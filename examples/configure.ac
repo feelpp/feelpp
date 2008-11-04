@@ -95,7 +95,7 @@ AC_CONFIG_FILES([ heat/Makefile ])
 AC_CONFIG_FILES([ levelset/Makefile ])
 AC_CONFIG_FILES([ pbeq/Makefile ])
 AC_CONFIG_FILES([ bloodflow/Makefile ])
-AC_CONFIG_FILES([ poly/Makefile ])
+dnl AC_CONFIG_FILES([ poly/Makefile ])
 AC_OUTPUT
 
 dnl if test "x$enable_fsi" != "xfalse"; then
