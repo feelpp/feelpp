@@ -84,6 +84,7 @@ AC_CACHE_SAVE
 
 #
 LIFE_EXTRAMODULE([fbm])
+LIFE_EXTRAMODULE([fsi])
 
 # examples
 AC_CONFIG_FILES([ Makefile ])
