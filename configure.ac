@@ -431,6 +431,7 @@ CPPFLAGS="${CPPFLAGS} -I\$(top_srcdir)/contrib/gmm -I\$(top_srcdir)/contrib/gmm/
 
 # Activate sub-modules
 LIFE_SUBMODULE([examples])
+LIFE_SUBMODULE([benchmarks])
 
 LIFE_CREATE_SUBDIRSLIST
 AC_CONFIG_FILES([ Makefile ])
@@ -467,14 +468,14 @@ dnl        *) AC_MSG_ERROR([bad value ${enableval} for --enable-examples]) ;;
 dnl      esac],[enable_examples=true])
 dnl AM_CONDITIONAL([ENABLE_EXAMPLES], [test $enable_examples = true])
 
-AC_ARG_ENABLE([benchmarks],
-     [  --enable-benchmarks    Turn on benchmarks creation],
-     [case "${enableval}" in
-       yes) enable_benchmarks=true ;;
-       no)  enable_benchmarks=false ;;
-       *) AC_MSG_ERROR([bad value ${enableval} for --enable-benchmarks]) ;;
-     esac],[enable_benchmarks=true])
-AM_CONDITIONAL([ENABLE_BENCHMARKS], [test $enable_benchmarks = true])
+dnl AC_ARG_ENABLE([benchmarks],
+dnl      [  --enable-benchmarks    Turn on benchmarks creation],
+dnl      [case "${enableval}" in
+dnl        yes) enable_benchmarks=true ;;
+dnl        no)  enable_benchmarks=false ;;
+dnl        *) AC_MSG_ERROR([bad value ${enableval} for --enable-benchmarks]) ;;
+dnl      esac],[enable_benchmarks=true])
+dnl AM_CONDITIONAL([ENABLE_BENCHMARKS], [test $enable_benchmarks = true])
 
 AC_ARG_ENABLE([fsi],
      [  --enable-fsi    Turn on fsi module],
@@ -561,20 +562,13 @@ dnl    AC_CONFIG_FILES([ examples/fsi/Makefile ])
 dnl fi
 
 
-# benchmark
-AC_CONFIG_FILES([ benchmarks/Makefile ])
-AC_CONFIG_FILES([ benchmarks/convergence/Makefile ])
-AC_CONFIG_FILES([ benchmarks/perf/Makefile ])
-AC_CONFIG_FILES([ benchmarks/kovasznay/Makefile ])
-AC_CONFIG_FILES([ benchmarks/stokes/Makefile ])
-AC_CONFIG_FILES([ benchmarks/turek/Makefile ])
-AC_CONFIG_FILES([ benchmarks/structure/Makefile ])
 
 AC_DEFINE_UNQUOTED(LIFE_PREFIX, "${prefix:-\"/usr\"}",[define prefix dir for life installation])
 AC_OUTPUT
 
 
 test "x$ENABLE_MODULE_EXAMPLES" = x1        && sum_examples=OK        || sum_examples="no"
+test "x$ENABLE_MODULE_BENCHMARKS" = x1      && sum_benchmarks=OK    || sum_benchmarks="no"
 
 cat <<EOT
 
@@ -584,12 +578,13 @@ Summary:
  Modules              Activation
  -------------------------------
  Examples             ${sum_examples}
+ Benchmarks           ${sum_benchmarks}
 
 Here are the submodule specific summaries:
 
 EOT
 
-for module in examples
+for module in examples benchmarks
 do
   test -f $module/summary && cat $module/summary
 done

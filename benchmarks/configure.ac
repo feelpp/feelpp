@@ -24,8 +24,8 @@
 AC_PREREQ([2.59])
 
 # Initialize Autoconf
-AC_INIT([Life platform module examples],
-        [0.1.0],
+AC_INIT([Life platform module benchmarks],
+        [0.9.9],
         [life-commits@lists.ljkforge.imag.fr],
         [life])
 
@@ -86,32 +86,18 @@ AC_CACHE_SAVE
 LIFE_EXTRAMODULE([fbm])
 LIFE_EXTRAMODULE([fsi])
 
-# examples
+# benchmark
 AC_CONFIG_FILES([ Makefile ])
-AC_CONFIG_FILES([ admin/Makefile ])
-AC_CONFIG_FILES([ generic/Makefile ])
-AC_CONFIG_FILES([ fluid/Makefile ])
-AC_CONFIG_FILES([ solid/Makefile ])
-AC_CONFIG_FILES([ heat/Makefile ])
-AC_CONFIG_FILES([ levelset/Makefile ])
-AC_CONFIG_FILES([ pbeq/Makefile ])
-AC_CONFIG_FILES([ bloodflow/Makefile ])
-dnl AC_CONFIG_FILES([ poly/Makefile ])
+AC_CONFIG_FILES([ convergence/Makefile ])
+AC_CONFIG_FILES([ perf/Makefile ])
+AC_CONFIG_FILES([ kovasznay/Makefile ])
+AC_CONFIG_FILES([ stokes/Makefile ])
+AC_CONFIG_FILES([ turek/Makefile ])
+AC_CONFIG_FILES([ structure/Makefile ])
+
 AC_OUTPUT
 
-test "x$ENABLE_EXTRAMODULE_FBM" = x1      && sum_examples_fbm=OK    || sum_examples_fbm="no"
-test "x$ENABLE_EXTRAMODULE_FSI" = x1      && sum_examples_fsi=OK    || sum_examples_fsi="no"
-
 cat <<EOT > summary
-
-Examples Sub-Module Summary:
-============================
-
- Extra-Modules        Activation
- -------------------------------
- Examples/Fbm         ${sum_examples_fbm}
- Examples/Fsi         ${sum_examples_fsi}
-
 EOT
 cat summary
 
