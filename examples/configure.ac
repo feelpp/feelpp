@@ -83,7 +83,7 @@ AC_SUBST(life_revision)
 AC_CACHE_SAVE
 
 #
-LIFE_SUBMODULE([fbm])
+LIFE_EXTRAMODULE([fbm])
 
 # examples
 AC_CONFIG_FILES([ Makefile ])
@@ -97,12 +97,6 @@ AC_CONFIG_FILES([ pbeq/Makefile ])
 AC_CONFIG_FILES([ bloodflow/Makefile ])
 dnl AC_CONFIG_FILES([ poly/Makefile ])
 AC_OUTPUT
-
-dnl if test "x$enable_fsi" != "xfalse"; then
-dnl    AC_CONFIG_FILES([ examples/fsi/Makefile ])
-dnl fi
-
-
 
 cat <<EOT > summary
 EOT
