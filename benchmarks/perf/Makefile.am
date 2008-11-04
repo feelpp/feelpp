@@ -21,13 +21,13 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-
-AM_CPPFLAGS =  -I$(srcdir)/../
+include $(top_srcdir)/admin/common.am
+#AM_CPPFLAGS =  $(AM_CPPFLAGS) -I$(srcdir)/../
 
 
 
 
 check_PROGRAMS    = perf
 perf_SOURCES  = bench1.cpp
-perf_LDADD    = ../liblifelog.la ../../life/liblife.la  -lpthread
+perf_LDADD    = ../liblifelog.la $(LIFE_LIBS)  -lpthread
 perf_LDFLAGS  = -static

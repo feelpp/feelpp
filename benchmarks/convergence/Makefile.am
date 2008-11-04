@@ -21,6 +21,7 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
+include $(top_srcdir)/admin/common.am
 AM_LDFLAGS=-static
 check_PROGRAMS=laplacian1dP1 laplacian1dP5\
                laplacian1d2dP1 laplacian1d2dP5\

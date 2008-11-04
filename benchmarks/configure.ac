@@ -82,10 +82,6 @@ AC_SUBST(life_revision)
 # Automatically save cache file to improve rerunning of configure script
 AC_CACHE_SAVE
 
-#
-LIFE_EXTRAMODULE([fbm])
-LIFE_EXTRAMODULE([fsi])
-
 # benchmark
 AC_CONFIG_FILES([ Makefile ])
 AC_CONFIG_FILES([ convergence/Makefile ])

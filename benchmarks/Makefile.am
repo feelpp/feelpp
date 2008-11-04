@@ -5,7 +5,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #       Date: 2007-02-23
 #
-#  Copyright (C) 2007 Universit� Joseph Fourier
+#  Copyright (C) 2007-2008 Université de Grenoble 1 (Joseph Fourier)
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,8 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
+include $(top_srcdir)/admin/common.am
+ACLOCAL_AMFLAGS = -I admin
 
 SUBDIRS=. convergence perf kovasznay stokes turek structure
 
