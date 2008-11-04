@@ -26,11 +26,6 @@ include $(top_srcdir)/admin/common.am
 
 ACLOCAL_AMFLAGS = -I admin
 
-
-# if ENABLE_FSI
-# FSDIR=fsi
-# endif
-
-SUBDIRS      = admin generic $(FSIDIR) $(ENABLE_EXTRAMODULE_FBM) fluid solid heat levelset pbeq bloodflow # poly
-DIST_SUBDIRS = admin generic $(FSIDIR) $(ENABLE_EXTRAMODULE_FBM) fluid solid heat levelset pbeq bloodflow # poly
+SUBDIRS      = admin generic $(ENABLE_EXTRAMODULE_FSI) $(ENABLE_EXTRAMODULE_FBM) fluid solid heat levelset pbeq bloodflow # poly
+DIST_SUBDIRS = admin generic $(ENABLE_EXTRAMODULE_FSI) $(ENABLE_EXTRAMODULE_FBM) fluid solid heat levelset pbeq bloodflow # poly
 
