@@ -12,4 +12,5 @@ all:
 	(cd contrib/gmm && autoconf)
 	@echo "Generating configure in contrib/gmm... done"
 	test -d examples/ && ( cd examples && make -f Makefile.dist)
+	test -d benchmarks/ && ( cd benchmarks && make -f Makefile.dist)
 

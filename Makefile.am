@@ -29,7 +29,7 @@ if ENABLE_DOC
 MAYBE_DOC=doc
 endif
 if ENABLE_LIFESUITE
-MAYBE_LIFESUITE=testsuite benchmarks
+MAYBE_LIFESUITE=testsuite
 endif
 
 SUBDIRS = boost contrib life $(MAYBE_LIFESUITE) $(MAYBE_DOC) .
@@ -37,6 +37,10 @@ DIST_SUBDIRS = boost contrib life $(MAYBE_LIFESUITE) $(MAYBE_DOC) .
 if ENABLE_MODULE_EXAMPLES
   SUBDIRS += examples
   DIST_SUBDIRS += examples
+endif
+if ENABLE_MODULE_BENCHMARKS
+  SUBDIRS += benchmarks
+  DIST_SUBDIRS += benchmarks
 endif
 
 
