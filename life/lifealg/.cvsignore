@@ -1,0 +1,14 @@
+.deps
+.libs
+Doxyfile
+Doxylog
+Makefile
+Makefile.in
+SolverPETSC.lo
+SolverPETSC.loT
+dataAztec.lo
+dataNewton.lo
+doxylog
+liblifealg.la
+pattern.lo
+values.lo

@@ -1,0 +1,20 @@
+
+*** what if I'm using a plugin DLL which uses boost.log in another DLL?
+ If this plugin DLL is unloaded explicitly, when Boost.Log DLL is unloaded, will
+ cause Access Violations (since the logs were created in a DLL that was already unloaded).
+ Need to fix this.
+ 
+
+*** compile-time logs: write docs about it
+
+**** appenders to Event log
+
+**** alternate logging manager
+
+***********
+Redirecting cout / cerr to a trace.
+
+For example we use some 3rd party libraries which write errors to cout / 
+cerr etc, so we allow the option of running (via a command line option) 
+in console mode (anything written to std output appears), or silent 
+mode, where cout / cerr is redirected to its own trace.

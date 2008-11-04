@@ -1,0 +1,147 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.06.00"/>
+    <PROJECT value="test_simple_class.exe"/>
+    <OBJFILES value="..\test\test_simple_class.obj"/>
+    <RESFILES value="test_simple_class.res"/>
+    <IDLFILES value=""/>
+    <IDLGENFILES value=""/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES)"/>
+    <LIBFILES value="..\..\..\bin\boost\libs\serialization\build\libboost_serialization.lib\borland\debug\runtime-link-static\libboost_serialization.lib 
+      ..\..\..\bin\boost\libs\serialization\build\libboost_wserialization.lib\borland\debug\runtime-link-static\libboost_wserialization.lib 
+      ..\..\..\bin\boost\libs\test\build\libboost_test_exec_monitor.lib\borland\debug\runtime-link-static\libboost_test_exec_monitor.lib"/>
+    <LIBRARIES value=""/>
+    <SPARELIBS value=""/>
+    <PACKAGES value="vcl.bpi rtl.bpi dbrtl.bpi adortl.bpi vcldb.bpi vclx.bpi bdertl.bpi 
+      vcldbx.bpi ibxpress.bpi dsnap.bpi cds.bpi bdecds.bpi qrpt.bpi teeui.bpi 
+      teedb.bpi tee.bpi dss.bpi teeqr.bpi visualclx.bpi visualdbclx.bpi 
+      dsnapcrba.bpi dsnapcon.bpi bcbsmp.bpi vclie.bpi xmlrtl.bpi inet.bpi 
+      inetdbbde.bpi inetdbxpress.bpi inetdb.bpi nmfast.bpi webdsnap.bpi 
+      bcbie.bpi websnap.bpi soaprtl.bpi dclocx.bpi dbexpress.bpi dbxcds.bpi 
+      indy.bpi bcb2kaxserver.bpi"/>
+    <PATHCPP value=".;..\test"/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value="_DEBUG;BOOST_ARCHIVE_TEST=xml_warchive.hpp"/>
+    <SYSDEFINES value="NO_STRICT;_NO_VCL;USEPACKAGES"/>
+    <MAINSOURCE value="test_simple_class.bpf"/>
+    <INCLUDEPATH value="..\test;C:\boost_1_31_0;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="..\test;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <WARNINGS value="-w-par"/>
+    <OTHERFILES value=""/>
+  </MACROS>
+  <OPTIONS>
+    <IDLCFLAGS value="-I..\test -IC:\boost_1_31_0 -I$(BCB)\include -I$(BCB)\include\vcl 
+      -src_suffix cpp -D_DEBUG -DBOOST_ARCHIVE_TEST=xml_warchive.hpp -boa"/>
+    <CFLAG1 value="-Od -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -tWC -tWM -c"/>
+    <PFLAGS value="-$YD -$W -$O- -$A8 -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zd"/>
+    <LFLAGS value="-D&quot;&quot; -ap -Tpe -x -Gn -v"/>
+    <OTHERFILES value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0x32.obj $(PACKAGES) $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cw32mt.lib"/>
+    <OTHERFILES value=""/>
+  </LINKER>
+  <FILELIST>
+      <FILE FILENAME="test_simple_class.res" FORMNAME="" UNITNAME="test_simple_class.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="test_simple_class.bpf" FORMNAME="" UNITNAME="test_simple_class" CONTAINERID="BPF" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\test\test_simple_class.cpp" FORMNAME="" UNITNAME="test_simple_class" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\..\bin\boost\libs\serialization\build\libboost_serialization.lib\borland\debug\runtime-link-static\libboost_serialization.lib" FORMNAME="" UNITNAME="libboost_serialization.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\..\bin\boost\libs\serialization\build\libboost_wserialization.lib\borland\debug\runtime-link-static\libboost_wserialization.lib" FORMNAME="" UNITNAME="libboost_wserialization.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\..\bin\boost\libs\test\build\libboost_test_exec_monitor.lib\borland\debug\runtime-link-static\libboost_test_exec_monitor.lib" FORMNAME="" UNITNAME="libboost_test_exec_monitor.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=0
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1033
+CodePage=1252
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[HistoryLists\hlIncludePath]
+Count=5
+Item0=..\test;C:\boost_1_31_0\libs\serialization\test;C:\boost_1_31_0;$(BCB)\include;$(BCB)\include\vcl
+Item1=C:\boost_1_31_0\libs\serialization\test;C:\boost_1_31_0;$(BCB)\include;$(BCB)\include\vcl
+Item2=C:\boost_1_31_0\libs;C:\boost_1_31_0\libs\serialization\test;$(BCB)\include;$(BCB)\include\vcl
+Item3=C:\boost_1_31_0\libs\;C:\boost_1_31_0\libs\serialization\test;$(BCB)\include;$(BCB)\include\vcl
+Item4=C:\boost_1_31_0\libs\serialization\test;$(BCB)\include;$(BCB)\include\vcl
+
+[HistoryLists\hlLibraryPath]
+Count=2
+Item0=..\test;C:\boost_1_31_0\libs\serialization\test;$(BCB)\lib\obj;$(BCB)\lib
+Item1=C:\boost_1_31_0\libs\serialization\test;$(BCB)\lib\obj;$(BCB)\lib
+
+[HistoryLists\hlDebugSourcePath]
+Count=1
+Item0=$(BCB)\source\vcl
+
+[HistoryLists\hlConditionals]
+Count=2
+Item0=_DEBUG;BOOST_ARCHIVE_TEST=xml_warchive.hpp
+Item1=_DEBUG
+
+[Debugging]
+DebugSourceDirs=$(BCB)\source\vcl
+
+[Parameters]
+RunParams=
+Launcher=
+UseLauncher=0
+DebugCWD=
+HostApplication=
+RemoteHost=
+RemotePath=
+RemoteLauncher=
+RemoteCWD=
+RemoteDebug=0
+
+[Compiler]
+ShowInfoMsgs=0
+LinkDebugVcl=1
+LinkCGLIB=0
+
+[CORBA]
+AddServerUnit=1
+AddClientUnit=1
+PrecompiledHeaders=1
+
+[Language]
+ActiveLang=
+ProjectLang=
+RootDir=
+  </IDEOPTIONS>
+</PROJECT>

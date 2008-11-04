@@ -1,0 +1,111 @@
+# -*- mode: m4 -*-
+#
+#  This file is part of the Life library
+#
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#       Date: 2008-03-27
+#
+#  Copyright (C) 2008 Université Joseph Fourier
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2.1 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+#
+# \file convergence.at
+# \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+# \date 2008-03-27
+#
+
+AT_BANNER([convergence tests...])
+
+AT_BANNER([laplacian(scalar)...])
+
+AT_SETUP([laplacian 1D P1])
+AT_KEYWORDS([laplacian 1D])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacian --program=laplacian1dP1 --dim=1 --order=1 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+
+AT_SETUP([laplacian 1D P5])
+AT_KEYWORDS([laplacian 1D])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacian --program=laplacian1dP5 --dim=1 --order=5 --hsize=0.5 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+AT_SETUP([laplacian 1D/2D P1])
+AT_KEYWORDS([laplacian 1D2D])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacian --program=laplacian1d2dP1 --dim=1 --order=1 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+AT_SETUP([laplacian 1D/2D P5])
+AT_KEYWORDS([laplacian 1D2D])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacian --program=laplacian1d2dP5 --dim=1 --order=5  --hsize=0.5 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+
+AT_SETUP([laplacian 2D P1])
+AT_KEYWORDS([laplacian 2D])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacian --program=laplacian2dP1 --dim=2 --order=1 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+
+AT_SETUP([laplacian 2D P5])
+AT_KEYWORDS([laplacian 2D])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacian --program=laplacian2dP5 --dim=2 --order=5 --hsize=0.5 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+AT_SETUP([laplacian 2D3D P1])
+AT_KEYWORDS([laplacian 2D3D])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacian --program=laplacian2d3dP1 --dim=2 --order=1 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+AT_SETUP([laplacian 2D P1 quad])
+AT_KEYWORDS([laplacian 2D P1 quad])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacian --program=laplacian2dP1h --dim=2 --order=1 --hsize=0.1 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+AT_SETUP([laplacian 2D P5 quad])
+AT_KEYWORDS([laplacian 2D P5 quad])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacian --program=laplacian2dP5h --dim=2 --order=5 --hsize=0.4 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+
+AT_SETUP([laplacian 3D P1])
+AT_KEYWORDS([laplacian 3D])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacian --program=laplacian3dP1 --dim=3 --order=1 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+
+AT_SETUP([laplacian 3D P2])
+AT_KEYWORDS([laplacian 3D])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacian --program=laplacian3dP2 --dim=3 --order=2 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+AT_SETUP([laplacian 3D P3 simplex])
+AT_KEYWORDS([laplacian 3D simplex])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacian --program=laplacian3dP3 --dim=3 --order=3 --hsize=0.5 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+AT_SETUP([laplacian 3D P5 simplex])
+AT_KEYWORDS([laplacian 3D P5 simplex])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacian --program=laplacian3dP5 --dim=3 --order=5 --hsize=1 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+AT_BANNER([laplacian(vectorial)...])
+
+AT_SETUP([laplacian vectorial 2D P1])
+AT_KEYWORDS([laplacian vectorial 2D])
+AT_CHECK([ $abs_srcdir/benchmarks/convergence/convergence.py --prefix=laplacianv --program=laplacian2dP1v --dim=2 --order=1 --path=$abs_top_builddir/benchmarks/convergence/],[0],[ignore],[ignore])
+AT_CLEANUP
+
+
+

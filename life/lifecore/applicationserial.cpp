@@ -1,0 +1,83 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2005-10-18
+
+  Copyright (C) 2005,2006 EPFL
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file application.cpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2005-10-18
+ */
+#include <life/lifecore/life.hpp>
+#include <life/lifecore/application.hpp>
+
+#if defined(HAVE_TAU)
+#include <Profile/Profiler.h>
+#endif /* HAVE_TAU */
+
+
+namespace Life
+{
+LIFE_NO_EXPORT
+po::options_description
+serialOptions()
+{
+    po::options_description serial("Serial application options");
+    return serial;
+}
+
+Application::Application( int argc,
+                                      char** argv,
+                                      AboutData const& ad )
+    :
+    super( argc, argv, ad, serialOptions(), true )
+{
+
+#if defined(HAVE_TAU)
+    TAU_PROFILE_SET_NODE(_S_process_id);
+#endif /* HAVE_TAU */
+}
+
+
+Application::Application( int argc,
+                                      char** argv,
+                                      AboutData const& ad,
+                                      po::options_description const& od )
+    :
+    super( argc, argv, ad, serialOptions().add( od ), true )
+
+{
+#if defined(HAVE_TAU)
+    TAU_PROFILE_SET_NODE(_S_process_id);
+#endif /* HAVE_TAU */
+}
+
+Application::Application(Application const& a )
+    :
+    super( a )
+{
+}
+
+Application::~Application()
+{
+}
+
+}

@@ -1,0 +1,224 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2005-10-06
+
+  Copyright (C) 2005-2006 EPFL
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file functional.hpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2005-10-06
+ */
+#ifndef __Functional_H
+#define __Functional_H 1
+
+#include <boost/operators.hpp>
+#include <boost/numeric/ublas/vector_proxy.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+
+#include <life/lifecore/life.hpp>
+
+
+namespace Life
+{
+namespace ublas = boost::numeric::ublas;
+
+/**
+ * \class Functional
+ * \brief represents a linear functional
+ *
+ * A functional is defined by a polynomial set and a set of
+ * coefficients
+ *
+ * \ingroup Polynomial
+ * @author Christophe Prud'homme
+ * @see
+*/
+template<typename Space>
+class Functional
+    :
+        public boost::addable<Functional<Space> >
+{
+    typedef boost::addable<Functional<Space> > super;
+public:
+
+
+    /** @name Typedefs
+     */
+    //@{
+
+    typedef typename Space::value_type value_type;
+    typedef Functional<Space> self_type;
+    typedef Space space_type;
+    typedef Space polynomialset_type;
+    typedef typename space_type::polynomial_type polynomial_type;
+    typedef typename space_type::basis_type basis_type;
+    typedef typename space_type::matrix_type matrix_type;
+
+    static const uint16_type nComponents = space_type::nComponents;
+
+    // representation type for the functionals
+    typedef ublas::matrix<value_type> rep_type;
+
+    //@}
+
+    /** @name Constructors, destructor
+     */
+    //@{
+
+    Functional()
+        :
+        super(),
+        _M_p(),
+        _M_coeff()
+    {}
+
+    Functional( space_type const& P )
+        :
+        super(),
+        _M_p( P ),
+        _M_coeff( _M_p.coeff() )
+
+    {
+
+    }
+
+    //template<class AE>
+    Functional( space_type const& P,
+                matrix_type const& coeff )
+                //ublas::matrix_expression<AE> const& coeff )
+        :
+        super(),
+        _M_p( P ),
+        _M_coeff( coeff )
+    {
+        //LIFE_ASSERT( _M_coeff.size1() == nComponents && _M_coeff.size2() == _M_p.polynomialDimensionPerComponent() )
+        //( _M_coeff.size1() )( _M_coeff.size2() )( _M_p.polynomialDimension() ).error( "invalid coefficient size" );
+//         LIFE_ASSERT( _M_coeff.size2() == 1 )( _M_coeff.size2() ).error( "there should be only one column" );
+    }
+
+    Functional( Functional const & __f )
+        :
+        _M_p( __f._M_p ),
+        _M_coeff( __f._M_coeff )
+    {
+        //LIFE_ASSERT( _M_coeff.size1() == nComponents && _M_coeff.size2() == _M_p.polynomialDimensionPerComponent() )
+        //( _M_coeff.size1() )( _M_coeff.size2() )( _M_p.polynomialDimensionPerComponent() ).error( "invalid coefficient size" );
+    }
+
+    virtual ~Functional()
+    {}
+
+    //@}
+
+    /** @name Operator overloads
+     */
+    //@{
+
+    self_type& operator=( self_type const& __f )
+    {
+        if ( this != &__f )
+        {
+            _M_p = __f._M_p;
+            _M_coeff = __f._M_coeff;
+        }
+        return *this;
+    }
+
+    /**
+     * add to another functional
+     * it generates automatically operator+ thanks to addable
+     */
+    self_type& operator+=(const self_type& __f )
+    {
+        _M_coeff += __f.M_coeff;
+        return *this;
+    }
+
+    /**
+     * apply the functional to a polynomial
+     *
+     *
+     * \param p polynomial
+     * \return matrix resulting from the application of the functional to the polynomial
+     */
+    virtual matrix_type operator()( polynomial_type const& p ) const
+    {
+        LIFE_ASSERT( p.coeff().size2()  == _M_coeff.size2() )
+            ( p.coeff() )( _M_coeff ).error( "invalid polynomial" );
+
+        return ublas::prod( p.coeff(), ublas::trans(_M_coeff) );
+    }
+
+    //@}
+
+    /** @name Accessors
+     */
+    //@{
+
+    /**
+     * \return the dimension of the polynomial space
+     */
+    uint16_type size() const { return _M_coeff.size2(); }
+
+    /**
+     * \return the coefficient of the functional in the basis
+     * associated with the polynomial space
+     */
+    rep_type const& coeff() const { return _M_coeff; }
+
+    //@}
+
+    /** @name  Mutators
+     */
+    //@{
+
+    //template<class AE>
+    //void setCoefficient( ublas::matrix_expression<AE> const& __coeff )
+    void setCoefficient( matrix_type const& __coeff )
+    {
+#if 1
+        LIFE_ASSERT( __coeff.size1() == nComponents && __coeff.size2() == _M_p.polynomialDimensionPerComponent() )
+            ( __coeff.size1() )( __coeff.size2() )( _M_p.polynomialDimensionPerComponent() ).error( "invalid coefficient size" );
+#endif
+        _M_coeff = __coeff;
+    }
+
+
+    //@}
+
+    /** @name  Methods
+     */
+    //@{
+
+
+    //@}
+
+
+
+protected:
+
+private:
+    space_type _M_p;
+    rep_type _M_coeff;
+};
+
+}
+#endif /* __Functional_H */

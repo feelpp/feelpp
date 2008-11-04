@@ -1,0 +1,7 @@
+AT_BANNER([heat examplesuite ...])
+
+# thermalfin
+AT_SETUP([heat])
+AT_CHECK([${at_dir}/examples/heat/thermalfin],[0],[ignore],[ignore])
+AT_KEYWORDS([examples heat])
+AT_CLEANUP

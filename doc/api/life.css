@@ -1,0 +1,18 @@
+/* Table Of Content styles, by Martin Quinson (but not original at all) */
+DIV.toc  {
+       background-color: #e8eef2;
+       border: 1px solid #84b0c7;
+       font-size: 120%;
+       display: block;
+       float: right;
+       margin: 10px;
+       padding: 10px;
+        padding-top: 0px;
+        padding-bottom: 0px;
+}
+
+DIV.tocTitle {
+        text-align: center;
+        font-weight: bold;
+        font-size: 130%;
+}

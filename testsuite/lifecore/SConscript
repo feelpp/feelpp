@@ -1,0 +1,40 @@
+# -*- Mode: python -*-
+###  SConscript ---
+
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
+#       Date: 2006-05-26
+#
+#  Copyright (C) 2006 EPFL
+#
+# Distributed under the GPL(GNU Public License):
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#
+
+Import('env')
+
+libpath=['../../life/lifecore/', '../../life']
+libs=['lifecore', 'lifeinfo', env['LIBS']]
+
+if 'test' in COMMAND_LINE_TARGETS or 'testcore' in COMMAND_LINE_TARGETS:
+    test_mpi = env.Program('test_mpi','test_mpi.cpp',LIBS=libs,LIBPATH=libpath)
+    test_traits = env.Program('test_traits','test_traits.cpp',LIBS=[libs,'-lboost_unit_test_framework'],LIBPATH=libpath)
+    test_singleton = env.Program('test_singleton','test_singleton.cpp',LIBS=libs,LIBPATH=libpath)
+    test_factory = env.Program('test_factory','test_factory.cpp',LIBS=libs,LIBPATH=libpath)
+    test_debug = env.Program('test_debug','test_debug.cpp',LIBS=libs,LIBPATH=libpath)
+
+    env.Test( 'test.lifecore.passed',[test_mpi, test_traits,test_singleton, test_factory,test_debug])
+
+

@@ -1,0 +1,7 @@
+AT_BANNER([solid examplesuite ...])
+
+# beam
+AT_SETUP([beam])
+AT_CHECK([${at_dir}/examples/solid/beam],[0],[ignore],[ignore])
+AT_KEYWORDS([examples solid beam])
+AT_CLEANUP

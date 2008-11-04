@@ -1,0 +1,255 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2007-04-11
+
+  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file eye.hpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2007-04-11
+ */
+#ifndef __Eye_H
+#define __Eye_H 1
+
+#include <blitz/array.h>
+
+
+namespace Life
+{
+namespace vf
+{
+/// \cond detail
+namespace detail
+{
+/**
+ * \class Eye
+ * \brief Return an identity matrix
+ *
+ * @author Christophe Prud'homme
+ */
+template<int M, int N = M>
+class Eye
+{
+public:
+
+
+    /** @name Typedefs
+     */
+    //@{
+    static const size_type context = 0;
+
+    template<typename Func>
+    struct HasTestFunction
+    {
+        static const bool result = false;
+    };
+
+    template<typename Func>
+    struct HasTrialFunction
+    {
+        static const bool result = false;
+    };
+
+    typedef Eye<M,N> this_type;
+    typedef double value_type;
+    //@}
+
+    /** @name Constructors, destructor
+     */
+    //@{
+
+    Eye()
+        :
+        _M_eye( M, N )
+    {
+        blitz::firstIndex i;
+        blitz::secondIndex j;
+        _M_eye = !(i-j);
+    }
+
+    Eye( Eye const & eig )
+        :
+        _M_eye( eig._M_eye )
+    {
+    }
+    ~Eye()
+    {}
+
+    //@}
+
+    /** @name Operator overloads
+     */
+    //@{
+
+
+    //@}
+
+    /** @name Accessors
+     */
+    //@{
+
+
+    //@}
+
+    /** @name  Mutators
+     */
+    //@{
+
+
+    //@}
+
+    /** @name  Methods
+     */
+    //@{
+
+    blitz::Array<value_type,2> eye() const { return _M_eye; }
+
+    //@}
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+    struct tensor
+    {
+        typedef this_type expression_type;
+        typedef typename expression_type::value_type value_type;
+        typedef value_type return_value_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
+                                  mpl::identity<detail::gmc<0> >,
+                                  mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+
+        struct INVALID_SHAPE {};
+        static const bool eq11 = M==1&&N==1;
+        static const bool eqD1 = M==gmc_type::nDim&&N==1;
+        static const bool eq1D = M==1&&N==gmc_type::nDim;
+        static const bool eqDD = M==gmc_type::nDim&&N==gmc_type::nDim;
+        typedef typename mpl::if_< mpl::bool_<eq11>,
+                                   mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,
+                                   typename mpl::if_< mpl::bool_<eqD1>,
+                                                      mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false> >,
+                                                      typename mpl::if_< mpl::bool_<eq1D>,
+                                                                         mpl::identity<Shape<gmc_type::nDim, Vectorial, true, false> >,
+                                                                         typename mpl::if_< mpl::bool_<eqDD>,
+                                                                                            mpl::identity<Shape<gmc_type::nDim, Tensor2, false, false> >,
+                                                                                            mpl::identity<INVALID_SHAPE> >::type>::type>::type>::type::type shape;
+
+
+        template <class Args> struct sig { typedef value_type type; };
+
+        tensor( this_type const& expr,Geo_t const&, Basis_i_t const&, Basis_j_t const& )
+            :
+            _M_expr(expr)
+        {
+        }
+
+        tensor( this_type const& expr,Geo_t const&, Basis_i_t const& )
+            :
+            _M_expr(expr)
+        {
+        }
+
+        tensor( this_type const& expr, Geo_t const&  )
+            :
+            _M_expr(expr)
+        {
+        }
+
+        void update( Geo_t const&, Basis_i_t const&, Basis_j_t const& )
+        {
+        }
+        void update( Geo_t const&, Basis_i_t const& )
+        {
+        }
+        void update( Geo_t const& )
+        {
+        }
+
+        template<typename IndexI, typename IndexJ>
+        value_type
+        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q ) const
+        {
+            Life::detail::ignore_unused_variable_warning(i);
+            Life::detail::ignore_unused_variable_warning(j);
+            Life::detail::ignore_unused_variable_warning(q);
+            return eval( c1, c2, mpl::bool_<shape::is_scalar>());
+        }
+
+        template<typename IndexI, typename IndexJ, int PatternContext>
+        value_type
+        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q,
+                 mpl::int_<PatternContext> ) const
+        {
+            Life::detail::ignore_unused_variable_warning(i);
+            Life::detail::ignore_unused_variable_warning(j);
+            Life::detail::ignore_unused_variable_warning(q);
+            return eval( c1, c2, mpl::bool_<shape::is_scalar>());
+        }
+        template<typename IndexI>
+        value_type
+        evaliq( IndexI const& i, uint16_type c1, uint16_type c2, uint16_type q ) const
+        {
+            Life::detail::ignore_unused_variable_warning(i);
+            Life::detail::ignore_unused_variable_warning(q);
+            return eval( c1, c2, mpl::bool_<shape::is_scalar>());
+        }
+        value_type
+        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
+        {
+            Life::detail::ignore_unused_variable_warning(q);
+            return eval( c1, c2, mpl::bool_<shape::is_scalar>());
+        }
+    private:
+        value_type
+        eval( int c1, int c2, mpl::bool_<true> ) const
+        {
+            Life::detail::ignore_unused_variable_warning(c1);
+            Life::detail::ignore_unused_variable_warning(c2);
+            return _M_expr.eye()( 0, 0 );
+        }
+        value_type
+        eval( int c1, int c2, mpl::bool_<false> ) const
+        {
+            return _M_expr.eye()( c1, c2 );
+        }
+        this_type _M_expr;
+    };
+private:
+    blitz::Array<value_type,2> _M_eye;
+
+};
+} // detail
+/// \endcond
+
+/**
+ * \class Eye
+ * \brief Return an identity matrix
+ *
+ * @author Christophe
+ */
+template<int M, int N>
+inline
+Expr<detail::Eye<M,N> >
+eye()
+{
+    return Expr< detail::Eye<M,N> >(  detail::Eye<M, N>() );
+}
+} // vf
+} // Life
+#endif /* __Eye_H */

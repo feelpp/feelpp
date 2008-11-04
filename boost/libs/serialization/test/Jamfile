@@ -1,0 +1,318 @@
+# Boost serialization Library test Jamfile
+
+#  (C) Copyright Robert Ramey 2002-2004.
+#  Use, modification, and distribution are subject to the 
+#  Boost Software License, Version 1.0. (See accompanying file 
+#  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+
+subproject libs/serialization/test ;
+
+# bring in rules for testing
+import testing ;
+
+import ../build/serialization ;
+
+{
+
+# Make tests run by default.
+DEPENDS all : test ;
+
+# these are used to shorten testing while in development.  It permits
+# testing to be applied to just a particular type of archive
+if ! $(BOOST_ARCHIVE_LIST) {
+    BOOST_ARCHIVE_LIST = 
+        "text_archive.hpp" 
+        "text_warchive.hpp" 
+        "binary_archive.hpp" 
+        "xml_archive.hpp" 
+        "xml_warchive.hpp" 
+    ;
+    # enable the tests which don't depend on a particular archive
+    BOOST_SERIALIZATION_TEST = true ;
+}
+
+# look in BOOST_ROOT for sources first, just in this Jamfile
+local SEARCH_SOURCE = $(BOOST_ROOT) $(SEARCH_SOURCE) ;
+
+rule run-template ( test-name : sources * : requirements * ) {
+    return [
+        run
+            $(sources)
+        : # command
+        : # input files
+        : # requirements
+            std::locale-support
+            toolset::require-boost-spirit-support
+            toolset::suppress-warnings
+            toolset::optimizations
+            $(requirements)
+        : # test name
+            $(test-name)
+        : # default-build
+            debug
+    ] ;
+}
+
+# each of the following tests is run with each type of archive
+rule run-invoke ( test-name : sources * : defns * )
+{    
+    if [ in-invocation-subdir ] { Echo $(test-name) ; }
+    local tests ;
+    tests += [ 
+        run-template $(test-name)
+        : # sources
+            $(sources)
+            <lib>../build/boost_serialization
+        : # requirements
+            # msvc stlport 4.5.3 only works with static lib
+            <msvc-stlport><*><runtime-link>static
+            <vc-6_5-stlport><*><runtime-link>static
+            <vc-7_0-stlport><*><runtime-link>static
+            <define>$(defns)
+            <define>BOOST_LIB_DIAGNOSTIC=1
+    ] ;
+    if [ in-invocation-subdir ] { Echo $(test-name)_dll ; }
+    tests += [ 
+        run-template $(test-name)_dll
+        : # sources
+            $(sources)
+            <dll>../build/boost_serialization
+        : # requiremens
+            toolset::require-shared-libraries-support
+            <define>$(defns)
+            <define>BOOST_LIB_DIAGNOSTIC=1
+            <define>BOOST_ALL_DYN_LINK=1
+            <runtime-link>dynamic
+    ] ;
+    return $(tests) ;
+}
+
+# each of the following tests is run with each type of archive
+rule run-winvoke ( test-name : sources * : defns * )
+{
+    if [ in-invocation-subdir ] { Echo $(test-name) ; }
+    local tests ;
+    tests += [ 
+        run-template $(test-name)
+        : # sources
+            $(sources)
+            <lib>../build/boost_serialization
+            <lib>../build/boost_wserialization
+        : # requirements
+            toolset::require-wide-char-io-support
+            <define>$(defns)
+            <define>BOOST_LIB_DIAGNOSTIC=1
+            # msvc stlport 4.5.3 only works with static lib
+            <msvc-stlport><*><runtime-link>static
+            <vc-6_5-stlport><*><runtime-link>static
+            <vc-7_0-stlport><*><runtime-link>static
+            # both stlport and msvc6 define iswspace
+            <msvc-stlport><*><linkflags>"-force:multiple"
+            <vc-6_5-stlport><*><linkflags>"-force:multiple"
+            <vc-7_0-stlport><*><linkflags>"-force:multiple"
+    ] ;
+    if [ in-invocation-subdir ] { Echo $(test-name)_dll ; }
+    tests += [ 
+        run-template $(test-name)_dll
+        : # sources
+            $(sources)
+            <dll>../build/boost_serialization
+            <dll>../build/boost_wserialization
+        : # requirements
+            toolset::require-wide-char-io-support
+            toolset::require-shared-libraries-support
+            <define>$(defns)
+            <define>BOOST_LIB_DIAGNOSTIC=1
+            <define>BOOST_ALL_DYN_LINK=1
+            <runtime-link>dynamic
+    ] ;
+    return $(tests) ;
+}
+
+# for tests which don't use library code - usually just headers
+rule test-bsl-run-no-lib  ( test-name : sources * )
+{
+    if [ in-invocation-subdir ] { Echo $(test-name) ; }
+    local tests ;
+    tests += [ 
+        run-template $(test-name)
+        : # sources
+            $(test-name).cpp $(sources).cpp
+        : # requirements
+            <msvc-stlport><*><runtime-link>static
+            <vc-6_5-stlport><*><runtime-link>static
+            <vc-7_0-stlport><*><runtime-link>static
+    ] ;
+}
+
+rule test-bsl-run ( test-name : sources * )
+{
+    local tests ;
+    tests +=  [ 
+        run-invoke $(test-name) 
+        : 
+            $(test-name).cpp $(sources).cpp
+    ] ;
+    return $(tests) ;
+}
+
+rule test-bsl-run_archive ( test-name : archive-name : sources * ) {
+    local tests ;
+    switch $(archive-name) {
+    case "*_warchive" :
+        tests +=  [
+            run-winvoke $(test-name)_$(archive-name)
+            : 
+                $(sources).cpp
+            :
+                BOOST_ARCHIVE_TEST=$(archive-name).hpp
+        ] ;
+    case "*" :
+        tests +=  [
+            run-invoke $(test-name)_$(archive-name)
+            : 
+                $(sources).cpp
+            : 
+                BOOST_ARCHIVE_TEST=$(archive-name).hpp
+        ] ;
+    }
+    return $(tests) ;
+}
+
+rule test-bsl-run_files ( test-name : sources * ) {
+    local tests ;
+    for local defn in $(BOOST_ARCHIVE_LIST) {
+        tests += [ 
+            test-bsl-run_archive $(test-name) 
+            : $(defn:LB) 
+            : $(test-name) $(sources)
+        ] ;
+    }
+    return $(tests) ;
+}
+    
+rule test-bsl-run_polymorphic_archive ( test-name : sources * ) {
+    local tests ;
+    for local defn in $(BOOST_ARCHIVE_LIST) {
+        tests += [ 
+            test-bsl-run_archive test
+            : polymorphic_$(defn:LB)  
+            : test_polymorphic $(sources)
+        ] ;
+    }
+    return $(tests) ;
+}
+
+test-suite "serialization" :
+     [ test-bsl-run_files test_array ]
+     [ test-bsl-run_files test_binary ]
+     [ test-bsl-run_files test_contained_class ]
+     [ test-bsl-run_files test_cyclic_ptrs ]
+     [ test-bsl-run_files test_delete_pointer ]
+     [ test-bsl-run_files test_deque ]
+     [ test-bsl-run_files test_derived ]
+     [ test-bsl-run_files test_derived_class ]
+     [ test-bsl-run_files test_derived_class_ptr ]
+     [ test-bsl-run_files test_diamond ]
+     [ test-bsl-run_files test_exported ]
+     [ test-bsl-run_files test_class_info_load ]
+     [ test-bsl-run_files test_class_info_save ]
+     [ test-bsl-run_files test_object ]
+     [ test-bsl-run_files test_primitive ]
+     [ test-bsl-run_files test_list ]
+     [ test-bsl-run_files test_list_ptrs ]
+     [ test-bsl-run_files test_map ]
+     [ test-bsl-run_files test_mi ]
+     [ test-bsl-run_files test_multiple_ptrs ]
+     [ test-bsl-run_files test_no_rtti ]
+     [ test-bsl-run_files test_non_intrusive ]
+     [ test-bsl-run_files test_non_default_ctor ]
+     [ test-bsl-run_files test_non_default_ctor2 ]
+     [ test-bsl-run_files test_null_ptr ]
+     [ test-bsl-run_files test_nvp ]
+     [ test-bsl-run_files test_recursion ]
+     [ test-bsl-run_files test_registered ]
+     [ test-bsl-run_files test_set ]
+     [ test-bsl-run_files test_simple_class ]
+     [ test-bsl-run_files test_simple_class_ptr ]
+     [ test-bsl-run_files test_split ]
+     [ test-bsl-run_files test_tracking ]
+     [ test-bsl-run_files test_unregistered ]
+     [ test-bsl-run_files test_valarray ]
+     [ test-bsl-run_files test_variant ]
+     [ test-bsl-run_files test_vector ]
+     [ test-bsl-run_files test_optional ]
+     [ test-bsl-run_files test_shared_ptr ]
+     [ test-bsl-run_files test_shared_ptr_132 ]
+     [ test-bsl-run_polymorphic_archive test_polymorphic : test_polymorphic_A ]
+;
+
+if $(BOOST_SERIALIZATION_TEST) {
+    test-suite "serialization" : 
+        [ test-bsl-run-no-lib test_iterators ]
+        [ test-bsl-run-no-lib test_iterators_base64 ]
+        [ test-bsl-run-no-lib test_inclusion ]
+        [ test-bsl-run test_private_ctor ]
+        [ test-bsl-run test_reset_object_address ]
+        [ test-bsl-run-no-lib test_smart_cast ]
+        [ test-bsl-run-no-lib test_static_warning ]
+        [ test-bsl-run-no-lib test_utf8_codecvt : ../src/utf8_codecvt_facet ]
+        [ test-bsl-run test_void_cast ]
+        [ test-bsl-run test_mult_archive_types ]
+        [ test-bsl-run-no-lib test_codecvt_null : ../src/codecvt_null ]
+
+        # demos
+        [ test-bsl-run test_demo ]
+        [ test-bsl-run test_demo_auto_ptr ]
+        [ test-bsl-run test_demo_exception ]
+        [ test-bsl-run test_demo_fast_archive ]
+        [ test-bsl-run test_demo_pimpl : ../example/demo_pimpl_A ]
+        [ test-bsl-run test_demo_polymorphic : ../example/demo_polymorphic_A ]
+        [ test-bsl-run test_demo_portable_archive ]
+        [ test-bsl-run test_demo_shared_ptr ]
+        [ test-bsl-run test_demo_xml ]
+        [ test-bsl-run test_demo_xml_load ]
+        [ test-bsl-run test_demo_xml_save ]
+
+        # should fail compilation
+        [ compile-fail test_not_serializable.cpp : std::locale-support ]
+        [ compile-fail test_traits_fail.cpp : std::locale-support ]
+        [ compile-fail test_const_save_fail1.cpp : std::locale-support ]
+        [ compile-fail test_const_save_fail2.cpp : std::locale-support ]
+        [ compile-fail test_const_save_fail3.cpp : std::locale-support ]
+        # note - library unable to detect there errors for now
+        #[ compile-fail test_const_save_fail1_nvp.cpp ]
+        #[ compile-fail test_const_save_fail2_nvp.cpp ]
+        #[ compile-fail test_const_save_fail3_nvp.cpp ]
+        [ compile-fail test_const_load_fail1.cpp : std::locale-support ]
+        [ compile-fail test_const_load_fail2.cpp : std::locale-support ]
+        [ compile-fail test_const_load_fail3.cpp : std::locale-support ]
+        [ compile-fail test_const_load_fail1_nvp.cpp : std::locale-support ]
+        [ compile-fail test_const_load_fail2_nvp.cpp : std::locale-support ]
+        [ compile-fail test_const_load_fail3_nvp.cpp : std::locale-support ]
+
+        # should compile
+        [ compile test_traits_pass.cpp : std::locale-support ]
+        [ compile test_const_pass.cpp : std::locale-support ]
+    ;
+    
+}
+
+saving-tests = [ test-bsl-run_files test_class_info_save ]
+               [ test-bsl-run test_demo_xml_save ] ;
+loading-tests = [ test-bsl-run_files test_class_info_load ]
+                [ test-bsl-run test_demo_xml_load ] ;
+
+## This makes each individual load test depend on the run of the
+## corresponding save test. It is important to do this one at a
+## time because $(saving-tests) and $(loading-tests) can contain
+## the targets for multiple toolsets.
+for local save-test-i in $(saving-tests)
+{
+    DEPENDS $(loading-tests[1]:S=.run) : $(save-test-i:S=.run) ;
+    loading-tests = $(loading-tests[2-]) ;
+}
+
+}
+

@@ -1,0 +1,15 @@
+# -*- mode: makefile -*-
+all:
+	$(SHELL) tools/update-headers $(top_srcdir)
+	aclocal -I admin
+	autoheader
+	automake
+	autoconf
+	@echo "Generating configure in contrib/gmm..."
+	(cd contrib/gmm && aclocal -I config)
+	(cd contrib/gmm && autoheader)
+	(cd contrib/gmm && automake)
+	(cd contrib/gmm && autoconf)
+	@echo "Generating configure in contrib/gmm... done"
+	test -d examples/ && ( cd examples && make -f Makefile.dist)
+

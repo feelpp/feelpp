@@ -1,0 +1,35 @@
+# -*- Mode: python -*-
+###  SConscript ---
+
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
+#       Date: 2006-05-26
+#
+#  Copyright (C) 2006 EPFL
+#
+# Distributed under the GPL(GNU Public License):
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#
+
+Import('env')
+
+libpath=['../../life/lifecore/', '../../life']
+libs=['lifecore', 'lifeinfo', env['LIBS']]
+
+if 'test' in COMMAND_LINE_TARGETS or 'testalg' in COMMAND_LINE_TARGETS:
+    test_epetra = env.Program('test_epetra','test_epetra.cpp',LIBS=[libs,'-lboost_unit_test_framework'],LIBPATH=libpath)
+
+# comment out for now until it is fixed
+    env.Test('test.passed',[test_epetra])

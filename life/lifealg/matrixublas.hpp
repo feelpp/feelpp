@@ -1,0 +1,515 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2005-11-13
+
+  Copyright (C) 2005,2006 EPFL
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file matrixublas.hpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2005-11-13
+ */
+#ifndef __MatrixUBlas_H
+#define __MatrixUBlas_H 1
+
+#include <set>
+#include <boost/timer.hpp>
+#include <boost/numeric/ublas/matrix_sparse.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/numeric/bindings/traits/traits.hpp>
+#include <boost/numeric/bindings/traits/ublas_sparse.hpp>
+
+
+namespace Life
+{
+namespace ublas = boost::numeric::ublas;
+
+/*!
+ * \class MatrixUBlas
+ * \brief interface to ublas sparse matrix
+ *
+ *  @author Christophe Prud'homme
+ *  @see
+ */
+template<typename T, typename LayoutType>
+class MatrixUBlas
+{
+public:
+
+
+    /** @name Typedefs
+     */
+    //@{
+
+    typedef T value_type;
+    typedef ublas::compressed_matrix<value_type, LayoutType> matrix_type;
+
+    typedef typename boost::numeric::bindings::traits::sparse_matrix_traits<matrix_type>::ordering_type ordering_type;
+    typedef typename boost::numeric::bindings::traits::sparse_matrix_traits<matrix_type>::layout_type layout_type;
+
+    static const bool is_row_major = boost::is_same<ordering_type,
+                                                    boost::numeric::bindings::traits::row_major_t>::value;
+
+
+    typedef std::vector<std::set<size_type> > pattern_type;
+
+    //@}
+
+    /** @name Constructors, destructor
+     */
+    //@{
+
+    MatrixUBlas()
+        :
+        _M_is_initialized( false ),
+        _M_mat()
+    {}
+    MatrixUBlas( MatrixUBlas const & m )
+        :
+        _M_is_initialized( m._M_is_initialized ),
+        _M_mat( m._M_mat )
+    {}
+
+    ~MatrixUBlas()
+    {
+    }
+
+    //@}
+
+    /** @name Operator overloads
+     */
+    //@{
+
+    value_type& operator()( size_type i, size_type j )
+    {
+        return _M_mat( i, j );
+    }
+
+    value_type const& operator()( size_type i, size_type j ) const
+    {
+        return _M_mat( i, j );
+    }
+
+    //@}
+
+    /** @name Accessors
+     */
+    //@{
+
+    /**
+     * @returns \p m, the row-dimension of
+     * the matrix where the marix is \f$ M \times N \f$.
+     */
+    unsigned int size1 () const
+    {
+        return _M_mat.size1();
+    }
+
+    /**
+     * @returns \p n, the column-dimension of
+     * the matrix where the marix is \f$ M \times N \f$.
+     */
+    unsigned int size2 () const
+    {
+        return _M_mat.size2();
+    }
+
+    /**
+     * \return the number of non-zeros entries in the matrix
+     */
+    size_type nnz() const
+    {
+        return _M_mat.nnz();
+    }
+
+    /**
+     * return row_start, the index of the first
+     * matrix row stored on this processor
+     */
+    unsigned int rowStart () const
+    {
+        return 0;
+    }
+
+    /**
+     * return row_stop, the index of the last
+     * matrix row (+1) stored on this processor
+     */
+    unsigned int rowStop () const
+    {
+        return 0;
+    }
+
+    /**
+     * \return true if matrix is initialized/usable, false otherwise
+     */
+    bool isInitialized() const { return _M_is_initialized; }
+
+    /**
+     * Returns the raw ublas matrix.
+     */
+    matrix_type const& mat () const { return _M_mat; }
+
+    /**
+     * Returns the raw ublas matrix.
+     */
+    matrix_type & mat ()  { return _M_mat; }
+
+
+
+    //@}
+
+    /** @name  Mutators
+     */
+    //@{
+
+
+    //@}
+
+    /** @name  Methods
+     */
+    //@{
+
+    /**
+     * Initialize a Ublas matrix that is of global
+     * dimension \f$ m \times  n \f$ with local dimensions
+     * \f$ m_l \times n_l \f$.  \p nnz is the number of on-processor
+     * nonzeros per row (defaults to 30).
+     * \p noz is the number of on-processor
+     * nonzeros per row (defaults to 30).
+     */
+    void init (const unsigned int m,
+               const unsigned int n,
+               const unsigned int m_l,
+               const unsigned int n_l,
+               const unsigned int nnz=30,
+               const unsigned int noz=10);
+
+    /**
+     * Release all memory and return
+     * to a state just like after
+     * having called the default
+     * constructor.
+     */
+    void clear ()
+    {
+        _M_mat.clear();
+    }
+
+    /**
+     * Set all entries to 0. This method retains
+     * sparsity structure.
+     */
+    void zero ()
+    {
+        _M_mat = ublas::zero_matrix<value_type>( _M_mat.size1(), _M_mat.size2() );
+    }
+
+    void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 )
+    {
+        ublas::subrange( _M_mat, start1, stop1, start2, stop2 )  = ublas::zero_matrix<value_type>( stop1-start1, stop2-start2 );
+    }
+
+    /**
+     * Add \p value to the element
+     * \p (i,j).  Throws an error if
+     * the entry does not
+     * exist. Still, it is allowed to
+     * store zero values in
+     * non-existent fields.
+     */
+    void add (const unsigned int i,
+              const unsigned int j,
+              const value_type value)
+    {
+        _M_mat( i, j ) += value;
+    }
+
+    /**
+     * Set \p value to the element
+     * \p (i,j).  Throws an error if
+     * the entry does not
+     * exist. Still, it is allowed to
+     * store zero values in
+     * non-existent fields.
+     */
+    void set (const unsigned int i,
+              const unsigned int j,
+              const value_type value)
+    {
+        _M_mat( i, j ) = value;
+    }
+
+
+    /**
+     * Print the contents of the matrix in Matlab's
+     * sparse matrix format. Optionally prints the
+     * matrix to the file named \p name.  If \p name
+     * is not specified it is dumped to the screen.
+     */
+    void printMatlab(const std::string name="NULL") const;
+
+
+    /**
+     * fill sparse matrix with non zero entries
+     */
+    void fill( pattern_type const& );
+
+    void resize( size_type nr, size_type nc, bool preserve = false )
+    {
+        _M_mat.resize( nr, nc, preserve );
+    }
+
+    /**
+     * \return \f$ v^T M u \f$
+     */
+    template<typename VE1, typename VE2>
+    value_type
+    energy( ublas::vector_expression<VE1> const& __v,
+            ublas::vector_expression<VE2> const& __u ) const
+    {
+        return ublas::inner_prod( __v, ublas::prod( _M_mat, __u ) );
+    }
+
+    /**
+     *
+     */
+    void diagonalize( size_type );
+    //@}
+
+
+
+protected:
+
+private:
+
+    bool _M_is_initialized;
+
+    /**
+     * the ublas sparse matrix data structure
+     */
+    matrix_type _M_mat;
+
+};
+template <typename T, typename LayoutType>
+void MatrixUBlas<T,LayoutType>::init (const unsigned int m,
+                                      const unsigned int n,
+                                      const unsigned int /*m_l*/,
+                                      const unsigned int /*n_l*/,
+                                      const unsigned int /*nnz*/,
+                                      const unsigned int /*noz*/)
+{
+    if ((m==0) || (n==0))
+        return;
+
+    _M_mat.resize(m,n,false);
+    this->zero ();
+}
+
+template<typename T, typename LayoutType>
+void
+MatrixUBlas<T, LayoutType>::diagonalize( size_type __dof_index )
+{
+    // eliminating row
+    ublas::matrix_row<matrix_type> mr (_M_mat, __dof_index);
+    typedef typename ublas::matrix_row<matrix_type>::iterator r_it;
+    for ( r_it __r = mr.begin(); __r != mr.end();++__r )
+        {
+            *__r = 0.0;
+        }
+
+    // eliminating column
+    ublas::matrix_column<matrix_type> mc (_M_mat, __dof_index);
+    for ( typename ublas::matrix_column<matrix_type>::iterator therow = mc.begin();
+          therow != mc.end(); ++therow )
+        {
+            *therow = 0.0;
+        }
+
+    // 1 on the diagonal
+    _M_mat( __dof_index, __dof_index ) = 1.0;
+}
+template<typename T, typename LayoutType>
+void
+MatrixUBlas<T, LayoutType>::fill( pattern_type const& __pattern )
+{
+    namespace bindings = boost::numeric::bindings;
+
+    boost::timer chrono;
+    typename pattern_type::const_iterator __itl = __pattern.begin();
+    size_type __nnz = 0;
+#if 0
+    std::for_each( __pattern.begin(),
+                   __pattern.end(),
+                   ( boost::lambda::var( __nnz ) += boost::lambda::bind(&std::set<size_type>::size,
+                                                                        boost::lambda::_1 ) ) );
+#else
+    for ( size_type __i = 0;__i < __pattern.size();++__i )
+        {
+            __nnz += __pattern[__i].size();
+            //         std::cout << "line " << __i << "\n";
+            //         std::for_each( __pattern[__i].begin(), __pattern[__i].end(), std::cout << lambda::_1 << " " );
+            //         std::cout << "\n";
+        }
+#endif
+
+    //     ublas::unbounded_array<value_type> __val( __nnz );
+    //     std::for_each( __val.begin(), __val.end(), boost::lambda::_1 = 0.0 );
+
+    LIFE_ASSERT( __nnz >= _M_mat.nnz() )(__nnz)(_M_mat.nnz()).error("incompatible sizes");
+
+    Debug( 5010 ) << "number of nnz in old M : " << _M_mat.nnz() << ", " << _M_mat.nnz_capacity() <<"\n";
+    Debug( 5010 ) << "size M.value_data() :  " << _M_mat.value_data().size() << "\n";
+    //     Debug( 5010 ) << "           size val :  " << __val.size() << "\n";
+    // save current nonzero entrie of M in the vector val
+    // std::copy( _M_mat.value_data().begin(), _M_mat.value_data().begin()+_M_mat.nnz(), __val.begin() );
+
+    //std::cout << "values=";
+    // std::for_each( __val.begin(), __val.end(), std::cout << boost::lambda::_1 << "\n" );
+    //std::cout << "\n";
+
+    matrix_type _M_mat_backup( _M_mat );
+
+    Debug( 5010 ) << "resizing M old : " << _M_mat_backup.size1() << "," << _M_mat_backup.size2() << " nnz = " << _M_mat_backup.nnz() <<"\n";
+
+    _M_mat.reserve( __nnz, false );
+
+    Debug( 5010 ) << "resizing M new : " << _M_mat.size1() << "," << _M_mat.size2() << " nnz = " << _M_mat.nnz() <<"\n";
+
+    std::set<size_type>::const_iterator __it;
+    std::set<size_type>::const_iterator __en;
+
+    Debug( 5010 ) << "*** counting Nnz  : " << chrono.elapsed() <<"\n";
+    //Debug( 5010 ) << "*** l size  : " << __pattern.size() <<"\n";
+    Debug( 5010 ) << "*** nnz size  : " << __nnz <<"\n";
+    chrono.restart();
+
+    uint32_type __max_nnz_per_line = 0;
+    uint __row = 0;
+    uint __nnz_entry = 0;
+
+    size_type __filled1 = 1;
+    size_type __filled2 = 0;
+
+    size_type thesize;
+    if ( is_row_major )
+        thesize = _M_mat.size1();
+    else
+        thesize = _M_mat.size2();
+    while ( __row < thesize )
+        {
+            __it = __pattern[__row].begin();
+            __en = __pattern[__row].end();
+
+            _M_mat.index1_data()[__row] = __nnz_entry;
+
+            ++__filled1;
+            uint32_type __nnz_line = 0;
+            while (__it != __en )
+                {
+                    _M_mat.index2_data()[__nnz_entry] = *__it;
+
+                    ++__filled2;
+
+                    namespace bindings = boost::numeric::bindings;
+
+                    typename matrix_type::value_type* __pv = 0;
+
+                    if ( boost::is_same<typename bindings::traits::sparse_matrix_traits<matrix_type>::ordering_type,
+                         bindings::traits::row_major_t>::value )
+                        {
+                            if ( __row < _M_mat_backup.size1() && *__it < _M_mat_backup.size2() )
+                                __pv = _M_mat_backup.find_element( __row, *__it );
+                        }
+                    else if ( boost::is_same<typename bindings::traits::sparse_matrix_traits<matrix_type>::ordering_type,
+                              bindings::traits::column_major_t>::value )
+                        {
+                            if ( __row < _M_mat_backup.size2() && *__it < _M_mat_backup.size1() )
+                                __pv = _M_mat_backup.find_element( *__it, __row );
+                        }
+                    else
+                        {
+                            std::cout << "ERROR " << __FILE__ << ": " << __LINE__ << "\n";
+                        }
+                    if ( __pv )
+                        _M_mat.value_data()[__nnz_entry] = *__pv;
+                    else
+                        _M_mat.value_data()[__nnz_entry] =  value_type(0);
+                    ++__nnz_entry;
+                    ++__it;
+                    ++__nnz_line;
+                }
+            __max_nnz_per_line = std::max( __nnz_line, __max_nnz_per_line );
+            ++__row;
+        }
+    _M_mat.index1_data()[thesize] = __filled2;
+    LIFE_ASSERT(thesize+1 == __filled1 )( thesize )( __filled1 ).error( "invalid matrix storage" );
+    _M_mat.set_filled( __filled1, __filled2 );
+    LIFE_ASSERT( _M_mat.nnz() == __filled2 )( _M_mat.nnz() )( __filled2 ).error( "inconsistent matrix storage" );
+
+    Debug( 5010 ) << "***  value data size  : " << _M_mat.value_data().size() << "\n";
+    Debug( 5010 ) << "***              nnz  : " << _M_mat.nnz() << "\n";
+    Debug( 5010 ) << "*** max nnz per line  : " << __max_nnz_per_line << "\n";
+    Debug( 5010 ) << "*** fillMatrixFromPattern() done in " << chrono.elapsed() <<"s\n";
+}
+
+template<typename T, typename LayoutType>
+void
+MatrixUBlas<T, LayoutType>::printMatlab(const std::string filename ) const
+{
+    std::string name = filename;
+    std::string separator = " , ";
+
+    // check on the file name
+    int i = filename.find( "." );
+
+    if ( i <= 0 )
+        name = filename + ".m";
+    else
+        {
+            if ( ( unsigned int ) i != filename.size() - 2 ||
+                 filename[ i + 1 ] != 'm' )
+                {
+                    std::cerr << "Wrong file name ";
+                    name = filename + ".m";
+                }
+        }
+
+    std::ofstream file_out( name.c_str() );
+
+    LIFE_ASSERT( file_out)( filename ).error("[Life::spy] ERROR: File cannot be opened for writing.");
+
+    file_out << "S = [ ";
+    for ( typename matrix_type::const_iterator1 i1=_M_mat.begin1();
+          i1!=_M_mat.end1(); ++i1 )
+        {
+            for ( typename matrix_type::const_iterator2 i2=i1.begin();
+                  i2!=i1.end(); ++i2 )
+                file_out << i2.index1() + 1 << separator
+                         << i2.index2() + 1 << separator
+                         << *i2  << std::endl;
+        }
+    file_out << "];" << std::endl;
+    file_out << "I=S(:,1); J=S(:,2); S=S(:,3);" << std::endl;
+    file_out << "A=sparse(I,J,S); spy(A);" << std::endl;
+}
+
+} // Life
+#endif /* __MatrixUBlas_H */

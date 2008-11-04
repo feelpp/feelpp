@@ -1,0 +1,22 @@
+# Mode: -*- readme-debian -*-
+
+Requirements
+------------
+
+ - g++ (>=4.0)
+ - boost (>=1.33)
+ - superlu, umfpack
+ - petsc
+ - trilinos (>=8.0.8)
+ - gmsh
+
+Building life
+-------------
+
+configure
+make
+
+# to build the testsuite, examples and benchmarks
+make check
+
+ -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Sun, 26 Oct 2008 14:21:45 +0100

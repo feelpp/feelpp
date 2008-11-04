@@ -1,0 +1,9 @@
+.deps
+.libs
+Makefile
+Makefile.in
+MatrixTest.lo
+convdiff.m
+liblifealg_testsuite.la
+mass.m
+test_linearsolvers

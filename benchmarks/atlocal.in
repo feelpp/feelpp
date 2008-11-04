@@ -1,0 +1,6 @@
+# -*- shell-script -*-
+# @configure_input@
+# Configurable variable values for Autoconf test suite.
+#
+
+# stuff that could be needed by the testsuite

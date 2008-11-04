@@ -1,0 +1,28 @@
+subproject libs/numeric/bindings/blas/test ;
+
+BLAS_PATH ?= /usr/lib ;
+BLAS_LIB  ?= blas g2c ;
+
+exe scal
+        : scal.cpp 
+        :  <include>$(BOOST_ROOT)
+	   <include>$(BOOST)
+	   <library-path>$(BLAS_PATH)
+	   <find-library>$(BLAS_LIB)
+        ;
+
+exe blas1
+        : blas1.cpp 
+        :  <include>$(BOOST_ROOT)
+	   <include>$(BOOST)
+	   <library-path>$(BLAS_PATH)
+	   <find-library>$(BLAS_LIB)
+        ;
+
+exe blas3
+        : blas3.cpp 
+        :  <include>$(BOOST_ROOT)
+	   <include>$(BOOST)
+	   <library-path>$(BLAS_PATH)
+	   <find-library>$(BLAS_LIB)
+        ;

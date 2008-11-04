@@ -1,0 +1,2 @@
+subproject libs/numeric/bindings/blas ;
+subinclude libs/numeric/bindings/blas/test ;

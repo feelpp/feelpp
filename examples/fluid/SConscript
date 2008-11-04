@@ -1,0 +1,77 @@
+# -*- Mode: python -*-
+###  SConscript ---
+
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
+#       Date: 2006-06-15
+#
+#  Copyright (C) 2006 EPFL
+#
+# Distributed under the GPL(GNU Public License):
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#
+
+Import('env')
+
+libpath=['../../life/lifefilters/',
+         '../../life/lifemesh/',
+         '../../life/lifealg/',
+         '../../life/lifecore/',
+         '../../life']
+libs=['lifefilters',
+      'lifemesh',
+      'lifealg',
+      'lifecore',
+      'lifeinfo',
+      'boost_serialization',
+      'boost_filesystem',
+      'boost_program_options',
+      'boost_date_time',
+      env['LIBS']
+      ]
+
+theLIBPATH=[
+    '../../life',
+    '../../life/lifecore/',
+    '../../life/lifealg/',
+    '../../life/lifemesh/',
+    ]
+
+#env.Program('cavity2d',
+#            'cavity2d.cpp',
+#            LIBS=[libs],
+#            LIBPATH=libpath)
+
+# env.Program('splitting2d',
+#             'splitting2d.cpp',
+#             LIBS=[libs],
+#             LIBPATH=libpath)
+
+# env.Program('coupled2d',
+#             'coupled2d.cpp',
+#             LIBS=[libs],
+#             LIBPATH=libpath)
+
+# env.Program('twofluid2d',
+#             'twofluid2d.cpp',
+#             LIBS=[libs],
+#             LIBPATH=libpath)
+
+#env.Program('cavity3d',
+#            'cavity3d.cpp',
+#            #LIBS=[libs, '-lboost_unit_test_framework'],
+#            LIBS=[libs],
+#            LIBPATH=libpath)
+

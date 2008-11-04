@@ -1,0 +1,152 @@
+# Boost serialization Library Build Jamfile
+#  (C) Copyright Robert Ramey 2002-2004.
+#  Use, modification, and distribution are subject to the 
+#  Boost Software License, Version 1.0. (See accompanying file 
+#  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+#  See http://www.boost.org/libs/serialization for the library home page.
+
+subproject libs/serialization/build ;
+
+import ./serialization ;
+
+{
+
+SOURCES = 
+    basic_archive
+    basic_iarchive
+    basic_iserializer
+    basic_oarchive
+    basic_oserializer
+    basic_pointer_iserializer
+    basic_pointer_oserializer
+    basic_serializer_map
+    basic_text_iprimitive
+    basic_text_oprimitive
+    basic_xml_archive
+    binary_iarchive
+    binary_oarchive
+    codecvt_null
+    extended_type_info
+    extended_type_info_no_rtti
+    extended_type_info_typeid
+    polymorphic_iarchive
+    polymorphic_oarchive
+    stl_port
+    text_iarchive
+    text_oarchive
+    void_cast
+    xml_grammar
+    xml_iarchive
+    xml_oarchive
+;
+    
+WSOURCES = 
+    basic_text_wiprimitive
+    basic_text_woprimitive
+    binary_wiarchive
+    binary_woarchive
+    text_wiarchive
+    text_woarchive
+    utf8_codecvt_facet
+    xml_wgrammar
+    xml_wiarchive
+    xml_woarchive
+    codecvt_null
+;
+
+template boost_serialization_base
+    : ## sources ##
+    : ## requirements ##
+        std::locale-support
+        toolset::require-boost-spirit-support
+        toolset::suppress-warnings
+        toolset::optimizations
+        # the common names rule ensures that the library will
+        # be named according to the rules used by the install
+        # and auto-link features:
+        common-variant-tag
+        <sysinclude>$(BOOST_ROOT)
+        <stlport-iostream>on 
+        <msvc><*><cxxflags>-Gy
+        <vc*><*><cxxflags>-Gy
+        <define>BOOST_LIB_DIAGNOSTIC=1
+    : ## default build 
+        debug release
+;
+
+lib boost_serialization
+    : ## sources ##
+        <template>boost_serialization_base
+        ../src/$(SOURCES).cpp
+;
+
+lib boost_wserialization
+    : ## sources ##
+        <template>boost_serialization_base
+        ../src/$(WSOURCES).cpp
+        <lib>boost_serialization
+    : ## requirements ##
+        toolset::require-wide-char-io-support
+;
+
+dll boost_serialization
+    : ## sources ##
+        <template>boost_serialization_base
+        ../src/$(SOURCES).cpp
+    : ## requirements ##
+        toolset::require-shared-libraries-support
+        # this suppress the --a switch in the como toolset
+        # without this one gets compile errors ! with "dllexport"
+        # however, it doesn't link anyway so comment it out
+        # <como-4_3_3-vc7_1><*><no-warn>$(SOURCES).cpp
+        <define>BOOST_SERIALIZATION_DYN_LINK=1
+        <runtime-link>dynamic
+;
+
+dll boost_wserialization
+    : ## sources ##
+        <template>boost_serialization_base
+        ../src/$(WSOURCES).cpp
+        <dll>boost_serialization
+    : ## requirements ##
+        toolset::require-wide-char-io-support
+        toolset::require-shared-libraries-support
+        # this suppress the --a switch in the como toolset
+        # without this one gets compile errors ! with "dllexport"
+        # however, it doesn't link anyway so comment it out
+        # <como-4_3_3-vc7_1><*><no-warn>$(WSOURCES).cpp
+        <define>BOOST_WSERIALIZATION_DYN_LINK=1
+        <define>BOOST_SERIALIZATION_DYN_LINK=1
+        <runtime-link>dynamic
+;
+
+install serialization lib 
+    :
+        <lib>boost_serialization
+        <lib>boost_wserialization
+        <dll>boost_serialization
+        <dll>boost_wserialization
+;
+
+stage stage/lib 
+    :
+        <lib>boost_serialization
+        <lib>boost_wserialization
+        <dll>boost_serialization
+        <dll>boost_wserialization
+    :
+        # copy to a path rooted at BOOST_ROOT:
+        <locate>$(BOOST_ROOT)
+        # the common names rule ensures that the library will
+        # be named according to the rules used by the install
+        # and auto-link features:
+        common-variant-tag
+        # add this target to the "stage" and "all" psuedo-targets:
+        <target>stage
+        <target>all
+    :
+        debug release
+;
+
+}

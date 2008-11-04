@@ -1,0 +1,25 @@
+# -*- readme-debian -*-
+
+
+New in 1.0.0 Prerelease 2
+=========================
+
+* Added access to second order derivatives in the language feel++. The
+  keywords hess(), hesst() and hessv() have been introduced and behave
+  the same way as the other operators (e.g. grad(),...). Note the
+  restriction that the second order derivatives are implemented only
+  for the linear geometric mapping(i.e works only for linear
+  simplices). Quadratic geometric mappings would require the
+  computation of an additional term.
+
+* Fixed the construction of the mesh and related data structures in
+  parallel: implementation of a new algorithm which should also prove
+  helpful when parallelising the dof table creation.
+
+* New class GmshSimplexDomain<Dim,Order> generates gmsh mesh for
+  simplices domain. It works like
+  GmshTensorizeDomain<Dim,Order,Entity>. The class Gmsh offers now a
+  factory to generate from a string either a GmshSimplexDomain<> or a
+  GmshTensorizeDomain<>.
+
+ -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Thu, 11 Oct 2007 18:51:46 +0200

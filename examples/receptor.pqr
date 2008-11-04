@@ -1,0 +1,8 @@
+REMARK   receptor sample file
+REMARK   (...)
+ATOM      1  N   PRO     1      0.        0.  0.    -0.0700 0.5
+ATOM      2  NA  PRO     1      1.        1.  1.    -0.0700 0.8
+ATOM      1  N   PRO     1      1.        0.  0.    -0.0700 0.7
+ATOM      1  N   PRO     1      0.        1.  0.    -0.0700 0.7
+ATOM      1  N   PRO     1      0.        0.  1.    -0.0700 0.5
+

@@ -1,0 +1,14 @@
+
+/.gitignore~
+/Makefile.headers
+/Makefile.in
+/Templates
+/aclocal.m4
+/admin
+/autom4te.cache
+/configure
+/lifeconfig.h.in
+/lifeconfig.h.in~
+/package.m4
+/subdirs
+/tools

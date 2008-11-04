@@ -1,0 +1,15 @@
+subproject libs/numeric/bindings/amos/test ;
+
+AMOS_PATH = /usr/lib ;
+AMOS_LIB = amos ;
+
+exe amos
+        : amos.cpp 
+	  <lib>../bindings_amos
+        :  <include>$(BOOST_ROOT)
+	   <include>$(B_ROOT)
+	   <library-path>$(AMOS_PATH)
+	   <find-library>$(AMOS_LIB)
+        ;
+
+

@@ -1,0 +1,88 @@
+# -*- Mode: python -*-
+###  SConscript ---
+
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
+#       Date: 2006-05-29
+#
+#  Copyright (C) 2006 EPFL
+#
+# Distributed under the GPL(GNU Public License):
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#
+
+Import('env')
+
+libpath=['../../life/lifefilters/',
+         '../../life/lifemesh/',
+         '../../life/lifealg/',
+         '../../life/lifecore/',
+         '../../life']
+libs=['lifefilters',
+      'lifemesh',
+      'lifealg',
+      'lifecore',
+      'lifeinfo',
+      env['LIBS']
+      ]
+
+theLIBPATH=[
+    '../../life',
+    '../../life/lifecore/',
+    '../../life/lifealg/',
+    '../../life/lifemesh/',
+    ]
+
+
+if 'test' in COMMAND_LINE_TARGETS or 'testfem' in COMMAND_LINE_TARGETS:
+    test_space = env.Program('test_space',
+                             'test_space.cpp',
+                             LIBS=[libs, '-lboost_unit_test_framework'],
+                             #LIBS=[libs],
+                             LIBPATH=libpath)
+
+    test_integration = env.Program('test_integration',
+                                   'test_integration.cpp',
+                                   LIBS=[libs, '-lboost_unit_test_framework'],
+                                   #LIBS=[libs],
+                                   LIBPATH=libpath)
+
+    test_convergence=env.Program('test_convergence',
+                                 ['test_convergence.cpp',
+                                  'mesh.cpp',
+                                  'lagrange_test_suite_1d.cpp',
+                                  'lagrange_test_suite_2d.cpp',
+                                  'lagrange_test_suite_3d.cpp'],
+                                    #                                 LIBS=[libs, '-lboost_unit_test_framework'],
+                                    LIBS=[libs, '-lboost_unit_test_framework'],
+                                    LIBPATH=libpath)
+
+#    env.Test( 'test.passed',[test_space] )
+#    env.Test( 'test.passed',[test_integration,] )
+#    env.Test( 'test.passed',[test_integration,] )
+    env.Test( 'test.passed',
+              [
+        test_integration,
+        test_space,
+#        test_convergence,
+        ] )
+
+
+#env.Program('test_stokes',
+#            'test_stokes.cpp',
+#            #LIBS=[libs, '-lboost_unit_test_framework'],
+#            LIBS=[libs],
+#            LIBPATH=libpath)
+

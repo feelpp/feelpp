@@ -1,0 +1,60 @@
+# -*- Mode: python -*-
+###  SConscript ---
+
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
+#       Date: 2006-06-23
+#
+#  Copyright (C) 2006 EPFL
+#
+# Distributed under the GPL(GNU Public License):
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#
+
+Import('env')
+
+libpath=['../../life/lifecore/', '../../life']
+libs=['lifemesh',
+      'lifealg',
+      'lifecore',
+      'lifeinfo',
+      'boost_filesystem',
+      'boost_program_options',
+      'boost_date_time',
+      env['LIBS']]
+
+theLIBPATH=[
+    '../../life',
+    '../../life/lifecore/',
+    '../../life/lifealg/',
+    '../../life/lifemesh/',
+    ]
+
+Import('env')
+
+SOURCES=['imsimplex.cpp',
+         ]
+
+if env['static']:
+    env.StaticLibrary('lifepoly', source=SOURCES)
+
+if env['shared']:
+    env.SharedLibrary('lifepoly',
+                      source=SOURCES,
+                      LIBS=['lifealg','lifecore',env['umfpack_libs']],
+                      LIBPATH=['../lifealg','../lifecore'])
+
+#env.Program('test_poly','test_poly.cpp',LIBS=[libs, '-lboost_unit_test_framework'],LIBPATH=theLIBPATH)
+#env.Program('imt','imtriangle.cpp',LIBS=[libs],LIBPATH=theLIBPATH)

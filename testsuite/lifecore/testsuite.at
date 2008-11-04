@@ -1,0 +1,71 @@
+# -*- mode: m4 -*-
+#
+#  This file is part of the Life library
+#
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#       Date: 2006-12-29
+#
+#  Copyright (C) 2006 Université Joseph Fourier
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2.1 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+# \file testsuite.at
+# \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+# \date 2004-08-29
+#
+AT_BANNER([life/lifecore testsuite ...])
+
+# Debug test
+AT_SETUP([test_debug])
+AT_CHECK([$at_dir/testsuite/lifecore/test_debug],[0],[ignore],[ignore])
+AT_KEYWORDS([ core debug])
+AT_CLEANUP
+
+# Singleton test
+AT_SETUP([test_singleton])
+AT_CHECK([$at_dir/testsuite/lifecore/test_singleton],[0],[ignore],[ignore])
+AT_KEYWORDS([ core singleton])
+AT_CLEANUP
+
+# Mpi test
+AT_SETUP([test_mpi (sequential)])
+AT_CHECK([$at_dir/testsuite/lifecore/test_mpi],[0],[ignore],[ignore])
+AT_KEYWORDS([ core mpi])
+AT_CLEANUP
+
+# Traits test
+AT_SETUP([test_traits])
+AT_CHECK([$at_dir/testsuite/lifecore/test_traits],[0],[ignore],[ignore])
+AT_KEYWORDS([ core traits])
+AT_CLEANUP
+
+# Factory test
+AT_SETUP([test_factory])
+AT_CHECK([$at_dir/testsuite/lifecore/test_factory],[0],[ignore],[ignore])
+AT_KEYWORDS([ core factory])
+AT_CLEANUP
+
+# OpenMP test
+AT_SETUP([test_openmp])
+AT_CHECK([$at_dir/testsuite/lifecore/test_openmp],[0],[ignore],[ignore])
+AT_KEYWORDS([ core openmp])
+AT_CLEANUP
+
+# Boost.MPi test
+AT_SETUP([test_boostmpi])
+AT_CHECK([mpirun.openmpi -np 2 $at_dir/testsuite/lifecore/test_boostmpi],[0],[ignore],[ignore])
+AT_KEYWORDS([ core boostmpi])
+AT_CLEANUP
+

@@ -1,0 +1,85 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2005-11-09
+
+  Copyright (C) 2005,2006 EPFL
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file meshbase.cpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2005-11-09
+ */
+#include <life/lifemesh/meshbase.hpp>
+
+namespace Life
+{
+
+MeshBase::MeshBase()
+    :
+    M_components( MESH_ALL_COMPONENTS ),
+    M_is_updated( false ),
+    M_n_vertices( 0 ),
+    M_n_parts( 1 )
+{}
+
+MeshBase::MeshBase( MeshBase const& m )
+    :
+    M_components( m.M_components ),
+    M_is_updated( m.M_is_updated ),
+    M_n_vertices( m.M_n_vertices ),
+    M_n_parts( m.M_n_parts )
+{}
+
+MeshBase::~MeshBase()
+{}
+
+MeshBase&
+MeshBase::operator=( MeshBase const& m )
+{
+    if ( this != &m )
+    {
+        M_components = m.M_components;
+        M_is_updated = m.M_is_updated;
+        M_n_vertices = m.M_n_vertices;
+        M_n_parts = m.M_n_parts;
+    }
+    return *this;
+}
+
+void
+MeshBase::clear()
+{
+    M_is_updated = false;
+
+    M_n_vertices = 0;
+
+    // Reset the number of partitions
+    M_n_parts = 1;
+
+    M_components = MESH_ALL_COMPONENTS;
+}
+void
+MeshBase::updateForUse( size_type components )
+{
+    this->setComponents( components );
+    this->updateForUse();
+}
+
+} // Life

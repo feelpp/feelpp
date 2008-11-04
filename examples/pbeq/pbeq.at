@@ -1,0 +1,13 @@
+AT_BANNER([pbeq examplesuite ...])
+
+# test_atom
+AT_SETUP([test_atom])
+AT_CHECK([$at_dir/examples/pbeq/test_atom],[0],[ignore],[ignore])
+AT_KEYWORDS([examples pbeq])
+AT_CLEANUP
+
+# pbeq
+AT_SETUP([pbeq])
+AT_CHECK([$at_dir/examples/pbeq/solvepbeq],[0],[ignore],[ignore])
+AT_KEYWORDS([examples pbeq])
+AT_CLEANUP

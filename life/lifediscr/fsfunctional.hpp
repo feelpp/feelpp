@@ -1,0 +1,72 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
+       Date: 2006-11-16
+
+  Copyright (C) 2006 EPFL
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file fsfunctional.hpp
+   \author Christoph Winkelmann <christoph.winkelmann@epfl.ch>
+   \date 2006-11-16
+ */
+
+#ifndef _FSFUNCTIONAL_HPP_
+#define _FSFUNCTIONAL_HPP_
+
+namespace Life
+{
+
+// Functional on function space
+template<class Space>
+class FsFunctional
+{
+public:
+
+    // -- TYPEDEFS --
+    typedef Space space_type;
+    
+    typedef boost::shared_ptr<const space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+
+    typedef typename space_type::value_type value_type;
+
+    FsFunctional( space_ptrtype space ) :
+        M_space( space )
+    {
+    }
+
+    // apply the functional
+    virtual value_type
+    operator()( const element_type& x ) const = 0;
+
+    space_ptrtype space() const
+    {
+        return M_space;
+    }
+
+private:
+
+    space_ptrtype M_space;
+
+}; // class FsFunctional
+
+} // Life
+
+#endif /* _FSFUNCTIONAL_HPP_ */

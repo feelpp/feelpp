@@ -1,0 +1,730 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2006-11-23
+
+  Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+/**
+   \file laplacian.cpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2006-11-23
+ */
+#include <life/options.hpp>
+#include <life/lifecore/application.hpp>
+
+#include <life/lifealg/backend.hpp>
+
+#include <life/lifediscr/functionspace.hpp>
+#include <life/lifediscr/region.hpp>
+#include <life/lifepoly/im.hpp>
+
+#include <life/lifefilters/importergmsh.hpp>
+#include <life/lifefilters/exporter.hpp>
+#include <life/lifefilters/gmshtensorizeddomain.hpp>
+#include <life/lifepoly/polynomialset.hpp>
+
+
+#include <life/lifevf/vf.hpp>
+
+
+
+
+inline
+Life::po::options_description
+makeOptions()
+{
+    Life::po::options_description laplacianoptions("Laplacian options");
+    laplacianoptions.add_options()
+        ("dt", Life::po::value<double>()->default_value( 1 ), "time step value")
+        ("ft", Life::po::value<double>()->default_value( 1 ), "final time value")
+
+        ("diff", Life::po::value<double>()->default_value( 1 ), "diffusion parameter")
+        ("penal", Life::po::value<double>()->default_value( 10 ), "penalisation parameter")
+        ("penalbc", Life::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
+        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("bctype", Life::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
+        ("export", "export results(ensight, data file(1D)")
+        ("export-mesh-only", "export mesh only in ensight format")
+        ("export-matlab", "export matrix and vectors in matlab" )
+        ;
+    return laplacianoptions.add( Life::life_options() );
+}
+inline
+Life::AboutData
+makeAbout()
+{
+    Life::AboutData about( "laplacian" ,
+                            "laplacian" ,
+                            "0.2",
+                            "nD(n=1,2,3) Laplacian on simplices or simplex products",
+                            Life::AboutData::License_GPL,
+                            "Copyright (c) 2006, 2007 Université Joseph Fourier");
+
+    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    return about;
+
+}
+
+
+namespace Life
+{
+using namespace vf;
+template<int Dim>struct ExactSolution{};
+template<>
+struct ExactSolution<1>
+{
+    static const double pi = M_PI;
+    typedef __typeof__( sin(pi*Px()) ) type;
+    typedef __typeof__( pi*pi*sin(pi*Px()) ) laplacian_type;
+};
+
+template<>
+struct ExactSolution<2>
+{
+    static const double pi = M_PI;
+    typedef __typeof__( sin(pi*Px())*cos(pi*Py()) ) type;
+    typedef __typeof__( 2*pi*pi*sin(pi*Px())*cos(pi*Py()) ) laplacian_type;
+};
+
+template<>
+struct ExactSolution<3>
+{
+    static const double pi = M_PI;
+    typedef __typeof__( sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) ) type;
+    typedef __typeof__( 3*pi*pi*sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) ) laplacian_type;
+};
+/**
+ * Laplacian Solver using discontinous approximation spaces
+ *
+ * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
+ */
+template<int Dim,
+         int Order,
+         typename Cont,
+         template<uint16_type,uint16_type,uint16_type> class Entity,
+         template<uint16_type> class FType>
+class Laplacian
+    :
+    public Application
+{
+    typedef Application super;
+public:
+
+    // -- TYPEDEFS --
+    static const uint16_type imOrder = 2*Order;
+
+    typedef double value_type;
+
+    typedef Backend<value_type> backend_type;
+    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+
+    /*matrix*/
+    typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
+    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    typedef typename backend_type::vector_type vector_type;
+    typedef typename backend_type::vector_ptrtype vector_ptrtype;
+
+    /*mesh*/
+    typedef Entity<Dim, 1,Dim+1> entity_type;
+    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptr_type;
+
+    typedef FunctionSpace<mesh_type, fusion::vector<fem::Lagrange<Dim, 0, Scalar, Discontinuous> > > p0_space_type;
+    typedef typename p0_space_type::element_type p0_element_type;
+
+    template<typename Conti = Cont>
+    struct space
+    {
+        /*basis*/
+        typedef fusion::vector<fem::Lagrange<Dim, Order, FType, Conti, double, Entity> > basis_type;
+
+        /* number of dofs per element */
+        static const uint16_type nLocalDof = boost::remove_reference<typename fusion::result_of::at<basis_type,mpl::int_<0> >::type>::type::nLocalDof;
+
+#if 0
+        typedef typename mpl::if_<mpl::bool_<Conti::is_continuous>,
+                                  mpl::identity<fusion::vector<fem::Lagrange<Dim, Order, FType, Conti, double, Entity> > >,
+                                  mpl::identity<fusion::vector<OrthonormalPolynomialSet<Dim, Order, FType, double, Entity> > > >::type::type basis_type;
+#endif
+        /*space*/
+        typedef FunctionSpace<mesh_type, basis_type, value_type> type;
+        typedef boost::shared_ptr<type> ptrtype;
+        typedef typename type::element_type element_type;
+        typedef typename element_type::template sub_element<0>::type element_0_type;
+        typedef typename element_type::template sub_element<1>::type element_1_type;
+    };
+
+
+    /*quadrature*/
+    //typedef IM_PK<Dim, imOrder, value_type> im_type;
+    typedef IM<Dim, imOrder, value_type, Entity> im_type;
+
+    /* export */
+    typedef Exporter<mesh_type> export_type;
+    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef typename export_type::timeset_type timeset_type;
+
+    Laplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        super( argc, argv, ad, od ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
+        timeSet( new timeset_type( "laplacian" ) ),
+        timers(),
+        stats()
+    {
+        timeSet->setTimeIncrement( 1.0 );
+        exporter->addTimeSet( timeSet );
+        exporter->setPrefix( "laplacian" );
+    }
+
+    /**
+     * create the mesh using mesh size \c meshSize
+     */
+    mesh_ptr_type createMesh( double meshSize, double ymin = 0, double ymax = 1 );
+
+    /**
+     * alias for run()
+     */
+    void operator()()
+    {
+        run();
+    }
+
+    /**
+     * run the convergence test
+     */
+    void run();
+
+private:
+
+    /**
+     * solve the system
+     */
+    template<typename Mat, typename Vec1, typename Vec2>
+    void solve( boost::shared_ptr<Mat>& D, Vec1& u, boost::shared_ptr<Vec2>& F, bool is_sym );
+
+
+    /**
+     * export results to ensight format (enabled by  --export cmd line options)
+     */
+    template<typename f1_type, typename f2_type, typename f3_type>
+    void exportResults( double time,
+                        f1_type& u,
+                        f2_type& v,
+                        f3_type& e );
+
+private:
+
+    double meshSize;
+
+    export_ptrtype exporter;
+    typename export_type::timeset_ptrtype timeSet;
+
+    std::map<std::string,std::pair<boost::timer,double> > timers;
+    std::map<std::string,double> stats;
+}; // Laplacian
+
+template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
+typename Laplacian<Dim,Order,Cont,Entity,FType>::mesh_ptr_type
+Laplacian<Dim,Order,Cont,Entity,FType>::createMesh( double meshSize, double ymin, double ymax )
+{
+    timers["mesh"].first.restart();
+    mesh_ptr_type mesh( new mesh_type );
+    //mesh->setRenumber( false );
+
+    GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
+    td.setCharacteristicLength( meshSize );
+    if ( Dim >=2 )
+        td.setY( std::make_pair( ymin, ymax ) );
+    std::string fname = td.generate( entity_type::name().c_str() );
+
+    ImporterGmsh<mesh_type> import( fname );
+    mesh->accept( import );
+    timers["mesh"].second = timers["mesh"].first.elapsed();
+    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    return mesh;
+} // Laplacian::createMesh
+
+
+template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
+void
+Laplacian<Dim, Order, Cont, Entity, FType>::run()
+{
+    if ( this->vm().count( "help" ) )
+        {
+            std::cout << this->optionsDescription() << "\n";
+            return;
+        }
+
+    //    int maxIter = 10.0/meshSize;
+    using namespace Life::vf;
+
+
+    this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
+                            % this->about().appName()
+                            % entity_type::name()
+                            % Order
+                            % this->vm()["hsize"].template as<double>()
+                            );
+    this->setLogs();
+
+    /*
+     * First we create the mesh
+     */
+    mesh_ptr_type mesh = createMesh( meshSize );
+    stats["nelt"] = mesh->elements().size();
+
+    /*
+     * The function space and some associate elements are then defined
+     */
+    timers["init"].first.restart();
+    typename space<Cont>::ptrtype Xh = space<Cont>::type::New( mesh );
+    //Xh->dof()->showMe();
+    typename space<Cont>::element_type u( Xh, "u" );
+    typename space<Cont>::element_type v( Xh, "v" );
+    timers["init"].second = timers["init"].first.elapsed();
+    stats["ndof"] = Xh->nDof();
+
+    if ( this->vm().count( "export-mesh-only" ) )
+        this->exportResults( 0., u, u, u );
+    /*
+     * a quadrature rule for numerical integration
+     */
+    im_type im;
+
+    value_type penalisation = this->vm()["penal"].template as<value_type>();
+    value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
+    int bctype = this->vm()["bctype"].template as<int>();
+
+    double t = 0;
+    value_type pi = 4.0*math::atan(1.0);
+    AUTO( g, val( exp(-cst_ref( t ))*sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) ) );
+    AUTO( f, (-1*(t > 0)+pi*pi*Dim)*g )
+    //AUTO( g, val( Px()*Px()+Py()*Py()+Pz()*Pz() ) );
+    //AUTO( f, val( -4 ) );
+
+    timers["assembly"].second = timers["assembly"].first.elapsed();
+
+    //
+    // Compute domain and boundary size
+    //
+    double local_domain_size = integrate( elements(mesh), im, constant(1.0)).evaluate()(0,0);
+    double global_domain_size;
+    mpi::all_reduce( Application::comm(), local_domain_size, global_domain_size, std::plus<double>() );
+    Log() << "int_Omega = " << global_domain_size << "[ " << local_domain_size << " ]\n";
+    double local_boundary_size = integrate( boundaryfaces(mesh), im, constant(1.0)).evaluate()(0,0);
+    double global_boundary_size;
+    mpi::all_reduce( Application::comm(), local_boundary_size, global_boundary_size, std::plus<double>() );
+    Log() << "int_Omega = " << global_boundary_size << "[ " << local_boundary_size << " ]\n";
+
+    backend_ptrtype b( backend_type::build( this->vm() ) );
+    /*
+     * Construction of the left hand side
+     */
+    sparse_matrix_ptrtype D( b->newMatrix( Xh, Xh ) );
+    sparse_matrix_ptrtype Mt( b->newMatrix( Xh, Xh ) );
+
+    value_type diff = this->vm()["diff"].template as<double>();
+    value_type dt = this->vm()["dt"].template as<double>();
+    value_type ft = this->vm()["ft"].template as<double>();
+
+
+
+    timers["assembly"].first.restart();
+
+    size_type pattern = (Cont::is_continuous?DOF_PATTERN_COUPLED:DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR );
+    form2( Xh, Xh, Mt, _init=true, _pattern=pattern ) =
+        integrate( elements(mesh), im,
+                   idt(u)*id(v)/dt );
+    Mt->close();
+    form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
+        integrate( elements(mesh), im,
+                   //diff*gradt(u)*trans(grad(v))
+                   -trace(hesst(u))*id(v)
+                   );
+    D->close();
+    vector_ptrtype Un( b->newVector( u.functionSpace() ) );
+    vector_ptrtype Vn( b->newVector( u.functionSpace() ) );
+    u = project( Xh, elements(mesh), g );
+    v = project( Xh, elements(mesh), constant(1.0) );
+
+    std::cout << "int Px() = "  << integrate( elements(mesh), im, Px() ).evaluate() << "\n";
+    std::cout << "int idv(1) = "  << integrate( elements(mesh), im, idv(v) ).evaluate() << "\n";
+    v = project( Xh, elements(mesh), Px() );
+    std::cout << "int idv(x) = "  << integrate( elements(mesh), im, idv(v) ).evaluate() << "\n";
+    std::cout << "int gradv(x) = "  << integrate( elements(mesh), im, gradv(v) ).evaluate() << "\n";
+    v = project( Xh, elements(mesh), Px()*Px() );
+    std::cout << "int Px()*Px() = "  << integrate( elements(mesh), im, Px()*Px() ).evaluate() << "\n";
+    std::cout << "int idv(x) = "  << integrate( elements(mesh), im, idv(v) ).evaluate() << "\n";
+    std::cout << "int gradv(x) = "  << integrate( elements(mesh), im, gradv(v) ).evaluate() << "\n";
+
+    for( int i = 0; i < u.size(); ++i )
+        {
+            Un->set( i, u( i ) );
+            Vn->set( i, v( i ) );
+        }
+    Un->close();
+    Vn->close();
+    std::cout << "||u||_energy = " << D->energy( Vn, Un ) << "\n"
+              << "||u||_energy_2 = " << integrate( elements(mesh), im, gradv(u)*trans(gradv(v)) ).evaluate() << "\n"
+              << "||u||_energy_2' = " << integrate( boundaryfaces(mesh), im, (gradv(u)*N())*idv(v) ).evaluate() << "\n"
+              << "||u||_energy_3 = " << integrate( elements(mesh), im, -trace(hessv(u))*idv(v) ).evaluate() << "\n";
+
+    form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
+        integrate( elements(mesh), im,
+                   diff*gradt(u)*trans(grad(v))
+                   //-trace(hesst(u))*id(v)
+                   );
+    if ( !Cont::is_continuous )
+        form2( Xh, Xh, D ) +=integrate( internalfaces(mesh), im,
+                                        // - {grad(u)} . [v]
+                                        -averaget(gradt(u))*jump(id(v))
+                                        // - [u] . {grad(v)}
+                                        -average(grad(v))*jumpt(idt(u))
+                                        // penal*[u] . [v]/h_face
+                                        + penalisation* (trans(jumpt(idt(u)))*jump(id(v)) )/hFace()
+                                        );
+    if ( bctype == 1 || !Cont::is_continuous )
+        {
+            form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh), im,
+                                             ( - trans(id(v))*(gradt(u)*N())
+                                               - trans(idt(u))*(grad(v)*N())
+                                               + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
+        }
+    D->close();
+    if ( this->vm().count( "export-matlab" ) )
+        D->printMatlab( "D.m" );
+
+    //
+    // Construct L2-projection operator
+    //
+    typename space<Continuous>::ptrtype Xch = space<Continuous>::type::New( mesh );
+    typename space<Continuous>::element_type uEx( Xch, "uEx" );
+    sparse_matrix_ptrtype M( b->newMatrix( Xch, Xch ) );
+    form2( Xch, Xch, M, _init=true ) = integrate( elements( mesh ), im, trans(idt(uEx))*id(uEx) );
+    M->close();
+    vector_ptrtype L( b->newVector( Xch ) );
+
+    //
+    // initially u = g(0,x,y,z)
+    //
+    u.zero();
+    //
+    //  construct right hand side
+    //
+    vector_ptrtype Ft( b->newVector( Xh ) );
+    timers["assembly"].first.restart();
+    form1( _test=Xh, _vector=Ft, _init=true )  = integrate( elements(mesh), im,
+                                                            trans(f)*id(v) );
+    if ( bctype == 1 || !Cont::is_continuous )
+        form1( Xh, Ft ) += integrate( boundaryfaces(mesh), im,
+                                      trans(g)*( - grad(v)*N() + penalisation_bc*id(v)/hFace() ) );
+    Ft->close();
+    if ( this->vm().count( "export-matlab" ) )
+        Ft->printMatlab( "F.m" );
+
+    timers["assembly"].second += timers["assembly"].first.elapsed();
+
+    form1( Xch, L, _init=true ) = integrate( elements( mesh ), im, trans(g)*id(uEx) );
+    L->close();
+
+    if ( this->vm().count( "export-matlab" ) )
+        L->printMatlab( "L.m" );
+
+    this->solve( D, u, Ft, ( bctype == 1 || !Cont::is_continuous ) );
+
+    this->solve( M, uEx, L, true );
+
+
+    // compute local error wrt the exact solution
+    double error = integrate( elements(mesh), im, val( trans(idv(u)-g)*(idv(u)-g) ) ).evaluate()(0,0);
+    double errorex = integrate( elements(mesh), im, trans(idv(u)-idv(uEx))*(idv(u)-idv(uEx)) ).evaluate()(0,0);
+    double local_jump = integrate( internalfaces(mesh), im, trans(jumpv(idv(u)))*(jumpv(idv(u))) ).evaluate()(0,0);
+
+    // compute global error : suming all contributions from
+    // all processors
+    double global_error = 0;
+    mpi::all_reduce( Application::comm(), error, global_error, std::plus<double>() );
+    double global_errorex = 0;
+    mpi::all_reduce( Application::comm(), errorex, global_errorex, std::plus<double>() );
+    double global_jump = 0;
+    mpi::all_reduce( Application::comm(), local_jump, global_jump, std::plus<double>() );
+
+    Log() << "||[u]||= " << math::sqrt( global_jump )  << "\n";
+    //Log() << "local ||error||_0 = " << math::sqrt( error ) << "\n";
+    Log() << "global ||error||_0 = " << math::sqrt( global_error ) << "\n";
+    //Log() << "local ||error(l2proj)||_0 = " << math::sqrt( errorex ) << "\n";
+    Log() << "global ||errorex(l2proj)||_0 = " << math::sqrt( global_errorex ) << "\n";
+
+    // exporting the results using the exporter set by the
+    // command line: the default being the 'ensight' exporter
+    if ( Cont::is_continuous )
+        this->exportResults( t, u, u, uEx );
+    else
+        {
+
+            form1( Xch, L, _init=true ) = integrate( elements( mesh ), im, trans(idv(u))*id(uEx) );
+            typename space<Continuous>::element_type uc( Xch, "uc" );
+            this->solve( M, uc, L, true );
+            this->exportResults( t, u, uc, uEx );
+        }
+
+    D->addMatrix( 1.0, *Mt );
+
+    //
+    // Time loop
+    //
+    for( t = dt; t < ft; t += dt )
+        {
+            Log() << "============================================================\n";
+            Log() << "time : " << t << "s dt: " << dt << " ft: "<< ft << "s\n";
+
+            //
+            //  construct right hand side
+            //
+            timers["assembly"].first.restart();
+            form1( _test=Xh, _vector=Ft, _init=true )  = integrate( elements(mesh), im,
+                                                                    trans(f)*id(v) + idv(u)*id(v)/dt );
+            if ( bctype == 1 || !Cont::is_continuous )
+                form1( Xh, Ft ) += integrate( boundaryfaces(mesh), im,
+                                              trans(g)*( - grad(v)*N() + penalisation_bc*id(v)/hFace() ) );
+
+            Ft->close();
+            timers["assembly"].second += timers["assembly"].first.elapsed();
+
+            if ( this->vm().count( "export-matlab" ) )
+                {
+                    std::ostringstream ostr;
+                    ostr.precision( 3 );
+                    ostr << "Ft-" << t;
+                    Ft->printMatlab( ostr.str() );
+                }
+
+            this->solve( D, u, Ft, ( bctype == 1 || !Cont::is_continuous ) );
+
+            if ( this->vm().count( "export-matlab" ) )
+                {
+                    std::ostringstream ostr;
+                    ostr.precision( 3 );
+                    ostr << "u-" << t;
+                    u.printMatlab( ostr.str() );
+                }
+
+            // find the L2-projection (with a continuous expansion) of
+            // the exact solution
+            form1( Xch, L, _init=true ) = integrate( elements( mesh ), im, trans(g)*id(uEx) );
+            this->solve( M, uEx, L, true );
+
+            // compute local error wrt the exact solution
+            double error = integrate( elements(mesh), im, val( trans(idv(u)-g)*(idv(u)-g) ) ).evaluate()(0,0);
+            double errorex = integrate( elements(mesh), im, trans(idv(u)-idv(uEx))*(idv(u)-idv(uEx)) ).evaluate()(0,0);
+
+            // compute global error : suming all contributions from
+            // all processors
+            double global_error = 0;
+            mpi::all_reduce( Application::comm(), error, global_error, std::plus<double>() );
+            double global_errorex = 0;
+            mpi::all_reduce( Application::comm(), errorex, global_errorex, std::plus<double>() );
+
+            Log() << "local ||error||_0 = " << math::sqrt( error ) << "\n";
+            Log() << "global ||error||_0 = " << math::sqrt( global_error ) << "\n";
+            Log() << "local ||error(l2proj)||_0 = " << math::sqrt( errorex ) << "\n";
+            Log() << "global ||errorex(l2proj)||_0 = " << math::sqrt( global_errorex ) << "\n";
+
+            // compute the value of the field u at the middle of the
+            // domain
+            node_type __n( Dim );
+
+            __n[0]=0.5;
+            if ( Dim >= 2 )
+                __n[1]=0.5;
+            if ( Dim >= 3 )
+                __n[2]=0.5;
+            Log() << "u value at (0.5,0.5,0.5)= " << u( __n ) << "\n";
+            Log() << "e value at (0.5,0.5,0.5)= " << uEx( __n ) << "\n";
+
+
+            // exporting the results using the exporter set by the
+            // command line: the default being the 'ensight' exporter
+            if ( Cont::is_continuous )
+                this->exportResults( t, u, u, uEx );
+            else
+                {
+
+                    form1( Xch, L, _init=true ) = integrate( elements( mesh ), im, trans(idv(u))*id(uEx) );
+                    typename space<Continuous>::element_type uc( Xch, "uc" );
+                    this->solve( M, uc, L, true );
+                    this->exportResults( t, u, uc, uEx );
+                }
+
+            Log() << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
+            Log() << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
+        } // time loop
+
+} // Laplacian::run
+
+template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
+template<typename Mat, typename Vec1, typename Vec2>
+void
+Laplacian<Dim, Order, Cont, Entity, FType>::solve( boost::shared_ptr<Mat>& D,
+                                                   Vec1& u,
+                                                   boost::shared_ptr<Vec2>& F,
+                                                   bool is_sym  )
+{
+    timers["solver"].first.restart();
+
+    backend_ptrtype backend =  backend_type::build( this->vm() );
+    //backend->set_symmetric( is_sym );
+
+    vector_ptrtype U( backend->newVector( u.functionSpace() ) );
+    backend->solve( D, D, U, F );
+    u = *U;
+
+    timers["solver"].second = timers["solver"].first.elapsed();
+    Log() << "[timer] solve: " << timers["solver"].second << "\n";
+} // Laplacian::solve
+
+
+template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
+template<typename f1_type, typename f2_type, typename f3_type>
+void
+Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
+                                                          f1_type& U,
+                                                          f2_type& V,
+                                                          f3_type& E )
+{
+    timers["export"].first.restart();
+
+    Log() << "exportResults starts\n";
+    typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
+    timeStep->setMesh( U.functionSpace()->mesh() );
+    //timeStep->setMesh( this->createMesh( meshSize/2, 0.5, 1 ) );
+    //timeStep->setMesh( this->createMesh( meshSize/Order, 0, 1 ) );
+    //timeStep->setMesh( this->createMesh( meshSize, 0, 1 ) );
+    if ( !this->vm().count( "export-mesh-only" ) )
+        {
+            timeStep->add( "pid",
+                           regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
+
+
+            timeStep->add( "u", U );
+            timeStep->add( "v", V );
+            timeStep->add( "e", E );
+        }
+    exporter->save();
+
+
+    if ( Dim == 1 )
+        {
+            std::ostringstream fname_u;
+            fname_u << "u-" << Application::processId() << ".dat";
+            std::ofstream ofs3( fname_u.str().c_str() );
+            typename mesh_type::element_iterator it = U.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
+            typename mesh_type::element_iterator en = U.functionSpace()->mesh()->endElementWithProcessId( Application::processId() );
+            if ( !U.areGlobalValuesUpdated() )
+                U.updateGlobalValues();
+            for( ; it!=en; ++it )
+                {
+                    for( size_type i = 0; i < space<Cont>::nLocalDof; ++i )
+                        {
+                            size_type dof0 = boost::get<0>( U.functionSpace()->dof()->localToGlobal( it->id(), i ) );
+                            ofs3 << std::setw( 5 ) << it->id() << " "
+                                 << std::setw( 5 ) << i << " "
+                                 << std::setw( 5 ) << dof0 << " "
+                                 << std::setw( 15 ) << U.globalValue( dof0 ) << " ";
+                            value_type a = it->point(0).node()[0];
+                            value_type b = it->point(1).node()[0];
+                            if ( i == 0 )
+                                ofs3 << a;
+                            else if ( i == 1 )
+                                ofs3 <<  b;
+                            else
+                                ofs3 <<  a + (i-1)*(b-a)/(space<Continuous>::nLocalDof-1);
+
+                            ofs3 << "\n";
+
+                        }
+                }
+            ofs3.close();
+
+            std::ostringstream fname_v;
+            fname_v << "values-" << Application::processId() << ".dat";
+            std::ofstream ofs2( fname_v.str().c_str() );
+            it = V.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
+            en = V.functionSpace()->mesh()->endElementWithProcessId(  Application::processId() );
+            if ( !V.areGlobalValuesUpdated() ) V.updateGlobalValues();
+            if ( !E.areGlobalValuesUpdated() ) E.updateGlobalValues();
+            for( ; it!=en; ++it )
+                {
+                    for( size_type i = 0; i < space<Continuous>::nLocalDof; ++i )
+                        {
+                            size_type dof0 = boost::get<0>( V.functionSpace()->dof()->localToGlobal( it->id(), i ) );
+                            ofs2 << std::setw( 5 ) << it->id() << " "
+                                 << std::setw( 5 ) << i << " "
+                                 << std::setw( 5 ) << dof0 << " "
+                                 << std::setw( 15 ) << V.globalValue( dof0 ) << " "
+                                 << std::setw( 15 ) << E.globalValue( dof0 ) << " ";
+                            value_type a = it->point(0).node()[0];
+                            value_type b = it->point(1).node()[0];
+                            if ( i == 0 )
+                                ofs2 << a;
+                            else if ( i == 1 )
+                                ofs2 <<  b;
+                            else
+                                ofs2 <<  a + (i-1)*(b-a)/(space<Continuous>::nLocalDof-1);
+                            ofs2 << "\n";
+
+                        }
+                }
+
+        }
+
+    timers["export"].second = timers["export"].first.elapsed();
+    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+} // Laplacian::export
+} // Life
+
+
+
+
+int
+main( int argc, char** argv )
+{
+    using namespace Life;
+
+    /* change parameters below */
+    const int nDim = 1;
+    const int nOrder = 2;
+    typedef Continuous MyContinuity;
+    //typedef Discontinuous MyContinuity;
+    //typedef Life::Laplacian<nDim, nOrder, MyContinuity, SimplexProduct, Scalar> laplacian_type;
+
+    typedef Life::Laplacian<nDim, nOrder, MyContinuity, Simplex, Scalar> laplacian_type;
+
+    /* define and run application */
+    laplacian_type laplacian( argc, argv, makeAbout(), makeOptions() );
+
+    laplacian.run();
+}
+
+
+
+

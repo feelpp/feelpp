@@ -1,0 +1,163 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2008-04-17
+
+  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file solvernonlinear.cpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2008-04-17
+ */
+#include <life/lifecore/life.hpp>
+#include <life/lifealg/solvernonlinear.hpp>
+#include <life/lifealg/solvernonlinearpetsc.hpp>
+
+namespace Life
+{
+template <typename T>
+inline
+SolverNonLinear<T>::SolverNonLinear ()
+  :
+    residual        (0),
+    jacobian        (0),
+    matvec          (0),
+    M_is_initialized (false),
+    M_prec_matrix_structure( SAME_NONZERO_PATTERN )
+{
+}
+
+template <typename T>
+inline
+SolverNonLinear<T>::SolverNonLinear ( SolverNonLinear const& snl )
+  :
+    residual        ( snl.residual ),
+    jacobian        ( snl.jacobian ),
+    matvec          ( snl.matvec ),
+    M_is_initialized (snl.M_is_initialized ),
+    M_prec_matrix_structure( snl.M_prec_matrix_structure )
+{
+}
+
+
+
+template <typename T>
+inline
+SolverNonLinear<T>::~SolverNonLinear ()
+{
+  this->clear ();
+}
+template <typename T>
+boost::shared_ptr<SolverNonLinear<T> >
+SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefix )
+{
+    SolverPackage solver_package;
+    if ( vm["nlsolver"].template as<std::string>() == "petsc" )
+        solver_package = SOLVERS_PETSC;
+    else
+        {
+            Log() << "[SolverNonLinear] solver " << vm["nlsolver"].template as<std::string>() << " not available\n";
+            Log() << "[Backend] use fallback  gmm\n";
+            solver_package = SOLVERS_PETSC;
+        }
+    // Build the appropriate solver
+    switch (solver_package)
+        {
+
+        case SOLVERS_PETSC:
+            {
+
+#if defined( HAVE_PETSC )
+                solvernonlinear_ptrtype ap(new SolverNonLinearPetsc<T>);
+                return ap;
+#else
+                std::cerr << "PETSc is not available/installed" << std::endl;
+                throw std::invalid_argument( "invalid solver PETSc package" );
+#endif
+            }
+
+
+        default:
+            std::cerr << "ERROR:  Unrecognized NonLinear solver package: "
+                      << solver_package
+                      << std::endl;
+            throw std::invalid_argument( "invalid solver package" );
+        }
+
+    return solvernonlinear_ptrtype();
+}
+
+template <typename T>
+boost::shared_ptr<SolverNonLinear<T> >
+SolverNonLinear<T>::build( SolverPackage solver_package )
+{
+    if ( solver_package != SOLVERS_PETSC )
+        {
+            Log() << "[SolverNonLinear] solver " << solver_package << " not available\n";
+            Log() << "[Backend] use fallback  petsc: " << SOLVERS_PETSC << "\n";
+            solver_package = SOLVERS_PETSC;
+        }
+    // Build the appropriate solver
+    switch (solver_package)
+        {
+
+        case SOLVERS_PETSC:
+            {
+
+#if defined( HAVE_PETSC )
+                solvernonlinear_ptrtype ap(new SolverNonLinearPetsc<T>);
+                return ap;
+#else
+                std::cerr << "PETSc is not available/installed" << std::endl;
+                throw std::invalid_argument( "invalid solver PETSc package" );
+#endif
+            }
+
+
+        default:
+            std::cerr << "ERROR:  Unrecognized NonLinear solver package: "
+                      << solver_package
+                      << std::endl;
+            throw std::invalid_argument( "invalid solver package" );
+        }
+
+    return solvernonlinear_ptrtype();
+}
+
+
+/*
+ * Explicit instantiations
+ */
+template class SolverNonLinear<double>;
+
+/**
+ * \return the command lines options of the petsc backend
+ */
+po::options_description nlsolver_options()
+{
+    po::options_description _options( "Non Linear Solver options");
+    _options.add_options()
+        // solver options
+        ("nlsolver", Life::po::value<std::string>()->default_value( "petsc" ), "nonlinear solver type: petsc")
+        ;
+    return _options;
+}
+
+}

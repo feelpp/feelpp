@@ -1,0 +1,109 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
+       Date: 2006-10-23
+
+  Copyright (C) 2005,2006 EPFL
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file fmsheap.hpp
+   \author Christoph Winkelmann <christoph.winkelmann@epfl.ch>
+   \date 2006-10-23
+ */
+#ifndef __FMS_Heap_H
+#define __FMS_Heap_H 1
+
+namespace Life
+{
+namespace details
+{
+
+template<typename T>
+class FmsHeap
+{
+
+public:
+
+    typedef T value_type;
+    typedef std::pair<value_type, uint16_type> heap_entry_type;
+
+    void push( heap_entry_type in )
+    {
+        _M_heap.push_back( in );
+        push_heap( _M_heap.begin(), _M_heap.end(), farther );
+    }
+
+    void change( heap_entry_type in )
+    {
+        for ( heapvect_iter it=_M_heap.begin(); it != _M_heap.end(); ++it )
+            {
+                if (it->second == in.second)
+                    {
+                        if ( farther( *it, in ) )
+                            {
+                                *it = in;
+                                make_heap( _M_heap.begin(),
+                                           _M_heap.end(),
+                                           farther );
+                            }
+                        return;
+                    }
+            }
+        // if not found, push
+        push( in );
+    }
+
+    heap_entry_type pop()
+    {
+        // assert _M_heap.size() > 0
+        heap_entry_type out = *(_M_heap.begin());
+        pop_heap( _M_heap.begin(), _M_heap.end(), farther );
+        _M_heap.pop_back();
+        return out;
+    }
+
+    size_type size() const
+    {
+        return _M_heap.size();
+    }
+
+private:
+
+    typedef std::vector<heap_entry_type> heapvect_type;
+    typedef typename heapvect_type::iterator heapvect_iter;
+    typedef typename heapvect_type::const_iterator heapvect_constiter;
+
+    static bool farther( heap_entry_type a, heap_entry_type b )
+    {
+        value_type aa = a.first;
+        aa = aa < 0.0 ? -aa : aa;
+        value_type bb = b.first;
+        bb = bb < 0.0 ? -bb : bb;
+        return aa > bb;
+    }
+
+    std::vector<heap_entry_type> _M_heap;
+};
+
+} // namespace details
+
+} // namespace Life
+
+#endif /* __FMS_Heap_H */
+

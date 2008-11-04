@@ -1,0 +1,811 @@
+/* -*- mode: c++ -*-
+
+   This file is part of the Life library
+
+   Author(s):
+   Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Klaus Sapelza <klaus.sapelza@epfl.ch>
+   Date: 2006-09-14
+
+   Copyright (C) 2006,2007 EPFL
+   Copyright (C) 2006,2007,2008 Université Joseph Fourier (Grenoble I)
+
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file vectorepetra.hpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Klaus.Sapelza <klaus.sapelza@epfl.ch>
+   \date 2006-09-14
+*/
+#ifndef __VectorEpetra_H
+#define __VectorEpetra_H 1
+
+#include <lifeconfig.h>
+
+#include <life/lifealg/vector.hpp>
+#include <life/lifealg/matrixsparse.hpp>
+#include <life/lifecore/application.hpp>
+#if defined(HAVE_TRILINOS_EPETRA)
+
+#if defined(HAVE_MPI)
+#include <Epetra_MpiComm.h>
+#else
+#include <Epetra_SerialComm.h>
+#endif /* HAVE_MPI */
+
+#include <EpetraExt_MultiVectorOut.h>
+#include <Epetra_FEVector.h>
+
+
+
+namespace Life
+{
+/**
+ * \class VectorEpetra
+ * \brief Wrapper for epetra vectors
+ *
+ * Epetra vector. Provides a nice interface to the Epetra data
+ * structures for parallel vectors.
+ *
+ * @author Christophe Prud'homme
+ * @author Klaus Sapelza
+ * @see Trilinos, Vector
+ */
+template<typename T>
+class VectorEpetra : public Vector<T>
+{
+    typedef Vector<T> super;
+
+
+public:
+
+
+    /** @name Typedefs
+     */
+    //@{
+
+    typedef typename super::value_type value_type;
+    typedef typename super::real_type real_type;
+    typedef typename super::clone_ptrtype clone_ptrtype;
+
+    //@}
+
+    /** @name Constructors, destructor
+     */
+    //@{
+
+    VectorEpetra( )
+        :
+        super(),
+#ifdef HAVE_MPI
+        _M_emap( Epetra_Map( -1, 0, 0, Epetra_MpiComm(Application::COMM_WORLD)) ),
+        _M_vec( _M_emap ) // false (zerout)?
+#else
+        _M_emap( Epetra_Map( -1, 0, 0, Epetra_SerialComm) ),
+        _M_vec( _M_emap )
+#endif
+    {
+    }
+
+    /**
+     * Constructor. Set dimension to \p n and initialize all elements with zero.
+     */
+    VectorEpetra ( Epetra_Map const& emap )
+        :
+        super(),
+        _M_emap( emap ),
+        _M_vec( _M_emap )
+        //_M_destroy_vec_on_exit( true )
+    {
+        this->init( _M_emap, true);
+    }
+
+
+    /**
+     * Constructor.  Creates a VectorEpetra assuming you already have a
+     * valid Epetra Vec object.  In this case, v is NOT destroyed by the
+     * VectorEpetra constructor when this object goes out of scope.
+     * This allows ownership of v to remain with the original creator,
+     * and to simply provide additional functionality with the VectorEpetra.
+     */
+
+
+    VectorEpetra ( VectorEpetra const& v )
+        :
+        super(),
+        _M_emap(v.Map()),
+        _M_vec(v.vec())
+
+    {
+        this->M_is_initialized = true;
+    }
+
+    /*
+    template< typename ublas_vector_type >
+    VectorEpetra ( ublas_vector_type const& u, Epetra_Map const& emap )
+        :
+        super(),
+        _M_emap( emap ),
+        _M_vec( u )
+    {
+        this->M_is_initialized = true;
+    }
+    */
+
+    /**
+     * Destructor, deallocates memory. Made virtual to allow
+     * for derived classes to behave properly.
+     */
+    ~VectorEpetra ()
+    {
+
+    }
+
+    /**
+     * Returns the Epetra map
+     */
+    Epetra_Map Map() const
+    {
+        return _M_emap;
+    }
+
+
+    /**
+     * Creates a copy of this vector and returns it in an \p
+     * shared_ptr<>.  This must be overloaded in the derived classes.
+     */
+    clone_ptrtype clone () const
+    {
+        clone_ptrtype cloned_vector (new VectorEpetra<T>);
+
+        *cloned_vector = *this;
+
+        return cloned_vector;
+    }
+
+
+    /**
+     * Change the dimension of the vector to \p N. The reserved memory for
+     * this vector remains unchanged if possible, to make things faster, but
+     * this may waste some memory, so take this in the back of your head.
+     * However, if \p N==0 all memory is freed, i.e. if you want to resize
+     * the vector and release the memory not needed, you have to first call
+     * \p init(0) and then \p init(N). This cited behaviour is analogous
+     * to that of the STL containers.
+     *
+     * On \p fast = false the vector is filled by zeros.
+     */
+
+    void init ( Epetra_Map const& emap, const bool fast = false  );
+
+    void init ( const size_type N, const size_type n_local, const bool fast = false );
+
+    /** @name Operator overloads
+     */
+    //@{
+    //operator Epetra_Vector() { return _M_vec; }
+
+
+
+    value_type operator() (const size_type i) const
+    {
+        assert (this->isInitialized());
+        assert ( ((i >= this->firstLocalIndex()) &&
+                  (i <  this->lastLocalIndex())) );
+        assert (this->isInitialized());
+
+        value_type value=0.;
+        int ierr=0, dummy;
+        double* values;
+
+        ierr = _M_vec.ExtractView( &values, &dummy);
+
+        value = values[i - this->firstLocalIndex()];
+        return static_cast<value_type>(value);
+
+    }
+
+    value_type& operator() (const size_type i)
+    {
+        assert (this->isInitialized());
+        assert ( ((i >= this->firstLocalIndex()) &&
+                  (i <  this->lastLocalIndex())) );
+        assert (this->isInitialized());
+
+
+        return _M_vec[0][ (int)i-this->firstLocalIndex() ];
+
+    }
+
+
+    VectorEpetra& operator=( VectorEpetra const& v)
+    {
+        if ( &v != this )
+            {
+                _M_emap = v.Map();
+                _M_vec = v.vec();
+
+                this->M_is_initialized = true;
+            }
+
+        return *this;
+    }
+
+    /**
+     * Addition operator.
+     * Fast equivalent to \p U.add(1, V).
+     */
+    Vector<T> & operator += (const Vector<T> &V)
+    {
+
+        this->add(1., V);
+
+        return *this;
+    }
+
+    /**
+     * Subtraction operator.
+     * Fast equivalent to \p U.add(-1, V).
+     */
+    super & operator -= (const super &V)
+    {
+
+        this->add(-1., V);
+
+        return *this;
+    }
+
+
+    //@}
+
+    /** @name Accessors
+     */
+    //@{
+
+    /**
+     * @return dimension of the vector. This
+     * function was formerly called \p n(), but
+     * was renamed to get the \p VectorEpetra class
+     * closer to the C++ standard library's
+     * \p std::vector container.
+     */
+    size_type size () const
+    {
+        LIFE_ASSERT (this->isInitialized()).error( "VectorEpetra not initialized" );
+
+
+        if (!this->isInitialized())
+            return 0;
+
+        int epetra_size=0;
+        epetra_size = _M_vec.GlobalLength();
+        return static_cast<size_type>(epetra_size);
+
+        return 0;
+    }
+    /**
+     * @return the local size of the vector
+     * (index_stop-index_start)
+     */
+    size_type localSize() const
+    {
+        LIFE_ASSERT (this->isInitialized()).error( "VectorEpetra not initialized" );
+
+        int epetra_size=0;
+        epetra_size = _M_vec.MyLength();
+        return static_cast<size_type>(epetra_size);
+
+
+        return 0;
+    }
+
+    /**
+     * Returns the raw Epetra vector context pointer.  Note this is generally
+     * not required in user-level code. Just don't do anything crazy like
+     * calling VecDestroy()!
+     */
+    Epetra_FEVector const& vec () const
+    {
+        //LIFE_ASSERT (_M_vec != 0).error( "invalid epetra vector" );
+        return _M_vec;
+    }
+
+    /**
+     * Returns the raw Epetra vector context pointer.  Note this is generally
+     * not required in user-level code. Just don't do anything crazy like
+     * calling VecDestroy()!
+     */
+    Epetra_FEVector& vec ()
+    {
+        //LIFE_ASSERT (_M_vec != 0).error( "invalid epetra vector" );
+        return _M_vec;
+    }
+
+    //@}
+
+    /** @name  Mutators
+     */
+    //@{
+
+
+    //@}
+
+    /** @name  Methods
+     */
+    //@{
+
+    /**
+     * Call the assemble functions (necessary in PetSc, but not in Trilinos)
+     */
+    void close ()
+    {
+        LIFE_ASSERT (this->isInitialized()).error( "VectorEpetra<> not initialized" );
+
+        int ierr=0;
+        ierr = _M_vec.GlobalAssemble( Add );
+
+        this->M_is_closed = true;
+    }
+
+    /**
+     * Set all entries to zero. Equivalent to \p v = 0, but more obvious and
+     * faster.
+     */
+    void zero ()
+    {
+        LIFE_ASSERT (this->isInitialized()).error( "VectorEpetra<> not initialized" );
+
+        _M_vec.PutScalar(0.0);
+
+    }
+
+    /**
+     * Set entries to zero between \p start and \p stop
+     */
+    void zero ( size_type /*start*/,  size_type /*stop*/ )
+    {
+        this->zero();
+    }
+
+
+    /**
+     * @returns the \p VectorEpetra to a pristine state.
+     */
+    void clear ()
+    {
+        if (this->isInitialized()) //&& (this->_M_destroy_vec_on_exit))
+            {
+                _M_emap = Epetra_Map( -1, 0, 0, _M_vec.Comm() );
+                _M_vec.ReplaceMap( _M_emap );
+                _M_vec.PutScalar(0.0);
+            }
+
+        this->M_is_closed = this->M_is_initialized = false;
+    }
+
+    /**
+     * \f$ v(i) = \mathrm{value} \forall i\f$
+     */
+    void set ( const value_type& value);
+
+    /**
+     * v(i) = value
+     */
+    void set ( size_type i, const value_type& value);
+
+    /**
+     * v(i) += value
+     */
+    void add ( size_type i, const value_type& value);
+
+
+    void addVector ( VectorEpetra& v )
+    {
+        _M_vec.Update( 1.0, v.vec(), 1.0 );
+    }
+
+
+    /**
+     * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
+     * and a \p Vector \p V to \p this, where \p this=U.
+     */
+    void addVector (const Vector<T>& _v,
+                    const MatrixSparse<T>& _M)
+    {
+        // to be implemented
+    }
+
+    /**
+     * \f$ U+=v \f$ where \p v is a std::vector<T>
+     * and you want to specify WHERE to add it
+     */
+    void addVector (const std::vector<value_type>& v,
+                    const std::vector<size_type>& dof_indices)
+    {
+        LIFE_ASSERT (v.size() == dof_indices.size()).error( "invalid dof indices" );
+
+        for (size_type i=0; i<v.size(); i++)
+            this->add (dof_indices[i], v[i]);
+    }
+
+
+    /**
+     * \f$ U+=V \f$ where U and V are type
+     * \p Vector<T> and you
+     * want to specify WHERE to add
+     * the \p Vector<T> V
+     */
+    void addVector (const Vector<value_type>& V,
+                    const std::vector<size_type>& dof_indices)
+    {
+        LIFE_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+
+        for (size_type i=0; i<V.size(); i++)
+            this->add (dof_indices[i], V(i));
+    }
+    //
+    //
+    //     /**
+    //      * \f$ U+=A*V\f$, add the product of a \p MatrixSparse \p A
+    //      * and a \p Vector \p V to \p this, where \p this=U.
+    //      */
+    //     void addVector (const Vector<value_type>& V_in,
+    //                     const MatrixSparse<value_type>& A_in)
+    //     {
+    //
+    //
+    //     }
+    //
+
+    /**
+     * \f$U+=V \f$ where U and V are type
+     * ublas::vector<T> and you
+     * want to specify WHERE to add
+     * the ublas::vector<T> V
+     */
+    void addVector (const ublas::vector<value_type>& V,
+                    const std::vector<size_type>& dof_indices)
+    {
+        LIFE_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+
+        for (size_type i=0; i<V.size(); i++)
+            this->add (dof_indices[i], V(i));
+    }
+
+    /**
+     * \f$ U(0-DIM)+=s\f$.
+     * Addition of \p s to all components. Note
+     * that \p s is a scalar and not a vector.
+     */
+    void add (const value_type& v_in )
+    {
+        value_type v = static_cast<value_type>(v_in);
+        const int n   = static_cast<int>(this->size());
+
+        for( int i=0 ; i<n ; i++ )
+            {
+                _M_vec.SumIntoGlobalValues(1,&i,&v);    //indices are in global index space
+                //_M_vec.SumIntoMyValues(1,&v,&i);      //indices are in local index space
+            }
+
+    }
+
+    /**
+     * \f$ U+=V \f$ .
+     * Simple vector addition, equal to the
+     * \p operator +=.
+     */
+    void add (const Vector<value_type>& v)
+    {
+        VectorEpetra* v_ptr = const_cast<VectorEpetra*>(dynamic_cast< VectorEpetra const*>(&v));
+        this->add (1., *v_ptr);
+    }
+
+    /**
+     * \f$ U+=a*V \f$ .
+     * Simple vector addition, equal to the
+     * \p operator +=.
+     */
+    void add (const value_type& a_in, const Vector<value_type>& v_in)
+    {
+
+        const value_type a = static_cast<value_type>(a_in);
+        const VectorEpetra<T>* v = dynamic_cast<const VectorEpetra<T>*>(&v_in);
+
+
+        assert (v != NULL);
+        assert(this->size() == v->size());
+
+        _M_vec.Update(a, v->_M_vec,1.);
+
+    }
+
+    /**
+     * \f$ U=v \f$ where v is a DenseVector<T>
+     * and you want to specify WHERE to insert it
+     */
+    void insert (const std::vector<T>& v,
+                 const std::vector<size_type>& dof_indices)
+    {
+        //to be implemented
+    }
+
+    /**
+     * \f$U=V\f$, where U and V are type
+     * Vector<T> and you
+     * want to specify WHERE to insert
+     * the Vector<T> V
+     */
+    void insert (const Vector<T>& V,
+                 const std::vector<size_type>& dof_indices)
+    {
+        //to be implemented
+    }
+
+    /**
+     * \f$ U+=V \f$ where U and V are type
+     * DenseVector<T> and you
+     * want to specify WHERE to insert
+     * the DenseVector<T> V
+     */
+    void insert (const ublas::vector<T>& /*V*/,
+                 const std::vector<size_type>& /*dof_indices*/)
+    {
+        //to be implemented
+    }
+
+    /**
+     * Scale each element of the
+     * vector by the given factor.
+     */
+    void scale (const T /*factor*/)
+    {
+        //to be implemented
+    }
+
+
+    /**
+     * Creates a copy of the global vector in the
+     * local vector \p v_local.
+     */
+    void localize (std::vector<T>& /*v_local*/) const
+    {
+        //to be implemented
+    }
+
+    /**
+     * Same, but fills a \p Vector<T> instead of
+     * a \p std::vector.
+     */
+    void localize (Vector<T>& /*v_local*/) const
+    {
+        //to be implemented
+    }
+
+    /**
+     * Creates a local vector \p v_local containing
+     * only information relevant to this processor, as
+     * defined by the \p send_list.
+     */
+    void localize (Vector<T>& /*v_local*/,
+                   const std::vector<size_type>& /*send_list*/) const
+    {
+    }
+
+    /**
+     * Updates a local vector with selected values from neighboring
+     * processors, as defined by \p send_list.
+     */
+    void localize (const size_type /*first_local_idx*/,
+                   const size_type /*last_local_idx*/,
+                   const std::vector<size_type>& /*send_list*/)
+    {
+        //to be implemented
+    }
+    /**
+     * Creates a local copy of the global vector in
+     * \p v_local only on processor \p proc_id.  By
+     * default the data is sent to processor 0.  This method
+     * is useful for outputting data from one processor.
+     */
+    void localizeToOneProcessor (std::vector<T>& /*v_local*/,
+                                 const size_type /*proc_id*/=0) const
+    {
+        //to be implemented
+    }
+
+    /**
+     * @return the minimum element in the vector.
+     * In case of complex numbers, this returns the minimum
+     * Real part.
+     */
+    real_type min () const
+    {
+        assert (this->isInitialized());
+
+        double min=0.;
+
+        _M_vec.MinValue( &min );
+
+        // this return value is correct: VecMin returns a PetscReal
+        return static_cast<double>(min);
+    }
+
+    /**
+     * @returns the maximum element in the vector.
+     * In case of complex numbers, this returns the maximum
+     * Real part.
+     */
+    real_type max() const
+    {
+        assert (this->isInitialized());
+
+        double max=0.;
+
+        _M_vec.MaxValue( &max );
+
+        // this return value is correct: VecMin returns a PetscReal
+        return static_cast<double>(max);
+    }
+
+    /**
+     * @return the \f$l_1\f$-norm of the vector, i.e.
+     * the sum of the absolute values.
+     */
+    real_type l1Norm () const
+    {
+        //assert(this->closed());
+
+        double value=0.;
+
+        _M_vec.Norm1( &value );
+
+        return static_cast<Real>(value);
+    }
+
+    /**
+     * @returns the \f$l_2\f$-norm of the vector, i.e.
+     * the square root of the sum of the
+     * squares of the elements.
+     */
+    real_type l2Norm () const
+    {
+        //assert(this->closed());
+
+        double value=0.;
+
+        _M_vec.Norm2( &value );
+
+        return static_cast<Real>(value);
+
+    }
+
+    /**
+     * @returns the maximum absolute value of the
+     * elements of this vector, which is the
+     * \f$l_\infty\f$-norm of a vector.
+     */
+    real_type linftyNorm () const
+    {
+        assert(this->closed());
+
+        double value=0.;
+
+        _M_vec.NormInf( &value );
+
+        return static_cast<Real>(value);
+
+    }
+
+    /**
+     * @return the sum of the vector.
+     */
+    value_type sum() const
+    {
+        //assert(this->closed());
+
+        double value=0.;
+        double global_sum=0;
+
+        double const * pointers( _M_vec[0] );
+
+        for (int i(0); i < _M_vec.MyLength(); ++i , ++pointers)
+            value += *pointers;
+
+        _M_vec.Comm().SumAll(&value, &global_sum, 1);
+
+        return static_cast<Real>(global_sum);
+
+
+    }
+
+
+    /**
+     * @return the global index of the first vector element
+     * actually stored on this processor
+     *
+     * \return the minimum global Index owned by this processor
+     */
+    size_type firstLocalIndex () const
+    {
+        int epetra_first = 0;
+        assert (this->isInitialized());
+        epetra_first = _M_emap.MinMyGID();
+        return static_cast<size_type>(epetra_first);
+    }
+
+
+
+    /**
+     * @return the index of the last vector element
+     * actually stored on this processor
+     *
+     * \return the maximum global Index owned by this processor + 1
+     */
+    size_type lastLocalIndex () const
+    {
+        int epetra_last = 0;
+        assert (this->isInitialized());
+        epetra_last = _M_emap.MaxMyGID();
+        return static_cast<size_type>(epetra_last)+1;
+    }
+
+    /**
+     * print Epetra vector in a matlab file \p name
+     * \param name filename of the matlab file
+     * \sa MatrixEpetra::printMatlab
+     */
+    void printMatlab (const std::string name) const;
+
+    //   @}
+
+
+
+protected:
+
+private:
+
+private:
+    Epetra_Map _M_emap;
+    Epetra_FEVector _M_vec;
+
+    /**
+     * This boolean value should only be set to false
+     * for the constructor which takes a Epetra Vec object.
+     */
+    //const bool _M_destroy_vec_on_exit;
+};
+
+template<typename T>
+DebugStream&
+operator<<( DebugStream& __os, VectorEpetra<T> const& __n );
+
+
+template<typename T>
+NdebugStream&
+operator<<( NdebugStream& __os, VectorEpetra<T> const& __n );
+
+DebugStream&
+operator<<( DebugStream& __os, Epetra_Map const& __n );
+
+
+NdebugStream&
+operator<<( NdebugStream& __os, Epetra_Map const& __n );
+
+
+} // Life
+#endif /* HAVE_EPETRA */
+#endif /* __VectorEpetra_H */

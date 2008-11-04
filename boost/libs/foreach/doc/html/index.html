@@ -1,0 +1,174 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Chapter 1. BOOST_FOREACH 1.0</title>
+<link rel="stylesheet" href="boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.66.1">
+<link rel="start" href="index.html" title="Chapter 1. BOOST_FOREACH 1.0">
+<link rel="next" href="boost_foreach/extending_boost_foreach.html" title="Extending BOOST_FOREACH">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><td valign="top"><img alt="boost.png (6897 bytes)" width="277" height="86" src="../../../../boost.png"></td></table>
+<hr>
+<div class="spirit-nav"><a accesskey="n" href="boost_foreach/extending_boost_foreach.html"><img src="images/next.png" alt="Next"></a></div>
+<div class="chapter" lang="en">
+<div class="titlepage"><div>
+<div><h2 class="title">
+<a name="boost_foreach"></a>Chapter 1. BOOST_FOREACH 1.0</h2></div>
+<div><div class="author"><h3 class="author">
+<span class="firstname">Eric</span> <span class="surname">Niebler</span>
+</h3></div></div>
+<div><p class="copyright">Copyright © 2004 Eric Niebler</p></div>
+<div><div class="legalnotice">
+<a name="id376119"></a><p>
+        Distributed under the Boost Software License, Version 1.0.
+        (See accompanying file LICENSE_1_0.txt or copy at
+        <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">
+            http://www.boost.org/LICENSE_1_0.txt
+        </a>)
+    
+      </p>
+</div></div>
+</div></div>
+<div class="toc">
+<p><b>Table of Contents</b></p>
+<dl>
+<dt><span class="section"><a href="index.html#boost_foreach.introduction">Introduction</a></span></dt>
+<dt><span class="section"><a href="boost_foreach/extending_boost_foreach.html">Extending BOOST_FOREACH</a></span></dt>
+<dt><span class="section"><a href="boost_foreach/portability.html">Portability</a></span></dt>
+<dt><span class="section"><a href="boost_foreach/acknowledgements.html">Acknowledgements</a></span></dt>
+</dl>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="boost_foreach.introduction"></a>Introduction</h2></div></div></div>
+<div class="blockquote"><blockquote class="blockquote"><p>"Make simple things easy."</p></blockquote></div>
+<div class="blockquote"><blockquote class="blockquote"><p><span class="bold"><b><span class="emphasis"><em>-- Larry Wall</em></span></b></span></p></blockquote></div>
+<a name="introduction.what_is__code__phrase_role__identifier__boost_foreach__phrase___code__"></a><h2>
+<a name="id376627"></a>What is <tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt>?</h2>
+<p>
+In C++, writing a loop that iterates over a sequence is tedious. You can either
+use iterators, which requires a considerable amount of boiler-plate, or you can
+use the <tt class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">for_each</span><span class="special">()</span></tt> algorithm and move your loop body into a predicate, which
+requires no less boiler-plate and forces you to move your logic far from where
+it will be used. In contrast, some other languages provide a dedicated "foreach"
+construct that automates this process. <tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt> is just such a construct for C++.
+It iterates over sequences for you, freeing you from having to deal directly with
+iterators or write predicates.</p>
+<p><tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt> is designed for ease-of-use and efficiency. It does no dynamic allocations,
+makes no virtual function calls or calls through function pointers, and makes no calls
+that are not transparent to the compiler's optimizer. This results in near-optimal code
+generation; the performance of <tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt> is usually within a few percent of the
+equivalent hand-coded loop. And although <tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt> is a macro, it is a remarkably
+well-behaved one. On modern compilers, it evaluates its arguments exactly once, leading
+to no nasty surprises.</p>
+<a name="introduction.hello__world_"></a><h2>
+<a name="id376695"></a>Hello, world!</h2>
+<p>
+Below is a sample program that uses <tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt> to loop over the contents of
+a null-terminated C-style string.</p>
+<pre class="programlisting"><tt class="literal"><span class="preprocessor">#include</span><span class="special"> &lt;</span><span class="identifier">iostream</span><span class="special">&gt;</span><span class="preprocessor">
+#include</span><span class="special"> &lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">foreach</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span><span class="keyword">
+
+int</span><span class="identifier"> main</span><span class="special">()</span><span class="special">
+{</span><span class="identifier">
+    BOOST_FOREACH</span><span class="special">(</span><span class="keyword"> char</span><span class="identifier"> ch</span><span class="special">,</span><span class="string"> "Hello, world!"</span><span class="special"> )</span><span class="special">
+    {</span><span class="identifier">
+        std</span><span class="special">::</span><span class="identifier">cout</span><span class="special"> &lt;&lt;</span><span class="identifier"> ch</span><span class="special">;</span><span class="special">
+    }</span><span class="keyword">
+    return</span><span class="number"> 0</span><span class="special">;</span><span class="special">
+}</span></tt></pre>
+<p>
+This program outputs the following:</p>
+<pre class="programlisting"><tt class="literal">Hello, world!
+</tt></pre>
+<a name="introduction.supported_sequence_types"></a><h2>
+<a name="id377847"></a>Supported Sequence Types</h2>
+<p><tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt> iterates over sequences. But what qualifies as a sequence, exactly? Since
+<tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt> is built on top of <a href="http://boost.org/libs/range/index.html" target="_top">Boost.Range</a>, it automatically supports those types which
+<a href="http://boost.org/libs/range/index.html" target="_top">Boost.Range</a> recognizes as sequences. In particular, you can use <tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt> with:</p>
+<div class="itemizedlist"><ul type="disc">
+<li>
+STL containers
+</li>
+<li>
+arrays
+</li>
+<li>
+Null-terminated strings (<tt class="computeroutput"><span class="keyword">char</span></tt> and <tt class="computeroutput"><span class="keyword">wchar_t</span></tt>)
+</li>
+<li>
+std::pair of iterators
+</li>
+</ul></div>
+<div class="informaltable"><table class="table">
+<colgroup><col></colgroup>
+<tbody><tr><td class="blurb">
+<span class="inlinemediaobject"><img src="images/note.png"></span> The support for STL containers is very general; anything that looks like
+an STL container counts. If it has nested <tt class="computeroutput"><span class="identifier">iterator</span></tt> and <tt class="computeroutput"><span class="identifier">const_iterator</span></tt> types and <tt class="computeroutput"><span class="identifier">begin</span><span class="special">()</span></tt>
+and <tt class="computeroutput"><span class="identifier">end</span><span class="special">()</span></tt> member functions, <tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt> will automatically know how to iterate over
+it. It is in this way that <a href="http://boost.org/libs/range/doc/utility_class.html#iter_range" target="_top"><tt class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">iterator_range</span><span class="special">&lt;&gt;</span></tt></a> and <a href="http://boost.org/libs/range/doc/utility_class.html#sub_range" target="_top"><tt class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">sub_range</span><span class="special">&lt;&gt;</span></tt></a> work with <tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt>.</td></tr></tbody>
+</table></div>
+<p>
+See the section on <a href="boost_foreach/extending_boost_foreach.html" title="Extending BOOST_FOREACH">Extending <tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt></a> to find
+out how to make <tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt> work with other types.</p>
+<a name="introduction.examples"></a><h2>
+<a name="id378410"></a>Examples</h2>
+<p>
+Below are some examples that demonstrate all the different ways you can use <tt class="computeroutput"><span class="identifier">BOOST_FOREACH</span></tt>.</p>
+<p>
+Iterate over an STL container:</p>
+<pre class="programlisting"><tt class="literal"><span class="identifier">std</span><span class="special">::</span><span class="identifier">list</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;</span><span class="identifier"> list_int</span><span class="special">(</span><span class="comment"> /*...*/</span><span class="special"> );</span><span class="identifier">
+BOOST_FOREACH</span><span class="special">(</span><span class="keyword"> int</span><span class="identifier"> i</span><span class="special">,</span><span class="identifier"> list_int</span><span class="special"> )</span><span class="special">
+{</span><span class="comment">
+    // do something with i
+</span><span class="special">}</span></tt></pre>
+<p>
+Iterate over an array, with covariance (i.e., the type of the iteration variable is
+not exactly the same as the element type of the container):</p>
+<pre class="programlisting"><tt class="literal"><span class="keyword">short</span><span class="identifier"> array_short</span><span class="special">[]</span><span class="special"> =</span><span class="special"> {</span><span class="number">1</span><span class="special">,</span><span class="number">2</span><span class="special">,</span><span class="number">3</span><span class="special">};</span><span class="identifier">
+BOOST_FOREACH</span><span class="special">(</span><span class="keyword"> int</span><span class="identifier"> i</span><span class="special">,</span><span class="identifier"> array_short</span><span class="special"> )</span><span class="special">
+{</span><span class="comment">
+    // The short was implicitly converted to an int
+</span><span class="special">}</span></tt></pre>
+<p>
+Predeclare the loop variable, and use <tt class="computeroutput"><span class="keyword">break</span></tt>, <tt class="computeroutput"><span class="keyword">continue</span></tt>, and <tt class="computeroutput"><span class="keyword">return</span></tt> in the loop body:</p>
+<pre class="programlisting"><tt class="literal"><span class="identifier">std</span><span class="special">::</span><span class="identifier">deque</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;</span><span class="identifier"> deque_int</span><span class="special">(</span><span class="comment"> /*...*/</span><span class="special"> );</span><span class="keyword">
+int</span><span class="identifier"> i</span><span class="special"> =</span><span class="number"> 0</span><span class="special">;</span><span class="identifier">
+BOOST_FOREACH</span><span class="special">(</span><span class="identifier"> i</span><span class="special">,</span><span class="identifier"> deque_int</span><span class="special"> )</span><span class="special">
+{</span><span class="keyword">
+    if</span><span class="special">(</span><span class="identifier">i</span><span class="special">==</span><span class="number">0</span><span class="special">)</span><span class="keyword"> return</span><span class="special">;</span><span class="keyword">
+    if</span><span class="special">(</span><span class="identifier">i</span><span class="special">==</span><span class="number">1</span><span class="special">)</span><span class="keyword"> continue</span><span class="special">;</span><span class="keyword">
+    if</span><span class="special">(</span><span class="identifier">i</span><span class="special">==</span><span class="number">2</span><span class="special">)</span><span class="keyword"> break</span><span class="special">;</span><span class="special">
+}</span></tt></pre>
+<p>
+Iterate over a sequence by reference, and modify the underlying sequence:</p>
+<pre class="programlisting"><tt class="literal"><span class="keyword">short</span><span class="identifier"> array_short</span><span class="special">[]</span><span class="special"> =</span><span class="special"> {</span><span class="number">1</span><span class="special">,</span><span class="number">2</span><span class="special">,</span><span class="number">3</span><span class="special">};</span><span class="identifier">
+BOOST_FOREACH</span><span class="special">(</span><span class="keyword"> short</span><span class="special"> &amp;</span><span class="identifier"> i</span><span class="special">,</span><span class="identifier"> array_short</span><span class="special"> )</span><span class="special">
+{</span><span class="special">
+    ++</span><span class="identifier">i</span><span class="special">;</span><span class="special">
+}</span><span class="comment">
+// array_short contains {2,3,4} here
+</span></tt></pre>
+<p>
+Iterate over an expression that returns a sequence by value (i.e. an r-value):</p>
+<pre class="programlisting"><tt class="literal"><span class="keyword">extern</span><span class="identifier"> std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="keyword">float</span><span class="special">&gt;</span><span class="identifier"> get_vector_float</span><span class="special">();</span><span class="identifier">
+BOOST_FOREACH</span><span class="special">(</span><span class="keyword"> float</span><span class="identifier"> f</span><span class="special">,</span><span class="identifier"> get_vector_float</span><span class="special">()</span><span class="special"> )</span><span class="special">
+{</span><span class="comment">
+    // Note: get_vector_float() will be called exactly once
+</span><span class="special">}</span>    
+</tt></pre>
+<p>
+Iterating over r-values doesn't work on some older compilers. Check the 
+<a href="boost_foreach/portability.html" title="Portability">Portability</a> section to see whether your
+compiler supports this.</p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"><small><p>Last revised: February 28, 2005 at 06:30:54 GMT</p></small></td>
+<td align="right"><small></small></td>
+</tr></table>
+<hr>
+<div class="spirit-nav"><a accesskey="n" href="boost_foreach/extending_boost_foreach.html"><img src="images/next.png" alt="Next"></a></div>
+</body>
+</html>

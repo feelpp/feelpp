@@ -1,0 +1,25 @@
+# -*- Mode: python -*-
+
+import os;
+
+#root_build_dir=os.environ['HOME']+'/scratch/Devel/LifeV/lifev-trilinos/'
+
+# only static libs
+shared=0
+static=1
+
+# debug
+#debug='yes'
+
+# std
+
+
+# testsuite compilation and execution [no|compile|execute] (compile by default)
+#testsuite='no'
+
+# examples compilation [0|1] (1 by default)
+#examples=0
+
+#mpi_inc_dir='/usr/include/mpi'
+#ufsparse_inc_dir='/usr/include/ufsparse'
+#vtk_inc_dir='/usr/include/vtk'

@@ -1,0 +1,145 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
+       Date: 2006-11-16
+
+  Copyright (C) 2006 EPFL
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file fsfunctionallinear.hpp
+   \author Christoph Winkelmann <christoph.winkelmann@epfl.ch>
+   \date 2006-11-16
+ */
+
+#ifndef _FSFUNCTIONALLINEAR_HPP_
+#define _FSFUNCTIONALLINEAR_HPP_
+
+#include <life/lifealg/backend.hpp>
+#include <life/lifediscr/fsfunctional.hpp>
+#include <life/lifevf/vf.hpp>
+
+namespace Life
+{
+
+// Linear functional on function space, represented by M_vector
+template<class Space>
+class FsFunctionalLinear : public FsFunctional<Space>
+{
+public:
+
+    // -- TYPEDEFS --
+    typedef FsFunctionalLinear<Space> this_type;
+    typedef FsFunctional<Space> super_type;
+
+    typedef Space space_type;
+
+    typedef boost::shared_ptr<const space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+
+    typedef typename space_type::value_type value_type;
+
+    typedef Backend<value_type> backend_type;
+    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+
+    typedef typename backend_type::vector_type vector_type;
+    typedef typename backend_type::vector_ptrtype vector_ptrtype;
+
+    FsFunctionalLinear( space_ptrtype space ) :
+        super_type( space ),
+        M_backend( backend_type::build( BACKEND_GMM ) ),
+        M_vector( M_backend->newVector( space->map() ) )
+    {
+    }
+
+    FsFunctionalLinear( space_ptrtype space, backend_ptrtype backend ) :
+        super_type( space ),
+        M_backend( backend ),
+        M_vector( M_backend->newVector( space->map() ) )
+    {
+    }
+
+    // apply the functional
+    virtual value_type
+    operator()( const element_type& x ) const
+    {
+#warning TODO
+        LIFE_ASSERT( 0 ).warn( "invalid call, not implemented yet" );
+        return 0;//backend_type::dot( *M_vector, x.container() );
+    }
+
+    // get the representation vector
+    vector_type const& container() const
+    {
+        return *M_vector;
+    }
+
+    vector_type& container()
+    {
+        return *M_vector;
+    }
+    // get the representation vector
+    vector_ptrtype const& containerPtr() const
+    {
+        return M_vector;
+    }
+
+    vector_ptrtype& containerPtr()
+    {
+        return M_vector;
+    }
+
+    // fill linear functional from linear form
+    template<typename ExprT>
+    this_type& operator=( ExprT const& e )
+    {
+        form( this->space(), *M_vector ) = e;
+        return *this;
+    }
+
+    // fill linear functional from linear form
+    template<typename ExprT>
+    this_type& operator+=( ExprT const& e )
+    {
+        form( this->space(), *M_vector, false ) += e;
+        return *this;
+    }
+
+    void close()
+    {
+        if ( ! M_vector->closed() )
+            {
+                M_vector->close();
+            }
+
+    }
+    void
+    add( this_type const& f )
+    {
+        M_vector->add( f.container() );
+    }
+private:
+
+    backend_ptrtype M_backend;
+    vector_ptrtype M_vector;
+
+}; // class FsFunctionalLinear
+
+} // Life
+
+#endif /* _FSFUNCTIONALLINEAR_HPP_ */

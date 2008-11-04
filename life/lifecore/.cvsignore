@@ -1,0 +1,17 @@
+.deps
+.libs
+Doxyfile
+Doxylog
+GetPot.lo
+LDebug.lo
+Makefile
+Makefile.in
+bareItems.lo
+basisElSh.lo
+dataString.lo
+dataTime.lo
+doxylog
+liblifecore.la
+subDomainNeighbors.lo
+switch.lo
+util_string.lo
