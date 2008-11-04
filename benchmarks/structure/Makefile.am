@@ -21,6 +21,7 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
+include $(top_srcdir)/admin/common.am
 check_PROGRAMS=structure
 
 structure_SOURCES=structureapp.cpp structurebase.cpp stvenant_kirchhoff_d2p3.cpp stvenant_kirchhoff_d2p8.cpp
