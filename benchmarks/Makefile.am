@@ -24,7 +24,7 @@
 include $(top_srcdir)/admin/common.am
 ACLOCAL_AMFLAGS = -I admin
 
-SUBDIRS=. convergence perf kovasznay stokes turek structure
+SUBDIRS=. $(ENABLE_EXTRAMODULE_VALIDATION) convergence perf kovasznay stokes turek structure
 
 lib_LTLIBRARIES=liblifelog.la
 
