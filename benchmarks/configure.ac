@@ -96,7 +96,17 @@ AC_CONFIG_FILES([ structure/Makefile ])
 
 AC_OUTPUT
 
+test "x$ENABLE_EXTRAMODULE_VALIDATION" = xvalidation      && sum_benchmarks_validation=OK    || sum_benchmarks_validation="no"
+
 cat <<EOT > summary
+
+Benchmarks Sub-Module Summary:
+==============================
+
+ Extra-Modules        Activation
+ -------------------------------
+ Bencmarks/Validation ${sum_benchmarks_validation}
+
 EOT
 cat summary
 
