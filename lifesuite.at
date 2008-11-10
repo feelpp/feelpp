@@ -32,7 +32,7 @@ m4_include([testsuite/testsuite.at])
 
 m4_include([benchmarks/convergence/convergence.at])
 
-m4_include([examples/fbm/convergence.at])
+#m4_include([examples/fbm/convergence.at])
 
 #m4_include([examples/examplesuite.at])
 
