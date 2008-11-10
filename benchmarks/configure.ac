@@ -105,7 +105,7 @@ Benchmarks Sub-Module Summary:
 
  Extra-Modules        Activation
  -------------------------------
- Bencmarks/Validation ${sum_benchmarks_validation}
+ Validation           ${sum_benchmarks_validation}
 
 EOT
 cat summary
