@@ -25,7 +25,7 @@ AC_PREREQ([2.59])
 
 # Initialize Autoconf
 AC_INIT([Life platform module examples],
-        [0.1.0],
+        [0.9.9],
         [life-commits@lists.ljkforge.imag.fr],
         [life])
 
@@ -99,8 +99,8 @@ AC_CONFIG_FILES([ bloodflow/Makefile ])
 dnl AC_CONFIG_FILES([ poly/Makefile ])
 AC_OUTPUT
 
-test "x$ENABLE_EXTRAMODULE_FBM" = x1      && sum_examples_fbm=OK    || sum_examples_fbm="no"
-test "x$ENABLE_EXTRAMODULE_FSI" = x1      && sum_examples_fsi=OK    || sum_examples_fsi="no"
+test "x$ENABLE_EXTRAMODULE_FBM" = xfbm      && sum_examples_fbm=OK    || sum_examples_fbm="no"
+test "x$ENABLE_EXTRAMODULE_FSI" = xfsi      && sum_examples_fsi=OK    || sum_examples_fsi="no"
 
 cat <<EOT > summary
 
