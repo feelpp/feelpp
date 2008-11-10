@@ -1,7 +1,9 @@
 # -*- autoconf -*-
 #
 #
-AC_INIT([life], [0.9.9], [life-dev@imag.fr])
+AC_INIT([life],
+        [0.9.9],
+        [life-devel@lists.ljkforge.imag.fr])
 
 LIFE_VERSION_MAJOR=0
 LIFE_VERSION_MINOR=9
@@ -432,6 +434,8 @@ CPPFLAGS="${CPPFLAGS} -I\$(top_srcdir)/contrib/gmm -I\$(top_srcdir)/contrib/gmm/
 # Activate sub-modules
 LIFE_SUBMODULE([examples])
 LIFE_SUBMODULE([benchmarks])
+LIFE_SUBMODULE([applications])
+
 
 LIFE_CREATE_SUBDIRSLIST
 AC_CONFIG_FILES([ Makefile ])
@@ -458,42 +462,6 @@ AC_ARG_ENABLE([lifesuite],
        *) AC_MSG_ERROR([bad value ${enableval} for --enable-lifesuite]) ;;
      esac],[enable_lifesuite=true])
 AM_CONDITIONAL([ENABLE_LIFESUITE], [test $enable_lifesuite = true])
-
-dnl AC_ARG_ENABLE([examples],
-dnl      [  --enable-examples    Turn on examples creation],
-dnl      [case "${enableval}" in
-dnl        yes) enable_examples=true ;;
-dnl        no)  enable_examples=false ;;
-dnl        *) AC_MSG_ERROR([bad value ${enableval} for --enable-examples]) ;;
-dnl      esac],[enable_examples=true])
-dnl AM_CONDITIONAL([ENABLE_EXAMPLES], [test $enable_examples = true])
-
-dnl AC_ARG_ENABLE([benchmarks],
-dnl      [  --enable-benchmarks    Turn on benchmarks creation],
-dnl      [case "${enableval}" in
-dnl        yes) enable_benchmarks=true ;;
-dnl        no)  enable_benchmarks=false ;;
-dnl        *) AC_MSG_ERROR([bad value ${enableval} for --enable-benchmarks]) ;;
-dnl      esac],[enable_benchmarks=true])
-dnl AM_CONDITIONAL([ENABLE_BENCHMARKS], [test $enable_benchmarks = true])
-
-AC_ARG_ENABLE([fsi],
-     [  --enable-fsi    Turn on fsi module],
-     [case "${enableval}" in
-       yes) enable_fsi=true ;;
-       no)  enable_fsi=false ;;
-       *) AC_MSG_ERROR([bad value ${enableval} for --enable-fsi]) ;;
-     esac],[enable_fsi=false])
-AM_CONDITIONAL([ENABLE_FSI], [test $enable_fsi = true])
-
-dnl AC_ARG_ENABLE([fbm],
-dnl      [  --enable-fbm    Turn on fbm module],
-dnl      [case "${enableval}" in
-dnl        yes) enable_fbm=true ;;
-dnl        no)  enable_fbm=false ;;
-dnl        *) AC_MSG_ERROR([bad value ${enableval} for --enable-fbm]) ;;
-dnl      esac],[enable_fbm=false])
-dnl AM_CONDITIONAL([ENABLE_FBM], [test $enable_fbm = true])
 
 # We force the values of Life install path, headers and library flags
 # for subsequent invocations of LIFE_CHECK_LIFE in sub-modules
@@ -546,29 +514,13 @@ AC_CONFIG_FILES([ testsuite/lifepoly/Makefile ])
 AC_CONFIG_FILES([ testsuite/lifediscr/Makefile ])
 AC_CONFIG_FILES([ testsuite/lifefilters/Makefile ])
 
-# examples
-dnl AC_CONFIG_FILES([ examples/Makefile ])
-dnl AC_CONFIG_FILES([ examples/generic/Makefile ])
-dnl AC_CONFIG_FILES([ examples/fluid/Makefile ])
-dnl AC_CONFIG_FILES([ examples/solid/Makefile ])
-dnl AC_CONFIG_FILES([ examples/heat/Makefile ])
-dnl AC_CONFIG_FILES([ examples/levelset/Makefile ])
-dnl AC_CONFIG_FILES([ examples/pbeq/Makefile ])
-dnl AC_CONFIG_FILES([ examples/bloodflow/Makefile ])
-dnl dnl AC_CONFIG_FILES([ examples/poly/Makefile ])
-
-dnl if test "x$enable_fsi" != "xfalse"; then
-dnl    AC_CONFIG_FILES([ examples/fsi/Makefile ])
-dnl fi
-
-
-
 AC_DEFINE_UNQUOTED(LIFE_PREFIX, "${prefix:-\"/usr\"}",[define prefix dir for life installation])
 AC_OUTPUT
 
 
-test "x$ENABLE_MODULE_EXAMPLES" = x1        && sum_examples=OK        || sum_examples="no"
-test "x$ENABLE_MODULE_BENCHMARKS" = x1      && sum_benchmarks=OK    || sum_benchmarks="no"
+test "x$ENABLE_MODULE_EXAMPLES" = x1             && sum_examples=OK        || sum_examples="no"
+test "x$ENABLE_MODULE_BENCHMARKS" = x1           && sum_benchmarks=OK      || sum_benchmarks="no"
+test "x$ENABLE_MODULE_APPLICATIONS" = x1         && sum_applications=OK    || sum_applications="no"
 
 cat <<EOT
 
@@ -579,6 +531,7 @@ Summary:
  -------------------------------
  Examples             ${sum_examples}
  Benchmarks           ${sum_benchmarks}
+ Applications         ${sum_applications}
 
 Here are the submodule specific summaries:
 
