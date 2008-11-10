@@ -42,6 +42,10 @@ if ENABLE_MODULE_BENCHMARKS
   SUBDIRS += benchmarks
   DIST_SUBDIRS += benchmarks
 endif
+if ENABLE_MODULE_APPLICATIONS
+  SUBDIRS += applications
+  DIST_SUBDIRS += applications
+endif
 
 
 
