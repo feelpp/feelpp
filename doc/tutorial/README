@@ -1,0 +1,15 @@
+###  README
+
+## Copyright 2008 Christophe Prud'homme
+##
+## Author: christophe.prudhomme@ujf-grenoble.fr
+## Keywords: README file for life-tutorial
+
+In order to compile life-tutorial, type the following commands:
+
+cmake .
+make
+
+
+
+
