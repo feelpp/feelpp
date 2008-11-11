@@ -83,14 +83,14 @@ AC_SUBST(life_revision)
 AC_CACHE_SAVE
 
 #
-LIFE_EXTRAMODULE([validation])
+LIFE_EXTRAMODULE([opus])
 
 # Applications
 AC_CONFIG_FILES([ Makefile ])
 
 AC_OUTPUT
 
-# test "x$ENABLE_EXTRAMODULE_VALIDATION" = xvalidation      && sum_applications_validation=OK    || sum_applications_validation="no"
+test "x$ENABLE_EXTRAMODULE_OPUS" = xopus      && sum_applications_opus=OK    || sum_applications_opus="no"
 
 cat <<EOT > summary
 
@@ -99,6 +99,7 @@ Applications Sub-Module Summary:
 
  Extra-Modules        Activation
  -------------------------------
+ OPUS                 ${sum_applications_opus}
 
 EOT
 cat summary
