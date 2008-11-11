@@ -1,0 +1,1572 @@
+%%\documentclass{../doc/tex/lifestyle}
+\documentclass[11pt]{article}
+%\documentclass{article}
+
+%\usepackage{tex4ht}
+
+\usepackage{svninfo}
+%%\usepackage{fullpage}
+\usepackage{longtable}
+\usepackage{a4wide}
+\usepackage{url}
+\usepackage{fancyhdr}
+\pagestyle{fancyplain}
+\fancyhead[RE,LO]{\leftmark}
+\fancyhead[LE,RO]{\thepage}
+
+\usepackage{fancybox}
+%\usepackage{fancyvrb}
+%\usepackage{color}
+\usepackage{xspace}
+\usepackage{multicol}
+\usepackage{makeidx}
+\usepackage{subfigure}
+\usepackage{verbatim}
+
+\usepackage[english]{babel}
+\usepackage{tabularx}
+
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\newtheorem{problem}{Problem}
+
+\definecolor{lbcolor}{rgb}{0.95,0.95,0.95}
+\definecolor{cblue}{rgb}{0.,0.0,0.6}
+
+\usepackage[colorlinks=true]{hyperref}
+\usepackage{filecontents,listings}
+\lstset{language=c++,showspaces=false,showstringspaces=false,captionpos=t,literate={>>}{\ensuremath{>>}}1}
+%\lstset{float}
+\lstset{basicstyle=\small\ttfamily}
+\lstset{lineskip=-2pt}
+\lstset{keywordstyle=\color{red}\bfseries}
+%\lstset{keywordstyle=\mdseries\color{red}}
+\lstset{emph={inline},emphstyle=\color{red}\bfseries}
+%\lstset{stringstyle=\ttfamily}
+\lstset{commentstyle=\ttfamily\color{cblue}}
+\lstset{backgroundcolor=\color{lbcolor},rulecolor=}
+%\lstset{numbers=left}
+%\lstset{numbers={none}}
+%\lstset{numberstyle=\tiny}
+%\lstset{numbersep=1pt}
+\lstset{frame=single,framerule=0.5pt}
+\lstset{belowskip=\smallskipamount}
+\lstset{aboveskip=\smallskipamount}
+
+
+\newcommand{\acos}{\ensuremath{\mathrm{acos}}\xspace}
+\newcommand{\asin}{\ensuremath{\mathrm{asin}}\xspace}
+\newcommand{\atan}{\ensuremath{\mathrm{atan}}\xspace}
+%\newcommand{\tanh}{\ensuremath{\mathrm{tanh}}\xspace}
+\newcommand{\cpp}{C++}
+\newcommand{\nel}{{\ensuremath{N_{\text{el}}}}}
+
+
+\title{Life Tutorial}
+\author{Christophe Prud'homme}
+\date{\svnToday}
+
+
+\begin{document}
+
+\svnInfo $Id$
+
+
+% \CssFile
+% /* css.sty */
+% body { width: 75% }
+% h1,h2,h3,h4,h5,h6,pre,code,p {font-size: 1em; font-weight: normal; }
+% dl,li,dt,dd,h1,h2,h3,h4,h5,h6,pre,form,body,html,p,blockquote,fieldset,input {margin: 0; padding: 0;}
+% h2,h3,h4,h5,h6 { color: #B30000; }
+% h1 { color: #FFB267; }
+% h2 { border-bottom: 1px dotted #FFB267; border-left: 1px dotted #FFB267; }
+% h3 { border-bottom: 1px dotted #D95934; }
+
+% div.lstlisting{background: #eee; border: thin solid #000;  }
+% div.lstinputlisting{background: #eee; border: thin solid #000; }
+
+% \EndCssFile
+
+\maketitle
+
+\vfill
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.2
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+A copy of the license is included in the section entitled "GNU
+Free Documentation License".
+
+\thispagestyle{empty}
+
+\newpage
+
+\tableofcontents
+
+
+\section{Generalities}
+
+\subsection{Programming environment}
+
+\begin{itemize}
+\item Compiler: C++ (g++ $\geq 4.1$)
+\item Libraries: Blas, Lapack, Mpi, Boost, SuiteSparse, Superlu, Petsc, Trilinos, Vtk
+\item Programs: Gmsh\footnote{Gmsh is a pre/post processing software for scientific computing available at \url{http://www.geuz.org/gmsh}}, Paraview\footnote{Paraview is a few parallel scientific data visualisation plateform, \url{http://www.paraview.org}}
+\end{itemize}
+
+\subsection{Namepaces}
+
+\begin{itemize}
+\item \lstinline!Life!
+\item \lstinline!Life::po!
+\item \lstinline!Life::mpl!
+\item \lstinline!Life::ublas!
+\item \lstinline!Life::math!
+\item \lstinline!Life::fem!
+\item \lstinline!Life::vf!
+
+\end{itemize}
+
+\subsection{Libraries}
+
+\begin{itemize}
+\item \lstinline!life/lifecore!
+\item \lstinline!life/lifealg!
+\item \lstinline!life/lifepoly!
+\item \lstinline!life/lifediscr!
+\item \lstinline!life/lifefilters!
+\item \lstinline!life/lifevf!
+\end{itemize}
+
+\section{Creating applications}
+\label{sec:creat-appl}
+
+
+\marginpar{\lstinline!myapp.cpp!}
+
+\subsection{Application and Options}
+\label{sec:options}
+
+As a Life user, the first step in order to use Life is to create an
+application. First we include the \lstinline!Application! header file,
+\lstinline!life/lifecore/application.hpp! and the header which the
+internal Life options. Life uses the
+\lstinline!boost::program_options!\footnote{\url{http://www.boost.org/doc/html/program_options.html}}
+library from Boost to handle its command line options
+
+
+\lstinputlisting[firstline=28,lastline=30]{myapp.cpp}
+
+Next to ease the programming and reading, we use the \lstinline!using!
+\cpp directive to bring the namespace Life to the current namespace
+
+\lstinputlisting[firstline=32,lastline=32]{myapp.cpp}
+
+Then we define the command line options that the applications will
+provide. Note that on the \lstinline!return! line, we incorporate the
+options defined internally in Life.
+
+\lstinputlisting[firstline=34,lastline=46]{myapp.cpp}
+
+In the example, we provide the options \lstinline!dt! which takes an
+argument, a \lstinline!double! and its default value is \lstinline!1!
+if the options is not set by the command line.
+
+Then we describe the application by defining a class
+\lstinline!AboutData! which will be typically used by the
+\lstinline!help! command line options to describe the application
+
+
+\lstinputlisting[firstline=47,lastline=62]{myapp.cpp}
+
+
+Now we turn to the class \lstinline!MyApp! itself: it derives from
+\lstinline!Life::Application!. Two constructors take \lstinline!argc!,
+\lstinline!argv! and the \lstinline!AboutData! as well as possibly the
+description of the command line options !\lstinline!Life::po::option_description!.
+
+The class \lstinline!MyApp! must redefine the \lstinline!run()! member
+function. It is defined as a pure virtual function in
+\lstinline!Application!.
+
+
+\lstinputlisting[firstline=65,lastline=85]{myapp.cpp}
+
+The implementation of the constructors is usually simple, we pass the
+arguments to the super class \lstinline!Application! that will analyze
+them and subsequently provide them with a
+\lstinline!Life::po::variable_map! data structure which operates like
+a \lstinline!map!. Have a look at the document
+\lstinline!boost::program_options! for further details.
+
+\lstinputlisting[firstline=87,lastline=109]{myapp.cpp}
+
+The \lstinline!run()! member function holds the application
+commands/statements. Here we provide the smallest code unit: we print
+the description of the application if the \lstinline!--help! command
+line options is set.
+
+
+Finally the \lstinline!main()! function can be implemented. We pass
+the results of the \lstinline!makeAbout()! and
+\lstinline!makeOptions()! to the constructor of \lstinline!MyApp! as
+well as \lstinline!argc! and \lstinline!argv!. Then we call the
+\lstinline!run()! member function to execute the application.
+
+\lstinputlisting[firstline=114,lastline=119]{myapp.cpp}
+
+After compiling \lstinline!myapp!, we can execute it
+
+\begin{lstlisting}[language=sh]
+> myapp --help
+myapp: my first Life application
+Allowed options:
+
+MyApp options:
+  --dt arg (=1)                              time step value
+
+>./myapp --authors
+myapp: my first Life application
+          Author Name       Task                          Email Address
+-----------------------------------------------------------------------
+Christophe Prud'homme   developer  christophe.prudhomme@ujf-grenoble.fr
+\end{lstlisting}
+
+\subsection{Application, Logging and Archiving}
+\label{sec:appl-logg-arch}
+
+Life provides some basic logging and archiving support: using the
+\lstinline!changeRepository! member functions of the class
+\lstinline!Application!, the logfile and results of the application
+will be stored in a subdirectory of \lstinline!~/life!. For
+example the following code
+
+\lstinputlisting[firstline=105,lastline=106]{myapp.cpp}
+
+will create the directory \lstinline!~/life/myapp! and will store the
+logfile and any files created after calling
+\lstinline!changeRepository!. Refer to the documentation of
+\lstinline!Boost::format! of further details about the arguments to be
+passed to \lstinline!changeRepository!. The logfile is named
+\lstinline!~/life/myapp/myapp-1.0!. The name of the logfile is built
+using the application name, here \lstinline!myapp!, the number of
+processes, here 1 and the id of the current process, here 0.
+
+\begin{lstlisting}[language=sh]
+> myapp
+> cat ~/life/myapp/myapp-1.0
+myapp-1.0 is opened for debug
+[Area 0] the value of dt is 1
+
+> myapp --dt=0.1
+> cat ~/life/myapp/myapp-1.0
+myapp-1.0 is opened for debug
+[Area 0] the value of dt is 0.1
+\end{lstlisting}
+
+\subsection{MPI Application}
+
+\marginpar{\lstinline!myapp.cpp!}
+Life relies on MPI for parallel computations and the class
+\lstinline!Application!  initialises the MPI environment.
+
+\begin{lstlisting}[language=sh]
+> mpirun -np 2 mympiapp
+> cat ~/life/mympiapp/mympiapp-2.0
+mympiapp-2.0 is opened for debug
+[Area 0] the value of dt is 1
+[Area 0] we are on processor eta
+[Area 0] this is process number 0 out of 2
+> cat ~/life/mympiapp/mympiapp-2.1
+mympiapp-2.1 is opened for debug
+[Area 0] the value of dt is 1
+[Area 0] we are on processor eta
+[Area 0] this is process number 1 out of 2
+
+> mpirun -np 2 mympiapp --dt=0.01
+> cat ~/life/mympiapp/mympiapp-2.0
+mympiapp-2.0 is opened for debug
+[Area 0] the value of dt is 0.01
+[Area 0] we are on processor eta
+[Area 0] this is process number 0 out of 2
+> cat ~/life/mympiapp/mympiapp-2.1
+mympiapp-2.1 is opened for debug
+[Area 0] the value of dt is 0.01
+[Area 0] we are on processor eta
+[Area 0] this is process number 1 out of 2
+\end{lstlisting}
+
+\subsection{PETSc and Trilinos Application}
+
+Life supports also the PETSc and Trilinos framework: it provides
+\lstinline!ApplicationPetsc! and \lstinline!ApplicationEpetra! to
+initialize their respective environments.
+
+\section{Mesh Manipulation}
+
+\marginpar{\lstinline!mymesh.cpp!}
+In this section, we present some of the mesh definition and
+manipulation tools provided by Life.
+
+\subsection{Mesh definition}
+
+We look at the definition of a mesh data structure. First, we define
+the type of geometric entities that we shall use to form our mesh. Life supports
+\begin{itemize}
+\item simplices: segment, triangle, tetrahedron
+\item tensorized entities: segment, quadrangle, hexahedron
+\end{itemize}
+
+We choose between \lstinline!Simplex<Dim,Order,RealDim>!  and
+\lstinline!SimplexProduct<Dim,Order,RealDim>!. They have the same
+template arguments:
+\begin{itemize}
+\item \lstinline!Dim!: the topological dimension of the entity
+\item \lstinline!Order!: the order of the entity(usually 1, higher order in development)
+\item \lstinline!RealDim!: the dimension of the real space
+\end{itemize}
+
+
+\lstinputlisting[firstline=76,lastline=77]{mymesh.cpp}
+
+Then we define the mesh type, \lstinline!Mesh<Entity>! by passing as
+argument the type of entity it is formed with. At the moment hybrid
+meshes are not supported.
+
+\lstinputlisting[firstline=79,lastline=80]{mymesh.cpp}
+
+It is customary to also define the \lstinline!boost::shared_ptr<>!
+counterpart which is usually used in practice. We can now instantiate
+a new mesh data structure.
+
+\lstinputlisting[firstline=147,lastline=147]{mymesh.cpp}
+
+The next step is to read some mesh files. Life supports essentially
+the Gmsh mesh file format. It provides also some classes to manipulate
+Gmsh \lstinline!.geo! files and generate \lstinline!.msh! files. To
+begin, we use some helper classes to generate a \lstinline!.geo! file.
+
+\begin{itemize}
+\item \lstinline!GmshTensorizedDomain! will allow to create a
+  tensorized domain (e.g. cube) in 1D, 2D and 3D. It allows to modify
+  \begin{itemize}
+  \item the characteristic size of the mesh (by default $h=0.1$)
+  \item the domain, by default it is the cube $[0;1]\times[0;1]\times[0;1]$
+  \end{itemize}
+\item \lstinline!GmshSimplexDomain! will allow to create a simplex
+  domain (e.g. segment, triangle or tetrahedron). Again you can modify
+  \begin{itemize}
+  \item the characteristic size of the mesh (by default $h=0.1$)
+  \item the domain vertices, by default $(-1,-1,-1), (1,-1,-1), (-1,1,-1), (-1,-1,1)$
+  \end{itemize}
+\end{itemize}
+
+Here is an example
+
+\lstinputlisting[firstline=150,lastline=152]{mymesh.cpp}
+
+The call to \lstinline!setCharacteristicLength! allows to change the
+mesh size to \lstinline!M_meshSize! which was given for example on the
+command line using the \lstinline!Application! framework, see
+section~\ref{sec:creat-appl}. The call to \lstinline!generate! creates
+the \lstinline!.geo! file and generate the associated mesh. Note that
+\lstinline!fname! holds the name of the \lstinline!.msh! file,
+e.g. \lstinline!mymesh.msh!. Life has added the \lstinline!.msh!
+extension. Also note the last argument of
+\lstinline!GmshTensorizedDomain!, it allows to change the type of
+geometric entities used to generate the mesh. Here we use
+\lstinline!Simplex!, we could have also used \lstinline!SimplexProduct!.
+
+
+Next we import the mesh using the \lstinline!ImporterGmsh! class as follows:
+
+\lstinputlisting[firstline=154,lastline=155]{mymesh.cpp}
+
+
+At this stage we are ready to use the mesh instance: we can for
+example example the mesh to a postprocessing format. Two formats are
+supported at the moment
+\begin{itemize}
+\item \lstinline!Ensight! (case and sos) which is supported by the
+  software Ensight\footnote{\url{http://www.ensight.com}} and
+  Paraview\footnote{\url{http://www.paraview.org}}
+\item \lstinline!Gmsh! which is post-processing format of Gmsh
+\end{itemize}
+
+The export stage reads as follows:
+
+\lstinputlisting[firstline=175,lastline=183]{mymesh.cpp}
+
+In this example, we create a $P_0$ function space and save the
+piecewise constant function that associates to each element the
+process id it belongs to. In sequential, they all belong to processor
+0.  In a parallel setting, the mesh is partitioned using Metis and
+each element is associated with a corresponding processor. The figure
+\ref{fig:1} displays a partitioned mesh in two regions and the
+associated $P_0$ function.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=.7\linewidth]{mymeshpartition}
+  \label{fig:1}
+  \caption{Screenshot of Paraview (3.2.1) of a 2D mesh partitioned and distributed on two processors}
+\end{figure}
+
+
+\subsection{Iterating over the entities of a mesh}
+
+Life mesh data structures provides powerful iterators that allows to
+walk though the mesh in various ways: iterate over element, faces ,
+points, marked\footnote{associated to an integer flag denoting a
+  region, material, processor} elements, marked faces, ...
+
+
+
+\section{Function Spaces}
+
+\subsection{Defining function spaces and functions}
+
+\begin{itemize}
+\item basis function
+\item function spaces
+\item element of a function space
+\end{itemize}
+
+\subsection{Using functions spaces and functions}
+
+\begin{itemize}
+\item interpolating
+\item nodal projection
+\item saving
+\end{itemize}
+
+
+\section{Linear Algebra}
+\label{sec:linear-algebra}
+
+
+Life supports three different linear algebra environments that we
+shall call \emph{backends}.
+\begin{itemize}
+\item Gmm\footnote{}
+\item Petsc\footnote{}
+\item Trilinos\footnote{}
+\end{itemize}
+
+
+\subsection{Choosing a linear algebra backend}
+\label{sec:choos-line-algebra}
+
+To select a backend in order to solve a linear system, we instantiate
+the \lstinline!Backend! class associated.
+
+\begin{lstlisting}
+#include <life/lifealg/backendtrilinos.hpp>
+BackendTrilinos backend;
+
+#include <life/lifealg/backendpetsc.hpp>
+BackendPetsc<double> backend;
+
+#include <life/lifealg/backendgmm.hpp>
+BackendGmm<double> backend;
+\end{lstlisting}
+
+The backend provides an interface to solve
+\begin{equation}
+  \label{eq:8}
+  A x = b
+\end{equation}
+\noindent
+where $A$ is a $n \times n $ sparse matrix and $x,b$ vectors of size $n$.
+The backend defines the \cpp types for  each of these, e.g.
+\begin{lstlisting}
+Backend::sparse_matrix_type A;
+Backend::vector_type x,b;
+\end{lstlisting}
+\noindent
+In practice, we use the \lstinline!boost::shared_ptr<>! shared pointer
+to ensure that we won't get memory leaks. The backends provide a
+corresponding \lstinline!typedef!
+
+
+\begin{lstlisting}
+Backend::sparse_matrix_ptrtype A( Backend::newMatrix( Xh, Yh ) );
+Backend::vector_ptrtype x( Backend::newVector( Yh ) );
+Backend::vector_ptrtype b( Backend::newVector( Xh ) );
+\end{lstlisting}
+\noindent
+where $X_h$ and $Y_h$ are function spaces providing the number of
+degrees of freedom that will define the size of the matrix and vectors
+thanks to the helpers functions \lstinline!Backend::newMatrix()! and
+\lstinline!Backend::newVector!. In a parallel setting, the
+local/global processor mapping would be passed down by the function
+spaces.
+
+\subsection{Defining and using matrices and vectors}
+\label{sec:defin-using-matr}
+
+\subsection{Solving}
+\label{sec:solving}
+
+
+\section{Variational Formulation}
+\label{sec:vari-form}
+
+\begin{itemize}
+\item keywords
+\item principles
+\end{itemize}
+
+\subsection{Computing integrals}
+\label{sec:computing-integrals}
+
+\marginpar{\lstinline!myintegrals.cpp!}
+We would like to compute some integrals on a domain of $\Omega=[0,1]^d\ \subset\ \mathbb{R}^d$
+and parts of the domain, i.e. subregions and (parts of) boundary.
+
+Once we have defined the computational mesh, we would like to compute
+the area of the domain. We form the integral $\int_\Omega 1$, the code
+reads as follows
+
+\lstinputlisting[firstline=175,lastline=176]{myintegrals.cpp}
+
+\lstinline!elements(mesh)! returns a pair of iterators over the
+elements owned by the current processor, \lstinline!im! is an instance
+of the  \lstinline!im_type! which provides a quadrature method to
+integrate exactly polynomials up to degree 2. In our case integrating
+constant(degree 0) would have sufficed, but we will reuse
+\lstinline!im! later. Now that we have computed the integral of 1 over
+the region of $\Omega$ current processor (ie the area of the domain
+owned by the processor), we want to compute the area of $\Omega$. To
+do that we collect the integrals on all processors using a
+\lstinline!reduce! MPI operation and sum all contributions. The code reads
+
+\lstinputlisting[firstline=177,lastline=184]{myintegrals.cpp}
+
+\noindent
+Finally, we print to the log file the result of the local and global
+integral calculation. Another calculation is for example to compute
+the perimeter of the domain
+
+\lstinputlisting[firstline=189,lastline=198]{myintegrals.cpp}
+
+\noindent
+the main difference with the domain area computation resides in the
+elements with are iterating on: here we are iterating on the boundary
+faces of the domain to compute the integral using
+\lstinline!boundaryfaces(mesh)! to provide the pairs of iterators.
+
+
+Now say that we want to compute
+\begin{equation}
+  \label{eq:5}
+  \int_\Omega x^2 + y^2 dx dy.
+\end{equation}
+The Finite Element Embedded Language (FEEL++) language provides the
+keyword \lstinline!Px()! and \lstinline!Py()! to denote the $x$ and
+$y$ coordinates like in equation~(\ref{eq:5}).  The code reads then
+
+
+\lstinputlisting[firstline=203,lastline=213]{myintegrals.cpp}
+
+Note that in this case, we really require the use of a quadrature that
+integrates exactly order 2 polynomials.
+
+Let's run now the tutrial example \lstinline!myintegrals!. The results are stored
+in the log file under \lstinline!~/life/myintegrals/!.
+
+\begin{lstlisting}{language=sh}
+> cat ~/life/myintegrals/Simplex_2_1/h_0.5/myintegrals-1.0
+myintegrals-1.0 is opened for debug
+[Area 0] int_Omega = 1[ 1 ]
+[Area 0] int_Omega = 4[ 4 ]
+[Area 0] int_Omega = 0.666667[ 0.666667 ]
+\end{lstlisting}
+
+We remark that the results are exact. Integrating higher order
+polynomials ($\geq 3$) or non-polynomial function would typically
+require higher order quadrature to get accurate results. To do that
+increase \lstinline!imOrder! in the example and try integrating
+$f(x,y)=x^3 + x y^2$.
+
+
+In order to see what happens in parallel, use \lstinline!mpirun! to
+launch \lstinline!myintegrals! on several processors, for example
+
+\begin{lstlisting}{language=sh}
+> mpirun -np 4 myintegrals --hsize=0.1
+> cat ~/life/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.0
+myintegrals-4.0 is opened for debug
+[Area 0] int_Omega = 1[ 0.253348 ]
+[Area 0] int_Omega = 4[ 1.44444 ]
+[Area 0] int_Omega = 0.666667[ 0.0701812 ]
+> cat ~/life/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.1
+myintegrals-4.1 is opened for debug
+[Area 0] int_Omega = 1[ 0.288919 ]
+[Area 0] int_Omega = 4[ 0.444444 ]
+[Area 0] int_Omega = 0.666667[ 0.186251 ]
+> cat ~/life/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.2
+myintegrals-4.2 is opened for debug
+[Area 0] int_Omega = 1[ 0.183219 ]
+[Area 0] int_Omega = 4[ 1.11111 ]
+[Area 0] int_Omega = 0.666667[ 0.105008 ]
+> cat ~/life/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.3
+myintegrals-4.3 is opened for debug
+[Area 0] int_Omega = 1[ 0.274514 ]
+[Area 0] int_Omega = 4[ 1 ]
+[Area 0] int_Omega = 0.666667[ 0.305227 ]
+\end{lstlisting}
+
+\subsection{Laplacian}
+\label{sec:defin-bilin-forms}
+
+\marginpar{\lstinline!laplacian.cpp!}
+In this example, we would like to solve for the following problem in 2D
+\begin{problem}
+\label{prob:1}
+ find $u$ such that
+\begin{equation}
+  \label{eq:1}
+  -\Delta u = f\ \text{in}\ \Omega = [-1;1]^2
+\end{equation}
+with
+\begin{equation}
+  \label{eq:2}
+  f= 2 \pi^2  g
+\end{equation}
+and $g$ is the exact solution
+\begin{equation}
+  \label{eq:3}
+  g=\sin(\pi x) \cos(\pi y)
+\end{equation}
+The following boundary conditions apply
+\begin{equation}
+  \label{eq:4}
+  u=g_{|x=\pm 1}, \quad \frac{\partial u}{\partial n} = 0_{|y=\pm 1}
+\end{equation}
+\end{problem}
+
+\noindent
+Two variational formulations are written in
+appendix~\ref{sec:vari-form-1} and implemented below.
+
+
+First we define the $f$ and $g$. To do that we use the
+\lstinline!AUTO! keyword and associate to \lstinline!f! and
+\lstinline!g! their expressions
+
+\lstinputlisting[firstline=241,lastline=244]{laplacian.cpp}
+
+\noindent where \lstinline!M_PI! is defined in the header
+\lstinline!cmath!.  We use \lstinline!AUTO! here because the
+expression for \lstinline!f!  and \lstinline!g!  are actually very
+complex objects whose type we are not really interested
+in. \lstinline!AUTO! determines automatically the type of the
+expression using the \lstinline!__typeof__! keyword internally.
+
+Then we form the right hand side by defining a linear form whose
+algebraic representation will be stored in a
+\lstinline!vector_ptrtype! which is provided by the chosen linear
+algebra backend. The linear form is equated with an integral
+expression defining our right hand side.
+
+\lstinputlisting[firstline=250,lastline=254]{laplacian.cpp}
+
+\noindent \lstinline!form1! generates an instance of the object
+representing linear forms, that is to say it mimics the mathematical
+object $\ell$ such that
+\begin{equation}
+  \label{eq:9}
+  \begin{array}{rccl}
+    \ell: & X_h & \mapsto & \mathbb{R}\\
+    & v_h & \rightarrow &\ell(v_h)=\int_\Omega f v
+  \end{array}
+\end{equation}
+which is represented algebraically in the code by the vector
+\lstinline!F! using the argument \lstinline!_vector!. The last
+argument \lstinline!_init!, if set to \lstinline!true!\footnote{It is
+  set to \lstinline!false! by default.}, will zero-out the entries of
+the vector \lstinline!F!.
+
+
+We now turn to the left hand side and define the bilinear form using
+the \lstinline!form2! helper function which is passed \textit{(i)} the
+trial function space using the \lstinline!_trial! option,
+\textit{(ii)} the test function space using the \lstinline!_test!
+option, \textit{(iii)} the algebraic representation using
+\lstinline!_matrix!, i.e. a sparse matrix whose type is derived from
+one of the linear algebra backends and \textit{(iv)} whether the
+associated matrix should initialized using
+\lstinline!_init!.
+
+
+\lstinputlisting[firstline=268,lastline=275]{laplacian.cpp}
+
+
+Finally, we deal with the boundary condition, we implement both
+formulation described in appendix~\ref{sec:vari-form-1}. For a
+\emph{strong} treatment of the Dirichlet condition, we use the
+\lstinline!on()! keyword of FEEL++ as follows
+
+\lstinputlisting[firstline=292,lastline=294]{laplacian.cpp}
+
+Notice that we add, using \lstinline!+=!, the Dirichlet contribution
+for the bilinear form. The first argument is the set of boundary faces
+to apply the condition: in gmsh the points satisfying $x=\pm 1$ are
+marked using the flags $1$ and $3$ ($x=-1$ and $x=1$ respectively.)
+
+To implement the weak Dirichlet boundary condition, we add the
+following contributions to the left and right hand side:
+
+\lstinputlisting[firstline=257,lastline=261]{laplacian.cpp}
+\lstinputlisting[firstline=278,lastline=286]{laplacian.cpp}
+
+Note that we use the command line option \lstinline!--weakdir! set to
+1 by default to decide between weak/strong Dirichlet handling.  Apart
+the uniform treatment of boundary conditions, the weak Dirichlet
+formulation has the advantage to work also in a parallel environment.
+
+Next we solve the linear system
+\begin{equation}
+  \label{eq:6}
+  D u = F
+\end{equation}
+
+\lstinputlisting[firstline=300,lastline=300]{laplacian.cpp}
+
+where the \lstinline!solve! function is implemented as follows
+
+\lstinputlisting[firstline=310,lastline=321]{laplacian.cpp}
+
+Finally we check for the $L_2$ error in our approximation by computing
+\begin{equation}
+  \label{eq:7}
+  \|u-u_h\|_{L_2}\ =\ \sqrt{\int_\Omega (u-u_h)^2} = \sqrt{\int_\Omega (g-u_h)^2}
+\end{equation}
+where $u$ is the exact solution and is equal to $g$ and $u_h$ is the
+numerical solution of the problem~(\ref{eq:1}) and the components of
+$u_h$ in the $P_2$ Lagrange basis are given by solving (\ref{eq:6}).
+
+The code reads
+
+\lstinputlisting[firstline=302,lastline=305]{laplacian.cpp}
+
+
+You can now verify that the $L_2$ error norm behaves like $h^{-(N+1)}$
+where $h$ is the mesh size and $N$ the polynomial order. The $H_1$ error norm
+would be checked similarly in $h^{-N}$.
+
+\subsection{Advection-reaction}
+\label{sec:advection-reaction}
+
+
+
+\appendix
+\newpage
+\section{Compiling the tutorial examples}
+\label{sec:comp-tutor-exampl}
+
+
+\subsection{CMake}
+
+The build system of the tutorial examples is
+CMake\footnote{\url{http://www.cmake.org}} by Kitware.Here is a excerpt from CMake web site
+
+CMake is a cross-platform, open-source make system. CMake is used to
+control the software compilation process using simple platform and
+compiler independent configuration files. CMake generates native
+makefiles and workspaces that can be used in the compiler environment
+of your choice. CMake is quite sophisticated: it is possible to
+support complex environments requiring system configuration,
+pre-processor generation, code generation, and template
+instantiation. Please go here to learn more about CMake.
+
+CMake was developed by Kitware as part of the NLM Insight Segmentation
+and Registration Toolkit project. The ASCI VIEWS project also provided
+support in the context of their parallel computation
+environment. Other sponsors include the Insight, VTK, and VXL open
+source software communities.
+
+The goals for CMake include the following:
+
+\begin{itemize}
+\item Develop an open source, cross-platform tool to manage the build process,
+\item Allow the use of native compilers and systems,
+\item Simplify the build process,
+\item Optionally provide a user-interface to manage the build system,
+\item Create an extensible framework,
+\item Grow a self-sustaining community of software users and developers.
+\end{itemize}
+
+\subsection{Building the examples}
+\label{sec:building-examples}
+
+The compilation is fairly simple. First make sure that the
+\lstinline!cmake! and eventually its text based(ncurses) interfaces
+\lstinline!ccmake! are in your \lstinline!PATH! (i.e. you can execute
+them).
+\noindent
+Then create a directory, where you will build and test the examples, e.g.
+\begin{lstlisting}{language=sh}
+mkdir tutorial-build
+cd tutorial-build
+\end{lstlisting}
+
+\noindent
+Then you configure and generate the \lstinline!Makefile!s using CMake
+\begin{lstlisting}{language=sh}
+cmake <path to tutorial sources>
+\end{lstlisting}
+\noindent
+CMake provides a text based interface using ncurses for configuration,
+you can check it out using the command
+\begin{lstlisting}{language=sh}
+ccmake <path to tutorial sources>
+\end{lstlisting}
+\noindent Follow the instructions at the bottom: press \lstinline!c!
+to configure, then \lstinline!g! to generate the \lstinline!Makefile!s
+
+\noindent
+You are now ready to compile the examples
+\begin{lstlisting}{language=sh}
+make
+\end{lstlisting}
+If somehow something fails during the build, try using the
+\lstinline!make!  option \lstinline!-k! which allows to continue
+after a failure.
+
+\newpage
+\section{Variational formulation for the Laplacian}
+\label{sec:vari-form-1}
+
+Recall, the problem~\ref{prob:1} in
+section~\ref{sec:defin-bilin-forms}. We propose in the following
+appendix two possible variational formulations. The first one, handles
+the Dirichlet boundary conditions strongly, that is to say the
+condition is \emph{incorporated} into the function space definitions.
+The second one handles the Dirichlet condition \emph{weakly} and hence
+we have a uniform treatment for all types of boundary conditions.
+
+
+
+\subsection{Strong Dirichlet conditions}
+\label{sec:strong-dirichl-cond}
+
+\noindent
+The variational formulation reads as follows, we introduce the spaces
+\begin{equation}
+  \label{eq:11}
+  \mathcal{X} = \Big\{ v \in H_1(\Omega) \text{ such that } v=g_{|x=-1,x=1} \Big\}
+\end{equation}
+and
+\begin{equation}
+  \label{eq:12}
+  \mathcal{V} = \Big\{ v \in H_1(\Omega) \text{ such that } v=0_{|x=-1,x=1} \Big\}
+\end{equation}
+We multiply (\ref{eq:1}) by $v \in \mathcal{V}$ then integrate over $\Omega$ and obtain
+\begin{equation}
+  \label{eq:13}
+  \int_\Omega -\Delta u v = \int_\Omega f v
+\end{equation}
+We integrate by parts and reformulate the problem as follows:
+\begin{problem}
+we look
+for $u \in \mathcal{X}$ such that for all $v \in \mathcal{V}$
+\begin{equation}
+  \label{eq:14}
+  \int_\Omega \nabla u \cdot \nabla v  = \int_\Omega f v
+\end{equation}
+
+\end{problem}
+In the present space setting~(\ref{eq:12}) and boundary
+conditions~(\ref{eq:4}), we have the boundary term from the integration by
+parts which is dropped being equal to 0
+\begin{equation}
+  \label{eq:15}
+  \int_{\partial \Omega} \frac{\partial u}{\partial n} v = 0,
+\end{equation}
+recalling that
+\begin{equation}
+  \label{eq:21}
+  \frac{\partial u}{\partial n} \stackrel{\text{def}}{=} \nabla u \cdot n
+\end{equation}
+where $n$ is the outward normal to $\partial \Omega$ by convention.We
+now discretize the problem, we create a mesh out of $\Omega$, we have
+\begin{equation}
+  \label{eq:10}
+  \Omega = \cup_{e=1}^\nel \Omega^e
+\end{equation}
+where $\Omega^e$ can be segments, triangles or tetrahedra depending on
+$d$ and we have $\nel$ of them. We introduce the finite dimensional
+spaces of continuous piecewise polynomial of degree $N$ functions
+\begin{equation}
+  \label{eq:17}
+  X_h = \Big\{ v_h  \in C^0(\Omega),\ {v_h}_{|\Omega^e} \in \mathbb{P}_N( \Omega^e ),\   v_h=g_{|x=-1,x=1}\Big\}
+\end{equation}
+and
+\begin{equation}
+  \label{eq:18}
+  V_h = \Big\{ v_h \in C^0(\Omega),\ {v_h}_{|\Omega^e} \in \mathbb{P}_N( \Omega^e ),\   v_h=0_{|x=-1,x=1}\Big\}
+\end{equation}
+which are out trial and test function spaces respectively.  We now
+have the problem we seek to solve which reads in our continuous
+Galerkin framework
+\begin{problem}
+  \label{prob:2}
+  we look for $u_h \in X_h \subset \mathcal{X}$ such that for all $v
+  \in V_h \subset \mathcal{V}$
+  \begin{equation}
+    \label{eq:20}
+    \int_\Omega \nabla u_h \cdot \nabla v_h  = \int_\Omega f v_h
+  \end{equation}
+\end{problem}
+
+\subsection{Weak Dirichlet conditions}
+\label{sec:weak-dirichl-cond}
+
+There is an alternative formulation which allows to treat weakly
+Dirichlet(Essential) boundary conditions similarly to Neumann(Natural)
+and Robin conditions. Following a similar development as in the previous section, the problem reads
+\begin{problem}
+  \label{prob:3}
+  we look for $u \in X_h \subset H_1(\Omega)$ such that for all $v \in
+  X_h$
+\begin{equation}
+  \label{eq:16}
+  \int_\Omega \nabla u \cdot \nabla v +
+  \int_{|x=-1,x=1} -\frac{\partial u}{\partial n} v - u \frac{\partial v}{\partial n} + \frac{\mu}{h} u v
+  =
+  \int_\Omega f v +
+  \int_{|x=-1,x=1}  - g \frac{\partial v}{\partial n} + \frac{\mu}{h} g v
+\end{equation}
+where
+\begin{equation}
+  \label{eq:19}
+  X_h = \Big\{ v_h \in C^0(\Omega),\ {v_h}_{|\Omega^e} \in \mathbb{P}_N( \Omega^e ) \Big\}
+\end{equation}
+\end{problem}
+In (\ref{eq:16}), $g$ is defined by (\ref{eq:3}). $\mu$ serves as a penalisation
+parameter which should be $> 0$, e.g. between 2 and 10, and $h$ is the
+size of the face. The inconvenient of this formulation is the
+introduction of the parameter $\mu$, but the advantage is the
+\emph{weak} treatment of the Dirichlet condition.
+
+
+
+\newpage
+\section{FEEL++}
+\label{sec:feel++}
+
+One of Life assets is it finite element embedded language
+(FEEL++). The language follows the C++ grammar, and provides keywords
+as well as operations between objects which are, mathematically,
+tensors of rank 0, 1 or 2.
+
+
+\subsection{Predefined functions}
+
+Some notations
+\begin{itemize}
+\item $f: \mathbb{R}^n \mapsto \mathbb{R}^{m\times p}$  with $n=1,2,3$, $m=1,2,3$, $p=1,2,3$.
+\item $\Omega^e$ current mesh element
+\end{itemize}
+
+
+\begin{longtable}[c]{rllll}
+  Keyword & Math object & Description & Rank & $M \times N$\\\hline\hline
+
+  \endhead
+  %%
+  %% Point
+  %%
+  \lstinline!P()! & $\overrightarrow{P}$ & current point coordinates $(P_x, P_y, P_z)^T$ & 1 & $d \times 1$ \\
+
+  \lstinline!Px()! & $P_x$ & $x$ coordinate of $\overrightarrow{P}$ & 0 & $1 \times 1$\\
+
+  \lstinline!Py()! & $P_y$ & $y$ coordinate of $\overrightarrow{P}$ & 0 & $1 \times 1$\\
+  & &  (value is 0 in 1D) & &\\
+
+  \lstinline!Pz()! & $P_z$ & $z$ coordinate of $\overrightarrow{P}$& 0 & $1 \times 1$\\
+  & &  (value is 0 in 1D and 2D)  & &\\\hline\\
+
+  %%
+  %% Barycenter
+  %%
+  \lstinline!C()! & $\overrightarrow{C}$ & element barycenter point coordinates  & 1 & $d \times 1$ \\
+  &&$(C_x, C_y, C_z)^T$&&\\
+
+  \lstinline!Cx()! & $C_x$ & $x$ coordinate of $\overrightarrow{C}$ & 0 & $1 \times 1$\\
+
+  \lstinline!Cy()! & $C_y$ & $y$ coordinate of $\overrightarrow{C}$ & 0 & $1 \times 1$\\
+  & &  (value is 0 in 1D) & &\\
+
+  \lstinline!Cz()! & $C_z$ & $z$ coordinate of $\overrightarrow{C}$& 0 & $1 \times 1$\\
+  & &  (value is 0 in 1D and 2D)  & &\\\hline\\
+
+  %%
+  %% normal
+  %%
+
+  \lstinline!N()! & $\overrightarrow{N}$ & normal at current point $(N_x,N_y,N_z)^T$ & 1 & $d \times 1$\\
+
+  \lstinline!Nx()! & $N_x$ & $x$ coordinate of $\overrightarrow{N}$ at current point & 0 & $1 \times 1$\\
+
+  \lstinline!Ny()! & $N_y$ & $y$ coordinate of $\overrightarrow{N}$ at current point & 0 & $1 \times 1$\\
+  & &  (value is 0 in 1D) & &\\
+
+  \lstinline!Nz()! & $N_z$ & $z$ coordinate of $\overrightarrow{N}$ at current point& 0 & $1 \times 1$\\
+  & &  (value is 0 in 1D and 2D)  & &\\\hline\\
+
+  %%
+  %% Element id
+  %%
+  \lstinline!eid()! & $e$ & index of  $\Omega^e$ & 0 & $1 \times 1$\\
+  \lstinline!emarker()! & $m(e)$ & marker of  $\Omega^e$ & 0 & $1 \times 1$\\
+  \lstinline!h()! & $h^e$ & size of   $\Omega^e$ & 0 & $1 \times 1$\\
+  \lstinline!hFace()! & $h^e_{\Gamma}$ & size of face $\Gamma$ of $\Omega^e$ & 0 & $1 \times 1$\\\hline\\
+
+  %%
+  %% Mat/vec
+  %%
+  \lstinline!mat<M,N>(m_11,! &
+  $\begin{pmatrix}
+    m_{11} & m_{12} & ...\\
+    m_{21} & m_{22} & ...\\
+    \vdots & &
+  \end{pmatrix}$
+  & $M\times N$ matrix    & 2 & $M \times N$\\
+  \lstinline!m_12,...)!& & entries being expressions   & &\\
+
+  \lstinline!vec<M>(v_1,! &$(v_1, v_2,...)^T$
+  & column vector with $M$ rows    & 1 & $M \times 1$\\
+  \lstinline!v_2,...)!& & entries being expressions   & &\\
+
+  \lstinline!trace(expr)! &$\mathrm{tr}(f(\overrightarrow{x}))$  & trace of $f(\overrightarrow{x})$   & 0 & $1 \times 1$\\\hline\\
+
+
+  %%
+  %% std math functions
+  %%
+
+  \lstinline!abs(expr)! & $|f(\overrightarrow{x})|$ & element wise absolute value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!cos(expr)! & $\cos(f(\overrightarrow{x}))$ & element wise cosinus value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!sin(expr)! & $\sin(f(\overrightarrow{x}))$ & element wise sinus value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!tan(expr)! & $\tan(f(\overrightarrow{x}))$ & element wise tangent value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!acos(expr)! & $\acos(f(\overrightarrow{x}))$ & element wise acos value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!asin(expr)! & $\asin(f(\overrightarrow{x}))$ & element wise asin value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!atan(expr)! & $\atan(f(\overrightarrow{x}))$ & element wise atan value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!cosh(expr)! & $\cosh(f(\overrightarrow{x}))$ & element wise cosh value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!sinh(expr)! & $\sinh(f(\overrightarrow{x}))$ & element wise sinh value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!tanh(expr)! & $\tanh(f(\overrightarrow{x}))$ & element wise tanh value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!exp(expr)! & $\exp(f(\overrightarrow{x}))$ & element wise exp value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!log(expr)! & $\log(f(\overrightarrow{x}))$ & element wise log value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!sqrt(expr)! & $\sqrt{f(\overrightarrow{x})}$ & element wise sqrt value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!sign(expr)! & $
+  \begin{cases}
+    1 & \text{if}\ f(\overrightarrow{x}) \geq 0\\
+    -1 & \text{if}\ f(\overrightarrow{x}) < 0
+  \end{cases}$ & element wise sign of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!chi(expr)! & $\chi(f(\overrightarrow{x}))=$ & element wise boolean test of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  & $\begin{cases}
+    0 & \text{if}\ f(\overrightarrow{x}) = 0\\
+    1 & \text{if}\ f(\overrightarrow{x}) \neq 0\\
+  \end{cases}$ &&&\\\hline\\
+
+  %%
+  %% operation
+  %%
+  \lstinline!id(f)! & $f$ & test function & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!idt(f)! & $f$ & trial function & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!idv(f)! & $f$ & evaluation function   & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!grad(f)! & $\nabla f$ & gradient of test function & $\mathrm{rank}( f(\overrightarrow{x}))+1$ & $p=1,\ m \times n$\footnote{Gradient of matrix value functions is not implemented, hence $p=1$ }\\
+  \lstinline!gradt(f)! & $\nabla f$ & gradient of trial function & $\mathrm{rank}(f(\overrightarrow{x}))+1$ & $p=1,\ m \times n$\\
+  \lstinline!gradv(f)! & $\nabla f$ & evaluation function gradient    & $\mathrm{rank}(f(\overrightarrow{x}))+1$ & $p=1,\ m \times n$\\
+
+  \lstinline!div(f)! & $\nabla \cdot \overrightarrow{f}$ & divergence of test function & $\mathrm{rank}( f(\overrightarrow{x}))-1$ & $1\times 1$\footnote{Divergence  of matrix value functions is not implemented, hence $p=1$ }\\
+  \lstinline!divt(f)! & $\nabla \cdot \overrightarrow{f}$ & divergence of trial function & $\mathrm{rank}( f(\overrightarrow{x}))-1$ & $1\times 1$\\
+  \lstinline!divv(f)! & $\nabla \cdot \overrightarrow{f}$ & evaluation of  function divergence  & $\mathrm{rank}( f(\overrightarrow{x}))-1$ & $1\times 1$\\
+
+  \lstinline!curl(f)! & $\nabla \times \overrightarrow{f}$ & curl of test function & 1 & $n=m, n\times 1$\\
+  \lstinline!curlt(f)! & $\nabla \times \overrightarrow{f}$ & curl of trial function & 1 & $m=n, n\times 1$\\
+  \lstinline!curlv(f)! & $\nabla \times \overrightarrow{f}$ & evaluation of  function curl  & 1 & $m=n, n\times 1$\\
+
+  \lstinline!hess(f)! & $\nabla^2 f$ & hessian of test function & 2 & $m=p=1, n\times n$\\\hline\\
+
+  %%
+  %% Two valued operators
+  %%
+  \lstinline!jump(f)! & $[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}$ & jump of test function & 1   & $m=1, n\times 1$\\
+  \lstinline!jump(f)! & $[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}$ & jump of test function & 0   & $m=2, 1\times 1$\\
+  \lstinline!jumpt(f)! & $[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}$ & jump of trial function & 1   & $m=1, n\times 1$\\
+  \lstinline!jumpt(f)! & $[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}$ & jump of trial function & 0   & $m=2, 1\times 1$\\
+  \lstinline!jumpv(f)! & $[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}$ & jump of  function evaluation & 1   & $m=1, n\times 1$\\
+  \lstinline!jumpv(f)! & $[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}$ & jump of  function evaluation & 0   & $m=2, 1\times 1$\\
+  \lstinline!average(f)! & ${f}=\frac{1}{2}(f_0+f_1)$ & average of test function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+  \lstinline!averaget(f)! & ${f}=\frac{1}{2}(f_0+f_1)$ & average of trial function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+  \lstinline!averagev(f)! & ${f}=\frac{1}{2}(f_0+f_1)$ & average of  function evaluation & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+
+  \lstinline!leftface(f)! & $f_0$ & left  test function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+  \lstinline!leftfacet(f)! & $f_0$ & left  trial function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+  \lstinline!leftfacev(f)! & $f_0$ & left   function evaluation & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+  \lstinline!rightface(f)! & $f_1$ & right  test function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+
+  \lstinline!rightfacet(f)! & $f_1$ & right  trial function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+  \lstinline!rightfacev(f)! & $f_1$ & right   function evaluation & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+
+  \lstinline!maxface(f)! & $\max(f_0,f_1)$ & maximum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
+  && test   function&&\\
+  \lstinline!maxfacet(f)! & $\max(f_0,f_1)$ & maximum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
+  && trial   function&&\\
+  \lstinline!maxfacev(f)! & $\max(f_0,f_1)$ & maximum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
+  && function evaluation&&\\
+  \lstinline!minface(f)! & $\min(f_0,f_1)$ & minimum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
+  && test   function&&\\
+  \lstinline!minfacet(f)! & $\min(f_0,f_1)$ & minimum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
+  && trial   function&&\\
+  \lstinline!minfacev(f)! & $\min(f_0,f_1)$ & minimum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
+  && function evaluation&&\\
+  \hline\\
+  %%
+  %% Operations
+  %%
+  \lstinline!-! & $-g$ & element wise unary minus  & & \\
+  \lstinline!-! & $!g$ & element wise logical not  & & \\\hline\\
+
+  \lstinline!+! & $f+g$ & tensor sum  & & \\
+  \lstinline!-! & $f-g$ & tensor substraction  & & \\
+  \lstinline!*! & $f*g$ & tensor product  & & \\
+  \lstinline!/! & $f/g$ & tensor division ($g$ scalar field)  & & \\\hline\\
+
+  \lstinline!<! & $f < g$ & element wise less  & & \\
+  \lstinline!<=! & $f \leq g$ & element wise less or equal  & & \\
+  \lstinline!>! & $f > g$ & element wise greater  & & \\
+  \lstinline!>=! & $f \geq g$ & element wise greater or equal  & & \\
+  \lstinline!==! & $f = g$ & element wise  equal  & & \\
+  \lstinline+!=+ & $f \neq g$ & element wise not equal  & & \\
+  \lstinline!&&! & $f\ \text{and}\ g$ & element wise logical and  & & \\
+  \lstinline!||! & $f\ \text{or}\ g$ & element wise logical or  & & \\\hline\\
+
+
+\end{longtable}
+
+\newpage
+
+\section{References}
+\label{sec:references}
+
+\renewcommand{\bibname}{}
+\renewcommand{\refname}{}
+\nocite{*}
+\bibliographystyle{plain}
+\bibliography{tutorial}
+
+\newpage
+\section{GNU Free Documentation License}
+\label{sec:gnu-free-docum}
+
+		GNU Free Documentation License
+		  Version 1.2, November 2002
+
+
+ Copyright (C) 2000,2001,2002  Free Software Foundation, Inc.
+     51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
+
+
+\subsection*{Preamble}
+
+The purpose of this License is to make a manual, textbook, or other
+functional and useful document "free" in the sense of freedom: to
+assure everyone the effective freedom to copy and redistribute it,
+with or without modifying it, either commercially or noncommercially.
+Secondarily, this License preserves for the author and publisher a way
+to get credit for their work, while not being considered responsible
+for modifications made by others.
+
+This License is a kind of "copyleft", which means that derivative
+works of the document must themselves be free in the same sense.  It
+complements the GNU General Public License, which is a copyleft
+license designed for free software.
+
+We have designed this License in order to use it for manuals for free
+software, because free software needs free documentation: a free
+program should come with manuals providing the same freedoms that the
+software does.  But this License is not limited to software manuals;
+it can be used for any textual work, regardless of subject matter or
+whether it is published as a printed book.  We recommend this License
+principally for works whose purpose is instruction or reference.
+
+
+\subsection*{Applicability and definitions}
+\label{sec:appl-defin}
+
+This License applies to any manual or other work, in any medium, that
+contains a notice placed by the copyright holder saying it can be
+distributed under the terms of this License.  Such a notice grants a
+world-wide, royalty-free license, unlimited in duration, to use that
+work under the conditions stated herein.  The "Document", below,
+refers to any such manual or work.  Any member of the public is a
+licensee, and is addressed as "you".  You accept the license if you
+copy, modify or distribute the work in a way requiring permission
+under copyright law.
+
+A "Modified Version" of the Document means any work containing the
+Document or a portion of it, either copied verbatim, or with
+modifications and/or translated into another language.
+
+A "Secondary Section" is a named appendix or a front-matter section of
+the Document that deals exclusively with the relationship of the
+publishers or authors of the Document to the Document's overall subject
+(or to related matters) and contains nothing that could fall directly
+within that overall subject.  (Thus, if the Document is in part a
+textbook of mathematics, a Secondary Section may not explain any
+mathematics.)  The relationship could be a matter of historical
+connection with the subject or with related matters, or of legal,
+commercial, philosophical, ethical or political position regarding
+them.
+
+The "Invariant Sections" are certain Secondary Sections whose titles
+are designated, as being those of Invariant Sections, in the notice
+that says that the Document is released under this License.  If a
+section does not fit the above definition of Secondary then it is not
+allowed to be designated as Invariant.  The Document may contain zero
+Invariant Sections.  If the Document does not identify any Invariant
+Sections then there are none.
+
+The "Cover Texts" are certain short passages of text that are listed,
+as Front-Cover Texts or Back-Cover Texts, in the notice that says that
+the Document is released under this License.  A Front-Cover Text may
+be at most 5 words, and a Back-Cover Text may be at most 25 words.
+
+A "Transparent" copy of the Document means a machine-readable copy,
+represented in a format whose specification is available to the
+general public, that is suitable for revising the document
+straightforwardly with generic text editors or (for images composed of
+pixels) generic paint programs or (for drawings) some widely available
+drawing editor, and that is suitable for input to text formatters or
+for automatic translation to a variety of formats suitable for input
+to text formatters.  A copy made in an otherwise Transparent file
+format whose markup, or absence of markup, has been arranged to thwart
+or discourage subsequent modification by readers is not Transparent.
+An image format is not Transparent if used for any substantial amount
+of text.  A copy that is not "Transparent" is called "Opaque".
+
+Examples of suitable formats for Transparent copies include plain
+ASCII without markup, Texinfo input format, LaTeX input format, SGML
+or XML using a publicly available DTD, and standard-conforming simple
+HTML, PostScript or PDF designed for human modification.  Examples of
+transparent image formats include PNG, XCF and JPG.  Opaque formats
+include proprietary formats that can be read and edited only by
+proprietary word processors, SGML or XML for which the DTD and/or
+processing tools are not generally available, and the
+machine-generated HTML, PostScript or PDF produced by some word
+processors for output purposes only.
+
+The "Title Page" means, for a printed book, the title page itself,
+plus such following pages as are needed to hold, legibly, the material
+this License requires to appear in the title page.  For works in
+formats which do not have any title page as such, "Title Page" means
+the text near the most prominent appearance of the work's title,
+preceding the beginning of the body of the text.
+
+A section "Entitled XYZ" means a named subunit of the Document whose
+title either is precisely XYZ or contains XYZ in parentheses following
+text that translates XYZ in another language.  (Here XYZ stands for a
+specific section name mentioned below, such as "Acknowledgements",
+"Dedications", "Endorsements", or "History".)  To "Preserve the Title"
+of such a section when you modify the Document means that it remains a
+section "Entitled XYZ" according to this definition.
+
+The Document may include Warranty Disclaimers next to the notice which
+states that this License applies to the Document.  These Warranty
+Disclaimers are considered to be included by reference in this
+License, but only as regards disclaiming warranties: any other
+implication that these Warranty Disclaimers may have is void and has
+no effect on the meaning of this License.
+
+
+\subsection*{Verbatim copying}
+\label{sec:verbatim-copying}
+
+You may copy and distribute the Document in any medium, either
+commercially or noncommercially, provided that this License, the
+copyright notices, and the license notice saying this License applies
+to the Document are reproduced in all copies, and that you add no other
+conditions whatsoever to those of this License.  You may not use
+technical measures to obstruct or control the reading or further
+copying of the copies you make or distribute.  However, you may accept
+compensation in exchange for copies.  If you distribute a large enough
+number of copies you must also follow the conditions in section 3.
+
+You may also lend copies, under the same conditions stated above, and
+you may publicly display copies.
+
+\subsection*{Copying in quantity}
+\label{sec:copying-quantity}
+
+If you publish printed copies (or copies in media that commonly have
+printed covers) of the Document, numbering more than 100, and the
+Document's license notice requires Cover Texts, you must enclose the
+copies in covers that carry, clearly and legibly, all these Cover
+Texts: Front-Cover Texts on the front cover, and Back-Cover Texts on
+the back cover.  Both covers must also clearly and legibly identify
+you as the publisher of these copies.  The front cover must present
+the full title with all words of the title equally prominent and
+visible.  You may add other material on the covers in addition.
+Copying with changes limited to the covers, as long as they preserve
+the title of the Document and satisfy these conditions, can be treated
+as verbatim copying in other respects.
+
+If the required texts for either cover are too voluminous to fit
+legibly, you should put the first ones listed (as many as fit
+reasonably) on the actual cover, and continue the rest onto adjacent
+pages.
+
+If you publish or distribute Opaque copies of the Document numbering
+more than 100, you must either include a machine-readable Transparent
+copy along with each Opaque copy, or state in or with each Opaque copy
+a computer-network location from which the general network-using
+public has access to download using public-standard network protocols
+a complete Transparent copy of the Document, free of added material.
+If you use the latter option, you must take reasonably prudent steps,
+when you begin distribution of Opaque copies in quantity, to ensure
+that this Transparent copy will remain thus accessible at the stated
+location until at least one year after the last time you distribute an
+Opaque copy (directly or through your agents or retailers) of that
+edition to the public.
+
+It is requested, but not required, that you contact the authors of the
+Document well before redistributing any large number of copies, to give
+them a chance to provide you with an updated version of the Document.
+
+\subsection*{Modifications}
+
+You may copy and distribute a Modified Version of the Document under
+the conditions of sections 2 and 3 above, provided that you release
+the Modified Version under precisely this License, with the Modified
+Version filling the role of the Document, thus licensing distribution
+and modification of the Modified Version to whoever possesses a copy
+of it.  In addition, you must do these things in the Modified Version:
+
+\begin{enumerate}
+\item Use in the Title Page (and on the covers, if any) a title distinct
+   from that of the Document, and from those of previous versions
+   (which should, if there were any, be listed in the History section
+   of the Document).  You may use the same title as a previous version
+   if the original publisher of that version gives permission.
+\item List on the Title Page, as authors, one or more persons or entities
+   responsible for authorship of the modifications in the Modified
+   Version, together with at least five of the principal authors of the
+   Document (all of its principal authors, if it has fewer than five),
+   unless they release you from this requirement.
+
+
+\item State on the Title page the name of the publisher of the
+   Modified Version, as the publisher.
+\item Preserve all the copyright notices of the Document.
+\item Add an appropriate copyright notice for your modifications
+   adjacent to the other copyright notices.
+\item Include, immediately after the copyright notices, a license notice
+   giving the public permission to use the Modified Version under the
+   terms of this License, in the form shown in the Addendum below.
+\item Preserve in that license notice the full lists of Invariant Sections
+   and required Cover Texts given in the Document's license notice.
+\item Include an unaltered copy of this License.
+\item Preserve the section Entitled "History", Preserve its Title, and add
+   to it an item stating at least the title, year, new authors, and
+   publisher of the Modified Version as given on the Title Page.  If
+   there is no section Entitled "History" in the Document, create one
+   stating the title, year, authors, and publisher of the Document as
+   given on its Title Page, then add an item describing the Modified
+   Version as stated in the previous sentence.
+\item Preserve the network location, if any, given in the Document for
+   public access to a Transparent copy of the Document, and likewise
+   the network locations given in the Document for previous versions
+   it was based on.  These may be placed in the "History" section.
+   You may omit a network location for a work that was published at
+   least four years before the Document itself, or if the original
+   publisher of the version it refers to gives permission.
+\item For any section Entitled "Acknowledgements" or "Dedications",
+   Preserve the Title of the section, and preserve in the section all
+   the substance and tone of each of the contributor acknowledgements
+   and/or dedications given therein.
+\item Preserve all the Invariant Sections of the Document,
+   unaltered in their text and in their titles.  Section numbers
+   or the equivalent are not considered part of the section titles.
+\item Delete any section Entitled "Endorsements".  Such a section
+   may not be included in the Modified Version.
+\item Do not retitle any existing section to be Entitled "Endorsements"
+   or to conflict in title with any Invariant Section.
+\item Preserve any Warranty Disclaimers.
+\end{enumerate}
+
+If the Modified Version includes new front-matter sections or
+appendices that qualify as Secondary Sections and contain no material
+copied from the Document, you may at your option designate some or all
+of these sections as invariant.  To do this, add their titles to the
+list of Invariant Sections in the Modified Version's license notice.
+These titles must be distinct from any other section titles.
+
+You may add a section Entitled "Endorsements", provided it contains
+nothing but endorsements of your Modified Version by various
+parties--for example, statements of peer review or that the text has
+been approved by an organization as the authoritative definition of a
+standard.
+
+You may add a passage of up to five words as a Front-Cover Text, and a
+passage of up to 25 words as a Back-Cover Text, to the end of the list
+of Cover Texts in the Modified Version.  Only one passage of
+Front-Cover Text and one of Back-Cover Text may be added by (or
+through arrangements made by) any one entity.  If the Document already
+includes a cover text for the same cover, previously added by you or
+by arrangement made by the same entity you are acting on behalf of,
+you may not add another; but you may replace the old one, on explicit
+permission from the previous publisher that added the old one.
+
+The author(s) and publisher(s) of the Document do not by this License
+give permission to use their names for publicity for or to assert or
+imply endorsement of any Modified Version.
+
+
+\subsection*{Combining documents}
+
+You may combine the Document with other documents released under this
+License, under the terms defined in section 4 above for modified
+versions, provided that you include in the combination all of the
+Invariant Sections of all of the original documents, unmodified, and
+list them all as Invariant Sections of your combined work in its
+license notice, and that you preserve all their Warranty Disclaimers.
+
+The combined work need only contain one copy of this License, and
+multiple identical Invariant Sections may be replaced with a single
+copy.  If there are multiple Invariant Sections with the same name but
+different contents, make the title of each such section unique by
+adding at the end of it, in parentheses, the name of the original
+author or publisher of that section if known, or else a unique number.
+Make the same adjustment to the section titles in the list of
+Invariant Sections in the license notice of the combined work.
+
+In the combination, you must combine any sections Entitled "History"
+in the various original documents, forming one section Entitled
+"History"; likewise combine any sections Entitled "Acknowledgements",
+and any sections Entitled "Dedications".  You must delete all sections
+Entitled "Endorsements".
+
+
+\subsection*{Collections of documents}
+
+You may make a collection consisting of the Document and other documents
+released under this License, and replace the individual copies of this
+License in the various documents with a single copy that is included in
+the collection, provided that you follow the rules of this License for
+verbatim copying of each of the documents in all other respects.
+
+You may extract a single document from such a collection, and distribute
+it individually under this License, provided you insert a copy of this
+License into the extracted document, and follow this License in all
+other respects regarding verbatim copying of that document.
+
+
+\subsection*{Aggregation with independent works}
+
+A compilation of the Document or its derivatives with other separate
+and independent documents or works, in or on a volume of a storage or
+distribution medium, is called an "aggregate" if the copyright
+resulting from the compilation is not used to limit the legal rights
+of the compilation's users beyond what the individual works permit.
+When the Document is included in an aggregate, this License does not
+apply to the other works in the aggregate which are not themselves
+derivative works of the Document.
+
+If the Cover Text requirement of section 3 is applicable to these
+copies of the Document, then if the Document is less than one half of
+the entire aggregate, the Document's Cover Texts may be placed on
+covers that bracket the Document within the aggregate, or the
+electronic equivalent of covers if the Document is in electronic form.
+Otherwise they must appear on printed covers that bracket the whole
+aggregate.
+
+
+\subsection*{Translation}
+
+Translation is considered a kind of modification, so you may
+distribute translations of the Document under the terms of section 4.
+Replacing Invariant Sections with translations requires special
+permission from their copyright holders, but you may include
+translations of some or all Invariant Sections in addition to the
+original versions of these Invariant Sections.  You may include a
+translation of this License, and all the license notices in the
+Document, and any Warranty Disclaimers, provided that you also include
+the original English version of this License and the original versions
+of those notices and disclaimers.  In case of a disagreement between
+the translation and the original version of this License or a notice
+or disclaimer, the original version will prevail.
+
+If a section in the Document is Entitled "Acknowledgements",
+"Dedications", or "History", the requirement (section 4) to Preserve
+its Title (section 1) will typically require changing the actual
+title.
+
+
+\subsection*{Termination}
+
+You may not copy, modify, sublicense, or distribute the Document except
+as expressly provided for under this License.  Any other attempt to
+copy, modify, sublicense or distribute the Document is void, and will
+automatically terminate your rights under this License.  However,
+parties who have received copies, or rights, from you under this
+License will not have their licenses terminated so long as such
+parties remain in full compliance.
+
+
+\subsection*{Future revisions of this license}
+
+The Free Software Foundation may publish new, revised versions
+of the GNU Free Documentation License from time to time.  Such new
+versions will be similar in spirit to the present version, but may
+differ in detail to address new problems or concerns.  See
+http://www.gnu.org/copyleft/.
+
+Each version of the License is given a distinguishing version number.
+If the Document specifies that a particular numbered version of this
+License "or any later version" applies to it, you have the option of
+following the terms and conditions either of that specified version or
+of any later version that has been published (not as a draft) by the
+Free Software Foundation.  If the Document does not specify a version
+number of this License, you may choose any version ever published (not
+as a draft) by the Free Software Foundation.
+
+
+\subsection*{ADDENDUM: How to use this License for your documents}
+
+To use this License in a document you have written, include a copy of
+the License in the document and put the following copyright and
+license notices just after the title page:
+
+    Copyright (c)  YEAR  YOUR NAME.
+    Permission is granted to copy, distribute and/or modify this document
+    under the terms of the GNU Free Documentation License, Version 1.2
+    or any later version published by the Free Software Foundation;
+    with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+    A copy of the license is included in the section entitled "GNU
+    Free Documentation License".
+
+If you have Invariant Sections, Front-Cover Texts and Back-Cover Texts,
+replace the "with...Texts." line with this:
+
+    with the Invariant Sections being LIST THEIR TITLES, with the
+    Front-Cover Texts being LIST, and with the Back-Cover Texts being LIST.
+
+If you have Invariant Sections without Cover Texts, or some other
+combination of the three, merge those two alternatives to suit the
+situation.
+
+If your document contains nontrivial examples of program code, we
+recommend releasing these examples in parallel under your choice of
+free software license, such as the GNU General Public License,
+to permit their use in free software.
+
+
+\end{document}

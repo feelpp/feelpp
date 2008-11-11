@@ -1,0 +1,14 @@
+;; -*- emacs-lisp -*-
+;;
+;; This	file is processed by the dirvars emacs package.  Each variable
+;; setting below is performed when this dirvars file is loaded.
+;;
+indent-tabs-mode: nil
+tab-width: 4
+c-basic-offset: 4
+evaluate: (c-set-offset 'innamespace '0)
+show-trailing-whitespace: t
+indicate-empty-lines: t
+evaluate: (add-hook 'write-file-hooks 'delete-trailing-whitespace)
+
+debian-changelog-mailing-address: "christophe.prudhomme@ujf-grenoble.fr"
