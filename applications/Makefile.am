@@ -24,9 +24,7 @@
 include $(top_srcdir)/admin/common.am
 ACLOCAL_AMFLAGS = -I admin
 
-SUBDIRS=.
-
-#$(ENABLE_EXTRAMODULE_VALIDATION)
+SUBDIRS=. $(ENABLE_EXTRAMODULE_OPUS)
 
 
 EXTRA_DIST=
