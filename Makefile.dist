@@ -10,7 +10,12 @@ all:
 	(cd contrib/gmm && autoheader)
 	(cd contrib/gmm && automake)
 	(cd contrib/gmm && autoconf)
-	@echo "Generating configure in contrib/gmm... done"
+	@echo "Generating configure in doc... done"
+	test -d doc/ && ( cd doc && make -f Makefile.dist)
+	@echo "Generating configure in examples... done"
 	test -d examples/ && ( cd examples && make -f Makefile.dist)
+	@echo "Generating configure in benchmarks... done"
 	test -d benchmarks/ && ( cd benchmarks && make -f Makefile.dist)
+	@echo "Generating configure in applications... done"
+	test -d applications/ && ( cd applications && make -f Makefile.dist)
 
