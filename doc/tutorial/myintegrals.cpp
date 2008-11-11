@@ -124,7 +124,7 @@ MyIntegrals<Dim>::createMesh( double meshSize )
 {
     mesh_ptrtype mesh( new mesh_type );
 
-    GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,Simplex> td;
+    GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nDim,Simplex> td;
     td.setCharacteristicLength( meshSize );
     std::string fname = td.generate( entity_type::name().c_str() );
 

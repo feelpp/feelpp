@@ -186,7 +186,10 @@ Laplacian<Dim>::createMesh( double meshSize )
 {
     mesh_ptrtype mesh( new mesh_type );
 
-    GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,Simplex> td;
+    GmshTensorizedDomain<entity_type::nDim,
+                         entity_type::nOrder,
+                         entity_type::nDim,
+                         Simplex> td;
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( -1, 1 ) );
     td.setY( std::make_pair( -1, 1 ) );

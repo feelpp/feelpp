@@ -3,7 +3,7 @@
 SUFFIXES	= .cpp .hpp .idl .c .h .f .F .o .moc
 
 
-DOCSOURCES = $(shell find @top_srcdir@/life  -name "*.[ch]pp") \
+DOCSOURCES = $(shell find @top_srcdir@/../life  -name "*.[ch]pp") \
  $(shell find @srcdir@ -name "*.doc")
 
 EXTRA_DIST = html Doxyfile \
