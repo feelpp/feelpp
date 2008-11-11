@@ -147,7 +147,10 @@ MyMesh<Dim>::createMesh()
     mesh_ptrtype mesh( new mesh_type );
 
 
-    GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,Simplex> geo;
+    GmshTensorizedDomain<entity_type::nDim,
+                         entity_type::nOrder,
+                         entity_type::nDim,
+                         Simplex> geo;
     geo.setCharacteristicLength( M_meshSize );
     std::string fname = geo.generate( "mymesh" );
 

@@ -1,6 +1,6 @@
 # -*- Mode : makefile -*-
 #
-# Copyright (C) 2006 EPFL
+# Copyright (C) 2008 Université de Grenoble
 #
 #  Distributed under the GPL(GNU Public License):
 #  This program is free software; you can redistribute it and/or modify
@@ -18,4 +18,4 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 
-SUBDIRS		= api 
+SUBDIRS		= tutorial api
