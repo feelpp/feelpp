@@ -432,6 +432,7 @@ AC_CONFIG_SUBDIRS([contrib/gmm])
 CPPFLAGS="${CPPFLAGS} -I\$(top_srcdir)/contrib/gmm -I\$(top_srcdir)/contrib/gmm/include -I/usr/include/superlu  "
 
 # Activate sub-modules
+LIFE_SUBMODULE([doc])
 LIFE_SUBMODULE([examples])
 LIFE_SUBMODULE([benchmarks])
 LIFE_SUBMODULE([applications])
@@ -444,16 +445,6 @@ AC_CONFIG_FILES([ Makefile ])
 #
 # conditional directories
 #
-AC_ARG_ENABLE([doc],
-     [  --enable-doc    Turn on documentation creation],
-     [case "${enableval}" in
-       yes) enable_doc=true ;;
-       no)  enable_doc=false ;;
-       *) AC_MSG_ERROR([bad value ${enableval} for --enable-doc]) ;;
-     esac],[enable_doc=true])
-
-AM_CONDITIONAL([ENABLE_DOC], [test $enable_doc = true])
-
 AC_ARG_ENABLE([lifesuite],
      [  --enable-lifesuite    Turn on lifesuite creation],
      [case "${enableval}" in
@@ -490,9 +481,6 @@ AC_CONFIG_FILES([ boost/libs/serialization/src/Makefile ])
 # contrib
 AC_CONFIG_FILES([ contrib/Makefile ])
 
-# doc
-AC_CONFIG_FILES([ doc/Makefile ])
-AC_CONFIG_FILES([ doc/api/Makefile doc/api/Doxyfile ])
 
 # life library
 AC_CONFIG_FILES([ life/Makefile ])
@@ -518,6 +506,7 @@ AC_DEFINE_UNQUOTED(LIFE_PREFIX, "${prefix:-\"/usr\"}",[define prefix dir for lif
 AC_OUTPUT
 
 
+test "x$ENABLE_MODULE_DOC" = x1                  && sum_doc=OK             || sum_doc="no"
 test "x$ENABLE_MODULE_EXAMPLES" = x1             && sum_examples=OK        || sum_examples="no"
 test "x$ENABLE_MODULE_BENCHMARKS" = x1           && sum_benchmarks=OK      || sum_benchmarks="no"
 test "x$ENABLE_MODULE_APPLICATIONS" = x1         && sum_applications=OK    || sum_applications="no"
@@ -529,6 +518,7 @@ Summary:
 
  Modules              Activation
  -------------------------------
+ Doc                  ${sum_doc}
  Examples             ${sum_examples}
  Benchmarks           ${sum_benchmarks}
  Applications         ${sum_applications}
@@ -537,7 +527,7 @@ Here are the submodule specific summaries:
 
 EOT
 
-for module in examples benchmarks
+for module in doc examples benchmarks applications
 do
   test -f $module/summary && cat $module/summary
 done
