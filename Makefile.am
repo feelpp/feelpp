@@ -25,15 +25,16 @@
 DO_NOT_COMPILE=polyvis
 #SUBDIRS = admin $(TOPSUBDIRS)
 
-if ENABLE_DOC
-MAYBE_DOC=doc
-endif
 if ENABLE_LIFESUITE
 MAYBE_LIFESUITE=testsuite
 endif
 
-SUBDIRS = boost contrib life $(MAYBE_LIFESUITE) $(MAYBE_DOC) .
-DIST_SUBDIRS = boost contrib life $(MAYBE_LIFESUITE) $(MAYBE_DOC) .
+SUBDIRS = boost contrib life $(MAYBE_LIFESUITE) .
+DIST_SUBDIRS = boost contrib life $(MAYBE_LIFESUITE)  .
+if ENABLE_MODULE_DOC
+  SUBDIRS += doc
+  DIST_SUBDIRS += doc
+endif
 if ENABLE_MODULE_EXAMPLES
   SUBDIRS += examples
   DIST_SUBDIRS += examples
