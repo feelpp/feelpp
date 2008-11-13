@@ -44,9 +44,7 @@ value_type lebesgueConstant()
 {
     static const uint16_type Dim = Convex::nDim;
 
-    typedef typename mpl::if_< mpl::bool_< Convex::is_simplex >,
-        Simplex<Dim, 1>,
-        SimplexProduct<Dim, 1> >::type convex_type;
+    typedef typename mpl::if_< mpl::bool_< Convex::is_simplex >, Simplex<Dim, 1>, SimplexProduct<Dim, 1> >::type convex_type;
 
     typedef typename mpl::if_< mpl::bool_< Convex::is_simplex >,
         fem::Lagrange<Dim, Order, Scalar, Continuous, value_type, Simplex, PointSetType >,
@@ -54,7 +52,7 @@ value_type lebesgueConstant()
 
     basis_type _M_basis;
 
-    PointSetEquiSpaced<convex_type, 200 - 70*(Dim-2), value_type> test;
+    PointSetEquiSpaced<convex_type, 100 - 80*(Dim-2), value_type> test;
 
     return ublas::norm_1( _M_basis.evaluate( test.points() ) );
 };

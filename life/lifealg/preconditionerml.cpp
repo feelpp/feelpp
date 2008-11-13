@@ -40,20 +40,15 @@ PreconditionerML::PreconditionerML( list_type options )
     M_List(),
     M_precType("MultiGrid")
 {
-    ML_Epetra::SetDefaults("DD", M_List);
-
+    ML_Epetra::SetDefaults("SA", M_List);
+    /*
     M_List.set("max levels", 5);
     M_List.set("increasing or decreasing", "increasing");
-    M_List.set("aggregation: type", "Uncoupled");
+    M_List.set("aggregation: type", "MIS");
     M_List.set("smoother: type","Aztec");
     M_List.set("smoother: pre or post", "both");
     M_List.set("coarse: type","Amesos-KLU");
-
-#if defined(HAVE_ML_PARMETIS_3x)
-    M_List.set("repartition: enable",1);
-    M_List.set("repartition: min per proc",500);
-    M_List.set("repartition: partitioner","ParMETIS");
-#endif
+    */
 
     M_List.set("output", 0);
 }
@@ -73,6 +68,7 @@ PreconditionerML::buildPreconditioner( sparse_matrix_ptrtype& A )
     M_Prec = boost::shared_ptr<prec_type>( new prec_type( A_ptr->mat(),
                                                           M_List,
                                                           true) );
+
     return 0;
 }
 

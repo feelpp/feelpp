@@ -231,6 +231,7 @@ BackendTrilinos::solve( base_sparse_matrix_ptrtype const& A,
     opt.set_verbose("none");
     opt.set_tol(1e-14);
     opt.set_solver("gmres");
+    opt.set_residual("rhs");
 
     operator_ptrtype prec = IfpackPrec( B, opt.get_options() );
 
