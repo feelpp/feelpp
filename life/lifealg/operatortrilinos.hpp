@@ -172,6 +172,7 @@ public:
 
         M_Matrix->mat().Apply(X,Y);
 
+        Debug(10100) << "Apply Operator " << Label() << " successfully\n";
         return !hasApply();
     }
 
@@ -192,18 +193,17 @@ public:
         std::pair<unsigned int, real_type> result;
 
         Debug(10100) << "Apply Inverse Operator " << Label() << "\n";
-        Debug(10100) << "Max iter: " << M_maxiter << "\n";
-        Debug(10100) << "tolerance: " << M_tol << "\n";
 
         if ( M_Prec.get() != 0 )
             result = M_Solver->solve( *M_Matrix, M_Prec, Y, X, M_tol, M_maxiter);
         else
             result = M_Solver->solve( *M_Matrix, Y, X, M_tol, M_maxiter);
 
-        Debug(10100) << "num iters: " << result.first << "\n";
-        Debug(10100) << "true residual: " << result.second << "\n";
+        Debug(10100) << "Apply Inverse Operator " << Label() << " successfully\n";
 
-        return result.first;
+        int result_integer = result.first;
+
+        return result_integer;
     }
 
     // other function
@@ -406,7 +406,7 @@ private:
 
 
 
-template< typename op1_type, typename op2_type>
+template< typename op1_type, typename op2_type >
 class OperatorCompose : public Epetra_Operator
 {
 public:
@@ -628,7 +628,7 @@ public:
 
     int Apply( const Epetra_MultiVector & X, Epetra_MultiVector & Y ) const
     {
-        //std::cout << "Apply scale operator " << Label() << "\n";
+        Debug(10100) << "Apply scale operator " << Label() << "\n";
 
         M_F->Apply(X,Y);
 
@@ -695,7 +695,7 @@ public:
 
     ~OperatorScale()
     {
-        //std::cout << "Destroyed scale operator: " << Label() << " ...\n";
+        //Debug(10100) << "Destroyed scale operator: " << Label() << " ...\n";
     };
 
 private:
@@ -786,20 +786,22 @@ public:
 
     int Apply( const Epetra_MultiVector & X, Epetra_MultiVector & Y ) const
     {
-        //std::cout << "Apply operator " << Label() << "\n";
+        Debug(10100) << "Apply operator " << Label() << "\n";
         M_op->Apply(X,Y);
+        Debug(10100) << "Finished Apply operator " << Label() << "\n";
 
         return !hasApply();
     }
 
     int ApplyInverse ( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        //std::cout << "ApplyInverse operator " << Label() << "\n";
+        Debug(10100) << "ApplyInverse operator " << Label() << "\n";
 
         LIFE_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
 
         std::pair<unsigned int, real_type> result = M_Solver->solve( M_op, M_Prec, Y, X, M_tol, M_maxiter);
 
+        Debug(10100) << "Finished ApplyInverse operator " << Label() << "\n";
         return !hasInverse();
     }
 
@@ -848,7 +850,7 @@ public:
 
     ~OperatorFree()
     {
-        //std::cout << "Destroyed operator: " << Label() << " ...\n";
+        Debug(10100) << "Destroyed operator: " << Label() << " ...\n";
     };
 
 private:

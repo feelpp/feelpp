@@ -144,21 +144,21 @@ public:
     sparse_matrix_ptrtype newMatrix( DataMap const& domainmap,
                                      DataMap const& imagemap )
     {
-	Epetra_Map erowmap = BackendTrilinos::epetraMap( imagemap );
+        Epetra_Map erowmap = BackendTrilinos::epetraMap( imagemap );
         Epetra_Map ecolmap = BackendTrilinos::epetraMapStatic( domainmap );
         Epetra_Map edomainmap = BackendTrilinos::epetraMap( imagemap );
 
-	//std::cout << "Rowmap: " << erowmap << "\n";
-	//std::cout << "Colmap: " << ecolmap << "\n";
-	//std::cout << "Domainmap: " << edomainmap << "\n";
+        //std::cout << "Rowmap: " << erowmap << "\n";
+        //std::cout << "Colmap: " << ecolmap << "\n";
+        //std::cout << "Domainmap: " << edomainmap << "\n";
 
-	//std::cout << "Is matrix rectangular? " << !erowmap.SameAs( ecolmap ) << "\n";
+        //std::cout << "Is matrix rectangular? " << !erowmap.SameAs( ecolmap ) << "\n";
 
 	if ( !erowmap.SameAs( ecolmap ) )
 		{
 			Epetra_Map eimagemap = BackendTrilinos::epetraMap( domainmap );
 			//std::cout << "Imagemap: " << eimagemap << "\n";
-        		return sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap, eimagemap, edomainmap ) );
+            return sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap, eimagemap, edomainmap ) );
 		}
 	else
 		return sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap ) );
@@ -178,9 +178,9 @@ public:
     }
 
 
-    static operator_ptrtype IfpackPrec( sparse_matrix_ptrtype const& M, list_type options )
+    static operator_ptrtype IfpackPrec( sparse_matrix_ptrtype const& M, list_type options, std::string precType = "Amesos" )
     {
-        PreconditionerIfpack P( options );
+        PreconditionerIfpack P( options, precType );
 
         P.buildPreconditioner( M );
 
@@ -197,6 +197,7 @@ public:
         return P.getPrec();
     }
 
+#if 0
     template< typename element_type >
     static void Epetra2Ublas( vector_ptrtype const& u, element_type& x )
     {
@@ -242,7 +243,7 @@ public:
                 v->set(v_map.GID(i), x( x.firstLocalIndex() + i ) );
             }
     }
-
+#endif
 
     template< int index, typename spaceT >
     static Epetra_MultiVector getComponent( spaceT const& Xh, Epetra_MultiVector const& sol )

@@ -1,33 +1,33 @@
 /* -*- mode: c++ -*-
 
-  This file is part of the Life library
+   This file is part of the Life library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2007-08-14
+   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Date: 2007-08-14
 
-  Copyright (C) 2008 Christophe Prud'homme
-  Copyright (C) 2007,2008 Universit� Joseph Fourier (Grenoble I)
-  Copyright (C) 2007 �cole Polytechnique F�d�rale de Lausanne (EPFL)
+   Copyright (C) 2008 Christophe Prud'homme
+   Copyright (C) 2007,2008 Universit� Joseph Fourier (Grenoble I)
+   Copyright (C) 2007 �cole Polytechnique F�d�rale de Lausanne (EPFL)
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
    \file matrixepetra.cpp
    \author Goncalo Pena <goncalo.pena@epfl.ch>
    \date 2007-08-14
- */
+*/
 #include <life/lifealg/vectorepetra.hpp>
 #include <life/lifealg/matrixepetra.hpp>
 
@@ -74,10 +74,10 @@ MatrixEpetra::init ( const size_type m,
             this->clear();
 
         /*
-        _M_emap = Epetra_Map( m, m_l, 0, Epetra_MpiComm(Application::COMM_WORLD));
-        _M_col_emap = Epetra_Map( n, n, 0, Epetra_MpiComm(Application::COMM_WORLD));
-        _M_dom_map = _M_emap;
-        _M_range_map = _M_emap;
+          _M_emap = Epetra_Map( m, m_l, 0, Epetra_MpiComm(Application::COMM_WORLD));
+          _M_col_emap = Epetra_Map( n, n, 0, Epetra_MpiComm(Application::COMM_WORLD));
+          _M_dom_map = _M_emap;
+          _M_range_map = _M_emap;
         */
 #endif
         //_M_emap.Print(std::cout );
@@ -85,15 +85,15 @@ MatrixEpetra::init ( const size_type m,
         //_M_dom_map.Print(std::cout );
         //_M_range_map.Print(std::cout );
         //Epetra_FECrsGraph epetra_graph( Copy, _M_emap, _M_col_emap, (int*)this->graph()->nNz().data() );
-	//std::cout << "_M_row_map " << _M_emap << "\n";
-	//std::cout << "_M_col_map " << _M_col_emap << "\n";
+        //std::cout << "_M_row_map " << _M_emap << "\n";
+        //std::cout << "_M_col_map " << _M_col_emap << "\n";
 
-	boost::shared_ptr<Epetra_Map> graph_map ( new Epetra_Map( _M_emap ) );
+        boost::shared_ptr<Epetra_Map> graph_map ( new Epetra_Map( _M_emap ) );
 
 
-	//find which map (between col and row map has more lines)
-	if ( _M_emap.MaxAllGID() < _M_col_emap.MaxAllGID() )
-		graph_map = boost::shared_ptr<Epetra_Map>(new Epetra_Map(_M_col_emap));
+        //find which map (between col and row map has more lines)
+        if ( _M_emap.MaxAllGID() < _M_col_emap.MaxAllGID() )
+            graph_map = boost::shared_ptr<Epetra_Map>(new Epetra_Map(_M_col_emap));
 
         Epetra_FECrsGraph epetra_graph( Copy, _M_emap, _M_col_emap, (int*)this->graph()->nNz().data() );
 
@@ -120,7 +120,7 @@ MatrixEpetra::init ( const size_type m,
 
                 const int *cols = (int*)it->second.get<2>().data();
 
-		//std::cout << "Inserted row number: " << ii << " and column: " << *cols << "\n";
+                //std::cout << "Inserted row number: " << ii << " and column: " << *cols << "\n";
 
                 int ierr = epetra_graph.InsertGlobalIndices( numRows, rows,
                                                              numCols, cols );
@@ -129,20 +129,20 @@ MatrixEpetra::init ( const size_type m,
                 Life::detail::ignore_unused_variable_warning(ierr);
 
                 LIFE_ASSERT( ierr == 0 )( ierr )( it->first )( it->second.get<0>() )( it->second.get<1>() )( it->second.get<2>().size() ).warn( "problem with Epetra_FECrsGraph::InsertGlobalIndices" );
-//                 Debug( 10010 ) << "row = " << ii << " irow.size " << irow.size() <<  " ierr = " << ierr << "\n";
+                //                 Debug( 10010 ) << "row = " << ii << " irow.size " << irow.size() <<  " ierr = " << ierr << "\n";
             }
 
-	//std::cout << "Epetra graph: " << epetra_graph << "\n";
+        //std::cout << "Epetra graph: " << epetra_graph << "\n";
 
         //int ierr = epetra_graph.GlobalAssemble( _M_dom_map, _M_range_map );
-	//std::cout << "_M_dom_map " << _M_dom_map << "\n";
-	//std::cout << "_M_range_map " << _M_range_map << "\n";
+        //std::cout << "_M_dom_map " << _M_dom_map << "\n";
+        //std::cout << "_M_range_map " << _M_range_map << "\n";
 
-	//std::cout << "Call GlobalAssemble...\n";
+        //std::cout << "Call GlobalAssemble...\n";
         int ierr = epetra_graph.GlobalAssemble( _M_dom_map, _M_range_map, true );
         //int ierr = epetra_graph.GlobalAssemble( true );
         //int ierr = epetra_graph.GlobalAssemble();
-	//std::cout << "Epetra graph: " << epetra_graph << "\n";
+        //std::cout << "Epetra graph: " << epetra_graph << "\n";
         Life::detail::ignore_unused_variable_warning(ierr);
         LIFE_ASSERT( ierr == 0 )( ierr ).warn ( "[MatrixEpetra::init] GlobalAssemble failed" );
         Debug( 10010 ) << "Global assemble  ierr = " << ierr << "\n";
@@ -188,8 +188,8 @@ MatrixEpetra::add (const size_type i,
 
 #if 0
     Debug( 10010 ) << "ERRORCODE SumIntoGlobalValues: " << ierr
-            <<  " in M(" << i_val << "," << j_val << ") for value "
-            << epetra_value << ".\n";
+                   <<  " in M(" << i_val << "," << j_val << ") for value "
+                   << epetra_value << ".\n";
 #endif
     //ierr=_M_mat->InsertMyValues(i_val, 1,  &j_val, &epetra_value);
 #endif

@@ -717,6 +717,7 @@ void MatrixEpetra::zero ()
 {
     LIFE_ASSERT (this->isInitialized()).error( "epetra matrix not properly initialized" ) ;
 
+    M_bc_index.resize(0);
     _M_mat->PutScalar(0.0);
 
 }
@@ -948,6 +949,23 @@ MatrixEpetra::operator () (const size_type i,
     LIFE_ASSERT (this->isInitialized()).error( "epetra matrix not initialized" );
 
 
+    int i_val=static_cast<int>(i),
+        j_val=static_cast<int>(j);
+
+    int    NumEntries;
+    double* Values;
+    int* Indices;
+
+
+    int ierr = _M_mat->ExtractMyRowView( i_val, NumEntries, Values, Indices);
+
+    for( int k = 0; k < NumEntries; ++k )
+        {
+            if ( Indices[k] == j_val )
+                return static_cast<double> (Values[k]);
+        }
+
+/*
     int *epetra_cols;
     double *epetra_row;
 
@@ -966,6 +984,8 @@ MatrixEpetra::operator () (const size_type i,
     // petsc_cols (resp. petsc_row) corresponding to global index j_val
     std::pair<const int*, const int*> p =  std::equal_range (&epetra_cols[0], &epetra_cols[0] + ncols, j_val);
 
+    std::cout << "Epetra row: " << *epetra_row << "\n";
+    std::cout << "Epetra col: " << *epetra_cols << "\n";
 
 
     // Found an entry for j_val
@@ -984,6 +1004,7 @@ MatrixEpetra::operator () (const size_type i,
             //return value;
         }
 
+    std::cout << "Element " << epetra_row[j] << "\n";*/
 
     // Otherwise the entry is not in the sparse matrix,
     // i.e. it is 0.
