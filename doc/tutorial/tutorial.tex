@@ -3,7 +3,8 @@
 %\documentclass{article}
 
 %\usepackage{tex4ht}
-
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
 \usepackage{svninfo}
 %%\usepackage{fullpage}
 \usepackage{longtable}
@@ -59,17 +60,18 @@
 \newcommand{\asin}{\ensuremath{\mathrm{asin}}\xspace}
 \newcommand{\atan}{\ensuremath{\mathrm{atan}}\xspace}
 %\newcommand{\tanh}{\ensuremath{\mathrm{tanh}}\xspace}
-\newcommand{\cpp}{C++}
+\newcommand{\cpp}{C{\hspace{-.3em}\vspace{-.2em}\tiny++}\xspace}
 \newcommand{\nel}{{\ensuremath{N_{\text{el}}}}}
-
+\newcommand{\polyP}[1]{\ensuremath{\mathbb{P}_{#1}}\xspace}
 
 \title{Life Tutorial}
-\author{Christophe Prud'homme}
+\author{Christophe Prud'homme\thanks{Université de Grenoble,
+51, rue des Mathématiques, BP53,38041 Grenoble}}
 \date{\svnToday}
 
 
 \begin{document}
-
+\thispagestyle{empty}
 \svnInfo $Id$
 
 
@@ -90,6 +92,11 @@
 
 \maketitle
 
+\newpage
+
+\thispagestyle{empty}
+
+
 \vfill
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.2
@@ -97,8 +104,6 @@ or any later version published by the Free Software Foundation;
 with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
 A copy of the license is included in the section entitled "GNU
 Free Documentation License".
-
-\thispagestyle{empty}
 
 \newpage
 
@@ -184,7 +189,7 @@ Then we describe the application by defining a class
 Now we turn to the class \lstinline!MyApp! itself: it derives from
 \lstinline!Life::Application!. Two constructors take \lstinline!argc!,
 \lstinline!argv! and the \lstinline!AboutData! as well as possibly the
-description of the command line options !\lstinline!Life::po::option_description!.
+description of the command line options \lstinline!Life::po::option_description!.
 
 The class \lstinline!MyApp! must redefine the \lstinline!run()! member
 function. It is defined as a pure virtual function in
@@ -336,9 +341,9 @@ meshes are not supported.
 
 \lstinputlisting[firstline=79,lastline=80]{mymesh.cpp}
 
-It is customary to also define the \lstinline!boost::shared_ptr<>!
-counterpart which is usually used in practice. We can now instantiate
-a new mesh data structure.
+It is customary, and usually a very good practice, to define the
+\lstinline!boost::shared_ptr<>!  counterpart which is used actually in
+practice. We can now instantiate a new mesh data structure.
 
 \lstinputlisting[firstline=147,lastline=147]{mymesh.cpp}
 
@@ -372,11 +377,12 @@ command line using the \lstinline!Application! framework, see
 section~\ref{sec:creat-appl}. The call to \lstinline!generate! creates
 the \lstinline!.geo! file and generate the associated mesh. Note that
 \lstinline!fname! holds the name of the \lstinline!.msh! file,
-e.g. \lstinline!mymesh.msh!. Life has added the \lstinline!.msh!
-extension. Also note the last argument of
+e.g. \lstinline!mymesh.msh!. Life adds automatically the
+\lstinline!.msh!  extension. Also note the last argument of
 \lstinline!GmshTensorizedDomain!, it allows to change the type of
 geometric entities used to generate the mesh. Here we use
-\lstinline!Simplex!, we could have also used \lstinline!SimplexProduct!.
+\lstinline!Simplex!, we could have also used
+\lstinline!SimplexProduct! (quadrangle or hexahedron).
 
 
 Next we import the mesh using the \lstinline!ImporterGmsh! class as follows:
@@ -385,7 +391,7 @@ Next we import the mesh using the \lstinline!ImporterGmsh! class as follows:
 
 
 At this stage we are ready to use the mesh instance: we can for
-example example the mesh to a postprocessing format. Two formats are
+example export the mesh to a postprocessing format. Two formats are
 supported at the moment
 \begin{itemize}
 \item \lstinline!Ensight! (case and sos) which is supported by the
@@ -398,13 +404,13 @@ The export stage reads as follows:
 
 \lstinputlisting[firstline=175,lastline=183]{mymesh.cpp}
 
-In this example, we create a $P_0$ function space and save the
+In this example, we create a $\polyP{0}$ function space and save the
 piecewise constant function that associates to each element the
 process id it belongs to. In sequential, they all belong to processor
 0.  In a parallel setting, the mesh is partitioned using Metis and
 each element is associated with a corresponding processor. The figure
 \ref{fig:1} displays a partitioned mesh in two regions and the
-associated $P_0$ function.
+associated $\polyP{0}$ function.
 
 \begin{figure}[htbp]
   \centering
@@ -529,27 +535,29 @@ Once we have defined the computational mesh, we would like to compute
 the area of the domain. We form the integral $\int_\Omega 1$, the code
 reads as follows
 
-\lstinputlisting[firstline=175,lastline=176]{myintegrals.cpp}
+\lstinputlisting[firstline=170,lastline=171]{myintegrals.cpp}
 
 \lstinline!elements(mesh)! returns a pair of iterators over the
 elements owned by the current processor, \lstinline!im! is an instance
-of the  \lstinline!im_type! which provides a quadrature method to
+of the \lstinline!im_type! which provides a quadrature method to
 integrate exactly polynomials up to degree 2. In our case integrating
 constant(degree 0) would have sufficed, but we will reuse
 \lstinline!im! later. Now that we have computed the integral of 1 over
 the region of $\Omega$ current processor (ie the area of the domain
 owned by the processor), we want to compute the area of $\Omega$. To
 do that we collect the integrals on all processors using a
-\lstinline!reduce! MPI operation and sum all contributions. The code reads
+\lstinline!reduce! MPI operation and sum all contributions. We have
+used here the Boost.MPI library that provides an extremely powerful
+\cpp wrapper around the MPI library. The code reads
 
-\lstinputlisting[firstline=177,lastline=184]{myintegrals.cpp}
+\lstinputlisting[firstline=172,lastline=179]{myintegrals.cpp}
 
 \noindent
 Finally, we print to the log file the result of the local and global
 integral calculation. Another calculation is for example to compute
 the perimeter of the domain
 
-\lstinputlisting[firstline=189,lastline=198]{myintegrals.cpp}
+\lstinputlisting[firstline=184,lastline=185]{myintegrals.cpp}
 
 \noindent
 the main difference with the domain area computation resides in the
@@ -568,7 +576,7 @@ keyword \lstinline!Px()! and \lstinline!Py()! to denote the $x$ and
 $y$ coordinates like in equation~(\ref{eq:5}).  The code reads then
 
 
-\lstinputlisting[firstline=203,lastline=213]{myintegrals.cpp}
+\lstinputlisting[firstline=198,lastline=200]{myintegrals.cpp}
 
 Note that in this case, we really require the use of a quadrature that
 integrates exactly order 2 polynomials.
@@ -656,7 +664,7 @@ First we define the $f$ and $g$. To do that we use the
 \lstinline!AUTO! keyword and associate to \lstinline!f! and
 \lstinline!g! their expressions
 
-\lstinputlisting[firstline=241,lastline=244]{laplacian.cpp}
+\lstinputlisting[firstline=236,lastline=238]{laplacian.cpp}
 
 \noindent where \lstinline!M_PI! is defined in the header
 \lstinline!cmath!.  We use \lstinline!AUTO! here because the
@@ -733,8 +741,6 @@ Next we solve the linear system
   D u = F
 \end{equation}
 
-\lstinputlisting[firstline=300,lastline=300]{laplacian.cpp}
-
 where the \lstinline!solve! function is implemented as follows
 
 \lstinputlisting[firstline=310,lastline=321]{laplacian.cpp}
@@ -750,7 +756,7 @@ $u_h$ in the $P_2$ Lagrange basis are given by solving (\ref{eq:6}).
 
 The code reads
 
-\lstinputlisting[firstline=302,lastline=305]{laplacian.cpp}
+\lstinputlisting[firstline=300,lastline=303]{laplacian.cpp}
 
 
 You can now verify that the $L_2$ error norm behaves like $h^{-(N+1)}$
