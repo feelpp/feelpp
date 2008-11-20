@@ -250,89 +250,14 @@ AC_ARG_ENABLE(slepc,
      enableslepc=yes)
 
 if test "$enableslepc" != no ; then
-   AC_CHECK_SLEPC
+   LIFE_CHECK_SLEPC
 fi
 AM_CONDITIONAL(HAVE_SLEPC, test "x$enableslepc" != "xno" )
 
 dnl -------------------------------------------------------------
 
 
-
-dnl -------------------------------------------------------------
-dnl Trilinos
-dnl -------------------------------------------------------------
-AC_ARG_ENABLE(trilinos,
-              AC_HELP_STRING([--enable-trilinos],
-                             [build with trilinos support]),
-     enabletrilinos=$enableval,
-     enabletrilinos=yes)
-
-AM_CONDITIONAL(HAVE_TRILINOS, test "x$enabletrilinos" != "xno" )
-
-if test "x$enabletrilinos" != "xno"; then
-
-AC_ARG_WITH(trilinos,
-  [AS_HELP_STRING([--with-trilinos sets the directory where the Trilinos headers and libraries are],
-     [location of the Trilinos headers and libraries])],
-  [with_trilinos_include=$withval/include; with_trilinos_lib=$withval/lib],
-  [])
-
-AC_ARG_WITH(trilinos-include,
-  [AS_HELP_STRING([--with-trilinos-include sets the directory where the Trilinos headers are],
-     [location of the Trilinos headers])],
-  with_trilinos_include=$withval, with_trilinos_include="/usr/include/trilinos")
-AC_MSG_CHECKING(trilinos headers path)
-AC_MSG_RESULT($with_trilinos_include)
-
-AC_ARG_WITH(trilinos-lib,
-  [AS_HELP_STRING([--with-trilinos-lib sets the directory where the Trilinos libraries are],
-     [location of the Trilinos libraries])],
-  [with_trilinos_lib=$withval], [with_trilinos_lib="/usr/lib"])
-AC_MSG_CHECKING(trilinos libraries path)
-AC_MSG_RESULT($with_trilinos_lib)
-
-CPPFLAGS="${CPPFLAGS} -I${with_trilinos_include}"
-LDFLAGS="${LDFLAGS} -L${with_trilinos_lib}"
-
-dnl AC_CHECK_LIB(xml2, XML_Parse, [LIBS="-lxml2 ${LIBS}"],[])
-AC_CHECK_LIB(expat, XML_Parse, [LIBS="-lexpat ${LIBS}"])
-AC_CHECK_HEADER([Teuchos_Utils.hpp], [
-                    AC_DEFINE(HAVE_TRILINOS_TEUCHOS, 1, [Define if the Trilinos Teuchos library is used.])
-                    LIBS="-ltrilinos_teuchos ${LIBS}"] )
-AC_CHECK_HEADER([Epetra_Vector.h], [
-                    AC_DEFINE(HAVE_TRILINOS_EPETRA, 1, [Define if the Trilinos Epetra library is used.])
-                    LIBS="-ltrilinos_epetra ${LIBS}"] )
-AC_CHECK_HEADER([EpetraExt_VectorIn.h], [
-                    AC_DEFINE(HAVE_TRILINOS_EPETRAEXT, 1, [Define if the Trilinos EpetraExt library is used.])
-                    LIBS="-ltrilinos_epetraext ${LIBS}"] )
-AC_CHECK_HEADER([Trilinos_Util_CrsMatrixGallery.h], [
-                    AC_DEFINE(HAVE_TRILINOS_TRIUTILS, 1, [Define if the Trilinos TriUtils library is used.])
-                    LIBS="-ltrilinos_triutils ${LIBS}"] )
-AC_CHECK_HEADER([AztecOO.h], [
-                    AC_DEFINE(HAVE_TRILINOS_AZTECOO, 1, [Define if the Trilinos AztecOO library is used.])
-                    AC_DEFINE(HAVE_AZTECOO_TEUCHOS, 1, [Define if the Trilinos AztecOO-Teuchos library is used.])
-                    LIBS="-ltrilinos_aztecoo ${LIBS}"] )
-AC_CHECK_HEADER([Amesos.h], [
-                    AC_DEFINE(HAVE_TRILINOS_AMESOS, 1, [Define if the Trilinos Amesos library is used.])
-                    LIBS="-ltrilinos_amesos ${LIBS}"] )
-AC_CHECK_HEADER([Ifpack.h],[
-                    AC_DEFINE(HAVE_TRILINOS_IFPACK, 1, [Define if the Trilinos Ifpack library is used.])
-                    LIBS="-ltrilinos_ifpack ${LIBS}"] )
-AC_CHECK_HEADER([AnasaziEigenproblem.hpp],[
-                    AC_DEFINE(HAVE_TRILINOS_ANASAZI, 1, [Define if the Trilinos Anasazi library is used.])
-                    LIBS="-ltrilinos_anasazi ${LIBS}"])
-AC_CHECK_HEADER([ml_vec.h],[
-                    AC_DEFINE(HAVE_TRILINOS_ML, 1, [Define if the Trilinos ML library is used.])
-                    AC_DEFINE(ML_MPI, 1, [Define to ensure that ML will use MPI.])
-                    AC_DEFINE(HAVE_ML_TEUCHOS, 1, [Define if the Trilinos ML-Teuchos library is used.])
-                    AC_DEFINE(HAVE_ML_EPETRA, 1, [Define if the Trilinos ML-Epetra library is used.])
-                    AC_DEFINE(HAVE_ML_AZTECOO, 1, [Define if the Trilinos ML-AztecOO library is used.])
-                    LIBS="-ltrilinos_ml -ltrilinos_galeri ${LIBS}"])
-
-fi
-
-dnl -------------------------------------------------------------
-
+LIFE_CHECK_TRILINOS
 
 
 dnl vtk
@@ -431,6 +356,36 @@ dnl AX_CREATE_PKGCONFIG_INFO(life.pc,,[${LIFE_LIBS} $LIBS],[Finite Element Libra
 AC_CONFIG_SUBDIRS([contrib/gmm])
 CPPFLAGS="${CPPFLAGS} -I\$(top_srcdir)/contrib/gmm -I\$(top_srcdir)/contrib/gmm/include -I/usr/include/superlu  "
 
+AC_ARG_ENABLE(instantiation-mode,
+             AC_HELP_STRING([--enable-instantiation-mode],
+                            [build with instantiation support]),
+      instantiation_mode=$enableval,
+      instantiation_mode=no)
+
+if test x$instantiation_mode = xyes
+then
+ AC_MSG_NOTICE([build Life with instantiation classes support])
+ AC_DEFINE(LIFE_INSTANTIATION_MODE, [1], [Define if support for c++ class instantiation is enabled)])
+else
+ AC_MSG_NOTICE([build Life without instantiation classes support])
+fi
+
+AM_CONDITIONAL([ENABLE_INSTANTIATION_MODE], [test $instantiation_mode = yes])
+
+AC_DEFUN([LIFE_WITH_MESH_MAX_ORDER],
+[
+ AC_ARG_WITH(meshmaxorder,
+             AC_HELP_STRING([--with-meshmaxorder@<:@=INT@:>@],
+                            [build with maximum mesh (order @<:@]m4_default([$1], 1)[@:>@ mesh in 1D,2D,3D) support]),
+      mesh_max_order=$withval,
+      mesh_max_order=1)
+
+ AC_MSG_NOTICE([enabling mesh geometries up to order $mesh_max_order])
+ AC_DEFINE(LIFE_MESH_MAX_ORDER, m4_default([$mesh_max_order], 1), [Define if minimal mesh support is required (order 1 mesh in 1D,2D,3D)])
+
+])
+LIFE_WITH_MESH_MAX_ORDER
+
 # Activate sub-modules
 LIFE_SUBMODULE([doc])
 LIFE_SUBMODULE([examples])
@@ -466,7 +421,7 @@ LIFE_SET_LIFE_CACHE_VALUES
 
 #
 AC_CONFIG_FILES([ atlocal ])
-
+AC_CONFIG_FILES([ admin/Makefile ])
 # boost
 AC_CONFIG_FILES([ boost/Makefile ])
 AC_CONFIG_FILES([ boost/libs/Makefile ])
