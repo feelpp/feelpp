@@ -664,14 +664,14 @@ First we define the $f$ and $g$. To do that we use the
 \lstinline!AUTO! keyword and associate to \lstinline!f! and
 \lstinline!g! their expressions
 
-\lstinputlisting[firstline=236,lastline=238]{laplacian.cpp}
+\lstinputlisting[firstline=239,lastline=241]{laplacian.cpp}
 
 \noindent where \lstinline!M_PI! is defined in the header
-\lstinline!cmath!.  We use \lstinline!AUTO! here because the
-expression for \lstinline!f!  and \lstinline!g!  are actually very
-complex objects whose type we are not really interested
-in. \lstinline!AUTO! determines automatically the type of the
-expression using the \lstinline!__typeof__! keyword internally.
+\lstinline!cmath!.  Using \lstinline!AUTO! allows to defined
+\lstinline!f!  and \lstinline!g! --- which are moderately complex
+object --- without having to know the actual type. \lstinline!AUTO!
+determines automatically the type of the expression using the
+\lstinline!__typeof__! keyword internally.
 
 Then we form the right hand side by defining a linear form whose
 algebraic representation will be stored in a
