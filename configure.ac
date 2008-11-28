@@ -391,6 +391,7 @@ LIFE_SUBMODULE([doc])
 LIFE_SUBMODULE([examples])
 LIFE_SUBMODULE([benchmarks])
 LIFE_SUBMODULE([applications])
+LIFE_SUBMODULE([research])
 
 
 LIFE_CREATE_SUBDIRSLIST
@@ -465,6 +466,7 @@ test "x$ENABLE_MODULE_DOC" = x1                  && sum_doc=OK             || su
 test "x$ENABLE_MODULE_EXAMPLES" = x1             && sum_examples=OK        || sum_examples="no"
 test "x$ENABLE_MODULE_BENCHMARKS" = x1           && sum_benchmarks=OK      || sum_benchmarks="no"
 test "x$ENABLE_MODULE_APPLICATIONS" = x1         && sum_applications=OK    || sum_applications="no"
+test "x$ENABLE_MODULE_RESEARCH" = x1             && sum_research=OK        || sum_research="no"
 
 cat <<EOT
 
@@ -477,12 +479,13 @@ Summary:
  Examples             ${sum_examples}
  Benchmarks           ${sum_benchmarks}
  Applications         ${sum_applications}
+ Research             ${sum_research}
 
 Here are the submodule specific summaries:
 
 EOT
 
-for module in doc examples benchmarks applications
+for module in doc examples benchmarks applications research
 do
   test -f $module/summary && cat $module/summary
 done
