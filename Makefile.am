@@ -47,6 +47,9 @@ if ENABLE_MODULE_APPLICATIONS
   SUBDIRS += applications
   DIST_SUBDIRS += applications
 endif
+if ENABLE_MODULE_RESEARCH
+  SUBDIRS += research
+endif
 
 
 
