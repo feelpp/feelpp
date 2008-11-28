@@ -18,4 +18,6 @@ all:
 	test -d benchmarks/ && ( cd benchmarks && make -f Makefile.dist)
 	@echo "Generating configure in applications... done"
 	test -d applications/ && ( cd applications && make -f Makefile.dist)
+	@echo "Generating configure in research... done"
+	test -d research/ && ( cd research && make -f Makefile.dist)
 
