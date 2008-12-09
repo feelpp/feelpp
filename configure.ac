@@ -354,7 +354,7 @@ dnl pkgconfig
 dnl AX_CREATE_PKGCONFIG_INFO(life.pc,,[${LIFE_LIBS} $LIBS],[Finite Element Library and more],[$CPPFLAGS $CFLAGS])
 
 AC_CONFIG_SUBDIRS([contrib/gmm])
-CPPFLAGS="${CPPFLAGS} -I\$(top_srcdir)/contrib/gmm -I\$(top_srcdir)/contrib/gmm/include -I/usr/include/superlu  "
+CPPFLAGS="${CPPFLAGS} -I\$(top_srcdir)/contrib/gmm -I\$(top_srcdir)/../contrib/gmm -I\$(top_srcdir)/../../contrib/gmm -I\$(top_srcdir)/contrib/gmm/include -I\$(top_srcdir)/../contrib/gmm/include -I\$(top_srcdir)/../../contrib/gmm/include -I/usr/include/superlu  "
 
 AC_ARG_ENABLE(instantiation-mode,
              AC_HELP_STRING([--enable-instantiation-mode],
@@ -414,7 +414,7 @@ AM_CONDITIONAL([ENABLE_LIFESUITE], [test $enable_lifesuite = true])
 # for subsequent invocations of LIFE_CHECK_LIFE in sub-modules
 life_toplevel=
 life_install_path=$prefix
-life_cppflags="-I\$(top_srcdir)/../ -I\$(top_srcdir)/../boost -I\$(top_builddir)/../ -I\$(top_srcdir)/../../ -I\$(top_srcdir)/../../boost -I\$(top_builddir)/../../  ${CPPFLAGS} "
+life_cppflags="-I\$(top_srcdir)/../ -I\$(top_srcdir)/../boost -I\$(top_srcdir)/../../contrib/gmm/include -I\$(top_builddir)/../ -I\$(top_srcdir)/../../ -I\$(top_srcdir)/../../boost -I\$(top_builddir)/../../  ${CPPFLAGS} "
 life_ldflags="${LDFLAGS}"
 life_libs="${life_libs} ${LIBS}"
 
