@@ -112,13 +112,98 @@ Free Documentation License".
 
 \section{Generalities}
 
-\subsection{Programming environment}
+\subsection{How to install Life}
+
+\subsubsection{Creation of RSA keys}
+In order to download the sources of Life and Life-test, you have to go in
+LJKForge website (https://ljkforge.imag.fr) and create an account. After the
+administrator approval, you have to demand the rights to see the project tree.
+
+Then, you will have to create RSA keys to be able to connect to the server
+using ssh. To do that you have to type the commands :
+\verb|ssh-keygen -t dsa| and \linebreak[2] \verb|ssh-keygen -t rsa| to create
+the keys. After that, you have to copy the \verb|id_dsa.pub| and
+\verb|id_rsa.pub| files in the My Page > Account Maintenance > Edit SSH Keys
+section of the LJKForge website. Those files are located in the \verb|~/.ssh/|
+folder of your computer. You will be able to connect to the server within an
+hour.
+\\
+{\bfseries Important : } If you don't have the same login on your computer as on
+LJKForge, you must add the commands
+\begin{lstlisting}[language=sh]
+host ljkforge.imag.fr
+user votre_login_ljkforge
+\end{lstlisting}
+in the \verb|~/.ssh/config| file.
+
+\subsubsection{Download sources}
+To be able to download the life sources, you need subversion and SSH > 1.xxx
+installed on your computer. In a command prompt, go where you want life to be
+downloaded and type the following command.
+\\ \verb|svn co svn+ssh://login@ljkforge.imag.fr/svn/life/life/trunk life|
+where \\ \verb|login| is your login name in the LJKForge plateform. Then, if
+you want to download the life-test sources type :
+\begin{lstlisting}[language=sh]
+cd life/benchmarks
+svn co svn+ssh://login@ljkforge.imag.fr/svn/life-test/life-test/trunk validation
+\end{lstlisting}
+
+\subsubsection{About dependencies.}
+In order to install life, you have to install many dependencies before. Those
+libraries are necessary for the installation of the entire life and life-test
+librairies.
+
+This is the list of all the librairies you must have installed on your
+computer, and the \verb|*-dev| packages for some of them.
 
 \begin{itemize}
-\item Compiler: C++ (g++ $\geq 4.1$)
-\item Libraries: Blas, Lapack, Mpi, Boost, SuiteSparse, Superlu, Petsc, Trilinos, Vtk
-\item Programs: Gmsh\footnote{Gmsh is a pre/post processing software for scientific computing available at \url{http://www.geuz.org/gmsh}}, Paraview\footnote{Paraview is a few parallel scientific data visualisation plateform, \url{http://www.paraview.org}}
+\item g++ (>=4.1)
+\item Boost (>=1.33)
+\item autoconf
+\item automake
+\item libtool
+\item mpi (mpich or openmpi)
+\item superlu
+\item Suitesparse
+\item Petsc (>=2.3.3)
+\item Parametis
+\item Trilinos (>=8.0.8)
+\item perftools
+\item umfpack
+\item fltk
+\item gmm++
+\item gmsh\footnote{Gmsh is a pre/post processing software for scientific
+computing available at \url{http://www.geuz.org/gmsh}}
+\item Paraview\footnote{Paraview is a few parallel scientific data visualisation
+plateform, \url{http://www.paraview.org}}
 \end{itemize}
+
+\subsubsection{Life Compilation}
+If you have passed all the previous chapter without problems, the compilation
+will be a formality.
+Go in the same folder in wich you have done the checkout and type the following
+ commands :
+\begin{lstlisting}[language=sh]
+cd life
+make -f Makefile.dist
+cd benchmarks/validation
+make -f Makefile.dist
+cd ../../..
+mkdir opt
+cd opt
+../life/configure --enable-opt2 --enable-maintainer-mode\
+ CXXFLAGS= LDFLAGS= CPPFLAGS= CXX=g++
+make
+make check
+cd testsuite
+make check
+cd ../benchmarks/convergence
+make check
+cd ../..
+lifesuite
+\end{lstlisting}
+
+\subsection{Programming environment}
 
 \subsection{Namepaces}
 
