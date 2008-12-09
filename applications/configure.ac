@@ -79,9 +79,6 @@ AC_PATH_PROG([SVNVERSION], [svnversion], [echo unknown])
 life_revision=`cd "$ac_top_srcdir" && $SVNVERSION`
 AC_SUBST(life_revision)
 
-# Automatically save cache file to improve rerunning of configure script
-AC_CACHE_SAVE
-
 #
 LIFE_EXTRAMODULE([opus])
 
