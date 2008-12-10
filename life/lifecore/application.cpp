@@ -54,11 +54,12 @@ extern "C"
 #include <petsc.h>
 #include <petscerror.h>
 }
-#endif /* HAVE_PETSC_H */
-
 #if defined( HAVE_SLEPC )
 # include <slepc/slepc.h>
 #endif /* HAVE_SLEPC */
+
+#endif /* HAVE_PETSC_H */
+
 
 #if defined(HAVE_TRILINOS_EPETRA)
 #if defined(HAVE_MPI)
