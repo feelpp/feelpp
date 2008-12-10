@@ -5,5 +5,3 @@ all:
 #	autoheader
 	automake
 	autoconf
-
-
