@@ -1,0 +1,7 @@
+# -*- mode: makefile -*-
+
+all:
+	aclocal
+#	autoheader
+	automake
+	autoconf
