@@ -5,11 +5,8 @@ all:
 	autoheader
 	automake
 	autoconf
-	@echo "Generating configure in contrib/gmm..."
-	(cd contrib/gmm && aclocal -I config)
-	(cd contrib/gmm && autoheader)
-	(cd contrib/gmm && automake)
-	(cd contrib/gmm && autoconf)
+	@echo "Generating configure in doc... done"
+	test -d contrib/ && ( cd contrib && make -f Makefile.dist)
 	@echo "Generating configure in doc... done"
 	test -d doc/ && ( cd doc && make -f Makefile.dist)
 	@echo "Generating configure in examples... done"
