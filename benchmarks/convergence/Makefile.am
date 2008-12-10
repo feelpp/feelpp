@@ -55,9 +55,6 @@ laplacian2dP5_LDADD=../../life/liblife.la
 laplacian2d3dP1_SOURCES=laplacian2d3dP1.cpp
 laplacian2d3dP1_LDADD=../../life/liblife.la
 
-laplacian2dP1_SOURCES=laplacian2dP1.cpp
-laplacian2dP1_LDADD=../../life/liblife.la
-
 laplacian2dP1h_SOURCES=laplacian2dP1h.cpp
 laplacian2dP1h_LDADD=../../life/liblife.la
 
