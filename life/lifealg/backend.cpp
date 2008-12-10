@@ -80,11 +80,14 @@ Backend<T>::build( BackendType bt )
                 return backend_ptrtype( new BackendGmm<value_type> );
             }
             break;
+#if defined ( HAVE_PETSC_H )
         case BACKEND_PETSC:
             {
                 return backend_ptrtype( new BackendPetsc<value_type> );
             }
             break;
+#endif
+
 #if defined ( HAVE_TRILINOS_EPETRA )
         case BACKEND_TRILINOS:
             {
@@ -122,11 +125,13 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
     // Build the appropriate solver
     switch ( bt )
         {
+#if defined ( HAVE_PETSC_H )
         case BACKEND_PETSC:
             {
                 return backend_ptrtype( new BackendPetsc<value_type>( vm, prefix ) );
             }
             break;
+#endif
 #if defined ( HAVE_TRILINOS_EPETRA )
         case BACKEND_TRILINOS:
             {
