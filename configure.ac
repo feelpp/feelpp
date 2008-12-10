@@ -70,6 +70,25 @@ AC_CANONICAL_SYSTEM
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_HEADER(lifeconfig.h)
 
+# Turn off shared libraries during beta-testing, since they
+# make the build process take too long.
+#LT_INIT([disable-static])
+#AC_ENABLE_SHARED
+AC_LIBTOOL_DLOPEN # MUST be declared BEFORE AC_PROG_LIBTOOL
+AC_PROG_LIBTOOL
+
+# checks for a C compiler
+AC_PROG_CC( gcc gcc-4.0 gcc-3.4 gcc-3.3 gcc-3.2  )
+AC_PROG_CC_C_O
+AC_PROG_F77( gfortran g77 )
+AC_F77_LIBRARY_LDFLAGS
+AC_F77_WRAPPERS
+
+AC_PROG_CXX( g++ g++-4.3 g++-4.2 g++-4.1 g++-4.0 g++-3.4 g++-3.3 g++-3.2 )
+
+AC_PROG_CPP
+
+
 LIFE_CHECK_COMPILERS
 
 dnl check for openmp
@@ -90,14 +109,6 @@ omp_set_num_threads(10);
   AC_MSG_RESULT(no)
   CXXFLAGS=$ac_save_cxxflags
 ])
-
-
-# Turn off shared libraries during beta-testing, since they
-# make the build process take too long.
-#LT_INIT([disable-static])
-#AC_ENABLE_SHARED
-AC_PROG_LIBTOOL
-
 
 # type checks
 AC_CHECK_TYPE(size_t, unsigned)
@@ -127,6 +138,9 @@ AC_CHECK_PROG(PDFLATEX, pdflatex,[pdflatex],[no])
 # doxygen
 AC_CHECK_PROG(DOXYGEN, doxygen, [doxygen], [no-doxygen] )
 AC_CHECK_PROG(LIFE_HAS_DOT, dot, [yes] )
+
+# Automatically save cache file to improve rerunning of configure script
+AC_CACHE_SAVE
 
 # check for boost
 with_boost=yes
@@ -249,10 +263,10 @@ AC_ARG_ENABLE(slepc,
      enableslepc=$enableval,
      enableslepc=yes)
 
-if test "$enableslepc" != no ; then
+if test "$enableslepc" != no -a "x$petsc_libs" != "x"; then
    LIFE_CHECK_SLEPC
 fi
-AM_CONDITIONAL(HAVE_SLEPC, test "x$enableslepc" != "xno" )
+AM_CONDITIONAL(HAVE_SLEPC, test "x$enableslepc" != "xno" -a "x$petsc_libs" != "x" )
 
 dnl -------------------------------------------------------------
 
@@ -295,7 +309,7 @@ dnl gmsh
 AC_CHECK_GMSH
 
 
-
+LDFLAGS="${LDFLAGS} -L/usr/lib"
 CPPFLAGS="-I\$(top_srcdir) -I\$(top_srcdir)/boost ${CPPFLAGS} -I\$(top_builddir)"
 LIBS="${boostlibs} ${LIBS}"
 life_libs="$ac_pwd/life/liblife.la"
@@ -353,8 +367,6 @@ AC_CONFIG_TESTDIR(.)
 dnl pkgconfig
 dnl AX_CREATE_PKGCONFIG_INFO(life.pc,,[${LIFE_LIBS} $LIBS],[Finite Element Library and more],[$CPPFLAGS $CFLAGS])
 
-AC_CONFIG_SUBDIRS([contrib/gmm])
-CPPFLAGS="${CPPFLAGS} -I\$(top_srcdir)/contrib/gmm -I\$(top_srcdir)/../contrib/gmm -I\$(top_srcdir)/../../contrib/gmm -I\$(top_srcdir)/contrib/gmm/include -I\$(top_srcdir)/../contrib/gmm/include -I\$(top_srcdir)/../../contrib/gmm/include -I/usr/include/superlu  "
 
 AC_ARG_ENABLE(instantiation-mode,
              AC_HELP_STRING([--enable-instantiation-mode],
@@ -387,6 +399,9 @@ AC_DEFUN([LIFE_WITH_MESH_MAX_ORDER],
 LIFE_WITH_MESH_MAX_ORDER
 
 # Activate sub-modules
+LIFE_SUBMODULE([contrib])
+CPPFLAGS="${CPPFLAGS} -I\$(top_srcdir)/contrib/gmm -I\$(top_srcdir)/../contrib/gmm -I\$(top_srcdir)/../../contrib/gmm -I\$(top_srcdir)/contrib/gmm/include -I\$(top_srcdir)/../contrib/gmm/include -I\$(top_srcdir)/../../contrib/gmm/include -I/usr/include/superlu  "
+
 LIFE_SUBMODULE([doc])
 LIFE_SUBMODULE([examples])
 LIFE_SUBMODULE([benchmarks])
@@ -412,7 +427,7 @@ AM_CONDITIONAL([ENABLE_LIFESUITE], [test $enable_lifesuite = true])
 
 # We force the values of Life install path, headers and library flags
 # for subsequent invocations of LIFE_CHECK_LIFE in sub-modules
-life_toplevel=
+life_toplevel=$ac_pwd
 life_install_path=$prefix
 life_cppflags="-I\$(top_srcdir)/../ -I\$(top_srcdir)/../boost -I\$(top_srcdir)/../../contrib/gmm/include -I\$(top_builddir)/../ -I\$(top_srcdir)/../../ -I\$(top_srcdir)/../../boost -I\$(top_builddir)/../../  ${CPPFLAGS} "
 life_ldflags="${LDFLAGS}"
@@ -433,10 +448,6 @@ AC_CONFIG_FILES([ boost/libs/mpi/Makefile ])
 AC_CONFIG_FILES([ boost/libs/mpi/src/Makefile ])
 AC_CONFIG_FILES([ boost/libs/serialization/Makefile ])
 AC_CONFIG_FILES([ boost/libs/serialization/src/Makefile ])
-
-# contrib
-AC_CONFIG_FILES([ contrib/Makefile ])
-
 
 # life library
 AC_CONFIG_FILES([ life/Makefile ])
