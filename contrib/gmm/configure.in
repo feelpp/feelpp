@@ -5,8 +5,8 @@ dnl ------------------------------------------------------------------------
 
 dnl ./configure: sh internal 2K buffer overflow on HP-UX 9.xx
 dnl thus, updating cache ./config.cache avoided.
-define([AC_CACHE_LOAD], )dnl
-define([AC_CACHE_SAVE], )dnl
+dnl define([AC_CACHE_LOAD], )dnl
+dnl define([AC_CACHE_SAVE], )dnl
 
 AC_INIT
 AC_CONFIG_HEADERS(config.h)
@@ -52,7 +52,7 @@ else
   GFPREFIX="$prefix";
 fi;
 
-dnl AC_CXX_FULL_SPECIALIZATION_SYNTAX (c)Luc Maisonobe v 1.1.1.1 (2001/07/26)     0.5.41 
+dnl AC_CXX_FULL_SPECIALIZATION_SYNTAX (c)Luc Maisonobe v 1.1.1.1 (2001/07/26)     0.5.41
 dnl with some modification to test partial specialization
 AC_CACHE_CHECK(whether the compiler recognizes the partial specialization syntax,
 ac_cv_cxx_partial_specialization_syntax,
@@ -103,9 +103,9 @@ dnl             CXXFLAGS="$CXXFLAGS -LANG:std  -O3 -ansiW "
 	;;
  aCC)
 	echo "Using HP ANSI C++ Compiler aCC"
-	CXXFLAGS="$CXXFLAGS -AA -fast"	
+	CXXFLAGS="$CXXFLAGS -AA -fast"
 	;;
-	
+
  g++* | c++)
 	GCCVER=`$CXX --version | head -1 | cut -d ' ' -f3`
 	echo "Using the GNU g++ compiler $GCCVER"

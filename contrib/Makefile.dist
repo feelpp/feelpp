@@ -1,0 +1,9 @@
+# -*- mode: makefile -*-
+
+all:
+	aclocal -I admin
+#	autoheader
+	automake
+	autoconf
+	test -d gmm && ( cd gmm && make -f Makefile.dist)
+

@@ -1,2 +1,0 @@
-AC_CONFIG_SUBDIRS([contrib/gmm])
-CPPFLAGS="${CPPFLAGS} -I\$(top_srcdir)/contrib/gmm -I\$(top_srcdir)/contrib/gmm/include"

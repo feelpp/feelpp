@@ -1832,6 +1832,22 @@ echo "$as_me: loading site script $ac_site_file" >&6;}
   fi
 done
 
+if test -r "$cache_file"; then
+  # Some versions of bash will fail to source /dev/null (special
+  # files actually), so we avoid doing that.
+  if test -f "$cache_file"; then
+    { echo "$as_me:$LINENO: loading cache $cache_file" >&5
+echo "$as_me: loading cache $cache_file" >&6;}
+    case $cache_file in
+      [\\/]* | ?:[\\/]* ) . "$cache_file";;
+      *)                      . "./$cache_file";;
+    esac
+  fi
+else
+  { echo "$as_me:$LINENO: creating cache $cache_file" >&5
+echo "$as_me: creating cache $cache_file" >&6;}
+  >$cache_file
+fi
 
 # Check that the precious variables saved in the cache have kept the same
 # value.
@@ -5136,7 +5152,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5139 "configure"' > conftest.$ac_ext
+  echo '#line 5155 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7393,11 +7409,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7396: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7412: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7400: \$? = $ac_status" >&5
+   echo "$as_me:7416: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7661,11 +7677,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7664: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7680: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7668: \$? = $ac_status" >&5
+   echo "$as_me:7684: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7765,11 +7781,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7768: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7784: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7772: \$? = $ac_status" >&5
+   echo "$as_me:7788: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10062,7 +10078,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10065 "configure"
+#line 10081 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10162,7 +10178,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10165 "configure"
+#line 10181 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12502,11 +12518,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12505: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12521: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:12509: \$? = $ac_status" >&5
+   echo "$as_me:12525: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -12606,11 +12622,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12609: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12625: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:12613: \$? = $ac_status" >&5
+   echo "$as_me:12629: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14167,11 +14183,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14170: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14186: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14174: \$? = $ac_status" >&5
+   echo "$as_me:14190: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14271,11 +14287,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14274: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14290: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14278: \$? = $ac_status" >&5
+   echo "$as_me:14294: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16462,11 +16478,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16465: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16481: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16469: \$? = $ac_status" >&5
+   echo "$as_me:16485: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16730,11 +16746,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16733: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16749: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16737: \$? = $ac_status" >&5
+   echo "$as_me:16753: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16834,11 +16850,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16837: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16853: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:16841: \$? = $ac_status" >&5
+   echo "$as_me:16857: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19642,7 +19658,79 @@ LIBTOOL_VERSION_INFO="-version-info ${MAJOR_VERSION}:${MINOR_VERSION}:0"
 
 ac_config_files="$ac_config_files Makefile config/Makefile tests/Makefile include/Makefile gmm-config"
 
+cat >confcache <<\_ACEOF
+# This file is a shell script that caches the results of configure
+# tests run on this system so they can be shared between configure
+# scripts and configure runs, see configure's option --config-cache.
+# It is not useful on other systems.  If it contains results you don't
+# want to keep, you may remove or edit it.
+#
+# config.status only pays attention to the cache file if you give it
+# the --recheck option to rerun configure.
+#
+# `ac_cv_env_foo' variables (set or unset) will be overridden when
+# loading this file, other *unset* `ac_cv_foo' will be assigned the
+# following values.
 
+_ACEOF
+
+# The following way of writing the cache mishandles newlines in values,
+# but we know of no workaround that is simple, portable, and efficient.
+# So, we kill variables containing newlines.
+# Ultrix sh set writes to stderr and can't be redirected directly,
+# and sets the high bit in the cache file unless we assign to the vars.
+(
+  for ac_var in `(set) 2>&1 | sed -n 's/^\([a-zA-Z_][a-zA-Z0-9_]*\)=.*/\1/p'`; do
+    eval ac_val=\$$ac_var
+    case $ac_val in #(
+    *${as_nl}*)
+      case $ac_var in #(
+      *_cv_*) { echo "$as_me:$LINENO: WARNING: Cache variable $ac_var contains a newline." >&5
+echo "$as_me: WARNING: Cache variable $ac_var contains a newline." >&2;} ;;
+      esac
+      case $ac_var in #(
+      _ | IFS | as_nl) ;; #(
+      *) $as_unset $ac_var ;;
+      esac ;;
+    esac
+  done
+
+  (set) 2>&1 |
+    case $as_nl`(ac_space=' '; set) 2>&1` in #(
+    *${as_nl}ac_space=\ *)
+      # `set' does not quote correctly, so add quotes (double-quote
+      # substitution turns \\\\ into \\, and sed turns \\ into \).
+      sed -n \
+	"s/'/'\\\\''/g;
+	  s/^\\([_$as_cr_alnum]*_cv_[_$as_cr_alnum]*\\)=\\(.*\\)/\\1='\\2'/p"
+      ;; #(
+    *)
+      # `set' quotes correctly as required by POSIX, so do not add quotes.
+      sed -n "/^[_$as_cr_alnum]*_cv_[_$as_cr_alnum]*=/p"
+      ;;
+    esac |
+    sort
+) |
+  sed '
+     /^ac_cv_env_/b end
+     t clear
+     :clear
+     s/^\([^=]*\)=\(.*[{}].*\)$/test "${\1+set}" = set || &/
+     t end
+     s/^\([^=]*\)=\(.*\)$/\1=${\1=\2}/
+     :end' >>confcache
+if diff "$cache_file" confcache >/dev/null 2>&1; then :; else
+  if test -w "$cache_file"; then
+    test "x$cache_file" != "x/dev/null" &&
+      { echo "$as_me:$LINENO: updating cache $cache_file" >&5
+echo "$as_me: updating cache $cache_file" >&6;}
+    cat confcache >$cache_file
+  else
+    { echo "$as_me:$LINENO: not updating unwritable cache $cache_file" >&5
+echo "$as_me: not updating unwritable cache $cache_file" >&6;}
+  fi
+fi
+rm -f confcache
 
 test "x$prefix" = xNONE && prefix=$ac_default_prefix
 # Let make expand exec_prefix.
