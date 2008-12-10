@@ -70,29 +70,32 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
 {
     SolverPackage solver_package;
     if ( vm["nlsolver"].template as<std::string>() == "petsc" )
+        {
+#if defined( HAVE_PETSC )
         solver_package = SOLVERS_PETSC;
+#endif
+        }
     else
         {
             Log() << "[SolverNonLinear] solver " << vm["nlsolver"].template as<std::string>() << " not available\n";
             Log() << "[Backend] use fallback  gmm\n";
+#if defined( HAVE_PETSC )
             solver_package = SOLVERS_PETSC;
+#endif
         }
     // Build the appropriate solver
     switch (solver_package)
         {
-
+#if defined( HAVE_PETSC )
         case SOLVERS_PETSC:
             {
 
-#if defined( HAVE_PETSC )
+
                 solvernonlinear_ptrtype ap(new SolverNonLinearPetsc<T>);
                 return ap;
-#else
-                std::cerr << "PETSc is not available/installed" << std::endl;
-                throw std::invalid_argument( "invalid solver PETSc package" );
-#endif
             }
-
+            break;
+#endif
 
         default:
             std::cerr << "ERROR:  Unrecognized NonLinear solver package: "
@@ -108,6 +111,7 @@ template <typename T>
 boost::shared_ptr<SolverNonLinear<T> >
 SolverNonLinear<T>::build( SolverPackage solver_package )
 {
+#if defined( HAVE_PETSC )
     if ( solver_package != SOLVERS_PETSC )
         {
             Log() << "[SolverNonLinear] solver " << solver_package << " not available\n";
@@ -137,7 +141,7 @@ SolverNonLinear<T>::build( SolverPackage solver_package )
                       << std::endl;
             throw std::invalid_argument( "invalid solver package" );
         }
-
+#endif
     return solvernonlinear_ptrtype();
 }
 
