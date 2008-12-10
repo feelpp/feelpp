@@ -69,7 +69,7 @@ SolverEigen<T>::build(const SolverPackage solver_package)
         case SOLVERS_SLEPC:
             {
 
-#if defined( HAVE_SLEPC )
+#if defined( HAVE_SLEPC ) && defined( HAVE_PETSC_H )
                 solvereigen_ptrtype ap(new SolverEigenSlepc<T>);
                 return ap;
 #else
@@ -77,7 +77,7 @@ SolverEigen<T>::build(const SolverPackage solver_package)
                 throw std::invalid_argument( "invalid solver slepc package" );
 #endif
             }
-
+            break;
 
         default:
             std::cerr << "ERROR:  Unrecognized eigen solver package: "
