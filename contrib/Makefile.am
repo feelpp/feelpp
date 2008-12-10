@@ -3,9 +3,9 @@
 #  This file is part of the LifeV library
 #
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
-#       Date: 2005-11-16
+#       Date: 2008-12-09
 #
-#  Copyright (C) 2005 EPFL
+#  Copyright (C) 2008 Université de Grenoble 1
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -21,4 +21,9 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-SUBDIRS=gmm
+include $(top_srcdir)/admin/common.am
+ACLOCAL_AMFLAGS = -I admin
+
+SUBDIRS=. gmm
+
+EXTRA_DIST=
