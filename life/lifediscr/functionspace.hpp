@@ -2249,7 +2249,12 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::init( mesh_ptrtype const& 
     _M_dof = dof_ptrtype( new dof_type( _M_ref_fe, periodicity ) );
     Debug( 5010 ) << "Dof indices is empty ? " << dofindices.empty() << "\n";
     _M_dof->setDofIndices( dofindices );
-    _M_dof->buildDofMap( *_M_mesh );
+    Log() << "[dof] is_periodic = " << is_periodic << "\n";
+
+    size_type start_next_free_dof = 0;
+    if ( is_periodic )
+        start_next_free_dof = _M_dof->buildPeriodicDofMap( *_M_mesh );
+    _M_dof->buildDofMap( *_M_mesh, start_next_free_dof );
     _M_dof->buildBoundaryDofMap( *_M_mesh );
     if ( is_vectorial )
         _M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( _M_mesh, MESH_COMPONENTS_DEFAULTS, periodicity ) );
