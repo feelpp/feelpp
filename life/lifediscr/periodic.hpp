@@ -172,6 +172,9 @@ public:
     static const bool is_periodic = false;
     static const uint16_type tag1 = invalid_uint16_type_value;
     static const uint16_type tag2 = invalid_uint16_type_value;
+
+    typedef node<double>::type node_type;
+
     //@}
 
     /** @name Accessors
@@ -180,6 +183,9 @@ public:
 
     //! return whether the condition is periodic or not
     static bool isPeriodic()  { return is_periodic; }
+
+    //! return the translation condition that should be applied on Tag2
+    node_type translation()  { return node_type(); }
 
     //@}
 };
