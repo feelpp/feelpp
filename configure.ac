@@ -88,7 +88,7 @@ AC_PROG_CXX( g++ g++-4.3 g++-4.2 g++-4.1 g++-4.0 g++-3.4 g++-3.3 g++-3.2 )
 
 AC_PROG_CPP
 
-
+LIFE_DEBUG
 LIFE_CHECK_COMPILERS
 
 dnl check for openmp
