@@ -62,6 +62,7 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
+LIFE_DEBUG
 LIFE_CHECK_LIFE
 
 # Write out configure arguments
