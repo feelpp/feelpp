@@ -25,6 +25,8 @@
 # \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #
 
+AT_INIT([Life Library Test Suite])
+
 #lifecore tests
 m4_include([lifecore/testsuite.at])
 

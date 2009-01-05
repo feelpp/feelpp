@@ -533,29 +533,30 @@ main( int argc, char** argv )
 
     std::cout << "Order = " << mpi.vm()["order"].as<int>()<< "\n";
 
-#if 1
     if ( mpi.vm()["order"].as<int>() == 1 )
         {
             test_integration_sin<1,double> t1( mpi.vm()["hsize"].as<double>() ); t1();
         }
+#if LIFE_MESH_MAX_ORDER >= 2
     else if ( mpi.vm()["order"].as<int>() == 2 )
         {
             test_integration_sin<2,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
         }
+#elif LIFE_MESH_MAX_ORDER >= 3
     else if ( mpi.vm()["order"].as<int>() == 3 )
         {
             test_integration_sin<3,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
         }
+#elif LIFE_MESH_MAX_ORDER >= 4
     else if ( mpi.vm()["order"].as<int>() == 4 )
         {
             test_integration_sin<4,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
         }
+#elif LIFE_MESH_MAX_ORDER >= 5
     else if ( mpi.vm()["order"].as<int>() == 5 )
         {
             test_integration_sin<5,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
         }
-#else
-    test_integration_sin<3,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
 #endif
 }
 #endif // USE_BOOST_TEST

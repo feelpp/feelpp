@@ -21,8 +21,7 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-
-SUFFIXES	= .cpp .hpp .idl .c .h .f .F .o .moc
+include $(top_srcdir)/admin/common.am
 
 AM_LDFLAGS=-static
 check_PROGRAMS  = test_entity test_mesh test_regiontree test_mesh_codim1

@@ -29,16 +29,16 @@
 AT_BANNER([life/lifemesh testsuite...])
 
 AT_SETUP([test_entity])
-AT_CHECK([$at_dir/testsuite/lifemesh/test_entity],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifemesh/test_entity],[0],[ignore],[ignore])
 AT_KEYWORDS([mesh entity])
 AT_CLEANUP
 
 AT_SETUP([test_mesh])
-AT_CHECK([$at_dir/testsuite/lifemesh/test_mesh],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifemesh/test_mesh],[0],[ignore],[ignore])
 AT_KEYWORDS([mesh])
 AT_CLEANUP
 
 AT_SETUP([test_regiontree])
-AT_CHECK([$at_dir/testsuite/lifemesh/test_regiontree],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifemesh/test_regiontree],[0],[ignore],[ignore])
 AT_KEYWORDS([mesh region tree location])
 AT_CLEANUP

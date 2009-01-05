@@ -19,9 +19,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
-
-SUFFIXES	= .cpp .hpp .idl .c .h .f .F .o .moc
-
+include $(top_srcdir)/admin/common.am
 
 LIBS=
 

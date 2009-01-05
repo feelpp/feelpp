@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE( lag35scr64s )
 }
 BOOST_AUTO_TEST_CASE( lag310scr64s )
 {
-    TestLagrange<fem::Lagrange<3, 10, Scalar, Continuous, real64_type, Simplex> > t(5e-10);
+    TestLagrange<fem::Lagrange<3, 10, Scalar, Continuous, real64_type, Simplex> > t(1e-9);
     t();
 }
 

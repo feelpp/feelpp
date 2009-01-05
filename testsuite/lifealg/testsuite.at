@@ -29,23 +29,23 @@ AT_BANNER([life/lifealg testsuite...])
 
 
 AT_SETUP([test_ublas])
-AT_CHECK([$at_dir/testsuite/lifealg/test_ublas],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifealg/test_ublas],[0],[ignore],[ignore])
 AT_KEYWORDS([ alg ublas])
 AT_CLEANUP
 
 
 AT_SETUP([test_petsc])
-AT_CHECK([$at_dir/testsuite/lifealg/test_petsc],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifealg/test_petsc],[0],[ignore],[ignore])
 AT_KEYWORDS([ alg petsc])
 AT_CLEANUP
 
 
 AT_SETUP([test_umfpack])
-AT_CHECK([$at_dir/testsuite/lifealg/test_umfpack],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifealg/test_umfpack],[0],[ignore],[ignore])
 AT_KEYWORDS([ alg linear solver algebra umfpack])
 AT_CLEANUP
 
 AT_SETUP([test_matrix])
-AT_CHECK([$at_dir/testsuite/lifealg/test_matrix],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifealg/test_matrix],[0],[ignore],[ignore])
 AT_KEYWORDS([alg matrix petsc])
 AT_CLEANUP
