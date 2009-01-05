@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-21
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2008 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -30,8 +30,9 @@
 #include <life/lifealg/backend.hpp>
 #include <life/lifealg/backendgmm.hpp>
 #include <life/lifealg/backendpetsc.hpp>
+#include <life/lifealg/solvereigenslepc.hpp>
 #include <life/lifealg/backendtrilinos.hpp>
-#include <life/lifediscr/oseen.hpp>
+#include <life/lifediscr/oseendata.hpp>
 #include <life/lifediscr/bdf2.hpp>
 #include <life/lifefilters/exporter.hpp>
 #include <life/lifematerial/materiallib.hpp>
@@ -49,7 +50,9 @@ life_options( std::string const& prefix  )
 #if defined(HAVE_PETSC_H)
         .add( backendpetsc_options( prefix ) )
 #endif
-
+#if defined(HAVE_SLEPC) && defined(HAVE_PETSC)
+        .add( solvereigenslepc_options( prefix ) )
+#endif // HAVE_SLEPC && HAVE_PETSC
 #if defined( HAVE_TRILINOS_EPETRA )
         .add( backendtrilinos_options( prefix ) )
 #endif

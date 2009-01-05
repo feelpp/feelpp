@@ -586,6 +586,7 @@ ExporterGmsh<MeshType>::visit( mesh_type* )
 {
 }
 
+#if defined( LIFE_INSTANTIATION_MODE )
 //
 // explicit instances
 //
@@ -598,5 +599,5 @@ template class ExporterGmsh<Mesh<GeoEntity<Simplex<3,1> > > >;
 template class ExporterGmsh<Mesh<GeoEntity<SimplexProduct<1,1> > > >;
 template class ExporterGmsh<Mesh<GeoEntity<SimplexProduct<2,1> > > >;
 template class ExporterGmsh<Mesh<GeoEntity<SimplexProduct<3,1> > > >;
-
+#endif // LIFE_INSTANTIATION_MODE
 }

@@ -19,9 +19,6 @@
 #
 include $(top_srcdir)/admin/common.am
 
-SUFFIXES	= .cpp .hpp .idl .c .h .f .F .o .moc .cc
-
-
 
 lib_LTLIBRARIES		= liblifecore.la
 

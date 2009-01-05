@@ -308,6 +308,9 @@ public:
         return *this;
     }
 
+    //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
+    MeshBase const* mesh() const { return super::mesh(); }
+
     /**
      * \return process id
      */
@@ -495,6 +498,9 @@ public:
         return _M_h.get();
 
     }
+
+    //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
+    MeshBase const* mesh() const { return super::mesh(); }
 
     /**
      * get the max length of the edge in the local face \c f
@@ -717,6 +723,8 @@ public:
         return *this;
     }
 
+    //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
+    MeshBase const* mesh() const { return super::mesh(); }
     /**
      * \return \c true if on the boundary, \c false otherwise
      */
@@ -1008,6 +1016,8 @@ public:
         return *this;
     }
 
+    //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
+    MeshBase const* mesh() const { return super::mesh(); }
     /**
      * \return \c true if on the boundary, \c false otherwise
      */

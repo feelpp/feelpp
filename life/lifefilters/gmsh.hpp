@@ -225,5 +225,6 @@ private:
     int M_version;
 };
 
-}
+} // Life
+
 #endif /* __Gmsh_H */

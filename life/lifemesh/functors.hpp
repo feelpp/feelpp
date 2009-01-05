@@ -30,12 +30,30 @@
 #define __Functor_H 1
 
 #include <life/lifealg/glas.hpp>
+#include <life/lifemesh/meshbase.hpp>
 
 namespace Life
 {
+class MeshBase;
 
 namespace detail
 {
+struct UpdateMesh
+{
+    UpdateMesh( MeshBase const* m )
+        :
+        M_mesh( m )
+    {}
+    template<typename ElementType>
+    void operator()( ElementType& element  ) const
+    {
+        element.setMesh( M_mesh );
+    }
+private:
+    MeshBase const* M_mesh;
+
+};
+
 struct OnBoundary
 {
     OnBoundary( bool is_on_bdy = false )

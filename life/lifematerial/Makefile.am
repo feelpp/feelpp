@@ -21,9 +21,7 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
-
-SUFFIXES	= .cpp .hpp .idl .c .h .f .F .o .moc
-
+include $(top_srcdir)/admin/common.am
 
 lib_LTLIBRARIES		= liblifematerial.la
 

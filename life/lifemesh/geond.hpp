@@ -33,9 +33,12 @@
 #include <life/lifepoly/geomap.hpp>
 #include <life/lifemesh/marker.hpp>
 #include <life/lifemesh/meshutil.hpp>
+#include <life/lifemesh/meshbase.hpp>
 
 namespace Life
 {
+class MeshBase;
+
 template<int Dim, int Order,  template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
 
 /// \cond detail
@@ -178,6 +181,28 @@ public:
     virtual ~GeoND()
     {
     }
+
+    /**
+     * set the mesh to which this geometric entity belongs to
+     */
+    void setMeshAndGm( MeshBase const* m, gm_ptrtype const& gm ) const
+    {
+        M_mesh = m;
+        M_gm = gm;
+    }
+
+    void setMesh( MeshBase const* m ) const
+    {
+        M_mesh = m;
+    }
+
+    //! return the geometric mapping if a mesh was set
+    gm_ptrtype gm() const { return M_gm; }
+
+    /**
+     * \return the mesh to which this geometric entity belongs to
+     */
+    MeshBase const* mesh() const { return M_mesh; }
 
     /**
      * \return true if points have been inserted in elements, false
@@ -511,6 +536,10 @@ private:
     Marker1 _M_marker1;
     Marker2 _M_marker2;
     Marker3 _M_marker3;
+
+    // mesh to which the geond element belongs to
+    mutable MeshBase const* M_mesh;
+    mutable gm_ptrtype M_gm;
 };
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>

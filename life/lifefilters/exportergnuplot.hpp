@@ -174,7 +174,12 @@ private:
     bool M_png_output;
 };
 
-}
+} // Life
+
+#if !defined( LIFE_INSTANTIATION_MODE )
+# include <life/lifefilters/exportergnuplot.cpp>
+#endif // LIFE_INSTANTIATION_MODE
+
 #endif /* __ExporterGnuplot_H */
 
 

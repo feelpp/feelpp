@@ -36,7 +36,11 @@ namespace Life
 template <typename T>
 Backend<T>::Backend()
     :
+#if defined( HAVE_PETSC_H )
+    M_backend    (BACKEND_PETSC),
+#else
     M_backend    (BACKEND_GMM),
+#endif
     M_nlsolver(),
     M_tolerance( 1e-10 ),
     M_maxiter( 1000 )
@@ -108,7 +112,7 @@ template <typename T>
 typename Backend<T>::backend_ptrtype
 Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
 {
-
+    Log() << "[Backend] backend " << vm["backend"].template as<std::string>() << "\n";
     BackendType bt;
     if ( vm["backend"].template as<std::string>() == "gmm" )
         bt = BACKEND_GMM;
@@ -118,16 +122,25 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
         bt = BACKEND_TRILINOS;
     else
         {
+
+#if defined( HAVE_PETSC_H )
+
+            Log() << "[Backend] use fallback backend gmm\n";
+            bt = BACKEND_PETSC;
+#else
             Log() << "[Backend] backend " << vm["backend"].template as<std::string>() << " not available\n";
             Log() << "[Backend] use fallback backend gmm\n";
             bt = BACKEND_GMM;
+#endif
         }
+
     // Build the appropriate solver
     switch ( bt )
         {
 #if defined ( HAVE_PETSC_H )
         case BACKEND_PETSC:
             {
+                Log() << "[Backend] Instantiate a Petsc backend\n";
                 return backend_ptrtype( new BackendPetsc<value_type>( vm, prefix ) );
             }
             break;

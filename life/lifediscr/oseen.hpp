@@ -55,43 +55,11 @@
 #include <life/lifealg/backend.hpp>
 
 #include <life/lifevf/vf.hpp>
+#include <life/lifediscr/oseendata.hpp>
 
 namespace Life
 {
 
-// struct to hold default values for Oseen
-struct OseenDefaults
-{
-    // Default constructor with default default values
-    OseenDefaults()
-        :
-    BC_COEFF_DIFF( 100.0 ),
-    BC_COEFF_CONV( 100.0 ),
-    STAB_COEFF_DIV( 0.0 ),
-    STAB_COEFF_P( 0.0 ),
-    EPS_COMPRESS( 0.0 ),
-    DIVDIV_COEFF( 0.0 ),
-    WEAK_DIRICHLET( true ),
-    EXPORT_MATLAB( false )
-    {}
-
-    // coefficient for diffusive terms of weak Dirichlet conditions
-    double BC_COEFF_DIFF;
-    // coefficient for convective terms of weak Dirichlet conditions
-    double BC_COEFF_CONV;
-    // coefficient for divergence jump stabilisation
-    double STAB_COEFF_DIV;
-    // coefficient for pressure gradient jump stabilization
-    double STAB_COEFF_P;
-    // coefficient for pseudo-compressibility term
-    double EPS_COMPRESS;
-    // coefficient for divergence penalty term
-    double DIVDIV_COEFF;
-    // whether to use weak instead of strong dirichlet boundary conditions
-    bool WEAK_DIRICHLET;
-    // whether to export matrix and vector in matlab format
-    bool EXPORT_MATLAB;
-};
 
 template<class Space,
          uint16_type imOrder = 3*boost::fusion::result_of::value_at_c<typename Space::basis_type, 0>::basis_type::nOrder-1,
@@ -725,7 +693,5 @@ Oseen<Space, imOrder, Entity>::solveNonSym( sparse_matrix_ptrtype const& D,
 } // Oseen::solveNonSym
 
 
-po::options_description oseen_options( std::string const& prefix="",
-                                       OseenDefaults defaults=OseenDefaults() );
 
 } // Life

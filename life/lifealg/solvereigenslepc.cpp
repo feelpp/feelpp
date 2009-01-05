@@ -32,6 +32,29 @@
 namespace Life
 {
 
+po::options_description
+solvereigenslepc_options( std::string const& prefix )
+{
+        std::string _prefix = prefix;
+    if ( !_prefix.empty() )
+        _prefix += "-";
+
+
+    //int nev,                  // number of requested eigenpairs
+    //int ncv,                  // number of basis vectors
+    //const double tol,         // solver tolerance
+    //const unsigned int m_its) // maximum number of iterations
+    po::options_description _options( "Solver EigenValue Slepc -- " + prefix + " solver options");
+    _options.add_options()
+        // solver options
+        ((_prefix+"slepc-nev").c_str(), Life::po::value<int>()->default_value( 1 ), "number of requested eigenpairs")
+        ((_prefix+"slepc-ncv").c_str(), Life::po::value<int>()->default_value( 3 ), "number of basis vectors")
+        ((_prefix+"slepc-tol").c_str(), Life::po::value<double>()->default_value( 1e-10 ), "solver tolerance")
+        ((_prefix+"slepc-nit").c_str(), Life::po::value<int>()->default_value( 1000 ), "maximum number of iterations");
+
+    return _options;
+}
+
 // must have both slepc and petsc
 #if defined(HAVE_SLEPC) && defined(HAVE_PETSC)
 

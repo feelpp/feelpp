@@ -614,7 +614,7 @@ ExporterEnsight<MeshType>::visit( mesh_type* __mesh )
         }
 }
 
-
+#if defined( LIFE_INSTANTIATION_MODE )
 //
 // explicit instances
 //
@@ -627,4 +627,5 @@ template class ExporterEnsight<Mesh<GeoEntity<Simplex<3,1,3> > > >;
 template class ExporterEnsight<Mesh<GeoEntity<SimplexProduct<1,1,1> > > >;
 template class ExporterEnsight<Mesh<GeoEntity<SimplexProduct<2,1,2> > > >;
 template class ExporterEnsight<Mesh<GeoEntity<SimplexProduct<3,1,3> > > >;
+#endif // LIFE_INSTANTIATION_MODE
 }

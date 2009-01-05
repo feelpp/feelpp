@@ -87,9 +87,16 @@ public:
     virtual ~Backend();
 
     /**
-     * Builds a \p Backend
+     * Builds a \p Backend, if Petsc is available, use Petsc by
+     * default, otherwise use GMM which is distributed with life
      */
-    static backend_ptrtype build( BackendType = BACKEND_GMM );
+    static backend_ptrtype build(
+#if defined( HAVE_PETSC_H )
+                                 BackendType = BACKEND_PETSC
+#else
+                                 BackendType = BACKEND_GMM
+#endif
+                                 );
 
     /**
      * Builds a \p Backend

@@ -176,4 +176,9 @@ private:
 };
 
 } // Life
+
+#if !defined( LIFE_INSTANTIATION_MODE )
+# include <life/lifefilters/gmshtensorizeddomain.cpp>
+#endif // LIFE_INSTANTIATION_MODE
+
 #endif /* __GmshTensorizedDomain_H */

@@ -69,11 +69,11 @@ Mesh<Shape, T>::updateForUse()
     if ( !this->isUpdatedForUse() )
         {
             if ( this->components().test( MESH_RENUMBER ) )
-            {
+                {
 
-                this->renumber();
-                Debug( 4015 ) << "[Mesh::updateForUse] renumber : " << ti.elapsed() << "\n";
-            }
+                    this->renumber();
+                    Debug( 4015 ) << "[Mesh::updateForUse] renumber : " << ti.elapsed() << "\n";
+                }
             //
             // compute the Adjacency graph
             //
@@ -157,9 +157,34 @@ Mesh<Shape, T>::updateForUse()
                     Debug( 4015 ) << "[Mesh::updateForUse] update edges : " << ti.elapsed() << "\n";
                 }
 
+            {
+                element_iterator iv,  en;
+                boost::tie( iv, en ) = this->elementsRange();
+
+                for ( ;iv != en; ++iv )
+                    {
+                        this->elements().modify( iv,
+                                                 lambda::bind( &element_type::setMeshAndGm,
+                                                               lambda::_1,
+                                                               this, _M_gm ) );
+                    }
+                typedef typename super::face_const_iterator face_const_iterator;
+                face_iterator itf = this->beginFace();
+                face_iterator ite = this->endFace();
+                for( ; itf != ite; ++ itf )
+                    {
+                        this->faces().modify( itf,
+                                              lambda::bind( &face_type::setMesh,
+                                                            lambda::_1,
+                                                            this ) );
+                    }
+            }
+
             // check mesh connectivity
             this->check();
             this->setUpdatedForUse( true );
+
+            _M_gm->initCache( this );
         }
     Debug( 4015 ) << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
 }
@@ -693,9 +718,10 @@ Mesh<Shape, T>::check() const
             LIFE_ASSERT( __face.isConnectedTo0() )
                 (__face.id() )( __face.G() )( __face.ad_first() )( __face.pos_first() )( __face.proc_first() ).warn( "invalid face" );
             if ( __face.isConnectedTo0() )
-                LIFE_ASSERT( __face.element(0).facePtr( __face.pos_first() ) )
-                    ( __face.ad_first() )( __face.pos_first() )( __face.proc_first() )( __face.element(0).id() ).warn( "invalid face in element" );
-
+                {
+                    LIFE_ASSERT( __face.element(0).facePtr( __face.pos_first() ) )
+                        ( __face.ad_first() )( __face.pos_first() )( __face.proc_first() )( __face.element(0).id() ).warn( "invalid face in element" );
+                }
             LIFE_ASSERT( !__face.isConnectedTo1() )
                 ( __face.ad_first() )( __face.pos_first() )( __face.proc_first() ).warn( "invalid boundary face" );
 
@@ -937,25 +963,38 @@ Mesh<Shape, T>::Inverse::distribute( bool extrapolation )
 //
 // Explicit instatiations
 //
+#if defined( LIFE_INSTANTIATION_MODE )
+
 template class Mesh<GeoEntity<Simplex<1, 1, 1> > >;
 template class Mesh<GeoEntity<Simplex<1, 1, 2> > >;
 template class Mesh<GeoEntity<SimplexProduct<1, 1, 1> > >;
 template class Mesh<GeoEntity<SimplexProduct<1, 1, 2> > >;
 
 template class Mesh<GeoEntity<Simplex<2, 1, 2> > >;
+template class Mesh<GeoEntity<SimplexProduct<2, 1, 2> > >;
+
+#if LIFE_MESH_MAX_ORDER >= 2
 template class Mesh<GeoEntity<Simplex<2, 2, 2> > >;
+template class Mesh<GeoEntity<SimplexProduct<2, 2, 2> > >;
+#elif LIFE_MESH_MAX_ORDER >= 3
 template class Mesh<GeoEntity<Simplex<2, 3, 2> > >;
+#elif LIFE_MESH_MAX_ORDER >= 4
 template class Mesh<GeoEntity<Simplex<2, 4, 2> > >;
+#elif LIFE_MESH_MAX_ORDER >= 5
 template class Mesh<GeoEntity<Simplex<2, 5, 2> > >;
+#endif
 
 template class Mesh<GeoEntity<Simplex<2, 1, 3> > >;
 
+
 template class Mesh<GeoEntity<Simplex<3, 1, 3> > >;
-template class Mesh<GeoEntity<Simplex<3, 2, 3> > >;
-
-template class Mesh<GeoEntity<SimplexProduct<2, 1, 2> > >;
-template class Mesh<GeoEntity<SimplexProduct<2, 2, 2> > >;
 template class Mesh<GeoEntity<SimplexProduct<3, 1, 3> > >;
-template class Mesh<GeoEntity<SimplexProduct<3, 2, 3> > >;
 
+
+#if LIFE_MESH_MAX_ORDER >= 2
+template class Mesh<GeoEntity<Simplex<3, 2, 3> > >;
+template class Mesh<GeoEntity<SimplexProduct<3, 2, 3> > >;
+#endif
+
+#endif // LIFE_INSTANTIATION_MODE
 }

@@ -431,5 +431,4 @@ PartitionerParmetis<Mesh>::assignPartitioning (mesh_type& mesh)
 
 } // Life
 
-
 #endif

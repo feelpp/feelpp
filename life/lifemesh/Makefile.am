@@ -18,7 +18,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 
-SUFFIXES	= .cpp .hpp .idl .c .h .f .F .o .moc .cc
+include $(top_srcdir)/admin/common.am
 
 #INCLUDES=-I/usr/include/metis
 lib_LTLIBRARIES		= liblifemesh.la
