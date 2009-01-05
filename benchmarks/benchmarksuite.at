@@ -26,4 +26,7 @@
 # \date 2008-02-27
 #
 
+AT_INIT([Life Benchmark Suite])
+
+m4_include([convergence/convergence.at])
 m4_include([perf/perf.at])

@@ -24,7 +24,9 @@
 include $(top_srcdir)/admin/common.am
 ACLOCAL_AMFLAGS = -I admin
 
-SUBDIRS=. $(ENABLE_EXTRAMODULE_VALIDATION) convergence perf kovasznay stokes turek structure
+SUBDIRS= admin convergence perf
+#. $(ENABLE_EXTRAMODULE_VALIDATION) convergence perf kovasznay stokes turek structure
+DIST_SUBDIRS = admin convergence perf
 
 lib_LTLIBRARIES=liblifelog.la
 
@@ -32,4 +34,48 @@ check_HEADERS=logs.hpp
 liblifelog_la_SOURCES=logs.cpp
 liblifelog_la_LIBADD=../boost/libs/log/src/libboost_log.la
 
-EXTRA_DIST=benchmarksuite.at
+
+$(srcdir)/package.m4: $(top_srcdir)/configure.ac
+	{									   \
+	echo '# Signature of the current package.'; \
+	echo 'm4_define([AT_PACKAGE_NAME],		[@PACKAGE_NAME@])'; \
+	echo 'm4_define([AT_PACKAGE_TARNAME],	[@PACKAGE_TARNAME@])'; \
+	echo 'm4_define([AT_PACKAGE_VERSION],	[@PACKAGE_VERSION@])'; \
+	echo 'm4_define([AT_PACKAGE_STRING],	[@PACKAGE_STRING@])'; \
+	echo 'm4_define([AT_PACKAGE_BUGREPORT], [@PACKAGE_BUGREPORT@])'; \
+	} > $(srcdir)/package.m4
+
+TESTSUITE = $(srcdir)/benchmarksuite
+
+EXTRA_DIST = package.m4 benchmarksuite benchmarksuite.at atlocal.in
+
+check-local: atconfig  atlocal $(TESTSUITE)
+	$(SHELL) $(TESTSUITE)
+
+installcheck-local: atlocal atconfig  $(TESTSUITE)
+	$(SHELL) '$(TESTSUITE)' AUTOTEST_PATH='$(bindir)' \
+              $(TESTSUITEFLAGS)
+
+clean-local:
+	test ! -f '$(TESTSUITE)' || \
+     $(SHELL) '$(TESTSUITE)' --clean
+
+AUTOM4TE    = autom4te
+AUTOTEST = $(AUTOM4TE) --language=autotest
+$(TESTSUITE): $(srcdir)/benchmarksuite.at $(srcdir)/package.m4 $(srcdir)/convergence/convergence.at $(srcdir)/perf/perf.at
+	$(AUTOTEST) -I . -I $(srcdir) -I $(top_srcdir) $@.at -o $@.tmp
+	mv $@.tmp $@
+
+atconfig: $(top_builddir)/config.status
+	cd $(top_builddir) && \
+      $(SHELL) ./config.status $@
+
+atlocal: $(srcdir)/atlocal.in $(top_builddir)/config.status
+	cd $(top_builddir) && \
+      $(SHELL) ./config.status $@
+
+MOSTLYCLEANFILES	= benchmarksuite.log `find -type f -print | grep benchmarksuite.dir`
+
+DISTCLEANFILES		= atconfig atlocal summary
+
+

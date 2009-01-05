@@ -29,8 +29,18 @@
 AT_BANNER([perf perfsuite ...])
 
 # perf
-AT_SETUP([perf])
-AT_CHECK([$at_dir/benchmarks/perf/perf],[0],[ignore],[ignore])
-AT_KEYWORDS([benchmarks perf])
+AT_SETUP([perf 1D])
+AT_CHECK([$abs_top_builddir/perf/perf --dim=1],[0],[ignore],[ignore])
+AT_KEYWORDS([perf 1D])
+AT_CLEANUP
+
+AT_SETUP([perf 2D])
+AT_CHECK([$abs_top_builddir/perf/perf --dim=2],[0],[ignore],[ignore])
+AT_KEYWORDS([perf 2D])
+AT_CLEANUP
+
+AT_SETUP([perf 3D])
+AT_CHECK([$abs_top_builddir/perf/perf --dim=3],[0],[ignore],[ignore])
+AT_KEYWORDS([perf 3D])
 AT_CLEANUP
 

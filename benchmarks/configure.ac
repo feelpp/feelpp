@@ -27,7 +27,7 @@ AC_PREREQ([2.59])
 AC_INIT([Life platform module benchmarks],
         [0.9.9],
         [life-commits@lists.ljkforge.imag.fr],
-        [life])
+        [life-benchmarks])
 
 # We check a special cache variable to see if we are built in a combined environment
 AC_CACHE_CHECK([for combined build process], [life_cv_combined_env], [life_cv_combined_env=no])
@@ -63,6 +63,7 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 LIFE_DEBUG
+LIFE_CHECK_COMPILERS
 LIFE_CHECK_LIFE
 
 # Write out configure arguments
@@ -83,17 +84,22 @@ AC_SUBST(life_revision)
 # Automatically save cache file to improve rerunning of configure script
 AC_CACHE_SAVE
 
+AC_CONFIG_TESTDIR(.)
+
 #
 LIFE_EXTRAMODULE([validation])
 
 # benchmark
+AC_CONFIG_FILES([ atlocal ])
 AC_CONFIG_FILES([ Makefile ])
+AC_CONFIG_FILES([ admin/Makefile ])
 AC_CONFIG_FILES([ convergence/Makefile ])
 AC_CONFIG_FILES([ perf/Makefile ])
-AC_CONFIG_FILES([ kovasznay/Makefile ])
-AC_CONFIG_FILES([ stokes/Makefile ])
-AC_CONFIG_FILES([ turek/Makefile ])
-AC_CONFIG_FILES([ structure/Makefile ])
+
+#AC_CONFIG_FILES([ kovasznay/Makefile ])
+#AC_CONFIG_FILES([ stokes/Makefile ])
+#AC_CONFIG_FILES([ turek/Makefile ])
+#AC_CONFIG_FILES([ structure/Makefile ])
 
 AC_OUTPUT
 
