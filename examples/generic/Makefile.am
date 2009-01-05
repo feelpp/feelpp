@@ -63,8 +63,8 @@ stokes_SOURCES=stokes.cpp
 stokes_LDADD = $(LIFE_LIBS)
 stokes_LDFLAGS=-static
 
-stokesT_SOURCES=stokesT.cpp
-stokesT_LDADD = $(LIFE_LIBS)
+#stokesT_SOURCES=stokesT.cpp
+#stokesT_LDADD = $(LIFE_LIBS)
 
 wave_SOURCES=wave.cpp
 wave_LDADD = $(LIFE_LIBS)
@@ -72,8 +72,8 @@ wave_LDADD = $(LIFE_LIBS)
 bratu_SOURCES=bratu.cpp
 bratu_LDADD = $(LIFE_LIBS)
 
-test_ale_SOURCES=test_ale.cpp
-test_ale_LDADD = $(LIFE_LIBS)
+#test_ale_SOURCES=test_ale.cpp
+#test_ale_LDADD = $(LIFE_LIBS)
 
 #test_formulation_SOURCES=test_formulation.cpp
 #test_formulation_LDADD = $(LIFE_LIBS)

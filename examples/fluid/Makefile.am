@@ -38,8 +38,8 @@ splitting2d_LDADD = $(LIFE_LIBS)
 rclux_SOURCES=rcluxmesh.cpp rclux.cpp
 rclux_LDADD = $(LIFE_LIBS)
 
-test_nsale_SOURCES=test_nsALE.cpp
-test_nsale_LDADD = $(LIFE_LIBS)
+#test_nsale_SOURCES=test_nsALE.cpp
+#test_nsale_LDADD = $(LIFE_LIBS)
 
 
 # test_ale1_SOURCES=test_ale1.cpp
