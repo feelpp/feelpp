@@ -23,7 +23,7 @@
 #
 include $(top_srcdir)/admin/common.am
 
-SUBDIRS=pngs pdfs
+SUBDIRS=styles pngs pdfs
 
 ACLOCAL_AMFLAGS = -I admin
 
@@ -50,15 +50,15 @@ CLEANFILES = *.aux *.log *.lot *.lof *.toc *.bbl *.blg *.out *.idx *.ind *.ilg $
 
 .tex.pdf:
 	echo "*** INFO: first pdflatex compilation" ; \
-	TEXINPUTS=:.:$(top_builddir)/src:$(srcdir): $(PDFLATEX) $< ; \
+	TEXINPUTS=:.//:$(top_builddir)/tutorial//:$(srcdir)//: $(PDFLATEX) $< ; \
 	echo "*** INFO: index generation" ; \
 	if test -f $*.idx; then $(MAKEINDEX) $*.idx ; fi ; \
 	echo "*** INFO: bibliography creation" ; \
 	if test -f $(srcdir)/*.bib; then BIBINPUTS=:$(srcdir): $(BIBTEX) $*.aux ; fi ; \
 	echo "*** INFO: table of content insertion" ; \
-	TEXINPUTS_pdflatex=:.:$(top_builddir)/src:$(srcdir): $(PDFLATEX) $< ; \
+	TEXINPUTS_pdflatex=:.//:$(top_builddir)/tutorial//:$(srcdir)//: $(PDFLATEX) $< ; \
 	echo "*** INFO: labels insertion" ; \
-	TEXINPUTS_pdflatex=:.:$(top_builddir)/src:$(srcdir): $(PDFLATEX) $< -o $(top_builddir)/$*.pdf
+	TEXINPUTS_pdflatex=:.//:$(top_builddir)/tutorial//:$(srcdir)//: $(PDFLATEX) $< -o $(top_builddir)/$*.pdf
 
 
 

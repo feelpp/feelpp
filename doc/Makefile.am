@@ -18,4 +18,12 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 
-SUBDIRS		= tutorial api
+SUBDIRS		= admin tutorial api
+
+if MAINTAINER_MODE
+ACLOCAL_AMFLAGS=-I admin
+
+endif
+
+
+DISTCLEANFILES=summary
