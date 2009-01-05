@@ -1,0 +1,10 @@
+headings_flag 1
+heading_prefix "{\\large\\sffamily\\bfseries\\shadowbox{"
+heading_suffix "}\\hfil}\\nopagebreak\n"
+symhead_negative "symboles"
+symhead_positive "Symboles"
+
+delim_0 " \\dotfill \ "
+delim_1 " \\dotfill \ "
+
+
