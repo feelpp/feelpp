@@ -24,7 +24,7 @@
 include $(top_srcdir)/admin/common.am
 #AM_CPPFLAGS =  $(AM_CPPFLAGS) -I$(srcdir)/../
 
-
+EXTRA_DIST=perf.at
 
 
 check_PROGRAMS    = perf

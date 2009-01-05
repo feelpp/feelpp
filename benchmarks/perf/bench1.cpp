@@ -176,6 +176,7 @@ private:
     template<typename FSType, typename IMType> void R( boost::shared_ptr<FSType> const& Xh, IMType const& );
     template<typename FSType, typename IMType> void D( boost::shared_ptr<FSType> const& Xh, IMType const& );
     template<typename FSType, typename IMType> void DR( boost::shared_ptr<FSType> const& Xh, IMType const& );
+    template<typename FSType, typename IMType> void ADR( boost::shared_ptr<FSType> const& Xh, IMType const&, mpl::int_<1> );
     template<typename FSType, typename IMType> void ADR( boost::shared_ptr<FSType> const& Xh, IMType const&, mpl::int_<2> );
     template<typename FSType, typename IMType> void ADR( boost::shared_ptr<FSType> const& Xh, IMType const&, mpl::int_<3> );
     /**
@@ -237,7 +238,7 @@ Bench1::run()
             std::cout << this->optionsDescription() << "\n";
             return;
         }
-    this->changeRepository( boost::format( "/benchmarks/%1%/%2$dD/%3$.3f" )
+    this->changeRepository( boost::format( "/benchmarks/perf/%1%/%2$dD/%3$.3f" )
                              % this->about().appName()
                              % this->vm()["dim"].as<int>()
                              % this->vm()["hsize"].as<double>() );
@@ -264,7 +265,7 @@ Bench1::run1d()
 {
     using namespace Life;
 
-    typedef Mesh<LinearTriangle> mesh_type;
+    typedef Mesh<LinearLine> mesh_type;
     boost::shared_ptr<mesh_type> aMesh( new mesh_type );
 
     GmshTensorizedDomain<1,1,1,Simplex> td;
@@ -431,6 +432,34 @@ Bench1::DR( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
 }
 template<typename FSType, typename IMType>
 void
+Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<1>  )
+{
+    typename FSType::element_type u( Xh );
+    typename FSType::element_type v( Xh );
+    sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
+
+    BOOST_LOG( app )<< "quad npts: " << im.nPoints() << std::endl;
+    form2(Xh,Xh,M,_init=true);
+    boost::timer timer;
+
+    //
+    // ADR
+    //
+    timer.restart();
+    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im,
+                                 gradt(u)*trans(grad(v))+idt( u )*id( v ) +
+                                 (gradt(u)*vec(constant(1.0)))*id(v));
+    BOOST_LOG( app ) << " o- ADR<const> time : " << timer.elapsed() << std::endl;
+
+    timer.restart();
+    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im,
+                                 val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+                                 (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v));
+    BOOST_LOG( app ) << " o-   ADR<xyz> time : " << timer.elapsed() << std::endl;
+}
+
+template<typename FSType, typename IMType>
+void
 Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<2>  )
 {
     typename FSType::element_type u( Xh );
@@ -453,7 +482,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<2>
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im,
                                            val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-                                           (gradt(u)*vec(val(Px()^(3)+Py()^(2)*Pz()),val(Px()^(3)+Py()^(2))))*id(v));
+                                 (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v));
     BOOST_LOG( app ) << " o-   ADR<xyz> time : " << timer.elapsed() << std::endl;
 }
 template<typename FSType, typename IMType>
@@ -479,8 +508,8 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<3>
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im,
-                                           val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-                                           (gradt(u)*vec(val(Px()^(3)+Py()^(2)*Pz()),val(Px()^(3)+Py()^(2)),val(Px()^(3))))*id(v));
+                                 val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+                                 (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v));
     BOOST_LOG( app ) << " o-   ADR<xyz> time : " << timer.elapsed() << std::endl;
 }
 template<typename MeshType, int Order>
@@ -508,7 +537,7 @@ Bench1::bench1( boost::shared_ptr<MeshType> & mesh )
 
 
     //IM<nDim, 2*Order, double, Simplex> im;
-    IMSimplex<nDim, 2*Order,double> im;
+    IM<nDim, 2*Order,double> im;
     //IM_PK<nDim, 4> im;
     //IMSimplex<2,2*Order> im;
 
@@ -522,7 +551,7 @@ Bench1::bench1( boost::shared_ptr<MeshType> & mesh )
     boost::timer timer;
 
     R( Xh,  im );
-    D( Xh,  IMSimplex<nDim, 2*(Order-1),double>() );
+    D( Xh,  IM<nDim, 2*(Order-1),double>() );
     DR( Xh, im );
     ADR( Xh, im, mpl::int_<nDim>() );
     BOOST_LOG( app ) << "------------------------------------------------------------" << std::endl;
