@@ -1,25 +1,26 @@
 # -*- readme-debian -*-
 
 
-New in 1.0.0 Prerelease 2
-=========================
+New in 0.9.9
+============
 
-* Added access to second order derivatives in the language feel++. The
-  keywords hess(), hesst() and hessv() have been introduced and behave
-  the same way as the other operators (e.g. grad(),...). Note the
-  restriction that the second order derivatives are implemented only
-  for the linear geometric mapping(i.e works only for linear
-  simplices). Quadratic geometric mappings would require the
-  computation of an additional term.
+* If Petsc is supported then use Petsc as default backend.
 
-* Fixed the construction of the mesh and related data structures in
-  parallel: implementation of a new algorithm which should also prove
-  helpful when parallelising the dof table creation.
+* Slepc(Petsc) support has been updated to latest version.
 
-* New class GmshSimplexDomain<Dim,Order> generates gmsh mesh for
-  simplices domain. It works like
-  GmshTensorizeDomain<Dim,Order,Entity>. The class Gmsh offers now a
-  factory to generate from a string either a GmshSimplexDomain<> or a
-  GmshTensorizeDomain<>.
+* Added periodic boundary conditions support in FunctionSpace<>.
 
- -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Thu, 11 Oct 2007 18:51:46 +0200
+* New Build system framework still using the Autotools: the Life
+  Developement Plateform (LDP).
+   - split the directories into submodules which can hold extra (external
+     to life) modules: examples, benchmarks, doc, applications, research
+   - allow for easy creation of new projets which can build on top of the
+     LDP.
+
+* [Experimental] System<FunctionSpaceType> framework implementation.
+
+* [Experimental] Shell matrices (only support matrix/vector
+  multiplication) support.
+
+
+ -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Sun,  4 Jan 2009 18:08:17 +0100
