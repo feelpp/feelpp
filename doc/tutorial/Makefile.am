@@ -23,9 +23,14 @@
 #
 include $(top_srcdir)/admin/common.am
 
+SUBDIRS=pngs pdfs
+
 ACLOCAL_AMFLAGS = -I admin
 
-bin_PROGRAMS=myapp mymesh myintegrals laplacian
+bin_PROGRAMS=myapp mymesh myintegrals laplacian stokes
+
+stokes_SOURCES=stokes.cpp
+stokes_LDADD=$(LIFE_LIBS)
 
 laplacian_SOURCES=laplacian.cpp
 laplacian_LDADD=$(LIFE_LIBS)
@@ -39,3 +44,28 @@ mymesh_LDADD=$(LIFE_LIBS)
 myapp_SOURCES=myapp.cpp
 myapp_LDADD=$(LIFE_LIBS)
 
+SUFFIXES=.cpp .hpp .tex .pdf
+
+CLEANFILES = *.aux *.log *.lot *.lof *.toc *.bbl *.blg *.out *.idx *.ind *.ilg $(doc_DATA)
+
+.tex.pdf:
+	echo "*** INFO: first pdflatex compilation" ; \
+	TEXINPUTS=:.:$(top_builddir)/src:$(srcdir): $(PDFLATEX) $< ; \
+	echo "*** INFO: index generation" ; \
+	if test -f $*.idx; then $(MAKEINDEX) $*.idx ; fi ; \
+	echo "*** INFO: bibliography creation" ; \
+	if test -f $(srcdir)/*.bib; then BIBINPUTS=:$(srcdir): $(BIBTEX) $*.aux ; fi ; \
+	echo "*** INFO: table of content insertion" ; \
+	TEXINPUTS_pdflatex=:.:$(top_builddir)/src:$(srcdir): $(PDFLATEX) $< ; \
+	echo "*** INFO: labels insertion" ; \
+	TEXINPUTS_pdflatex=:.:$(top_builddir)/src:$(srcdir): $(PDFLATEX) $< -o $(top_builddir)/$*.pdf
+
+
+
+EXTRA_DIST = tutorial.tex
+
+
+tutorial.pdf : $(EXTRA_DIST) myapp.cpp mymesh.cpp myintegrals.cpp laplacian.cpp stokes.cpp
+
+pdf-local : tutorial.pdf
+doc_DATA = tutorial.pdf

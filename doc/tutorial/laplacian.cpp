@@ -1,11 +1,11 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++ coding: utf-8 -*-
 
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-07
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universite Joseph Fourier (Grenoble I)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Laplacian on simplices or simplex products",
                      Life::AboutData::License_GPL,
-                     "Copyright (c) 2008 Université Joseph Fourier");
+                     "Copyright (c) 2008 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -216,7 +216,7 @@ Laplacian<Dim>::run()
      * we change to the directory where the results and logs will be
      * stored
      */
-    this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
+    this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
                             % entity_type::name()
                             % Order
@@ -297,8 +297,8 @@ Laplacian<Dim>::run()
 
     this->solve( D, u, F );
 
-    double L2error2 =integrate( elements(mesh), im_type(),
-                                (idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0 );
+    double L2error2 =integrate(elements(mesh), im_type(),
+                               (idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
     double L2error =   math::sqrt( L2error2 );
     Log() << "||error||_L2=" << L2error << "\n";
 

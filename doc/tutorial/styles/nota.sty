@@ -1,0 +1,44 @@
+\RequirePackage{graphicx}
+\RequirePackage{calc}
+
+\newcommand{\defaultnota}{notabene}
+\newlength{\largeurnota}
+\newlength{\largeurlignenota}
+\newlength{\indentationnota}
+\newlength{\paddingnota}
+\setlength{\largeurnota}{.9cm}
+\setlength{\paddingnota}{5pt}
+
+
+\newcommand{\notafont}{%
+  \fontencoding{T1}%
+  \fontfamily{cmss}%
+  \fontshape{n}%
+  \fontseries{m}%
+  \selectfont}
+
+\newenvironment{pictonote}[1]{%
+  \begin{list}{}{%
+      \setlength{\labelsep}{5pt}%
+      \setlength{\leftmargin}{10pt}%
+      \setlength{\rightmargin}{15pt}}
+  \item%
+    \notafont\small%
+    \setlength{\indentationnota}{\@totalleftmargin+\largeurnota+\paddingnota}%
+    \setlength{\largeurlignenota}{\linewidth-\largeurnota-\paddingnota}%
+    \parshape=3%
+    \indentationnota\largeurlignenota%
+    \indentationnota\largeurlignenota%
+    \@totalleftmargin\linewidth%
+    \raisebox{-\largeurnota+2.2ex}[0pt][0pt]{%
+      \makebox[0pt][r]{%
+        \includegraphics[width=\largeurnota]{#1}%
+        \hspace{\paddingnota}}}%
+    \ignorespaces}{%
+  \end{list}%
+}
+
+\newcommand{\continuenota}{%
+  \par\noindent\parshape=1\@totalleftmargin\linewidth}
+
+\endinput
