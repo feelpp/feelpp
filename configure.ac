@@ -255,7 +255,7 @@ AM_CONDITIONAL(HAVE_PETSC, test "x$petsc_libs" != "x" )
 
 
 dnl -------------------------------------------------------------
-dnl SLEPc  -- disabled by default
+dnl SLEPc  -- enabled by default
 dnl -------------------------------------------------------------
 AC_ARG_ENABLE(slepc,
               AC_HELP_STRING([--enable-slepc],
@@ -274,8 +274,22 @@ dnl -------------------------------------------------------------
 LIFE_CHECK_TRILINOS
 
 
-dnl vtk
+dnl -------------------------------------------------------------
+dnl VTK  -- disabled by default
+dnl -------------------------------------------------------------
+AC_ARG_ENABLE(vtk,
+              AC_HELP_STRING([--enable-vtk],
+                             [build with VTK support]),
+     enablevtk=$enableval,
+     enablevtk=yes)
+
+if test "$enablevtk" != no; then
  AC_CHECK_VTK
+fi
+AM_CONDITIONAL(HAVE_VTK, test "x$enablevtk" != "xno" )
+
+dnl vtk
+
 #AM_OPTIONS_VTK
 #AM_PATH_VTK
 #CPPFLAGS=" ${CPPFLAGS} -I/usr/include/vtk-5.0"
@@ -361,8 +375,6 @@ then
    enable_compile_warnings=yes
 fi
 
-dnl testdir
-AC_CONFIG_TESTDIR(.)
 
 dnl pkgconfig
 dnl AX_CREATE_PKGCONFIG_INFO(life.pc,,[${LIFE_LIBS} $LIBS],[Finite Element Library and more],[$CPPFLAGS $CFLAGS])
@@ -372,7 +384,7 @@ AC_ARG_ENABLE(instantiation-mode,
              AC_HELP_STRING([--enable-instantiation-mode],
                             [build with instantiation support]),
       instantiation_mode=$enableval,
-      instantiation_mode=no)
+      instantiation_mode=yes)
 
 if test x$instantiation_mode = xyes
 then
@@ -393,7 +405,7 @@ AC_DEFUN([LIFE_WITH_MESH_MAX_ORDER],
       mesh_max_order=1)
 
  AC_MSG_NOTICE([enabling mesh geometries up to order $mesh_max_order])
- AC_DEFINE(LIFE_MESH_MAX_ORDER, m4_default([$mesh_max_order], 1), [Define if minimal mesh support is required (order 1 mesh in 1D,2D,3D)])
+ AC_DEFINE_UNQUOTED(LIFE_MESH_MAX_ORDER, m4_default([$mesh_max_order], 1), [Define if minimal mesh support is required (order 1 mesh in 1D,2D,3D)])
 
 ])
 LIFE_WITH_MESH_MAX_ORDER
@@ -416,14 +428,18 @@ AC_CONFIG_FILES([ Makefile ])
 #
 # conditional directories
 #
-AC_ARG_ENABLE([lifesuite],
-     [  --enable-lifesuite    Turn on lifesuite creation],
+AC_ARG_ENABLE([tests],
+     [  --enable-tests    Turn on tests],
      [case "${enableval}" in
-       yes) enable_lifesuite=true ;;
-       no)  enable_lifesuite=false ;;
-       *) AC_MSG_ERROR([bad value ${enableval} for --enable-lifesuite]) ;;
-     esac],[enable_lifesuite=true])
-AM_CONDITIONAL([ENABLE_LIFESUITE], [test $enable_lifesuite = true])
+       yes) enable_tests=true ;;
+       no)  enable_tests=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-tests]) ;;
+     esac],[enable_tests=true])
+AM_CONDITIONAL([ENABLE_TESTS], [test $enable_tests = true])
+
+dnl testdir
+AC_CONFIG_TESTDIR(testsuite)
+
 
 # We force the values of Life install path, headers and library flags
 # for subsequent invocations of LIFE_CHECK_LIFE in sub-modules
@@ -436,7 +452,6 @@ life_libs="${life_libs} ${LIBS}"
 LIFE_SET_LIFE_CACHE_VALUES
 
 #
-AC_CONFIG_FILES([ atlocal ])
 AC_CONFIG_FILES([ admin/Makefile ])
 # boost
 AC_CONFIG_FILES([ boost/Makefile ])
@@ -458,9 +473,11 @@ AC_CONFIG_FILES([ life/lifepoly/Makefile ])
 AC_CONFIG_FILES([ life/lifediscr/Makefile ])
 AC_CONFIG_FILES([ life/lifevf/Makefile ])
 AC_CONFIG_FILES([ life/lifefilters/Makefile ])
+AC_CONFIG_FILES([ life/lifesystem/Makefile ])
 AC_CONFIG_FILES([ life/lifematerial/Makefile ])
 
 # testsuite
+AC_CONFIG_FILES([ testsuite/atlocal ])
 AC_CONFIG_FILES([ testsuite/Makefile ])
 AC_CONFIG_FILES([ testsuite/lifecore/Makefile ])
 AC_CONFIG_FILES([ testsuite/lifealg/Makefile ])
