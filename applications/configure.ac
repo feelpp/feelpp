@@ -27,7 +27,7 @@ AC_PREREQ([2.59])
 AC_INIT([Life platform module applications],
         [0.9.9],
         [life-commits@lists.ljkforge.imag.fr],
-        [life])
+        [life-apps])
 
 # We check a special cache variable to see if we are built in a combined environment
 AC_CACHE_CHECK([for combined build process], [life_cv_combined_env], [life_cv_combined_env=no])
@@ -63,6 +63,7 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 LIFE_DEBUG
+LIFE_CHECK_COMPILERS
 LIFE_CHECK_LIFE
 
 # Write out configure arguments
@@ -85,6 +86,7 @@ LIFE_EXTRAMODULE([opus])
 
 # Applications
 AC_CONFIG_FILES([ Makefile ])
+AC_CONFIG_FILES([ admin/Makefile ])
 
 AC_OUTPUT
 
