@@ -24,7 +24,8 @@
 include $(top_srcdir)/admin/common.am
 ACLOCAL_AMFLAGS = -I admin
 
-SUBDIRS=. $(ENABLE_EXTRAMODULE_CRB)
+SUBDIRS=. admin
+#$(ENABLE_EXTRAMODULE_CRB)
 
 
 EXTRA_DIST=
