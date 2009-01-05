@@ -25,12 +25,13 @@
 DO_NOT_COMPILE=polyvis
 #SUBDIRS = admin $(TOPSUBDIRS)
 
-if ENABLE_LIFESUITE
-MAYBE_LIFESUITE=testsuite
+if ENABLE_TESTS
+MAYBE_TESTS=testsuite
 endif
 
-SUBDIRS = admin boost contrib life $(MAYBE_LIFESUITE) .
-DIST_SUBDIRS = admin boost contrib life $(MAYBE_LIFESUITE)  .
+SUBDIRS = admin boost contrib life $(MAYBE_TESTS) .
+DIST_SUBDIRS = admin boost contrib life $(MAYBE_TESTS)  .
+
 if ENABLE_MODULE_DOC
   SUBDIRS += doc
   DIST_SUBDIRS += doc
@@ -53,15 +54,17 @@ endif
 
 
 
-EXTRA_DIST = Makefile.headers lifesuite.at
+
 
 include $(top_srcdir)/Makefile.headers
 
 
+EXTRA_DIST = Makefile.headers
+
 if MAINTAINER_MODE
 ACLOCAL_AMFLAGS=-I admin
 
-DISTCHECK_CONFIGURE_FLAGS=--disable-testsuite --disable-examples --disable-benchmarks --enable-opt2 CXXFLAGS=""
+DISTCHECK_CONFIGURE_FLAGS=--enable-debug=0  --enable-opt2 CXXFLAGS=""
 
 $(nobase_include_HEADERS):
 	cd $(top_srcdir) && $(SHELL) tools/update-headers $(top_srcdir)
@@ -84,64 +87,3 @@ report:
 endif
 
 
-if ENABLE_LIFESUITE
-
-TESTSUITES=$(srcdir)/testsuite/testsuite.at\
-$(srcdir)/examples/examplesuite.at\
-$(srcdir)/benchmarks/benchmarksuite.at
-
-
-
-package.m4: $(top_srcdir)/configure.ac
-	{									   \
-	echo '# Signature of the current package.'; \
-	echo 'm4_define([AT_PACKAGE_NAME],		[@PACKAGE_NAME@])'; \
-	echo 'm4_define([AT_PACKAGE_TARNAME],	[@PACKAGE_TARNAME@])'; \
-	echo 'm4_define([AT_PACKAGE_VERSION],	[@PACKAGE_VERSION@])'; \
-	echo 'm4_define([AT_PACKAGE_STRING],	[@PACKAGE_STRING@])'; \
-	echo 'm4_define([AT_PACKAGE_BUGREPORT], [@PACKAGE_BUGREPORT@])'; \
-	} > package.m4
-
-EXTRA_DIST = package.m4 $(TESTSUITE) atlocal.in
-
-TESTSUITE = lifesuite
-
-check-local: atconfig atlocal $(TESTSUITE)
-	$(SHELL) $(TESTSUITE)
-
-check-testsuite: atconfig atlocal  $(TESTSUITE) $(LN_TESTSUITE)
-	$(SHELL) $(TESTSUITE)
-
-installcheck-local: atconfig atlocal $(TESTSUITE)
-	$(SHELL) '$(TESTSUITE)' AUTOTEST_PATH='$(bindir)' \
-              $(TESTSUITEFLAGS)
-
-clean-local:
-	test ! -f '$(TESTSUITE)' || \
-     $(SHELL) '$(TESTSUITE)' --clean
-
-AUTOM4TE    = autom4te
-AUTOTEST = $(AUTOM4TE) --language=autotest
-$(TESTSUITE): $(srcdir)/lifesuite.at package.m4 $(TESTSUITES)
-	$(AUTOTEST) -I . -I $(srcdir) $@.at -o $@.tmp
-	mv $@.tmp $@
-#	@if test $(top_srcdir) != $(top_builddir); then\
-#     ln -sf $(TESTSUITE);\
-#    fi
-
-TESTINCLUDES=-I . -I$(srcdir) -I$(srcdir)/testsuite -I$(srcdir)/examples -I$(srcdir)/benchmarks
-lifesuite: $(srcdir)/lifesuite.at package.m4 $(TESTSUITES)
-	$(AUTOTEST) $(TESTINCLUDES) $(srcdir)/$@.at -o $@.tmp
-	mv $@.tmp $@
-#	@if test $(top_srcdir) != $(top_builddir); then\
-#     ln -sf $(TESTSUITE);\
-#    fi
-
-
-MOSTLYCLEANFILES	= lifesuite.log `find -type f -print | grep lifesuite.dir`
-
-DISTCLEANFILES		= atconfig lifesuite
-
-CLEANFILES 			= package.m4
-
-endif # ENABLE_LIFESUITE
