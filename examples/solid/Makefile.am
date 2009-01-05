@@ -36,7 +36,7 @@ axi1D_LDADD = $(LIFE_LIBS) -lboost_signals
 stvenant_kirchhoff_SOURCES=stvenant_kirchhoff.cpp
 stvenant_kirchhoff_LDADD = $(LIFE_LIBS) -lboost_signals
 
-stvenant_kirchhoff_ho_SOURCES=stvenant_kirchhoff_ho.cpp
-stvenant_kirchhoff_ho_LDADD = $(LIFE_LIBS) -lboost_signals
+#stvenant_kirchhoff_ho_SOURCES=stvenant_kirchhoff_ho.cpp
+#stvenant_kirchhoff_ho_LDADD = $(LIFE_LIBS) -lboost_signals
 
 EXTRA_DIST=solid.at

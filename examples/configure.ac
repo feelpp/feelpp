@@ -27,7 +27,7 @@ AC_PREREQ([2.59])
 AC_INIT([Life platform module examples],
         [0.9.9],
         [life-commits@lists.ljkforge.imag.fr],
-        [life])
+        [life-examples])
 
 # We check a special cache variable to see if we are built in a combined environment
 AC_CACHE_CHECK([for combined build process], [life_cv_combined_env], [life_cv_combined_env=no])
@@ -63,6 +63,7 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 LIFE_DEBUG
+LIFE_CHECK_COMPILERS
 LIFE_CHECK_LIFE
 
 # Write out configure arguments
@@ -91,12 +92,13 @@ LIFE_EXTRAMODULE([fsi])
 AC_CONFIG_FILES([ Makefile ])
 AC_CONFIG_FILES([ admin/Makefile ])
 AC_CONFIG_FILES([ generic/Makefile ])
-AC_CONFIG_FILES([ fluid/Makefile ])
 AC_CONFIG_FILES([ solid/Makefile ])
 AC_CONFIG_FILES([ heat/Makefile ])
-AC_CONFIG_FILES([ levelset/Makefile ])
-AC_CONFIG_FILES([ pbeq/Makefile ])
-AC_CONFIG_FILES([ bloodflow/Makefile ])
+
+#AC_CONFIG_FILES([ fluid/Makefile ])
+#AC_CONFIG_FILES([ levelset/Makefile ])
+#AC_CONFIG_FILES([ pbeq/Makefile ])
+#AC_CONFIG_FILES([ bloodflow/Makefile ])
 dnl AC_CONFIG_FILES([ poly/Makefile ])
 AC_OUTPUT
 

@@ -376,7 +376,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     std::cout << "int idv(x) = "  << integrate( elements(mesh), im, idv(v) ).evaluate() << "\n";
     std::cout << "int gradv(x) = "  << integrate( elements(mesh), im, gradv(v) ).evaluate() << "\n";
 
-    for( int i = 0; i < u.size(); ++i )
+    for( size_type i = 0; i < u.size(); ++i )
         {
             Un->set( i, u( i ) );
             Vn->set( i, v( i ) );

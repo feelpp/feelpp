@@ -444,7 +444,7 @@ Laplacian<Order>::run()
         {
             // TODO: pass graph of D
             Mdelta = sparse_matrix_ptrtype( M_backend->newMatrix( Xh, Xh ) );
-            size_type pattern = (DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR );
+            //size_type pattern = (DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR );
             //form2( Xh, Xh, Mdelta, _init=true, _pattern=pattern );
 
             vectorial_space_ptrtype Wh( vectorial_space_type::New( mesh ) );
@@ -456,7 +456,6 @@ Laplacian<Order>::run()
             en = mesh->endFace();
 
             uint16_type nLocalDof = Xh->fe()->nLocalDof;
-            int i = 0;
             std::vector<typename mesh_type::element_type> localelts( 2 );
             for ( ; it!=en; ++it )
                 {

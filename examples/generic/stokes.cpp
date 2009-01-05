@@ -325,16 +325,13 @@ Stokes<Dim, Order, Entity>::run()
     sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
     timers["assembly"].first.restart();
 
-    //size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
-    size_type pattern = DOF_PATTERN_COUPLED;
-    form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), im, mu*trace(deft*trans(def)) )+
-        integrate( elements(mesh), im, - div(v)*idt(p) + divt(u)*id(q) )+
-        integrate( elements(mesh), im, id(q)*idt(lambda) + idt(p)*id(nu) )+
-        integrate( boundaryfaces(mesh), im,
-                   -trans(SigmaNt)*id(v)
-                   -trans(SigmaN)*idt(u)
-                   +penalbc*trans(idt(u))*id(v)/hFace() );
+    form2( Xh, Xh, D, _init=true ) = integrate( elements(mesh), im, mu*trace(deft*trans(def)) );
+    form2( Xh, Xh, D ) += integrate( elements(mesh), im, - div(v)*idt(p) + divt(u)*id(q) );
+    form2( Xh, Xh, D ) += integrate( elements(mesh), im, id(q)*idt(lambda) + idt(p)*id(nu) );
+    form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh), im,
+                                     -trans(SigmaNt)*id(v)
+                                     -trans(SigmaN)*idt(u)
+                                     +penalbc*trans(idt(u))*id(v)/hFace() );
 
     Log() << "[stokes] matrix local assembly done\n";
     D->close();
