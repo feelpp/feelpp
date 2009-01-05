@@ -96,6 +96,7 @@ LIFE_CHECK_BIBTEX
 AC_CONFIG_FILES([ Makefile ])
 AC_CONFIG_FILES([ admin/Makefile ])
 AC_CONFIG_FILES([ tutorial/Makefile ])
+AC_CONFIG_FILES([ tutorial/version.tex ])
 AC_CONFIG_FILES([ tutorial/styles/Makefile ])
 AC_CONFIG_FILES([ tutorial/pdfs/Makefile ])
 AC_CONFIG_FILES([ tutorial/pngs/Makefile ])
