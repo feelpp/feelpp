@@ -20,15 +20,18 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 
-SUFFIXES	= .cpp .hpp .idl .c .h .f .F .o .moc
+include $(top_srcdir)/admin/common.am
 
 
 lib_LTLIBRARIES	= liblifefilters.la
 
-liblifefilters_la_SOURCES	= gmsh.cpp gmshtensorizeddomain.cpp gmshsimplexdomain.cpp\
-                              importergambit.cpp\
-                              exporter.cpp exporterensight.cpp exportergmsh.cpp exportergnuplot.cpp
+liblifefilters_la_SOURCES	= exporter.cpp gmsh.cpp importergambit.cpp
 
+
+if ENABLE_INSTANTIATION_MODE
+liblifefilters_la_SOURCES +=  gmshtensorizeddomain.cpp gmshsimplexdomain.cpp\
+                               exporterensight.cpp exportergmsh.cpp exportergnuplot.cpp
+endif
 
 liblifefilters_la_LIBADD	=  $(BOOST_FILESYSTEM_LIB) ../../boost/libs/serialization/src/libboost_serialization.la ../../boost/libs/mpi/src/libboost_mpi.la
 

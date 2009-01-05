@@ -203,5 +203,10 @@ protected:
 
 po::options_description exporter_options( std::string const& prefix = "" );
 
-}
+} // Life
+
+//#if !defined( LIFE_INSTANTIATION_MODE )
+//# include <life/lifefilters/exporter.cpp>
+//#endif // LIFE_INSTANTIATION_MODE
+
 #endif /* __Exporter_H */

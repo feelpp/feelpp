@@ -52,7 +52,9 @@
 
 namespace Life
 {
+#if defined( LIFE_INSTANTIATION_MODE )
 void test_partitioner();
+#endif // LIFE_INSTANTIATION_MODE
 /**
  * The \p Partitioner class provides a uniform interface for
  * partitioning algorithms.  It takes a reference to a \p mesh_type
@@ -87,7 +89,9 @@ public:
      */
     static Partitioner<Mesh>* New( std::string const& partitioner )
     {
+#if defined(LIFE_INSTANTIATION_MODE)
         test_partitioner();
+#endif
         return Factory::type::instance().createObject( partitioner );
     }
 
@@ -187,5 +191,9 @@ Partitioner<Mesh>::singlePartition (mesh_type& mesh)
     }
 }
 
-}
+} // Life
+
+#if !defined( LIFE_INSTANTIATION_MODE )
+# include <life/lifediscr/partitioner.cpp>
+#endif
 #endif

@@ -227,6 +227,8 @@ private:
     IP M_ip;
 
 };
+po::options_description solvereigenslepc_options( std::string const& prefix = "" );
+
 } // Life
 
 #endif // SLEPC PETSC

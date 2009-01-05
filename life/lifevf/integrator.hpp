@@ -668,6 +668,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
                 } // end loop on elements
 
         }
+    Log() << "[faces] Overall geometric mapping update time : " << (t0+t1+t2) << " per element:" << (t0+t1+t2)/std::distance( this->beginElement(), this->endElement() ) << "\n";
     Debug( 5065 ) << "[faces] Overall geometric mapping update time : " << t0 << "\n";
     Debug( 5065 ) << "[faces] Overall form update time : " << t1 << "\n";
     Debug( 5065 ) << "[faces] Overall local assembly time : " << t2 << "\n";
@@ -699,16 +700,17 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     //typedef typename eval_expr_type::value_type value_type;
     typedef typename Im::value_type value_type;
 
+    element_iterator it = this->beginElement();
+    element_iterator en = this->endElement();
+
     //
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
     //
-    gm_ptrtype gm( new gm_type );
+    gm_ptrtype gm = it->gm();
+    Log() << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
     typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm,
                                                                                          this->im().points() ) );
-    element_iterator it = this->beginElement();
-    element_iterator en = this->endElement();
-
 
 
     for( ; it != en; ++it )
@@ -808,7 +810,12 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
 
     std::vector<__integrate> __integrators;
 
+    element_iterator it = beginElement();
+    element_iterator en = endElement();
+
     gm_ptrtype gm( new gm_type );
+    //gm_ptrtype gm = it->gm();
+    Log() << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
     for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
         {
             __integrators.push_back( __integrate( im(__f) ) );
@@ -820,8 +827,6 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
             }
         }
 
-    element_iterator it = beginElement();
-    element_iterator en = endElement();
 
     // make sure that we have elements to iterate over (return 0
     // otherwise)

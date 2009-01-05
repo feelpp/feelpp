@@ -27,9 +27,12 @@
 #include <life/lifecore/life.hpp>
 #include <life/lifealg/glas.hpp>
 #include <life/lifemesh/geoentity.hpp>
+#include <life/lifemesh/meshbase.hpp>
 
 namespace Life
 {
+class MeshBase;
+
 /**
  *  \defgroup GeoXD Basis Geometrical Entities Geo0D and GeoND.
  *
@@ -207,6 +210,19 @@ public:
     }
 
     /**
+     * set the mesh to which this geometric entity belongs to
+     */
+    void setMesh( MeshBase const* m )
+    {
+        M_mesh = m;
+    }
+
+    /**
+     * \return the mesh to which this geometric entity belongs to
+     */
+    MeshBase const* mesh() const { return M_mesh; }
+
+    /**
      * @return the \c begin() iterator of the coordinate container
      */
     typename node_type::iterator begin() { return _M_coor.begin(); }
@@ -314,6 +330,9 @@ private:
     node_type _M_coor;
 
     bool _M_is_vertex;
+
+    // mesh to which the geond element belongs to
+    MeshBase const* M_mesh;
 };
 
 // Alias for Geo0D<3>

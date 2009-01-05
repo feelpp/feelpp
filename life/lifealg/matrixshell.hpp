@@ -3,7 +3,7 @@
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2008-05-25
+       Date: 2008-12-28
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
 
@@ -22,32 +22,28 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file air.cpp
+   \file matrixshell.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-   \date 2008-05-25
+   \date 2008-12-28
  */
-#include <cmath>
-
-#include <boost/any.hpp>
-#include <map>
-#include <utility>
-
-#include <boost/plugin/export_plugin.hpp>
-
-#include <life/lifematerial/material.hpp>
-
+#ifndef __MatrixShell_H
+#define __MatrixShell_H 1
 
 namespace Life
 {
-
 /**
- * \class Air
- *  \brief Air material
+ * \class MatrixShell
+ * \brief matrices that define its action against a vector
  *
- *  @author Christophe Prud'homme
- * @see
+ * Generic shell matrix, i.e. a matrix that does not define anything
+ * but its action on a vector. This class contains pure virtual
+ * members that must be overloaded in derived classes.
+ *
+ * @author Christophe Prud'homme
+ * @see MatrixSparse
  */
-class Air : public Material
+template <typename T>
+class MatrixShell
 {
 public:
 
@@ -56,6 +52,8 @@ public:
      */
     //@{
 
+    typedef T value_type;
+    typedef typename type_traits<T>::real_type real_type;
 
     //@}
 
@@ -63,9 +61,8 @@ public:
      */
     //@{
 
-    Air() : Material( "Air" ) {}
-    Air( Air const & m ): Material( m ) {}
-    ~Air() {}
+    MatrixShell() {}
+    virtual ~MatrixShell() {}
 
     //@}
 
@@ -80,29 +77,17 @@ public:
      */
     //@{
 
+    /**
+     * @returns \p m, the row-dimension of
+     * the matrix where the marix is \f$ M \times N \f$.
+     */
+    virtual size_type size1 () const = 0;
 
-    //! thermal conductivity in \f$ W/(m*K) \f$
-    virtual double k() const
-    {
-        double T = 273; // K (default)
-        return pow(10,(0.8616*log10(abs(T))-3.7142));
-    }
-
-    //! density in \f$ kg/m^3 \f$
-    virtual double rho() const
-    {
-
-        return 1.2;
-    }
-
-    //! thermal capacity in \f$ J/(kg*K) \f$
-    virtual double C() const { double T=273; return 0.0769*T+1076.9; }
-
-    //! Poisson coefficient
-    virtual double nu() const { return 1.7*1e-5; }
-
-    //! Young modulus in \f$ Pa \f$
-    virtual double E() const { return -1; }
+    /**
+     * @returns \p n, the column-dimension of
+     * the matrix where the marix is \f$ M \times N \f$.
+     */
+    virtual size_type size2 () const = 0;
 
 
     //@}
@@ -118,6 +103,14 @@ public:
      */
     //@{
 
+    //! copies the diagonal of the matrix into \p v.
+    virtual void diagonal( vector_type& v ) = 0;
+
+    //! Multiplies the matrix with arg and stores the result in dest.
+    virtual void mult( vector_type const& arg, vector_type& dest ) = 0;
+
+    //! Multiplies the matrix with arg and adds the result to dest.
+    virtual void multAndAdd( vector_type const& arg, vector_type& dest ) = 0;
 
     //@}
 
@@ -128,8 +121,5 @@ protected:
 private:
 
 };
-BOOST_PLUGIN_EXPORT(Material, Air, "Air");
-BOOST_PLUGIN_EXPORT_LIST();
-
 } // Life
-
+#endif /* __MatrixShell_H */

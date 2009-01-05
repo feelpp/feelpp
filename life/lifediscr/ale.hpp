@@ -547,5 +547,9 @@ ALE<Convex>::updatePointsInFaces( std::vector<flag_type>& flagSet,
     Log() << "[ALE] Time to update PN map (faces): " << M_timer.elapsed() << "\n";
 }
 
-}
+} // Life
+
+#if !defined( LIFE_INSTANTIATION_MODE )
+# include <life/lifediscr/ale.cpp>
+#endif // LIFE_INSTANTIATION_MODE
 #endif // __ALE

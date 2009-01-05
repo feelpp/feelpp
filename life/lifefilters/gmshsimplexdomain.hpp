@@ -172,4 +172,9 @@ private:
 };
 
 } // Life
+
+#if !defined( LIFE_INSTANTIATION_MODE )
+# include <life/lifefilters/gmshsimplexdomain.cpp>
+#endif // LIFE_INSTANTIATION_MODE
+
 #endif /* __GmshSimplexDomain_H */

@@ -68,7 +68,7 @@ extern "C"
            << std::scientific
            << ", |residual|_2 = " << fnorm;
       Life::Log() << ostr.str() << "\n";
-#if 0
+#if 1
       KSP            ksp;         /* linear solver context */
       SNESGetKSP( snes,&ksp);
       PetscInt lits;

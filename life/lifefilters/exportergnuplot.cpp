@@ -161,9 +161,12 @@ ExporterGnuplot<MeshType>::save() const
     Debug( 8007 ) << "[ExporterGnuplot] saving done\n";
 }
 
+
+#if defined( LIFE_INSTANTIATION_MODE )
 //
 // explicit instances
 //
 template class ExporterGnuplot<Mesh<GeoEntity<Simplex<1,1> > > >;
+#endif // LIFE_INSTANTIATION_MODE
 
 }

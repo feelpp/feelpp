@@ -22,11 +22,9 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 # DESCRIP-END.
 #
+include $(top_srcdir)/admin/common.am
 
-SUFFIXES	= .cpp .hpp .idl .c .h .f .F .o .moc
-
-
-SUBDIRS		= lifecore  lifealg lifemesh lifepoly lifediscr lifevf  lifefilters lifematerial
+SUBDIRS		= lifecore  lifealg lifemesh lifepoly lifediscr lifevf  lifefilters lifesystem lifematerial
 
 
 dist_pkgdata_DATA  = debug.areas

@@ -378,4 +378,117 @@
 # define LIFE_ISUNLIKELY( x )  ( x )
 #endif
 
+/**
+ * \def LIFE_PREFETCH(x)
+ * \brief Prefetching
+
+ Another important method of improving performance is through caching
+ of necessary data close to the processor. Caching minimizes the
+ amount of time it takes to access the data. Most modern processors
+ have three classes of memory:
+
+ -# Level 1 cache commonly supports single-cycle access
+
+ -# Level 2 cache supports two-cycle access
+
+ -# System memory supports longer access times
+
+ To to minimize access latency, and thus improve performance, it's
+ best to have your data in the closest memory. Performing this task
+ manually is called prefetching. GCC supports manual prefetching of
+ data through a built-in function called __builtin_prefetch. You use
+ this function to pull data into the cache shortly before it's
+ needed. As shown below, the __builtin_prefetch function takes three
+ arguments:
+
+ -# The address of the data
+
+ -# The rw parameter, which you use to indicate whether the data is
+ being pulled in for Read or preparing for a Write operation
+
+ -# The locality parameter, which you use to define whether the data
+ should be left in cache or purged after use
+
+ \code
+ void  __builtin_prefetch( const void *addr, int rw, int locality );
+ \endcode
+
+
+ Prefetching is used extensively by the Linux kernel. Most often it is
+ used through macros and wrapper functions. Listing below is an example of
+ a helper function that uses a wrapper over the built-in function
+ (from ./linux/include/linux/prefetch.h). The function implements a
+ preemptive look-ahead mechanism for streamed operations. Using this
+ function can generally result in better performance by minimizing
+ cache misses and stalls.
+
+ \code
+ #ifndef ARCH_HAS_PREFETCH
+ #define prefetch(x) __builtin_prefetch(x)
+ #endif
+
+ static inline void prefetch_range(void *addr, size_t len)
+ {
+ #ifdef ARCH_HAS_PREFETCH
+ char *cp;
+ char *end = addr + len;
+
+ for (cp = addr; cp < end; cp += PREFETCH_STRIDE)
+   prefetch(cp);
+ #endif
+ }
+ \endcode
+ */
+#if __GNUC__ - 0 >= 3
+# define LIFE_PREFETCH( x, rw, locality )   __builtin_prefetch( (x), rw, locality )
+#else
+# define LIFE_PREFETCH( x, rw, locality )
+#endif // __GNUC__
+
+/**
+ * \def LIFE_IS_CONSTANT(x)
+ * \brief detect at compile if it is a constant
+
+ GCC provides a built-in function that you can use to determine
+ whether a value is a constant at compile-time. This is valuable
+ information because you can construct expressions that can be
+ optimized through constant folding. The __builtin_constant_p function
+ is used to test for constants.
+
+ The prototype for __builtin_constant_p is shown below. Note that
+ __builtin_constant_p cannot verify all constants, because some are not
+ easily proven by GCC.
+
+ \code
+ int __builtin_constant_p( exp )
+ \endcode
+
+
+ Linux uses constant detection quite frequently. In the example shown
+ in Listing 3 (from ./linux/include/linux/log2.h), constant detection
+ is used to optimize the roundup_pow_of_two macro. If the expression
+ can be verified as a constant, then a constant expression (which is
+ available for optimization) is used. Otherwise, if the expression is
+ not a constant, another macro function is called to round up the
+ value to a power of two.
+
+
+ Listing. Constant detection to optimize a macro function
+\code
+#define roundup_pow_of_two(n)			\
+(						\
+	__builtin_constant_p(n) ? (		\
+		(n == 1) ? 1 :			\
+		(1UL << (ilog2((n) - 1) + 1))	\
+				   ) :		\
+	__roundup_pow_of_two(n)			\
+)
+\endcode
+ */
+#if __GNUC__ - 0 >= 3
+# define LIFE_IS_CONSTANT( n ) __builtin_constant_p( n )
+#else
+# define LIFE_IS_CONSTANT( n )
+#endif // __GNUC__
+
 #endif /* LIFEMACROS_HPP */

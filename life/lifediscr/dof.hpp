@@ -1198,7 +1198,7 @@ Dof<MeshType, FEType, PeriodicityType>::Dof( mesh_type& mesh, fe_ptrtype const& 
     M_dof_indices(),
     M_periodicity( periodicity )
 {
-    Log() << "[dof] is_periodic = " << is_periodic << "\n";
+    Debug( 5015 ) << "[dof] is_periodic = " << is_periodic << "\n";
     size_type start_next_free_dof = 0;
     if ( is_periodic )
         start_next_free_dof = buildPeriodicDofMap( mesh );
@@ -1341,7 +1341,7 @@ Dof<MeshType, FEType, PeriodicityType>::addPeriodicDof( element_type const& __el
                     dof_id = boost::get<0>(localToGlobal( __elt.id(), lid, 0 ));
                     periodic_dof[tag].insert( std::make_pair( dof_id, boost::make_tuple( __elt.id(), lid, gDof ) ) );
 
-                    Log() << "added " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>(localToGlobal( __elt.id(), lid, 0 )) << "\n";
+                    Debug( 5015 ) << "added " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>(localToGlobal( __elt.id(), lid, 0 )) << "\n";
                 }
 
         }
@@ -1392,17 +1392,8 @@ Dof<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
     _M_face_sign = ublas::scalar_vector<bool>(M.numFaces(), false);
 
     generateFacePermutations( M, mpl::bool_< ((Shape == SHAPE_TETRA && nOrder > 2 ) || (Shape == SHAPE_HEXA && nOrder > 1 ))>() );
-    /* counter that stores the number dof per entities
-       already registered this counter is used to shift
-       the global dof index for each topological
-       entities. We start from 0 and each topological
-       entity (point,edge,face,element) will add there
-       contribution to this counter to be then used the
-       next topological dofs*/
-    size_type gdofcount = 0;
 
     //! list of elements which have a periodic face Tag2
-
     periodic_element_list_type periodic_elements;
 
     for (size_type processor=0; processor<n_proc; processor++)
@@ -1472,14 +1463,14 @@ Dof<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
             ++it_periodic;
         }
 
-    Log() << "[periodic dof table] next_free_dof : " << next_free_dof << "\n";
-    Log() << "[periodic dof table] number of periodic dof : " << periodic_dof[periodicity_type::tag1].size() << "\n";
+    Debug( 5015 ) << "[periodic dof table] next_free_dof : " << next_free_dof << "\n";
+    Debug( 5015 ) << "[periodic dof table] number of periodic dof : " << periodic_dof[periodicity_type::tag1].size() << "\n";
 
     dof_points_type periodic_dof_points( next_free_dof );
     generatePeriodicDofPoints( M, periodic_elements, periodic_dof_points );
 
-    Log() << "[periodic dof table] generated dof points\n";
-    Log() << "[periodic dof table] start matching the dof points\n";
+    Debug( 5015 ) << "[periodic dof table] generated dof points\n";
+    Debug( 5015 ) << "[periodic dof table] start matching the dof points\n";
 
     size_type max_gid = 0;
     std::pair<size_type,periodic_dof_type> dof;
@@ -1516,8 +1507,8 @@ Dof<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
                     size_type gid2 = it_dof2->first;
                     LIFE_ASSERT( gid2 < next_free_dof )( gid )( gid2 )( next_free_dof ).error( "[periodic] invalid dof id" );
                     node_type x2 = periodic_dof_points[gid2].template get<0>();
-                    LIFE_ASSERT( math::abs( x2[0]-M_periodicity.translation()[0]) < 1e-10 )
-                        ( x1 )( x2 )( M_periodicity.translation() ).error( "[periodic] invalid periodic setup");
+                    //LIFE_ASSERT( math::abs( x2[0]-M_periodicity.translation()[0]) < 1e-10 )
+                    //( x1 )( x2 )( M_periodicity.translation() ).error( "[periodic] invalid periodic setup");
                 }
             it_dof2 = periodic_dof[periodicity_type::tag2].begin();
             size_type corresponding_gid = invalid_size_type_value;
@@ -1531,8 +1522,8 @@ Dof<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
                         ( gid )( dof.second.template get<0>() )( dof.second.template get<1>())
                         ( gid2 )( it_dof2->second.template get<0>() )( it_dof2->second.template get<1>())
                         ( x1 )( x2 )( M_periodicity.translation() ).error( "invalid point size" );
-                    LIFE_ASSERT( math::abs( x1[0]-(x2[0]-M_periodicity.translation()[0])) < 1e-10 )
-                        ( x1 )( x2 )( M_periodicity.translation() ).error( "[periodic] invalid periodic setup");
+                    //LIFE_ASSERT( math::abs( x1[0]-(x2[0]-M_periodicity.translation()[0])) < 1e-10 )
+                    //( x1 )( x2 )( M_periodicity.translation() ).error( "[periodic] invalid periodic setup");
                     if ( ublas::norm_2( x1-(x2-M_periodicity.translation()) ) < 1e-10 )
                         {
                             // loop on each pair (element, lid) which
@@ -1556,7 +1547,7 @@ Dof<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
                             size_type lid = it_dof2->second.template get<1>();
                             size_type gDof = it_dof2->second.template get<2>();
 
-                            Log() << "link " <<  boost::get<0>( _M_el_l2g[ ie][ lid ] )  << " -> " << gid << "\n";
+                            Debug( 5015 ) << "link " <<  boost::get<0>( _M_el_l2g[ ie][ lid ] )  << " -> " << gid << "\n";
 
                             // gid is given by dof1
                             _M_el_l2g[ ie][ lid ] = boost::make_tuple(gid, 1, true );
@@ -1574,22 +1565,38 @@ Dof<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
             else
                 {
                     // we have a problem, no match was found, this should not happen
-                    Log() << "[periodic] invalid point/dof matching\n";
-                    Log() << "[periodic] n = " << x1 << "\n";
+                    Debug( 5015 ) << "[periodic] invalid point/dof matching\n";
+                    Debug( 5015 ) << "[periodic] n = " << x1 << "\n";
                 }
 
         }
-    Log() << "[periodic dof table] done matching the dof points\n";
-    Log() << "[periodic dof table] is empty : " << periodic_dof[periodicity_type::tag2].empty() << "\n";
+    Debug( 5015 ) << "[periodic dof table] done matching the dof points\n";
+    Debug( 5015 ) << "[periodic dof table] is empty : " << periodic_dof[periodicity_type::tag2].empty() << "\n";
 
     // ensure that periodic_dof[periodicity_type::tag2] is empty
     if ( !periodic_dof[periodicity_type::tag2].empty() )
         {
-            Log() << "[periodic] periodic conditions not set properly, some periodic dof were not assigned\n";
+            Debug( 5015 ) << "[periodic] periodic conditions not set properly, some periodic dof were not assigned\n";
+            typename periodic_dof_map_type::iterator it_dof2 = periodic_dof[periodicity_type::tag2].begin();
+            typename periodic_dof_map_type::iterator en_dof2 = periodic_dof[periodicity_type::tag2].end();
+            while( it_dof2 != en_dof2 )
+                {
+
+                    size_type ie = it_dof2->second.template get<0>();
+                    size_type lid = it_dof2->second.template get<1>();
+
+                    Debug( 5015 ) << "[periodic] dof " << it_dof2->first << " not assigned, "
+                          << "x = " << periodic_dof_points[it_dof2->first].template get<0>() << " "
+                          << "elt = " << ie << ", lid= " << lid << "\n";
+
+
+
+                    ++it_dof2;
+                }
         }
     else
         {
-            Log() << "[periodic] periodic condition done\n";
+            Debug( 5015 ) << "[periodic] periodic condition done\n";
         }
 
     return max_gid+1;
@@ -1992,11 +1999,14 @@ Dof<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_type& M
                         if ( dof_done[ thedof ] == false )
                             {
                                 periodic_dof_points[thedof] = boost::make_tuple( __c->xReal( lid ), thedof, 0 );
+                                // these tests are problem specific x=0 and x=translation
+#if 0
                                 if ( __face.marker().value() == periodicity_type::tag1 )
                                     LIFE_ASSERT( math::abs( __c->xReal( lid )[0] ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1");
                                 if ( __face.marker().value() == periodicity_type::tag2 )
                                     LIFE_ASSERT( math::abs( __c->xReal( lid )[0] - M_periodicity.translation()[0] ) < 1e-10 )
                                         ( __c->xReal( lid ) )( M_periodicity.translation()).warn( "[periodic] invalid p[eriodic point tag1");
+#endif
                                 dof_done[thedof] = true;
                                 ++dof_id;
                             }

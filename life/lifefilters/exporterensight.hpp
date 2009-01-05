@@ -222,5 +222,10 @@ private:
 };
 
 
-}
+} // Life
+
+#if !defined( LIFE_INSTANTIATION_MODE )
+# include <life/lifefilters/exporterensight.cpp>
+#endif // LIFE_INSTANTIATION_MODE
+
 #endif /* __ExporterEnsight_H */

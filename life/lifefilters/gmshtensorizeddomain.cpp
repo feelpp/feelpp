@@ -189,6 +189,8 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  m
 
 }
 
+#if defined( LIFE_INSTANTIATION_MODE )
+
 // Instantiations
 // 1D
 template class GmshTensorizedDomain<1,1,1,Simplex>;
@@ -208,4 +210,6 @@ template class GmshTensorizedDomain<3,1,3,Simplex>;
 template class GmshTensorizedDomain<3,1,3,SimplexProduct>;
 template class GmshTensorizedDomain<3,2,3,Simplex>;
 template class GmshTensorizedDomain<3,2,3,SimplexProduct>;
+#endif // LIFE_INSTANTIATION_MODE
+
 }

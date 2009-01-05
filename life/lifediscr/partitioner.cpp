@@ -126,11 +126,6 @@ const bool meshsp31g = Partitioner<meshsp31_t>::Factory::type::instance().regist
 
 
 } // detail
-void test_partitioner()
-{
-    Debug( 4020 ) << "meshsp21e= " << detail::meshsp21e << "\n"
-                  << "meshs31e = " << detail::meshs31e << "\n";
-}
 
 
 
@@ -138,11 +133,19 @@ void test_partitioner()
 template<typename MeshType>
 Partitioner<MeshType>::Partitioner()
 {
+#if defined(LIFE_INSTANTIATION_MODE)
     test_partitioner();
+#endif
 }
 
 
 
+#if defined( LIFE_INSTANTIATION_MODE )
+void test_partitioner()
+{
+    Debug( 4020 ) << "meshsp21e= " << detail::meshsp21e << "\n"
+                  << "meshs31e = " << detail::meshs31e << "\n";
+}
 
 //
 // explicit instances
@@ -153,16 +156,24 @@ template class Partitioner<Mesh<GeoEntity<Simplex<1,1,1> > > >;
 template class Partitioner<Mesh<GeoEntity<Simplex<1,1,2> > > >;
 // 2D
 template class Partitioner<Mesh<GeoEntity<Simplex<2,1,2> > > >;
+#if LIFE_MESH_MAX_ORDER >= 2
 template class Partitioner<Mesh<GeoEntity<Simplex<2,2,2> > > >;
+#elif LIFE_MESH_MAX_ORDER >= 3
 template class Partitioner<Mesh<GeoEntity<Simplex<2,3,2> > > >;
+#elif LIFE_MESH_MAX_ORDER >= 4
 template class Partitioner<Mesh<GeoEntity<Simplex<2,4,2> > > >;
+#elif LIFE_MESH_MAX_ORDER >= 5
 template class Partitioner<Mesh<GeoEntity<Simplex<2,5,2> > > >;
+#endif
 // 2D3D
 template class Partitioner<Mesh<GeoEntity<Simplex<2,1,3> > > >;
 // 3D
 template class Partitioner<Mesh<GeoEntity<Simplex<3,1,3> > > >;
+#if LIFE_MESH_MAX_ORDER >= 2
 template class Partitioner<Mesh<GeoEntity<Simplex<3,2,3> > > >;
+#endif
 template class Partitioner<Mesh<GeoEntity<SimplexProduct<1,1,1> > > >;
 template class Partitioner<Mesh<GeoEntity<SimplexProduct<2,1,2> > > >;
 template class Partitioner<Mesh<GeoEntity<SimplexProduct<3,1,3> > > >;
+#endif // LIFE_INSTANTIATION_MODE
 }

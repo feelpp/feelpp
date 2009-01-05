@@ -163,6 +163,7 @@ typedef Mesh<GeoEntity<SimplexProduct<3,1> > > meshsp31_t;
 const bool meshsp31e = Exporter<meshsp31_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshsp31_t> );
 const bool meshsp31g = Exporter<meshsp31_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshsp31_t> );
 
+//#if defined( LIFE_INSTANTIATION_MODE )
 //
 // explicit instances
 //
@@ -175,6 +176,7 @@ template class Exporter<Mesh<GeoEntity<Simplex<3,1,3> > > >;
 template class Exporter<Mesh<GeoEntity<SimplexProduct<1,1,1> > > >;
 template class Exporter<Mesh<GeoEntity<SimplexProduct<2,1,2> > > >;
 template class Exporter<Mesh<GeoEntity<SimplexProduct<3,1,3> > > >;
+//#endif // LIFE_INSTANTIATION_MODE
 
 //
 // Exporter Options

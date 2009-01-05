@@ -6,7 +6,7 @@
        Date: 2005-07-05
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2008 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -623,6 +623,8 @@ Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
 
 } // Life
 
-
+#if !defined(LIFE_INSTANTIATION_MODE)
+# include <life/lifediscr/mesh.cpp>
+#endif //
 
 #endif /* __mesh_H */

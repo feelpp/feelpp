@@ -184,8 +184,10 @@ ALE<Convex>::generateP1Map( p1_element_type& p )
     p = *U;
 }
 
+#if defined( LIFE_INSTANTIATION_MODE )
 template class ALE< Simplex<2,1> >;
 template class ALE< Simplex<2,2> >;
 template class ALE< Simplex<2,3> >;
 template class ALE< Simplex<2,4> >;
+#endif // LIFE_INSTANTIATION_MODE
 }

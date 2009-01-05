@@ -23,16 +23,15 @@
 # DESCRIP-END.
 #
 
-SUFFIXES	= .cpp .hpp .idl .c .h .f .F .o .moc .cc
-
-
+include $(top_srcdir)/admin/common.am
 
 lib_LTLIBRARIES		= liblifediscr.la
 liblifediscr_la_SOURCES	=  bdf2.cpp \
-                           mesh.cpp  \
-                           partitioner.cpp \
-                           oseen.cpp ale.cpp
+                           oseendata.cpp
 
+if ENABLE_INSTANTIATION_MODE
+liblifediscr_la_SOURCES += mesh.cpp partitioner.cpp ale.cpp
+endif
 
 liblifediscr_la_LIBADD	= ../lifemesh/liblifemesh.la ../lifealg/liblifealg.la
 

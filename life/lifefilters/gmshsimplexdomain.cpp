@@ -104,6 +104,8 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<3> ) const
     return ostr.str();
 }
 
+#if defined( LIFE_INSTANTIATION_MODE )
+
 // Instantiations
 // 1D
 template class GmshSimplexDomain<1,1>;
@@ -114,4 +116,6 @@ template class GmshSimplexDomain<2,2>;
 // 3D
 template class GmshSimplexDomain<3,1>;
 template class GmshSimplexDomain<3,2>;
+#endif // LIFE_INSTANTIATION_MODE
+
 }
