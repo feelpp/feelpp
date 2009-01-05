@@ -28,13 +28,13 @@ html: Doxyfile  $(PNGS) $(DOCSOURCES)
 	cp @srcdir@/life.css html/
 	: # First pass
 	doxygen Doxyfile >/dev/null
-	perl @top_srcdir@/tools/doxygen/index_create.pl life.tag index-API.doc
-	perl @top_srcdir@/tools/doxygen/toc_create.pl @srcdir@/index.doc @srcdir@/publis.doc
-	: # Second pass
-	doxygen Doxyfile >/dev/null
-	: # Post-processing
-	rm -f html/dir*
-	perl @top_srcdir@/tools/doxygen/doxygen_postprocessor.pl
+#	perl @top_srcdir@/tools/doxygen/index_create.pl life.tag index-API.doc
+#	perl @top_srcdir@/tools/doxygen/toc_create.pl @srcdir@/index.doc @srcdir@/publis.doc
+#	: # Second pass
+#	doxygen Doxyfile >/dev/null
+#	: # Post-processing
+#	rm -f html/dir*
+#	perl @top_srcdir@/tools/doxygen/doxygen_postprocessor.pl
 
 #publish:
 #	$(MAKE) -C .. sync-gforge

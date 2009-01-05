@@ -523,7 +523,7 @@ WARN_LOGFILE           = Doxylog
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT = @top_srcdir@/doc @top_srcdir@/life
+INPUT = @top_srcdir@/../doc @top_srcdir@/../life
 
 
 # This tag can be used to specify the character encoding of the source files

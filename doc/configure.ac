@@ -24,10 +24,10 @@
 AC_PREREQ([2.59])
 
 # Initialize Autoconf
-AC_INIT([Life platform module applications],
+AC_INIT([Life platform module documentation],
         [0.9.9],
         [life-commits@lists.ljkforge.imag.fr],
-        [life])
+        [life-doc])
 
 # We check a special cache variable to see if we are built in a combined environment
 AC_CACHE_CHECK([for combined build process], [life_cv_combined_env], [life_cv_combined_env=no])
@@ -65,7 +65,9 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 LIFE_DEBUG
+LIFE_CHECK_COMPILERS
 LIFE_CHECK_LIFE
+
 
 # Write out configure arguments
 life_configure_args=`eval echo configure $ac_configure_args`
@@ -85,9 +87,18 @@ AC_SUBST(life_revision)
 # Automatically save cache file to improve rerunning of configure script
 AC_CACHE_SAVE
 
+LIFE_CHECK_PDFLATEX
+LIFE_CHECK_MAKEINDEX
+LIFE_CHECK_BIBTEX
+
+
 # doc
 AC_CONFIG_FILES([ Makefile ])
+AC_CONFIG_FILES([ admin/Makefile ])
 AC_CONFIG_FILES([ tutorial/Makefile ])
+AC_CONFIG_FILES([ tutorial/styles/Makefile ])
+AC_CONFIG_FILES([ tutorial/pdfs/Makefile ])
+AC_CONFIG_FILES([ tutorial/pngs/Makefile ])
 AC_CONFIG_FILES([ api/Makefile api/Doxyfile ])
 
 AC_OUTPUT

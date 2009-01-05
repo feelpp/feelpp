@@ -1,0 +1,100 @@
+
+
+\RequirePackage[final]{listings}
+
+
+%
+% quelques mise en pages (package, commande, environnement,...)
+%
+\newcommand{\ltx@pack}[1]{{\mdseries\sffamily\upshape#1}}
+
+\newcommand{\ltxpack}[1]{%
+  \ltx@pack{#1}%
+  \protect\index{extensions!\protect\texttt{#1}}%
+  \protect\index{#1@\protect\textsf{#1 extension}}}
+\newcommand{\ltxpackwi}[1]{%
+  \ltx@pack{#1}}
+
+\newcommand{\ltx@file}[1]{%
+  \texttt{#1}}
+
+\newcommand{\ltxfile}[1]{%
+  \ltx@file{#1}%
+  \protect\index{fichiers!\protect\texttt{#1}}%
+  \protect\index{#1@\protect\texttt{#1}}}
+
+\newcommand{\latexcom}[1]{{\mdseries\ttfamily\upshape\symbol{92}#1}}
+
+\newcommand{\indexcom}[1]{%
+  \index{#1@\protect\texttt{\symbol{92}#1}}}
+  
+\newcommand{\ltxcom}[1]{%
+  \latexcom{#1}\indexcom{#1}}
+
+\newcommand{\ltxenv}[1]{%
+  {\mdseries\ttfamily\upshape#1}%
+  \index{environnements!\protect\texttt{#1}}%
+  \index{#1@\protect\texttt{#1} environnement}}
+
+
+
+\newcommand{\indexlen}[1]{%
+  \index{#1@\protect\texttt{\symbol{'134}#1} longueur}}
+
+\newcommand{\ltxlen}[1]{%
+  \latexcom{#1}\indexlen{#1}}
+
+\newcommand{\@ltxcls}[1]{{\mdseries\ttfamily\upshape#1}}
+
+\newcommand{\ltxcls}[1]{%
+  \@ltxcls{#1}}
+\newcommand{\ltxclswi}[1]{%
+  \@ltxcls{#1}%
+  \protect\index{#1@\protect\texttt{#1} classe}%
+  \protect\index{classe!\protect\texttt{#1}}}
+
+\newcommand{\ltxcounter}[1]{\texttt{#1}}
+\RequirePackage{listings}
+
+\lstnewenvironment{ltxcode}[1][]{%
+  \lstset{language=[LaTeX]TeX,
+    basicstyle=\ttfamily,
+    commentstyle=\rmfamily\slshape,
+    extendedchars=true,
+    flexiblecolumns=true,
+    xrightmargin=-25pt,
+    escapechar=ø,
+    #1
+  }}{}
+
+
+
+\newcommand{\ccomment}[1]{\hfill$\leftarrow$
+  \parbox[t]{.45\textwidth}{\normalfont\sffamily#1}}
+
+%
+% quelques logos
+%
+\newcommand{\BibTeX}{%
+  {\rmfamily\textsc{Bib}\TeX}%
+  \protect\index{BibTeX@\textsc{Bib}\protect\TeX}%
+  \protect\index{logiciels connexes!bibtex@\textsc{Bib}\protect\TeX}}
+
+\newcommand{\OzTeX}{%
+  Oz\TeX%
+  \protect\index{OzTeX@Oz\protect\TeX}}
+
+\newcommand{\emTeX}{%
+  em\TeX%
+  \protect\index{emTeX@em\protect\TeX}}
+
+\newcommand{\AucTeX}{%
+  Auc\TeX%
+  \protect\index{AucTeX@Auc\protect\TeX}}
+
+
+\endinput
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

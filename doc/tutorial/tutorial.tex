@@ -36,6 +36,10 @@
 \usepackage{amsmath,amssymb}
 
 %-----------------------------------------------------------------------
+% fancyvrb unixcom environment
+\usepackage{fvrb}
+
+%-----------------------------------------------------------------------
 % nota environment
 \usepackage{nota}
 \newcommand{\ficnota}{attention}
@@ -146,12 +150,13 @@ at
 \begin{center}
   \href{http://ljkforge.imag.fr/life}{http://ljkforge.imag.fr/life}
 \end{center}
-Download the latest tarball. Then follow the steps
-\begin{lstlisting}{language=sh}
-  # replace x,y,z with the corresponding  numbers
+Download the latest tarball. Then follow the steps and replace x,y,z
+with the corresponding numbers
+
+\begin{unixcom}
   tar xzf life-x.y.z.tar.gz
   cd life-x.y.z
-\end{lstlisting}
+\end{unixcom}
 
 
 \subsubsection{Getting the source via Subversion}
@@ -176,7 +181,7 @@ hour.
 LJKForge, you must add the commands
 \begin{lstlisting}[language=sh]
 host ljkforge.imag.fr
-user votre_login_ljkforge
+  user <your_login_ljkforge>
 \end{lstlisting}
 in the \verb|~/.ssh/config| file.
 
@@ -189,10 +194,10 @@ downloaded and type the following command.
 \\ \verb|svn co svn+ssh://login@ljkforge.imag.fr/svn/life/life/trunk life|
 where \\ \verb|login| is your login name in the LJKForge plateform. Then, if
 you want to download the life-test sources type :
-\begin{lstlisting}[language=sh]
-cd life/benchmarks
-svn co svn+ssh://login@ljkforge.imag.fr/svn/life-test/life-test/trunk validation
-\end{lstlisting}
+\begin{unixcom}
+  cd life/benchmarks
+  svn co svn+ssh://login@ljkforge.imag.fr/svn/life-test/life-test/trunk validation
+\end{unixcom}
 
 \subsubsection{Dealing with software dependencies}
 \label{sec:about-dependencies}
@@ -235,41 +240,53 @@ have done the checkout and type the following commands :
 \paragraph{From tarball}
 \label{sec:from-tarball}
 
-The steps are as follows:
+The steps are as follows to configure the Life Development Plateform
 
-\begin{lstlisting}{language=sh}
+\begin{unixcom}
   cd life-x.y.z
   mkdir opt
   cd opt
-  # configure the Life Development Plateform
+
   ../configure --enable-opt2
+\end{unixcom}
 
-  # Build the Life library
+Then type
+\begin{unixcom}
   make
+\end{unixcom}
 
-  # Check the Life Library
+to compile the library and the tutorial. And finally type
+\begin{unixcom}
   make check
-\end{lstlisting}
+\end{unixcom}
+In order to compile the testsuite, the examples and the benchmarks and
+execute some of them to verity that the Life library is functional.
+
 
 \paragraph{From subversion}
 \label{sec:from-subversion}
 
-The steps are as follows:
+The steps are as follows to configure the Life Development Plateform
 
-\begin{lstlisting}{language=sh}
+\begin{unixcom}
   cd life
   make -f Makefile.dist
   mkdir opt
   cd opt
-  # configure the Life Development Plateform
+
   ../configure --enable-opt2
+\end{unixcom}
 
-  # Build the Life library
+Then, to build  the Life library, type
+\begin{unixcom}
   make
+\end{unixcom}
 
-  # Check the Life Library
+And finally to check the library, type
+\begin{unixcom}
   make check
-\end{lstlisting}
+\end{unixcom}
+
 
 \begin{note}
   The script \lstinline!configure! supports many command line
@@ -278,13 +295,13 @@ The steps are as follows:
   called \emph{maintainer mode} to ensure that the makefiles are
   properly regenerated when you modify a \lstinline!Makefile.am! or if
   you modify \lstinline!configure.ac!, to achieve this type
-  \begin{lstlisting}
+  \begin{unixcom}
     configure --enable-maintainer-mode
-  \end{lstlisting}
+  \end{unixcom}
   To list all configure options, type
-  \begin{lstlisting}
+  \begin{unixcom}
     configure --help
-  \end{lstlisting}
+  \end{unixcom}
 \end{note}
 
 
@@ -292,7 +309,7 @@ The steps are as follows:
 \label{sec:compile-an-extra}
 
 If you work with an extra module, \emph{e.g.} \lstinline!validation!, the steps are as follows
-\begin{lstlisting}[language=sh]
+\begin{unixcom}
 cd life
 make -f Makefile.dist
 cd benchmarks/validation
@@ -303,29 +320,27 @@ cd opt
 ../life/configure --enable-opt2 --enable-maintainer-mode
 make
 make check
-\end{lstlisting}
+\end{unixcom}
 
 
 \paragraph{Compiling the Life tutorial}
 \label{sec:comp-life-tutor}
 If the command \lstinline!make check! has been run before the tutorial
-should be already compiled and ready. The steps are as follows:
-\begin{lstlisting}{language=sh}
-  # Build the Life tutorial
+should be already compiled and ready. The steps are as follows  to build the Life tutorial
+\begin{unixcom}
   cd opt/doc/tutorial
   make check
-\end{lstlisting}
+\end{unixcom}
 Here is what the directory should look like
-\begin{lstlisting}{language=sh}
-cd opt/doc/tutorial
-ls
+\begin{unixcom}
+  cd opt/doc/tutorial
+  ls
 
-laplacian     Makefile      myintegrals   mymesh       pngs/
-tutorial.blg  tutorial.out  tutorial.toc  laplacian.o  myapp
-myintegrals.o mymesh.o      stokes.assert tutorial.aux
-stokes        stokes.o      tutorial.bbl  tutorial.log tutorial.pdf
-
-\end{lstlisting}
+  laplacian     Makefile      myintegrals   mymesh       pngs/
+  tutorial.blg  tutorial.out  tutorial.toc  laplacian.o  myapp
+  myintegrals.o mymesh.o      stokes.assert tutorial.aux pdfs/ styles/
+  stokes        stokes.o      tutorial.bbl  tutorial.log tutorial.pdf
+\end{unixcom}
 
 
 \subsection{Programming environment}
