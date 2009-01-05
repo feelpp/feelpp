@@ -1,0 +1,194 @@
+\chapter{FEEL++}
+\label{sec:feel++}
+
+One of Life assets is it finite element embedded language
+(FEEL++). The language follows the C++ grammar, and provides keywords
+as well as operations between objects which are, mathematically,
+tensors of rank 0, 1 or 2.
+
+
+\section{Predefined functions}
+
+Some notations
+\begin{itemize}
+\item $f: \mathbb{R}^n \mapsto \mathbb{R}^{m\times p}$  with $n=1,2,3$, $m=1,2,3$, $p=1,2,3$.
+\item $\Omega^e$ current mesh element
+\end{itemize}
+
+
+\begin{longtable}[c]{rllll}
+  Keyword & Math object & Description & Rank & $M \times N$\\\hline\hline
+
+  \endhead
+  %%
+  %% Point
+  %%
+  \lstinline!P()! & $\overrightarrow{P}$ & current point coordinates $(P_x, P_y, P_z)^T$ & 1 & $d \times 1$ \\
+
+  \lstinline!Px()! & $P_x$ & $x$ coordinate of $\overrightarrow{P}$ & 0 & $1 \times 1$\\
+
+  \lstinline!Py()! & $P_y$ & $y$ coordinate of $\overrightarrow{P}$ & 0 & $1 \times 1$\\
+  & &  (value is 0 in 1D) & &\\
+
+  \lstinline!Pz()! & $P_z$ & $z$ coordinate of $\overrightarrow{P}$& 0 & $1 \times 1$\\
+  & &  (value is 0 in 1D and 2D)  & &\\\hline\\
+
+  %%
+  %% Barycenter
+  %%
+  \lstinline!C()! & $\overrightarrow{C}$ & element barycenter point coordinates  & 1 & $d \times 1$ \\
+  &&$(C_x, C_y, C_z)^T$&&\\
+
+  \lstinline!Cx()! & $C_x$ & $x$ coordinate of $\overrightarrow{C}$ & 0 & $1 \times 1$\\
+
+  \lstinline!Cy()! & $C_y$ & $y$ coordinate of $\overrightarrow{C}$ & 0 & $1 \times 1$\\
+  & &  (value is 0 in 1D) & &\\
+
+  \lstinline!Cz()! & $C_z$ & $z$ coordinate of $\overrightarrow{C}$& 0 & $1 \times 1$\\
+  & &  (value is 0 in 1D and 2D)  & &\\\hline\\
+
+  %%
+  %% normal
+  %%
+
+  \lstinline!N()! & $\overrightarrow{N}$ & normal at current point $(N_x,N_y,N_z)^T$ & 1 & $d \times 1$\\
+
+  \lstinline!Nx()! & $N_x$ & $x$ coordinate of $\overrightarrow{N}$ at current point & 0 & $1 \times 1$\\
+
+  \lstinline!Ny()! & $N_y$ & $y$ coordinate of $\overrightarrow{N}$ at current point & 0 & $1 \times 1$\\
+  & &  (value is 0 in 1D) & &\\
+
+  \lstinline!Nz()! & $N_z$ & $z$ coordinate of $\overrightarrow{N}$ at current point& 0 & $1 \times 1$\\
+  & &  (value is 0 in 1D and 2D)  & &\\\hline\\
+
+  %%
+  %% Element id
+  %%
+  \lstinline!eid()! & $e$ & index of  $\Omega^e$ & 0 & $1 \times 1$\\
+  \lstinline!emarker()! & $m(e)$ & marker of  $\Omega^e$ & 0 & $1 \times 1$\\
+  \lstinline!h()! & $h^e$ & size of   $\Omega^e$ & 0 & $1 \times 1$\\
+  \lstinline!hFace()! & $h^e_{\Gamma}$ & size of face $\Gamma$ of $\Omega^e$ & 0 & $1 \times 1$\\\hline\\
+
+  %%
+  %% Mat/vec
+  %%
+  \lstinline!mat<M,N>(m_11,! &
+  $\begin{pmatrix}
+    m_{11} & m_{12} & ...\\
+    m_{21} & m_{22} & ...\\
+    \vdots & &
+  \end{pmatrix}$
+  & $M\times N$ matrix    & 2 & $M \times N$\\
+  \lstinline!m_12,...)!& & entries being expressions   & &\\
+
+  \lstinline!vec<M>(v_1,! &$(v_1, v_2,...)^T$
+  & column vector with $M$ rows    & 1 & $M \times 1$\\
+  \lstinline!v_2,...)!& & entries being expressions   & &\\
+
+  \lstinline!trace(expr)! &$\mathrm{tr}(f(\overrightarrow{x}))$  & trace of $f(\overrightarrow{x})$   & 0 & $1 \times 1$\\\hline\\
+
+
+  %%
+  %% std math functions
+  %%
+
+  \lstinline!abs(expr)! & $|f(\overrightarrow{x})|$ & element wise absolute value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!cos(expr)! & $\cos(f(\overrightarrow{x}))$ & element wise cosinus value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!sin(expr)! & $\sin(f(\overrightarrow{x}))$ & element wise sinus value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!tan(expr)! & $\tan(f(\overrightarrow{x}))$ & element wise tangent value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!acos(expr)! & $\acos(f(\overrightarrow{x}))$ & element wise acos value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!asin(expr)! & $\asin(f(\overrightarrow{x}))$ & element wise asin value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!atan(expr)! & $\atan(f(\overrightarrow{x}))$ & element wise atan value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!cosh(expr)! & $\cosh(f(\overrightarrow{x}))$ & element wise cosh value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!sinh(expr)! & $\sinh(f(\overrightarrow{x}))$ & element wise sinh value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!tanh(expr)! & $\tanh(f(\overrightarrow{x}))$ & element wise tanh value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!exp(expr)! & $\exp(f(\overrightarrow{x}))$ & element wise exp value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!log(expr)! & $\log(f(\overrightarrow{x}))$ & element wise log value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!sqrt(expr)! & $\sqrt{f(\overrightarrow{x})}$ & element wise sqrt value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!sign(expr)! & $
+  \begin{cases}
+    1 & \text{if}\ f(\overrightarrow{x}) \geq 0\\
+    -1 & \text{if}\ f(\overrightarrow{x}) < 0
+  \end{cases}$ & element wise sign of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!chi(expr)! & $\chi(f(\overrightarrow{x}))=$ & element wise boolean test of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  & $\begin{cases}
+    0 & \text{if}\ f(\overrightarrow{x}) = 0\\
+    1 & \text{if}\ f(\overrightarrow{x}) \neq 0\\
+  \end{cases}$ &&&\\\hline\\
+
+  %%
+  %% operation
+  %%
+  \lstinline!id(f)! & $f$ & test function & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!idt(f)! & $f$ & trial function & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!idv(f)! & $f$ & evaluation function   & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
+  \lstinline!grad(f)! & $\nabla f$ & gradient of test function & $\mathrm{rank}( f(\overrightarrow{x}))+1$ & $p=1,\ m \times n$\footnote{Gradient of matrix value functions is not implemented, hence $p=1$ }\\
+  \lstinline!gradt(f)! & $\nabla f$ & gradient of trial function & $\mathrm{rank}(f(\overrightarrow{x}))+1$ & $p=1,\ m \times n$\\
+  \lstinline!gradv(f)! & $\nabla f$ & evaluation function gradient    & $\mathrm{rank}(f(\overrightarrow{x}))+1$ & $p=1,\ m \times n$\\
+
+  \lstinline!div(f)! & $\nabla \cdot \overrightarrow{f}$ & divergence of test function & $\mathrm{rank}( f(\overrightarrow{x}))-1$ & $1\times 1$\footnote{Divergence  of matrix value functions is not implemented, hence $p=1$ }\\
+  \lstinline!divt(f)! & $\nabla \cdot \overrightarrow{f}$ & divergence of trial function & $\mathrm{rank}( f(\overrightarrow{x}))-1$ & $1\times 1$\\
+  \lstinline!divv(f)! & $\nabla \cdot \overrightarrow{f}$ & evaluation of  function divergence  & $\mathrm{rank}( f(\overrightarrow{x}))-1$ & $1\times 1$\\
+
+  \lstinline!curl(f)! & $\nabla \times \overrightarrow{f}$ & curl of test function & 1 & $n=m, n\times 1$\\
+  \lstinline!curlt(f)! & $\nabla \times \overrightarrow{f}$ & curl of trial function & 1 & $m=n, n\times 1$\\
+  \lstinline!curlv(f)! & $\nabla \times \overrightarrow{f}$ & evaluation of  function curl  & 1 & $m=n, n\times 1$\\
+
+  \lstinline!hess(f)! & $\nabla^2 f$ & hessian of test function & 2 & $m=p=1, n\times n$\\\hline\\
+
+  %%
+  %% Two valued operators
+  %%
+  \lstinline!jump(f)! & $[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}$ & jump of test function & 1   & $m=1, n\times 1$\\
+  \lstinline!jump(f)! & $[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}$ & jump of test function & 0   & $m=2, 1\times 1$\\
+  \lstinline!jumpt(f)! & $[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}$ & jump of trial function & 1   & $m=1, n\times 1$\\
+  \lstinline!jumpt(f)! & $[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}$ & jump of trial function & 0   & $m=2, 1\times 1$\\
+  \lstinline!jumpv(f)! & $[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}$ & jump of  function evaluation & 1   & $m=1, n\times 1$\\
+  \lstinline!jumpv(f)! & $[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}$ & jump of  function evaluation & 0   & $m=2, 1\times 1$\\
+  \lstinline!average(f)! & ${f}=\frac{1}{2}(f_0+f_1)$ & average of test function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+  \lstinline!averaget(f)! & ${f}=\frac{1}{2}(f_0+f_1)$ & average of trial function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+  \lstinline!averagev(f)! & ${f}=\frac{1}{2}(f_0+f_1)$ & average of  function evaluation & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+
+  \lstinline!leftface(f)! & $f_0$ & left  test function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+  \lstinline!leftfacet(f)! & $f_0$ & left  trial function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+  \lstinline!leftfacev(f)! & $f_0$ & left   function evaluation & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+  \lstinline!rightface(f)! & $f_1$ & right  test function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+
+  \lstinline!rightfacet(f)! & $f_1$ & right  trial function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+  \lstinline!rightfacev(f)! & $f_1$ & right   function evaluation & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
+
+  \lstinline!maxface(f)! & $\max(f_0,f_1)$ & maximum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
+  && test   function&&\\
+  \lstinline!maxfacet(f)! & $\max(f_0,f_1)$ & maximum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
+  && trial   function&&\\
+  \lstinline!maxfacev(f)! & $\max(f_0,f_1)$ & maximum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
+  && function evaluation&&\\
+  \lstinline!minface(f)! & $\min(f_0,f_1)$ & minimum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
+  && test   function&&\\
+  \lstinline!minfacet(f)! & $\min(f_0,f_1)$ & minimum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
+  && trial   function&&\\
+  \lstinline!minfacev(f)! & $\min(f_0,f_1)$ & minimum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
+  && function evaluation&&\\
+  \hline\\
+  %%
+  %% Operations
+  %%
+  \lstinline!-! & $-g$ & element wise unary minus  & & \\
+  \lstinline!-! & $!g$ & element wise logical not  & & \\\hline\\
+
+  \lstinline!+! & $f+g$ & tensor sum  & & \\
+  \lstinline!-! & $f-g$ & tensor substraction  & & \\
+  \lstinline!*! & $f*g$ & tensor product  & & \\
+  \lstinline!/! & $f/g$ & tensor division ($g$ scalar field)  & & \\\hline\\
+
+  \lstinline!<! & $f < g$ & element wise less  & & \\
+  \lstinline!<=! & $f \leq g$ & element wise less or equal  & & \\
+  \lstinline!>! & $f > g$ & element wise greater  & & \\
+  \lstinline!>=! & $f \geq g$ & element wise greater or equal  & & \\
+  \lstinline!==! & $f = g$ & element wise  equal  & & \\
+  \lstinline+!=+ & $f \neq g$ & element wise not equal  & & \\
+  \lstinline!&&! & $f\ \text{and}\ g$ & element wise logical and  & & \\
+  \lstinline!||! & $f\ \text{or}\ g$ & element wise logical or  & & \\\hline\\
+
+
+\end{longtable}

@@ -29,4 +29,7 @@ EXTRA_DIST=mymeshpartition.png\
            stokes-p.png\
            stokes-u.png\
            \
-           note.png
+           note.png\
+           \
+           logo-ujf.png\
+           logo-ljk.png

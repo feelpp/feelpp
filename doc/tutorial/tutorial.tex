@@ -1,14 +1,14 @@
 %%\documentclass{../doc/tex/lifestyle}
-\documentclass[11pt]{article}
+\documentclass[a4paper]{report}
 %\documentclass{article}
 
-%\usepackage{tex4ht}
+\usepackage{a4wide}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{svninfo}
 %%\usepackage{fullpage}
 \usepackage{longtable}
-\usepackage{a4wide}
+
 \usepackage{url}
 \usepackage{fancyhdr}
 \pagestyle{fancyplain}
@@ -34,6 +34,62 @@
   {pngs/}
 }
 \usepackage{amsmath,amssymb}
+
+%
+% les trois parties (front, main et back)
+%
+
+\newcommand\backmatter{%
+%  \let\minisommaire\null
+  \cleardoublepage
+ % \@mainmatterfalse
+ % \@frontmatterfalse
+  \fancyfoot{}
+  \fancyhead[LE]{\bfseries\thepage}
+  \fancyhead[RO]{\bfseries\thepage}
+  \fancyhead[LO]{\bfseries\rightmark}
+  \fancyhead[RE]{\bfseries\leftmark}
+ % \renewcommand{\toclevel@chapter}{-1}% pour avoir le bookmark au même niveau
+ %                                     % que part
+}
+
+
+
+
+
+
+
+
+
+%-----------------------------------------------------------------------
+% index
+\usepackage{index}
+%-----------------------------------------------------------------------
+%
+% espace verticale entre les groupes dans l'index
+%
+\renewcommand\indexspace{\par \vskip 20pt plus5pt minus3pt\relax}
+%-----------------------------------------------------------------------
+
+
+%-----------------------------------------------------------------------
+%
+% pour avoir un lien correct dans les bookmark du pdf, sur l'index
+%
+\let\printindexORIG\printindex
+\renewcommand{\printindex}{%
+  \cleardoublepage
+  \phantomsection% création d'une fausse section
+  \addcontentsline{toc}{chapter}{Index}
+  \printindexORIG}
+
+
+\AtBeginDocument{%
+  \makeindex%
+}
+
+%-----------------------------------------------------------------------
+
 
 %-----------------------------------------------------------------------
 % fancyvrb unixcom environment
@@ -92,12 +148,15 @@
 \newcommand{\nel}{{\ensuremath{N_{\text{el}}}}}
 \newcommand{\polyP}[1]{\ensuremath{\mathbb{P}_{#1}}\xspace}
 
-\title{Life Tutorial}
+\input{version}
+\title{Life Tutorial\\
+A Library for Finite and Spectral Element Methods in 1D, 2D and 3D\\
+{\small \lifeversion }}
 \author{Christophe Prud'homme\thanks{Université de Grenoble,
 51, rue des Mathématiques, BP53,38041 Grenoble}}
 \date{\svnToday}
 
-
+\thispagestyle{empty}
 \begin{document}
 \thispagestyle{empty}
 \svnInfo $Id$
@@ -118,9 +177,37 @@
 
 % \EndCssFile
 
-\maketitle
+%\maketitle
 
-\newpage
+\begin{center}
+  {\Large
+    LIFE TUTORIAL\\
+    A LIBRARY FOR \\
+    FINITE AND SPECTRAL ELEMENT METHODS IN\\
+    1D, 2D AND 3D\\
+    {\small \lifeversion }}\\[0.6cm]
+  Christophe \textsc{Prud'homme}\\
+  \texttt{christophe.prudhomme@ujf-grenoble.fr}\\
+  \par\vspace{2cm}
+
+  \begin{flushright}
+    \footnotesize
+    Version du \svnInfoDate\\
+    Revision \svnInfoRevision
+  \end{flushright}
+  \par\vspace{5cm}
+
+  \centerline{\begin{minipage}[l]{0.35\linewidth}
+    \includegraphics[width=.7\linewidth]{logo-ujf}
+  \end{minipage}
+  \begin{minipage}[r]{0.35\linewidth}
+    \includegraphics[width=.7\linewidth]{logo-ljk}
+  \end{minipage}}
+
+
+\end{center}
+
+\vfill \mbox{} \clearpage
 
 \thispagestyle{empty}
 
@@ -137,12 +224,12 @@ Free Documentation License".
 
 \tableofcontents
 
+\chapter{Building and Programming Environment}
 
-\section{Building and Programming Environments}
 
-\subsection{Building Life}
+\section{Building Life}
 
-\subsubsection{Getting the source via an archive}
+\subsection{Getting the source via an archive}
 \label{sec:getting-source-via-1}
 
 Life is distributed as a tarball once in a while. The tarballs are available
@@ -159,7 +246,7 @@ with the corresponding numbers
 \end{unixcom}
 
 
-\subsubsection{Getting the source via Subversion}
+\subsection{Getting the source via Subversion}
 \label{sec:getting-source-via}
 
 \paragraph{Creating RSA keys}
@@ -185,7 +272,7 @@ host ljkforge.imag.fr
 \end{lstlisting}
 in the \verb|~/.ssh/config| file.
 
-\paragraph{Downloading the sources}
+\subsubsection{Downloading the sources}
 \label{sec:download-sources}
 
 To be able to download the life sources, you need subversion and SSH > 1.xxx
@@ -199,7 +286,7 @@ you want to download the life-test sources type :
   svn co svn+ssh://login@ljkforge.imag.fr/svn/life-test/life-test/trunk validation
 \end{unixcom}
 
-\subsubsection{Dealing with software dependencies}
+\subsection{Dealing with software dependencies}
 \label{sec:about-dependencies}
 
 In order to install life, you have to install many dependencies before. Those
@@ -231,13 +318,13 @@ computing available at \url{http://www.geuz.org/gmsh}}
 plateform, \url{http://www.paraview.org}}
 \end{itemize}
 
-\subsubsection{Compiling Life}
+\subsection{Compiling Life}
 
 If you have passed all the previous chapter without problems, the
 compilation will be a formality.  Go in the same folder in wich you
 have done the checkout and type the following commands :
 
-\paragraph{From tarball}
+\subsubsection{From tarball}
 \label{sec:from-tarball}
 
 The steps are as follows to configure the Life Development Plateform
@@ -263,7 +350,7 @@ In order to compile the testsuite, the examples and the benchmarks and
 execute some of them to verity that the Life library is functional.
 
 
-\paragraph{From subversion}
+\subsubsection{From subversion}
 \label{sec:from-subversion}
 
 The steps are as follows to configure the Life Development Plateform
@@ -305,7 +392,7 @@ And finally to check the library, type
 \end{note}
 
 
-\paragraph{Compiling an extra module}
+\subsubsection{Compiling an extra module}
 \label{sec:compile-an-extra}
 
 If you work with an extra module, \emph{e.g.} \lstinline!validation!, the steps are as follows
@@ -323,7 +410,7 @@ make check
 \end{unixcom}
 
 
-\paragraph{Compiling the Life tutorial}
+\subsubsection{Compiling the Life tutorial}
 \label{sec:comp-life-tutor}
 If the command \lstinline!make check! has been run before the tutorial
 should be already compiled and ready. The steps are as follows  to build the Life tutorial
@@ -343,9 +430,9 @@ Here is what the directory should look like
 \end{unixcom}
 
 
-\subsection{Programming environment}
+\section{Programming environment}
 
-\subsection{Namepaces}
+\section{Namepaces}
 
 \begin{itemize}
 \item \lstinline!Life!
@@ -358,7 +445,7 @@ Here is what the directory should look like
 
 \end{itemize}
 
-\subsection{Libraries}
+\section{Libraries}
 
 \begin{itemize}
 \item \lstinline!life/lifecore!
@@ -369,13 +456,13 @@ Here is what the directory should look like
 \item \lstinline!life/lifevf!
 \end{itemize}
 
-\section{Creating applications}
+\chapter{Creating applications}
 \label{sec:creat-appl}
 
 
 \marginpar{\lstinline!myapp.cpp!}
 
-\subsection{Application and Options}
+\section{Application and Options}
 \label{sec:options}
 
 As a Life user, the first step in order to use Life is to create an
@@ -463,7 +550,7 @@ myapp: my first Life application
 Christophe Prud'homme   developer  christophe.prudhomme@ujf-grenoble.fr
 \end{lstlisting}
 
-\subsection{Application, Logging and Archiving}
+\section{Application, Logging and Archiving}
 \label{sec:appl-logg-arch}
 
 Life provides some basic logging and archiving support: using the
@@ -495,7 +582,7 @@ myapp-1.0 is opened for debug
 [Area 0] the value of dt is 0.1
 \end{lstlisting}
 
-\subsection{MPI Application}
+\section{MPI Application}
 
 \marginpar{\lstinline!myapp.cpp!}
 Life relies on MPI for parallel computations and the class
@@ -527,19 +614,21 @@ mympiapp-2.1 is opened for debug
 [Area 0] this is process number 1 out of 2
 \end{lstlisting}
 
-\subsection{PETSc and Trilinos Application}
+\section{PETSc and Trilinos Application}
 
-Life supports also the PETSc and Trilinos framework: it provides
-\lstinline!ApplicationPetsc! and \lstinline!ApplicationEpetra! to
-initialize their respective environments.
+\index{PETSc}\index{Trilinos}\index{Libraries!PETSc}\index{Libraries!Trilinos}
+Life supports also the PETSc and Trilinos framework, the class
+\lstinline!Application!\index{Class!Application} takes care of
+initialize the associated environments.
 
-\section{Mesh Manipulation}
+\chapter{Mesh Manipulation}
 
+\index{mesh}\index{Class!Mesh}
 \marginpar{\lstinline!mymesh.cpp!}
 In this section, we present some of the mesh definition and
 manipulation tools provided by Life.
 
-\subsection{Mesh definition}
+\section{Mesh definition}
 
 We look at the definition of a mesh data structure. First, we define
 the type of geometric entities that we shall use to form our mesh. Life supports
@@ -610,7 +699,8 @@ geometric entities used to generate the mesh. Here we use
 \lstinline!SimplexProduct! (quadrangle or hexahedron).
 
 
-Next we import the mesh using the \lstinline!ImporterGmsh! class as follows:
+Next we import the mesh using the
+\lstinline!ImporterGmsh!\index{mesh!import}\index{Class!ImporterGmsh} class as follows:
 
 \lstinputlisting[firstline=154,lastline=155]{mymesh.cpp}
 
@@ -645,7 +735,7 @@ associated $\polyP{0}$ function.
 \end{figure}
 
 
-\subsection{Iterating over the entities of a mesh}
+\section{Iterating over the entities of a mesh}
 
 Life mesh data structures provides powerful iterators that allows to
 walk though the mesh in various ways: iterate over element, faces ,
@@ -654,9 +744,9 @@ points, marked\footnote{associated to an integer flag denoting a
 
 
 
-\section{Function Spaces}
+\chapter{Function Spaces}
 
-\subsection{Defining function spaces and functions}
+\section{Defining function spaces and functions}
 
 \begin{itemize}
 \item basis function
@@ -664,7 +754,7 @@ points, marked\footnote{associated to an integer flag denoting a
 \item element of a function space
 \end{itemize}
 
-\subsection{Using functions spaces and functions}
+\section{Using functions spaces and functions}
 
 \begin{itemize}
 \item interpolating
@@ -673,7 +763,7 @@ points, marked\footnote{associated to an integer flag denoting a
 \end{itemize}
 
 
-\section{Linear Algebra}
+\chapter{Linear Algebra}
 \label{sec:linear-algebra}
 
 
@@ -686,21 +776,17 @@ shall call \emph{backends}.
 \end{itemize}
 
 
-\subsection{Choosing a linear algebra backend}
+\section{Choosing a linear algebra backend}
 \label{sec:choos-line-algebra}
 
+\index{Class!Backend}\index{boost!shared\_ptr}
 To select a backend in order to solve a linear system, we instantiate
 the \lstinline!Backend! class associated.
 
 \begin{lstlisting}
-#include <life/lifealg/backendtrilinos.hpp>
-BackendTrilinos backend;
-
-#include <life/lifealg/backendpetsc.hpp>
-BackendPetsc<double> backend;
-
-#include <life/lifealg/backendgmm.hpp>
-BackendGmm<double> backend;
+#include <life/lifealg/backend.hpp>
+boost::shared_ptr<Backend<double> > backend =
+     Backend<double>::build( BACKEND_PETSC );
 \end{lstlisting}
 
 The backend provides an interface to solve
@@ -712,8 +798,8 @@ The backend provides an interface to solve
 where $A$ is a $n \times n $ sparse matrix and $x,b$ vectors of size $n$.
 The backend defines the \cpp types for  each of these, e.g.
 \begin{lstlisting}
-Backend::sparse_matrix_type A;
-Backend::vector_type x,b;
+Backend<double>::sparse_matrix_type A;
+Backend<double>::vector_type x,b;
 \end{lstlisting}
 \noindent
 In practice, we use the \lstinline!boost::shared_ptr<>! shared pointer
@@ -722,9 +808,9 @@ corresponding \lstinline!typedef!
 
 
 \begin{lstlisting}
-Backend::sparse_matrix_ptrtype A( Backend::newMatrix( Xh, Yh ) );
-Backend::vector_ptrtype x( Backend::newVector( Yh ) );
-Backend::vector_ptrtype b( Backend::newVector( Xh ) );
+Backend<double>::sparse_matrix_ptrtype A( backend->newMatrix( Xh, Yh ) );
+Backend<double>::vector_ptrtype x( backend->newVector( Yh ) );
+Backend<double>::vector_ptrtype b( backend->newVector( Xh ) );
 \end{lstlisting}
 \noindent
 where $X_h$ and $Y_h$ are function spaces providing the number of
@@ -734,24 +820,26 @@ thanks to the helpers functions \lstinline!Backend::newMatrix()! and
 local/global processor mapping would be passed down by the function
 spaces.
 
-\subsection{Defining and using matrices and vectors}
+\section{Defining and using matrices and vectors}
 \label{sec:defin-using-matr}
 
-\subsection{Solving}
+\section{Solving}
 \label{sec:solving}
 
 
-\section{Variational Formulation}
+\chapter{Variational Formulation}
 \label{sec:vari-form}
 
+\index{formulation!variational}
 \begin{itemize}
 \item keywords
 \item principles
 \end{itemize}
 
-\subsection{Computing integrals}
+\section{Computing integrals}
 \label{sec:computing-integrals}
 
+\index{integrals}
 \marginpar{\lstinline!myintegrals.cpp!}
 We would like to compute some integrals on a domain of $\Omega=[0,1]^d\ \subset\ \mathbb{R}^d$
 and parts of the domain, i.e. subregions and (parts of) boundary.
@@ -851,12 +939,12 @@ myintegrals-4.3 is opened for debug
 [Area 0] int_Omega = 0.666667[ 0.305227 ]
 \end{lstlisting}
 
-\subsection{Standard formulation: the Laplacian case}
+\section{Standard formulation: the Laplacian case}
 \label{sec:defin-bilin-forms}
-
-\subsubsection{Mathematical formulation}
+\index{laplacian}
+\subsection{Mathematical formulation}
 \label{sec:math-form-3}
-
+\index{laplacian!formulation!mathematical}
 \marginpar{\lstinline!laplacian.cpp!}
 In this example, we would like to solve for the following problem in 2D
 \begin{problem}
@@ -891,7 +979,7 @@ we have a uniform treatment for all types of boundary conditions.
 
 
 
-\paragraph{Strong Dirichlet conditions}
+\subsubsection{Strong Dirichlet conditions}
 \label{sec:strong-dirichl-cond}
 
 \noindent
@@ -963,7 +1051,7 @@ Galerkin framework
   \end{equation}
 \end{problem}
 
-\paragraph{Weak Dirichlet conditions}
+\subsubsection{Weak Dirichlet conditions}
 \label{sec:weak-dirichl-cond}
 
 There is an alternative formulation which allows to treat weakly
@@ -993,10 +1081,10 @@ size of the face. The inconvenient of this formulation is the
 introduction of the parameter $\mu$, but the advantage is the
 \emph{weak} treatment of the Dirichlet condition.
 
-\subsubsection{Life formulation}
+\subsection{Life formulation}
 \label{sec:life-formulation-1}
 
-
+\index{laplacian!formulation!life}
 First we define the $f$ and $g$. To do that we use the
 \lstinline!AUTO! keyword and associate to \lstinline!f! and
 \lstinline!g! their expressions
@@ -1109,12 +1197,13 @@ figure~\ref{fig:2} displays the results using Paraview.
   \label{fig:2}
 \end{figure}
 
-\subsection{Mixed formulation: the Stokes case}
+\section{Mixed formulation: the Stokes case}
 \label{sec:mixed-form-stok}
-
-\subsubsection{Mathematical formulation}
+\index{Stokes}
+\subsection{Mathematical formulation}
 \label{sec:math-form}
 
+\index{Stokes!formulation!mathematical}
 \marginpar{\lstinline!stokes.cpp!}  We are now interested in solving
 the Stokes equations, we would like to solve for the following problem
 in 2D
@@ -1200,9 +1289,10 @@ block. $\mathcal{A}$ is a symetric positive definite matrix and thus
 the system $\mathcal{A} \mathcal{U} = \mathcal{F}$ enjoys a unique
 solution.
 
-\subsubsection{Life formulation}
+\subsection{Life formulation}
 \label{sec:life-formulation}
 
+\index{Stokes!formulation!life}
 Regarding the implementation of the Stokes problem~\ref{prob:4}, we
 can start from the laplacian case, from
 section~\ref{sec:defin-bilin-forms}. The implementation we choose to
@@ -1267,11 +1357,11 @@ The figure~\ref{fig:2} displays $p$ and $\mathbf{u}$ which are available in
 
 \appendix
 \newpage
-% \section{Compiling the tutorial examples}
+% \chapter{Compiling the tutorial examples}
 % \label{sec:comp-tutor-exampl}
 
 
-% \subsection{CMake}
+% \section{CMake}
 
 % The build system of the tutorial examples is
 % CMake\footnote{\url{http://www.cmake.org}} by Kitware.Here is a excerpt from CMake web site
@@ -1302,7 +1392,7 @@ The figure~\ref{fig:2} displays $p$ and $\mathbf{u}$ which are available in
 % \item Grow a self-sustaining community of software users and developers.
 % \end{itemize}
 
-% \subsection{Building the examples}
+% \section{Building the examples}
 % \label{sec:building-examples}
 
 % The compilation is fairly simple. First make sure that the
@@ -1339,622 +1429,19 @@ The figure~\ref{fig:2} displays $p$ and $\mathbf{u}$ which are available in
 % \lstinline!make!  option \lstinline!-k! which allows to continue
 % after a failure.
 
-\newpage
 
+\include{feel}
+\include{gfdl}
 
-\newpage
-\section{FEEL++}
-\label{sec:feel++}
+\backmatter
 
-One of Life assets is it finite element embedded language
-(FEEL++). The language follows the C++ grammar, and provides keywords
-as well as operations between objects which are, mathematically,
-tensors of rank 0, 1 or 2.
+\printindex
 
-
-\subsection{Predefined functions}
-
-Some notations
-\begin{itemize}
-\item $f: \mathbb{R}^n \mapsto \mathbb{R}^{m\times p}$  with $n=1,2,3$, $m=1,2,3$, $p=1,2,3$.
-\item $\Omega^e$ current mesh element
-\end{itemize}
-
-
-\begin{longtable}[c]{rllll}
-  Keyword & Math object & Description & Rank & $M \times N$\\\hline\hline
-
-  \endhead
-  %%
-  %% Point
-  %%
-  \lstinline!P()! & $\overrightarrow{P}$ & current point coordinates $(P_x, P_y, P_z)^T$ & 1 & $d \times 1$ \\
-
-  \lstinline!Px()! & $P_x$ & $x$ coordinate of $\overrightarrow{P}$ & 0 & $1 \times 1$\\
-
-  \lstinline!Py()! & $P_y$ & $y$ coordinate of $\overrightarrow{P}$ & 0 & $1 \times 1$\\
-  & &  (value is 0 in 1D) & &\\
-
-  \lstinline!Pz()! & $P_z$ & $z$ coordinate of $\overrightarrow{P}$& 0 & $1 \times 1$\\
-  & &  (value is 0 in 1D and 2D)  & &\\\hline\\
-
-  %%
-  %% Barycenter
-  %%
-  \lstinline!C()! & $\overrightarrow{C}$ & element barycenter point coordinates  & 1 & $d \times 1$ \\
-  &&$(C_x, C_y, C_z)^T$&&\\
-
-  \lstinline!Cx()! & $C_x$ & $x$ coordinate of $\overrightarrow{C}$ & 0 & $1 \times 1$\\
-
-  \lstinline!Cy()! & $C_y$ & $y$ coordinate of $\overrightarrow{C}$ & 0 & $1 \times 1$\\
-  & &  (value is 0 in 1D) & &\\
-
-  \lstinline!Cz()! & $C_z$ & $z$ coordinate of $\overrightarrow{C}$& 0 & $1 \times 1$\\
-  & &  (value is 0 in 1D and 2D)  & &\\\hline\\
-
-  %%
-  %% normal
-  %%
-
-  \lstinline!N()! & $\overrightarrow{N}$ & normal at current point $(N_x,N_y,N_z)^T$ & 1 & $d \times 1$\\
-
-  \lstinline!Nx()! & $N_x$ & $x$ coordinate of $\overrightarrow{N}$ at current point & 0 & $1 \times 1$\\
-
-  \lstinline!Ny()! & $N_y$ & $y$ coordinate of $\overrightarrow{N}$ at current point & 0 & $1 \times 1$\\
-  & &  (value is 0 in 1D) & &\\
-
-  \lstinline!Nz()! & $N_z$ & $z$ coordinate of $\overrightarrow{N}$ at current point& 0 & $1 \times 1$\\
-  & &  (value is 0 in 1D and 2D)  & &\\\hline\\
-
-  %%
-  %% Element id
-  %%
-  \lstinline!eid()! & $e$ & index of  $\Omega^e$ & 0 & $1 \times 1$\\
-  \lstinline!emarker()! & $m(e)$ & marker of  $\Omega^e$ & 0 & $1 \times 1$\\
-  \lstinline!h()! & $h^e$ & size of   $\Omega^e$ & 0 & $1 \times 1$\\
-  \lstinline!hFace()! & $h^e_{\Gamma}$ & size of face $\Gamma$ of $\Omega^e$ & 0 & $1 \times 1$\\\hline\\
-
-  %%
-  %% Mat/vec
-  %%
-  \lstinline!mat<M,N>(m_11,! &
-  $\begin{pmatrix}
-    m_{11} & m_{12} & ...\\
-    m_{21} & m_{22} & ...\\
-    \vdots & &
-  \end{pmatrix}$
-  & $M\times N$ matrix    & 2 & $M \times N$\\
-  \lstinline!m_12,...)!& & entries being expressions   & &\\
-
-  \lstinline!vec<M>(v_1,! &$(v_1, v_2,...)^T$
-  & column vector with $M$ rows    & 1 & $M \times 1$\\
-  \lstinline!v_2,...)!& & entries being expressions   & &\\
-
-  \lstinline!trace(expr)! &$\mathrm{tr}(f(\overrightarrow{x}))$  & trace of $f(\overrightarrow{x})$   & 0 & $1 \times 1$\\\hline\\
-
-
-  %%
-  %% std math functions
-  %%
-
-  \lstinline!abs(expr)! & $|f(\overrightarrow{x})|$ & element wise absolute value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!cos(expr)! & $\cos(f(\overrightarrow{x}))$ & element wise cosinus value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!sin(expr)! & $\sin(f(\overrightarrow{x}))$ & element wise sinus value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!tan(expr)! & $\tan(f(\overrightarrow{x}))$ & element wise tangent value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!acos(expr)! & $\acos(f(\overrightarrow{x}))$ & element wise acos value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!asin(expr)! & $\asin(f(\overrightarrow{x}))$ & element wise asin value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!atan(expr)! & $\atan(f(\overrightarrow{x}))$ & element wise atan value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!cosh(expr)! & $\cosh(f(\overrightarrow{x}))$ & element wise cosh value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!sinh(expr)! & $\sinh(f(\overrightarrow{x}))$ & element wise sinh value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!tanh(expr)! & $\tanh(f(\overrightarrow{x}))$ & element wise tanh value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!exp(expr)! & $\exp(f(\overrightarrow{x}))$ & element wise exp value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!log(expr)! & $\log(f(\overrightarrow{x}))$ & element wise log value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!sqrt(expr)! & $\sqrt{f(\overrightarrow{x})}$ & element wise sqrt value of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!sign(expr)! & $
-  \begin{cases}
-    1 & \text{if}\ f(\overrightarrow{x}) \geq 0\\
-    -1 & \text{if}\ f(\overrightarrow{x}) < 0
-  \end{cases}$ & element wise sign of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!chi(expr)! & $\chi(f(\overrightarrow{x}))=$ & element wise boolean test of $f$ & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  & $\begin{cases}
-    0 & \text{if}\ f(\overrightarrow{x}) = 0\\
-    1 & \text{if}\ f(\overrightarrow{x}) \neq 0\\
-  \end{cases}$ &&&\\\hline\\
-
-  %%
-  %% operation
-  %%
-  \lstinline!id(f)! & $f$ & test function & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!idt(f)! & $f$ & trial function & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!idv(f)! & $f$ & evaluation function   & $\mathrm{rank}(f(\overrightarrow{x}))$ & $m \times p$\\
-  \lstinline!grad(f)! & $\nabla f$ & gradient of test function & $\mathrm{rank}( f(\overrightarrow{x}))+1$ & $p=1,\ m \times n$\footnote{Gradient of matrix value functions is not implemented, hence $p=1$ }\\
-  \lstinline!gradt(f)! & $\nabla f$ & gradient of trial function & $\mathrm{rank}(f(\overrightarrow{x}))+1$ & $p=1,\ m \times n$\\
-  \lstinline!gradv(f)! & $\nabla f$ & evaluation function gradient    & $\mathrm{rank}(f(\overrightarrow{x}))+1$ & $p=1,\ m \times n$\\
-
-  \lstinline!div(f)! & $\nabla \cdot \overrightarrow{f}$ & divergence of test function & $\mathrm{rank}( f(\overrightarrow{x}))-1$ & $1\times 1$\footnote{Divergence  of matrix value functions is not implemented, hence $p=1$ }\\
-  \lstinline!divt(f)! & $\nabla \cdot \overrightarrow{f}$ & divergence of trial function & $\mathrm{rank}( f(\overrightarrow{x}))-1$ & $1\times 1$\\
-  \lstinline!divv(f)! & $\nabla \cdot \overrightarrow{f}$ & evaluation of  function divergence  & $\mathrm{rank}( f(\overrightarrow{x}))-1$ & $1\times 1$\\
-
-  \lstinline!curl(f)! & $\nabla \times \overrightarrow{f}$ & curl of test function & 1 & $n=m, n\times 1$\\
-  \lstinline!curlt(f)! & $\nabla \times \overrightarrow{f}$ & curl of trial function & 1 & $m=n, n\times 1$\\
-  \lstinline!curlv(f)! & $\nabla \times \overrightarrow{f}$ & evaluation of  function curl  & 1 & $m=n, n\times 1$\\
-
-  \lstinline!hess(f)! & $\nabla^2 f$ & hessian of test function & 2 & $m=p=1, n\times n$\\\hline\\
-
-  %%
-  %% Two valued operators
-  %%
-  \lstinline!jump(f)! & $[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}$ & jump of test function & 1   & $m=1, n\times 1$\\
-  \lstinline!jump(f)! & $[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}$ & jump of test function & 0   & $m=2, 1\times 1$\\
-  \lstinline!jumpt(f)! & $[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}$ & jump of trial function & 1   & $m=1, n\times 1$\\
-  \lstinline!jumpt(f)! & $[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}$ & jump of trial function & 0   & $m=2, 1\times 1$\\
-  \lstinline!jumpv(f)! & $[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}$ & jump of  function evaluation & 1   & $m=1, n\times 1$\\
-  \lstinline!jumpv(f)! & $[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}$ & jump of  function evaluation & 0   & $m=2, 1\times 1$\\
-  \lstinline!average(f)! & ${f}=\frac{1}{2}(f_0+f_1)$ & average of test function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
-  \lstinline!averaget(f)! & ${f}=\frac{1}{2}(f_0+f_1)$ & average of trial function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
-  \lstinline!averagev(f)! & ${f}=\frac{1}{2}(f_0+f_1)$ & average of  function evaluation & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
-
-  \lstinline!leftface(f)! & $f_0$ & left  test function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
-  \lstinline!leftfacet(f)! & $f_0$ & left  trial function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
-  \lstinline!leftfacev(f)! & $f_0$ & left   function evaluation & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
-  \lstinline!rightface(f)! & $f_1$ & right  test function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
-
-  \lstinline!rightfacet(f)! & $f_1$ & right  trial function & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
-  \lstinline!rightfacev(f)! & $f_1$ & right   function evaluation & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m=n, n\times n$\\
-
-  \lstinline!maxface(f)! & $\max(f_0,f_1)$ & maximum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
-  && test   function&&\\
-  \lstinline!maxfacet(f)! & $\max(f_0,f_1)$ & maximum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
-  && trial   function&&\\
-  \lstinline!maxfacev(f)! & $\max(f_0,f_1)$ & maximum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
-  && function evaluation&&\\
-  \lstinline!minface(f)! & $\min(f_0,f_1)$ & minimum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
-  && test   function&&\\
-  \lstinline!minfacet(f)! & $\min(f_0,f_1)$ & minimum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
-  && trial   function&&\\
-  \lstinline!minfacev(f)! & $\min(f_0,f_1)$ & minimum of right and left & $\mathrm{rank}( f(\overrightarrow{x}))$   & $m\times p$\\
-  && function evaluation&&\\
-  \hline\\
-  %%
-  %% Operations
-  %%
-  \lstinline!-! & $-g$ & element wise unary minus  & & \\
-  \lstinline!-! & $!g$ & element wise logical not  & & \\\hline\\
-
-  \lstinline!+! & $f+g$ & tensor sum  & & \\
-  \lstinline!-! & $f-g$ & tensor substraction  & & \\
-  \lstinline!*! & $f*g$ & tensor product  & & \\
-  \lstinline!/! & $f/g$ & tensor division ($g$ scalar field)  & & \\\hline\\
-
-  \lstinline!<! & $f < g$ & element wise less  & & \\
-  \lstinline!<=! & $f \leq g$ & element wise less or equal  & & \\
-  \lstinline!>! & $f > g$ & element wise greater  & & \\
-  \lstinline!>=! & $f \geq g$ & element wise greater or equal  & & \\
-  \lstinline!==! & $f = g$ & element wise  equal  & & \\
-  \lstinline+!=+ & $f \neq g$ & element wise not equal  & & \\
-  \lstinline!&&! & $f\ \text{and}\ g$ & element wise logical and  & & \\
-  \lstinline!||! & $f\ \text{or}\ g$ & element wise logical or  & & \\\hline\\
-
-
-\end{longtable}
-
-\newpage
-
-\section{References}
-\label{sec:references}
-
-\renewcommand{\bibname}{}
-\renewcommand{\refname}{}
 \nocite{*}
 \bibliographystyle{plain}
 \bibliography{tutorial}
 
-\newpage
-\section{GNU Free Documentation License}
-\label{sec:gnu-free-docum}
 
-		GNU Free Documentation License
-		  Version 1.2, November 2002
-
-
- Copyright (C) 2000,2001,2002  Free Software Foundation, Inc.
-     51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- Everyone is permitted to copy and distribute verbatim copies
- of this license document, but changing it is not allowed.
-
-
-\subsection*{Preamble}
-
-The purpose of this License is to make a manual, textbook, or other
-functional and useful document "free" in the sense of freedom: to
-assure everyone the effective freedom to copy and redistribute it,
-with or without modifying it, either commercially or noncommercially.
-Secondarily, this License preserves for the author and publisher a way
-to get credit for their work, while not being considered responsible
-for modifications made by others.
-
-This License is a kind of "copyleft", which means that derivative
-works of the document must themselves be free in the same sense.  It
-complements the GNU General Public License, which is a copyleft
-license designed for free software.
-
-We have designed this License in order to use it for manuals for free
-software, because free software needs free documentation: a free
-program should come with manuals providing the same freedoms that the
-software does.  But this License is not limited to software manuals;
-it can be used for any textual work, regardless of subject matter or
-whether it is published as a printed book.  We recommend this License
-principally for works whose purpose is instruction or reference.
-
-
-\subsection*{Applicability and definitions}
-\label{sec:appl-defin}
-
-This License applies to any manual or other work, in any medium, that
-contains a notice placed by the copyright holder saying it can be
-distributed under the terms of this License.  Such a notice grants a
-world-wide, royalty-free license, unlimited in duration, to use that
-work under the conditions stated herein.  The "Document", below,
-refers to any such manual or work.  Any member of the public is a
-licensee, and is addressed as "you".  You accept the license if you
-copy, modify or distribute the work in a way requiring permission
-under copyright law.
-
-A "Modified Version" of the Document means any work containing the
-Document or a portion of it, either copied verbatim, or with
-modifications and/or translated into another language.
-
-A "Secondary Section" is a named appendix or a front-matter section of
-the Document that deals exclusively with the relationship of the
-publishers or authors of the Document to the Document's overall subject
-(or to related matters) and contains nothing that could fall directly
-within that overall subject.  (Thus, if the Document is in part a
-textbook of mathematics, a Secondary Section may not explain any
-mathematics.)  The relationship could be a matter of historical
-connection with the subject or with related matters, or of legal,
-commercial, philosophical, ethical or political position regarding
-them.
-
-The "Invariant Sections" are certain Secondary Sections whose titles
-are designated, as being those of Invariant Sections, in the notice
-that says that the Document is released under this License.  If a
-section does not fit the above definition of Secondary then it is not
-allowed to be designated as Invariant.  The Document may contain zero
-Invariant Sections.  If the Document does not identify any Invariant
-Sections then there are none.
-
-The "Cover Texts" are certain short passages of text that are listed,
-as Front-Cover Texts or Back-Cover Texts, in the notice that says that
-the Document is released under this License.  A Front-Cover Text may
-be at most 5 words, and a Back-Cover Text may be at most 25 words.
-
-A "Transparent" copy of the Document means a machine-readable copy,
-represented in a format whose specification is available to the
-general public, that is suitable for revising the document
-straightforwardly with generic text editors or (for images composed of
-pixels) generic paint programs or (for drawings) some widely available
-drawing editor, and that is suitable for input to text formatters or
-for automatic translation to a variety of formats suitable for input
-to text formatters.  A copy made in an otherwise Transparent file
-format whose markup, or absence of markup, has been arranged to thwart
-or discourage subsequent modification by readers is not Transparent.
-An image format is not Transparent if used for any substantial amount
-of text.  A copy that is not "Transparent" is called "Opaque".
-
-Examples of suitable formats for Transparent copies include plain
-ASCII without markup, Texinfo input format, LaTeX input format, SGML
-or XML using a publicly available DTD, and standard-conforming simple
-HTML, PostScript or PDF designed for human modification.  Examples of
-transparent image formats include PNG, XCF and JPG.  Opaque formats
-include proprietary formats that can be read and edited only by
-proprietary word processors, SGML or XML for which the DTD and/or
-processing tools are not generally available, and the
-machine-generated HTML, PostScript or PDF produced by some word
-processors for output purposes only.
-
-The "Title Page" means, for a printed book, the title page itself,
-plus such following pages as are needed to hold, legibly, the material
-this License requires to appear in the title page.  For works in
-formats which do not have any title page as such, "Title Page" means
-the text near the most prominent appearance of the work's title,
-preceding the beginning of the body of the text.
-
-A section "Entitled XYZ" means a named subunit of the Document whose
-title either is precisely XYZ or contains XYZ in parentheses following
-text that translates XYZ in another language.  (Here XYZ stands for a
-specific section name mentioned below, such as "Acknowledgements",
-"Dedications", "Endorsements", or "History".)  To "Preserve the Title"
-of such a section when you modify the Document means that it remains a
-section "Entitled XYZ" according to this definition.
-
-The Document may include Warranty Disclaimers next to the notice which
-states that this License applies to the Document.  These Warranty
-Disclaimers are considered to be included by reference in this
-License, but only as regards disclaiming warranties: any other
-implication that these Warranty Disclaimers may have is void and has
-no effect on the meaning of this License.
-
-
-\subsection*{Verbatim copying}
-\label{sec:verbatim-copying}
-
-You may copy and distribute the Document in any medium, either
-commercially or noncommercially, provided that this License, the
-copyright notices, and the license notice saying this License applies
-to the Document are reproduced in all copies, and that you add no other
-conditions whatsoever to those of this License.  You may not use
-technical measures to obstruct or control the reading or further
-copying of the copies you make or distribute.  However, you may accept
-compensation in exchange for copies.  If you distribute a large enough
-number of copies you must also follow the conditions in section 3.
-
-You may also lend copies, under the same conditions stated above, and
-you may publicly display copies.
-
-\subsection*{Copying in quantity}
-\label{sec:copying-quantity}
-
-If you publish printed copies (or copies in media that commonly have
-printed covers) of the Document, numbering more than 100, and the
-Document's license notice requires Cover Texts, you must enclose the
-copies in covers that carry, clearly and legibly, all these Cover
-Texts: Front-Cover Texts on the front cover, and Back-Cover Texts on
-the back cover.  Both covers must also clearly and legibly identify
-you as the publisher of these copies.  The front cover must present
-the full title with all words of the title equally prominent and
-visible.  You may add other material on the covers in addition.
-Copying with changes limited to the covers, as long as they preserve
-the title of the Document and satisfy these conditions, can be treated
-as verbatim copying in other respects.
-
-If the required texts for either cover are too voluminous to fit
-legibly, you should put the first ones listed (as many as fit
-reasonably) on the actual cover, and continue the rest onto adjacent
-pages.
-
-If you publish or distribute Opaque copies of the Document numbering
-more than 100, you must either include a machine-readable Transparent
-copy along with each Opaque copy, or state in or with each Opaque copy
-a computer-network location from which the general network-using
-public has access to download using public-standard network protocols
-a complete Transparent copy of the Document, free of added material.
-If you use the latter option, you must take reasonably prudent steps,
-when you begin distribution of Opaque copies in quantity, to ensure
-that this Transparent copy will remain thus accessible at the stated
-location until at least one year after the last time you distribute an
-Opaque copy (directly or through your agents or retailers) of that
-edition to the public.
-
-It is requested, but not required, that you contact the authors of the
-Document well before redistributing any large number of copies, to give
-them a chance to provide you with an updated version of the Document.
-
-\subsection*{Modifications}
-
-You may copy and distribute a Modified Version of the Document under
-the conditions of sections 2 and 3 above, provided that you release
-the Modified Version under precisely this License, with the Modified
-Version filling the role of the Document, thus licensing distribution
-and modification of the Modified Version to whoever possesses a copy
-of it.  In addition, you must do these things in the Modified Version:
-
-\begin{enumerate}
-\item Use in the Title Page (and on the covers, if any) a title distinct
-   from that of the Document, and from those of previous versions
-   (which should, if there were any, be listed in the History section
-   of the Document).  You may use the same title as a previous version
-   if the original publisher of that version gives permission.
-\item List on the Title Page, as authors, one or more persons or entities
-   responsible for authorship of the modifications in the Modified
-   Version, together with at least five of the principal authors of the
-   Document (all of its principal authors, if it has fewer than five),
-   unless they release you from this requirement.
-
-
-\item State on the Title page the name of the publisher of the
-   Modified Version, as the publisher.
-\item Preserve all the copyright notices of the Document.
-\item Add an appropriate copyright notice for your modifications
-   adjacent to the other copyright notices.
-\item Include, immediately after the copyright notices, a license notice
-   giving the public permission to use the Modified Version under the
-   terms of this License, in the form shown in the Addendum below.
-\item Preserve in that license notice the full lists of Invariant Sections
-   and required Cover Texts given in the Document's license notice.
-\item Include an unaltered copy of this License.
-\item Preserve the section Entitled "History", Preserve its Title, and add
-   to it an item stating at least the title, year, new authors, and
-   publisher of the Modified Version as given on the Title Page.  If
-   there is no section Entitled "History" in the Document, create one
-   stating the title, year, authors, and publisher of the Document as
-   given on its Title Page, then add an item describing the Modified
-   Version as stated in the previous sentence.
-\item Preserve the network location, if any, given in the Document for
-   public access to a Transparent copy of the Document, and likewise
-   the network locations given in the Document for previous versions
-   it was based on.  These may be placed in the "History" section.
-   You may omit a network location for a work that was published at
-   least four years before the Document itself, or if the original
-   publisher of the version it refers to gives permission.
-\item For any section Entitled "Acknowledgements" or "Dedications",
-   Preserve the Title of the section, and preserve in the section all
-   the substance and tone of each of the contributor acknowledgements
-   and/or dedications given therein.
-\item Preserve all the Invariant Sections of the Document,
-   unaltered in their text and in their titles.  Section numbers
-   or the equivalent are not considered part of the section titles.
-\item Delete any section Entitled "Endorsements".  Such a section
-   may not be included in the Modified Version.
-\item Do not retitle any existing section to be Entitled "Endorsements"
-   or to conflict in title with any Invariant Section.
-\item Preserve any Warranty Disclaimers.
-\end{enumerate}
-
-If the Modified Version includes new front-matter sections or
-appendices that qualify as Secondary Sections and contain no material
-copied from the Document, you may at your option designate some or all
-of these sections as invariant.  To do this, add their titles to the
-list of Invariant Sections in the Modified Version's license notice.
-These titles must be distinct from any other section titles.
-
-You may add a section Entitled "Endorsements", provided it contains
-nothing but endorsements of your Modified Version by various
-parties--for example, statements of peer review or that the text has
-been approved by an organization as the authoritative definition of a
-standard.
-
-You may add a passage of up to five words as a Front-Cover Text, and a
-passage of up to 25 words as a Back-Cover Text, to the end of the list
-of Cover Texts in the Modified Version.  Only one passage of
-Front-Cover Text and one of Back-Cover Text may be added by (or
-through arrangements made by) any one entity.  If the Document already
-includes a cover text for the same cover, previously added by you or
-by arrangement made by the same entity you are acting on behalf of,
-you may not add another; but you may replace the old one, on explicit
-permission from the previous publisher that added the old one.
-
-The author(s) and publisher(s) of the Document do not by this License
-give permission to use their names for publicity for or to assert or
-imply endorsement of any Modified Version.
-
-
-\subsection*{Combining documents}
-
-You may combine the Document with other documents released under this
-License, under the terms defined in section 4 above for modified
-versions, provided that you include in the combination all of the
-Invariant Sections of all of the original documents, unmodified, and
-list them all as Invariant Sections of your combined work in its
-license notice, and that you preserve all their Warranty Disclaimers.
-
-The combined work need only contain one copy of this License, and
-multiple identical Invariant Sections may be replaced with a single
-copy.  If there are multiple Invariant Sections with the same name but
-different contents, make the title of each such section unique by
-adding at the end of it, in parentheses, the name of the original
-author or publisher of that section if known, or else a unique number.
-Make the same adjustment to the section titles in the list of
-Invariant Sections in the license notice of the combined work.
-
-In the combination, you must combine any sections Entitled "History"
-in the various original documents, forming one section Entitled
-"History"; likewise combine any sections Entitled "Acknowledgements",
-and any sections Entitled "Dedications".  You must delete all sections
-Entitled "Endorsements".
-
-
-\subsection*{Collections of documents}
-
-You may make a collection consisting of the Document and other documents
-released under this License, and replace the individual copies of this
-License in the various documents with a single copy that is included in
-the collection, provided that you follow the rules of this License for
-verbatim copying of each of the documents in all other respects.
-
-You may extract a single document from such a collection, and distribute
-it individually under this License, provided you insert a copy of this
-License into the extracted document, and follow this License in all
-other respects regarding verbatim copying of that document.
-
-
-\subsection*{Aggregation with independent works}
-
-A compilation of the Document or its derivatives with other separate
-and independent documents or works, in or on a volume of a storage or
-distribution medium, is called an "aggregate" if the copyright
-resulting from the compilation is not used to limit the legal rights
-of the compilation's users beyond what the individual works permit.
-When the Document is included in an aggregate, this License does not
-apply to the other works in the aggregate which are not themselves
-derivative works of the Document.
-
-If the Cover Text requirement of section 3 is applicable to these
-copies of the Document, then if the Document is less than one half of
-the entire aggregate, the Document's Cover Texts may be placed on
-covers that bracket the Document within the aggregate, or the
-electronic equivalent of covers if the Document is in electronic form.
-Otherwise they must appear on printed covers that bracket the whole
-aggregate.
-
-
-\subsection*{Translation}
-
-Translation is considered a kind of modification, so you may
-distribute translations of the Document under the terms of section 4.
-Replacing Invariant Sections with translations requires special
-permission from their copyright holders, but you may include
-translations of some or all Invariant Sections in addition to the
-original versions of these Invariant Sections.  You may include a
-translation of this License, and all the license notices in the
-Document, and any Warranty Disclaimers, provided that you also include
-the original English version of this License and the original versions
-of those notices and disclaimers.  In case of a disagreement between
-the translation and the original version of this License or a notice
-or disclaimer, the original version will prevail.
-
-If a section in the Document is Entitled "Acknowledgements",
-"Dedications", or "History", the requirement (section 4) to Preserve
-its Title (section 1) will typically require changing the actual
-title.
-
-
-\subsection*{Termination}
-
-You may not copy, modify, sublicense, or distribute the Document except
-as expressly provided for under this License.  Any other attempt to
-copy, modify, sublicense or distribute the Document is void, and will
-automatically terminate your rights under this License.  However,
-parties who have received copies, or rights, from you under this
-License will not have their licenses terminated so long as such
-parties remain in full compliance.
-
-
-\subsection*{Future revisions of this license}
-
-The Free Software Foundation may publish new, revised versions
-of the GNU Free Documentation License from time to time.  Such new
-versions will be similar in spirit to the present version, but may
-differ in detail to address new problems or concerns.  See
-http://www.gnu.org/copyleft/.
-
-Each version of the License is given a distinguishing version number.
-If the Document specifies that a particular numbered version of this
-License "or any later version" applies to it, you have the option of
-following the terms and conditions either of that specified version or
-of any later version that has been published (not as a draft) by the
-Free Software Foundation.  If the Document does not specify a version
-number of this License, you may choose any version ever published (not
-as a draft) by the Free Software Foundation.
-
-
-\subsection*{ADDENDUM: How to use this License for your documents}
-
-To use this License in a document you have written, include a copy of
-the License in the document and put the following copyright and
-license notices just after the title page:
-
-    Copyright (c)  YEAR  YOUR NAME.
-    Permission is granted to copy, distribute and/or modify this document
-    under the terms of the GNU Free Documentation License, Version 1.2
-    or any later version published by the Free Software Foundation;
-    with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
-    A copy of the license is included in the section entitled "GNU
-    Free Documentation License".
-
-If you have Invariant Sections, Front-Cover Texts and Back-Cover Texts,
-replace the "with...Texts." line with this:
-
-    with the Invariant Sections being LIST THEIR TITLES, with the
-    Front-Cover Texts being LIST, and with the Back-Cover Texts being LIST.
-
-If you have Invariant Sections without Cover Texts, or some other
-combination of the three, merge those two alternatives to suit the
-situation.
-
-If your document contains nontrivial examples of program code, we
-recommend releasing these examples in parallel under your choice of
-free software license, such as the GNU General Public License,
-to permit their use in free software.
 
 
 \end{document}

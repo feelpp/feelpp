@@ -46,13 +46,13 @@ myapp_LDADD=$(LIFE_LIBS)
 
 SUFFIXES=.cpp .hpp .tex .pdf
 
-CLEANFILES = *.aux *.log *.lot *.lof *.toc *.bbl *.blg *.out *.idx *.ind *.ilg $(doc_DATA)
+CLEANFILES = *.aux *.log *.lot *.lof *.toc *.bbl *.blg *.out *.idx *.ind *.ilg $(doc_DATA) version.tex
 
 .tex.pdf:
 	echo "*** INFO: first pdflatex compilation" ; \
 	TEXINPUTS=:.//:$(top_builddir)/tutorial//:$(srcdir)//: $(PDFLATEX) $< ; \
 	echo "*** INFO: index generation" ; \
-	if test -f $*.idx; then $(MAKEINDEX) $*.idx ; fi ; \
+	if test -f $*.idx; then $(MAKEINDEX) -s $(srcdir)/tutorial.ist $*.idx ; fi ; \
 	echo "*** INFO: bibliography creation" ; \
 	if test -f $(srcdir)/*.bib; then BIBINPUTS=:$(srcdir): $(BIBTEX) $*.aux ; fi ; \
 	echo "*** INFO: table of content insertion" ; \
@@ -62,7 +62,7 @@ CLEANFILES = *.aux *.log *.lot *.lof *.toc *.bbl *.blg *.out *.idx *.ind *.ilg $
 
 
 
-EXTRA_DIST = tutorial.tex
+EXTRA_DIST = tutorial.tex version.tex.in feel.tex gfdl.tex tutorial.ist version.tex.in
 
 
 tutorial.pdf : $(EXTRA_DIST) myapp.cpp mymesh.cpp myintegrals.cpp laplacian.cpp stokes.cpp
