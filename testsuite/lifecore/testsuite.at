@@ -29,43 +29,43 @@ AT_BANNER([life/lifecore testsuite ...])
 
 # Debug test
 AT_SETUP([test_debug])
-AT_CHECK([$at_dir/testsuite/lifecore/test_debug],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifecore/test_debug],[0],[ignore],[ignore])
 AT_KEYWORDS([ core debug])
 AT_CLEANUP
 
 # Singleton test
 AT_SETUP([test_singleton])
-AT_CHECK([$at_dir/testsuite/lifecore/test_singleton],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifecore/test_singleton],[0],[ignore],[ignore])
 AT_KEYWORDS([ core singleton])
 AT_CLEANUP
 
 # Mpi test
 AT_SETUP([test_mpi (sequential)])
-AT_CHECK([$at_dir/testsuite/lifecore/test_mpi],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifecore/test_mpi],[0],[ignore],[ignore])
 AT_KEYWORDS([ core mpi])
 AT_CLEANUP
 
 # Traits test
 AT_SETUP([test_traits])
-AT_CHECK([$at_dir/testsuite/lifecore/test_traits],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifecore/test_traits],[0],[ignore],[ignore])
 AT_KEYWORDS([ core traits])
 AT_CLEANUP
 
 # Factory test
 AT_SETUP([test_factory])
-AT_CHECK([$at_dir/testsuite/lifecore/test_factory],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifecore/test_factory],[0],[ignore],[ignore])
 AT_KEYWORDS([ core factory])
 AT_CLEANUP
 
 # OpenMP test
 AT_SETUP([test_openmp])
-AT_CHECK([$at_dir/testsuite/lifecore/test_openmp],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifecore/test_openmp],[0],[ignore],[ignore])
 AT_KEYWORDS([ core openmp])
 AT_CLEANUP
 
 # Boost.MPi test
 AT_SETUP([test_boostmpi])
-AT_CHECK([mpirun.openmpi -np 2 $at_dir/testsuite/lifecore/test_boostmpi],[0],[ignore],[ignore])
+AT_CHECK([mpirun.openmpi -np 2 $abs_top_builddir/testsuite/lifecore/test_boostmpi],[0],[ignore],[ignore])
 AT_KEYWORDS([ core boostmpi])
 AT_CLEANUP
 

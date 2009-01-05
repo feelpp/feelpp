@@ -30,37 +30,37 @@ AT_BANNER([life/lifediscr testsuite...])
 
 AT_SETUP([test_geomap])
 AT_KEYWORDS([discr geomap])
-AT_CHECK([ $at_dir/testsuite/lifediscr/test_geomap],[0],[ignore],[ignore])
+AT_CHECK([ $abs_top_builddir/testsuite/lifediscr/test_geomap],[0],[ignore],[ignore])
 AT_CLEANUP
 
 AT_SETUP([test_integration])
 AT_KEYWORDS([discr integration])
-AT_CHECK([ $at_dir/testsuite/lifediscr/test_integration],[0],[ignore],[ignore])
+AT_CHECK([ $abs_top_builddir/testsuite/lifediscr/test_integration],[0],[ignore],[ignore])
 AT_CLEANUP
 
 AT_SETUP([test_integration_ho])
 AT_KEYWORDS([discr integration highorder])
-AT_CHECK([ $at_dir/testsuite/lifediscr/test_integration_ho],[0],[ignore],[ignore])
+AT_CHECK([ln -sf $abs_srcdir/lifediscr/test_integration_ho_geometry.geo && $abs_top_builddir/testsuite/lifediscr/test_integration_ho],[0],[ignore],[ignore])
 AT_CLEANUP
 
 AT_SETUP([test_integration_3d])
 AT_KEYWORDS([discr integration_3d])
-AT_CHECK([$at_dir/testsuite/lifediscr/test_integration_3d],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifediscr/test_integration_3d],[0],[ignore],[ignore])
 AT_CLEANUP
 
 AT_SETUP([test_interpolation])
 AT_KEYWORDS([discr interpolation])
-AT_CHECK([$at_dir/testsuite/lifediscr/test_interpolation],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifediscr/test_interpolation],[0],[ignore],[ignore])
 AT_CLEANUP
 
 AT_SETUP([test_space])
 AT_KEYWORDS([discr space dof ])
-AT_CHECK([$at_dir/testsuite/lifediscr/test_space],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifediscr/test_space],[0],[ignore],[ignore])
 AT_CLEANUP
 
 # temporariky disabled
 #AT_SETUP([test_convergence])
 #AT_KEYWORDS([discr convergence])
-#AT_CHECK([ $at_dir/testsuite/lifediscr/test_convergence],[0],[ignore],[ignore])
+#AT_CHECK([ $abs_top_builddir/testsuite/lifediscr/test_convergence],[0],[ignore],[ignore])
 #AT_CLEANUP
 

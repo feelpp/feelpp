@@ -30,69 +30,69 @@ AT_BANNER([life/lifepoly testsuite...])
 
 AT_SETUP([test_poly])
 AT_KEYWORDS([poly polynomial poly ])
-AT_CHECK([$at_dir/testsuite/lifepoly/test_poly],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_poly],[0],[ignore],[ignore])
 AT_CLEANUP
 
 AT_SETUP([test_jacobi])
 AT_KEYWORDS([poly polynomial jacobi ])
-AT_CHECK([$at_dir/testsuite/lifepoly/test_jacobi],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_jacobi],[0],[ignore],[ignore])
 AT_CLEANUP
 
 
 AT_SETUP([test_im])
 AT_KEYWORDS([poly polynomial jacobi integration  ])
-AT_CHECK([$at_dir/testsuite/lifepoly/test_im],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_im],[0],[ignore],[ignore])
 AT_CLEANUP
 
 
 AT_SETUP([test_lag])
 AT_KEYWORDS([poly polynomial Lagrange  ])
-AT_CHECK([$at_dir/testsuite/lifepoly/test_lag],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_lag],[0],[ignore],[ignore])
 AT_CLEANUP
 
 AT_SETUP([test_qm_qk])
 AT_KEYWORDS([poly quadrature method on tensorised domains])
-AT_CHECK([$at_dir/testsuite/lifepoly/test_qm_qk],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_qm_qk],[0],[ignore],[ignore])
 AT_CLEANUP
 
 AT_SETUP([test_qm_pk])
 AT_KEYWORDS([poly quadrature method on simplicies])
-AT_CHECK([$at_dir/testsuite/lifepoly/test_qm_pk],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_qm_pk],[0],[ignore],[ignore])
 AT_CLEANUP
 
 AT_SETUP([test_qm_qk_3D])
 AT_KEYWORDS([poly quadrature method on 3D-tensorised domains])
-AT_CHECK([$at_dir/testsuite/lifepoly/test_qm_qk_3D],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_qm_qk_3D],[0],[ignore],[ignore])
 AT_CLEANUP
 
 AT_SETUP([test_qm_pk_3D])
 AT_KEYWORDS([poly quadrature method on 3D-simplicies])
-AT_CHECK([$at_dir/testsuite/lifepoly/test_qm_pk_3D],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_qm_pk_3D],[0],[ignore],[ignore])
 AT_CLEANUP
 
 
 AT_SETUP([test_qm_pk_double])
 AT_KEYWORDS([poly quadrature method on simplicies 2])
-AT_CHECK([$at_dir/testsuite/lifepoly/test_qm_pk_double],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_qm_pk_double],[0],[ignore],[ignore])
 AT_CLEANUP
 
 # AT_SETUP([test_spectral_1D])
 # AT_KEYWORDS([Monodomain-1D spectral accuracy test])
-# AT_CHECK([$at_dir/testsuite/lifepoly/test_spectral_1D],[0],[ignore],[ignore])
+# AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_spectral_1D],[0],[ignore],[ignore])
 # AT_CLEANUP
 
 # AT_SETUP([test_spectral_2D])
 # AT_KEYWORDS([Monodomain-2D spectral accuracy test])
-# AT_CHECK([$at_dir/testsuite/lifepoly/test_spectral_2D],[0],[ignore],[ignore])
+# AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_spectral_2D],[0],[ignore],[ignore])
 # AT_CLEANUP
 
 # AT_SETUP([test_spectral_3D])
 # AT_KEYWORDS([Monodomain-3D spectral accuracy test])
-# AT_CHECK([$at_dir/testsuite/lifepoly/test_spectral_3D],[0],[ignore],[ignore])
+# AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_spectral_3D],[0],[ignore],[ignore])
 # AT_CLEANUP
 
 # AT_SETUP([test_spectral_laplacian_3D])
 # AT_KEYWORDS([Monodomain-3D spectral accuracy test])
-# AT_CHECK([$at_dir/testsuite/lifepoly/test_spectral_laplacian_3D],[0],[ignore],[ignore])
+# AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_spectral_laplacian_3D],[0],[ignore],[ignore])
 # AT_CLEANUP
 

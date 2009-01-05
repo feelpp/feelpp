@@ -253,7 +253,7 @@ struct test_integration_circle
         int Order=2;
         double t = 0.0;
         AUTO( mycst, cst_ref( t ) );
-        typename imesh<value_type,2>::ptrtype mesh( createCircle<value_type,2>( meshSize ) );
+        typename imesh<value_type,1>::ptrtype mesh( createCircle<value_type,1>( meshSize ) );
 
         t = 1.0;
         value_type v0 = integrate( elements(mesh), IM<2,2,value_type,Simplex>(), mycst ).evaluate()( 0, 0 );
@@ -282,7 +282,7 @@ struct test_integration_circle
         LIFE_ASSERT( math::abs( v0-v00) < eps )( v0 )( v00 )( math::abs( v0-v00) )( eps ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
-        typedef typename imesh<value_type,2>::type mesh_type;
+        typedef typename imesh<value_type,1>::type mesh_type;
         typedef fusion::vector<fem::Lagrange<2, 2, Scalar, Continuous, double> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
