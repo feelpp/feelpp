@@ -1,11 +1,11 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++ coding: utf-8 -*-
 
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-07
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) MyIntegrals on simplices or simplex products",
                      Life::AboutData::License_GPL,
-                     "Copyright (c) 2008 Université Joseph Fourier");
+                     "Copyright (c) 2008 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -150,7 +150,7 @@ MyIntegrals<Dim>::run()
     using namespace Life::vf;
 
 
-    this->changeRepository( boost::format( "%1%/%2%/h_%3%/" )
+    this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/" )
                             % this->about().appName()
                             % entity_type::name()
                             % this->vm()["hsize"].template as<double>()

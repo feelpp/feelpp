@@ -27,10 +27,34 @@
 \usepackage[english]{babel}
 \usepackage{tabularx}
 
+\usepackage{subfigure}
 \usepackage{graphicx}
+\graphicspath{%
+  {pdfs/}%
+  {pngs/}
+}
 \usepackage{amsmath,amssymb}
+
+%-----------------------------------------------------------------------
+% nota environment
+\usepackage{nota}
+\newcommand{\ficnota}{attention}
+\newcommand{\ficnote}{note}
+\newcommand{\ficnotahack}{question}
+
+\setlength{\largeurnota}{.8cm}
+\newenvironment{nota}{%
+  \begin{pictonote}{\ficnota}}{\end{pictonote}}
+\newenvironment{note}{%
+  \begin{pictonote}{\ficnote}}{\end{pictonote}}
+\newenvironment{notahack}{%
+  \begin{pictonote}{\ficnotahack}}{\end{pictonote}}
+
+
 \usepackage{xcolor}
 \newtheorem{problem}{Problem}
+
+
 
 \definecolor{lbcolor}{rgb}{0.95,0.95,0.95}
 \definecolor{cblue}{rgb}{0.,0.0,0.6}
@@ -110,11 +134,31 @@ Free Documentation License".
 \tableofcontents
 
 
-\section{Generalities}
+\section{Building and Programming Environments}
 
-\subsection{How to install Life}
+\subsection{Building Life}
 
-\subsubsection{Creation of RSA keys}
+\subsubsection{Getting the source via an archive}
+\label{sec:getting-source-via-1}
+
+Life is distributed as a tarball once in a while. The tarballs are available
+at
+\begin{center}
+  \href{http://ljkforge.imag.fr/life}{http://ljkforge.imag.fr/life}
+\end{center}
+Download the latest tarball. Then follow the steps
+\begin{lstlisting}{language=sh}
+  # replace x,y,z with the corresponding  numbers
+  tar xzf life-x.y.z.tar.gz
+  cd life-x.y.z
+\end{lstlisting}
+
+
+\subsubsection{Getting the source via Subversion}
+\label{sec:getting-source-via}
+
+\paragraph{Creating RSA keys}
+\label{sec:creation-rsa-keys}
 In order to download the sources of Life and Life-test, you have to go in
 LJKForge website (https://ljkforge.imag.fr) and create an account. After the
 administrator approval, you have to demand the rights to see the project tree.
@@ -136,7 +180,9 @@ user votre_login_ljkforge
 \end{lstlisting}
 in the \verb|~/.ssh/config| file.
 
-\subsubsection{Download sources}
+\paragraph{Downloading the sources}
+\label{sec:download-sources}
+
 To be able to download the life sources, you need subversion and SSH > 1.xxx
 installed on your computer. In a command prompt, go where you want life to be
 downloaded and type the following command.
@@ -148,7 +194,9 @@ cd life/benchmarks
 svn co svn+ssh://login@ljkforge.imag.fr/svn/life-test/life-test/trunk validation
 \end{lstlisting}
 
-\subsubsection{About dependencies.}
+\subsubsection{Dealing with software dependencies}
+\label{sec:about-dependencies}
+
 In order to install life, you have to install many dependencies before. Those
 libraries are necessary for the installation of the entire life and life-test
 librairies.
@@ -178,11 +226,72 @@ computing available at \url{http://www.geuz.org/gmsh}}
 plateform, \url{http://www.paraview.org}}
 \end{itemize}
 
-\subsubsection{Life Compilation}
-If you have passed all the previous chapter without problems, the compilation
-will be a formality.
-Go in the same folder in wich you have done the checkout and type the following
- commands :
+\subsubsection{Compiling Life}
+
+If you have passed all the previous chapter without problems, the
+compilation will be a formality.  Go in the same folder in wich you
+have done the checkout and type the following commands :
+
+\paragraph{From tarball}
+\label{sec:from-tarball}
+
+The steps are as follows:
+
+\begin{lstlisting}{language=sh}
+  cd life-x.y.z
+  mkdir opt
+  cd opt
+  # configure the Life Development Plateform
+  ../configure --enable-opt2
+
+  # Build the Life library
+  make
+
+  # Check the Life Library
+  make check
+\end{lstlisting}
+
+\paragraph{From subversion}
+\label{sec:from-subversion}
+
+The steps are as follows:
+
+\begin{lstlisting}{language=sh}
+  cd life
+  make -f Makefile.dist
+  mkdir opt
+  cd opt
+  # configure the Life Development Plateform
+  ../configure --enable-opt2
+
+  # Build the Life library
+  make
+
+  # Check the Life Library
+  make check
+\end{lstlisting}
+
+\begin{note}
+  The script \lstinline!configure! supports many command line
+  options. In particular if you are interested in writing some code or
+  examples inside the Life environment you have to enable the so
+  called \emph{maintainer mode} to ensure that the makefiles are
+  properly regenerated when you modify a \lstinline!Makefile.am! or if
+  you modify \lstinline!configure.ac!, to achieve this type
+  \begin{lstlisting}
+    configure --enable-maintainer-mode
+  \end{lstlisting}
+  To list all configure options, type
+  \begin{lstlisting}
+    configure --help
+  \end{lstlisting}
+\end{note}
+
+
+\paragraph{Compiling an extra module}
+\label{sec:compile-an-extra}
+
+If you work with an extra module, \emph{e.g.} \lstinline!validation!, the steps are as follows
 \begin{lstlisting}[language=sh]
 cd life
 make -f Makefile.dist
@@ -191,17 +300,33 @@ make -f Makefile.dist
 cd ../../..
 mkdir opt
 cd opt
-../life/configure --enable-opt2 --enable-maintainer-mode\
- CXXFLAGS= LDFLAGS= CPPFLAGS= CXX=g++
+../life/configure --enable-opt2 --enable-maintainer-mode
 make
 make check
-cd testsuite
-make check
-cd ../benchmarks/convergence
-make check
-cd ../..
-lifesuite
 \end{lstlisting}
+
+
+\paragraph{Compiling the Life tutorial}
+\label{sec:comp-life-tutor}
+If the command \lstinline!make check! has been run before the tutorial
+should be already compiled and ready. The steps are as follows:
+\begin{lstlisting}{language=sh}
+  # Build the Life tutorial
+  cd opt/doc/tutorial
+  make check
+\end{lstlisting}
+Here is what the directory should look like
+\begin{lstlisting}{language=sh}
+cd opt/doc/tutorial
+ls
+
+laplacian     Makefile      myintegrals   mymesh       pngs/
+tutorial.blg  tutorial.out  tutorial.toc  laplacian.o  myapp
+myintegrals.o mymesh.o      stokes.assert tutorial.aux
+stokes        stokes.o      tutorial.bbl  tutorial.log tutorial.pdf
+
+\end{lstlisting}
+
 
 \subsection{Programming environment}
 
@@ -711,8 +836,11 @@ myintegrals-4.3 is opened for debug
 [Area 0] int_Omega = 0.666667[ 0.305227 ]
 \end{lstlisting}
 
-\subsection{Laplacian}
+\subsection{Standard formulation: the Laplacian case}
 \label{sec:defin-bilin-forms}
+
+\subsubsection{Mathematical formulation}
+\label{sec:math-form-3}
 
 \marginpar{\lstinline!laplacian.cpp!}
 In this example, we would like to solve for the following problem in 2D
@@ -740,9 +868,118 @@ The following boundary conditions apply
 \end{equation}
 \end{problem}
 
+We propose here two possible variational formulations. The first one,
+handles the Dirichlet boundary conditions strongly, that is to say the
+condition is \emph{incorporated} into the function space definitions.
+The second one handles the Dirichlet condition \emph{weakly} and hence
+we have a uniform treatment for all types of boundary conditions.
+
+
+
+\paragraph{Strong Dirichlet conditions}
+\label{sec:strong-dirichl-cond}
+
 \noindent
-Two variational formulations are written in
-appendix~\ref{sec:vari-form-1} and implemented below.
+The variational formulation reads as follows, we introduce the spaces
+\begin{equation}
+  \label{eq:11}
+  \mathcal{X} = \Big\{ v \in H_1(\Omega) \text{ such that } v=g_{|x=-1,x=1} \Big\}
+\end{equation}
+and
+\begin{equation}
+  \label{eq:12}
+  \mathcal{V} = \Big\{ v \in H_1(\Omega) \text{ such that } v=0_{|x=-1,x=1} \Big\}
+\end{equation}
+We multiply (\ref{eq:1}) by $v \in \mathcal{V}$ then integrate over $\Omega$ and obtain
+\begin{equation}
+  \label{eq:13}
+  \int_\Omega -\Delta u v = \int_\Omega f v
+\end{equation}
+We integrate by parts and reformulate the problem as follows:
+\begin{problem}
+we look
+for $u \in \mathcal{X}$ such that for all $v \in \mathcal{V}$
+\begin{equation}
+  \label{eq:14}
+  \int_\Omega \nabla u \cdot \nabla v  = \int_\Omega f v
+\end{equation}
+
+\end{problem}
+In the present space setting~(\ref{eq:12}) and boundary
+conditions~(\ref{eq:4}), we have the boundary term from the integration by
+parts which is dropped being equal to 0
+\begin{equation}
+  \label{eq:15}
+  \int_{\partial \Omega} \frac{\partial u}{\partial n} v = 0,
+\end{equation}
+recalling that
+\begin{equation}
+  \label{eq:21}
+  \frac{\partial u}{\partial n} \stackrel{\text{def}}{=} \nabla u \cdot n
+\end{equation}
+where $n$ is the outward normal to $\partial \Omega$ by convention.We
+now discretize the problem, we create a mesh out of $\Omega$, we have
+\begin{equation}
+  \label{eq:10}
+  \Omega = \cup_{e=1}^\nel \Omega^e
+\end{equation}
+where $\Omega^e$ can be segments, triangles or tetrahedra depending on
+$d$ and we have $\nel$ of them. We introduce the finite dimensional
+spaces of continuous piecewise polynomial of degree $N$ functions
+\begin{equation}
+  \label{eq:17}
+  X_h = \Big\{ v_h  \in C^0(\Omega),\ {v_h}_{|\Omega^e} \in \mathbb{P}_N( \Omega^e ),\   v_h=g_{|x=-1,x=1}\Big\}
+\end{equation}
+and
+\begin{equation}
+  \label{eq:18}
+  V_h = \Big\{ v_h \in C^0(\Omega),\ {v_h}_{|\Omega^e} \in \mathbb{P}_N( \Omega^e ),\   v_h=0_{|x=-1,x=1}\Big\}
+\end{equation}
+which are out trial and test function spaces respectively.  We now
+have the problem we seek to solve which reads in our continuous
+Galerkin framework
+\begin{problem}
+  \label{prob:2}
+  we look for $u_h \in X_h \subset \mathcal{X}$ such that for all $v
+  \in V_h \subset \mathcal{V}$
+  \begin{equation}
+    \label{eq:20}
+    \int_\Omega \nabla u_h \cdot \nabla v_h  = \int_\Omega f v_h
+  \end{equation}
+\end{problem}
+
+\paragraph{Weak Dirichlet conditions}
+\label{sec:weak-dirichl-cond}
+
+There is an alternative formulation which allows to treat weakly
+Dirichlet(Essential) boundary conditions similarly to Neumann(Natural)
+and Robin conditions. Following a similar development as in the previous section, the problem reads
+\begin{problem}
+  \label{prob:3}
+  we look for $u \in X_h \subset H_1(\Omega)$ such that for all $v \in
+  X_h$
+\begin{equation}
+  \label{eq:16}
+  \int_\Omega \nabla u \cdot \nabla v +
+  \int_{|x=-1,x=1} -\frac{\partial u}{\partial n} v - u \frac{\partial v}{\partial n} + \frac{\mu}{h} u v
+  =
+  \int_\Omega f v +
+  \int_{|x=-1,x=1}  - g \frac{\partial v}{\partial n} + \frac{\mu}{h} g v
+\end{equation}
+where
+\begin{equation}
+  \label{eq:19}
+  X_h = \Big\{ v_h \in C^0(\Omega),\ {v_h}_{|\Omega^e} \in \mathbb{P}_N( \Omega^e ) \Big\}
+\end{equation}
+\end{problem}
+In (\ref{eq:16}), $g$ is defined by (\ref{eq:3}). $\mu$ serves as a penalisation
+parameter which should be $> 0$, e.g. between 2 and 10, and $h$ is the
+size of the face. The inconvenient of this formulation is the
+introduction of the parameter $\mu$, but the advantage is the
+\emph{weak} treatment of the Dirichlet condition.
+
+\subsubsection{Life formulation}
+\label{sec:life-formulation-1}
 
 
 First we define the $f$ and $g$. To do that we use the
@@ -845,204 +1082,249 @@ The code reads
 
 
 You can now verify that the $L_2$ error norm behaves like $h^{-(N+1)}$
-where $h$ is the mesh size and $N$ the polynomial order. The $H_1$ error norm
-would be checked similarly in $h^{-N}$.
+where $h$ is the mesh size and $N$ the polynomial order. The $H_1$
+error norm would be checked similarly in $h^{-N}$. The
+figure~\ref{fig:2} displays the results using Paraview.
 
-\subsection{Advection-reaction}
-\label{sec:advection-reaction}
+\begin{figure}[htbp]
+  \centering
+  \subfigure[Colored with $u$]{\includegraphics[width=.43\linewidth]{laplacian.png}}
+  \subfigure[Elevation]{\includegraphics[width=.43\linewidth]{laplacian_warp.png}}
+  \caption{Solution of problem~\ref{prob:3}}
+  \label{fig:2}
+\end{figure}
 
+\subsection{Mixed formulation: the Stokes case}
+\label{sec:mixed-form-stok}
+
+\subsubsection{Mathematical formulation}
+\label{sec:math-form}
+
+\marginpar{\lstinline!stokes.cpp!}  We are now interested in solving
+the Stokes equations, we would like to solve for the following problem
+in 2D
+\begin{problem}
+\label{prob:4}
+ find $(\mathbf{u},p)$ such that
+\begin{equation}
+  \label{eq:22}
+  -\Delta \mathbf{u} +\nabla p = \mathbf{f}\quad \text{and}\quad \nabla \cdot \mathbf{u} = 0,\quad \text{in}\ \Omega = [-1;1]^2
+\end{equation}
+with
+\begin{equation}
+  \label{eq:24}
+  \mathbf{f} = \mathbf{0}
+\end{equation}
+The following boundary conditions apply
+\begin{equation}
+  \label{eq:23}
+  \mathbf{u}=\mathbf{1}_{|y=1}, \quad \mathbf{u}=\mathbf{0}_{|\partial \Omega \backslash \{(x,y) \in \Omega | y=1\}}
+\end{equation}
+\end{problem}
+
+In problem (\ref{prob:2}), $p$ is known up to a constant $c$,
+\emph{i.e.} if $p$ is a solution then $p+c$ is also solution. To
+ensure uniqueness we impose the constraint that $p$ should have
+zero-mean, \emph{i.e.}
+\begin{equation}
+  \label{eq:26}
+  \int_\Omega p = 0
+\end{equation}
+
+The functional framework is has follows, we look for $\mathbf{u}$ is
+$H^1_0(\Omega)$ and $p$ in $L^2_0(\Omega)$. We shall not seek $p$ in
+$L^2_0(\Omega)$ but rather in $L^2(\Omega)$ and use Lagrange
+multipliers which live are the constants whose space we denote
+$\mathbb{P}_0(\Omega)$, to enforce~(\ref{eq:26}).
+
+Denote $\mathcal{X} = H^1_0(\Omega)\times
+L^2(\Omega)\times\mathbb{P}_0(\Omega)$, the variational formulation
+reads we look for $(\mathbf{u}, p, \lambda) \in \mathcal{X}$ for all
+$(\mathbf{v},q,\nu) \in \mathcal{X}$
+\begin{equation}
+  \label{eq:25}
+  \int_\Omega \nabla \mathbf{u} \cdot \nabla \mathbf{v} + \nabla \cdot \mathbf{v} p + \nabla \cdot \mathbf{u}\ q + q \lambda + p \nu  \ = \ \int_\Omega \mathbf{f} \cdot \mathbf{v}
+\end{equation}
+
+We build a triangulation $\Omega_h$ of $\Omega$, we choose compatible
+(piecewise polynomial) discretisation spaces $X_h$ and $M_h$,
+\emph{e.g.} the Taylor Hood element ($\mathbb{P}_N/\mathbb{P}_{N-1}$)
+and we denote $\mathcal{X}_h=X_h\times M_h \times
+\mathbb{P}_0(\Omega)$.  The discrete problem now reads, we look for
+$(\mathbf{u}_h,p_h,\lambda_h) \in \mathcal{X}_h$ such that for all
+$(\mathbf{v}_h,q_h,\nu_h) \in \mathcal{X}_h$
+\begin{equation}
+  \label{eq:27}
+  \int_{\Omega_h} \nabla \mathbf{u}_h \cdot \nabla \mathbf{v}_h + \nabla \cdot \mathbf{v}_h \ p_h + \nabla \cdot \mathbf{u}_h\ q_h + p_h \nu_h + q_h \lambda_h   = \ \int_{\Omega_h} \mathbf{f} \cdot \mathbf{v}_h
+\end{equation}
+
+The formulation~(\ref{eq:27}) leads to a linear system of the form
+\begin{equation}
+  \label{eq:28}
+  \underbrace{\begin{pmatrix}
+    A & B & 0\\
+    B^T & 0 & C\\
+    0 & C^T & 0
+  \end{pmatrix}}_{\mathcal{A}}
+\underbrace{
+  \begin{pmatrix}
+    \mathbf{u}_h\\
+    p_h\\
+    \lambda_h
+  \end{pmatrix}}_{\mathcal{U}} =
+\underbrace{\begin{pmatrix}
+    F\\
+    0\\
+    0
+  \end{pmatrix}}_{\mathcal{F}}
+\end{equation}
+
+where $A$ corresponds to the $(\mathbf{u},\mathbf{v})$ block, $B$ to
+the $\mathbf{u},q)$ block and $C$ to the $(p,\nu)$
+block. $\mathcal{A}$ is a symetric positive definite matrix and thus
+the system $\mathcal{A} \mathcal{U} = \mathcal{F}$ enjoys a unique
+solution.
+
+\subsubsection{Life formulation}
+\label{sec:life-formulation}
+
+Regarding the implementation of the Stokes problem~\ref{prob:4}, we
+can start from the laplacian case, from
+section~\ref{sec:defin-bilin-forms}. The implementation we choose to
+display here defines and builds $\mathcal{X}_h$, $\mathcal{A}$,
+$\mathcal{U}$ and $\mathcal{F}$.
+
+We start by defining and building $\mathcal{X}_h$: first we define the
+basis functions that will span each subspaces $X_h$, $M_h$ and
+$\mathbb{P}_0(\Omega)$.
+
+\lstinputlisting[firstline=115,lastline=123,gobble=4]{stokes.cpp}
+
+note that on the \lstinline!typedef! we build a (MPL) vector of them. Now we are
+ready to define the functionspace $\mathcal{X}_h$, much like in the
+Laplacian case:
+
+\lstinputlisting[firstline=124,lastline=126]{stokes.cpp}
+
+Next we define a few types which are associated with $\mathcal{U}$,
+$u$, $p$ and $\lambda$ respectively.
+
+\lstinputlisting[firstline=127,lastline=131]{stokes.cpp}
+
+Using these types we can instantiate elements of $\mathcal{X}_h$,
+$X_h$, $M_h$ and $\mathbb{P}_0(\Omega_h)$ respectively:
+
+\lstinputlisting[firstline=240,lastline=247]{stokes.cpp}
+
+They will serve in the definition of the variational formulation. We
+can now start assemble the various terms of the variational
+formulation~(\ref{eq:27}). First we define some viscous stress tensor,
+$\sigma(\mathbf{u}) = \frac{1}{2}(\nabla \mathbf{u} + \nabla
+\mathbf{u}^T)$, associated with the trial and test functions
+respectively
+
+\lstinputlisting[firstline=264,lastline=267]{stokes.cpp}
+
+Then we define the total stress tensor times the normal,
+$\tau(\mathbf{u},p) \mathbf{n} = -p \mathbf{n} + \sigma(\mathbf{u})
+\mathbf{n}$ where $\mathbf{n}$ is the normal and $\tau(\mathbf{u},p) =
+-p \mathbb{I} + \sigma(\mathbf{u})$:
+
+\lstinputlisting[firstline=269,lastline=273]{stokes.cpp}
+
+
+We then form the matrix $\mathcal{A}$ starting with block $A$,  block $B$
+block $C$ and finally the boundary conditions.
+
+
+\lstinputlisting[firstline=290,lastline=299]{stokes.cpp}
+
+The figure~\ref{fig:2} displays $p$ and $\mathbf{u}$ which are available in
+\lstinline!~/life/doc/tutorial/stokes/Simplex_2_1_2/P2/h_0.05!
+\begin{figure}[htbp]
+  \centering
+  \subfigure[Colored with $p$, $h=0.05$]{\includegraphics[width=.43\linewidth]{stokes-p.png}}
+  \subfigure[Colored with $\|\mathbf{u}\|$ and the arrows associated to $\mathbf{u}$ colored with $p$]{\includegraphics[width=.43\linewidth]{stokes-u.png}}
+  \caption{Solution of problem~\ref{prob:4}}
+  \label{fig:2}
+\end{figure}
 
 
 \appendix
 \newpage
-\section{Compiling the tutorial examples}
-\label{sec:comp-tutor-exampl}
+% \section{Compiling the tutorial examples}
+% \label{sec:comp-tutor-exampl}
 
 
-\subsection{CMake}
+% \subsection{CMake}
 
-The build system of the tutorial examples is
-CMake\footnote{\url{http://www.cmake.org}} by Kitware.Here is a excerpt from CMake web site
+% The build system of the tutorial examples is
+% CMake\footnote{\url{http://www.cmake.org}} by Kitware.Here is a excerpt from CMake web site
 
-CMake is a cross-platform, open-source make system. CMake is used to
-control the software compilation process using simple platform and
-compiler independent configuration files. CMake generates native
-makefiles and workspaces that can be used in the compiler environment
-of your choice. CMake is quite sophisticated: it is possible to
-support complex environments requiring system configuration,
-pre-processor generation, code generation, and template
-instantiation. Please go here to learn more about CMake.
+% CMake is a cross-platform, open-source make system. CMake is used to
+% control the software compilation process using simple platform and
+% compiler independent configuration files. CMake generates native
+% makefiles and workspaces that can be used in the compiler environment
+% of your choice. CMake is quite sophisticated: it is possible to
+% support complex environments requiring system configuration,
+% pre-processor generation, code generation, and template
+% instantiation. Please go here to learn more about CMake.
 
-CMake was developed by Kitware as part of the NLM Insight Segmentation
-and Registration Toolkit project. The ASCI VIEWS project also provided
-support in the context of their parallel computation
-environment. Other sponsors include the Insight, VTK, and VXL open
-source software communities.
+% CMake was developed by Kitware as part of the NLM Insight Segmentation
+% and Registration Toolkit project. The ASCI VIEWS project also provided
+% support in the context of their parallel computation
+% environment. Other sponsors include the Insight, VTK, and VXL open
+% source software communities.
 
-The goals for CMake include the following:
+% The goals for CMake include the following:
 
-\begin{itemize}
-\item Develop an open source, cross-platform tool to manage the build process,
-\item Allow the use of native compilers and systems,
-\item Simplify the build process,
-\item Optionally provide a user-interface to manage the build system,
-\item Create an extensible framework,
-\item Grow a self-sustaining community of software users and developers.
-\end{itemize}
+% \begin{itemize}
+% \item Develop an open source, cross-platform tool to manage the build process,
+% \item Allow the use of native compilers and systems,
+% \item Simplify the build process,
+% \item Optionally provide a user-interface to manage the build system,
+% \item Create an extensible framework,
+% \item Grow a self-sustaining community of software users and developers.
+% \end{itemize}
 
-\subsection{Building the examples}
-\label{sec:building-examples}
+% \subsection{Building the examples}
+% \label{sec:building-examples}
 
-The compilation is fairly simple. First make sure that the
-\lstinline!cmake! and eventually its text based(ncurses) interfaces
-\lstinline!ccmake! are in your \lstinline!PATH! (i.e. you can execute
-them).
-\noindent
-Then create a directory, where you will build and test the examples, e.g.
-\begin{lstlisting}{language=sh}
-mkdir tutorial-build
-cd tutorial-build
-\end{lstlisting}
+% The compilation is fairly simple. First make sure that the
+% \lstinline!cmake! and eventually its text based(ncurses) interfaces
+% \lstinline!ccmake! are in your \lstinline!PATH! (i.e. you can execute
+% them).
+% \noindent
+% Then create a directory, where you will build and test the examples, e.g.
+% \begin{lstlisting}{language=sh}
+% mkdir tutorial-build
+% cd tutorial-build
+% \end{lstlisting}
 
-\noindent
-Then you configure and generate the \lstinline!Makefile!s using CMake
-\begin{lstlisting}{language=sh}
-cmake <path to tutorial sources>
-\end{lstlisting}
-\noindent
-CMake provides a text based interface using ncurses for configuration,
-you can check it out using the command
-\begin{lstlisting}{language=sh}
-ccmake <path to tutorial sources>
-\end{lstlisting}
-\noindent Follow the instructions at the bottom: press \lstinline!c!
-to configure, then \lstinline!g! to generate the \lstinline!Makefile!s
+% \noindent
+% Then you configure and generate the \lstinline!Makefile!s using CMake
+% \begin{lstlisting}{language=sh}
+% cmake <path to tutorial sources>
+% \end{lstlisting}
+% \noindent
+% CMake provides a text based interface using ncurses for configuration,
+% you can check it out using the command
+% \begin{lstlisting}{language=sh}
+% ccmake <path to tutorial sources>
+% \end{lstlisting}
+% \noindent Follow the instructions at the bottom: press \lstinline!c!
+% to configure, then \lstinline!g! to generate the \lstinline!Makefile!s
 
-\noindent
-You are now ready to compile the examples
-\begin{lstlisting}{language=sh}
-make
-\end{lstlisting}
-If somehow something fails during the build, try using the
-\lstinline!make!  option \lstinline!-k! which allows to continue
-after a failure.
+% \noindent
+% You are now ready to compile the examples
+% \begin{lstlisting}{language=sh}
+% make
+% \end{lstlisting}
+% If somehow something fails during the build, try using the
+% \lstinline!make!  option \lstinline!-k! which allows to continue
+% after a failure.
 
 \newpage
-\section{Variational formulation for the Laplacian}
-\label{sec:vari-form-1}
-
-Recall, the problem~\ref{prob:1} in
-section~\ref{sec:defin-bilin-forms}. We propose in the following
-appendix two possible variational formulations. The first one, handles
-the Dirichlet boundary conditions strongly, that is to say the
-condition is \emph{incorporated} into the function space definitions.
-The second one handles the Dirichlet condition \emph{weakly} and hence
-we have a uniform treatment for all types of boundary conditions.
-
-
-
-\subsection{Strong Dirichlet conditions}
-\label{sec:strong-dirichl-cond}
-
-\noindent
-The variational formulation reads as follows, we introduce the spaces
-\begin{equation}
-  \label{eq:11}
-  \mathcal{X} = \Big\{ v \in H_1(\Omega) \text{ such that } v=g_{|x=-1,x=1} \Big\}
-\end{equation}
-and
-\begin{equation}
-  \label{eq:12}
-  \mathcal{V} = \Big\{ v \in H_1(\Omega) \text{ such that } v=0_{|x=-1,x=1} \Big\}
-\end{equation}
-We multiply (\ref{eq:1}) by $v \in \mathcal{V}$ then integrate over $\Omega$ and obtain
-\begin{equation}
-  \label{eq:13}
-  \int_\Omega -\Delta u v = \int_\Omega f v
-\end{equation}
-We integrate by parts and reformulate the problem as follows:
-\begin{problem}
-we look
-for $u \in \mathcal{X}$ such that for all $v \in \mathcal{V}$
-\begin{equation}
-  \label{eq:14}
-  \int_\Omega \nabla u \cdot \nabla v  = \int_\Omega f v
-\end{equation}
-
-\end{problem}
-In the present space setting~(\ref{eq:12}) and boundary
-conditions~(\ref{eq:4}), we have the boundary term from the integration by
-parts which is dropped being equal to 0
-\begin{equation}
-  \label{eq:15}
-  \int_{\partial \Omega} \frac{\partial u}{\partial n} v = 0,
-\end{equation}
-recalling that
-\begin{equation}
-  \label{eq:21}
-  \frac{\partial u}{\partial n} \stackrel{\text{def}}{=} \nabla u \cdot n
-\end{equation}
-where $n$ is the outward normal to $\partial \Omega$ by convention.We
-now discretize the problem, we create a mesh out of $\Omega$, we have
-\begin{equation}
-  \label{eq:10}
-  \Omega = \cup_{e=1}^\nel \Omega^e
-\end{equation}
-where $\Omega^e$ can be segments, triangles or tetrahedra depending on
-$d$ and we have $\nel$ of them. We introduce the finite dimensional
-spaces of continuous piecewise polynomial of degree $N$ functions
-\begin{equation}
-  \label{eq:17}
-  X_h = \Big\{ v_h  \in C^0(\Omega),\ {v_h}_{|\Omega^e} \in \mathbb{P}_N( \Omega^e ),\   v_h=g_{|x=-1,x=1}\Big\}
-\end{equation}
-and
-\begin{equation}
-  \label{eq:18}
-  V_h = \Big\{ v_h \in C^0(\Omega),\ {v_h}_{|\Omega^e} \in \mathbb{P}_N( \Omega^e ),\   v_h=0_{|x=-1,x=1}\Big\}
-\end{equation}
-which are out trial and test function spaces respectively.  We now
-have the problem we seek to solve which reads in our continuous
-Galerkin framework
-\begin{problem}
-  \label{prob:2}
-  we look for $u_h \in X_h \subset \mathcal{X}$ such that for all $v
-  \in V_h \subset \mathcal{V}$
-  \begin{equation}
-    \label{eq:20}
-    \int_\Omega \nabla u_h \cdot \nabla v_h  = \int_\Omega f v_h
-  \end{equation}
-\end{problem}
-
-\subsection{Weak Dirichlet conditions}
-\label{sec:weak-dirichl-cond}
-
-There is an alternative formulation which allows to treat weakly
-Dirichlet(Essential) boundary conditions similarly to Neumann(Natural)
-and Robin conditions. Following a similar development as in the previous section, the problem reads
-\begin{problem}
-  \label{prob:3}
-  we look for $u \in X_h \subset H_1(\Omega)$ such that for all $v \in
-  X_h$
-\begin{equation}
-  \label{eq:16}
-  \int_\Omega \nabla u \cdot \nabla v +
-  \int_{|x=-1,x=1} -\frac{\partial u}{\partial n} v - u \frac{\partial v}{\partial n} + \frac{\mu}{h} u v
-  =
-  \int_\Omega f v +
-  \int_{|x=-1,x=1}  - g \frac{\partial v}{\partial n} + \frac{\mu}{h} g v
-\end{equation}
-where
-\begin{equation}
-  \label{eq:19}
-  X_h = \Big\{ v_h \in C^0(\Omega),\ {v_h}_{|\Omega^e} \in \mathbb{P}_N( \Omega^e ) \Big\}
-\end{equation}
-\end{problem}
-In (\ref{eq:16}), $g$ is defined by (\ref{eq:3}). $\mu$ serves as a penalisation
-parameter which should be $> 0$, e.g. between 2 and 10, and $h$ is the
-size of the face. The inconvenient of this formulation is the
-introduction of the parameter $\mu$, but the advantage is the
-\emph{weak} treatment of the Dirichlet condition.
-
 
 
 \newpage

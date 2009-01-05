@@ -1,11 +1,11 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++ coding: utf-8 -*-
 
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-06
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 UniversitÃ© Joseph Fourier (Grenoble I)
 
 
   This program is free software: you can redistribute it and/or modify
@@ -60,7 +60,7 @@ makeAbout()
                            "0.1",
                            "my first Life application",
                            Life::AboutData::License_GPL,
-                           "Copyright (c) 2008 Université Joseph Fourier");
+                           "Copyright (c) 2008 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme",
                     "developer",
@@ -168,7 +168,7 @@ void MyMesh<Dim>::run()
             std::cout << this->optionsDescription() << "\n";
             return;
         }
-    this->changeRepository( boost::format( "%1%/h_%2%/" )
+    this->changeRepository( boost::format( "doc/tutorial/%1%/h_%2%/" )
                             % this->about().appName()
                             % M_meshSize
                             );
