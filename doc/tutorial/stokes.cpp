@@ -308,8 +308,8 @@ Stokes<Dim, Order, Entity>::run()
     Log() << "[stokes] solve for D done\n";
 
     double meas = integrate( elements(mesh), im, constant(1.0) ).evaluate()( 0, 0);
-    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 4)\n";
-    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 4)\n";
+    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
+    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
     double mean_p = integrate( elements(mesh), im, idv(p) ).evaluate()( 0, 0 )/meas;
     Log() << "[stokes] mean(p)=" << mean_p << "\n";
