@@ -118,7 +118,7 @@ public:
     typedef fusion::vector<fem::Lagrange<Dim, Order, Scalar, Continuous, double, Entity> > basis_type;
 
     /*space*/
-    typedef FunctionSpace<mesh_type, basis_type, value_type, Periodic<1,3,value_type> > functionspace_type;
+    typedef FunctionSpace<mesh_type, basis_type, value_type, Periodic<2,4,value_type> > functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
@@ -190,7 +190,7 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
 
     // export
     exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-    timeSet( new timeset_type( "laplacian_ml" ) ),
+    timeSet( new timeset_type( "periodic" ) ),
 
     //
     timers()
@@ -212,16 +212,16 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
 
     timeSet->setTimeIncrement( 1.0 );
     exporter->addTimeSet( timeSet );
-    exporter->setPrefix( "laplacian_ml" );
+    exporter->setPrefix( "periodic" );
 
     Log() << "create mesh\n";
     mesh = createMesh();
 
     Log() << "create space\n";
     node_type trans(2);
-    trans[0]=2;
-    trans[1]=0;
-    Xh = functionspace_type::New( mesh, MESH_COMPONENTS_DEFAULTS, Periodic<1,3,value_type>( trans ) );
+    trans[0]=0;
+    trans[1]=2;
+    Xh = functionspace_type::New( mesh, MESH_COMPONENTS_DEFAULTS, Periodic<2,4,value_type>( trans ) );
 
     Log() << "print space info\n";
     Xh->printInfo();
@@ -284,6 +284,14 @@ PeriodicLaplacian<Dim, Order>::run()
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
     form2( Xh, Xh, M, _init=true ) = integrate( elements( mesh ), MyIM<2*(Order-1)>(), gradt(u)*trans(grad(v)) );
+    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, 1 ), MyIM<2*(Order-1)>(),
+                                     -gradt(u)*N()*id(v)
+                                     -grad(v)*N()*idt(u)
+                                     + penalisation_bc*id(u)*idt(v)/hFace() );
+    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, 3 ), MyIM<2*(Order-1)>(),
+                                     -gradt(u)*N()*id(v)
+                                     -grad(v)*N()*idt(u)
+                                     + penalisation_bc*id(u)*idt(v)/hFace() );
 
     M->close();
 
@@ -291,8 +299,8 @@ PeriodicLaplacian<Dim, Order>::run()
     double mean = integrate( elements(mesh), MyIM<5>(), g ).evaluate()( 0, 0)/area;
     Log() << "int g  = " << mean << "\n";
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( Xh, F, _init=true ) = ( integrate( elements( mesh ), MyIM<Order+5>(), f*id(v) )+
-                                   integrate( boundaryfaces( mesh ), MyIM<Order+5>(), (trans(grad_g)*N())*id(v) )
+    form1( Xh, F, _init=true ) = ( integrate( elements( mesh ), MyIM<Order+5>(), f*id(v) )
+                                   //+integrate( boundaryfaces( mesh ), MyIM<Order+5>(), (trans(grad_g)*N())*id(v) )
 
                                    );
     F->close();
@@ -367,14 +375,14 @@ main( int argc, char** argv )
 
     /* change parameters below */
     const int nDim = 2;
-    const int nOrder = 4;
+    const int nOrder = 1;
 
-    typedef Life::PeriodicLaplacian<nDim, nOrder> laplacian_ml_type;
+    typedef Life::PeriodicLaplacian<nDim, nOrder> laplacian_periodic_type;
 
     /* define and run application */
-    laplacian_ml_type laplacian_ml( argc, argv, makeAbout(), makeOptions() );
+    laplacian_periodic_type laplacian_periodic( argc, argv, makeAbout(), makeOptions() );
 
-    laplacian_ml.run();
+    laplacian_periodic.run();
 }
 
 

@@ -1,6 +1,32 @@
 # -*- readme-debian -*-
 
 
+New in 0.9.10
+=============
+
+* Libraries
+
+ ** lifediscr
+
+   *** support for high order nodal basis function in case of periodic
+       conditions
+
+ ** lifefilters
+
+   *** Gmsh : throw an exception if gmsh is execute when not available
+
+* Build System
+
+ ** configure: better feedback to users
+
+ ** Gmsh
+
+   *** configure: better support
+
+
+* many minor fixes
+
+
 New in 0.9.9
 ============
 
@@ -23,4 +49,4 @@ New in 0.9.9
   multiplication) support.
 
 
- -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Sun,  4 Jan 2009 18:08:17 +0100
+ -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Wed,  7 Jan 2009 16:44:19 +0100

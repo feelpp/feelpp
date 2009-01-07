@@ -72,6 +72,8 @@ am__aclocal_m4_deps = $(top_srcdir)/admin/ac_check_arprec.m4 \
 	$(top_srcdir)/admin/ac_find_file.m4 \
 	$(top_srcdir)/admin/ax_boost.m4 $(top_srcdir)/admin/libtool.m4 \
 	$(top_srcdir)/admin/life_check_compilers.m4 \
+	$(top_srcdir)/admin/life_check_python.m4 \
+	$(top_srcdir)/admin/life_check_python_module.m4 \
 	$(top_srcdir)/admin/life_check_slepc.m4 \
 	$(top_srcdir)/admin/life_check_trilinos.m4 \
 	$(top_srcdir)/admin/life_create_subdirslist.m4 \
@@ -175,6 +177,8 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PDFLATEX = @PDFLATEX@
+PYTHON = @PYTHON@
+PYTHON_VERSION = @PYTHON_VERSION@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -186,6 +190,10 @@ SVNVERSION = @SVNVERSION@
 TOPSUBDIRS = @TOPSUBDIRS@
 UMFPACK_LIBS = @UMFPACK_LIBS@
 VERSION = @VERSION@
+WITH_GMSH = @WITH_GMSH@
+WITH_PYTHON = @WITH_PYTHON@
+WITH_PYTHON_MODULE_PYX = @WITH_PYTHON_MODULE_PYX@
+WITH_PYTHON_MODULE_SCIPY = @WITH_PYTHON_MODULE_SCIPY@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
