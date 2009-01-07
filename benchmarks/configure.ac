@@ -25,7 +25,7 @@ AC_PREREQ([2.59])
 
 # Initialize Autoconf
 AC_INIT([Life platform module benchmarks],
-        [0.9.9],
+        [0.9.10],
         [life-commits@lists.ljkforge.imag.fr],
         [life-benchmarks])
 
