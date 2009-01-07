@@ -319,7 +319,16 @@ dnl AC_CHECK_HEADERS([grace_np.h])
 dnl AC_CHECK_LIB([grace_np],GraceClose,[grace_libs="-lgrace_np"],[grace_libs=""])
 dnl AC_SUBST(grace_libs)
 
+dnl ------------------------------------------------------------
+dnl Python
+dnl ------
+LIFE_CHECK_PYTHON
+LIFE_CHECK_PYTHON_MODULE([scipy])
+LIFE_CHECK_PYTHON_MODULE([pyx])
+
+dnl ------------------------------------------------------------
 dnl gmsh
+dnl ----
 AC_CHECK_GMSH
 
 
@@ -529,11 +538,15 @@ do
   test -f $module/summary && cat $module/summary
 done
 
-test "x$WITH_BOOST" = x1       && sum_boost=OK       || sum_boost="no * (MANDATORY)"
-test "x$WITH_GMSH" = x1        && sum_gmsh=OK        || sum_gmsh="no * (optional)"
-test "x$WITH_PETSC" = x1       && sum_petsc=OK       || sum_petsc="no * (optional)"
-test "x$WITH_SLEPC" = x1       && sum_slepc=OK       || sum_slepc="no * (optional)"
-test "x$WITH_TRILINOS" = x1    && sum_trilinos=OK    || sum_trilinos="no * (optional)"
+test "x$WITH_BOOST" = x1                 && sum_boost=OK                    || sum_boost="no * (MANDATORY)"
+test "x$WITH_GMSH" = x1                  && sum_gmsh=OK                     || sum_gmsh="no * (optional)"
+test "x$WITH_PETSC" = x1                 && sum_petsc=OK                    || sum_petsc="no * (optional)"
+test "x$WITH_SLEPC" = x1                 && sum_slepc=OK                    || sum_slepc="no * (optional)"
+test "x$WITH_TRILINOS" = x1              && sum_trilinos=OK                 || sum_trilinos="no * (optional)"
+
+test "x$WITH_PYTHON" = x1                && sum_python=OK                   || sum_python="no * (optional)"
+test "x$WITH_PYTHON_MODULE_SCIPY" = x1   && sum_python_module_scipy=OK      || sum_python_module_scipy="no * (optional)"
+test "x$WITH_PYTHON_MODULE_PYX" = x1     && sum_python_module_pyx=OK        || sum_python_module_pyx="no * (optional)"
 
 cat <<EOT
 
@@ -549,10 +562,14 @@ cat <<EOT > libsummary
  Support for          is
  -----------------------------
   Boost               ${sum_boost}
-  Gmsh                ${sum_gmsh}
   PETSc               ${sum_petsc}
   SLEPc               ${sum_slepc}
   Trilinos            ${sum_trilinos}
+  Gmsh                ${sum_gmsh}
+  Python              ${sum_python}
+  Python module scipy ${sum_python_module_scipy}
+  Python module pyx   ${sum_python_module_pyx}
+
 EOT
 cat libsummary
 

@@ -125,7 +125,7 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
 
 #if defined( HAVE_PETSC_H )
 
-            Log() << "[Backend] use fallback backend gmm\n";
+            Log() << "[Backend] use fallback backend petsc\n";
             bt = BACKEND_PETSC;
 #else
             Log() << "[Backend] backend " << vm["backend"].template as<std::string>() << " not available\n";
