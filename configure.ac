@@ -365,7 +365,7 @@ _AC_SRCDIRS([.])
 
 AC_MSG_CHECKING([Life Subversion version if applicable])
 if test -d $ac_top_srcdir/.svn; then
- life_revision=`$SVNVERSION  $ac_top_srcdir | awk 'BEGIN{FS=":"}{print $2}' | sed 's/[[MSP]]//g'`
+ life_revision=`$SVNVERSION  $ac_top_srcdir | awk 'BEGIN{FS=":"}{print $1}' | sed 's/[[MSP]]//g'`
  AC_DEFINE_UNQUOTED(LIFE_REVISION,[$life_revision],[revision])
  AC_SUBST(life_revision)
  AC_MSG_RESULT([$life_revision])
