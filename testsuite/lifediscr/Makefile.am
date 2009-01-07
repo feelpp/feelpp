@@ -44,7 +44,7 @@ test_space_SOURCES	= test_space.cpp
 test_space_LDADD    = $(life_libs) $(boost_unit_test_framework_lib)  $(BOOST_UNIT_TEST_FRAMEWORK_LIB)
 
 test_integration_SOURCES	= test_integration.cpp
-test_integration_LDADD    = ../../life/liblife.la $(BOOST_UNIT_TEST_FRAMEWORK_LIB) -lprofiler
+test_integration_LDADD    = ../../life/liblife.la $(BOOST_UNIT_TEST_FRAMEWORK_LIB)
 
 #test_integration_dirac_SOURCES	= test_integration_dirac.cpp
 #test_integration_dirac_LDADD    = ../../life/liblife.la $(BOOST_UNIT_TEST_FRAMEWORK_LIB)
