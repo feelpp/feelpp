@@ -24,7 +24,6 @@ AC_DEFINE_UNQUOTED(LIFE_VERSION_MINOR,$LIFE_VERSION_MINOR,[minor version number]
 AC_DEFINE_UNQUOTED(LIFE_VERSION_MICRO,$LIFE_VERSION_MICRO,[micro version number])
 AC_DEFINE_UNQUOTED(LIFE_VERSION_EXTRA,$LIFE_VERSION_EXTRA,[extra version information: date, cvs, ...])
 AC_DEFINE_UNQUOTED(LIFE_BUILDID,$LIFE_BUILDID,[buildid])
-AC_DEFINE_UNQUOTED(LIFE_REVISION,$LIFE_REVISION,[revision])
 AC_DEFINE_UNQUOTED(LIFE_VERSION,$LIFE_VERSION,[full blown version])
 
 LIFE_PACKAGE=life
@@ -78,6 +77,7 @@ AC_LIBTOOL_DLOPEN # MUST be declared BEFORE AC_PROG_LIBTOOL
 AC_PROG_LIBTOOL
 
 # checks for a C compiler
+AC_PROG_AWK
 AC_PROG_CC( gcc gcc-4.0 gcc-3.4 gcc-3.3 gcc-3.2  )
 AC_PROG_CC_C_O
 AC_PROG_F77( gfortran g77 )
@@ -349,9 +349,20 @@ AC_SUBST(life_configure_date)
 
 # Write out project revision if versioning tool is present
 AC_PATH_PROG([SVNVERSION], [svnversion], [echo unknown])
-#_AC_SRCDIRS([.])
-life_revision=`cd "$ac_top_srcdir" && $SVNVERSION`
-AC_SUBST(life_revision)
+_AC_SRCDIRS([.])
+
+AC_MSG_CHECKING([Life Subversion version if applicable])
+if test -d $ac_top_srcdir/.svn; then
+ life_revision=`$SVNVERSION  $ac_top_srcdir | awk 'BEGIN{FS=":"}{print $2}' | sed 's/[[MSP]]//g'`
+ AC_DEFINE_UNQUOTED(LIFE_REVISION,[$life_revision],[revision])
+ AC_SUBST(life_revision)
+ AC_MSG_RESULT([$life_revision])
+else
+ life_revision=0
+ AC_SUBST(life_revision)
+ AC_DEFINE_UNQUOTED(LIFE_REVISION,[$life_revision],[revision])
+ AC_MSG_RESULT([not applicable])
+fi
 
 
 #
@@ -517,6 +528,34 @@ for module in doc examples benchmarks applications research
 do
   test -f $module/summary && cat $module/summary
 done
+
+test "x$WITH_BOOST" = x1       && sum_boost=OK       || sum_boost="no * (MANDATORY)"
+test "x$WITH_GMSH" = x1        && sum_gmsh=OK        || sum_gmsh="no * (optional)"
+test "x$WITH_PETSC" = x1       && sum_petsc=OK       || sum_petsc="no * (optional)"
+test "x$WITH_SLEPC" = x1       && sum_slepc=OK       || sum_slepc="no * (optional)"
+test "x$WITH_TRILINOS" = x1    && sum_trilinos=OK    || sum_trilinos="no * (optional)"
+
+cat <<EOT
+
+Summary:
+========
+EOT
+
+cat <<EOT > libsummary
+
+(lib)
+ Debug level is ${DEBUG_LEVEL}
+
+ Support for          is
+ -----------------------------
+  Boost               ${sum_boost}
+  Gmsh                ${sum_gmsh}
+  PETSc               ${sum_petsc}
+  SLEPc               ${sum_slepc}
+  Trilinos            ${sum_trilinos}
+EOT
+cat libsummary
+
 
 cat << EOT
 
