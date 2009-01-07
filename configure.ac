@@ -142,12 +142,9 @@ AC_CHECK_PROG(LIFE_HAS_DOT, dot, [yes] )
 # Automatically save cache file to improve rerunning of configure script
 AC_CACHE_SAVE
 
-# check for boost
-with_boost=yes
-AX_BOOST([1.33.1])
-#LIBS="${BOOST_FILESYSTEM_LIB} ${BOOST_PROGRAM_OPTIONS_LIB} ${BOOST_SERIALIZATION_LIB} ${BOOST_DATE_TIME_LIB} $LIBS"
-theboostlibs="\$(top_builddir)/boost/libs/mpi/src/libboost_mpi.la ${BOOST_FILESYSTEM_LIB} ${BOOST_PROGRAM_OPTIONS_LIB} \$(top_builddir)/boost/libs/serialization/src/libboost_serialization.la ${BOOST_DATE_TIME_LIB}"
-boostlibs="${BOOST_FILESYSTEM_LIB} ${BOOST_PROGRAM_OPTIONS_LIB} ${BOOST_SIGNALS_LIB} ${BOOST_DATE_TIME_LIB}"
+dnl ------------------------------------------------------------
+dnl Boost
+LIFE_CHECK_BOOST
 
 dnl
 dnl checks for some scientific computing libraries
@@ -200,8 +197,9 @@ CAMD_LIBS=
 AC_SUBST(CAMD_LIBS)
 AC_CHECK_LIB(camd, camd_postorder, [CAMD_LIBS="-lcamd"; with_camd=yes],[with_camd=no])
 
-# Check for UMFPACK library.
-
+dnl ------------------------------------------------------------
+dnl Check for UMFPACK library.
+dnl --------------------------
 UMFPACK_LIBS=
 AC_SUBST(UMFPACK_LIBS)
 
@@ -252,7 +250,8 @@ AC_CHECK_PARMETIS
 dnl petsc
 AC_CHECK_PETSC(2.1.6) #
 AM_CONDITIONAL(HAVE_PETSC, test "x$petsc_libs" != "x" )
-
+WITH_PETSC=0
+test "x$petsc_libs" = x || WITH_PETSC=1
 
 dnl -------------------------------------------------------------
 dnl SLEPc  -- enabled by default
@@ -267,6 +266,8 @@ if test "$enableslepc" != no -a "x$petsc_libs" != "x"; then
    LIFE_CHECK_SLEPC
 fi
 AM_CONDITIONAL(HAVE_SLEPC, test "x$enableslepc" != "xno" -a "x$petsc_libs" != "x" )
+WITH_SLEPC=0
+test "x$enableslepc" = xno -o "x$petsc_libs" = x || WITH_SLEPC=1
 
 dnl -------------------------------------------------------------
 
@@ -287,6 +288,8 @@ if test "$enablevtk" != no; then
  AC_CHECK_VTK
 fi
 AM_CONDITIONAL(HAVE_VTK, test "x$enablevtk" != "xno" )
+WITH_VTK=0
+test "x$enablevtk" = "xno" || WITH_VTK=1
 
 dnl vtk
 
@@ -543,6 +546,7 @@ test "x$WITH_GMSH" = x1                  && sum_gmsh=OK                     || s
 test "x$WITH_PETSC" = x1                 && sum_petsc=OK                    || sum_petsc="no * (optional)"
 test "x$WITH_SLEPC" = x1                 && sum_slepc=OK                    || sum_slepc="no * (optional)"
 test "x$WITH_TRILINOS" = x1              && sum_trilinos=OK                 || sum_trilinos="no * (optional)"
+test "x$WITH_VTK" = x1                   && sum_vtk=OK                      || sum_vtk="no * (optional)"
 
 test "x$WITH_PYTHON" = x1                && sum_python=OK                   || sum_python="no * (optional)"
 test "x$WITH_PYTHON_MODULE_SCIPY" = x1   && sum_python_module_scipy=OK      || sum_python_module_scipy="no * (optional)"
@@ -565,6 +569,7 @@ cat <<EOT > libsummary
   PETSc               ${sum_petsc}
   SLEPc               ${sum_slepc}
   Trilinos            ${sum_trilinos}
+  VTK                 ${sum_vtk}
   Gmsh                ${sum_gmsh}
   Python              ${sum_python}
   Python module scipy ${sum_python_module_scipy}
