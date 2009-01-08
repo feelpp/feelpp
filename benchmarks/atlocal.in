@@ -4,3 +4,9 @@
 #
 
 # stuff that could be needed by the testsuite
+with_python=@WITH_PYTHON@
+with_python_module_scipy=@WITH_PYTHON_MODULE_SCIPY@
+with_python_module_pyx=@WITH_PYTHON_MODULE_PYX@
+
+with_python_support=0
+(test "x$with_python"=x0 -o  "x$with_python_module_scipy"=x0 -o test "x$with_python_module_pyx"=x0) || with_python_support=1
