@@ -68,6 +68,18 @@ LIFE_DEBUG
 LIFE_CHECK_COMPILERS
 LIFE_CHECK_LIFE
 
+# Automatically save cache file to improve rerunning of configure script
+AC_CACHE_SAVE
+
+LIFE_CHECK_PDFLATEX
+LIFE_CHECK_MAKEINDEX
+LIFE_CHECK_BIBTEX
+
+LIFE_CHECK_DOXYGEN
+LIFE_CHECK_DOT
+
+# Automatically save cache file to improve rerunning of configure script
+AC_CACHE_SAVE
 
 # Write out configure arguments
 life_configure_args=`eval echo configure $ac_configure_args`
@@ -87,11 +99,6 @@ AC_SUBST(life_revision)
 # Automatically save cache file to improve rerunning of configure script
 AC_CACHE_SAVE
 
-LIFE_CHECK_PDFLATEX
-LIFE_CHECK_MAKEINDEX
-LIFE_CHECK_BIBTEX
-
-
 # doc
 AC_CONFIG_FILES([ Makefile ])
 AC_CONFIG_FILES([ admin/Makefile ])
@@ -104,7 +111,26 @@ AC_CONFIG_FILES([ api/Makefile api/Doxyfile ])
 
 AC_OUTPUT
 
+test "x$WITH_PDFLATEX" = x1              && sum_pdflatex=OK                 || sum_pdflatex="no * (optional)"
+test "x$WITH_MAKEINDEX" = x1             && sum_makeindex=OK                || sum_makeindex="no * (optional)"
+test "x$WITH_BIBTEX" = x1                && sum_bibtex=OK                   || sum_bibtex="no * (optional)"
+test "x$WITH_DOXYGEN" = x1               && sum_doxygen=OK                  || sum_doxygen="no * (optional)"
+test "x$WITH_DOT" = x1                   && sum_dot=OK                      || sum_dot="no * (optional)"
+
+
 cat <<EOT > summary
+
+(lib)
+ Debug level is ${DEBUG_LEVEL}
+
+ Support for          is
+ -----------------------------
+  PDFLatex            ${sum_pdflatex}
+  MakeIndex           ${sum_makeindex}
+  BibTeX              ${sum_bibtex}
+  Doxygen             ${sum_doxygen}
+  Dot                 ${sum_dot}
+
 EOT
 cat summary
 
