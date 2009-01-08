@@ -24,8 +24,6 @@ include $(top_srcdir)/testsuite/Makefile.testsuite
 
 SUFFIXES		= .cpp .hpp .idl .c .h .f .F .o .moc
 
-#AM_CXXFLAGS = -fopenmp
-
 check_PROGRAMS 	= test_mpi test_boostmpi test_traits test_singleton test_factory test_debug test_openmp test_context test_material
 
 test_mpi_SOURCES    = test_mpi.cpp
