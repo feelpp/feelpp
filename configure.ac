@@ -132,13 +132,6 @@ return !(sizeof(size_t)==sizeof(uint));
 ])
 
 
-# pdflatex
-AC_CHECK_PROG(PDFLATEX, pdflatex,[pdflatex],[no])
-
-# doxygen
-AC_CHECK_PROG(DOXYGEN, doxygen, [doxygen], [no-doxygen] )
-AC_CHECK_PROG(LIFE_HAS_DOT, dot, [yes] )
-
 # Automatically save cache file to improve rerunning of configure script
 AC_CACHE_SAVE
 
@@ -322,12 +315,6 @@ dnl AC_CHECK_HEADERS([grace_np.h])
 dnl AC_CHECK_LIB([grace_np],GraceClose,[grace_libs="-lgrace_np"],[grace_libs=""])
 dnl AC_SUBST(grace_libs)
 
-dnl ------------------------------------------------------------
-dnl Python
-dnl ------
-LIFE_CHECK_PYTHON
-LIFE_CHECK_PYTHON_MODULE([scipy])
-LIFE_CHECK_PYTHON_MODULE([pyx])
 
 dnl ------------------------------------------------------------
 dnl gmsh
@@ -519,7 +506,14 @@ test "x$ENABLE_MODULE_BENCHMARKS" = x1           && sum_benchmarks=OK      || su
 test "x$ENABLE_MODULE_APPLICATIONS" = x1         && sum_applications=OK    || sum_applications="no"
 test "x$ENABLE_MODULE_RESEARCH" = x1             && sum_research=OK        || sum_research="no"
 
-cat <<EOT
+test "x$WITH_BOOST" = x1                 && sum_boost=OK                    || sum_boost="no * (MANDATORY)"
+test "x$WITH_GMSH" = x1                  && sum_gmsh=OK                     || sum_gmsh="no * (optional)"
+test "x$WITH_PETSC" = x1                 && sum_petsc=OK                    || sum_petsc="no * (optional)"
+test "x$WITH_SLEPC" = x1                 && sum_slepc=OK                    || sum_slepc="no * (optional)"
+test "x$WITH_TRILINOS" = x1              && sum_trilinos=OK                 || sum_trilinos="no * (optional)"
+test "x$WITH_VTK" = x1                   && sum_vtk=OK                      || sum_vtk="no * (optional)"
+
+cat <<EOT > summary
 
 Summary:
 ========
@@ -532,34 +526,6 @@ Summary:
  Applications         ${sum_applications}
  Research             ${sum_research}
 
-Here are the submodule specific summaries:
-
-EOT
-
-for module in doc examples benchmarks applications research
-do
-  test -f $module/summary && cat $module/summary
-done
-
-test "x$WITH_BOOST" = x1                 && sum_boost=OK                    || sum_boost="no * (MANDATORY)"
-test "x$WITH_GMSH" = x1                  && sum_gmsh=OK                     || sum_gmsh="no * (optional)"
-test "x$WITH_PETSC" = x1                 && sum_petsc=OK                    || sum_petsc="no * (optional)"
-test "x$WITH_SLEPC" = x1                 && sum_slepc=OK                    || sum_slepc="no * (optional)"
-test "x$WITH_TRILINOS" = x1              && sum_trilinos=OK                 || sum_trilinos="no * (optional)"
-test "x$WITH_VTK" = x1                   && sum_vtk=OK                      || sum_vtk="no * (optional)"
-
-test "x$WITH_PYTHON" = x1                && sum_python=OK                   || sum_python="no * (optional)"
-test "x$WITH_PYTHON_MODULE_SCIPY" = x1   && sum_python_module_scipy=OK      || sum_python_module_scipy="no * (optional)"
-test "x$WITH_PYTHON_MODULE_PYX" = x1     && sum_python_module_pyx=OK        || sum_python_module_pyx="no * (optional)"
-
-cat <<EOT
-
-Summary:
-========
-EOT
-
-cat <<EOT > libsummary
-
 (lib)
  Debug level is ${DEBUG_LEVEL}
 
@@ -571,12 +537,17 @@ cat <<EOT > libsummary
   Trilinos            ${sum_trilinos}
   VTK                 ${sum_vtk}
   Gmsh                ${sum_gmsh}
-  Python              ${sum_python}
-  Python module scipy ${sum_python_module_scipy}
-  Python module pyx   ${sum_python_module_pyx}
+
+Here are the submodule specific summaries:
 
 EOT
-cat libsummary
+
+for module in doc examples benchmarks applications research
+do
+  test -f $module/summary && cat $module/summary
+done
+
+
 
 
 cat << EOT
