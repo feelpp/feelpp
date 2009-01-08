@@ -28,6 +28,9 @@
  */
 #define USE_TEST
 // Boost.Test
+#define BOOST_TEST_MAIN
+#include <boost/test/unit_test.hpp>
+
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 
@@ -58,8 +61,7 @@ struct x2
         return v;
     }
 };
-void
-test_polynomial1D()
+BOOST_AUTO_TEST_CASE( test_polynomial1D )
 {
 
 
@@ -81,8 +83,7 @@ test_polynomial1D()
     std::cout << "hess(p1) = " << p1.toSet(true).gradient().gradient().evaluate( pts ) << "\n";
 }
 
-void
-test_polynomial2D()
+BOOST_AUTO_TEST_CASE( test_polynomial2D )
 {
 
 
@@ -136,8 +137,7 @@ test_polynomial2D()
 
 }
 
-void
-test_polynomial3D()
+BOOST_AUTO_TEST_CASE( test_polynomial3D )
 {
 
 
@@ -169,6 +169,7 @@ test_polynomial3D()
 
 }
 
+#if 0
 #if defined(USE_TEST)
 test_suite*
 init_unit_test_suite( int /*argc*/, char** /*argv*/ )
@@ -190,4 +191,5 @@ int main( int argc, char** argv )
     //    test_polynomial2D();
     //test_polynomial3D();
 }
+#endif
 #endif
