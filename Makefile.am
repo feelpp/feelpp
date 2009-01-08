@@ -87,3 +87,4 @@ report:
 endif
 
 
+DISTCLEANFILES		= summary
