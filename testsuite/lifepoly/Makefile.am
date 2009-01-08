@@ -23,7 +23,7 @@
 #
 include $(top_srcdir)/admin/common.am
 
-AM_CPPFLAGS         = -I../../life/lifepoly -I$(top_srcdir)/boost #-I/usr/include/vtk/
+AM_CPPFLAGS         = -DBOOST_TEST_DYN_LINK -I../../life/lifepoly -I$(top_srcdir)/boost #-I/usr/include/vtk/
 
 check_HEADERS       = testlagrange.hpp
 
