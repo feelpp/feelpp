@@ -62,9 +62,19 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
+# Automatically save cache file to improve rerunning of configure script
+AC_CACHE_SAVE
+
 LIFE_DEBUG
 LIFE_CHECK_COMPILERS
 LIFE_CHECK_LIFE
+
+dnl ------------------------------------------------------------
+dnl Python
+dnl ------
+LIFE_CHECK_PYTHON
+LIFE_CHECK_PYTHON_MODULE([scipy])
+LIFE_CHECK_PYTHON_MODULE([pyx])
 
 # Write out configure arguments
 life_configure_args=`eval echo configure $ac_configure_args`
@@ -83,6 +93,7 @@ AC_SUBST(life_revision)
 
 # Automatically save cache file to improve rerunning of configure script
 AC_CACHE_SAVE
+
 
 AC_CONFIG_TESTDIR(.)
 
@@ -105,6 +116,10 @@ AC_OUTPUT
 
 test "x$ENABLE_EXTRAMODULE_VALIDATION" = xvalidation      && sum_benchmarks_validation=OK    || sum_benchmarks_validation="no"
 
+test "x$WITH_PYTHON" = x1                && sum_python=OK                   || sum_python="no * (optional)"
+test "x$WITH_PYTHON_MODULE_SCIPY" = x1   && sum_python_module_scipy=OK      || sum_python_module_scipy="no * (optional)"
+test "x$WITH_PYTHON_MODULE_PYX" = x1     && sum_python_module_pyx=OK        || sum_python_module_pyx="no * (optional)"
+
 cat <<EOT > summary
 
 Benchmarks Sub-Module Summary:
@@ -113,6 +128,16 @@ Benchmarks Sub-Module Summary:
  Extra-Modules        Activation
  -------------------------------
  Validation           ${sum_benchmarks_validation}
+
+(lib)
+ Debug level is ${DEBUG_LEVEL}
+
+ Support for          is
+ -----------------------------
+
+  Python              ${sum_python}
+  Python module scipy ${sum_python_module_scipy}
+  Python module pyx   ${sum_python_module_pyx}
 
 EOT
 cat summary
