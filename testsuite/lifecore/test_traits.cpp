@@ -6,6 +6,7 @@
        Date: 2005-07-28
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2009 Université de Grenoble 1 (Joseph Fourier)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,6 +28,7 @@
    \date 2005-07-28
  */
 // Boost.Test
+#define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 
@@ -40,8 +42,8 @@ void check( value_type x )
 {
   BOOST_CHECK( Life::math::abs( x ) < Life::type_traits<value_type>::epsilon() );
 }
-void
-test_functions()
+
+BOOST_AUTO_TEST_CASE( test_functions )
 {
   using namespace Life;
 
@@ -65,8 +67,8 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT( LIFE_CHECK_UNARY_FUNCS_OP_STD, 2, (BOOST_PP_LIST
 #
 BOOST_PP_LIST_FOR_EACH_PRODUCT( LIFE_CHECK_UNARY_FUNCS_OP_GLOBAL, 2, (BOOST_PP_LIST_FILTER(LIFE_PRED_FUNC, 1, LIFE_TRAITS_TYPES ), LIFE_GLOBAL_FUNCS) );
 }
-void
-test_promote()
+
+BOOST_AUTO_TEST_CASE( test_promote )
 {
     using namespace Life;
     // integral types
@@ -108,8 +110,7 @@ test_promote()
 }
 
 
-void
-test_constants()
+BOOST_AUTO_TEST_CASE( test_constants )
 {
     using namespace Life;
     BOOST_MESSAGE( "check pi value with double" );
@@ -124,19 +125,3 @@ test_constants()
 #endif
 
 }
-test_suite*
-init_unit_test_suite( int /*argc*/, char** /*argv*/ )
-{
-    test_suite* test = BOOST_TEST_SUITE( "Type traits test suite" );
-
-
-    test->add( BOOST_TEST_CASE( test_functions ) );
-
-    test->add( BOOST_TEST_CASE( test_promote ) );
-
-    test->add( BOOST_TEST_CASE( test_constants ) );
-
-    return test;
-}
-
-

@@ -20,7 +20,7 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 
-AM_CXXFLAGS = -DBOOST_UBLAS_NO_ELEMENT_PROXIES
+#AM_CXXFLAGS = -DBOOST_UBLAS_NO_ELEMENT_PROXIES
 
 AM_LDFLAGS=-static $(life_libs) -rpath $(abs_top_builddir)/life/lifecore -rpath $(abs_top_builddir)/life/lifealg -rpath $(abs_top_builddir)/life/lifemesh -rpath $(abs_top_builddir)/life/lifepoly -rpath $(abs_top_builddir)/life/lifefilters -rpath $(abs_top_builddir)/life/lifediscr -rpath $(abs_top_builddir)/life/lifematerial
 #LDADD			= $(life_libs) $(boost_libs)
