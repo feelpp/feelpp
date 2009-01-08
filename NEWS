@@ -15,6 +15,14 @@ New in 0.9.10
 
    *** Gmsh : throw an exception if gmsh is execute when not available
 
+* Documentation
+
+ ** Tutorial
+
+   *** updated the building section
+
+   *** updated the Backend<> section
+
 * Build System
 
  ** configure: better feedback to users
@@ -22,7 +30,6 @@ New in 0.9.10
  ** Gmsh
 
    *** configure: better support
-
 
 * many minor fixes
 
@@ -49,4 +56,4 @@ New in 0.9.9
   multiplication) support.
 
 
- -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Wed,  7 Jan 2009 16:44:19 +0100
+ -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Wed,  7 Jan 2009 22:17:08 +0100
