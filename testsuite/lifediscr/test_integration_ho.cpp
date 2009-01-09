@@ -31,6 +31,7 @@
 //#define USE_BOOST_TEST 1
 
 // Boost.Test
+#define BOOST_TEST_MAIN
 #if defined(USE_BOOST_TEST)
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;

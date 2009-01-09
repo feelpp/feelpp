@@ -58,6 +58,9 @@ std::ofstream ost("QK_results.txt");
 std::ofstream QK_log_3D("QK_error_3D.log");
 std::ofstream ost_3D("QK_results_3D.txt");
 
+std::ofstream PK_log_g("PK_log_g.dat");
+std::ofstream ost_g("PK_results_g.dat");
+
 std::ofstream PK_x_log("PK_x_log.dat");
 std::ofstream PK_y_log("PK_y_log.dat");
 
@@ -180,7 +183,7 @@ void QK_find_N_opt_3D()
  *
  */
 template<Life::uint16_type N, typename T>
-void PK_Monom_N_opt()
+void PK_Monom_N_opt_gauss_lobatto()
 {
   using namespace Life;
 
@@ -247,6 +250,65 @@ void PK_Monom_N_opt()
 
   BOOST_CHECK( (i_x-2 >= 2*Q-3) && (i_y-2 >= 2*Q-2) );
 }
+template<Life::uint16_type N, typename T>
+void PK_find_N_opt_gauss()
+//@}
+{
+  using namespace Life;
+
+  typedef T value_type;
+
+  Gauss<Simplex<2,1> , N, value_type> im;
+
+  ublas::vector<value_type> x_i(ublas::row(im.points(),0));
+  ublas::vector<value_type> y_i(ublas::row(im.points(),1));
+
+  const value_type tol = value_type(7.0)*type_traits<value_type>::epsilon();
+
+  ost_g << "Tolerance = " << tol << "\n";
+
+  uint16_type Q = (uint16_type)sqrt(im.nPoints());
+
+  value_type error;
+  value_type res;
+  uint16_type i=1;
+  value_type sum;
+
+  ost_g << "Nbre of Points on the triangle : " << Q << "^2 = "<< im.nPoints() <<  std::endl;
+
+  do{
+    if (i%2 == 0)
+      res = value_type(2.0)/value_type(double(i)+1.0)/value_type(double(i)+1.0);
+    else
+      res = value_type(0.0);
+
+    sum = value_type(0.0);
+
+    for(uint16_type l=0;l< x_i.size();++l)
+      {
+        value_type p = pow(x_i(l),i)*pow(y_i(l),i)*im.weight(l);
+        //        std::cout << "Contrib = " << p << "\n";
+        sum += p;
+      }
+#if 0
+    std::cout << "i = " << i << "\n";
+    std::cout << "res = " << res << "\n";
+    std::cout << "sum = " << sum << "\n";
+#endif
+
+    error = math::abs(sum - res);
+    ost_g << "i = " << i <<" Error = "<< error << "\n";
+
+    ++i;
+  }while(error <= tol);
+
+  if ( i-2 < Q-1  )
+    PK_log_g << "Q = " << Q << " ; i = " << i << " ; Error = " << error << std::endl;
+
+  BOOST_CHECK( i-2 >= Q-1  );
+
+}
+
 /**
  * PK 3D
  */
@@ -323,10 +385,15 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_QK_find_N_opt_3D_double, T, test_types )
     QK_find_N_opt_3D<T::value,double>();
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE( PK_Monom_N_opt_double, T, test_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( PK_Monom_N_opt_gauss_lobatto_double, T, test_types )
 {
-    PK_Monom_N_opt<T::value,double>();
+    PK_Monom_N_opt_gauss_lobatto<T::value,double>();
 }
+BOOST_AUTO_TEST_CASE_TEMPLATE( PK_Monom_N_opt_gauss_double, T, test_types )
+{
+    PK_find_N_opt_gauss<T::value,double>();
+}
+
 BOOST_AUTO_TEST_CASE_TEMPLATE( PK_Monom_N_opt_3D_double, T, test_types )
 {
     PK_Monom_N_opt_3D<T::value,double>();

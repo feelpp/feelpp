@@ -28,6 +28,7 @@
    \date 2005-11-08
  */
 //#define USE_BOOST_TEST 1
+#define BOOST_TEST_MAIN
 #include <boost/timer.hpp>
 
 #include <boost/archive/binary_iarchive.hpp>

@@ -29,6 +29,7 @@
  */
 #define USE_BOOST_TEST 1
 // Boost.Test
+#define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 #include <boost/test/floating_point_comparison.hpp>
@@ -198,6 +199,13 @@ makeAbout()
 
 }
 
+BOOST_AUTO_TEST_CASE( test_integration_internal_faces_double )
+{
+    test_integration_internal_faces<double> t( 0.3 );
+    t();
+
+}
+#if 0
 #if defined(USE_BOOST_TEST)
 boost::shared_ptr<Life::Application> mpi;
 test_suite*
@@ -222,3 +230,4 @@ main( int argc, char** argv )
     c();
 }
 #endif /* USE_BOOST_TEST */
+#endif
