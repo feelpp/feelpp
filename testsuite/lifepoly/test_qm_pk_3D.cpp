@@ -32,6 +32,7 @@
 **/
 
 // Boost.Test
+#define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 
@@ -102,9 +103,10 @@ void PK_Monom_N_opt()
   }while(error_x <= tol);
 
   if ( i_x-2 < 2*Q-3  )
-    PK_x_log << "Q = " << Q << " ; i = " << i_x << " ; Error = " << error_x << std::endl;
+      PK_x_log << "Q = " << Q << " ; i = " << i_x << " ; Error = " << error_x << std::endl;
 
-   BOOST_CHECK( (i_x-2 >= 2*Q-3));
+  BOOST_TEST_MESSAGE( "check for order " << N << " that " << i_x-2 << " is greater than " << 2*Q-3 << " : error = " << error_x );
+  BOOST_CHECK( (i_x-2 >= 2*Q-3));
 }
 
 template<Life::int16_type P>
