@@ -32,7 +32,10 @@
 **/
 
 // Boost.Test
+#define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
+#include <boost/test/test_case_template.hpp>
+#include <boost/mpl/list.hpp>
 using boost::unit_test::test_suite;
 
 #include <boost/numeric/ublas/banded.hpp>
@@ -131,6 +134,20 @@ void PK_Monom_N_opt()
   BOOST_CHECK( (i_x-2 >= 2*Q-3) && (i_y-2 >= 2*Q-2) );
 }
 
+typedef boost::mpl::list<boost::mpl::int_<0>,
+                         boost::mpl::int_<1>,
+                         boost::mpl::int_<2>,
+                         boost::mpl::int_<10>,
+                         boost::mpl::int_<40>,
+                         boost::mpl::int_<80> > test_types;
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( PK_Monom_N_opt_double, T, test_types )
+{
+    PK_Monom_N_opt<T::value,double>();
+}
+
+
+#if 0
 template<Life::int16_type P>
 void add_tests( test_suite* test )
 {
@@ -177,3 +194,4 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
 
     return test;
 }
+#endif

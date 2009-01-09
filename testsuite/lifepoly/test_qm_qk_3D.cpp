@@ -33,6 +33,7 @@
 **/
 
 // Boost.Test
+#define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 
@@ -106,7 +107,7 @@ void QK_find_N_opt()
   }while(error <= tol);
 
   if ( i-2 < 2*Q-1  )
-    QK_log << "Q = " << Q << " ; i = " << i << " ; Error" << error << std::endl;
+    QK_log_3D << "Q = " << Q << " ; i = " << i << " ; Error" << error << std::endl;
 
   BOOST_CHECK( i-2 >= 2*Q-1  );
 }
@@ -147,7 +148,7 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
 
     test_suite* test = BOOST_TEST_SUITE( "Quadrature methods on 3D tensorised geometries test suite" );
 
-    QK_log << "This file attempt to save the errors encountered while numerically integrating $x^iy^iz^i$ on the cube !" << "\n\n";
+    QK_log_3D << "This file attempt to save the errors encountered while numerically integrating $x^iy^iz^i$ on the cube !" << "\n\n";
 
     ost << "This file save the details of the execution of 'test_qm_qk_3D' !" << "\n\n";
 #if defined( LIFE_HAVE_QD_REAL)

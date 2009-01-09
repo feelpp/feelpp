@@ -6,6 +6,7 @@
        Date: 2005-07-28
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2009 Université de Grenoble 1 (Joseph Fourier)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -29,7 +30,12 @@
 #define CHAR_BIT 8
 #include <boost/timer.hpp>
 // Boost.Test
+#define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
+#include <boost/test/test_case_template.hpp>
+#include <boost/mpl/list.hpp>
+
+
 using boost::unit_test::test_suite;
 
 
@@ -162,28 +168,39 @@ class TestDubiner
     }
 };
 
-test_suite*
-init_unit_test_suite( int /*argc*/, char** /*argv*/ )
-{
-    test_suite* test = BOOST_TEST_SUITE( "Master test suite" );
 
+
+typedef boost::mpl::list<boost::mpl::int_<0>,boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<10> > test_types;
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_jacobi_double, T, test_types )
+{
+    BOOST_TEST_MESSAGE( "o- TestJacobi<" << T::value << ", double>()" );
+    TestJacobi<T::value, double> a;
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_dubiner_double, T, test_types )
+{
+    BOOST_TEST_MESSAGE( "o- TestDubiner<" << T::value << ", double>()" );
+    TestDubiner<T::value, double> d0;
+}
+#if 0
 #if 1
     //
     // TestJacobi
     //
-    test->add( BOOST_TEST_CASE( ( TestJacobi<0, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestJacobi<1, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestJacobi<2, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestJacobi<10, double>() )  ) );
+    TestJacobi<0, double> a;
+    TestJacobi<1, double> b;
+    TestJacobi<2, double> c;
+    TestJacobi<10, double> d;
     //test->add( BOOST_TEST_CASE( ( TestJacobi<15, Life::real96_type>(50.0) )  ) );
 
 #if defined( LIFE_HAVE_QD_REAL)
     unsigned int old_cw;
     fpu_fix_start(&old_cw);
 
-    test->add( BOOST_TEST_CASE( ( TestJacobi<0, qd_real>() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestJacobi<1, qd_real>() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestJacobi<2, qd_real>() )  ) );
+    TestJacobi<0, qd_real> a_qd;
+    TestJacobi<1, qd_real> b_qd;
+    TestJacobi<2, qd_real> c_qd;
     test->add( BOOST_TEST_CASE( ( TestJacobi<4, qd_real>() )  ) );
     test->add( BOOST_TEST_CASE( ( TestJacobi<10, qd_real>() )  ) );
     //test->add( BOOST_TEST_CASE( ( TestJacobi<15, qd_real>() )  ) );
@@ -192,10 +209,10 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
     //
     // TestDubiner
     //
-    std::cout << "o- TestDubiner<0, double>()\n";
-    test->add( BOOST_TEST_CASE( ( TestDubiner<0, double>() )  ) );
-    std::cout << "o- TestDubiner<1, double>()\n";
-    test->add( BOOST_TEST_CASE( ( TestDubiner<1, double>() )  ) );
+    BOOST_TEST_MESSAGE( "o- TestDubiner<0, double>()" );
+TestDubiner<0, double> d0;
+    BOOST_TEST_MESSAGE( "o- TestDubiner<1, double>()" );
+    TestDubiner<1, double> d1;
 #else
     //test->add( BOOST_TEST_CASE( ( TestJacobi<1, double>() )  ) );
     //test->add( BOOST_TEST_CASE( ( TestJacobi<10, double>() )  ) );
@@ -213,7 +230,7 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
 #endif /* LIFE_HAVE_QD_REAL */
 
 #endif
-    return test;
+    //    return test;
 }
-
+#endif
 
