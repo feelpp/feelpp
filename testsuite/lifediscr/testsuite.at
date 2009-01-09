@@ -45,7 +45,7 @@ AT_CLEANUP
 
 AT_SETUP([test_integration_3d])
 AT_KEYWORDS([discr integration_3d])
-AT_CHECK([$abs_top_builddir/testsuite/lifediscr/test_integration_3d],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifediscr/test_integration_3d  --catch_system_errors=no --log_level=message],[0],[ignore],[ignore])
 AT_CLEANUP
 
 AT_SETUP([test_interpolation])

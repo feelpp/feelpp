@@ -34,7 +34,7 @@ AT_KEYWORDS([mesh entity])
 AT_CLEANUP
 
 AT_SETUP([test_mesh])
-AT_CHECK([$abs_top_builddir/testsuite/lifemesh/test_mesh],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifemesh/test_mesh --catch_system_errors=no --log_level=message],[0],[ignore],[ignore])
 AT_KEYWORDS([mesh])
 AT_CLEANUP
 

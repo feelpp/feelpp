@@ -6,6 +6,7 @@
        Date: 2005-08-10
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2009 Université de Grenoble 1 (Joseph Fourier)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -28,6 +29,7 @@
  */
 #define DO_TEST 1
 // Boost.Test
+#define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 
@@ -85,6 +87,17 @@ test_entity_range()
             std::cerr  << G << "\n";
         }
 }
+BOOST_AUTO_TEST_CASE( test_entity_isin_ )
+{
+    test_entity_isin<2,1>();
+    test_entity_isin<3,1>();
+
+}
+BOOST_AUTO_TEST_CASE( test_entity_range_ )
+{
+    //test_entity_range<1,1>();
+}
+#if 0
 #if DO_TEST
 test_suite*
 init_unit_test_suite( int argc, char* argv[] )
@@ -121,4 +134,5 @@ int main()
     test_entity_range<3,1>();
     test_entity_range<3,2>();
 }
+#endif
 #endif

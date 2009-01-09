@@ -50,31 +50,11 @@ AT_KEYWORDS([poly polynomial Lagrange  ])
 AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_lag],[0],[ignore],[ignore])
 AT_CLEANUP
 
-AT_SETUP([test_qm_qk])
+AT_SETUP([test_quad_order])
 AT_KEYWORDS([poly quadrature method on tensorised domains])
-AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_qm_qk],[0],[ignore],[ignore])
+AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_quad_order],[0],[ignore],[ignore])
 AT_CLEANUP
 
-AT_SETUP([test_qm_pk])
-AT_KEYWORDS([poly quadrature method on simplicies])
-AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_qm_pk],[0],[ignore],[ignore])
-AT_CLEANUP
-
-AT_SETUP([test_qm_qk_3D])
-AT_KEYWORDS([poly quadrature method on 3D-tensorised domains])
-AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_qm_qk_3D],[0],[ignore],[ignore])
-AT_CLEANUP
-
-AT_SETUP([test_qm_pk_3D])
-AT_KEYWORDS([poly quadrature method on 3D-simplicies])
-AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_qm_pk_3D],[0],[ignore],[ignore])
-AT_CLEANUP
-
-
-AT_SETUP([test_qm_pk_double])
-AT_KEYWORDS([poly quadrature method on simplicies 2])
-AT_CHECK([$abs_top_builddir/testsuite/lifepoly/test_qm_pk_double],[0],[ignore],[ignore])
-AT_CLEANUP
 
 # AT_SETUP([test_spectral_1D])
 # AT_KEYWORDS([Monodomain-1D spectral accuracy test])

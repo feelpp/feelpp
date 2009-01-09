@@ -6,6 +6,7 @@
        Date: 2005-09-03
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2009 Université de Grenoble 1 (Joseph Fourier)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,7 +28,10 @@
    \date 2005-09-03
  */
 // Boost.Test
+#define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
+#include <boost/test/parameterized_test.hpp>
+
 using boost::unit_test::test_suite;
 
 #include <life/lifecore/life.hpp>
@@ -44,61 +48,87 @@ namespace Life
 typedef Mesh<GeoEntity<Simplex<2, 1> > > mesh_type;
 typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-mesh_ptrtype
-createMesh( double hsize )
-{
-    double meshSize = hsize;
-    //std::cout << "hsize = " << meshSize << std::endl;
-
-    Gmsh __gmsh;
-    std::string fname;
-    std::ostringstream ostr;
-    std::ostringstream nameStr;
-
-    ostr << "Mesh.MshFileVersion = 2;\n"
-         << "h=" << meshSize << ";\n"
-         << "Point(1) = {-1, -1,0.0,h};\n"
-         << "Point(2) = { 1, -1,0.0,h};\n"
-         << "Point(3) = {-1,  1,0.0,h};\n"
-         << "Line(1) = {2,3};\n"
-         << "Line(2) = {3,1};\n"
-         << "Line(3) = {1,2};\n"
-         << "Line Loop(4) = {1,2,3};\n"
-         << "Plane Surface(5) = {4};\n"
-         << "Physical Surface(30) = {5};\n"
-         << "Physical Line(31) = {1};\n"
-         << "Physical Line(32) = {2};\n"
-         << "Physical Line(33) = {3};\n";
-
-    nameStr << "triangle." << meshSize;
-    std::cout <<"Mesh generation ... ";
-    fname = __gmsh.generate( nameStr.str(), ostr.str() );
-
-    /* Mesh */
-
-
-    mesh_ptrtype mesh( new mesh_type );
-
-    ImporterGmsh<mesh_type> import( fname );
-    import.setVersion( "2.0" );
-    mesh->accept( import );
-    mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
-    mesh->updateForUse();
-    return mesh;
-}
 }
 struct test_mesh_filters
 {
-    test_mesh_filters( double meshSize_=1 ): meshSize(meshSize_), mesh( Life::createMesh( meshSize ) )
+    test_mesh_filters( double meshSize_=1 ): meshSize(meshSize_), mesh()
     {
+        BOOST_TEST_MESSAGE( "setup mesh" );
+        BOOST_CHECK( meshSize_ <= 1 );
+
+        mesh = this->createMesh( meshSize );
+
+        BOOST_CHECK( mesh != 0 );
+        BOOST_TEST_MESSAGE( "setup mesh done" );
     }
+    Life::mesh_ptrtype
+    createMesh( double hsize )
+    {
+        using namespace Life;
+        double meshSize = hsize;
+        //std::cout << "hsize = " << meshSize << std::endl;
+
+        Gmsh __gmsh;
+        std::string fname;
+        std::ostringstream ostr;
+        std::ostringstream nameStr;
+
+        BOOST_TEST_CHECKPOINT( "Gmsh generator instantiated" );
+
+        ostr << "Mesh.MshFileVersion = 2;\n"
+             << "h=" << meshSize << ";\n"
+             << "Point(1) = {-1, -1,0.0,h};\n"
+             << "Point(2) = { 1, -1,0.0,h};\n"
+             << "Point(3) = {-1,  1,0.0,h};\n"
+             << "Line(1) = {2,3};\n"
+             << "Line(2) = {3,1};\n"
+             << "Line(3) = {1,2};\n"
+             << "Line Loop(4) = {1,2,3};\n"
+             << "Plane Surface(5) = {4};\n"
+             << "Physical Surface(30) = {5};\n"
+             << "Physical Line(31) = {1};\n"
+             << "Physical Line(32) = {2};\n"
+             << "Physical Line(33) = {3};\n";
+
+        BOOST_TEST_CHECKPOINT( "Described mesh geometry" );
+
+        nameStr << "triangle." << meshSize;
+        BOOST_TEST_CHECKPOINT( "Described mesh name" );
+        try {
+            fname = __gmsh.generate( nameStr.str(), ostr.str() );
+        }
+        catch( ... )
+            {
+                std::cout << "Caught exception\n";
+            }
+        BOOST_TEST_CHECKPOINT( "Generating mesh with h=" << meshSize );
+        /* Mesh */
+
+
+        mesh_ptrtype mesh( new mesh_type );
+        BOOST_TEST_CHECKPOINT( "Instantiating mesh" );
+
+
+        ImporterGmsh<mesh_type> import( fname );
+        BOOST_TEST_CHECKPOINT( "Importer instantiated" );
+        import.setVersion( "2.0" );
+        mesh->accept( import );
+        BOOST_TEST_CHECKPOINT( "mesh imported" );
+        mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
+        mesh->updateForUse();
+        BOOST_TEST_CHECKPOINT( "mesh ready for use" );
+        return mesh;
+    }
+
     void operator()()
     {
+        BOOST_TEST_MESSAGE( "testing mesh for h=" << meshSize );
         Life::Assert::setLog( "test_mesh_filters.assert" );
 
 
         using namespace Life;
 
+        BOOST_TEST_MESSAGE( "testing mesh faces" );
         // location faces
         {
             Life::mesh::Traits<mesh_type>::location_face_const_iterator it = mesh->beginInternalFace();
@@ -152,7 +182,7 @@ struct test_mesh_filters
                                  it->marker().value() == 33 );
                 }
         }
-
+        BOOST_TEST_MESSAGE( "testing mesh elements" );
         // elements
         {
             mesh_type::gm_ptrtype __gm = mesh->gm();
@@ -180,13 +210,18 @@ struct test_mesh_filters
                     BOOST_CHECK( ublas::norm_frobenius( __c->xReal() - it->G() ) < 1e-15 );
                 }
         }
-
+        BOOST_TEST_MESSAGE( "testing mesh for h=" << meshSize << " done" );
     }
     double meshSize;
     Life::mesh_ptrtype mesh;
 };
-void
-test_simple_mesh2d()
+BOOST_AUTO_TEST_CASE( test_mesh_filters_ )
+{
+    test_mesh_filters tmf;
+    tmf();
+}
+
+BOOST_AUTO_TEST_CASE( test_simple_mesh2d )
 {
     using namespace Life;
 
@@ -242,19 +277,4 @@ test_simple_mesh2d()
 #endif
     //mesh.updateElementFaces();
 
-}
-test_suite*
-init_unit_test_suite( int argc, char** argv )
-{
-    boost::mpi::environment env(argc, argv);
-    Life::Assert::setLog( "assertions.log");
-    test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
-
-    test->add( BOOST_TEST_CASE( ( test_simple_mesh2d ) ) );
-    if ( argc == 2 )
-        test->add( BOOST_TEST_CASE( ( test_mesh_filters( std::atof(argv[1])) ) ) );
-    else
-        test->add( BOOST_TEST_CASE( ( test_mesh_filters() ) ) );
-
-    return test;
 }

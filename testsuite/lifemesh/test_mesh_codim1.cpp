@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-08-13
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008,2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,7 @@
    \date 2008-08-13
  */
 // Boost.Test
+#define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 
@@ -219,8 +220,8 @@ struct test_mesh_filters
     double meshSize;
     Life::mesh_ptrtype mesh;
 };
-void
-test_simple_mesh1d()
+
+BOOST_AUTO_TEST_CASE( test_simple_mesh1d )
 {
     using namespace Life;
 
@@ -277,6 +278,14 @@ test_simple_mesh1d()
     //mesh.updateElementFaces();
 
 }
+
+BOOST_AUTO_TEST_CASE( test_mesh_filters_ )
+{
+    test_mesh_filters tmf1;
+    //test_mesh_filters tmf2(0.2);
+
+}
+#if 0
 #if 1
 test_suite*
 init_unit_test_suite( int argc, char** argv )
@@ -303,4 +312,5 @@ int main( int argc, char** argv )
     else
         { test_mesh_filters a; a();}
 }
+#endif
 #endif

@@ -23,7 +23,7 @@ include $(top_srcdir)/admin/common.am
 include $(top_srcdir)/testsuite/Makefile.testsuite
 
 
-AM_CPPFLAGS         = -I../../life/lifefem -I$(top_srcdir)/boost
+# AM_CPPFLAGS         = -I../../life/lifefem -I$(top_srcdir)/boost
 noinst_HEADERS		=
 
 EXTRA_DIST =  testsuite.at test_integration_ho_geometry.geo
