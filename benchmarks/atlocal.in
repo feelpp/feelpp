@@ -9,4 +9,6 @@ with_python_module_scipy=@WITH_PYTHON_MODULE_SCIPY@
 with_python_module_pyx=@WITH_PYTHON_MODULE_PYX@
 
 with_python_support=0
-(test "x$with_python"=x0 -o  "x$with_python_module_scipy"=x0 -o test "x$with_python_module_pyx"=x0) || with_python_support=1
+if test "x$with_python"=x1 -a "x$with_python_module_scipy"=x1 -a "x$with_python_module_pyx"=x1; then
+with_python_support=1
+fi
