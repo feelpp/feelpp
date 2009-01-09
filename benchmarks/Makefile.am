@@ -62,11 +62,11 @@ clean-local:
 
 AUTOM4TE    = autom4te
 AUTOTEST = $(AUTOM4TE) --language=autotest
-$(TESTSUITE): $(srcdir)/benchmarksuite.at atlocal $(srcdir)/package.m4 $(srcdir)/convergence/convergence.at $(srcdir)/perf/perf.at
+$(TESTSUITE): $(srcdir)/benchmarksuite.at $(srcdir)/package.m4 $(srcdir)/convergence/convergence.at $(srcdir)/perf/perf.at
 	$(AUTOTEST) -I . -I $(srcdir) -I $(top_srcdir) $@.at -o $@.tmp
 	mv $@.tmp $@
 
-benchmarksuite: $(TESTSUITE)
+# benchmarksuite: $(TESTSUITE)
 
 atconfig: $(top_builddir)/config.status
 	cd $(top_builddir) && \
