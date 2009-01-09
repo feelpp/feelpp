@@ -16,9 +16,9 @@ DISTCLEANFILES = index-API.doc life.tag
 MAINTAINERCLEANFILES = html
 
 if MAINTAINER_MODE
-
+if WITH_DOXYGEN
 %.png: fig/%.fig
-	fig2dev -Lpng $^ > $@
+	$(FIG2DEV) -Lpng $^ > $@
 
 html: Doxyfile  $(PNGS) $(DOCSOURCES)
 	: # Setting up
@@ -27,17 +27,19 @@ html: Doxyfile  $(PNGS) $(DOCSOURCES)
 #	cp $(foreach file,$(PNGS),@srcdir@/$(file)) html/
 	cp @srcdir@/life.css html/
 	: # First pass
-	doxygen Doxyfile >/dev/null
-#	perl @top_srcdir@/tools/doxygen/index_create.pl life.tag index-API.doc
-#	perl @top_srcdir@/tools/doxygen/toc_create.pl @srcdir@/index.doc @srcdir@/publis.doc
+	$(DOXYGEN) Doxyfile >/dev/null
+#	perl @top_srcdir@/tools/$(DOXYGEN)/index_create.pl life.tag index-API.doc
+#	perl @top_srcdir@/tools/$(DOXYGEN)/toc_create.pl @srcdir@/index.doc @srcdir@/publis.doc
 #	: # Second pass
-#	doxygen Doxyfile >/dev/null
+#	$(DOXYGEN) Doxyfile >/dev/null
 #	: # Post-processing
 #	rm -f html/dir*
-#	perl @top_srcdir@/tools/doxygen/doxygen_postprocessor.pl
+#	perl @top_srcdir@/tools/$(DOXYGEN)/$(DOXYGEN)_postprocessor.pl
 
 #publish:
 #	$(MAKE) -C .. sync-gforge
+endif # WITH_DOXYGEN
+
 endif
 
 install-data-local:
