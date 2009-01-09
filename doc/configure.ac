@@ -77,6 +77,7 @@ LIFE_CHECK_BIBTEX
 
 LIFE_CHECK_DOXYGEN
 LIFE_CHECK_DOT
+LIFE_CHECK_FIG2DEV
 
 # Automatically save cache file to improve rerunning of configure script
 AC_CACHE_SAVE
@@ -116,6 +117,7 @@ test "x$WITH_MAKEINDEX" = x1             && sum_makeindex=OK                || s
 test "x$WITH_BIBTEX" = x1                && sum_bibtex=OK                   || sum_bibtex="no * (optional)"
 test "x$WITH_DOXYGEN" = x1               && sum_doxygen=OK                  || sum_doxygen="no * (optional)"
 test "x$WITH_DOT" = x1                   && sum_dot=OK                      || sum_dot="no * (optional)"
+test "x$WITH_FIG2DEV" = x1               && sum_fig2dev=OK                  || sum_fig2dev="no * (optional)"
 
 
 cat <<EOT > summary
@@ -130,6 +132,7 @@ cat <<EOT > summary
   BibTeX              ${sum_bibtex}
   Doxygen             ${sum_doxygen}
   Dot                 ${sum_dot}
+  Fig2dev             ${sum_fig2dev}
 
 EOT
 cat summary
