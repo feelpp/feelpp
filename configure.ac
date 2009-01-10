@@ -239,32 +239,19 @@ dnl parmetis
 AC_CHECK_METIS
 AC_CHECK_PARMETIS
 
-
+dnl ------------------------------------------------------------
 dnl petsc
+dnl -----
 AC_CHECK_PETSC(2.1.6) #
-AM_CONDITIONAL(HAVE_PETSC, test "x$petsc_libs" != "x" )
-WITH_PETSC=0
-test "x$petsc_libs" = x || WITH_PETSC=1
 
 dnl -------------------------------------------------------------
-dnl SLEPc  -- enabled by default
-dnl -------------------------------------------------------------
-AC_ARG_ENABLE(slepc,
-              AC_HELP_STRING([--enable-slepc],
-                             [build with SLEPc eigen solver support]),
-     enableslepc=$enableval,
-     enableslepc=yes)
-
-if test "$enableslepc" != no -a "x$petsc_libs" != "x"; then
-   LIFE_CHECK_SLEPC
-fi
-AM_CONDITIONAL(HAVE_SLEPC, test "x$enableslepc" != "xno" -a "x$petsc_libs" != "x" )
-WITH_SLEPC=0
-test "x$enableslepc" = xno -o "x$petsc_libs" = x || WITH_SLEPC=1
+dnl slepc
+dnl -----
+LIFE_CHECK_SLEPC
 
 dnl -------------------------------------------------------------
-
-
+dnl trilinos
+dnl --------
 LIFE_CHECK_TRILINOS
 
 
@@ -281,6 +268,7 @@ if test "$enablevtk" != no; then
  AC_CHECK_VTK
 fi
 AM_CONDITIONAL(HAVE_VTK, test "x$enablevtk" != "xno" )
+AM_CONDITIONAL(WITH_VTK, test "x$enablevtk" != "xno" )
 WITH_VTK=0
 test "x$enablevtk" = "xno" || WITH_VTK=1
 
