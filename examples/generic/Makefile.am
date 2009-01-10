@@ -1,4 +1,4 @@
-# -*- mode: makefile -*-
+# -*- Mode : makefile; indent-tabs-mode: t -*-
 #
 #  This file is part of the Life library
 #
@@ -23,11 +23,12 @@
 #
 include $(top_srcdir)/admin/common.am
 
-AM_LDFLAGS=-static
+check_PROGRAMS=pmesh laplacian laplacian_p laplacian_p2 advection dar stokes wave laplacian_multiplicateur_lagrange periodic
 
-check_PROGRAMS=pmesh laplacian laplacian_p laplacian_p2 advection sound dar stokes wave bratu laplacian_multiplicateur_lagrange periodic # stokesT  test_ale  #test_formulation nonlinear
-
+# stokesT  test_ale  #test_formulation nonlinear
 #CXXFLAGS= -DLIFE_USE_BOOST_LAMBDA
+
+
 
 
 pmesh_SOURCES=pmesh.cpp
@@ -53,8 +54,7 @@ periodic_LDFLAGS = -static
 advection_SOURCES=advection.cpp mesh.cpp
 advection_LDADD = $(LIFE_LIBS)
 
-sound_SOURCES=sound.cpp room.cpp
-sound_LDADD = $(LIFE_LIBS)
+
 
 dar_SOURCES=dar.cpp
 dar_LDADD = $(LIFE_LIBS)
@@ -69,8 +69,14 @@ stokes_LDFLAGS=-static
 wave_SOURCES=wave.cpp
 wave_LDADD = $(LIFE_LIBS)
 
+if WITH_PETSC
+
+check_PROGRAMS += bratu
+
 bratu_SOURCES=bratu.cpp
 bratu_LDADD = $(LIFE_LIBS)
+
+endif
 
 #test_ale_SOURCES=test_ale.cpp
 #test_ale_LDADD = $(LIFE_LIBS)
@@ -80,6 +86,16 @@ bratu_LDADD = $(LIFE_LIBS)
 
 #nonlinear_SOURCES=nonlinear.cpp
 #nonlinear_LDADD = $(LIFE_LIBS)
+
+
+if WITH_SLEPC
+
+check_PROGRAMS += sound
+
+sound_SOURCES=sound.cpp room.cpp
+sound_LDADD = $(LIFE_LIBS)
+
+endif
 
 
 

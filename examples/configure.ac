@@ -66,6 +66,11 @@ LIFE_DEBUG
 LIFE_CHECK_COMPILERS
 LIFE_CHECK_LIFE
 
+AC_CACHE_SAVE
+
+AC_CHECK_PETSC
+LIFE_CHECK_SLEPC
+
 # Write out configure arguments
 life_configure_args=`eval echo configure $ac_configure_args`
 AC_SUBST(life_configure_args)
