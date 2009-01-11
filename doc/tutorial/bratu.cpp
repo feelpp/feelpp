@@ -47,8 +47,6 @@ makeOptions()
 {
     Life::po::options_description bratuoptions("Bratu problem options");
     bratuoptions.add_options()
-        ("dt", Life::po::value<double>()->default_value( 1 ), "time step value")
-        ("ft", Life::po::value<double>()->default_value( 1 ), "final time value")
         ("lambda", Life::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Bratu problem")
 
         ("penalbc", Life::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
@@ -317,10 +315,6 @@ Bratu<Dim, Order, Entity>::run()
     im_type im;
 
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
-    int bctype = this->vm()["bctype"].template as<int>();
-    value_type dt = this->vm()["dt"].template as<value_type>();
-    value_type ft = this->vm()["ft"].template as<value_type>();
-
 
     M_oplin = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
     *M_oplin =
