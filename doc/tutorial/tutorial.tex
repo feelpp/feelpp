@@ -1,5 +1,5 @@
 %%\documentclass{../doc/tex/lifestyle}
-\documentclass[a4paper]{report}
+\documentclass[a4paper]{book}
 %\documentclass{article}
 
 \usepackage{a4wide}
@@ -39,7 +39,7 @@
 % les trois parties (front, main et back)
 %
 
-\newcommand\backmatter{%
+\renewcommand\backmatter{%
 %  \let\minisommaire\null
   \cleardoublepage
  % \@mainmatterfalse
@@ -456,13 +456,17 @@ Here is what the directory should look like
 \item \lstinline!life/lifevf!
 \end{itemize}
 
-\chapter{Creating applications}
+\chapter{Tutorial}
+\label{sec:tutorial}
+
+
+\section{Creating applications}
 \label{sec:creat-appl}
 
 
 \marginpar{\lstinline!myapp.cpp!}
 
-\section{Application and Options}
+\subsection{Application and Options}
 \label{sec:options}
 
 As a Life user, the first step in order to use Life is to create an
@@ -550,7 +554,7 @@ myapp: my first Life application
 Christophe Prud'homme   developer  christophe.prudhomme@ujf-grenoble.fr
 \end{lstlisting}
 
-\section{Application, Logging and Archiving}
+\subsection{Application, Logging and Archiving}
 \label{sec:appl-logg-arch}
 
 Life provides some basic logging and archiving support: using the
@@ -582,7 +586,7 @@ myapp-1.0 is opened for debug
 [Area 0] the value of dt is 0.1
 \end{lstlisting}
 
-\section{MPI Application}
+\subsection{MPI Application}
 
 \marginpar{\lstinline!myapp.cpp!}
 Life relies on MPI for parallel computations and the class
@@ -614,21 +618,23 @@ mympiapp-2.1 is opened for debug
 [Area 0] this is process number 1 out of 2
 \end{lstlisting}
 
-\section{PETSc and Trilinos Application}
+\subsection{Initializing PETSc and Trilinos}
 
 \index{PETSc}\index{Trilinos}\index{Libraries!PETSc}\index{Libraries!Trilinos}
+
 Life supports also the PETSc and Trilinos framework, the class
 \lstinline!Application!\index{Class!Application} takes care of
 initialize the associated environments.
 
-\chapter{Mesh Manipulation}
+\section{Mesh Manipulation}
+\label{sec:mesh-manipulation}
 
 \index{mesh}\index{Class!Mesh}
 \marginpar{\lstinline!mymesh.cpp!}
 In this section, we present some of the mesh definition and
 manipulation tools provided by Life.
 
-\section{Mesh definition}
+\subsection{Mesh definition}
 
 We look at the definition of a mesh data structure. First, we define
 the type of geometric entities that we shall use to form our mesh. Life supports
@@ -735,7 +741,7 @@ associated $\polyP{0}$ function.
 \end{figure}
 
 
-\section{Iterating over the entities of a mesh}
+\subsection{Iterating over the entities of a mesh}
 
 Life mesh data structures provides powerful iterators that allows to
 walk though the mesh in various ways: iterate over element, faces ,
@@ -744,9 +750,10 @@ points, marked\footnote{associated to an integer flag denoting a
 
 
 
-\chapter{Function Spaces}
+\section{Function Spaces}
+\label{sec:function-spaces}
 
-\section{Defining function spaces and functions}
+\subsection{Defining function spaces and functions}
 
 \begin{itemize}
 \item basis function
@@ -754,7 +761,7 @@ points, marked\footnote{associated to an integer flag denoting a
 \item element of a function space
 \end{itemize}
 
-\section{Using functions spaces and functions}
+\subsection{Using functions spaces and functions}
 
 \begin{itemize}
 \item interpolating
@@ -763,7 +770,7 @@ points, marked\footnote{associated to an integer flag denoting a
 \end{itemize}
 
 
-\chapter{Linear Algebra}
+\section{Linear Algebra}
 \label{sec:linear-algebra}
 
 
@@ -776,7 +783,7 @@ shall call \emph{backends}.
 \end{itemize}
 
 
-\section{Choosing a linear algebra backend}
+\subsection{Choosing a linear algebra backend}
 \label{sec:choos-line-algebra}
 
 \index{Class!Backend}\index{boost!shared\_ptr}
@@ -820,14 +827,14 @@ thanks to the helpers functions \lstinline!Backend::newMatrix()! and
 local/global processor mapping would be passed down by the function
 spaces.
 
-\section{Defining and using matrices and vectors}
+\subsection{Defining and using matrices and vectors}
 \label{sec:defin-using-matr}
 
-\section{Solving}
+\subsection{Solving}
 \label{sec:solving}
 
 
-\chapter{Variational Formulation}
+\section{Variational Formulation}
 \label{sec:vari-form}
 
 \index{formulation!variational}
@@ -836,7 +843,7 @@ spaces.
 \item principles
 \end{itemize}
 
-\section{Computing integrals}
+\subsection{Computing integrals}
 \label{sec:computing-integrals}
 
 \index{integrals}
@@ -939,10 +946,10 @@ myintegrals-4.3 is opened for debug
 [Area 0] int_Omega = 0.666667[ 0.305227 ]
 \end{lstlisting}
 
-\section{Standard formulation: the Laplacian case}
+\subsection{Standard formulation: the Laplacian case}
 \label{sec:defin-bilin-forms}
 \index{laplacian}
-\subsection{Mathematical formulation}
+\subsubsection{Mathematical formulation}
 \label{sec:math-form-3}
 \index{laplacian!formulation!mathematical}
 \marginpar{\lstinline!laplacian.cpp!}
@@ -979,7 +986,7 @@ we have a uniform treatment for all types of boundary conditions.
 
 
 
-\subsubsection{Strong Dirichlet conditions}
+\paragraph{Strong Dirichlet conditions}
 \label{sec:strong-dirichl-cond}
 
 \noindent
@@ -1051,7 +1058,7 @@ Galerkin framework
   \end{equation}
 \end{problem}
 
-\subsubsection{Weak Dirichlet conditions}
+\paragraph{Weak Dirichlet conditions}
 \label{sec:weak-dirichl-cond}
 
 There is an alternative formulation which allows to treat weakly
@@ -1081,7 +1088,7 @@ size of the face. The inconvenient of this formulation is the
 introduction of the parameter $\mu$, but the advantage is the
 \emph{weak} treatment of the Dirichlet condition.
 
-\subsection{Life formulation}
+\subsubsection{Life formulation}
 \label{sec:life-formulation-1}
 
 \index{laplacian!formulation!life}
@@ -1197,10 +1204,10 @@ figure~\ref{fig:2} displays the results using Paraview.
   \label{fig:2}
 \end{figure}
 
-\section{Mixed formulation: the Stokes case}
+\subsection{Mixed formulation: the Stokes case}
 \label{sec:mixed-form-stok}
 \index{Stokes}
-\subsection{Mathematical formulation}
+\subsubsection{Mathematical formulation}
 \label{sec:math-form}
 
 \index{Stokes!formulation!mathematical}
@@ -1212,14 +1219,14 @@ in 2D
  find $(\mathbf{u},p)$ such that
 \begin{equation}
   \label{eq:22}
-  -\Delta \mathbf{u} +\nabla p = \mathbf{f}\quad \text{and}\quad \nabla \cdot \mathbf{u} = 0,\quad \text{in}\ \Omega = [-1;1]^2
+  - \mu \Delta \mathbf{u} +\nabla p = \mathbf{f}\quad \text{and}\quad \nabla \cdot \mathbf{u} = 0,\quad \text{in}\ \Omega = [-1;1]^2
 \end{equation}
 with
 \begin{equation}
   \label{eq:24}
   \mathbf{f} = \mathbf{0}
 \end{equation}
-The following boundary conditions apply
+where $\mu$ being the viscosity. The following boundary conditions apply
 \begin{equation}
   \label{eq:23}
   \mathbf{u}=\mathbf{1}_{|y=1}, \quad \mathbf{u}=\mathbf{0}_{|\partial \Omega \backslash \{(x,y) \in \Omega | y=1\}}
@@ -1247,7 +1254,7 @@ reads we look for $(\mathbf{u}, p, \lambda) \in \mathcal{X}$ for all
 $(\mathbf{v},q,\nu) \in \mathcal{X}$
 \begin{equation}
   \label{eq:25}
-  \int_\Omega \nabla \mathbf{u} \cdot \nabla \mathbf{v} + \nabla \cdot \mathbf{v} p + \nabla \cdot \mathbf{u}\ q + q \lambda + p \nu  \ = \ \int_\Omega \mathbf{f} \cdot \mathbf{v}
+  \int_\Omega \mu \nabla \mathbf{u} \cdot \nabla \mathbf{v} + \nabla \cdot \mathbf{v} p + \nabla \cdot \mathbf{u}\ q + q \lambda + p \nu  \ = \ \int_\Omega \mathbf{f} \cdot \mathbf{v}
 \end{equation}
 
 We build a triangulation $\Omega_h$ of $\Omega$, we choose compatible
@@ -1259,7 +1266,7 @@ $(\mathbf{u}_h,p_h,\lambda_h) \in \mathcal{X}_h$ such that for all
 $(\mathbf{v}_h,q_h,\nu_h) \in \mathcal{X}_h$
 \begin{equation}
   \label{eq:27}
-  \int_{\Omega_h} \nabla \mathbf{u}_h \cdot \nabla \mathbf{v}_h + \nabla \cdot \mathbf{v}_h \ p_h + \nabla \cdot \mathbf{u}_h\ q_h + p_h \nu_h + q_h \lambda_h   = \ \int_{\Omega_h} \mathbf{f} \cdot \mathbf{v}_h
+  \int_{\Omega_h} \mu \nabla \mathbf{u}_h \cdot \nabla \mathbf{v}_h + \nabla \cdot \mathbf{v}_h \ p_h + \nabla \cdot \mathbf{u}_h\ q_h + p_h \nu_h + q_h \lambda_h   = \ \int_{\Omega_h} \mathbf{f} \cdot \mathbf{v}_h
 \end{equation}
 
 The formulation~(\ref{eq:27}) leads to a linear system of the form
@@ -1289,7 +1296,7 @@ block. $\mathcal{A}$ is a symetric positive definite matrix and thus
 the system $\mathcal{A} \mathcal{U} = \mathcal{F}$ enjoys a unique
 solution.
 
-\subsection{Life formulation}
+\subsubsection{Life formulation}
 \label{sec:life-formulation}
 
 \index{Stokes!formulation!life}
@@ -1324,16 +1331,16 @@ $X_h$, $M_h$ and $\mathbb{P}_0(\Omega_h)$ respectively:
 They will serve in the definition of the variational formulation. We
 can now start assemble the various terms of the variational
 formulation~(\ref{eq:27}). First we define some viscous stress tensor,
-$\sigma(\mathbf{u}) = \frac{1}{2}(\nabla \mathbf{u} + \nabla
+$\tau(\mathbf{u}) = \frac{1}{2}(\nabla \mathbf{u} + \nabla
 \mathbf{u}^T)$, associated with the trial and test functions
 respectively
 
 \lstinputlisting[firstline=264,lastline=267]{stokes.cpp}
 
 Then we define the total stress tensor times the normal,
-$\tau(\mathbf{u},p) \mathbf{n} = -p \mathbf{n} + \sigma(\mathbf{u})
-\mathbf{n}$ where $\mathbf{n}$ is the normal and $\tau(\mathbf{u},p) =
--p \mathbb{I} + \sigma(\mathbf{u})$:
+$\sigma(\mathbf{u},p) \mathbf{n} = -p \mathbf{n} + 2 \mu \tau(\mathbf{u})
+\mathbf{n}$ where $\mathbf{n}$ is the normal and $\sigma(\mathbf{u},p) =
+-p \mathbb{I} + 2 \mu \tau(\mathbf{u})$:
 
 \lstinputlisting[firstline=269,lastline=273]{stokes.cpp}
 
@@ -1345,7 +1352,10 @@ block $C$ and finally the boundary conditions.
 \lstinputlisting[firstline=290,lastline=299]{stokes.cpp}
 
 The figure~\ref{fig:2} displays $p$ and $\mathbf{u}$ which are available in
-\lstinline!~/life/doc/tutorial/stokes/Simplex_2_1_2/P2/h_0.05!
+\begin{unixcom}
+  ls ~/life/doc/tutorial/stokes/Simplex_2_1_2/P2/h_0.05
+\end{unixcom}
+
 \begin{figure}[htbp]
   \centering
   \subfigure[Colored with $p$, $h=0.05$]{\includegraphics[width=.43\linewidth]{stokes-p.png}}
@@ -1353,6 +1363,160 @@ The figure~\ref{fig:2} displays $p$ and $\mathbf{u}$ which are available in
   \caption{Solution of problem~\ref{prob:4}}
   \label{fig:2}
 \end{figure}
+
+\chapter{Examples}
+\label{cha:examples}
+
+\section{Solving nonlinear equations}
+\label{sec:nonlinear-equations}
+
+Life allows to solve nonlinear equations thanks to its interface to
+the interface to the PETSc nonlinear solver library. It requires the
+implementation of two extra functions in your application that will
+update the jacobian matrix associated to the tangent problem and the
+residual.
+
+Consider that you have an application class \lstinline!MyApp! with a
+backend as data member
+\begin{lstlisting}{gobble=2}
+#include <life/lifecore/life.hpp>
+#include <life/lifecore/application.hpp>
+#include <life/lifealg/backend.hpp>
+namespace Life {
+
+class MyApp : public Application
+{
+  public:
+
+  typedef Backend<double> backend_type;
+  typedef boost::shared_ptr<backend_type> backend_ptrtype;
+
+  MyApp( int argc, char** argv,
+  AboutData const& ad, po::options_description const& od )
+  :
+  // init the parent class
+  Application( argc, argv, ad, od ),
+  // init the backend
+  M_backend( backend_type::build( this->vm() ) ),
+  {
+    // define the callback functions (works only for the PETSc backend)
+    M_backend->nlSolver()->residual =
+      boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
+    M_backend->nlSolver()->jacobian =
+      boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
+
+  }
+  void updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
+  {
+    // update the matrix J (Jacobian matrix) associated
+    // with the tangent problem
+  }
+  void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+  {
+    // update the vector R associated with the residual
+  }
+  void run()
+  {
+
+    //define space
+    Xh...
+    element_type u(Xh);
+    // initial guess is 0
+    u = project( M_Xh, elements(mesh), constant(0.) );
+    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
+    *U = u;
+
+    // define R and J
+    vector_ptrtype R( M_backend->newVector( u.functionSpace() ) );
+    sparse_matrix_ptrtype J;
+
+    // update R
+    updateJacobian( U, R );
+    // update J
+    updateResidual( U, J );
+
+    // solve using non linear methods (newton)
+    // tolerance : 1e-10
+    // max number of iterations : 10
+    M_backend->nlSolve( J, U, R, 1e-10, 10 );
+
+    // the soluution was stored in U
+    u = *U;
+  }
+  private:
+
+  backend_ptrtype M_backend;
+};
+} // namespace Life
+\end{lstlisting}
+
+The function \lstinline!updateJacobian! and \lstinline!updateResidual!
+implement the assmebly of the matrix $J$ (jacobian matrix) and the
+vector $R$ (residual vector) respectively.
+
+\subsection{A first nonlinear problem}
+\label{sec:bratu}
+
+As a simple example, let $\Omega$ be a subset of $\mathbb{R}^d, d=1,2,3$,
+(\emph{i.e.} $\Omega=[-1,1]^d$) with boundary $\partial
+\Omega$. Consider now the following equation and boundary condition
+\begin{equation}
+  \label{eq:29}
+  -\Delta u + u^\lambda = f,\quad u = 0 \text{ on } \partial \Omega.
+\end{equation}
+where $\lambda \in \mathbb{R_+}$ is a given parameter and $f=1$.
+
+
+\begin{nota}
+  To be described in this section. For now see
+  \texttt{doc/tutorial/nonlinearpow.cpp} for an implementation of this
+  problem.
+\end{nota}
+
+\subsection{Simplified combustion problem: Bratu}
+\label{sec:bratu}
+
+As a simple example, let $\Omega$ be a subset of $\mathbb{R}^d, d=1,2,3$,
+(\emph{i.e.} $\Omega=[-1,1]^d$) with boundary $\partial
+\Omega$. Consider now the following equation and boundary condition
+\begin{equation}
+  \label{eq:29}
+  -\Delta u + \lambda e^u = f,\quad u = 0 \text{ on } \partial \Omega
+\end{equation}
+where $\lambda$ is a given parameter. Ceci est généralement appellé le
+problème de Bratu et apparaît lors de la simplification de modèles de
+processus de diffusion non-linéaires par exemple dans le domaine de la
+combustion.
+
+\begin{nota}
+  To be described in this section. For now see
+  \texttt{doc/tutorial/bratu.cpp} for an implementation of this
+  problem.
+\end{nota}
+% The discrete variational formulation reads, we look for $u \in V
+% \subset H^1(\Omega)$ such that
+% \begin{equation}
+%   \label{eq:30}
+%   \int_\Omega \nabla u \cdot \nabla v + \lambda e^u v + \int_{\partial \Omega} -\frac{\partial u}{\partial \mathbf{n}} v -\frac{\partial v}{\partial \mathbf{n}} u + \frac{\mu}{h} u v  = 0\quad \forall v \in V
+% \end{equation}
+% where the last terms integrate on $\partial \Omega$ are associated with the weak treatment of the Dirichlet condition, see~\ref{sec:weak-dirichl-cond}.
+% Denote the residual
+% \begin{equation}
+%   \label{eq:31}
+%   \mathcal{F}() v=  \int_\Omega \nabla u \cdot \nabla v + \lambda e^u v + \int_{\partial \Omega} -\frac{\partial u}{\partial \mathbf{n}} v -\frac{\partial v}{\partial \mathbf{n}} u + \frac{\mu}{h} u v
+% \end{equation}
+% Denote the Jacobian
+% \begin{equation}
+%   \label{eq:32}
+%   \mathcal{J}_z(u,v) = \int_\Omega \lambda e^z u v + \underbrace{\int_\Omega \nabla u \cdot \nabla v + \int_{\partial \Omega} -\frac{\partial u}{\partial \mathbf{n}} v -\frac{\partial v}{\partial \mathbf{n}} u + \frac{\mu}{h} u v}_{\text{linear part, constant over the nonlinear iterations}}
+% \end{equation}
+% The Nonlinear iterations now reads if $J$ and $F$ are the matrices and
+% vectors associated with $\mathcal{J}_z$ and $\mathcal{F}$ respectively: given $u^{0}$
+% \begin{equation}
+%   \label{eq:33}
+%   J_{u^n} u^{n+1} = -F
+% \end{equation}
+
 
 
 \appendix

@@ -27,7 +27,13 @@ SUBDIRS=styles pngs pdfs
 
 ACLOCAL_AMFLAGS = -I admin
 
-bin_PROGRAMS=myapp mymesh myintegrals laplacian stokes
+bin_PROGRAMS=myapp mymesh myintegrals laplacian stokes bratu nonlinearpow
+
+nonlinearpow_SOURCES=nonlinearpow.cpp
+nonlinearpow_LDADD=$(LIFE_LIBS)
+
+bratu_SOURCES=bratu.cpp
+bratu_LDADD=$(LIFE_LIBS)
 
 stokes_SOURCES=stokes.cpp
 stokes_LDADD=$(LIFE_LIBS)
@@ -65,7 +71,7 @@ CLEANFILES = *.aux *.log *.lot *.lof *.toc *.bbl *.blg *.out *.idx *.ind *.ilg $
 EXTRA_DIST = tutorial.tex version.tex.in feel.tex gfdl.tex tutorial.ist version.tex.in
 
 
-tutorial.pdf : $(EXTRA_DIST) myapp.cpp mymesh.cpp myintegrals.cpp laplacian.cpp stokes.cpp
+tutorial.pdf : $(EXTRA_DIST) myapp.cpp mymesh.cpp myintegrals.cpp laplacian.cpp stokes.cpp bratu.cpp
 
 pdf-local : tutorial.pdf
 doc_DATA = tutorial.pdf
