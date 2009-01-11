@@ -177,7 +177,7 @@ private:
     backend_ptrtype M_backend;
 
     double meshSize;
-    double M_lambda;
+    int M_lambda;
 
     functionspace_ptrtype M_Xh;
     oplin_ptrtype M_oplin;
@@ -196,7 +196,7 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
     super( argc, argv, ad, od ),
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].template as<double>() ),
-    M_lambda( this->vm()["lambda"].template as<double>() ),
+    M_lambda( this->vm()["lambda"].template as<int>() ),
     M_Xh(),
     exporter(),
     timeSet()
