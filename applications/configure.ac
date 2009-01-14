@@ -25,7 +25,7 @@ AC_PREREQ([2.59])
 
 # Initialize Autoconf
 AC_INIT([Life platform module applications],
-        [0.9.10],
+        [0.9.11],
         [life-commits@lists.ljkforge.imag.fr],
         [life-apps])
 
@@ -87,6 +87,7 @@ LIFE_EXTRAMODULE([opus])
 # Applications
 AC_CONFIG_FILES([ Makefile ])
 AC_CONFIG_FILES([ admin/Makefile ])
+AC_CONFIG_FILES([ polyvis/Makefile ])
 
 AC_OUTPUT
 
