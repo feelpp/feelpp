@@ -1,6 +1,6 @@
 /* -*- mode: c++ -*-
 
-  This file is part of the LifeV library
+  This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
        Date: 2006-02-03

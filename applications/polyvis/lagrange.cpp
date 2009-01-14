@@ -1,6 +1,6 @@
 /* -*- mode: c++ -*-
 
-  This file is part of the LifeV library
+  This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
        Date: 2006-02-01
@@ -34,8 +34,8 @@
 
 #include <polyvis.hpp>
 
-
-#include <life/lifepoly/lagrangeset.hpp>
+#include <life/lifepoly/polynomialset.hpp>
+#include <life/lifepoly/lagrange.hpp>
 
 class Lagrange
     :
@@ -47,7 +47,7 @@ public:
         std::cout << "Created lagrange '" << s << "'\n";
         std::cout << "dimension is " << d << "\n";
 
-        using namespace LifeV;
+        using namespace Life;
 
         if ( d == 2 )
             {
@@ -64,7 +64,7 @@ public:
         std::cout << "dimension is " << d << "\n";
         std::cout << "order is " << o << "\n";
 
-        using namespace LifeV;
+        using namespace Life;
 
         if ( d == 2 )
             {
