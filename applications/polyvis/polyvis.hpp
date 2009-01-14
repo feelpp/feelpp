@@ -1,6 +1,6 @@
 /* -*- mode: c++ -*-
 
-  This file is part of the LifeV library
+  This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
        Date: 2006-02-01
@@ -34,29 +34,27 @@
 
 #include <life/lifepoly/polynomialset.hpp>
 #include <life/lifepoly/operations.hpp>
-//#include <life/lifepoly/bubble.hpp>
-//#include <life/lifepoly/raviartthomas.hpp>
-//#include <life/lifepoly/divfree.hpp>
 
-#include <life/lifefem/space.hpp>
+#include <life/lifediscr/functionspace.hpp>
 #include <life/lifefilters/pointsettomesh.hpp>
 #include <life/lifefilters/exporterensight.hpp>
 
-
+namespace Life
+{
 class Polyvis {
 public:
 
     virtual ~Polyvis() {}
 
-    template<typename P, template<LifeV::uint16_type> class PS>
+    template<typename P, template<uint16_type> class PS>
     void
-    save( std::string const& s, LifeV::PolynomialSet<P,PS> const& pset )
+    save( std::string const& s, PolynomialSet<P,PS> const& pset )
     {
-        using namespace LifeV;
+        using namespace Life;
         const uint16_type nDim = P::nDim;
         const int OrderPts = 10;
-        PointSetToMesh<LifeV::Simplex<nDim,OrderPts>, double> p2m;
-        typedef typename PointSetToMesh<LifeV::Simplex<nDim,1>, double>::mesh_type mesh_type;
+        PointSetToMesh<Simplex<nDim,OrderPts>, double> p2m;
+        typedef typename PointSetToMesh<Simplex<nDim,1>, double>::mesh_type mesh_type;
 
         //GaussLobatto<Simplex<nDim,OrderPts>, OrderPts, double> GS;
         PointSetEquiSpaced<Simplex<nDim,OrderPts>, double> GS;
@@ -87,8 +85,8 @@ public:
                                                                  ublas::range( i*nC, (i+1)*nC ),
                                                                  ublas::range( 0, evalpset.size2() ) ) );
                         std::cout << "m = " << m << "\n"
-                                  << "v2m(m) = " << LifeV::PolynomialSet<P,PS>::polyset_type::toMatrix( m ) << "\n";
-                        u[i] = ublas::row( LifeV::PolynomialSet<P,PS>::polyset_type::toMatrix( m ), 0 );
+                                  << "v2m(m) = " << PolynomialSet<P,PS>::polyset_type::toMatrix( m ) << "\n";
+                        u[i] = ublas::row( PolynomialSet<P,PS>::polyset_type::toMatrix( m ), 0 );
                     }
                 std::cout << s << "_u_" << i << u[i] << "\n";
                 std::cout << s << "_p_" << i << pset.polynomial( i ).evaluate( GS.points() ) << "\n";
@@ -119,7 +117,7 @@ public:
         __ensight.save();
     }
 };
-
+}
 namespace boost { namespace plugin {
 
     template<>

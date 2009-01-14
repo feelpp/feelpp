@@ -1,6 +1,6 @@
 /* -*- mode: c++ -*-
 
-  This file is part of the LifeV library
+  This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
        Date: 2006-02-01
@@ -47,7 +47,7 @@ public:
         std::cout << "Created raviartthomas '" << s << "'\n";
         std::cout << "dimension is " << d << "\n";
 
-        using namespace LifeV;
+        using namespace Life;
 
         if ( d == 2 )
             {
@@ -64,7 +64,7 @@ public:
         std::cout << "dimension is " << d << "\n";
         std::cout << "order is " << o << "\n";
 
-        using namespace LifeV;
+        using namespace Life;
 
         if ( d == 2 )
             {

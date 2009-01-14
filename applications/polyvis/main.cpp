@@ -1,6 +1,6 @@
 /* -*- mode: c++ -*-
 
-  This file is part of the LifeV library
+  This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
        Date: 2006-02-01
@@ -42,14 +42,14 @@
 #include <polyvis.hpp>
 
 
-LifeV::AboutData
+Life::AboutData
 makeAbout()
 {
-    LifeV::AboutData about( "life_polyvis" ,
+    Life::AboutData about( "life_polyvis" ,
                             "life_polyvis" ,
                             "0.1",
                             "Generate ensight files to visualize polynomials",
-                            LifeV::AboutData::License_LGPL,
+                            Life::AboutData::License_LGPL,
                             "Copyright (c) 2006 EPFL");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@epfl.ch", "");
@@ -57,12 +57,12 @@ makeAbout()
 
 }
 
-class PolyvisApp : public LifeV::Application
+class PolyvisApp : public Life::Application
 {
 public:
-    typedef LifeV::Application super;
+    typedef Life::Application super;
 
-    PolyvisApp( int argc,  char** argv, LifeV::AboutData const& ad, LifeV::po::options_description const& od )
+    PolyvisApp( int argc,  char** argv, Life::AboutData const& ad, Life::po::options_description const& od )
         :
         super( argc, argv, ad, od )
     {}
@@ -101,14 +101,14 @@ PolyvisApp::run()
 int
 main( int argc, char** argv )
 {
-    LifeV::po::options_description desc("Specific options");
+    Life::po::options_description desc("Specific options");
     desc.add_options()
-        ("lib", LifeV::po::value<std::string>()->default_value("stdpoly.so"), "library of polynomials")
+        ("lib", Life::po::value<std::string>()->default_value("stdpoly.so"), "library of polynomials")
         //("list", "list components in pluging")
-        ("poly,p", LifeV::po::value<std::string>()->default_value("Lagrange"), "polynomials to display")
-        ("dim,d", LifeV::po::value<int>()->default_value(2), "dimension")
-        ("order,o", LifeV::po::value<int>()->default_value(1), "polynomials order")
-        ("convex,c", LifeV::po::value<int>()->default_value(1), "convex")
+        ("poly,p", Life::po::value<std::string>()->default_value("Lagrange"), "polynomials to display")
+        ("dim,d", Life::po::value<int>()->default_value(2), "dimension")
+        ("order,o", Life::po::value<int>()->default_value(1), "polynomials order")
+        ("convex,c", Life::po::value<int>()->default_value(1), "convex")
         ;
 
     PolyvisApp app( argc, argv, makeAbout(), desc );
@@ -123,14 +123,14 @@ main( int argc, char** argv )
 const int OrderPts = 10;
 
 
-template<typename P, template<LifeV::uint16_type> class PS >
+template<typename P, template<Life::uint16_type> class PS >
 void
-visu( std::string const& s, LifeV::Polynomial<P,PS> const& poly )
+visu( std::string const& s, Life::Polynomial<P,PS> const& poly )
 {
-    using namespace LifeV;
+    using namespace Life;
     const uint16_type nDim = P::nDim;
-    PointSetToMesh<LifeV::Simplex<nDim,OrderPts>, double> p2m;
-    typedef typename PointSetToMesh<LifeV::Simplex<nDim,1>, double>::mesh_type mesh_type;
+    PointSetToMesh<Life::Simplex<nDim,OrderPts>, double> p2m;
+    typedef typename PointSetToMesh<Life::Simplex<nDim,1>, double>::mesh_type mesh_type;
 
     //GaussLobatto<<Simplex<nDim,OrderPts>, OrderPts, double> GS;
     PointSetEquiSpaced<Simplex<nDim,OrderPts>, double> GS;
@@ -194,7 +194,7 @@ visu( std::string const& s, LifeV::Polynomial<P,PS> const& poly )
 #if 0
 int main()
 {
-    using namespace LifeV;
+    using namespace Life;
 
     //fem::Lagrange<2,1,Scalar> lag2;
     //visu( "lag_2_1", lag2.functionShape() );
@@ -236,9 +236,9 @@ int main()
     fem::Lagrange<2,1,Scalar> lag;
     std::cout << lag.evaluate( lag.points() ) << "\n";
     //Bubble<2,Vectorial> bubble_v;
-    //LifeV::P1BubblePolynomialSet<2, Scalar> p1bubbleset;
+    //Life::P1BubblePolynomialSet<2, Scalar> p1bubbleset;
 
-    LifeV::node<double>::type x(2);
+    Life::node<double>::type x(2);
     x(0) = 0;
     x(1) = 0;
     fem::Lagrange<2,1,Vectorial> lag_v;
@@ -278,10 +278,10 @@ int main()
 
 
 #if 0
-    LifeV::OrthogonalPolynomialSet<2, 2, Scalar> ortho;
+    Life::OrthogonalPolynomialSet<2, 2, Scalar> ortho;
     visu( "ortho", ortho );
 
-    LifeV::P1BubblePolynomialSet<2, Scalar> p1bubbleset;
+    Life::P1BubblePolynomialSet<2, Scalar> p1bubbleset;
     visu( "p1b", p1bubbleset );
 
     FEM_PK<2,1,Scalar> p1;
