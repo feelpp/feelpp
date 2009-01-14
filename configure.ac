@@ -2,12 +2,12 @@
 #
 #
 AC_INIT([life],
-        [0.9.10],
+        [0.9.11],
         [life-devel@lists.ljkforge.imag.fr])
 
 LIFE_VERSION_MAJOR=0
 LIFE_VERSION_MINOR=9
-LIFE_VERSION_MICRO=10
+LIFE_VERSION_MICRO=11
 LIFE_VERSION_EXTRA=
 LIFE_BUILDID=0
 LIFE_REVISION=0
