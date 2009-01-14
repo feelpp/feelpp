@@ -259,6 +259,11 @@ public:
     //! return the relative path where the bdf data is stored
     fs::path path() { return M_path_save; }
 
+    void setTimeStep( double dt ) { M_dt = dt; }
+    void setTimeFinal( double T ) { M_Tf = T; }
+
+    void setSteady() { M_dt=1e30; M_Tf=1e30; }
+
     void print() const
     {
         Log() << "============================================================\n";
