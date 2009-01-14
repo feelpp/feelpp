@@ -551,12 +551,18 @@ private:
         bool __inserted = false;
         if ( itdof == endof )
             {
+                Debug( 5005 ) << "[dof] dof (" << gDof.get<0>() << "," << gDof.get<1>() << "," << gDof.get<2>() << ") not yet inserted in map\n";
                 boost::tie( itdof, __inserted ) = map_gdof.insert( std::make_pair( gDof, dofIndex( pDof ) ) );
+
                 pDof += 1;
 
                 LIFE_ASSERT( __inserted == true )( ie )( lc_dof )
                     (gDof.get<0>())(gDof.get<1>())( gDof.get<2>() )
                     ( processor )( itdof->second ).error( "dof should have been inserted");
+            }
+        else
+            {
+                Debug( 5005 ) << "[dof] dof (" << gDof.get<0>() << "," << gDof.get<1>() << "," << gDof.get<2>() << ") already inserted in map with dof_id = " << itdof->second << "\n";
             }
 #if !defined( NDEBUG )
         Debug( 5005 ) << "global dof = " << itdof->second
@@ -587,7 +593,7 @@ private:
         typedef Container::index index;
 
         for ( index i2 = 0; i2 < nComponents*fe_type::nLocalDof; ++i2 )
-            Debug() << "dof table( " << ie  << ")=" << boost::get<0>(_M_el_l2g[ ie][ i2 ]) << "\n";
+            Debug() << "dof table( " << ie << ", " << lc  << ")=" << boost::get<0>(_M_el_l2g[ ie][ i2 ]) << "\n";
 #endif
         return __inserted;
     }
@@ -1361,11 +1367,11 @@ Dof<MeshType, FEType, PeriodicityType>::addVertexPeriodicDof( element_type const
                     //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
                     const size_type gDof = ( __elt.point( iVeEl ).id() ) * fe_type::nDofPerVertex + l;
 
-                    Debug( 5015 ) << "add periodic doc " << next_free_dof << " in element " << __elt.id() << " lid = " << lid << "\n";
+                    Debug( 5015 ) << "add vertex periodic doc " << next_free_dof << " in element " << __elt.id() << " lid = " << lid << "\n";
                     size_type dof_id = next_free_dof;
                     // next_free_dof might be incremented if a new dof is created
                     bool inserted = this->insertDof( __elt.id(), lid, iVeEl, boost::make_tuple(0, 0, gDof), 0, next_free_dof, 1, true );
-                    Debug( 5015 ) << "periodic dof inserted : " << inserted << "\n";
+                    Debug( 5015 ) << "vertex periodic dof inserted : " << inserted << "\n";
 
                     // add the pair (elt, lid) to the map associated
                     // with dof_id, one dof can be shared by several
@@ -1373,7 +1379,7 @@ Dof<MeshType, FEType, PeriodicityType>::addVertexPeriodicDof( element_type const
                     dof_id = boost::get<0>(localToGlobal( __elt.id(), lid, 0 ));
                     periodic_dof[tag].insert( std::make_pair( dof_id, boost::make_tuple( __elt.id(), lid, gDof, 0 ) ) );
 
-                    Debug( 5015 ) << "added " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>(localToGlobal( __elt.id(), lid, 0 )) << "\n";
+                    Debug( 5015 ) << "added vertex periodic dof " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>(localToGlobal( __elt.id(), lid, 0 )) << "\n";
                 }
 
         }
@@ -1409,13 +1415,13 @@ Dof<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type const& 
         {
             uint16_type lid = element_type::numVertices*fe_type::nDofPerVertex + iFaEl * fe_type::nDofPerEdge + l;
             //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
-            const size_type gDof = ( __elt.id() ) * fe_type::nDofPerEdge + l;
+            const size_type gDof = ( __elt.edge( iFaEl ).id() ) * fe_type::nDofPerEdge + l;
 
-            Debug( 5015 ) << "add periodic doc " << next_free_dof << " in element " << __elt.id() << " lid = " << lid << "\n";
+            Debug( 5015 ) << "add edge periodic dof " << next_free_dof << " in element " << __elt.id() << " lid = " << lid << "\n";
             size_type dof_id = next_free_dof;
             // next_free_dof might be incremented if a new dof is created
-            bool inserted = this->insertDof( __elt.id(), lid, l, boost::make_tuple(1, 0, gDof), 0, next_free_dof, 1, true );
-            Debug( 5015 ) << "periodic dof inserted : " << inserted << "\n";
+            bool inserted = this->insertDof( __elt.id(), lid, iFaEl, boost::make_tuple(1, 0, gDof), 0, next_free_dof, 1, true );
+            Debug( 5015 ) << "edge periodic dof inserted (1 or 0) : " << inserted << "\n";
 
             // add the pair (elt, lid) to the map associated
             // with dof_id, one dof can be shared by several
@@ -1423,7 +1429,7 @@ Dof<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type const& 
             dof_id = boost::get<0>(localToGlobal( __elt.id(), lid, 0 ));
             periodic_dof[tag].insert( std::make_pair( dof_id, boost::make_tuple( __elt.id(), lid, gDof, 1 ) ) );
 
-            Debug( 5015 ) << "added " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>(localToGlobal( __elt.id(), lid, 0 )) << "\n";
+            Debug( 5015 ) << "added edge periodic dof " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>(localToGlobal( __elt.id(), lid, 0 )) << "\n";
 
         }
 }
@@ -1709,8 +1715,8 @@ Dof<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
                         ( gid )( dof.second.template get<0>() )( dof.second.template get<1>())
                         ( gid2 )( it_dof2->second.template get<0>() )( it_dof2->second.template get<1>())
                         ( x1 )( x2 )( M_periodicity.translation() ).error( "invalid point size" );
-                    //LIFE_ASSERT( math::abs( x1[0]-(x2[0]-M_periodicity.translation()[0])) < 1e-10 )
-                    //( x1 )( x2 )( M_periodicity.translation() ).error( "[periodic] invalid periodic setup");
+                    LIFE_ASSERT( math::abs( x1[1]-(x2[1]-M_periodicity.translation()[1])) < 1e-10 )
+                        ( x1 )( x2 )( M_periodicity.translation() ).error( "[periodic] invalid periodic setup");
                     if ( ublas::norm_2( x1-(x2-M_periodicity.translation()) ) < 1e-10 )
                         {
                             // loop on each pair (element, lid) which
@@ -1727,6 +1733,7 @@ Dof<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 
                     it_dof2 = periodic_dof[periodicity_type::tag2].lower_bound( corresponding_gid );
                     en_dof2 = periodic_dof[periodicity_type::tag2].upper_bound( corresponding_gid );
+                    Debug( 5015 ) << "distance = " << std::distance( it_dof2, en_dof2 ) << "\n";
                     while( it_dof2 != en_dof2 )
                         {
 
@@ -1748,7 +1755,17 @@ Dof<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 
                             // warning: must modify the data structure that allows to
                             // generate unique global dof ids
+                            LIFE_ASSERT( (map_gdof[  boost::make_tuple(dof2_type, 0, gDof) ] == corresponding_gid ) ||
+                                         ( map_gdof[ boost::make_tuple(dof2_type, 0, gDof) ] == gid ) )
+                                ( corresponding_gid )( dof2_type )( gDof )( gid )
+                                ( map_gdof[ boost::make_tuple(dof2_type, 0, gDof) ] ).error ("invalid gid" );
+
+                            Debug( 5015 ) << "link mapgdof " <<   map_gdof[ boost::make_tuple(dof2_type, 0, gDof) ]  << " -> " << gid << "\n";
                             map_gdof[ boost::make_tuple(dof2_type, 0, gDof) ] = gid;
+
+                            LIFE_ASSERT( map_gdof[ boost::make_tuple(dof2_type, 0, gDof) ] == gid )
+                                ( corresponding_gid )( dof2_type )( gDof )( gid )
+                                ( map_gdof[ boost::make_tuple(dof2_type, 0, gDof) ]) .error ("invalid gid" );
 
                             ++it_dof2;
                         }
@@ -2214,7 +2231,7 @@ Dof<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_type& M
                 LIFE_ASSERT( thedof < dof_done.size() )
                     ( thedof )
                     ( dof_done.size() )
-                    ( it_elt->template get<0>()->id() )
+                   ( it_elt->template get<0>()->id() )
                     ( lid ).error ("[generatePeriodicDofPoints] invalid dof id" );
                 if ( dof_done[ thedof ] == false )
                     {
@@ -2222,9 +2239,9 @@ Dof<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_type& M
                         // these tests are problem specific x=0 and x=translation
 #if 0
                         if ( __face.marker().value() == periodicity_type::tag1 )
-                            LIFE_ASSERT( math::abs( __c->xReal( lid )[0] ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1");
+                            LIFE_ASSERT( math::abs( __c->xReal( lid )[1] +1 ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1");
                         if ( __face.marker().value() == periodicity_type::tag2 )
-                            LIFE_ASSERT( math::abs( __c->xReal( lid )[0] - M_periodicity.translation()[0] ) < 1e-10 )
+                            LIFE_ASSERT( math::abs( __c->xReal( lid )[1] - (M_periodicity.translation()[1]-1) ) < 1e-10 )
                                 ( __c->xReal( lid ) )( M_periodicity.translation()).warn( "[periodic] invalid p[eriodic point tag1");
 #endif
                         dof_done[thedof] = true;
