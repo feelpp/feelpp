@@ -1106,8 +1106,10 @@ sortSparsityRow (const BidirectionalIterator begin,
 
     assert (std::distance (begin,  middle) > 0);
     assert (std::distance (middle, end)    > 0);
-    assert (std::unique (begin,  middle) == middle);
-    assert (std::unique (middle, end)    == end);
+    LIFE_ASSERT( std::unique (begin,  middle) == middle )
+        ( *begin )( *middle ).error( "duplicate dof(begin,middle)" );
+    LIFE_ASSERT (std::unique (middle, end)    == end)
+        (*begin)( *middle ).error( "duplicate dof (middle,end)" );
 
     while (middle != end)
         {
