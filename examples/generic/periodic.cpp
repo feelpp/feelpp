@@ -51,15 +51,15 @@ inline
 Life::po::options_description
 makeOptions()
 {
-    Life::po::options_description laplacian_mloptions("Periodic Laplacian options");
-    laplacian_mloptions.add_options()
-        ("h", Life::po::value<double>()->default_value( 0.1 ), "mesh size in domain")
+    Life::po::options_description periodicoptions("Periodic Laplacian options");
+    periodicoptions.add_options()
+        ("hsize", Life::po::value<double>()->default_value( 0.1 ), "mesh size in domain")
 
         ("penalbc", Life::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
 
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return laplacian_mloptions.add( Life::life_options() );
+    return periodicoptions.add( Life::life_options() );
 }
 inline
 Life::AboutData
@@ -182,7 +182,7 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
     M_backend( backend_type::build( this->vm() ) ),
 
     // Data
-    h( this->vm()["h"].template as<double>() ),
+    h( this->vm()["hsize"].template as<double>() ),
     penalisation_bc( this->vm()["penalbc"].template as<value_type>() ),
 
     // spaces
@@ -323,7 +323,9 @@ PeriodicLaplacian<Dim, Order>::run()
     element_type e( Xh, "e" );
     e = vf::project( Xh, elements(mesh), idv(u)-g );
 
+
     exportResults( u, v, e );
+
 
 } // PeriodicLaplacian::run
 
@@ -375,7 +377,7 @@ main( int argc, char** argv )
 
     /* change parameters below */
     const int nDim = 2;
-    const int nOrder = 1;
+    const int nOrder = 4;
 
     typedef Life::PeriodicLaplacian<nDim, nOrder> laplacian_periodic_type;
 
