@@ -34,6 +34,7 @@
 
 namespace Life
 {
+namespace detail { struct periodicity_base {}; }
 
 /**
  * \class Periodic
@@ -78,7 +79,7 @@ namespace Life
  * @see
  */
 template<uint16_type Tag1, uint16_type Tag2, typename T = double >
-class Periodic
+class Periodic : public detail::periodicity_base
 {
 public:
 
@@ -162,7 +163,7 @@ private:
  * @author Christophe Prud'homme
  * @see
  */
-class NoPeriodicity
+class NoPeriodicity : public detail:: periodicity_base
 {
 public:
     /** @name Constants

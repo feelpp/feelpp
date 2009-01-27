@@ -34,6 +34,7 @@
 #include <life/lifecore/visitor.hpp>
 #include <life/lifecore/factory.hpp>
 #include <life/lifecore/singleton.hpp>
+
 #include <life/lifediscr/timeset.hpp>
 
 namespace Life

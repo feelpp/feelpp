@@ -28,6 +28,9 @@
  */
 #include <life/lifecore/life.hpp>
 
+#include <life/lifediscr/mesh.hpp>
+#include <life/lifediscr/functionspace.hpp>
+#include <life/lifediscr/timeset.hpp>
 #include <life/lifefilters/exporterensight.hpp>
 
 

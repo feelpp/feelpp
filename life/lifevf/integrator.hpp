@@ -97,7 +97,6 @@ public:
 
     typedef typename boost::tuples::template element<1, Elements>::type element_iterator;
 
-    typedef Im im_type;
     typedef Expr expression_type;
     typedef typename expression_type::value_type value_type;
     typedef ublas::vector<int> vector_dof_type;
@@ -117,7 +116,8 @@ public:
         typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gm_type::precompute_ptrtype gmcpc_ptrtype;
         //typedef typename eval_expr_type::value_type value_type;
-        typedef typename strongest_numeric_type<typename Im::value_type, typename expression_type::value_type>::type value_type;
+        //typedef typename strongest_numeric_type<typename Im::value_type, typename expression_type::value_type>::type value_type;
+        typedef typename expression_type::value_type value_type;
 
         //
         // Precompute some data in the reference element for
@@ -133,17 +133,23 @@ public:
           mpl::identity<ublas::vector<value_type,storage_type> > >::type::type ret_type;*/
         typedef ublas::matrix<value_type> ret_type;
     };
+
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template apply<eval::the_element_type::nDim, value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template apply<eval::the_element_type::nDim, value_type, SimplexProduct>::type >
+                              >::type::type im_type;
+
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
 
-    Integrator( Elements const& elts, im_type const& __im, expression_type const& __expr )
+    Integrator( Elements const& elts, Im const& __im, expression_type const& __expr )
         :
         _M_eltbegin( elts.template get<1>() ),
         _M_eltend( elts.template get<2>() ),
-        _M_im( __im ),
+        _M_im(),
         _M_expr( __expr )
     {
         Debug( 5065 ) << "Integrator constructor from expression\n";
@@ -698,7 +704,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
 
     //typedef typename eval_expr_type::value_type value_type;
-    typedef typename Im::value_type value_type;
+    //typedef typename Im::value_type value_type;
 
     element_iterator it = this->beginElement();
     element_iterator en = this->endElement();
@@ -791,7 +797,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
     typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, the_element_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
     //typedef typename eval_expr_type::value_type value_type;
-    typedef typename Im::value_type value_type;
+    //typedef typename Im::value_type value_type;
 
     //BOOST_MPL_ASSERT_MSG( the_element_type::nDim > 1, INVALID_DIM, (mpl::int_<the_element_type::nDim>, mpl::int_<the_face_element_type::nDim>, mpl::identity<the_face_element_type>, mpl::identity<the_element_type> ) );;
 
