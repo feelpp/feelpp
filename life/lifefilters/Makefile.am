@@ -30,7 +30,9 @@ liblifefilters_la_SOURCES	= exporter.cpp gmsh.cpp importergambit.cpp
 
 if ENABLE_INSTANTIATION_MODE
 liblifefilters_la_SOURCES +=  gmshtensorizeddomain.cpp gmshsimplexdomain.cpp\
-                               exporterensight.cpp exportergmsh.cpp exportergnuplot.cpp
+                              exporterensight.cpp exportergmsh.cpp exportergnuplot.cpp
+
+
 endif
 
 liblifefilters_la_LIBADD	=  $(BOOST_FILESYSTEM_LIB) ../../boost/libs/serialization/src/libboost_serialization.la ../../boost/libs/mpi/src/libboost_mpi.la

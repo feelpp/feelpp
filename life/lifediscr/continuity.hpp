@@ -1,0 +1,151 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2009-01-20
+
+  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file continuity.hpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2009-01-20
+ */
+#ifndef __Continuity_H
+#define __Continuity_H 1
+
+#include <boost/fusion/sequence.hpp>
+
+namespace Life
+{
+// import fusion namespace in Life
+namespace fusion = boost::fusion;
+
+namespace detail { struct continuity_base {}; }
+/**
+ * \class Continuous
+ * \brief describe continuous functions
+ *
+ * @author Christophe Prud'homme
+ * @see
+ */
+class ContinuousT : public detail::continuity_base
+{
+public:
+
+
+    /** @name Constants
+     */
+    //@{
+
+    static const bool is_continuous = true;
+    static const bool is_discontinuous_locally = false;
+    static const bool is_discontinuous_totally = false;
+
+
+    //@}
+
+    /** @name Typedefs
+     */
+    //@{
+    typedef fusion::vector<> discontinuity_markers_type;
+
+    //@}
+
+    /** @name Constructors, destructor
+     */
+    //@{
+
+    //! default constructor
+    ContinuousT();
+    //! copy constructor
+    ContinuousT( Continuous const & );
+    //! destructor
+    ~ContinuousT();
+
+    //@}
+
+    /** @name Operator overloads
+     */
+    //@{
+
+    //! copy operator
+    ContinuousT& operator=( ContinuousT const & o)
+    {
+        if (this != &o )
+            {
+            }
+        return *this;
+    }
+    //@}
+
+    /** @name Accessors
+     */
+    //@{
+
+
+    //@}
+
+    /** @name  Mutators
+     */
+    //@{
+
+
+    //@}
+
+    /** @name  Methods
+     */
+    //@{
+
+
+    //@}
+
+    template<typename MeshType, typename DofType>
+    class apply
+    {
+    public:
+        typedef size_type result_type;
+        typedef MeshType mesh_type;
+        typedef DofType dof_type;
+        typedef typename dof_type::fe_type fe_type;
+
+        apply( MeshType& M, DofType& D )
+            :
+            M_mesh( M ),
+            M_dof( D )
+        {}
+        template<typename T>
+        result_type operator()(const T& t, const size_type& start ) const
+        {
+            //return build( T::value, start );
+            return start;
+        }
+    private:
+    private:
+        MeshType& M_mesh;
+        DofType M_dof;
+    };
+
+protected:
+
+private:
+
+};
+
+} // Life
+#endif /* __Continuity_H */

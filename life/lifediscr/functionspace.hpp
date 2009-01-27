@@ -37,6 +37,7 @@
 #include <boost/mpl/transform.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/fusion/support/pair.hpp>
+#include <boost/fusion/support/is_sequence.hpp>
 #include <boost/fusion/sequence.hpp>
 #include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/algorithm.hpp>
@@ -71,18 +72,23 @@
 
 
 #include <life/lifediscr/mesh.hpp>
+#include <life/lifediscr/periodic.hpp>
+#include <life/lifediscr/continuity.hpp>
+#include <life/lifediscr/discontinuousinterfaces.hpp>
 #include <life/lifediscr/dof.hpp>
 #include <life/lifediscr/dofcomposite.hpp>
-#include <life/lifediscr/periodic.hpp>
-
+#include <life/lifediscr/parameter.hpp>
+#include <life/lifediscr/bases.hpp>
 
 #include <life/lifefilters/pointsettomesh.hpp>
+
 
 //#include <life/lifevf/vf.hpp>
 
 namespace Life
 {
 namespace fusion = boost::fusion;
+namespace parameter = boost::parameter;
 
 namespace detail{
 
@@ -629,6 +635,23 @@ class FunctionSpaceBase
 public:
     virtual ~FunctionSpaceBase() {}
 };
+
+
+typedef parameter::parameters<
+    parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
+#if 1
+    , parameter::optional<parameter::deduced<tag::bases_list>, mpl::or_<boost::is_base_and_derived<detail::bases_base,_>,
+                                                                        mpl::or_<fusion::traits::is_sequence<_>,
+                                                                                 mpl::is_sequence<_> > > >
+#else
+    , parameter::optional<parameter::deduced<tag::bases_list>, fusion::traits::is_sequence<_> >
+#endif
+    , parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
+    , parameter::optional<parameter::deduced<tag::periodicity_type>, boost::is_base_and_derived<detail::periodicity_base,_> >
+    , parameter::optional<parameter::deduced<tag::continuity_type>, boost::is_base_and_derived<detail::continuity_base,_> >
+    > functionspace_signature;
+
+
 /**
  * \class FunctionSpace
  * \ingroup SpaceTime
@@ -639,24 +662,42 @@ public:
  *
  * @author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
  */
-template<typename MeshType, typename Basis_t, typename T_type = double, typename PeriodicityType = NoPeriodicity>
+//template<typename MeshType, typename Basis_t, typename T_type = double, typename PeriodicityType = NoPeriodicity>
+template<
+    typename A0,
+    typename A1 = parameter::void_,
+    typename A2 = parameter::void_,
+    typename A3 = parameter::void_,
+    typename A4 = parameter::void_>
 class FunctionSpace : public FunctionSpaceBase
 {
+public:
+    typedef typename functionspace_signature::bind<A0,A1,A2,A3,A4>::type args;
+
+    typedef typename parameter::binding<args, tag::mesh_type>::type mesh_type;
+    typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
+    typedef typename parameter::binding<args, tag::continuity_type, ContinuousT>::type continuity_type;
+    typedef typename parameter::binding<args, tag::periodicity_type, NoPeriodicity>::type periodicity_type;
+    typedef typename parameter::binding<args, tag::bases_list, bases<fem::Lagrange<mesh_type::nDim,1,Scalar,Continuous> > >::type bases_list;
+
+    BOOST_MPL_ASSERT_NOT( ( boost::is_same<mpl::at<bases_list,mpl::int_<0> >, mpl::void_> ) );
+
+private:
     template<typename BasisType>
     struct ChangeBasis
     {
-        typedef boost::shared_ptr<FunctionSpace<MeshType,fusion::vector<BasisType>,T_type, PeriodicityType> > type;
+        typedef boost::shared_ptr<FunctionSpace<mesh_type,bases<BasisType>,value_type, periodicity_type,continuity_type> > type;
     };
-    typedef typename mpl::transform<Basis_t, ChangeBasis<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type functionspace_vector_type;
+    typedef typename mpl::transform<bases_list, ChangeBasis<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type functionspace_vector_type;
 
     template<typename BasisType>
     struct ChangeBasisToComponentBasis
     {
         typedef typename BasisType::component_basis_type component_basis_type;
-        typedef boost::shared_ptr<FunctionSpace<MeshType,fusion::vector<component_basis_type>,T_type,PeriodicityType> > type;
+        typedef boost::shared_ptr<FunctionSpace<mesh_type,bases<component_basis_type>,value_type,periodicity_type,continuity_type> > type;
     };
 
-    typedef typename mpl::transform<Basis_t,
+    typedef typename mpl::transform<bases_list,
                                     ChangeBasisToComponentBasis<mpl::_1>,
                                     mpl::back_inserter<fusion::vector<> > >::type component_functionspace_vector_type;
 
@@ -666,7 +707,7 @@ class FunctionSpace : public FunctionSpaceBase
         typedef typename BasisType::component_basis_type type;
     };
 
-    typedef typename mpl::transform<Basis_t,
+    typedef typename mpl::transform<bases_list,
                                     GetComponentBasis<mpl::_1>,
                                     mpl::back_inserter<fusion::vector<> > >::type component_basis_vector_type;
 
@@ -681,28 +722,28 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = MeshType::nDim;
-    static const uint16_type nRealDim = MeshType::nRealDim;
+    static const uint16_type nDim = mesh_type::nDim;
+    static const uint16_type nRealDim = mesh_type::nRealDim;
 
-    static const bool is_composite = ( mpl::size<Basis_t>::type::value > 1 );
+    static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
 
-    static const uint16_type rank = ( is_composite? invalid_uint16_type_value : mpl::at_c<Basis_t,0>::type::rank );
-    static const bool is_scalar = ( is_composite? false : mpl::at_c<Basis_t,0>::type::is_scalar );
-    static const bool is_vectorial = ( is_composite? false : mpl::at_c<Basis_t,0>::type::is_vectorial );
-    static const bool is_tensor2 = ( is_composite? false : mpl::at_c<Basis_t,0>::type::is_tensor2 );
-    static const bool is_continuous = ( is_composite? false : mpl::at_c<Basis_t,0>::type::is_continuous );
-    static const bool is_modal = ( is_composite? false : mpl::at_c<Basis_t,0>::type::is_modal );
-    static const uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : mpl::at_c<Basis_t,0>::type::nComponents1 );
-    static const uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : mpl::at_c<Basis_t,0>::type::nComponents2 );
+    static const uint16_type rank = ( is_composite? invalid_uint16_type_value : mpl::at_c<bases_list,0>::type::rank );
+    static const bool is_scalar = ( is_composite? false : mpl::at_c<bases_list,0>::type::is_scalar );
+    static const bool is_vectorial = ( is_composite? false : mpl::at_c<bases_list,0>::type::is_vectorial );
+    static const bool is_tensor2 = ( is_composite? false : mpl::at_c<bases_list,0>::type::is_tensor2 );
+    static const bool is_continuous = ( is_composite? false : mpl::at_c<bases_list,0>::type::is_continuous );
+    static const bool is_modal = ( is_composite? false : mpl::at_c<bases_list,0>::type::is_modal );
+    static const uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : mpl::at_c<bases_list,0>::type::nComponents1 );
+    static const uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : mpl::at_c<bases_list,0>::type::nComponents2 );
 
 
-    static const uint16_type nComponents = mpl::transform<Basis_t,
+    static const uint16_type nComponents = mpl::transform<bases_list,
                                                           GetNComponents<mpl::_1>,
                                                           mpl::inserter<mpl::int_<0>,mpl::plus<mpl::_,mpl::_> > >::type::value;
     static const uint16_type N_COMPONENTS = nComponents;
-    static const uint16_type nSpaces = mpl::size<Basis_t>::type::value;
+    static const uint16_type nSpaces = mpl::size<bases_list>::type::value;
 
-    static const bool is_periodic = PeriodicityType::is_periodic;
+    static const bool is_periodic = periodicity_type::is_periodic;
 
     //@}
 
@@ -710,33 +751,30 @@ public:
      */
     //@{
 
-    typedef T_type value_type;
     typedef typename ublas::type_traits<value_type>::real_type real_type;
     typedef typename node<value_type>::type node_type;
 
-    typedef PeriodicityType periodicity_type;
 
-    typedef FunctionSpace<MeshType,Basis_t, T_type, periodicity_type> functionspace_type;
+    typedef FunctionSpace<A0,A1,A2,A3,A4> functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef boost::shared_ptr<functionspace_type> pointer_type;
 
-    typedef FunctionSpace<MeshType, component_basis_vector_type, T_type, periodicity_type> component_functionspace_type;
+    typedef FunctionSpace<mesh_type, component_basis_vector_type, value_type, periodicity_type, continuity_type> component_functionspace_type;
     typedef boost::shared_ptr<component_functionspace_type> component_functionspace_ptrtype;
 
     // mesh
-    typedef MeshType mesh_type;
-    typedef boost::shared_ptr<MeshType> mesh_ptrtype;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     // basis
-    typedef Basis_t BasisType;
+    typedef bases_list BasisType;
     template<int N>
     struct Basis
     {
-        typedef typename mpl::at_c<Basis_t,N>::type type;
+        typedef typename mpl::at_c<bases_list,N>::type type;
     };
     typedef typename mpl::if_<mpl::bool_<is_composite>,
-                              mpl::identity<Basis_t>,
-                              mpl::at_c<Basis_t,0> >::type::type basis_type;
+                              mpl::identity<bases_list>,
+                              mpl::at_c<bases_list,0> >::type::type basis_type;
     typedef boost::shared_ptr<basis_type> basis_ptrtype;
     typedef basis_type reference_element_type;
     typedef boost::shared_ptr<reference_element_type> reference_element_ptrtype;
@@ -744,7 +782,7 @@ public:
     typedef reference_element_ptrtype fe_ptrtype;
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<boost::none_t>,
-                              mpl::identity<typename mpl::at_c<Basis_t,0>::type::PreCompute> >::type pc_type;
+                              mpl::identity<typename mpl::at_c<bases_list,0>::type::PreCompute> >::type pc_type;
     typedef boost::shared_ptr<pc_type> pc_ptrtype;
 
     // component basis
@@ -766,15 +804,15 @@ public:
     // dof
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<DofComposite>,
-                              mpl::identity<Dof<mesh_type, basis_type, PeriodicityType> > >::type::type dof_type;
+                              mpl::identity<Dof<mesh_type, basis_type, periodicity_type, continuity_type> > >::type::type dof_type;
 
     typedef boost::shared_ptr<dof_type> dof_ptrtype;
 
     // return types
-    //typedef typename Basis_t::polyset_type return_value_type;
+    //typedef typename bases_list::polyset_type return_value_type;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<N_COMPONENTS>, mpl::int_<1> >,
-                              mpl::identity<T_type>,
+                              mpl::identity<value_type>,
                               mpl::identity<node_type> >::type::type return_type;
 
     typedef boost::function<return_type ( node_type const& )> function_type;
@@ -802,21 +840,22 @@ public:
         template<typename BasisType>
         struct ChangeElement
         {
-            typedef FunctionSpace<MeshType,fusion::vector<BasisType>,T_type, PeriodicityType> fs_type;
-            typedef typename fs_type::template Element<T_type, typename VectorUblas<T>::range::type > element_type;
+            BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
+            typedef FunctionSpace<mesh_type,bases<BasisType>,value_type,periodicity_type,continuity_type> fs_type;
+            typedef typename fs_type::template Element<value_type, typename VectorUblas<T>::range::type > element_type;
             typedef element_type type;
         };
-        typedef typename mpl::transform<Basis_t, ChangeElement<mpl::_1>, mpl::back_inserter<mpl::vector<> > >::type element_vector_type;
+        typedef typename mpl::transform<bases_list, ChangeElement<mpl::_1>, mpl::back_inserter<mpl::vector<> > >::type element_vector_type;
         typedef typename VectorUblas<T>::range::type ct_type;
 
 
     public:
 
-        typedef FunctionSpace<MeshType, Basis_t, T, PeriodicityType> functionspace_type;
+        typedef FunctionSpace<A0,A1,A2,A3,A4> functionspace_type;
         typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
 
-        static const uint16_type nDim = MeshType::nDim;
-        static const uint16_type nRealDim = MeshType::nRealDim;
+        static const uint16_type nDim = mesh_type::nDim;
+        static const uint16_type nRealDim = mesh_type::nRealDim;
         static const bool is_composite = functionspace_type::is_composite;
         static const bool is_scalar = functionspace_type::is_scalar;
         static const bool is_vectorial = functionspace_type::is_vectorial;
@@ -841,11 +880,11 @@ public:
 
         typedef typename mpl::if_<mpl::bool_<is_composite>,
                                   mpl::identity<boost::none_t>,
-                                  mpl::identity<typename mpl::at_c<Basis_t,0>::type::polyset_type> >::type::type polyset_type;
+                                  mpl::identity<typename mpl::at_c<bases_list,0>::type::polyset_type> >::type::type polyset_type;
 
         typedef typename mpl::if_<mpl::bool_<is_composite>,
                                   mpl::identity<boost::none_t>,
-                                  mpl::identity<typename mpl::at_c<Basis_t,0>::type::PreCompute> >::type::type pc_type;
+                                  mpl::identity<typename mpl::at_c<bases_list,0>::type::PreCompute> >::type::type pc_type;
         typedef boost::shared_ptr<pc_type> pc_ptrtype;
     //typedef typename basis_type::polyset_type return_value_type;
         typedef typename functionspace_type::return_type return_type;
@@ -854,7 +893,7 @@ public:
 
         typedef typename mpl::if_<mpl::bool_<is_composite>,
                                   mpl::identity<boost::none_t>,
-                                  mpl::identity<typename mpl::at_c<Basis_t,0>::type::polynomial_type> >::type::type polynomial_view_type;
+                                  mpl::identity<typename mpl::at_c<bases_list,0>::type::polynomial_type> >::type::type polynomial_view_type;
 
         template<int i>
         struct sub_element
@@ -887,7 +926,7 @@ public:
 
         Element( Element const& __e );
 
-        friend class FunctionSpace<MeshType, Basis_t, T, PeriodicityType>;
+        friend class FunctionSpace<A0,A1,A2,A3,A4>;
 
         Element( functionspace_ptrtype const& __functionspace,
                  std::string const& __name = "unknown",
@@ -1865,7 +1904,7 @@ public:
      */
     FunctionSpace( mesh_ptrtype const& mesh,
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
-                   PeriodicityType  periodicity = PeriodicityType() )
+                   periodicity_type  periodicity = periodicity_type() )
     {
         this->init( mesh, mesh_components, periodicity );
     }
@@ -1890,14 +1929,14 @@ public:
 
     static pointer_type New( mesh_ptrtype const& __m,
                              size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
-                             PeriodicityType periodicity = PeriodicityType() )
+                             periodicity_type periodicity = periodicity_type() )
     {
         return pointer_type( new functionspace_type( __m, mesh_components, periodicity ) );
     }
     /**
      * initialize the function space
      */
-    void init( mesh_ptrtype const& mesh, size_type mesh_components = MESH_RENUMBER | MESH_CHECK, PeriodicityType periodicity = PeriodicityType() )
+    void init( mesh_ptrtype const& mesh, size_type mesh_components = MESH_RENUMBER | MESH_CHECK, periodicity_type periodicity = periodicity_type() )
     {
 
         Context ctx( mesh_components );
@@ -1917,7 +1956,7 @@ public:
         Debug( 5010 ) << "component MESH_UPDATE_EDGES: " <<  ctx.test( MESH_UPDATE_EDGES ) << "\n";
         Debug( 5010 ) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
         Debug( 5010 ) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
-        this->init( mesh, mesh_components, PeriodicityType(), dofindices, mpl::bool_<is_composite>() );
+        this->init( mesh, mesh_components, periodicity_type(), dofindices, mpl::bool_<is_composite>() );
         mesh->addObserver( *this );
     }
 
@@ -2131,15 +2170,15 @@ private:
     class ComponentSpace
     {
     public:
-        typedef FunctionSpace<MeshType,  Basis_t, value_type, periodicity_type> functionspace_type;
+        typedef FunctionSpace<A0,A1,A2,A3,A4> functionspace_type;
         typedef functionspace_type* functionspace_ptrtype;
         typedef functionspace_type const* functionspace_cptrtype;
 
-        typedef typename FunctionSpace<MeshType,  Basis_t, value_type, periodicity_type>::component_functionspace_type component_functionspace_type;
-        typedef typename FunctionSpace<MeshType,  Basis_t, value_type, periodicity_type>::component_functionspace_ptrtype component_functionspace_ptrtype;
+        typedef typename FunctionSpace<A0,A1,A2,A3,A4>::component_functionspace_type component_functionspace_type;
+        typedef typename FunctionSpace<A0,A1,A2,A3,A4>::component_functionspace_ptrtype component_functionspace_ptrtype;
         typedef component_functionspace_type const* component_functionspace_cptrtype;
 
-        ComponentSpace( FunctionSpace<MeshType,  Basis_t, value_type> * __functionspace,
+        ComponentSpace( FunctionSpace<A0,A1,A2,A3,A4> * __functionspace,
                         mesh_ptrtype __m )
             :
             _M_functionspace( __functionspace ),
@@ -2162,14 +2201,14 @@ private:
 
     private:
 
-        FunctionSpace<MeshType,  Basis_t, value_type, periodicity_type> * _M_functionspace;
+        FunctionSpace<A0,A1,A2,A3,A4> * _M_functionspace;
         mesh_ptrtype _M_mesh;
     };
 
 protected:
 
-    //friend class FunctionSpace<mesh_type, typename Basis_t::component_basis_type, value_type>;
-    //friend class FunctionSpace<mesh_type, Basis_t, value_type>;
+    //friend class FunctionSpace<mesh_type, typename bases_list::component_basis_type, value_type>;
+    //friend class FunctionSpace<mesh_type, bases_list, value_type>;
 
 
     // finite element mesh
@@ -2201,25 +2240,25 @@ private:
 
 }; // FunctionSpace
 
-template<typename MeshType, typename Basis_t, typename T_type, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename T,  typename Cont>
-const bool FunctionSpace<MeshType,Basis_t,T_type,PeriodicityType>::Element<T,Cont>::is_scalar;
+const bool FunctionSpace<A0,A1,A2,A3, A4>::Element<T,Cont>::is_scalar;
 
-template<typename MeshType, typename Basis_t, typename T_type, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename T,  typename Cont>
-const bool FunctionSpace<MeshType,Basis_t,T_type,PeriodicityType>::Element<T,Cont>::is_vectorial;
+const bool FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::is_vectorial;
 
-template<typename MeshType, typename Basis_t, typename T_type, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename T,  typename Cont>
-const bool FunctionSpace<MeshType,Basis_t,T_type,PeriodicityType>::Element<T,Cont>::is_tensor2;
+const bool FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::is_tensor2;
 
-template<typename MeshType, typename Basis_t, typename T_type, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename T,  typename Cont>
-const uint16_type FunctionSpace<MeshType,Basis_t,T_type,PeriodicityType>::Element<T,Cont>::nComponents;
+const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::nComponents;
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::init( mesh_ptrtype const& __m,
+FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                                             size_type mesh_components,
                                                             periodicity_type const& periodicity,
                                                             std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
@@ -2251,11 +2290,8 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::init( mesh_ptrtype const& 
     _M_dof->setDofIndices( dofindices );
     Log() << "[dof] is_periodic = " << is_periodic << "\n";
 
-    size_type start_next_free_dof = 0;
-    if ( is_periodic )
-        start_next_free_dof = _M_dof->buildPeriodicDofMap( *_M_mesh );
-    _M_dof->buildDofMap( *_M_mesh, start_next_free_dof );
-    _M_dof->buildBoundaryDofMap( *_M_mesh );
+    _M_dof->build( _M_mesh );
+
     if ( is_vectorial )
         _M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( _M_mesh, MESH_COMPONENTS_DEFAULTS, periodicity ) );
 
@@ -2276,9 +2312,9 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::init( mesh_ptrtype const& 
 
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::init( mesh_ptrtype const& __m,
+FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                                             size_type mesh_components,
                                                             periodicity_type const& periodicity,
                                                             std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
@@ -2315,9 +2351,9 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::init( mesh_ptrtype const& 
                                       detail::searchIndicesBySpace<proc_dist_map_type>() );
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::nDof( mpl::bool_<true> ) const
+FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<true> ) const
 {
     Debug( 5010 ) << "calling nDof(<composite>) begin\n";
     size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NbDof() );
@@ -2325,16 +2361,16 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::nDof( mpl::bool_<true> ) c
     return ndof;
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::nDof( mpl::bool_<false> ) const
+FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<false> ) const
 {
     return _M_dof->nDof();
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::nLocalDof( mpl::bool_<true> ) const
+FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<true> ) const
 {
     Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
     size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof() );
@@ -2342,16 +2378,16 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::nLocalDof( mpl::bool_<true
     return ndof;
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::nLocalDof( mpl::bool_<false> ) const
+FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<false> ) const
 {
     return _M_dof->nLocalDof();
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::updateRegionTree() const
+FunctionSpace<A0, A1, A2, A3, A4>::updateRegionTree() const
 {
     scalar_type EPS=1E-13;
 
@@ -2378,9 +2414,9 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::updateRegionTree() const
     _M_rt = __rt;
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 region_tree_ptrtype const&
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::regionTree() const
+FunctionSpace<A0, A1, A2, A3, A4>::regionTree() const
 {
     if ( !_M_rt )
     {
@@ -2411,9 +2447,9 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::regionTree() const
     return _M_rt.get();
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 bool
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::findPoint(node_type const& pt,size_type &cv , node_type &ptr ) const
+FunctionSpace<A0, A1, A2, A3, A4>::findPoint(node_type const& pt,size_type &cv , node_type &ptr ) const
 {
     if ( !hasRegionTree() )
         regionTree();
@@ -2460,18 +2496,18 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::findPoint(node_type const&
 //
 // Element implementation
 //
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::Element()
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element()
     :
     super(),
     _M_start( 0 ),
     _M_ct( NO_COMPONENT )
 {}
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::Element( Element const& __e )
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e )
     :
     super( __e ),
     _M_functionspace( __e._M_functionspace ),
@@ -2484,9 +2520,9 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::Element( 
 
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
                                                                std::string const& __name,
                                                                size_type __start,
                                                                ComponentType __ct )
@@ -2503,9 +2539,9 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::Element( 
     Debug( 5010 ) << "Element::nlocaldof = " << this->nLocalDof() << "\n";
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
                                                                container_type const& __c,
                                                                std::string const& __name,
                                                                size_type __start,
@@ -2526,25 +2562,25 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::Element( 
     _M_start = __c.start();
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::~Element()
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::~Element()
 {}
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::init( functionspace_ptrtype const& __functionspace,
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::init( functionspace_ptrtype const& __functionspace,
                                                             container_type const& __c )
 {
     _M_functionspace = __functionspace;
     (container_type)*this = __c;
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>&
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::operator=( Element const& __e )
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>&
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element const& __e )
 {
     if (  this != &__e )
         {
@@ -2559,11 +2595,11 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::operator=
     return *this;
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename VectorExpr>
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>&
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::operator=( VectorExpr const& __v )
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>&
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( VectorExpr const& __v )
 {
     if (  __v.size() != this->size() )
         {
@@ -2578,10 +2614,10 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::operator=
 }
 
 #if 0
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-typename FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::template Element<Y,Cont>::interpolant_type const&
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::interpolant( size_type element_id ) const
+typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::interpolant_type const&
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::interpolant( size_type element_id ) const
 {
     typedef typename polynomial_view_type::matrix_type matrix_type;
     //matrix_type coeff ( 1, nComponents*basis_type::nDof );
@@ -2614,12 +2650,12 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::interpola
     return M_interpolant;
 }
 #endif
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
-//typename FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::id_( Context_t const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, pc_type const& pc, array_type& v ) const
 {
 #if 0
     if ( context.element().mesh() == mesh() )
@@ -2687,12 +2723,12 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::id_( Cont
     //return v;
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::grad_( ContextType const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & context, pc_type const& pc, array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -2790,12 +2826,12 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::grad_( Co
             }
 #endif
 }
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::div_( ContextType const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & context, pc_type const& pc, array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -2827,12 +2863,12 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::div_( Con
                 }
         }
 }
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::curl_( ContextType const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & context, pc_type const& pc, array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -2882,12 +2918,12 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::curl_( Co
 
 }
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::d_( int N, ContextType const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const & context, pc_type const& pc, array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -2921,21 +2957,21 @@ FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::d_( int N
 }
 
 
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::hess_( ContextType const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & context, pc_type const& pc, array_type& v ) const
 {
     hess_( context, pc, v, mpl::int_<rank>() );
 }
-template<typename MeshType, typename Basis_t, typename T, typename PeriodicityType>
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<MeshType, Basis_t, T, PeriodicityType>::Element<Y,Cont>::hess_( ContextType const & context, pc_type const& pc, array_type& v, mpl::int_<0> ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & context, pc_type const& pc, array_type& v, mpl::int_<0> ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();

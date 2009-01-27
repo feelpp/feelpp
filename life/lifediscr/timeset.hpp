@@ -56,13 +56,13 @@
 #include <life/lifecore/life.hpp>
 #include <life/lifecore/context.hpp>
 
-#include <life/lifemesh/mesh3d.hpp>
-#include <life/lifemesh/mesh2d.hpp>
 #include <life/lifealg/glas.hpp>
-#include <life/lifediscr/functionspace.hpp>
 #include <life/lifepoly/lagrange.hpp>
 
+#include <life/lifediscr/mesh.hpp>
+#include <life/lifediscr/functionspace.hpp>
 #include <life/lifediscr/interpolate.hpp>
+
 
 namespace Life
 {
@@ -76,6 +76,7 @@ enum
     STEP_IN_MEMORY = (1<<3),
     STEP_OVERWRITE = (1<<10)
 };
+template<typename A0,typename A1,typename A2,typename A3,typename A4> class FunctionSpace;
 /**
  * \class TimeSet
  * \ingroup SpaceTime
@@ -123,12 +124,12 @@ public:
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
 
-        typedef FunctionSpace<mesh_type, mpl::vector<typename lag<Scalar,0>::type> > scalar_p0_space_type;
-        typedef FunctionSpace<mesh_type, mpl::vector<typename lag<Vectorial,0>::type> > vector_p0_space_type;
-        typedef FunctionSpace<mesh_type, mpl::vector<typename lag<Tensor2,0>::type> > tensor2_p0_space_type;
-        typedef FunctionSpace<mesh_type, mpl::vector<typename lag<Scalar,1>::type> > scalar_p1_space_type;
-        typedef FunctionSpace<mesh_type, mpl::vector<typename lag<Vectorial,1>::type> > vector_p1_space_type;
-        typedef FunctionSpace<mesh_type, mpl::vector<typename lag<Tensor2,1>::type> > tensor2_p1_space_type;
+        typedef FunctionSpace<MeshType, bases<typename lag<Scalar,0>::type> > scalar_p0_space_type;
+        typedef FunctionSpace<MeshType, bases<typename lag<Vectorial,0>::type> > vector_p0_space_type;
+        typedef FunctionSpace<MeshType, bases<typename lag<Tensor2,0>::type> > tensor2_p0_space_type;
+        typedef FunctionSpace<MeshType, bases<typename lag<Scalar,1>::type> > scalar_p1_space_type;
+        typedef FunctionSpace<MeshType, bases<typename lag<Vectorial,1>::type> > vector_p1_space_type;
+        typedef FunctionSpace<MeshType, bases<typename lag<Tensor2,1>::type> > tensor2_p1_space_type;
         typedef boost::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
         typedef boost::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
         typedef boost::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;

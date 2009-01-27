@@ -134,7 +134,40 @@ struct IM
                                   mpl::bool_<Entity<DIM,1,DIM>::is_simplex> >,
                         mpl::identity<IMSimplex<DIM, IMORDER, T> >,
                         mpl::identity<IMGeneral<DIM, IMORDER, T, Entity> > >::type::type
-{};
+{
+      template<int DIM1,
+               typename T1,
+               template<uint16_type, uint16_type, uint16_type> class Entity1>
+      struct apply
+      {
+          typedef typename mpl::if_<mpl::and_<mpl::or_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
+                                                                 mpl::equal_to<mpl::int_<DIM1>,mpl::int_<2> > >,
+                                                       mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<21> >,
+                                                                 mpl::equal_to<mpl::int_<DIM1>,mpl::int_<3> > > >,
+                                              mpl::bool_<Entity1<DIM1,1,DIM1>::is_simplex> >,
+                                    mpl::identity<IMSimplex<DIM1, IMORDER, T1> >,
+                                    mpl::identity<IMGeneral<DIM1, IMORDER, T1, Entity1> > >::type::type type;
+      };
+};
+
+template<int IMORDER>
+struct _Q
+{
+    template<int DIM,
+             typename T,
+             template<uint16_type, uint16_type, uint16_type> class Entity>
+    struct apply
+    {
+        typedef typename mpl::if_<mpl::and_<mpl::or_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
+                                                               mpl::equal_to<mpl::int_<DIM>,mpl::int_<2> > >,
+                                                     mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<21> >,
+                                                               mpl::equal_to<mpl::int_<DIM>,mpl::int_<3> > > >,
+                                            mpl::bool_<Entity<DIM,1,DIM>::is_simplex> >,
+                                  mpl::identity<IMSimplex<DIM, IMORDER, T> >,
+                                  mpl::identity<IMGeneral<DIM, IMORDER, T, Entity> > >::type::type type;
+    };
+};
+
 
 #if 0
 template<int Dim,
