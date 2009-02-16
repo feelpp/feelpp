@@ -115,6 +115,12 @@ struct BoundaryAdaptedTraits
     typedef typename storage_policy::node_type node_type;
 };
 
+template<int D, int O>
+struct BoundaryAdaptedTag
+{
+    static const int Dim = D;
+    static const int Order = O;
+};
 
 /**
  * \class BoundaryAdapted
@@ -131,23 +137,19 @@ struct BoundaryAdaptedTraits
  *
  * \ingroup Polynomial
  * @author Gilles Steiner
- * @see dubiner.hpp
+ * @see boundadapted.hpp
  */
 
 template<uint16_type Dim,
          uint16_type Degree,
          typename T = double,
          template<class> class StoragePolicy = StorageUBlas>
-class BoundaryAdapted
-    :
-        public Basis<BoundaryAdapted<Dim, Degree, T, StoragePolicy>,
-                     BoundaryAdaptedTraits<Dim, Degree, T, StoragePolicy> >
+class BoundaryAdapted : Basis<BoundaryAdaptedTag<Dim, Degree>, T>
 {
-
-    typedef BoundaryAdaptedTraits<Dim, Degree, T, StoragePolicy> traits_type;
-    typedef Basis<BoundaryAdapted<Dim, Degree, T, StoragePolicy>,BoundaryAdaptedTraits<Dim, Degree, T, StoragePolicy> > super;
+    typedef Basis<BoundaryAdaptedTag<Dim, Degree>, T > super;
 
 public:
+    typedef BoundaryAdaptedTraits<Dim, Degree, T, StoragePolicy> traits_type;
 
     static const uint16_type nDim = traits_type::nDim;
     static const uint16_type nOrder = traits_type::nOrder;
@@ -203,7 +205,7 @@ public:
 
     BoundaryAdapted()
         :
-        super(),
+        super(*this),
         _M_refconvex(),
         _M_pts( nDim, numVertices ),
         _M_pts_face( reference_convex_type::numVertices )
@@ -226,7 +228,7 @@ public:
 
     BoundaryAdapted( BoundaryAdapted const & d )
         :
-        super(),
+        super(*this),
         _M_refconvex(d._M_refconvex),
         _M_pts( d._M_pts ),
         _M_pts_face( d._M_pts_face )
