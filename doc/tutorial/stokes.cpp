@@ -44,6 +44,13 @@
 
 #include <life/lifevf/vf.hpp>
 
+/**
+ * This routine returns the list of options using the
+ * boost::program_options library. The data returned is typically used
+ * as an argument of a Life::Application subclass.
+ *
+ * \return the list of options
+ */
 inline
 Life::po::options_description
 makeOptions()
@@ -61,6 +68,15 @@ makeOptions()
         ;
     return stokesoptions.add( Life::life_options() ) ;
 }
+
+
+/**
+ * This routine defines some information about the application like
+ * authors, version, or name of the application. The data returned is
+ * typically used as an argument of a Life::Application subclass.
+ *
+ * \return some data about the application.
+ */
 inline
 Life::AboutData
 makeAbout()
@@ -123,6 +139,10 @@ public:
                             basis_p_type, basis_l_type> basis_type;
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+    BOOST_MPL_ASSERT( ( boost::is_same<typename space_type::bases_list, basis_type> ) );
+    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<0> >::type, basis_u_type> ) );
+    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<1> >::type, basis_p_type> ) );
+    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<2> >::type, basis_l_type> ) );
     typedef boost::shared_ptr<space_type> space_ptrtype;
     /* functions */
     typedef typename space_type::element_type element_type;
@@ -177,7 +197,7 @@ private:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( element_type& u );
+    void exportResults( element_type& u, element_type& v );
 
 private:
 
@@ -261,24 +281,39 @@ Stokes<Dim, Order, Entity>::run()
 
     vector_ptrtype F( M_backend->newVector( Xh ) );
 
+#if 0
     // viscous stress tensor (trial) : 0.5 ( \nabla u + \nabla u ^T )
-    AUTO( deft, 0.5*( gradt(u)+trans(gradt(u)) ) );
+    AUTO( deft, 0.5*(gradt(u)+trans(gradt(u)) ));
     // viscous stress tensor (test) : 0.5 ( \nabla u + \nabla u ^T )
-    AUTO( def, 0.5*( grad(v)+trans(grad(v)) ) );
-
+    AUTO( def, 0.5*(grad(v)+trans(grad(v))) );
+#else
+    AUTO( deft, gradt(u) );
+    AUTO( def, grad(v) );
+#endif
     // total stress tensor (trial)
-    AUTO( SigmaNt, (-idt(p)*N()+2*mu*deft*N()) );
+    AUTO( SigmaNt, (-idt(p)*N()+mu*deft*N()) );
 
     // total stress tensor (test)
-    AUTO( SigmaN, (-id(p)*N()+2*mu*def*N()) );
+    AUTO( SigmaN, (-id(p)*N()+mu*def*N()) );
 
-    // top lid velocity
-    AUTO( g, oneX() );
+    // u exact solution
+    AUTO( u_exact, vec(cos(Px())*cos(Py()),sin(Px())*sin(Py()) ) );
+
+    // this is the exact solution which has zero mean : the mean of
+    // cos(x)*sin(y) is sin(1)*(1-cos(1))) on [0,1]^2
+    AUTO( p_exact, cos(Px())*sin(Py())-(sin(1.0)*(1.-cos(1.0)) ) );
+
+    // f is such that f = \Delta u_exact + \nabla p_exact
+    AUTO( f, vec(2*cos(Px())*cos(Py())-sin(Px())*sin(Py()),
+                 2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) ) );
 
     // right hand side
     form1( Xh, F, _init=true )  =
-        integrate( markedfaces(mesh,4), im,
-                   trans(g)*(-SigmaN+penalbc*id(v)/hFace() ) );
+        integrate( elements(mesh), im, trans(f)*id(v) )+
+        integrate( boundaryfaces(mesh),
+                   // higher order quadrature to accurately integrate u_exact
+                   _Q<3*Order>(),
+                   trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
 
     Log() << "[stokes] vector local assembly done\n";
 
@@ -287,13 +322,13 @@ Stokes<Dim, Order, Entity>::run()
      */
     sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh, Xh, D, _init=true )=integrate( elements(mesh), im,
+    form2( Xh, Xh, D, _init=true )=integrate( elements(mesh), _Q<2*(Order-1)>(),
                                               mu*trace(deft*trans(def)) );
-    form2( Xh, Xh, D )+=integrate( elements(mesh), im,
+    form2( Xh, Xh, D )+=integrate( elements(mesh), _Q<2*(Order-1)>(),
                                    - div(v)*idt(p) + divt(u)*id(q) );
-    form2( Xh, Xh, D )+=integrate( elements(mesh), im,
+    form2( Xh, Xh, D )+=integrate( elements(mesh), _Q<Order-1>(),
                                    id(q)*idt(lambda) + idt(p)*id(nu) );
-    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), im,
+    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), _Q<2*Order>(),
                                    -trans(SigmaNt)*id(v)
                                    -trans(SigmaN)*idt(u)
                                    +penalbc*trans(idt(u))*id(v)/hFace() );
@@ -303,7 +338,18 @@ Stokes<Dim, Order, Entity>::run()
     F->close();
     Log() << "[stokes] vector/matrix global assembly done\n";
 
+
     this->solve( D, U, F, false );
+
+    Log() << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
+    std::cout << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
+
+    double u_errorL2 = integrate( elements(mesh), im, trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
+    std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
+
+
+    double p_errorL2 = integrate( elements(mesh), im, (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
+    std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
     Log() << "[stokes] solve for D done\n";
 
@@ -315,7 +361,18 @@ Stokes<Dim, Order, Entity>::run()
     Log() << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
-    this->exportResults( U );
+    double mean_div_u = integrate( elements(mesh), im, divv(u) ).evaluate()( 0, 0 );
+    Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+    std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+
+    double div_u_error_L2 = integrate( elements(mesh), im, divv(u)*divv(u) ).evaluate()( 0, 0 );
+    Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
+    std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
+
+    v = vf::project( Xh->template functionSpace<0>(), elements( Xh->mesh() ), u_exact );
+    q = vf::project( Xh->template functionSpace<1>(), elements( Xh->mesh() ), p_exact );
+
+    this->exportResults( U, V );
 
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
@@ -339,12 +396,14 @@ Stokes<Dim, Order, Entity>::solve( sparse_matrix_ptrtype const& D,
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Stokes<Dim, Order, Entity>::exportResults( element_type& U )
+Stokes<Dim, Order, Entity>::exportResults( element_type& U, element_type& V )
 {
     typename timeset_type::step_ptrtype timeStep = timeSet->step( 1.0 );
     timeStep->setMesh( U.functionSpace()->mesh() );
     timeStep->add( "u", U.template element<0>() );
     timeStep->add( "p", U.template element<1>() );
+    timeStep->add( "u_exact", V.template element<0>() );
+    timeStep->add( "p_exact", V.template element<1>() );
     exporter->save();
 } // Stokes::export
 } // Life
