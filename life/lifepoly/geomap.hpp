@@ -719,6 +719,11 @@ public:
     uint16_type P() const { return PDim; }
 
     /**
+     * \return the real element to which this context is associated
+     */
+    element_type const& element() const { return _M_element; }
+
+    /**
      *
      */
     uint16_type nPoints() const { return _M_npoints; }
@@ -1075,6 +1080,11 @@ public:
     {
         return permutation( mpl::bool_<(nDim>=2)>() );
     }
+
+    /**
+     * \return the precompute type
+     */
+    precompute_ptrtype const& pc() { return _M_pc; }
 
     //@}
 
