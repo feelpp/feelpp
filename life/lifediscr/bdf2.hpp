@@ -177,7 +177,7 @@ public:
         for(size_type i = 0; i < M_time_values.size(); ++ i )
             {
                 //Log() << "[Bdf] order " << i << "=" << M_time_orders[i] << "\n";
-                Log() << "[Bdf::serialize] value " << i << "=" << M_time_values[i] << "\n";
+                Debug( 5017 ) << "[Bdf::serialize] value " << i << "=" << M_time_values[i] << "\n";
             }
         Debug( 5017 ) << "[BDF::serialize] serialize BDFBase done\n";
     }
