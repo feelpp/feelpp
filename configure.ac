@@ -136,6 +136,14 @@ return !(sizeof(size_t)==sizeof(uint));
 AC_CACHE_SAVE
 
 dnl ------------------------------------------------------------
+dnl Google perftools
+AC_CHECK_HEADERS([google/profiler.h])
+AC_CHECK_LIB(profiler, ProfilerStop,
+             [LIBS="${LIBS} -lprofiler";with_google_profiler=yes]
+             [with_google_profiler=no])
+AM_CONDITIONAL(HAVE_GOOGLE_PROFILER, test "x$with_google_profiler" != "xno" )
+
+dnl ------------------------------------------------------------
 dnl Boost
 LIFE_CHECK_BOOST
 
