@@ -588,10 +588,19 @@ public:
                  ExprT const& expr,
                  IM const& im );
 
+        template<typename IM2>
         Context( form_type& __form,
                  map_geometric_mapping_context_type const& gmc,
                  ExprT const& expr,
                  IM const& im,
+                 IM2 const& im2 );
+
+        template<typename IM2>
+        Context( form_type& __form,
+                 map_geometric_mapping_context_type const& gmc,
+                 ExprT const& expr,
+                 IM const& im,
+                 IM2 const& im2,
                  mpl::int_<2> );
 
         void update( map_geometric_mapping_context_type const& gmc );
@@ -1501,9 +1510,9 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::computeGraph( size_type hints, mp
 template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
 BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
-                                                                                     map_geometric_mapping_context_type const& _gmc,
-                                                                                     ExprT const& expr,
-                                                                                     IM const& im )
+                                                                                         map_geometric_mapping_context_type const& _gmc,
+                                                                                         ExprT const& expr,
+                                                                                         IM const& im )
     :
     _M_form( __form ),
     _M_lb( __form.blockList() ),
@@ -1522,14 +1531,46 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::
     _M_eval_expr11(),
     M_integrator( im )
 {
+    _M_eval_expr00->init( im );
 }
 template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
+template<typename IM2>
 BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
-                                                                                     map_geometric_mapping_context_type const& _gmc,
-                                                                                     ExprT const& expr,
-                                                                                     IM const& im,
-                                                                                     mpl::int_<2> )
+                                                                                         map_geometric_mapping_context_type const& _gmc,
+                                                                                         ExprT const& expr,
+                                                                                         IM const& im,
+                                                                                         IM2 const& im2 )
+    :
+    _M_form( __form ),
+    _M_lb( __form.blockList() ),
+    _M_test_dof( __form.testSpace()->dof().get() ),
+    _M_trial_dof( __form.trialSpace()->dof().get() ),
+    _M_gmc( _gmc ),
+    _M_test_fec( fusion::transform( _gmc, InitTestFec(__form.testSpace()->fe(), _M_form ) ) ),
+    _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
+    _M_trial_fec( getMap( _M_test_fec, fusion::transform( _gmc, InitTrialFec( __form.trialSpace()->fe(), _M_form ) ) ) ),
+    _M_trial_fec0( getMapL( _M_test_fec0, fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) ) ) ),
+    _M_rep( boost::extents[fusion::size(_gmc)*test_fecontext_type::nDof][test_fecontext_type::nComponents1]
+            [fusion::size(_gmc)*trial_fecontext_type::nDof][trial_fecontext_type::nComponents1] ),
+    _M_eval_expr00( new eval00_expr_type( expr, _gmc, _M_test_fec0, _M_trial_fec0 ) ),
+    _M_eval_expr01(),
+    _M_eval_expr10(),
+    _M_eval_expr11(),
+    M_integrator( im )
+{
+    // faces
+    _M_eval_expr00->init( im2 );
+}
+template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename GeomapContext,typename ExprT,typename IM>
+template<typename IM2>
+BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
+                                                                                         map_geometric_mapping_context_type const& _gmc,
+                                                                                         ExprT const& expr,
+                                                                                         IM const& im,
+                                                                                         IM2 const& im2,
+                                                                                         mpl::int_<2> )
     :
     _M_form( __form ),
     _M_lb( __form.blockList() ),
@@ -1554,145 +1595,151 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::
     LIFE_ASSERT( fusion::at_key<gmc<1> >( _M_test_fec1 ).get() != 0 ).error( "invalid test_fec");
     LIFE_ASSERT( fusion::at_key<gmc<0> >( _M_trial_fec0 ).get() != 0 ).error( "invalid trial_fec");
     LIFE_ASSERT( fusion::at_key<gmc<1> >( _M_trial_fec1 ).get() != 0 ).error( "invalid trial_fec");
+
+    _M_eval_expr00->init( im2 );
+    _M_eval_expr01->init( im2 );
+    _M_eval_expr10->init( im2 );
+    _M_eval_expr11->init( im2 );
 }
 
-    template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
-        template<typename GeomapContext,typename ExprT,typename IM>
-        void
-        BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc )
-        {
-            update( _gmc,  boost::is_same<map_test_fecontext_type, map_trial_fecontext_type>() );
-            M_integrator.update( *fusion::at_key<gmc<0> >( _gmc ) );
-        }
-    template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
-        template<typename GeomapContext,typename ExprT,typename IM>
-        void
-        BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::bool_<false> )
-        {
-            fusion::for_each( _M_test_fec, UpdateTestFec( _gmc, _M_form ) );
-            _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
-            fusion::for_each( _M_trial_fec, UpdateTrialFec( _gmc, _M_form ) );
-            _M_trial_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) );
-            _M_eval_expr00->update( _gmc, _M_test_fec0, _M_trial_fec0 );
-            std::fill( _M_rep.data(), _M_rep.data()+_M_rep.num_elements(), value_type(0) );
-        }
-    template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
-        template<typename GeomapContext,typename ExprT,typename IM>
-        void
-        BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::bool_<true> )
-        {
-            fusion::for_each( _M_test_fec, UpdateTestFec( _gmc, _M_form ) );
-            _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
-            _M_eval_expr00->update( _gmc, _M_test_fec0, _M_test_fec0 );
-            std::fill( _M_rep.data(), _M_rep.data()+_M_rep.num_elements(), value_type(0) );
-        }
-    template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
-        template<typename GeomapContext,typename ExprT,typename IM>
-        void
-        BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::int_<2> )
-        {
-            fusion::for_each( _M_test_fec, UpdateTestFec( _gmc, _M_form ) );
-            _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
-            _M_test_fec1 = fusion::make_map<gmc<1> >( fusion::at_key<gmc<1> >( _M_test_fec ) );
-            fusion::for_each( _M_trial_fec, UpdateTrialFec( _gmc, _M_form ) );
-            _M_trial_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) );
-            _M_trial_fec1 = fusion::make_map<gmc<1> >( fusion::at_key<gmc<1> >( _M_trial_fec ) );
+template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename GeomapContext,typename ExprT,typename IM>
+void
+BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc )
+{
+    update( _gmc,  boost::is_same<map_test_fecontext_type, map_trial_fecontext_type>() );
+    M_integrator.update( *fusion::at_key<gmc<0> >( _gmc ) );
+}
+template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename GeomapContext,typename ExprT,typename IM>
+void
+BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::bool_<false> )
+{
+    fusion::for_each( _M_test_fec, UpdateTestFec( _gmc, _M_form ) );
+    _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
+    fusion::for_each( _M_trial_fec, UpdateTrialFec( _gmc, _M_form ) );
+    _M_trial_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) );
+    _M_eval_expr00->update( _gmc, _M_test_fec0, _M_trial_fec0 );
+    std::fill( _M_rep.data(), _M_rep.data()+_M_rep.num_elements(), value_type(0) );
+}
+template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename GeomapContext,typename ExprT,typename IM>
+void
+BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::bool_<true> )
+{
+    fusion::for_each( _M_test_fec, UpdateTestFec( _gmc, _M_form ) );
+    _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
+    _M_eval_expr00->update( _gmc, _M_test_fec0, _M_test_fec0 );
+    std::fill( _M_rep.data(), _M_rep.data()+_M_rep.num_elements(), value_type(0) );
+}
+template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename GeomapContext,typename ExprT,typename IM>
+void
+BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::int_<2> )
+{
+    fusion::for_each( _M_test_fec, UpdateTestFec( _gmc, _M_form ) );
+    _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
+    _M_test_fec1 = fusion::make_map<gmc<1> >( fusion::at_key<gmc<1> >( _M_test_fec ) );
+    fusion::for_each( _M_trial_fec, UpdateTrialFec( _gmc, _M_form ) );
+    _M_trial_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) );
+    _M_trial_fec1 = fusion::make_map<gmc<1> >( fusion::at_key<gmc<1> >( _M_trial_fec ) );
 
-            LIFE_ASSERT( fusion::at_key<gmc<0> >( _M_test_fec0 ).get() != 0 )
-                ( 0 ).error( "invalid test_fec0" );
-            LIFE_ASSERT( fusion::at_key<gmc<1> >( _M_test_fec1 ).get() != 0 )
-                ( 1 ).error( "invalid test_fec1" );
-            LIFE_ASSERT( fusion::at_key<gmc<0> >( _M_trial_fec0 ).get() != 0 )
-                ( 0 ).error( "invalid trial_fec0" );
-            LIFE_ASSERT( fusion::at_key<gmc<1> >( _M_trial_fec1 ).get() != 0 )
-                ( 0 ).error( "invalid trial_fec1" );
+    LIFE_ASSERT( fusion::at_key<gmc<0> >( _M_test_fec0 ).get() != 0 )
+        ( 0 ).error( "invalid test_fec0" );
+    LIFE_ASSERT( fusion::at_key<gmc<1> >( _M_test_fec1 ).get() != 0 )
+        ( 1 ).error( "invalid test_fec1" );
+    LIFE_ASSERT( fusion::at_key<gmc<0> >( _M_trial_fec0 ).get() != 0 )
+        ( 0 ).error( "invalid trial_fec0" );
+    LIFE_ASSERT( fusion::at_key<gmc<1> >( _M_trial_fec1 ).get() != 0 )
+        ( 0 ).error( "invalid trial_fec1" );
 
-            _M_eval_expr00->update( _gmc, _M_test_fec0, _M_trial_fec0 );
-            _M_eval_expr01->update( _gmc, _M_test_fec0, _M_trial_fec1 );
-            _M_eval_expr10->update( _gmc, _M_test_fec1, _M_trial_fec0 );
-            _M_eval_expr11->update( _gmc, _M_test_fec1, _M_trial_fec1 );
-            std::fill( _M_rep.data(), _M_rep.data()+_M_rep.num_elements(), value_type(0) );
-            M_integrator.update( *fusion::at_key<gmc<0> >( _gmc ) );
-        }
+    _M_eval_expr00->update( _gmc, _M_test_fec0, _M_trial_fec0 );
+    _M_eval_expr01->update( _gmc, _M_test_fec0, _M_trial_fec1 );
+    _M_eval_expr10->update( _gmc, _M_test_fec1, _M_trial_fec0 );
+    _M_eval_expr11->update( _gmc, _M_test_fec1, _M_trial_fec1 );
+
+    std::fill( _M_rep.data(), _M_rep.data()+_M_rep.num_elements(), value_type(0) );
+    M_integrator.update( *fusion::at_key<gmc<0> >( _gmc ) );
+}
 
 
 
-    template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
-        template<typename GeomapContext,typename ExprT,typename IM>
-        void
-    BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( mpl::int_<1> )
-        {
+template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename GeomapContext,typename ExprT,typename IM>
+void
+BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( mpl::int_<1> )
+{
 
-            typedef geometric_mapping_context_type gmc_type;
-            typedef typename eval00_expr_type::shape shape;
-            static const bool cond = (shape::M == 1 && shape::N == 1);
-            BOOST_MPL_ASSERT_MSG( cond,
-                                  INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
-                                  (mpl::int_<shape::M>, mpl::int_<shape::N> ) );
+    typedef geometric_mapping_context_type gmc_type;
+    typedef typename eval00_expr_type::shape shape;
+    static const bool cond = (shape::M == 1 && shape::N == 1);
+    BOOST_MPL_ASSERT_MSG( cond,
+                          INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
+                          (mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
 #if !defined(NDEBUG)
-            geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_gmc );
-            Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
+    geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_gmc );
+    Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
 
-            for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
-                for ( uint16_type c1 = 0; c1 < test_fecontext_type::nComponents1; ++c1 )
-                    {
-                        indi.setIndex( boost::make_tuple( i, c1, 0 ) );
-                        LIFE_ASSERT( size_type(indi.index()) ==
-                                     size_type(c1*test_fecontext_type::nDof+i) )
-                            ( i )( c1 )
-                            ( indi.index() )
-                            ( c1*test_fecontext_type::nDof+i ).error( "invalid test index" );
+    for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
+        for ( uint16_type c1 = 0; c1 < test_fecontext_type::nComponents1; ++c1 )
+            {
+                indi.setIndex( boost::make_tuple( i, c1, 0 ) );
+                LIFE_ASSERT( size_type(indi.index()) ==
+                             size_type(c1*test_fecontext_type::nDof+i) )
+                    ( i )( c1 )
+                    ( indi.index() )
+                    ( c1*test_fecontext_type::nDof+i ).error( "invalid test index" );
 
-                        for ( uint16_type j = 0; j < trial_fecontext_type::nDof; ++j )
-                            for ( uint16_type c2 = 0; c2 < trial_fecontext_type::nComponents1; ++c2 )
-                                {
-                                    indj.setIndex( boost::make_tuple( j, c2, 0 ) );
-                                    LIFE_ASSERT( size_type(indj.index()) ==
-                                                 size_type(c2*trial_fecontext_type::nDof+j) )
-                                        ( j )( c2 )
-                                        ( indj.index() )
-                                        ( c2*trial_fecontext_type::nDof+j ).error( "invalid trial index" );
+                for ( uint16_type j = 0; j < trial_fecontext_type::nDof; ++j )
+                    for ( uint16_type c2 = 0; c2 < trial_fecontext_type::nComponents1; ++c2 )
+                        {
+                            indj.setIndex( boost::make_tuple( j, c2, 0 ) );
+                            LIFE_ASSERT( size_type(indj.index()) ==
+                                         size_type(c2*trial_fecontext_type::nDof+j) )
+                                ( j )( c2 )
+                                ( indj.index() )
+                                ( c2*trial_fecontext_type::nDof+j ).error( "invalid trial index" );
 #if 0
-                                    if ( vm::has_symm<expression_type::context>::value )
+                            if ( vm::has_symm<expression_type::context>::value )
+                                {
+                                    if ( indj.index() <= indi.index() )
                                         {
-                                            if ( indj.index() <= indi.index() )
-                                                {
-                                                    _M_rep[i][c1][j][c2] = M_integrator( *_M_eval_expr00,
-                                                                                         indi,
-                                                                                         indj,
-                                                                                         0, 0,
-                                                                                         mpl::int_<vm::SYMM>() );
-                                                    _M_rep[j][c2][i][c1] = _M_rep[i][c1][j][c2];
-                                                }
+                                            _M_rep[i][c1][j][c2] = M_integrator( *_M_eval_expr00,
+                                                                                 indi,
+                                                                                 indj,
+                                                                                 0, 0,
+                                                                                 mpl::int_<vm::SYMM>() );
+                                            _M_rep[j][c2][i][c1] = _M_rep[i][c1][j][c2];
+                                        }
+                                }
+                            else
+#endif
+                                {
+#if 0
+                                    if ( (indj.index() <= indi.index()) &&
+                                         (test_fecontext_type::nDof*test_fecontext_type::nComponents1 ==
+                                          trial_fecontext_type::nDof*trial_fecontext_type::nComponents1) )
+                                        {
+                                            _M_rep[i][c1][j][c2] = M_integrator( *_M_eval_expr00,
+                                                                                 indi,
+                                                                                 indj,
+                                                                                 0, 0 );
+                                            _M_rep[j][c2][i][c1] = _M_rep[i][c1][j][c2];
                                         }
                                     else
 #endif
                                         {
-#if 0
-                                            if ( (indj.index() <= indi.index()) &&
-                                                 (test_fecontext_type::nDof*test_fecontext_type::nComponents1 ==
-                                                  trial_fecontext_type::nDof*trial_fecontext_type::nComponents1) )
-                                                {
-                                                    _M_rep[i][c1][j][c2] = M_integrator( *_M_eval_expr00,
-                                                                                         indi,
-                                                                                         indj,
-                                                                                         0, 0 );
-                                                    _M_rep[j][c2][i][c1] = _M_rep[i][c1][j][c2];
-                                                }
-                                            else
-#endif
-                                                {
-                                                    _M_rep[i][c1][j][c2] = M_integrator( *_M_eval_expr00,
-                                                                                         indi,
-                                                                                         indj,
-                                                                                         0, 0 );
-                                                }
+                                            _M_rep[i][c1][j][c2] = M_integrator( *_M_eval_expr00,
+                                                                                 indi,
+                                                                                 indj,
+                                                                                 0, 0 );
                                         }
-                                } // j, c2
-                    }
-        }
+                                }
+                        } // j, c2
+            }
+}
 
     template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
         template<typename GeomapContext,typename ExprT,typename IM>
