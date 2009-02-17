@@ -108,6 +108,7 @@ public:
 
     typedef boost::tuple<nodes_type, weights_type> quadrature_data_type;
     typedef typename super::face_quadrature_type face_quadrature_type;
+    typedef IMGeneral<Dim,Order,T,Entity,QPS,DegreePolicy> parent_quadrature_type;
 
     IMGeneral()
         :
