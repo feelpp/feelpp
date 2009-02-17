@@ -1,37 +1,67 @@
 # -*- readme-debian -*-
 
+New in 0.9.11
+=============
+
+== Libraries ==
+
+=== lifediscr ===
+
+ * Bdf: allow to set time step and final time, added setSteady() to
+   set time step and final time to a very big value for the
+   computation of the steady state
+
+ * support for high order nodal basis function in case of periodic
+   conditions in 1D and 2D is complete see #20
+
+=== lifealg ===
+
+ * Improve robustness of linear algebra backends see #21
+
+== Applications ==
+
+=== Polyvis ===
+
+ * resurrected a tool to visualize polynomial set called polyvis
+
 
 New in 0.9.10
 =============
 
-* Libraries
+== Libraries ==
 
- ** lifediscr
+=== lifediscr ===
 
-   *** support for high order nodal basis function in case of periodic
-       conditions
+ * started support for high order nodal basis function in case of periodic
+   conditions
 
- ** lifefilters
+=== lifefilters ===
 
-   *** Gmsh : throw an exception if gmsh is execute when not available
+ * Gmsh : throw an exception if gmsh is execute when not available
 
-* Documentation
+== Documentation ==
 
- ** Tutorial
+=== Tutorial ===
 
-   *** updated the building section
+ * updated the building section
 
-   *** updated the Backend<> section
+ * updated the Backend<> section
 
-* Build System
+ * started new examples (nonlinear pde)
 
- ** configure: better feedback to users
+== Build System ==
 
- ** Gmsh
+=== Configure ===
 
-   *** configure: better support
+ * better feedback to users
 
-* many minor fixes
+ * a summary text file provides what is available and what is not
+
+=== Gmsh ===
+
+ * configure: better support
+
+
 
 
 New in 0.9.9
@@ -56,4 +86,4 @@ New in 0.9.9
   multiplication) support.
 
 
- -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Wed,  7 Jan 2009 22:17:08 +0100
+ -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Sun, 18 Jan 2009 20:14:22 +0100
