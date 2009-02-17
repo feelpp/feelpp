@@ -28,6 +28,7 @@
 #include <life/lifealg/glas.hpp>
 #include <life/lifemesh/geoentity.hpp>
 #include <life/lifemesh/meshbase.hpp>
+#include <life/lifemesh/marker.hpp>
 
 namespace Life
 {
@@ -309,6 +310,18 @@ public:
         return *this;
     }
 
+    Marker1 const& marker() const { return _M_marker1; }
+    Marker1& marker() { return _M_marker1; }
+    void setMarker( flag_type v ) { return _M_marker1.value( v ); }
+
+    Marker2 const& marker2() const { return _M_marker2; }
+    Marker2& marker2() { return _M_marker2; }
+    void setMarker2( flag_type v ) { return _M_marker2.value( v ); }
+
+    Marker3 const& marker3() const { return _M_marker3; }
+    Marker3& marker3() { return _M_marker3; }
+    void setMarker3( flag_type v ) { return _M_marker3.value( v ); }
+
 private:
     bool isEqual( Geo0D const& geo0d, mpl::int_<1> ) const
     {
@@ -333,6 +346,12 @@ private:
 
     // mesh to which the geond element belongs to
     MeshBase const* M_mesh;
+
+
+    Marker1 _M_marker1;
+    Marker2 _M_marker2;
+    Marker3 _M_marker3;
+
 };
 
 // Alias for Geo0D<3>
@@ -347,7 +366,10 @@ Geo0D<Dim, T>::Geo0D()
     :
     super( 0, MESH_ENTITY_INTERNAL ),
     _M_coor(Dim),
-    _M_is_vertex( false )
+    _M_is_vertex( false ),
+    _M_marker1(),
+    _M_marker2(),
+    _M_marker3()
 {
     _M_coor.clear();
 }
@@ -357,7 +379,10 @@ Geo0D<Dim, T>::Geo0D( size_type id, bool boundary, bool is_vertex )
     :
     super( id, MESH_ENTITY_INTERNAL ),
     _M_coor(Dim),
-    _M_is_vertex( is_vertex )
+    _M_is_vertex( is_vertex ),
+    _M_marker1(),
+    _M_marker2(),
+    _M_marker3()
 {
     _M_coor.clear();
     this->setOnBoundary( boundary );
@@ -368,7 +393,10 @@ Geo0D<Dim, T>::Geo0D( size_type id, value_type x, value_type y, value_type z, bo
     :
     super( id, MESH_ENTITY_INTERNAL ),
     _M_coor(Dim),
-    _M_is_vertex( is_vertex )
+    _M_is_vertex( is_vertex ),
+    _M_marker1(),
+    _M_marker2(),
+    _M_marker3()
 {
     if ( Dim < 2 )
         _M_coor[ 0 ] = x;
@@ -385,7 +413,10 @@ Geo0D<Dim, T>::Geo0D( size_type id, node_type const& __p, bool boundary, bool is
     :
     super( id, MESH_ENTITY_INTERNAL ),
     _M_coor(__p ),
-    _M_is_vertex( is_vertex )
+    _M_is_vertex( is_vertex ),
+    _M_marker1(),
+    _M_marker2(),
+    _M_marker3()
 {
     LIFE_ASSERT( __p.size() == Dim )( __p )( Dim ).error( "invalid node" );
 
@@ -397,7 +428,10 @@ Geo0D<Dim, T>::Geo0D( Geo0D const & G )
     :
     super( G ),
     _M_coor( G._M_coor ),
-    _M_is_vertex( G._M_is_vertex )
+    _M_is_vertex( G._M_is_vertex ),
+    _M_marker1( G._M_marker1 ),
+    _M_marker2( G._M_marker2 ),
+    _M_marker3( G._M_marker3 )
 {
 }
 
@@ -410,6 +444,9 @@ Geo0D<Dim, T>::operator=( Geo0D<Dim, T> const & G )
     super::operator=( G );
     _M_coor = G._M_coor;
     _M_is_vertex = G._M_is_vertex;
+    _M_marker1 = G._M_marker1;
+    _M_marker2 = G._M_marker2;
+    _M_marker3 = G._M_marker3;
     return *this;
 }
 
