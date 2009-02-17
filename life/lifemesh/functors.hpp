@@ -174,6 +174,8 @@ struct UpdateFaceConnection1
     {
         //element.setOnBoundary( false );
         element.setConnection1( M_conn );
+        if ( element.element0().marker() == element.element1().marker() )
+            element.setMarker( element.element0().marker().value() );
     }
 private:
     ConnectionType const& M_conn;
