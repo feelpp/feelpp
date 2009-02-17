@@ -1227,7 +1227,7 @@ public:
          *
          * @return the interpolated value of the function at the real point x
          */
-        id_type operator()( node_type const& __x ) const
+        id_type operator()( node_type const& __x, bool extrapolate = false ) const
         {
             this->updateGlobalValues();
 
@@ -1235,7 +1235,7 @@ public:
             size_type __cv_id;
             std::vector<int> found_pt( Application::nProcess(), 0 );
             std::vector<int> global_found_pt( Application::nProcess(), 0 );
-            if ( functionSpace()->findPoint( __x, __cv_id, __x_ref ) )
+            if ( functionSpace()->findPoint( __x, __cv_id, __x_ref ) || extrapolate )
                 {
 #if !defined( NDEBUG )
                     Debug( 5010 ) << "Point " << __x << " is in element " << __cv_id << " pt_ref=" << __x_ref << "\n";
@@ -2286,9 +2286,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     _M_ref_fe = basis_ptrtype( new basis_type );
     _M_dof = dof_ptrtype( new dof_type( _M_ref_fe, periodicity ) );
-    Debug( 5010 ) << "Dof indices is empty ? " << dofindices.empty() << "\n";
+    Debug( 5010 ) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
     _M_dof->setDofIndices( dofindices );
-    Log() << "[dof] is_periodic = " << is_periodic << "\n";
+    Debug( 5010 ) << "[functionspace] is_periodic = " << is_periodic << "\n";
 
     _M_dof->build( _M_mesh );
 
@@ -2464,6 +2464,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint(node_type const& pt,size_type &cv ,
     typedef typename gm_type::Inverse inv_trans_type;
     typename gm_type::reference_convex_type refelem;
 
+    std::pair<size_type,value_type> closest = std::make_pair( invalid_size_type_value, -1e30 );
+
     region_tree_type::pbox_set_type::const_iterator it = boxlst.begin();
     region_tree_type::pbox_set_type::const_iterator ite = boxlst.end();
     for (; it != ite; ++it)
@@ -2471,15 +2473,20 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint(node_type const& pt,size_type &cv ,
         inv_trans_type __git( _M_mesh->gm(), _M_mesh->element( ( *it )->id, Application::processId() ) );
 
         size_type cv_stored = (*it)->id;
+
+
         Debug( 5010 ) << "[FunctionSpace::findPoint] id : " << cv_stored << "\n";
 
         __git.setXReal( pt );
         ptr = __git.xRef();
 
+
         bool isin;
         value_type dmin;
         boost::tie( isin, dmin ) = refelem.isIn( ptr );
         Debug( 5010 ) << "[FunctionSpace::findPoint] isin: " << isin << " dmin: " << dmin << "\n";
+
+        closest =  ( dmin > closest.second )?std::make_pair( cv_stored, dmin ):closest;
         if ( isin )
         {
             Debug( 5010 ) << "[FunctionSpace::findPoint] id of the convex where " << pt << " belongs : " << cv_stored << "\n";
@@ -2489,6 +2496,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint(node_type const& pt,size_type &cv ,
             return true;
         }
     }
+    cv=closest.first;
     //_M_prof_find_points.pause();
     return false;
 }
