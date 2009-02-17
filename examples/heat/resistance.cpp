@@ -26,6 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2009-01-22
  */
+#include <fstream>
+
 #include <life/options.hpp>
 #include <life/lifecore/application.hpp>
 
@@ -57,10 +59,10 @@ makeOptions()
         ("penalbc", Life::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
 
         ("T0", Life::po::value<double>()->default_value( 300 ), "Temperature imposed at the left wall")
-        ("k1", Life::po::value<double>()->default_value( 100 ), "conductivity of material 1")
-        ("k2", Life::po::value<double>()->default_value( 1 ), "conductivity of material 2")
-        ("c", Life::po::value<double>()->default_value( 1 ), "Conductance between the domain 1 and 2(temperature discontinuity)")
-        ("Q", Life::po::value<double>()->default_value( 1 ), "Heat flux")
+        ("k1", Life::po::value<double>()->default_value( 0.2 ), "conductivity of material 1")
+        ("k2", Life::po::value<double>()->default_value( 2 ), "conductivity of material 2")
+        ("c", Life::po::value<double>()->default_value( 100 ), "Conductance between the domain 1 and 2(temperature discontinuity)")
+        ("Q", Life::po::value<double>()->default_value( 1000 ), "Heat flux")
 
 
         ("export-matlab", "export matrix and vectors in matlab" )
@@ -121,13 +123,24 @@ public:
     typedef Mesh<GeoEntity<entity_type> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
+    typedef Entity<1, 1,Dim> line_entity_type;
+    typedef Mesh<GeoEntity<line_entity_type> > line_mesh_type;
+    typedef boost::shared_ptr<line_mesh_type> line_mesh_ptrtype;
+
     typedef bases<fem::Lagrange<Dim, Order, Scalar, Continuous, double, Entity> > basis_type;
+    typedef bases<fem::Lagrange<Dim, Order-1, Vectorial, Discontinuous, double, Entity> > vectorial_basis_type;
     typedef DiscontinuousInterfaces<fusion::vector<mpl::vector<mpl::int_<4>, mpl::int_<5>, mpl::int_<6> > > >  discontinuity_type;
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, discontinuity_type> functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef FunctionSpace<mesh_type, vectorial_basis_type> vectorial_functionspace_type;
+    typedef boost::shared_ptr<vectorial_functionspace_type> vectorial_functionspace_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
+
+    typedef FunctionSpace<mesh_type, fusion::vector<fem::Lagrange<Dim, 0, Scalar, Discontinuous> > > p0_space_type;
+    typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
+    typedef typename p0_space_type::element_type p0_element_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -139,6 +152,8 @@ public:
 
     /** mesh generation */
     mesh_ptrtype createMesh();
+
+    line_mesh_ptrtype createLine();
 
     /**
      * run the convergence test
@@ -158,7 +173,7 @@ private:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( element_type& u, element_type&, element_type& );
+    void exportResults( p0_element_type& k, element_type& u, element_type&, element_type& );
 
 private:
 
@@ -168,8 +183,10 @@ private:
     double penalisation_bc;
 
     mesh_ptrtype mesh;
+    line_mesh_ptrtype line_mesh;
 
     functionspace_ptrtype Xh;
+    vectorial_functionspace_ptrtype Yh;
 
     export_ptrtype exporter;
     typename export_type::timeset_ptrtype timeSet;
@@ -219,12 +236,14 @@ ResistanceLaplacian<Dim,Order>::ResistanceLaplacian( int argc, char** argv, Abou
 
     Log() << "create mesh\n";
     mesh = createMesh();
+    line_mesh = createLine();
 
     Log() << "create space\n";
     node_type trans(2);
     trans[0]=0;
     trans[1]=2;
     Xh = functionspace_type::New( mesh, MESH_COMPONENTS_DEFAULTS );
+    Yh = vectorial_functionspace_type::New( mesh, MESH_COMPONENTS_DEFAULTS );
 
     Log() << "print space info\n";
     Xh->printInfo();
@@ -252,13 +271,21 @@ ResistanceLaplacian<Dim,Order>::createMesh()
          << "Point(4) = {a,d,0.0,h};\n"
          << "Point(5) = {0,c,0.0,h};\n"
          << "Point(6) = {0,d,0.0,h};\n"
-         << "Line(1) = {4,1};\n"
-         << "Line(2) = {1,5};\n"
-         << "Line(3) = {5,2};\n"
-         << "Line(4) = {2,3};\n"
+         << "Point(7) = {a,0,0.0,h};\n"
+         << "Point(8) = {b,0,0.0,h};\n"
+         << "Point(9) = {0,0,0.0,h};\n"
+         << "Line(1) = {1,5};\n"
+         << "Line(2) = {5,2};\n"
+         << "Line(3) = {2,8};\n"
+         << "Line(4) = {8,3};\n"
          << "Line(5) = {3,6};\n"
          << "Line(6) = {6,4};\n"
-         << "Line(7) = {5,6};\n"
+         << "Line(7) = {4,7};\n"
+         << "Line(8) = {7,1};\n"
+         << "Line(9) = {7,0};\n"
+         << "Line(9) = {0,8};\n"
+         << "Line(10) = {5,0};\n"
+         << "Line(11) = {0,6};\n"
          << "Line Loop(8) = {1,2,7,6};\n"
          << "Line Loop(9) = {3,4,5,-7};\n"
          << "Plane Surface(10) = {8};\n"
@@ -275,6 +302,38 @@ ResistanceLaplacian<Dim,Order>::createMesh()
     std::string fname = gmsh.generate( "square", ostr.str()  );
 
     ImporterGmsh<mesh_type> import( fname );
+    import.setVersion( "2.0" );
+    mesh->accept( import );
+    timers["mesh"].second = timers["mesh"].first.elapsed();
+    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    return mesh;
+} // ResistanceLaplacian::createMesh
+
+template<int Dim, int Order>
+typename ResistanceLaplacian<Dim,Order>::line_mesh_ptrtype
+ResistanceLaplacian<Dim,Order>::createLine()
+{
+    timers["mesh"].first.restart();
+    line_mesh_ptrtype mesh( new line_mesh_type );
+    //mesh->setRenumber( false );
+
+    std::ostringstream ostr;
+    ostr << "Mesh.MshFileVersion = " << 2 << ";\n"
+         << "a=" << -1 << ";\n"
+         << "b=" << 1 << ";\n"
+         << "h=" << h << ";\n"
+         << "Point(1) = {a,0,0.0,h};\n"
+         << "Point(2) = {0,0,0.0,h};\n"
+         << "Point(3) = {b,0,0.0,h};\n"
+         << "Line(1) = {1,2};\n"
+         << "Line(2) = {2,3};\n"
+         << "Physical Line(\"line\") = {1,2};\n";
+
+
+    Gmsh gmsh;
+    std::string fname = gmsh.generate( "line", ostr.str()  );
+
+    ImporterGmsh<line_mesh_type> import( fname );
     import.setVersion( "2.0" );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
@@ -333,11 +392,23 @@ ResistanceLaplacian<Dim, Order>::run()
 
     double meas = integrate( markedfaces( mesh, mesh->markerName( "discontinuity" ) ), _Q<0>(),constant(1.0)).evaluate()(0,0) ;
     double mean_jump = integrate( markedfaces( mesh, mesh->markerName( "discontinuity" ) ), _Q<Order>(),
-                                  trans(jumpv(idv(u)))*N21).evaluate()(0,0)/meas;
-    std::cout <<  "mean([[T]]) = " << mean_jump << "\n";
-    Log() <<  "mean([[T]]) = " << mean_jump << "\n";
+                                  trans(jumpv(idv(u)))*N21).evaluate()(0,0);
+    std::cout <<  "int ([[T]]) = " << mean_jump << "\n";
+    Log() <<  "int ([[T]]) = " << mean_jump << "\n";
+    std::cout <<  "mean([[T]]) = " << mean_jump/meas << "\n";
+    Log() <<  "mean([[T]]) = " << mean_jump/meas << "\n";
 
-    exportResults( u, u, u );
+    p0_space_ptrtype P0h = p0_space_type::New( mesh );
+    p0_element_type k( P0h, "k" );
+
+    k = vf::project( P0h, elements( mesh ),
+                     (emarker()==mesh->markerName( "k1" ))*k1 +
+                     (emarker()==mesh->markerName( "k2" ))*k2 );
+    std::cout << "flux = " << integrate( markedfaces( mesh, mesh->markerName( "discontinuity" ) ), _Q<Order>(),
+                                         jumpv(idv(k)*gradv(u))).evaluate()(0,0) << "\n";
+
+
+    exportResults( k, u, u, u );
 
 
 } // ResistanceLaplacian::run
@@ -362,7 +433,7 @@ ResistanceLaplacian<Dim, Order>::solve( sparse_matrix_ptrtype& D,
 
 template<int Dim, int Order>
 void
-ResistanceLaplacian<Dim, Order>::exportResults( element_type& U, element_type& V, element_type& E )
+ResistanceLaplacian<Dim, Order>::exportResults( p0_element_type& k, element_type& U, element_type& V, element_type& E )
 
 {
     timers["export"].first.restart();
@@ -370,13 +441,31 @@ ResistanceLaplacian<Dim, Order>::exportResults( element_type& U, element_type& V
     Log() << "exportResults starts\n";
     typename timeset_type::step_ptrtype timeStep = timeSet->step( 0.0 );
     timeStep->setMesh( U.functionSpace()->mesh() );
+    timeStep->add( "k", k );
     timeStep->add( "u", U );
-    timeStep->add( "exact", V );
-    timeStep->add( "error", E );
+    //timeStep->add( "exact", V );
+
+
+    typename vectorial_functionspace_type::element_type g( Yh, "grad u" );
+    g = vf::project( Yh, elements( Yh->mesh() ), trans(gradv(U)) );
+    timeStep->add( "grad(u)", g );
 
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
     Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+
+    std::ofstream os( "profile.dat" );
+    os.precision( 4 );
+    os.width(10 );
+    os.setf( std::ios::right );
+    for( size_type i = 0; i < line_mesh->numPoints(); ++i )
+        {
+            if ( i != 1 )
+                os  << line_mesh->point( i ).node()[0] << " " << U( line_mesh->point( i ).node() ) << std::endl;
+        }
+    // this is the last point of the 1D mesh ie y = 0.13m
+    os  << line_mesh->point( 1 ).node()[0] << " " << U( line_mesh->point( 1 ).node() ) << std::endl;
+
 } // ResistanceLaplacian::export
 } // Life
 
