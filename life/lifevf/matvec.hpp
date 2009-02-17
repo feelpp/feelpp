@@ -499,6 +499,11 @@ public:
             {
                 update( geom );
             }
+        template<typename IM>
+        void init( IM const& im )
+        {
+            //_M_expr.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             fusion::for_each( M_expr, detail::update_expression_gij<Geo_t, Basis_i_t, Basis_j_t>( geom, fev, feu ) );
@@ -743,6 +748,11 @@ public:
             {
                 update( geom );
             }
+        template<typename IM>
+        void init( IM const& im )
+        {
+            //_M_expr.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             fusion::for_each( M_expr, detail::update_expression_gij<Geo_t, Basis_i_t, Basis_j_t>( geom, fev, feu ) );

@@ -88,7 +88,7 @@ namespace vf
 template < typename ExprT1 >
 class Val
     :
-    public UnaryFunctor<typename ExprT1::value_type>
+        public UnaryFunctor<typename ExprT1::value_type>
 {
 public:
 
@@ -150,111 +150,116 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
                                   mpl::identity<detail::gmc<0> >,
                                   mpl::identity<detail::gmc<1> > >::type::type key_type;
-    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
-    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-    typedef typename tensor2_expr_type::shape shape;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        typedef typename tensor2_expr_type::shape shape;
 
-    struct is_zero { static const bool value = tensor2_expr_type::is_zero::value; };
+        struct is_zero { static const bool value = tensor2_expr_type::is_zero::value; };
 
-    template<typename ExprT>
-    tensor( ExprT const& expr, Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
-        :
-        _M_expr( expr.expression(), geom ),
-        _M_gmc( fusion::at_key<key_type>( geom ).get() ),
-        _M_loc( boost::extents[shape::M][shape::N][_M_gmc->nPoints()] )
-    {
-        update( geom );
-    }
-    template<typename ExprT>
-    tensor( ExprT const& expr,Geo_t const& geom, Basis_i_t const& /*fev*/ )
-        :
-        _M_expr( expr.expression(), geom ),
-        _M_gmc( fusion::at_key<key_type>( geom ).get() ),
-        _M_loc( boost::extents[shape::M][shape::N][_M_gmc->nPoints()] )
-    {
-        update( geom );
-    }
-    template<typename ExprT>
-    tensor( ExprT const& expr, Geo_t const& geom )
-        :
-        _M_expr( expr.expression(), geom ),
-        _M_gmc( fusion::at_key<key_type>( geom ).get() ),
-        _M_loc( boost::extents[shape::M][shape::N][_M_gmc->nPoints()] )
-    {
-        update( geom );
-    }
-    void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
-    {
-        update( geom );
-    }
-    void update( Geo_t const& geom, Basis_i_t const& /*fev*/ )
-    {
-        update( geom );
-    }
-    void update( Geo_t const& geom )
-    {
-        _M_expr.update( geom );
-        for( int c1 = 0; c1 < shape::M; ++c1 )
-            for( int c2 = 0; c2 < shape::N; ++c2 )
-                for ( int q = 0; q < _M_gmc->nPoints(); ++q )
-                    {
-                        _M_loc[c1][c2][q] = _M_expr.evalq( c1, c2, q );
-                    }
-    }
-    template<typename IndexI, typename IndexJ>
-    value_type
-    evalijq( IndexI const& /*i*/, IndexJ const& /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
-    {
-        return evalq( c1, c2, q );
-    }
-    template<typename IndexI, typename IndexJ, int PatternContext>
-    value_type
-    evalijq( IndexI const& /*i*/, IndexJ const& /*j*/, uint16_type c1, uint16_type c2, uint16_type q,
-             mpl::int_<PatternContext> ) const
-    {
-        return evalq( c1, c2, q );
-    }
-    template<typename IndexI>
-    value_type
-    evaliq( IndexI const& /*i*/, uint16_type c1, uint16_type c2, uint16_type q ) const
-    {
-        return evalq( c1, c2, q );
-    }
-    value_type
-    evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
-    {
-        return evalq( c1, c2, q, mpl::int_<shape::rank>() );
-    }
-private:
-    value_type
-    evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> ) const
-    {
-        Life::detail::ignore_unused_variable_warning(c1);
-        Life::detail::ignore_unused_variable_warning(c2);
-        return _M_loc[0][0][q];
-    }
-    value_type
-    evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const
-    {
-        if ( shape::M > shape::N )
-            return _M_loc[c1][0][q];
-        return _M_loc[0][c2][q];
-    }
-    value_type
-    evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> ) const
-    {
-        return _M_loc[c1][c2][q];
-    }
-private:
-    tensor2_expr_type _M_expr;
-    gmc_ptrtype _M_gmc;
-    boost::multi_array<value_type,3> _M_loc;
-};
+        template<typename ExprT>
+        tensor( ExprT const& expr, Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
+            :
+            _M_expr( expr.expression(), geom ),
+            _M_gmc( fusion::at_key<key_type>( geom ).get() ),
+            _M_loc( boost::extents[shape::M][shape::N][_M_gmc->nPoints()] )
+        {
+            update( geom );
+        }
+        template<typename ExprT>
+        tensor( ExprT const& expr,Geo_t const& geom, Basis_i_t const& /*fev*/ )
+            :
+            _M_expr( expr.expression(), geom ),
+            _M_gmc( fusion::at_key<key_type>( geom ).get() ),
+            _M_loc( boost::extents[shape::M][shape::N][_M_gmc->nPoints()] )
+        {
+            update( geom );
+        }
+        template<typename ExprT>
+        tensor( ExprT const& expr, Geo_t const& geom )
+            :
+            _M_expr( expr.expression(), geom ),
+            _M_gmc( fusion::at_key<key_type>( geom ).get() ),
+            _M_loc( boost::extents[shape::M][shape::N][_M_gmc->nPoints()] )
+        {
+            update( geom );
+        }
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_expr.init( im );
+        }
+        void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
+        {
+            update( geom );
+        }
+        void update( Geo_t const& geom, Basis_i_t const& /*fev*/ )
+        {
+            update( geom );
+        }
+        void update( Geo_t const& geom )
+        {
+            _M_expr.update( geom );
+            for( int c1 = 0; c1 < shape::M; ++c1 )
+                for( int c2 = 0; c2 < shape::N; ++c2 )
+                    for ( int q = 0; q < _M_gmc->nPoints(); ++q )
+                        {
+                            _M_loc[c1][c2][q] = _M_expr.evalq( c1, c2, q );
+                        }
+        }
+        template<typename IndexI, typename IndexJ>
+        value_type
+        evalijq( IndexI const& /*i*/, IndexJ const& /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
+        {
+            return evalq( c1, c2, q );
+        }
+        template<typename IndexI, typename IndexJ, int PatternContext>
+        value_type
+        evalijq( IndexI const& /*i*/, IndexJ const& /*j*/, uint16_type c1, uint16_type c2, uint16_type q,
+                 mpl::int_<PatternContext> ) const
+        {
+            return evalq( c1, c2, q );
+        }
+        template<typename IndexI>
+        value_type
+        evaliq( IndexI const& /*i*/, uint16_type c1, uint16_type c2, uint16_type q ) const
+        {
+            return evalq( c1, c2, q );
+        }
+        value_type
+        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
+        {
+            return evalq( c1, c2, q, mpl::int_<shape::rank>() );
+        }
+    private:
+        value_type
+        evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> ) const
+        {
+            Life::detail::ignore_unused_variable_warning(c1);
+            Life::detail::ignore_unused_variable_warning(c2);
+            return _M_loc[0][0][q];
+        }
+        value_type
+        evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const
+        {
+            if ( shape::M > shape::N )
+                return _M_loc[c1][0][q];
+            return _M_loc[0][c2][q];
+        }
+        value_type
+        evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> ) const
+        {
+            return _M_loc[c1][c2][q];
+        }
+    private:
+        tensor2_expr_type _M_expr;
+        gmc_ptrtype _M_gmc;
+        boost::multi_array<value_type,3> _M_loc;
+    };
 
 protected:
-Val() {}
+    Val() {}
 
-expression_1_type _M_expr_1;
+    expression_1_type _M_expr_1;
 };
 /// \endcond
 
@@ -273,8 +278,8 @@ val( ExprT1 const& __e1 )
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
         mpl::identity<Cst<ExprT1> >,
         mpl::identity<ExprT1> >::type::type t1;
-typedef Val<t1> expr_t;
-return Expr< expr_t >(  expr_t( t1( __e1 ) ) );
+    typedef Val<t1> expr_t;
+    return Expr< expr_t >(  expr_t( t1( __e1 ) ) );
 }
 } // vf
 } // Life

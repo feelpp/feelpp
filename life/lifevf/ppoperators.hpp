@@ -423,6 +423,12 @@
                 _M_right( expr.right(), geom )                          \
                     {                                                   \
                     }                                                   \
+            template<typename IM>                                       \
+                void init( IM const& im )                               \
+            {                                                           \
+                _M_left.init( im );                                     \
+                _M_right.init( im );                                    \
+            }                                                           \
             void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) \
             {                                                           \
                 if ( is_zero::update_and_eval_left )                    \
@@ -509,7 +515,7 @@
                 evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false>  ) const \
             {                                                           \
                 value_type res( value_type( 0 ) );                      \
-                for(uint16_type ii = 0; ii < l_type::shape::N; ++ii )   \
+                for(uint16_type ii = 0; ii < l_type::shape::N; ++ii ) \
                     res += _M_left.evalijq(i, j, c1, ii, q ) VF_OP_SYMBOL( O ) _M_right.evalijq(i, j, ii, c2, q ); \
                 return res;                                             \
             }                                                           \
@@ -537,7 +543,7 @@
                 evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext>, mpl::int_<1>  ) const \
             {                                                           \
                 value_type res( value_type( 0 ) );                      \
-                for(uint16_type ii = 0; ii < l_type::shape::N; ++ii )   \
+                for(uint16_type ii = 0; ii < l_type::shape::N; ++ii ) \
                     res += _M_left.evalijq(i, j, c1, ii, q,mpl::int_<PatternContext>() ) VF_OP_SYMBOL( O ) _M_right.evalijq(i, j, ii, c2, q,mpl::int_<PatternContext>() ); \
                 return res;                                             \
             }                                                           \

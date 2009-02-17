@@ -152,6 +152,12 @@ public:
         {
         }
 
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_tensor_expr_left.init( im );
+            _M_tensor_expr_right.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
@@ -413,6 +419,11 @@ public:
             Debug( 5051 ) << "expr SumExpr is_zero " << is_zero::value << "\n";
         }
 
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_tensor_expr.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& /*feu*/ )
         {
             update( geom, fev, fusion::result_of::has_key<Basis_i_t, detail::gmc<Side> >() );
@@ -641,7 +652,11 @@ public:
             Debug( 5051 ) << "expr SumTExpr<" << Side << "> is_zero " << is_zero::value << "\n";
         }
 
-
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_tensor_expr.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             update( geom, fev, feu, fusion::result_of::has_key<Basis_j_t, detail::gmc<Side> >() );
@@ -918,7 +933,12 @@ public:
             _M_tensor_expr_right( expr.expression(), _M_right_map )
         {
         }
-
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_tensor_expr_left.init( im );
+            _M_tensor_expr_right.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
