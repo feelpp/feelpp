@@ -448,6 +448,92 @@ public:
     }
 
     /**
+     * set element to done
+     */
+    void setElementDone( size_type elt )
+    {
+        _M_elt_done[elt] = true;
+    }
+    bool isElementDone( size_type elt, int c = 0 )
+    {
+        const size_type nldof =
+            fe_type::nDofPerVolume * element_type::numVolumes +
+            fe_type::nDofPerFace * element_type::numGeometricFaces +
+            fe_type::nDofPerEdge * element_type::numEdges +
+            fe_type::nDofPerVertex * element_type::numVertices;
+        for( uint16_type l = 0; l < nldof; ++l )
+            if (boost::get<0>(_M_el_l2g[elt][c*nldof+l])==invalid_size_type_value)
+                return false;
+        return true;
+    }
+    void addDofFromElement( element_type const& __elt,
+                            size_type& next_free_dof,
+                            size_type processor = 0,
+                            size_type shift = 0 )
+    {
+
+        size_type nldof =
+            fe_type::nDofPerVolume * element_type::numVolumes +
+            fe_type::nDofPerFace * element_type::numGeometricFaces +
+            fe_type::nDofPerEdge * element_type::numEdges +
+            fe_type::nDofPerVertex * element_type::numVertices;
+
+        for( int c = 0; c < nComponents; ++c )
+            {
+                Debug( 5005 ) << "[buildDofMap] component " << c << "\n";
+                if ( !this->isElementDone( __elt.id(), c ) )
+                    {
+                        Debug(11111) << "adding dof from element " << __elt.id() << "\n";
+                        size_type gdofcount = shift;
+                        Debug( 5005 ) << "next_free_dof " << next_free_dof  << "\n";
+                        Debug( 5005 ) << "current dof " << dofIndex( next_free_dof ) << "\n";
+
+
+                        /*
+                         * Only in the continuous , we need to have the ordering [vertex,edge,face,volume]
+                         */
+                        if ( is_continuous || is_discontinuous_locally )
+                            {
+
+                                /* idem as above but for local element
+                                   numbering except that it is
+                                   reset to 0 after each element */
+                                uint16_type ldofcount = c*nldof;
+
+                                /* pack the shifts into a tuple */
+                                boost::tuple<uint16_type&,size_type&> shifts = boost::make_tuple( boost::ref(ldofcount),
+                                                                                                  boost::ref(gdofcount) );
+
+                                /* \warning: the order of function calls is
+                                   crucial here we order the degrees of freedom
+                                   wrt the topological entities of the mesh
+                                   elements from lowest dimension (vertex) to
+                                   highest dimension (element)
+                                */
+                                addVertexDof( __elt, processor, c, next_free_dof, shifts  );
+                                addEdgeDof( __elt, processor, c, next_free_dof, shifts );
+                                addFaceDof( __elt, processor, c, next_free_dof, shifts );
+                                addVolumeDof( __elt, processor, c, next_free_dof, shifts );
+                            }
+                        else
+                            {
+
+                                size_type ie = __elt.id();
+
+                                for ( uint16_type l = 0; l < nldof; ++l, ++next_free_dof )
+                                    {
+                                        _M_el_l2g[ ie][ fe_type::nLocalDof*c + l ] = boost::make_tuple(( dofIndex(next_free_dof)) , 1, false );
+                                    }
+                            }
+
+                    }
+                else
+                    {
+                        Debug(11111) << "element " << __elt.id() << "has already been taken care of\n";
+                    }
+            }
+    }
+    /**
      * \return the local to global map
      */
     std::map<size_type, std::pair<size_type, size_type> >
@@ -526,6 +612,9 @@ public:
      */
     void build( mesh_type& M )
     {
+        _M_elt_done.resize( M.numElements() );
+        std::fill( _M_elt_done.begin(), _M_elt_done.end(), false );
+
         Debug( 5015 ) << "[Dof::build] initDofMap\n";
         this->initDofMap( M );
 
@@ -534,17 +623,51 @@ public:
         Debug( 5015 ) << "[Dof::build] start_next_free_dof = " << start_next_free_dof << "\n";
         if ( is_periodic )
             {
+                Debug(5015) << "[build] call buildPeriodicDofMap()\n";
                 start_next_free_dof = this->buildPeriodicDofMap( M );
                 Debug( 5015 ) << "[Dof::build] start_next_free_dof(after periodic) = " << start_next_free_dof << "\n";
             }
+
         if ( is_discontinuous_locally )
             {
+                Debug(5015) << "[build] call buildLocallyDiscontinuousDofMap()\n";
                 start_next_free_dof = this->buildLocallyDiscontinuousDofMap( M, start_next_free_dof );
                 Debug( 5015 ) << "[Dof::build] start_next_free_dof(after local discontinuities) = " << start_next_free_dof << "\n";
             }
+        Debug(5015) << "[build] call buildDofMap()\n";
         this->buildDofMap( M, start_next_free_dof );
+
+        Debug(5015) << "[build] check that all elements dof were assigned()\n";
+        element_const_iterator fit, fen;
+        boost::tie( fit, fen ) = M.elementsRange();
+        std::vector<boost::tuple<size_type,uint16_type,size_type> > em;
+        for( ; fit != fen; ++fit )
+            {
+                for ( uint16_type c = 0; c < nComponents; ++c )
+                    if (!this->isElementDone( fit->id(), c ) )
+                    {
+                        em.push_back( boost::make_tuple( fit->id(), c, fit->marker().value() ) );
+                    }
+            }
+        if ( !em.empty() )
+            {
+                Debug(5015) << "[build] some element dof were not assigned\n";
+                for( int i = 0; i < em.size(); ++i )
+                    {
+                        Debug(5015) << " - element " << boost::get<0>( em[i] ) << " c=" << boost::get<1>( em[i] )
+                                    << " m=" << boost::get<2>( em[i] ) << "\n";
+                    }
+            }
+        else
+            {
+                Debug(5015) << "[build] check that all elements dof were assigned: OK\n";
+            }
         Debug( 5015 ) << "[Dof::build] n_dof = " << this->nLocalDof() << "\n";
+
+        Debug(5015) << "[build] call buildBoundaryDofMap()\n";
         this->buildBoundaryDofMap( M );
+
+        Debug(5015) << "[Dof::build] done building the map\n";
     }
 
     /**
@@ -573,6 +696,25 @@ public:
     void buildBoundaryDofMap( mesh_type& mesh );
 
 
+    /**
+     * \return the dictionnary for the global dof
+     */
+    dof_map_type const& mapGDof() const { return map_gdof; }
+
+    /**
+     * \return the dictionnary for the global dof
+     */
+    dof_map_type& mapGDof() { return map_gdof; }
+
+    /**
+     * clear the dictionnary
+     */
+    void clearMapGDof() { map_gdof.clear(); }
+
+    /**
+     * set the dictionnary for the dictionary of the global dof
+     */
+    void setMapGDof( dof_map_type const& mapdof ) { map_gdof = mapdof; }
 
     /**
      * The dof are ordered such that they are contiguous per element
@@ -658,10 +800,10 @@ public:
                     Debug() << "dof table( " << ie << ", " << lc  << ")=" << boost::get<0>(_M_el_l2g[ ie][ i2 ]) << "\n";
 #endif
             }
-        return __inserted;
+        return __inserted || ( ( boost::get<0>( _M_el_l2g[ ie][ lc_dof ] ) == invalid_size_type_value ) && shift );
     }
 
-    private:
+private:
 
     void addVertexDof( element_type const& __elt, uint16_type processor, uint16_type c, size_type& next_free_dof,
                        ref_shift_type& shifts  )
@@ -689,7 +831,7 @@ public:
                         //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
                         const size_type gDof = ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
 
-                        this->insertDof( ie, lc, i, boost::make_tuple(0, c, gDof), processor, next_free_dof );
+                        this->insertDof( ie, lc, i, boost::make_tuple(0, c, gDof), processor, next_free_dof, 1, false, global_shift );
                     }
             }
         // update shifts
@@ -726,7 +868,7 @@ public:
         for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
             {
                 const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerEdge + l;
-                this->insertDof( ie, lc, l, boost::make_tuple(1, c, gDof), processor, next_free_dof );
+                this->insertDof( ie, lc, l, boost::make_tuple(1, c, gDof), processor, next_free_dof, 1, false, global_shift );
             }
         // update shifts
         shifts.get<0>() = lc;
@@ -775,7 +917,7 @@ public:
                             }
                         else
                             LIFE_ASSERT( 0 ).error ( "invalid edge permutation" );
-                        this->insertDof( ie, lc, i, boost::make_tuple(1, c, gDof), processor, next_free_dof, sign );
+                        this->insertDof( ie, lc, i, boost::make_tuple(1, c, gDof), processor, next_free_dof, sign, false, global_shift );
                     }
             }
 
@@ -826,7 +968,7 @@ public:
                         else
                             LIFE_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                        this->insertDof( ie, lc, i, boost::make_tuple(1, c, gDof), processor, next_free_dof, sign );
+                        this->insertDof( ie, lc, i, boost::make_tuple(1, c, gDof), processor, next_free_dof, sign, false, global_shift );
                     }
             }
         // update shifts
@@ -860,7 +1002,7 @@ public:
         for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
             {
                 const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerFace + l;
-                this->insertDof( ie, lc, l, boost::make_tuple(2, c, gDof), processor, next_free_dof );
+                this->insertDof( ie, lc, l, boost::make_tuple(2, c, gDof), processor, next_free_dof, 1, false, global_shift );
             }
         // update shifts
         shifts.get<0>() = lc;
@@ -932,7 +1074,7 @@ public:
 
                                     }
                             }
-                        this->insertDof( ie, lc, i, boost::make_tuple(2, c, gDof), processor, next_free_dof, sign );
+                        this->insertDof( ie, lc, i, boost::make_tuple(2, c, gDof), processor, next_free_dof, sign, false, global_shift );
 
                     }
             }
@@ -963,7 +1105,7 @@ public:
         for ( uint16_type l = 0; l < fe_type::nDofPerVolume; ++l, ++lc )
             {
                 const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerVolume + l;
-                this->insertDof( ie, lc, l, boost::make_tuple(3, c, gDof), processor, next_free_dof );
+                this->insertDof( ie, lc, l, boost::make_tuple(3, c, gDof), processor, next_free_dof, 1, false, global_shift );
             }
         // update shifts
         shifts.get<0>() = lc;
@@ -1134,7 +1276,7 @@ public:
 
 #if !defined(NDEBUG)
 
-using namespace Life;
+        using namespace Life;
 
         gm_ptrtype _M_gm_ptr = M.gm();
 
@@ -1246,6 +1388,7 @@ private:
     reference_convex_type _M_convex_ref;
 
     size_type _M_n_el;
+    std::vector<bool> _M_elt_done;
 
     uint16_type _M_n_dof_per_face_on_bdy;
     uint16_type _M_n_dof_per_face;
@@ -1398,11 +1541,11 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::showMe() const
 template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
 void
 Dof<MeshType, FEType, PeriodicityType, ContinuityType>::addVertexPeriodicDof( element_type const& __elt,
-                                                              face_type const& __face,
-                                                              size_type& next_free_dof,
-                                                              std::map<size_type,periodic_dof_map_type>& periodic_dof,
-                                                              size_type tag,
-                                                              mpl::bool_<true> )
+                                                                              face_type const& __face,
+                                                                              size_type& next_free_dof,
+                                                                              std::map<size_type,periodic_dof_map_type>& periodic_dof,
+                                                                              size_type tag,
+                                                                              mpl::bool_<true> )
 {
     // store the element and local dof id for further
     // reference when inserting the associated global dof
@@ -1454,12 +1597,12 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::addVertexPeriodicDof( el
 template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
 void
 Dof<MeshType, FEType, PeriodicityType, ContinuityType>::addEdgePeriodicDof( element_type const& __elt,
-                                                            face_type const& __face,
-                                                            size_type& next_free_dof,
-                                                            std::map<size_type,periodic_dof_map_type>& periodic_dof,
-                                                            size_type tag,
-                                                            mpl::bool_<true>,
-                                                            mpl::int_<2> )
+                                                                            face_type const& __face,
+                                                                            size_type& next_free_dof,
+                                                                            std::map<size_type,periodic_dof_map_type>& periodic_dof,
+                                                                            size_type tag,
+                                                                            mpl::bool_<true>,
+                                                                            mpl::int_<2> )
 {
 #if 0
     // id of the element adjacent to the face
@@ -1501,12 +1644,12 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::addEdgePeriodicDof( elem
 template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
 void
 Dof<MeshType, FEType, PeriodicityType, ContinuityType>::addEdgePeriodicDof( element_type const& __elt,
-                                                            face_type const& __face,
-                                                            size_type& next_free_dof,
-                                                            std::map<size_type,periodic_dof_map_type>& periodic_dof,
-                                                            size_type tag,
-                                                            mpl::bool_<true>,
-                                                            mpl::int_<3> )
+                                                                            face_type const& __face,
+                                                                            size_type& next_free_dof,
+                                                                            std::map<size_type,periodic_dof_map_type>& periodic_dof,
+                                                                            size_type tag,
+                                                                            mpl::bool_<true>,
+                                                                            mpl::int_<3> )
 {
     //BOOST_STATIC_ASSERT( face_type::numEdges );
 
@@ -1567,11 +1710,11 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::addEdgePeriodicDof( elem
 template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
 void
 Dof<MeshType, FEType, PeriodicityType, ContinuityType>::addFacePeriodicDof( element_type const& __elt,
-                                                            face_type const& __face,
-                                                            size_type& next_free_dof,
-                                                            std::map<size_type,periodic_dof_map_type>& periodic_dof,
-                                                            size_type tag,
-                                                            mpl::bool_<true> )
+                                                                            face_type const& __face,
+                                                                            size_type& next_free_dof,
+                                                                            std::map<size_type,periodic_dof_map_type>& periodic_dof,
+                                                                            size_type tag,
+                                                                            mpl::bool_<true> )
 {
 #if 0
     // id of the element adjacent to the face
@@ -1795,8 +1938,6 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::buildPeriodicDofMap( mes
                         ( gid )( dof.second.template get<0>() )( dof.second.template get<1>())
                         ( gid2 )( it_dof2->second.template get<0>() )( it_dof2->second.template get<1>())
                         ( x1 )( x2 )( M_periodicity.translation() ).error( "invalid point size" );
-                    LIFE_ASSERT( math::abs( x1[1]-(x2[1]-M_periodicity.translation()[1])) < 1e-10 )
-                        ( x1 )( x2 )( M_periodicity.translation() ).error( "[periodic] invalid periodic setup");
                     if ( ublas::norm_2( x1-(x2-M_periodicity.translation()) ) < 1e-10 )
                         {
                             // loop on each pair (element, lid) which
@@ -1877,8 +2018,8 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::buildPeriodicDofMap( mes
                     size_type lid = it_dof2->second.template get<1>();
 
                     Debug( 5015 ) << "[periodic] dof " << it_dof2->first << " not assigned, "
-                          << "x = " << periodic_dof_points[it_dof2->first].template get<0>() << " "
-                          << "elt = " << ie << ", lid= " << lid << "\n";
+                                  << "x = " << periodic_dof_points[it_dof2->first].template get<0>() << " "
+                                  << "elt = " << ie << ", lid= " << lid << "\n";
 
 
 
@@ -1924,15 +2065,6 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::buildDofMap( mesh_type& 
 
     const size_type n_proc  = Application::nProcess();
 
-    /* counter that stores the number dof per entities
-       already registered this counter is used to shift
-       the global dof index for each topological
-       entities. We start from 0 and each topological
-       entity (point,edge,face,element) will add there
-       contribution to this counter to be then used the
-       next topological dofs*/
-    size_type gdofcount = 0;
-
     //! list of elements which have a periodic face Tag2
     std::list<std::pair<element_type const*, face_type const*> > periodic_elements;
 
@@ -1949,103 +2081,31 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::buildDofMap( mesh_type& 
                 this->_M_first_df[processor] =  0;
             it_elt = M.beginElementWithProcessId( processor );
 
-            for( int c = 0; c < nComponents; ++c )
+            Debug( 5005 ) << "[buildDofMap] starting with elt " << it_elt->id() << "\n";
+            for (;it_elt!=en_elt; ++it_elt )
                 {
-                    Debug( 5005 ) << "[buildDofMap] component " << c << "\n";
-                    it_elt = M.beginElementWithProcessId( processor );
-                    Debug( 5005 ) << "[buildDofMap] starting with elt " << it_elt->id() << "\n";
-                    for (;it_elt!=en_elt; ++it_elt )
-                        {
-                            element_type const& __elt = *it_elt;
-                            Debug( 5005 ) << "next_free_dof " << next_free_dof  << "\n";
-                            Debug( 5005 ) << "current dof " << dofIndex( next_free_dof ) << "\n";
+                    this->addDofFromElement( *it_elt, next_free_dof, processor );
+                } // elements loop
 
-                            /*
-                             * Only in the continuous , we need to have the ordering [vertex,edge,face,volume]
-                             */
-                            if ( is_continuous || is_discontinuous_locally )
-                                {
-
-                                    /* idem as above but for local element
-                                       numbering except that it is
-                                       reset to 0 after each element */
-                                    uint16_type ldofcount = c*nldof;
-
-                                    /* pack the shifts into a tuple */
-                                    boost::tuple<uint16_type&,size_type&> shifts = boost::make_tuple( boost::ref(ldofcount),
-                                                                                                      boost::ref(gdofcount) );
-
-                                    /* \warning: the order of function calls is
-                                       crucial here we order the degrees of freedom
-                                       wrt the topological entities of the mesh
-                                       elements from lowest dimension (vertex) to
-                                       highest dimension (element)
-                                    */
-                                    addVertexDof( __elt, processor, c, next_free_dof, shifts  );
-                                    addEdgeDof( __elt, processor, c, next_free_dof, shifts );
-                                    addFaceDof( __elt, processor, c, next_free_dof, shifts );
-                                    addVolumeDof( __elt, processor, c, next_free_dof, shifts );
-                                }
-                            else
-                                {
-
-                                    size_type ie = __elt.id();
-
-                                    for ( uint16_type l = 0; l < nldof; ++l, ++next_free_dof )
-                                        {
-                                            _M_el_l2g[ ie][ fe_type::nLocalDof*c + l ] = boost::make_tuple(( dofIndex(next_free_dof)) , 1, false );
-                                        }
-                                }
-
-                            // construct on the fly the associated dof points
-#if 0
-                            __c->update( __elt, __geopc );
-                            for( uint16_type l =0; l < fe_type::nLocalDof; ++l )
-                                {
-                                    size_type thedof = boost::get<0>(localToGlobal( __elt->id(), l, c ));
-                                    bool is_dof_periodic = boost::get<2>(localToGlobal( __elt->id(), l, c ));
-                                    if ( ( thedof >= firstDof() ) && ( thedof <= lastDof() ) )
-                                        {
-                                            // get only the local dof
-                                            //size_type thedofonproc = thedof - firstDof();
-                                            thedof -= firstDof();
-                                            if ( dof_done[ thedof ] == false )
-                                                {
-                                                    M_dof_points[thedof] = boost::make_tuple( __c->xReal( l ), firstDof()+thedof, c );
-
-                                                    // store the periodic dofs
-                                                    if ( is_dof_periodic )
-                                                        M_dof_points_periodic[thedof] = boost::make_tuple( __c->xReal( l ), firstDof()+thedof, c );
-
-                                                    dof_done[thedof] = true;
-                                                }
-
-                                        }
-                                }
-#endif // 0
-
-                        } // elements loop
-                } // nComponents loop
-
-            // printing Dof table only in debug mode
+    // printing Dof table only in debug mode
 #if !defined( NDEBUG )
-            for( int c = 0; c < nComponents; ++c )
+    for( int c = 0; c < nComponents; ++c )
+        {
+            it_elt = M.beginElementWithProcessId( processor );
+            for (;it_elt!=en_elt; ++it_elt )
                 {
-                    it_elt = M.beginElementWithProcessId( processor );
-                    for (;it_elt!=en_elt; ++it_elt )
+                    element_type const& __elt = *it_elt;
+                    std::ostringstream ostr;
+                    ostr << "element " << __elt.id() << " : ";
+                    for ( uint16_type l = 0; l < nldof; ++l )
                         {
-                            element_type const& __elt = *it_elt;
-                            std::ostringstream ostr;
-                            ostr << "element " << __elt.id() << " : ";
-                            for ( uint16_type l = 0; l < nldof; ++l )
-                                {
-                                    ostr << _M_el_l2g[ __elt.id()][ fe_type::nLocalDof*c + l ] << " ";
-                                }
-                            Debug( 5005 ) << ostr.str() << "\n";
+                            ostr << _M_el_l2g[ __elt.id()][ fe_type::nLocalDof*c + l ] << " ";
                         }
+                    Debug( 5005 ) << ostr.str() << "\n";
                 }
+        }
 #endif
-            this->_M_last_df[processor] = next_free_dof-1;
+    this->_M_last_df[processor] = next_free_dof-1;
         }
     this->_M_n_dofs = next_free_dof;
 
@@ -2123,7 +2183,7 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::buildBoundaryDofMap( mes
 #if !defined(NDEBUG)
     for ( index i1 = 0; i1 < index(nF); ++i1 )
         for ( index i2 = 0; i2 < index(nComponents*nDofF); ++i2 )
-            LIFE_ASSERT( boost::get<0>(_M_face_l2g[i1][i2]) != invalid_size_type_value )( i1 )( i2 ).error( "invalid dof table: initialized dof entries" );
+            LIFE_ASSERT( boost::get<0>(_M_face_l2g[i1][i2]) != invalid_size_type_value )( i1 )( i2 ).warn( "invalid dof table: initialized dof entries" );
 #endif
 }    // updateBoundaryDof
 
@@ -2196,7 +2256,7 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::generateDofPoints(  mesh
                 ( dof_id )( firstDof() )( lastDof() )( nLocalDof() )
                 ( boost::get<1>(M_dof_points[dof_id]) )
                 ( boost::get<0>(M_dof_points[dof_id]) ).error( "invalid dof point" );
-            LIFE_ASSERT( dof_done[dof_id] == true )( dof_id ).error( "invalid dof point" );
+            LIFE_ASSERT( dof_done[dof_id] == true )( dof_id ).warn( "invalid dof point" );
         }
     Debug( 5005 ) << "[Dof::generateDofPoints] generating dof coordinates done\n";
 }
