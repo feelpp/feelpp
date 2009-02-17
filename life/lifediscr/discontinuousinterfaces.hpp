@@ -179,7 +179,7 @@ public:
             boost::tie( fit, fen ) = M_mesh.elementsRange();
             Debug( 5015 ) << "[DiscontinuousInterfaces::build] n_elements = " << std::distance( fit, fen )
                           << " with marker " << boost::get<1>( marker ) << "\n";
-
+#if 0
             while( fit != fen )
                 {
                     if ( fit->marker().value() != boost::get<1>( marker ) )
@@ -187,6 +187,7 @@ public:
                             ++fit;
                             continue;
                         }
+
                     Debug(5015) << "found element with marker " << fit->marker().value() << "\n";
                     typename element_type::face_const_iterator it, en;
                     boost::tie( it, en ) = fit->faces();
@@ -195,7 +196,7 @@ public:
                     for( ;it != en; ++it )
                         {
                             Debug(5015) << "face with marker " << (*it)->marker().value() << "\n";
-                            if ( (*it)->marker().value() == boost::get<0>( marker ) )
+                            //if ( (*it)->marker().value() == boost::get<0>( marker ) )
                                 {
                                     Debug( 5015 ) << "------------------------------------------------------------\n";
                                     Debug( 5015 ) << "face " << (*it)->id()
@@ -212,7 +213,19 @@ public:
                         }
                     ++fit;
                 }
-            n_dof = next_free_dof-start;
+#else
+            boost::tie( fit, fen ) = M_mesh.elementsRange();
+            while( fit != fen )
+                {
+                    if ( fit->marker().value() == boost::get<1>( marker ) )
+                        {
+                            M_dof.addDofFromElement( *fit, next_free_dof, 0 );
+                        }
+                    ++fit;
+                }
+#endif
+            //n_dof = next_free_dof-start;
+            n_dof = next_free_dof;
 
             Debug( 5015 ) << "[DiscontinuousInterfaces::build] n_dof = " << n_dof << "\n";
 
@@ -220,6 +233,7 @@ public:
             boost::tie( fit, fen ) = M_mesh.elementsRange();
             Debug( 5015 ) << "[DiscontinuousInterfaces::build] n_elements = " << std::distance( fit, fen )
                           << " with marker " << boost::get<2>( marker ) << "\n";
+#if 0
             while( fit != fen )
                 {
                     if ( fit->marker().value() != boost::get<2>( marker ) )
@@ -227,6 +241,7 @@ public:
                             ++fit;
                             continue;
                         }
+
                     Debug(5015) << "found element with marker " << fit->marker().value() << "\n";
                     typename element_type::face_const_iterator it, en;
                     boost::tie( it, en ) = fit->faces();
@@ -235,7 +250,7 @@ public:
                     for( ;it != en; ++it )
                         {
                             Debug(5015) << "face with marker " << (*it)->marker().value() << "\n";
-                            if ( (*it)->marker().value() == boost::get<0>( marker ) )
+                            //if ( (*it)->marker().value() == boost::get<0>( marker ) )
                                 {
                                     Debug( 5015 ) << "------------------------------------------------------------\n";
                                     Debug( 5015 ) << "face " << (*it)->id()
@@ -249,11 +264,48 @@ public:
 
 
                                 }
+
                         }
                     ++fit;
                 }
+#else
 
-            return start+2*n_dof;
+            typedef typename DofType::dof_map_type dof_map_type;
+            dof_map_type m1( M_dof.mapGDof() );
+            M_dof.clearMapGDof();
+            boost::tie( fit, fen ) = M_mesh.elementsRange();
+            while( fit != fen )
+                {
+                    if ( fit->marker().value() == boost::get<2>( marker ) )
+                        {
+                            M_dof.addDofFromElement( *fit, next_free_dof );
+                        }
+                    ++fit;
+                }
+#if 0
+             dof_map_type m2( M_dof.mapGDof() );
+            M_dof.clearMapGDof();
+            std::merge( m1.begin(), m1.end(), m2.begin(), m2.end(), M_dof.mapGDof().begin() );
+#else
+            dof_map_type m2( M_dof.mapGDof() );
+            M_dof.clearMapGDof();
+            typename dof_map_type::iterator it = m1.begin();
+            typename dof_map_type::iterator en = m1.end();
+            for( ; it != en; ++it )
+                {
+                    M_dof.mapGDof().insert( *it );
+                }
+            it = m2.begin();
+            en = m2.end();
+            for( ; it != en; ++it )
+                {
+                    M_dof.mapGDof().insert( *it );
+                }
+            Debug( 5015 ) << "size dictionnary = " << M_dof.mapGDof().size() << " next_free_dof = " << next_free_dof+n_dof << "\n";
+#endif
+#endif
+
+            return next_free_dof;
         }
         template<typename element_type, typename face_type>
         void
