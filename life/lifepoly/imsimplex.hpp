@@ -8892,6 +8892,7 @@ public:
 #else
     typedef IMSimplex<Dim-1,Order,T> face_quad_type;
 #endif
+    typedef IMSimplex<Dim,Order,T> parent_quadrature_type;
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
 
