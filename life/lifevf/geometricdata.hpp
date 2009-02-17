@@ -158,6 +158,10 @@ const size_type jp = vm::JACOBIAN|vm::POINT;
                 :                                                       \
                 _M_gmc( fusion::at_key<key_type>( geom ).get() )        \
                 {}                                                      \
+            template<typename IM>                                       \
+                void init( IM const& im )                               \
+            {                                                           \
+            }                                                           \
             void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
             {                                                           \
                 update( geom );                                         \

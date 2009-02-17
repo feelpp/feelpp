@@ -30,6 +30,8 @@
 #if !defined( __LIFE_VF_OPERATORS_HPP )
 #define __LIFE_VF_OPERATORS_HPP 1
 
+#include <life/lifepoly/quadmapped.hpp>
+
 # include <boost/preprocessor/comparison/less.hpp>
 # include <boost/preprocessor/logical/and.hpp>
 # include <boost/preprocessor/control/if.hpp>
@@ -279,6 +281,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     mpl::identity<Shape<gmc_type::NDim, Vectorial, VF_OPERATOR_TRANSPOSE(O)> >, \
                                   mpl::identity<Shape<gmc_type::NDim, Tensor2, false> > >::type>::type::type shape; \
                 typedef typename fe_type::PreCompute pc_type;           \
+                typedef boost::shared_ptr<pc_type> pc_ptrtype;          \
                                                                         \
                                                                         \
                 template<typename E>\
@@ -305,36 +308,65 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                         Basis_j_t const& VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), feu ) ) \
                     :                                                   \
                     _M_expr( expr ),                                    \
+                    _M_geot( geom ),                                    \
                     _M_fec( VF_OP_SWITCH( VF_OP_TYPE_IS_TEST( T ),      \
                                           fusion::at_key<basis_context_key_type>( fev ).get() , \
                                           VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), \
                                                                    fusion::at_key<basis_context_key_type>( feu ).get() ) ) ), \
                     _M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
                     _M_pc( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), \
+                    _M_pcf(),                                           \
                     _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ) \
-                        { update( geom ); }                             \
+                        {                                               \
+                            /*update( geom );*/                         \
+                        }                                               \
                 tensor( this_type const& expr,                          \
                         Geo_t const& geom,                              \
                         Basis_i_t const& VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TEST( T ), fev  ) ) \
                     :                                                   \
                     _M_expr( expr ),                                    \
+                    _M_geot( geom ),                                    \
                     _M_fec( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TEST( T ), \
                                                      fusion::at_key<basis_context_key_type>( fev ).get() ) ), \
                     _M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
                     _M_pc( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), \
+                    _M_pcf(),                                           \
                     _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ) \
-                        { update( geom ); }                             \
+                        {                                               \
+                            /*update( geom );*/                         \
+                        }                                               \
                 tensor( this_type const& expr,                          \
                         Geo_t const& geom )                             \
                     :                                                   \
                     _M_expr( expr ),                                    \
+                    _M_geot( geom ),                                    \
                     _M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
                     _M_pc( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), \
+                    _M_pcf(),                                           \
                     _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ) \
                         {                                               \
-                            update( geom );                             \
+                            /*update( geom ); */                        \
                             BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_CONSTRUCTOR, ()); \
                         }                                               \
+                template<typename IM>                                   \
+                    void init( IM const& im )                           \
+                {                                                       \
+                    QuadMapped<IM> qm;                                  \
+                    typedef typename QuadMapped<IM>::permutation_type permutation_type; \
+                    typename QuadMapped<IM>::permutation_points_type ppts( qm( im ) ); \
+                                                                        \
+                    _M_pcf.resize( im.nFaces() );                       \
+                    for ( uint16_type __f = 0; __f < im.nFaces(); ++__f ) \
+                        {                                               \
+                            for( permutation_type __p( permutation_type::IDENTITY ); \
+                                 __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p ) \
+                                {                                       \
+                                    _M_pcf[__f][__p.value()] = pc_ptrtype(  new pc_type( _M_expr.e().functionSpace()->fe(), \
+                                                                                         ppts[__f].find(__p)->second ) ); \
+                                }                                       \
+                        }                                               \
+                    /* expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), */ \
+                }                                                       \
                                                                         \
                 void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
                 {                                                       \
@@ -352,10 +384,18 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 {                                                       \
                     if ( dim_ok )                                       \
                         {                                               \
-                            if ( fusion::at_key<key_type>( geom )->elementIsAFace() ) \
-                                _M_pc.update( fusion::at_key<key_type>( geom )->xRefs() ); \
                             std::fill( _M_loc.data(), _M_loc.data()+_M_loc.num_elements(), value_type( 0 ) ); \
-                            _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), _M_pc, _M_loc ); \
+                            if ( fusion::at_key<key_type>( geom )->elementIsAFace() ) \
+                                {                                       \
+                                    if (_M_pcf.empty()) return;         \
+                                    uint16_type face = fusion::at_key<key_type>( geom )->faceId(); \
+                                    uint16_type perm = fusion::at_key<key_type>( geom )->permutation().value(); \
+                                    _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), *_M_pcf[face][perm], _M_loc ); \
+                                }                                       \
+                            else                                        \
+                                {                                       \
+                                    _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), _M_pc, _M_loc ); \
+                                }                                       \
                         }                                               \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<false> )     \
@@ -455,9 +495,11 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     return _M_loc[c1][c2][q];                           \
                 }                                                       \
                 this_type const& _M_expr;                               \
+                Geo_t const& _M_geot;                                   \
                 basis_context_ptrtype _M_fec;                           \
                 const uint16_type _M_np;                                \
                 pc_type _M_pc;                                          \
+                std::vector<std::map<uint16_type, pc_ptrtype> > _M_pcf; \
                 array_type _M_loc;                                      \
                 /*typename element_type::BOOST_PP_CAT( VF_OPERATOR_TERM( O ), _type) _M_loc;*/ \
             };                                                          \

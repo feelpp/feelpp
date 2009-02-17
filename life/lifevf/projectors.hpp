@@ -211,14 +211,16 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MES
                           INVALID_TENSOR_RANK,
                           (mpl::int_<shape::M>, mpl::int_<FunctionSpaceType::nComponents>, shape ) );
 
+    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+    t_expr_type tensor_expr( _M_expr, mapgmc );
+
     std::vector<bool> points_done( __v.functionSpace()->dof()->nLocalDof()/__v.nComponents );
     std::fill( points_done.begin(), points_done.end(),false );
     for ( ; it!=en ; ++it )
     {
         __c->update( *it, __geopc );
         map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-        t_expr_type tensor_expr( _M_expr, mapgmc );
-
+        tensor_expr.update( mapgmc );
 
         for ( uint16_type __j = 0; __j < ndofv;++__j )
             {

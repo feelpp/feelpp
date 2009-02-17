@@ -40,6 +40,9 @@
 #include <life/lifemesh/filters.hpp>
 #include <life/lifepoly/quadmapped.hpp>
 
+#if defined( HAVE_GOOGLE_PROFILER_H )
+#include <google/profiler.h>
+#endif
 
 namespace Life
 {
@@ -490,7 +493,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
 #endif
         } // end loop on elements
 
-    Log() << "[elements] Overall geometric mapping update time : " << (t0+t1+t2) << " per element:" << (t0+t1+t2)/std::distance( this->beginElement(), this->endElement() ) << "\n";
+    Debug( 5065 ) << "[elements] Overall geometric mapping update time : " << (t0+t1+t2) << " per element:" << (t0+t1+t2)/std::distance( this->beginElement(), this->endElement() ) << "\n";
     Debug( 5065 ) << "[elements] Overall geometric mapping update time : " << t0 << "\n";
     Debug( 5065 ) << "[elements] Overall form update time : " << t1 << "\n";
     Debug( 5065 ) << "[elements] Overall local assembly time : " << t2 << "\n";
@@ -510,6 +513,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
     // some typedefs
     //
     typedef typename FormType::gm_type gm_type;
+    typedef boost::shared_ptr<gm_type> gm_ptrtype;
     typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
     //
@@ -555,7 +559,9 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
 
     // get the geometric mapping associated with element 0
     //Debug( 5065 ) << "element " << it->element(0)  << "face " << __face_id_in_elt_0 << " permutation " << it->element(0).permutation( __face_id_in_elt_0 ) << "\n";
-    gmc_ptrtype __c0( new gmc_type( __form.gm(),
+    gm_ptrtype __gm = it->element(0).gm();
+    Debug( 5065 ) << "[integrator] evaluate(faces), gm is cached: " << __gm->isCached() << "\n";
+    gmc_ptrtype __c0( new gmc_type( __gm,
                                     it->element( 0 ),
                                     __geopc[__face_id_in_elt_0][it->element(0).permutation( __face_id_in_elt_0 )],
                                     __face_id_in_elt_0 ) );
@@ -569,7 +575,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
     typedef typename FormType::template Context<map_gmc_type, expression_type, face_im_type> form_context_type;
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
-    form_context_type form( __form, mapgmc, expression(), face_ims[__face_id_in_elt_0] );
+    form_context_type form( __form, mapgmc, expression(), face_ims[__face_id_in_elt_0], this->im() );
 
     //
     // the case where the face is connected only to two elements
@@ -586,14 +592,14 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
         {
             uint16_type __face_id_in_elt_1 = it->pos_second();
 
-            __c1 = gmc_ptrtype( new gmc_type( __form.gm(),
+            __c1 = gmc_ptrtype( new gmc_type( __gm,
                                               it->element( 1 ),
                                               __geopc[__face_id_in_elt_1][it->element(1).permutation(__face_id_in_elt_1)],
                                               __face_id_in_elt_1 ) );
             map2_gmc_type mapgmc2( fusion::make_pair<detail::gmc<0> >( __c0 ),
                                    fusion::make_pair<detail::gmc<1> >( __c1 ) );
 
-            form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmc2, expression(), face_ims[__face_id_in_elt_0], mpl::int_<2>() ) );
+            form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmc2, expression(), face_ims[__face_id_in_elt_0], this->im(), mpl::int_<2>() ) );
         }
 
     boost::timer ti0,ti1, ti2, ti3;
@@ -674,7 +680,8 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
                 } // end loop on elements
 
         }
-    Log() << "[faces] Overall geometric mapping update time : " << (t0+t1+t2) << " per element:" << (t0+t1+t2)/std::distance( this->beginElement(), this->endElement() ) << "\n";
+
+    Debug( 5065 ) << "[faces] Overall integration time : " << (t0+t1+t2+t3) << " per element:" << (t0+t1+t2+t3)/std::distance( this->beginElement(), this->endElement() ) << "for " << std::distance( this->beginElement(), this->endElement() ) << "elements\n";
     Debug( 5065 ) << "[faces] Overall geometric mapping update time : " << t0 << "\n";
     Debug( 5065 ) << "[faces] Overall form update time : " << t1 << "\n";
     Debug( 5065 ) << "[faces] Overall local assembly time : " << t2 << "\n";
@@ -714,16 +721,11 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     // geometric mapping and reference finite element
     //
     gm_ptrtype gm = it->gm();
-    Log() << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
+    Debug(5065) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
     typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm,
                                                                                          this->im().points() ) );
 
 
-    for( ; it != en; ++it )
-        {
-            Debug( 5065 ) << "[Integrator::evaluate<elements>] element : " << it->id()
-                          << " proc " << Application::processId() << "\n";;
-        }
     it = this->beginElement();
     // wait for all the guys
 #ifdef HAVE_MPI
@@ -755,7 +757,6 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     for ( ; it != en; ++it )
         {
             boost::timer ti;
-            Debug( 5065 ) << "[Integrator::evaluate<elements>] element : " << it->id() << "\n";
             __c->update( *it, __geopc );
             map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
             expr.update( mapgmc );
@@ -769,8 +770,6 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     {
                         res(c1,c2) += __integrator( expr, c1, c2 );
                     }
-            Debug( 5065 ) << "[Integrator::evaluate<elements>] element : "
-                          << it->id() << " done in " << ti.elapsed() << "s.\n";
         }
     //std::cout << "res=" << res << "\n";
     //std::cout << "res1=" << res1 << "\n";
@@ -819,9 +818,8 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
     element_iterator it = beginElement();
     element_iterator en = endElement();
 
-    gm_ptrtype gm( new gm_type );
-    //gm_ptrtype gm = it->gm();
-    Log() << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
+    gm_ptrtype gm = it->element(0).gm();
+    Debug(5065) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
     for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
         {
             __integrators.push_back( __integrate( im(__f) ) );
@@ -853,6 +851,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
     typedef boost::shared_ptr<eval_expr_type> eval_expr_ptrtype;
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
     eval_expr_ptrtype expr( new eval_expr_type( expression(), mapgmc ) );
+    expr->init( im() );
 
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype>, fusion::pair<detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
     typedef typename expression_type::template tensor<map2_gmc_type> eval2_expr_type;
@@ -880,6 +879,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
                                   fusion::make_pair<detail::gmc<1> >( __c1 ) );
 
             expr2 = eval2_expr_ptrtype( new eval2_expr_type( expression(), mapgmc ) );
+            expr2->init( im() );
         }
     // make sure that we have elements to iterate over (return 0
     // otherwise)

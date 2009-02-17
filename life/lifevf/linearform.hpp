@@ -316,11 +316,19 @@ public:
                  ExprT const& expr,
                  IM const& im );
 
-
+        template<typename IM2>
         Context( form_type& __form,
                  map_geometric_mapping_context_type const& _gmc,
                  ExprT const& expr,
                  IM const& im,
+                 IM2 const& im2 );
+
+        template<typename IM2>
+        Context( form_type& __form,
+                 map_geometric_mapping_context_type const& _gmc,
+                 ExprT const& expr,
+                 IM const& im,
+                 IM2 const& im2,
                  mpl::int_<2> );
 
         void update( map_geometric_mapping_context_type const& _gmc );
@@ -804,13 +812,42 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     _M_eval1_expr(),
     M_integrator( im )
 {
+    _M_eval0_expr->init( im );
 }
+
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT, typename IM>
+template<typename IM2>
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
                                                                                            map_geometric_mapping_context_type const& _gmc,
                                                                                            ExprT const& expr,
                                                                                            IM const& im,
+                                                                                           IM2 const& im2 )
+    :
+    _M_form( __form ),
+    _M_test_dof( __form.functionSpace()->dof().get() ),
+    _M_lb( __form.blockList() ),
+    _M_gmc( _gmc ),
+    _M_gmc_left( fusion::at_key<gmc<0> >( _gmc ) ),
+    _M_left_map( fusion::make_map<gmc<0> >( _M_gmc_left ) ),
+    _M_test_fec( fusion::transform( _M_gmc, InitTestFec(__form.functionSpace()->fe(), _M_form ) ) ),
+    _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
+    _M_rep(boost::extents[fusion::size(_gmc)*test_basiscontext_type::nDof]
+           [test_basiscontext_type::nComponents1]),
+    _M_eval0_expr( new eval0_expr_type( expr, _gmc, _M_test_fec0 ) ),
+    _M_eval1_expr(),
+    M_integrator( im )
+{
+    _M_eval0_expr->init( im2 );
+}
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+template<typename GeomapContext,typename ExprT, typename IM>
+template<typename IM2>
+LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
+                                                                                           map_geometric_mapping_context_type const& _gmc,
+                                                                                           ExprT const& expr,
+                                                                                           IM const& im,
+                                                                                           IM2 const& im2,
                                                                                            mpl::int_<2> )
     :
     _M_form( __form ),
@@ -830,6 +867,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     _M_eval1_expr( new eval1_expr_type( expr, _gmc, _M_test_fec1 ) ),
     M_integrator( im )
 {
+    _M_eval0_expr->init( im2 );
+    _M_eval1_expr->init( im2 );
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>

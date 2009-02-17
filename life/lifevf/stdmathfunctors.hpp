@@ -236,6 +236,11 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \
+            template<typename IM>                                       \
+                void init( IM const& im )                               \
+            {                                                           \
+                _M_expr.init( im );                                     \
+            }                                                           \
             void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
             {                                                           \
                 update( geom );                                         \

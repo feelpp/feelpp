@@ -155,6 +155,11 @@ public:
         {
         }
 
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_tensor_expr.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             _M_tensor_expr.update( geom, fev, feu );
@@ -370,7 +375,11 @@ public:
             _M_tag( expr.tag() )
         {
         }
-
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_tensor_expr.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             _M_tensor_expr.update( geom, fev, feu );
@@ -604,6 +613,11 @@ public:
             _M_tensor_expr( expr.expression(), geom )
         {
         }
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_tensor_expr.init( im );
+        }
 
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
@@ -780,6 +794,11 @@ public:
 //             std::cout << "diag q rank : " << shape::rank << "\n";
         }
 
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_tensor_expr.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             _M_tensor_expr.update( geom, fev, feu );
@@ -958,6 +977,10 @@ public:
             _M_constant( expr.value() )
         {
         }
+        template<typename IM>
+        void init( IM const& /*im*/ )
+        {
+        }
         void update( Geo_t const&, Basis_i_t const& , Basis_j_t const&  )
         {
         }
@@ -1121,6 +1144,10 @@ public:
 //                           << "M=" << shape::M << "\n"
 //                           << "N=" << shape::N << "\n";
             }
+        template<typename IM>
+        void init( IM const& /*im*/ )
+        {
+        }
         void update( Geo_t const& /*geom*/, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
         }
@@ -1249,7 +1276,11 @@ public:
             :
             _M_t_expr( expr.expression(), geom )
         {}
-
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_t_expr.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev , Basis_j_t const& feu )
         {
             _M_t_expr.update( geom, fev, feu );
@@ -1369,7 +1400,11 @@ public:
             :
             _M_t_expr( expr.expression(), geom )
         {}
-
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_t_expr.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev , Basis_j_t const& feu )
         {
             _M_t_expr.update( geom, fev, feu );
@@ -1515,6 +1550,12 @@ public:
             _M_right( expr.right(), geom )
             {
             }
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_left.init( im );
+            _M_right.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -1684,6 +1725,12 @@ public:
             _M_right( expr.right(), geom )
             {
             }
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_left.init( im );
+            _M_right.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -1862,6 +1909,12 @@ public:
             {
                 update( geom );
             }
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_left.init( im );
+            _M_right.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -2057,7 +2110,11 @@ public:
             :
             _M_tensor_expr( expr.expression(), fusion::at_c<GeoId>(  geom ) )
         {}
-
+        template<typename IM>
+        void init( IM const& im )
+        {
+            _M_tensor_expr.init( im );
+        }
         void update( VecGeo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             _M_tensor_expr.update( fusion::at_c<GeoId>(  geom ), fev, feu );
@@ -2247,6 +2304,11 @@ public:
         {
             for( uint16_type i = 0; i < _M_loc.size(); ++i )
                 _M_loc[i].resize( boost::extents[nComponents1][nComponents2][_M_pc.nPoints()] );
+        }
+        template<typename IM>
+        void init( IM const& /*im*/ )
+        {
+
         }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
