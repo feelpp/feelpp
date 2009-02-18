@@ -245,14 +245,10 @@ public:
                               mpl::identity<ublas::row_major>,
                               mpl::identity<ublas::column_major> >::type::type layout_type;
 
-    typedef typename mpl::if_<mpl::bool_<space_1_type::is_composite>,
-                              mpl::at_c<fe_1_type,0>,
-                              mpl::identity<fe_1_type> >::type::type::precompute_type test_precompute_type;
+    typedef typename space_1_type::basis_0_type::precompute_type test_precompute_type;
     typedef boost::shared_ptr<test_precompute_type> test_precompute_ptrtype;
 
-    typedef typename mpl::if_<mpl::bool_<space_2_type::is_composite>,
-                              mpl::at_c<fe_2_type,0>,
-                              mpl::identity<fe_2_type> >::type::type::precompute_type trial_precompute_type;
+    typedef typename space_2_type::basis_0_type::precompute_type trial_precompute_type;
     typedef boost::shared_ptr<trial_precompute_type> trial_precompute_ptrtype;
 
     typedef GraphCSR graph_type;
