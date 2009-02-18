@@ -85,7 +85,7 @@ class Mesh1D
         public MeshBase,
         public Elements<Shape>,
         public Points<Shape::nRealDim>,
-        public Faces<GeoEntity<typename Shape::template shape<0,Shape::nOrder,Shape::nRealDim>::type >,
+        public Faces<typename Shape::template shape<0,Shape::nOrder,Shape::nRealDim>::type,
                      typename Elements<Shape>::element_type>
 {
     // check at compilation time that the shape has indeed dimension 1
@@ -117,7 +117,7 @@ public:
     typedef typename super_points::points_type points_type;
     typedef typename super_points::point_type point_type;
 
-    typedef Faces<GeoEntity<typename Shape::template shape<0,Shape::nOrder,Shape::nRealDim>::type >,
+    typedef Faces<typename Shape::template shape<0,Shape::nOrder,Shape::nRealDim>::type,
                   typename super_elements::element_type> super_faces;
     typedef typename super_faces::faces_type faces_type;
     typedef typename super_faces::face_type face_type;

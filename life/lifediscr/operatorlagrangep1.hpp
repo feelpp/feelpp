@@ -47,9 +47,6 @@ template<typename SpaceType>
 struct SpaceToLagrangeP1Space
 {
     typedef SpaceType domain_space_type;
-    typedef typename mpl::if_<mpl::bool_<domain_space_type::is_continuous>,
-                              mpl::identity<Continuous>,
-                              mpl::identity<Discontinuous> >::type::type continuity_type;
     typedef typename domain_space_type::fe_type::convex_type convex_type;
 
     template< template<uint16_type Dim> class PsetType>
@@ -59,12 +56,12 @@ struct SpaceToLagrangeP1Space
         typedef typename SpaceType::value_type value_type;
 
         typedef typename mpl::if_<mpl::bool_<convex_type::is_simplex>,
-                                  mpl::identity<fem::Lagrange<convex_type::nDim,1,PsetType,continuity_type,value_type,Simplex> >,
-                                  mpl::identity<fem::Lagrange<convex_type::nDim,1,PsetType,continuity_type,value_type,SimplexProduct> > >::type::type type;
+                                  mpl::identity<fem::Lagrange<convex_type::nDim,1,PsetType,value_type,Simplex> >,
+                                  mpl::identity<fem::Lagrange<convex_type::nDim,1,PsetType,value_type,SimplexProduct> > >::type::type type;
 
     };
     typedef typename convex_type::template shape<convex_type::nDim, 1, convex_type::nDim>::type image_convex_type;
-    typedef Mesh<GeoEntity<image_convex_type> > image_mesh_type;
+    typedef Mesh<image_convex_type> image_mesh_type;
 
     typedef typename mpl::if_<mpl::bool_<domain_space_type::is_scalar>,
                               mpl::identity<typename SelectConvex<Scalar>::type>,

@@ -81,7 +81,7 @@ class ALE
     };
 
 
-    typedef Mesh< GeoEntity< convex_type > > mesh_type;
+    typedef Mesh< convex_type > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
 
@@ -90,7 +90,9 @@ class ALE
     {
         typedef typename MyPointSet<i>::type pointSet_type;
 
-        typedef typename mpl::if_< mpl::bool_< is_simplex >,                                                                                                                fusion::vector<fem::Lagrange<Dim, i, Vectorial, Continuous, double, Simplex, PointSetFekete> >,                                          fusion::vector<fem::Lagrange<Dim, i, Vectorial, Continuous, double, SimplexProduct, PointSetGaussLobatto> > >::type type;
+        typedef typename mpl::if_< mpl::bool_< is_simplex >,
+                                   fusion::vector<Lagrange<i, Vectorial, PointSetFekete> >,
+                                   fusion::vector<Lagrange<i, Vectorial, PointSetGaussLobatto> > >::type type;
     };
 
 
@@ -118,7 +120,7 @@ class ALE
      *  Definitions for PN mesh and functionspace
      */
     typedef typename MyConvex<Order>::type new_convex_type;
-    typedef Mesh< GeoEntity<new_convex_type> > new_mesh_type;
+    typedef Mesh< new_convex_type > new_mesh_type;
     typedef boost::shared_ptr<new_mesh_type> new_mesh_ptrtype;
 
     typedef typename MyBasis<Order>::type pN_basis_type;

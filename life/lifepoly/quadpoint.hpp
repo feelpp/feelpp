@@ -76,7 +76,7 @@ public :
 
     typedef PointSetQuadrature<Convex, Integration_Degree, T> self_type;
 
-
+    typedef self_type parent_quadrature_type;
     static const uint16_type I_deg = Integration_Degree;
 
     PointSetQuadrature() {}
@@ -289,6 +289,7 @@ public :
                                    Integration_Degree,
                                    T> super;
     public:
+        typedef super parent_quadrature_type;
         static const bool is_face_im = true;
         Face()
             :

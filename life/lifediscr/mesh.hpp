@@ -6,7 +6,7 @@
        Date: 2005-07-05
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007-2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -152,7 +152,7 @@ public:
     typedef Mesh<shape_type, T> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
-    typedef typename GeoShape::template reference_convex<T>::type reference_convex_type;
+    typedef typename element_type::template reference_convex<T>::type reference_convex_type;
 
     typedef Partitioner<self_type> partitioner_type;
     typedef boost::shared_ptr<partitioner_type> partitioner_ptrtype;

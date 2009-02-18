@@ -109,57 +109,57 @@ Exporter<MT>* createGmsh() { return new ExporterGmsh<MT>; }
 //
 // Simplex 1,1
 //
-typedef Mesh<GeoEntity<Simplex<1,1> > > meshs11_t;
+typedef Mesh<Simplex<1,1> > meshs11_t;
 const bool meshs11e = Exporter<meshs11_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshs11_t> );
 const bool meshs11g = Exporter<meshs11_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshs11_t> );
 
-typedef Mesh<GeoEntity<Simplex<1,1,2> > > meshs112_t;
+typedef Mesh<Simplex<1,1,2> > meshs112_t;
 const bool meshs112e = Exporter<meshs112_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshs112_t> );
 const bool meshs112g = Exporter<meshs112_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshs112_t> );
 
 //
 // Simplex 2,1
 //
-typedef Mesh<GeoEntity<Simplex<2,1> > > meshs21_t;
+typedef Mesh<Simplex<2,1> > meshs21_t;
 const bool meshs21e = Exporter<meshs21_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshs21_t> );
 const bool meshs21g = Exporter<meshs21_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshs21_t> );
 
-typedef Mesh<GeoEntity<Simplex<2,1,3> > > meshs213_t;
+typedef Mesh<Simplex<2,1,3> > meshs213_t;
 const bool meshs213e = Exporter<meshs213_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshs213_t> );
 const bool meshs213g = Exporter<meshs213_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshs213_t> );
 
 //
 // Simplex 2,2
 //
-typedef Mesh<GeoEntity<Simplex<2,2> > > meshs22_t;
+typedef Mesh<Simplex<2,2> > meshs22_t;
 const bool meshs22e = Exporter<meshs22_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshs22_t> );
 const bool meshs22g = Exporter<meshs22_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshs22_t> );
 
 //
 // Simplex 3,1
 //
-typedef Mesh<GeoEntity<Simplex<3,1> > > meshs31_t;
+typedef Mesh<Simplex<3,1> > meshs31_t;
 const bool meshs31e = Exporter<meshs31_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshs31_t> );
 const bool meshs31g = Exporter<meshs31_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshs31_t> );
 
 //
 // SimplexProduct 1,1
 //
-typedef Mesh<GeoEntity<SimplexProduct<1,1> > > meshsp11_t;
+typedef Mesh<SimplexProduct<1,1> > meshsp11_t;
 const bool meshsp11e = Exporter<meshsp11_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshsp11_t> );
 const bool meshsp11g = Exporter<meshsp11_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshsp11_t> );
 
 //
 // SimplexProduct 2,1
 //
-typedef Mesh<GeoEntity<SimplexProduct<2,1> > > meshsp21_t;
+typedef Mesh<SimplexProduct<2,1> > meshsp21_t;
 const bool meshsp21e = Exporter<meshsp21_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshsp21_t> );
 const bool meshsp21g = Exporter<meshsp21_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshsp21_t> );
 
 //
 // SimplexProduct 3,1
 //
-typedef Mesh<GeoEntity<SimplexProduct<3,1> > > meshsp31_t;
+typedef Mesh<SimplexProduct<3,1> > meshsp31_t;
 const bool meshsp31e = Exporter<meshsp31_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshsp31_t> );
 const bool meshsp31g = Exporter<meshsp31_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshsp31_t> );
 
@@ -167,15 +167,15 @@ const bool meshsp31g = Exporter<meshsp31_t>::Factory::type::instance().registerP
 //
 // explicit instances
 //
-template class Exporter<Mesh<GeoEntity<Simplex<1,1,1> > > >;
-template class Exporter<Mesh<GeoEntity<Simplex<1,1,2> > > >;
-template class Exporter<Mesh<GeoEntity<Simplex<2,1,2> > > >;
-template class Exporter<Mesh<GeoEntity<Simplex<2,2,2> > > >;
-template class Exporter<Mesh<GeoEntity<Simplex<2,1,3> > > >;
-template class Exporter<Mesh<GeoEntity<Simplex<3,1,3> > > >;
-template class Exporter<Mesh<GeoEntity<SimplexProduct<1,1,1> > > >;
-template class Exporter<Mesh<GeoEntity<SimplexProduct<2,1,2> > > >;
-template class Exporter<Mesh<GeoEntity<SimplexProduct<3,1,3> > > >;
+template class Exporter<Mesh<Simplex<1,1,1> > >;
+template class Exporter<Mesh<Simplex<1,1,2> > >;
+template class Exporter<Mesh<Simplex<2,1,2> > >;
+template class Exporter<Mesh<Simplex<2,2,2> > >;
+template class Exporter<Mesh<Simplex<2,1,3> > >;
+template class Exporter<Mesh<Simplex<3,1,3> > >;
+template class Exporter<Mesh<SimplexProduct<1,1,1> > >;
+template class Exporter<Mesh<SimplexProduct<2,1,2> > >;
+template class Exporter<Mesh<SimplexProduct<3,1,3> > >;
 //#endif // LIFE_INSTANTIATION_MODE
 
 //

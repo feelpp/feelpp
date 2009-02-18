@@ -93,18 +93,7 @@ public:
      */
     //@{
     typedef MeshType mesh_type;
-    template<template<uint16_type> class SType, uint16_type Order>
-    struct lag
-    {
 
-        typedef typename mpl::if_<mpl::equal_to<mpl::int_<Order>,mpl::int_<0> >,
-                                  typename mpl::if_<mpl::bool_<mesh_type::element_type::is_simplex_product>,
-                                                    mpl::identity<fem::Lagrange<mesh_type::nDim, Order, SType, Discontinuous, double, SimplexProduct> >,
-                                                    mpl::identity<fem::Lagrange<mesh_type::nDim, Order, SType, Discontinuous, double, Simplex> > >::type,
-                                  typename mpl::if_<mpl::bool_<mesh_type::element_type::is_simplex_product>,
-                                                    mpl::identity<fem::Lagrange<mesh_type::nDim, Order, SType, Continuous, double, SimplexProduct> >,
-                                                    mpl::identity<fem::Lagrange<mesh_type::nDim, Order, SType, Continuous, double, Simplex> > >::type >::type::type type;
-    };
 
     /**
        \brief a step in a time set
@@ -124,12 +113,12 @@ public:
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
 
-        typedef FunctionSpace<MeshType, bases<typename lag<Scalar,0>::type> > scalar_p0_space_type;
-        typedef FunctionSpace<MeshType, bases<typename lag<Vectorial,0>::type> > vector_p0_space_type;
-        typedef FunctionSpace<MeshType, bases<typename lag<Tensor2,0>::type> > tensor2_p0_space_type;
-        typedef FunctionSpace<MeshType, bases<typename lag<Scalar,1>::type> > scalar_p1_space_type;
-        typedef FunctionSpace<MeshType, bases<typename lag<Vectorial,1>::type> > vector_p1_space_type;
-        typedef FunctionSpace<MeshType, bases<typename lag<Tensor2,1>::type> > tensor2_p1_space_type;
+        typedef FunctionSpace<MeshType, bases<Lagrange<0,Scalar> >, Discontinuous > scalar_p0_space_type;
+        typedef FunctionSpace<MeshType, bases<Lagrange<0,Vectorial> >, Discontinuous > vector_p0_space_type;
+        typedef FunctionSpace<MeshType, bases<Lagrange<0,Tensor2> >, Discontinuous > tensor2_p0_space_type;
+        typedef FunctionSpace<MeshType, bases<Lagrange<1,Scalar> > > scalar_p1_space_type;
+        typedef FunctionSpace<MeshType, bases<Lagrange<1,Vectorial> > > vector_p1_space_type;
+        typedef FunctionSpace<MeshType, bases<Lagrange<1,Tensor2> > > tensor2_p1_space_type;
         typedef boost::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
         typedef boost::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
         typedef boost::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;

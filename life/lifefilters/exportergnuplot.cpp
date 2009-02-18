@@ -166,7 +166,7 @@ ExporterGnuplot<MeshType>::save() const
 //
 // explicit instances
 //
-template class ExporterGnuplot<Mesh<GeoEntity<Simplex<1,1> > > >;
+template class ExporterGnuplot<Mesh<Simplex<1,1> > >;
 #endif // LIFE_INSTANTIATION_MODE
 
 }

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-08-07
 
-  Copyright (C) 2007 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -965,35 +965,35 @@ Mesh<Shape, T>::Inverse::distribute( bool extrapolation )
 //
 #if defined( LIFE_INSTANTIATION_MODE )
 
-template class Mesh<GeoEntity<Simplex<1, 1, 1> > >;
-template class Mesh<GeoEntity<Simplex<1, 1, 2> > >;
-template class Mesh<GeoEntity<SimplexProduct<1, 1, 1> > >;
-template class Mesh<GeoEntity<SimplexProduct<1, 1, 2> > >;
+template class Mesh<Simplex<1, 1, 1> >;
+template class Mesh<Simplex<1, 1, 2> >;
+template class Mesh<SimplexProduct<1, 1, 1> >;
+template class Mesh<SimplexProduct<1, 1, 2> >;
 
-template class Mesh<GeoEntity<Simplex<2, 1, 2> > >;
-template class Mesh<GeoEntity<SimplexProduct<2, 1, 2> > >;
+template class Mesh<Simplex<2, 1, 2> >;
+template class Mesh<SimplexProduct<2, 1, 2> >;
 
 #if LIFE_MESH_MAX_ORDER >= 2
-template class Mesh<GeoEntity<Simplex<2, 2, 2> > >;
-template class Mesh<GeoEntity<SimplexProduct<2, 2, 2> > >;
+template class Mesh<Simplex<2, 2, 2> >;
+template class Mesh<SimplexProduct<2, 2, 2> >;
 #elif LIFE_MESH_MAX_ORDER >= 3
-template class Mesh<GeoEntity<Simplex<2, 3, 2> > >;
+template class Mesh<Simplex<2, 3, 2> >;
 #elif LIFE_MESH_MAX_ORDER >= 4
-template class Mesh<GeoEntity<Simplex<2, 4, 2> > >;
+template class Mesh<Simplex<2, 4, 2> >;
 #elif LIFE_MESH_MAX_ORDER >= 5
-template class Mesh<GeoEntity<Simplex<2, 5, 2> > >;
+template class Mesh<Simplex<2, 5, 2> >;
 #endif
 
-template class Mesh<GeoEntity<Simplex<2, 1, 3> > >;
+template class Mesh<Simplex<2, 1, 3> >;
 
 
-template class Mesh<GeoEntity<Simplex<3, 1, 3> > >;
-template class Mesh<GeoEntity<SimplexProduct<3, 1, 3> > >;
+template class Mesh<Simplex<3, 1, 3> >;
+template class Mesh<SimplexProduct<3, 1, 3> >;
 
 
 #if LIFE_MESH_MAX_ORDER >= 2
-template class Mesh<GeoEntity<Simplex<3, 2, 3> > >;
-template class Mesh<GeoEntity<SimplexProduct<3, 2, 3> > >;
+template class Mesh<Simplex<3, 2, 3> >;
+template class Mesh<SimplexProduct<3, 2, 3> >;
 #endif
 
 #endif // LIFE_INSTANTIATION_MODE

@@ -45,8 +45,7 @@ namespace Life
  *  @see
  */
 template<typename P,
-	template<class Pr, class Co,  template<class,uint16_type,class> class Pt> class PDual,
-	typename ContinuityType,
+	template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
 	template<class,uint16_type,class> class Pts>
 class FiniteElement :
                     public mpl::if_<mpl::bool_<P::is_scalar>,
@@ -62,7 +61,7 @@ public:
    */
   //@{
 
-  typedef FiniteElement<P, PDual, ContinuityType, Pts> self_type;
+  typedef FiniteElement<P, PDual, Pts> self_type;
 
   typedef typename P::value_type value_type;
 
@@ -73,15 +72,9 @@ public:
    */
   typedef typename primal_space_type::polyset_type polyset_type;
 
-  /**
-   * Polynomial Set continuity type: continuous or discontinuous
-   */
-  typedef ContinuityType continuity_type;
-  static const bool is_continuous = continuity_type::is_continuous;
-
   static const bool is_modal = false;
 
-  typedef PDual<P, continuity_type, Pts> dual_space_type;
+  typedef PDual<P, Pts> dual_space_type;
 
   typedef typename super::matrix_type matrix_type;
   typedef typename super::points_type points_type;
@@ -261,33 +254,28 @@ private:
 };
 
 template<typename P,
-         template<class Pr, class Co,  template<class,uint16_type,class> class Pt> class PDual,
-         typename ContinuityType,
+         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
          template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,ContinuityType,Pts>::nLocalDof;
+const uint16_type FiniteElement<P,PDual,Pts>::nLocalDof;
 
 template<typename P,
-         template<class Pr, class Co,  template<class,uint16_type,class> class Pt> class PDual,
-         typename ContinuityType,
+         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
          template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,ContinuityType,Pts>::nDofPerVertex;
+const uint16_type FiniteElement<P,PDual,Pts>::nDofPerVertex;
 
 template<typename P,
-         template<class Pr, class Co,  template<class,uint16_type,class> class Pt> class PDual,
-         typename ContinuityType,
+         template<class Pr, template<class,uint16_type,class> class Pt> class PDual,
          template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,ContinuityType,Pts>::nDofPerEdge;
+const uint16_type FiniteElement<P,PDual,Pts>::nDofPerEdge;
 
 template<typename P,
-         template<class Pr, class Co,  template<class,uint16_type,class> class Pt> class PDual,
-         typename ContinuityType,
+         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
          template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,ContinuityType,Pts>::nDofPerFace;
+const uint16_type FiniteElement<P,PDual,Pts>::nDofPerFace;
 
 template<typename P,
-         template<class Pr, class Co,  template<class,uint16_type,class> class Pt> class PDual,
-         typename ContinuityType,
+         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
          template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,ContinuityType,Pts>::nDofPerVolume;
+const uint16_type FiniteElement<P,PDual,Pts>::nDofPerVolume;
 }
 #endif /* __FiniteElement_H */

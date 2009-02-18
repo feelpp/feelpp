@@ -205,12 +205,10 @@ class CrouzeixRaviart
     :
     public FiniteElement<OrthonormalPolynomialSet<N, 1, PolySetType, T, Convex>,
                          details::CrouzeixRaviartDual,
-                         Continuous,
                          PointSetEquiSpaced >
 {
     typedef FiniteElement<OrthonormalPolynomialSet<N, 1, PolySetType, T, Convex>,
                           details::CrouzeixRaviartDual,
-                          Continuous,
                           PointSetEquiSpaced > super;
 public:
 

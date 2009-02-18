@@ -46,10 +46,7 @@ value_type lebesgueConstant()
 
     typedef typename mpl::if_< mpl::bool_< Convex::is_simplex >, Simplex<Dim, 1>, SimplexProduct<Dim, 1> >::type convex_type;
 
-    typedef typename mpl::if_< mpl::bool_< Convex::is_simplex >,
-        fem::Lagrange<Dim, Order, Scalar, Continuous, value_type, Simplex, PointSetType >,
-        fem::Lagrange<Dim, Order, Scalar, Continuous, value_type, SimplexProduct, PointSetType > >::type basis_type;
-
+    typedef Lagrange<Order,Scalar,PointSetType>::template apply<Dim, value_type, Convex>::type basis_type;
     basis_type _M_basis;
 
     PointSetEquiSpaced<convex_type, 100 - 80*(Dim-2), value_type> test;

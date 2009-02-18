@@ -91,8 +91,8 @@ public:
     static const uint16_type nComponents1 = fe_type::nComponents1;
     static const uint16_type nComponents2 = fe_type::nComponents2;
 
-    static const bool is_continuous = FEType::is_continuous && ContinuityType::is_continuous;
-    static const bool is_discontinuous_locally = FEType::is_continuous && ContinuityType::is_discontinuous_locally;
+    static const bool is_continuous = ContinuityType::is_continuous;
+    static const bool is_discontinuous_locally = ContinuityType::is_discontinuous_locally;
     static const bool is_discontinuous_totally = ContinuityType::is_discontinuous_totally;
 
     static const bool is_scalar = FEType::is_scalar;
@@ -637,6 +637,7 @@ public:
         Debug(5015) << "[build] call buildDofMap()\n";
         this->buildDofMap( M, start_next_free_dof );
 
+#if !defined(NDEBUG)
         Debug(5015) << "[build] check that all elements dof were assigned()\n";
         element_const_iterator fit, fen;
         boost::tie( fit, fen ) = M.elementsRange();
@@ -652,7 +653,7 @@ public:
         if ( !em.empty() )
             {
                 Debug(5015) << "[build] some element dof were not assigned\n";
-                for( int i = 0; i < em.size(); ++i )
+                for( size_type i = 0; i < em.size(); ++i )
                     {
                         Debug(5015) << " - element " << boost::get<0>( em[i] ) << " c=" << boost::get<1>( em[i] )
                                     << " m=" << boost::get<2>( em[i] ) << "\n";
@@ -662,6 +663,7 @@ public:
             {
                 Debug(5015) << "[build] check that all elements dof were assigned: OK\n";
             }
+#endif // NDEBUG
         Debug( 5015 ) << "[Dof::build] n_dof = " << this->nLocalDof() << "\n";
 
         Debug(5015) << "[build] call buildBoundaryDofMap()\n";

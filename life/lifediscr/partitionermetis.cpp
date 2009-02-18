@@ -356,23 +356,23 @@ namespace{
 //
 // explicit instantiations
 //
-template class PartitionerMetis<Mesh<GeoEntity<Simplex<1,1> > > >;
-template class PartitionerMetis<Mesh<GeoEntity<Simplex<2,1> > > >;
+template class PartitionerMetis<Mesh<Simplex<1,1> > >;
+template class PartitionerMetis<Mesh<Simplex<2,1> > >;
 #if LIFE_MESH_MAX_ORDER >= 2
-template class PartitionerMetis<Mesh<GeoEntity<Simplex<2,2> > > >;
+template class PartitionerMetis<Mesh<Simplex<2,2> > >;
 #elif LIFE_MESH_MAX_ORDER >= 3
-template class PartitionerMetis<Mesh<GeoEntity<Simplex<2,3> > > >;
+template class PartitionerMetis<Mesh<Simplex<2,3> > >;
 #elif LIFE_MESH_MAX_ORDER >= 4
-template class PartitionerMetis<Mesh<GeoEntity<Simplex<2,4> > > >;
+template class PartitionerMetis<Mesh<Simplex<2,4> > >;
 #elif LIFE_MESH_MAX_ORDER >= 5
-template class PartitionerMetis<Mesh<GeoEntity<Simplex<2,5> > > >;
+template class PartitionerMetis<Mesh<Simplex<2,5> > >;
 #endif
 
-template class PartitionerMetis<Mesh<GeoEntity<Simplex<3,1> > > >;
+template class PartitionerMetis<Mesh<Simplex<3,1> > >;
 #if LIFE_MESH_MAX_ORDER >= 2
-template class PartitionerMetis<Mesh<GeoEntity<Simplex<3,2> > > >;
+template class PartitionerMetis<Mesh<Simplex<3,2> > >;
 #endif
-template class PartitionerMetis<Mesh<GeoEntity<SimplexProduct<1,1> > > >;
-template class PartitionerMetis<Mesh<GeoEntity<SimplexProduct<2,1> > > >;
-template class PartitionerMetis<Mesh<GeoEntity<SimplexProduct<3,1> > > >;
+template class PartitionerMetis<Mesh<SimplexProduct<1,1> > >;
+template class PartitionerMetis<Mesh<SimplexProduct<2,1> > >;
+template class PartitionerMetis<Mesh<SimplexProduct<3,1> > >;
 }

@@ -411,7 +411,8 @@ public:
 
     typedef GEOSHAPE GeoShape;
     typedef GeoElement1D<Dim, GEOSHAPE, SubFace, T > self_type;
-    typedef typename SubFace::template Element<self_type>::type element_type;
+    //typedef typename SubFace::template Element<self_type>::type element_type;
+    typedef self_type element_type;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<1> >,
                               mpl::identity<GeoElement0D<Dim, SubFaceOf<self_type>, T> >,
                               mpl::identity<GeoElement0D<Dim, SubFaceOfNone, T> > >::type::type point_type;
@@ -649,10 +650,11 @@ public:
     static const uint16_type numLocalFaces = super::numFaces;
 
     typedef GEOSHAPE GeoShape;
-    typedef typename GEOSHAPE::GeoBShape EdgeShape;
+    typedef typename super::face_type entity_face_type;
     typedef GeoElement2D<Dim, GEOSHAPE,SubFace, T> self_type;
-    typedef typename SubFace::template Element<self_type>::type element_type;
-    typedef GeoElement1D<Dim, typename GEOSHAPE::face_type, SubFaceOf<self_type>, T > edge_type;
+    //typedef typename SubFace::template Element<self_type>::type element_type;
+    typedef self_type element_type;
+    typedef GeoElement1D<Dim, entity_face_type, SubFaceOf<self_type>, T > edge_type;
     typedef GeoElement0D<Dim, SubFaceOfNone, T> point_type;
 #if 0
     BOOST_MPL_ASSERT_MSG( (boost::is_same<point_type,typename edge_type::point_type>::value),
@@ -932,13 +934,13 @@ public:
     typedef SubFaceOfNone super2;
 
     typedef GEOSHAPE GeoShape;
-    typedef typename GEOSHAPE::GeoBShape FaceShape;
-    typedef typename FaceShape::GeoBShape EdgeShape;
+
+    typedef typename super::face_type entity_face_type;
 
     typedef GeoElement3D<Dim, GEOSHAPE,T> self_type;
     typedef self_type element_type;
-    typedef GeoElement2D<Dim, typename GEOSHAPE::face_type, SubFaceOf<self_type>, T > face_type;
-    typedef GeoElement1D<Dim, typename GEOSHAPE::face_type::face_type, SubFaceOfNone, T> edge_type;
+    typedef GeoElement2D<Dim, entity_face_type, SubFaceOf<self_type>, T > face_type;
+    typedef GeoElement1D<Dim, typename entity_face_type::topological_face_type, SubFaceOfNone, T> edge_type;
     typedef GeoElement0D<Dim, SubFaceOfNone, T> point_type;
 
     typedef typename super::node_type node_type;

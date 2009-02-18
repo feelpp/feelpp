@@ -63,7 +63,7 @@ public:
     typedef Entity super;
     typedef GeoEntity<Entity> GeoShape;
     typedef GeoEntity<Entity> self_type;
-    typedef GeoEntity<typename super::topological_face_type> face_type;
+    typedef typename super::topological_face_type face_type;
     typedef face_type GeoBShape;
     typedef typename Entity::edge_permutation_type edge_permutation_type;
     typedef typename Entity::face_permutation_type face_permutation_type;

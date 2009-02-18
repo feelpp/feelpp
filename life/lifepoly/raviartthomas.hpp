@@ -184,7 +184,6 @@ namespace details
 
 
 template<typename Basis,
-         typename ContinuityType,
          template<class, class> class PointSetType>
 class RaviartThomasDual
     :
@@ -344,12 +343,10 @@ class RaviartThomas
     :
     public FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
                          details::RaviartThomasDual,
-                         Continuous,
                          PointSetEquiSpaced >
 {
     typedef FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
                           details::RaviartThomasDual,
-                          Continuous,
                           PointSetEquiSpaced > super;
 public:
 
@@ -374,12 +371,6 @@ public:
     static const bool is_scalar = polyset_type::is_scalar;
     static const uint16_type nComponents = polyset_type::nComponents;
 
-
-    /**
-     * Polynomial Set continuity type: continuous or discontinuous
-     */
-    typedef typename super::continuity_type continuity_type;
-    static const bool is_continuous = super::is_continuous;
 
     typedef typename dual_space_type::convex_type convex_type;
     typedef typename dual_space_type::pointset_type pointset_type;

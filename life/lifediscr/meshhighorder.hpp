@@ -42,12 +42,12 @@ class MeshHighOrder
 
 
     typedef typename mpl::if_< mpl::bool_< is_simplex >, Simplex<Dim, 1>, SimplexProduct<Dim, 1> >::type convex_type;
-    typedef Mesh< GeoEntity< convex_type > > mesh_type;
+    typedef Mesh< convex_type > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
 
     typedef typename mpl::if_< mpl::bool_< is_simplex >, Simplex<2, Order>, SimplexProduct<2, Order> >::type new_convex_type;
-    typedef Mesh< GeoEntity<new_convex_type> > new_mesh_type;
+    typedef Mesh< new_convex_type > new_mesh_type;
 
     typedef boost::shared_ptr<new_mesh_type> new_mesh_ptrtype;
 
