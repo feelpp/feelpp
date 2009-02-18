@@ -96,9 +96,7 @@ public:
     typedef typename space_type::gm_ptrtype gm_ptrtype;
 
     typedef typename space_type::fe_type fe_type;
-    typedef typename mpl::if_<mpl::bool_<space_type::is_composite>,
-                              mpl::at_c<fe_type,0>,
-                              mpl::identity<fe_type> >::type::type::precompute_type test_precompute_type;
+    typedef typename space_type::basis_0_type::precompute_type test_precompute_type;
 
     typedef boost::shared_ptr<test_precompute_type> test_precompute_ptrtype;
     //@}
