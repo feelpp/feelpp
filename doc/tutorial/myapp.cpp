@@ -21,7 +21,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   \file application.cpp
+   \file myapp.cpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-02-04
  */
@@ -31,6 +31,13 @@
 
 using namespace Life;
 
+/**
+ * This routine returns the list of options using the
+ * boost::program_options library. The data returned is typically used
+ * as an argument of a Life::Application subclass.
+ *
+ * \return the list of options
+ */
 inline
 po::options_description
 makeOptions()
@@ -44,6 +51,13 @@ makeOptions()
     // internally by Life
     return myappoptions.add( life_options() );
 }
+/**
+ * This routine defines some information about the application like
+ * authors, version, or name of the application. The data returned is
+ * typically used as an argument of a Life::Application subclass.
+ *
+ * \return some data about the application.
+ */
 inline
 AboutData
 makeAbout()
@@ -61,7 +75,12 @@ makeAbout()
     return about;
 }
 
-
+/**
+ * \class MyApp
+ *
+ * This is a demo class to illustrate what is done (at the very least) in subclasses of Life::Application
+ *
+ */
 class MyApp: public Application
 {
 public:
@@ -79,7 +98,7 @@ public:
            po::options_description const&  );
 
     /**
-     * must be redefined by Application subclass
+     * This function is responsible for the actual work done by MyApp.
      */
     void run();
 };
@@ -97,24 +116,51 @@ MyApp::MyApp(int argc, char** argv,
 {}
 void MyApp::run()
 {
+    /**
+     * print the help if --help is passed as an argument
+     */
+    /** \code */
     if ( this->vm().count( "help" ) )
         {
             std::cout << this->optionsDescription() << "\n";
             return;
         }
+    /** \endcode */
+
+    /**
+     * store all subsequent data files in a $HOME/life/doc/tutorial/myapp/
+     */
+    /** \code */
     this->changeRepository( boost::format( "doc/tutorial/%1%/" )
                             % this->about().appName() );
+    /** \endcode */
 
+    /**
+     * print some information that will be written in the log file in
+     * $HOME/life/doc/tutorial/myapp/myapp-1.0
+     */
+    /** \code */
     Log() << "the value of dt is " << this->vm()["dt"].as<double>() << "\n";
+    /** \endcode */
 }
 
-//
-// main function: entry point of the program
-//
+/**
+ * main function: entry point of the program
+ */
 int main( int argc, char** argv )
 {
+    /**
+     * intantiate a MyApp class
+     */
+    /** \code */
     MyApp app( argc, argv, makeAbout(), makeOptions() );
+    /** \endcode */
 
+    /**
+     * run the application
+     */
+    /** \code */
     app.run();
+    /** \endcode */
 }
 

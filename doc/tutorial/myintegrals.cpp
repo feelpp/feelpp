@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-07
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -78,20 +78,13 @@ class MyIntegrals
 {
     typedef Application super;
 public:
-
-    // -- TYPEDEFS --
-    static const uint16_type imOrder = 2;
-
     typedef double value_type;
     typedef Application application_type;
 
     /*mesh*/
-    typedef Simplex<Dim, 1,Dim> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Simplex<Dim> convex_type;
+    typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
-    /*quadrature*/
-    typedef IM<Dim, imOrder, value_type, Simplex> im_type;
 
     MyIntegrals( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
@@ -116,17 +109,15 @@ private:
 
 }; // MyIntegrals
 
-template<int Dim> const uint16_type MyIntegrals<Dim>::imOrder;
-
 template<int Dim>
 typename MyIntegrals<Dim>::mesh_ptrtype
 MyIntegrals<Dim>::createMesh( double meshSize )
 {
     mesh_ptrtype mesh( new mesh_type );
 
-    GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nDim,Simplex> td;
+    GmshTensorizedDomain<convex_type::nDim,convex_type::nOrder,convex_type::nDim,Simplex> td;
     td.setCharacteristicLength( meshSize );
-    std::string fname = td.generate( entity_type::name().c_str() );
+    std::string fname = td.generate( convex_type::name().c_str() );
 
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
@@ -152,7 +143,7 @@ MyIntegrals<Dim>::run()
 
     this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/" )
                             % this->about().appName()
-                            % entity_type::name()
+                            % convex_type::name()
                             % this->vm()["hsize"].template as<double>()
                             );
     this->setLogs();
@@ -162,12 +153,10 @@ MyIntegrals<Dim>::run()
      */
     mesh_ptrtype mesh = createMesh( meshSize );
 
-    im_type im;
-
     /*
      * Compute domain Area
      */
-    double local_domain_area = integrate( elements(mesh), im,
+    double local_domain_area = integrate( elements(mesh), _Q<0>(),
                                           constant(1.0)).evaluate()(0,0);
     double global_domain_area=local_domain_area;
     if ( Application::nProcess() > 1 )
@@ -181,7 +170,7 @@ MyIntegrals<Dim>::run()
     /*
      * Compute domain perimeter
      */
-    double local_boundary_length = integrate( boundaryfaces(mesh), im,
+    double local_boundary_length = integrate( boundaryfaces(mesh), _Q<0>(),
                                             constant(1.0)).evaluate()(0,0);
     double global_boundary_length = local_boundary_length;
     if ( Application::nProcess() > 1 )
@@ -195,7 +184,7 @@ MyIntegrals<Dim>::run()
     /*
      * Compute \int f where f= x^2 + y^2 + z^2
      */
-    double local_intf = integrate( elements(mesh), im,
+    double local_intf = integrate( elements(mesh), _Q<2>(),
                                    Px()*Px() + Py()*Py() + Pz()*Pz()
                                    ).evaluate()(0,0);
     double global_intf = local_intf;
