@@ -647,6 +647,8 @@ public:
 #endif
 
     }
+
+
     //@}
 
 
@@ -1166,9 +1168,110 @@ public:
         }
         void update( geometric_mapping_context_ptrtype const& __gmc )
         {
-            update( __gmc, mpl::int_<rank>() );
+            static const bool do_opt= (rank==0) && (nOrder==1) && (Geo_t::nOrder==1);
+            update( __gmc, mpl::int_<rank>(), mpl::bool_<do_opt>() );
+            //update( __gmc, mpl::int_<rank>(), mpl::bool_<false>() );
         }
-        void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0> )
+        void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_<true> )
+        {
+            //#pragma omp parallel
+            //precompute_type* __pc = _M_pc.get().get();
+            geometric_mapping_context_type* thegmc = __gmc.get();
+            if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+                {
+                    precompute_type* __pc = _M_pc.get().get();
+                    const uint16_type Q = __gmc->nPoints();//_M_grad.size2();
+                    const uint16_type I = nDof; //_M_ref_ele->nbDof();
+
+                    // can take any B(q), B is contant (Geo is P1)
+                    matrix_type const& B = thegmc->B( 0 );
+
+                    std::fill( _M_grad.data(), _M_grad.data()+_M_grad.num_elements(), value_type(0));
+                    for ( uint16_type i = 0; i < I; ++i )
+                        {
+                            for ( uint16_type l = 0; l < NDim; ++l )
+                                {
+                                    for ( uint16_type p = 0; p < PDim; ++p )
+                                        {
+                                            // can take any quad points (polynomial is P1, so grad is constant)
+                                            value_type g = B( l, p ) * __pc->grad( i, 0, p, 0 );
+                                            for ( uint16_type q = 0; q < Q; ++q )
+                                                {
+
+                                                    _M_grad[i][0][l][q] += g;
+                                                }
+                                        }
+                                }
+                        }
+                    // we need the normal derivative
+                    if ( vm::has_first_derivative_normal<context>::value )
+                        {
+                            std::fill( _M_dn.data(), _M_dn.data()+_M_dn.num_elements(), value_type(0));
+                            const uint16_type I = _M_ref_ele->nbDof()*nComponents;
+                            const uint16_type Q = nPoints();
+
+                            for( int i = 0; i < I; ++i )
+                                {
+                                    for ( uint16_type l = 0; l < NDim; ++l )
+                                        {
+                                            value_type n = thegmc->unitNormal( l, 0 );
+                                            value_type gn = _M_grad[i][0][l][0] * n;
+                                            for ( uint16_type q = 0; q < Q; ++q )
+                                                {
+                                                    _M_dn[i][0][0][q] += gn;
+                                                }
+                                        }
+
+                                }
+                        }
+
+                } // grad
+            if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
+                {
+                    precompute_type* __pc = _M_pc.get().get();
+                    const uint16_type Q = __gmc->nPoints();//_M_grad.size2();
+                    const uint16_type I = nDof; //_M_ref_ele->nbDof();
+
+                    // hessian only for P1 geometric mappings
+                    boost::multi_array<value_type,4> const& B3 = thegmc->B3();
+
+                    std::fill( _M_hessian.data(), _M_hessian.data()+_M_hessian.num_elements(), value_type(0));
+                    //#pragma omp for
+                    for ( uint16_type i = 0; i < I; ++i )
+                        {
+                            for ( uint16_type l = 0; l < NDim; ++l )
+                                {
+                                    for ( uint16_type j = l; j < NDim; ++j )
+                                        {
+                                            for ( uint16_type p = 0; p < PDim; ++p )
+                                                {
+                                                    // deal with _extra_ diagonal contributions
+                                                    for ( uint16_type r = p+1; r < PDim; ++r )
+                                                        {
+                                                            for ( uint16_type q = 0; q < Q; ++q )
+                                                                {
+                                                                    // we have twice the same contibution thanks to the symmetry
+                                                                    value_type h = B3[l][j][p][r] * __pc->hessian( i, p, r, q );
+                                                                    _M_hessian[i][l][j][q]  += 2*h;
+                                                                    _M_hessian[i][j][l][q]  += 2*h;
+                                                                } // q
+                                                        } // r
+
+                                                    // deal with diagonal contributions
+                                                    for ( uint16_type q = 0; q < Q; ++q )
+                                                        {
+                                                            value_type h = B3[l][j][p][p] * __pc->hessian( i, p, p, q );
+                                                            _M_hessian[i][l][j][q]  += h;
+                                                            _M_hessian[i][j][l][q]  += h;
+                                                        } // q
+                                                } // p
+                                        } // j
+                                } // l
+                        } // i
+                }
+        }
+
+        void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_<false> )
         {
             //#pragma omp parallel
             //precompute_type* __pc = _M_pc.get().get();
@@ -1260,7 +1363,7 @@ public:
                 }
         }
 
-        void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1> )
+        void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_<false> )
         {
             //precompute_type* __pc = _M_pc.get().get();
             geometric_mapping_context_type* thegmc = __gmc.get();

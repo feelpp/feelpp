@@ -588,15 +588,15 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e,
 //
 // Explicit instantiations
 //
-template class ImporterGmsh<Mesh<GeoEntity<Simplex<1,1> > > >;
-template class ImporterGmsh<Mesh<GeoEntity<Simplex<1,1,2> > > >;
-template class ImporterGmsh<Mesh<GeoEntity<Simplex<2,1> > > >;
-template class ImporterGmsh<Mesh<GeoEntity<Simplex<2,1,3> > > >;
-template class ImporterGmsh<Mesh<GeoEntity<Simplex<3,1> > > >;
-template class ImporterGmsh<Mesh<GeoEntity<Simplex<2,2> > > >;
-template class ImporterGmsh<Mesh<GeoEntity<Simplex<3,2> > > >;
-template class ImporterGmsh<Mesh<GeoEntity<SimplexProduct<1,1> > > >;
-template class ImporterGmsh<Mesh<GeoEntity<SimplexProduct<2,1> > > >;
-template class ImporterGmsh<Mesh<GeoEntity<SimplexProduct<3,1> > > >;
+template class ImporterGmsh<Mesh<Simplex<1,1> > >;
+template class ImporterGmsh<Mesh<Simplex<1,1,2> > >;
+template class ImporterGmsh<Mesh<Simplex<2,1> > >;
+template class ImporterGmsh<Mesh<Simplex<2,1,3> > >;
+template class ImporterGmsh<Mesh<Simplex<3,1> > >;
+template class ImporterGmsh<Mesh<Simplex<2,2> > >;
+template class ImporterGmsh<Mesh<Simplex<3,2> > >;
+template class ImporterGmsh<Mesh<SimplexProduct<1,1> > >;
+template class ImporterGmsh<Mesh<SimplexProduct<2,1> > >;
+template class ImporterGmsh<Mesh<SimplexProduct<3,1> > >;
 }
 #endif // 0

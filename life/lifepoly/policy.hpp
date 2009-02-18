@@ -44,17 +44,6 @@
 namespace Life
 {
 namespace ublas = boost::numeric::ublas;
-struct Continuous
-{
-    static const bool is_continuous = true;
-    typedef Continuous type;
-};
-
-struct Discontinuous
-{
-    static const bool is_continuous = false;
-    typedef Discontinuous type;
-};
 
 namespace fem
 {

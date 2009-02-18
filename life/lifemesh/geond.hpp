@@ -75,9 +75,9 @@ template <uint16_type Dim,
           typename POINTTYPE = Geo0D<Dim, T> >
 class GeoND
     :
-        public GEOSHAPE
+    public GeoEntity<GEOSHAPE>
 {
-    typedef GEOSHAPE super;
+    typedef GeoEntity<GEOSHAPE> super;
 public:
 
     typedef T value_type;
@@ -86,6 +86,7 @@ public:
 
     typedef GEOSHAPE GeoShape;
     typedef POINTTYPE PointType;
+
     typedef PointType point_type;
     typedef typename super::face_type face_type;
 

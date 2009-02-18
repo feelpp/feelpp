@@ -590,14 +590,14 @@ ExporterGmsh<MeshType>::visit( mesh_type* )
 //
 // explicit instances
 //
-template class ExporterGmsh<Mesh<GeoEntity<Simplex<1,1> > > >;
-template class ExporterGmsh<Mesh<GeoEntity<Simplex<1,1,2> > > >;
-template class ExporterGmsh<Mesh<GeoEntity<Simplex<2,1> > > >;
-template class ExporterGmsh<Mesh<GeoEntity<Simplex<2,2> > > >;
-template class ExporterGmsh<Mesh<GeoEntity<Simplex<2,1,3> > > >;
-template class ExporterGmsh<Mesh<GeoEntity<Simplex<3,1> > > >;
-template class ExporterGmsh<Mesh<GeoEntity<SimplexProduct<1,1> > > >;
-template class ExporterGmsh<Mesh<GeoEntity<SimplexProduct<2,1> > > >;
-template class ExporterGmsh<Mesh<GeoEntity<SimplexProduct<3,1> > > >;
+template class ExporterGmsh<Mesh<Simplex<1,1> > >;
+template class ExporterGmsh<Mesh<Simplex<1,1,2> > >;
+template class ExporterGmsh<Mesh<Simplex<2,1> > >;
+template class ExporterGmsh<Mesh<Simplex<2,2> > >;
+template class ExporterGmsh<Mesh<Simplex<2,1,3> > >;
+template class ExporterGmsh<Mesh<Simplex<3,1> > >;
+template class ExporterGmsh<Mesh<SimplexProduct<1,1> > >;
+template class ExporterGmsh<Mesh<SimplexProduct<2,1> > >;
+template class ExporterGmsh<Mesh<SimplexProduct<3,1> > >;
 #endif // LIFE_INSTANTIATION_MODE
 }

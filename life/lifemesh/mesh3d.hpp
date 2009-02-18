@@ -86,11 +86,11 @@ class Mesh3D
     :
         public VisitableBase<>,
         public MeshBase,
-        public Elements<GeoEntity<Shape> >,
+        public Elements<Shape>,
         public Points<3>,
-        public Faces<GeoEntity<typename Shape::template shape<2>::type >,
-                     typename Elements<GeoEntity<Shape> >::element_type>,
-        public Edges<GeoEntity<typename Shape::template shape<1>::type > >
+        public Faces<typename Shape::template shape<2>::type,
+                     typename Elements<Shape>::element_type>,
+        public Edges<typename Shape::template shape<1>::type>
 {
     // check at compilation time that the shape has indeed dimension 2
     BOOST_STATIC_ASSERT( Shape::nDim == 3 );
@@ -108,7 +108,7 @@ public:
     typedef VisitableBase<> super_visitable;
     typedef MeshBase super;
 
-    typedef Elements<GeoEntity<Shape> > super_elements;
+    typedef Elements<Shape> super_elements;
     typedef typename super_elements::elements_type elements_type;
     typedef typename super_elements::element_type element_type;
     typedef typename super_elements::element_iterator element_iterator;
@@ -123,7 +123,7 @@ public:
     typedef typename super_points::points_type points_type;
     typedef typename super_points::point_type point_type;
 
-    typedef Faces<GeoEntity<typename Shape::template shape<2>::type >,
+    typedef Faces<typename Shape::template shape<2>::type,
                   typename super_elements::element_type> super_faces;
     typedef typename super_faces::faces_type faces_type;
     typedef typename super_faces::face_type face_type;
@@ -136,7 +136,7 @@ public:
     typedef typename super_faces::location_face_const_iterator location_face_const_iterator;
 
 
-    typedef Edges<GeoEntity<typename Shape::template shape<1>::type > > super_edges;
+    typedef Edges<typename Shape::template shape<1>::type> super_edges;
     typedef typename super_edges::edges_type edges_type;
     typedef typename super_edges::edge_type edge_type;
 
@@ -145,7 +145,7 @@ public:
     typedef Mesh3D<Shape> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
-    static const size_type SHAPE = GeoEntity<Shape>::Shape;
+    static const size_type SHAPE = Shape::Shape;
 
     typedef typename super::face_processor_type face_processor_type;
 

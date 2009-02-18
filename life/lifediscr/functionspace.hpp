@@ -75,6 +75,7 @@
 #include <life/lifediscr/periodic.hpp>
 #include <life/lifediscr/continuity.hpp>
 #include <life/lifediscr/discontinuousinterfaces.hpp>
+#include <life/lifediscr/discontinuous.hpp>
 #include <life/lifediscr/dof.hpp>
 #include <life/lifediscr/dofcomposite.hpp>
 #include <life/lifediscr/parameter.hpp>
@@ -676,9 +677,9 @@ public:
 
     typedef typename parameter::binding<args, tag::mesh_type>::type mesh_type;
     typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
-    typedef typename parameter::binding<args, tag::continuity_type, ContinuousT>::type continuity_type;
+    typedef typename parameter::binding<args, tag::continuity_type, Continuous>::type continuity_type;
     typedef typename parameter::binding<args, tag::periodicity_type, NoPeriodicity>::type periodicity_type;
-    typedef typename parameter::binding<args, tag::bases_list, bases<fem::Lagrange<mesh_type::nDim,1,Scalar,Continuous> > >::type bases_list;
+    typedef typename parameter::binding<args, tag::bases_list, bases<Lagrange<1,Scalar> > >::type bases_list;
 
     BOOST_MPL_ASSERT_NOT( ( boost::is_same<mpl::at<bases_list,mpl::int_<0> >, mpl::void_> ) );
 
@@ -714,7 +715,7 @@ private:
     template<typename BasisType>
     struct GetNComponents
     {
-        typedef mpl::int_<BasisType::nComponents> type;
+        typedef mpl::int_<BasisType::template apply<mesh_type::nDim,value_type,typename mesh_type::element_type>::type::nComponents> type;
     };
 public:
 
@@ -726,15 +727,16 @@ public:
     static const uint16_type nRealDim = mesh_type::nRealDim;
 
     static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
+    typedef typename mpl::at_c<bases_list,0>::type::template apply<mesh_type::nDim,value_type,typename mesh_type::element_type>::type basis_0_type;
 
-    static const uint16_type rank = ( is_composite? invalid_uint16_type_value : mpl::at_c<bases_list,0>::type::rank );
-    static const bool is_scalar = ( is_composite? false : mpl::at_c<bases_list,0>::type::is_scalar );
-    static const bool is_vectorial = ( is_composite? false : mpl::at_c<bases_list,0>::type::is_vectorial );
-    static const bool is_tensor2 = ( is_composite? false : mpl::at_c<bases_list,0>::type::is_tensor2 );
-    static const bool is_continuous = ( is_composite? false : mpl::at_c<bases_list,0>::type::is_continuous );
-    static const bool is_modal = ( is_composite? false : mpl::at_c<bases_list,0>::type::is_modal );
-    static const uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : mpl::at_c<bases_list,0>::type::nComponents1 );
-    static const uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : mpl::at_c<bases_list,0>::type::nComponents2 );
+    static const uint16_type rank = ( is_composite? invalid_uint16_type_value : basis_0_type::rank );
+    static const bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
+    static const bool is_vectorial = ( is_composite? false : basis_0_type::is_vectorial );
+    static const bool is_tensor2 = ( is_composite? false : basis_0_type::is_tensor2 );
+    static const bool is_continuous = ( is_composite? false : continuity_type::is_continuous );
+    static const bool is_modal = ( is_composite? false : basis_0_type::is_modal );
+    static const uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
+    static const uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
 
 
     static const uint16_type nComponents = mpl::transform<bases_list,
@@ -764,6 +766,7 @@ public:
 
     // mesh
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef typename mesh_type::element_type convex_type;
 
     // basis
     typedef bases_list BasisType;
@@ -774,7 +777,7 @@ public:
     };
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<bases_list>,
-                              mpl::at_c<bases_list,0> >::type::type basis_type;
+                              mpl::identity<basis_0_type> >::type::type basis_type;
     typedef boost::shared_ptr<basis_type> basis_ptrtype;
     typedef basis_type reference_element_type;
     typedef boost::shared_ptr<reference_element_type> reference_element_ptrtype;
@@ -782,13 +785,13 @@ public:
     typedef reference_element_ptrtype fe_ptrtype;
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<boost::none_t>,
-                              mpl::identity<typename mpl::at_c<bases_list,0>::type::PreCompute> >::type pc_type;
+                              mpl::identity<typename basis_0_type::PreCompute> >::type pc_type;
     typedef boost::shared_ptr<pc_type> pc_ptrtype;
 
     // component basis
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<component_basis_vector_type>,
-                              mpl::at_c<component_basis_vector_type,0> >::type::type component_basis_type;
+                              typename mpl::at_c<component_basis_vector_type,0>::type::template apply<nDim,value_type,convex_type> >::type::type component_basis_type;
     typedef boost::shared_ptr<component_basis_type> component_basis_ptrtype;
 
 
@@ -880,11 +883,11 @@ public:
 
         typedef typename mpl::if_<mpl::bool_<is_composite>,
                                   mpl::identity<boost::none_t>,
-                                  mpl::identity<typename mpl::at_c<bases_list,0>::type::polyset_type> >::type::type polyset_type;
+                                  mpl::identity<typename basis_0_type::polyset_type> >::type::type polyset_type;
 
         typedef typename mpl::if_<mpl::bool_<is_composite>,
                                   mpl::identity<boost::none_t>,
-                                  mpl::identity<typename mpl::at_c<bases_list,0>::type::PreCompute> >::type::type pc_type;
+                                  mpl::identity<typename basis_0_type::PreCompute> >::type::type pc_type;
         typedef boost::shared_ptr<pc_type> pc_ptrtype;
     //typedef typename basis_type::polyset_type return_value_type;
         typedef typename functionspace_type::return_type return_type;
@@ -893,7 +896,7 @@ public:
 
         typedef typename mpl::if_<mpl::bool_<is_composite>,
                                   mpl::identity<boost::none_t>,
-                                  mpl::identity<typename mpl::at_c<bases_list,0>::type::polynomial_type> >::type::type polynomial_view_type;
+                                  mpl::identity<typename basis_0_type::polynomial_type> >::type::type polynomial_view_type;
 
         template<int i>
         struct sub_element
@@ -2277,7 +2280,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
      * expansion is continuous between elements. This case handles strong
      * Dirichlet imposition
      */
-    if ( basis_type::nDofPerFace || basis_type::is_continuous )
+    if ( basis_type::nDofPerFace || continuity_type::is_continuous )
         mesh_components |= MESH_UPDATE_FACES;
 
     _M_mesh->components().set( mesh_components );
@@ -2331,7 +2334,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
      * expansion is continuous between elements. This case handles
      * strong Dirichlet imposition
      */
-    if ( basis_type::nDofPerFace || basis_type::is_continuous  )
+    if ( basis_type::nDofPerFace || continuity_type::is_continuous  )
         _M_mesh->components().set( MESH_UPDATE_FACES );
 #else
     _M_mesh->components().set( mesh_components | MESH_UPDATE_FACES | MESH_UPDATE_EDGES | MESH_PARTITION );

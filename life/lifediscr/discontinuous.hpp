@@ -3,7 +3,7 @@
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2009-01-20
+       Date: 2009-02-17
 
   Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
 
@@ -22,21 +22,21 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file continuity.hpp
+   \file discontinuous.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-   \date 2009-01-20
+   \date 2009-02-17
  */
-#ifndef __Continuity_H
-#define __Continuity_H 1
+#ifndef __Discontinuous_H
+#define __Discontinuous_H 1
 
 #include <boost/fusion/sequence.hpp>
+#include <life/lifediscr/continuity.hpp>
 
 namespace Life
 {
 // import fusion namespace in Life
 namespace fusion = boost::fusion;
 
-namespace detail { struct continuity_base {}; }
 /**
  * \class Continuous
  * \brief describe continuous functions
@@ -44,7 +44,10 @@ namespace detail { struct continuity_base {}; }
  * @author Christophe Prud'homme
  * @see
  */
-class Continuous : public detail::continuity_base
+class Discontinuous
+    :
+        // necessary for boost.parameters
+        public detail::continuity_base
 {
 public:
 
@@ -53,9 +56,9 @@ public:
      */
     //@{
 
-    static const bool is_continuous = true;
+    static const bool is_continuous = false;
     static const bool is_discontinuous_locally = false;
-    static const bool is_discontinuous_totally = false;
+    static const bool is_discontinuous_totally = true;
 
 
     //@}
@@ -72,11 +75,11 @@ public:
     //@{
 
     //! default constructor
-    Continuous();
+    Discontinuous();
     //! copy constructor
-    Continuous( Continuous const & );
+    Discontinuous( Continuous const & );
     //! destructor
-    ~Continuous();
+    ~Discontinuous();
 
     //@}
 
@@ -85,7 +88,7 @@ public:
     //@{
 
     //! copy operator
-    Continuous& operator=( Continuous const & o)
+    Discontinuous& operator=( Discontinuous const & o)
     {
         if (this != &o )
             {
@@ -148,4 +151,5 @@ private:
 };
 
 } // Life
-#endif /* __Continuity_H */
+#endif /* __Discontinuous_H */
+

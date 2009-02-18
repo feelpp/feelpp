@@ -62,17 +62,11 @@ struct GeomapInverse
 {
     //GeomapInverse
 };
-namespace fem
-{
-template<uint16_type N,
-         uint16_type O,
+
+template<uint16_type O,
          template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type,class> class Pts >
-class Lagrange;
-} // fem
+         template<class, uint16_type, class> class Pts> class Lagrange;
+
 
 /**
  * \class GeoMap
@@ -87,18 +81,13 @@ template<uint16_type Dim,
          uint16_type Order,
          typename T = double,
          template<uint16_type, uint16_type, uint16_type> class Entity = Simplex,
-         template<uint16_type,
-                  uint16_type,
-                  template<uint16_type> class,
-                  class,
-                  class,
-                  template<uint16_type, uint16_type, uint16_type> class,
-                  template<class, uint16_type, class> class> class PP = fem::Lagrange>
+         template<uint16_type, template<uint16_type Dim> class PolySetType,
+                  template<class, uint16_type, class> class Pts> class PP = Lagrange>
 class GeoMap
     :
-    public PP<Dim, Order, Scalar, Continuous, T, Entity, PointSetEquiSpaced>
+    public PP<Order,Scalar, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
 {
-    typedef PP<Dim, Order, Scalar, Continuous, T, Entity, PointSetEquiSpaced> super;
+    typedef typename PP<Order, Scalar, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
 
     typedef mpl::vector<boost::none_t, boost::none_t, GeoMap<1, Order, T, Entity, PP>, GeoMap<2, Order, T, Entity, PP> > geomap_faces_t;
     typedef mpl::vector<GeoMap<1, Order, T, Entity, PP>, GeoMap<2, Order, T, Entity, PP>, GeoMap<3, Order, T, Entity, PP>, boost::none_t> geomap_elements_t;
@@ -2037,18 +2026,18 @@ struct GT_QK
     template<typename T>                                                \
     struct BOOST_PP_CAT(GT_, GEOM)<LDIM, LORDER, ENTITY, T>             \
         :                                                               \
-        public GeoMap<LDIM, LORDER, T, ENTITY, fem::GEOM>               \
+        public GeoMap<LDIM, LORDER, T, ENTITY, GEOM>                    \
     {                                                                   \
         typedef mpl::vector<boost::none_t,                              \
             boost::none_t,                                              \
-            GeoMap<1, LORDER, T, ENTITY, fem::GEOM>,                    \
-            GeoMap<2, LORDER, T, ENTITY, fem::GEOM> > geomap_faces_t;   \
-    typedef mpl::vector<GeoMap<1, LORDER, T, ENTITY, fem::GEOM>,        \
-            GeoMap<2, LORDER, T, ENTITY, fem::GEOM>,                    \
-            GeoMap<3, LORDER, T, ENTITY, fem::GEOM>,                    \
+            GeoMap<1, LORDER, T, ENTITY, GEOM>,                    \
+            GeoMap<2, LORDER, T, ENTITY, GEOM> > geomap_faces_t;   \
+    typedef mpl::vector<GeoMap<1, LORDER, T, ENTITY, GEOM>,        \
+            GeoMap<2, LORDER, T, ENTITY, GEOM>,                    \
+            GeoMap<3, LORDER, T, ENTITY, GEOM>,                    \
             boost::none_t> geomap_elements_t;                           \
     typedef typename type_traits<T>::value_type value_type;             \
-    typedef GeoMap<LDIM, LORDER, T, ENTITY, fem::GEOM> super;           \
+    typedef GeoMap<LDIM, LORDER, T, ENTITY, GEOM> super;           \
     typedef BOOST_PP_CAT(GT_,GEOM)<LDIM-1, LORDER, ENTITY, T> face_geo_type; \
                                                                         \
     static const uint16_type nDim = LDIM;                                   \

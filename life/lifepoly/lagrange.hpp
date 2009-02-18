@@ -53,7 +53,7 @@ namespace fem
 /// \cond detail
 namespace details
 {
-template<typename Basis, typename ContinuityType, template<class, uint16_type, class> class PointSetType>
+template<typename Basis, template<class, uint16_type, class> class PointSetType>
 class LagrangeDual
     :
         public DualBasis<Basis>
@@ -142,7 +142,7 @@ public:
 
         _M_pts = pts.points();
 
-        if ( ContinuityType::is_continuous && nOrder > 0 )
+        if ( nOrder > 0 )
             {
                 for ( uint16_type e = _M_convex_ref.entityRange( nDim-1 ).begin();
                       e < _M_convex_ref.entityRange( nDim-1 ).end();
@@ -151,7 +151,6 @@ public:
                         _M_points_face[e] = pts.pointsBySubEntity(nDim-1, e, 1);
                         Debug(5045) << "face " << e << " pts " <<  _M_points_face[e] << "\n";
                     }
-
             }
 
         setFset( primal, _M_pts, mpl::bool_<primal_space_type::is_scalar>() );
@@ -232,22 +231,19 @@ private:
 template<uint16_type N,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
-         typename ContinuityType = Continuous,
          typename T = double,
          template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced >
 class Lagrange
     :
-    public FiniteElement<OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::LagrangeDual, ContinuityType, Pts >
+    public FiniteElement<OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::LagrangeDual, Pts >
 {
-    typedef FiniteElement<OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::LagrangeDual, ContinuityType, Pts > super;
+    typedef FiniteElement<OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::LagrangeDual, Pts > super;
 public:
 
     BOOST_STATIC_ASSERT( ( boost::is_same<PolySetType<N>, Scalar<N> >::value ||
                            boost::is_same<PolySetType<N>, Vectorial<N> >::value ||
                            boost::is_same<PolySetType<N>, Tensor2<N> >::value ) );
-    BOOST_STATIC_ASSERT( ( boost::is_same<ContinuityType, Continuous>::value ||
-                           boost::is_same<ContinuityType, Discontinuous>::value ) );
 
     /** @name Typedefs
      */
@@ -270,18 +266,13 @@ public:
     static const uint16_type nComponents = polyset_type::nComponents;
 
 
-    typedef Lagrange<N, O, Scalar, ContinuityType, T, Convex,  Pts> component_basis_type;
+    typedef Lagrange<N, O, Scalar, T, Convex,  Pts> component_basis_type;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
                               mpl::identity<boost::none_t>,
-                              mpl::identity< Lagrange<N-1, O, Scalar, ContinuityType, T, Convex,  Pts> > >::type::type face_basis_type;
+                              mpl::identity< Lagrange<N-1, O, Scalar, T, Convex,  Pts> > >::type::type face_basis_type;
 
     typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
-    /**
-     * Polynomial Set continuity type: continuous or discontinuous
-     */
-    typedef typename super::continuity_type continuity_type;
-    static const bool is_continuous = super::is_continuous;
 
     typedef typename dual_space_type::convex_type convex_type;
     typedef typename dual_space_type::pointset_type pointset_type;
@@ -294,9 +285,6 @@ public:
     static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
     static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
     static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
-
-    BOOST_STATIC_ASSERT( (nOrder >= 0 && is_continuous) ||
-                         (nOrder >= 0 && !is_continuous) );
 
     //@}
 
@@ -362,40 +350,40 @@ private:
 template<uint16_type N,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
          typename T,
          template<uint16_type, uint16_type, uint16_type> class Convex,
          template<class, uint16_type, class> class Pts >
-const uint16_type Lagrange<N,O,PolySetType,ContinuityType,T,Convex,Pts>::nDim;
+const uint16_type Lagrange<N,O,PolySetType,T,Convex,Pts>::nDim;
 
 template<uint16_type N,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
          typename T,
          template<uint16_type, uint16_type, uint16_type> class Convex,
          template<class, uint16_type, class> class Pts >
-const uint16_type Lagrange<N,O,PolySetType,ContinuityType,T,Convex,Pts>::nOrder;
-
-template<uint16_type N,
-         uint16_type O,
-         template<uint16_type Dim> class PolySetType,
-         typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced >
-class ContinuousLagrange : public Lagrange<N,O,PolySetType,Continuous,T,Convex,Pts>
-{};
-
-template<uint16_type N,
-         uint16_type O,
-         template<uint16_type Dim> class PolySetType,
-         typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced >
-class DiscontinuousLagrange : public Lagrange<N,O,PolySetType,Discontinuous,T,Convex,Pts>
-{};
-
+const uint16_type Lagrange<N,O,PolySetType,T,Convex,Pts>::nOrder;
 
 } // namespace fem
+
+template<uint16_type Order,
+         template<uint16_type Dim> class PolySetType = Scalar,
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+class Lagrange
+{
+public:
+    template<uint16_type N,
+             typename T = double,
+             typename Convex = Simplex<N> >
+    struct apply
+    {
+        typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
+                                  mpl::identity<fem::Lagrange<N,Order,PolySetType,T,Simplex, Pts> >,
+                                  mpl::identity<fem::Lagrange<N,Order,PolySetType,T,SimplexProduct, Pts> > >::type::type result_type;
+        typedef result_type type;
+    };
+
+    typedef Lagrange<Order,Scalar,Pts> component_basis_type;
+};
+
 } // namespace Life
 #endif /* __lagrange_H */
