@@ -111,8 +111,6 @@ class Stokes
     typedef Application super;
 public:
 
-    // -- TYPEDEFS --
-    static const uint16_type imOrder = 2*Order;
 
     typedef double value_type;
 
@@ -124,21 +122,17 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<Dim, 1,Dim> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Entity<Dim,1,Dim> convex_type;
+    typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
-    typedef fem::Lagrange<Dim, Order, Vectorial,
-                          Continuous, double, Entity> basis_u_type;
-    typedef fem::Lagrange<Dim, Order-1, Scalar,
-                          Continuous, double, Entity> basis_p_type;
-    typedef fem::Lagrange<Dim, 0, Scalar,
-                          Continuous, double, Entity> basis_l_type;
-    typedef fusion::vector<basis_u_type,
-                            basis_p_type, basis_l_type> basis_type;
+    typedef Lagrange<Order, Vectorial> basis_u_type;
+    typedef Lagrange<Order-1, Scalar> basis_p_type;
+    typedef Lagrange<0, Scalar> basis_l_type;
+    typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
     /*space*/
-    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+    typedef FunctionSpace<mesh_type, basis_type> space_type;
     BOOST_MPL_ASSERT( ( boost::is_same<typename space_type::bases_list, basis_type> ) );
     BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<0> >::type, basis_u_type> ) );
     BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<1> >::type, basis_p_type> ) );
@@ -149,9 +143,6 @@ public:
     typedef typename element_type::template sub_element<0>::type element_0_type;
     typedef typename element_type::template sub_element<1>::type element_1_type;
     typedef typename element_type::template sub_element<2>::type element_2_type;
-
-    /*quadrature*/
-    typedef IM<Dim, imOrder, value_type, Entity> im_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -218,9 +209,9 @@ Stokes<Dim,Order,Entity>::createMesh( double meshSize )
     mesh_ptrtype mesh( new mesh_type );
 
 
-    GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
+    GmshTensorizedDomain<convex_type::nDim,convex_type::nOrder,convex_type::nRealDim,Entity> td;
     td.setCharacteristicLength( meshSize );
-    std::string fname = td.generate( entity_type::name().c_str() );
+    std::string fname = td.generate( convex_type::name().c_str() );
 
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
@@ -242,7 +233,7 @@ Stokes<Dim, Order, Entity>::run()
 
     this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
-                            % entity_type::name()
+                            % convex_type::name()
                             % Order
                             % this->vm()["hsize"].template as<double>()
                             );
@@ -265,12 +256,6 @@ Stokes<Dim, Order, Entity>::run()
     element_1_type q = V.template element<1>();
     element_2_type lambda = U.template element<2>();
     element_2_type nu = V.template element<2>();
-
-    /*
-     * a quadrature rule for numerical integration
-     */
-    im_type im;
-
 
     Log() << "Data Summary:\n";
     Log() << "   hsize = " << meshSize << "\n";
@@ -309,7 +294,7 @@ Stokes<Dim, Order, Entity>::run()
 
     // right hand side
     form1( Xh, F, _init=true )  =
-        integrate( elements(mesh), im, trans(f)*id(v) )+
+        integrate( elements(mesh), _Q<Order+5>(), trans(f)*id(v) )+
         integrate( boundaryfaces(mesh),
                    // higher order quadrature to accurately integrate u_exact
                    _Q<3*Order>(),
@@ -344,28 +329,28 @@ Stokes<Dim, Order, Entity>::run()
     Log() << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
 
-    double u_errorL2 = integrate( elements(mesh), im, trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
+    double u_errorL2 = integrate( elements(mesh), _Q<2*Order>(), trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
 
-    double p_errorL2 = integrate( elements(mesh), im, (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
+    double p_errorL2 = integrate( elements(mesh), _Q<2*Order>(), (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
     Log() << "[stokes] solve for D done\n";
 
-    double meas = integrate( elements(mesh), im, constant(1.0) ).evaluate()( 0, 0);
+    double meas = integrate( elements(mesh), _Q<0>(), constant(1.0) ).evaluate()( 0, 0);
     Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
-    double mean_p = integrate( elements(mesh), im, idv(p) ).evaluate()( 0, 0 )/meas;
+    double mean_p = integrate( elements(mesh), _Q<Order-1>(), idv(p) ).evaluate()( 0, 0 )/meas;
     Log() << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
-    double mean_div_u = integrate( elements(mesh), im, divv(u) ).evaluate()( 0, 0 );
+    double mean_div_u = integrate( elements(mesh), _Q<Order-1>(), divv(u) ).evaluate()( 0, 0 );
     Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
-    double div_u_error_L2 = integrate( elements(mesh), im, divv(u)*divv(u) ).evaluate()( 0, 0 );
+    double div_u_error_L2 = integrate( elements(mesh), _Q<2*(Order-1)>(), divv(u)*divv(u) ).evaluate()( 0, 0 );
     Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 

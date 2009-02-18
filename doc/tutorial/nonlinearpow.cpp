@@ -110,18 +110,18 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<Dim, 1,Dim> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Entity<Dim,1,Dim> entity_type;
+    typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
-    typedef fusion::vector<fem::Lagrange<Dim, Order, Scalar, Continuous, double, Entity> > basis_type;
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
 
     /* number of dofs per element */
     static const uint16_type nLocalDof = boost::remove_reference<typename fusion::result_of::at<basis_type,mpl::int_<0> >::type>::type::nLocalDof;
 
     /*space*/
-    typedef FunctionSpace<mesh_type, basis_type, value_type> functionspace_type;
+    typedef FunctionSpace<mesh_type, basis_type> functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
     typedef typename element_type::template sub_element<0>::type element_0_type;
@@ -131,9 +131,6 @@ public:
     typedef boost::shared_ptr<oplin_type> oplin_ptrtype;
     typedef FsFunctionalLinear<functionspace_type> funlin_type;
     typedef boost::shared_ptr<funlin_type> funlin_ptrtype;
-
-    /*quadrature*/
-    typedef IM<Dim, imOrder, value_type, Entity> im_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -260,13 +257,13 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
-    im_type im;
+
     u = *X;
     AUTO( g, constant(0.0) );
 
     *M_residual =
-        integrate( elements( mesh ), im, + gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) +id(v) ) +
-        integrate( boundaryfaces(mesh), im,
+        integrate( elements( mesh ), _Q<2*Order>(), + gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) +id(v) ) +
+        integrate( boundaryfaces(mesh), _Q<2*Order>(),
                    ( - trans(id(v))*(gradv(u)*N())
                      - trans(idv(u))*(grad(v)*N())
                      + penalisation_bc*trans(idv(u))*id(v)/hFace())-
@@ -288,16 +285,15 @@ NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, spars
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
     u = *X;
-    im_type im;
     if ( is_init == false )
         {
-            *M_jac = integrate( elements( mesh ), im, M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) );
+            *M_jac = integrate( elements( mesh ), _Q<2*Order>(), M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) );
             is_init = true;
         }
     else
         {
             M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ), im, M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) );
+            *M_jac += integrate( elements( mesh ), _Q<2*Order>(), M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) );
         }
     M_jac->close();
     M_jac->matPtr()->addMatrix( 1.0, M_oplin->mat() );
@@ -315,14 +311,12 @@ NonLinearPow<Dim, Order, Entity>::run()
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
 
-    im_type im;
-
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
 
     M_oplin = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
     *M_oplin =
-        integrate( elements( mesh ), im, gradt(u)*trans(grad(v)) ) +
-        integrate( boundaryfaces(mesh), im,
+        integrate( elements( mesh ), _Q<2*Order>(), gradt(u)*trans(grad(v)) ) +
+        integrate( boundaryfaces(mesh), _Q<2*Order>(),
                    ( - trans(id(v))*(gradt(u)*N())
                      - trans(idt(u))*(grad(v)*N())
                      + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
