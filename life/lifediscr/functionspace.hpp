@@ -55,7 +55,6 @@
 #include <boost/lambda/bind.hpp>
 #include <boost/optional.hpp>
 #include <boost/preprocessor/control/if.hpp>
-#include <boost/profiler.hpp>
 
 #include <stdexcept>
 #include <sstream>

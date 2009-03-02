@@ -137,7 +137,7 @@ public:
 
                         new_edge_type new_edge;
                         new_edge.setId( old_edge.id() );
-                        new_edge.marker().value( old_edge.marker().value() );
+                        new_edge.marker().assign( old_edge.marker().value() );
                         new_edge.setOnBoundary( old_edge.isOnBoundary() );
 
                         // if the edge is not found in the list, create it and add the points in the boundary
@@ -185,7 +185,7 @@ public:
                                     }
 
                                 point_type new_point( nodesCount, node, old_edge.isOnBoundary() );
-                                new_point.marker().value( old_edge.marker().value() );
+                                new_point.marker().assign( old_edge.marker().value() );
                                 //uint16_type localId = j;
 
                                 if ( hasEdge == 0 )

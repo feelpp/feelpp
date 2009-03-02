@@ -169,16 +169,17 @@ struct pow<N, 0>
  * defines an enum for the possible edge permutation with respect to
  * its parent elements
  */
-struct no_permutation: public boost::identifier<uint16_type, no_permutation>
+struct no_permutation: public boost::detail::identifier<uint16_type, no_permutation>
 {
     static const uint16_type NO_PERMUTATION       = 0; //!< no permutation
     static const uint16_type IDENTITY             = 1; //!< no permutation
     static const uint16_type N_PERMUTATIONS       = 2; //!< number of permutations
-    typedef boost::identifier<uint16_type, no_permutation> super;
+    typedef boost::detail::identifier<uint16_type, no_permutation> super;
     typedef super::value_type value_type;
     no_permutation()                           : super(IDENTITY) {}
     explicit no_permutation( value_type v )    : super(v) {}
-    no_permutation & operator=( value_type v ) { value(v); return *this; }
+    no_permutation & operator=( value_type v ) { this->assign(v); return *this; }
+    no_permutation& operator++() { this->assign( this->value()+1 ); return *this; }
 };
 
 
@@ -188,22 +189,23 @@ struct no_permutation: public boost::identifier<uint16_type, no_permutation>
  * defines an enum for the possible edge permutation with respect to
  * its parent elements
  */
-struct line_permutations: public boost::identifier<uint16_type, line_permutations>
+struct line_permutations: public boost::detail::identifier<uint16_type, line_permutations>
 {
     static const uint16_type NO_PERMUTATION       = 0; //!< the edge has no permutation defined
     static const uint16_type IDENTITY             = 1; //!< the edge is oriented according to the standard one
     static const uint16_type REVERSE_PERMUTATION  = 2; //!< the edge is orientated reversely wrt parent element
     static const uint16_type N_PERMUTATIONS       = 3; //!< number of permutations
-    typedef boost::identifier<uint16_type, line_permutations> super;
+    typedef boost::detail::identifier<uint16_type, line_permutations> super;
     typedef super::value_type value_type;
     line_permutations()                           : super(IDENTITY) {}
     explicit line_permutations( value_type v )    : super(v) {}
-    line_permutations & operator=( value_type v ) { value(v); return *this; }
+    line_permutations& operator=( value_type v ) { this->assign(v); return *this; }
+    line_permutations& operator++() { this->assign( this->value()+1 ); return *this; }
 };
 
 enum line_permutations_dummy {};
 
-struct triangular_faces_type: public boost::identifier<uint16_type, triangular_faces_type>
+struct triangular_faces_type: public boost::detail::identifier<uint16_type, triangular_faces_type>
 {
     static const uint16_type NO_PERMUTATION       = 0; //!< the face has no permutation associated
     static const uint16_type IDENTITY             = 1; //!< the face has the identity permutation associated (standard one)
@@ -218,15 +220,16 @@ struct triangular_faces_type: public boost::identifier<uint16_type, triangular_f
     static const uint16_type SECOND_DIAGONAL          = 7; //!< reflection according to the second diagonal
     static const uint16_type ROTATION_TWICE_CLOCKWISE = 8; //!< rotates the points twice in the (anti)clockwise sense
 
-    typedef boost::identifier<uint16_type, triangular_faces_type> super;
+    typedef boost::detail::identifier<uint16_type, triangular_faces_type> super;
     typedef super::value_type value_type;
     triangular_faces_type()                           : super(IDENTITY){}
     explicit triangular_faces_type( value_type v )    : super(v){}
     ///triangular_faces_type( triangular_faces_type const& tft ) : super( tft ) { value( tft.value() ); }
-    triangular_faces_type & operator=( value_type v ) { value(v); return *this; }
+    triangular_faces_type & operator=( value_type v ) { this->assign(v); return *this; }
+    triangular_faces_type& operator++() { this->assign( this->value()+1 ); return *this; }
 };
 
-struct quadrangular_faces: public boost::identifier<uint16_type, quadrangular_faces>
+struct quadrangular_faces: public boost::detail::identifier<uint16_type, quadrangular_faces>
 {
     static const uint16_type NO_PERMUTATION           = 0; //!< the face has no permutation associated
     static const uint16_type IDENTITY                 = 1; //!< the face has the identity permutation associated (standard one)
@@ -242,12 +245,13 @@ struct quadrangular_faces: public boost::identifier<uint16_type, quadrangular_fa
 
     static const uint16_type REVERSE_HYPOTENUSE   = 4; //!< reflection according to the hypotenuse direction
 
-    typedef boost::identifier<uint16_type, quadrangular_faces> super;
+    typedef boost::detail::identifier<uint16_type, quadrangular_faces> super;
     typedef super::value_type value_type;
     quadrangular_faces()                           : super(IDENTITY){}
     explicit quadrangular_faces( value_type v )    : super(v){}
     //quadrangular_faces( quadrangular_faces const& tft ) : super( tft ) { value( tft.value() ); }
-    quadrangular_faces & operator=( value_type v ) { value(v); return *this; }
+    quadrangular_faces & operator=( value_type v ) { this->assign(v); return *this; }
+    quadrangular_faces& operator++() { this->assign( this->value()+1 ); return *this; }
 };
 /// \endcond
 

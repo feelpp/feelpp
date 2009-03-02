@@ -30,10 +30,10 @@
 #ifndef __VF_H
 #define __VF_H 1
 
-#include <boost/numeric/bindings/traits/traits.hpp>
-#include <boost/numeric/bindings/traits/ublas_vector.hpp>
-#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
-#include <boost/numeric/bindings/blas/blas.hpp>
+//#include <boost/numeric/bindings/traits/traits.hpp>
+//#include <boost/numeric/bindings/traits/ublas_vector.hpp>
+//#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
+//#include <boost/numeric/bindings/blas/blas.hpp>
 
 #include <boost/fusion/tuple.hpp>
 #include <boost/fusion/sequence.hpp>
@@ -46,8 +46,8 @@
 
 namespace Life
 {
-namespace blas = boost::numeric::bindings::blas;
-namespace traits = boost::numeric::bindings::traits;
+//namespace blas = boost::numeric::bindings::blas;
+//namespace traits = boost::numeric::bindings::traits;
 namespace fusion = boost::fusion;
 
 

@@ -29,7 +29,7 @@
 #ifndef __SimplexProduct_H
 #define __SimplexProduct_H 1
 
-#include <boost/identifier.hpp>
+#include <boost/detail/identifier.hpp>
 #include <life/lifecore/traits.hpp>
 #include <life/lifemesh/simplex.hpp>
 
@@ -101,7 +101,7 @@ struct hexa
 /// \endcond
 
 
-template<uint16_type Dim, uint16_type Order, uint16_type RDim = Dim>
+template<uint16_type Dim, uint16_type Order=1, uint16_type RDim = Dim>
 class SimplexProduct
 {
     typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_QUAD, SHAPE_HEXA, SHAPE_SP4, SHAPE_SP5> shapes_t;

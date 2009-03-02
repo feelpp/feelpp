@@ -33,9 +33,9 @@
 #include <boost/timer.hpp>
 #include <life/lifevf/block.hpp>
 
-#include <boost/numeric/bindings/traits/traits.hpp>
-#include <boost/numeric/bindings/traits/sparse_traits.hpp>
-#include <boost/numeric/bindings/traits/ublas_sparse.hpp>
+//#include <boost/numeric/bindings/traits/traits.hpp>
+//#include <boost/numeric/bindings/traits/sparse_traits.hpp>
+//#include <boost/numeric/bindings/traits/ublas_sparse.hpp>
 
 #include <life/lifemesh/filters.hpp>
 #include <life/lifepoly/quadmapped.hpp>

@@ -55,10 +55,7 @@ struct SpaceToLagrangeP1Space
         //typedef typename PsetType<convex_type::nDim>::value_type value_type;
         typedef typename SpaceType::value_type value_type;
 
-        typedef typename mpl::if_<mpl::bool_<convex_type::is_simplex>,
-                                  mpl::identity<fem::Lagrange<convex_type::nDim,1,PsetType,value_type,Simplex> >,
-                                  mpl::identity<fem::Lagrange<convex_type::nDim,1,PsetType,value_type,SimplexProduct> > >::type::type type;
-
+        typedef Lagrange<1,PsetType> type;
     };
     typedef typename convex_type::template shape<convex_type::nDim, 1, convex_type::nDim>::type image_convex_type;
     typedef Mesh<image_convex_type> image_mesh_type;

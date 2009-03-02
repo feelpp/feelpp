@@ -312,15 +312,15 @@ public:
 
     Marker1 const& marker() const { return _M_marker1; }
     Marker1& marker() { return _M_marker1; }
-    void setMarker( flag_type v ) { return _M_marker1.value( v ); }
+    void setMarker( flag_type v ) { return _M_marker1.assign( v ); }
 
     Marker2 const& marker2() const { return _M_marker2; }
     Marker2& marker2() { return _M_marker2; }
-    void setMarker2( flag_type v ) { return _M_marker2.value( v ); }
+    void setMarker2( flag_type v ) { return _M_marker2.assign( v ); }
 
     Marker3 const& marker3() const { return _M_marker3; }
     Marker3& marker3() { return _M_marker3; }
-    void setMarker3( flag_type v ) { return _M_marker3.value( v ); }
+    void setMarker3( flag_type v ) { return _M_marker3.assign( v ); }
 
 private:
     bool isEqual( Geo0D const& geo0d, mpl::int_<1> ) const

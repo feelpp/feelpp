@@ -179,8 +179,6 @@ make_bfassign1( BFType& lf,
 { return BFAssign1<BFType,ExprType,TestSpaceType>( lf, expr, test_space, test_index ); }
 
 
-namespace bindings = boost::numeric::bindings;
-
 /*!
   \class BilinearForm
   \brief brief description

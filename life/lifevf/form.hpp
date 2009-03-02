@@ -203,6 +203,7 @@ struct compute_form2_return<Args, mpl::true_>
 };
 /// \endcond
 
+#if 0
 BOOST_PARAMETER_FUNCTION(
                          (typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type), // 1. return type
                          form2,                                       // 2. name of the function template
@@ -216,6 +217,8 @@ BOOST_PARAMETER_FUNCTION(
                           (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
                           (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
                           (pattern,          *(boost::is_integral<mpl::_>), size_type(vf::DOF_PATTERN_COUPLED) )
+                          (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
+                          (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
                           )
                          )
 {
@@ -225,6 +228,33 @@ BOOST_PARAMETER_FUNCTION(
     //return form( test, trial, *matrix, init, false, threshold, pattern );
     //return form( test, trial, *matrix, init, false, threshold, 0 );
 } //
+#else
+BOOST_PARAMETER_FUNCTION((typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type), // 1. return type
+                         form2,                                       // 2. name of the function template
+                         tag,                                        // 3. namespace of tag types
+                         (required                                   // 4. one required parameter, and
+                          (test,             *)
+                          (trial,            *)
+                          (in_out(matrix),   *)
+                          ) // required
+                         (optional                                   //    four optional parameters, with defaults
+                          (init,             *(boost::is_integral<mpl::_>), false )
+                          (pattern,          *(boost::is_integral<mpl::_>), size_type(vf::DOF_PATTERN_COUPLED) )
+                          ) // optional
+                         )
+{
+    Life::detail::ignore_unused_variable_warning(args);
+    //return form( test, trial, *matrix, init, false, 1e-16, pattern );
+    bool do_threshold = false;
+    double threshold = 1e-16;
+    return form( test, trial, *matrix, init, do_threshold, threshold, pattern );
+    //return form( test, trial, *matrix, init, false, threshold, pattern );
+    //return form( test, trial, *matrix, init, false, threshold, 0 );
+} //
+
+#endif
+
+#if 0
 BOOST_PARAMETER_FUNCTION(
                          (typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type), // 1. return type
                          blform,                                       // 2. name of the function template
@@ -244,7 +274,7 @@ BOOST_PARAMETER_FUNCTION(
     return form( test, trial, *matrix, init, do_threshold, threshold, pattern );
     //return form( test, trial, *matrix, init, false, 1e-16, pattern );
 } //
-
+#endif
 
 
 

@@ -399,7 +399,7 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func)
         {
-            add( __n, func, mpl::bool_<FunctionType::is_continuous>() );
+            add( __n, func, mpl::bool_<FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally>() );
         }
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func, mpl::bool_<true> )

@@ -78,9 +78,7 @@ public:
     virtual value_type
     operator()( const element_type& x ) const
     {
-#warning TODO
-        LIFE_ASSERT( 0 ).warn( "invalid call, not implemented yet" );
-        return 0;//backend_type::dot( *M_vector, x.container() );
+        return M_backend->dot( *M_vector, x.container() );
     }
 
     // get the representation vector

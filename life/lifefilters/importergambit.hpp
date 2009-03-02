@@ -302,7 +302,7 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh )
             //pe = &( mesh->addElement() );
             element_type pe;
 
-            pe.marker().value( ( __elements[__i].get<1>() ) );
+            pe.marker().assign( ( __elements[__i].get<1>() ) );
 
             // this handle linear and quadratic elements
             for ( uint n = 0;n < __elements[__i].get<2>().size(); ++n )
@@ -323,7 +323,7 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh )
                     Debug( 8012 ) << "adding face " << numface
                                   << " on boundary : " << __elements[__i].get<3>().get<1>() << "\n";
 
-                    pf.marker().value( ( __elements[__i].get<3>().get<1>() ) );
+                    pf.marker().assign( ( __elements[__i].get<3>().get<1>() ) );
 
                     if ( mesh_type::nDim == 2 && __elements[__i].get<2>().size() == 3 ) // linear triangle 3-node
                         {
@@ -399,7 +399,7 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh,
         __n[1] = nodes[3*__i+1];
         __n[2] = nodes[3*__i+2];
         point_type __pt( __i, __n, boundary[ __i ].get<0>() );
-        __pt.marker().value( boundary[__i].get<1>() );
+        __pt.marker().assign( boundary[__i].get<1>() );
         mesh->addPoint( __pt );
     }
 
@@ -416,7 +416,7 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh,
         element_type pv;
         pv.setId( __i );
 
-        pv.marker().value( ( __elements[__i].get<1>() ) );
+        pv.marker().assign( ( __elements[__i].get<1>() ) );
         // this handle linear and quadratic elements
         for ( uint n = 0;n < __elements[__i].get<2>().size(); ++n )
         {
@@ -436,7 +436,7 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh,
             // local id of the face in the element
             int numface = __elements[__i].get<3>().get<0>();
 
-            pf.marker().value( ( __elements[__i].get<3>().get<1>() ) );
+            pf.marker().assign( ( __elements[__i].get<3>().get<1>() ) );
 
 
             if ( __elements[__i].get<2>().size() == 4 ) // linear tetra 4-node
