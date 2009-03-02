@@ -56,7 +56,7 @@ namespace Life
 template<typename T, int Dim, int Order = 1>
 struct imesh
 {
-    typedef Mesh<GeoEntity<Simplex<Dim, Order> >, T > type;
+    typedef Mesh<Simplex<Dim, Order>, T > type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 
@@ -97,8 +97,8 @@ struct test_integration_internal_faces
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 #if 0
         // int ([-1,1],[-1,x]) 1 dx
-        value_type v0 = integrate( elements(*mesh), IM<3,1,value_type,Simplex>(),
-                                   vf::min(constant(1.0),constant(2.0)) ).evaluate()( 0, 0 );
+        value_type v0 = 1;//integrate( elements(*mesh), IM<3,1,value_type,Simplex>(),
+        //vf::min(constant(1.0),constant(2.0)) ).evaluate()( 0, 0 );
         std::cout << "v0 = " << v0 << "\n";
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v0-8.0, eps );
@@ -116,7 +116,7 @@ struct test_integration_internal_faces
 #endif /* USE_BOOST_TEST */
 
         value_type v2 = integrate( internalfaces(*mesh), IM<3,3,value_type,Simplex>(),
-                                   leftfacev(norm2(P()))-rightfacev(vf::sqrt(trans(P())*P())) ).evaluate()( 0, 0 );
+                                   leftfacev(vf::sqrt(trans(P())*P()))-rightfacev(vf::sqrt(trans(P())*P())) ).evaluate()( 0, 0 );
         std::cout << "v2 = " << v2 << "\n";
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v2-0.0, eps );
@@ -125,7 +125,7 @@ struct test_integration_internal_faces
 #endif /* USE_BOOST_TEST */
 
         value_type v3 = integrate( internalfaces(*mesh), IM<3,3,value_type,Simplex>(),
-                                   leftfacev(norm2(P()*P()))-rightfacev(vf::sqrt(trans(P()*P())*(P()*P()))) ).evaluate()( 0, 0 );
+                                   leftfacev(vf::sqrt(trans(P()*P())*(P()*P())))-rightfacev(vf::sqrt(trans(P()*P())*(P()*P()))) ).evaluate()( 0, 0 );
         std::cout << "v3 = " << v3 << "\n";
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v3-0.0, eps );
@@ -134,7 +134,7 @@ struct test_integration_internal_faces
 #endif /* USE_BOOST_TEST */
 #endif
 
-        typedef FunctionSpace<mesh_type, fusion::vector<fem::Lagrange<3, 3, Scalar, Continuous, double> >, double> space_type;
+        typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<3, Scalar> >, double> space_type;
         typedef boost::shared_ptr<space_type> space_ptrtype;
         space_ptrtype Xh = space_type::New( mesh );
         typedef typename space_type::element_type element_type;

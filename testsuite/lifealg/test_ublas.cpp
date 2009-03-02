@@ -51,14 +51,14 @@ void init_logs() {
 }
 
 #include <life/lifealg/glas.hpp>
-#include <boost/numeric/bindings/traits/traits.hpp>
-#include <boost/numeric/bindings/traits/ublas_vector.hpp>
-#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
+//#include <boost/numeric/bindings/traits/traits.hpp>
+//#include <boost/numeric/bindings/traits/ublas_vector.hpp>
+//#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
 //#include <boost/numeric/bindings/atlas/cblas.hpp>
-#include <boost/numeric/bindings/blas/blas.hpp>
+//#include <boost/numeric/bindings/blas/blas.hpp>
 
-namespace blas = boost::numeric::bindings::blas;
-namespace traits = boost::numeric::bindings::traits;
+//namespace blas = boost::numeric::bindings::blas;
+//namespace traits = boost::numeric::bindings::traits;
 
 
 int main( int argc, char** argv )
@@ -89,11 +89,12 @@ int main( int argc, char** argv )
     BOOST_LOG(info) << "mc3 = trans(mc1)*mc2 = " << ublas::prod( ublas::trans( mc1 ), mc2 ) << std::endl;
     BOOST_LOG(info) << "scalar = mc1*trans(mc2) = " << ublas::prod( mc1, ublas::trans( mc2 ) ) << std::endl;
 
+#if 0
     blas::gemm( traits::TRANSPOSE, traits::NO_TRANSPOSE,
                 1.0, mc1, mc2,
                 0.0, mc3 );
     BOOST_LOG(info) << "mc3 = trans(mc1)*mc2 using gemm = " << mc3 << std::endl;
-
+#endif
     boost::timer timer;
 
     for ( int i = 0; i < N; ++i )
@@ -114,6 +115,7 @@ int main( int argc, char** argv )
 
     timer.restart();
     dcm_t mc4( S, S );
+#if 0
     for ( int i = 0; i < N; ++i )
     {
         mc4.assign( ublas::scalar_matrix<double>( mc3.size1(), mc3.size2(), 1 ) );
@@ -122,13 +124,14 @@ int main( int argc, char** argv )
                     0.0, mc4 );
     }
     BOOST_LOG(info) << "blas::gemm : " << timer.elapsed() << std::endl;
-
+#endif
     BOOST_LOG(info) << "||mc3-mc4|| : " << ublas::norm_frobenius( mc3-mc4 ) << std::endl;
     BOOST_LOG(info) << "||mc3-mc6|| : " << ublas::norm_frobenius( mc3-mc6 ) << std::endl;
 
     timer.restart();
 
     dcm_t mc5( S, S );
+#if 0
     for ( int i = 0; i < N; ++i )
     {
         mc5.assign( ublas::scalar_matrix<double>( mc5.size1(), mc5.size2(), 1 ) );
@@ -136,6 +139,7 @@ int main( int argc, char** argv )
                     1.0, mc3, mc4,
                     0.0, mc5 );
     }
+#endif
     BOOST_LOG(info) << "blas::gemm mc3*mc4 : " << timer.elapsed() << std::endl;
 
     timer.restart();

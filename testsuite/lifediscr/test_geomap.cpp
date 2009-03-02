@@ -57,7 +57,7 @@ struct TestInterp
 {
     typedef Entity<Dim, 1,Dim> entity_type;
     typedef Reference<entity_type,Dim,1,Dim> ref_entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptr_type;
 
     typedef typename mesh_type::gm_type gm_type;
