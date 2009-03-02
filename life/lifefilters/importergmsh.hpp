@@ -533,7 +533,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 __n[j] = __x[3*__i+j];
             point_type __pt( __i,__n, __isonboundary[ __i ] );
             __pt.setOnBoundary( __isonboundary[ __i ] );
-            __pt.marker().value( __whichboundary[__i] );
+            __pt.marker().assign( __whichboundary[__i] );
             mesh->addPoint( __pt );
         }
 
@@ -605,7 +605,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, std::vector<int> const& __e, i
 {
     face_type pf;
     pf.setId( mesh->numFaces() );
-    pf.marker().value(  tag  );
+    pf.marker().assign(  tag  );
     pf.setPoint( 0, mesh->point( __e[0] ) );
 
     _M_n_vertices[ __e[0] ] = 1;
@@ -643,7 +643,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, in
 {
     element_type e;
 
-    e.marker().value(  tag  );
+    e.marker().assign(  tag  );
     if ( type == GMSH_LINE ||
          type == GMSH_LINE_2 ||
          type == GMSH_LINE_3 ||
@@ -669,7 +669,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, i
 {
     face_type pf;
     pf.setId( mesh->numFaces() );
-    pf.marker().value(  tag  );
+    pf.marker().assign(  tag  );
 
     if ( type == GMSH_LINE ||
          type == GMSH_LINE_2 ||
@@ -718,7 +718,7 @@ void
 ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, int tag, GMSH_ENTITY type, mpl::int_<2> )
 {
     element_type pf;
-    pf.marker().value(  tag  );
+    pf.marker().assign(  tag  );
 
     if ( type == GMSH_QUADRANGLE ||
          type == GMSH_TRIANGLE ||
@@ -785,7 +785,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, i
 {
     face_type pf;
     pf.setId( mesh->numFaces() );
-    pf.marker().value(  tag  );
+    pf.marker().assign(  tag  );
 
     if ( type == GMSH_QUADRANGLE ||
          type == GMSH_TRIANGLE ||
@@ -830,7 +830,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e,
 {
     element_type pv;
 
-    pv.marker().value(  tag  );
+    pv.marker().assign(  tag  );
 
     if ( type == GMSH_HEXAHEDRON ||
          type == GMSH_HEXAHEDRON_2 ||

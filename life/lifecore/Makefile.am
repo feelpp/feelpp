@@ -29,7 +29,7 @@ typeinfo.cpp\
 smartassert.cpp $(MPFR_SOURCES) \
 pslogger.cpp
 
-liblifecore_la_LIBADD	= $(aztec_libs) $(top_builddir)/boost/libs/mpi/src/libboost_mpi.la $(top_builddir)/boost/libs/serialization/src/libboost_serialization.la $(boost_filesystem_lib) $(boost_date_time_lib) $(boost_program_options_lib)
+liblifecore_la_LIBADD	= $(aztec_libs) $(BOOST_MPI_LIB) $(BOOST_SERIALIZATION_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_FILESYSTEM_LIB)
 
 
 # if HAVE_PETSC

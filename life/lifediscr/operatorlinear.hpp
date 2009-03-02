@@ -184,12 +184,10 @@ public:
 
     this_type& operator=( this_type const& m )
     {
-#warning TODO
-        LIFE_ASSERT( 0 ).warn( "invalid call, not implemented yet" );
-        // copy operator
-        // call M_backend->newMatrix( M_matrix )
-        //M_matrix.reset( new matrix_type( *m.M_matrix ) );
         M_backend = m.M_backend;
+        M_matrix->zero();
+        M_matrix->addMatrix( 1.0, m.M_matrix );
+
         return *this;
     }
 

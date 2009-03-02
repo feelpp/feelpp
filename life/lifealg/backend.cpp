@@ -303,10 +303,14 @@ template class Backend<double>;
  */
 po::options_description backend_options()
 {
-    po::options_description _options( "Backend options");
+    po::options_description _options( "Linear and NonLinear Solvers Backend options");
     _options.add_options()
         // solver options
+#if defined( HAVE_PETSC_H )
+        ("backend", Life::po::value<std::string>()->default_value( "petsc" ), "backend type: gmm, petsc, trilinos")
+#else
         ("backend", Life::po::value<std::string>()->default_value( "gmm" ), "backend type: gmm, petsc, trilinos")
+#endif
         ;
     return _options;
 }

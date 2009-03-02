@@ -34,9 +34,9 @@
 #include <boost/optional.hpp>
 #include <boost/signal.hpp>
 
-#include <boost/numeric/bindings/traits/traits.hpp>
-#include <boost/numeric/bindings/traits/ublas_vector.hpp>
-#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
+//#include <boost/numeric/bindings/traits/traits.hpp>
+//#include <boost/numeric/bindings/traits/ublas_vector.hpp>
+//#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
 //#include <boost/numeric/bindings/atlas/cblas3.hpp>
 
 #include <life/lifecore/life.hpp>
@@ -56,7 +56,7 @@
 namespace Life
 {
 //namespace blas = boost::numeric::bindings::blas;
-namespace traits = boost::numeric::bindings::traits;
+//namespace traits = boost::numeric::bindings::traits;
 
 struct GeomapInverse
 {

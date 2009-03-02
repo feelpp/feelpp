@@ -29,7 +29,7 @@
 #ifndef __Simplex_H
 #define __Simplex_H 1
 
-#include <boost/identifier.hpp>
+#include <boost/detail/identifier.hpp>
 #include <life/lifemesh/entities.hpp>
 
 namespace Life

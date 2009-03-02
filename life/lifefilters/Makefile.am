@@ -35,5 +35,5 @@ liblifefilters_la_SOURCES +=  gmshtensorizeddomain.cpp gmshsimplexdomain.cpp\
 
 endif
 
-liblifefilters_la_LIBADD	=  $(BOOST_FILESYSTEM_LIB) ../../boost/libs/serialization/src/libboost_serialization.la ../../boost/libs/mpi/src/libboost_mpi.la
+liblifefilters_la_LIBADD	=  $(BOOST_FILESYSTEM_LIB) $(BOOST_MPI_LIB) $(BOOST_SERIALIZATION_LIB)
 

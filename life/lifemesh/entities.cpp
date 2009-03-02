@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2006-12-14
  */
-#include <boost/identifier.hpp>
+#include <boost/detail/identifier.hpp>
 
 #include <life/lifecore/life.hpp>
 #include <life/lifemesh/entities.hpp>
