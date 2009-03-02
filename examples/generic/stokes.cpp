@@ -120,15 +120,15 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<Dim, 1,Dim> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Entity<Dim,1,Dim> entity_type;
+    typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
-    //typedef mytag<fem::Lagrange<Dim, Order, Vectorial, Continuous, double, Entity>,0> basis_u_type;
-    typedef mytag<fem::Lagrange<Dim, Order, Vectorial, Continuous, double, Entity>,0> basis_u_type;
-    typedef mytag<fem::Lagrange<Dim, Order-1, Scalar, Continuous, double, Entity>,1> basis_p_type;
-    typedef mytag<fem::Lagrange<Dim, 0, Scalar, Continuous, double, Entity>,2> basis_l_type;
+    //typedef mytag<Lagrange<Order, Vectorial>,0> basis_u_type;
+    typedef mytag<Lagrange<Order, Vectorial>,0> basis_u_type;
+    typedef mytag<Lagrange<Order-1, Scalar>,1> basis_p_type;
+    typedef mytag<Lagrange<0, Scalar>,2> basis_l_type;
     typedef fusion::vector<basis_u_type, basis_p_type, basis_l_type> basis_type;
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;

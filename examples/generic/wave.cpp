@@ -144,41 +144,29 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<Dim, 1,Dim> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Entity<Dim,1,Dim> entity_type;
+    typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<fem::Lagrange<Dim, 0, Scalar, Discontinuous> > > p0_space_type;
+    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >,Discontinuous> p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
     template<typename Conti = Cont>
     struct space
     {
         /*basis*/
-#if 0
-        typedef typename mpl::if_<mpl::bool_<Conti::is_continuous>,
-                                  mpl::identity<fusion::vector<fem::Lagrange<Dim, Order, FType, Conti, double, Entity> > >,
-                                  mpl::identity<fusion::vector<OrthonormalPolynomialSet<Dim, Order, FType, double, Entity> > > >::type::type basis_type;
-#else
-        typedef fusion::vector<fem::Lagrange<Dim, Order, FType, Conti, double, Entity> > basis_type;
-        typedef fusion::vector<fem::Lagrange<Dim, Order-1, Vectorial, Discontinuous, double, Entity> > grad_basis_type;
-
-#endif
-        /* number of dofs per element */
-        static const uint16_type nLocalDof = boost::remove_reference<typename fusion::result_of::at<basis_type,mpl::int_<0> >::type>::type::nLocalDof;
+        typedef fusion::vector<Lagrange<Order, FType> > basis_type;
+        typedef fusion::vector<Lagrange<Order-1, Vectorial> > grad_basis_type;
 
         /*space*/
-        typedef FunctionSpace<mesh_type, basis_type, value_type> type;
+        typedef FunctionSpace<mesh_type, basis_type, Conti> type;
         typedef boost::shared_ptr<type> ptrtype;
 
-        typedef FunctionSpace<mesh_type, grad_basis_type, value_type> grad_type;
+        typedef FunctionSpace<mesh_type, grad_basis_type, Discontinuous> grad_type;
         typedef boost::shared_ptr<grad_type> grad_ptrtype;
 
         typedef typename type::element_type element_type;
         typedef typename grad_type::element_type grad_element_type;
-
-        typedef typename element_type::template sub_element<0>::type element_0_type;
-        typedef typename element_type::template sub_element<1>::type element_1_type;
     };
     typedef typename space<Cont>::type functionspace_type;
     typedef typename space<Cont>::ptrtype functionspace_ptrtype;
@@ -453,7 +441,7 @@ Wave<Dim, Order, Cont, Entity,FType>::exportResults( double time,
                 U.updateGlobalValues();
             for( ; it!=en; ++it )
                 {
-                    for( size_type i = 0; i < space<Cont>::nLocalDof; ++i )
+                    for( size_type i = 0; i < space<Cont>::type::basis_type::nLocalDof; ++i )
                         {
                             size_type dof0 = boost::get<0>( U.functionSpace()->dof()->localToGlobal( it->id(), i ) );
                             ofs3 << std::setw( 5 ) << it->id() << " "
@@ -467,7 +455,7 @@ Wave<Dim, Order, Cont, Entity,FType>::exportResults( double time,
                             else if ( i == 1 )
                                 ofs3 <<  b;
                             else
-                                ofs3 <<  a + (i-1)*(b-a)/(space<Continuous>::nLocalDof-1);
+                                ofs3 <<  a + (i-1)*(b-a)/(space<Continuous>::type::basis_type::nLocalDof-1);
 
                             ofs3 << "\n";
 
@@ -484,7 +472,7 @@ Wave<Dim, Order, Cont, Entity,FType>::exportResults( double time,
             if ( !E.areGlobalValuesUpdated() ) E.updateGlobalValues();
             for( ; it!=en; ++it )
                 {
-                    for( size_type i = 0; i < space<Continuous>::nLocalDof; ++i )
+                    for( size_type i = 0; i < space<Continuous>::type::basis_type::nLocalDof; ++i )
                         {
                             size_type dof0 = boost::get<0>( V.functionSpace()->dof()->localToGlobal( it->id(), i ) );
                             ofs2 << std::setw( 5 ) << it->id() << " "
@@ -499,7 +487,7 @@ Wave<Dim, Order, Cont, Entity,FType>::exportResults( double time,
                             else if ( i == 1 )
                                 ofs2 <<  b;
                             else
-                                ofs2 <<  a + (i-1)*(b-a)/(space<Continuous>::nLocalDof-1);
+                                ofs2 <<  a + (i-1)*(b-a)/(space<Continuous>::type::basis_type::nLocalDof-1);
                             ofs2 << "\n";
 
                         }
