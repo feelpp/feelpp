@@ -122,17 +122,17 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<Dim, 1,Dim> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Entity<Dim,1,Dim> entity_type;
+    typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     template<typename Conti = Cont>
     struct space
     {
         /*basis*/
-        typedef fusion::vector<fem::Lagrange<Dim, Order, Scalar, Conti, double, Entity> > basis_type;
+        typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
         /*space*/
-        typedef FunctionSpace<mesh_type, basis_type, value_type> type;
+        typedef FunctionSpace<mesh_type, basis_type, Conti, value_type> type;
         typedef boost::shared_ptr<type> ptrtype;
         typedef typename type::element_type element_type;
         typedef typename element_type::template sub_element<0>::type element_0_type;

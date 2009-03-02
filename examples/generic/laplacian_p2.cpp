@@ -118,23 +118,23 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef SimplexProduct<Dim, 1, Dim> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef SimplexProduct<Dim> entity_type;
+    typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*discontinuous basis*/
-    typedef fusion::vector<fem::Lagrange<Dim, Order, Scalar, Discontinuous, value_type, SimplexProduct, PointSetGaussLobatto> > basis_type;
-//    typedef fusion::vector<fem::Dubiner<Dim, Order, Scalar, Discontinuous, value_type, SimplexProduct>,
-//						   fem::Dubiner<Dim, Order, Vectorial, Discontinuous, value_type, SimplexProduct>
-//						   > basis_type;
+    typedef fusion::vector<Lagrange<Order, Scalar, PointSetGaussLobatto> > basis_type;
+    //    typedef fusion::vector<fem::Dubiner<Dim, Order, Scalar, Discontinuous, value_type, SimplexProduct>,
+    //						   fem::Dubiner<Dim, Order, Vectorial, Discontinuous, value_type, SimplexProduct>
+    //						   > basis_type;
 	/*discontinuous space*/
-	typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+	typedef FunctionSpace<mesh_type, basis_type, Discontinuous, value_type> space_type;
 	typedef boost::shared_ptr<space_type> space_ptrtype;
 	typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
-    typedef fusion::vector<fem::Lagrange<Dim, Order, Vectorial, Discontinuous, value_type, SimplexProduct, PointSetGaussLobatto> > vectorial_basis_type;
-    typedef FunctionSpace<mesh_type, vectorial_basis_type, value_type> vectorial_space_type;
+    typedef fusion::vector<Lagrange<Order, Vectorial, PointSetGaussLobatto> > vectorial_basis_type;
+    typedef FunctionSpace<mesh_type, vectorial_basis_type, Discontinuous> vectorial_space_type;
 	typedef boost::shared_ptr<vectorial_space_type> vectorial_space_ptrtype;
 	typedef typename vectorial_space_type::element_type vectorial_element_type;
     typedef boost::shared_ptr<vectorial_element_type> vectorial_element_ptrtype;
@@ -143,11 +143,11 @@ public:
 
 #if 0
         typedef typename mpl::if_<mpl::bool_<Conti::is_continuous>,
-                                  mpl::identity<fusion::vector<fem::Lagrange<Dim, Order, FType, Conti, double, SimplexProduct> > >,
-                                  mpl::identity<fusion::vector<OrthonormalPolynomialSet<Dim, Order, FType, double, SimplexProduct> > > >::type::type basis_type;
+                                  mpl::identity<fusion::vector<Lagrange<Order, FType> > >,
+                                  mpl::identity<fusion::vector<OrthonormalPolynomialSet<Order, FType> > > >::type::type basis_type;
 #endif
     /*continuous basis*/
-	typedef fusion::vector<fem::Lagrange<Dim, Order, Scalar, Continuous, double, SimplexProduct> > basis_type_cont;
+	typedef fusion::vector<Lagrange<Order, Scalar> > basis_type_cont;
 
 	/*continuous space*/
     typedef FunctionSpace<mesh_type, basis_type_cont, value_type> type_cont;
