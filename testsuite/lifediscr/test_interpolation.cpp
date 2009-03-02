@@ -62,7 +62,7 @@ using namespace Life;
 template<int Dim, int Order=1, int RDim=Dim>
 struct imesh
 {
-    typedef Mesh<GeoEntity<Simplex<Dim,Order,RDim> >, double > type;
+    typedef Mesh<Simplex<Dim,Order,RDim>, double > type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 
@@ -111,8 +111,8 @@ struct test_interpolation
 
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 
-        typedef fusion::vector<fem::Lagrange<Dim, Order, Scalar, Continuous, double> > basis_type;
-        typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+        typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
+        typedef FunctionSpace<mesh_type, basis_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
 
@@ -198,8 +198,8 @@ struct test_interpolation_op
 
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 
-        typedef fusion::vector<fem::Lagrange<Dim, Order+2, Scalar, Continuous, double> > basis_type;
-        typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+        typedef fusion::vector<Lagrange<Order+2, Scalar> > basis_type;
+        typedef FunctionSpace<mesh_type, basis_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
 
         typename space_type::element_type u( Xh, "u" );
@@ -208,8 +208,8 @@ struct test_interpolation_op
 
         typename imesh<Dim,1,RDim>::ptrtype mesh1( createMesh<Dim,1,RDim>( meshSize/2 ) );
 
-        typedef fusion::vector<fem::Lagrange<Dim, Order, Scalar, Continuous, double> > imagebasis_type;
-        typedef FunctionSpace<mesh_type, imagebasis_type, value_type> imagespace_type;
+        typedef fusion::vector<Lagrange<Order, Scalar> > imagebasis_type;
+        typedef FunctionSpace<mesh_type, imagebasis_type> imagespace_type;
         boost::shared_ptr<imagespace_type> Yh( new imagespace_type(mesh1) );
         typename imagespace_type::element_type v( Yh, "v" );
 
@@ -272,8 +272,8 @@ struct test_interpolation_op_2
 
 
 #if 0
-        typedef fusion::vector<fem::Lagrange<DimDomain, OrderDomain, Scalar, Continuous, double> > domain_basis_type;
-        typedef FunctionSpace<mesh_type, domain_basis_type, value_type> domain_space_type;
+        typedef fusion::vector<Lagrange<OrderDomain, Scalar> > domain_basis_type;
+        typedef FunctionSpace<mesh_type, domain_basis_type> domain_space_type;
         boost::shared_ptr<domain_space_type> Xh( new domain_space_type(mesh) );
 
         typename domain_space_type::element_type u( Xh, "u" );
@@ -282,8 +282,8 @@ struct test_interpolation_op_2
 
         typename imesh<DimImage,1,RealDimImage>::ptrtype image_mesh( createMesh<DimImage,1,RealDimImage>( meshSize/2 ) );
 
-        typedef fusion::vector<fem::Lagrange<DimImage, Order, Scalar, Continuous, double> > imagebasis_type;
-        typedef FunctionSpace<mesh_type, imagebasis_type, value_type> imagespace_type;
+        typedef fusion::vector<Lagrange<Order, Scalar> > imagebasis_type;
+        typedef FunctionSpace<mesh_type, imagebasis_type> imagespace_type;
         boost::shared_ptr<imagespace_type> Yh( new imagespace_type(mesh1) );
         typename imagespace_type::element_type v( Yh, "v" );
 
@@ -344,8 +344,8 @@ struct test_lagrange_p1_op
 
         //const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 
-        typedef fusion::vector<fem::Lagrange<Dim, Order, Scalar, Continuous, double> > basis_type;
-        typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+        typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
+        typedef FunctionSpace<mesh_type, basis_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
 
         typename space_type::element_type u( Xh, (boost::format( "u_%1%.%2%.%3%" ) % Dim % Order % GeoOrder ).str() );

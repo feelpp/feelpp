@@ -6,7 +6,7 @@
        Date: 2006-08-25
 
   Copyright (C) 2006 EPFL
-  Copyright (C) 2006,2007,2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006-2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -101,7 +101,7 @@ struct f_sinPx
 template<typename T, int Order = 1>
 struct imesh
 {
-    typedef Mesh<GeoEntity<Simplex<2, Order> >, T > type;
+    typedef Mesh<Simplex<2, Order>, T > type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 
@@ -388,7 +388,7 @@ struct test_integration_circle
 #endif /* USE_BOOST_TEST */
 
         typedef typename imesh<value_type,Order>::type mesh_type;
-        typedef fusion::vector<fem::Lagrange<2, Order+1, Scalar, Continuous, double> > basis_type;
+        typedef fusion::vector<Lagrange<Order+1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
@@ -467,7 +467,7 @@ struct test_integration_sin
 
         typename imesh<value_type,Order>::ptrtype mesh( createSin<value_type,Order>( meshSize ) );
 
-        typedef fusion::vector<fem::Lagrange<2, Order+1, Scalar, Continuous, double> > basis_type;
+        typedef fusion::vector<Lagrange<Order+1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );

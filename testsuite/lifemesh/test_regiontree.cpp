@@ -48,7 +48,7 @@ namespace lambda = boost::lambda;
 
 int main( int /*argc*/,  char** /*argv*/ )
 {
-    typedef Mesh<LinearTetra> mesh_type;
+    typedef Mesh<Simplex<3,1> > mesh_type;
     mesh_type aMesh;
 
     Gmsh __gmsh;

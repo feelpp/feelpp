@@ -59,14 +59,14 @@ public:
     {
         using namespace Life;
 
-        typedef Mesh<GeoEntity<Simplex<Dim, 1> > > mesh_type;
+        typedef Mesh<Simplex<Dim, 1> > mesh_type;
         typedef Simplex<Dim, 1> convex_type;
 
-        typedef FunctionSpace<mesh_type, fusion::vector<fem::Lagrange<Dim, N, Scalar, Continuous, T> >, T> scalar_space_type;
+        typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<N, Scalar> >, T> scalar_space_type;
         BOOST_STATIC_ASSERT( scalar_space_type::nDim == Dim );
         BOOST_STATIC_ASSERT( scalar_space_type::N_COMPONENTS == 1 );
 
-        typedef FunctionSpace<mesh_type, fusion::vector<fem::Lagrange<Dim, N, Vectorial, Continuous, T> >, T> vectorial_space_type;
+        typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<N, Vectorial> >, T> vectorial_space_type;
         BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
         BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
 
@@ -125,10 +125,10 @@ template<int Dim, typename T>
 class TestSpace2
 {
 public:
-    typedef Mesh<GeoEntity<Simplex<Dim, 1> > > mesh_type;
-    typedef fusion::vector<fem::Lagrange<Dim, 2, Vectorial, Continuous, T>,
-                           fem::Lagrange<Dim, 1, Scalar, Continuous, T>,
-                           fem::Lagrange<Dim, 1, Scalar, Continuous, T> > basis_type;
+    typedef Mesh<Simplex<Dim, 1> > mesh_type;
+    typedef fusion::vector<Lagrange<2, Vectorial>,
+                           Lagrange<1, Scalar>,
+                           Lagrange<1, Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type, T> space_type;
 
     TestSpace2()
@@ -261,7 +261,7 @@ public:
     {
         using namespace Life;
 
-        typedef Mesh<GeoEntity<Simplex<Dim, 1> > > mesh_type;
+        typedef Mesh<Simplex<Dim, 1> > mesh_type;
         typedef Simplex<Dim, 1> convex_type;
 
         typedef FunctionSpace<mesh_type, fusion::vector<BoundaryAdaptedPolynomialSet<Dim, N, Scalar, T> >, T> scalar_space_type;

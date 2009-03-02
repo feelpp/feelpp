@@ -6,7 +6,7 @@
        Date: 2006-08-25
 
   Copyright (C) 2006 EPFL
-  Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006-2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@
    \date 2006-08-25
  */
 
-//#define USE_BOOST_TEST 1
+#define USE_BOOST_TEST 1
 
 // Boost.Test
 #define BOOST_TEST_MAIN
@@ -105,7 +105,7 @@ struct f_sinPx
 template<typename T, int Order = 1>
 struct imesh
 {
-    typedef Mesh<GeoEntity<Simplex<2, Order> >, T > type;
+    typedef Mesh<Simplex<2, Order>, T > type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 
@@ -284,8 +284,8 @@ struct test_integration_circle
 #endif /* USE_BOOST_TEST */
 
         typedef typename imesh<value_type,1>::type mesh_type;
-        typedef fusion::vector<fem::Lagrange<2, 2, Scalar, Continuous, double> > basis_type;
-        typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+        typedef fusion::vector<Lagrange<2, Scalar> > basis_type;
+        typedef FunctionSpace<mesh_type, basis_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
 
@@ -298,7 +298,7 @@ struct test_integration_circle
         LIFE_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
-        typedef fusion::vector<fem::Lagrange<2, 2, Vectorial, Continuous, double> > vector_basis_type;
+        typedef fusion::vector<Lagrange<2, Vectorial> > vector_basis_type;
         typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
         boost::shared_ptr<vector_space_type> Xvh( new vector_space_type(mesh) );
         typename vector_space_type::element_type U( Xvh );
@@ -342,7 +342,7 @@ struct test_integration_simplex
         typename imesh<value_type,1>::ptrtype mesh( createSimplex<value_type,1>( meshSize ) );
         typedef typename imesh<value_type>::type mesh_type;
 
-        typedef fusion::vector<fem::Lagrange<2, 3, Scalar, Continuous, double> > basis_type;
+        typedef fusion::vector<Lagrange<3, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
@@ -545,7 +545,7 @@ struct test_integration_functions
 
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 
-        typedef fusion::vector<fem::Lagrange<2, Order, Scalar, Continuous, double> > basis_type;
+        typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
@@ -678,7 +678,7 @@ struct test_integration_vectorial_functions
 
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 
-        typedef fusion::vector<fem::Lagrange<2, Order, Vectorial, Continuous, double> > basis_type;
+        typedef fusion::vector<Lagrange<Order, Vectorial> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
@@ -763,8 +763,8 @@ struct test_integration_composite_functions
 
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 
-        typedef fusion::vector<fem::Lagrange<2, Order, Vectorial, Continuous, double>,
-            fem::Lagrange<2, Order-1, Scalar, Continuous, double> > basis_type;
+        typedef fusion::vector<Lagrange<Order, Vectorial>,
+            Lagrange<Order-1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );

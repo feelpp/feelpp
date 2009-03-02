@@ -27,7 +27,7 @@ include $(top_srcdir)/testsuite/Makefile.testsuite
 check_HEADERS       = testlagrange.hpp
 
 check_PROGRAMS		= test_jacobi test_imsimplex test_im test_poly \
-			          test_lag test_quad_order
+			          test_lag test_quad_order test_bdf
 #			  test_spectral_1D test_spectral_2D test_spectral_3D test_spectral_laplacian_3D
 
 test_jacobi_SOURCES	= test_jacobi.cpp
@@ -49,6 +49,9 @@ test_quad_order_LDADD   = $(top_builddir)/life/lifemesh/liblifemesh.la $(top_bui
 
 test_lag_SOURCES = test_lag.cpp
 test_lag_LDADD   =   $(top_builddir)/life/lifemesh/liblifemesh.la $(top_builddir)/life/lifecore/liblifecore.la $(BOOST_UNIT_TEST_FRAMEWORK_LIB)
+
+test_bdf_SOURCES = test_bdf.cpp
+test_bdf_LDADD   =   $(LIFE_LIBS)
 
 # test_spectral_1D_SOURCES = test_spectral_1D.cpp
 # test_spectral_1D_LDADD   =  $(life_libs) $(BOOST_UNIT_TEST_FRAMEWORK_LIB)

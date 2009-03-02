@@ -45,7 +45,7 @@ using boost::unit_test::test_suite;
 
 namespace Life
 {
-typedef Mesh<GeoEntity<Simplex<2, 1> > > mesh_type;
+typedef Mesh<Simplex<2> > mesh_type;
 typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
 }
@@ -225,7 +225,7 @@ BOOST_AUTO_TEST_CASE( test_simple_mesh2d )
 {
     using namespace Life;
 
-    typedef Mesh<LinearTriangle>  mesh_type;
+    typedef Mesh<Simplex<2,1> >  mesh_type;
     mesh_type mesh;
 
 
