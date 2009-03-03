@@ -108,9 +108,7 @@ public:
 
     typedef GeoMap<Dim, Order, T, Entity, PP > self_type;
     typedef self_type geometric_mapping_type;
-    typedef self_type gm_type;
     typedef boost::shared_ptr<geometric_mapping_type> geometric_mapping_ptrtype;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
 
     typedef typename mpl::at<geomap_elements_t, mpl::int_<nDim> >::type element_gm_type;
     typedef boost::shared_ptr<element_gm_type> element_gm_ptrtype;
@@ -521,8 +519,8 @@ public:
         static const uint16_type NDim = ElementType::nRealDim;
         static const uint16_type nDim = NDim;
         // type of transformation (linear or not)
-        static const fem::transformation_type trans = gm_type::trans;
-        static const bool is_linear = trans == fem::LINEAR;
+        static const fem::transformation_type trans = geometric_mapping_type::trans;
+        static const bool is_linear = (trans == fem::LINEAR);
 
         static const bool condition = ((PDim==NDim)||((NDim>=1)&&(PDim==NDim-1)));
         BOOST_MPL_ASSERT_MSG( condition, INVALID_DIM, (mpl::int_<NDim>, mpl::int_<PDim>, ElementType ) );

@@ -253,60 +253,6 @@ public:
             form_type const& _M_form;
         };
 
-        struct __integrate
-        {
-            __integrate( IM const& im )
-                :
-                _M_np( im.nPoints() ),
-                _M_prod( im.nPoints() ),
-                _M_weight( im.weights() ),
-                _M_is_face_im( IM::is_face_im )
-            {
-            }
-            __integrate&
-            operator=( IM const& im )
-
-            {
-                _M_weight = im.weights();
-                return *this;
-            }
-
-            void update( geometric_mapping_context_type const& _gmc )
-            {
-                if ( _M_is_face_im )
-                    for( uint16_type q = 0; q < _M_np; ++q )
-                        {
-                            _M_prod[q] = _M_weight( q )*_gmc.J(q)*_gmc.normalNorm(q);
-                        }
-                else
-                    for( uint16_type q = 0; q < _M_np; ++q )
-                        {
-                            _M_prod[q] = _M_weight( q )*_gmc.J(q);
-                        }
-            }
-            template<typename ExprType>
-            value_type operator()( ExprType const& expr,
-                                   test_index_type  const& indi,
-                                   uint16_type c1,
-                                   uint16_type c2 ) const
-            {
-                value_type res = value_type(0);
-
-                for( uint16_type q = 0; q < _M_np; ++q )
-                    {
-                        const value_type val_expr = expr.evaliq( indi, c1, c2, q );
-                        res += _M_prod[q]*val_expr;
-
-                    }
-                return res;
-            }
-        private:
-            uint16_type _M_np;
-            std::vector<value_type> _M_prod;
-            ublas::vector<value_type> _M_weight;
-            const bool _M_is_face_im;
-        };
-
     public:
 
         Context( form_type& __form,
@@ -373,7 +319,7 @@ public:
         eval0_expr_ptrtype _M_eval0_expr;
         eval1_expr_ptrtype _M_eval1_expr;
 
-        __integrate M_integrator;
+        IM M_integrator;
 
     }; // Context
 
@@ -864,6 +810,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     _M_eval0_expr( new eval0_expr_type( expr, _gmc, _M_test_fec0 ) ),
     _M_eval1_expr( new eval1_expr_type( expr, _gmc, _M_test_fec1 ) ),
     M_integrator( im )
+
 {
     _M_eval0_expr->init( im2 );
     _M_eval1_expr->init( im2 );
@@ -975,7 +922,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
             {
                 indi.setIndex( boost::make_tuple( i, c1, 0 ) );
 
-                BOOST_MPL_ASSERT( IM::is_face_im );
+                LIFE_ASSERT( M_integrator.isFaceIm() )
+                    ( M_integrator ).error( "invalid face integrator" );
                 _M_rep[i][c1] = M_integrator( *_M_eval0_expr, indi, 0, 0 );
                 uint16_type ii = i + test_basiscontext_type::nDof;
                 _M_rep[ii][c1] = M_integrator( *_M_eval1_expr, indi, 0, 0 );

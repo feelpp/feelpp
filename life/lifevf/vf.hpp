@@ -62,6 +62,19 @@ template<int Index> struct gmc
     static const int value = Index;
     typedef mpl::void_ reference_element_type;
 } ;
+
+template<typename Geo_t>
+struct ExtractGm
+{
+    typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,mpl::identity<detail::gmc<0> >,mpl::identity<detail::gmc<1> > >::type::type key_type;
+    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+
+    static gmc_ptrtype get( Geo_t const& geom )
+    {
+        return fusion::at_key<key_type>( geom ).get();
+    }
+};
 /// \endcond
 }
 }
@@ -72,13 +85,13 @@ template<int Index> struct gmc
 #include <life/lifevf/ppoperators.hpp>
 
 #include <life/lifevf/operators.hpp>
-#include <life/lifevf/operators2.hpp>
-#include <life/lifevf/operators3.hpp>
+//#include <life/lifevf/operators2.hpp>
+//#include <life/lifevf/operators3.hpp>
 #include <life/lifevf/geometricdata.hpp>
 #include <life/lifevf/stdmathfunctors.hpp>
 #include <life/lifevf/trace.hpp>
-#include <life/lifevf/symm.hpp>
-#include <life/lifevf/norm.hpp>
+//#include <life/lifevf/symm.hpp>
+//#include <life/lifevf/norm.hpp>
 #include <life/lifevf/ones.hpp>
 #include <life/lifevf/twovalued.hpp>
 //#include <life/lifevf/eye.hpp>

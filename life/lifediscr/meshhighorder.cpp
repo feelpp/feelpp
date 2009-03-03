@@ -163,7 +163,7 @@ MeshHighOrder<Convex>::addVertices( element_type const& elt, new_element_type& n
             point_type old_point = elt.point(i);
 
             point_type new_point( old_point.id(), old_point.node(), old_point.isOnBoundary() );
-            new_point.marker().value( old_point.marker().value() );
+            new_point.marker().assign( old_point.marker().value() );
 
             // if the created point has not been added to the mesh then add it
             if ( vertexAdd[ old_point.id() ] == 0 )
@@ -190,13 +190,18 @@ MeshHighOrder<Convex>::addVertices( element_type const& elt, new_element_type& n
         }
 }
 
-
+#if defined( LIFE_INSTANTIATION_MODE )
 
 template class MeshHighOrder< Simplex<2,1> >;
+#if LIFE_MESH_MAX_ORDER >= 2
 template class MeshHighOrder< Simplex<2,2> >;
+#elif LIFE_MESH_MAX_ORDER >= 3
 template class MeshHighOrder< Simplex<2,3> >;
+#elif LIFE_MESH_MAX_ORDER >= 4
 template class MeshHighOrder< Simplex<2,4> >;
+#endif // LIFE_MESH_MAX_ORDER
 
+#endif // LIFE_INSTANTIATION_MODE
 }
 
 

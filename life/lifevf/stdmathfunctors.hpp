@@ -203,36 +203,30 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             typedef this_type expression_type;                          \
             typedef typename expression_1_type::template tensor<Geo_t, Basis_i_t,Basis_j_t> tensor2_expr_type; \
             typedef typename tensor2_expr_type::value_type value_type;  \
-            typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >, \
-                mpl::identity<detail::gmc<0> >,                         \
-                mpl::identity<detail::gmc<1> > >::type::type key_type;  \
-            typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype; \
-            typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type; \
+            typedef typename detail::ExtractGm<Geo_t>::gmc_ptrtype gmc_ptrtype; \
+            typedef typename detail::ExtractGm<Geo_t>::gmc_type gmc_type; \
             typedef typename tensor2_expr_type::shape shape;            \
                                                                         \
             struct is_zero { static const bool value = tensor2_expr_type::is_zero::value; }; \
                                                                         \
-            template<typename ExprT>                                    \
-                tensor( ExprT const& expr, Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
+            tensor( this_type const& expr, Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
                 :                                                       \
                 _M_expr( expr.expression(), geom ),                     \
-                _M_gmc( fusion::at_key<key_type>( geom ).get() )        \
+                _M_gmc( detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \
-            template<typename ExprT>                                    \
-                tensor( ExprT const& expr,Geo_t const& geom, Basis_i_t const& /*fev*/ ) \
+            tensor( this_type const& expr,Geo_t const& geom, Basis_i_t const& /*fev*/ ) \
                 :                                                       \
                 _M_expr( expr.expression(), geom ),                     \
-                _M_gmc( fusion::at_key<key_type>( geom ).get() )        \
+                _M_gmc( detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \
-            template<typename ExprT>                                    \
-                tensor( ExprT const& expr, Geo_t const& geom )          \
+            tensor( this_type const& expr, Geo_t const& geom )             \
                 :                                                       \
                 _M_expr( expr.expression(), geom ),                     \
-                _M_gmc( fusion::at_key<key_type>( geom ).get() )        \
+                _M_gmc( detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \

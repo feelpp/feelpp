@@ -8931,6 +8931,14 @@ public:
     /** @name  Methods
      */
     //@{
+    IMSimplex& operator=( IMSimplex const & i)
+    {
+        if ( this != &i )
+            {
+                _M_quad = i._M_quad;
+            }
+        return *this;
+    }
     //@}
 
 
@@ -8938,91 +8946,6 @@ private:
     quad_type _M_quad;
 };
 
-#if 0
-
-/*******      Particular Quadrature Rule from old Life       *******/
-
-/** 7 points Integration rule for triangle (Ref. Stroud) D of Ex = 5 **/
-
-template< typename T >
-class TriangleQuadRule
-{
-public:
-
-    typedef T value_type;
-    typedef typename node<value_type>::type node_type;
-    typedef ublas::matrix<value_type, ublas::column_major> nodes_type;
-    typedef ublas::vector<value_type> weights_type;
-
-    nodes_type const& points() const { return _pts; }
-
-    ublas::matrix_column<nodes_type const> point( uint32_type __i ) const { return ublas::column( _pts, __i ); }
-
-    weights_type const& weights() const { return _M_w; }
-    value_type const& weight( int q ) const { return _M_w[q]; }
-
-    value_type integrate( boost::function<value_type( node_type const&)> const& f ) const
-    {
-        value_type res = 0.0;
-
-        for ( uint16_type k = 0; k < 7 ; ++k )
-            {
-                res += this->weights()[k]*f( this->point(k) );
-            }
-        return res;
-    }
-
-    TriangleQuadRule()
-        : _pts(2, 7), _M_w(7)
-    {
-        value_type t7pt_x[3] = {value_type(1.0)/3.0, 0.10128650732345633, 0.47014206410511508};
-        value_type t7pt_w[3] = {0.1125, 0.062969590272413576, 0.066197076394253090};
-
-        for(int i = 0; i < 3 ; ++i)
-            {
-                t7pt_x[i]= 2.0*t7pt_x[i]-1.0;
-                t7pt_w[i]= 4.0*t7pt_w[i];
-            }
-
-        _M_w( 0 ) = t7pt_w[0];
-        _M_w( 1 ) = t7pt_w[1];
-        _M_w( 2 ) = t7pt_w[1];
-        _M_w( 3 ) = t7pt_w[1];
-        _M_w( 4 ) = t7pt_w[2];
-        _M_w( 5 ) = t7pt_w[2];
-        _M_w( 6 ) = t7pt_w[2];
-
-        _pts( 0, 0 ) = t7pt_x[0];
-        _pts( 1, 0 ) = t7pt_x[0];
-
-        _pts( 0, 1 ) = t7pt_x[1];
-        _pts( 1, 1 ) = t7pt_x[1];
-
-        _pts( 0, 2 ) = t7pt_x[1];
-        _pts( 1, 2 ) = 1.0-2.0*t7pt_x[1];
-
-        _pts( 0, 3 ) = 1.0-2.0*t7pt_x[1];
-        _pts( 1, 3 ) = t7pt_x[1];
-
-        _pts( 0, 4 ) = t7pt_x[2];
-        _pts( 1, 4 ) = t7pt_x[2];
-
-        _pts( 0, 5 ) = t7pt_x[2];
-        _pts( 1, 5 ) = 1.0-2.0*t7pt_x[2];
-
-        _pts( 0, 6 ) = 1.0-2.0*t7pt_x[2];
-        _pts( 1, 6 ) = t7pt_x[2];
-    }
-
-    ~TriangleQuadRule() {}
-
-protected:
-    nodes_type _pts;
-    weights_type _M_w;
-};
-
-
-#endif // 0
 }
 
 #endif /* __IMSimplex_H */

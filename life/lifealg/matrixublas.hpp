@@ -33,8 +33,8 @@
 #include <boost/timer.hpp>
 #include <boost/numeric/ublas/matrix_sparse.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <boost/numeric/bindings/traits/traits.hpp>
-#include <boost/numeric/bindings/traits/ublas_sparse.hpp>
+//#include <boost/numeric/bindings/traits/traits.hpp>
+//#include <boost/numeric/bindings/traits/ublas_sparse.hpp>
 
 
 namespace Life

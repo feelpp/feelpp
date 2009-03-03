@@ -148,7 +148,7 @@ gmsh_save_value( std::ostream& out,
 
 
     //loop on all elements
-    typedef typename FunctionType::mesh_type mesh_type;
+    typedef typename FunctionType::functionspace_type::mesh_type mesh_type;
     typedef typename mesh_type::element_const_iterator element_const_iterator;
 
     element_const_iterator __elit = __u.mesh()->beginElement();
