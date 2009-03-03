@@ -79,27 +79,32 @@ public :
     typedef self_type parent_quadrature_type;
     static const uint16_type I_deg = Integration_Degree;
 
-    PointSetQuadrature() {}
+    PointSetQuadrature(): super(), _M_w(), _M_prod() {}
 
     PointSetQuadrature( const PointSetQuadrature& Qp )
         : super(Qp),
           _M_w( Qp.weights() ),
           _M_w_face( Qp.allfweights() ),
-          _M_n_face( Qp.allfpoints() )
+          _M_n_face( Qp.allfpoints() ),
+          _M_prod( Qp.nPoints() )
     {}
 
     PointSetQuadrature(uint32_type Npoints)
-        : super(Npoints), _M_w(Npoints)
+        : super(Npoints), _M_w(Npoints), _M_prod( Npoints )
     {}
 
     PointSetQuadrature(weights_type Wts)
         :
-        _M_w(Wts),super(Wts.size())
+        super(Wts.size()),
+        _M_w(Wts),
+        _M_prod( Wts.size() )
     {}
 
 
     virtual ~PointSetQuadrature()
     {}
+
+    virtual bool isFaceIm() const { return is_face_im; }
 
     self_type& operator=( self_type const& q )
     {
@@ -109,6 +114,7 @@ public :
                 _M_w = q._M_w;
                 _M_w_face = q._M_w_face;
                 _M_n_face = q._M_n_face;
+                _M_prod = q._M_prod;
             }
         return *this;
     }
@@ -279,6 +285,71 @@ public :
         return res;
     }
 
+    template<typename IndexTest, typename IndexTrial, typename ExprType>
+    value_type operator()( ExprType const& expr,
+                           IndexTest  const& indi,
+                           IndexTrial  const& indj,
+                           uint16_type c1,
+                           uint16_type c2 ) const
+    {
+        value_type res = value_type(0);
+
+        for( uint16_type q = 0; q < this->nPoints(); ++q )
+            {
+                const value_type val_expr = expr.evalijq( indi, indj, c1, c2, q );
+                res += _M_prod[q]*val_expr;
+            }
+        return res;
+    }
+    template<typename IndexTest, typename ExprType>
+    value_type operator()( ExprType const& expr,
+                           IndexTest  const& indi,
+                           uint16_type c1,
+                           uint16_type c2 ) const
+    {
+        value_type res = value_type(0);
+
+        for( uint16_type q = 0; q < this->nPoints(); ++q )
+            {
+                const value_type val_expr = expr.evaliq( indi, c1, c2, q );
+                res += _M_prod[q]*val_expr;
+
+            }
+        return res;
+    }
+
+    template<typename ExprT>
+    value_type operator()( ExprT const& expr,
+                           uint16_type c1,
+                           uint16_type c2 ) const
+    {
+        value_type res = value_type(0);
+
+        for( uint16_type q = 0; q < this->nPoints(); ++q )
+            {
+                const value_type val_expr = expr.evalq( c1, c2, q );
+                res += _M_prod[q]*val_expr;
+
+            }
+        return res;
+    }
+
+    template<typename GMC>
+    void update( GMC const& gmc )
+    {
+        if ( this->isFaceIm() )
+            for( uint16_type q = 0; q < this->nPoints(); ++q )
+                {
+                    _M_prod[q] = _M_w( q )*gmc.J(q)*gmc.normalNorm(q);
+                }
+        else
+            for( uint16_type q = 0; q < this->nPoints(); ++q )
+                {
+                    _M_prod[q] = _M_w( q )*gmc.J(q);
+                }
+    }
+
+
     class Face
         :
         public PointSetQuadrature<typename Convex::topological_face_type,
@@ -321,6 +392,7 @@ public :
                 }
             return *this;
         }
+        bool isFaceIm() const { return is_face_im; }
         uint16_type face() const { return _M_f; }
     private:
         uint16_type _M_f;
@@ -333,7 +405,7 @@ public :
 
 protected:
 
-    void setWeights( weights_type const& w ) { _M_w = w; }
+    void setWeights( weights_type const& w ) { _M_prod.resize( w.size() ); _M_w = w; }
 
     template<typename Elem, typename GM, typename IM>
     void constructQROnFace(Elem const& ref_convex,
@@ -378,7 +450,7 @@ protected:
     std::vector<weights_type> _M_w_face;
     std::vector<nodes_type> _M_n_face;
 
-
+    std::vector<value_type> _M_prod;
 };
 
 template<class Convex, uint16_type Integration_Degree, typename T>

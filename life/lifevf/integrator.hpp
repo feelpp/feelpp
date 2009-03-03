@@ -141,6 +141,7 @@ public:
                               mpl::identity<typename Im::template apply<eval::the_element_type::nDim, value_type, Simplex>::type >,
                               mpl::identity<typename Im::template apply<eval::the_element_type::nDim, value_type, SimplexProduct>::type >
                               >::type::type im_type;
+    typedef typename im_type::face_quadrature_type im_face_type;
 
     //@}
 
@@ -197,7 +198,7 @@ public:
      *
      * @return the integration method on face f
      */
-    typename im_type::face_quadrature_type  im( uint16_type f ) const { return _M_im.face( f ); }
+    im_face_type  im( uint16_type f ) const { return _M_im.face( f ); }
 
     /**
      * get the variational expression
@@ -289,80 +290,12 @@ private:
     typename eval::ret_type evaluate( mpl::int_<MESH_ELEMENTS> ) const;
     typename eval::ret_type evaluate( mpl::int_<MESH_FACES> ) const;
 
-
-    struct __integrate
-    {
-        template<typename IM>
-        __integrate( IM const& im )
-            :
-            _M_np( im.nPoints() ),
-            _M_prod( im.nPoints() ),
-            _M_weight( im.weights() ),
-            _M_is_face_im( IM::is_face_im )
-        {
-
-
-        }
-        __integrate( __integrate const& i )
-            :
-            _M_np( i._M_np ),
-            _M_prod( i._M_prod ),
-            _M_weight( i._M_weight ),
-            _M_is_face_im( i._M_is_face_im )
-        {}
-        __integrate& operator=( __integrate const& i )
-        {
-            if ( this != &i )
-                {
-                    _M_np = i._M_np;
-                    _M_prod = i._M_prod;
-                    _M_weight = i._M_weight;
-                    _M_is_face_im = i._M_is_face_im;
-                }
-            return *this;
-        }
-        template<typename GMC>
-        void update( GMC const& gmc )
-        {
-            if ( _M_is_face_im )
-                for( uint16_type q = 0; q < _M_np; ++q )
-                    {
-                        _M_prod[q] = _M_weight( q )*gmc.J(q)*gmc.normalNorm(q);
-                    }
-            else
-                for( uint16_type q = 0; q < _M_np; ++q )
-                    {
-                        _M_prod[q] = _M_weight( q )*gmc.J(q);
-                    }
-        }
-        template<typename ExprT>
-        value_type operator()( ExprT const& expr,
-                               uint16_type c1,
-                               uint16_type c2 ) const
-        {
-            value_type res = value_type(0);
-
-            for( uint16_type q = 0; q < _M_np; ++q )
-                {
-                    const value_type val_expr = expr.evalq( c1, c2, q );
-                    res += _M_prod[q]*val_expr;
-
-                }
-            return res;
-        }
-    private:
-        uint16_type _M_np;
-        std::vector<value_type> _M_prod;
-        ublas::vector<value_type>  _M_weight;
-        bool _M_is_face_im;
-    };
-
 private:
 
 
     element_iterator _M_eltbegin;
     element_iterator _M_eltend;
-    im_type _M_im;
+    mutable im_type _M_im;
     expression_type const&  _M_expr;
 
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > _M_profile_local_assembly;
@@ -751,7 +684,6 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     typename eval::ret_type res(eval::shape::M, eval::shape::N );
     res.clear();
 
-    __integrate __integrator( im() );
 
     //value_type res1 = 0;
     for ( ; it != en; ++it )
@@ -762,13 +694,13 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             expr.update( mapgmc );
             const gmc_type& gmc = *__c;
 
-            __integrator.update( gmc );
+            _M_im.update( gmc );
 
 
             for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                 for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                     {
-                        res(c1,c2) += __integrator( expr, c1, c2 );
+                        res(c1,c2) += _M_im( expr, c1, c2 );
                     }
         }
     //std::cout << "res=" << res << "\n";
@@ -813,7 +745,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
     std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( im().nFaces() );
     typedef typename im_type::face_quadrature_type face_im_type;
 
-    std::vector<__integrate> __integrators;
+    std::vector<im_face_type> __integrators;
 
     element_iterator it = beginElement();
     element_iterator en = endElement();
@@ -822,7 +754,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
     Debug(5065) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
     for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
         {
-            __integrators.push_back( __integrate( im(__f) ) );
+            __integrators.push_back( im(__f) );
             for( permutation_type __p( permutation_type::IDENTITY );
                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {

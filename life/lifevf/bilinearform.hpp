@@ -466,98 +466,6 @@ public:
             form_type const& _M_form;
         };
 
-        struct __integrate
-        {
-            __integrate( IM const& im )
-                :
-                _M_np( im.nPoints() ),
-                _M_prod( im.nPoints() ),
-                _M_weight( im.weights() ),
-                _M_is_face_im( IM::is_face_im )
-            {
-
-            }
-            __integrate&
-            operator=( IM const& im )
-
-            {
-                _M_weight = im.weights();
-                return *this;
-            }
-            void update( geometric_mapping_context_type const& gmc )
-            {
-                if ( _M_is_face_im )
-                    for( uint16_type q = 0; q < _M_np; ++q )
-                        {
-                            _M_prod[q] = _M_weight( q )*gmc.J(q)*gmc.normalNorm(q);
-                        }
-                else
-                    for( uint16_type q = 0; q < _M_np; ++q )
-                        {
-                            _M_prod[q] = _M_weight( q )*gmc.J(q);
-                        }
-            }
-            template<typename ExprType>
-            value_type operator()( ExprType const& expr,
-                                   test_index_type  const& indi,
-                                   trial_index_type  const& indj,
-                                   uint16_type c1,
-                                   uint16_type c2 ) const
-            {
-                value_type res = value_type(0);
-
-                for( uint16_type q = 0; q < _M_np; ++q )
-                    {
-                        const value_type val_expr = expr.evalijq( indi, indj, c1, c2, q );
-                        res += _M_prod[q]*val_expr;
-                    }
-                return res;
-            }
-            template<typename ExprType>
-            value_type operator()( ExprType const& expr,
-                                   test_index_type  const& indi,
-                                   trial_index_type  const& indj,
-                                   uint16_type c1,
-                                   uint16_type c2,
-                                   mpl::int_<vm::SYMM> ) const
-            {
-                value_type res = value_type(0);
-
-                for( uint16_type q = 0; q < _M_np; ++q )
-                    {
-                        const value_type val_expr = expr.evalijq( indi, indj,
-                                                                  c1, c2, q,
-                                                                  mpl::int_<vm::SYMM>() );
-                        res += _M_prod[q]*val_expr;
-                    }
-                return res;
-            }
-            template<typename ExprType>
-            value_type operator()( ExprType const& expr,
-                                   test_index_type  const& indi,
-                                   trial_index_type  const& indj,
-                                   uint16_type c1,
-                                   uint16_type c2,
-                                   mpl::int_<vm::UNSYMM> ) const
-            {
-                value_type res = value_type(0);
-
-                for( uint16_type q = 0; q < _M_np; ++q )
-                    {
-                        const value_type val_expr = expr.evalijq( indi,
-                                                                  indj,
-                                                                  c1, c2, q,
-                                                                  mpl::int_<vm::UNSYMM>() );
-                        res += _M_prod[q]*val_expr;
-                    }
-                return res;
-            }
-        private:
-            uint32_type _M_np;
-            std::vector<value_type> _M_prod;
-            ublas::vector<value_type> _M_weight;
-            const bool _M_is_face_im;
-        };
 
     public:
 
@@ -653,7 +561,7 @@ public:
         eval10_expr_ptrtype _M_eval_expr10;
         eval11_expr_ptrtype _M_eval_expr11;
 
-        __integrate M_integrator;
+        IM M_integrator;
 
         test_index_type indi;
         trial_index_type indj;

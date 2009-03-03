@@ -909,7 +909,6 @@ public:
         /**
          * geometry typedef
          */
-        typedef typename functionspace_type::mesh_type mesh_type;
         typedef typename mesh_type::element_type geoelement_type;
         typedef typename functionspace_type::gm_type gm_type;
         typedef boost::shared_ptr<gm_type> gm_ptrtype;

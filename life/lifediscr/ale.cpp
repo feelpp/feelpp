@@ -186,8 +186,12 @@ ALE<Convex>::generateP1Map( p1_element_type& p )
 
 #if defined( LIFE_INSTANTIATION_MODE )
 template class ALE< Simplex<2,1> >;
+#if LIFE_MESH_MAX_ORDER >= 2
 template class ALE< Simplex<2,2> >;
+#elif LIFE_MESH_MAX_ORDER >= 3
 template class ALE< Simplex<2,3> >;
+#elif LIFE_MESH_MAX_ORDER >= 4
 template class ALE< Simplex<2,4> >;
+#endif // LIFE_MESH_MAX_ORDER
 #endif // LIFE_INSTANTIATION_MODE
 }
