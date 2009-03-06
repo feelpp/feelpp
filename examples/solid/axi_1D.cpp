@@ -87,7 +87,7 @@ public:
  * solve \f$-\epsilon \Delta u -\beta\cdot\nabla u + \mu u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma_{in}\f$
  */
 template<int Order,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,uint16_type,uint16_type> class Entity = Simplex>
 class Elaxi
     :
         public Application
@@ -109,7 +109,7 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<Dim> entity_type;
+    typedef Entity<Dim,1,Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
