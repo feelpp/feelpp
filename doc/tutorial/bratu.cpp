@@ -277,7 +277,6 @@ Bratu<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matri
     boost::timer ti;
     Log() << "[updateJacobian] start\n";
     static bool is_init = false;
-    value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
