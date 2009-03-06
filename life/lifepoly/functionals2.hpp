@@ -6,6 +6,7 @@
        Date: 2006-01-22
 
   Copyright (C) 2006 EPFL
+  Copyright (C) 2009 Université de Grenoble 1 (Joseph Fourier)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -213,7 +214,108 @@ private:
     uint16_type _M_k;
 
     // quadrature rule on the element and faces of the element
-    IM_PK<Space::nDim,2*Space::nOrder+1, value_type> _M_q;
+    IM<Space::nDim,2*Space::nOrder+1, value_type> _M_q;
+};
+
+
+/**
+ * \class IntegralMomentsOnFace
+ * \brief functional that returns \f$\ell_u (v) = \int_{\Gamma} ( u\, v )\f$ where \f$\Gamma \subset \partial \Omega\f$
+ *
+ *
+ * \author Christophe Prud'homme
+ */
+template<typename Space,typename BasisType>
+class IntegralMomentsOnFace
+    :
+    public std::vector<Functional<Space> >
+{
+    typedef std::vector<Functional<Space> > super;
+public:
+
+    typedef Functional<Space> functional_type;
+    typedef IntegralMomentsOnFace<Space,BasisType> self_type;
+    typedef BasisType basis_type;
+    typedef Space space_type;
+    typedef typename space_type::reference_convex_type reference_convex_type;
+    typedef typename super::polynomial_type polynomial_type;
+    typedef typename space_type::value_type value_type;
+    typedef typename node<value_type>::type node_type;
+
+    const static uint16_type nComponents = space_type::nComponents;
+
+    /**
+     * Construct the functional
+     *
+     * \param p polynomial space on which we apply the functional
+     * \param k index of the polynomial to integrate against
+     * \param face face of the convex over which to integrate
+     */
+    IntegralMomentsOnFace( space_type const& p,
+                           basis_type const& l,
+                           IntegrationFaceEnum face = ALL_FACES )
+        :
+        super()
+    {
+        reference_convex_type ref_convex;
+        typedef typename reference_convex_type::topological_face_type  element_type;
+        element_type ref_convex_face = ref_convex.topologicalFace( face );
+
+        typedef GeoMap<reference_convex_type::nDim,1> gm_type;
+        typedef typename gm_type::face_gm_type::precompute_type face_pc_type;
+        typedef typename gm_type::face_gm_type::precompute_ptrtype face_pc_ptrtype;
+        gm_type __gm;
+        IM<reference_convex_type::nDim-1,2*space_type::nOrder-1> __qr_face;
+        face_pc_ptrtype __geopc( new face_pc_type( __gm->boundaryMap(),__qr_face.points() ) );
+
+        Debug( 5050 ) << "[nc] ref_convex_face "  << face << "=" << ref_convex_face.points() << "\n";
+
+
+        typename gm_type::template Context<vm::POINT,element_type> __c( __gm->boundaryMap(),
+                                                                        ref_convex_face,
+                                                                        __geopc );
+
+        __c.update( ref_convex_face, __geopc );
+        Debug( 5050 ) << "[nc] ref_convex_face "  << face << " xref" << __c.xRefs() << "\n";
+        Debug( 5050 ) << "[nc] ref_convex_face "  << face << " xreal" << __c.xReal() << "\n";
+
+        for ( uint16_type k = 0; k < l.polynomialDimensionPerComponent(); ++k )
+            {
+                ublas::matrix<value_type> __rep( nComponents, p.polynomialDimensionPerComponent() );
+
+                for ( uint16_type i = 0; i < p.polynomialDimensionPerComponent(); ++i )
+                    {
+                        /*
+                        typedef typename node<value_type>::type node_type;
+                        double __res = 0;
+                        double __len = 0;
+                        for ( uint16_type __ip = 0; __ip < __qr_face.nPoints();++__ip )
+                            {
+                                __res += ( __qr_face.weight( __ip )*
+                                           p.polynomial(i).evaluate( __c.xReal(__ip) )*
+                                           l.polynomial(k).evaluate( __c.xRef( __ip ) ));
+
+                                __len += __qr_face.weight( __ip );
+                            }
+                                  Debug( 5050 ) << "[nc] length = " << __len << "\n";
+                              Debug( 5050 ) << "[nc] res = " << __res << "\n";
+                              ublas::column( __rep, i ) = __res/__len;
+                              }
+                        this->push_back( functional_type( p,  __rep ) );
+                        */
+                    }
+
+            }
+    }
+
+private:
+
+    // disabled
+    IntegralMomentsOnFace();
+
+private:
+
+
 };
 
 /**
