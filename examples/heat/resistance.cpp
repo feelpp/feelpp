@@ -120,15 +120,15 @@ public:
 
     /*mesh*/
     typedef Entity<Dim, 1,Dim> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef Entity<1, 1,Dim> line_entity_type;
-    typedef Mesh<GeoEntity<line_entity_type> > line_mesh_type;
+    typedef Mesh<line_entity_type> line_mesh_type;
     typedef boost::shared_ptr<line_mesh_type> line_mesh_ptrtype;
 
-    typedef bases<fem::Lagrange<Dim, Order, Scalar, Continuous, double, Entity> > basis_type;
-    typedef bases<fem::Lagrange<Dim, Order-1, Vectorial, Discontinuous, double, Entity> > vectorial_basis_type;
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
+    typedef bases<Lagrange<Order-1, Vectorial> > vectorial_basis_type;
     typedef DiscontinuousInterfaces<fusion::vector<mpl::vector<mpl::int_<4>, mpl::int_<5>, mpl::int_<6> > > >  discontinuity_type;
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, discontinuity_type> functionspace_type;
@@ -138,7 +138,7 @@ public:
 
     typedef typename functionspace_type::element_type element_type;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<fem::Lagrange<Dim, 0, Scalar, Discontinuous> > > p0_space_type;
+    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
     typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
     typedef typename p0_space_type::element_type p0_element_type;
 
