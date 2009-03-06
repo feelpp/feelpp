@@ -123,10 +123,12 @@ struct BFAssign2
     template<typename SpaceType>
     void operator()( boost::shared_ptr<SpaceType> const& X ) const
     {
-        Debug( 5050 ) << "[BFAssign2::operator()] testindex: " << _M_test_index << "\n";
+        Debug( 5050 ) << "[BFAssign2::operator()] start loop on trial spaces against test space index: " << _M_test_index << "\n";
         fusion::for_each( _M_bf.trialSpace()->functionSpaces(),
                           make_bfassign1( _M_bf, _M_expr, X, _M_test_index ) );
+        Debug( 5050 ) << "[BFAssign2::operator()] stop loop on trial spaces against test space index: " << _M_test_index << "\n";
         ++_M_test_index;
+
     }
 private:
     BFType& _M_bf;
@@ -971,7 +973,9 @@ BilinearForm<FE1, FE2, MatrixType, ElemContType>::assign( Expr<ExprT> const& __e
                                                           bool /*init*/,
                                                           mpl::bool_<true> )
 {
-  fusion::for_each( _M_X1->functionSpaces(), make_bfassign2( *this, __expr ) );
+    Debug( 5050 ) << "BilinearForm::assign() start loop on test spaces\n";
+    fusion::for_each( _M_X1->functionSpaces(), make_bfassign2( *this, __expr ) );
+    Debug( 5050 ) << "BilinearForm::assign() stop loop on test spaces\n";
 }
 template<typename FE1,  typename FE2, typename MatrixType,  typename ElemContType>
 template<typename ExprT>
@@ -1758,8 +1762,13 @@ template<typename BFType, typename ExprType, typename TestSpaceType>
 template<typename SpaceType>
 void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<SpaceType> const& trial ) const
 {
-    Debug(5050) << "expression has test functions ? :" << ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result << "\n";
-    Debug(5050) << "expression has trial functions ? :" << ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result << "\n";
+    Debug(5050) << "[BFAssign1::operator()] expression has test functions index "
+                << _M_test_index << " : "
+                << ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
+    Debug(5050) << "[BFAssign1::operator()] expression has trial functions index "
+                << _M_trial_index << " :"
+                << ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
+
     if ( !ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result ||
          !ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result )
         {
@@ -1767,8 +1776,8 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
             return;
         }
 
-    Debug( 5050 ) << "[BFAssign1::operator()] testindex: " << _M_test_index << "\n";
-    Debug( 5050 ) << "[BFAssign1::operator()] trialindex: " << _M_trial_index << "\n";
+    Debug( 5050 ) << "[BFAssign1::operator()] terms found with "
+                  << "testindex: " << _M_test_index << " trialindex: " << _M_trial_index << "\n";
     typedef SpaceType trial_space_type;
     typedef TestSpaceType test_space_type;
 
