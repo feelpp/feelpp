@@ -70,6 +70,10 @@ LIFE_CHECK_COMPILERS
 LIFE_CHECK_LIFE
 
 dnl ------------------------------------------------------------
+dnl Google perftools
+LIFE_CHECK_GOOGLE_PERFTOOLS
+
+dnl ------------------------------------------------------------
 dnl Python
 dnl ------
 LIFE_CHECK_PYTHON
@@ -116,6 +120,7 @@ AC_OUTPUT
 
 test "x$ENABLE_EXTRAMODULE_VALIDATION" = xvalidation      && sum_benchmarks_validation=OK    || sum_benchmarks_validation="no"
 
+test "x$WITH_GOOGLE_PROFILER" = x1                && sum_google_profiler=OK                   || sum_google_profiler="no * (optional)"
 test "x$WITH_PYTHON" = x1                && sum_python=OK                   || sum_python="no * (optional)"
 test "x$WITH_PYTHON_MODULE_SCIPY" = x1   && sum_python_module_scipy=OK      || sum_python_module_scipy="no * (optional)"
 test "x$WITH_PYTHON_MODULE_PYX" = x1     && sum_python_module_pyx=OK        || sum_python_module_pyx="no * (optional)"
@@ -135,6 +140,7 @@ Benchmarks Sub-Module Summary:
  Support for          is
  -----------------------------
 
+  Google Profiler     ${sum_google_profiler}
   Python              ${sum_python}
   Python module scipy ${sum_python_module_scipy}
   Python module pyx   ${sum_python_module_pyx}
