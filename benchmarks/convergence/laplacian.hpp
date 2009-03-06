@@ -10,7 +10,7 @@
 
   Date: 2008-02-07
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -119,27 +119,19 @@ public:
 
     /*mesh*/
     typedef Entity<Dim, 1,RDim> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<fem::Lagrange<Dim, 0, Scalar, Discontinuous> > > p0_space_type;
+    typedef FunctionSpace<mesh_type,fusion::vector<Lagrange<0, Scalar> >,Discontinuous> p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
     /*basis*/
-    typedef fusion::vector<fem::Lagrange<Dim, Order, Scalar, Continuous, double, Entity> > basis_type;
+    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-
-    /*quadrature*/
-    //typedef ImBestSimplex<Dim, imOrder, value_type> im_type;
-    template<int IMORDER> struct MyIm
-        :
-        public IM<Dim, IMORDER, value_type, Entity>
-    {};
-    typedef MyIm<imOrder> im_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -298,15 +290,15 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     vector_ptrtype F( backend->newVector( Xh ) );
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), MyIm<2*Order>(),
+        integrate( elements(mesh), _Q<2*Order>(),
                    f*id(v) );
     if ( M_use_weak_dirichlet )
         {
             form1( Xh, F ) +=
-                integrate( markedfaces(mesh,tag1), MyIm<Order>(),
+                integrate( markedfaces(mesh,tag1), _Q<Order>(),
                            zf*(-grad(v)*N()+M_gammabc*id(v)/hFace() ) );
             form1( Xh, F ) +=
-                integrate( markedfaces(mesh,tag2), MyIm<Order>(),
+                integrate( markedfaces(mesh,tag2), _Q<Order>(),
                            zf*(-grad(v)*N()+M_gammabc*id(v)/hFace() ) );
 
         }
@@ -320,18 +312,18 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     sparse_matrix_ptrtype D( backend->newMatrix( Xh, Xh ) );
 
     form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), im_type(),
+        integrate( elements(mesh), _Q<2*Order>(),
                    nu*(gradt(u)*trans(grad(v)))
                    + beta*(idt(u)*id(v)) );
 
     if ( M_use_weak_dirichlet )
         {
 
-            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag1), MyIm<2*Order>(),
+            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag1), _Q<2*Order>(),
                                              ( - trans(id(v))*(gradt(u)*N())
                                                - trans(idt(u))*(grad(v)*N())
                                                + M_gammabc*trans(idt(u))*id(v)/hFace()) );
-            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag2), MyIm<2*Order>(),
+            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag2), _Q<2*Order>(),
                                              ( - trans(id(v))*(gradt(u)*N())
                                                - trans(idt(u))*(grad(v)*N())
                                                + M_gammabc*trans(idt(u))*id(v)/hFace()) );
@@ -360,7 +352,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     Log() << "solve in " << t1.elapsed() << "s\n";
     t1.restart();
 
-    double L2error2 =integrate( elements(mesh), MyIm<2*Order+2>(),
+    double L2error2 =integrate( elements(mesh), _Q<2*Order+2>(),
                                 (idv(u)-g)*trans(idv(u)-g) ).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
@@ -370,7 +362,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 
 
     v = project( Xh, elements(mesh), g );
-    double semiH1error2 =integrate( elements(mesh), MyIm<2*Order>(),
+    double semiH1error2 =integrate( elements(mesh), _Q<2*Order>(),
                                     (gradv(u)-gradv(v))*trans(gradv(u)-gradv(v)) ).evaluate()( 0, 0 ) ;
 
     Log() << "semi H1 norm computed in " << t1.elapsed() << "s\n";
