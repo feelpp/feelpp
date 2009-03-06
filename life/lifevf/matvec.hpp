@@ -71,6 +71,56 @@ struct GetContext
         return lhs | rhs;
     }
 };
+template<typename Func>
+struct ExprHasTestFunction
+{
+    template<typename Sig>
+    struct result;
+
+    template<typename Lhs, typename Rhs>
+    struct result<ExprHasTestFunction(Lhs,Rhs)>
+        : boost::remove_reference<Lhs>
+    {
+
+        typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
+        typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
+        typedef typename mpl::or_<mpl::bool_<lhs_noref_type::template HasTestFunction<Func>::result>, rhs_noref_type >::type type;
+    };
+    template<typename Lhs, typename Rhs>
+    Lhs operator()(const Lhs& lhs, const Rhs& rhs) const
+    {
+#if 0
+        typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
+        typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
+        return ( lhs_noref_type::template ExprHasTestFunction<Func>::result ||
+                 lhs_noref_type::template ExprHasTestFunction<Func>::result );
+#endif
+    }
+};
+template<typename Func>
+struct ExprHasTrialFunction
+{
+    template<typename Sig>
+    struct result;
+
+    template<typename Lhs, typename Rhs>
+    struct result<ExprHasTrialFunction(Lhs,Rhs)>
+        : boost::remove_reference<Lhs>
+    {
+
+        typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
+        typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
+        typedef typename mpl::or_<mpl::bool_<lhs_noref_type::template HasTrialFunction<Func>::result>, rhs_noref_type >::type type;
+    };
+    template<typename Lhs, typename Rhs>
+    Lhs operator()(const Lhs& lhs, const Rhs& rhs) const
+    {
+#if 0
+        return ( Lhs::template HasTrialFunction<Func>::result ||
+                 Rhs::template HasTrialFunction<Func>::result );
+#endif
+    }
+};
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
 struct initialize_expression_gij
 {
@@ -385,12 +435,12 @@ public:
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = false;
+        static const bool result = fusion::result_of::accumulate<VectorExpr,mpl::bool_<false>,ExprHasTestFunction<Func> >::type::value;
     };
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = false;
+        static const bool result = fusion::result_of::accumulate<VectorExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
     };
 
     typedef VectorExpr expression_vector_type;
@@ -619,12 +669,12 @@ public:
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = false;
+        static const bool result = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<false>,ExprHasTestFunction<Func> >::type::value;
     };
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = false;
+        static const bool result = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
     };
 
     typedef MatrixExpr expression_matrix_type;
