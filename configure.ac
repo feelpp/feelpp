@@ -136,12 +136,13 @@ return !(sizeof(size_t)==sizeof(uint));
 AC_CACHE_SAVE
 
 dnl ------------------------------------------------------------
+dnl MPI
+AC_CHECK_MPI
+
+dnl ------------------------------------------------------------
 dnl Google perftools
-AC_CHECK_HEADERS([google/profiler.h])
-AC_CHECK_LIB(profiler, ProfilerStop,
-             [LIBS="${LIBS} -lprofiler";with_google_profiler=yes]
-             [with_google_profiler=no])
-AM_CONDITIONAL(HAVE_GOOGLE_PROFILER, test "x$with_google_profiler" != "xno" )
+LIFE_CHECK_GOOGLE_PERFTOOLS
+
 
 dnl ------------------------------------------------------------
 dnl Boost
@@ -242,7 +243,6 @@ fi
 
 AM_CONDITIONAL(HAVE_UMFPACK, test ! -n "$warn_umfpack"  )
 
-AC_CHECK_MPI
 dnl parmetis
 AC_CHECK_METIS
 AC_CHECK_PARMETIS
@@ -462,13 +462,13 @@ AC_CONFIG_FILES([ admin/Makefile ])
 # boost
 AC_CONFIG_FILES([ boost/Makefile ])
 AC_CONFIG_FILES([ boost/libs/Makefile ])
-AC_CONFIG_FILES([ boost/libs/detail/Makefile ])
+# AC_CONFIG_FILES([ boost/libs/detail/Makefile ])
 AC_CONFIG_FILES([ boost/libs/log/Makefile ])
 AC_CONFIG_FILES([ boost/libs/log/src/Makefile ])
-AC_CONFIG_FILES([ boost/libs/mpi/Makefile ])
-AC_CONFIG_FILES([ boost/libs/mpi/src/Makefile ])
-AC_CONFIG_FILES([ boost/libs/serialization/Makefile ])
-AC_CONFIG_FILES([ boost/libs/serialization/src/Makefile ])
+#AC_CONFIG_FILES([ boost/libs/mpi/Makefile ])
+#AC_CONFIG_FILES([ boost/libs/mpi/src/Makefile ])
+#AC_CONFIG_FILES([ boost/libs/serialization/Makefile ])
+#AC_CONFIG_FILES([ boost/libs/serialization/src/Makefile ])
 
 # life library
 AC_CONFIG_FILES([ life/Makefile ])
