@@ -123,25 +123,20 @@ public:
     typedef backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<2, 1> entity_type;
+    typedef Entity<2> entity_type;
     typedef Mesh<GeoEntity<entity_type> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<fem::Lagrange<Dim, 0, Scalar, Discontinuous> > > p0_space_type;
+    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
     typedef p0_space_type::element_type p0_element_type;
 
     /*basis*/
-    typedef fusion::vector<fem::Lagrange<Dim, Order, Scalar, Continuous, double, Entity> > basis_type;
+    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef space_type::element_type element_type;
-
-
-    /*quadrature*/
-    //typedef IM_PK<Dim, imOrder, value_type> im_type;
-    typedef IM<Dim, imOrder, value_type, Entity> im_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -180,15 +175,10 @@ public:
         element_type u( Xh, "u" );
         element_type v( Xh, "v" );
 
-        /*
-         * a quadrature rule for numerical integration
-         */
-        im_type im;
-
         Fcst = M_backend->newVector( Xh );
 
 
-        form1( Xh, Fcst, _init=true )  = integrate( markedfaces(mesh,1), im, id(v) );
+        form1( Xh, Fcst, _init=true )  = integrate( markedfaces(mesh,1), _Q<imOrder>(), id(v) );
 
         if ( this->vm().count( "export-matlab" ) )
             Fcst->printMatlab( "F.m" );
@@ -199,7 +189,7 @@ public:
          */
         Dcst = M_backend->newMatrix( Xh, Xh );
 
-        form2( Xh, Xh, Dcst, _init=true ) = integrate( markedelements(mesh,1), im, ( gradt(u)*trans(grad(v))) );
+        form2( Xh, Xh, Dcst, _init=true ) = integrate( markedelements(mesh,1), _Q<imOrder>(), ( gradt(u)*trans(grad(v))) );
 
         Dcst->close();
         if ( this->vm().count( "export-matlab" ) )
@@ -277,8 +267,6 @@ ThermalFin::run()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    im_type im;
-
     double Bimin = this->vm()["Bimin"].as<double>();
     double Bimax = this->vm()["Bimax"].as<double>();
     int N = this->vm()["N"].as<int>();
@@ -303,7 +291,7 @@ ThermalFin::run()
                 for( int c = 0; c < Nb; ++c )
                     {
 
-                        form2( Xh, Xh, D ) += integrate( markedelements(mesh,Nb*c+r+1), im,
+                        form2( Xh, Xh, D ) += integrate( markedelements(mesh,Nb*c+r+1), _Q<imOrder>(),
                                                          k(r,c)*gradt(u)*trans(grad(v)) );
                     }
 
@@ -314,7 +302,7 @@ ThermalFin::run()
                 Bi = math::exp( math::log(Bimin)+value_type(i)*(math::log(Bimax)-math::log(Bimin))/value_type(N-1) );
             Log() << "Bi = " << Bi << "\n";
 
-            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,2), im, Bi*idt(u)*id(v) );
+            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,2), _Q<imOrder>(), Bi*idt(u)*id(v) );
 
             D->close();
 
@@ -323,8 +311,8 @@ ThermalFin::run()
 
             this->solve( D, u, Fcst );
 
-            double moy_u = ( integrate( markedfaces(mesh,1), im, idv(u) ).evaluate()(0,0) /
-                             integrate( markedfaces(mesh,1), im, constant(1.0) ).evaluate()(0,0) );
+            double moy_u = ( integrate( markedfaces(mesh,1), _Q<imOrder>(), idv(u) ).evaluate()(0,0) /
+                             integrate( markedfaces(mesh,1), _Q<imOrder>(), constant(1.0) ).evaluate()(0,0) );
             std::cout.precision( 5 );
             std::cout << std::setw( 5 ) << k(0,0) << " "
                       << std::setw( 5 ) << k(1,0) << " "
