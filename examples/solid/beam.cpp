@@ -107,20 +107,17 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Simplex<Dim,1> entity_type;
+    typedef Simplex<Dim> entity_type;
     typedef Mesh<GeoEntity<entity_type> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
-    typedef fusion::vector<fem::Lagrange<Dim, feOrder, Vectorial, Continuous, double> > basis_type;
+    typedef fusion::vector<Lagrange<feOrder, Vectorial> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-
-    /*quadrature*/
-    typedef IM<Dim, imOrder, value_type, Simplex> im_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -248,11 +245,6 @@ Beam<nDim,nOrder>::run()
     timers["init"].second = timers["init"].first.elapsed();
 
     /*
-     * a quadrature rule for numerical integration
-     */
-    im_type im;
-
-    /*
      * Data associated with the simulation
      */
     const double E = 21*1e5;
@@ -277,7 +269,7 @@ Beam<nDim,nOrder>::run()
     if ( this->vm().count( "export-matlab" ) )
         F->printMatlab( "F0.m" );
 
-    form1( Xh, F, _init=true ) =   integrate( elements(mesh), im, trans(gravity*oneY())*id(v) );
+    form1( Xh, F, _init=true ) =   integrate( elements(mesh), _Q<imOrder>(), trans(gravity*oneY())*id(v) );
     F->close();
     if ( this->vm().count( "export-matlab" ) )
         F->printMatlab( "F1.m" );
@@ -291,14 +283,14 @@ Beam<nDim,nOrder>::run()
     AUTO( deft, 0.5*( gradt(u)+trans(gradt(u)) ) );
     AUTO( def, 0.5*( grad(v)+trans(grad(v)) ) );
     form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), im,
+        integrate( elements(mesh), _Q<imOrder>(),
                    lambda*divt(u)*div(v)  +
                    2*mu*trace(trans(deft)*def) );
     if ( M_bctype == 1 ) // weak Dirichlet bc
         {
             AUTO( Id, (mat<nDim,nDim>( cst(1), cst(0), cst(0), cst(1.) )) );
             form2( Xh, Xh, D ) +=
-                integrate( markedfaces(mesh,1), im,
+                integrate( markedfaces(mesh,1), _Q<imOrder>(),
                            - trans((2*mu*deft+lambda*trace(deft)*Id )*N())*id(v)
                            - trans((2*mu*def+lambda*trace(def)*Id )*N())*idt(u)
                            + bcCoeff*trans(idt(u))*id(v)/hFace() );

@@ -109,14 +109,14 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<Dim, 1,Dim> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Entity<Dim> entity_type;
+    typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
     //typedef mytag<fem::Lagrange<Dim, Order, Vectorial, Continuous, double, Entity>,0> basis_u_type;
-    typedef mytag<fem::Lagrange<Dim, Order, Scalar, Continuous, double, Entity>,0> basis_scalar_type_0;
-    typedef mytag<fem::Lagrange<Dim, Order, Scalar, Continuous, double, Entity>,1> basis_scalar_type_1;
+    typedef mytag<Lagrange<Order, Scalar>,0> basis_scalar_type_0;
+    typedef mytag<Lagrange<Order, Scalar>,1> basis_scalar_type_1;
     typedef fusion::vector<basis_scalar_type_0,basis_scalar_type_1> basis_type;
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -125,10 +125,6 @@ public:
     typedef typename element_type::template sub_element<0>::type element_0_type;
     typedef typename element_type::template sub_element<1>::type element_1_type;
 
-
-
-    /*quadrature*/
-    template<int IMORDER> struct MyIM : public IM<Dim, IMORDER, value_type, Entity> {};
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -335,7 +331,7 @@ Elaxi<Order, Entity>::run()
 
         //size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
         form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
-            integrate( elements(mesh), MyIM<2*Order>(), 2.0*(
+            integrate( elements(mesh), _Q<2*Order>(), 2.0*(
                                                               //idt(u1)*id(v1)/Py()
                                                               idt(u0)*id(v0)/Py()
                                                               +dyt(u0)*dy(v0)*Py()
@@ -364,10 +360,10 @@ Elaxi<Order, Entity>::run()
 #endif
 
         form1( Xh, newt_nl_source_term,_init=true ) =
-            integrate( elements(mesh), MyIM<2*Order-1>(),  2.0*(
-                                                                 //idv(phi1)*id(v1)/Py()
-                                                                 dyv(phi1)*dy(v1)*val(Py())
-                                                                 ));
+            integrate( elements(mesh), _Q<2*Order-1>(),  2.0*(
+                                                              //idv(phi1)*id(v1)/Py()
+                                                              dyv(phi1)*dy(v1)*val(Py())
+                                                              ));
 
 #if 0
         newt_nl_source_term->print();

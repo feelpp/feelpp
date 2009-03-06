@@ -1,3 +1,4 @@
+
 /* -*- mode: c++ -*-
 
   This file is part of the Life library
@@ -129,15 +130,15 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<Dim, 1,Dim> entity_type;
+    typedef Entity<Dim> entity_type;
     typedef Mesh<GeoEntity<entity_type> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<fem::Lagrange<Dim, 0, Scalar, Discontinuous> > > p0_space_type;
+    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
-    typedef Tagged<fem::Lagrange<Dim, Order, Vectorial, Continuous, double, Simplex>, 0> basis_u_type;
-    typedef Tagged<fem::Lagrange<Dim, Order, Vectorial, Continuous, double, Simplex>, 1> basis_v_type;
+    typedef Tagged<Lagrange<Order, Vectorial>, 0> basis_u_type;
+    typedef Tagged<Lagrange<Order, Vectorial>, 1> basis_v_type;
 #if MIXED
     typedef mpl::vector<basis_u_type, basis_v_type> basis_type;
 #else
@@ -161,10 +162,6 @@ public:
     /* time */
     typedef Bdf<functionspace_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
-
-    /*quadrature*/
-    //typedef IM_PK<Dim, imOrder, value_type> im_type;
-    typedef IM<Dim, imOrder, value_type, Entity> im_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -337,8 +334,6 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
     u = *X;
 #endif
 
-    im_type im;
-
     AUTO( g, constant(0.0) );
     AUTO( defv, 0.5*( gradv(u)+trans(gradv(u)) ) );
     AUTO( def, 0.5*( grad(v)+trans(grad(v)) ) );
@@ -348,7 +343,7 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
     AUTO( eta, 0.1*Px()*( Px() -5 )*(Px()-2.5)*sin( omega*M_PI*cst_ref(time)  ) );
 
     *M_residual =
-        integrate( elements( mesh ), im,
+        integrate( elements( mesh ), _Q<imOrder>(),
                    .5*mu*(trace( (gradv(u)*trans(gradv(u)))*grad(v) ) )+
                    .25*lambda*trace(gradv(u)*trans(gradv(u)))*div(v) -
                    trans(gravity*oneY())*id(v) );
@@ -356,18 +351,18 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
 #if 1
     // force applied at the bottom
     *M_residual +=
-        integrate( markedfaces( mesh, 2 ), im,
+        integrate( markedfaces( mesh, 2 ), _Q<imOrder>(),
                    -trans(eta*oneY())*id(v) );
 #endif
 
 #if MIXED
     *M_residual +=
-        integrate( elements( mesh ), im,
+        integrate( elements( mesh ), _Q<imOrder>(),
                    - density*trans(idv( M_bdf->derivate( M_time_order, dt ).template element<1>() ) ) *id(v)
                    //-density*trans(2*idv(un->template element<0>())-idv(un1->template element<0>())) *id(v) /(dt*dt)
                    );
     *M_residual +=
-        integrate( elements( mesh ), im,
+        integrate( elements( mesh ), _Q<imOrder>(),
                    + trans(idv( u ))*id(vv)*M_bdf->derivateCoefficient( M_time_order, dt )
                    - trans(idv( M_bdf->derivate( M_time_order, dt ).template element<0>() ) )*id(vv)
                    );
@@ -375,7 +370,7 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
     M_oplin->apply( U, flin );
 #else
     *M_residual +=
-        integrate( elements( mesh ), im,
+        integrate( elements( mesh ), _Q<imOrder>(),
                    -density*trans(2*idv(*un)-idv(*un1)) *id(v) /(dt*dt)
                    );
 
@@ -415,10 +410,9 @@ StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_m
     element_type v( M_Xh, "V" );
     u = *X;
 #endif
-    im_type im;
     if ( is_init == false )
         {
-            *M_jac = integrate( elements( mesh ), im,
+            *M_jac = integrate( elements( mesh ), _Q<imOrder>(),
                                 .5*mu*(trace( (gradv(u)*trans(gradt(u)))*grad(v) ) )+
                                 .25*lambda*trace(gradv(u)*trans(gradt(u)))*div(v)
                                 );
@@ -428,7 +422,7 @@ StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_m
     else
         {
             M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ), im,
+            *M_jac += integrate( elements( mesh ), _Q<imOrder>(),
                                  .5*mu*(trace( (gradv(u)*trans(gradt(u)))*grad(v) ) )+
                                  .25*lambda*trace(gradv(u)*trans(gradt(u)))*div(v) );
         }
@@ -466,8 +460,6 @@ StVenantKirchhoff<Dim, Order>::run()
     M_bdf = bdf_ptrtype( new bdf_type( M_Xh ) );
 
 
-    im_type im;
-
     value_type penalisation = this->vm()["penal"].template as<value_type>();
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
     int bctype = this->vm()["bctype"].template as<int>();
@@ -483,7 +475,7 @@ StVenantKirchhoff<Dim, Order>::run()
     AUTO( def, 0.5*( grad(v)+trans(grad(v)) ) );
     AUTO( Id, (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) )) );
     *M_oplin =
-        integrate( elements(mesh), im,
+        integrate( elements(mesh), _Q<imOrder>(),
                    //density*trans(idt(uu))*id(v)*M_bdf->derivateCoefficient( M_time_order, dt ) +
                    density*trans(idt(u))*id(v)/(dt*dt)+
                    lambda*divt(u)*div(v)  +
@@ -496,13 +488,13 @@ StVenantKirchhoff<Dim, Order>::run()
                    );
 
     *M_oplin +=
-        integrate( markedfaces(mesh,1), im,
+        integrate( markedfaces(mesh,1), _Q<imOrder>(),
                    - trans((2*mu*deft+lambda*trace(deft)*Id )*N())*id(v)
                    - trans((2*mu*def+lambda*trace(def)*Id )*N())*idt(u)
                    + penalisation_bc*trans(idt(u))*id(v)/hFace() );
 
     *M_oplin +=
-        integrate( markedfaces(mesh,3), im,
+        integrate( markedfaces(mesh,3), _Q<imOrder>(),
                    - trans((2*mu*deft+lambda*trace(deft)*Id )*N())*id(v)
                    - trans((2*mu*def+lambda*trace(def)*Id )*N())*idt(u)
                    + penalisation_bc*trans(idt(u))*id(v)/hFace() );
