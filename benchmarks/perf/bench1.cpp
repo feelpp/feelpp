@@ -6,7 +6,7 @@
        Date: 2006-07-04
 
   Copyright (C) 2006 EPFL
-  Copyright (C) 2007,2008 Université Joseph Fourier (Grenoble 1)
+  Copyright (C) 2007-2009 Université Joseph Fourier (Grenoble 1)
 
 
   This library is free software; you can redistribute it and/or
@@ -50,12 +50,15 @@
 #include <life/lifefilters/importergmsh.hpp>
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
 
-#include <life/lifealg/vectorublas.hpp>
-#include <life/lifealg/matrixublas.hpp>
 #include <life/lifealg/backend.hpp>
 #include <life/lifevf/vf.hpp>
 
 #include <benchmarks/logs.hpp>
+
+#if defined(HAVE_GOOGLE_PROFILER_H)
+#include <google/profiler.h>
+#endif // HAVE_GOOGLE_PROFILER_H
+
 
 using namespace Life;
 using namespace Life::vf;
@@ -207,13 +210,13 @@ private:
 };
 
 void
-clear( boost::shared_ptr<Mesh<LinearTriangle> >& mesh )
+clear( boost::shared_ptr<Mesh<Simplex<2,1> > >& mesh )
 {
     //mesh->cleanElementFaces();
 }
 
 void
-clear( boost::shared_ptr<Mesh<LinearTetra> >& mesh )
+clear( boost::shared_ptr<Mesh<Simplex<3,1> > >& mesh )
 {
     //mesh->cleanElementFaces();
     //mesh->cleanElementEdges();
@@ -263,9 +266,10 @@ Bench1::run()
 void
 Bench1::run1d()
 {
+#if 0
     using namespace Life;
 
-    typedef Mesh<LinearLine> mesh_type;
+    typedef Mesh<Simplex<1> > mesh_type;
     boost::shared_ptr<mesh_type> aMesh( new mesh_type );
 
     GmshTensorizedDomain<1,1,1,Simplex> td;
@@ -282,14 +286,14 @@ Bench1::run1d()
     //bench1<mesh_type, 5>( aMesh );
     //bench1<mesh_type, 8>( aMesh );
     BOOST_LOG( app ) << "run2d ends" << std::endl;
-
+#endif
 }
 void
 Bench1::run2d()
 {
     using namespace Life;
 
-    typedef Mesh<LinearTriangle> mesh_type;
+    typedef Mesh<Simplex<2> > mesh_type;
     boost::shared_ptr<mesh_type> aMesh( new mesh_type );
 
     GmshTensorizedDomain<2,1,2,Simplex> td;
@@ -311,9 +315,10 @@ Bench1::run2d()
 void
 Bench1::run3d()
 {
+#if 0
     using namespace Life;
 
-    typedef Mesh<LinearTetra> mesh_type;
+    typedef Mesh<Simplex<3> > mesh_type;
     boost::shared_ptr<mesh_type> aMesh( new mesh_type );
 
     GmshTensorizedDomain<3,1,3,Simplex> td;
@@ -324,9 +329,10 @@ Bench1::run3d()
     aMesh->accept( import );
 
     BOOST_LOG( app ) << "run3d starts" << std::endl;
-    bench1<mesh_type, 1>( aMesh );
-    bench1<mesh_type, 2>( aMesh );
+    //bench1<mesh_type, 1>( aMesh );
+    //bench1<mesh_type, 2>( aMesh );
     BOOST_LOG( app ) << "run3d ends" << std::endl;
+#endif
 }
 
 template<typename FSType, typename IMType>
@@ -337,8 +343,9 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     typename FSType::element_type v( Xh );
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    typedef fusion::vector<fem::Lagrange<FSType::nDim, 0, Scalar, Discontinuous> > dp0_basis_type;
-    typedef FunctionSpace<typename FSType::mesh_type, dp0_basis_type> dp0_space_type;
+
+    typedef fusion::vector<Lagrange<0, Scalar> > dp0_basis_type;
+    typedef FunctionSpace<typename FSType::mesh_type, dp0_basis_type, Discontinuous> dp0_space_type;
     typename dp0_space_type::pointer_type P0h = dp0_space_type::New( Xh->mesh() );
     typename dp0_space_type::element_type w( P0h );
     w = vf::project( P0h, elements(Xh->mesh()), Px() );
@@ -346,7 +353,9 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
-
+#if defined(HAVE_GOOGLE_PROFILER_H)
+    ProfilerStart( "perf" );
+#endif
     //
     // R
     //
@@ -373,6 +382,9 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, idv(w)*val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v) );
     BOOST_LOG( app ) << " o-   R<dp0 val xyz> time : " << timer.elapsed() << std::endl;
+#if defined(HAVE_GOOGLE_PROFILER_H)
+    ProfilerStop();
+#endif
 }
 
 template<typename FSType, typename IMType>
@@ -387,7 +399,9 @@ Bench1::D( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     BOOST_LOG( app )<< "quad npts: " << im.nPoints() << std::endl;
     boost::timer timer;
 
-
+#if defined(HAVE_GOOGLE_PROFILER_H)
+    ProfilerStart( "perf" );
+#endif
     //
     // D
     //
@@ -406,6 +420,10 @@ Bench1::D( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, val((Px()^(3))+(Py()^(2))*Pz())*gradt(u)*trans(grad(v)) );
     BOOST_LOG( app ) << " o-   D<xyz> time : " << timer.elapsed() << std::endl;
+
+#if defined(HAVE_GOOGLE_PROFILER_H)
+    ProfilerStop();
+#endif
 }
 template<typename FSType, typename IMType>
 void
@@ -419,6 +437,9 @@ Bench1::DR( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
+#if defined(HAVE_GOOGLE_PROFILER_H)
+    ProfilerStart( "perf" );
+#endif
     //
     // DR
     //
@@ -429,6 +450,9 @@ Bench1::DR( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v ) ));
     BOOST_LOG( app ) << " o-   DR<xyz> time : " << timer.elapsed() << std::endl;
+#if defined(HAVE_GOOGLE_PROFILER_H)
+    ProfilerStop();
+#endif
 }
 template<typename FSType, typename IMType>
 void
@@ -442,6 +466,9 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<1>
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
+#if defined(HAVE_GOOGLE_PROFILER_H)
+    ProfilerStart( "perf" );
+#endif
     //
     // ADR
     //
@@ -456,6 +483,9 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<1>
                                  val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
                                  (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v));
     BOOST_LOG( app ) << " o-   ADR<xyz> time : " << timer.elapsed() << std::endl;
+#if defined(HAVE_GOOGLE_PROFILER_H)
+    ProfilerStop();
+#endif
 }
 
 template<typename FSType, typename IMType>
@@ -470,6 +500,9 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<2>
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
+#if defined(HAVE_GOOGLE_PROFILER_H)
+    ProfilerStart( "perf" );
+#endif
     //
     // ADR
     //
@@ -484,6 +517,9 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<2>
                                            val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
                                  (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v));
     BOOST_LOG( app ) << " o-   ADR<xyz> time : " << timer.elapsed() << std::endl;
+#if defined(HAVE_GOOGLE_PROFILER_H)
+    ProfilerStop();
+#endif
 }
 template<typename FSType, typename IMType>
 void
@@ -497,6 +533,9 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<3>
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
+#if defined(HAVE_GOOGLE_PROFILER_H)
+    ProfilerStart( "perf" );
+#endif
     //
     // ADR
     //
@@ -511,6 +550,9 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<3>
                                  val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
                                  (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v));
     BOOST_LOG( app ) << " o-   ADR<xyz> time : " << timer.elapsed() << std::endl;
+#if defined(HAVE_GOOGLE_PROFILER_H)
+    ProfilerStop();
+#endif
 }
 template<typename MeshType, int Order>
 void
@@ -530,7 +572,7 @@ Bench1::bench1( boost::shared_ptr<MeshType> & mesh )
     BOOST_LOG( app ) << "      geo : " << geostr.str() << std::endl;
     BOOST_LOG( app ) << "++++++++++++++++++++++++++++++" << std::endl;
 
-    typedef fusion::vector<fem::Lagrange<nDim, Order, Scalar, Continuous> > basis_type;
+    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
     typedef FunctionSpace<MeshType, basis_type> space_type;
     typename space_type::pointer_type Xh = space_type::New( mesh );
 
