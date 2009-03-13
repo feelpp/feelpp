@@ -117,7 +117,7 @@ ExporterEnsight<MeshType>::_F_writeSoSFile() const
     if ( Application::processId() == 0 )
         {
             std::ostringstream filestr;
-            filestr << this->prefix() << "-" << Application::nProcess() << ".sos";
+            filestr << this->path() << "/" << this->prefix() << "-" << Application::nProcess() << ".sos";
             std::ofstream __out(filestr.str().c_str());
             if ( __out.fail() )
                 {
@@ -144,7 +144,9 @@ void
 ExporterEnsight<MeshType>::_F_writeCaseFile() const
 {
     std::ostringstream filestr;
-    filestr << this->prefix() << "-" << Application::nProcess() << "_" << Application::processId() << ".case";
+    filestr << this->path() << "/"
+            << this->prefix() << "-"
+            << Application::nProcess() << "_" << Application::processId() << ".case";
     std::ofstream __out(filestr.str().c_str());
     if ( __out.fail() )
         {
@@ -288,7 +290,8 @@ ExporterEnsight<MeshType>::_F_writeGeoFiles() const
 
                     std::ostringstream __geofname;
 
-                    __geofname << __ts->name()
+                    __geofname << this->path() << "/"
+                               << __ts->name()
                                << "-" << Application::nProcess() << "_" << Application::processId()
                                << ".geo" << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
 
@@ -353,7 +356,7 @@ ExporterEnsight<MeshType>::saveNodal( typename timeset_type::step_ptrtype __step
         {
             std::ostringstream __varfname;
 
-            __varfname << __var->first
+            __varfname << this->path() << "/" << __var->first
                        << "-" << Application::nProcess() << "_" << Application::processId()
                        << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
             Debug( 8006 ) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "...\n";
@@ -418,7 +421,7 @@ ExporterEnsight<MeshType>::saveElement( typename timeset_type::step_ptrtype __st
 
             std::ostringstream __evarfname;
 
-            __evarfname << __evar->first
+            __evarfname << this->path() << "/" << __evar->first
                         << "-" << Application::nProcess() << "_" << Application::processId()
                         << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
             Debug( 8006 ) << "[ExporterEnsight::saveElement] saving " << __evarfname.str() << "...\n";

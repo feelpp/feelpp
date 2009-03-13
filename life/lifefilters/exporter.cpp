@@ -26,6 +26,11 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-07-21
  */
+#include <boost/tokenizer.hpp>
+#include <boost/token_functions.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+
 #include <life/lifecore/life.hpp>
 #include <life/lifecore/factory.hpp>
 #include <life/lifecore/singleton.hpp>
@@ -43,7 +48,8 @@ Exporter<MeshType>::Exporter( std::string const& __type, std::string const& __pr
     M_type( __type ),
     M_prefix( __prefix ),
     M_freq( __freq ),
-    M_ft( ASCII )
+    M_ft( ASCII ),
+    M_path( "." )
 {
 
 }
@@ -56,7 +62,8 @@ Exporter<MeshType>::Exporter( po::variables_map const& vm, std::string const& ex
     M_type(),
     M_prefix( exp_prefix ),
     M_freq(1),
-    M_ft( ASCII )
+    M_ft( ASCII ),
+    M_path( "." )
 {
 }
 
@@ -68,7 +75,8 @@ Exporter<MeshType>::Exporter( Exporter const & __ex )
     M_type( __ex.M_type ),
     M_prefix( __ex.M_prefix ),
     M_freq( __ex.M_freq ),
-    M_ft( __ex.M_ft )
+    M_ft( __ex.M_ft ),
+    M_path( __ex.M_path )
 {
 
 }
@@ -96,6 +104,30 @@ Exporter<MeshType>::setOptions( po::variables_map const& vm, std::string const& 
     Debug() << "[Exporter] prefix:  " << M_prefix << "\n";
     Debug() << "[Exporter] freq:  " << M_freq << "\n";
     Debug() << "[Exporter] ft:  " << M_ft << "\n";
+    return this;
+}
+
+template<typename MeshType>
+Exporter<MeshType>*
+Exporter<MeshType>::addPath( boost::format fmt )
+{
+    fs::path rep_path = ".";
+    typedef std::vector< std::string > split_vector_type;
+
+    split_vector_type dirs; // #2: Search for tokens
+    std::string fmtstr = fmt.str();
+    boost::split( dirs, fmtstr, boost::is_any_of("/") );
+
+    BOOST_FOREACH( std::string const& dir, dirs )
+        {
+            //Debug( 1000 ) << "[Application::Application] option: " << s << "\n";
+            rep_path = rep_path / dir;
+            if (!fs::exists( rep_path ) )
+                fs::create_directory( rep_path );
+        }
+
+    M_path = rep_path.string();
+
     return this;
 }
 
