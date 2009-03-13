@@ -134,6 +134,11 @@ public:
      */
     file_type fileType() const { return M_ft; }
 
+    /**
+     * \return the path to the saved files
+     */
+    std::string path() const { return M_path; }
+
     //@}
 
     /** @name  Mutators
@@ -147,6 +152,7 @@ public:
         M_type = __type;
         return this;
     }
+    Exporter<MeshType>* addPath( boost::format fmt );
     Exporter<MeshType>* setPrefix( std::string const& __prefix )
     {
         M_prefix = __prefix;
@@ -196,6 +202,7 @@ protected:
     std::string M_prefix;
     int M_freq;
     file_type M_ft;
+    std::string M_path;
 
     timeset_set_type M_ts_set;
 };
