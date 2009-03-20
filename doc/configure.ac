@@ -102,7 +102,6 @@ AC_CACHE_SAVE
 
 # doc
 AC_CONFIG_FILES([ Makefile ])
-AC_CONFIG_FILES([ admin/Makefile ])
 AC_CONFIG_FILES([ tutorial/Makefile ])
 AC_CONFIG_FILES([ tutorial/version.tex ])
 AC_CONFIG_FILES([ tutorial/styles/Makefile ])

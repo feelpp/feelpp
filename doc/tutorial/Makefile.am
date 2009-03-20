@@ -27,7 +27,10 @@ SUBDIRS=styles pngs pdfs
 
 ACLOCAL_AMFLAGS = -I admin
 
-bin_PROGRAMS=myapp mymesh myintegrals laplacian stokes bratu nonlinearpow
+bin_PROGRAMS=myapp mymesh myintegrals laplacian laplacian2 stokes bratu nonlinearpow lag convection
+
+lag_SOURCES=lag.cpp
+lag_LDADD=$(LIFE_LIBS)
 
 nonlinearpow_SOURCES=nonlinearpow.cpp
 nonlinearpow_LDADD=$(LIFE_LIBS)
@@ -41,11 +44,17 @@ stokes_LDADD=$(LIFE_LIBS)
 laplacian_SOURCES=laplacian.cpp
 laplacian_LDADD=$(LIFE_LIBS)
 
+laplacian2_SOURCES=laplacian2.cpp
+laplacian2_LDADD=$(LIFE_LIBS)
+
 myintegrals_SOURCES=myintegrals.cpp
 myintegrals_LDADD=$(LIFE_LIBS)
 
 mymesh_SOURCES=mymesh.cpp
 mymesh_LDADD=$(LIFE_LIBS)
+
+convection_SOURCES= convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp
+convection_LDADD=$(LIFE_LIBS)
 
 myapp_SOURCES=myapp.cpp
 myapp_LDADD=$(LIFE_LIBS)

@@ -310,12 +310,11 @@ Bratu<Dim, Order, Entity>::run()
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
 
     M_oplin = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
-    *M_oplin =
-        integrate( elements( mesh ), _Q<2*Order>(), gradt(u)*trans(grad(v)) ) +
-        integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                   ( - trans(id(v))*(gradt(u)*N())
-                     - trans(idt(u))*(grad(v)*N())
-                     + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
+    *M_oplin = integrate( elements( mesh ), _Q<2*Order>(), gradt(u)*trans(grad(v)) );
+    *M_oplin = integrate( boundaryfaces(mesh), _Q<2*Order>(),
+                          ( - trans(id(v))*(gradt(u)*N())
+                            - trans(idt(u))*(grad(v)*N())
+                            + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
     M_oplin->close();
 
     M_jac = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
