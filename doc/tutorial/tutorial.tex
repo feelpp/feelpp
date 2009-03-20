@@ -1242,7 +1242,27 @@ zero-mean, \emph{i.e.}
   \int_\Omega p = 0
 \end{equation}
 
-The functional framework is has follows, we look for $\mathbf{u}$ is
+The problem~\ref{prob:4} now reads
+\begin{problem}
+  \label{prob:5}
+ find $(\mathbf{u},p,\lambda)$ such that
+\begin{equation}
+  \label{eq:34}
+  - \mu \Delta \mathbf{u} +\nabla p = \mathbf{f}\quad, \quad \nabla \cdot \mathbf{u} + \lambda = 0, \quad \text{and}\quad \int_\Omega p = 0,\quad \text{in}\ \Omega = [-1;1]^2
+\end{equation}
+with
+\begin{equation}
+  \label{eq:35}
+  \mathbf{f} = \mathbf{0}
+\end{equation}
+where $\mu$ being the viscosity. The following boundary conditions apply
+\begin{equation}
+  \label{eq:36}
+  \mathbf{u}=\mathbf{1}_{|y=1}, \quad \mathbf{u}=\mathbf{0}_{|\partial \Omega \backslash \{(x,y) \in \Omega | y=1\}}
+\end{equation}
+\end{problem}
+
+The functional framework is as follows, we look for $\mathbf{u}$ is
 $H^1_0(\Omega)$ and $p$ in $L^2_0(\Omega)$. We shall not seek $p$ in
 $L^2_0(\Omega)$ but rather in $L^2(\Omega)$ and use Lagrange
 multipliers which live are the constants whose space we denote
@@ -1291,7 +1311,7 @@ The formulation~(\ref{eq:27}) leads to a linear system of the form
 \end{equation}
 
 where $A$ corresponds to the $(\mathbf{u},\mathbf{v})$ block, $B$ to
-the $\mathbf{u},q)$ block and $C$ to the $(p,\nu)$
+the $(\mathbf{u},q)$ block and $C$ to the $(p,\nu)$
 block. $\mathcal{A}$ is a symetric positive definite matrix and thus
 the system $\mathcal{A} \mathcal{U} = \mathcal{F}$ enjoys a unique
 solution.
@@ -1363,6 +1383,7 @@ The figure~\ref{fig:2} displays $p$ and $\mathbf{u}$ which are available in
   \caption{Solution of problem~\ref{prob:4}}
   \label{fig:2}
 \end{figure}
+
 
 \chapter{Examples}
 \label{cha:examples}

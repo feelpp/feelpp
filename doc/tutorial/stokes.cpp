@@ -131,6 +131,11 @@ public:
     typedef Lagrange<Order-1, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
+#if 0
+    typedef Product<Expansion<Continuous,basis_u_type>,
+                    Expansion<Continuous,basis_p_type>,
+                    Expansion<Continuous,basis_l_type> > basis_type;
+#endif
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     BOOST_MPL_ASSERT( ( boost::is_same<typename space_type::bases_list, basis_type> ) );
