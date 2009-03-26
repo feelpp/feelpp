@@ -287,6 +287,12 @@ public:
     virtual T operator () (const size_type i,
                            const size_type j) const = 0;
 
+    virtual MatrixSparse<T> & operator = ( MatrixSparse<value_type> const& M ) = 0;
+    MatrixSparse<T> & operator = ( boost::shared_ptr<MatrixSparse<value_type> > const& M )
+    {
+        *this = *M;
+        return *this;
+    }
     /**
      * Return the energy \f$v1^T A v\f$
      */

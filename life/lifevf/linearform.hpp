@@ -37,6 +37,7 @@
 #include <boost/multi_array.hpp>
 #include <life/lifevf/block.hpp>
 #include <life/lifealg/vectorvalue.hpp>
+#include <life/lifevf/fec.hpp>
 
 namespace Life
 {
@@ -125,7 +126,7 @@ public:
     class Context
     {
     public:
-
+        typedef Context<GeomapContext,ExprT,IM> form_context_type;
         typedef LinearForm<SpaceType,VectorType, ElemContType> form_type;
         typedef typename SpaceType::dof_type dof_type;
         typedef typename form_type::value_type value_type;
@@ -145,16 +146,17 @@ public:
         typedef typename space_type::mesh_type mesh_type;
         typedef typename mesh_type::element_type mesh_element_type;
         typedef typename mesh_element_type::permutation_type permutation_type;
-        typedef typename space_type::fe_type test_basis_type;
-        typedef boost::shared_ptr<test_basis_type> test_basis_ptrtype;
-        typedef typename test_basis_type::template Context< geometric_mapping_context_type::context,
-                                                            test_basis_type,
+        typedef typename space_type::fe_type test_fe_type;
+        typedef typename space_type::fe_type trial_fe_type;
+        typedef boost::shared_ptr<test_fe_type> test_fe_ptrtype;
+        typedef typename test_fe_type::template Context< geometric_mapping_context_type::context,
+                                                            test_fe_type,
                                                             geometric_mapping_type,
-                                                            mesh_element_type> test_basiscontext_type;
-
+                                                            mesh_element_type> test_fecontext_type;
+        typedef test_fecontext_type trial_fecontext_type;
         typedef mpl::int_<fusion::result_of::template size<GeomapContext>::type::value> map_size;
 
-        typedef boost::shared_ptr<test_basiscontext_type> test_basiscontext_ptrtype;
+        typedef boost::shared_ptr<test_fecontext_type> test_fecontext_ptrtype;
 
 
         typedef typename mpl::if_<mpl::equal_to<map_size,mpl::int_<2> >,
@@ -170,88 +172,34 @@ public:
         typedef fusion::map<fusion::pair<gmc<0>, right_gmc_ptrtype> > map_right_gmc_type;
 
         typedef typename mpl::if_<mpl::equal_to<map_size, mpl::int_<1> >,
-                                  mpl::identity<fusion::map<fusion::pair<gmc<0>, test_basiscontext_ptrtype> > >,
-                                  mpl::identity<fusion::map<fusion::pair<gmc<0>, test_basiscontext_ptrtype>,
-                                                            fusion::pair<gmc<1>, test_basiscontext_ptrtype> > > >::type::type map_test_basiscontext_type;
+                                  mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > >,
+                                  mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype>,
+                                                            fusion::pair<gmc<1>, test_fecontext_ptrtype> > > >::type::type map_test_fecontext_type;
 
-        typedef fusion::map<fusion::pair<gmc<0>, test_basiscontext_ptrtype> > map_left_test_basiscontext_type;
-        typedef fusion::map<fusion::pair<gmc<1>, test_basiscontext_ptrtype> > map_right_test_basiscontext_type;
+        typedef fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > map_left_test_fecontext_type;
+        typedef fusion::map<fusion::pair<gmc<1>, test_fecontext_ptrtype> > map_right_test_fecontext_type;
 
 
-        typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map_left_test_basiscontext_type> eval0_expr_type;
+        typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map_left_test_fecontext_type> eval0_expr_type;
         typedef boost::shared_ptr<eval0_expr_type> eval0_expr_ptrtype;
 
-        typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map_right_test_basiscontext_type> eval1_expr_type;
+        typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map_right_test_fecontext_type> eval1_expr_type;
         typedef boost::shared_ptr<eval1_expr_type> eval1_expr_ptrtype;
-        //typedef typename ExprT::template tensor<map_right_gmc_type, map_test_basiscontext_type> eval1_expr_type;
+        //typedef typename ExprT::template tensor<map_right_gmc_type, map_test_fecontext_type> eval1_expr_type;
 
 
-        typedef typename test_basis_type::template Context< geometric_mapping_context_type::context,
-                                                            test_basis_type,
+        typedef typename test_fe_type::template Context< geometric_mapping_context_type::context,
+                                                            test_fe_type,
                                                             geometric_mapping_type,
                                                             mesh_element_type>::template Index<> test_index_type;
 
 
-        //typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map0_test_basiscontext_type> eval0_expr_type;
-        //typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map1_test_basiscontext_type> eval1_expr_type;
+        //typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map0_test_fecontext_type> eval0_expr_type;
+        //typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map1_test_fecontext_type> eval1_expr_type;
 
         //typedef ublas::vector<value_type> local_vector_type;
         static const int rep_shape = 2;//1+(eval_expr_type::shape::M-1>0)+(eval_expr_type::shape::N-1>0);
         typedef boost::multi_array<value_type, rep_shape> local_vector_type;
-
-    private:
-
-        struct InitTestFec
-        {
-            template<typename Sig>
-            struct result;
-
-            template<typename T>
-            struct result<InitTestFec(T)>
-            {
-                typedef fusion::pair<typename boost::remove_reference<T>::type::first_type,test_basiscontext_ptrtype> type;
-            };
-
-
-            InitTestFec( test_basis_ptrtype const& fe, form_type const& form )
-                :
-                _M_fe( fe ),
-                _M_form( form )
-                {}
-            template<typename T>
-            fusion::pair<typename T::first_type,test_basiscontext_ptrtype>
-            operator()( T const& t) const
-            {
-                geometric_mapping_context_ptrtype gmcptr( t.second );
-
-                return fusion::make_pair<typename boost::remove_reference<T>::type::first_type>( test_basiscontext_ptrtype( new test_basiscontext_type( _M_fe,
-                                                                                                                                                        gmcptr,
-                                                                                                                                                        _M_form.testPc( gmcptr->faceId(), gmcptr->permutation() ) ) ) );
-            };
-
-            test_basis_ptrtype const& _M_fe;
-            form_type const& _M_form;
-        };
-
-        struct UpdateTestFec
-        {
-            UpdateTestFec( map_geometric_mapping_context_type const& mapgmc,
-                           form_type const& form )
-                :
-                _M_mapgmc( mapgmc ),
-                _M_form( form )
-                {}
-
-            template<typename T>
-            void operator()( T& t) const
-            {
-                geometric_mapping_context_ptrtype gmcptr( fusion::at_key<typename boost::remove_reference<T>::type::first_type>( _M_mapgmc ) );
-                t.second->update( gmcptr, _M_form.testPc( gmcptr->faceId(), gmcptr->permutation()  ) );
-            };
-
-            map_geometric_mapping_context_type const& _M_mapgmc;
-            form_type const& _M_form;
-        };
 
     public:
 
@@ -311,9 +259,9 @@ public:
         right_gmc_ptrtype _M_gmc_right;
         map_left_gmc_type _M_left_map;
         map_right_gmc_type _M_right_map;
-        map_test_basiscontext_type _M_test_fec;
-        map_left_test_basiscontext_type _M_test_fec0;
-        map_right_test_basiscontext_type _M_test_fec1;
+        map_test_fecontext_type _M_test_fec;
+        map_left_test_fecontext_type _M_test_fec0;
+        map_right_test_fecontext_type _M_test_fec1;
 
         local_vector_type _M_rep;
         eval0_expr_ptrtype _M_eval0_expr;
@@ -748,10 +696,10 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     _M_gmc( _gmc ),
     _M_gmc_left( fusion::at_key<gmc<0> >( _gmc ) ),
     _M_left_map( fusion::make_map<gmc<0> >( _M_gmc_left ) ),
-    _M_test_fec( fusion::transform( _M_gmc, InitTestFec(__form.functionSpace()->fe(), _M_form ) ) ),
+    _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>(__form.functionSpace()->fe(), _M_form ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
-    _M_rep(boost::extents[fusion::size(_gmc)*test_basiscontext_type::nDof]
-           [test_basiscontext_type::nComponents1]),
+    _M_rep(boost::extents[fusion::size(_gmc)*test_fecontext_type::nDof]
+           [test_fecontext_type::nComponents1]),
     _M_eval0_expr( new eval0_expr_type( expr, _gmc, _M_test_fec0 ) ),
     _M_eval1_expr(),
     M_integrator( im )
@@ -774,10 +722,10 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     _M_gmc( _gmc ),
     _M_gmc_left( fusion::at_key<gmc<0> >( _gmc ) ),
     _M_left_map( fusion::make_map<gmc<0> >( _M_gmc_left ) ),
-    _M_test_fec( fusion::transform( _M_gmc, InitTestFec(__form.functionSpace()->fe(), _M_form ) ) ),
+    _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>(__form.functionSpace()->fe(), _M_form ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
-    _M_rep(boost::extents[fusion::size(_gmc)*test_basiscontext_type::nDof]
-           [test_basiscontext_type::nComponents1]),
+    _M_rep(boost::extents[fusion::size(_gmc)*test_fecontext_type::nDof]
+           [test_fecontext_type::nComponents1]),
     _M_eval0_expr( new eval0_expr_type( expr, _gmc, _M_test_fec0 ) ),
     _M_eval1_expr(),
     M_integrator( im )
@@ -802,11 +750,11 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     _M_gmc_right( fusion::at_key<gmc1 >( _gmc ) ),
     _M_left_map( fusion::make_map<gmc<0> >( _M_gmc_left ) ),
     _M_right_map( fusion::make_map<gmc<0> >( _M_gmc_right ) ),
-    _M_test_fec( fusion::transform( _M_gmc, InitTestFec(__form.functionSpace()->fe(), _M_form ) ) ),
+    _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>(__form.functionSpace()->fe(), _M_form ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
     _M_test_fec1( fusion::make_pair<gmc<1> >( fusion::at_key<gmc<1> >( _M_test_fec ) ) ),
-    _M_rep(boost::extents[fusion::size(_gmc)*test_basiscontext_type::nDof]
-           [test_basiscontext_type::nComponents1]),
+    _M_rep(boost::extents[fusion::size(_gmc)*test_fecontext_type::nDof]
+           [test_fecontext_type::nComponents1]),
     _M_eval0_expr( new eval0_expr_type( expr, _gmc, _M_test_fec0 ) ),
     _M_eval1_expr( new eval1_expr_type( expr, _gmc, _M_test_fec1 ) ),
     M_integrator( im )
@@ -823,7 +771,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     _M_gmc = _gmc;
     _M_gmc_left = fusion::at_key<gmc<0> >( _gmc );
     _M_left_map = fusion::make_map<gmc<0> >( _M_gmc_left );
-    fusion::for_each( _M_test_fec, UpdateTestFec( _gmc, _M_form ) );
+    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, _M_form ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_eval0_expr->update( _gmc, _M_test_fec0 );
     std::fill( _M_rep.data(), _M_rep.data()+_M_rep.num_elements(), value_type(0) );
@@ -843,7 +791,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     _M_left_map = fusion::make_map<gmc<0> >( _M_gmc_left );
     _M_right_map = fusion::make_map<gmc<0> >( _M_gmc_right );
 #endif
-    fusion::for_each( _M_test_fec, UpdateTestFec( _gmc, _M_form ) );
+    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, _M_form ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_test_fec1 = fusion::make_map<gmc<1> >( fusion::at_key<gmc<1> >( _M_test_fec ) );
     _M_eval0_expr->update( _gmc, _M_test_fec0 );
@@ -891,8 +839,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
         //Debug() << "[linearform::integrate] num threads: " << OMP_GET_NUM_THREADS << "\n";
 
     //#pragma omp for private(i,c1,indi, res)
-        for ( i = 0; i < test_basiscontext_type::nDof; ++i )
-            for( c1 = 0;c1 < test_basiscontext_type::nComponents1; ++ c1 )
+        for ( i = 0; i < test_fecontext_type::nDof; ++i )
+            for( c1 = 0;c1 < test_fecontext_type::nComponents1; ++ c1 )
                 {
                     indi.setIndex( boost::make_tuple( i, c1, 0 ) );
                     res = M_integrator( *_M_eval0_expr, indi, 0, 0 );
@@ -917,15 +865,15 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
                           (mpl::int_<shape::M>, mpl::int_<shape::N> ) );
     test_index_type indi;
 
-    for ( uint16_type i = 0; i < test_basiscontext_type::nDof; ++i )
-        for( uint16_type c1 = 0;c1 < test_basiscontext_type::nComponents1; ++ c1 )
+    for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
+        for( uint16_type c1 = 0;c1 < test_fecontext_type::nComponents1; ++ c1 )
             {
                 indi.setIndex( boost::make_tuple( i, c1, 0 ) );
 
                 LIFE_ASSERT( M_integrator.isFaceIm() )
                     ( M_integrator ).error( "invalid face integrator" );
                 _M_rep[i][c1] = M_integrator( *_M_eval0_expr, indi, 0, 0 );
-                uint16_type ii = i + test_basiscontext_type::nDof;
+                uint16_type ii = i + test_fecontext_type::nDof;
                 _M_rep[ii][c1] = M_integrator( *_M_eval1_expr, indi, 0, 0 );
             }
 }
@@ -938,10 +886,10 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     size_type ig;
     int isign;
     size_type row_start = _M_lb.front().globalRowStart();
-    for ( uint16_type k = 0 ; k < test_basiscontext_type::nDof; k++ )
-        for( uint16_type c1 = 0;c1 < test_basiscontext_type::nComponents1; ++ c1 )
+    for ( uint16_type k = 0 ; k < test_fecontext_type::nDof; k++ )
+        for( uint16_type c1 = 0;c1 < test_fecontext_type::nComponents1; ++ c1 )
             {
-                //uint16_type c = test_basiscontext_type::nComponents2*c1+c2;
+                //uint16_type c = test_fecontext_type::nComponents2*c1+c2;
                 boost::tie( ig, isign, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_0, k, c1 );
                 ig += row_start;
                 _M_form.add( ig, value_type(isign)*_M_rep[k][c1] );
@@ -956,18 +904,18 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     size_type ig0,ig1;
     int isign0,isign1;
     size_type row_start = _M_lb.front().globalRowStart();
-    for ( uint16_type k = 0 ; k < test_basiscontext_type::nDof; k++ )
-        for( uint16_type c1 = 0;c1 < test_basiscontext_type::nComponents1; ++ c1 )
-            //for( uint16_type c2 = 0;c2 < test_basiscontext_type::nComponents2; ++ c2 )
+    for ( uint16_type k = 0 ; k < test_fecontext_type::nDof; k++ )
+        for( uint16_type c1 = 0;c1 < test_fecontext_type::nComponents1; ++ c1 )
+            //for( uint16_type c2 = 0;c2 < test_fecontext_type::nComponents2; ++ c2 )
             {
-                //uint16_type c = test_basiscontext_type::nComponents2*c1+c2;
+                //uint16_type c = test_fecontext_type::nComponents2*c1+c2;
                 boost::tie( ig0, isign0, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_0, k, c1 );
                 ig0 += row_start;
                 _M_form.add( ig0, value_type(isign0)*_M_rep[k][c1] );
 
                 boost::tie( ig1, isign1, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_1, k, c1 );
                 ig1 += row_start;
-                size_type l = test_basiscontext_type::nDof + k;
+                size_type l = test_fecontext_type::nDof + k;
                 _M_form.add( ig1, value_type(isign1)*_M_rep[l][c1] );
             }
 }

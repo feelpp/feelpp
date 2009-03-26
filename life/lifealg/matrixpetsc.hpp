@@ -43,7 +43,7 @@
 
 extern "C"
 {
-#if defined(MPICH_NAME) 
+#if defined(MPICH_NAME)
 #if !defined( MPICH_HAVE_MPI_WIN )
 #define MPICH_HAVE_MPI_WIN
   struct MPI_Win {};
@@ -152,7 +152,11 @@ public:
     value_type operator () (const size_type i,
                             const size_type j) const;
 
-
+    /**
+     * create a PETSc matrix which is a copy of \p M
+     * \param M the matrix to copy
+     */
+    MatrixPetsc& operator=( MatrixSparse<value_type> const& M );
 
     //@}
 

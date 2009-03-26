@@ -227,6 +227,12 @@ public:
      */
     //@{
 
+    MatrixGmm<T,LayoutType> & operator = ( MatrixSparse<value_type> const& M )
+    {
+        return *this;
+    }
+
+
     value_type  operator()( size_type i, size_type j ) const
     {
         return _M_mat( i, j );
