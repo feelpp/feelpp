@@ -271,7 +271,8 @@ VectorPetsc<T>::localize (Vector<T>& v_local_in) const
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // Perform the scatter
-#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3)
+#if ( (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) ) || ( PETSC_VERSION_MAJOR >= 3 )
+
     ierr = VecScatterBegin(scatter, _M_vec, v_local->_M_vec, INSERT_VALUES,
                            SCATTER_FORWARD );
 #else
@@ -280,7 +281,7 @@ VectorPetsc<T>::localize (Vector<T>& v_local_in) const
 #endif
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
-#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3)
+#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3)|| ( PETSC_VERSION_MAJOR >= 3 )
     ierr = VecScatterEnd  (scatter, const_cast<Vec>(_M_vec), v_local->_M_vec, INSERT_VALUES,
                            SCATTER_FORWARD );
 #else
@@ -332,14 +333,14 @@ void VectorPetsc<T>::localize (Vector<T>& v_local_in,
 
 
     // Perform the scatter
-#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3)
+#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) || ( PETSC_VERSION_MAJOR >= 3 )
     ierr = VecScatterBegin(scatter, const_cast<Vec>(_M_vec), v_local->_M_vec, INSERT_VALUES, SCATTER_FORWARD );
 #else
     ierr = VecScatterBegin( _M_vec, v_local->_M_vec, INSERT_VALUES, SCATTER_FORWARD, scatter );
 #endif
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
-#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3)
+#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) || ( PETSC_VERSION_MAJOR >= 3 )
     ierr = VecScatterEnd  (scatter, const_cast<Vec>(_M_vec), v_local->_M_vec, INSERT_VALUES, SCATTER_FORWARD);
 #else
     ierr = VecScatterEnd  ( _M_vec, v_local->_M_vec, INSERT_VALUES, SCATTER_FORWARD, scatter );
@@ -402,14 +403,14 @@ void VectorPetsc<T>::localize (const size_type first_local_idx,
         CHKERRABORT(Application::COMM_WORLD,ierr);
 
         // Perform the scatter
-#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3)
+#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) || ( PETSC_VERSION_MAJOR >= 3 )
         ierr = VecScatterBegin(scatter, _M_vec, parallel_vec._M_vec, INSERT_VALUES, SCATTER_FORWARD );
 #else
         ierr = VecScatterBegin(_M_vec, parallel_vec._M_vec, INSERT_VALUES, SCATTER_FORWARD, scatter);
 #endif
         CHKERRABORT(Application::COMM_WORLD,ierr);
 
-#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3)
+#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) || ( PETSC_VERSION_MAJOR >= 3 )
         ierr = VecScatterEnd  (scatter, _M_vec, parallel_vec._M_vec, INSERT_VALUES, SCATTER_FORWARD );
 #else
         ierr = VecScatterEnd  (_M_vec, parallel_vec._M_vec, INSERT_VALUES, SCATTER_FORWARD, scatter);
