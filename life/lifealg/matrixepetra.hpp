@@ -163,6 +163,10 @@ public:
      */
     //@{
 
+    MatrixEpetra & operator = ( MatrixSparse<value_type> const& M )
+    {
+        return *this;
+    }
     /**
      * Return the value of the entry \p (i,j).  This may be an
      * expensive operation and you should always take care where to

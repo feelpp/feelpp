@@ -40,6 +40,7 @@
 #include <life/lifealg/vectorublas.hpp>
 #include <life/lifealg/graphcsr.hpp>
 #include <life/lifevf/block.hpp>
+#include <life/lifevf/fec.hpp>
 
 
 namespace Life
@@ -55,7 +56,7 @@ enum DofGraph
     };
 
 /// \cond detail
-template<typename FE1,typename FE2,typename MatrixType,typename ElemContType> class BilinearForm;
+template<typename FE1,typename FE2,typename ElemContType> class BilinearForm;
 namespace detail
 {
 template<typename BFType, typename Space1Type>
@@ -190,10 +191,6 @@ make_bfassign1( BFType& lf,
 */
 template<typename FE1,
          typename FE2,
-         typename MatrixType = ublas::compressed_matrix<typename FE1::value_type,
-                                                        ublas::column_major, 0,
-                                                        ublas::unbounded_array<size_t>,
-                                                        ublas::unbounded_array<typename FE1::value_type> >,
          typename ElemContType = VectorUblas<typename FE1::value_type> >
 class BilinearForm
 {
@@ -219,7 +216,7 @@ public:
     typedef typename space_1_type::template Element<value_type,ElemContType> element_1_type;
 
     typedef typename space_2_type::template Element<value_type,ElemContType> element_2_type;
-    typedef BilinearForm<FE1, FE2,MatrixType, ElemContType> self_type;
+    typedef BilinearForm<FE1, FE2, ElemContType> self_type;
 
 #if 0
     typedef typename space_1_type::component_fespace_type component_space_1_type;
@@ -238,7 +235,7 @@ public:
     typedef typename space_1_type::gm_ptrtype gm_ptrtype;
 
     //typedef ublas::compressed_matrix<value_type, ublas::row_major> csr_matrix_type;
-    typedef MatrixType matrix_type;
+    typedef MatrixSparse<value_type> matrix_type;
     static const bool is_row_major = true;//matrix_type::is_row_major;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::bool_<is_row_major>, mpl::bool_<true> >,
@@ -282,8 +279,8 @@ public:
 
 
     public:
-
-        typedef BilinearForm<FE1, FE2,MatrixType, ElemContType> form_type;
+        typedef Context<GeomapContext,ExprT,IM> form_context_type;
+        typedef BilinearForm<FE1, FE2, ElemContType> form_type;
         typedef typename FE1::dof_type dof_1_type;
         typedef typename FE2::dof_type dof_2_type;
 
@@ -364,110 +361,6 @@ public:
 
         static const int rep_shape = 4;//2+(eval_expr_type::shape::M-1>0)+(eval_expr_type::shape::N-1>0);
         typedef boost::multi_array<value_type, rep_shape> local_matrix_type;
-    private:
-
-        struct InitTestFec
-        {
-            template<typename Sig>
-            struct result;
-
-            template<typename T>
-            struct result<InitTestFec(T)>
-            {
-                typedef fusion::pair<typename boost::remove_reference<T>::type::first_type,test_fecontext_ptrtype> type;
-            };
-
-            InitTestFec( test_fe_ptrtype const& fe, form_type const& form )
-                :
-                _M_fe( fe ),
-                _M_form( form )
-                {}
-            template<typename T>
-            fusion::pair<typename boost::remove_reference<T>::type::first_type,test_fecontext_ptrtype>
-            operator()(T const& t) const
-            {
-                geometric_mapping_context_ptrtype gmcptr( t.second );
-
-                return fusion::make_pair<typename boost::remove_reference<T>::type::first_type>( test_fecontext_ptrtype( new test_fecontext_type( _M_fe,
-                                                                                                                   gmcptr,
-                                                                                                                   _M_form.testPc( gmcptr->faceId(), gmcptr->permutation() ) ) ) );
-            };
-
-            test_fe_ptrtype const& _M_fe;
-            form_type const& _M_form;
-        };
-
-        struct InitTrialFec
-        {
-            template<typename Sig>
-            struct result;
-
-            template<typename T>
-            struct result<InitTrialFec(T)>
-            {
-                typedef fusion::pair<typename boost::remove_reference<T>::type::first_type,trial_fecontext_ptrtype> type;
-            };
-
-            InitTrialFec( trial_fe_ptrtype const& fe, form_type const& form )
-                :
-                _M_fe( fe ),
-                _M_form( form )
-                {}
-
-            template<typename T>
-            fusion::pair<typename boost::remove_reference<T>::type::first_type,trial_fecontext_ptrtype>
-            operator()(T const& t) const
-            {
-                geometric_mapping_context_ptrtype gmcptr( t.second );
-                return fusion::make_pair<typename boost::remove_reference<T>::type::first_type>( trial_fecontext_ptrtype( new trial_fecontext_type( _M_fe,
-                                                                                                                     gmcptr,
-                                                                                                                     _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation() ) ) ) );
-            };
-
-            trial_fe_ptrtype const& _M_fe;
-            form_type const& _M_form;
-        };
-
-        struct UpdateTestFec
-        {
-            UpdateTestFec( map_geometric_mapping_context_type const& mapgmc,
-                            form_type const& form )
-                :
-                _M_mapgmc( mapgmc ),
-                _M_form( form )
-                {}
-
-            template<typename T>
-            void operator()(T& t) const
-            {
-                geometric_mapping_context_ptrtype gmcptr( fusion::at_key<typename boost::remove_reference<T>::type::first_type>( _M_mapgmc ) );
-                t.second->update( gmcptr, _M_form.testPc( gmcptr->faceId(), gmcptr->permutation() ) );
-            };
-
-            map_geometric_mapping_context_type const& _M_mapgmc;
-            form_type const& _M_form;
-        };
-
-        struct UpdateTrialFec
-        {
-            UpdateTrialFec( map_geometric_mapping_context_type const& mapgmc,
-                            form_type const& form )
-                :
-                _M_mapgmc( mapgmc ),
-                _M_form( form )
-                {}
-
-            template<typename T>
-            void operator()(T& t) const
-            {
-                geometric_mapping_context_ptrtype gmcptr( fusion::at_key<typename boost::remove_reference<T>::type::first_type>( _M_mapgmc ) );
-                t.second->update( gmcptr, _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation() ) );
-            };
-
-            map_geometric_mapping_context_type const& _M_mapgmc;
-            form_type const& _M_form;
-        };
-
 
     public:
 
@@ -870,15 +763,15 @@ private:
 
     graph_ptrtype M_graph;
 };
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
-BilinearForm<FE1, FE2,  MatrixType, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
-                                                                 space_2_ptrtype const& Yh,
-                                                                 matrix_type& __M,
-                                                                 bool build,
-                                                                 bool do_threshold,
-                                                                 value_type threshold,
-                                                                 size_type graph_hints
-                                                                 )
+template<typename FE1,  typename FE2, typename ElemContType>
+BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
+                                                    space_2_ptrtype const& Yh,
+                                                    matrix_type& __M,
+                                                    bool build,
+                                                    bool do_threshold,
+                                                    value_type threshold,
+                                                    size_type graph_hints
+                                                    )
     :
     _M_X1( Xh ),
     _M_X2( Yh ),
@@ -917,14 +810,14 @@ BilinearForm<FE1, FE2,  MatrixType, ElemContType>::BilinearForm( space_1_ptrtype
     Debug( 5050 ) << "begin constructor with default listblock done\n";
 }
 
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
-BilinearForm<FE1, FE2,  MatrixType, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
-                                                                 space_2_ptrtype const& Yh,
-                                                                 matrix_type& __M,
-                                                                 list_block_type const& __lb,
-                                                                 bool do_threshold ,
-                                                                 value_type threshold,
-                                                                 size_type graph_hints )
+template<typename FE1,  typename FE2, typename ElemContType>
+BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
+                                                    space_2_ptrtype const& Yh,
+                                                    matrix_type& __M,
+                                                    list_block_type const& __lb,
+                                                    bool do_threshold ,
+                                                    value_type threshold,
+                                                    size_type graph_hints )
     :
     _M_X1( Xh ),
     _M_X2( Yh ),
@@ -940,18 +833,18 @@ BilinearForm<FE1, FE2,  MatrixType, ElemContType>::BilinearForm( space_1_ptrtype
 
 }
 
-template<typename FE1,  typename FE2, typename MatrixType,  typename ElemContType>
+template<typename FE1,  typename FE2,  typename ElemContType>
 template<typename ExprT>
 void
-BilinearForm<FE1, FE2, MatrixType, ElemContType>::assign( Expr<ExprT> const& __expr,
-                                                          bool init,
-                                                          mpl::bool_<false> )
+BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
+                                              bool init,
+                                              mpl::bool_<false> )
 {
     if ( init )
-      {
-	Debug( 5055 ) << "[BilinearForm::assign<false>] start\n";
-	typedef ublas::matrix_range<MatrixType> matrix_range_type;
-	typename list_block_type::const_iterator __bit = _M_lb.begin();
+        {
+            Debug( 5055 ) << "[BilinearForm::assign<false>] start\n";
+            typedef ublas::matrix_range<matrix_type> matrix_range_type;
+            typename list_block_type::const_iterator __bit = _M_lb.begin();
             typename list_block_type::const_iterator __ben = _M_lb.end();
             for ( ; __bit != __ben; ++__bit )
                 {
@@ -966,21 +859,21 @@ BilinearForm<FE1, FE2, MatrixType, ElemContType>::assign( Expr<ExprT> const& __e
     Debug( 5055 ) << "[BilinearForm::assign<false>] stop\n";
 
 }
-template<typename FE1,  typename FE2, typename MatrixType,  typename ElemContType>
+template<typename FE1,  typename FE2,  typename ElemContType>
 template<typename ExprT>
 void
-BilinearForm<FE1, FE2, MatrixType, ElemContType>::assign( Expr<ExprT> const& __expr,
-                                                          bool /*init*/,
-                                                          mpl::bool_<true> )
+BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
+                                              bool /*init*/,
+                                              mpl::bool_<true> )
 {
     Debug( 5050 ) << "BilinearForm::assign() start loop on test spaces\n";
     fusion::for_each( _M_X1->functionSpaces(), make_bfassign2( *this, __expr ) );
     Debug( 5050 ) << "BilinearForm::assign() stop loop on test spaces\n";
 }
-template<typename FE1,  typename FE2, typename MatrixType,  typename ElemContType>
+template<typename FE1,  typename FE2,  typename ElemContType>
 template<typename ExprT>
-BilinearForm<FE1, FE2, MatrixType, ElemContType>&
-BilinearForm<FE1, FE2, MatrixType, ElemContType>::operator=( Expr<ExprT> const& __expr )
+BilinearForm<FE1, FE2, ElemContType>&
+BilinearForm<FE1, FE2, ElemContType>::operator=( Expr<ExprT> const& __expr )
 {
     // loop(fusion::for_each) over sub-functionspaces in SpaceType
     // pass expression and initialize
@@ -988,10 +881,10 @@ BilinearForm<FE1, FE2, MatrixType, ElemContType>::operator=( Expr<ExprT> const& 
     return *this;
 }
 
-template<typename FE1,  typename FE2, typename MatrixType,  typename ElemContType>
+template<typename FE1,  typename FE2,  typename ElemContType>
 template<typename ExprT>
-BilinearForm<FE1, FE2, MatrixType, ElemContType>&
-BilinearForm<FE1, FE2, MatrixType, ElemContType>::operator+=( Expr<ExprT> const& __expr )
+BilinearForm<FE1, FE2, ElemContType>&
+BilinearForm<FE1, FE2, ElemContType>::operator+=( Expr<ExprT> const& __expr )
 {
     Debug( 5055 ) << "[BilinearForm::operator+=] start\n";
     this->assign( __expr, false, mpl::bool_<(FE1::nSpaces > 1)>() );
@@ -1000,12 +893,12 @@ BilinearForm<FE1, FE2, MatrixType, ElemContType>::operator+=( Expr<ExprT> const&
 }
 
 
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename FE1,  typename FE2, typename ElemContType>
 void
-BilinearForm<FE1,FE2,MatrixType,ElemContType>::zeroRows( std::vector<int> __dofs,
-                                                         std::vector<value_type> __values,
-                                                         Vector<value_type>& rhs,
-                                                         Life::Context const& on_context )
+BilinearForm<FE1,FE2,ElemContType>::zeroRows( std::vector<int> __dofs,
+                                              std::vector<value_type> __values,
+                                              Vector<value_type>& rhs,
+                                              Life::Context const& on_context )
 {
     _M_matrix.zeroRows( __dofs, __values, rhs, on_context );
 }
@@ -1066,9 +959,9 @@ sortSparsityRow (const BidirectionalIterator begin,
     assert (std::unique (begin, end) == end);
 } //
 
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename FE1,  typename FE2, typename ElemContType>
 void
-BilinearForm<FE1,FE2,MatrixType,ElemContType>::mergeGraph( int row, int col, graph_ptrtype g )
+BilinearForm<FE1,FE2,ElemContType>::mergeGraph( int row, int col, graph_ptrtype g )
 {
     Debug( 5050 ) << "[merge graph] for composite bilinear form\n";
     Debug( 5050 ) << "[mergeGraph] row = " << row << "\n";
@@ -1136,9 +1029,9 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::mergeGraph( int row, int col, gra
 
     Debug( 5050 ) << "merge graph for composite bilinear form done\n";
 }
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
-typename BilinearForm<FE1,FE2,MatrixType,ElemContType>::graph_ptrtype
-BilinearForm<FE1,FE2,MatrixType,ElemContType>::computeGraph( size_type hints, mpl::bool_<false> )
+template<typename FE1,  typename FE2, typename ElemContType>
+typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
+BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<false> )
 {
     Debug( 5050 ) << "compute graph for composite bilinear form\n";
     fusion::for_each( _M_X1->functionSpaces(), compute_graph1<self_type>( *this, hints ) );
@@ -1160,9 +1053,9 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::computeGraph( size_type hints, mp
 
     return M_graph;
 }
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
-typename BilinearForm<FE1,FE2,MatrixType,ElemContType>::graph_ptrtype
-BilinearForm<FE1,FE2,MatrixType,ElemContType>::computeGraph( size_type hints, mpl::bool_<true> )
+template<typename FE1,  typename FE2, typename ElemContType>
+typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
+BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<true> )
 {
     // Compute the sparsity structure of the global matrix.  This can be
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
@@ -1413,21 +1306,25 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::computeGraph( size_type hints, mp
 //
 // Context
 //
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
-BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
-                                                                                         map_geometric_mapping_context_type const& _gmc,
-                                                                                         ExprT const& expr,
-                                                                                         IM const& im )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
+                                                                              map_geometric_mapping_context_type const& _gmc,
+                                                                              ExprT const& expr,
+                                                                              IM const& im )
     :
     _M_form( __form ),
     _M_lb( __form.blockList() ),
     _M_test_dof( __form.testSpace()->dof().get() ),
     _M_trial_dof( __form.trialSpace()->dof().get() ),
     _M_gmc( _gmc ),
-    _M_test_fec( fusion::transform( _gmc, InitTestFec(__form.testSpace()->fe(), _M_form ) ) ),
+    _M_test_fec( fusion::transform( _gmc,
+                                    detail::FEContextInit<0,form_context_type>(__form.testSpace()->fe(),
+                                                                       _M_form ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
-    _M_trial_fec( getMap( _M_test_fec, fusion::transform( _gmc, InitTrialFec( __form.trialSpace()->fe(), _M_form ) ) ) ),
+    _M_trial_fec( getMap( _M_test_fec, fusion::transform( _gmc,
+                                                          detail::FEContextInit<1,form_context_type>( __form.trialSpace()->fe(),
+                                                                                              _M_form ) ) ) ),
     _M_trial_fec0( getMapL( _M_test_fec0, fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) ) ) ),
     _M_rep( boost::extents[fusion::size(_gmc)*test_fecontext_type::nDof][test_fecontext_type::nComponents1]
             [fusion::size(_gmc)*trial_fecontext_type::nDof][trial_fecontext_type::nComponents1] ),
@@ -1439,23 +1336,23 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::
 {
     _M_eval_expr00->init( im );
 }
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
 template<typename IM2>
-BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
-                                                                                         map_geometric_mapping_context_type const& _gmc,
-                                                                                         ExprT const& expr,
-                                                                                         IM const& im,
-                                                                                         IM2 const& im2 )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
+                                                                              map_geometric_mapping_context_type const& _gmc,
+                                                                              ExprT const& expr,
+                                                                              IM const& im,
+                                                                              IM2 const& im2 )
     :
     _M_form( __form ),
     _M_lb( __form.blockList() ),
     _M_test_dof( __form.testSpace()->dof().get() ),
     _M_trial_dof( __form.trialSpace()->dof().get() ),
     _M_gmc( _gmc ),
-    _M_test_fec( fusion::transform( _gmc, InitTestFec(__form.testSpace()->fe(), _M_form ) ) ),
+    _M_test_fec( fusion::transform( _gmc, detail::FEContextInit<0,form_context_type>(__form.testSpace()->fe(), _M_form ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
-    _M_trial_fec( getMap( _M_test_fec, fusion::transform( _gmc, InitTrialFec( __form.trialSpace()->fe(), _M_form ) ) ) ),
+    _M_trial_fec( getMap( _M_test_fec, fusion::transform( _gmc, detail::FEContextInit<1,form_context_type>( __form.trialSpace()->fe(), _M_form ) ) ) ),
     _M_trial_fec0( getMapL( _M_test_fec0, fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) ) ) ),
     _M_rep( boost::extents[fusion::size(_gmc)*test_fecontext_type::nDof][test_fecontext_type::nComponents1]
             [fusion::size(_gmc)*trial_fecontext_type::nDof][trial_fecontext_type::nComponents1] ),
@@ -1468,10 +1365,10 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::
     // faces
     _M_eval_expr00->init( im2 );
 }
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
 template<typename IM2>
-BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
                                                                                          map_geometric_mapping_context_type const& _gmc,
                                                                                          ExprT const& expr,
                                                                                          IM const& im,
@@ -1483,10 +1380,10 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::
     _M_test_dof( __form.testSpace()->dof().get() ),
     _M_trial_dof( __form.trialSpace()->dof().get() ),
     _M_gmc( _gmc ),
-    _M_test_fec( fusion::transform( _gmc, InitTestFec(__form.testSpace()->fe(), _M_form ) ) ),
+    _M_test_fec( fusion::transform( _gmc, detail::FEContextInit<0,form_context_type>(__form.testSpace()->fe(), _M_form ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
     _M_test_fec1( fusion::make_map<gmc<1> >( fusion::at_key<gmc<1> >( _M_test_fec ) ) ),
-    _M_trial_fec( fusion::transform( _gmc, InitTrialFec( __form.trialSpace()->fe(), _M_form ) ) ),
+    _M_trial_fec( fusion::transform( _gmc, detail::FEContextInit<1,form_context_type>( __form.trialSpace()->fe(), _M_form ) ) ),
     _M_trial_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) ) ),
     _M_trial_fec1( fusion::make_map<gmc<1> >( fusion::at_key<gmc<1> >( _M_trial_fec ) ) ),
     _M_rep( boost::extents[fusion::size(_gmc)*test_fecontext_type::nDof][test_fecontext_type::nComponents1]
@@ -1508,45 +1405,45 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::
     _M_eval_expr11->init( im2 );
 }
 
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
 void
-BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc )
 {
     update( _gmc,  boost::is_same<map_test_fecontext_type, map_trial_fecontext_type>() );
     M_integrator.update( *fusion::at_key<gmc<0> >( _gmc ) );
 }
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
 void
-BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::bool_<false> )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::bool_<false> )
 {
-    fusion::for_each( _M_test_fec, UpdateTestFec( _gmc, _M_form ) );
+    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, _M_form ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
-    fusion::for_each( _M_trial_fec, UpdateTrialFec( _gmc, _M_form ) );
+    fusion::for_each( _M_trial_fec, detail::FEContextUpdate<1,form_context_type>( _gmc, _M_form ) );
     _M_trial_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) );
     _M_eval_expr00->update( _gmc, _M_test_fec0, _M_trial_fec0 );
     std::fill( _M_rep.data(), _M_rep.data()+_M_rep.num_elements(), value_type(0) );
 }
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
 void
-BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::bool_<true> )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::bool_<true> )
 {
-    fusion::for_each( _M_test_fec, UpdateTestFec( _gmc, _M_form ) );
+    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, _M_form ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_eval_expr00->update( _gmc, _M_test_fec0, _M_test_fec0 );
     std::fill( _M_rep.data(), _M_rep.data()+_M_rep.num_elements(), value_type(0) );
 }
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
 void
-BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::int_<2> )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::int_<2> )
 {
-    fusion::for_each( _M_test_fec, UpdateTestFec( _gmc, _M_form ) );
+    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, _M_form ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_test_fec1 = fusion::make_map<gmc<1> >( fusion::at_key<gmc<1> >( _M_test_fec ) );
-    fusion::for_each( _M_trial_fec, UpdateTrialFec( _gmc, _M_form ) );
+    fusion::for_each( _M_trial_fec, detail::FEContextUpdate<1,form_context_type>( _gmc, _M_form ) );
     _M_trial_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) );
     _M_trial_fec1 = fusion::make_map<gmc<1> >( fusion::at_key<gmc<1> >( _M_trial_fec ) );
 
@@ -1570,10 +1467,10 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::
 
 
 
-template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
 void
-BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( mpl::int_<1> )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( mpl::int_<1> )
 {
 
     typedef geometric_mapping_context_type gmc_type;
@@ -1647,10 +1544,10 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::
             }
 }
 
-    template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+    template<typename FE1,  typename FE2, typename ElemContType>
         template<typename GeomapContext,typename ExprT,typename IM>
         void
-    BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( mpl::int_<2> )
+    BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( mpl::int_<2> )
         {
             //geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_gmc );
             typedef geometric_mapping_context_type gmc_type;
@@ -1690,10 +1587,10 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::
 
                     }
         }
-    template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+    template<typename FE1,  typename FE2, typename ElemContType>
         template<typename GeomapContext,typename ExprT,typename IM>
         void
-        BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::assemble( size_type elt_0 )
+        BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::assemble( size_type elt_0 )
         {
 
             size_type ig,jg;
@@ -1722,10 +1619,10 @@ BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::
                     }
         }
 
-    template<typename FE1,  typename FE2,  typename MatrixType, typename ElemContType>
+    template<typename FE1,  typename FE2, typename ElemContType>
         template<typename GeomapContext,typename ExprT,typename IM>
         void
-        BilinearForm<FE1,FE2,MatrixType,ElemContType>::Context<GeomapContext,ExprT,IM>::assemble( size_type elt_0, size_type elt_1  )
+        BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::assemble( size_type elt_0, size_type elt_1  )
         {
             test_index_type indi;
             trial_index_type indj;
@@ -1791,7 +1688,6 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
     typedef typename BFType::matrix_type matrix_type;
     typedef Life::vf::detail::BilinearForm<test_space_type,
         trial_space_type,
-        matrix_type,
         ublas::vector_range<ublas::vector<double> > > bf_type;
 
     bf_type bf( _M_test,trial, _M_bf.matrix(), list_block );
@@ -1822,7 +1718,6 @@ compute_graph2<BFType,TestSpaceType>::operator()( boost::shared_ptr<SpaceType> c
     typedef typename BFType::matrix_type matrix_type;
     typedef Life::vf::detail::BilinearForm<test_space_type,
         trial_space_type,
-        matrix_type,
         ublas::vector_range<ublas::vector<double> > > bf_type;
 
 

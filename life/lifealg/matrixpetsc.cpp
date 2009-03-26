@@ -55,7 +55,7 @@ MatrixPetsc<T>::MatrixPetsc(Mat m)
     _M_destroy_mat_on_exit(false)
 {
     this->_M_mat = m;
-    MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS);
+    MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
     this->setInitialized( true );
 }
 
@@ -126,7 +126,7 @@ void MatrixPetsc<T>::init (const size_type m,
     ierr = MatSetFromOptions (_M_mat);
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
-    ierr = MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS);
+    ierr = MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
     CHKERRABORT(Application::COMM_WORLD,ierr);
 #if 0
     // additional insertions will not be allowed if they generate
@@ -241,7 +241,7 @@ void MatrixPetsc<T>::init (const size_type m,
     ierr = MatSetFromOptions (_M_mat);
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
-    MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS);
+    MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
 #if 0
     // additional insertions will not be allowed if they generate
     // a new nonzero
@@ -549,7 +549,8 @@ MatrixPetsc<T>::addMatrix (const T a_in, MatrixSparse<T> &X_in)
 // 2.3.x & newer
 #else
 
-    ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SAME_NONZERO_PATTERN);
+    //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SAME_NONZERO_PATTERN);
+    ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SUBSET_NONZERO_PATTERN );
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
 #endif
@@ -597,7 +598,17 @@ MatrixPetsc<T>::linftyNorm() const
     return value;
 }
 
+template <typename T>
+MatrixPetsc<T> &
+MatrixPetsc<T>::operator = ( MatrixSparse<value_type> const& M )
+{
+    MatrixPetsc<T> const* X = dynamic_cast<MatrixPetsc<T> const*> (&M);
 
+    //MatConvert(X->mat(), MATSAME, MAT_INITIAL_MATRIX, &_M_mat);
+    MatDuplicate(X->mat(),MAT_COPY_VALUES,&_M_mat);
+
+    return *this;
+}
 template <typename T>
 inline
 typename MatrixPetsc<T>::value_type
@@ -607,7 +618,7 @@ MatrixPetsc<T>::operator () (const size_type i,
     LIFE_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
 
 #if (((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR >= 2) && (PETSC_VERSION_SUBMINOR >= 1)) || \
-     ((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR >= 3)))
+    ((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR >= 3))  || ( PETSC_VERSION_MAJOR >= 3 ) )
     // PETSc 2.2.1 & newer
     const PetscScalar *petsc_row;
     const PetscInt    *petsc_cols;
@@ -669,7 +680,7 @@ template<typename T>
 void
 MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
 {
-    MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS);
+    MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
     int start=0, stop=0, ierr=0;
 
     ierr = MatGetOwnershipRange(_M_mat, &start, &stop);

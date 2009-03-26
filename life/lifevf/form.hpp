@@ -48,18 +48,18 @@ template<typename T> class Vector;
 //
 // free form functions
 //
-template<typename X1, typename X2, typename RepType>
+template<typename X1, typename X2>
 inline
-vf::detail::BilinearForm<X1, X2, RepType>
+vf::detail::BilinearForm<X1, X2>
 form( boost::shared_ptr<X1> const& __X1,
       boost::shared_ptr<X2> const& __X2,
-      RepType& __M,
+      MatrixSparse<double>& __M,
       bool init = false,
       bool do_threshold = false,
-      typename X1::value_type threshold = type_traits<typename RepType::value_type>::epsilon(),
+      typename X1::value_type threshold = type_traits<double>::epsilon(),
       size_type pattern  = vf::DOF_PATTERN_COUPLED )
 {
-    return vf::detail::BilinearForm<X1, X2, RepType>( __X1, __X2, __M, init, do_threshold, threshold, pattern );
+    return vf::detail::BilinearForm<X1, X2>( __X1, __X2, __M, init, do_threshold, threshold, pattern );
 }
 
 template<typename X1, typename RepType>
@@ -189,7 +189,7 @@ struct compute_form2_return<Args, mpl::false_>
     typedef typename parameter::value_type<Args, tag::test>::type::element_type::value_type value_type;
     typedef vf::detail::BilinearForm<typename parameter::value_type<Args, tag::test>::type::element_type,
                                      typename parameter::value_type<Args, tag::trial>::type::element_type,
-                                     typename parameter::value_type<Args, tag::matrix>::type::element_type,
+                                     //typename parameter::value_type<Args, tag::matrix>::type::element_type,
                                      VectorUblas<value_type> > type;
 };
 template<typename Args>
@@ -198,7 +198,7 @@ struct compute_form2_return<Args, mpl::true_>
     typedef typename parameter::value_type<Args, tag::test>::type::element_type::value_type value_type;
     typedef vf::detail::BilinearForm<typename parameter::value_type<Args, tag::test>::type::element_type,
                                      typename parameter::value_type<Args, tag::test>::type::element_type,
-                                     typename parameter::value_type<Args, tag::vector>::type::element_type,
+                                     //typename parameter::value_type<Args, tag::vector>::type::element_type,
                                      VectorUblas<value_type> > type;
 };
 /// \endcond
