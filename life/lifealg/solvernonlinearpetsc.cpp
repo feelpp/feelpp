@@ -79,7 +79,8 @@ extern "C"
       // Get the norm of the final residual to return to the user.
       ierr = KSPGetResidualNorm ( ksp, &final_resid);
       CHKERRABORT(Life::Application::COMM_WORLD,ierr);
-      Life::Log() << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
+      ///Life::Log() << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
+      //std::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
 #endif
 
     //return ierr;
@@ -140,16 +141,34 @@ extern "C"
 
     X_global->localize (*X_local);
 
-    // if (solver->jacobian != NULL) solver->jacobian (X_local, PC );
+    //if (solver->jacobian != NULL) solver->jacobian (X_local, PC );
     if (solver->jacobian != NULL) solver->jacobian (X_global, Jac );
     //if (solver->matvec   != NULL) solver->matvec   (X_local, R, PC );
 
-    PC->close();
+    //PC=Jac;
+    //PC->close();
     //Jac = PC;
     Jac->close();
+    //*PC = Jac;
+    //PC->printMatlab( "pc.m" );
+    Jac->printMatlab( "jac.m" );
+    *msflag = SAME_NONZERO_PATTERN;
+    //*msflag = DIFFERENT_NONZERO_PATTERN;
+#if 0
+    std::cout << "[__ snes_jacobian] mflag = " << *msflag << "\n";
+    std::cout << "[__ snes_jacobian] SAME_NONZERO_PATTERN = " << SAME_NONZERO_PATTERN << "\n";
+    std::cout << "[__ snes_jacobian] DIFFERENT_NONZERO_PATTERN = " << DIFFERENT_NONZERO_PATTERN << "\n";
+    std::cout << "[__ snes_jacobian] SAME_PRECONDITIONER = " << SAME_PRECONDITIONER << "\n";
+#endif
 
-    *msflag = MatStructure( solver->precMatrixStructure() );
-
+#if ((PETSC_VERSION_MAJOR >= 3))
+    //PetscInt lag;
+    //SNESGetLagPreconditioner(snes,&lag);
+    //std::cout << "lag = " << lag << "\n";
+#endif
+    //*msflag = MatStructure( solver->precMatrixStructure() );
+    //*msflag = SAME_NONZERO_PATTERN;
+    //*msflag = DIFFERENT_NONZERO_PATTERN;
     return ierr;
   }
 
@@ -306,7 +325,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     int ierr=0;
 
-#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3)
+#if ((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3)) || ( PETSC_VERSION_MAJOR >= 3 )
     ierr = SNESMonitorSet (M_snes, __life_petsc_snes_monitor, this, PETSC_NULL);
 #else
     ierr = SNESSetMonitor (M_snes, __life_petsc_snes_monitor, this, PETSC_NULL);
@@ -331,6 +350,20 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     ierr = SNESSetJacobian (M_snes, jac->mat(), jac->mat(), __life_petsc_snes_jacobian, this);
     CHKERRABORT(Application::COMM_WORLD,ierr);
+
+#if 1
+    KSP            ksp;         /* linear solver context */
+    PC             pc;           /* preconditioner context */
+    SNESGetKSP(M_snes,&ksp);
+    KSPSetOperators(ksp, jac->mat(), jac->mat(),
+                    MatStructure(SAME_NONZERO_PATTERN));
+    KSPGetPC(ksp,&pc);
+
+    //PCSetType(pc,PCNONE);
+    PCSetType(pc,PCLU);
+    ierr = SNESSetFromOptions(M_snes);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+#endif
 
     /*
       Set array that saves the function norms.  This array is intended
