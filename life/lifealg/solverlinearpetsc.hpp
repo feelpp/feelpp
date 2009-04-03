@@ -126,39 +126,59 @@ public:
     /**
      * Call the Petsc solver.  It calls the method below, using the
      * same matrix for the system and preconditioner matrices.
+     *
+     * \param mat System Matrix
+     * \param prec Preconditioning Matrix
+     * \param x Solution vector
+     * \param b RHS vector
+     * \param tolerance Stopping tolerance
+     * \param maxit maximum Number of Iterations
+     * \param transpose true to solve the transpose system, false otherwise
      */
     std::pair<unsigned int, real_type>
-    solve (MatrixSparse<T>  const &matrix_in,
-           Vector<T> &solution_in,
-           Vector<T> const&rhs_in,
-           const double tol,
-           const unsigned int m_its)
+    solve (MatrixSparse<T>  const &mat,
+           Vector<T> & x,
+           Vector<T> const& b,
+           const double tolerance,
+           const unsigned int maxit,
+           bool transpose )
     {
-        return this->solve(matrix_in, matrix_in, solution_in, rhs_in, tol, m_its);
+        return this->solve( mat, mat, x, b, tolerance, maxit, transpose );
     }
 
     /**
      * This method allows you to call a linear solver while specifying
      * the matrix to use as the (left) preconditioning matrix.  Note
-     * that the linear solver will not compute a preconditioner in this
-     * case, and will instead premultiply by the matrix you provide.
+     * that the linear solver will not compute a preconditioner in
+     * this case, and will instead premultiply by the matrix you
+     * provide.
      *
      * In PETSc, this is accomplished by calling
      *
      * PCSetType(_pc, PCMAT);
      *
-     * before invoking KSPSolve().  Note: this functionality is not implemented
-     * in the SolverLinear class since there is not a built-in analog
-     * to this method for LasPack -- You could probably implement it by hand
-     * if you wanted.
+     * before invoking KSPSolve().  Note: this functionality is not
+     * implemented in the SolverLinear class since there is not a
+     * built-in analog to this method for LasPack -- You could
+     * probably implement it by hand if you wanted.
+     *
+     *
+     * \param mat System Matrix
+     * \param prec Preconditioning Matrix
+     * \param x Solution vector
+     * \param b RHS vector
+     * \param tolerance Stopping tolerance
+     * \param maxit maximum Number of Iterations
+     * \param transpose true to solve the transpose system, false otherwise
      */
     std::pair<unsigned int, real_type>
-    solve (MatrixSparse<T>  const& matrix,
-           MatrixSparse<T>  const& preconditioner,
-           Vector<T> & solution,
-           Vector<T> const& rhs,
-           const double tol,
-           const unsigned int m_its);
+    solve (MatrixSparse<T>  const& mat,
+           MatrixSparse<T>  const& prec,
+           Vector<T> & x,
+           Vector<T> const& b,
+           const double tolerance,
+           const unsigned int maxit,
+           bool transpose );
 
     /**
      * Returns the raw PETSc preconditioner context pointer.  This allows

@@ -112,16 +112,26 @@ public:
     virtual void setPrecMatrixStructure( MatrixStructure mstruct  ) { M_prec_matrix_structure = mstruct; }
 
     /**
-     * This function calls the solver
-     * "_M_solver_type" preconditioned with the
-     * "_M_preconditioner_type" preconditioner.  Note that this method
-     * will compute the preconditioner from the system matrix.
+     * This function calls the solver "_M_solver_type" preconditioned
+     * with the "_M_preconditioner_type" preconditioner.  Note that
+     * this method will compute the preconditioner from the system
+     * matrix.
+     *
+     * \param mat System Matrix
+     * \param prec Preconditioning Matrix
+     * \param x Solution vector
+     * \param b RHS vector
+     * \param tolerance Stopping tolerance
+     * \param maxit maximum Number of Iterations
+     * \param transpose true to solve the transpose system, false otherwise
      */
-    virtual std::pair<unsigned int, real_type> solve (MatrixSparse<T> const&,  // System Matrix
-                                                      Vector<T>&, // Solution vector
-                                                      Vector<T> const&, // RHS vector
-                                                      const double,      // Stopping tolerance
-                                                      const unsigned int) = 0; // N. Iterations
+    virtual std::pair<unsigned int, real_type> solve (MatrixSparse<T> const& mat,
+                                                      Vector<T>& x,
+                                                      Vector<T> const& b,
+                                                      const double tolerance,
+                                                      const unsigned int maxit,
+                                                      bool transpose
+                                                      ) = 0;
 
 
 
@@ -130,13 +140,24 @@ public:
      * "_M_solver_type" preconditioned with the
      * "_M_preconditioner_type" preconditioner.  Note that this method
      * will compute the preconditioner from the system matrix.
+     *
+     * \param mat System Matrix
+     * \param prec Preconditioning Matrix
+     * \param x Solution vector
+     * \param b RHS vector
+     * \param tolerance Stopping tolerance
+     * \param maxit maximum Number of Iterations
+     * \param transpose true to solve the transpose system, false otherwise
      */
-    virtual std::pair<unsigned int, real_type> solve (MatrixSparse<T> const&, // System Matrix
-                                                      MatrixSparse<T> const&, // Preconditioning Matrix
-                                                      Vector<T>&, // Solution vector
-                                                      Vector<T> const&, // RHS vector
-                                                      const double,      // Stopping tolerance
-                                                      const unsigned int) = 0; // N. Iterations
+    virtual std::pair<unsigned int, real_type> solve (MatrixSparse<T> const& mat,
+                                                      MatrixSparse<T> const& prec,
+                                                      Vector<T>& x,
+                                                      Vector<T> const& b,
+                                                      const double tolerance,
+                                                      const unsigned int maxit,
+                                                      bool transpose
+                                                      ) = 0;
+
 
 protected:
 

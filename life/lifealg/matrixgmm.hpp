@@ -449,7 +449,7 @@ public:
      */
     value_type
     energy( Vector<value_type> const& __v,
-            Vector<value_type> const& __u ) const;
+            Vector<value_type> const& __u, bool transpose = false ) const;
 
     /**
      * eliminates row without change pattern, and put 1 on the diagonal

@@ -168,7 +168,7 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     setSlepcPositionOfSpectrum();
 
     // Set eigenvalues to be computed.
-    ierr = EPSSetDimensions (M_eps, nev, ncv);
+    ierr = EPSSetDimensions (M_eps, nev, ncv, 2*ncv);
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // Set the tolerance and maximum iterations.
@@ -297,7 +297,7 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     setSlepcPositionOfSpectrum();
 
     // Set eigenvalues to be computed.
-    ierr = EPSSetDimensions (M_eps, nev, ncv);
+    ierr = EPSSetDimensions (M_eps, nev, ncv, 2*ncv);
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // Set the tolerance and maximum iterations.
@@ -333,11 +333,12 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     EPSGetOperationCounters(M_eps,PETSC_NULL,PETSC_NULL,&lits);
     PetscPrintf(PETSC_COMM_WORLD," Number of linear iterations of the method: %d\n",lits);
 
-    EPSType              type;
+    const EPSType              type;
     EPSGetType(M_eps,&type);
     PetscPrintf(PETSC_COMM_WORLD," Solution method: %s\n\n",type);
 
-    EPSGetDimensions(M_eps,&nev,PETSC_NULL);
+    int ncv1, mdv;
+    EPSGetDimensions(M_eps,&nev,&ncv1,&mdv);
     PetscPrintf(PETSC_COMM_WORLD," Number of requested eigenvalues: %d\n",nev);
 
     int maxit;double _tol;
@@ -418,7 +419,7 @@ void SolverEigenSlepc<T>::setSlepcSolverType()
                       << this->M_eigen_solver_type         << std::endl
                       << "Continuing with SLEPc defaults" << std::endl;
         }
-    EPSType etype;
+    const EPSType etype;
     ierr = EPSGetType(M_eps,&etype);
     CHKERRABORT(Application::COMM_WORLD,ierr);
     Debug() << "solution method:  " << etype << "\n";

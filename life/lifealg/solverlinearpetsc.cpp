@@ -191,7 +191,8 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
                              Vector<T> & solution_in,
                              Vector<T> const& rhs_in,
                              const double tol,
-                             const unsigned int m_its)
+                             const unsigned int m_its,
+                             bool transpose )
 {
     this->init ();
 
@@ -283,7 +284,10 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // Solve the linear system
-    ierr = KSPSolve (_M_ksp);
+    if ( transpose )
+        ierr = KSPSolveTranspose (_M_ksp);
+    else
+        ierr = KSPSolve (_M_ksp);
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // Get the number of iterations required for convergence
@@ -309,7 +313,10 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // Solve the linear system
-    ierr = KSPSolve (_M_ksp, rhs->vec(), solution->vec());
+    if ( transpose )
+        ierr = KSPSolveTranspose (_M_ksp, rhs->vec(), solution->vec());
+    else
+        ierr = KSPSolve (_M_ksp, rhs->vec(), solution->vec());
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // Get the number of iterations required for convergence

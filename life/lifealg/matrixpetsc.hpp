@@ -368,12 +368,16 @@ public:
      */
     value_type
     energy( Vector<value_type> const& __v,
-            Vector<value_type> const& __u ) const
+            Vector<value_type> const& __u,
+            bool transpose = false ) const
     {
         VectorPetsc<T> const& v   = dynamic_cast<VectorPetsc<T> const&>( __v );
         VectorPetsc<T> const& u   = dynamic_cast<VectorPetsc<T> const&>( __u );
         VectorPetsc<value_type> z( __u.size(), __u.localSize() );
-        MatMult( _M_mat, u.vec(), z.vec() );
+        if ( !transpose )
+            MatMult( _M_mat, u.vec(), z.vec() );
+        else
+            MatMultTranspose( _M_mat, u.vec(), z.vec() );
         PetscScalar e;
         VecDot( v.vec(), z.vec(), &e );
         return e;

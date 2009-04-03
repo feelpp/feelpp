@@ -42,13 +42,13 @@ namespace Life
 #if defined ( HAVE_TRILINOS_EPETRA )
 
 MatrixEpetra::real_type
-MatrixEpetra::energy ( vector_type const& v1, vector_type const& v2 ) const
+MatrixEpetra::energy ( vector_type const& v1, vector_type const& v2, bool transpose ) const
 {
     epetra_vector_type const& ev1( dynamic_cast<epetra_vector_type const&>( v1 ) );
     epetra_vector_type const& ev2( dynamic_cast<epetra_vector_type const&>( v2 ) );
     epetra_vector_type ev3( this->getRowMap() );
 
-    _M_mat->Apply( ev2.vec(), ev3.vec() );
+    _M_mat->Multiply( transpose, ev2.vec(), ev3.vec() );
 
     real_type res;
     ev3.vec().Dot( ev1.vec(), &res );
