@@ -29,12 +29,7 @@
 #ifndef __Form_H
 #define __Form_H 1
 
-#include <boost/parameter.hpp>
-#include <boost/parameter/keyword.hpp>
-#include <boost/parameter/aux_/maybe.hpp>
-#include <boost/parameter/name.hpp>
-#include <boost/parameter/preprocessor.hpp>
-
+#include <life/lifecore/parameter.hpp>
 #include <life/lifealg/vector.hpp>
 #include <life/lifealg/matrixsparse.hpp>
 #include <life/lifediscr/functionspace.hpp>
@@ -111,14 +106,6 @@ template<typename FuncSpaceType>
 struct is_function_space_ptr<boost::shared_ptr<FuncSpaceType> > : mpl::true_ {};
 } // detail
 
-BOOST_PARAMETER_NAME(test)    // Note: no semicolon
-BOOST_PARAMETER_NAME(trial)
-BOOST_PARAMETER_NAME(matrix)
-BOOST_PARAMETER_NAME(vector)
-BOOST_PARAMETER_NAME(pattern)
-BOOST_PARAMETER_NAME(do_threshold)
-BOOST_PARAMETER_NAME(threshold)
-BOOST_PARAMETER_NAME(init)
 
 /// \cond detail
 template<typename Args>
