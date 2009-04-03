@@ -5,7 +5,14 @@ New in 0.9.11
 
 == Libraries ==
 
+=== lifepoly ===
+
+ * now Lagrange polynomials can be instantiated using only
+   Lagrange<Order,Scalar|Vectorial>
+
 === lifediscr ===
+
+ * Simplified FunctionSpace<>
 
  * Bdf: allow to set time step and final time, added setSteady() to
    set time step and final time to a very big value for the
@@ -17,6 +24,13 @@ New in 0.9.11
 === lifealg ===
 
  * Improve robustness of linear algebra backends see #21
+
+=== lifevf ===
+
+ * reflect simplifications made in lifepoly and lifediscr
+
+ * mat(),vec(): supports for trial and test functions added, now you
+   can write vec(0.,idt(v)).
 
 == Applications ==
 
@@ -86,4 +100,4 @@ New in 0.9.9
   multiplication) support.
 
 
- -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Sun, 18 Jan 2009 20:14:22 +0100
+ -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Thu, 19 Mar 2009 14:15:50 +0100
