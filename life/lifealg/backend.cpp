@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-12-23
 
-  Copyright (C) 2007-2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -43,6 +43,7 @@ Backend<T>::Backend()
 #endif
     M_nlsolver(),
     M_tolerance( 1e-10 ),
+    M_transpose( false ),
     M_maxiter( 1000 )
 {
 }
@@ -54,6 +55,7 @@ Backend<T>::Backend( Backend const& backend )
     M_nlsolver( backend.M_nlsolver ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
     M_tolerance( backend.M_tolerance ),
+    M_transpose( backend.M_transpose ),
     M_maxiter( backend.M_maxiter )
 {
 }
@@ -63,6 +65,7 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     M_nlsolver( solvernonlinear_type::build( vm ) ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
     M_tolerance( 1e-10 ),
+    M_transpose( false ),
     M_maxiter( 1000 )
 {
 }
@@ -255,7 +258,7 @@ Backend<T>::stop()
             M_reusePC = true;
             M_firstSolveTime = solveTime;
             if ( !M_reuseFailed )
-                M_maxiter = std::min( M_maxiter, (int)(1.5*solveIter + 10.5));
+                M_maxiter = std::min( M_maxiter, (size_type)(1.5*solveIter + 10.5));
         }
     else
         {
@@ -278,7 +281,7 @@ Backend<T>::stop()
             M_lastSolveIter = solveIter;
             if ( M_reusePC )
                 {
-                    M_maxiter = std::min( M_maxiter, (int)( M_totalSolveIter/M_nUsePC + 0.5 ) );
+                    M_maxiter = std::min( M_maxiter, (size_type)( M_totalSolveIter/M_nUsePC + 0.5 ) );
                 }
         }
 }

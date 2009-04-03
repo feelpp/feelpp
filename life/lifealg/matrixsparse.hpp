@@ -294,16 +294,30 @@ public:
         return *this;
     }
     /**
-     * Return the energy \f$v1^T A v\f$
+     * compute the A scalar product \f$v^T A u\f$
+     *
+     * \param u a vector
+     * \param v a vector
+     * \param transpose true to compute \f$v^T A^T u\f$
+     * \return the energy \f$v^T A u\f$
      */
-    virtual real_type energy ( vector_type const& v1, vector_type const& v2 ) const = 0;
+    virtual real_type energy ( vector_type const& v,
+                               vector_type const& u,
+                               bool transpose = false ) const = 0;
 
     /**
-     * \return the energy \f$v1^T A v\f$
+     * Compute the scalar product \f$(Au, v)= v^T A u\f$
+     *
+     * \param u a vector
+     * \param v a vector
+     * \param transpose true to compute \f$v^T A^T u\f$ instead, false otherwise
+     * \return the energy \f$v^T A u\f$
      */
-    virtual real_type energy ( vector_ptrtype const& v1, vector_ptrtype const& v2 ) const
+    virtual real_type energy ( vector_ptrtype const& v,
+                               vector_ptrtype const& u,
+                               bool transpose = false ) const
     {
-        return this->energy( *v1, *v2 );
+        return this->energy( *v, *u, transpose );
     }
 
     /**

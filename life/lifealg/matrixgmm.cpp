@@ -140,7 +140,8 @@ MatrixGmm<T, LayoutType>::close() const
 template<typename T, typename LayoutType>
 typename MatrixGmm<T, LayoutType>::value_type
 MatrixGmm<T, LayoutType>::energy( Vector<value_type> const& __v,
-                                  Vector<value_type> const& __u ) const
+                                  Vector<value_type> const& __u,
+                                  bool tranpose ) const
 {
     VectorUblas<T> const& v( dynamic_cast<VectorUblas<T> const&>( __v ) );
     VectorUblas<T> const& u( dynamic_cast<VectorUblas<T> const&>( __u ) );
@@ -148,7 +149,11 @@ MatrixGmm<T, LayoutType>::energy( Vector<value_type> const& __v,
     std::vector<value_type> __v1( __u.size() ), __u1( __u.size() ), __t( __u.size() );
     std::copy( v.vec().begin(), v.vec().end(), __v1.begin() );
     std::copy( u.vec().begin(), u.vec().end(), __u1.begin() );
-    gmm::mult( _M_mat, __u1, __t );
+    if ( !tranpose )
+        gmm::mult( _M_mat, __u1, __t );
+    else
+        gmm::mult( gmm::transposed( _M_mat ), __u1, __t );
+
     return gmm::vect_sp( __v1, __t );
 }
 

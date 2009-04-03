@@ -33,6 +33,7 @@
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 
+#include <life/lifecore/parameter.hpp>
 #include <life/lifealg/enums.hpp>
 #include <life/lifealg/vector.hpp>
 #include <life/lifealg/matrixsparse.hpp>
@@ -42,6 +43,7 @@
 
 namespace Life
 {
+
 /**
  * \class Backend
  * \brief base class for all linear algebra backends
@@ -151,11 +153,13 @@ public:
 
     value_type tolerance() const { return M_tolerance;}
 
-    int maxIterations() const { return M_maxiter; }
+    size_type maxIterations() const { return M_maxiter; }
 
     bool converged() const { return M_converged; }
 
-    int nIterations() const { return M_iteration; }
+    size_type nIterations() const { return M_iteration; }
+
+    bool transpose() const { return M_transpose; }
 
     //@}
 
@@ -175,7 +179,9 @@ public:
 
     void setTolerance( value_type tol ) { M_tolerance = tol; }
 
-    void setMaxIterations( int maxiter ) { M_maxiter = maxiter; }
+    void setMaxIterations( size_type maxiter ) { M_maxiter = maxiter; }
+
+    void setTranspose( bool transpose ) { M_transpose = transpose; }
 
     //@}
 
@@ -214,28 +220,88 @@ public:
         this->prod( *A, *x, *y );
     }
 
-
+    /**
+     * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation
+     * of the inverse of \f$A\f$. this interface uses the
+     * boost.parameter library to ease the function usage
+     *
+     * \param A matrix to inverse
+     * \param rhs right hand side vector
+     * \param solution solution of the system
+     * \param P preconditioner
+     * \param maxit maximum number of iterations
+     * \param tolerance tolerance on the residual
+     * \param reuse_prec if true use adaptive preconditioning strategy
+     * \param transpose if true solve the transpose problem
+     *
+     * \warning some parameter may not be meaningful for all backends
+     */
+    BOOST_PARAMETER_MEMBER_FUNCTION((solve_return_type),
+                                    solve,
+                                    tag,
+                                    (required
+                                     (matrix,(sparse_matrix_ptrtype))
+                                     (solution,(vector_ptrtype))
+                                     (rhs,(vector_ptrtype)))
+                                    (optional
+                                     (prec,(sparse_matrix_ptrtype), matrix )
+                                     (maxit,(size_type), 1000 )
+                                     (tolerance,(double), 1e-11)
+                                     (reuse_prec,(bool), false )
+                                     (transpose,(bool), false )
+                                     )
+                                    )
+    {
+        this->setMaxIterations( maxit );
+        this->setTolerance( tolerance );
+        this->setTranspose( transpose );
+        if ( reuse_prec == false )
+            return solve( matrix, prec, solution, rhs );
+        else
+            return solve( matrix, prec, solution, rhs, reuse_prec );
+    }
 
     /**
      * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation of
      * the inverse of \f$A\f$.
+     *
+     * \param A matrix to inverse
+     * \param rhs right hand side vector
+     * \param solution solution of the system
+     * \param P preconditioner
+     * \param maxit maximum number of iterations
+     * \param tolerance tolerance on the residual
+     * \param transpose if true solve the transpose problem
+     *
+     * \warning some parameter may not be meaningful for all backends
      */
     virtual solve_return_type solve( sparse_matrix_ptrtype const& A,
                                      sparse_matrix_ptrtype const& P,
                                      vector_ptrtype& x,
-                                     vector_ptrtype const& b ) = 0;
+                                     vector_ptrtype const& b
+                                     ) = 0;
 
     /**
-     * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation of
-     * the inverse of \f$A\f$ with an adaptive strategy to reuse the
-     * preconditioner
+     * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation
+     * of the inverse of \f$A\f$ using an adaptive preconditioning
+     * strategy.
+     *
+     * \param A matrix to inverse
+     * \param rhs right hand side vector
+     * \param solution solution of the system
+     * \param P preconditioner
+     * \param maxit maximum number of iterations
+     * \param tolerance tolerance on the residual
+     * \param transpose if true solve the transpose problem
+     *
+     * \warning some parameter may not be meaningful for all backends
      */
-    virtual solve_return_type solve( sparse_matrix_ptrtype const& A,
-                                     sparse_matrix_ptrtype const& P,
-                                     vector_ptrtype& x,
-                                     vector_ptrtype const& b,
-                                     bool reusePC );
-
+    solve_return_type solve( sparse_matrix_ptrtype const& A,
+                             sparse_matrix_ptrtype const& P,
+                             vector_ptrtype& x,
+                             vector_ptrtype const& b,
+                             bool reuse_prec
+                             );
     /**
      * solve for the nonlinear problem \f$F( u ) = 0\f$
      */
@@ -285,8 +351,9 @@ private:
     bool   M_reusedPC;
     bool   M_reuseFailed;
     boost::timer M_timer;
-    int    M_maxiter;
-    int    M_iteration;
+    bool   M_transpose;
+    size_type    M_maxiter;
+    size_type    M_iteration;
 
 };
 

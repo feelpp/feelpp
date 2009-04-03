@@ -387,7 +387,7 @@ public:
     /**
      * Return the energy v1^T M v2
      */
-    real_type energy ( vector_type const& v1, vector_type const& v2 ) const;
+    real_type energy ( vector_type const& v1, vector_type const& v2, bool tranpose = false ) const;
 
     /**
      * Return the l1-norm of the matrix, that is
