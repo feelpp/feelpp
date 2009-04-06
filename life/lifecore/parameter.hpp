@@ -32,9 +32,6 @@
 
 #if !defined(BOOST_PARAMETER_MAX_ARITY)
 #define BOOST_PARAMETER_MAX_ARITY 10
-#else
-#undef BOOST_PARAMETER_MAX_ARITY
-#define BOOST_PARAMETER_MAX_ARITY 10
 #endif
 
 #include <boost/parameter.hpp>
