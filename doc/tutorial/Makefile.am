@@ -53,7 +53,7 @@ myintegrals_LDADD=$(LIFE_LIBS)
 mymesh_SOURCES=mymesh.cpp
 mymesh_LDADD=$(LIFE_LIBS)
 
-convection_SOURCES= convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp
+convection_SOURCES= applicationxml.cpp convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp
 convection_LDADD=$(LIFE_LIBS)
 
 myapp_SOURCES=myapp.cpp

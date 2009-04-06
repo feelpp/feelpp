@@ -29,8 +29,11 @@
  */
 #include <life/options.hpp>
 #include <life/lifecore/application.hpp>
-#include <life/lifecore/application.hpp>
+
+#include <life/lifealg/backend.hpp>
+
 #include <life/lifediscr/functionspace.hpp>
+
 #include <life/lifepoly/im.hpp>
 
 #include <life/lifefilters/importergmsh.hpp>
@@ -38,7 +41,7 @@
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
 #include <life/lifepoly/polynomialset.hpp>
 
-#include <life/lifealg/backend.hpp>
+
 
 #include <life/lifemesh/elements.hpp>
 
