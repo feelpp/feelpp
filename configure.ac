@@ -470,13 +470,8 @@ AC_CONFIG_FILES([ admin/Makefile ])
 # boost
 AC_CONFIG_FILES([ boost/Makefile ])
 AC_CONFIG_FILES([ boost/libs/Makefile ])
-# AC_CONFIG_FILES([ boost/libs/detail/Makefile ])
 AC_CONFIG_FILES([ boost/libs/log/Makefile ])
 AC_CONFIG_FILES([ boost/libs/log/src/Makefile ])
-#AC_CONFIG_FILES([ boost/libs/mpi/Makefile ])
-#AC_CONFIG_FILES([ boost/libs/mpi/src/Makefile ])
-#AC_CONFIG_FILES([ boost/libs/serialization/Makefile ])
-#AC_CONFIG_FILES([ boost/libs/serialization/src/Makefile ])
 
 # life library
 AC_CONFIG_FILES([ life/Makefile ])
