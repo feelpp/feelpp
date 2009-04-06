@@ -55,7 +55,11 @@ MatrixPetsc<T>::MatrixPetsc(Mat m)
     _M_destroy_mat_on_exit(false)
 {
     this->_M_mat = m;
+#if (PETSC_VERSION_MAJOR >= 3)
     MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
+#else
+    MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS);
+#endif
     this->setInitialized( true );
 }
 
@@ -126,7 +130,11 @@ void MatrixPetsc<T>::init (const size_type m,
     ierr = MatSetFromOptions (_M_mat);
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
+#if (PETSC_VERSION_MAJOR >= 3)
     ierr = MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
+#else
+    ierr = MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS );
+#endif
     CHKERRABORT(Application::COMM_WORLD,ierr);
 #if 0
     // additional insertions will not be allowed if they generate
@@ -241,7 +249,11 @@ void MatrixPetsc<T>::init (const size_type m,
     ierr = MatSetFromOptions (_M_mat);
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
+#if (PETSC_VERSION_MAJOR >= 3)
     MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
+#else
+    MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS);
+#endif
 #if 0
     // additional insertions will not be allowed if they generate
     // a new nonzero
@@ -680,7 +692,11 @@ template<typename T>
 void
 MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
 {
+#if (PETSC_VERSION_MAJOR >= 3)
     MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
+#else
+    MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS);
+#endif
     int start=0, stop=0, ierr=0;
 
     ierr = MatGetOwnershipRange(_M_mat, &start, &stop);
