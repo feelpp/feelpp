@@ -24,7 +24,7 @@
 include $(top_srcdir)/admin/common.am
 ACLOCAL_AMFLAGS = -I admin
 
-SUBDIRS= admin  $(ENABLE_EXTRAMODULE_OPUS)
+SUBDIRS= admin  # $(ENABLE_EXTRAMODULE_OPUS)
 DIST_SUBDIRS= admin polyvis
 
 EXTRA_DIST=
