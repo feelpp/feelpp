@@ -1,8 +1,0 @@
-subproject libs/numeric/bindings/amos ;
-subinclude libs/numeric/bindings/amos/test ;
-
-lib bindings_amos 
-        : amos.cpp 
-        :  <include>$(BOOST_ROOT)
-	   <include>$(B_ROOT)
-        ;

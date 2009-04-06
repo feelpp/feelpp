@@ -1,2 +1,0 @@
-subproject libs/numeric/bindings/lapack ;
-subinclude libs/numeric/blasbindings/tst ;
