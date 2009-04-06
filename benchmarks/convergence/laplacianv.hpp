@@ -115,22 +115,19 @@ public:
 
     /*mesh*/
     typedef Simplex<Dim, 1,RDim> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<fem::Lagrange<Dim, 0, Scalar, Discontinuous> > > p0_space_type;
+    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
     /*basis*/
-    typedef fusion::vector<fem::Lagrange<Dim, Order, Vectorial, Continuous, double, Simplex> > basis_type;
+    typedef fusion::vector<Lagrange<Order, Vectorial> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-
-    /*quadrature*/
-    typedef IM<Dim, imOrder, value_type, Simplex> im_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -259,7 +256,7 @@ LaplacianV<Dim, Order, RDim>::run()
     vector_ptrtype F( backend->newVector( Xh ) );
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), im_type(),
+        integrate( elements(mesh), _Q<2*Order>(),
                    trans(f)*id(v) );
 
     F->close();
@@ -271,7 +268,7 @@ LaplacianV<Dim, Order, RDim>::run()
     sparse_matrix_ptrtype D( backend->newMatrix( Xh, Xh ) );
 
     form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), im_type(),
+        integrate( elements(mesh), _Q<2*Order>(),
                    nu*(trace(gradt(u)*trans(grad(v))))
                    + beta*(trans(idt(u))*id(v)) );
 
@@ -307,7 +304,7 @@ LaplacianV<Dim, Order, RDim>::run()
     Log() << "solve in " << t1.elapsed() << "s\n";
     t1.restart();
 
-    double L2error2 =integrate( elements(mesh), im_type(),
+    double L2error2 =integrate( elements(mesh), _Q<2*Order>(),
                                 trans(idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
@@ -317,7 +314,7 @@ LaplacianV<Dim, Order, RDim>::run()
 
 
     v = project( Xh, elements(mesh), g );
-    double semiH1error2 =integrate( elements(mesh), IM<Dim, 2*Order-2, value_type, Simplex>(),
+    double semiH1error2 =integrate( elements(mesh), _Q<2*Order-2>(),
                                     trace((gradv(u)-gradv(v))*trans(gradv(u)-gradv(v))) ).evaluate()( 0, 0 ) ;
 
     Log() << "semi H1 norm computed in " << t1.elapsed() << "s\n";
