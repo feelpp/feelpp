@@ -38,6 +38,7 @@ AC_SUBST([ac_aux_dir])
 
 # Initialize Automake
 AM_INIT_AUTOMAKE([foreign])
+AM_MAINTAINER_MODE
 
 # Chooze project source directory
 AC_CONFIG_SRCDIR([configure.ac])

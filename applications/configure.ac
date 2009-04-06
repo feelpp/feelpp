@@ -38,13 +38,13 @@ AC_SUBST([ac_aux_dir])
 
 # Initialize Automake
 AM_INIT_AUTOMAKE([foreign])
+AM_MAINTAINER_MODE
 
 # Chooze project source directory
 AC_CONFIG_SRCDIR([configure.ac])
 
 # Propagate through source files the path of the installation directory
 AC_DEFINE_UNQUOTED([INSTALL_PATH], "$prefix", [The path of installation])
-
 
 # Proceed to required program detection
 AC_LIBTOOL_DLOPEN # MUST be declared BEFORE AC_PROG_LIBTOOL

@@ -22,9 +22,12 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 include $(top_srcdir)/admin/common.am
-check_PROGRAMS=splitting2d cavity2d rclux #test_nsale test_ale1  test_ale2  test_ale3  test_ale4 # twofluid2d cavity2d cavity3d
+check_PROGRAMS=convection splitting2d cavity2d rclux #test_nsale test_ale1  test_ale2  test_ale3  test_ale4 # twofluid2d cavity2d cavity3d
 
 noinst_HEADERS=advreact.hpp oseen.hpp  splitting.hpp  twofluid.hpp
+
+convection_SOURCES=convection.cpp
+convection_LDADD = $(LIFE_LIBS)
 
 cavity2d_SOURCES=cavity2d.cpp
 cavity2d_LDADD = $(LIFE_LIBS)

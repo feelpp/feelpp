@@ -147,6 +147,8 @@ LIFE_CHECK_GOOGLE_PERFTOOLS
 dnl ------------------------------------------------------------
 dnl Boost
 LIFE_CHECK_BOOST
+AC_DEFINE_UNQUOTED([BOOST_PARAMETER_MAX_ARITY], [10], [the maximum of parameters for boost.parameter])
+CPPFLAGS="${CPPFLAGS} -DBOOST_PARAMETER_MAX_ARITY=10"
 
 dnl
 dnl checks for some scientific computing libraries
@@ -166,6 +168,7 @@ AC_CHECK_QD
 
 dnl lapack, blas, g2c
 AC_CHECK_LAPACK
+LIFE_CHECK_ARPACK
 
 # Check for superlu library
 AC_ARG_WITH(superlu-lib,
@@ -310,6 +313,11 @@ dnl dnl grace
 dnl AC_CHECK_HEADERS([grace_np.h])
 dnl AC_CHECK_LIB([grace_np],GraceClose,[grace_libs="-lgrace_np"],[grace_libs=""])
 dnl AC_SUBST(grace_libs)
+
+dnl ------------------------------------------------------------
+dnl Xml
+dnl ---
+LIFE_CHECK_LIBXML2
 
 
 dnl ------------------------------------------------------------
@@ -462,13 +470,13 @@ AC_CONFIG_FILES([ admin/Makefile ])
 # boost
 AC_CONFIG_FILES([ boost/Makefile ])
 AC_CONFIG_FILES([ boost/libs/Makefile ])
-AC_CONFIG_FILES([ boost/libs/detail/Makefile ])
+# AC_CONFIG_FILES([ boost/libs/detail/Makefile ])
 AC_CONFIG_FILES([ boost/libs/log/Makefile ])
 AC_CONFIG_FILES([ boost/libs/log/src/Makefile ])
-AC_CONFIG_FILES([ boost/libs/mpi/Makefile ])
-AC_CONFIG_FILES([ boost/libs/mpi/src/Makefile ])
-AC_CONFIG_FILES([ boost/libs/serialization/Makefile ])
-AC_CONFIG_FILES([ boost/libs/serialization/src/Makefile ])
+#AC_CONFIG_FILES([ boost/libs/mpi/Makefile ])
+#AC_CONFIG_FILES([ boost/libs/mpi/src/Makefile ])
+#AC_CONFIG_FILES([ boost/libs/serialization/Makefile ])
+#AC_CONFIG_FILES([ boost/libs/serialization/src/Makefile ])
 
 # life library
 AC_CONFIG_FILES([ life/Makefile ])
@@ -502,12 +510,15 @@ test "x$ENABLE_MODULE_BENCHMARKS" = x1           && sum_benchmarks=OK      || su
 test "x$ENABLE_MODULE_APPLICATIONS" = x1         && sum_applications=OK    || sum_applications="no"
 test "x$ENABLE_MODULE_RESEARCH" = x1             && sum_research=OK        || sum_research="no"
 
+test "x$WITH_MPI" = x1                   && sum_mpi=OK                      || sum_mpi="no * (MANDATORY)"
 test "x$WITH_BOOST" = x1                 && sum_boost=OK                    || sum_boost="no * (MANDATORY)"
 test "x$WITH_GMSH" = x1                  && sum_gmsh=OK                     || sum_gmsh="no * (optional)"
+test "x$WITH_ARPACK" = x1                && sum_arpack=OK                   || sum_arpack="no * (optional)"
 test "x$WITH_PETSC" = x1                 && sum_petsc=OK                    || sum_petsc="no * (optional)"
 test "x$WITH_SLEPC" = x1                 && sum_slepc=OK                    || sum_slepc="no * (optional)"
 test "x$WITH_TRILINOS" = x1              && sum_trilinos=OK                 || sum_trilinos="no * (optional)"
 test "x$WITH_VTK" = x1                   && sum_vtk=OK                      || sum_vtk="no * (optional)"
+test "x$WITH_LIBXML2" = x1               && sum_libxml2=OK                  || sum_xercesc="no * (MANDATORY)"
 
 cat <<EOT > summary
 
@@ -527,11 +538,14 @@ Summary:
 
  Support for          is
  -----------------------------
+  Mpi                 ${sum_mpi}
   Boost               ${sum_boost}
+  Arpack              ${sum_arpack}
   PETSc               ${sum_petsc}
   SLEPc               ${sum_slepc}
   Trilinos            ${sum_trilinos}
   VTK                 ${sum_vtk}
+  LibXml2             ${sum_libxml2}
   Gmsh                ${sum_gmsh}
 
 Here are the submodule specific summaries:

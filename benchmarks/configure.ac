@@ -39,6 +39,8 @@ AC_SUBST([ac_aux_dir])
 # Initialize Automake
 AM_INIT_AUTOMAKE([foreign])
 
+AM_MAINTAINER_MODE
+
 # Chooze project source directory
 AC_CONFIG_SRCDIR([configure.ac])
 
@@ -107,7 +109,6 @@ LIFE_EXTRAMODULE([validation])
 # benchmark
 AC_CONFIG_FILES([ atlocal ])
 AC_CONFIG_FILES([ Makefile ])
-AC_CONFIG_FILES([ admin/Makefile ])
 AC_CONFIG_FILES([ convergence/Makefile ])
 AC_CONFIG_FILES([ perf/Makefile ])
 
