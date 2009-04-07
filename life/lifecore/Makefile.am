@@ -24,6 +24,8 @@ lib_LTLIBRARIES		= liblifecore.la
 
 liblifecore_la_SOURCES	= info.cpp \
 application.cpp \
+xmlparser.hpp \
+applicationxml.cpp \
 about.cpp  debug.cpp \
 typeinfo.cpp\
 smartassert.cpp $(MPFR_SOURCES) \
