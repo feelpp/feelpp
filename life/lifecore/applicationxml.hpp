@@ -33,7 +33,7 @@
 
 #include <life/lifecore/application.hpp>
 
-#include <benchmarks/validation/src/xmlParser.hpp>
+#include <life/lifecore/xmlparser.hpp>
 
 namespace Life
 {
