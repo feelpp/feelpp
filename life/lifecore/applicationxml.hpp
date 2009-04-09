@@ -134,9 +134,9 @@ public:
     template<typename T>
     ApplicationXML& addParameterValue( T const& val )
     {
-        std::ostringstream oss;
-        oss << val;
-        M_parameter_values.push_back( oss.str() );
+        char sci_val[11];
+        sprintf(sci_val,"%.5e",(double)val);
+        M_parameter_values.push_back( string(sci_val) );
         return *this;
     }
 
