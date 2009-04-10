@@ -30,16 +30,30 @@
 #include <map>
 #include <utility>
 
+#include <life/lifecore/life.hpp>
+
+#if 0
+namespace Life{
+template<typename Poly, template<uint16_type> class PolySetType > class PolynomialSet;
+template<uint16_type Dim,
+         uint16_type Order,
+         template<uint16_type> class PolySetType,
+         typename T,
+         template<uint16_type,uint16_type,uint16_type> class Convex>
+class OrthogonalPolynomialSet;
+
+}
+#endif
 #include <boost/plugin/export_plugin.hpp>
+
+
+#include <life/lifepoly/lagrange.hpp>
 
 #include <polyvis.hpp>
 
-#include <life/lifepoly/polynomialset.hpp>
-#include <life/lifepoly/lagrange.hpp>
-
 class Lagrange
     :
-    public Polyvis
+    public Life::Polyvis
 {
 public:
     Lagrange(std::string const& s, int d = 2) : Polyvis(),name(s)
@@ -51,11 +65,11 @@ public:
 
         if ( d == 2 )
             {
-                this->save( "lag_2_1", fem::Lagrange<2,1,Scalar>().functionShape() );
+                this->save( "lag_2_1", fem::Lagrange<2,1,Scalar>() );
             }
         if ( d == 3 )
             {
-                this->save( "lag_3_1", fem::Lagrange<3,1,Scalar>().functionShape() );
+                this->save( "lag_3_1", fem::Lagrange<3,1,Scalar>() );
             }
     }
     Lagrange(std::string const& s, int d, int o) : Polyvis(),name(s)
@@ -71,19 +85,19 @@ public:
                 switch( o )
                     {
                     case 1:
-                        { this->save( "lag_2_1", fem::Lagrange<2,1,Scalar>().functionShape() ); }
+                        { this->save( "lag_2_1", fem::Lagrange<2,1,Scalar>() ); }
                         break;
                     case 2:
-                        { this->save( "lag_2_2", fem::Lagrange<2,2,Scalar>().functionShape() ); }
+                        { this->save( "lag_2_2", fem::Lagrange<2,2,Scalar>() ); }
                         break;
                     case 3:
-                        { this->save( "lag_2_3", fem::Lagrange<2,3,Scalar>().functionShape() ); }
+                        { this->save( "lag_2_3", fem::Lagrange<2,3,Scalar>() ); }
                         break;
                     case 4:
-                        { this->save( "lag_2_4", fem::Lagrange<2,4,Scalar>().functionShape() ); }
+                        { this->save( "lag_2_4", fem::Lagrange<2,4,Scalar>() ); }
                         break;
                     default:
-                        { this->save( "lag_2_1", fem::Lagrange<2,1,Scalar>().functionShape() ); }
+                        { this->save( "lag_2_1", fem::Lagrange<2,1,Scalar>() ); }
                     }
 
             }
@@ -92,19 +106,19 @@ public:
                 switch( o )
                     {
                     case 1:
-                        { this->save( "lag_3_1", fem::Lagrange<3,1,Scalar>().functionShape() ); }
+                        { this->save( "lag_3_1", fem::Lagrange<3,1,Scalar>() ); }
                         break;
                     case 2:
-                        { this->save( "lag_3_2", fem::Lagrange<3,2,Scalar>().functionShape() ); }
+                        { this->save( "lag_3_2", fem::Lagrange<3,2,Scalar>() ); }
                         break;
                     case 3:
-                        { this->save( "lag_3_3", fem::Lagrange<3,3,Scalar>().functionShape() ); }
+                        { this->save( "lag_3_3", fem::Lagrange<3,3,Scalar>() ); }
                         break;
                     case 4:
-                        { this->save( "lag_3_4", fem::Lagrange<3,4,Scalar>().functionShape() ); }
+                        { this->save( "lag_3_4", fem::Lagrange<3,4,Scalar>() ); }
                         break;
                     default:
-                        { this->save( "lag_3_1", fem::Lagrange<3,1,Scalar>().functionShape() ); }
+                        { this->save( "lag_3_1", fem::Lagrange<3,1,Scalar>() ); }
                     }
 
             }
@@ -116,6 +130,6 @@ public:
     std::string name;
 };
 
-BOOST_PLUGIN_EXPORT(Polyvis, Lagrange, "Lagrange");
+BOOST_PLUGIN_EXPORT(Life::Polyvis, Lagrange, "Lagrange");
 
 

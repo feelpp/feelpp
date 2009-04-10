@@ -28,12 +28,19 @@ ACLOCAL_AMFLAGS = -I admin
 
 bin_PROGRAMS    = life_polyvis
 life_polyvis_SOURCES  = main.cpp
-life_polyvis_LDADD    = ../life/lifefilters/liblifefilters.la ../life/lifepoly/liblifepoly.la ../life/lifemesh/liblifemesh.la ../life/lifecore/liblifecore.la -lboost_serialization
+life_polyvis_LDADD    = libstdpoly.la $(LIFE_LIBS)
 
-pkglib_LTLIBRARIES = stdpoly.la
+lib_LTLIBRARIES = libstdpoly.la
 
 
-stdpoly_la_SOURCES = stdpoly.cpp lagrange.cpp raviartthomas.cpp
-stdpoly_la_LDFLAGS = -module
-stdpoly_la_LIBADD = ../life/lifefilters/liblifefilters.la ../life/lifepoly/liblifepoly.la ../life/lifemesh/liblifemesh.la ../life/lifecore/liblifecore.la -lboost_serialization
+libstdpoly_la_SOURCES = stdpoly.cpp lagrange.cpp #raviartthomas.cpp
+libstdpoly_la_LIBADD = $(LIFE_LIBS)
+
+
+#pkglib_LTLIBRARIES = stdpoly.la
+
+
+#stdpoly_la_SOURCES = stdpoly.cpp lagrange.cpp #raviartthomas.cpp
+#stdpoly_la_LDFLAGS = -module
+#stdpoly_la_LIBADD = $(LIFE_LIBS)
 

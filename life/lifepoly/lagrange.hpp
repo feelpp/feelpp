@@ -40,14 +40,15 @@
 #include <life/lifemesh/pointset.hpp>
 #include <life/lifepoly/equispaced.hpp>
 
-#include <life/lifepoly/fe.hpp>
+
 #include <life/lifepoly/dualbasis.hpp>
 #include <life/lifepoly/polynomialset.hpp>
 #include <life/lifepoly/functionalset.hpp>
 #include <life/lifepoly/functionals.hpp>
-
+#include <life/lifepoly/fe.hpp>
 namespace Life
 {
+
 namespace fem
 {
 

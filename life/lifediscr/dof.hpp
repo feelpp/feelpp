@@ -2164,7 +2164,7 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::buildBoundaryDofMap( mes
                         ( __face_it->id() )
                         ( __face_it->marker() )
                         ( __face_it->isConnectedTo0() )
-                        ( __face_it->isConnectedTo1() ).error( "[Dof::buildFaceDofMap] face not connected" );
+                        ( __face_it->isConnectedTo1() ).warn( "[Dof::buildFaceDofMap] face not connected" );
 #if !defined(NDEBUG)
                     if (  __face_it->isOnBoundary() )
                         Debug( 5005 ) << "[buildBoundaryDofMap] boundary global face id : " << __face_it->id()

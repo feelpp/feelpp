@@ -49,12 +49,12 @@ template<typename P,
 	template<class,uint16_type,class> class Pts>
 class FiniteElement :
                     public mpl::if_<mpl::bool_<P::is_scalar>,
-                                    mpl::identity<PolynomialSet<P> >,
+                                    mpl::identity<PolynomialSet<P, Scalar> >,
                                     mpl::identity<PolynomialSet<P, Vectorial> > >::type::type
 {
   typedef typename mpl::if_<mpl::bool_<P::is_scalar>,
-			 mpl::identity<PolynomialSet<P> >,
-			 mpl::identity<PolynomialSet<P, Vectorial> > >::type::type super;
+                            mpl::identity<PolynomialSet<P, Scalar> >,
+                            mpl::identity<PolynomialSet<P, Vectorial> > >::type::type super;
 public:
 
   /** @name Typedefs
