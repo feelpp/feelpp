@@ -32,11 +32,11 @@
 
 #include <boost/plugin/export_plugin.hpp>
 
-#include <polyvis.hpp>
 
 
+#include <life/lifecore/life.hpp>
 #include <life/lifepoly/raviartthomas.hpp>
-
+#include <polyvis.hpp>
 class RaviartThomas
     :
     public Polyvis

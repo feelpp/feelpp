@@ -47,7 +47,7 @@
 #include <life/lifemesh/refentity.hpp>
 #include <life/lifemesh/pointset.hpp>
 
-#include <life/lifepoly/fe.hpp>
+
 #include <life/lifepoly/dualbasis.hpp>
 #include <life/lifepoly/polynomialset.hpp>
 #include <life/lifepoly/functionalset.hpp>
@@ -55,7 +55,7 @@
 #include <life/lifepoly/functionals.hpp>
 #include <life/lifepoly/functionals2.hpp>
 #include <life/lifepoly/quadpoint.hpp>
-
+#include <life/lifepoly/fe.hpp>
 namespace LifeV
 {
 namespace detail

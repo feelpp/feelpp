@@ -35,7 +35,8 @@
 #include <boost/plugin.hpp>
 
 #include <life/lifecore/application.hpp>
-
+#include <life/lifepoly/lagrange.hpp>
+#include <life/lifepoly/polynomialset.hpp>
 
 
 
@@ -73,21 +74,25 @@ void
 PolyvisApp::run()
 {
     try {
+
         std::string poly = vm()["poly"].as<std::string>();
         std::string lib = vm()["lib"].as<std::string>();
+#if 1
         /* get the handle of the library */
         boost::plugin::dll d ( lib );
 
-        boost::plugin::plugin_factory <Polyvis> pf (d);
+        boost::plugin::plugin_factory <Life::Polyvis> pf (d);
 
 
         std::cout << "*** Creating an instance of plugin class " << poly << " out of lib " << lib << "\n";
-        std::auto_ptr <Polyvis> p (pf.create ( poly,
-                                               "Lagrange",
-                                               vm()["dim"].as<int>(),
-                                               vm()["order"].as<int>()
-                                               ));
+        std::auto_ptr <Life::Polyvis> p (pf.create ( poly,
+                                                     "Lagrange",
+                                                     vm()["dim"].as<int>(),
+                                                     vm()["order"].as<int>()
+                                                     ));
+#else
 
+#endif
         std::cout << "*** Calling method of the created instance\n";
     }
     catch ( std::logic_error const & e )

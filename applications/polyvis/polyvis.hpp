@@ -57,26 +57,28 @@ public:
         typedef typename PointSetToMesh<Simplex<nDim,1>, double>::mesh_type mesh_type;
 
         //GaussLobatto<Simplex<nDim,OrderPts>, OrderPts, double> GS;
-        PointSetEquiSpaced<Simplex<nDim,OrderPts>, double> GS;
-        p2m.addBoundaryPoints( false );
+        PointSetEquiSpaced<Simplex<nDim,OrderPts>, OrderPts, double> GS;
+        //p2m.addBoundaryPoints( false );
         p2m.visit( &GS );
 
-        typedef Space<mesh_type, fem::Lagrange<nDim, 1, PS, Continuous> > P1_type;
-        P1_type P1( p2m.mesh() );
+        typedef FunctionSpace<mesh_type, Lagrange<1, Scalar> > P1_type;
+        typedef boost::shared_ptr<P1_type> P1_ptrtype;
+        P1_ptrtype P1( P1_type::New( p2m.mesh() ) );
 
-        std::vector<typename P1_type::element_type > u( pset.coeff().size1()/pset.nComponents );
+        std::vector<boost::shared_ptr<typename P1_type::element_type> > u( pset.coeff().size1()/pset.nComponents );
         ublas::matrix<double> evalpset( pset.evaluate( GS.points() ) );
         std::cout << "evalpset = " << evalpset << "\n";
         // evaluate the dubiner polynomials at the lobatto nodes
         for ( size_type i = 0;i < evalpset.size1()/pset.nComponents; ++i )
             {
-                u[i] = P1.newElement( "u" );
+                u[i] =  boost::shared_ptr<typename P1_type::element_type>( new typename P1_type::element_type( P1 ) );
+                //u[i] = P1.newElement( "u" );
                 //u[i].resize( evalpset.size2() );
 
                 if ( pset.is_scalar )
                     {
                         std::cout << "u[" << i << "]=" << ublas::row( evalpset, i ) << "\n";
-                        u[i] = ublas::row( evalpset, i );
+                        *u[i] = ublas::row( evalpset, i );
                     }
                 else
                     {
@@ -86,9 +88,9 @@ public:
                                                                  ublas::range( 0, evalpset.size2() ) ) );
                         std::cout << "m = " << m << "\n"
                                   << "v2m(m) = " << PolynomialSet<P,PS>::polyset_type::toMatrix( m ) << "\n";
-                        u[i] = ublas::row( PolynomialSet<P,PS>::polyset_type::toMatrix( m ), 0 );
+                        *u[i] = ublas::row( PolynomialSet<P,PS>::polyset_type::toMatrix( m ), 0 );
                     }
-                std::cout << s << "_u_" << i << u[i] << "\n";
+                std::cout << s << "_u_" << i << *u[i] << "\n";
                 std::cout << s << "_p_" << i << pset.polynomial( i ).evaluate( GS.points() ) << "\n";
             }
 
@@ -109,9 +111,9 @@ public:
                 std::ostringstream str;
                 str << s << "_p_" << i;
                 if ( pset.is_scalar )
-                    __step->addNodalScalar( str.str(), u[i].size(), u[i].begin(), u[i].end()  );
+                    __step->add( str.str(), *u[i]  );
                 else
-                    __step->addNodalVector( str.str(), u[i].size(), u[i].begin(), u[i].end()  );
+                    __step->add( str.str(), *u[i]  );
             }
 
         __ensight.save();
@@ -121,7 +123,7 @@ public:
 namespace boost { namespace plugin {
 
     template<>
-    struct virtual_constructors<Polyvis>
+    struct virtual_constructors<Life::Polyvis>
     {
         typedef mpl::list<
             mpl::list<std::string>,
