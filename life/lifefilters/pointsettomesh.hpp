@@ -358,19 +358,19 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
         {
             //  std::cout << "\nLa cellule num�ro : " << i << " compte " << outMesh->GetCell(i)->GetNumberOfPoints() << " points." << "\n";
             Debug( 8098 ) << "Element Id = " << i << "\n";
-            Debug( 8098 ) << "Point 0 (" <<  outMesh->GetCell(i)->GetPointId(0) <<") =" ;
+            Debug( 8098 ) << "Point 0 (" <<  (int)outMesh->GetCell(i)->GetPointId(0) <<") =" ;
             Debug( 8098 ) << "(" << outMesh->GetCell(i)->GetPoints()->GetPoint(0)[0] << " , "
                           << outMesh->GetCell(i)->GetPoints()->GetPoint(0)[1]<< ")" << "\n";
-            Debug( 8098 ) << "Point 1 (" <<  outMesh->GetCell(i)->GetPointId(1) <<") =" ;
+            Debug( 8098 ) << "Point 1 (" <<  (int)outMesh->GetCell(i)->GetPointId(1) <<") =" ;
             Debug( 8098 ) << "(" << outMesh->GetCell(i)->GetPoints()->GetPoint(1)[0] << " , "
                           << outMesh->GetCell(i)->GetPoints()->GetPoint(1)[1]<< ")" << "\n";
-            Debug( 8098 ) << "Point 2 (" <<  outMesh->GetCell(i)->GetPointId(2) <<") =" ;
+            Debug( 8098 ) << "Point 2 (" <<  (int)outMesh->GetCell(i)->GetPointId(2) <<") =" ;
             Debug( 8098 ) << "(" << outMesh->GetCell(i)->GetPoints()->GetPoint(2)[0] << " , "
                           << outMesh->GetCell(i)->GetPoints()->GetPoint(2)[1]<< ")" << "\n";
 
             Debug( 8098 ) << outMesh->GetCell(i)->GetNumberOfEdges() << "\n";
-            Debug( 8098 ) << outMesh->GetCell(i)->GetEdge(0)->GetPointId(0) << "\n";
-            Debug( 8098 ) << outMesh->GetCell(i)->GetEdge(0)->GetPointId(1) << "\n";
+            Debug( 8098 ) << (int)outMesh->GetCell(i)->GetEdge(0)->GetPointId(0) << "\n";
+            Debug( 8098 ) << (int)outMesh->GetCell(i)->GetEdge(0)->GetPointId(1) << "\n";
         }
 
 
