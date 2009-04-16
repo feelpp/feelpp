@@ -246,9 +246,16 @@ fi
 
 AM_CONDITIONAL(HAVE_UMFPACK, test ! -n "$warn_umfpack"  )
 
-dnl parmetis
-AC_CHECK_METIS
-AC_CHECK_PARMETIS
+dnl ------------------------------------------------------------
+dnl Eigen
+dnl
+LIFE_CHECK_EIGEN
+
+dnl ------------------------------------------------------------
+dnl scotch and scotch/metis interface
+dnl
+LIFE_CHECK_SCOTCH
+LIFE_CHECK_SCOTCHMETIS
 
 dnl ------------------------------------------------------------
 dnl petsc
@@ -507,7 +514,9 @@ test "x$ENABLE_MODULE_RESEARCH" = x1             && sum_research=OK        || su
 
 test "x$WITH_MPI" = x1                   && sum_mpi=OK                      || sum_mpi="no * (MANDATORY)"
 test "x$WITH_BOOST" = x1                 && sum_boost=OK                    || sum_boost="no * (MANDATORY)"
-test "x$WITH_GMSH" = x1                  && sum_gmsh=OK                     || sum_gmsh="no * (optional)"
+test "x$WITH_GMSH" = x1                  && sum_gmsh=OK                     || sum_gmsh="no * (MANDATORY)"
+test "x$WITH_SCOTCH" = x1                && sum_scotch=OK                   || sum_scotch="no * (optional)"
+test "x$WITH_EIGEN" = x1                 && sum_eigen=OK                    || sum_eigen="no * (optional)"
 test "x$WITH_ARPACK" = x1                && sum_arpack=OK                   || sum_arpack="no * (optional)"
 test "x$WITH_PETSC" = x1                 && sum_petsc=OK                    || sum_petsc="no * (optional)"
 test "x$WITH_SLEPC" = x1                 && sum_slepc=OK                    || sum_slepc="no * (optional)"
@@ -535,13 +544,16 @@ Summary:
  -----------------------------
   Mpi                 ${sum_mpi}
   Boost               ${sum_boost}
+  Gmsh                ${sum_gmsh}
+  Scotch              ${sum_scotch}
+  Eigen               ${sum_eigen}
   Arpack              ${sum_arpack}
   PETSc               ${sum_petsc}
   SLEPc               ${sum_slepc}
   Trilinos            ${sum_trilinos}
   VTK                 ${sum_vtk}
   LibXml2             ${sum_libxml2}
-  Gmsh                ${sum_gmsh}
+
 
 Here are the submodule specific summaries:
 
