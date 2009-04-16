@@ -37,6 +37,10 @@
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
+#if 0
+#include <Eigen/Core>
+#endif
+
 #include <life/lifecore/traits.hpp>
 
 namespace Life
@@ -428,6 +432,77 @@ Jacobi<T>::derivate( value_type const& x ) const
 }
 }
 
+#if 0
+template<uint16_type N, typename T>
+typename Eigen::Matrix<T,N+1,Eigen::Dynamic>
+JacobiBatchEvaluation( T a, T b, Matrix<T,Eigen::Dynamic,1> const& __pts )
+{
+    typedef T value_type;
+    typedef Eigen::Matrix<T,Eigen::Dynamic,N+1> matrix_type;
+    typedef Eigen::Matrix<T,Eigen::Dynamic,1> vector_type;
+    matrix_type res( __pts.size(), N+1 );
+    res.col( 0 ).setOnes();
+
+    if ( N > 0 )
+    {
+        //ublas::col( res, 1 ) = 0.5 * ( ublas::scalar_vector<value_type>( res.size2(), a - b) + ( a + b + 2.0 ) * __pts );
+        res.col( 1 ) = 0.5*(res.col(1).Constant(res.rows(),a-b)+(a+b+2)*__pts);
+        value_type apb = a + b;
+        for ( int k = 2; k < N+1; ++k )
+        {
+            value_type kv = value_type(k);
+            value_type a1 = 2.0 * kv * ( kv + apb ) * ( 2.0 * kv + apb - 2.0 );
+            value_type a2 = ( 2.0 * kv + apb - 1.0 ) * ( a * a - b * b );
+            value_type a3 = ( 2.0 * kv + apb - 2.0 ) * ( 2.0 * kv + apb - 1.0 ) * ( 2.0 * kv + apb );
+            value_type a4 = 2.0 * ( kv + a - 1.0 ) * ( kv + b - 1.0 ) * ( 2.0 * kv + apb );
+            a2 = a2 / a1;
+            a3 = a3 / a1;
+            a4 = a4 / a1;
+
+            res.col( k ) =
+                ( a2* res.col( k-1) +
+                  a3 * (__pts.cwise()*res.col(k-1)) -
+                  a4 * res.col(k-2) );
+        }
+    }
+    return res.transpose();
+}
+template<typename T,uint16_type N, uint16_type Np>
+typename Eigen::Matrix<T,N+1,Np>
+JacobiBatchEvaluation( T a, T b, Matrix<T,Np,1> const& __pts )
+{
+    typedef T value_type;
+    typedef Eigen::Matrix<T,Np,N+1> matrix_type;
+    typedef Eigen::Matrix<T,Np,1> vector_type;
+    matrix_type res( Np, N+1 );
+    res.col( 0 ).setOnes();
+
+    if ( N > 0 )
+    {
+        //ublas::col( res, 1 ) = 0.5 * ( ublas::scalar_vector<value_type>( res.size2(), a - b) + ( a + b + 2.0 ) * __pts );
+        res.col( 1 ) = 0.5*(res.col(1).Constant(res.rows(),a-b)+(a+b+2)*__pts);
+        value_type apb = a + b;
+        for ( int k = 2; k < N+1; ++k )
+        {
+            value_type kv = value_type(k);
+            value_type a1 = 2.0 * kv * ( kv + apb ) * ( 2.0 * kv + apb - 2.0 );
+            value_type a2 = ( 2.0 * kv + apb - 1.0 ) * ( a * a - b * b );
+            value_type a3 = ( 2.0 * kv + apb - 2.0 ) * ( 2.0 * kv + apb - 1.0 ) * ( 2.0 * kv + apb );
+            value_type a4 = 2.0 * ( kv + a - 1.0 ) * ( kv + b - 1.0 ) * ( 2.0 * kv + apb );
+            a2 = a2 / a1;
+            a3 = a3 / a1;
+            a4 = a4 / a1;
+
+            res.col( k ) =
+                ( a2* res.col( k-1) +
+                  a3 * (__pts.cwise()*res.col(k-1)) -
+                  a4 * res.col(k-2) );
+        }
+    }
+    return res.transpose();
+}
+#endif // 0 - Eigen
+
 template<uint16_type N, typename T>
 ublas::matrix<T>
 JacobiBatchEvaluation( T a, T b, ublas::vector<T> const& __pts )
@@ -473,6 +548,65 @@ JacobiBatchDerivation( T a, T b, ublas::vector<T> const& __pts )
     }
     return res;
 }
+
+#if 0
+template<uint16_type N, typename T>
+Eigen::Matrix<T,N+1,Eigen::Dynamic>
+JacobiBatchDerivation( T a, T b, Eigen::Matrix<T,Eigen::Dynamic,1> const& __pts )
+{
+    typedef T value_type;
+    Eigen::Matrix<T,N+1,Eigen::Dynamic> res( N+1, __pts.size() );
+    res.row(0).setZero();
+
+    if ( N > 0 )
+    {
+        res.block( 1, 0, N, __pts.size()) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
+        //ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
+        for ( uint16_type i = 1;i < N+1; ++i )
+            res.row( i ) *= 0.5*(a+b+value_type( i )+1.0);
+    }
+    return res;
+}
+template<typename T,
+         uint16_type N,
+         uint16_type Ncols>
+Eigen::Matrix<T,N+1,Ncols>
+JacobiBatchDerivation( T a, T b, Eigen::Matrix<T,Ncols,1> const& __pts )
+{
+    typedef T value_type;
+    Eigen::Matrix<T,N+1,Ncols> res;
+    res.row(0).setZero();
+
+    if ( N > 0 )
+    {
+        res.block( 1, 0, N, __pts.size()) = JacobiBatchEvaluation<T,N-1,Ncols>( a+1.0, b+1.0, __pts );
+        //ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
+        for ( uint16_type i = 1;i < N+1; ++i )
+            res.row( i ) *= 0.5*(a+b+value_type( i )+1.0);
+    }
+    return res;
+}
+template<typename T>
+Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic>
+JacobiBatchDerivation( uint16_type N,
+                       T a, T b, Eigen::Matrix<T,Eigen::Dynamic,1> const& __pts )
+{
+    typedef T value_type;
+    Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> res( N+1, __pts.size() );
+    res.row(0).setZero();
+
+    if ( N > 0 )
+    {
+        res.block( 1, 0, N, __pts.size()) = JacobiBatchEvaluation<T>( N-1,
+                                                                      a+1.0,
+                                                                      b+1.0,
+                                                                      __pts );
+        for ( uint16_type i = 1;i < N+1; ++i )
+            res.row( i ) *= 0.5*(a+b+value_type( i )+1.0);
+    }
+    return res;
+}
+#endif // 0 - Eigen
 
 namespace dyna
 {
