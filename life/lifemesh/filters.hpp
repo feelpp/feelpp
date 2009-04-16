@@ -832,6 +832,25 @@ internalpoints( MeshType const& mesh )
     return detail::internalpoints( mesh, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
 }
 
+/**
+ * return the number of elements given element iterators constructed
+ * using the mesh filters
+ * \param its the mesh iterators
+ *
+ * The following code prints in the logfile the number of elements in
+ * the mesh that are marked with marker1 equal to 1:
+ *
+ * \code
+ * Debug() << "number of elements = " << nelements( markedelements(mesh,1) ) << "\n";
+ * \endcode
+ */
+template<typename MT, typename Iterator>
+size_type
+nelements( boost::tuple<MT,Iterator,Iterator> const& its )
+{
+    return std::distance( boost::get<1>( its ), boost::get<2>( its ) );
+}
+
 }
 
 
