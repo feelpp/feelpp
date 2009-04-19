@@ -24,7 +24,7 @@
 include $(top_srcdir)/admin/common.am
 ACLOCAL_AMFLAGS = -I admin
 
-SUBDIRS= admin convergence perf
+SUBDIRS= admin python convergence perf
 #. $(ENABLE_EXTRAMODULE_VALIDATION) convergence perf kovasznay stokes turek structure
 DIST_SUBDIRS = admin convergence perf
 
