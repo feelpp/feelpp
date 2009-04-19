@@ -109,6 +109,7 @@ LIFE_EXTRAMODULE([validation])
 # benchmark
 AC_CONFIG_FILES([ atlocal ])
 AC_CONFIG_FILES([ Makefile ])
+AC_CONFIG_FILES([ admin/Makefile ])
 AC_CONFIG_FILES([ python/Makefile ])
 AC_CONFIG_FILES([ convergence/Makefile ])
 AC_CONFIG_FILES([ perf/Makefile ])
