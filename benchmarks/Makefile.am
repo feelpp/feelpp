@@ -26,7 +26,7 @@ ACLOCAL_AMFLAGS = -I admin
 
 SUBDIRS= admin python convergence perf
 #. $(ENABLE_EXTRAMODULE_VALIDATION) convergence perf kovasznay stokes turek structure
-DIST_SUBDIRS = admin convergence perf
+DIST_SUBDIRS = admin python convergence perf
 
 lib_LTLIBRARIES=liblifelog.la
 
