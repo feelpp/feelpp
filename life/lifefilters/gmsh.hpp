@@ -87,6 +87,8 @@ class Gmsh
 {
 public:
 
+    enum DomainType { GMSH_REFERENCE_DOMAIN = 0, GMSH_REAL_DOMAIN };
+
     struct Factory
     {
         typedef Life::Singleton< Life::Factory< Gmsh, std::string > > type;
