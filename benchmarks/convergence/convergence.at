@@ -38,7 +38,7 @@ AT_SETUP([laplacian 1D P1])
  then
 
    AT_KEYWORDS([laplacian 1D])
-   AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacian --program=laplacian1dP1 --dim=1 --order=1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+   AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian1dP1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -56,7 +56,7 @@ AT_SETUP([laplacian 1D P5])
  then
 
   AT_KEYWORDS([laplacian 1D])
-  AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacian --program=laplacian1dP5 --dim=1 --order=5 --hsize=0.5 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian1dP5 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -72,7 +72,7 @@ AT_SETUP([laplacian 1D/2D P1])
  then
 
   AT_KEYWORDS([laplacian 1D2D])
-  AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacian --program=laplacian1d2dP1 --dim=1 --order=1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian1d2dP1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -88,7 +88,7 @@ AT_SETUP([laplacian 1D/2D P5])
  then
 
   AT_KEYWORDS([laplacian 1D2D])
-  AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacian --program=laplacian1d2dP5 --dim=1 --order=5  --hsize=0.5 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian1d2dP5 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -105,7 +105,7 @@ AT_SETUP([laplacian 2D P1])
  then
 
   AT_KEYWORDS([laplacian 2D])
-  AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacian --program=laplacian2dP1 --dim=2 --order=1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian2dP1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -122,7 +122,7 @@ AT_SETUP([laplacian 2D P5])
  then
 
   AT_KEYWORDS([laplacian 2D])
-  AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacian --program=laplacian2dP5 --dim=2 --order=5 --hsize=0.5 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian2dP5 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -138,7 +138,7 @@ AT_SETUP([laplacian 2D3D P1])
  then
 
   AT_KEYWORDS([laplacian 2D3D])
-  AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacian --program=laplacian2d3dP1 --dim=2 --order=1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian2d3dP1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -154,7 +154,7 @@ AT_SETUP([laplacian 2D P1 quad])
  then
 
   AT_KEYWORDS([laplacian 2D P1 quad])
-  AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacian --program=laplacian2dP1h --dim=2 --order=1 --hsize=0.1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian2dP1h --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -170,7 +170,7 @@ AT_SETUP([laplacian 2D P5 quad])
  then
 
   AT_KEYWORDS([laplacian 2D P5 quad])
-  AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacian --program=laplacian2dP5h --dim=2 --order=5 --hsize=0.4 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian2dP5h --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -187,7 +187,7 @@ AT_SETUP([laplacian 3D P1])
  then
 
   AT_KEYWORDS([laplacian 3D])
-  AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacian --program=laplacian3dP1 --dim=3 --order=1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian3dP1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -203,7 +203,7 @@ AT_SETUP([laplacian 3D P2])
  then
 
   AT_KEYWORDS([laplacian 3D])
-  AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacian --program=laplacian3dP2 --dim=3 --order=2 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian3dP2 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -217,7 +217,7 @@ AT_SETUP([laplacian 3D P3 simplex])
  then
 
   AT_KEYWORDS([laplacian 3D simplex])
-  AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacian --program=laplacian3dP3 --dim=3 --order=3 --hsize=0.5 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian3dP3 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -232,7 +232,7 @@ AT_SETUP([laplacian 3D P5 simplex])
  then
 
   AT_KEYWORDS([laplacian 3D P5 simplex])
-  AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacian --program=laplacian3dP5 --dim=3 --order=5 --hsize=1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian3dP5 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -251,7 +251,7 @@ AT_SETUP([laplacian vectorial 2D P1])
  then
 
   AT_KEYWORDS([laplacian vectorial 2D])
-  AT_CHECK([ $abs_srcdir/convergence/convergence.py --prefix=laplacianv --program=laplacian2dP1v --dim=2 --order=1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian2dP1v --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
 
  else
 
@@ -261,5 +261,23 @@ AT_SETUP([laplacian vectorial 2D P1])
 
 AT_CLEANUP
 
+AT_BANNER([stokes...])
+
+AT_SETUP([stokes 2d])
+
+
+ if test x$with_python_support = x1;
+ then
+
+  AT_KEYWORDS([stokes 2d])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=stokes --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+
+ else
+
+  AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+ fi
+
+AT_CLEANUP
 
 fi

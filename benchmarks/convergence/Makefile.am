@@ -31,7 +31,9 @@ check_PROGRAMS=laplacian1dP1 laplacian1dP5\
                laplacian3dP1 laplacian3dP2 laplacian3dP3 laplacian3dP5\
                laplacian3dP1h\
                \
-               laplacian2dP1v laplacian2dP4v
+               laplacian2dP1v laplacian2dP4v\
+               \
+               stokes
 
 check_HEADERS=laplacian.hpp
 laplacian1dP1_SOURCES=laplacian1dP1.cpp
@@ -82,4 +84,7 @@ laplacian2dP1v_LDADD=../../life/liblife.la
 laplacian2dP4v_SOURCES=laplacian2dP4v.cpp
 laplacian2dP4v_LDADD=../../life/liblife.la
 
-EXTRA_DIST=convergence.at convergence.py
+stokes_SOURCES= stokes.cpp
+stokes_LDADD=$(LIFE_LIBS)
+
+EXTRA_DIST=convergence.at

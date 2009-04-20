@@ -52,8 +52,13 @@
 
 #include <life/lifevf/vf.hpp>
 #include <fstream>
+#include <sstream>
+
+#include <life/lifecore/applicationxml.hpp>
+#include <life/lifecore/xmlparser.hpp>
 
 using namespace Life;
+using namespace xmlParse;
 
 inline
 po::options_description
@@ -94,9 +99,9 @@ makeAbout()
 template<int Dim, int Order, int RDim>
 class LaplacianV
     :
-    public Application
+    public ApplicationXML
 {
-    typedef Application super;
+    typedef ApplicationXML super;
 public:
 
     // -- TYPEDEFS --
@@ -145,6 +150,28 @@ public:
         timeSet->setTimeIncrement( 1.0 );
         exporter->addTimeSet( timeSet );
         exporter->setPrefix( "laplacianv" );
+
+                exporter->setPrefix( "laplacian" );
+
+        xmlParse::parameter h(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.01:0.2:0.5") );
+        this->
+            addParameter( xmlParse::parameter(STR("dim"),DISCRETE_ATTRIBUTE,NULL,NULL,STR(boost::lexical_cast<std::string>( Dim  ))) )
+            .addParameter( xmlParse::parameter(STR("order"),DISCRETE_ATTRIBUTE,NULL,NULL,STR(boost::lexical_cast<std::string>( Order  ))) )
+            .addParameter( xmlParse::parameter(STR("beta"),CONTINUOUS_ATTRIBUTE,NULL,STR("\\beta"),STR("0.01:1:10")) )
+            .addParameter( xmlParse::parameter(STR("nu"),CONTINUOUS_ATTRIBUTE,NULL,STR("\\nu"),STR("0.01:1:10")) )
+            .addParameter( h );
+
+        vector<xmlParse::parameter> depend;
+        vector<string> funcs;
+        depend.push_back(h);
+        funcs.push_back("h**2");
+        vector<string> funcs2;
+        funcs2.push_back("h**1");
+
+        this->
+            addOutput( xmlParse::output(STR("norm_L2"),STR("\\left\\| . \\right\\|_{L^2}"),depend,funcs) )
+            .addOutput( xmlParse::output(STR("norm_H1"),STR("\\left\\| . \\right\\|_{H^1}"),depend,funcs2) );
+
     }
 
     /**
@@ -207,25 +234,16 @@ template<int Dim, int Order, int RDim>
 void
 LaplacianV<Dim, Order, RDim>::run()
 {
-    if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    this->addParameterValue( Dim )
+        .addParameterValue( Order )
+        .addParameterValue( this->vm()["beta"].template as<double>() )
+        .addParameterValue( this->vm()["nu"].template as<double>() )
+        .addParameterValue( this->vm()["hsize"].template as<double>() );
+
+    this->preProcessing();
 
     //    int maxIter = 10.0/meshSize;
     using namespace Life::vf;
-
-    this->changeRepository( boost::format( "%1%/nu_%2%/beta_%3%/%4%/P%5%/h_%6%/" )
-                            % this->about().appName()
-                            % this->vm()["nu"].template as<double>()
-                            % this->vm()["beta"].template as<double>()
-                            % entity_type::name()
-                            % Order
-                            % this->vm()["hsize"].template as<double>()
-                            );
-
-
 
     /*
      * First we create the mesh
@@ -330,19 +348,8 @@ LaplacianV<Dim, Order, RDim>::run()
     this->exportResults( u, v );
 
 
-    this->changeRepository( boost::format( "%1%/TestConv/%2%D/P%3%/nu_%4%/beta_%5%/")
-                            % this->about().appName()
-                            % Dim
-                            % Order
-                            % this->vm()["nu"].template as<double>()
-                            % this->vm()["beta"].template as<double>()
-                            );
-
-
-
-    std::ofstream fichier("resultTest.txt",std::ios_base::app);
-    fichier <<this->vm()["hsize"].template as<double>()
-            <<" "<<H1error<<" "<<L2error<<"\n";
+    this->addOutputValue( L2error ).addOutputValue( H1error );
+    this->postProcessing();
 
 } // LaplacianV::run
 
