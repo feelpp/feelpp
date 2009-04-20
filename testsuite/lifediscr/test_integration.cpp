@@ -28,7 +28,7 @@
    \date 2006-08-25
  */
 
-#define USE_BOOST_TEST 1
+//#define USE_BOOST_TEST 1
 
 // Boost.Test
 #define BOOST_TEST_MAIN
