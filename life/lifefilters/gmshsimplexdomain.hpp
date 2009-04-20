@@ -51,6 +51,7 @@ public:
     /** @name Constants and Typedefs
      */
     //@{
+
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
 
@@ -62,19 +63,37 @@ public:
      */
     //@{
 
-    GmshSimplexDomain()
+    GmshSimplexDomain( DomainType dt = GMSH_REAL_DOMAIN )
         :
         super(),
         _M_I( nDim ),
         _M_h( 0.1 ),
         _M_descr()
     {
-        if ( nDim >= 1 )
-            _M_I[0] = std::make_pair( 0, 1 );
-        if ( nDim >= 2 )
-            _M_I[1] = std::make_pair( 0, 1 );
-        if ( nDim >= 3 )
-            _M_I[2] = std::make_pair( 0, 1 );
+        switch (dt)
+            {
+            case GMSH_REAL_DOMAIN:
+                {
+
+                    if ( nDim >= 1 )
+                        _M_I[0] = std::make_pair( 0, 1 );
+                    if ( nDim >= 2 )
+                        _M_I[1] = std::make_pair( 0, 1 );
+                    if ( nDim >= 3 )
+                        _M_I[2] = std::make_pair( 0, 1 );
+                }
+                break;
+            case GMSH_REFERENCE_DOMAIN:
+                {
+                    if ( nDim >= 1 )
+                        _M_I[0] = std::make_pair( -1, 1 );
+                    if ( nDim >= 2 )
+                        _M_I[1] = std::make_pair( -1, 1 );
+                    if ( nDim >= 3 )
+                        _M_I[2] = std::make_pair( -1, 1 );
+                }
+                break;
+            }
         this->setOrder( (GMSH_ORDER) nOrder );
     }
 
@@ -133,6 +152,15 @@ public:
     {
         LIFE_ASSERT( nDim >= 3 )( nDim ).error( "invalid dimension" );
         _M_I[2] = z;
+    }
+    void setReferenceDomain()
+    {
+        if ( nDim >= 1 )
+            _M_I[0] = std::make_pair( -1, 1 );
+        if ( nDim >= 2 )
+            _M_I[1] = std::make_pair( -1, 1 );
+        if ( nDim >= 3 )
+            _M_I[2] = std::make_pair( -1, 1 );
     }
     void setCharacteristicLength( double h ) { _M_h = h; }
 
