@@ -10,7 +10,7 @@
 
   Date: 2008-02-07
 
-  Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -52,8 +52,13 @@
 
 #include <life/lifevf/vf.hpp>
 #include <fstream>
+#include <sstream>
+
+#include <life/lifecore/applicationxml.hpp>
+#include <life/lifecore/xmlparser.hpp>
 
 using namespace Life;
+using namespace xmlParse;
 
 inline
 po::options_description
@@ -80,7 +85,7 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Laplacian on simplices or simplex products",
                      Life::AboutData::License_GPL,
-                     "Copyright (c) 2008 Université Joseph Fourier");
+                     "Copyright (c) 2008 Universitï¿½ Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     about.addAuthor("Benoit Perrimond", "developer", "Benoit.Perrimond@bvra.e.ujf-grenoble.fr", "");
@@ -98,9 +103,9 @@ makeAbout()
 template<int Dim, int Order, int RDim = Dim, template<uint16_type,uint16_type,uint16_type> class Entity=Simplex>
 class Laplacian
     :
-    public Application
+    public ApplicationXML
 {
-    typedef Application super;
+    typedef ApplicationXML super;
 public:
 
     // -- TYPEDEFS --
@@ -122,7 +127,7 @@ public:
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef FunctionSpace<mesh_type,fusion::vector<Lagrange<0, Scalar> >,Discontinuous> p0_space_type;
+    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
     /*basis*/
@@ -154,6 +159,26 @@ public:
         timeSet->setTimeIncrement( 1.0 );
         exporter->addTimeSet( timeSet );
         exporter->setPrefix( "laplacian" );
+
+        xmlParse::parameter h(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.01:0.2:0.5") );
+        this->
+            addParameter( xmlParse::parameter(STR("dim"),DISCRETE_ATTRIBUTE,NULL,NULL,STR(boost::lexical_cast<std::string>( Dim  ))) )
+            .addParameter( xmlParse::parameter(STR("order"),DISCRETE_ATTRIBUTE,NULL,NULL,STR(boost::lexical_cast<std::string>( Order  ))) )
+            .addParameter( xmlParse::parameter(STR("beta"),CONTINUOUS_ATTRIBUTE,NULL,STR("\\beta"),STR("0.01:1:10")) )
+            .addParameter( xmlParse::parameter(STR("nu"),CONTINUOUS_ATTRIBUTE,NULL,STR("\\nu"),STR("0.01:1:10")) )
+            .addParameter( h );
+
+        vector<xmlParse::parameter> depend;
+        vector<string> funcs;
+        depend.push_back(h);
+        funcs.push_back("h**2");
+        vector<string> funcs2;
+        funcs2.push_back("h**1");
+
+        this->
+            addOutput( xmlParse::output(STR("norm_L2"),STR("\\left\\| . \\right\\|_{L^2}"),depend,funcs) )
+            .addOutput( xmlParse::output(STR("norm_H1"),STR("\\left\\| . \\right\\|_{H^1}"),depend,funcs2) );
+
     }
 
     /**
@@ -223,25 +248,15 @@ template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_t
 void
 Laplacian<Dim, Order, RDim, Entity>::run()
 {
-    if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    this->addParameterValue( Dim )
+        .addParameterValue( Order )
+        .addParameterValue( this->vm()["beta"].template as<double>() )
+        .addParameterValue( this->vm()["nu"].template as<double>() )
+        .addParameterValue( this->vm()["hsize"].template as<double>() );
 
-    //    int maxIter = 10.0/meshSize;
+    this->preProcessing();
+
     using namespace Life::vf;
-
-    this->changeRepository( boost::format( "%1%/nu_%2%/beta_%3%/%4%/P%5%/h_%6%/" )
-                            % this->about().appName()
-                            % this->vm()["nu"].template as<double>()
-                            % this->vm()["beta"].template as<double>()
-                            % entity_type::name()
-                            % Order
-                            % this->vm()["hsize"].template as<double>()
-                            );
-
-
 
     /*
      * First we create the mesh
@@ -312,7 +327,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     sparse_matrix_ptrtype D( backend->newMatrix( Xh, Xh ) );
 
     form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), _Q<2*Order>(),
+      integrate( elements(mesh), _Q<2*Order>(),
                    nu*(gradt(u)*trans(grad(v)))
                    + beta*(idt(u)*id(v)) );
 
@@ -378,19 +393,8 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     this->exportResults( u );
 
 
-    this->changeRepository( boost::format( "%1%/TestConv/%2%D/P%3%/nu_%4%/beta_%5%/")
-                            % this->about().appName()
-                            % Dim
-                            % Order
-                            % this->vm()["nu"].template as<double>()
-                            % this->vm()["beta"].template as<double>()
-                            );
-
-
-
-    std::ofstream fichier("resultTest.txt",std::ios_base::app);
-    fichier <<this->vm()["hsize"].template as<double>()
-            <<" "<<H1error<<" "<<L2error<<"\n";
+    this->addOutputValue( L2error ).addOutputValue( H1error );
+    this->postProcessing();
 
 } // Laplacian::run
 
