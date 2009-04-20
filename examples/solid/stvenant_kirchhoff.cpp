@@ -131,7 +131,7 @@ public:
 
     /*mesh*/
     typedef Entity<Dim> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
