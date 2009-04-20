@@ -50,7 +50,7 @@
 /** include  polynomialset header */
 #include <life/lifepoly/polynomialset.hpp>
 #include <life/lifepoly/lagrange.hpp>
-#include <life/lifepoly/raviartthomas.hpp>
+//#include <life/lifepoly/raviartthomas.hpp>
 
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <life/lifevf/vf.hpp>
@@ -128,9 +128,9 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! the basis type of our approximation space
-    //typedef bases<Lagrange<Order,Scalar> > basis_type;
+    typedef bases<Lagrange<Order,Scalar> > basis_type;
     //typedef bases<Lagrange<Order,Vectorial> > basis_type;
-    typedef bases<RaviartThomas<Order> > basis_type;
+    //typedef bases<RaviartThomas<Order> > basis_type;
 
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
