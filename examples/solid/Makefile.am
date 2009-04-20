@@ -28,13 +28,13 @@ check_PROGRAMS=beam stvenant_kirchhoff axi1D # stvenant_kirchhoff_ho
 #CXXFLAGS= -DLIFE_USE_BOOST_LAMBDA
 
 beam_SOURCES=beam.cpp
-beam_LDADD = $(LIFE_LIBS) -lboost_signals
+beam_LDADD = $(LIFE_LIBS)
 
 axi1D_SOURCES=axi_1D.cpp
-axi1D_LDADD = $(LIFE_LIBS) -lboost_signals
+axi1D_LDADD = $(LIFE_LIBS)
 
 stvenant_kirchhoff_SOURCES=stvenant_kirchhoff.cpp
-stvenant_kirchhoff_LDADD = $(LIFE_LIBS) -lboost_signals
+stvenant_kirchhoff_LDADD = $(LIFE_LIBS)
 
 #stvenant_kirchhoff_ho_SOURCES=stvenant_kirchhoff_ho.cpp
 #stvenant_kirchhoff_ho_LDADD = $(LIFE_LIBS) -lboost_signals
