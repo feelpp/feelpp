@@ -191,8 +191,7 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
     meshSize( this->vm()["hsize"].template as<double>() ),
     M_lambda( this->vm()["lambda"].template as<int>() ),
     M_Xh(),
-    exporter(),
-    timeSet()
+    exporter()
 {
 
     if ( this->vm().count( "help" ) )
