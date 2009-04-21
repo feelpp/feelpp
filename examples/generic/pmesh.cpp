@@ -172,23 +172,18 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef typename Exporter<mesh_type>::timeset_type timeset_type;
 
     Laplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
         meshSize( this->vm()["hsize"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "pmesh" ) ),
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers(),
         stats()
     {
         Log() << "[Laplacian] hsize = " << meshSize << "\n";
         Log() << "[Laplacian] export = " << this->vm().count("export") << "\n";
 
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
-        exporter->setPrefix( "pmesh" );
     }
 
     /**
@@ -231,7 +226,6 @@ private:
     double meshSize;
 
     boost::shared_ptr<export_type> exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
     std::map<std::string,double> stats;
@@ -304,10 +298,9 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
     if ( this->vm().count( "export" ) )
         {
-            typename timeset_type::step_ptrtype timeStep = timeSet->step( 1.0 );
-            timeStep->setMesh( mesh );
+            exporter->step(1.)->setMesh( mesh );
 #if 1
-            timeStep->add( "pid", pid );
+            exporter->step(1.)->add( "pid", pid );
 
 #endif
             exporter->save();
@@ -457,19 +450,18 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( f1_type& U,
     if ( this->vm().count( "export" ) )
         {
             Log() << "exportResults starts\n";
-            typename timeset_type::step_ptrtype timeStep = timeSet->step( 1.0 );
-            timeStep->setMesh( U.functionSpace()->mesh() );
-            //timeStep->setMesh( this->createMesh( meshSize/2, 0.5, 1 ) );
-            //timeStep->setMesh( this->createMesh( meshSize, 0, 1 ) );
+            exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
+            //exporter->step(1.)->setMesh( this->createMesh( meshSize/2, 0.5, 1 ) );
+            //exporter->step(1.)->setMesh( this->createMesh( meshSize, 0, 1 ) );
             if ( !this->vm().count( "export-mesh-only" ) )
                 {
-                    timeStep->add( "pid",
+                    exporter->step(1.)->add( "pid",
                                    regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
 
 
-                    timeStep->add( "u", U );
-                    timeStep->add( "v", V );
-                    timeStep->add( "e", E );
+                    exporter->step(1.)->add( "u", U );
+                    exporter->step(1.)->add( "v", V );
+                    exporter->step(1.)->add( "e", E );
                 }
             exporter->save();
 

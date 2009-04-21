@@ -162,7 +162,6 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef typename Exporter<mesh_type>::timeset_type timeset_type;
 
     /** constructor */
     Laplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od );
@@ -211,7 +210,6 @@ private:
     ptrtype_cont  Xch;
 
     boost::shared_ptr<export_type> exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
 
@@ -223,8 +221,7 @@ Laplacian<Order>::Laplacian( int argc, char** argv, AboutData const& ad, po::opt
         super( argc, argv, ad, od ),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "laplacian" ) ),
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers()
 {
 /*	int anisomesh = this->vm()["anisomesh"].template as<int>();
@@ -260,9 +257,6 @@ Laplacian<Order>::Laplacian( int argc, char** argv, AboutData const& ad, po::opt
 
 	Log() << "[Laplacian] hsize = " << meshSize << "\n";
     Log() << "[Laplacian] export = " << this->vm().count("export") << "\n";
-
-    timeSet->setTimeIncrement( 1.0 );
-    exporter->addTimeSet( timeSet );
 
     mesh = createMesh( meshSize );
     Xh = space_type::New( mesh );
@@ -725,11 +719,10 @@ Laplacian<Order>::exportResults( element_type& U, element_type_cont& V, element_
 {
     timers["export"].first.restart();
 
-    typename timeset_type::step_ptrtype timeStep = timeSet->step( 1.0 );
-    timeStep->setMesh( createMesh( this->vm()["hvisu"].template as<value_type>() ) );
-    timeStep->add( "u", U );
-    timeStep->add( "v", V );
-    timeStep->add( "e", E );
+    exporter->step(1.)->setMesh( createMesh( this->vm()["hvisu"].template as<value_type>() ) );
+    exporter->step(1.)->add( "u", U );
+    exporter->step(1.)->add( "v", V );
+    exporter->step(1.)->add( "e", E );
     exporter->save();
 
 
@@ -753,11 +746,10 @@ Laplacian<Order>::writeResults( value_type e1,
 {
     timers["write"].first.restart();
 
-//     typename timeset_type::step_ptrtype timeStep = timeSet->step( 1.0 );
-//     timeStep->setMesh( U.functionSpace()->mesh() );
-//     timeStep->add( "u", U );
-//     timeStep->add( "v", V );
-//     timeStep->add( "e", E );
+//     exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
+//     exporter->step(1.)->add( "u", U );
+//     exporter->step(1.)->add( "v", V );
+//     exporter->step(1.)->add( "e", E );
 //     exporter->save();
 
 

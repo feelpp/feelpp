@@ -133,7 +133,6 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    typedef typename export_type::timeset_type timeset_type;
 
     /** constructor */
     LaplacianML( int argc, char** argv, AboutData const& ad, po::options_description const& od );
@@ -173,7 +172,6 @@ private:
     functionspace_ptrtype Xh;
 
     export_ptrtype exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
 
@@ -193,8 +191,7 @@ LaplacianML<Dim,Order>::LaplacianML( int argc, char** argv, AboutData const& ad,
     Xh(),
 
     // export
-    exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-    timeSet( new timeset_type( "laplacian_ml" ) ),
+    exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
 
     //
     timers()
@@ -213,10 +210,6 @@ LaplacianML<Dim,Order>::LaplacianML( int argc, char** argv, AboutData const& ad,
                             % Order
                             % h
                             );
-
-    timeSet->setTimeIncrement( 1.0 );
-    exporter->addTimeSet( timeSet );
-    exporter->setPrefix( "laplacian_ml" );
 
     Log() << "create mesh\n";
     mesh = createMesh();
@@ -361,12 +354,11 @@ LaplacianML<Dim, Order>::exportResults( element_type& U, element_type& V, elemen
     timers["export"].first.restart();
 
     Log() << "exportResults starts\n";
-    typename timeset_type::step_ptrtype timeStep = timeSet->step( 0.0 );
-    timeStep->setMesh( U.functionSpace()->mesh() );
-    timeStep->add( "u", U.template element<0>() );
-    timeStep->add( "exact", V.template element<0>() );
-    timeStep->add( "error", E.template element<0>() );
-    //timeStep->add( "l", U.template element<1>() );
+    exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+    exporter->step(0)->add( "u", U.template element<0>() );
+    exporter->step(0)->add( "exact", V.template element<0>() );
+    exporter->step(0)->add( "error", E.template element<0>() );
+    //exporter->step(0)->add( "l", U.template element<1>() );
 
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
