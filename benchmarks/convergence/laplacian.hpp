@@ -359,7 +359,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     Log() << "solve in " << t1.elapsed() << "s\n";
     t1.restart();
 
-    double L2error2 =integrate( elements(mesh), _Q<2*(Order+2)+2>(),
+    double L2error2 =integrate( elements(mesh), _Q<4*(Order)+2>(),
                                 (idv(u)-g)*trans(idv(u)-g) ).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
@@ -369,7 +369,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 
 
     v = project( Xh, elements(mesh), g );
-    double semiH1error2 =integrate( elements(mesh), _Q<2*(Order+2)>(),
+    double semiH1error2 =integrate( elements(mesh), _Q<4*(Order)>(),
                                     (gradv(u)-gradv(v))*trans(gradv(u)-gradv(v)) ).evaluate()( 0, 0 ) ;
 
     Log() << "semi H1 norm computed in " << t1.elapsed() << "s\n";
