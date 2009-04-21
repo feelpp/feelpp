@@ -157,8 +157,8 @@ ExporterEnsight<MeshType>::_F_writeCaseFile() const
           << "type: ensight \n"
           << "GEOMETRY:\n";
 
-    timeset_iterator __ts_it = this->beginTimeSet();
-    timeset_iterator __ts_en = this->endTimeSet();
+    timeset_const_iterator __ts_it = this->beginTimeSet();
+    timeset_const_iterator __ts_en = this->endTimeSet();
     while ( __ts_it != __ts_en )
         {
             timeset_ptrtype __ts = *__ts_it;
@@ -275,8 +275,8 @@ ExporterEnsight<MeshType>::_F_writeGeoFiles() const
 {
     namespace lambda = boost::lambda;
 
-    timeset_iterator __ts_it = this->beginTimeSet();
-    timeset_iterator __ts_en = this->endTimeSet();
+    timeset_const_iterator __ts_it = this->beginTimeSet();
+    timeset_const_iterator __ts_en = this->endTimeSet();
     while ( __ts_it != __ts_en )
         {
             timeset_ptrtype __ts = *__ts_it;
@@ -316,8 +316,8 @@ ExporterEnsight<MeshType>::_F_writeVariableFiles() const
     namespace lambda = boost::lambda;
 
 
-    timeset_iterator __ts_it = this->beginTimeSet();
-    timeset_iterator __ts_en = this->endTimeSet();
+    timeset_const_iterator __ts_it = this->beginTimeSet();
+    timeset_const_iterator __ts_en = this->endTimeSet();
     while ( __ts_it != __ts_en )
         {
             timeset_ptrtype __ts = *__ts_it;
