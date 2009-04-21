@@ -140,15 +140,13 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef typename Exporter<mesh_type>::timeset_type timeset_type;
 
     Dar( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "dar" ) ),
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers(),
         stats()
     {
@@ -156,9 +154,7 @@ public:
         Log() << "[Dar] bccoeff = " << bcCoeff << "\n";
         Log() << "[Dar] export = " << this->vm().count("export") << "\n";
 
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
-        exporter->setPrefix( "dar" );
+
     }
 
 
@@ -202,7 +198,6 @@ private:
     double bcCoeff;
 
     boost::shared_ptr<export_type> exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
     std::map<std::string,double> stats;
@@ -468,11 +463,11 @@ Dar<Dim, Order, Cont, Entity>::exportResults( f1_type& U,
 {
     timers["export"].first.restart();
 
-    typename timeset_type::step_ptrtype timeStep = timeSet->step( 1.0 );
-    timeStep->setMesh( U.functionSpace()->mesh() );
-    timeStep->add( "u", U );
-    timeStep->add( "v", V );
-    timeStep->add( "e", E );
+
+    exporter->step(1)->setMesh( U.functionSpace()->mesh() );
+    exporter->step(1)->add( "u", U );
+    exporter->step(1)->add( "v", V );
+    exporter->step(1)->add( "e", E );
     exporter->save();
 
     timers["export"].second = timers["export"].first.elapsed();

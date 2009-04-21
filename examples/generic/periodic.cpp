@@ -129,7 +129,6 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    typedef typename export_type::timeset_type timeset_type;
 
     /** constructor */
     PeriodicLaplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od );
@@ -169,7 +168,6 @@ private:
     functionspace_ptrtype Xh;
 
     export_ptrtype exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
 
@@ -189,8 +187,7 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
     Xh(),
 
     // export
-    exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-    timeSet( new timeset_type( "periodic" ) ),
+    exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
 
     //
     timers()
@@ -209,10 +206,6 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
                             % Order
                             % h
                             );
-
-    timeSet->setTimeIncrement( 1.0 );
-    exporter->addTimeSet( timeSet );
-    exporter->setPrefix( "periodic" );
 
     Log() << "create mesh\n";
     mesh = createMesh();
@@ -355,11 +348,11 @@ PeriodicLaplacian<Dim, Order>::exportResults( element_type& U, element_type& V, 
     timers["export"].first.restart();
 
     Log() << "exportResults starts\n";
-    typename timeset_type::step_ptrtype timeStep = timeSet->step( 0.0 );
-    timeStep->setMesh( U.functionSpace()->mesh() );
-    timeStep->add( "u", U );
-    timeStep->add( "exact", V );
-    timeStep->add( "error", E );
+
+    exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
+    exporter->step(1.)->add( "u", U );
+    exporter->step(1.)->add( "exact", V );
+    exporter->step(1.)->add( "error", E );
 
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();

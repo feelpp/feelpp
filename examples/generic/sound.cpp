@@ -143,24 +143,18 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef typename Exporter<mesh_type>::timeset_type timeset_type;
 
     Sound( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "sound" ) ),
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers(),
         stats()
     {
         Log() << "[Sound] hsize = " << meshSize << "\n";
         Log() << "[Sound] export = " << this->vm().count("export") << "\n";
-
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
-        exporter->setPrefix( "sound" );
     }
 
     /**
@@ -193,7 +187,6 @@ private:
     double meshSize;
 
     boost::shared_ptr<export_type> exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
     std::map<std::string,double> stats;
@@ -379,15 +372,14 @@ Sound<Dim, Order, Entity>::exportResults( element_type& U, element_type& Mode )
     if ( this->vm().count( "export" ) )
         {
             Log() << "exportResults starts\n";
-            typename timeset_type::step_ptrtype timeStep = timeSet->step( 1.0 );
-            timeStep->setMesh( U.functionSpace()->mesh() );
-            //timeStep->setMesh( this->createMesh( meshSize/2, 0.5, 1 ) );
-            //timeStep->setMesh( this->createMesh( meshSize/Order, 0, 1 ) );
-            //timeStep->setMesh( this->createMesh( meshSize ) );
+            exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
+            //exporter->step(1.)->setMesh( this->createMesh( meshSize/2, 0.5, 1 ) );
+            //exporter->step(1.)->setMesh( this->createMesh( meshSize/Order, 0, 1 ) );
+            //exporter->step(1.)->setMesh( this->createMesh( meshSize ) );
             if ( !this->vm().count( "export-mesh-only" ) )
                 {
-                    timeStep->add( "p", U );
-                    timeStep->add( "mode", Mode );
+                    exporter->step(1.)->add( "p", U );
+                    exporter->step(1.)->add( "mode", Mode );
                 }
             exporter->save();
         }

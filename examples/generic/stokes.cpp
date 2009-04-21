@@ -144,8 +144,6 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef typename Exporter<mesh_type>::timeset_type timeset_type;
-
 
     Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
@@ -153,18 +151,13 @@ public:
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "stokes" ) ),
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers(),
         stats()
     {
         Log() << "[Stokes] hsize = " << meshSize << "\n";
         Log() << "[Stokes] bccoeff = " << bcCoeff << "\n";
         Log() << "[Stokes] export = " << this->vm().count("export") << "\n";
-
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
-        exporter->setPrefix( "stokes" );
 
         mu = this->vm()["mu"].template as<value_type>();
         penalbc = this->vm()["bccoeff"].template as<value_type>();
@@ -209,8 +202,6 @@ private:
     double penalbc;
 
     boost::shared_ptr<export_type> exporter;
-    typename export_type::timeset_ptrtype timeSet;
-
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
     std::map<std::string,double> stats;
@@ -421,10 +412,9 @@ Stokes<Dim, Order, Entity>::exportResults( element_type& U )
 {
     timers["export"].first.restart();
 
-    typename timeset_type::step_ptrtype timeStep = timeSet->step( 1.0 );
-    timeStep->setMesh( U.functionSpace()->mesh() );
-    timeStep->add( "u", U.template element<0>() );
-    timeStep->add( "p", U.template element<1>() );
+    exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
+    exporter->step(1.)->add( "u", U.template element<0>() );
+    exporter->step(1.)->add( "p", U.template element<1>() );
     exporter->save();
 
     timers["export"].second = timers["export"].first.elapsed();
