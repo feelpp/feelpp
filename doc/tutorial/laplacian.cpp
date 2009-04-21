@@ -167,8 +167,6 @@ public:
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    //! the time set type  to save data over time
-    typedef typename export_type::timeset_type timeset_type;
 
     /**
      * Constructor
@@ -178,12 +176,8 @@ public:
         super( argc, argv, ad, od ),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "laplacian" ) )
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
-        exporter->setPrefix( "laplacian" );
     }
 
     /**
@@ -228,10 +222,6 @@ private:
 
     //! exporter factory
     export_ptrtype exporter;
-
-    //! timeset data structure the holds results over time
-    typename export_type::timeset_ptrtype timeSet;
-
 }; // Laplacian
 
 template<int Dim> const uint16_type Laplacian<Dim>::Order;
@@ -443,12 +433,11 @@ Laplacian<Dim>::exportResults( element_type& U )
 {
     Log() << "exportResults starts\n";
 
-    typename timeset_type::step_ptrtype timeStep = timeSet->step( 0 );
-    timeStep->setMesh( U.functionSpace()->mesh() );
+    exporter->step(0)->setMesh( U.functionSpace()->mesh() );
 
-    timeStep->add( "pid",
-                   regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-    timeStep->add( "u", U );
+    exporter->step(0)->add( "pid",
+                            regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
+    exporter->step(0)->add( "u", U );
 
     exporter->save();
 } // Laplacian::export
