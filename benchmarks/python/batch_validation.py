@@ -95,7 +95,7 @@ for o in code.outputs:
 					if p.getAttrValues()[1]=="discrete":
 						val_depend[str(d)]=map(util.strToSci,p.getValues().split(','))
 					else:
-						val_depend[str(d)]=map(util.strToSci,util.pickInInterval(float(p.getValues().split(':')[0]),float(p.getValues().split(':')[-1]),options.lnbr,12,options.method))
+						val_depend[str(d)]=map(util.strToSci,util.pickInInterval(float(p.getValues().split(':')[0]),float(p.getValues().split(':')[-1]),options.lnbr,options.lnbr*4,options.method))
 
 # les outputs n'ayant pas de dependances sont enleves
 dep_outputs=[]
