@@ -51,10 +51,24 @@ enum file_type
 /**
  * \class Exporter
  * \brief export Life generated data to some file formats
- *
- * use the visitor pattern
- *
  * \ingroup Exporter
+ *
+ * Use the visitor and factory pattern.
+ *
+ * Here is a snippet on how to use the Exporter class
+ * \code
+ * #include <life/lifefilters/exporter.hpp>
+ * typedef Exporter<mesh_type> export_type;
+ * typedef boost::shared_ptr<export_type> export_ptrtype;
+ * // vm is a po::variables_map to get the command lines options
+ * export_ptrtype exporter( export_type::New( vm );
+ * // U is an element of a function space which we want to visualise
+ * exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+ * exporter->step(0)->add( "u", U );
+ * \endcode
+ *
+ * \sa Laplacian
+ *
  * @author Christophe Prud'homme
  */
 template<typename MeshType>
