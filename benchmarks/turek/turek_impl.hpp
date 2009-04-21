@@ -50,13 +50,9 @@ Turek<Dim, Order, GeoOrder>::Turek( po::variables_map const& vm )
     M_backend_symm_v( backend_type::build( this->vm() ) ),
     M_backend_symm_s( backend_type::build( this->vm() ) ),
     M_Xh(),
-    exporter( export_type::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-    timeSet( new timeset_type( "turek" ) ),
+    exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
     M_data( "data.txt" )
 {
-    timeSet->setTimeIncrement( 1.0 );
-    exporter->addTimeSet( timeSet );
-    exporter->setPrefix( "turek" );
 
     // print data
     this->print();
@@ -622,46 +618,44 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U)
 
     if ( this->doExport() != NO_EXPORT )
         {
-            typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
-
             if ( this->doExport() == EXPORT_SAME_MESH )
-                timeStep->setMesh( M_pressure_oplagp1->dualImageSpace()->mesh() );
+                exporter->step(time)->setMesh( M_pressure_oplagp1->dualImageSpace()->mesh() );
             else if ( this->doExport() == EXPORT_LAGP1_MESH )
-                timeStep->setMesh( M_velocity_oplagp1->dualImageSpace()->mesh() );
+                exporter->step(time)->setMesh( M_velocity_oplagp1->dualImageSpace()->mesh() );
             else
                 {
                     Log() << "invalid export strategy: using EXPORT_SAME_MESH\n";
-                    timeStep->setMesh( M_pressure_oplagp1->dualImageSpace()->mesh() );
+                    exporter->step(time)->setMesh( M_pressure_oplagp1->dualImageSpace()->mesh() );
                 }
 
             Log() << "[exportResults] setMesh : " << ti.elapsed() << "\n";
             ti.restart();
 
-            timeStep->addScalar( "CD", Force(0,0) );
-            timeStep->addScalar( "CL", Force(1,0) );
-            timeStep->addScalar( "DP", DeltaP );
-            timeStep->addScalar( "Uinf", u.linftyNorm() );
+            exporter->step(time)->addScalar( "CD", Force(0,0) );
+            exporter->step(time)->addScalar( "CL", Force(1,0) );
+            exporter->step(time)->addScalar( "DP", DeltaP );
+            exporter->step(time)->addScalar( "Uinf", u.linftyNorm() );
 
 
             velocity_element_type force( M_Xh->template functionSpace<0>(), "force" );
             force = vf::project( M_Xh->template functionSpace<0>(), boundaryfaces( mesh ), SigmaNv );
-            timeStep->add( "total_force_per_area", force );
+            exporter->step(time)->add( "total_force_per_area", force );
             force = vf::project( M_Xh->template functionSpace<0>(), boundaryfaces( mesh ), 2*this->nu()*defv*N() );
-            timeStep->add( "viscous_force_per_area", force );
+            exporter->step(time)->add( "viscous_force_per_area", force );
 
 
             //else
             //timeStep->setMesh( M_Xh->mesh() );
-            timeStep->add( "pid",
+            exporter->step(time)->add( "pid",
                            regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( M_velocity_oplagp1->dualImageSpace()->mesh() ) ) ) );
 
 
-            timeStep->add( "velocity", u );
-            timeStep->add( "u", u.comp(X) );
-            timeStep->add( "v", u.comp(Y) );
+            exporter->step(time)->add( "velocity", u );
+            exporter->step(time)->add( "u", u.comp(X) );
+            exporter->step(time)->add( "v", u.comp(Y) );
             if ( Dim == 3 )
-                timeStep->add( "w", u.comp(Z) );
-            timeStep->add( "pressure", p );
+                exporter->step(time)->add( "w", u.comp(Z) );
+            exporter->step(time)->add( "pressure", p );
 
             Log() << "[exportResults] pid, U, u, v, p : " << ti.elapsed() << "\n";
             ti.restart();
@@ -669,7 +663,7 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U)
             pressure_element_type aux( M_Xh->template functionSpace<1>(), "mag" );
             aux = vf::project( M_Xh->template functionSpace<1>(), elements( mesh ), sqrt( trans(idv(u))*idv(u) ) );
 
-            timeStep->add( "velocity_mag", aux );
+            exporter->step(time)->add( "velocity_mag", aux );
 
             Log() << "[exportResults] ||U|| : " << ti.elapsed() << "\n";
             ti.restart();
@@ -677,7 +671,7 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U)
             // cell Reynolds number
             aux = vf::project( M_Xh->template functionSpace<1>(), elements( mesh ), this->rho()*sqrt( trans(idv(u))*idv(u) )*h()/this->nu() );
 
-            timeStep->add( "cellRe", aux );
+            exporter->step(time)->add( "cellRe", aux );
 
             Log() << "[exportResults] cellRe : " << ti.elapsed() << "\n";
             ti.restart();
@@ -695,10 +689,10 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U)
 
                     this->solve( M_mass_v->matPtr(), vort, F_vort );
 
-                    timeStep->add( "vorticity", vort );
-                    timeStep->add( "vorticity_x", vort.comp(X) );
-                    timeStep->add( "vorticity_y", vort.comp(Y) );
-                    timeStep->add( "vorticity_z", vort.comp(Z) );
+                    exporter->step(time)->add( "vorticity", vort );
+                    exporter->step(time)->add( "vorticity_x", vort.comp(X) );
+                    exporter->step(time)->add( "vorticity_y", vort.comp(Y) );
+                    exporter->step(time)->add( "vorticity_z", vort.comp(Z) );
                 }
             else
                 {
@@ -710,7 +704,7 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U)
 
                     this->solve( M_mass_s->matPtr(), aux, F_vort );
 
-                    timeStep->add( "vorticity", aux );
+                    exporter->step(time)->add( "vorticity", aux );
                 }
             Log() << "[exportResults] vorticity : " << ti.elapsed() << "\n";
             ti.restart();

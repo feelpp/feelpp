@@ -141,7 +141,6 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    typedef typename export_type::timeset_type timeset_type;
 
     Laplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
@@ -153,14 +152,9 @@ public:
         M_gammabc( this->vm()["gammabc"].template as<double>() ),
 
         M_do_export( !this->vm().count( "no-export" ) ),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "laplacian" ) )
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
-        exporter->setPrefix( "laplacian" );
-
-        xmlParse::parameter h(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.01:0.2:0.5") );
+        xmlParse::parameter h(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.05:0.09:0.3") );
         this->
             addParameter( xmlParse::parameter(STR("dim"),DISCRETE_ATTRIBUTE,NULL,NULL,STR(boost::lexical_cast<std::string>( Dim  ))) )
             .addParameter( xmlParse::parameter(STR("order"),DISCRETE_ATTRIBUTE,NULL,NULL,STR(boost::lexical_cast<std::string>( Order  ))) )
@@ -215,7 +209,6 @@ private:
 
     bool M_do_export;
     export_ptrtype exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
 }; // Laplacian
 
@@ -420,12 +413,11 @@ Laplacian<Dim, Order, RDim, Entity>::exportResults( element_type& U )
         {
             Log() << "exportResults starts\n";
 
-            typename timeset_type::step_ptrtype timeStep = timeSet->step( 0 );
-            timeStep->setMesh( U.functionSpace()->mesh() );
+            exporter->step(0)->setMesh( U.functionSpace()->mesh() );
 
-            timeStep->add( "pid",
+            exporter->step(0)->add( "pid",
                            regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-            timeStep->add( "u", U );
+            exporter->step(0)->add( "u", U );
 
             exporter->save();
         }

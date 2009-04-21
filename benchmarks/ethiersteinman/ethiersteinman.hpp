@@ -179,7 +179,6 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef Exporter<mesh_type>::timeset_type timeset_type;
 
     // linear algebra backends
     typedef BackendAdaptiveReusePC<BackendGmm<value_type> > backend_type;
@@ -292,7 +291,6 @@ private:
     double M_mu;
 
     boost::shared_ptr<export_type> M_exporter;
-    export_type::timeset_ptrtype M_timeSet;
 
     std::map<std::string,std::pair<boost::timer,double> > M_timers;
 

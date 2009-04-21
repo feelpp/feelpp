@@ -137,19 +137,14 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    typedef typename export_type::timeset_type timeset_type;
 
     LaplacianV( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
         backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "laplacianv" ) )
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
-        exporter->setPrefix( "laplacianv" );
 
                 exporter->setPrefix( "laplacian" );
 
@@ -204,7 +199,6 @@ private:
     double meshSize;
 
     export_ptrtype exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
 }; // LaplacianV
 
@@ -373,13 +367,12 @@ LaplacianV<Dim, Order, RDim>::exportResults( element_type& U, element_type& E )
 {
     Log() << "exportResults starts\n";
 
-    typename timeset_type::step_ptrtype timeStep = timeSet->step( 0 );
-    timeStep->setMesh( U.functionSpace()->mesh() );
+    exporter->step(0)->setMesh( U.functionSpace()->mesh() );
 
-    timeStep->add( "pid",
+    exporter->step(0)->add( "pid",
                    regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-    timeStep->add( "u", U );
-    timeStep->add( "exact", E );
+    exporter->step(0)->add( "u", U );
+    exporter->step(0)->add( "exact", E );
 
     exporter->save();
 } // LaplacianV::export

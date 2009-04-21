@@ -46,8 +46,7 @@ Kovasznay::Kovasznay( int argc, char** argv, AboutData const& ad )
     super( argc, argv, ad ),
     M_meshSize( this->vm()["hsize"].as<double>() ),
     M_nu( this->vm()["nu"].as<double>() ),
-    M_exporter( new ExporterEnsight<mesh_type>( "kovasznay" ) ),
-    M_timeSet( new timeset_type( "kovasznay" ) ),
+    exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
     M_timers(),
     M_im(),
     M_uErrorL2( -1.0 ),
@@ -60,8 +59,6 @@ Kovasznay::Kovasznay( int argc, char** argv, AboutData const& ad )
     Debug() << "[Kovasznay] export      = "
             << this->vm()["export"].as<int>() << "\n";
 
-    M_timeSet->setTimeIncrement( 1.0 );
-    M_exporter->addTimeSet( M_timeSet );
 }
 
 Kovasznay::Kovasznay( int argc,
@@ -86,8 +83,6 @@ Kovasznay::Kovasznay( int argc,
     Debug() << "[Kovasznay] export  = "
             << this->vm()["export"].as<int>() << "\n";
 
-    M_timeSet->setTimeIncrement( 1.0 );
-    M_exporter->addTimeSet( M_timeSet );
 }
 
 Kovasznay::Kovasznay( Kovasznay const& tc )
@@ -109,8 +104,6 @@ Kovasznay::Kovasznay( Kovasznay const& tc )
     Debug() << "[Kovasznay] export  = "
             << this->vm()["export"].as<int>() << "\n";
 
-    M_timeSet->setTimeIncrement( 1.0 );
-    M_exporter->addTimeSet( M_timeSet );
 }
 
 Kovasznay::mesh_ptr_type
@@ -539,12 +532,11 @@ Kovasznay::exportResults( int iter,
         UErr = vf::project( U.functionSpace(), elements(*mesh), idv(U) - uxe*oneX()-uye*oneY() );
         pErr  = vf::project( p.functionSpace(),  elements(*mesh), idv(p)  - pe  - dpm );
 
-        timeset_type::step_ptrtype timeStep = M_timeSet->step( iter );
-        timeStep->setMesh( mesh );
-        timeStep->add( "U", U );
-        timeStep->add( "p", p );
-        timeStep->add( "UErr", UErr );
-        timeStep->add( "pErr", pErr );
+        exporter->step(iter)->setMesh( mesh );
+        exporter->step(iter)->add( "U", U );
+        exporter->step(iter)->add( "p", p );
+        exporter->step(iter)->add( "UErr", UErr );
+        exporter->step(iter)->add( "pErr", pErr );
         M_exporter->save();
     } // export
 

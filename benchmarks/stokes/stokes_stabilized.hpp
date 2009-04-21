@@ -166,23 +166,18 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef typename Exporter<mesh_type>::timeset_type timeset_type;
 
     StokesStabilized( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         nu( this->vm()["nu"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "stokesStabilized" ) )
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         Debug() << "[StokesStabilized] hsize = " << meshSize << "\n";
         Debug() << "[StokesStabilized] nu = " << nu << "\n";
         Debug() << "[StokesStabilized] export = " << this->vm().count("export") << "\n";
 
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
-        exporter->setPrefix( "stokesStabilized" );
     }
 
 
@@ -208,7 +203,6 @@ private:
     double nu;
 
     boost::shared_ptr<export_type> exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
 }; // StokesStabilized
 
@@ -502,11 +496,10 @@ void
 StokesStabilized<Order>::exportResults( double time,
                                         element_type& U)
 {
-    typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
-    timeStep->setMesh( U.functionSpace()->mesh() );
-    timeStep->add( "u", U.template element<0>().comp(X) );
-    timeStep->add( "v", U.template element<0>().comp(Y) );
-    timeStep->add( "pressure", U.template element<1>() );
+    exporter->step(time)->setMesh( U.functionSpace()->mesh() );
+    exporter->step(time)->add( "u", U.template element<0>().comp(X) );
+    exporter->step(time)->add( "v", U.template element<0>().comp(Y) );
+    exporter->step(time)->add( "pressure", U.template element<1>() );
     exporter->save();
 } // StokesStabilized::export
 
