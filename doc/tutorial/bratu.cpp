@@ -135,7 +135,6 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    typedef typename export_type::timeset_type timeset_type;
 
     /**
      * Constructor
@@ -182,9 +181,6 @@ private:
     funlin_ptrtype M_residual;
 
     export_ptrtype exporter;
-    typename export_type::timeset_ptrtype timeSet;
-
-
 }; // Bratu
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -216,12 +212,7 @@ Bratu<Dim,Order,Entity>::Bratu( int argc, char** argv, AboutData const& ad, po::
     mesh_ptrtype mesh = createMesh( meshSize );
     M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
 
-    exporter = export_ptrtype( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) );
-    timeSet = typename export_type::timeset_ptrtype( new timeset_type( "bratu" ) );
-    timeSet->setTimeIncrement( 1.0 );
-    exporter->addTimeSet( timeSet );
-    exporter->setPrefix( "bratu" );
-
+    exporter = export_ptrtype( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
 }
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 typename Bratu<Dim,Order,Entity>::mesh_ptrtype
@@ -361,11 +352,10 @@ void
 Bratu<Dim, Order, Entity>::exportResults( element_type& U )
 {
     Log() << "exportResults starts\n";
-    typename timeset_type::step_ptrtype timeStep = timeSet->step( 0.0 );
-    timeStep->setMesh( U.functionSpace()->mesh() );
+    exporter->step(0)->setMesh( U.functionSpace()->mesh() );
     if ( !this->vm().count( "export-mesh-only" ) )
         {
-            timeStep->add( "u", U );
+            exporter->step(0)->add( "u", U );
         }
     exporter->save();
 } // Bratu::export

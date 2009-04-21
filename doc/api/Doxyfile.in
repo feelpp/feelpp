@@ -574,6 +574,7 @@ WARN_LOGFILE           = Doxylog
 # with spaces.
 
 INPUT                  = @top_srcdir@/../life \
+                         @top_srcdir@/api \
                          @top_srcdir@/tutorial
 
 # This tag can be used to specify the character encoding of the source files

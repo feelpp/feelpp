@@ -83,9 +83,6 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    typedef typename export_type::timeset_type timeset_type;
-    typedef typename export_type::timeset_ptrtype timeset_ptrtype;
-    typedef typename timeset_type::step_ptrtype timestep_ptrtype;
 
     /**
      * constructor about data and options description
@@ -115,7 +112,6 @@ private:
     double M_meshSize;
 
     export_ptrtype exporter;
-    typename export_type::timeset_ptrtype timeSet;
 };
 
 template<int Dim>
@@ -125,8 +121,7 @@ MyMesh<Dim>::MyMesh(int argc, char** argv,
     :
     Application( argc, argv, ad, od ),
     M_meshSize( 0.1 ),
-    exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-    timeSet( new timeset_type( "mymesh" ) )
+    exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
     this->setOptions();
 }
@@ -135,10 +130,6 @@ void
 MyMesh<Dim>::setOptions()
 {
     M_meshSize = this->vm()["hsize"].template as<double>();
-
-    timeSet->setTimeIncrement( 1.0 );
-    exporter->addTimeSet( timeSet );
-    exporter->setPrefix( "mymesh" );
 }
 template<int Dim>
 typename MyMesh<Dim>::mesh_ptrtype
@@ -179,9 +170,8 @@ void MyMesh<Dim>::run()
     typedef FunctionSpace<mesh_type, p0_basis_type, Discontinuous> p0_space_type;
     boost::shared_ptr<p0_space_type> P0h( new p0_space_type( mesh ) );
 
-    timestep_ptrtype timeStep = timeSet->step( 0 );
-    timeStep->setMesh( mesh );
-    timeStep->add( "pid", regionProcess( P0h ) );
+    exporter->step(0)->setMesh( mesh );
+    exporter->step(0)->add( "pid", regionProcess( P0h ) );
 
     exporter->save();
 }
