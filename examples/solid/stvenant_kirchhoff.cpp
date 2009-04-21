@@ -166,7 +166,6 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    typedef typename export_type::timeset_type timeset_type;
 
     StVenantKirchhoff( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
@@ -175,16 +174,11 @@ public:
         meshSize( this->vm()["hsize"].template as<double>() ),
         M_lambda( this->vm()["lambda"].template as<double>() ),
         M_Xh(),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "stvenant_kirchhoff" ) ),
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         dt( this->vm()["dt"].template as<double>() ),
         ft( this->vm()["ft"].template as<double>() ),
         omega( this->vm()["omega"].template as<double>() )
     {
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
-        exporter->setPrefix( "stvenant_kirchhoff" );
-
         if ( this->vm().count( "help" ) )
             {
                 std::cout << this->optionsDescription() << "\n";
@@ -271,7 +265,6 @@ private:
     funlin_ptrtype M_residual;
 
     export_ptrtype exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
     double E;
     double sigma;
@@ -573,20 +566,20 @@ StVenantKirchhoff<Dim, Order>::exportResults( double time, element_type& U)
 {
 
     Log() << "exportResults starts\n";
-    typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
-    timeStep->setMesh( U.functionSpace()->mesh() );
-    timeStep->add( "pid",
+
+    exporter->step(time)->setMesh( U.functionSpace()->mesh() );
+    exporter->step(time)->add( "pid",
                    regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
 
 #if MIXED
-    timeStep->add( "displ", U.template element<0>() );
-    timeStep->add( "veloc", U.template element<1>() );
+    exporter->step(time)->add( "displ", U.template element<0>() );
+    exporter->step(time)->add( "veloc", U.template element<1>() );
 #else
-    timeStep->add( "displ", U );
+    exporter->step(time)->add( "displ", U );
 #endif
 
     exporter->save();
-    timeStep->setState( STEP_ON_DISK );
+    exporter->step(time)->setState( STEP_ON_DISK );
 } // StVenantKirchhoff::export
 } // Life
 

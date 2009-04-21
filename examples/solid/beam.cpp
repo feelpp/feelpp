@@ -121,7 +121,6 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef typename Exporter<mesh_type>::timeset_type timeset_type;
 
     Beam( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
@@ -131,8 +130,7 @@ public:
         beta( this->vm()["beta"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
         M_bctype( this->vm()["bctype"].template as<int>() ),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "beam" ) ),
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers()
     {
         Log() << "[Beam] hsize = " << meshSize << "\n";
@@ -141,9 +139,6 @@ public:
         Log() << "[Beam] bctype = " <<  M_bctype << "\n";
         Log() << "[Beam] export = " << this->vm().count("export") << "\n";
 
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
-        exporter->setPrefix( "beam" );
     }
 
     ~Beam()
@@ -187,7 +182,6 @@ private:
     int M_bctype;
 
     boost::shared_ptr<export_type> exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
 }; // Beam
@@ -358,10 +352,9 @@ Beam<nDim,nOrder>::exportResults( double time, element_type const& u, element_ty
 {
     timers["export"].first.restart();
 
-    typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
-    timeStep->setMesh( u.functionSpace()->mesh() );
-    timeStep->add( "displ", u );
-    timeStep->add( "P", v );
+    exporter->step(time)->setMesh( u.functionSpace()->mesh() );
+    exporter->step(time)->add( "displ", u );
+    exporter->step(time)->add( "P", v );
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
 } // Beam::export

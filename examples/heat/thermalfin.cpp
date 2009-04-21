@@ -37,7 +37,7 @@
 #include <life/lifepoly/im.hpp>
 
 #include <life/lifefilters/importergmsh.hpp>
-#include <life/lifefilters/exporterensight.hpp>
+#include <life/lifefilters/exporter.hpp>
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
 #include <life/lifepoly/polynomialset.hpp>
 
@@ -140,7 +140,6 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef Exporter<mesh_type>::timeset_type timeset_type;
 
 
     ThermalFin( int argc, char** argv, AboutData const& ad, po::options_description const& od )
@@ -148,13 +147,8 @@ public:
         super( argc, argv, ad, od ),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].as<double>() ),
-        exporter( new ExporterEnsight<mesh_type>( "thermalfin" ) ),
-        timeSet( new timeset_type( "thermalfin" ) )
+        exporter( export_type::New( this->vm(), this->about().appName() ) )
     {
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
-        exporter->setPrefix( "thermalfin" );
-
         this->changeRepository( boost::format( "%1%/%2%/%3%/" )
                                 % this->about().appName()
                                 % entity_type::name()
@@ -233,7 +227,6 @@ private:
     vector_ptrtype Fcst;
 
     boost::shared_ptr<export_type> exporter;
-    export_type::timeset_ptrtype timeSet;
 
 }; // ThermalFin
 
@@ -341,11 +334,10 @@ ThermalFin::exportResults( element_type& U )
 {
     if ( this->vm().count( "export" ) )
         {
-            timeset_type::step_ptrtype timeStep = timeSet->step( 1.0 );
-            timeStep->setMesh( U.functionSpace()->mesh() );
-            timeStep->add( "ProcessId",
+            exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
+            exporter->step(1.)->add( "ProcessId",
                            regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-            timeStep->add( "Temperature", U );
+            exporter->step(1.)->add( "Temperature", U );
             exporter->save();
 
         }
