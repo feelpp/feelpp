@@ -191,8 +191,7 @@ Bratu<Dim,Order,Entity>::Bratu( int argc, char** argv, AboutData const& ad, po::
     meshSize( this->vm()["hsize"].template as<double>() ),
     M_lambda( this->vm()["lambda"].template as<double>() ),
     M_Xh(),
-    exporter(),
-    timeSet()
+    exporter()
 {
 
     if ( this->vm().count( "help" ) )

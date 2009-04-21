@@ -143,10 +143,10 @@ template <int Order_s, int Order_p, int Order_t>
 void Convection<Order_s,Order_p,Order_t> ::exportResults( boost::format fmt, element_type& U, double t)
 {
     exporter->addPath( fmt );
-    exporter->step(time)->setMesh( U.functionSpace()->mesh() );
-    exporter->step(time)->add( "u", U.template element<0>() );
-    exporter->step(time)->add( "p", U.template element<1>() );
-    exporter->step(time)->add( "T", U.template element<2>() );
+    exporter->step(t)->setMesh( U.functionSpace()->mesh() );
+    exporter->step(t)->add( "u", U.template element<0>() );
+    exporter->step(t)->add( "p", U.template element<1>() );
+    exporter->step(t)->add( "T", U.template element<2>() );
     exporter->save();
 };
 
