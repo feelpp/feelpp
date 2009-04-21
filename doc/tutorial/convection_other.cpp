@@ -55,16 +55,21 @@ Convection<Order_s,Order_p,Order_t>::Convection(int argc,
         addParameter( xmlParse::parameter(STR("order-u"),DISCRETE_ATTRIBUTE,NULL,STR("N_u"),STR(boost::lexical_cast<std::string>( Order_s ) )) )
         .addParameter( xmlParse::parameter(STR("order-p"),DISCRETE_ATTRIBUTE,NULL,STR("N_p"),STR(boost::lexical_cast<std::string>( Order_p )) ))
         .addParameter( xmlParse::parameter(STR("order-t"),DISCRETE_ATTRIBUTE,NULL,STR("N_T"),STR(boost::lexical_cast<std::string>( Order_t )) ))
-        .addParameter( xmlParse::parameter(STR("gr"),CONTINUOUS_ATTRIBUTE,NULL,STR("\\mbox{Gr}"),STR("1::10000000")) )
-        .addParameter( xmlParse::parameter(STR("pr"),CONTINUOUS_ATTRIBUTE,NULL,STR("\\mbox{Pr}"),STR("0.01::10000000")) )
-        .addParameter( xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.001::0.5") ));
+        .addParameter( xmlParse::parameter(STR("gr"),CONTINUOUS_ATTRIBUTE,NULL,STR("\\mbox{Gr}"),STR("1:100:10000000")) )
+        .addParameter( xmlParse::parameter(STR("pr"),CONTINUOUS_ATTRIBUTE,NULL,STR("\\mbox{Pr}"),STR("0.01:10:10000000")) )
+        .addParameter( h );
 
     std::cout << "parameter added\n";
     vector<xmlParse::parameter> depend;
     vector<string> funcs;
+    vector<xmlParse::parameter> depend2;
+    depend2.push_back(h);
+    vector<string> funcs2;
+    funcs2.push_back("h**2");
     this->
-        addOutput( xmlParse::output(STR("AverageT"),STR("T"),depend,funcs) )
-        .addOutput( xmlParse::output(STR("FlowRate"),STR("D"),depend,funcs) );
+          addOutput( xmlParse::output(STR("AverageT"),STR("T"),depend,funcs) )
+         .addOutput( xmlParse::output(STR("FlowRate"),STR("D"),depend,funcs) )
+         .addOutput( xmlParse::output(STR("norm_L2"),STR("\\left\\| . \\right\\|_{L^2}"),depend2,funcs2) );
 
     std::cout << "output added\n";
 }

@@ -205,7 +205,7 @@ Convection<Order_s, Order_p, Order_t>::run()
 
 	timings.close();
 
-    this->addOutputValue( AverageT ).addOutputValue( Flux );
+    this->addOutputValue( AverageT ).addOutputValue( Flux ).addOutputValue( math::sqrt( div_u_error_L2 ) );
     this->postProcessing();
 }
 
