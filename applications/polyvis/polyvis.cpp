@@ -29,6 +29,9 @@
 /** include predefined life command line options */
 #include <life/options.hpp>
 
+#include <life/lifecore/factory.hpp>
+#include <life/lifecore/singleton.hpp>
+
 /** include function space class */
 #include <life/lifediscr/functionspace.hpp>
 
@@ -51,6 +54,8 @@
 #include <life/lifepoly/polynomialset.hpp>
 #include <life/lifepoly/lagrange.hpp>
 //#include <life/lifepoly/raviartthomas.hpp>
+
+
 
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <life/lifevf/vf.hpp>
@@ -105,7 +110,7 @@ makeAbout()
  * \class Polyvis
  *
  */
-template<int Dim>
+template<int Dim, typename Basis>
 class Polyvis
     :
     public Application
@@ -128,7 +133,8 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! the basis type of our approximation space
-    typedef bases<Lagrange<Order,Scalar> > basis_type;
+    typedef bases<Basis> basis_type;
+    //typedef bases<Lagrange<Order,Scalar> > basis_type;
     //typedef bases<Lagrange<Order,Vectorial> > basis_type;
     //typedef bases<RaviartThomas<Order> > basis_type;
 
@@ -146,6 +152,11 @@ public:
     //! the time set type  to save data over time
     typedef typename export_type::timeset_type timeset_type;
 
+    struct Factory
+    {
+        typedef Singleton< Factory< Polyvis<Dim, Basis>, std::string > > type;
+    };
+
     /**
      * Constructor
      */
@@ -161,6 +172,11 @@ public:
         timeSet->setTimeIncrement( 1.0 );
         exporter->addTimeSet( timeSet );
         exporter->setPrefix( "polyvis" );
+    }
+
+    static Polyvis<Dim,Basis>* New( std::string const& exporter )
+    {
+        return Factory::type::instance().createObject( exporter );
     }
 
     /**
