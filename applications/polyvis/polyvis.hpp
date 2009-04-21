@@ -2,10 +2,10 @@
 
   This file is part of the Life library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
-       Date: 2006-02-01
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2009-04-17
 
-  Copyright (C) 2006 EPFL
+  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -19,120 +19,256 @@
 
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file polyvis.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@epfl.ch>
-   \date 2006-02-01
+   \file polyvis.cpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2009-04-17
  */
-#ifndef POLYVIS_HPP
-#define POLYVIS_HPP
+/** include predefined life command line options */
+#include <life/options.hpp>
 
-#include <string>
-#include <boost/plugin/virtual_constructors.hpp>
 
-#include <life/lifepoly/polynomialset.hpp>
-#include <life/lifepoly/operations.hpp>
-
+/** include function space class */
 #include <life/lifediscr/functionspace.hpp>
-#include <life/lifefilters/pointsettomesh.hpp>
-#include <life/lifefilters/exporterensight.hpp>
 
-namespace Life
+/** include helper function to define \f$P_0\f$ functions associated with regions  */
+#include <life/lifediscr/region.hpp>
+
+/** include integration methods */
+#include <life/lifepoly/im.hpp>
+/** include gmsh mesh importer */
+#include <life/lifefilters/importergmsh.hpp>
+
+/** include exporter factory class */
+#include <life/lifefilters/exporter.hpp>
+
+/** include gmsh generator for tensorized domains */
+#include <life/lifefilters/gmshtensorizeddomain.hpp>
+#include <life/lifefilters/gmshsimplexdomain.hpp>
+
+/** include  polynomialset header */
+#include <life/lifepoly/polynomialset.hpp>
+#include <life/lifepoly/lagrange.hpp>
+//#include <life/lifepoly/raviartthomas.hpp>
+
+
+
+/** include  the header for the variational formulation language (vf) aka FEEL++ */
+#include <life/lifevf/vf.hpp>
+
+/** use Life namespace */
+using namespace Life;
+using namespace Life::vf;
+
+/**
+ * This routine returns the list of options using the
+ * boost::program_options library. The data returned is typically used
+ * as an argument of a Life::Application subclass.
+ *
+ * \return the list of options
+ */
+inline
+po::options_description
+makeOptions()
 {
-class Polyvis {
+    po::options_description polyvisoptions("Polyvis options");
+    polyvisoptions.add_options()
+        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
+        ;
+    return polyvisoptions.add( Life::life_options() );
+}
+
+/**
+ * This routine defines some information about the application like
+ * authors, version, or name of the application. The data returned is
+ * typically used as an argument of a Life::Application subclass.
+ *
+ * \return some data about the application.
+ */
+inline
+AboutData
+makeAbout()
+{
+    AboutData about( "polyvis" ,
+                     "polyvis" ,
+                     "0.2",
+                     "nD(n=1,2,3) Polynomial on simplices or simplex products",
+                     Life::AboutData::License_GPL,
+                     "Copyright (c) 2009 Universite Joseph Fourier");
+
+    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    return about;
+
+}
+
+
+/**
+ * \class Polyvis
+ * \brief class for polynomial visualisation
+ */
+template<int Dim, typename Basis>
+class Polyvis
+    :
+    public PolyvisBase
+{
+    typedef PolyvisBase super;
 public:
 
-    virtual ~Polyvis() {}
+    //! Polynomial order \f$P_2\f$
+    static const uint16_type Order = 0;
 
-    template<typename P, template<uint16_type> class PS>
-    void
-    save( std::string const& s, PolynomialSet<P,PS> const& pset )
+    //! numerical type is double
+    typedef double value_type;
+
+    //! geometry entities type composing the mesh, here Simplex in
+    //! Dimension Dim of Order 1
+    typedef Simplex<Dim> convex_type;
+    //! mesh type
+    typedef Mesh<convex_type> mesh_type;
+    //! mesh shared_ptr<> type
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    //! the basis type of our approximation space
+    typedef bases<Basis> basis_type;
+    //typedef bases<Lagrange<Order,Scalar> > basis_type;
+    //typedef bases<Lagrange<Order,Vectorial> > basis_type;
+    //typedef bases<RaviartThomas<Order> > basis_type;
+
+    //! the approximation function space type
+    typedef FunctionSpace<mesh_type, basis_type> space_type;
+    //! the approximation function space type (shared_ptr<> type)
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    //! an element type of the approximation function space
+    typedef typename space_type::element_type element_type;
+
+    //! the exporter factory type
+    typedef Exporter<mesh_type> export_type;
+    //! the exporter factory (shared_ptr<> type)
+    typedef boost::shared_ptr<export_type> export_ptrtype;
+
+    /**
+     * Constructor
+     */
+    Polyvis( po::variables_map vm )
+        :
+        super( vm ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        exporter( Exporter<mesh_type>::New( this->vm() ) )
     {
-        using namespace Life;
-        const uint16_type nDim = P::nDim;
-        const int OrderPts = 10;
-        PointSetToMesh<Simplex<nDim,OrderPts>, double> p2m;
-        typedef typename PointSetToMesh<Simplex<nDim,1>, double>::mesh_type mesh_type;
-
-        //GaussLobatto<Simplex<nDim,OrderPts>, OrderPts, double> GS;
-        PointSetEquiSpaced<Simplex<nDim,OrderPts>, OrderPts, double> GS;
-        //p2m.addBoundaryPoints( false );
-        p2m.visit( &GS );
-
-        typedef FunctionSpace<mesh_type, Lagrange<1, Scalar> > P1_type;
-        typedef boost::shared_ptr<P1_type> P1_ptrtype;
-        P1_ptrtype P1( P1_type::New( p2m.mesh() ) );
-
-        std::vector<boost::shared_ptr<typename P1_type::element_type> > u( pset.coeff().size1()/pset.nComponents );
-        ublas::matrix<double> evalpset( pset.evaluate( GS.points() ) );
-        std::cout << "evalpset = " << evalpset << "\n";
-        // evaluate the dubiner polynomials at the lobatto nodes
-        for ( size_type i = 0;i < evalpset.size1()/pset.nComponents; ++i )
-            {
-                u[i] =  boost::shared_ptr<typename P1_type::element_type>( new typename P1_type::element_type( P1 ) );
-                //u[i] = P1.newElement( "u" );
-                //u[i].resize( evalpset.size2() );
-
-                if ( pset.is_scalar )
-                    {
-                        std::cout << "u[" << i << "]=" << ublas::row( evalpset, i ) << "\n";
-                        *u[i] = ublas::row( evalpset, i );
-                    }
-                else
-                    {
-                        int nC = pset.nComponents;
-                        ublas::matrix<double> m( ublas::project( evalpset,
-                                                                 ublas::range( i*nC, (i+1)*nC ),
-                                                                 ublas::range( 0, evalpset.size2() ) ) );
-                        std::cout << "m = " << m << "\n"
-                                  << "v2m(m) = " << PolynomialSet<P,PS>::polyset_type::toMatrix( m ) << "\n";
-                        *u[i] = ublas::row( PolynomialSet<P,PS>::polyset_type::toMatrix( m ), 0 );
-                    }
-                std::cout << s << "_u_" << i << *u[i] << "\n";
-                std::cout << s << "_p_" << i << pset.polynomial( i ).evaluate( GS.points() ) << "\n";
-            }
-
-
-        typedef ExporterEnsight<mesh_type> export_type;
-        typedef typename ExporterEnsight<mesh_type>::timeset_type timeset_type;
-        export_type __ensight( s );
-        typename export_type::timeset_ptrtype __ts( new timeset_type( s ) );
-        __ts->setTimeIncrement( 1.0);
-        __ensight.addTimeSet( __ts );
-
-        typename timeset_type::step_ptrtype __step = __ts->step( 1.0 );
-
-        __step->setMesh( p2m.mesh() );
-
-        for ( size_type i = 0;i < u.size(); ++i )
-            {
-                std::ostringstream str;
-                str << s << "_p_" << i;
-                if ( pset.is_scalar )
-                    __step->add( str.str(), *u[i]  );
-                else
-                    __step->add( str.str(), *u[i]  );
-            }
-
-        __ensight.save();
     }
-};
-}
-namespace boost { namespace plugin {
 
-    template<>
-    struct virtual_constructors<Life::Polyvis>
-    {
-        typedef mpl::list<
-            mpl::list<std::string>,
-            mpl::list<std::string, int>,
-            mpl::list<std::string, int, int>
-        > type;
-    };
+    /**
+     * create the mesh using mesh size \c meshSize
+     *
+     * \param meshSize the mesh characteristic size
+     * \return a mesh of an hyper cube of dimension Dim
+     */
+    mesh_ptrtype createMesh( double meshSize );
 
-}}
+    /**
+     * run the convergence test
+     */
+    void run();
 
-#endif
+private:
 
+    //! mesh characteristic size
+    double meshSize;
+
+    //! exporter factory
+    export_ptrtype exporter;
+
+}; // Polyvis
+
+template<int Dim> const uint16_type Polyvis<Dim>::Order;
+
+template<int Dim>
+typename Polyvis<Dim>::mesh_ptrtype
+Polyvis<Dim>::createMesh( double meshSize )
+{
+    /** instantiate a new mesh */
+    /** \code */
+    mesh_ptrtype mesh( new mesh_type );
+    /** \endcode */
+
+    //! generate a tensorized domain (hyper cube of dimension Dim)
+    /** \code */
+    GmshSimplexDomain<convex_type::nDim, convex_type::nOrder> td( Gmsh::GMSH_REFERENCE_DOMAIN );
+    td.setCharacteristicLength( meshSize );
+    std::string fname = td.generate( convex_type::name().c_str() );
+    /** \endcode */
+
+    //! importer the mesh generated by td
+    /** \code */
+    ImporterGmsh<mesh_type> import( fname );
+    mesh->accept( import );
+    /** \endcode */
+
+    return mesh;
+} // Polyvis::createMesh
+
+
+template<int Dim>
+void
+Polyvis<Dim>::run()
+{
+    /**
+     * print help if --help is passed to the command line
+     */
+    /** \code */
+    if ( this->vm().count( "help" ) )
+        {
+            std::cout << this->optionsDescription() << "\n";
+            return;
+        }
+    /** \endcode */
+
+    /**
+     * we change to the directory where the results and logs will be
+     * stored
+     */
+    /** \code */
+    this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
+                            % this->about().appName()
+                            % convex_type::name()
+                            % Order
+                            % this->vm()["hsize"].template as<double>()
+                            );
+    /** \endcode */
+    /**
+     * First we create the mesh
+     */
+    /** \code */
+    mesh_ptrtype oneelement_mesh = createMesh( 2 );
+    mesh_ptrtype mesh = createMesh( meshSize );
+    /** \endcode */
+
+    /**
+     * The function space and some associated elements(functions) are then defined
+     */
+    /** \code */
+    space_ptrtype Xh = space_type::New( oneelement_mesh );
+    element_type U( Xh, "U" );
+    element_type V( Xh, "V" );
+    space_ptrtype Yh = space_type::New( mesh );
+    element_type u( Xh, "u" );
+    element_type v( Xh, "v" );
+    /** \endcode */
+
+    // setthe mesh
+    exporter->step(0)->setMesh( mesh );
+
+    for( int i = 0;i < Xh->nLocalDof(); ++i )
+        {
+            U.zero();
+            U( i ) = 1;
+            std::ostringstream ostr;
+            ostr << Xh->basis()->familyName() << "-" << i;
+            exporter->step(0)->add( ostr.str(), U );
+        }
+
+    exporter->save();
+
+} // Polyvis::run
