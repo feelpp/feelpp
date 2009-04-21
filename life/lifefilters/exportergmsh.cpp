@@ -226,8 +226,8 @@ gmsh_save_ascii( ExporterGmsh<MeshType> const& egmsh )
 
     typedef typename matrix_node<value_type>::type matrix_node_type;
 
-    timeset_iterator __ts_it = egmsh.beginTimeSet();
-    timeset_iterator __ts_en = egmsh.endTimeSet();
+    timeset_const_iterator __ts_it = egmsh.beginTimeSet();
+    timeset_const_iterator __ts_en = egmsh.endTimeSet();
     while ( __ts_it != __ts_en )
         {
             timeset_ptrtype __ts = *__ts_it;
@@ -323,8 +323,8 @@ gmsh_save_binary( ExporterGmsh<MeshType> const& egmsh )
 
     typedef typename matrix_node<value_type>::type matrix_node_type;
 
-    timeset_iterator __ts_it = egmsh.beginTimeSet();
-    timeset_iterator __ts_en = egmsh.endTimeSet();
+    timeset_const_iterator __ts_it = egmsh.beginTimeSet();
+    timeset_const_iterator __ts_en = egmsh.endTimeSet();
     while ( __ts_it != __ts_en )
         {
             timeset_ptrtype __ts = *__ts_it;
