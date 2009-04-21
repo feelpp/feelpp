@@ -51,6 +51,7 @@ Convection<Order_s,Order_p,Order_t>::Convection(int argc,
     M_backend( backend_type::build( this->vm() ) ),
 	exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
+    xmlParse::parameter h(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.01:0.2:0.3") );
     this->
         addParameter( xmlParse::parameter(STR("order-u"),DISCRETE_ATTRIBUTE,NULL,STR("N_u"),STR(boost::lexical_cast<std::string>( Order_s ) )) )
         .addParameter( xmlParse::parameter(STR("order-p"),DISCRETE_ATTRIBUTE,NULL,STR("N_p"),STR(boost::lexical_cast<std::string>( Order_p )) ))
