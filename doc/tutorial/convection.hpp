@@ -115,7 +115,6 @@ public:
 
 	// Definition pour les exportations
 	typedef Exporter<mesh_type> export_type;
-    typedef typename Exporter<mesh_type>::timeset_type timeset_type;
 
 	// Constructeur
 	Convection( int argc , char** argv , AboutData const& , po::options_description const& );
@@ -160,7 +159,6 @@ private:
 
 	// Exporters
 	boost::shared_ptr<export_type> exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
 	// Timers
 	std::map<std::string,std::pair<boost::timer,double> > timers;

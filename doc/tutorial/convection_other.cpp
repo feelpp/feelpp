@@ -49,14 +49,8 @@ Convection<Order_s,Order_p,Order_t>::Convection(int argc,
 	:
     super(argc,argv,ad,od),
     M_backend( backend_type::build( this->vm() ) ),
-	exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-    timeSet( new timeset_type( "Convection" ) )
+	exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
-	timeSet->setTimeIncrement( 1.0 );
-    exporter->addTimeSet( timeSet );
-    exporter->setPrefix( "Convection" );
-
-
     this->
         addParameter( xmlParse::parameter(STR("order-u"),DISCRETE_ATTRIBUTE,NULL,STR("N_u"),STR(boost::lexical_cast<std::string>( Order_s ) )) )
         .addParameter( xmlParse::parameter(STR("order-p"),DISCRETE_ATTRIBUTE,NULL,STR("N_p"),STR(boost::lexical_cast<std::string>( Order_p )) ))
@@ -149,11 +143,10 @@ template <int Order_s, int Order_p, int Order_t>
 void Convection<Order_s,Order_p,Order_t> ::exportResults( boost::format fmt, element_type& U, double t)
 {
     exporter->addPath( fmt );
-	typename timeset_type::step_ptrtype timeStep = timeSet->step( t );
-    timeStep->setMesh( U.functionSpace()->mesh() );
-    timeStep->add( "u", U.template element<0>() );
-    timeStep->add( "p", U.template element<1>() );
-    timeStep->add( "T", U.template element<2>() );
+    exporter->step(time)->setMesh( U.functionSpace()->mesh() );
+    exporter->step(time)->add( "u", U.template element<0>() );
+    exporter->step(time)->add( "p", U.template element<1>() );
+    exporter->step(time)->add( "T", U.template element<2>() );
     exporter->save();
 };
 
