@@ -163,9 +163,13 @@ public:
         vector<xmlParse::parameter> depend;
         vector<string> funcs;
         depend.push_back(h);
-        funcs.push_back("h**2");
+        ostringstream oss;
+        oss << "h**" << boost::lexical_cast<std::string>( Order + 1  ) ;
+        funcs.push_back(oss.str());
+        oss.str("");
         vector<string> funcs2;
-        funcs2.push_back("h**1");
+        oss << "h**" << boost::lexical_cast<std::string>( Order ) ;
+        funcs2.push_back(oss.str());
 
         this->
             addOutput( xmlParse::output(STR("norm_L2"),STR("\\left\\| . \\right\\|_{L^2}"),depend,funcs) )
