@@ -93,11 +93,11 @@
 
 %-----------------------------------------------------------------------
 % fancyvrb unixcom environment
-\usepackage{fvrb}
+\usepackage{styles/fvrb}
 
 %-----------------------------------------------------------------------
 % nota environment
-\usepackage{nota}
+\usepackage{styles/nota}
 \newcommand{\ficnota}{attention}
 \newcommand{\ficnote}{note}
 \newcommand{\ficnotahack}{question}
@@ -147,8 +147,9 @@
 \newcommand{\cpp}{C{\hspace{-.3em}\vspace{-.2em}\tiny++}\xspace}
 \newcommand{\nel}{{\ensuremath{N_{\text{el}}}}}
 \newcommand{\polyP}[1]{\ensuremath{\mathbb{P}_{#1}}\xspace}
+\newcommand{\life}{Life\xspace}
 
-\input{version}
+\InputIfFileExists{version}{}{\def\lifeversion{\texttt{x.y.z}}}
 \title{Life Tutorial\\
 A Library for Finite and Spectral Element Methods in 1D, 2D and 3D\\
 {\small \lifeversion }}
@@ -232,13 +233,13 @@ Free Documentation License".
 \subsection{Getting the source via an archive}
 \label{sec:getting-source-via-1}
 
-Life is distributed as a tarball once in a while. The tarballs are available
+\life is distributed as a tarball once in a while. The tarballs are available
 at
 \begin{center}
   \href{http://ljkforge.imag.fr/life}{http://ljkforge.imag.fr/life}
 \end{center}
-Download the latest tarball. Then follow the steps and replace x,y,z
-with the corresponding numbers
+Download the latest tarball. Then follow the steps and replace
+\texttt{x},\texttt{y},\texttt{z} with the corresponding numbers
 
 \begin{unixcom}
   tar xzf life-x.y.z.tar.gz
@@ -251,7 +252,7 @@ with the corresponding numbers
 
 \paragraph{Creating RSA keys}
 \label{sec:creation-rsa-keys}
-In order to download the sources of Life and Life-test, you have to go in
+In order to download the sources of \life, you have to go in
 LJKForge website (https://ljkforge.imag.fr) and create an account. After the
 administrator approval, you have to demand the rights to see the project tree.
 
@@ -275,8 +276,8 @@ in the \verb|~/.ssh/config| file.
 \subsubsection{Downloading the sources}
 \label{sec:download-sources}
 
-To be able to download the life sources, you need subversion and SSH > 1.xxx
-installed on your computer. In a command prompt, go where you want life to be
+To be able to download the \life sources, you need subversion and SSH > 1.xxx
+installed on your computer. In a command prompt, go where you want \life to be
 downloaded and type the following command.
 \\ \verb|svn co svn+ssh://login@ljkforge.imag.fr/svn/life/life/trunk life|
 where \\ \verb|login| is your login name in the LJKForge plateform. Then, if
@@ -289,34 +290,42 @@ you want to download the life-test sources type :
 \subsection{Dealing with software dependencies}
 \label{sec:about-dependencies}
 
-In order to install life, you have to install many dependencies before. Those
-libraries are necessary for the installation of the entire life and life-test
-librairies.
+In order to install \life, you have to install many dependencies
+before. Those libraries and programs are necessary for the
+compilation and installation of the \life librairies.
 
 This is the list of all the librairies you must have installed on your
 computer, and the \verb|*-dev| packages for some of them.
 
+Here is the list of required packages:
 \begin{itemize}
 \item g++ (>=4.1)
-\item Boost (>=1.33)
-\item autoconf
-\item automake
-\item libtool
-\item mpi (mpich or openmpi)
-\item superlu
-\item Suitesparse
+\item MPI : openmpi (preferred) or mpich
+\item Boost (>=1.37)
 \item Petsc (>=2.3.3)
-\item Parametis
-\item Trilinos (>=8.0.8)
-\item perftools
-\item umfpack
-\item fltk
-\item gmm++
-\item gmsh\footnote{Gmsh is a pre/post processing software for scientific
+\item autoconf, automake, libtool (required in subversion mode)
+\item Gmsh\footnote{Gmsh is a pre/post processing software for scientific
 computing available at \url{http://www.geuz.org/gmsh}}
-\item Paraview\footnote{Paraview is a few parallel scientific data visualisation
-plateform, \url{http://www.paraview.org}}
+\item Libxml2
 \end{itemize}
+
+Here is the list of optional packages:
+\begin{itemize}
+\item Eigen2
+\item Superlu
+\item Suitesparse(umfpack)
+\item Metis: scoth with the metis interface (preferred), metis (non-free)
+\item Trilinos (>=8.0.8)
+\item Google perftools
+\item Paraview\footnote{Paraview is a few parallel scientific data
+    visualisation plateform, \url{http://www.paraview.org}}, this is
+  not stricly required to run \life programs but it is somehow
+  necessary for visualisation
+\item Python (>= 2.5) for the validation tools
+\end{itemize}
+
+Note that all these packages are available under Debian/GNU/Linux and
+Ubuntu. They should be available
 
 \subsection{Compiling Life}
 
@@ -327,7 +336,7 @@ have done the checkout and type the following commands :
 \subsubsection{From tarball}
 \label{sec:from-tarball}
 
-The steps are as follows to configure the Life Development Plateform
+The steps are as follows to configure the \life Development Plateform
 
 \begin{unixcom}
   cd life-x.y.z
@@ -347,13 +356,13 @@ to compile the library and the tutorial. And finally type
   make check
 \end{unixcom}
 In order to compile the testsuite, the examples and the benchmarks and
-execute some of them to verity that the Life library is functional.
+execute some of them to verity that the \life library is functional.
 
 
 \subsubsection{From subversion}
 \label{sec:from-subversion}
 
-The steps are as follows to configure the Life Development Plateform
+The steps are as follows to configure the \life Development Plateform
 
 \begin{unixcom}
   cd life
@@ -364,7 +373,7 @@ The steps are as follows to configure the Life Development Plateform
   ../configure --enable-opt2
 \end{unixcom}
 
-Then, to build  the Life library, type
+Then, to build  the \life library, type
 \begin{unixcom}
   make
 \end{unixcom}
@@ -378,7 +387,7 @@ And finally to check the library, type
 \begin{note}
   The script \lstinline!configure! supports many command line
   options. In particular if you are interested in writing some code or
-  examples inside the Life environment you have to enable the so
+  examples inside the \life environment you have to enable the so
   called \emph{maintainer mode} to ensure that the makefiles are
   properly regenerated when you modify a \lstinline!Makefile.am! or if
   you modify \lstinline!configure.ac!, to achieve this type
@@ -469,10 +478,10 @@ Here is what the directory should look like
 \subsection{Application and Options}
 \label{sec:options}
 
-As a Life user, the first step in order to use Life is to create an
+As a \life user, the first step in order to use \life is to create an
 application. First we include the \lstinline!Application! header file,
 \lstinline!life/lifecore/application.hpp! and the header which the
-internal Life options. Life uses the
+internal \life options. \life uses the
 \lstinline!boost::program_options!\footnote{\url{http://www.boost.org/doc/html/program_options.html}}
 library from Boost to handle its command line options
 
@@ -486,7 +495,7 @@ Next to ease the programming and reading, we use the \lstinline!using!
 
 Then we define the command line options that the applications will
 provide. Note that on the \lstinline!return! line, we incorporate the
-options defined internally in Life.
+options defined internally in \life.
 
 \lstinputlisting[firstline=34,lastline=46]{myapp.cpp}
 
@@ -557,7 +566,7 @@ Christophe Prud'homme   developer  christophe.prudhomme@ujf-grenoble.fr
 \subsection{Application, Logging and Archiving}
 \label{sec:appl-logg-arch}
 
-Life provides some basic logging and archiving support: using the
+\life provides some basic logging and archiving support: using the
 \lstinline!changeRepository! member functions of the class
 \lstinline!Application!, the logfile and results of the application
 will be stored in a subdirectory of \lstinline!~/life!. For
@@ -589,7 +598,7 @@ myapp-1.0 is opened for debug
 \subsection{MPI Application}
 
 \marginpar{\lstinline!myapp.cpp!}
-Life relies on MPI for parallel computations and the class
+\life relies on MPI for parallel computations and the class
 \lstinline!Application!  initialises the MPI environment.
 
 \begin{lstlisting}[language=sh]
@@ -622,7 +631,7 @@ mympiapp-2.1 is opened for debug
 
 \index{PETSc}\index{Trilinos}\index{Libraries!PETSc}\index{Libraries!Trilinos}
 
-Life supports also the PETSc and Trilinos framework, the class
+\life supports also the PETSc and Trilinos framework, the class
 \lstinline!Application!\index{Class!Application} takes care of
 initialize the associated environments.
 
@@ -632,12 +641,12 @@ initialize the associated environments.
 \index{mesh}\index{Class!Mesh}
 \marginpar{\lstinline!mymesh.cpp!}
 In this section, we present some of the mesh definition and
-manipulation tools provided by Life.
+manipulation tools provided by \life.
 
 \subsection{Mesh definition}
 
 We look at the definition of a mesh data structure. First, we define
-the type of geometric entities that we shall use to form our mesh. Life supports
+the type of geometric entities that we shall use to form our mesh. \life supports
 \begin{itemize}
 \item simplices: segment, triangle, tetrahedron
 \item tensorized entities: segment, quadrangle, hexahedron
@@ -667,7 +676,7 @@ practice. We can now instantiate a new mesh data structure.
 
 \lstinputlisting[firstline=147,lastline=147]{mymesh.cpp}
 
-The next step is to read some mesh files. Life supports essentially
+The next step is to read some mesh files. \life supports essentially
 the Gmsh mesh file format. It provides also some classes to manipulate
 Gmsh \lstinline!.geo! files and generate \lstinline!.msh! files. To
 begin, we use some helper classes to generate a \lstinline!.geo! file.
@@ -697,7 +706,7 @@ command line using the \lstinline!Application! framework, see
 section~\ref{sec:creat-appl}. The call to \lstinline!generate! creates
 the \lstinline!.geo! file and generate the associated mesh. Note that
 \lstinline!fname! holds the name of the \lstinline!.msh! file,
-e.g. \lstinline!mymesh.msh!. Life adds automatically the
+e.g. \lstinline!mymesh.msh!. \life adds automatically the
 \lstinline!.msh!  extension. Also note the last argument of
 \lstinline!GmshTensorizedDomain!, it allows to change the type of
 geometric entities used to generate the mesh. Here we use
@@ -743,7 +752,7 @@ associated $\polyP{0}$ function.
 
 \subsection{Iterating over the entities of a mesh}
 
-Life mesh data structures provides powerful iterators that allows to
+\life mesh data structures provides powerful iterators that allows to
 walk though the mesh in various ways: iterate over element, faces ,
 points, marked\footnote{associated to an integer flag denoting a
   region, material, processor} elements, marked faces, ...
@@ -774,7 +783,7 @@ points, marked\footnote{associated to an integer flag denoting a
 \label{sec:linear-algebra}
 
 
-Life supports three different linear algebra environments that we
+\life supports three different linear algebra environments that we
 shall call \emph{backends}.
 \begin{itemize}
 \item Gmm\footnote{}
@@ -1391,7 +1400,7 @@ The figure~\ref{fig:2} displays $p$ and $\mathbf{u}$ which are available in
 \section{Solving nonlinear equations}
 \label{sec:nonlinear-equations}
 
-Life allows to solve nonlinear equations thanks to its interface to
+\life allows to solve nonlinear equations thanks to its interface to
 the interface to the PETSc nonlinear solver library. It requires the
 implementation of two extra functions in your application that will
 update the jacobian matrix associated to the tangent problem and the
