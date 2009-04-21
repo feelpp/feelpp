@@ -74,10 +74,11 @@ public:
 
     typedef TimeSet<MeshType> timeset_type;
     typedef boost::shared_ptr<timeset_type> timeset_ptrtype;
-    typedef std::set<timeset_ptrtype> timeset_set_type;
+    typedef std::vector<timeset_ptrtype> timeset_set_type;
     typedef typename timeset_set_type::iterator timeset_iterator;
     typedef typename timeset_set_type::const_iterator timeset_const_iterator;
-
+    typedef typename timeset_type::step_type step_type;
+    typedef typename timeset_type::step_ptrtype step_ptrtype;
     struct Factory
     {
         typedef Life::Singleton< Life::Factory< Exporter<MeshType>, std::string > > type;
@@ -99,6 +100,17 @@ public:
     static Exporter<MeshType>* New( std::string const& exporter )
     {
         return Factory::type::instance().createObject( exporter );
+    }
+
+    static Exporter<MeshType>* New( po::variables_map const& vm, std::string prefix = "export" )
+    {
+        std::string estr = vm["exporter"].template as<std::string>();
+        Exporter<MeshType>* exporter =  Factory::type::instance().createObject( estr  );
+        exporter->setOptions( vm );
+
+        exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
+        exporter->setPrefix( prefix );
+        return exporter;
     }
 
     //@}
@@ -178,6 +190,12 @@ public:
     timeset_const_iterator endTimeSet() const { return M_ts_set.end(); }
 
 
+    timeset_ptrtype defaultTimeSet() { return M_ts_set.front(); }
+    timeset_ptrtype timeSet( int ts ) { return M_ts_set[ts]; }
+
+    step_ptrtype step( double time ) { return M_ts_set.back()->step( time ); }
+    step_ptrtype step( double time, int s ) { return M_ts_set[s]->step( time ); }
+
     //@}
 
     /** @name  Methods
@@ -187,7 +205,7 @@ public:
     void addTimeSet( timeset_ptrtype const& __ts )
     {
         if ( __ts )
-            M_ts_set.insert( __ts );
+            M_ts_set.push_back( __ts );
     }
 
 
