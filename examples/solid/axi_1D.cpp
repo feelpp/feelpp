@@ -128,7 +128,6 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef typename Exporter<mesh_type>::timeset_type timeset_type;
 
 
     Elaxi( int argc, char** argv, AboutData const& ad, po::options_description const& od )
@@ -137,8 +136,7 @@ public:
         M_backend( backend_type::build( this->vm() )),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "elaxi" ) ),
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
         timers(),
         stats()
     {
@@ -146,8 +144,6 @@ public:
         Log() << "[Elaxi] bccoeff = " << bcCoeff << "\n";
         Log() << "[Elaxi] export = " << this->vm().count("export") << "\n";
 
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
     }
 
 
@@ -182,7 +178,6 @@ private:
     double bcCoeff;
 
     boost::shared_ptr<export_type> exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
     std::map<std::string,double> stats;
@@ -434,10 +429,10 @@ Elaxi<Order, Entity>::exportResults( double time, element_type& U )
 {
     timers["export"].first.restart();
 
-    typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
-    timeStep->setMesh( U.functionSpace()->mesh() );
-    timeStep->add( "u0", U.template element<0>());
-    timeStep->add( "u1", U.template element<1>());
+
+    exporter->step(time)->setMesh( U.functionSpace()->mesh() );
+    exporter->step(time)->add( "u0", U.template element<0>());
+    exporter->step(time)->add( "u1", U.template element<1>());
     exporter->save();
 
     timers["export"].second = timers["export"].first.elapsed();

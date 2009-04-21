@@ -145,7 +145,6 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    typedef typename export_type::timeset_type timeset_type;
 
     /** constructor */
     ResistanceLaplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od );
@@ -189,7 +188,6 @@ private:
     vectorial_functionspace_ptrtype Yh;
 
     export_ptrtype exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
 
@@ -209,8 +207,7 @@ ResistanceLaplacian<Dim,Order>::ResistanceLaplacian( int argc, char** argv, Abou
     Xh(),
 
     // export
-    exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
-    timeSet( new timeset_type( "resistance" ) ),
+    exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
 
     //
     timers()
@@ -229,10 +226,6 @@ ResistanceLaplacian<Dim,Order>::ResistanceLaplacian( int argc, char** argv, Abou
                             % Order
                             % h
                             );
-
-    timeSet->setTimeIncrement( 1.0 );
-    exporter->addTimeSet( timeSet );
-    exporter->setPrefix( "resistance" );
 
     Log() << "create mesh\n";
     mesh = createMesh();
@@ -439,16 +432,16 @@ ResistanceLaplacian<Dim, Order>::exportResults( p0_element_type& k, element_type
     timers["export"].first.restart();
 
     Log() << "exportResults starts\n";
-    typename timeset_type::step_ptrtype timeStep = timeSet->step( 0.0 );
-    timeStep->setMesh( U.functionSpace()->mesh() );
-    timeStep->add( "k", k );
-    timeStep->add( "u", U );
-    //timeStep->add( "exact", V );
+
+    exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
+    exporter->step(1.)->add( "k", k );
+    exporter->step(1.)->add( "u", U );
+    //exporter->step(1.)->add( "exact", V );
 
 
     typename vectorial_functionspace_type::element_type g( Yh, "grad u" );
     g = vf::project( Yh, elements( Yh->mesh() ), trans(gradv(U)) );
-    timeStep->add( "grad(u)", g );
+    exporter->step(1.)->add( "grad(u)", g );
 
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
