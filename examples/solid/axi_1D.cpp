@@ -136,7 +136,7 @@ public:
         M_backend( backend_type::build( this->vm() )),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers(),
         stats()
     {
