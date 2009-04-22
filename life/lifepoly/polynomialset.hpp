@@ -856,9 +856,11 @@ public:
               mpl::int_<1> )
         {
             typedef typename grad_type::index index;
-
+            //std::cout << "nbDof = " << _M_ref_ele->nbDof() << std::endl;
             const index I = _M_ref_ele->nbDof()/nDim/nDim;
+            //std::cout << "I = " << I << std::endl;
             const index Q = __pts.size2();
+            //std::cout << "Q = " << I << std::endl;
 
             _M_phi.resize( boost::extents[I*nDim][nDim][1][__pts.size2()] );
             _M_grad.resize( boost::extents[I*nDim][nDim][nDim][__pts.size2()] );
@@ -1168,7 +1170,7 @@ public:
         }
         void update( geometric_mapping_context_ptrtype const& __gmc )
         {
-            static const bool do_opt= (rank==0) && (nOrder==1) && (Geo_t::nOrder==1);
+            static const bool do_opt= (nOrder<=1) && (Geo_t::nOrder==1) && (convex_type::is_simplex);
             update( __gmc, mpl::int_<rank>(), mpl::bool_<do_opt>() );
             //update( __gmc, mpl::int_<rank>(), mpl::bool_<false>() );
         }
@@ -1411,6 +1413,108 @@ public:
                                                                     matrix_type const& Bq = thegmc->B( q );
                                                                     //gradreal[l][q]  += Bq( l, p ) *gradref[p][q];
                                                                     _M_grad[i][c1][l][q] += Bq( l, p ) * __pc->grad( i, c1, p, q );
+                                                                }
+                                                        }
+                                                }
+                                        } // c1 == c
+                                    // update divergence if needed
+                                    if ( vm::has_div<context>::value )
+                                        {
+                                            for ( uint16_type q = 0; q < Q; ++q )
+                                                {
+                                                    _M_div[i][q] +=  _M_grad[i][c1][c1][q];
+                                                }
+                                        }
+                                } // c1
+                            // update divergence if needed
+                            if ( vm::has_curl<context>::value )
+                                {
+                                    if ( NDim == 2 )
+                                        {
+                                            for ( uint16_type q = 0; q < Q; ++q )
+                                                {
+                                                    _M_curl[i][2][q] +=  _M_grad[i][1][0][q] - _M_grad[i][0][1][q];
+                                                }
+                                        }
+                                    else if ( NDim == 3 )
+                                        {
+                                            for ( uint16_type q = 0; q < Q; ++q )
+                                                {
+                                                    _M_curl[i][0][q] +=  _M_grad[i][2][1][q] - _M_grad[i][1][2][q];
+                                                    _M_curl[i][1][q] +=  _M_grad[i][0][2][q] - _M_grad[i][2][0][q];
+                                                    _M_curl[i][2][q] +=  _M_grad[i][1][0][q] - _M_grad[i][0][1][q];
+                                                }
+                                        }
+                                }
+
+                        }
+
+                    // we need the normal derivative
+                    if ( vm::has_first_derivative_normal<context>::value )
+                        {
+                            std::fill( _M_dn.data(), _M_dn.data()+_M_dn.num_elements(), value_type(0));
+                            const uint16_type I = nDof*nComponents1;
+                            const uint16_type Q = nPoints();
+                            for( int i = 0; i < I; ++i )
+                                for ( uint16_type c1 = 0; c1 < NDim; ++c1 )
+                                    {
+                                        for ( uint16_type l = 0; l < NDim; ++l )
+                                            {
+                                                for ( uint16_type q = 0; q < Q; ++q )
+                                                    {
+                                                        _M_dn[i][c1][0][q] += _M_grad[i][c1][l][q] * thegmc->unitNormal( l, q );
+                                                    }
+                                            }
+                                    }
+                        }
+
+                } // grad
+        }
+        void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_<true> )
+        {
+            //precompute_type* __pc = _M_pc.get().get();
+            geometric_mapping_context_type* thegmc = __gmc.get();
+            if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+                {
+
+                    std::fill( _M_grad.data(), _M_grad.data()+_M_grad.num_elements(), value_type(0) );
+
+                    if ( vm::has_div<context>::value )
+                        {
+                            std::fill( _M_div.data(), _M_div.data()+_M_div.num_elements(), value_type(0) );
+                        }
+                    if ( vm::has_curl<context>::value )
+                        {
+                            std::fill( _M_curl.data(), _M_curl.data()+_M_curl.num_elements(), value_type(0) );
+                        }
+
+                    precompute_type* __pc = _M_pc.get().get();
+                    const uint16_type Q = __gmc->nPoints();//_M_grad.size2();
+                    const uint16_type I = nDof; //_M_ref_ele->nbDof();
+
+                    typedef typename boost::multi_array<value_type,4>::index_range range;
+
+                    for ( uint16_type ii = 0; ii < I; ++ii )
+                        for ( uint16_type c = 0; c < nComponents1; ++c )
+                        {
+                            uint16_type i = I*c + ii;
+                            uint16_type c1 = c;
+                            //for ( uint16_type c1 = 0; c1 < NDim; ++c1 )
+                                {
+                                    //if ( c1 == c )
+
+                                        {
+                                            for ( uint16_type l = 0; l < NDim; ++l )
+                                                {
+                                                    for ( uint16_type p = 0; p < PDim; ++p )
+                                                        {
+                                                            matrix_type const& Bq = thegmc->B( 0 );
+                                                            value_type g =
+                                                                Bq( l, p ) * __pc->grad( i, c1, p, 0 );
+                                                            for ( uint16_type q = 0; q < Q; ++q )
+                                                                {
+                                                                    //gradreal[l][q]  += Bq( l, p ) *gradref[p][q];
+                                                                    _M_grad[i][c1][l][q] += g;
                                                                 }
                                                         }
                                                 }
