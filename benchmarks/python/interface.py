@@ -183,10 +183,10 @@ class app:
 				image = QtGui.QPixmap(self.imgfiles[0])
 				self.win.screenshotView.setFixedSize(image.width(),image.height())
 				self.win.screenshotView.setPixmap(image)
-
-		graph = QtGui.QPixmap(self.graphfile[self.win.comboOutput.currentIndex()])
-		self.win.graphicsView.setFixedSize(graph.width(),graph.height())
-		self.win.graphicsView.setPixmap(graph)
+		if (len(self.graphfile)>0):
+				graph = QtGui.QPixmap(self.graphfile[self.win.comboOutput.currentIndex()])
+				self.win.graphicsView.setFixedSize(graph.width(),graph.height())
+				self.win.graphicsView.setPixmap(graph)
 		self.launched=True
 
 	def changeModeNormal(self):

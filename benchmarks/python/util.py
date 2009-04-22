@@ -48,10 +48,10 @@ def strToSci(str):
 def intervalLog(Vmin,Vmax,nbVal):
 		return scipy.exp(scipy.arange(scipy.log(Vmin),
                                       scipy.log(Vmax),
-                                      (scipy.log(Vmax)-scipy.log(Vmin))/nbVal)).tolist()[4:-2]
+                                      (scipy.log(Vmax)-scipy.log(Vmin))/nbVal)).tolist()[1:-1]
 
 def intervalLin(Vmin,Vmax,nbVal):
-		return scipy.arange(Vmin,Vmax,(Vmax-Vmin)/nbVal).tolist()[4:-2]
+		return scipy.arange(Vmin,Vmax,(Vmax-Vmin)/nbVal).tolist()[1:-1]
 
 def pickInInterval(Vmin,Vmax,nbVal,nbPos,method):
 		if method==0:

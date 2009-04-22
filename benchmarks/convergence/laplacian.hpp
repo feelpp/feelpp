@@ -152,7 +152,17 @@ public:
         M_do_export( !this->vm().count( "no-export" ) ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
-        xmlParse::parameter h(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.05:0.09:0.3") );
+        xmlParse::parameter h;
+        if (Dim == 1)
+            h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.01:0.09:0.2") );
+        else if (Dim == 2)
+            h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.04:0.09:0.2") );
+        else
+            if (Order < 5)
+                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.06:0.09:0.2") );
+            else
+                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.1:0.15:0.2") );
+
         this->
             addParameter( xmlParse::parameter(STR("dim"),DISCRETE_ATTRIBUTE,NULL,NULL,STR(boost::lexical_cast<std::string>( Dim  ))) )
             .addParameter( xmlParse::parameter(STR("order"),DISCRETE_ATTRIBUTE,NULL,NULL,STR(boost::lexical_cast<std::string>( Order  ))) )

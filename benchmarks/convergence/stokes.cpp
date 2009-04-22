@@ -171,7 +171,7 @@ public:
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
 
-        xmlParse::parameter h(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.01:0.2:0.5") );
+        xmlParse::parameter h(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.04:0.08:0.2") );
         this->
             addParameter( xmlParse::parameter(STR("dim"),DISCRETE_ATTRIBUTE,NULL,NULL,STR(boost::lexical_cast<std::string>( Dim  ))) )
             .addParameter( xmlParse::parameter(STR("order"),DISCRETE_ATTRIBUTE,NULL,NULL,STR(boost::lexical_cast<std::string>( Order  ))) )
