@@ -153,15 +153,21 @@ public:
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         xmlParse::parameter h;
-        if (Dim == 1)
-            h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.01:0.09:0.2") );
-        else if (Dim == 2)
-            h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.04:0.09:0.2") );
-        else
+        if (Dim == 1)           //=== 1D ===
             if (Order < 5)
-                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.06:0.09:0.2") );
+                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.01:0.09:0.4") );
             else
-                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.1:0.15:0.2") );
+                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.08:0.09:0.4") );
+        else if (Dim == 2)      //=== 2D ===
+            if (Order < 5)
+                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.03:0.09:0.4") );
+            else
+                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.08:0.09:0.4") );
+        else
+            if (Order < 5)      //=== 3D ===
+                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.08:0.09:0.4") );
+            else
+                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.15:0.2:0.4") );
 
         this->
             addParameter( xmlParse::parameter(STR("dim"),DISCRETE_ATTRIBUTE,NULL,NULL,STR(boost::lexical_cast<std::string>( Dim  ))) )
@@ -369,7 +375,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     Log() << "solve in " << t1.elapsed() << "s\n";
     t1.restart();
 
-    double L2error2 =integrate( elements(mesh), _Q<4*(Order)+2>(),
+    double L2error2 =integrate( elements(mesh), _Q<2*(Order+2)+2>(),
                                 (idv(u)-g)*trans(idv(u)-g) ).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
