@@ -388,7 +388,7 @@ Stokes<Dim, Order, Entity>::run()
 
     this->exportResults( U, V );
 
-    this->addOutputValue( math::sqrt( p_errorL2 ) ).addOutputValue( math::sqrt( p_errorL2 ) );
+    this->addOutputValue( math::sqrt( u_errorL2 ) ).addOutputValue( math::sqrt( p_errorL2 ) );
     this->postProcessing();
 
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
