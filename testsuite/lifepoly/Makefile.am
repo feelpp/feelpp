@@ -27,7 +27,7 @@ include $(top_srcdir)/testsuite/Makefile.testsuite
 check_HEADERS       = testlagrange.hpp
 
 check_PROGRAMS		= test_jacobi test_imsimplex test_im test_poly \
-			          test_lag test_quad_order test_bdf # test_nc
+			          test_lag test_quad_order # test_bdf test_nc
 #			  test_spectral_1D test_spectral_2D test_spectral_3D test_spectral_laplacian_3D
 
 test_jacobi_SOURCES	= test_jacobi.cpp
