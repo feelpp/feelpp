@@ -33,7 +33,7 @@
    \date 2009-02-25
  */
 #include <life/options.hpp>
-#include "applicationxml.hpp"
+#include <life/lifecore/applicationxml.hpp>
 
 // (non)linear algebra backend
 #include <life/lifealg/backend.hpp>
