@@ -89,7 +89,7 @@ ApplicationXML::preProcessing()
             return RUN_EXIT;
         }
 
-		if ( this->vm().count( "capabilities" ) )
+    if ( this->vm().count( "capabilities" ) )
 		{
 			std::cout << "Writing capabilities..." << "\n";
 			this->changeRepository( boost::format( "%1%/" )
@@ -98,21 +98,33 @@ ApplicationXML::preProcessing()
                                      this->about().appName(),
                                      M_params,
                                      M_outputs);
+            string rep="";
+            for (unsigned int i=0; i<M_params.size(); i++) {
+                std::cout << "rep = " << rep << "\n";
+                rep+=M_params[i].getName();
+                rep+="_";
+                rep+=M_parameter_values[i];
+                rep+="/";
+            }
+            this->changeRepository( boost::format( "%1%/%2%" )
+                                    % this->about().appName()
+                                    % rep
+                                    );
 			return RUN_EXIT;
 		}
 
-        string rep="";
-        for (unsigned int i=0; i<M_params.size(); i++) {
-            std::cout << "rep = " << rep << "\n";
-            rep+=M_params[i].getName();
-            rep+="_";
-            rep+=M_parameter_values[i];
-            rep+="/";
-        }
+    string rep="";
+    for (unsigned int i=0; i<M_params.size(); i++) {
+        std::cout << "rep = " << rep << "\n";
+        rep+=M_params[i].getName();
+        rep+="_";
+        rep+=M_parameter_values[i];
+        rep+="/";
+    }
 	this->changeRepository( boost::format( "%1%/%2%" )
 							% this->about().appName()
 							% rep
-						  );
+                            );
 
     return RUN_CONTINUE;
 }
@@ -130,7 +142,18 @@ ApplicationXML::postProcessing()
                             M_outputs,
                             M_parameter_values,
                             M_output_values );
-
+    string rep="";
+    for (unsigned int i=0; i<M_params.size(); i++) {
+        std::cout << "rep = " << rep << "\n";
+        rep+=M_params[i].getName();
+        rep+="_";
+        rep+=M_parameter_values[i];
+        rep+="/";
+    }
+	this->changeRepository( boost::format( "%1%/%2%" )
+							% this->about().appName()
+							% rep
+                            );
 }
 
 
