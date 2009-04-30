@@ -262,7 +262,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
         .addParameterValue( this->vm()["nu"].template as<double>() )
         .addParameterValue( this->vm()["hsize"].template as<double>() );
 
-    this->preProcessing();
+    if (this->preProcessing() == RUN_EXIT) return;
 
     using namespace Life::vf;
 

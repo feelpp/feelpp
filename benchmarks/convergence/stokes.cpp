@@ -263,7 +263,7 @@ Stokes<Dim, Order, Entity>::run()
         .addParameterValue( this->vm()["penal"].template as<double>() )
         .addParameterValue( this->vm()["hsize"].template as<double>() );
 
-    this->preProcessing();
+    if (this->preProcessing() == RUN_EXIT) return;
 
     using namespace Life::vf;
 
