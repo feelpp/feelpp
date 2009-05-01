@@ -285,7 +285,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 
     value_type pi = M_PI;
     AUTO( g, sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) );
-    AUTO( f, (pi*pi*Dim+1)*g );
+    AUTO( f, (pi*pi*Dim*nu+beta)*g );
     AUTO( zf, 0*Px()+0*Py() );
 
     int tag1,tag2;
