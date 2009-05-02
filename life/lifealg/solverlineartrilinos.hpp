@@ -124,7 +124,8 @@ public:
             Vector<T> & solution,
             Vector<T> const& rhs,
             const double tol,
-            const unsigned int m_its )
+            const unsigned int m_its,
+            bool transpose = false )
     {
         Debug(10100) << "Matrix solver...\n";
 
@@ -145,7 +146,8 @@ public:
              Vector<T>& solution,
              Vector<T> const& rhs,
              const double tol,
-             const unsigned int m_its)
+             const unsigned int m_its,
+             bool transpose = false )
     {
         Debug(10100) << "Matrix solver with preconditioner...\n";
 
@@ -164,7 +166,8 @@ public:
             Vector<T> & solution,
             Vector<T> const& rhs,
             const double tol,
-            const unsigned int m_its)
+            const unsigned int m_its,
+            bool transpose = false )
     {
         Debug(10100) << "Operator solver...\n";
 
