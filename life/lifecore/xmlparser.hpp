@@ -44,87 +44,120 @@
 #include <libxml/encoding.h>
 #include <libxml/xmlwriter.h>
 
+#include <boost/parameter.hpp>
+
 using namespace std;
 
 #define MY_ENCODING "UTF-8"
 
-#define OUTPUT_ATTRIBUTE 0
-#define DISCRETE_ATTRIBUTE 1
-#define CONTINUOUS_ATTRIBUTE 2
-
-#define STR(a) (new string(a))
+#define OUT_ATTR 0
+#define DISC_ATTR 1
+#define CONT_ATTR 2
 
 namespace xmlParse {
 
-class parameter {
+BOOST_PARAMETER_NAME(name)
+BOOST_PARAMETER_NAME(type)
+BOOST_PARAMETER_NAME(latex)
+BOOST_PARAMETER_NAME(cmdName)
+BOOST_PARAMETER_NAME(values)
+BOOST_PARAMETER_NAME(dependencies)
+BOOST_PARAMETER_NAME(funcs)
+
+class parameter_impl {
 private:
-    string* _name;
-    int _type;
-    string* _cmdName;
-    string* _latex;
-    string* _values;
+    string* name;
+    int type;
+    string* cmdName;
+    string* latex;
+    string* values;
 
 public:
-    parameter() {}
-    parameter(string* name, int type, string* cmdName, string* latex, string* values) {
-        _name = name;
-        _type = type;
-        if (cmdName!=NULL)
-            _cmdName=cmdName;
-        else
-            _cmdName=name;
-        _latex=latex;
-        _values = values;
+    parameter_impl() {}
+    template <class ArgumentPack>
+    parameter_impl(ArgumentPack const& args) {
+        name = new string((const char*)args[_name]);
+        type = (int)args[_type];
+        cmdName = ( args[_cmdName | NULL] ?
+                    new string((const char*)args[_cmdName | NULL]) :
+                    new string(*name) );
+        latex = (args[_latex | NULL] ? new string((const char*)args[_latex | NULL]) : NULL);
+        values = (args[_values | NULL] ? new string((const char*)args[_values | NULL]) : NULL);
+
+        /* printf("name=%s\n",name->c_str());
+        printf("type=%d\n",type);
+        printf("cmdName=%s\n",cmdName->c_str());
+        if (latex)
+            printf("latex=%s\n",latex->c_str());
+        if (values)
+        printf("values=%s\n",values->c_str()); */
     }
     inline vector<string> getAttrNames() {
+        // printf("getAttrNames()\n");
         vector<string> attrNames;
         attrNames.push_back("name");
-        if (_type!=0)
+        if (type)
             attrNames.push_back("type");
-        if (_cmdName!=0)
+        if (cmdName)
             attrNames.push_back("cmd_name");
-        if (_latex!=0)
+        if (latex)
             attrNames.push_back("latex");
         return attrNames;
     }
     inline vector<string> getAttrValues() {
+        // printf("getAttrValues()\n");
         vector<string> attrValues;
-        attrValues.push_back(*_name);
-        if (_type!=0)
-            attrValues.push_back( ( _type == 1 ? "discrete" : "continuous" ) );
-        if (_cmdName!=0)
-            attrValues.push_back(*_cmdName);
-        if (_latex!=0)
-            attrValues.push_back(*_latex);
+        attrValues.push_back(*name);
+        if (type)
+            attrValues.push_back( ( type == 1 ? "discrete" : "continuous" ) );
+        if (cmdName)
+            attrValues.push_back(*cmdName);
+        if (latex)
+            attrValues.push_back(*latex);
         return attrValues;
     }
     inline string getValues() {
-        if (_values!=0)
-            return *_values;
-        else
-            return "";
+        // printf("getValues()\n");
+        return *values;
     }
     inline string getName() {
-        return *_name;
+        // printf("getName()\n");
+        return *name;
     }
 };
 
-class output : public parameter {
+class parameter : public parameter_impl {
+    public:
+    parameter() {}
+    BOOST_PARAMETER_CONSTRUCTOR(
+        parameter, (parameter_impl), tag
+        , (required (name,*)) (required (type,*)) (optional (cmdName,*)) (optional (latex,*)) (optional (values,*)))
+};
+
+class output_impl : public parameter {
 private:
-    vector<parameter> _dependencies;
-    vector<string> _funcs;
+    vector<parameter> dependencies;
+    vector<string> funcs;
 
 public:
-    output(string* name, string* latex, vector<parameter> dependencies, vector<string> funcs) : parameter(name, 0, NULL, latex, NULL) {
-        _dependencies=dependencies;
-        _funcs=funcs;
+    template <class ArgumentPack>
+    output_impl(ArgumentPack const& args) : parameter(_name=args[_name], _type=0, _latex=args[_latex]) {
+        dependencies=args[_dependencies];
+        funcs=args[_funcs];
     }
     inline vector<parameter> getDependencies() {
-        return _dependencies;
+        return dependencies;
     }
     inline vector<string> getFuncs() {
-        return _funcs;
+        return funcs;
     }
+};
+
+class output : public output_impl {
+    public:
+    BOOST_PARAMETER_CONSTRUCTOR(
+        output, (output_impl), tag
+        , (required (name,*)) (optional (latex,*)) (required (dependencies,*)) (required (funcs,*)))
 };
 
 class xmlParser {
@@ -146,7 +179,7 @@ public:
             xmlAddChild(rootNode,paramNode);
         }
         for (unsigned int i=0; i<outputs.size(); ++i) {
-            xmlNodePtr paramNode = createNode("output",outputs[i].getAttrNames(),outputs[i].getAttrValues(),outputs[i].getValues());
+            xmlNodePtr paramNode = createNode("output",outputs[i].getAttrNames(),outputs[i].getAttrValues());
             for (unsigned int j=0; j<outputs[i].getDependencies().size(); ++j) {
                 xmlNode* aNewNode = xmlNewNode(NULL,(xmlChar*) "depend");
                 xmlSetProp(aNewNode, (xmlChar*) "value", (xmlChar*) outputs[i].getDependencies()[j].getName().c_str());

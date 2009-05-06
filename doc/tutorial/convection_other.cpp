@@ -51,13 +51,13 @@ Convection<Order_s,Order_p,Order_t>::Convection(int argc,
     M_backend( backend_type::build( this->vm() ) ),
 	exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
-    xmlParse::parameter h(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.01:0.2:0.3") );
+    xmlParse::parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.2:0.3" );
     this->
-        addParameter( xmlParse::parameter(STR("order-u"),DISCRETE_ATTRIBUTE,NULL,STR("N_u"),STR(boost::lexical_cast<std::string>( Order_s ) )) )
-        .addParameter( xmlParse::parameter(STR("order-p"),DISCRETE_ATTRIBUTE,NULL,STR("N_p"),STR(boost::lexical_cast<std::string>( Order_p )) ))
-        .addParameter( xmlParse::parameter(STR("order-t"),DISCRETE_ATTRIBUTE,NULL,STR("N_T"),STR(boost::lexical_cast<std::string>( Order_t )) ))
-        .addParameter( xmlParse::parameter(STR("gr"),CONTINUOUS_ATTRIBUTE,NULL,STR("\\mbox{Gr}"),STR("1:100:10000000")) )
-        .addParameter( xmlParse::parameter(STR("pr"),CONTINUOUS_ATTRIBUTE,NULL,STR("\\mbox{Pr}"),STR("0.01:10:10000000")) )
+        addParameter( xmlParse::parameter(_name="order-u",_type=DISC_ATTR,_latex="N_u",_values=boost::lexical_cast<std::string>( Order_s ).c_str() ) )
+        .addParameter( xmlParse::parameter(_name="order-p",_type=DISC_ATTR,_latex="N_p",_values=boost::lexical_cast<std::string>( Order_p ).c_str() ) )
+        .addParameter( xmlParse::parameter(_name="order-t",_type=DISC_ATTR,_latex="N_T",_values=boost::lexical_cast<std::string>( Order_t ).c_str() ) )
+        .addParameter( xmlParse::parameter(_name="gr",_type=CONT_ATTR,_latex="\\mbox{Gr}",_values="1:100:10000000") )
+        .addParameter( xmlParse::parameter(_name="pr",_type=CONT_ATTR,_latex="\\mbox{Pr}",_values="0.01:10:10000000") )
         .addParameter( h );
 
     std::cout << "parameter added\n";
@@ -68,9 +68,9 @@ Convection<Order_s,Order_p,Order_t>::Convection(int argc,
     vector<string> funcs2;
     funcs2.push_back("h**2");
     this->
-          addOutput( xmlParse::output(STR("AverageT"),STR("T"),depend,funcs) )
-         .addOutput( xmlParse::output(STR("FlowRate"),STR("D"),depend,funcs) )
-         .addOutput( xmlParse::output(STR("norm_L2"),STR("\\left\\| . \\right\\|_{L^2}"),depend2,funcs2) );
+          addOutput( xmlParse::output(_name="AverageT",_latex="T",_dependencies=depend,_funcs=funcs) )
+         .addOutput( xmlParse::output(_name="FlowRate",_latex="D",_dependencies=depend,_funcs=funcs) )
+         .addOutput( xmlParse::output(_name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend2,_funcs=funcs2) );
 
     std::cout << "output added\n";
 }
