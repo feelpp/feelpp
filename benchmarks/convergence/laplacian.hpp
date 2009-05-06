@@ -155,25 +155,25 @@ public:
         xmlParse::parameter h;
         if (Dim == 1)           //=== 1D ===
             if (Order < 5)
-                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.01:0.09:0.4") );
+                h=xmlParse::parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.09:0.4" );
             else
-                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.08:0.09:0.4") );
+                h=xmlParse::parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.08:0.09:0.4" );
         else if (Dim == 2)      //=== 2D ===
             if (Order < 5)
-                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.03:0.09:0.4") );
+                h=xmlParse::parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.03:0.09:0.4" );
             else
-                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.08:0.09:0.4") );
+                h=xmlParse::parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.08:0.09:0.4" );
         else
             if (Order < 5)      //=== 3D ===
-                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.08:0.09:0.4") );
+                h=xmlParse::parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.08:0.09:0.4" );
             else
-                h=xmlParse::parameter(STR("h"),CONTINUOUS_ATTRIBUTE,STR("hsize"),NULL,STR("0.15:0.2:0.4") );
+                h=xmlParse::parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.15:0.2:0.4" );
 
         this->
-            addParameter( xmlParse::parameter(STR("dim"),DISCRETE_ATTRIBUTE,NULL,NULL,STR(boost::lexical_cast<std::string>( Dim  ))) )
-            .addParameter( xmlParse::parameter(STR("order"),DISCRETE_ATTRIBUTE,NULL,NULL,STR(boost::lexical_cast<std::string>( Order  ))) )
-            .addParameter( xmlParse::parameter(STR("beta"),CONTINUOUS_ATTRIBUTE,NULL,STR("\\beta"),STR("0.01:1:10")) )
-            .addParameter( xmlParse::parameter(STR("nu"),CONTINUOUS_ATTRIBUTE,NULL,STR("\\nu"),STR("0.01:1:10")) )
+            addParameter( xmlParse::parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
+            .addParameter( xmlParse::parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str() ) )
+            .addParameter( xmlParse::parameter(_name="beta",_type=CONT_ATTR,_latex="\\beta",_values="0.01:1:10") )
+            .addParameter( xmlParse::parameter(_name="nu",_type=CONT_ATTR,_latex="\\nu",_values="0.01:1:10") )
             .addParameter( h );
 
         vector<xmlParse::parameter> depend;
@@ -188,8 +188,8 @@ public:
         funcs2.push_back(oss.str());
 
         this->
-            addOutput( xmlParse::output(STR("norm_L2"),STR("\\left\\| . \\right\\|_{L^2}"),depend,funcs) )
-            .addOutput( xmlParse::output(STR("norm_H1"),STR("\\left\\| . \\right\\|_{H^1}"),depend,funcs2) );
+            addOutput( xmlParse::output(_name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) )
+            .addOutput( xmlParse::output(_name="norm_H1",_latex="\\left\\| . \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs2) );
 
     }
 
