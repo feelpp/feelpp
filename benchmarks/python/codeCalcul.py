@@ -91,7 +91,7 @@ class CodeCalcul:
 				return
 		for i in range(0,len(depend_val)):
 			for j in range(0,len(depend_val[depend_val.keys()[i]])):
-				lString=" --backend=petsc "+self.other_options
+				lString=self.other_options
 				img_dir=self.base_dir+self.vname+"/"
 				for k in range(0,len(self.params)):
 					if self.params[k].getName() == depend_val.keys()[i]:
@@ -144,7 +144,7 @@ class CodeCalcul:
 
 		for i in range(0,len(depend_val)):
 			for j in range(0,len(depend_val[depend_val.keys()[i]])):
-				lString=" --backend=petsc "+self.other_options
+				lString=self.other_options
 				img_dir=self.base_dir+self.vname+"/"
 				for k in range(0,len(self.params)):
 					if self.params[k].getName() == depend_val.keys()[i]:
