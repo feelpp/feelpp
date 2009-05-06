@@ -77,7 +77,7 @@ makeOptions()
 {
     po::options_description polyvisoptions("Polyvis options");
     polyvisoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
+        ("hsize", po::value<double>()->default_value( 0.05 ), "mesh size")
         ;
     return polyvisoptions.add( Life::life_options() );
 }
@@ -119,7 +119,7 @@ class Polyvis
 public:
 
     //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = 0;
+    static const uint16_type Order = 5;
 
     //! numerical type is double
     typedef double value_type;

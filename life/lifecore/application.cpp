@@ -476,10 +476,9 @@ Application::processGenericOptions()
 
     Debug( 1000 ) << "[Application::processGenericOptions] done\n";
 }
-Application&
-Application::changeRepository( boost::format fmt )
+std::string
+Application::rootRepository() const
 {
-    fs::path rep_path;
     std::string env;
     if ( ::getenv( "LIFE_REPOSITORY" ) )
         {
@@ -491,7 +490,15 @@ Application::changeRepository( boost::format fmt )
             env = ::getenv( "HOME" );
             env += "/life";
         }
-    rep_path = env;
+    return env;
+}
+
+Application&
+Application::changeRepository( boost::format fmt )
+{
+    fs::path rep_path;
+
+    rep_path = rootRepository();
     if ( !fs::exists( rep_path ) )
         fs::create_directory( rep_path );
 
