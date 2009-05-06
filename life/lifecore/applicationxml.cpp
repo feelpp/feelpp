@@ -29,9 +29,12 @@
 
 #include <applicationxml.hpp>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/fstream.hpp>
 
 namespace Life
 {
+namespace fs = boost::filesystem;
 namespace detail
 {
 po::options_description
@@ -92,12 +95,15 @@ ApplicationXML::preProcessing()
     if ( this->vm().count( "capabilities" ) )
 		{
 			std::cout << "Writing capabilities..." << "\n";
-			this->changeRepository( boost::format( "%1%/" )
-									% "xml" );
-			xmlParser::writeResponse("xml_response.xml",
-                                     this->about().appName(),
-                                     M_params,
-                                     M_outputs);
+            fs::path rep_path;
+            std::string fmtstr = (boost::format( "%1%/" ) % "xml").str();
+            rep_path = rootRepository();
+            rep_path = rep_path / fmtstr;
+            rep_path = rep_path / "xml_response.xml";
+			xmlParser::writeResponse( rep_path.string(),
+                                      this->about().appName(),
+                                      M_params,
+                                      M_outputs);
             string rep="";
             for (unsigned int i=0; i<M_params.size(); i++) {
                 std::cout << "rep = " << rep << "\n";
@@ -110,6 +116,7 @@ ApplicationXML::preProcessing()
                                     % this->about().appName()
                                     % rep
                                     );
+            // std::cout << "Capabilities writed..." << "\n";
 			return RUN_EXIT;
 		}
 
@@ -131,18 +138,18 @@ ApplicationXML::preProcessing()
 void
 ApplicationXML::postProcessing()
 {
-    this->changeRepository( boost::format( "%1%/")
-                            % "xml"
-                            );
-
-
-	xmlParser::writeResult( "xml_result.xml",
+    fs::path rep_path;
+    std::string fmtstr = (boost::format( "%1%/" ) % "xml").str();
+    rep_path = rootRepository();
+    rep_path = rep_path / fmtstr;
+    rep_path = rep_path / "xml_result.xml";
+	xmlParser::writeResult( rep_path.string(),
                             this->about().appName(),
                             M_params,
                             M_outputs,
                             M_parameter_values,
                             M_output_values );
-    string rep="";
+    /*string rep="";
     for (unsigned int i=0; i<M_params.size(); i++) {
         std::cout << "rep = " << rep << "\n";
         rep+=M_params[i].getName();
@@ -154,6 +161,7 @@ ApplicationXML::postProcessing()
 							% this->about().appName()
 							% rep
                             );
+    */
 }
 
 

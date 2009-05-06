@@ -214,6 +214,10 @@ public:
 #endif
     }
 
+    //! \return the root of life applications (typically $HOME/life)
+    std::string rootRepository() const;
+
+
     //@}
 
     /** @name  Mutators
