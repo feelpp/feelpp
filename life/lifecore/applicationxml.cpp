@@ -99,6 +99,8 @@ ApplicationXML::preProcessing()
             std::string fmtstr = (boost::format( "%1%/" ) % "xml").str();
             rep_path = rootRepository();
             rep_path = rep_path / fmtstr;
+            if ( !fs::exists( rep_path ) )
+                fs::create_directory( rep_path );
             rep_path = rep_path / "xml_response.xml";
 			xmlParser::writeResponse( rep_path.string(),
                                       this->about().appName(),
