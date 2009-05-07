@@ -32,6 +32,138 @@ AT_BANNER([convergence tests...])
 
 AT_BANNER([laplacian(scalar)...])
 
+AT_BANNER([backend gmm...])
+
+AT_SETUP([laplacian 1D P1])
+
+ if test x$with_python_support = x1;
+ then
+
+   AT_KEYWORDS([laplacian 1D])
+   AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian1dP1 --path=$abs_top_builddir/convergence/ --cmdargs="--backend=gmm"],[0],[ignore],[ignore])
+
+ else
+
+ AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+fi
+
+AT_CLEANUP
+
+AT_SETUP([laplacian 2D P1])
+
+ if test x$with_python_support = x1;
+ then
+
+  AT_KEYWORDS([laplacian 2D])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian2dP1 --path=$abs_top_builddir/convergence/ --cmdargs="--backend=gmm"],[0],[ignore],[ignore])
+
+ else
+
+  AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+ fi
+
+AT_CLEANUP
+
+AT_SETUP([laplacian 2D P5])
+
+ if test x$with_python_support = x1;
+ then
+
+  AT_KEYWORDS([laplacian 2D])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian2dP5 --path=$abs_top_builddir/convergence/ --cmdargs="--backend=gmm"],[0],[ignore],[ignore])
+
+ else
+
+  AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+ fi
+
+AT_CLEANUP
+
+AT_SETUP([laplacian 3D P1])
+
+ if test x$with_python_support = x1;
+ then
+
+  AT_KEYWORDS([laplacian 3D])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian3dP1 --path=$abs_top_builddir/convergence/ --cmdargs="--backend=gmm"],[0],[ignore],[ignore])
+
+ else
+
+  AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+ fi
+AT_CLEANUP
+
+AT_BANNER([backend trilinos...])
+
+AT_SETUP([laplacian 1D P1])
+
+ if test x$with_python_support = x1;
+ then
+
+   AT_KEYWORDS([laplacian 1D])
+   AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian1dP1 --path=$abs_top_builddir/convergence/ --cmdargs="--backend=trilinos"],[0],[ignore],[ignore])
+
+ else
+
+ AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+fi
+
+AT_CLEANUP
+
+AT_SETUP([laplacian 2D P1])
+
+ if test x$with_python_support = x1;
+ then
+
+  AT_KEYWORDS([laplacian 2D])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian2dP1 --path=$abs_top_builddir/convergence/ --cmdargs="--backend=trilinos"],[0],[ignore],[ignore])
+
+ else
+
+  AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+ fi
+
+AT_CLEANUP
+
+AT_SETUP([laplacian 2D P5])
+
+ if test x$with_python_support = x1;
+ then
+
+  AT_KEYWORDS([laplacian 2D])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian2dP5 --path=$abs_top_builddir/convergence/ --cmdargs="--backend=trilinos"],[0],[ignore],[ignore])
+
+ else
+
+  AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+ fi
+
+AT_CLEANUP
+
+AT_SETUP([laplacian 3D P1])
+
+ if test x$with_python_support = x1;
+ then
+
+  AT_KEYWORDS([laplacian 3D])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=laplacian3dP1 --path=$abs_top_builddir/convergence/ --cmdargs="--backend=trilinos"],[0],[ignore],[ignore])
+
+ else
+
+  AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+ fi
+AT_CLEANUP
+
+AT_BANNER([backend petsc...])
+
 AT_SETUP([laplacian 1D P1])
 
  if test x$with_python_support = x1;
