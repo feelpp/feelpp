@@ -25,6 +25,13 @@ New in 0.9.11
 
  * Improve robustness of linear algebra backends see #21
 
+=== lifefilters ===
+
+ * Simplfy Exporter interface, old interface still supported, but
+   might be obsoleted in a future release. The simplification is that
+   the TimeSet data structure should not be used directly but through
+   the Exporter class interface.
+
 === lifevf ===
 
  * reflect simplifications made in lifepoly and lifediscr
@@ -100,4 +107,4 @@ New in 0.9.9
   multiplication) support.
 
 
- -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Thu, 19 Mar 2009 14:15:50 +0100
+ -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Thu, 30 Apr 2009 19:36:01 +0200
