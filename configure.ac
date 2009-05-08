@@ -334,7 +334,7 @@ AC_CHECK_GMSH
 
 
 LDFLAGS="${LDFLAGS} -L/usr/lib"
-CPPFLAGS="-I\$(top_srcdir) -I\$(top_srcdir)/boost ${CPPFLAGS} -I\$(top_builddir)"
+CPPFLAGS="-I\$(top_srcdir) ${CPPFLAGS} -I\$(top_builddir)"
 LIBS="${boostlibs} ${LIBS}"
 life_libs="$ac_pwd/life/liblife.la"
 
@@ -466,7 +466,7 @@ AC_CONFIG_TESTDIR(testsuite)
 # for subsequent invocations of LIFE_CHECK_LIFE in sub-modules
 life_toplevel=$ac_pwd
 life_install_path=$prefix
-life_cppflags="-I\$(top_srcdir)/../ -I\$(top_srcdir)/../boost -I\$(top_srcdir)/../../contrib/gmm/include -I\$(top_builddir)/../ -I\$(top_srcdir)/../../ -I\$(top_srcdir)/../../boost -I\$(top_builddir)/../../  ${CPPFLAGS} "
+life_cppflags="-I\$(top_srcdir)/../  -I\$(top_srcdir)/../../contrib/gmm/include -I\$(top_builddir)/../ -I\$(top_srcdir)/../../  -I\$(top_builddir)/../../  ${CPPFLAGS} "
 life_ldflags="${LDFLAGS}"
 life_libs="${life_libs} ${LIBS}"
 
@@ -474,11 +474,6 @@ LIFE_SET_LIFE_CACHE_VALUES
 
 #
 AC_CONFIG_FILES([ admin/Makefile ])
-# boost
-AC_CONFIG_FILES([ boost/Makefile ])
-AC_CONFIG_FILES([ boost/libs/Makefile ])
-AC_CONFIG_FILES([ boost/libs/log/Makefile ])
-AC_CONFIG_FILES([ boost/libs/log/src/Makefile ])
 
 # life library
 AC_CONFIG_FILES([ life/Makefile ])
@@ -501,6 +496,7 @@ AC_CONFIG_FILES([ testsuite/lifemesh/Makefile ])
 AC_CONFIG_FILES([ testsuite/lifepoly/Makefile ])
 AC_CONFIG_FILES([ testsuite/lifediscr/Makefile ])
 AC_CONFIG_FILES([ testsuite/lifefilters/Makefile ])
+AC_CONFIG_FILES([ testsuite/lifematerial/Makefile ])
 
 AC_DEFINE_UNQUOTED(LIFE_PREFIX, "${prefix:-\"/usr\"}",[define prefix dir for life installation])
 AC_OUTPUT
