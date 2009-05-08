@@ -45,8 +45,7 @@
 #include <libxml/xmlwriter.h>
 
 #include <boost/parameter.hpp>
-
-using namespace std;
+#include <life/lifecore/parameter.hpp>
 
 #define MY_ENCODING "UTF-8"
 
@@ -54,35 +53,27 @@ using namespace std;
 #define DISC_ATTR 1
 #define CONT_ATTR 2
 
-namespace xmlParse {
+namespace Life {
 
-BOOST_PARAMETER_NAME(name)
-BOOST_PARAMETER_NAME(type)
-BOOST_PARAMETER_NAME(latex)
-BOOST_PARAMETER_NAME(cmdName)
-BOOST_PARAMETER_NAME(values)
-BOOST_PARAMETER_NAME(dependencies)
-BOOST_PARAMETER_NAME(funcs)
-
-class parameter_impl {
+class Parameter_impl {
 private:
-    string* name;
+    std::string* name;
     int type;
-    string* cmdName;
-    string* latex;
-    string* values;
+    std::string* cmdName;
+    std::string* latex;
+    std::string* values;
 
 public:
-    parameter_impl() {}
+    Parameter_impl() {}
     template <class ArgumentPack>
-    parameter_impl(ArgumentPack const& args) {
-        name = new string((const char*)args[_name]);
+    Parameter_impl(ArgumentPack const& args) {
+        name = new std::string((const char*)args[_name]);
         type = (int)args[_type];
         cmdName = ( args[_cmdName | NULL] ?
-                    new string((const char*)args[_cmdName | NULL]) :
-                    new string(*name) );
-        latex = (args[_latex | NULL] ? new string((const char*)args[_latex | NULL]) : NULL);
-        values = (args[_values | NULL] ? new string((const char*)args[_values | NULL]) : NULL);
+                    new std::string((const char*)args[_cmdName | NULL]) :
+                    new std::string(*name) );
+        latex = (args[_latex | NULL] ? new std::string((const char*)args[_latex | NULL]) : NULL);
+        values = (args[_values | NULL] ? new std::string((const char*)args[_values | NULL]) : NULL);
 
         /* printf("name=%s\n",name->c_str());
         printf("type=%d\n",type);
@@ -92,9 +83,9 @@ public:
         if (values)
         printf("values=%s\n",values->c_str()); */
     }
-    inline vector<string> getAttrNames() {
+    inline std::vector<std::string> getAttrNames() {
         // printf("getAttrNames()\n");
-        vector<string> attrNames;
+        std::vector<std::string> attrNames;
         attrNames.push_back("name");
         if (type)
             attrNames.push_back("type");
@@ -104,9 +95,9 @@ public:
             attrNames.push_back("latex");
         return attrNames;
     }
-    inline vector<string> getAttrValues() {
+    inline std::vector<std::string> getAttrValues() {
         // printf("getAttrValues()\n");
-        vector<string> attrValues;
+        std::vector<std::string> attrValues;
         attrValues.push_back(*name);
         if (type)
             attrValues.push_back( ( type == 1 ? "discrete" : "continuous" ) );
@@ -116,47 +107,47 @@ public:
             attrValues.push_back(*latex);
         return attrValues;
     }
-    inline string getValues() {
+    inline std::string getValues() {
         // printf("getValues()\n");
         return *values;
     }
-    inline string getName() {
+    inline std::string getName() {
         // printf("getName()\n");
         return *name;
     }
 };
 
-class parameter : public parameter_impl {
+class Parameter : public Parameter_impl {
     public:
-    parameter() {}
+    Parameter() {}
     BOOST_PARAMETER_CONSTRUCTOR(
-        parameter, (parameter_impl), tag
+        Parameter, (Parameter_impl), tag
         , (required (name,*)) (required (type,*)) (optional (cmdName,*)) (optional (latex,*)) (optional (values,*)))
 };
 
-class output_impl : public parameter {
+class Output_impl : public Parameter {
 private:
-    vector<parameter> dependencies;
-    vector<string> funcs;
+    std::vector<Parameter> dependencies;
+    std::vector<std::string> funcs;
 
 public:
     template <class ArgumentPack>
-    output_impl(ArgumentPack const& args) : parameter(_name=args[_name], _type=0, _latex=args[_latex]) {
+    Output_impl(ArgumentPack const& args) : Parameter(_name=args[_name], _type=0, _latex=args[_latex]) {
         dependencies=args[_dependencies];
         funcs=args[_funcs];
     }
-    inline vector<parameter> getDependencies() {
+    inline std::vector<Parameter> getDependencies() {
         return dependencies;
     }
-    inline vector<string> getFuncs() {
+    inline std::vector<std::string> getFuncs() {
         return funcs;
     }
 };
 
-class output : public output_impl {
+class Output : public Output_impl {
     public:
     BOOST_PARAMETER_CONSTRUCTOR(
-        output, (output_impl), tag
+        Output, (Output_impl), tag
         , (required (name,*)) (optional (latex,*)) (required (dependencies,*)) (required (funcs,*)))
 };
 
@@ -167,7 +158,7 @@ public:
      *
      * Writes the options available in the c++ code.
      **/
-    static void writeResponse(string filename,string name,vector<parameter> params,vector<output> outputs) {
+    static void writeResponse(std::string filename,std::string name,std::vector<Parameter> params,std::vector<Output> Outputs) {
         xmlDocPtr doc = xmlNewDoc((xmlChar*) "1.0");
         xmlNodePtr rootNode = xmlNewNode(NULL, (xmlChar*) "response");
         xmlDocSetRootElement(doc, rootNode);
@@ -178,12 +169,12 @@ public:
             xmlNodePtr paramNode = createNode("param",params[i].getAttrNames(),params[i].getAttrValues(),params[i].getValues());
             xmlAddChild(rootNode,paramNode);
         }
-        for (unsigned int i=0; i<outputs.size(); ++i) {
-            xmlNodePtr paramNode = createNode("output",outputs[i].getAttrNames(),outputs[i].getAttrValues());
-            for (unsigned int j=0; j<outputs[i].getDependencies().size(); ++j) {
+        for (unsigned int i=0; i<Outputs.size(); ++i) {
+            xmlNodePtr paramNode = createNode("Output",Outputs[i].getAttrNames(),Outputs[i].getAttrValues());
+            for (unsigned int j=0; j<Outputs[i].getDependencies().size(); ++j) {
                 xmlNode* aNewNode = xmlNewNode(NULL,(xmlChar*) "depend");
-                xmlSetProp(aNewNode, (xmlChar*) "value", (xmlChar*) outputs[i].getDependencies()[j].getName().c_str());
-                xmlNodeSetContent(aNewNode,(xmlChar*) outputs[i].getFuncs()[j].c_str());
+                xmlSetProp(aNewNode, (xmlChar*) "value", (xmlChar*) Outputs[i].getDependencies()[j].getName().c_str());
+                xmlNodeSetContent(aNewNode,(xmlChar*) Outputs[i].getFuncs()[j].c_str());
                 xmlAddChild(paramNode,aNewNode);
             }
             xmlAddChild(rootNode,paramNode);
@@ -199,12 +190,12 @@ public:
      * Appends the result in the xml file.
      *
      **/
-    static void writeResult(string filename,
-                            string name,
-                            vector<parameter> params,
-                            vector<output> outputs,
-                            vector<string> paramValues,
-                            vector<string> outputValues) {
+    static void writeResult(std::string filename,
+                            std::string name,
+                            std::vector<Parameter> params,
+                            std::vector<Output> Outputs,
+                            std::vector<std::string> paramValues,
+                            std::vector<std::string> OutputValues) {
         xmlDoc *doc = NULL;
         xmlNode *root_element = NULL;
 
@@ -230,23 +221,23 @@ public:
             aNewNode=findNode(aNode, params[i].getName(), paramValues[i]);
             aNode=aNewNode;
         }
-        for (unsigned int i=0; i<outputs.size();++i) {
+        for (unsigned int i=0; i<Outputs.size();++i) {
             xmlNode *cur_node=NULL;
             for (cur_node = aNode->children; cur_node; cur_node = cur_node->next) {
                 if ( (cur_node->type == XML_ELEMENT_NODE) &&
-                     (std::strcmp((char*)cur_node->name,outputs[i].getName().c_str())==0) ) {
+                     (std::strcmp((char*)cur_node->name,Outputs[i].getName().c_str())==0) ) {
                     xmlUnlinkNode(cur_node);
                     xmlFreeNode(cur_node);
                 }
             }
-            aNewNode=createNode(outputs[i].getName(), outputValues[i]);
+            aNewNode=createNode(Outputs[i].getName(), OutputValues[i]);
             xmlAddChild(aNode,aNewNode);
         }
 
         xmlSaveFileEnc(filename.c_str(), doc, MY_ENCODING);
     }
 private:
-    static xmlNode* findNode(xmlNode* aNode, string nodeName, string attrVal) {
+    static xmlNode* findNode(xmlNode* aNode, std::string nodeName, std::string attrVal) {
         xmlNode *cur_node = NULL;
 
         for (cur_node = aNode->children; cur_node; cur_node = cur_node->next) {
@@ -264,7 +255,7 @@ private:
         return aNewNode;
     }
 
-    static xmlNode* createNode(string nodeName, vector<string> attrNames, vector<string> attrValues, string value="") {
+    static xmlNode* createNode(std::string nodeName, std::vector<std::string> attrNames, std::vector<std::string> attrValues, std::string value="") {
         if (attrNames.size()!=attrValues.size()) {
             printf("[xmlParser] error : attributes names list size != attributes values list size\n");
             return NULL;
@@ -277,7 +268,7 @@ private:
         return aNewNode;
     }
 
-    static xmlNode* createNode(string nodeName, string value="") {
+    static xmlNode* createNode(std::string nodeName, std::string value="") {
         xmlNode* aNewNode = xmlNewNode(NULL,(xmlChar*) nodeName.c_str());
         if (std::strcmp(value.c_str(),"")!=0)
             xmlNodeSetContent(aNewNode,(xmlChar*) value.c_str());

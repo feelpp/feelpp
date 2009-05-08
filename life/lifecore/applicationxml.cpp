@@ -85,7 +85,7 @@ ApplicationXML::operator=( ApplicationXML const& app )
 ApplicationXML::RunStatus
 ApplicationXML::preProcessing()
 {
-    std::cout << "start preprocessing\n";
+    Debug( 1000 ) << "start preprocessing\n";
     if ( this->vm().count( "help" ) )
         {
             std::cout << this->optionsDescription() << "\n";
@@ -94,7 +94,7 @@ ApplicationXML::preProcessing()
 
     if ( this->vm().count( "capabilities" ) )
 		{
-			std::cout << "Writing capabilities..." << "\n";
+			Debug( 1000 ) << "Writing capabilities..." << "\n";
             fs::path rep_path;
             std::string fmtstr = (boost::format( "%1%/" ) % "xml").str();
             rep_path = rootRepository();
@@ -106,9 +106,9 @@ ApplicationXML::preProcessing()
                                       this->about().appName(),
                                       M_params,
                                       M_outputs);
-            string rep="";
+            std::string rep="";
             for (unsigned int i=0; i<M_params.size(); i++) {
-                std::cout << "rep = " << rep << "\n";
+                Debug( 1000 ) << "rep = " << rep << "\n";
                 rep+=M_params[i].getName();
                 rep+="_";
                 rep+=M_parameter_values[i];
@@ -118,13 +118,13 @@ ApplicationXML::preProcessing()
                                     % this->about().appName()
                                     % rep
                                     );
-            // std::cout << "Capabilities writed..." << "\n";
+            Debug( 1000 ) << "Capabilities writed..." << "\n";
 			return RUN_EXIT;
 		}
 
-    string rep="";
+    std::string rep="";
     for (unsigned int i=0; i<M_params.size(); i++) {
-        std::cout << "rep = " << rep << "\n";
+        Debug( 1000 ) << "rep = " << rep << "\n";
         rep+=M_params[i].getName();
         rep+="_";
         rep+=M_parameter_values[i];
@@ -153,7 +153,7 @@ ApplicationXML::postProcessing()
                             M_output_values );
     /*string rep="";
     for (unsigned int i=0; i<M_params.size(); i++) {
-        std::cout << "rep = " << rep << "\n";
+        Debug( 1000 ) << "rep = " << rep << "\n";
         rep+=M_params[i].getName();
         rep+="_";
         rep+=M_parameter_values[i];
