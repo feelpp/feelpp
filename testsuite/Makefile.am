@@ -24,7 +24,7 @@ SUFFIXES	= .cpp .hpp .idl .c .h .f .F .o .moc
 
 check_HEADERS=testsuite.hpp
 
-SUBDIRS		= lifecore lifealg lifemesh lifepoly lifediscr lifefilters
+SUBDIRS		= lifecore lifealg lifemesh lifepoly lifediscr lifefilters lifematerial
 
 EXTRA_DIST=testsuite.at
 

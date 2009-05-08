@@ -1,11 +1,11 @@
-# -*- mode: m4 -*-
+# -*- mode: makefile -*-
 #
 #  This file is part of the Life library
 #
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 1006-12-29
+#       Date: 2009-05-08
 #
-#  Copyright (C) 2006 Université Joseph Fourier
+#  Copyright (C) 2009 Université Joseph Fourier
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -19,35 +19,19 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library; if not, write to the Free Software
-#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
-# \file testsuite.at
-# \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#
+include $(top_srcdir)/admin/common.am
+include $(top_srcdir)/testsuite/Makefile.testsuite
 
-AT_INIT([Life Library Test Suite])
+SUFFIXES		= .cpp .hpp .idl .c .h .f .F .o .moc
 
-#lifecore tests
-m4_include([lifecore/testsuite.at])
+check_PROGRAMS 	= test_material
 
-#lifealg tests
-m4_include([lifealg/testsuite.at])
+test_material_SOURCES    = test_material.cpp
+test_material_LDADD   = $(LIFE_LIBS) $(BOOST_UNIT_TEST_FRAMEWORK_LIB)
 
-# mesh tests
-m4_include([lifemesh/testsuite.at])
-
-# poly tests
-m4_include([lifepoly/testsuite.at])
-
-# discr tests
-m4_include([lifediscr/testsuite.at])
-
-# filters tests
-m4_include([lifefilters/testsuite.at])
-
-# material tests
-m4_include([lifematerial/testsuite.at])
-
+EXTRA_DIST			= testsuite.at
 
 
 
