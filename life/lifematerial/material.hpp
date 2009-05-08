@@ -30,9 +30,7 @@
 #define __Material_H 1
 
 #include <string>
-#include <boost/plugin/virtual_constructors.hpp>
-
-
+#include <boost/shared_ptr.hpp>
 
 namespace Life
 {
@@ -121,21 +119,9 @@ private:
 
 };
 
+typedef Material material_type;
 typedef boost::shared_ptr<Material> material_ptrtype;
 
 } // Life
 
-#if 0
-namespace boost { namespace plugin {
-
-template<>
-struct virtual_constructors<Life::Material>
-{
-    typedef mpl::list<
-        mpl::list<std::string>
-        > type;
-};
-} // plugin
-} // boost
-#endif
 #endif /* __Material_H */

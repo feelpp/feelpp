@@ -29,14 +29,20 @@
 #ifndef __MaterialLib_H
 #define __MaterialLib_H 1
 
-#include <boost/plugin.hpp>
-
 #include <life/lifecore/life.hpp>
+#include <life/lifecore/factory.hpp>
+#include <life/lifecore/singleton.hpp>
 #include <life/lifematerial/material.hpp>
+
 
 
 namespace Life
 {
+namespace detail
+{
+template<typename T>
+Material* createMaterial() { return new T; }
+}
 /**
  * \class MaterialLib
  * \brief Material library
@@ -53,6 +59,7 @@ public:
      */
     //@{
 
+    typedef Singleton< Life::Factory< Material, std::string > > factory_type;
 
     //@}
 
@@ -78,14 +85,14 @@ public:
      */
     //@{
 
-    material_ptrtype material( std::string const& name );
+    static material_ptrtype material( std::string const& name );
+
 
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -102,12 +109,11 @@ protected:
 
 private:
 
-    boost::plugin::dll M_dll;
 
-    boost::plugin::plugin_factory <Material> M_plugin_factory;
+
 };
 
-
+typedef Singleton< Life::Factory< Material, std::string > > MaterialFactory;
 po::options_description material_options( std::string const& prefix = "" );
 
 } // Life

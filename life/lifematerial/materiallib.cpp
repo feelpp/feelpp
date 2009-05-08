@@ -28,6 +28,10 @@
  */
 #include <life/lifematerial/materiallib.hpp>
 
+#include <life/lifematerial/air.hpp>
+#include <life/lifematerial/castiron.hpp>
+
+
 namespace Life
 {
 /**
@@ -42,22 +46,16 @@ po::options_description material_options( std::string const& prefix )
     po::options_description _options( "Material " + prefix + "  options");
     _options.add_options()
         // material library options
-        ((_prefix+"material-lib").c_str(), Life::po::value<std::string>()->default_value( "stdmaterial.so" ), "Standard material library")
+        //((_prefix+"material-lib").c_str(), Life::po::value<std::string>()->default_value( "stdmaterial.so" ), "Standard material library")
         ((_prefix+"material").c_str(), Life::po::value<std::string>()->default_value( "Air" ), "material")
         ;
     return _options;
 }
 
 MaterialLib::MaterialLib()
-    :
-    M_dll( "/scratch/life/opt2-gcc43/testsuite/lifecore/stdmaterial.so" ),
-    M_plugin_factory( M_dll )
 {}
 
 MaterialLib::MaterialLib( po::variables_map const& vm )
-    :
-    M_dll( vm["material-lib"].as<std::string>() ),
-    M_plugin_factory( M_dll )
 {}
 MaterialLib::~MaterialLib()
 {}
@@ -65,6 +63,12 @@ MaterialLib::~MaterialLib()
 material_ptrtype
 MaterialLib::material( std::string const& name )
 {
-    return material_ptrtype( M_plugin_factory.create ( name ) );
+    return material_ptrtype( factory_type::instance().createObject( name ) );
 }
+
+
+const bool material_air = MaterialLib::factory_type::instance().registerProduct( "Air", &detail::createMaterial<Air> );
+const bool material_castiron = MaterialLib::factory_type::instance().registerProduct( "CastIron", &detail::createMaterial<CastIron> );
+
+
 }

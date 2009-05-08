@@ -30,9 +30,8 @@
 #include <map>
 #include <utility>
 
-#include <boost/plugin/export_plugin.hpp>
-
 #include <life/lifematerial/material.hpp>
+#include <life/lifematerial/materiallib.hpp>
 
 
 namespace Life
@@ -118,7 +117,10 @@ protected:
 private:
 
 };
-BOOST_PLUGIN_EXPORT(Material, CastIron, "Cast Iron");
+namespace {
 
+const bool material_castiron = MaterialLib::factory_type::instance().registerProduct( "CastIron", &detail::createMaterial<CastIron> );
+
+}
 
 } // Life
