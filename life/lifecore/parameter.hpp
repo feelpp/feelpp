@@ -35,7 +35,7 @@
 #endif
 
 #include <boost/parameter.hpp>
-
+#include <boost/type_traits.hpp>
 #if 0
 #include <boost/parameter/keyword.hpp>
 #include <boost/parameter/aux_/maybe.hpp>
@@ -53,7 +53,6 @@ BOOST_PARAMETER_NAME(maxit)
 BOOST_PARAMETER_NAME(transpose)
 BOOST_PARAMETER_NAME(reuse_prec)
 BOOST_PARAMETER_NAME(tolerance)
-
 BOOST_PARAMETER_NAME(test)    // Note: no semicolon
 BOOST_PARAMETER_NAME(trial)
 BOOST_PARAMETER_NAME(vector)
@@ -61,6 +60,25 @@ BOOST_PARAMETER_NAME(pattern)
 BOOST_PARAMETER_NAME(do_threshold)
 BOOST_PARAMETER_NAME(threshold)
 BOOST_PARAMETER_NAME(init)
+BOOST_PARAMETER_NAME(name)
+// parameter for description of geometries
+BOOST_PARAMETER_NAME(h)
+BOOST_PARAMETER_NAME(dim)
+BOOST_PARAMETER_NAME(order)
+BOOST_PARAMETER_NAME(xmin)
+BOOST_PARAMETER_NAME(xmax)
+BOOST_PARAMETER_NAME(ymin)
+BOOST_PARAMETER_NAME(ymax)
+BOOST_PARAMETER_NAME(zmin)
+BOOST_PARAMETER_NAME(zmax)
+// parameter for xmlParse
+BOOST_PARAMETER_NAME(type)
+BOOST_PARAMETER_NAME(latex)
+BOOST_PARAMETER_NAME(cmdName)
+BOOST_PARAMETER_NAME(values)
+BOOST_PARAMETER_NAME(dependencies)
+BOOST_PARAMETER_NAME(funcs)
+
 
 }
 #endif /* __lifecore_parameter_H */

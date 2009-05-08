@@ -37,7 +37,6 @@
 
 namespace Life
 {
-using namespace xmlParse;
 /**
  * \class ApplicationXML
  * \brief XML application
@@ -111,12 +110,12 @@ public:
      */
     //@{
 
-    ApplicationXML& addOutput( xmlParse::output const& o )
+    ApplicationXML& addOutput( Output const& o )
     {
         M_outputs.push_back( o );
         return *this;
     }
-    ApplicationXML& addParameter( xmlParse::parameter const& o )
+    ApplicationXML& addParameter( Parameter const& o )
     {
         M_params.push_back( o );
         return *this;
@@ -136,7 +135,7 @@ public:
     {
         char sci_val[11];
         sprintf(sci_val,"%.5e",(double)val);
-        M_parameter_values.push_back( string(sci_val) );
+        M_parameter_values.push_back( std::string(sci_val) );
         return *this;
     }
 
@@ -151,16 +150,16 @@ public:
 protected:
 
     //! parameters
-	vector<xmlParse::parameter> M_params;
+    std::vector<Parameter> M_params;
 
     //! outputs
-	vector<xmlParse::output> M_outputs;
+    std::vector<Output> M_outputs;
 
     //! parameter values
-	vector<std::string> M_parameter_values;
+    std::vector<std::string> M_parameter_values;
 
     //! output values
-	vector<std::string> M_output_values;
+    std::vector<std::string> M_output_values;
 
 
 private:
