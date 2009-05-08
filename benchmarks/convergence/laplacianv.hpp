@@ -146,25 +146,25 @@ public:
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
 
-        xmlParse::parameter h;
+        Parameter h;
         if (Dim == 1)
-            h=xmlParse::parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.09:0.2" );
+            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.09:0.2" );
         else if (Dim == 2)
-            h=xmlParse::parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.04:0.09:0.2" );
+            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.04:0.09:0.2" );
         else
             if (Order < 5)
-                h=xmlParse::parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.06:0.09:0.2" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.06:0.09:0.2" );
             else
-                h=xmlParse::parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.15:0.2" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.15:0.2" );
 
         this->
-            addParameter( xmlParse::parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
-            .addParameter( xmlParse::parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str()) )
-            .addParameter( xmlParse::parameter(_name="beta",_type=CONT_ATTR,_latex="\\beta",_values="0.01:1:10") )
-            .addParameter( xmlParse::parameter(_name="nu",_type=CONT_ATTR,_latex="\\nu",_values="0.01:1:10") )
+            addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
+            .addParameter( Parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str()) )
+            .addParameter( Parameter(_name="beta",_type=CONT_ATTR,_latex="\\beta",_values="0.01:1:10") )
+            .addParameter( Parameter(_name="nu",_type=CONT_ATTR,_latex="\\nu",_values="0.01:1:10") )
             .addParameter( h );
 
-        vector<xmlParse::parameter> depend;
+        vector<Parameter> depend;
         vector<string> funcs;
         depend.push_back(h);
         ostringstream oss;
@@ -176,8 +176,8 @@ public:
         funcs2.push_back(oss.str());
 
         this->
-            addOutput( xmlParse::output(_name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) )
-            .addOutput( xmlParse::output(_name="norm_H1",_latex="\\left\\| . \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs2) );
+            addOutput( Output(_name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) )
+            .addOutput( Output(_name="norm_H1",_latex="\\left\\| . \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs2) );
 
     }
 

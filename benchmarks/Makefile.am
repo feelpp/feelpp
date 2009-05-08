@@ -28,12 +28,6 @@ SUBDIRS= admin python convergence perf
 #. $(ENABLE_EXTRAMODULE_VALIDATION) convergence perf kovasznay stokes turek structure
 DIST_SUBDIRS = admin python convergence perf
 
-lib_LTLIBRARIES=liblifelog.la
-
-check_HEADERS=logs.hpp
-liblifelog_la_SOURCES=logs.cpp
-liblifelog_la_LIBADD=../boost/libs/log/src/libboost_log.la
-
 
 $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 	{									   \
