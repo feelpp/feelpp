@@ -29,5 +29,5 @@ EXTRA_DIST=perf.at
 
 check_PROGRAMS    = perf
 perf_SOURCES  = bench1.cpp
-perf_LDADD    = ../liblifelog.la $(LIFE_LIBS)
+perf_LDADD    = $(LIFE_LIBS)
 perf_LDFLAGS  = -static
