@@ -171,29 +171,29 @@ public:
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
 
-        xmlParse::parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.04:0.08:0.2" );
+        Parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.04:0.08:0.2" );
         this->
-            addParameter( xmlParse::parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
-            .addParameter( xmlParse::parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str()) )
-            .addParameter( xmlParse::parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu",_values="0.01:1:10") )
-            .addParameter( xmlParse::parameter(_name="f",_type=CONT_ATTR,_values="0:0:0") )
-            .addParameter( xmlParse::parameter(_name="penal",_type=CONT_ATTR,_values="0.1:0.5:1") )
+            addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
+            .addParameter( Parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str()) )
+            .addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu",_values="0.01:1:10") )
+            .addParameter( Parameter(_name="f",_type=CONT_ATTR,_values="0:0:0") )
+            .addParameter( Parameter(_name="penal",_type=CONT_ATTR,_values="0.1:0.5:1") )
             .addParameter( h );
 
-        vector<xmlParse::parameter> depend;
-        vector<string> funcs;
+        std::vector<Parameter> depend;
+        std::vector<string> funcs;
         depend.push_back(h);
-        ostringstream oss;
+        std::ostringstream oss;
         oss << "h**" << boost::lexical_cast<std::string>( Order + 1  ) ;
         funcs.push_back(oss.str());
         oss.str("");
-        vector<string> funcs2;
+        std::vector<std::string> funcs2;
         oss << "h**" << boost::lexical_cast<std::string>( Order ) ;
         funcs2.push_back(oss.str());
 
         this->
-            addOutput( xmlParse::output(_name="norm_L2_u",_latex="\\left\\| u \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) )
-            .addOutput( xmlParse::output(_name="norm_L2_p",_latex="\\left\\| p \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs2) );
+            addOutput( Output(_name="norm_L2_u",_latex="\\left\\| u \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) )
+            .addOutput( Output(_name="norm_L2_p",_latex="\\left\\| p \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs2) );
 
         mu = this->vm()["mu"].template as<value_type>();
         penalbc = this->vm()["bccoeff"].template as<value_type>();
