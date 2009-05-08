@@ -29,8 +29,8 @@ if ENABLE_TESTS
 MAYBE_TESTS=testsuite
 endif
 
-SUBDIRS = admin boost contrib life $(MAYBE_TESTS) .
-DIST_SUBDIRS = admin boost contrib life $(MAYBE_TESTS)  .
+SUBDIRS = admin contrib life $(MAYBE_TESTS) .
+DIST_SUBDIRS = admin contrib life $(MAYBE_TESTS)  .
 
 if ENABLE_MODULE_DOC
   SUBDIRS += doc
