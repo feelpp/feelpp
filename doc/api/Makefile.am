@@ -4,9 +4,9 @@ SUFFIXES	= .cpp .hpp .idl .c .h .f .F .o .moc
 
 
 DOCSOURCES = $(shell find @top_srcdir@/../life  -name "*.[ch]pp") \
- $(shell find @srcdir@ -name "*.doc")
+ $(shell find @srcdir@ -name "*.do[cx]")
 
-EXTRA_DIST = html Doxyfile \
+EXTRA_DIST = Doxyfile \
  index.doc publis.doc  \
  $(foreach file,$(FIGS),fig/$(file)) $(PNGS)
 
