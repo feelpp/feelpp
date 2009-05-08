@@ -53,8 +53,6 @@
 #include <life/lifealg/backend.hpp>
 #include <life/lifevf/vf.hpp>
 
-#include <benchmarks/logs.hpp>
-
 #if defined(HAVE_GOOGLE_PROFILER_H)
 #include <google/profiler.h>
 #endif // HAVE_GOOGLE_PROFILER_H
@@ -280,12 +278,12 @@ Bench1::run1d()
     aMesh->accept( import );
 
 
-    BOOST_LOG( app ) << "run2d starts" << std::endl;
+    Log() << "run2d starts" << "\n";
     bench1<mesh_type, 1>( aMesh );
     bench1<mesh_type, 2>( aMesh );
     //bench1<mesh_type, 5>( aMesh );
     //bench1<mesh_type, 8>( aMesh );
-    BOOST_LOG( app ) << "run2d ends" << std::endl;
+    Log() << "run2d ends" << "\n";
 #endif
 }
 void
@@ -304,12 +302,12 @@ Bench1::run2d()
     aMesh->accept( import );
 
 
-    BOOST_LOG( app ) << "run2d starts" << std::endl;
+    Log() << "run2d starts" << "\n";
     bench1<mesh_type, 1>( aMesh );
     bench1<mesh_type, 2>( aMesh );
     //bench1<mesh_type, 5>( aMesh );
     //bench1<mesh_type, 8>( aMesh );
-    BOOST_LOG( app ) << "run2d ends" << std::endl;
+    Log() << "run2d ends" << "\n";
 
 }
 void
@@ -328,10 +326,10 @@ Bench1::run3d()
     ImporterGmsh<mesh_type> import( fname );
     aMesh->accept( import );
 
-    BOOST_LOG( app ) << "run3d starts" << std::endl;
+    Log() << "run3d starts" << "\n";
     //bench1<mesh_type, 1>( aMesh );
     //bench1<mesh_type, 2>( aMesh );
-    BOOST_LOG( app ) << "run3d ends" << std::endl;
+    Log() << "run3d ends" << "\n";
 #endif
 }
 
@@ -349,7 +347,7 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     typename dp0_space_type::pointer_type P0h = dp0_space_type::New( Xh->mesh() );
     typename dp0_space_type::element_type w( P0h );
     w = vf::project( P0h, elements(Xh->mesh()), Px() );
-    BOOST_LOG( app )<< "quad npts: " << im.nPoints() << std::endl;
+    Log()<< "quad npts: " << im.nPoints() << "\n";
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
@@ -361,27 +359,27 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     //
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, idt(u)*id(v) );
-    BOOST_LOG( app ) << " o- R<const> time : " << timer.elapsed() << std::endl;
+    Log() << " o- R<const> time : " << timer.elapsed() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, idv(w)*idt(u)*id(v) );
-    BOOST_LOG( app ) << " o- R<p0 const> time : " << timer.elapsed() << std::endl;
+    Log() << " o- R<p0 const> time : " << timer.elapsed() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, ((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v) );
-    BOOST_LOG( app ) << " o-   R<xyz> time : " << timer.elapsed() << std::endl;
+    Log() << " o-   R<xyz> time : " << timer.elapsed() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, idv(w)*((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v) );
-    BOOST_LOG( app ) << " o-   R<dp0 xyz> time : " << timer.elapsed() << std::endl;
+    Log() << " o-   R<dp0 xyz> time : " << timer.elapsed() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v) );
-    BOOST_LOG( app ) << " o-   R<val xyz> time : " << timer.elapsed() << std::endl;
+    Log() << " o-   R<val xyz> time : " << timer.elapsed() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, idv(w)*val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v) );
-    BOOST_LOG( app ) << " o-   R<dp0 val xyz> time : " << timer.elapsed() << std::endl;
+    Log() << " o-   R<dp0 val xyz> time : " << timer.elapsed() << "\n";
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
@@ -396,7 +394,7 @@ Bench1::D( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
     form2(Xh,Xh,M,_init=true);
-    BOOST_LOG( app )<< "quad npts: " << im.nPoints() << std::endl;
+    Log()<< "quad npts: " << im.nPoints() << "\n";
     boost::timer timer;
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
@@ -407,19 +405,19 @@ Bench1::D( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     //
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, gradt(u)*trans(grad(v)) );
-    BOOST_LOG( app ) << " o- D<const> time : " << timer.elapsed() << std::endl;
+    Log() << " o- D<const> time : " << timer.elapsed() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, dxt(u)*dx(v)+dyt(u)*dy(v) );
-    BOOST_LOG( app ) << " o- D<const2> time : " << timer.elapsed() << std::endl;
+    Log() << " o- D<const2> time : " << timer.elapsed() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, dxt(u)*dx(v)+dyt(u)*dy(v)+dzt(u)*dz(v) );
-    BOOST_LOG( app ) << " o- D<const3> time : " << timer.elapsed() << std::endl;
+    Log() << " o- D<const3> time : " << timer.elapsed() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, val((Px()^(3))+(Py()^(2))*Pz())*gradt(u)*trans(grad(v)) );
-    BOOST_LOG( app ) << " o-   D<xyz> time : " << timer.elapsed() << std::endl;
+    Log() << " o-   D<xyz> time : " << timer.elapsed() << "\n";
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
@@ -433,7 +431,7 @@ Bench1::DR( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     typename FSType::element_type v( Xh );
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    BOOST_LOG( app )<< "quad npts: " << im.nPoints() << std::endl;
+    Log()<< "quad npts: " << im.nPoints() << "\n";
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
@@ -445,11 +443,11 @@ Bench1::DR( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     //
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, gradt(u)*trans(grad(v))+idt( u )*id( v ));
-    BOOST_LOG( app ) << " o- DR<const> time : " << timer.elapsed() << std::endl;
+    Log() << " o- DR<const> time : " << timer.elapsed() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v ) ));
-    BOOST_LOG( app ) << " o-   DR<xyz> time : " << timer.elapsed() << std::endl;
+    Log() << " o-   DR<xyz> time : " << timer.elapsed() << "\n";
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
@@ -462,7 +460,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<1>
     typename FSType::element_type v( Xh );
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    BOOST_LOG( app )<< "quad npts: " << im.nPoints() << std::endl;
+    Log()<< "quad npts: " << im.nPoints() << "\n";
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
@@ -476,13 +474,13 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<1>
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im,
                                  gradt(u)*trans(grad(v))+idt( u )*id( v ) +
                                  (gradt(u)*vec(constant(1.0)))*id(v));
-    BOOST_LOG( app ) << " o- ADR<const> time : " << timer.elapsed() << std::endl;
+    Log() << " o- ADR<const> time : " << timer.elapsed() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im,
                                  val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
                                  (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v));
-    BOOST_LOG( app ) << " o-   ADR<xyz> time : " << timer.elapsed() << std::endl;
+    Log() << " o-   ADR<xyz> time : " << timer.elapsed() << "\n";
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
@@ -496,7 +494,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<2>
     typename FSType::element_type v( Xh );
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    BOOST_LOG( app )<< "quad npts: " << im.nPoints() << std::endl;
+    Log()<< "quad npts: " << im.nPoints() << "\n";
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
@@ -510,13 +508,13 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<2>
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im,
                                            gradt(u)*trans(grad(v))+idt( u )*id( v ) +
                                            (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v));
-    BOOST_LOG( app ) << " o- ADR<const> time : " << timer.elapsed() << std::endl;
+    Log() << " o- ADR<const> time : " << timer.elapsed() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im,
                                            val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
                                  (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v));
-    BOOST_LOG( app ) << " o-   ADR<xyz> time : " << timer.elapsed() << std::endl;
+    Log() << " o-   ADR<xyz> time : " << timer.elapsed() << "\n";
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
@@ -529,7 +527,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<3>
     typename FSType::element_type v( Xh );
     sparse_matrix_ptrtype  M( M_backend->newMatrix( Xh, Xh ) );
 
-    BOOST_LOG( app )<< "quad npts: " << im.nPoints() << std::endl;
+    Log()<< "quad npts: " << im.nPoints() << "\n";
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
@@ -543,13 +541,13 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<3>
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im,
                                            gradt(u)*trans(grad(v))+idt( u )*id( v ) +
                                            (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v));
-    BOOST_LOG( app ) << " o- ADR<const> time : " << timer.elapsed() << std::endl;
+    Log() << " o- ADR<const> time : " << timer.elapsed() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im,
                                  val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
                                  (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v));
-    BOOST_LOG( app ) << " o-   ADR<xyz> time : " << timer.elapsed() << std::endl;
+    Log() << " o-   ADR<xyz> time : " << timer.elapsed() << "\n";
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
@@ -566,11 +564,11 @@ Bench1::bench1( boost::shared_ptr<MeshType> & mesh )
     std::ostringstream geostr;
     geostr << "GT_PK(" << nDim << "," << 1 << ")";
 
-    BOOST_LOG( app ) << "------------------------------------------------------------" << std::endl;
-    BOOST_LOG( app ) << "dimension : " << nDim << std::endl;
-    BOOST_LOG( app ) << "      fem : " << femstr.str() << std::endl;
-    BOOST_LOG( app ) << "      geo : " << geostr.str() << std::endl;
-    BOOST_LOG( app ) << "++++++++++++++++++++++++++++++" << std::endl;
+    Log() << "------------------------------------------------------------" << "\n";
+    Log() << "dimension : " << nDim << "\n";
+    Log() << "      fem : " << femstr.str() << "\n";
+    Log() << "      geo : " << geostr.str() << "\n";
+    Log() << "++++++++++++++++++++++++++++++" << "\n";
 
     typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
     typedef FunctionSpace<MeshType, basis_type> space_type;
@@ -586,8 +584,8 @@ Bench1::bench1( boost::shared_ptr<MeshType> & mesh )
     //v.space()->gm()->setCacheInformation( QDR, mesh->numElements(), QDR_NPTS);
     //v.space()->fe()->setCacheInformation( QDR, mesh->numElements(), QDR_NPTS);
 
-    BOOST_LOG( app ) << "dof : " << Xh->nDof() << std::endl
-                     << "elt : " << Xh->mesh()->numElements() << std::endl;
+    Log() << "dof : " << Xh->nDof() << "\n"
+                     << "elt : " << Xh->mesh()->numElements() << "\n";
 
 
     boost::timer timer;
@@ -596,7 +594,7 @@ Bench1::bench1( boost::shared_ptr<MeshType> & mesh )
     D( Xh,  IM<nDim, 2*(Order-1),double>() );
     DR( Xh, im );
     ADR( Xh, im, mpl::int_<nDim>() );
-    BOOST_LOG( app ) << "------------------------------------------------------------" << std::endl;
+    Log() << "------------------------------------------------------------" << "\n";
 
 }
 
@@ -604,9 +602,6 @@ Bench1::bench1( boost::shared_ptr<MeshType> & mesh )
 int
 main( int argc, char** argv )
 {
-    void init_logs();
-    init_logs();
-
     Bench1 bench1(argc, argv, makeAbout(), makeOptions() );
 
     bench1.run();
