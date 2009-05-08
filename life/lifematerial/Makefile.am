@@ -26,13 +26,7 @@ include $(top_srcdir)/admin/common.am
 lib_LTLIBRARIES		= liblifematerial.la
 
 liblifematerial_la_SOURCES	=  material.cpp materiallib.cpp
+
 liblifematerial_la_LDFLAGS  = -no-undefined
 liblifematerial_la_LIBADD   = ../lifecore/liblifecore.la $(BOOST_SERIALIZATION_LIB)
-
-pkglib_LTLIBRARIES = stdmaterial.la
-
-
-stdmaterial_la_SOURCES = air.cpp castiron.cpp
-stdmaterial_la_LDFLAGS = -module
-stdmaterial_la_LIBADD = liblifematerial.la $(BOOST_SERIALIZATION_LIB)
 

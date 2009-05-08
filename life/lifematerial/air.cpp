@@ -32,104 +32,14 @@
 #include <map>
 #include <utility>
 
-#include <boost/plugin/export_plugin.hpp>
-
-#include <life/lifematerial/material.hpp>
-
+#include <life/lifematerial/air.hpp>
+#include <life/lifematerial/materiallib.hpp>
 
 namespace Life
 {
-
-/**
- * \class Air
- *  \brief Air material
- *
- *  @author Christophe Prud'homme
- * @see
- */
-class Air : public Material
-{
-public:
+namespace {
 
 
-    /** @name Typedefs
-     */
-    //@{
-
-
-    //@}
-
-    /** @name Constructors, destructor
-     */
-    //@{
-
-    Air() : Material( "Air" ) {}
-    Air( Air const & m ): Material( m ) {}
-    ~Air() {}
-
-    //@}
-
-    /** @name Operator overloads
-     */
-    //@{
-
-
-    //@}
-
-    /** @name Accessors
-     */
-    //@{
-
-
-    //! thermal conductivity in \f$ W/(m*K) \f$
-    virtual double k() const
-    {
-        double T = 273; // K (default)
-        return pow(10,(0.8616*log10(abs(T))-3.7142));
-    }
-
-    //! density in \f$ kg/m^3 \f$
-    virtual double rho() const
-    {
-
-        return 1.2;
-    }
-
-    //! thermal capacity in \f$ J/(kg*K) \f$
-    virtual double C() const { double T=273; return 0.0769*T+1076.9; }
-
-    //! Poisson coefficient
-    virtual double nu() const { return 1.7*1e-5; }
-
-    //! Young modulus in \f$ Pa \f$
-    virtual double E() const { return -1; }
-
-
-    //@}
-
-    /** @name  Mutators
-     */
-    //@{
-
-
-    //@}
-
-    /** @name  Methods
-     */
-    //@{
-
-
-    //@}
-
-
-
-protected:
-
-private:
-
-};
-BOOST_PLUGIN_EXPORT(Material, Air, "Air");
-BOOST_PLUGIN_EXPORT_LIST();
-
+}
 } // Life
 
