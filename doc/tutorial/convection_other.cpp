@@ -51,28 +51,28 @@ Convection<Order_s,Order_p,Order_t>::Convection(int argc,
     M_backend( backend_type::build( this->vm() ) ),
 	exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
-    xmlParse::parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.2:0.3" );
+    Parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.2:0.3" );
     this->
-        addParameter( xmlParse::parameter(_name="order-u",_type=DISC_ATTR,_latex="N_u",_values=boost::lexical_cast<std::string>( Order_s ).c_str() ) )
-        .addParameter( xmlParse::parameter(_name="order-p",_type=DISC_ATTR,_latex="N_p",_values=boost::lexical_cast<std::string>( Order_p ).c_str() ) )
-        .addParameter( xmlParse::parameter(_name="order-t",_type=DISC_ATTR,_latex="N_T",_values=boost::lexical_cast<std::string>( Order_t ).c_str() ) )
-        .addParameter( xmlParse::parameter(_name="gr",_type=CONT_ATTR,_latex="\\mbox{Gr}",_values="1:100:10000000") )
-        .addParameter( xmlParse::parameter(_name="pr",_type=CONT_ATTR,_latex="\\mbox{Pr}",_values="0.01:10:10000000") )
+        addParameter( Parameter(_name="order-u",_type=DISC_ATTR,_latex="N_u",_values=boost::lexical_cast<std::string>( Order_s ).c_str() ) )
+        .addParameter( Parameter(_name="order-p",_type=DISC_ATTR,_latex="N_p",_values=boost::lexical_cast<std::string>( Order_p ).c_str() ) )
+        .addParameter( Parameter(_name="order-t",_type=DISC_ATTR,_latex="N_T",_values=boost::lexical_cast<std::string>( Order_t ).c_str() ) )
+        .addParameter( Parameter(_name="gr",_type=CONT_ATTR,_latex="\\mbox{Gr}",_values="1:100:10000000") )
+        .addParameter( Parameter(_name="pr",_type=CONT_ATTR,_latex="\\mbox{Pr}",_values="0.01:10:10000000") )
         .addParameter( h );
 
-    std::cout << "parameter added\n";
-    vector<xmlParse::parameter> depend;
-    vector<string> funcs;
-    vector<xmlParse::parameter> depend2;
+    Log() << "parameter added\n";
+    std::vector<Parameter> depend;
+    std::vector<std::string> funcs;
+    std::vector<Parameter> depend2;
     depend2.push_back(h);
-    vector<string> funcs2;
+    std::vector<std::string> funcs2;
     funcs2.push_back("h**2");
     this->
-          addOutput( xmlParse::output(_name="AverageT",_latex="T",_dependencies=depend,_funcs=funcs) )
-         .addOutput( xmlParse::output(_name="FlowRate",_latex="D",_dependencies=depend,_funcs=funcs) )
-         .addOutput( xmlParse::output(_name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend2,_funcs=funcs2) );
+          addOutput( Output(_name="AverageT",_latex="T",_dependencies=depend,_funcs=funcs) )
+         .addOutput( Output(_name="FlowRate",_latex="D",_dependencies=depend,_funcs=funcs) )
+         .addOutput( Output(_name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend2,_funcs=funcs2) );
 
-    std::cout << "output added\n";
+    Log() << "output added\n";
 }
 
 template <int Order_s, int Order_p, int Order_t>
