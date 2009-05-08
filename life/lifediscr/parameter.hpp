@@ -33,6 +33,8 @@
 #include <boost/parameter/keyword.hpp>
 #include <boost/parameter/aux_/maybe.hpp>
 
+#include <life/lifepoly/parameter.hpp>
+
 namespace Life
 {
 
@@ -43,7 +45,6 @@ BOOST_PARAMETER_TEMPLATE_KEYWORD(mesh_type)
 BOOST_PARAMETER_TEMPLATE_KEYWORD(expansion_type)
 BOOST_PARAMETER_TEMPLATE_KEYWORD(bases_list)
 BOOST_PARAMETER_TEMPLATE_KEYWORD(basis_type)
-BOOST_PARAMETER_TEMPLATE_KEYWORD(value_type)
 BOOST_PARAMETER_TEMPLATE_KEYWORD(domain_value_type)
 BOOST_PARAMETER_TEMPLATE_KEYWORD(periodicity_type)
 BOOST_PARAMETER_TEMPLATE_KEYWORD(continuity_type)
