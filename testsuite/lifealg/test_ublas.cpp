@@ -29,26 +29,7 @@
 #include <iostream>
 #include <boost/timer.hpp>
 
-#include <boost/log/log.hpp>
-#include <boost/log/functions.hpp>
 #include <boost/numeric/ublas/operation.hpp>
-BOOST_DECLARE_LOG(info);
-BOOST_DEFINE_LOG(info, "info");
-
-void write_to_cout(const std::string &, const std::string &msg) { std::cout << msg; }
-
-void init_logs() {
-    using namespace boost::logging;
-    // all logs prefix the message by time
-    //add_modifier("*", prepend_time("$hh:$mm:$ss "), DEFAULT_INDEX + 1 );
-    manipulate_logs("*").add_modifier(prepend_time("$hh:$mm:$ss "), DEFAULT_INDEX + 1 );
-    // all log' messages are prefixed by the log name ("app", or "DEBUG" or "info")
-    manipulate_logs("*").add_modifier(prepend_prefix);
-
-    //manipulate_logs("*").add_appender(&write_to_cout);
-    manipulate_logs("*").add_appender(write_to_file( "test_ublas.log") );
-    flush_log_cache();
-}
 
 #include <life/lifealg/glas.hpp>
 //#include <boost/numeric/bindings/traits/traits.hpp>
@@ -63,8 +44,6 @@ void init_logs() {
 
 int main( int argc, char** argv )
 {
-    init_logs();
-
     const int S = 10;
     int N;
     if ( argc == 2 )
@@ -81,19 +60,21 @@ int main( int argc, char** argv )
     dcm_t mc2( 1, S );
     mc2 = ublas::scalar_matrix<double>( mc2.size1(), mc2.size2(), 2 );
 
-    BOOST_LOG(info) << "mc1 = " << mc1 << std::endl;
-    BOOST_LOG(info) << "mc2 = " << mc2 << std::endl;
+    Log() << "mc1 = " << mc1 << "\n";
+    Log() << "mc2 = " << mc2 << "\n";
 
     dcm_t mc3( S, S );
 
-    BOOST_LOG(info) << "mc3 = trans(mc1)*mc2 = " << ublas::prod( ublas::trans( mc1 ), mc2 ) << std::endl;
-    BOOST_LOG(info) << "scalar = mc1*trans(mc2) = " << ublas::prod( mc1, ublas::trans( mc2 ) ) << std::endl;
+    drm_t r1 = ublas::prod( ublas::trans( mc1 ), mc2 );
+    drm_t r2 = ublas::prod( mc1, ublas::trans( mc2 ) );
+    Log() << "mc3 = trans(mc1)*mc2 = " << r1 << "\n";
+    Log() << "scalar = mc1*trans(mc2) = " << r2 << "\n";
 
 #if 0
     blas::gemm( traits::TRANSPOSE, traits::NO_TRANSPOSE,
                 1.0, mc1, mc2,
                 0.0, mc3 );
-    BOOST_LOG(info) << "mc3 = trans(mc1)*mc2 using gemm = " << mc3 << std::endl;
+    Log() << "mc3 = trans(mc1)*mc2 using gemm = " << mc3 << "\n";
 #endif
     boost::timer timer;
 
@@ -102,7 +83,7 @@ int main( int argc, char** argv )
         mc3.assign( ublas::scalar_matrix<double>( mc3.size1(), mc3.size2(), 1 ) );
         mc3.assign( ublas::prod( ublas::trans( mc1 ), mc2 ) );
     }
-    BOOST_LOG(info) << "ublas::prod : " << timer.elapsed() << std::endl;
+    Log() << "ublas::prod : " << timer.elapsed() << "\n";
 
     timer.restart();
     dcm_t mc6( S, S );
@@ -111,7 +92,7 @@ int main( int argc, char** argv )
         mc6.assign( ublas::scalar_matrix<double>( mc3.size1(), mc3.size2(), 1 ) );
         ublas::opb_prod( ublas::trans( mc1 ), mc2, mc6 );
     }
-    BOOST_LOG(info) << "ublas::obp_prod : " << timer.elapsed() << std::endl;
+    Log() << "ublas::obp_prod : " << timer.elapsed() << "\n";
 
     timer.restart();
     dcm_t mc4( S, S );
@@ -123,10 +104,10 @@ int main( int argc, char** argv )
                     1.0, mc1, mc2,
                     0.0, mc4 );
     }
-    BOOST_LOG(info) << "blas::gemm : " << timer.elapsed() << std::endl;
+    Log() << "blas::gemm : " << timer.elapsed() << "\n";
 #endif
-    BOOST_LOG(info) << "||mc3-mc4|| : " << ublas::norm_frobenius( mc3-mc4 ) << std::endl;
-    BOOST_LOG(info) << "||mc3-mc6|| : " << ublas::norm_frobenius( mc3-mc6 ) << std::endl;
+    Log() << "||mc3-mc4|| : " << ublas::norm_frobenius( mc3-mc4 ) << "\n";
+    Log() << "||mc3-mc6|| : " << ublas::norm_frobenius( mc3-mc6 ) << "\n";
 
     timer.restart();
 
@@ -140,7 +121,7 @@ int main( int argc, char** argv )
                     0.0, mc5 );
     }
 #endif
-    BOOST_LOG(info) << "blas::gemm mc3*mc4 : " << timer.elapsed() << std::endl;
+    Log() << "blas::gemm mc3*mc4 : " << timer.elapsed() << "\n";
 
     timer.restart();
 
@@ -149,7 +130,7 @@ int main( int argc, char** argv )
         mc5.assign( ublas::scalar_matrix<double>( mc5.size1(), mc5.size2(), 1 ) );
         mc5.assign( prod( mc3, mc4 ) );
     }
-    BOOST_LOG(info) << "ublas::prod mc3*mc4 : " << timer.elapsed() << std::endl;
+    Log() << "ublas::prod mc3*mc4 : " << timer.elapsed() << "\n";
 
     timer.restart();
 
@@ -158,6 +139,6 @@ int main( int argc, char** argv )
         mc5.assign( ublas::scalar_matrix<double>( mc5.size1(), mc5.size2(), 1 ) );
         ublas::axpy_prod( mc3, mc4,mc5 );
     }
-    BOOST_LOG(info) << "ublas::axpy_prod mc3*mc4 : " << timer.elapsed() << std::endl;
+    Log() << "ublas::axpy_prod mc3*mc4 : " << timer.elapsed() << "\n";
 
 }
