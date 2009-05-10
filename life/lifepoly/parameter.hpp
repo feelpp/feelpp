@@ -29,7 +29,7 @@
 #ifndef __parameter_H
 #define __parameter_H 1
 
-#include <boost/parameter.hpp
+#include <boost/parameter.hpp>
 #include <boost/parameter/keyword.hpp>
 
 namespace Life
