@@ -53,8 +53,6 @@
 #include <life/lifecore/xmlparser.hpp>
 
 
-using namespace xmlParse;
-
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
@@ -181,7 +179,7 @@ public:
             .addParameter( h );
 
         std::vector<Parameter> depend;
-        std::vector<string> funcs;
+        std::vector<std::string> funcs;
         depend.push_back(h);
         std::ostringstream oss;
         oss << "h**" << boost::lexical_cast<std::string>( Order + 1  ) ;
