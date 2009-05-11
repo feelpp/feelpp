@@ -117,6 +117,10 @@ public:
     }
 };
 
+/**
+ * \class Parameter
+ * \brief parameter class to describe code inputs
+ */
 class Parameter : public Parameter_impl {
     public:
     Parameter() {}
