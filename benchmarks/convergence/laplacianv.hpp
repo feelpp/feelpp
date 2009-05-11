@@ -58,7 +58,6 @@
 #include <life/lifecore/xmlparser.hpp>
 
 using namespace Life;
-using namespace xmlParse;
 
 inline
 po::options_description
@@ -164,14 +163,14 @@ public:
             .addParameter( Parameter(_name="nu",_type=CONT_ATTR,_latex="\\nu",_values="0.01:1:10") )
             .addParameter( h );
 
-        vector<Parameter> depend;
-        vector<string> funcs;
+        std::vector<Parameter> depend;
+        std::vector<std::string> funcs;
         depend.push_back(h);
-        ostringstream oss;
+        std::ostringstream oss;
         oss << "h**" << boost::lexical_cast<std::string>( Order + 1  ) ;
         funcs.push_back(oss.str());
         oss.str("");
-        vector<string> funcs2;
+        std::vector<std::string> funcs2;
         oss << "h**" << boost::lexical_cast<std::string>( Order ) ;
         funcs2.push_back(oss.str());
 
