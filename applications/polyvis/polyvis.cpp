@@ -53,7 +53,7 @@
 /** include  polynomialset header */
 #include <life/lifepoly/polynomialset.hpp>
 #include <life/lifepoly/lagrange.hpp>
-//#include <life/lifepoly/raviartthomas.hpp>
+#include <life/lifepoly/raviartthomas.hpp>
 
 
 
@@ -136,7 +136,7 @@ public:
     typedef bases<Basis> basis_type;
     //typedef bases<Lagrange<Order,Scalar> > basis_type;
     //typedef bases<Lagrange<Order,Vectorial> > basis_type;
-    //typedef bases<RaviartThomas<Order> > basis_type;
+    typedef bases<RaviartThomas<Order> > basis_type;
 
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
