@@ -238,9 +238,9 @@ template<uint16_type N,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced >
 class Lagrange
     :
-    public FiniteElement<OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::LagrangeDual, Pts >
+    public FiniteElement<detail::OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::LagrangeDual, Pts >
 {
-    typedef FiniteElement<OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::LagrangeDual, Pts > super;
+    typedef FiniteElement<detail::OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::LagrangeDual, Pts > super;
 public:
 
     BOOST_STATIC_ASSERT( ( boost::is_same<PolySetType<N>, Scalar<N> >::value ||
@@ -288,6 +288,7 @@ public:
     static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
     static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
 
+
     //@}
 
     /** @name Constructors, destructor
@@ -301,7 +302,9 @@ public:
         // _M_bdylag( new face_basis_type )
     {
 
-                // std::cout << "[LagrangeDual] points= " << _M_pts << "\n";
+
+
+        // std::cout << "[LagrangeDual] points= " << _M_pts << "\n";
     }
 
     virtual ~Lagrange() {}
