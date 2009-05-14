@@ -68,16 +68,24 @@ public:
 
     //! default constructor
     PolyvisBase();
+
     //! copy constructor
     PolyvisBase( PolyvisBase const & );
-    //! destructor
-    virtual ~PolyvisBase() {}
 
-    static PolyvisBase* New( po::variables_map const& vm )
-    {
-        //return factory_type::instance().createObject( vm[] );
-        //return p;
-    }
+    //! destructor
+    virtual ~PolyvisBase();
+
+    /**
+     * initialize the polynomial visualisation class
+     * \param vm variables map from the command line
+     */
+    virtual void init( po::variables_map const& vm );
+
+    /**
+     * create a new polynomial visualisation class
+     * \param vm variables map from the command line
+     */
+    static PolyvisBase* New( po::variables_map const& vm );
 
     //@}
 
@@ -86,19 +94,19 @@ public:
     //@{
 
     //! copy operator
-    PolyvisBase& operator=( PolyvisBase const & o)
-    {
-        if (this != &o )
-            {
-            }
-        return *this;
-    }
+    PolyvisBase& operator=( PolyvisBase const & o);
+
     //@}
 
     /** @name Accessors
      */
     //@{
 
+    //! return the variables map
+    po::variables_map vm() const { return M_vm; }
+
+    //! return the polynomial name
+    std::string name() const { return M_pname; }
 
     //@}
 
@@ -121,6 +129,11 @@ public:
 
 protected:
 
+    //! variables map
+    po::variables_map M_vm;
+
+    //! polynomial family name
+    std::string M_pname;
 private:
 
 };

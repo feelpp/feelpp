@@ -50,10 +50,11 @@ makeOptions()
 {
     po::options_description polyvisoptions("Polyvis options");
     polyvisoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
-        ("dim", po::value<int>()->default_value( 2 ), "dimension")
+        ("hsize", po::value<double>()->default_value( 0.1 ), "mesh size")
+        ("dim", po::value<uint16_type>()->default_value( 2 ), "dimension")
         ("poly", po::value<std::string>()->default_value( "lagrange" ), "polynomial family")
-        ("order", po::value<int>()->default_value( 2 ), "polynomial order")
+        ("order", po::value<uint16_type>()->default_value( 2 ), "polynomial order")
+        ("convex", po::value<std::string>()->default_value( "Simplex" ), "Convex type (Simplex, SimplexProduct")
         ;
     return polyvisoptions.add( Life::life_options() );
 }
@@ -105,9 +106,9 @@ public:
                 po::options_description const& od )
         :
         super( argc, argv, ad, od ),
-        polyvis( PolyvisBase::New( this->vm() )
+        polyvis( PolyvisBase::New( this->vm() ) )
     {
-
+        std::cout << "[PolyvisApp] init\n";
     }
 
     /**
@@ -131,22 +132,26 @@ PolyvisApp::run()
     /** \code */
     if ( this->vm().count( "help" ) )
         {
+            std::cout << "[PolyvisApp::run] help\n";
             std::cout << this->optionsDescription() << "\n";
             return;
         }
     /** \endcode */
 
+    std::cout << "[PolyvisApp::run] changeRepo\n";
     /**
      * we change to the directory where the results and logs will be
      * stored
      */
     /** \code */
-    this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
+    this->changeRepository( boost::format( "%1%/%2%/h_%3%/" )
                             % this->about().appName()
-                            % convex_type::name()
-                            % Order
-                            % this->vm()["hsize"].template as<double>()
+                            % polyvis->name()
+                            % this->vm()["hsize"].as<double>()
                             );
+    std::cout << "[PolyvisApp::run] run\n";
+    polyvis->run();
+
     /** \endcode */
 } // Polyvis::run
 
@@ -156,6 +161,7 @@ PolyvisApp::run()
 int
 main( int argc, char** argv )
 {
+    //try {
     /**
      * intantiate a Polyvis<Dim> class with Dim=2 (e.g. geometric dimension is 2)
      */
@@ -169,6 +175,17 @@ main( int argc, char** argv )
     /** \code */
     polyvis.run();
     /** \endcode */
+#if 0
+    }
+    catch( std::exception const& e )
+        {
+            std::cout << "Caught exception " << e.what() << std::endl;
+        }
+    catch( ... )
+        {
+            std::cout << "Caught an unknown exception " << std::endl;
+        }
+#endif
 }
 
 

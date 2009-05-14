@@ -22,13 +22,19 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file polyvis.cpp
+   \file polyvis.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2009-04-17
  */
+#ifndef __Polyvis_H
+#define __Polyvis_H 1
+
+#include <boost/parameter.hpp>
+
 /** include predefined life command line options */
 #include <life/options.hpp>
 
+#include <life/lifecore/parameter.hpp>
 
 /** include function space class */
 #include <life/lifediscr/functionspace.hpp>
@@ -58,57 +64,30 @@
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <life/lifevf/vf.hpp>
 
-/** use Life namespace */
-using namespace Life;
-using namespace Life::vf;
+#include "polyvisbase.hpp"
 
-/**
- * This routine returns the list of options using the
- * boost::program_options library. The data returned is typically used
- * as an argument of a Life::Application subclass.
- *
- * \return the list of options
- */
-inline
-po::options_description
-makeOptions()
+namespace Life
 {
-    po::options_description polyvisoptions("Polyvis options");
-    polyvisoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
-        ;
-    return polyvisoptions.add( Life::life_options() );
-}
-
-/**
- * This routine defines some information about the application like
- * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Life::Application subclass.
- *
- * \return some data about the application.
- */
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "polyvis" ,
-                     "polyvis" ,
-                     "0.2",
-                     "nD(n=1,2,3) Polynomial on simplices or simplex products",
-                     Life::AboutData::License_GPL,
-                     "Copyright (c) 2009 Universite Joseph Fourier");
-
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    return about;
-
-}
+typedef parameter::parameters<
+    parameter::required<tag::convex_type, boost::is_base_and_derived<ConvexBase,_> >,
+    parameter::required<tag::basis_type, boost::is_class<_> >
+    > polyvis_signature;
 
 
 /**
  * \class Polyvis
  * \brief class for polynomial visualisation
+ *
+ * \code
+ *  Polyvis<dim=2,basis_type=Lagrange>
+ * \endcode
  */
-template<int Dim, typename Basis>
+template<
+    typename A0,
+    typename A1,
+    typename A2 = parameter::void_,
+    typename A3 = parameter::void_,
+    typename A4 = parameter::void_>
 class Polyvis
     :
     public PolyvisBase
@@ -116,28 +95,35 @@ class Polyvis
     typedef PolyvisBase super;
 public:
 
+    typedef typename polyvis_signature::bind<A0,A1,A2,A3,A4>::type args;
+
+
+
+
+    //! geometry entities type composing the mesh, here Simplex in
+    //! Dimension Dim of Order 1
+    typedef typename parameter::binding<args, tag::convex_type, Simplex<2> >::type convex_type;
+
+    //! the basis type of our approximation space
+    typedef typename parameter::binding<args, tag::basis_type, Lagrange<3> >::type basis_type;
+
+    //! geometric dimension
+    static const uint16_type Dim = convex_type::nDim;
+
     //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = 0;
+    static const uint16_type Order = basis_type::nOrder;
 
     //! numerical type is double
     typedef double value_type;
 
-    //! geometry entities type composing the mesh, here Simplex in
-    //! Dimension Dim of Order 1
-    typedef Simplex<Dim> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    //! the basis type of our approximation space
-    typedef bases<Basis> basis_type;
-    //typedef bases<Lagrange<Order,Scalar> > basis_type;
-    //typedef bases<Lagrange<Order,Vectorial> > basis_type;
-    //typedef bases<RaviartThomas<Order> > basis_type;
 
     //! the approximation function space type
-    typedef FunctionSpace<mesh_type, basis_type> space_type;
+    typedef FunctionSpace<mesh_type, bases<basis_type> > space_type;
     //! the approximation function space type (shared_ptr<> type)
     typedef boost::shared_ptr<space_type> space_ptrtype;
     //! an element type of the approximation function space
@@ -151,6 +137,17 @@ public:
     /**
      * Constructor
      */
+    Polyvis()
+        :
+        super(),
+        meshSize( 0.1 ),
+        exporter()
+    {
+    }
+
+    /**
+     * Constructor
+     */
     Polyvis( po::variables_map vm )
         :
         super( vm ),
@@ -158,14 +155,12 @@ public:
         exporter( Exporter<mesh_type>::New( this->vm() ) )
     {
     }
-
-    /**
-     * create the mesh using mesh size \c meshSize
-     *
-     * \param meshSize the mesh characteristic size
-     * \return a mesh of an hyper cube of dimension Dim
-     */
-    mesh_ptrtype createMesh( double meshSize );
+    void init( po::variables_map const& vm )
+    {
+        super::init( vm );
+        meshSize = vm["hsize"].template as<double>();
+        exporter = export_ptrtype( Exporter<mesh_type>::New( vm, this->name() ) );
+    }
 
     /**
      * run the convergence test
@@ -182,85 +177,60 @@ private:
 
 }; // Polyvis
 
-template<int Dim> const uint16_type Polyvis<Dim>::Order;
+template<
+    typename A0,
+    typename A1,
+    typename A2,
+    typename A3,
+    typename A4>
+const uint16_type Polyvis<A0,A1,A2,A3,A4>::Order;
 
-template<int Dim>
-typename Polyvis<Dim>::mesh_ptrtype
-Polyvis<Dim>::createMesh( double meshSize )
-{
-    /** instantiate a new mesh */
-    /** \code */
-    mesh_ptrtype mesh( new mesh_type );
-    /** \endcode */
-
-    //! generate a tensorized domain (hyper cube of dimension Dim)
-    /** \code */
-    GmshSimplexDomain<convex_type::nDim, convex_type::nOrder> td( Gmsh::GMSH_REFERENCE_DOMAIN );
-    td.setCharacteristicLength( meshSize );
-    std::string fname = td.generate( convex_type::name().c_str() );
-    /** \endcode */
-
-    //! importer the mesh generated by td
-    /** \code */
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-    /** \endcode */
-
-    return mesh;
-} // Polyvis::createMesh
-
-
-template<int Dim>
+template<
+    typename A0,
+    typename A1,
+    typename A2,
+    typename A3,
+    typename A4>
 void
-Polyvis<Dim>::run()
+Polyvis<A0,A1,A2,A3,A4>::run()
 {
-    /**
-     * print help if --help is passed to the command line
-     */
-    /** \code */
-    if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    // First we create the mesh with one element
+    mesh_ptrtype oneelement_mesh = createGMSHMesh( _mesh=new mesh_type,
+                                                   _desc=domain( _name="one-elt",
+                                                                 _shape="simplex",
+                                                                 _dim=Dim,
+                                                                 _h=2.0,
+                                                                 _xmin=-1.,
+                                                                 _ymin=-1.,
+                                                                 _zmin=-1. ) );
+    // then a fine mesh which we use to export the basis function to
+    // visualize them
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name="fine",
+                                                      _shape="simplex",
+                                                      _dim=Dim,
+                                                      _h=meshSize,
+                                                      _xmin=-1.,
+                                                      _ymin=-1.,
+                                                      _zmin=-1. ) );
     /** \endcode */
 
     /**
-     * we change to the directory where the results and logs will be
-     * stored
+     * The function space and some associated elements(functions) are
+     * then defined
      */
-    /** \code */
-    this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
-                            % this->about().appName()
-                            % convex_type::name()
-                            % Order
-                            % this->vm()["hsize"].template as<double>()
-                            );
-    /** \endcode */
-    /**
-     * First we create the mesh
-     */
-    /** \code */
-    mesh_ptrtype oneelement_mesh = createMesh( 2 );
-    mesh_ptrtype mesh = createMesh( meshSize );
-    /** \endcode */
-
-    /**
-     * The function space and some associated elements(functions) are then defined
-     */
-    /** \code */
     space_ptrtype Xh = space_type::New( oneelement_mesh );
+    std::cout << "Family = " << Xh->basis()->familyName() << "\n"
+              << "Dim    = " << Xh->basis()->nDim << "\n"
+              << "Order  = " << Xh->basis()->nOrder << "\n"
+              << "NDof   = " << Xh->nLocalDof() << "\n";
     element_type U( Xh, "U" );
-    element_type V( Xh, "V" );
-    space_ptrtype Yh = space_type::New( mesh );
-    element_type u( Xh, "u" );
-    element_type v( Xh, "v" );
-    /** \endcode */
 
-    // setthe mesh
+    // set the mesh of the exporter, we use the fine mesh and the
+    // exporter does all the interpolation
     exporter->step(0)->setMesh( mesh );
 
-    for( int i = 0;i < Xh->nLocalDof(); ++i )
+    for( size_type i = 0;i < Xh->nLocalDof(); ++i )
         {
             U.zero();
             U( i ) = 1;
@@ -272,3 +242,13 @@ Polyvis<Dim>::run()
     exporter->save();
 
 } // Polyvis::run
+template<
+    typename A0,
+    typename A1,
+    typename A2,
+    typename A3,
+    typename A4>
+const uint16_type Polyvis<A0,A1,A2,A3,A4>::Dim;
+}
+
+#endif // Polyvis_HPP
