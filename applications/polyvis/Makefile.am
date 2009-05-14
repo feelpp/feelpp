@@ -27,20 +27,9 @@ include $(top_srcdir)/admin/common.am
 ACLOCAL_AMFLAGS = -I admin
 
 bin_PROGRAMS    = life_polyvis
-life_polyvis_SOURCES  = polyvis.cpp
+
 life_polyvis_LDADD    = $(LIFE_LIBS)
-
-#lib_LTLIBRARIES = libstdpoly.la
-
-
-#libstdpoly_la_SOURCES = stdpoly.cpp lagrange.cpp #raviartthomas.cpp
-#libstdpoly_la_LIBADD = $(LIFE_LIBS)
-
-
-#pkglib_LTLIBRARIES = stdpoly.la
-
-
-#stdpoly_la_SOURCES = stdpoly.cpp lagrange.cpp #raviartthomas.cpp
-#stdpoly_la_LDFLAGS = -module
-#stdpoly_la_LIBADD = $(LIFE_LIBS)
+life_polyvis_SOURCES  = polyvisapp.cpp polyvisbase.cpp \
+                        lagrange1d.cpp lagrange2d.cpp lagrange3d.cpp\
+                        orthonormalpset1d.cpp orthonormalpset2d.cpp orthonormalpset3d.cpp
 

@@ -2,10 +2,10 @@
 
   This file is part of the Life library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
-       Date: 2006-02-03
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2009-04-23
 
-  Copyright (C) 2006 EPFL
+  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -19,13 +19,16 @@
 
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file stdpoly.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@epfl.ch>
-   \date 2006-02-03
- */
-#include <boost/plugin/export_plugin.hpp>
+#include "lagrange.hpp"
 
-BOOST_PLUGIN_EXPORT_LIST();
+namespace Life
+{
+namespace detail
+{
+BOOST_PP_LIST_FOR_EACH_PRODUCT(LAGRANGE_FACTORY_OP, 3, (DIM2, ORDERS, CONVEX))
+}
+}
+
+
