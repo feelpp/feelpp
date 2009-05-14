@@ -116,7 +116,7 @@ public:
         Debug( 5030 ) << "============================================================\n";
         Debug( 5030 ) << "New FE \n";
         ublas::matrix<value_type> A( _M_dual( _M_primal ) );
-        //std::cout << "[FiniteElement] A = " << A << "\n";
+        //std::cout << "[FiniteElement " << this->familyName() << "] A = " << A << "\n";
 
         ublas::matrix<value_type> D = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
         LU<ublas::matrix<value_type> > lu(A);
@@ -242,6 +242,11 @@ public:
      * element
      */
     points_type const& points( uint16_type f ) const { return _M_dual.points( f ); }
+
+    /**
+     * \return the family name of the finite element
+     */
+    virtual std::string familyName() const = 0;
 
     //@}
 
