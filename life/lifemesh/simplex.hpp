@@ -31,6 +31,7 @@
 
 #include <boost/detail/identifier.hpp>
 #include <life/lifemesh/entities.hpp>
+#include <life/lifemesh/convex.hpp>
 
 namespace Life
 {
@@ -134,7 +135,7 @@ struct tetra
 template<uint16_type Dim,
          uint16_type Order = 1,
          uint16_type RDim = Dim>
-class Simplex
+class Simplex : public Convex<Dim,Order,RDim>
 {
 private:
     /**

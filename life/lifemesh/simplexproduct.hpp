@@ -31,7 +31,9 @@
 
 #include <boost/detail/identifier.hpp>
 #include <life/lifecore/traits.hpp>
+#include <life/lifemesh/convex.hpp>
 #include <life/lifemesh/simplex.hpp>
+
 
 namespace Life
 {
@@ -102,7 +104,7 @@ struct hexa
 
 
 template<uint16_type Dim, uint16_type Order=1, uint16_type RDim = Dim>
-class SimplexProduct
+class SimplexProduct  : public Convex<Dim,Order,RDim>
 {
     typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_QUAD, SHAPE_HEXA, SHAPE_SP4, SHAPE_SP5> shapes_t;
     typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME, GEOMETRY_4, GEOMETRY_5> geometries_t;

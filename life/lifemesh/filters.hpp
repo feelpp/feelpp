@@ -55,8 +55,8 @@ struct elements
 {
     static const uint16_type nDim = MeshType::nDim;
     typedef boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                         typename mesh::Traits<MeshType>::element_const_iterator,
-                         typename mesh::Traits<MeshType>::element_const_iterator> type;
+                         typename MeshTraits<MeshType>::element_const_iterator,
+                         typename MeshTraits<MeshType>::element_const_iterator> type;
 };
 
 template<typename MeshType>
@@ -64,8 +64,8 @@ struct markedelements
 {
     static const uint16_type nDim = MeshType::nDim;
     typedef boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                         typename mesh::Traits<MeshType>::marker_element_const_iterator,
-                         typename mesh::Traits<MeshType>::marker_element_const_iterator> type;
+                         typename MeshTraits<MeshType>::marker_element_const_iterator,
+                         typename MeshTraits<MeshType>::marker_element_const_iterator> type;
 };
 
 template<typename MeshType>
@@ -73,8 +73,8 @@ struct marked2elements
 {
     static const uint16_type nDim = MeshType::nDim;
     typedef boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                         typename mesh::Traits<MeshType>::marker2_element_const_iterator,
-                         typename mesh::Traits<MeshType>::marker2_element_const_iterator> type;
+                         typename MeshTraits<MeshType>::marker2_element_const_iterator,
+                         typename MeshTraits<MeshType>::marker2_element_const_iterator> type;
 };
 
 template<typename MeshType>
@@ -82,8 +82,8 @@ struct marked3elements
 {
     static const uint16_type nDim = MeshType::nDim;
     typedef boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                         typename mesh::Traits<MeshType>::marker3_element_const_iterator,
-                         typename mesh::Traits<MeshType>::marker3_element_const_iterator> type;
+                         typename MeshTraits<MeshType>::marker3_element_const_iterator,
+                         typename MeshTraits<MeshType>::marker3_element_const_iterator> type;
 };
 
 } // meta
@@ -94,8 +94,8 @@ namespace detail
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::element_const_iterator,
-             typename mesh::Traits<MeshType>::element_const_iterator>
+             typename MeshTraits<MeshType>::element_const_iterator,
+             typename MeshTraits<MeshType>::element_const_iterator>
 elements( MeshType const& mesh, flag_type flag, mpl::bool_<false> )
 {
 
@@ -110,8 +110,8 @@ elements( MeshType const& mesh, flag_type flag, mpl::bool_<false> )
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::element_const_iterator,
-             typename mesh::Traits<MeshType>::element_const_iterator>
+             typename MeshTraits<MeshType>::element_const_iterator,
+             typename MeshTraits<MeshType>::element_const_iterator>
 elements( MeshType const& mesh, flag_type flag, mpl::bool_<true> )
 {
     return elements( *mesh, flag, mpl::bool_<false>() );
@@ -120,18 +120,18 @@ elements( MeshType const& mesh, flag_type flag, mpl::bool_<true> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::location_element_const_iterator,
-             typename mesh::Traits<MeshType>::location_element_const_iterator>
+             typename MeshTraits<MeshType>::location_element_const_iterator,
+             typename MeshTraits<MeshType>::location_element_const_iterator>
 boundaryelements( MeshType const& mesh, size_type pid, mpl::bool_<false> )
 {
-    typedef typename mesh::Traits<MeshType>::location_element_const_iterator iterator;
+    typedef typename MeshTraits<MeshType>::location_element_const_iterator iterator;
     std::pair<iterator, iterator> p = mesh.boundaryElements( pid );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), p.first, p.second );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::location_element_const_iterator,
-             typename mesh::Traits<MeshType>::location_element_const_iterator>
+             typename MeshTraits<MeshType>::location_element_const_iterator,
+             typename MeshTraits<MeshType>::location_element_const_iterator>
 boundaryelements( MeshType const& mesh, size_type pid, mpl::bool_<true> )
 {
     return boundaryelements( *mesh, pid, mpl::bool_<false>() );
@@ -139,18 +139,18 @@ boundaryelements( MeshType const& mesh, size_type pid, mpl::bool_<true> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::location_element_const_iterator,
-             typename mesh::Traits<MeshType>::location_element_const_iterator>
+             typename MeshTraits<MeshType>::location_element_const_iterator,
+             typename MeshTraits<MeshType>::location_element_const_iterator>
 internalelements( MeshType const& mesh, size_type pid, mpl::bool_<false> )
 {
-    typedef typename mesh::Traits<MeshType>::location_element_const_iterator iterator;
+    typedef typename MeshTraits<MeshType>::location_element_const_iterator iterator;
     std::pair<iterator, iterator> p = mesh.internalElements( pid );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), p.first, p.second );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::location_element_const_iterator,
-             typename mesh::Traits<MeshType>::location_element_const_iterator>
+             typename MeshTraits<MeshType>::location_element_const_iterator,
+             typename MeshTraits<MeshType>::location_element_const_iterator>
 internalelements( MeshType const& mesh, size_type pid, mpl::bool_<true> )
 {
     return internalelements( *mesh, pid, mpl::bool_<false>() );
@@ -158,19 +158,19 @@ internalelements( MeshType const& mesh, size_type pid, mpl::bool_<true> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::marker_element_const_iterator,
-             typename mesh::Traits<MeshType>::marker_element_const_iterator>
+             typename MeshTraits<MeshType>::marker_element_const_iterator,
+             typename MeshTraits<MeshType>::marker_element_const_iterator>
 markedelements( MeshType const& mesh, flag_type flag, size_type pid, mpl::bool_<false>  )
 {
-    typedef typename mesh::Traits<MeshType>::marker_element_const_iterator iterator;
+    typedef typename MeshTraits<MeshType>::marker_element_const_iterator iterator;
     std::pair<iterator, iterator> p = mesh.elementsWithMarker( flag, pid );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               p.first, p.second );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::marker_element_const_iterator,
-             typename mesh::Traits<MeshType>::marker_element_const_iterator>
+             typename MeshTraits<MeshType>::marker_element_const_iterator,
+             typename MeshTraits<MeshType>::marker_element_const_iterator>
 markedelements( MeshType const& mesh, flag_type flag, size_type pid, mpl::bool_<true> )
 {
     return markedelements( *mesh, flag, pid, mpl::bool_<false>() );
@@ -178,19 +178,19 @@ markedelements( MeshType const& mesh, flag_type flag, size_type pid, mpl::bool_<
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::marker2_element_const_iterator,
-             typename mesh::Traits<MeshType>::marker2_element_const_iterator>
+             typename MeshTraits<MeshType>::marker2_element_const_iterator,
+             typename MeshTraits<MeshType>::marker2_element_const_iterator>
 marked2elements( MeshType const& mesh, flag_type flag, size_type pid, mpl::bool_<false> )
 {
-    typedef typename mesh::Traits<MeshType>::marker2_element_const_iterator iterator;
+    typedef typename MeshTraits<MeshType>::marker2_element_const_iterator iterator;
     std::pair<iterator, iterator> p = mesh.elementsWithMarker2( flag, pid );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               p.first, p.second );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::marker2_element_const_iterator,
-             typename mesh::Traits<MeshType>::marker2_element_const_iterator>
+             typename MeshTraits<MeshType>::marker2_element_const_iterator,
+             typename MeshTraits<MeshType>::marker2_element_const_iterator>
 marked2elements( MeshType const& mesh, flag_type flag, size_type pid, mpl::bool_<true> )
 {
     return marked2elements( *mesh, flag, pid, mpl::bool_<false>() );
@@ -198,19 +198,19 @@ marked2elements( MeshType const& mesh, flag_type flag, size_type pid, mpl::bool_
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::marker3_element_const_iterator,
-             typename mesh::Traits<MeshType>::marker3_element_const_iterator>
+             typename MeshTraits<MeshType>::marker3_element_const_iterator,
+             typename MeshTraits<MeshType>::marker3_element_const_iterator>
 marked3elements( MeshType const& mesh, flag_type flag, size_type pid, mpl::bool_<false> )
 {
-    typedef typename mesh::Traits<MeshType>::marker3_element_const_iterator iterator;
+    typedef typename MeshTraits<MeshType>::marker3_element_const_iterator iterator;
     std::pair<iterator, iterator> p = mesh.elementsWithMarker3( flag, pid );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               p.first, p.second );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::marker3_element_const_iterator,
-             typename mesh::Traits<MeshType>::marker3_element_const_iterator>
+             typename MeshTraits<MeshType>::marker3_element_const_iterator,
+             typename MeshTraits<MeshType>::marker3_element_const_iterator>
 marked3elements( MeshType const& mesh, flag_type flag, size_type pid, mpl::bool_<true> )
 {
     return marked3elements( mesh, flag, pid, mpl::bool_<false>() );
@@ -218,8 +218,8 @@ marked3elements( MeshType const& mesh, flag_type flag, size_type pid, mpl::bool_
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::element_const_iterator,
-             typename mesh::Traits<MeshType>::element_const_iterator>
+             typename MeshTraits<MeshType>::element_const_iterator,
+             typename MeshTraits<MeshType>::element_const_iterator>
 idedelements( MeshType const& mesh, flag_type flag, mpl::bool_<false> )
 {
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
@@ -228,8 +228,8 @@ idedelements( MeshType const& mesh, flag_type flag, mpl::bool_<false> )
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::element_const_iterator,
-             typename mesh::Traits<MeshType>::element_const_iterator>
+             typename MeshTraits<MeshType>::element_const_iterator,
+             typename MeshTraits<MeshType>::element_const_iterator>
 idedelements( MeshType const& mesh, flag_type flag, mpl::bool_<true> )
 {
     return idedelements( *mesh, flag, mpl::bool_<false>() );
@@ -237,19 +237,19 @@ idedelements( MeshType const& mesh, flag_type flag, mpl::bool_<true> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::pid_face_const_iterator,
-             typename mesh::Traits<MeshType>::pid_face_const_iterator>
+             typename MeshTraits<MeshType>::pid_face_const_iterator,
+             typename MeshTraits<MeshType>::pid_face_const_iterator>
 faces( MeshType const& mesh, size_type __pid, mpl::bool_<false> )
 {
-    typedef typename mesh::Traits<MeshType>::pid_face_const_iterator pid_face_const_iterator;
+    typedef typename MeshTraits<MeshType>::pid_face_const_iterator pid_face_const_iterator;
     pid_face_const_iterator it,en;
     boost::tie( it, en ) = mesh.facesWithProcessId( __pid );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(), it, en );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::pid_face_const_iterator,
-             typename mesh::Traits<MeshType>::pid_face_const_iterator>
+             typename MeshTraits<MeshType>::pid_face_const_iterator,
+             typename MeshTraits<MeshType>::pid_face_const_iterator>
 faces( MeshType const& mesh, size_type __pid, mpl::bool_<true> )
 {
     return faces( *mesh, __pid, mpl::bool_<false>() );
@@ -257,8 +257,8 @@ faces( MeshType const& mesh, size_type __pid, mpl::bool_<true> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::face_const_iterator,
-             typename mesh::Traits<MeshType>::face_const_iterator>
+             typename MeshTraits<MeshType>::face_const_iterator,
+             typename MeshTraits<MeshType>::face_const_iterator>
 idedfaces( MeshType const& mesh, size_type id, mpl::bool_<false> )
 {
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
@@ -267,8 +267,8 @@ idedfaces( MeshType const& mesh, size_type id, mpl::bool_<false> )
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::face_const_iterator,
-             typename mesh::Traits<MeshType>::face_const_iterator>
+             typename MeshTraits<MeshType>::face_const_iterator,
+             typename MeshTraits<MeshType>::face_const_iterator>
 idedfaces( MeshType const& mesh, size_type id, mpl::bool_<true> )
 {
     return idedfaces( *mesh, id, mpl::bool_<false>() );
@@ -276,19 +276,19 @@ idedfaces( MeshType const& mesh, size_type id, mpl::bool_<true> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::marker_face_const_iterator,
-             typename mesh::Traits<MeshType>::marker_face_const_iterator>
+             typename MeshTraits<MeshType>::marker_face_const_iterator,
+             typename MeshTraits<MeshType>::marker_face_const_iterator>
 markedfaces( MeshType const& mesh, flag_type __marker, size_type __pid, mpl::bool_<false> )
 {
-    typedef typename mesh::Traits<MeshType>::marker_face_const_iterator iterator;
+    typedef typename MeshTraits<MeshType>::marker_face_const_iterator iterator;
     std::pair<iterator, iterator> p = mesh.facesWithMarker( __marker, __pid );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               p.first, p.second );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::marker_face_const_iterator,
-             typename mesh::Traits<MeshType>::marker_face_const_iterator>
+             typename MeshTraits<MeshType>::marker_face_const_iterator,
+             typename MeshTraits<MeshType>::marker_face_const_iterator>
 markedfaces( MeshType const& mesh, flag_type __marker, size_type __pid, mpl::bool_<true> )
 {
     return markedfaces( *mesh,  __marker, __pid, mpl::bool_<false>() );
@@ -296,19 +296,19 @@ markedfaces( MeshType const& mesh, flag_type __marker, size_type __pid, mpl::boo
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::location_face_const_iterator,
-             typename mesh::Traits<MeshType>::location_face_const_iterator>
+             typename MeshTraits<MeshType>::location_face_const_iterator,
+             typename MeshTraits<MeshType>::location_face_const_iterator>
 boundaryfaces( MeshType const& mesh, size_type __pid, mpl::bool_<false>  )
 {
-    typedef typename mesh::Traits<MeshType>::location_face_const_iterator iterator;
+    typedef typename MeshTraits<MeshType>::location_face_const_iterator iterator;
     std::pair<iterator, iterator> p = mesh.facesOnBoundary( __pid );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               p.first, p.second );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::location_face_const_iterator,
-             typename mesh::Traits<MeshType>::location_face_const_iterator>
+             typename MeshTraits<MeshType>::location_face_const_iterator,
+             typename MeshTraits<MeshType>::location_face_const_iterator>
 boundaryfaces( MeshType const& mesh, size_type __pid, mpl::bool_<true>  )
 {
     return boundaryfaces( *mesh, __pid, mpl::bool_<false>() );
@@ -316,20 +316,20 @@ boundaryfaces( MeshType const& mesh, size_type __pid, mpl::bool_<true>  )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::location_face_const_iterator,
-             typename mesh::Traits<MeshType>::location_face_const_iterator>
+             typename MeshTraits<MeshType>::location_face_const_iterator,
+             typename MeshTraits<MeshType>::location_face_const_iterator>
 internalfaces( MeshType const& mesh, size_type __pid, mpl::bool_<false> )
 {
 
-    typedef typename mesh::Traits<MeshType>::location_face_const_iterator iterator;
+    typedef typename MeshTraits<MeshType>::location_face_const_iterator iterator;
     std::pair<iterator, iterator> p = mesh.internalFaces( __pid );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               p.first, p.second );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::location_face_const_iterator,
-             typename mesh::Traits<MeshType>::location_face_const_iterator>
+             typename MeshTraits<MeshType>::location_face_const_iterator,
+             typename MeshTraits<MeshType>::location_face_const_iterator>
 internalfaces( MeshType const& mesh, size_type __pid, mpl::bool_<true> )
 {
     return internalfaces( *mesh, __pid, mpl::bool_<false>() );
@@ -337,20 +337,20 @@ internalfaces( MeshType const& mesh, size_type __pid, mpl::bool_<true> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::interprocess_face_const_iterator,
-             typename mesh::Traits<MeshType>::interprocess_face_const_iterator>
+             typename MeshTraits<MeshType>::interprocess_face_const_iterator,
+             typename MeshTraits<MeshType>::interprocess_face_const_iterator>
 interprocessfaces( MeshType const& mesh, size_type __pid, mpl::bool_<false> )
 {
 
-    typedef typename mesh::Traits<MeshType>::interprocess_face_const_iterator iterator;
+    typedef typename MeshTraits<MeshType>::interprocess_face_const_iterator iterator;
     std::pair<iterator, iterator> p = mesh.interProcessFaces( __pid );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               p.first, p.second );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::interprocess_face_const_iterator,
-             typename mesh::Traits<MeshType>::interprocess_face_const_iterator>
+             typename MeshTraits<MeshType>::interprocess_face_const_iterator,
+             typename MeshTraits<MeshType>::interprocess_face_const_iterator>
 interprocessfaces( MeshType const& mesh, size_type __pid, mpl::bool_<true> )
 {
     return interprocessfaces( *mesh, __pid, mpl::bool_<false>() );
@@ -359,19 +359,19 @@ interprocessfaces( MeshType const& mesh, size_type __pid, mpl::bool_<true> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename mesh::Traits<MeshType>::pid_edge_const_iterator,
-             typename mesh::Traits<MeshType>::pid_edge_const_iterator>
+             typename MeshTraits<MeshType>::pid_edge_const_iterator,
+             typename MeshTraits<MeshType>::pid_edge_const_iterator>
 edges( MeshType const& mesh, size_type __pid, mpl::bool_<false> )
 {
-    typedef typename mesh::Traits<MeshType>::pid_edge_const_iterator pid_edge_const_iterator;
+    typedef typename MeshTraits<MeshType>::pid_edge_const_iterator pid_edge_const_iterator;
     pid_edge_const_iterator it,en;
     boost::tie( it, en ) = mesh.edgesWithProcessId( __pid );
     return boost::make_tuple( mpl::size_t<MESH_EDGES>(), it, en );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename mesh::Traits<MeshType>::pid_edge_const_iterator,
-             typename mesh::Traits<MeshType>::pid_edge_const_iterator>
+             typename MeshTraits<MeshType>::pid_edge_const_iterator,
+             typename MeshTraits<MeshType>::pid_edge_const_iterator>
 edges( MeshType const& mesh, size_type __pid, mpl::bool_<true> )
 {
     return edges( *mesh, __pid, mpl::bool_<false>() );
@@ -380,35 +380,35 @@ edges( MeshType const& mesh, size_type __pid, mpl::bool_<true> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename mesh::Traits<MeshType>::marker_edge_const_iterator,
-             typename mesh::Traits<MeshType>::marker_edge_const_iterator>
+             typename MeshTraits<MeshType>::marker_edge_const_iterator,
+             typename MeshTraits<MeshType>::marker_edge_const_iterator>
 markededges( MeshType const& mesh, flag_type __marker, size_type __pid, mpl::bool_<false> )
 {
-    typedef typename mesh::Traits<MeshType>::marker_edge_const_iterator iterator;
+    typedef typename MeshTraits<MeshType>::marker_edge_const_iterator iterator;
     std::pair<iterator, iterator> p = mesh.edgesWithMarker( __marker, __pid );
     return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
                               p.first, p.second );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename mesh::Traits<MeshType>::marker_edge_const_iterator,
-             typename mesh::Traits<MeshType>::marker_edge_const_iterator>
+             typename MeshTraits<MeshType>::marker_edge_const_iterator,
+             typename MeshTraits<MeshType>::marker_edge_const_iterator>
 markededges( MeshType const& mesh, flag_type __marker, size_type __pid, mpl::bool_<true> )
 {
     return markededges( *mesh, __marker, __pid, mpl::bool_<false>() );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename mesh::Traits<MeshType>::location_edge_const_iterator,
-             typename mesh::Traits<MeshType>::location_edge_const_iterator>
+             typename MeshTraits<MeshType>::location_edge_const_iterator,
+             typename MeshTraits<MeshType>::location_edge_const_iterator>
 boundaryedges( MeshType const& mesh, mpl::bool_<true> )
 {
     return boundaryedges( *mesh, mpl::bool_<false>() );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename mesh::Traits<MeshType>::location_edge_const_iterator,
-             typename mesh::Traits<MeshType>::location_edge_const_iterator>
+             typename MeshTraits<MeshType>::location_edge_const_iterator,
+             typename MeshTraits<MeshType>::location_edge_const_iterator>
 boundaryedges( MeshType const& mesh, mpl::bool_<false> )
 {
     return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
@@ -418,16 +418,16 @@ boundaryedges( MeshType const& mesh, mpl::bool_<false> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename mesh::Traits<MeshType>::location_edge_const_iterator,
-             typename mesh::Traits<MeshType>::location_edge_const_iterator>
+             typename MeshTraits<MeshType>::location_edge_const_iterator,
+             typename MeshTraits<MeshType>::location_edge_const_iterator>
 internaledges( MeshType const& mesh, mpl::bool_<true> )
 {
     return internaledges( mesh, mpl::bool_<false>() );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename mesh::Traits<MeshType>::location_edge_const_iterator,
-             typename mesh::Traits<MeshType>::location_edge_const_iterator>
+             typename MeshTraits<MeshType>::location_edge_const_iterator,
+             typename MeshTraits<MeshType>::location_edge_const_iterator>
 internaledges( MeshType const& mesh, mpl::bool_<false> )
 {
     return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
@@ -437,16 +437,16 @@ internaledges( MeshType const& mesh, mpl::bool_<false> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename mesh::Traits<MeshType>::point_const_iterator,
-             typename mesh::Traits<MeshType>::point_const_iterator>
+             typename MeshTraits<MeshType>::point_const_iterator,
+             typename MeshTraits<MeshType>::point_const_iterator>
 points( MeshType const& mesh, mpl::bool_<true> )
 {
     return points( *mesh, mpl::bool_<false>() );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename mesh::Traits<MeshType>::point_const_iterator,
-             typename mesh::Traits<MeshType>::point_const_iterator>
+             typename MeshTraits<MeshType>::point_const_iterator,
+             typename MeshTraits<MeshType>::point_const_iterator>
 points( MeshType const& mesh, mpl::bool_<false> )
 {
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
@@ -456,16 +456,16 @@ points( MeshType const& mesh, mpl::bool_<false> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename mesh::Traits<MeshType>::marked_point_const_iterator,
-             typename mesh::Traits<MeshType>::marked_point_const_iterator>
+             typename MeshTraits<MeshType>::marked_point_const_iterator,
+             typename MeshTraits<MeshType>::marked_point_const_iterator>
 markedpoints( MeshType const& mesh, size_type flag, mpl::int_<true> )
 {
     return markedpoints( *mesh, flag, mpl::int_<false>() );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename mesh::Traits<MeshType>::marked_point_const_iterator,
-             typename mesh::Traits<MeshType>::marked_point_const_iterator>
+             typename MeshTraits<MeshType>::marked_point_const_iterator,
+             typename MeshTraits<MeshType>::marked_point_const_iterator>
 markedpoints( MeshType const& mesh, size_type flag, mpl::bool_<false> )
 {
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
@@ -475,16 +475,16 @@ markedpoints( MeshType const& mesh, size_type flag, mpl::bool_<false> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename mesh::Traits<MeshType>::location_point_const_iterator,
-             typename mesh::Traits<MeshType>::location_point_const_iterator>
+             typename MeshTraits<MeshType>::location_point_const_iterator,
+             typename MeshTraits<MeshType>::location_point_const_iterator>
 boundarypoints( MeshType const& mesh, mpl::bool_<true> )
 {
     return boundarypoints( *mesh, mpl::bool_<false>() );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename mesh::Traits<MeshType>::location_point_const_iterator,
-             typename mesh::Traits<MeshType>::location_point_const_iterator>
+             typename MeshTraits<MeshType>::location_point_const_iterator,
+             typename MeshTraits<MeshType>::location_point_const_iterator>
 boundarypoints( MeshType const& mesh, mpl::bool_<false> )
 {
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
@@ -494,16 +494,16 @@ boundarypoints( MeshType const& mesh, mpl::bool_<false> )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename mesh::Traits<MeshType>::location_point_const_iterator,
-             typename mesh::Traits<MeshType>::location_point_const_iterator>
+             typename MeshTraits<MeshType>::location_point_const_iterator,
+             typename MeshTraits<MeshType>::location_point_const_iterator>
 internalpoints( MeshType const& mesh, mpl::bool_<true> )
 {
     return internalpoints( *mesh, mpl::bool_<false>() );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename mesh::Traits<MeshType>::location_point_const_iterator,
-             typename mesh::Traits<MeshType>::location_point_const_iterator>
+             typename MeshTraits<MeshType>::location_point_const_iterator,
+             typename MeshTraits<MeshType>::location_point_const_iterator>
 internalpoints( MeshType const& mesh, mpl::bool_<false> )
 {
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
@@ -520,8 +520,8 @@ internalpoints( MeshType const& mesh, mpl::bool_<false> )
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::element_const_iterator,
-             typename mesh::Traits<MeshType>::element_const_iterator>
+             typename MeshTraits<MeshType>::element_const_iterator,
+             typename MeshTraits<MeshType>::element_const_iterator>
 allelements( MeshType const& mesh )
 {
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
@@ -534,8 +534,8 @@ allelements( MeshType const& mesh )
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::element_const_iterator,
-             typename mesh::Traits<MeshType>::element_const_iterator>
+             typename MeshTraits<MeshType>::element_const_iterator,
+             typename MeshTraits<MeshType>::element_const_iterator>
 elements( MeshType const& mesh, flag_type flag = Application::processId() )
 {
     return detail::elements( mesh, flag, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -547,8 +547,8 @@ elements( MeshType const& mesh, flag_type flag = Application::processId() )
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::location_element_const_iterator,
-             typename mesh::Traits<MeshType>::location_element_const_iterator>
+             typename MeshTraits<MeshType>::location_element_const_iterator,
+             typename MeshTraits<MeshType>::location_element_const_iterator>
 boundaryelements( MeshType const& mesh, size_type pid  = Application::processId() )
 {
     return detail::boundaryelements( mesh, pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -562,8 +562,8 @@ boundaryelements( MeshType const& mesh, size_type pid  = Application::processId(
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::location_element_const_iterator,
-             typename mesh::Traits<MeshType>::location_element_const_iterator>
+             typename MeshTraits<MeshType>::location_element_const_iterator,
+             typename MeshTraits<MeshType>::location_element_const_iterator>
 internalelements( MeshType const& mesh, size_type pid  = Application::processId() )
 {
     return detail::internalelements( mesh, pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -575,8 +575,8 @@ internalelements( MeshType const& mesh, size_type pid  = Application::processId(
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::marker_element_const_iterator,
-             typename mesh::Traits<MeshType>::marker_element_const_iterator>
+             typename MeshTraits<MeshType>::marker_element_const_iterator,
+             typename MeshTraits<MeshType>::marker_element_const_iterator>
 markedelements( MeshType const& mesh, flag_type flag, size_type pid  = Application::processId() )
 {
     return detail::markedelements( mesh, flag, pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -588,8 +588,8 @@ markedelements( MeshType const& mesh, flag_type flag, size_type pid  = Applicati
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::marker2_element_const_iterator,
-             typename mesh::Traits<MeshType>::marker2_element_const_iterator>
+             typename MeshTraits<MeshType>::marker2_element_const_iterator,
+             typename MeshTraits<MeshType>::marker2_element_const_iterator>
 marked2elements( MeshType const& mesh, flag_type flag, size_type pid  = Application::processId() )
 {
     return detail::marked2elements( mesh, flag, pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -601,8 +601,8 @@ marked2elements( MeshType const& mesh, flag_type flag, size_type pid  = Applicat
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::marker3_element_const_iterator,
-             typename mesh::Traits<MeshType>::marker3_element_const_iterator>
+             typename MeshTraits<MeshType>::marker3_element_const_iterator,
+             typename MeshTraits<MeshType>::marker3_element_const_iterator>
 marked3elements( MeshType const& mesh, flag_type flag, size_type pid  = Application::processId() )
 {
     return detail::marked3elements( mesh, flag, pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -613,8 +613,8 @@ marked3elements( MeshType const& mesh, flag_type flag, size_type pid  = Applicat
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename mesh::Traits<MeshType>::element_const_iterator,
-             typename mesh::Traits<MeshType>::element_const_iterator>
+             typename MeshTraits<MeshType>::element_const_iterator,
+             typename MeshTraits<MeshType>::element_const_iterator>
 idedelements( MeshType const& mesh, flag_type flag )
 {
     return detail::idedelements( mesh, flag, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -631,8 +631,8 @@ idedelements( MeshType const& mesh, flag_type flag )
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::pid_face_const_iterator,
-             typename mesh::Traits<MeshType>::pid_face_const_iterator>
+             typename MeshTraits<MeshType>::pid_face_const_iterator,
+             typename MeshTraits<MeshType>::pid_face_const_iterator>
 faces( MeshType const& mesh, size_type __pid = Application::processId() )
 {
     return detail::faces( mesh, __pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -643,8 +643,8 @@ faces( MeshType const& mesh, size_type __pid = Application::processId() )
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::face_const_iterator,
-             typename mesh::Traits<MeshType>::face_const_iterator>
+             typename MeshTraits<MeshType>::face_const_iterator,
+             typename MeshTraits<MeshType>::face_const_iterator>
 idedfaces( MeshType const& mesh, size_type id )
 {
     return detail::idedfaces( mesh, id, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -662,8 +662,8 @@ idedfaces( MeshType const& mesh, size_type id )
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::marker_face_const_iterator,
-             typename mesh::Traits<MeshType>::marker_face_const_iterator>
+             typename MeshTraits<MeshType>::marker_face_const_iterator,
+             typename MeshTraits<MeshType>::marker_face_const_iterator>
 markedfaces( MeshType const& mesh,
              flag_type __marker, size_type __pid = Application::processId() )
 {
@@ -677,8 +677,8 @@ markedfaces( MeshType const& mesh,
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::location_face_const_iterator,
-             typename mesh::Traits<MeshType>::location_face_const_iterator>
+             typename MeshTraits<MeshType>::location_face_const_iterator,
+             typename MeshTraits<MeshType>::location_face_const_iterator>
 boundaryfaces( MeshType const& mesh, size_type __pid = Application::processId()  )
 {
     return detail::boundaryfaces( mesh, __pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -691,8 +691,8 @@ boundaryfaces( MeshType const& mesh, size_type __pid = Application::processId() 
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::location_face_const_iterator,
-             typename mesh::Traits<MeshType>::location_face_const_iterator>
+             typename MeshTraits<MeshType>::location_face_const_iterator,
+             typename MeshTraits<MeshType>::location_face_const_iterator>
 internalfaces( MeshType const& mesh, size_type __pid = Application::processId() )
 {
     return detail::internalfaces( mesh, __pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -704,8 +704,8 @@ internalfaces( MeshType const& mesh, size_type __pid = Application::processId() 
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-             typename mesh::Traits<MeshType>::interprocess_face_const_iterator,
-             typename mesh::Traits<MeshType>::interprocess_face_const_iterator>
+             typename MeshTraits<MeshType>::interprocess_face_const_iterator,
+             typename MeshTraits<MeshType>::interprocess_face_const_iterator>
 interprocessfaces( MeshType const& mesh, size_type __pid = Application::processId() )
 {
     return detail::interprocessfaces( mesh, __pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -723,8 +723,8 @@ interprocessfaces( MeshType const& mesh, size_type __pid = Application::processI
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename mesh::Traits<MeshType>::pid_edge_const_iterator,
-             typename mesh::Traits<MeshType>::pid_edge_const_iterator>
+             typename MeshTraits<MeshType>::pid_edge_const_iterator,
+             typename MeshTraits<MeshType>::pid_edge_const_iterator>
 edges( MeshType const& mesh,
        size_type __pid = Application::processId() )
 {
@@ -744,8 +744,8 @@ edges( MeshType const& mesh,
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename mesh::Traits<MeshType>::marker_edge_const_iterator,
-             typename mesh::Traits<MeshType>::marker_edge_const_iterator>
+             typename MeshTraits<MeshType>::marker_edge_const_iterator,
+             typename MeshTraits<MeshType>::marker_edge_const_iterator>
 markededges( MeshType const& mesh,
              flag_type __marker, size_type __pid = Application::processId() )
 {
@@ -758,8 +758,8 @@ markededges( MeshType const& mesh,
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename mesh::Traits<MeshType>::location_edge_const_iterator,
-             typename mesh::Traits<MeshType>::location_edge_const_iterator>
+             typename MeshTraits<MeshType>::location_edge_const_iterator,
+             typename MeshTraits<MeshType>::location_edge_const_iterator>
 boundaryedges( MeshType const& mesh )
 {
     return detail::boundaryedges( mesh, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -772,8 +772,8 @@ boundaryedges( MeshType const& mesh )
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename mesh::Traits<MeshType>::location_edge_const_iterator,
-             typename mesh::Traits<MeshType>::location_edge_const_iterator>
+             typename MeshTraits<MeshType>::location_edge_const_iterator,
+             typename MeshTraits<MeshType>::location_edge_const_iterator>
 internaledges( MeshType const& mesh )
 {
     return detail::internaledges( mesh, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -785,8 +785,8 @@ internaledges( MeshType const& mesh )
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename mesh::Traits<MeshType>::point_const_iterator,
-             typename mesh::Traits<MeshType>::point_const_iterator>
+             typename MeshTraits<MeshType>::point_const_iterator,
+             typename MeshTraits<MeshType>::point_const_iterator>
 points( MeshType const& mesh )
 {
     return detail::points( mesh, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -798,8 +798,8 @@ points( MeshType const& mesh )
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename mesh::Traits<MeshType>::marked_point_const_iterator,
-             typename mesh::Traits<MeshType>::marked_point_const_iterator>
+             typename MeshTraits<MeshType>::marked_point_const_iterator,
+             typename MeshTraits<MeshType>::marked_point_const_iterator>
 markedpoints( MeshType const& mesh, size_type flag )
 {
     return detail::markedpoints( mesh, flag, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -811,8 +811,8 @@ markedpoints( MeshType const& mesh, size_type flag )
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename mesh::Traits<MeshType>::location_point_const_iterator,
-             typename mesh::Traits<MeshType>::location_point_const_iterator>
+             typename MeshTraits<MeshType>::location_point_const_iterator,
+             typename MeshTraits<MeshType>::location_point_const_iterator>
 boundarypoints( MeshType const& mesh )
 {
     return detail::boundarypoints( mesh, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
@@ -824,8 +824,8 @@ boundarypoints( MeshType const& mesh )
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename mesh::Traits<MeshType>::location_point_const_iterator,
-             typename mesh::Traits<MeshType>::location_point_const_iterator>
+             typename MeshTraits<MeshType>::location_point_const_iterator,
+             typename MeshTraits<MeshType>::location_point_const_iterator>
 internalpoints( MeshType const& mesh )
 {
 
