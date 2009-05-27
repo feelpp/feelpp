@@ -30,9 +30,14 @@
 #ifndef __gmsh_H
 #define __gmsh_H 1
 
+#include <boost/type_traits.hpp>
+
 #include <life/lifecore/life.hpp>
+#include <life/lifecore/parameter.hpp>
 #include <life/lifecore/factory.hpp>
 #include <life/lifecore/singleton.hpp>
+
+#include <life/lifefilters/importergmsh.hpp>
 
 namespace Life
 {
@@ -134,6 +139,9 @@ public:
             return *this;
         }
 
+    static boost::shared_ptr<Gmsh> New( po::variables_map const& vm );
+    static boost::shared_ptr<Gmsh> New( std::string const& shape, uint16_type d = 2, uint16_type o = 1, std::string const& ct = "simplex" );
+
     //@}
 
     /** \name Accessors
@@ -150,11 +158,41 @@ public:
      * @return the file format version
      */
     int version() const { return M_version; }
+
+    /**
+     * \return the description string of the mesh (i.e. in the geo format)
+     */
+    virtual std::string description() const { return std::string();};
+
     //@}
 
     /** \name  Mutators
      */
     //@{
+
+    //! the gmsh generator to generate a reference domain
+    virtual void setReferenceDomain() {}
+
+    //! set the characteristic length to \p h
+    virtual void setCharacteristicLength( double _h ) {}
+
+    /**
+     * the gmsh generator to generate a reference domain
+     * \return the mesh generator
+     *
+     * \code
+     * Gmsh gmsh;
+     * gmsh = gmsh.ref();
+     * \endcode
+     */
+    Gmsh& ref() { this->setReferenceDomain(); return *this; }
+
+    /**
+     * set the characteristic length
+     * \param h the characteristic length
+     * \return the mesh generator
+     */
+    Gmsh& h( double _h ) { this->setCharacteristicLength( _h ); return *this; }
 
     /**
      * set the order of the elements of the mesh it can be either
@@ -177,6 +215,10 @@ public:
             throw std::invalid_argument( "invalid gmsh file format version" );
         M_version = version;
     }
+
+    virtual void setX( std::pair<double,double> const& x ) {};
+    virtual void setY( std::pair<double,double> const& y ) {};
+    virtual void setZ( std::pair<double,double> const& z ) {};
 
     //@}
 
@@ -202,6 +244,7 @@ public:
      */
     std::string generate( std::string const& name, std::string const& geo, bool const forceRebuild = false) const;
 
+
     //@}
 
 protected:
@@ -226,6 +269,95 @@ private:
     GMSH_ORDER _M_order;
     int M_version;
 };
+
+///! \typedef gmsh_type Gmsh
+typedef Gmsh gmsh_type;
+///! \typedef gmsh_ptrtype boost:shared_ptr<gmsh_type>
+typedef boost::shared_ptr<gmsh_type> gmsh_ptrtype;
+
+/// \cond DETAIL
+namespace detail
+{
+template<typename Args>
+struct mesh
+{
+    typedef typename boost::remove_pointer<
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<Args, tag::mesh>::type
+                >::type
+            >::type
+        >::type type;
+    typedef boost::shared_ptr<type> ptrtype;
+};
+}
+/// \endcond
+
+/**
+ * \fn createGMSHMesh
+ *
+ * \brief create a mesh data structure (hold in a shared_ptr<>) using GMSH
+ *
+ */
+BOOST_PARAMETER_FUNCTION(
+                         (typename detail::mesh<Args>::ptrtype), // return type
+                         createGMSHMesh,    // 2. function name
+
+                         tag,           // 3. namespace of tag types
+
+                         (required
+                          (mesh, *)
+                          (desc, *)
+                          ) // 4. one required parameter, and
+
+                         (optional
+                          (h,              *(boost::is_floating_point<mpl::_>), 0.1 )
+                          (order,          *(boost::is_integral<mpl::_>), 1 )
+                          )
+                         )
+{
+    typedef typename detail::mesh<Args>::type _mesh_type;
+    typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+
+    _mesh_ptrtype _mesh( mesh );
+    std::string fname = boost::get<2>( desc )->generate( boost::get<0>( desc ), boost::get<1>( desc ) );
+
+    ImporterGmsh<_mesh_type> import( fname );
+    _mesh->accept( import );
+    return _mesh;
+}
+
+
+/**
+ * \fn simplex
+ */
+BOOST_PARAMETER_FUNCTION(
+                         (boost::tuple<std::string,std::string,gmsh_ptrtype>), // return type
+                         domain,    // 2. function name
+                         tag,           // 3. namespace of tag types
+                         (required
+                          (name,           *(boost::is_convertible<mpl::_,std::string>))
+                          (shape,          *(boost::is_convertible<mpl::_,std::string>)))
+                         (optional
+                          (dim,            *(boost::is_integral<mpl::_>)      , 2)
+                          (order,          *(boost::is_integral<mpl::_>)      , 1)
+                          (h,              *(boost::is_floating_point<mpl::_>), double(0.1) )
+                          (convex,         *(boost::is_convertible<mpl::_,std::string>), "simplex")
+                          (xmin,           *(boost::is_floating_point<mpl::_>), 0. )
+                          (xmax,           *(boost::is_floating_point<mpl::_>), 1 )
+                          (ymin,           *(boost::is_floating_point<mpl::_>), 0. )
+                          (ymax,           *(boost::is_floating_point<mpl::_>), 1 )
+                          (zmin,           *(boost::is_floating_point<mpl::_>), 0. )
+                          (zmax,           *(boost::is_floating_point<mpl::_>), 1 )))
+{
+    gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, dim, order, convex );
+
+    gmsh_ptr->setCharacteristicLength( h );
+    gmsh_ptr->setX( std::make_pair( xmin, xmax ) );
+    gmsh_ptr->setY( std::make_pair( ymin, ymax ) );
+    gmsh_ptr->setZ( std::make_pair( zmin, zmax ) );
+    return boost::make_tuple( name, gmsh_ptr->description(), gmsh_ptr );
+}
 
 } // Life
 

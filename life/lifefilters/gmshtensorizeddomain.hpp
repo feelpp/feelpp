@@ -112,6 +112,10 @@ public:
      */
     double const& h() const {return _M_h; }
 
+    /**
+     * \return the geometry description
+     */
+    std::string description() const { return this->getDescription(); }
 
     //@}
 
@@ -134,6 +138,16 @@ public:
         LIFE_ASSERT( nRealDim >= 3 )( nDim )( nRealDim ).error( "invalid dimension" );
         _M_I[2] = z;
     }
+    void setReferenceDomain()
+    {
+        if ( nDim >= 1 )
+            _M_I[0] = std::make_pair( -1, 1 );
+        if ( nDim >= 2 )
+            _M_I[1] = std::make_pair( -1, 1 );
+        if ( nDim >= 3 )
+            _M_I[2] = std::make_pair( -1, 1 );
+    }
+
     void setCharacteristicLength( double h ) { _M_h = h; }
 
     //@}

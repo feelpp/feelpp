@@ -29,6 +29,11 @@
 #ifndef __GmshSimplexDomain_H
 #define __GmshSimplexDomain_H 1
 
+
+#include <boost/parameter.hpp>
+#include <life/lifecore/life.hpp>
+#include <life/lifecore/parameter.hpp>
+
 #include <life/lifefilters/gmsh.hpp>
 #include <life/lifemesh/simplex.hpp>
 
@@ -131,6 +136,10 @@ public:
      */
     double const& h() const {return _M_h; }
 
+    /**
+     * \return the geometry description
+     */
+    std::string description() const { return this->getDescription(); }
 
     //@}
 
@@ -145,13 +154,15 @@ public:
     }
     void setY( std::pair<double,double> const& y )
     {
-        LIFE_ASSERT( nDim >= 2 )( nDim ).error( "invalid dimension" );
-        _M_I[1] = y;
+        LIFE_ASSERT( nDim >= 2 )( nDim ).warn( "invalid dimension" );
+        if ( nDim >= 2 )
+            _M_I[1] = y;
     }
     void setZ( std::pair<double,double> const& z )
     {
-        LIFE_ASSERT( nDim >= 3 )( nDim ).error( "invalid dimension" );
-        _M_I[2] = z;
+        LIFE_ASSERT( nDim >= 3 )( nDim ).warn( "invalid dimension" );
+        if ( nDim >= 3 )
+            _M_I[2] = z;
     }
     void setReferenceDomain()
     {
@@ -194,7 +205,7 @@ private:
 
     std::vector<std::pair<double,double> > _M_I;
     double _M_h;
-    std::string _M_descr;
+ std::string _M_descr;
 
 
 };
