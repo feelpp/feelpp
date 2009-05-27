@@ -74,17 +74,12 @@ public:
                     new std::string(*name) );
         latex = (args[_latex | NULL] ? new std::string((const char*)args[_latex | NULL]) : NULL);
         values = (args[_values | NULL] ? new std::string((const char*)args[_values | NULL]) : NULL);
-
-        /* printf("name=%s\n",name->c_str());
-        printf("type=%d\n",type);
-        printf("cmdName=%s\n",cmdName->c_str());
-        if (latex)
-            printf("latex=%s\n",latex->c_str());
-        if (values)
-        printf("values=%s\n",values->c_str()); */
     }
+    /**
+     * \brief Function used to know the attributes available in the parameter
+     * \return the name of the attributes that are given for the parameter
+     */
     inline std::vector<std::string> getAttrNames() {
-        // printf("getAttrNames()\n");
         std::vector<std::string> attrNames;
         attrNames.push_back("name");
         if (type)
@@ -95,8 +90,13 @@ public:
             attrNames.push_back("latex");
         return attrNames;
     }
+    /**
+     * \brief Used to retrieve the attributes values for the parameter.
+     * The array contain the values of the parameters in the same order than the
+     * attribute names returned in getAttrNames() function.
+     * \return the values of the attributes for a parameter
+     */
     inline std::vector<std::string> getAttrValues() {
-        // printf("getAttrValues()\n");
         std::vector<std::string> attrValues;
         attrValues.push_back(*name);
         if (type)
@@ -107,12 +107,16 @@ public:
             attrValues.push_back(*latex);
         return attrValues;
     }
+    /**
+     * \return the values of the parameter
+     */
     inline std::string getValues() {
-        // printf("getValues()\n");
         return *values;
     }
+    /**
+     * \return the name of the parameter
+     */
     inline std::string getName() {
-        // printf("getName()\n");
         return *name;
     }
 };
@@ -140,14 +144,24 @@ public:
         dependencies=args[_dependencies];
         funcs=args[_funcs];
     }
+    /**
+     * \return the dependencies of the output
+     */
     inline std::vector<Parameter> getDependencies() {
         return dependencies;
     }
+    /**
+     * \return the functions associated to a dependency of an output
+     */
     inline std::vector<std::string> getFuncs() {
         return funcs;
     }
 };
 
+/**
+ * \class Ouput
+ * \brief output class to describe code outputs
+ */
 class Output : public Output_impl {
     public:
     BOOST_PARAMETER_CONSTRUCTOR(
@@ -174,7 +188,7 @@ public:
             xmlAddChild(rootNode,paramNode);
         }
         for (unsigned int i=0; i<Outputs.size(); ++i) {
-            xmlNodePtr paramNode = createNode("Output",Outputs[i].getAttrNames(),Outputs[i].getAttrValues());
+            xmlNodePtr paramNode = createNode("output",Outputs[i].getAttrNames(),Outputs[i].getAttrValues());
             for (unsigned int j=0; j<Outputs[i].getDependencies().size(); ++j) {
                 xmlNode* aNewNode = xmlNewNode(NULL,(xmlChar*) "depend");
                 xmlSetProp(aNewNode, (xmlChar*) "value", (xmlChar*) Outputs[i].getDependencies()[j].getName().c_str());
