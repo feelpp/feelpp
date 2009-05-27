@@ -147,8 +147,8 @@ LIFE_CHECK_GOOGLE_PERFTOOLS
 dnl ------------------------------------------------------------
 dnl Boost
 LIFE_CHECK_BOOST
-AC_DEFINE_UNQUOTED([BOOST_PARAMETER_MAX_ARITY], [10], [the maximum of parameters for boost.parameter])
-CPPFLAGS="${CPPFLAGS} -DBOOST_PARAMETER_MAX_ARITY=10"
+AC_DEFINE_UNQUOTED([BOOST_PARAMETER_MAX_ARITY], [15], [the maximum of parameters for boost.parameter])
+CPPFLAGS="${CPPFLAGS} -DBOOST_PARAMETER_MAX_ARITY=15"
 
 dnl
 dnl checks for some scientific computing libraries
@@ -169,6 +169,9 @@ AC_CHECK_QD
 dnl lapack, blas, g2c
 AC_CHECK_LAPACK
 LIFE_CHECK_ARPACK
+
+dnl sprng
+LIFE_CHECK_SPRNG
 
 # Check for superlu library
 AC_ARG_WITH(superlu-lib,
@@ -260,6 +263,7 @@ LIFE_CHECK_SCOTCHMETIS
 dnl ------------------------------------------------------------
 dnl petsc
 dnl -----
+LIFE_CHECK_HYPRE
 AC_CHECK_PETSC(2.1.6) #
 
 dnl -------------------------------------------------------------
