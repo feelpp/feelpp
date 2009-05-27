@@ -36,6 +36,7 @@
 
 #include <life/lifepoly/equispaced.hpp>
 #include <life/lifepoly/lagrange.hpp>
+#include <life/lifepoly/boundaryadaptedpolynomialset.hpp>
 
 #include <life/lifediscr/mesh.hpp>
 #include <life/lifediscr/functionspace.hpp>
@@ -264,12 +265,12 @@ public:
         typedef Mesh<Simplex<Dim, 1> > mesh_type;
         typedef Simplex<Dim, 1> convex_type;
 
-        typedef FunctionSpace<mesh_type, fusion::vector<BoundaryAdaptedPolynomialSet<Dim, N, Scalar, T> >, T> scalar_space_type;
+        typedef FunctionSpace<mesh_type, fusion::vector<BoundaryAdaptedPolynomialSet<N, Scalar> >, T> scalar_space_type;
         BOOST_STATIC_ASSERT( scalar_space_type::nDim == Dim );
         BOOST_STATIC_ASSERT( scalar_space_type::N_COMPONENTS == 1 );
 
         //std::cout << "antes vectorial\n";
-	//        typedef FunctionSpace<mesh_type, fusion::vector<BoundaryAdaptedPolynomialSet<Dim, N, Vectorial, T> >, T> vectorial_space_type;
+	//        typedef FunctionSpace<mesh_type, fusion::vector<detail::BoundaryAdaptedPolynomialSet<Dim, N, Vectorial, T> >, T> vectorial_space_type;
 	//	BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
 	//        BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
 

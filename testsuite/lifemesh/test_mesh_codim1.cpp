@@ -110,8 +110,8 @@ struct test_mesh_filters
             //1
             mesh_type::reference_convex_type ref_conv;
             geopc_ptrtype __geopc( new geopc_type( __gm, ref_conv.points() ) );
-            Life::mesh::Traits<mesh_type>::element_const_iterator it = mesh->beginElement();
-            Life::mesh::Traits<mesh_type>::element_const_iterator en = mesh->endElement();
+            Life::MeshTraits<mesh_type>::element_const_iterator it = mesh->beginElement();
+            Life::MeshTraits<mesh_type>::element_const_iterator en = mesh->endElement();
 
             std::cout << "Checking " << std::distance( it, en ) << " elements...\n";
 #if defined(USE_BOOST_TEST)
@@ -136,8 +136,8 @@ struct test_mesh_filters
                 // location faces
         {
 
-            Life::mesh::Traits<mesh_type>::location_face_const_iterator it = mesh->beginFaceOnBoundary();
-            Life::mesh::Traits<mesh_type>::location_face_const_iterator en = mesh->endFaceOnBoundary();
+            Life::MeshTraits<mesh_type>::location_face_const_iterator it = mesh->beginFaceOnBoundary();
+            Life::MeshTraits<mesh_type>::location_face_const_iterator en = mesh->endFaceOnBoundary();
 
             std::cout << "Checking " << std::distance( it, en ) << " boundary faces...\n";
 #if defined(USE_BOOST_TEST)

@@ -120,7 +120,7 @@ protected:
         BOOST_TEST_MESSAGE( "Checking Lagrange polynomials identity" );
 
         matrix_type eval_at_pts( FE::polyset_type::toMatrix( fe.evaluate( fe.points() ) ) );
-
+        BOOST_TEST_MESSAGE( "eval_at_pts = " << eval_at_pts  );
         value_type error = ublas::norm_frobenius( eval_at_pts-ublas::identity_matrix<value_type>( eval_at_pts.size1() ) );
 
 

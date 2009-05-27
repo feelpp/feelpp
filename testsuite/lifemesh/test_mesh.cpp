@@ -131,8 +131,8 @@ struct test_mesh_filters
         BOOST_TEST_MESSAGE( "testing mesh faces" );
         // location faces
         {
-            Life::mesh::Traits<mesh_type>::location_face_const_iterator it = mesh->beginInternalFace();
-            Life::mesh::Traits<mesh_type>::location_face_const_iterator en = mesh->endInternalFace();
+            Life::MeshTraits<mesh_type>::location_face_const_iterator it = mesh->beginInternalFace();
+            Life::MeshTraits<mesh_type>::location_face_const_iterator en = mesh->endInternalFace();
             //BOOST_CHECK( std::distance( it, en ) == 1 );
             for( ; it != en; ++it )
                 {
@@ -197,8 +197,8 @@ struct test_mesh_filters
             //1
             mesh_type::reference_convex_type ref_conv;
             geopc_ptrtype __geopc( new geopc_type( __gm, ref_conv.points() ) );
-            Life::mesh::Traits<mesh_type>::element_const_iterator it = mesh->beginElement();
-            Life::mesh::Traits<mesh_type>::element_const_iterator en = mesh->endElement();
+            Life::MeshTraits<mesh_type>::element_const_iterator it = mesh->beginElement();
+            Life::MeshTraits<mesh_type>::element_const_iterator en = mesh->endElement();
             //BOOST_CHECK( std::distance( it, en ) == 1 );
             for( ; it != en; ++it )
                 {
