@@ -31,7 +31,11 @@
 
 namespace Life
 {
+/** \cond DETAIL */
+namespace detail
+{
 /**
+ * \internal
  * \class BoundaryAdaptedPolynomialSet
  * \brief a set of boundary adapted polynomials over a convex
  *
@@ -230,5 +234,28 @@ public:
     points_type const& points() const { return this->basis().points(); }
     points_type const& points( int f ) const { return this->basis().points( f ); }
 };
+} // detail
+
+/** \encond  */
+
+template<uint16_type Order,
+         template<uint16_type Dim> class PolySetType = Scalar>
+class BoundaryAdaptedPolynomialSet
+{
+public:
+    template<uint16_type N,
+             typename T = double,
+             typename Convex = Simplex<N> >
+    struct apply
+    {
+        typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
+                                  mpl::identity<detail::BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,Simplex> >,
+                                  mpl::identity<detail::BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,SimplexProduct> > >::type::type result_type;
+        typedef result_type type;
+    };
+
+    typedef BoundaryAdaptedPolynomialSet<Order,Scalar> component_basis_type;
+};
+
 }
 #endif /* __BoundaryAdaptedPolynomialSet_H */
