@@ -34,27 +34,19 @@
 namespace Life
 {
 /**
- * \namespace Life::mesh
- *
- * The \c mesh namespace stores some mesh specific classes that may
- * conflict with classes in the namespace \c Life.
- */
-namespace mesh
-{
-/**
- * \class Traits
+ * \class MeshTraits
  * \brief Traits for meshes
  *
  * @author Christophe Prud'homme
  */
 template<typename MeshType>
-struct Traits
+struct MeshTraits
 {
     /** @name Typedefs
      */
     //@{
 
-    typedef Traits<MeshType> self_type;
+    typedef MeshTraits<MeshType> self_type;
     typedef typename boost::remove_pointer<typename remove_shared_ptr<MeshType>::type >::type mesh_type;
 
     typedef typename mesh_type::shape_type element_shape_type;
@@ -98,9 +90,5 @@ struct Traits
     //@}
 };
 
-
-
-
-} // mesh
 } // Life
 #endif /* __Traits_H */
