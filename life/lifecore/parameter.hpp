@@ -45,6 +45,8 @@
 
 namespace Life
 {
+namespace parameter = boost::parameter;
+
 BOOST_PARAMETER_NAME(matrix)    // Note: no semicolon
 BOOST_PARAMETER_NAME(rhs)
 BOOST_PARAMETER_NAME(solution)
@@ -78,6 +80,10 @@ BOOST_PARAMETER_NAME(cmdName)
 BOOST_PARAMETER_NAME(values)
 BOOST_PARAMETER_NAME(dependencies)
 BOOST_PARAMETER_NAME(funcs)
+BOOST_PARAMETER_NAME(mesh)
+BOOST_PARAMETER_NAME(desc)
+BOOST_PARAMETER_NAME(shape)
+BOOST_PARAMETER_NAME(convex)
 
 
 }
