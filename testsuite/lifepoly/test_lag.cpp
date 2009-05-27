@@ -70,6 +70,11 @@ BOOST_AUTO_TEST_CASE( lag21scr64s )
     TestLagrange<fem::Lagrange<2, 1, Scalar, real64_type, Simplex> > t;
     t();
 }
+BOOST_AUTO_TEST_CASE( lag21ver64s )
+{
+    TestLagrange<fem::Lagrange<2, 1, Vectorial, real64_type, Simplex> > t;
+    t();
+}
 BOOST_AUTO_TEST_CASE( lag22scr64s )
 {
     TestLagrange<fem::Lagrange<2, 2, Scalar, real64_type, Simplex> > t;
