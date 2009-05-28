@@ -32,6 +32,9 @@
 #include <life/lifealg/matrixpetsc.hpp>
 #include <life/lifealg/solvernonlineartrilinos.hpp>
 
+namespace Life
+{
+
 bool computeF( const Epetra_Vector & x, Epetra_Vector & f, NOX::Epetra::Interface::Required::FillType F ) {
     return true;
 }
@@ -45,8 +48,6 @@ bool computePreconditioner( const Epetra_Vector & x, Epetra_Operator & O ) {
     return true;
 }
 
-namespace Life
-{
 // SolverNonLinearTrilinos<> methods
 template <typename T>
 void SolverNonLinearTrilinos<T>::clear ()
