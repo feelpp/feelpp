@@ -42,7 +42,6 @@
 #include "NOX_Epetra_LinearSystem_AztecOO.H"
 #include "NOX_Epetra_Group.H"
 
-
 namespace Life
 {
 /**
