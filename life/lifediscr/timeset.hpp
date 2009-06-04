@@ -404,6 +404,8 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func, mpl::bool_<true> )
         {
+            int same_mesh = ( func.mesh() == _M_mesh )?INTERPOLATE_SAME_MESH:INTERPOLATE_DIFFERENT_MESH;
+            Debug( 8000 ) << "[TimeSet::add] use same mesh: " << same_mesh << " (" << INTERPOLATE_SAME_MESH << "," << INTERPOLATE_DIFFERENT_MESH << ")\n";
             if ( FunctionType::is_scalar )
                 {
                     if ( !_M_scalar_p1 )
@@ -414,7 +416,8 @@ public:
                     _M_nodal_scalar[__n].setName( __n );
                     _M_nodal_scalar[__n].setFunctionSpace( _M_scalar_p1 );
 
-                    interpolate( _M_scalar_p1, func, _M_nodal_scalar[__n] );
+
+                    interpolate( _M_scalar_p1, func, _M_nodal_scalar[__n], same_mesh );
                 }
             else if ( FunctionType::is_vectorial )
                 {
@@ -426,7 +429,7 @@ public:
                     _M_nodal_vector[__n].setName( __n );
                     _M_nodal_vector[__n].setFunctionSpace( _M_vector_p1 );
 
-                    interpolate( _M_vector_p1, func, _M_nodal_vector[__n] );
+                    interpolate( _M_vector_p1, func, _M_nodal_vector[__n], same_mesh );
                 }
 
             _M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
@@ -438,6 +441,8 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func, mpl::bool_<false> )
         {
+            int same_mesh = ( func.mesh() == _M_mesh )?INTERPOLATE_SAME_MESH:INTERPOLATE_DIFFERENT_MESH;
+            Debug( 8000 ) << "[TimeSet::add] use same mesh: " << same_mesh << " (" << INTERPOLATE_SAME_MESH << "," << INTERPOLATE_DIFFERENT_MESH << ")\n";
             if ( FunctionType::is_scalar )
                 {
                     if ( !_M_scalar_p0 )
@@ -449,7 +454,7 @@ public:
                     _M_element_scalar[__n].setName( __n );
                     _M_element_scalar[__n].setFunctionSpace( _M_scalar_p0 );
 
-                    interpolate( _M_scalar_p0, func, _M_element_scalar[__n] );
+                    interpolate( _M_scalar_p0, func, _M_element_scalar[__n], same_mesh );
                     //std::copy( func.begin(), func.end(), _M_element_scalar[__n].begin() );
                     Debug( 8000 ) << "[TimeSet::add] scalar p0 function " << __n << " added to exporter\n";
                 }
@@ -464,14 +469,14 @@ public:
 
                     _M_element_vector[__n].setName( __n );
                     _M_element_vector[__n].setFunctionSpace( _M_vector_p0 );
-                    interpolate( _M_vector_p0, func, _M_element_vector[__n] );
+                    interpolate( _M_vector_p0, func, _M_element_vector[__n], same_mesh );
                     //std::copy( func.begin(), func.end(), _M_element_vector[__n].begin() );
                 }
             else if ( FunctionType::is_tensor2 )
                 {
                     _M_element_tensor2[__n].setName( __n );
                     _M_element_tensor2[__n].setFunctionSpace( _M_tensor2_p0 );
-                    interpolate( _M_tensor2_p0, func, _M_element_tensor2[__n] );
+                    interpolate( _M_tensor2_p0, func, _M_element_tensor2[__n], same_mesh );
                     //std::copy( func.begin(), func.end(), _M_element_tensor2[__n].begin() );
                 }
             _M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
