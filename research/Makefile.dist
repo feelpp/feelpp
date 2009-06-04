@@ -5,5 +5,5 @@ all:
 #	autoheader
 	automake
 	autoconf
-
+	test -d meta_life_ifp/ && ( cd meta_life_ifp && make -f Makefile.dist)
 
