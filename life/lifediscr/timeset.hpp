@@ -93,6 +93,29 @@ public:
      */
     //@{
     typedef MeshType mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+
+    typedef FunctionSpace<MeshType, bases<Lagrange<0,Scalar> >, Discontinuous > scalar_p0_space_type;
+    typedef FunctionSpace<MeshType, bases<Lagrange<0,Vectorial> >, Discontinuous > vector_p0_space_type;
+    typedef FunctionSpace<MeshType, bases<Lagrange<0,Tensor2> >, Discontinuous > tensor2_p0_space_type;
+    typedef FunctionSpace<MeshType, bases<Lagrange<1,Scalar> > > scalar_p1_space_type;
+    typedef FunctionSpace<MeshType, bases<Lagrange<1,Vectorial> > > vector_p1_space_type;
+    typedef FunctionSpace<MeshType, bases<Lagrange<1,Tensor2> > > tensor2_p1_space_type;
+    typedef boost::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
+    typedef boost::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
+    typedef boost::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
+    typedef boost::shared_ptr<scalar_p1_space_type> scalar_p1_space_ptrtype;
+    typedef boost::shared_ptr<vector_p1_space_type> vector_p1_space_ptrtype;
+    typedef boost::shared_ptr<tensor2_p1_space_type> tensor2_p1_space_ptrtype;
+
+
+    typedef typename scalar_p0_space_type::element_type element_scalar_type;
+    typedef typename vector_p0_space_type::element_type element_vector_type;
+    typedef typename tensor2_p0_space_type::element_type element_tensor2_type;
+    typedef typename scalar_p1_space_type::element_type nodal_scalar_type;
+    typedef typename vector_p1_space_type::element_type nodal_vector_type;
+    typedef typename tensor2_p1_space_type::element_type nodal_tensor2_type;
 
 
     /**
@@ -408,7 +431,18 @@ public:
             Debug( 8000 ) << "[TimeSet::add] use same mesh: " << same_mesh << " (" << INTERPOLATE_SAME_MESH << "," << INTERPOLATE_DIFFERENT_MESH << ")\n";
             if ( FunctionType::is_scalar )
                 {
-                    if ( !_M_scalar_p1 )
+                    boost::timer t;
+                    if ( !M_ts->_M_scalar_p1 )
+                        {
+                            M_ts->_M_scalar_p1 = scalar_p1_space_ptrtype( new scalar_p1_space_type ( _M_mesh.get() ) );
+                            _M_scalar_p1 = M_ts->_M_scalar_p1;
+                            Debug( 8000 ) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
+                        }
+                    else if ( _M_mesh.get() == M_ts->_M_scalar_p1->mesh() )
+                        {
+                            _M_scalar_p1 = M_ts->_M_scalar_p1;
+                        }
+                    if ( _M_mesh.get() != M_ts->_M_scalar_p1->mesh() && !_M_scalar_p1 )
                         {
                             _M_scalar_p1 = scalar_p1_space_ptrtype( new scalar_p1_space_type ( _M_mesh.get() ) );
                             Debug( 8000 ) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
@@ -418,18 +452,34 @@ public:
 
 
                     interpolate( _M_scalar_p1, func, _M_nodal_scalar[__n], same_mesh );
+                    Debug( 8000 ) << "[timset::add] scalar time : " << t.elapsed() << "\n";
                 }
             else if ( FunctionType::is_vectorial )
                 {
-                    if ( !_M_vector_p1 )
+                    boost::timer t;
+                     if ( !M_ts->_M_vector_p1 )
+                        {
+                            M_ts->_M_vector_p1 = vector_p1_space_ptrtype( new vector_p1_space_type ( _M_mesh.get() ) );
+                            _M_vector_p1 = M_ts->_M_vector_p1;
+                            Debug( 8000 ) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
+                        }
+                    else if ( _M_mesh.get() == M_ts->_M_vector_p1->mesh() )
+                        {
+                            _M_vector_p1 = M_ts->_M_vector_p1;
+                        }
+                    if ( _M_mesh.get() != M_ts->_M_vector_p1->mesh() && !_M_vector_p1 )
                         {
                             _M_vector_p1 = vector_p1_space_ptrtype( new vector_p1_space_type ( _M_mesh.get() ) );
+                            Debug( 8000 ) << "[timeset::add] setmesh :  " << t.elapsed() << "\n";
                             Debug( 8000 ) << "[TimeSet::setMesh] setMesh space vector p1 created\n";
                         }
+                    t.restart();
                     _M_nodal_vector[__n].setName( __n );
                     _M_nodal_vector[__n].setFunctionSpace( _M_vector_p1 );
-
+                    Debug( 8000 ) << "[timeset::add] setmesh :  " << t.elapsed() << "\n";
+                    t.restart();
                     interpolate( _M_vector_p1, func, _M_nodal_vector[__n], same_mesh );
+                    Debug( 8000 ) << "[timset::add] scalar time : " << t.elapsed() << "\n";
                 }
 
             _M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
@@ -445,7 +495,17 @@ public:
             Debug( 8000 ) << "[TimeSet::add] use same mesh: " << same_mesh << " (" << INTERPOLATE_SAME_MESH << "," << INTERPOLATE_DIFFERENT_MESH << ")\n";
             if ( FunctionType::is_scalar )
                 {
-                    if ( !_M_scalar_p0 )
+                    if ( !M_ts->_M_scalar_p0 )
+                        {
+                            M_ts->_M_scalar_p0 = scalar_p0_space_ptrtype( new scalar_p0_space_type ( _M_mesh.get() ) );
+                            _M_scalar_p0 = M_ts->_M_scalar_p0;
+                            Debug( 8000 ) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
+                        }
+                    else if ( _M_mesh.get() == M_ts->_M_scalar_p0->mesh() )
+                        {
+                            _M_scalar_p0 = M_ts->_M_scalar_p0;
+                        }
+                    if ( _M_mesh.get() != M_ts->_M_scalar_p0->mesh() && !_M_scalar_p0 )
                         {
                             _M_scalar_p0 = scalar_p0_space_ptrtype( new scalar_p0_space_type ( _M_mesh.get() ) );
                             Debug( 8000 ) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
@@ -460,7 +520,17 @@ public:
                 }
             else if ( FunctionType::is_vectorial )
                 {
-                    if ( !_M_vector_p0 )
+                    if ( !M_ts->_M_vector_p0 )
+                        {
+                            M_ts->_M_vector_p0 = vector_p0_space_ptrtype( new vector_p0_space_type ( _M_mesh.get() ) );
+                            _M_vector_p0 = M_ts->_M_vector_p0;
+                            Debug( 8000 ) << "[TimeSet::setMesh] setMesh space vector p0 created\n";
+                        }
+                    else if ( _M_mesh.get() == M_ts->_M_vector_p0->mesh() )
+                        {
+                            _M_vector_p0 = M_ts->_M_vector_p0;
+                        }
+                    if (  _M_mesh.get() != M_ts->_M_vector_p0->mesh() && !_M_vector_p0 )
                         {
                             _M_vector_p0 = vector_p0_space_ptrtype( new vector_p0_space_type ( _M_mesh.get() ) );
                             Debug( 8000 ) << "[TimeSet::setMesh] setMesh space vector p0 created\n";
@@ -551,7 +621,7 @@ public:
            \param index index of the step
            * \param state the state of the step
            */
-        Step( Real time, size_type index, size_type __state = STEP_NEW|STEP_OVERWRITE );
+        Step( TimeSet* ts, Real time, size_type index, size_type __state = STEP_NEW|STEP_OVERWRITE );
 
 
         /**
@@ -842,6 +912,8 @@ public:
 
     private:
 
+        TimeSet* M_ts;
+
         /**
            Time associated with the step
         */
@@ -1076,7 +1148,7 @@ private:
 
                         step_iterator __sit;
                         bool __inserted;
-                        boost::tie( __sit, __inserted ) = _M_step_set.insert( step_ptrtype( new Step( t,ind, __state ) ) );
+                        boost::tie( __sit, __inserted ) = _M_step_set.insert( step_ptrtype( new Step( this, t,ind, __state ) ) );
 
                         LIFE_ASSERT( __inserted )( t )( ind ).error ("insertion failed");
 
@@ -1087,13 +1159,24 @@ private:
     //! cleanup steps states
     void cleanup();
 
+public:
+    boost::optional<mesh_ptrtype> _M_mesh;
 
+
+    scalar_p0_space_ptrtype _M_scalar_p0;
+    vector_p0_space_ptrtype _M_vector_p0;
+    tensor2_p0_space_ptrtype _M_tensor2_p0;
+    scalar_p1_space_ptrtype _M_scalar_p1;
+    vector_p1_space_ptrtype _M_vector_p1;
+    tensor2_p1_space_ptrtype _M_tensor2_p1;
 private:
 
     /**
        keep track of the current index of the TimeSets to ensure they get
     */
     static uint32_type _S_current_index;
+
+
 };
 template<typename MeshType>
 inline LIFE_EXPORT  bool operator<( TimeSet<MeshType> const& __ts1, TimeSet<MeshType> const& __ts2 )
@@ -1208,6 +1291,7 @@ template<typename MeshType>
 void
 TimeSet<MeshType>::cleanup()
 {
+
     step_iterator __it = _M_step_set.begin();
     step_iterator __en = _M_step_set.end();
     for( ; __it != __en; ++__it )
@@ -1215,7 +1299,7 @@ TimeSet<MeshType>::cleanup()
         if ( (*__it)->index() <= _M_step_set.size() - _M_keep_steps )
             (*__it)->setState( STEP_ON_DISK );
     }
-
+#if 0
     std::ostringstream __str;
     __str << _M_name << ".ts";
 
@@ -1228,6 +1312,7 @@ TimeSet<MeshType>::cleanup()
 
             ofs.close();
         }
+#endif
 }
 template<typename MeshType>
 typename TimeSet<MeshType>::step_ptrtype
@@ -1253,7 +1338,7 @@ TimeSet<MeshType>::step( Real __time )
         Debug( 8000 ) << "[TimeSet<MeshType>::step] Inserting new step at time " << __time << " with index "
                 << _M_step_set.size() << "\n";
 
-        boost::tie( __sit, __inserted ) = _M_step_set.insert( step_ptrtype( new Step( __time,
+        boost::tie( __sit, __inserted ) = _M_step_set.insert( step_ptrtype( new Step( this, __time,
                                                                                       _M_step_set.size() + 1 ) ) );
 
         Debug( 8000 ) << "[TimeSet<MeshType>::step] step was inserted properly? " << ( __inserted?"yes":"no" ) << "\n";
@@ -1293,8 +1378,9 @@ TimeSet<MeshType>::Step::Step()
 }
 
 template<typename MeshType>
-TimeSet<MeshType>::Step::Step( Real __t, size_type __index, size_type __state )
+TimeSet<MeshType>::Step::Step( TimeSet* ts, Real __t, size_type __index, size_type __state )
     :
+    M_ts( ts ),
     _M_time( __t ),
     _M_index( __index ),
     _M_state( __state )
@@ -1327,6 +1413,7 @@ TimeSet<MeshType>::Step::executeState( size_type __st )
     Debug( 8005 ) << "executeState: isInMemory() :  " << __state.test( STEP_IN_MEMORY ) << "\n";
     if ( hasData() && isInMemory()  && __state.test( STEP_ON_DISK ) )
     {
+#if 0
         Debug( 8005 ) << "saving step " << this->index() << " at time " << this->time() << " on disk\n";
         std::ostringstream __str;
         __str << "step-" << this->index();
@@ -1339,6 +1426,7 @@ TimeSet<MeshType>::Step::executeState( size_type __st )
 
             ofs.close();
         }
+#endif
         if ( hasData() )
         {
             Debug( 8005 ) << "releasing step " << _M_index << " at time " << _M_time << " allocated memory for this step\n";
@@ -1392,6 +1480,7 @@ TimeSet<MeshType>::Step::executeState( size_type __st )
     if ( hasData() && isOnDisk()  && __state.test( STEP_IN_MEMORY ) )
     {
         Debug( 8005 ) << "loading step " << this->index() << " at time " << this->time() << " in memory\n";
+#if 0
         std::ostringstream __str;
         __str << "step-" << this->index();
         if ( fs::exists( __str.str() ) )
@@ -1403,6 +1492,7 @@ TimeSet<MeshType>::Step::executeState( size_type __st )
 
             ifs.close();
         }
+#endif
         _M_state.set( STEP_IN_MEMORY|STEP_HAS_DATA );
         _M_state.clear( STEP_ON_DISK );
     }
