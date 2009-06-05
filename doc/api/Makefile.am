@@ -15,7 +15,6 @@ CLEANFILES = .*.toc
 DISTCLEANFILES = index-API.doc life.tag
 MAINTAINERCLEANFILES = html
 
-if MAINTAINER_MODE
 if WITH_DOXYGEN
 %.png: fig/%.fig
 	$(FIG2DEV) -Lpng $^ > $@
@@ -40,7 +39,6 @@ html: Doxyfile  $(PNGS) $(DOCSOURCES)
 #	$(MAKE) -C .. sync-gforge
 endif # WITH_DOXYGEN
 
-endif
 
 install-data-local:
 	@for file in `find html/ -type d` ; do \
