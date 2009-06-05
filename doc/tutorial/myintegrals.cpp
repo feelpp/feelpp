@@ -156,20 +156,28 @@ MyIntegrals<Dim>::run()
     /*
      * Compute domain Area
      */
+    //# marker1 #
     double local_domain_area = integrate( elements(mesh), _Q<0>(),
                                           constant(1.0)).evaluate()(0,0);
+    //# endmarker1 #
+
+    //# marker2 #
     double global_domain_area=local_domain_area;
     if ( Application::nProcess() > 1 )
         mpi::all_reduce( Application::comm(),
                          local_domain_area,
                          global_domain_area,
                          std::plus<double>() );
+    //# endmarker2 #
+    //# marker3 #
     Log() << "int_Omega = " << global_domain_area
           << "[ " << local_domain_area << " ]\n";
+    //# endmarker3 #
 
     /*
      * Compute domain perimeter
      */
+    //# marker4 #
     double local_boundary_length = integrate( boundaryfaces(mesh), _Q<0>(),
                                             constant(1.0)).evaluate()(0,0);
     double global_boundary_length = local_boundary_length;
@@ -180,6 +188,7 @@ MyIntegrals<Dim>::run()
                          std::plus<double>() );
     Log() << "int_Omega = " << global_boundary_length
           << "[ " << local_boundary_length << " ]\n";
+    //# endmarker4 #
 
     /*
      * Compute \int f where f= x^2 + y^2 + z^2
