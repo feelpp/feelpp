@@ -90,23 +90,28 @@ template<typename MeshType>
 void
 ExporterEnsight<MeshType>::save() const
 {
+    boost::timer ti;
     Debug( 8006 ) << "[ExporterEnsight::save] export in ensight format\n";
 
     Debug( 8006 ) << "[ExporterEnsight::save] export sos\n";
     _F_writeSoSFile();
-    Debug( 8006 ) << "[ExporterEnsight::save] export sos ok\n";
+    Debug( 8006 ) << "[ExporterEnsight::save] export sos ok, time " << ti.elapsed() << "\n";
 
+    ti.restart();
     Debug( 8006 ) << "[ExporterEnsight::save] export case file\n";
     _F_writeCaseFile();
-    Debug( 8006 ) << "[ExporterEnsight::save] export case file ok\n";
+    Debug( 8006 ) << "[ExporterEnsight::save] export case file ok, time " << ti.elapsed() << "\n";
 
+    ti.restart();
     Debug( 8006 ) << "[ExporterEnsight::save] export geo(mesh) file\n";
     _F_writeGeoFiles();
-    Debug( 8006 ) << "[ExporterEnsight::save] export geo(mesh) file ok\n";
+    Debug( 8006 ) << "[ExporterEnsight::save] export geo(mesh) file ok, time " << ti.elapsed() << "\n";
 
+    ti.restart();
     Debug( 8006 ) << "[ExporterEnsight::save] export variable file\n";
     _F_writeVariableFiles();
-    Debug( 8006 ) << "[ExporterEnsight::save] export variable files ok\n";
+    Debug( 8006 ) << "[ExporterEnsight::save] export variable files ok, time " << ti.elapsed() << "\n";
+
 }
 
 template<typename MeshType>
@@ -283,6 +288,7 @@ ExporterEnsight<MeshType>::_F_writeGeoFiles() const
 
             typename timeset_type::step_const_iterator __it = __ts->beginStep();
             typename timeset_type::step_const_iterator __end = __ts->endStep();
+            __it = boost::prior( __end );
             while( __it != __end )
                 {
                     typename timeset_type::step_ptrtype __step = *__it;;
@@ -324,6 +330,7 @@ ExporterEnsight<MeshType>::_F_writeVariableFiles() const
 
             typename timeset_type::step_const_iterator __it = __ts->beginStep();
             typename timeset_type::step_const_iterator __end = __ts->endStep();
+            __it = boost::prior( __end );
             while( __it != __end )
                 {
                     typename timeset_type::step_ptrtype __step = *__it;;
