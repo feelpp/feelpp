@@ -3,6 +3,7 @@
 
 \section{Natural convection in a heated tank}
 
+
 \subsection{Description}
 \label{sec:description}
 
@@ -70,7 +71,7 @@ compare the simulations with different parameter values.
 
 To study the convection, we use a model problem: it consists in a
 rectangular tank of height $1$ and width $W$, in which the fluid is
-enclosed, see figure~\vref{fig:heatns:1}. We wish to know the fluid velocity
+enclosed, see figure~\ref{fig:heatns:1}. We wish to know the fluid velocity
 $\mathbf{u}$, the fluid pressure $p$ and fluid temperature $\theta$.
 
 We introduce the adimensionalized Navier-Stokes and heat equations
@@ -235,6 +236,12 @@ becoming smaller as the Grashof increases.
   \label{fig:4}
 \end{figure}
 
+\subsection{Implementation}
+\label{sec:implementation}
+
+This application in implemented in
+\texttt{life/doc/tutorial/convection*.cpp}. The implementation solve
+the full nonlinear problem using the nonlinear solver framework.
 
 
 
