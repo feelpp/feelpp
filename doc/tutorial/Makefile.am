@@ -27,31 +27,31 @@ SUBDIRS=styles pngs pdfs
 
 ACLOCAL_AMFLAGS = -I admin
 
-bin_PROGRAMS=myapp mymesh myintegrals laplacian stokes bratu nonlinearpow  convection
+bin_PROGRAMS=life_myapp life_mymesh life_myintegrals life_laplacian life_stokes life_bratu life_nonlinearpow  life_convection
 
-nonlinearpow_SOURCES=nonlinearpow.cpp
-nonlinearpow_LDADD=$(LIFE_LIBS)
+life_nonlinearpow_SOURCES=nonlinearpow.cpp
+life_nonlinearpow_LDADD=$(LIFE_LIBS)
 
-bratu_SOURCES=bratu.cpp
-bratu_LDADD=$(LIFE_LIBS)
+life_bratu_SOURCES=bratu.cpp
+life_bratu_LDADD=$(LIFE_LIBS)
 
-stokes_SOURCES=stokes.cpp
-stokes_LDADD=$(LIFE_LIBS)
+life_stokes_SOURCES=stokes.cpp
+life_stokes_LDADD=$(LIFE_LIBS)
 
-laplacian_SOURCES=laplacian.cpp
-laplacian_LDADD=$(LIFE_LIBS)
+life_laplacian_SOURCES=laplacian.cpp
+life_laplacian_LDADD=$(LIFE_LIBS)
 
-myintegrals_SOURCES=myintegrals.cpp
-myintegrals_LDADD=$(LIFE_LIBS)
+life_myintegrals_SOURCES=myintegrals.cpp
+life_myintegrals_LDADD=$(LIFE_LIBS)
 
-mymesh_SOURCES=mymesh.cpp
-mymesh_LDADD=$(LIFE_LIBS)
+life_mymesh_SOURCES=mymesh.cpp
+life_mymesh_LDADD=$(LIFE_LIBS)
 
-convection_SOURCES= convection.hpp convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp
-convection_LDADD=$(LIFE_LIBS)
+life_convection_SOURCES= convection.hpp convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp
+life_convection_LDADD=$(LIFE_LIBS)
 
-myapp_SOURCES=myapp.cpp
-myapp_LDADD=$(LIFE_LIBS)
+life_myapp_SOURCES=myapp.cpp
+life_myapp_LDADD=$(LIFE_LIBS)
 
 SUFFIXES=.cpp .hpp .tex .pdf
 
@@ -61,7 +61,7 @@ CLEANFILES = *.aux *.log *.lot *.lof *.toc *.bbl *.blg *.out *.idx *.ind *.ilg $
 	echo "*** INFO: first pdflatex compilation" ; \
 	TEXINPUTS=:.//:$(top_builddir)/tutorial//:$(srcdir)//: $(PDFLATEX) $< ; \
 	echo "*** INFO: index generation" ; \
-	if test -f $*.idx; then $(MAKEINDEX) -s $(srcdir)/tutorial.ist $*.idx ; fi ; \
+	if test -f $*.idx; then $(MAKEINDEX) -s $(srcdir)/life-manual.ist $*.idx ; fi ; \
 	echo "*** INFO: bibliography creation" ; \
 	if test -f $(srcdir)/*.bib; then BIBINPUTS=:$(srcdir): $(BIBTEX) $*.aux ; fi ; \
 	echo "*** INFO: table of content insertion" ; \
@@ -71,10 +71,10 @@ CLEANFILES = *.aux *.log *.lot *.lof *.toc *.bbl *.blg *.out *.idx *.ind *.ilg $
 
 
 
-EXTRA_DIST = tutorial.tex version.tex.in feel.tex gfdl.tex tutorial.ist version.tex.in
+EXTRA_DIST = life-manual.tex version.tex.in feel.tex gfdl.tex life-manual.ist version.tex.in
 
 
-tutorial.pdf : $(EXTRA_DIST) myapp.cpp mymesh.cpp myintegrals.cpp laplacian.cpp stokes.cpp bratu.cpp
+life-manual.pdf : $(EXTRA_DIST) myapp.cpp mymesh.cpp myintegrals.cpp laplacian.cpp stokes.cpp bratu.cpp
 
-pdf-local : tutorial.pdf
-doc_DATA = tutorial.pdf
+pdf-local : life-manual.pdf
+doc_DATA = life-manual.pdf
