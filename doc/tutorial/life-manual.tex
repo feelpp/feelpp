@@ -35,6 +35,10 @@
 }
 \usepackage{amsmath,amssymb}
 
+\usepackage{xspace,pgf,pgfkeys,pgfmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows,patterns,plotmarks,shapes,snakes,er,3d,automata,backgrounds,topaths,trees,petri,mindmap}
+
 %
 % les trois parties (front, main et back)
 %
@@ -1530,6 +1534,9 @@ combustion.
   \texttt{doc/tutorial/bratu.cpp} for an implementation of this
   problem.
 \end{nota}
+
+\input{example-heatns}
+
 % The discrete variational formulation reads, we look for $u \in V
 % \subset H^1(\Omega)$ such that
 % \begin{equation}
@@ -1640,7 +1647,7 @@ combustion.
 
 \nocite{*}
 \bibliographystyle{plain}
-\bibliography{tutorial}
+\bibliography{life-manual}
 
 
 
