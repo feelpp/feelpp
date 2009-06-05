@@ -139,6 +139,8 @@
 \lstset{belowskip=\smallskipamount}
 \lstset{aboveskip=\smallskipamount}
 
+\lstset{includerangemarker=false,rangeprefix=\/\/\#\ ,% curly left brace plus space
+  rangesuffix=\ \#}% space plus curly right brace
 
 \newcommand{\acos}{\ensuremath{\mathrm{acos}}\xspace}
 \newcommand{\asin}{\ensuremath{\mathrm{asin}}\xspace}
@@ -150,7 +152,7 @@
 \newcommand{\life}{Life\xspace}
 
 \InputIfFileExists{version}{}{\def\lifeversion{\texttt{x.y.z}}}
-\title{Life Tutorial\\
+\title{Life Manual\\
 A Library for Finite and Spectral Element Methods in 1D, 2D and 3D\\
 {\small \lifeversion }}
 \author{Christophe Prud'homme\thanks{Université de Grenoble,
@@ -182,7 +184,7 @@ A Library for Finite and Spectral Element Methods in 1D, 2D and 3D\\
 
 \begin{center}
   {\Large
-    LIFE TUTORIAL\\
+    LIFE MANUAL\\
     A LIBRARY FOR \\
     FINITE AND SPECTRAL ELEMENT METHODS IN\\
     1D, 2D AND 3D\\
@@ -486,18 +488,20 @@ internal \life options. \life uses the
 library from Boost to handle its command line options
 
 
-\lstinputlisting[firstline=28,lastline=30]{myapp.cpp}
+\lstinputlisting[linerange=marker1-endmarker1]{myapp.cpp}
 
 Next to ease the programming and reading, we use the \lstinline!using!
 \cpp directive to bring the namespace Life to the current namespace
 
-\lstinputlisting[firstline=32,lastline=32]{myapp.cpp}
+\begin{lstlisting}
+  using namespace Life;
+\end{lstlisting}
 
 Then we define the command line options that the applications will
 provide. Note that on the \lstinline!return! line, we incorporate the
 options defined internally in \life.
 
-\lstinputlisting[firstline=34,lastline=46]{myapp.cpp}
+\lstinputlisting[linerange=marker2-endmarker2]{myapp.cpp}
 
 In the example, we provide the options \lstinline!dt! which takes an
 argument, a \lstinline!double! and its default value is \lstinline!1!
@@ -508,7 +512,7 @@ Then we describe the application by defining a class
 \lstinline!help! command line options to describe the application
 
 
-\lstinputlisting[firstline=47,lastline=62]{myapp.cpp}
+\lstinputlisting[linerange=marker3-endmarker3]{myapp.cpp}
 
 
 Now we turn to the class \lstinline!MyApp! itself: it derives from
@@ -521,7 +525,7 @@ function. It is defined as a pure virtual function in
 \lstinline!Application!.
 
 
-\lstinputlisting[firstline=65,lastline=85]{myapp.cpp}
+\lstinputlisting[linerange=marker4-endmarker4]{myapp.cpp}
 
 The implementation of the constructors is usually simple, we pass the
 arguments to the super class \lstinline!Application! that will analyze
@@ -530,13 +534,14 @@ them and subsequently provide them with a
 a \lstinline!map!. Have a look at the document
 \lstinline!boost::program_options! for further details.
 
-\lstinputlisting[firstline=87,lastline=109]{myapp.cpp}
+\lstinputlisting[linerange=marker5-endmarker5]{myapp.cpp}
 
 The \lstinline!run()! member function holds the application
 commands/statements. Here we provide the smallest code unit: we print
 the description of the application if the \lstinline!--help! command
 line options is set.
 
+\lstinputlisting[linerange=marker6-endmarker6]{myapp.cpp}
 
 Finally the \lstinline!main()! function can be implemented. We pass
 the results of the \lstinline!makeAbout()! and
@@ -544,7 +549,7 @@ the results of the \lstinline!makeAbout()! and
 well as \lstinline!argc! and \lstinline!argv!. Then we call the
 \lstinline!run()! member function to execute the application.
 
-\lstinputlisting[firstline=114,lastline=119]{myapp.cpp}
+\lstinputlisting[linerange=marker7-endmarker7]{myapp.cpp}
 
 After compiling \lstinline!myapp!, we can execute it
 
@@ -572,7 +577,7 @@ Christophe Prud'homme   developer  christophe.prudhomme@ujf-grenoble.fr
 will be stored in a subdirectory of \lstinline!~/life!. For
 example the following code
 
-\lstinputlisting[firstline=105,lastline=106]{myapp.cpp}
+\lstinputlisting[linerange=marker8-endmarker8]{myapp.cpp}
 
 will create the directory \lstinline!~/life/myapp! and will store the
 logfile and any files created after calling
@@ -662,19 +667,19 @@ template arguments:
 \end{itemize}
 
 
-\lstinputlisting[firstline=76,lastline=77]{mymesh.cpp}
+\lstinputlisting[linerange=marker1-endmarker1]{mymesh.cpp}
 
 Then we define the mesh type, \lstinline!Mesh<Entity>! by passing as
 argument the type of entity it is formed with. At the moment hybrid
 meshes are not supported.
 
-\lstinputlisting[firstline=79,lastline=80]{mymesh.cpp}
+\lstinputlisting[linerange=marker2-endmarker2]{mymesh.cpp}
 
 It is customary, and usually a very good practice, to define the
 \lstinline!boost::shared_ptr<>!  counterpart which is used actually in
 practice. We can now instantiate a new mesh data structure.
 
-\lstinputlisting[firstline=147,lastline=147]{mymesh.cpp}
+\lstinputlisting[linerange=marker3-endmarker3]{mymesh.cpp}
 
 The next step is to read some mesh files. \life supports essentially
 the Gmsh mesh file format. It provides also some classes to manipulate
