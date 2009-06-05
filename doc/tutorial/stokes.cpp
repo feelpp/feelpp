@@ -130,27 +130,31 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
+    //# marker1 #
     typedef Lagrange<Order, Vectorial> basis_u_type;
     typedef Lagrange<Order-1, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
-#if 0
-    typedef Product<Expansion<Continuous,basis_u_type>,
-                    Expansion<Continuous,basis_p_type>,
-                    Expansion<Continuous,basis_l_type> > basis_type;
-#endif
+    //# endmarker1 #
+
     /*space*/
+    //# marker2 #
     typedef FunctionSpace<mesh_type, basis_type> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    //# endmarker2 #
+
     BOOST_MPL_ASSERT( ( boost::is_same<typename space_type::bases_list, basis_type> ) );
     BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<0> >::type, basis_u_type> ) );
     BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<1> >::type, basis_p_type> ) );
     BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<2> >::type, basis_l_type> ) );
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+
     /* functions */
+    //# marker3 #
     typedef typename space_type::element_type element_type;
     typedef typename element_type::template sub_element<0>::type element_0_type;
     typedef typename element_type::template sub_element<1>::type element_1_type;
     typedef typename element_type::template sub_element<2>::type element_2_type;
+    //# endmarker3 #
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -245,6 +249,7 @@ Stokes<Dim, Order, Entity>::run()
     /*
      * The function space and some associate elements are then defined
      */
+    //# marker4 #
     space_ptrtype Xh = space_type::New( mesh );
 
     element_type U( Xh, "u" );
@@ -255,6 +260,7 @@ Stokes<Dim, Order, Entity>::run()
     element_1_type q = V.template element<1>();
     element_2_type lambda = U.template element<2>();
     element_2_type nu = V.template element<2>();
+    //# endmarker4 #
 
     Log() << "Data Summary:\n";
     Log() << "   hsize = " << meshSize << "\n";
@@ -265,20 +271,18 @@ Stokes<Dim, Order, Entity>::run()
 
     vector_ptrtype F( M_backend->newVector( Xh ) );
 
-#if 0
-    // viscous stress tensor (trial) : 0.5 ( \nabla u + \nabla u ^T )
-    AUTO( deft, 0.5*(gradt(u)+trans(gradt(u)) ));
-    // viscous stress tensor (test) : 0.5 ( \nabla u + \nabla u ^T )
-    AUTO( def, 0.5*(grad(v)+trans(grad(v))) );
-#else
+    //# marker5 #
     AUTO( deft, gradt(u) );
     AUTO( def, grad(v) );
-#endif
+    //# endmarker5 #
+
+    //# marker6 #
     // total stress tensor (trial)
     AUTO( SigmaNt, (-idt(p)*N()+mu*deft*N()) );
 
     // total stress tensor (test)
     AUTO( SigmaN, (-id(p)*N()+mu*def*N()) );
+    //# endmarker6 #
 
     // u exact solution
     AUTO( u_exact, vec(cos(Px())*cos(Py()),sin(Px())*sin(Py()) ) );
@@ -304,6 +308,7 @@ Stokes<Dim, Order, Entity>::run()
     /*
      * Construction of the left hand side
      */
+    //# marker7 #
     sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
 
     form2( Xh, Xh, D, _init=true )=integrate( elements(mesh), _Q<2*(Order-1)>(),
@@ -316,7 +321,7 @@ Stokes<Dim, Order, Entity>::run()
                                    -trans(SigmaNt)*id(v)
                                    -trans(SigmaN)*idt(u)
                                    +penalbc*trans(idt(u))*id(v)/hFace() );
-
+    //# endmarker7 #
     Log() << "[stokes] matrix local assembly done\n";
     D->close();
     F->close();

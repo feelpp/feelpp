@@ -305,9 +305,11 @@ Laplacian<Dim>::run()
      * is the exact solution
      */
     /** \code */
+    //# marker1 #
     value_type pi = M_PI;
     AUTO( g, sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) );
     AUTO( f, pi*pi*Dim*g );
+    //# endmarker1 #
     /** \endcode */
 
     bool weakdir = this->vm()["weakdir"].template as<int>();
@@ -320,26 +322,32 @@ Laplacian<Dim>::run()
      * problem
      */
     /** \code */
+    //# marker2 #
     vector_ptrtype F( M_backend->newVector( Xh ) );
 
     form1( _test=Xh, _vector=F, _init=true ) =
         integrate( elements(mesh), _Q<Order+5>(),
                    f*id(v) );
+    //# endmarker2 #
     if ( Application::nProcess () != 1 || weakdir )
         {
+            //# marker41 #
             form1( _test=Xh, _vector=F ) +=
                 integrate( markedfaces(mesh,1), _Q<2*Order>(),
                            g*(-grad(v)*N()+penaldir*id(v)/hFace()) ) +
                 integrate( markedfaces(mesh,3), _Q<2*Order>(),
                            g*(-grad(v)*N()+penaldir*id(v)/hFace()) );
+            //# endmarker41 #
         }
     F->close();
+
     /** \endcode */
 
     /**
      * create the matrix that will hold the algebraic representation
      * of the left hand side
      */
+    //# marker3 #
     /** \code */
     sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
     /** \endcode */
@@ -352,6 +360,7 @@ Laplacian<Dim>::run()
         integrate( elements(mesh), _Q<2*Order>(),
                    nu*gradt(u)*trans(grad(v)) );
     /** \endcode */
+    //# endmarker3 #
 
     if ( Application::nProcess () != 1 || weakdir )
         {
@@ -361,6 +370,7 @@ Laplacian<Dim>::run()
              * -# assemble \f$\int_{\partial \Omega} \frac{\gamma}{h} u v\f$
              */
             /** \code */
+            //# marker4 #
             form2( Xh, Xh, D ) +=
                 integrate( markedfaces(mesh,1), _Q<2*Order>(),
 
@@ -373,6 +383,7 @@ Laplacian<Dim>::run()
                            -(grad(v)*N())*idt(u)
                            +penaldir*id(v)*idt(u)/hFace());
             D->close();
+            //# endmarker4 #
             /** \endcode */
         }
     else
@@ -382,14 +393,17 @@ Laplacian<Dim>::run()
              * -# modify the matrix by cancelling out the rows and columns of D that are associated with the Dirichlet dof
              */
             /** \code */
+            //# marker5 #
             D->close();
             form2( Xh, Xh, D ) +=
                 on( markedfaces(mesh, 1), u, F, g )+
                 on( markedfaces(mesh, 3), u, F, g );
+            //# endmarker5 #
             /** \endcode */
 
         }
     /** \endcode */
+
 
     //! solve the system
     /** \code */
@@ -398,12 +412,14 @@ Laplacian<Dim>::run()
 
     //! compute the \f$L_2$ norm of the error
     /** \code */
+    //# marker7 #
     double L2error2 =integrate(elements(mesh), _Q<2*Order>(),
                                (idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
     double L2error =   math::sqrt( L2error2 );
 
 
     Log() << "||error||_L2=" << L2error << "\n";
+    //# endmarker7 #
     /** \endcode */
 
     //! save the results
@@ -412,20 +428,23 @@ Laplacian<Dim>::run()
     /** \endcode */
 } // Laplacian::run
 
+//# marker6 #
 template<int Dim>
 void
 Laplacian<Dim>::solve( sparse_matrix_ptrtype& D,
                        element_type& u,
                        vector_ptrtype& F )
 {
-    //! solve the system, first create a vector U of the same size as u, then call solve,
+    //! solve the system, first create a vector U of the same size as
+    //! u, then call solve,
     vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    //! call solve, the second D is the matrix which will be used to create the preconditionner
+    //! call solve, the second D is the matrix which will be used to
+    //! create the preconditionner
     M_backend->solve( D, D, U, F );
     //! copy U in u
     u = *U;
 } // Laplacian::solve
-
+//# endmarker6 #
 
 template<int Dim>
 void
