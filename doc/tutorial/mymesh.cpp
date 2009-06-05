@@ -142,17 +142,22 @@ MyMesh<Dim>::createMesh()
     mesh_ptrtype mesh( new mesh_type );
     //# endmarker3 #
 
+    //# marker4 #
     GmshTensorizedDomain<convex_type::nDim,
                          convex_type::nOrder,
                          convex_type::nDim,
                          Simplex> geo;
     geo.setCharacteristicLength( M_meshSize );
     std::string fname = geo.generate( "mymesh" );
+    //# endmarker4 #
 
+    //# marker5 #
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
     mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
     mesh->updateForUse();
+    //# endmarker5 #
+
     return mesh;
 }
 template<int Dim>
@@ -170,6 +175,7 @@ void MyMesh<Dim>::run()
 
     mesh_ptrtype mesh = this->createMesh();
 
+    //# marker6 #
     typedef bases<Lagrange<0,Scalar> > p0_basis_type;
     typedef FunctionSpace<mesh_type, p0_basis_type, Discontinuous> p0_space_type;
     boost::shared_ptr<p0_space_type> P0h( new p0_space_type( mesh ) );
@@ -178,6 +184,7 @@ void MyMesh<Dim>::run()
     exporter->step(0)->add( "pid", regionProcess( P0h ) );
 
     exporter->save();
+    //# endmarker6 #
 }
 
 //

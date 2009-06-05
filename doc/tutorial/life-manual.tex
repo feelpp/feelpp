@@ -138,7 +138,8 @@
 \lstset{frame=single,framerule=0.5pt}
 \lstset{belowskip=\smallskipamount}
 \lstset{aboveskip=\smallskipamount}
-
+\lstset{emph={constant,cst,cst_ref,constant_ref,val,integrate,on,grad,gradt,gradv,dot,id,dx,dy,dz,idt,dxt,dyt,dzt,div,divt,idv,dxv,dyv,dzv,dn,dnt,mass,stiffness,trans,trace,jump,jumpt,average,averaget,maxface,project,P,Px,Py,Pz,h,H,Hface,hFace,N,Nx,Ny,Nz,sqrt,sin,cos,min,max,abs,sign,pow,chi,exp,log,form1,form2, FunctionSpace, bases,
+prod,element_prod, range, subrange, inner_prod,unite,elements,markedelements,markedfaces,boundaryfaces,_Q},emphstyle=\color{blue}}
 \lstset{includerangemarker=false,rangeprefix=\/\/\#\ ,% curly left brace plus space
   rangesuffix=\ \#}% space plus curly right brace
 
@@ -703,7 +704,7 @@ begin, we use some helper classes to generate a \lstinline!.geo! file.
 
 Here is an example
 
-\lstinputlisting[firstline=150,lastline=152]{mymesh.cpp}
+\lstinputlisting[linerange=marker4-endmarker4]{mymesh.cpp}
 
 The call to \lstinline!setCharacteristicLength! allows to change the
 mesh size to \lstinline!M_meshSize! which was given for example on the
@@ -722,7 +723,7 @@ geometric entities used to generate the mesh. Here we use
 Next we import the mesh using the
 \lstinline!ImporterGmsh!\index{mesh!import}\index{Class!ImporterGmsh} class as follows:
 
-\lstinputlisting[firstline=154,lastline=155]{mymesh.cpp}
+\lstinputlisting[linerange=marker5-endmarker5]{mymesh.cpp}
 
 
 At this stage we are ready to use the mesh instance: we can for
@@ -737,7 +738,7 @@ supported at the moment
 
 The export stage reads as follows:
 
-\lstinputlisting[firstline=175,lastline=183]{mymesh.cpp}
+\lstinputlisting[linerange=marker6-endmarker6]{mymesh.cpp}
 
 In this example, we create a $\polyP{0}$ function space and save the
 piecewise constant function that associates to each element the
@@ -869,7 +870,7 @@ Once we have defined the computational mesh, we would like to compute
 the area of the domain. We form the integral $\int_\Omega 1$, the code
 reads as follows
 
-\lstinputlisting[firstline=170,lastline=171]{myintegrals.cpp}
+\lstinputlisting[linerange=marker1-endmarker1]{myintegrals.cpp}
 
 \lstinline!elements(mesh)! returns a pair of iterators over the
 elements owned by the current processor, \lstinline!im! is an instance
@@ -884,14 +885,14 @@ do that we collect the integrals on all processors using a
 used here the Boost.MPI library that provides an extremely powerful
 \cpp wrapper around the MPI library. The code reads
 
-\lstinputlisting[firstline=172,lastline=179]{myintegrals.cpp}
+\lstinputlisting[linerange=marker2-endmarker2]{myintegrals.cpp}
 
 \noindent
 Finally, we print to the log file the result of the local and global
 integral calculation. Another calculation is for example to compute
 the perimeter of the domain
 
-\lstinputlisting[firstline=184,lastline=185]{myintegrals.cpp}
+\lstinputlisting[linerange=marker3-endmarker3]{myintegrals.cpp}
 
 \noindent
 the main difference with the domain area computation resides in the
@@ -910,7 +911,7 @@ keyword \lstinline!Px()! and \lstinline!Py()! to denote the $x$ and
 $y$ coordinates like in equation~(\ref{eq:5}).  The code reads then
 
 
-\lstinputlisting[firstline=198,lastline=200]{myintegrals.cpp}
+\lstinputlisting[linerange=marker4-endmarker4]{myintegrals.cpp}
 
 Note that in this case, we really require the use of a quadrature that
 integrates exactly order 2 polynomials.
