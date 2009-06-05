@@ -82,20 +82,16 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     typedef typename SpaceType::basis_type basis_type;
 
 
-#if 0
     const bool same_basis = boost::is_same<basis_type, typename FunctionType::functionspace_type::basis_type>::value;
-    const bool same_mesh = f.functionSpace()->mesh() == space->mesh();
     Debug( 5010 ) << "[interpolate] are the basis the same " << same_basis << "\n";
     Debug( 5010 ) << "[interpolate] are the meshes the same " << same_mesh << "\n";
     // if same space type and mesh  then return the function itself
-    //if ( same_basis && same_mesh )
-    if ( 0 )
+    if ( same_basis && same_mesh == INTERPOLATE_SAME_MESH )
         {
             Debug( 5010 ) << "[interpolate] Same mesh and same space\n";
             interp = f;
             return;
         }
-#endif
     dof_type const* __dof = space->dof().get();
     basis_type const* __basis = space->basis().get();
     gm_ptrtype __gm = space->gm();
