@@ -40,7 +40,7 @@ test_umfpack_SOURCES	= test_umfpack.cpp
 test_umfpack_LDADD    = $(LDADD) $(boost_libs) $(boost_unit_test_framework_lib)
 
 test_ublas_SOURCES          = test_ublas.cpp
-test_ublas_LDADD    = $(LDADD) $(top_builddir)/boost/libs/log/src/libboost_log.la -lpthread -llapack -lblas $(boost_filesystem_libs)
+test_ublas_LDADD    = $(LDADD) -lpthread -llapack -lblas $(boost_filesystem_libs)
 
 test_matrix_SOURCES=test_matrix.cpp
 test_matrix_LDADD=$(LDADD) $(boost_filesystem_lib) $(petsc_libs)
