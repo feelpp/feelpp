@@ -236,7 +236,7 @@ protected:
     file_type M_ft;
     std::string M_path;
 
-    timeset_set_type M_ts_set;
+    mutable timeset_set_type M_ts_set;
 };
 
 
