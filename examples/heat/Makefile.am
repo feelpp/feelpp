@@ -22,13 +22,14 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 include $(top_srcdir)/admin/common.am
-check_PROGRAMS=thermalfin resistance
 
-thermalfin_SOURCES=fin.cpp thermalfin.cpp
-thermalfin_LDADD = $(LIFE_LIBS)
+bin_PROGRAMS=life_thermalfin life_resistance
 
-resistance_SOURCES=resistance.cpp
-resistance_LDADD = $(LIFE_LIBS)
+life_thermalfin_SOURCES=fin.cpp thermalfin.cpp
+life_thermalfin_LDADD = $(LIFE_LIBS)
+
+life_resistance_SOURCES=resistance.cpp
+life_resistance_LDADD = $(LIFE_LIBS)
 
 
 EXTRA_DIST=heat.at
