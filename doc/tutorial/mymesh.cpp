@@ -73,12 +73,15 @@ class MyMesh: public Life::Application
 {
 public:
 
+    //# marker1 #
     typedef Simplex<Dim> convex_type;
     //typedef SimplexProduct<Dim, 1,Dim> convex_type;
+    //# endmarker1 #
 
+    //# marker2 #
     typedef Mesh<convex_type > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
+    //# endmarker2 #
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -135,8 +138,9 @@ template<int Dim>
 typename MyMesh<Dim>::mesh_ptrtype
 MyMesh<Dim>::createMesh()
 {
+    //# marker3 #
     mesh_ptrtype mesh( new mesh_type );
-
+    //# endmarker3 #
 
     GmshTensorizedDomain<convex_type::nDim,
                          convex_type::nOrder,

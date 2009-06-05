@@ -25,9 +25,11 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-02-04
  */
+//# marker1 #
 #include <life/options.hpp>
 #include <life/lifecore/life.hpp>
 #include <life/lifecore/application.hpp>
+//# endmarker1 #
 
 using namespace Life;
 
@@ -38,6 +40,7 @@ using namespace Life;
  *
  * \return the list of options
  */
+//# marker2 #
 inline
 po::options_description
 makeOptions()
@@ -51,6 +54,9 @@ makeOptions()
     // internally by Life
     return myappoptions.add( life_options() );
 }
+//# endmarker2 #
+
+
 /**
  * This routine defines some information about the application like
  * authors, version, or name of the application. The data returned is
@@ -58,6 +64,7 @@ makeOptions()
  *
  * \return some data about the application.
  */
+//# marker3 #
 inline
 AboutData
 makeAbout()
@@ -74,13 +81,16 @@ makeAbout()
                     "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
 }
+//# endmarker3 #
 
 /**
  * \class MyApp
  *
- * This is a demo class to illustrate what is done (at the very least) in subclasses of Life::Application
+ * This is a demo class to illustrate what is done (at the very least)
+ * in subclasses of Life::Application
  *
  */
+//# marker4 #
 class MyApp: public Application
 {
 public:
@@ -102,7 +112,9 @@ public:
      */
     void run();
 };
+//# endmarker4 #
 
+//# marker5 #
 MyApp::MyApp(int argc, char** argv,
              AboutData const& ad )
     :
@@ -114,6 +126,9 @@ MyApp::MyApp(int argc, char** argv,
     :
     Application( argc, argv, ad, od )
 {}
+//# endmarker5 #
+
+//# marker6 #
 void MyApp::run()
 {
     /**
@@ -131,8 +146,10 @@ void MyApp::run()
      * store all subsequent data files in a $HOME/life/doc/tutorial/myapp/
      */
     /** \code */
+    //# marker8 #
     this->changeRepository( boost::format( "doc/tutorial/%1%/" )
                             % this->about().appName() );
+    //# endmarker8 #
     /** \endcode */
 
     /**
@@ -143,10 +160,12 @@ void MyApp::run()
     Log() << "the value of dt is " << this->vm()["dt"].as<double>() << "\n";
     /** \endcode */
 }
+//# endmarker6 #
 
 /**
  * main function: entry point of the program
  */
+//# marker7 #
 int main( int argc, char** argv )
 {
     /**
@@ -163,4 +182,4 @@ int main( int argc, char** argv )
     app.run();
     /** \endcode */
 }
-
+//# endmarker7 #
