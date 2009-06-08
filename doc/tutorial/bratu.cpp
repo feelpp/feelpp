@@ -257,7 +257,7 @@ Bratu<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vector_ptrty
                    );
 
     M_residual->close();
-    *R = M_residual->container();
+    R = M_residual->containerPtr();
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
