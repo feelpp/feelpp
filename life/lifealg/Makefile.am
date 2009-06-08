@@ -28,7 +28,7 @@ if HAVE_SLEPC
 SLEPC_SRCS=solvereigenslepc.cpp
 endif
 if HAVE_TRILINOS
-TRILINOS_SRCS=vectorepetra.cpp matrixepetra.cpp preconditionerml.cpp preconditionerifpack.cpp backendtrilinos.cpp
+TRILINOS_SRCS=vectorepetra.cpp matrixepetra.cpp preconditionerml.cpp preconditionerifpack.cpp backendtrilinos.cpp solvernonlineartrilinos.cpp
 endif
 if HAVE_UMFPACK
 UMFPACK_SRCS=solverumfpack.cpp

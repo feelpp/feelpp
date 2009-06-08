@@ -33,6 +33,7 @@
 
 #include <life/lifealg/matrixepetra.hpp>
 #include <life/lifealg/vectorepetra.hpp>
+// #include <life/lifealg/operatortrilinos.hpp>
 
 #include <life/lifealg/solverlineartrilinos.hpp>
 

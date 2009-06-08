@@ -273,6 +273,11 @@ public:
         return M_bc_index;
     }
 
+    boost::shared_ptr<Epetra_FECrsMatrix> matrix()
+    {
+        return _M_mat;
+    }
+
     /** @name  Mutators
      */
     //@{
@@ -961,7 +966,8 @@ MatrixEpetra::operator () (const size_type i,
     int* Indices;
 
 
-    int ierr = _M_mat->ExtractMyRowView( i_val, NumEntries, Values, Indices);
+    // int ierr = _M_mat->ExtractMyRowView( i_val, NumEntries, Values, Indices);
+    _M_mat->ExtractMyRowView( i_val, NumEntries, Values, Indices);
 
     for( int k = 0; k < NumEntries; ++k )
         {

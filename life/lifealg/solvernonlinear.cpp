@@ -29,7 +29,7 @@
 #include <life/lifecore/life.hpp>
 #include <life/lifealg/solvernonlinear.hpp>
 #include <life/lifealg/solvernonlinearpetsc.hpp>
-// #include <life/lifealg/solvernonlineartrilinos.hpp>
+#include <life/lifealg/solvernonlineartrilinos.hpp>
 
 namespace Life
 {
@@ -73,15 +73,15 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
     if ( vm["nlsolver"].template as<std::string>() == "petsc" )
         {
 #if defined( HAVE_PETSC )
-        solver_package = SOLVERS_PETSC;
+            solver_package = SOLVERS_PETSC;
 #endif
         }
-    //    else if ( vm["nlsolver"].template as<std::string>() == "trilinos" )
-    //        {
-    //#if defined( HAVE_TRILINOS_NOX )
-    //        solver_package = SOLVERS_TRILINOS;
-    //#endif
-    //        }
+    else if ( vm["nlsolver"].template as<std::string>() == "trilinos" )
+        {
+#if defined( HAVE_TRILINOS )
+            solver_package = SOLVERS_TRILINOS;
+#endif
+        }
     else
         {
             Log() << "[SolverNonLinear] solver " << vm["nlsolver"].template as<std::string>() << " not available\n";
@@ -104,14 +104,14 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
             break;
 #endif
 
-            //#if defined( HAVE_TRILINOS_NOX )
-            //        case SOLVERS_TRILINOS:
-            //            {
-            //                solvernonlinear_ptrtype ap(new SolverNonLinearTrilinos<T>);
-            //                return ap;
-            //            }
-            //            break;
-            //#endif
+#if defined( HAVE_TRILINOS )
+        case SOLVERS_TRILINOS:
+            {
+                solvernonlinear_ptrtype ap(new SolverNonLinearTrilinos<T>);
+                return ap;
+            }
+            break;
+#endif
 
         default:
             std::cerr << "ERROR:  Unrecognized NonLinear solver package: "
@@ -151,17 +151,17 @@ SolverNonLinear<T>::build( SolverPackage solver_package )
             }
             break;
 
-            //        case SOLVERS_TRILINOS:
-            //            {
-            //#if defined( HAVE_TRILINOS_NOX )
-            //                solvernonlinear_ptrtype ap(new SolverNonLinearTrilinos<T>);
-            //                return ap;
-            //#else
-            //                std::cerr << "Trilinos NOX is not available/installed" << std::endl;
-            //                throw std::invalid_argument( "invalid solver NOX package" );
-            //#endif
-            //            }
-            //            break;
+        case SOLVERS_TRILINOS:
+            {
+#if defined( HAVE_TRILINOS )
+                solvernonlinear_ptrtype ap(new SolverNonLinearTrilinos<T>);
+                return ap;
+#else
+                std::cerr << "Trilinos NOX is not available/installed" << std::endl;
+                throw std::invalid_argument( "invalid solver NOX package" );
+#endif
+            }
+            break;
 
         default:
             std::cerr << "ERROR:  Unrecognized NonLinear solver package: "
@@ -188,7 +188,7 @@ po::options_description nlsolver_options()
     _options.add_options()
         // solver options
         ("nlsolver", Life::po::value<std::string>()->default_value( "petsc" ), "nonlinear solver type: petsc")
-        //        ("nlsolver", Life::po::value<std::string>()->default_value( "trilinos" ), "nonlinear solver type: trilinos NOX")
+        ("nlsolver", Life::po::value<std::string>()->default_value( "trilinos" ), "nonlinear solver type: trilinos NOX")
         ;
     return _options;
 }

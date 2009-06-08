@@ -184,6 +184,9 @@ enum SolverPackage
 #ifdef HAVE_PETSC
         SOLVERS_PETSC,
 #endif
+#ifdef HAVE_TRILINOS
+        SOLVERS_TRILINOS,
+#endif
 
         SOLVERS_SLEPC,
 
