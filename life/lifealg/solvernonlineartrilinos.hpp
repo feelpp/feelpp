@@ -33,8 +33,9 @@
 #include <life/lifecore/life.hpp>
 #include <life/lifealg/solvernonlinear.hpp>
 #include <life/lifealg/matrixepetra.hpp>
-#include <life/lifealg/vectorepetra.hpp>
 #include <life/lifealg/operatortrilinos.hpp>
+#include <life/lifealg/vectorepetra.hpp>
+// #include <life/lifealg/operatortrilinos.hpp>
 
 #include "NOX.H"
 #include "NOX_Epetra_Interface_Required.H"
@@ -150,18 +151,18 @@ public:
 
     //@}
 
-private:
-
     bool computeF( const Epetra_Vector & x, Epetra_Vector & f, NOX::Epetra::Interface::Required::FillType F );
-    bool computeJecobian( const Epetra_Vector & x, Epetra_Operator & Jac );
+    bool computeJacobian( const Epetra_Vector & x, Epetra_Operator & Jac );
     bool computePrecMatrix( const Epetra_Vector & x, Epetra_RowMatrix & M );
     bool computePreconditioner( const Epetra_Vector & x, Epetra_Operator & O );
+
+private:
 
 };
 
 template <typename T>
 inline
-SolverNonLinearPetsc<T>::SolverNonLinearTrilinos ()
+SolverNonLinearTrilinos<T>::SolverNonLinearTrilinos ()
 {
 }
 
@@ -169,11 +170,11 @@ SolverNonLinearPetsc<T>::SolverNonLinearTrilinos ()
 
 template <typename T>
 inline
-SolverNonLinearPetsc<T>::~SolverNonLinearTrilinos ()
+SolverNonLinearTrilinos<T>::~SolverNonLinearTrilinos ()
 {
   this->clear ();
 }
 
 } // Life
 
-#endif /* __SolverNonLinearPetsc_H */
+#endif /* __SolverNonLinearTrilinos_H */

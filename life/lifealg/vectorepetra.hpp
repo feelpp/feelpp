@@ -48,6 +48,7 @@
 
 #include <EpetraExt_MultiVectorOut.h>
 #include <Epetra_FEVector.h>
+#include <Epetra_Vector.h>
 
 
 
@@ -111,6 +112,31 @@ public:
         //_M_destroy_vec_on_exit( true )
     {
         this->init( _M_emap, true);
+    }
+
+    /**
+     * Constructor.  Creates a VectorEpetra assuming you already have a
+     * valid Epetra_Vector object.
+     */
+
+    VectorEpetra ( Epetra_FEVector const * v )
+        :
+        super(),
+        _M_emap( dynamic_cast<Epetra_Map const&> (v->Map()) ),
+        _M_vec( *v )
+    {
+        this->init( _M_emap, true );
+    }
+
+    VectorEpetra ( Epetra_Vector const * v )
+        :
+        super(),
+        _M_emap( dynamic_cast<Epetra_Map const&> (v->Map()) ),
+        _M_vec ( _M_emap )
+    {
+        double** V;
+        v->ExtractView(&V);
+        _M_vec[0]=V[0];
     }
 
 
@@ -332,6 +358,14 @@ public:
     {
         //LIFE_ASSERT (_M_vec != 0).error( "invalid epetra vector" );
         return _M_vec;
+    }
+
+    boost::shared_ptr<Epetra_Vector> epetraVector ()
+    {
+        double** V;
+        _M_vec.ExtractView(&V);
+        boost::shared_ptr<Epetra_Vector> EV(new Epetra_Vector(View,_M_emap,V[0] ));
+        return EV;
     }
 
     //@}

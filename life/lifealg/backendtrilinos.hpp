@@ -62,6 +62,7 @@ namespace po = boost::program_options;
 
 // forward declararion
 template<class T> class Backend;
+class OperatorMatrix;
 
 /**
  * \class BackendTrilinos
