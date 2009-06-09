@@ -257,7 +257,7 @@ Bratu<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vector_ptrty
                    );
 
     M_residual->close();
-    R = M_residual->containerPtr();
+    *R = M_residual->container();
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -273,13 +273,13 @@ Bratu<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matri
     u = *X;
     if ( is_init == false )
         {
-            *M_jac = integrate( elements( mesh ), _Q<2*Order>(), M_lambda*(exp(idv(u)))*idt(u)*id(v) );
+            *M_jac = integrate( elements( mesh ), _Q<3*Order>(), M_lambda*(exp(idv(u)))*idt(u)*id(v) );
             is_init = true;
         }
     else
         {
             M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ), _Q<2*Order>(), M_lambda*(exp(idv(u)))*idt(u)*id(v) );
+            *M_jac += integrate( elements( mesh ), _Q<3*Order>(), M_lambda*(exp(idv(u)))*idt(u)*id(v) );
         }
     M_jac->close();
     M_jac->matPtr()->addMatrix( 1.0, M_oplin->mat() );

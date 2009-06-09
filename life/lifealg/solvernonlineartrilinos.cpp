@@ -37,39 +37,40 @@ bool SolverNonLinearTrilinos<T>::computeF( const Epetra_Vector & x,
                                            Epetra_Vector & f,
                                            NOX::Epetra::Interface::Required::FillType ft )
 {
-    printf("Entering computeF...\n");
+    //printf("Entering computeF...\n");
     boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>(&x));
-    boost::shared_ptr<VectorEpetra<double> > F;
-
-    if (this->residual != NULL) this->residual (X, (boost::shared_ptr<Vector<double> >&) F );
-    f=*(F->epetraVector().get());
-    printf("End computeF...\n");
+    boost::shared_ptr<Vector<double> > F( new VectorEpetra<double>(&x));
+    if (this->residual != NULL) this->residual (X, F );
+    f=*(dynamic_cast<VectorEpetra<double>*>(F.get())->epetraVector());
+    printf("|F|_L2=%f\n",F->l2Norm());
     return true;
 }
 template <typename T>
 bool SolverNonLinearTrilinos<T>::computeJacobian( const Epetra_Vector & x,
                                                   Epetra_Operator & Jac )
 {
-    printf("Entering computeJacobian...\n");
+    //printf("Entering computeJacobian...\n");
     boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>(&x));
-    boost::shared_ptr<MatrixEpetra> M_Jac;
-    //boost::shared_ptr<MatrixSparse<double> > M_Jac;
-    if (this->jacobian != NULL) this->jacobian (X, (boost::shared_ptr<MatrixSparse<double> >&) M_Jac );
+    //boost::shared_ptr<MatrixEpetra> M_Jac;
+    boost::shared_ptr<MatrixSparse<double> > M_Jac;
+    if (this->jacobian != NULL) this->jacobian (X, M_Jac );
 
-    Jac = M_Jac->mat();
-    printf("End computeJacobian...\n");
+    Jac = dynamic_cast<MatrixEpetra*>(M_Jac.get())->mat();
+    //printf("End computeJacobian...\n");
     return true;
 }
 template <typename T>
 bool SolverNonLinearTrilinos<T>::computePrecMatrix( const Epetra_Vector & x,
                                                     Epetra_RowMatrix & M )
 {
+    printf("End computePrecMatrix...\n");
     return true;
 }
 template <typename T>
 bool SolverNonLinearTrilinos<T>::computePreconditioner( const Epetra_Vector & x,
                                                         Epetra_Operator & O )
 {
+    printf("End computePreconditioner...\n");
     return true;
 }
 
@@ -102,15 +103,15 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
                                     const double,              // Stopping tolerance
                                     const unsigned int)
 {
-    printf("Entering solve...\n");
+    //printf("Entering solve...\n");
     MatrixEpetra* jac = dynamic_cast<MatrixEpetra *>( jac_in.get() );
     VectorEpetra<double>* x  = dynamic_cast<VectorEpetra<double>*>( x_in.get() );
 
     // We cast to pointers so we can be sure that they succeeded
     // by comparing the result against NULL.
-//    assert(jac != NULL); assert(jac->mat() != NULL);
-//    assert(x   != NULL); assert(x->vec()   != NULL);
-//    assert(r   != NULL); assert(r->vec()   != NULL);
+    //    assert(jac != NULL); assert(jac->mat() != NULL);
+    //    assert(x   != NULL); assert(x->vec()   != NULL);
+    //    assert(r   != NULL); assert(r->vec()   != NULL);
 
     // Create the top level parameter list
     Teuchos::RCP<Teuchos::ParameterList> nlParamsPtr =
@@ -122,7 +123,7 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
 
     // Set the printing parameters in the "Printing" sublist
     Teuchos::ParameterList& printParams = nlParams.sublist("Printing");
-    printParams.set("Output Precision", 5);
+    printParams.set("Output Precision", 10);
     printParams.set("Output Processor", 0);
     printParams.set("Output Information",
                     NOX::Utils::OuterIteration +
@@ -154,7 +155,7 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
 
     // -> A : Jacobian for the first iteration
     // -> InitialGuess : first value x0
-    printf("convert vectors...\n");
+    //printf("convert vectors...\n");
     boost::shared_ptr<Epetra_Vector> InitialGuess = x->epetraVector();
     Teuchos::RCP<Epetra_CrsMatrix> A = Teuchos::rcp(((boost::shared_ptr<Epetra_CrsMatrix>)(jac->matrix())).get());
 
