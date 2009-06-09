@@ -92,10 +92,10 @@ public:
         :
         super(),
 #ifdef HAVE_MPI
-        _M_emap( Epetra_Map( -1, 0, 0, Epetra_MpiComm(Application::COMM_WORLD)) ),
+        _M_emap( Epetra_BlockMap( -1, 0, 0, Epetra_MpiComm(Application::COMM_WORLD)) ),
         _M_vec( _M_emap ) // false (zerout)?
 #else
-        _M_emap( Epetra_Map( -1, 0, 0, Epetra_SerialComm) ),
+        _M_emap( Epetra_BlockMap( -1, 0, 0, Epetra_SerialComm) ),
         _M_vec( _M_emap )
 #endif
     {
@@ -104,7 +104,7 @@ public:
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
      */
-    VectorEpetra ( Epetra_Map const& emap )
+    VectorEpetra ( Epetra_BlockMap const& emap )
         :
         super(),
         _M_emap( emap ),
@@ -122,7 +122,7 @@ public:
     VectorEpetra ( Epetra_FEVector const * v )
         :
         super(),
-        _M_emap( dynamic_cast<Epetra_Map const&> (v->Map()) ),
+        _M_emap( v->Map() ),
         _M_vec( *v )
     {
         this->init( _M_emap, true );
@@ -137,11 +137,12 @@ public:
     VectorEpetra ( Epetra_Vector const * v )
         :
         super(),
-        _M_emap( dynamic_cast<Epetra_Map const&> (v->Map()) ),
+        _M_emap( v->Map() ),
         _M_vec ( _M_emap )
     {
         double** V;
         v->ExtractView(&V);
+        //_M_vec = Epetra_MultiVector(View,_M_emap,V,1);
         _M_vec[0]=V[0];
     }
 
@@ -189,7 +190,7 @@ public:
     /**
      * Returns the Epetra map
      */
-    Epetra_Map Map() const
+    Epetra_BlockMap Map() const
     {
         return _M_emap;
     }
@@ -221,7 +222,7 @@ public:
      * On \p fast = false the vector is filled by zeros.
      */
 
-    void init ( Epetra_Map const& emap, const bool fast = false  );
+    void init ( Epetra_BlockMap const& emap, const bool fast = false  );
 
     void init ( const size_type N, const size_type n_local, const bool fast = false );
 
@@ -435,7 +436,7 @@ public:
     {
         if (this->isInitialized()) //&& (this->_M_destroy_vec_on_exit))
             {
-                _M_emap = Epetra_Map( -1, 0, 0, _M_vec.Comm() );
+                _M_emap = Epetra_BlockMap( -1, 0, 0, _M_vec.Comm() );
                 _M_vec.ReplaceMap( _M_emap );
                 _M_vec.PutScalar(0.0);
             }
@@ -826,7 +827,7 @@ protected:
 private:
 
 private:
-    Epetra_Map _M_emap;
+    Epetra_BlockMap _M_emap;
     Epetra_FEVector _M_vec;
 
     /**
@@ -846,11 +847,11 @@ NdebugStream&
 operator<<( NdebugStream& __os, VectorEpetra<T> const& __n );
 
 DebugStream&
-operator<<( DebugStream& __os, Epetra_Map const& __n );
+operator<<( DebugStream& __os, Epetra_BlockMap const& __n );
 
 
 NdebugStream&
-operator<<( NdebugStream& __os, Epetra_Map const& __n );
+operator<<( NdebugStream& __os, Epetra_BlockMap const& __n );
 
 
 } // Life
