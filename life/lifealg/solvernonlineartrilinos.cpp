@@ -37,23 +37,27 @@ bool SolverNonLinearTrilinos<T>::computeF( const Epetra_Vector & x,
                                            Epetra_Vector & f,
                                            NOX::Epetra::Interface::Required::FillType ft )
 {
+    printf("Entering computeF...");
     boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>(&x));
     boost::shared_ptr<VectorEpetra<double> > F;
 
     if (this->residual != NULL) this->residual (X, (boost::shared_ptr<Vector<double> >&) F );
     f=*(F->epetraVector().get());
+    printf("End computeF...");
     return true;
 }
 template <typename T>
 bool SolverNonLinearTrilinos<T>::computeJacobian( const Epetra_Vector & x,
                                                   Epetra_Operator & Jac )
 {
+    printf("Entering computeJacobian...");
     boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>(&x));
     boost::shared_ptr<MatrixEpetra> M_Jac;
     //boost::shared_ptr<MatrixSparse<double> > M_Jac;
     if (this->jacobian != NULL) this->jacobian (X, (boost::shared_ptr<MatrixSparse<double> >&) M_Jac );
 
     Jac = M_Jac->mat();
+    printf("End computeJacobian...");
     return true;
 }
 template <typename T>
@@ -98,6 +102,7 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
                                     const double,              // Stopping tolerance
                                     const unsigned int)
 {
+    printf("Entering solve...");
     MatrixEpetra* jac = dynamic_cast<MatrixEpetra *>( jac_in.get() );
     VectorEpetra<double>* x  = dynamic_cast<VectorEpetra<double>*>( x_in.get() );
 
@@ -149,9 +154,9 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
 
     // -> A : Jacobian for the first iteration
     // -> InitialGuess : first value x0
-
+    printf("convert vectors...");
     boost::shared_ptr<Epetra_Vector> InitialGuess = x->epetraVector();
-Teuchos::RCP<Epetra_CrsMatrix> A = Teuchos::rcp(((boost::shared_ptr<Epetra_CrsMatrix>)(jac->matrix())).get());
+    Teuchos::RCP<Epetra_CrsMatrix> A = Teuchos::rcp(((boost::shared_ptr<Epetra_CrsMatrix>)(jac->matrix())).get());
 
     Teuchos::RCP<NOX::Epetra::Interface::Required> iReq = Teuchos::rcp(this);
     Teuchos::RCP<NOX::Epetra::Interface::Jacobian> iJac = Teuchos::rcp(this);
