@@ -151,6 +151,9 @@ public:
 
     //@}
 
+    /**
+     * Methods for NOX::Epetra::Interface::Required and NOX::Epetra::Interface::Jacobian
+     */
     bool computeF( const Epetra_Vector & x, Epetra_Vector & f, NOX::Epetra::Interface::Required::FillType F );
     bool computeJacobian( const Epetra_Vector & x, Epetra_Operator & Jac );
     bool computePrecMatrix( const Epetra_Vector & x, Epetra_RowMatrix & M );
