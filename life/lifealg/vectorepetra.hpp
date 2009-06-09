@@ -140,10 +140,13 @@ public:
         _M_emap( v->Map() ),
         _M_vec ( _M_emap )
     {
-        double** V;
-        v->ExtractView(&V);
-        //_M_vec = Epetra_MultiVector(View,_M_emap,V,1);
-        _M_vec[0]=V[0];
+        //double** V;
+        //v->ExtractView(&V);
+        //_M_vec = dynamic_cast<Epetra_FEVector> (Epetra_MultiVector(View,_M_emap,V,1));
+        //_M_vec[0]=V[0];
+
+        _M_vec.Update(1,*v,0);
+        this->init( _M_emap, true );
     }
 
 
