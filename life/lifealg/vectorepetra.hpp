@@ -116,7 +116,7 @@ public:
 
     /**
      * Constructor.  Creates a VectorEpetra assuming you already have a
-     * valid Epetra_Vector object.
+     * valid Epetra_FEVector object.
      */
 
     VectorEpetra ( Epetra_FEVector const * v )
@@ -128,6 +128,12 @@ public:
         this->init( _M_emap, true );
     }
 
+    /**
+     * @author Vielfaure Florent
+     *
+     * Constructor.  Creates a VectorEpetra assuming you already have a
+     * valid Epetra_Vector object.
+     */
     VectorEpetra ( Epetra_Vector const * v )
         :
         super(),
@@ -360,6 +366,13 @@ public:
         return _M_vec;
     }
 
+    /**
+     * @author Vielfaure Florent
+     *
+     * Returns the raw Epetra_Vector shared pointer.
+     * The returned object is a view of the Epetra_FEVector contained
+     * in the vectorEpetra
+     */
     boost::shared_ptr<Epetra_Vector> epetraVector ()
     {
         double** V;
