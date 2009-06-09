@@ -33,7 +33,7 @@ namespace Life
 #if defined(HAVE_TRILINOS_EPETRA)
 template<typename T>
 void
-VectorEpetra<T>::init ( Epetra_Map const& emap, const bool fast )
+VectorEpetra<T>::init ( Epetra_BlockMap const& emap, const bool fast )
 {
     // Clear initialized vectors
     if (this->isInitialized())
