@@ -71,7 +71,7 @@ CLEANFILES = *.aux *.log *.lot *.lof *.toc *.bbl *.blg *.out *.idx *.ind *.ilg $
 
 
 
-EXTRA_DIST = life-manual.tex version.tex.in feel.tex gfdl.tex life-manual.ist version.tex.in
+EXTRA_DIST = life-manual.tex version.tex.in feel.tex gfdl.tex life-manual.ist version.tex.in example-heatns.tex
 
 
 life-manual.pdf : $(EXTRA_DIST) myapp.cpp mymesh.cpp myintegrals.cpp laplacian.cpp stokes.cpp bratu.cpp
