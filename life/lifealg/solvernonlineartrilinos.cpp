@@ -38,11 +38,19 @@ bool SolverNonLinearTrilinos<T>::computeF( const Epetra_Vector & x,
                                            NOX::Epetra::Interface::Required::FillType ft )
 {
     //printf("Entering computeF...\n");
-    boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>(&x));
-    boost::shared_ptr<Vector<double> > F( new VectorEpetra<double>(&x));
+    boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>(&x) );
+    boost::shared_ptr<Vector<double> > F( new VectorEpetra<double>(&x) );
+
+    double norm[1];
+    if (x.Norm2(norm) != 0) printf("Error in norm2()\n");
+    printf("|x|_L2=%f\n",norm[0]);
+    //printf("length of x : %d\n",x.MyLength());
+    printf("|X|_L2=%f\n",X->l2Norm());
+    //printf("length of X : %d\n",X->size());
+
     if (this->residual != NULL) this->residual (X, F );
     f=*(dynamic_cast<VectorEpetra<double>*>(F.get())->epetraVector());
-    printf("|F|_L2=%f\n",F->l2Norm());
+    //printf("|F|_L2=%f\n",F->l2Norm());
     return true;
 }
 template <typename T>
