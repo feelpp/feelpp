@@ -33,7 +33,9 @@ check_PROGRAMS=laplacian1dP1 laplacian1dP5\
                \
                laplacian2dP1v laplacian2dP4v\
                \
-               stokes
+               stokes\
+               \
+               nonlinearpow
 
 check_HEADERS=laplacian.hpp
 laplacian1dP1_SOURCES=laplacian1dP1.cpp
@@ -86,5 +88,8 @@ laplacian2dP4v_LDADD=../../life/liblife.la
 
 stokes_SOURCES= stokes.cpp
 stokes_LDADD=$(LIFE_LIBS)
+
+nonlinearpow_SOURCES= nonlinearpow.cpp
+nonlinearpow_LDADD=$(LIFE_LIBS)
 
 EXTRA_DIST=convergence.at
