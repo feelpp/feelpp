@@ -32,55 +32,67 @@
 
 namespace Life
 {
-template <typename T>
-bool SolverNonLinearTrilinos<T>::computeF( const Epetra_Vector & x,
-                                           Epetra_Vector & f,
-                                           NOX::Epetra::Interface::Required::FillType ft )
-{
-    //printf("Entering computeF...\n");
-    boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>(&x) );
-    boost::shared_ptr<Vector<double> > F( new VectorEpetra<double>(&x) );
 
-    double norm[1];
-    if (x.Norm2(norm) != 0) printf("Error in norm2()\n");
-    printf("|x|_L2=%f\n",norm[0]);
-    //printf("length of x : %d\n",x.MyLength());
-    printf("|X|_L2=%f\n",X->l2Norm());
-    //printf("length of X : %d\n",X->size());
+class SolverNonLinearTrilinosInterface
+    :
+        public NOX::Epetra::Interface::Required,
+        public NOX::Epetra::Interface::Jacobian {
 
-    if (this->residual != NULL) this->residual (X, F );
-    f=*(dynamic_cast<VectorEpetra<double>*>(F.get())->epetraVector());
-    //printf("|F|_L2=%f\n",F->l2Norm());
-    return true;
-}
-template <typename T>
-bool SolverNonLinearTrilinos<T>::computeJacobian( const Epetra_Vector & x,
-                                                  Epetra_Operator & Jac )
-{
-    //printf("Entering computeJacobian...\n");
-    boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>(&x));
-    //boost::shared_ptr<MatrixEpetra> M_Jac;
-    boost::shared_ptr<MatrixSparse<double> > M_Jac;
-    if (this->jacobian != NULL) this->jacobian (X, M_Jac );
+private:
+    SolverNonLinearTrilinos<double>* solver;
 
-    Jac = dynamic_cast<MatrixEpetra*>(M_Jac.get())->mat();
-    //printf("End computeJacobian...\n");
-    return true;
-}
-template <typename T>
-bool SolverNonLinearTrilinos<T>::computePrecMatrix( const Epetra_Vector & x,
-                                                    Epetra_RowMatrix & M )
-{
-    printf("End computePrecMatrix...\n");
-    return true;
-}
-template <typename T>
-bool SolverNonLinearTrilinos<T>::computePreconditioner( const Epetra_Vector & x,
-                                                        Epetra_Operator & O )
-{
-    printf("End computePreconditioner...\n");
-    return true;
-}
+public:
+    SolverNonLinearTrilinosInterface(SolverNonLinearTrilinos<double> * sol) {
+        solver=sol;
+    }
+
+    bool computeF( const Epetra_Vector & x,
+                   Epetra_Vector & f,
+                   NOX::Epetra::Interface::Required::FillType ft )
+    {
+        //printf("Entering computeF...\n");
+        boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>(&x) );
+        boost::shared_ptr<Vector<double> > F( new VectorEpetra<double>(&x) );
+
+        //double norm[1];
+        //if (x.Norm2(norm) != 0) printf("Error in norm2()\n");
+        //printf("|x|_L2=%f\n",norm[0]);
+        //printf("length of x : %d\n",x.MyLength());
+        //printf("|X|_L2=%f\n",X->l2Norm());
+        //printf("length of X : %d\n",X->size());
+
+        if (solver->residual != NULL) solver->residual (X, F );
+        f=*(dynamic_cast<VectorEpetra<double>*>(F.get())->epetraVector());
+        //printf("|F|_L2=%f\n",F->l2Norm());
+        return true;
+    }
+    bool computeJacobian( const Epetra_Vector & x,
+                          Epetra_Operator & Jac )
+    {
+        //printf("Entering computeJacobian...\n");
+        boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>(&x));
+        //boost::shared_ptr<MatrixEpetra> M_Jac;
+        boost::shared_ptr<MatrixSparse<double> > M_Jac;
+        if (solver->jacobian != NULL) solver->jacobian (X, M_Jac );
+
+        Jac = dynamic_cast<MatrixEpetra*>(M_Jac.get())->mat();
+        //printf("End computeJacobian...\n");
+        return true;
+    }
+    bool computePrecMatrix( const Epetra_Vector & x,
+                            Epetra_RowMatrix & M )
+    {
+        printf("End computePrecMatrix...\n");
+        return true;
+    }
+    bool computePreconditioner( const Epetra_Vector & x,
+                                Epetra_Operator & O )
+    {
+        printf("End computePreconditioner...\n");
+        return true;
+    }
+};
+
 
 // SolverNonLinearTrilinos<> methods
 template <typename T>
@@ -113,7 +125,7 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
 {
     //printf("Entering solve...\n");
     MatrixEpetra* jac = dynamic_cast<MatrixEpetra *>( jac_in.get() );
-    VectorEpetra<double>* x  = dynamic_cast<VectorEpetra<double>*>( x_in.get() );
+    VectorEpetra<T>* x  = dynamic_cast<VectorEpetra<T>*>( x_in.get() );
 
     // We cast to pointers so we can be sure that they succeeded
     // by comparing the result against NULL.
@@ -167,8 +179,10 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
     boost::shared_ptr<Epetra_Vector> InitialGuess = x->epetraVector();
     Teuchos::RCP<Epetra_CrsMatrix> A = Teuchos::rcp(((boost::shared_ptr<Epetra_CrsMatrix>)(jac->matrix())).get());
 
-    Teuchos::RCP<NOX::Epetra::Interface::Required> iReq = Teuchos::rcp(this);
-    Teuchos::RCP<NOX::Epetra::Interface::Jacobian> iJac = Teuchos::rcp(this);
+    Teuchos::RCP<NOX::Epetra::Interface::Required> iReq =
+        Teuchos::rcp(new SolverNonLinearTrilinosInterface(this));
+    Teuchos::RCP<NOX::Epetra::Interface::Jacobian> iJac =
+        Teuchos::rcp(new SolverNonLinearTrilinosInterface(this));
     Teuchos::RCP<NOX::Epetra::LinearSystemAztecOO> linSys =
         Teuchos::rcp(new NOX::Epetra::LinearSystemAztecOO(printParams,
                                                           lsParams,
@@ -190,6 +204,7 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
         Teuchos::rcp(new NOX::StatusTest::NormF(1.0e-4));
     Teuchos::RCP<NOX::StatusTest::MaxIters> testMaxIters =
         Teuchos::rcp(new NOX::StatusTest::MaxIters(20));
+
     // this will be the convergence test to be used
   Teuchos::RCP<NOX::StatusTest::Combo> combo =
       Teuchos::rcp(new NOX::StatusTest::Combo(NOX::StatusTest::Combo::OR,
@@ -203,12 +218,12 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
   NOX::StatusTest::StatusType status = solver->solve();
 
   if( NOX::StatusTest::Converged  != status )
-      cout << "\n" << "-- NOX solver did not converged --" << "\n";
+      std::cout << "\n" << "-- NOX solver did not converged --" << "\n";
   else
-      cout << "\n" << "-- NOX solver converged --" << "\n";
+      std::cout << "\n" << "-- NOX solver converged --" << "\n";
 
   // Print the answer
-  cout << "\n" << "-- Parameter List From Solver --" << "\n";
+  std::cout << "\n" << "-- Parameter List From Solver --" << "\n";
   solver->getList().print(cout);
 
   // Get the Epetra_Vector with the final solution from the solver
@@ -217,11 +232,11 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
   const Epetra_Vector & finalSolution =
       (dynamic_cast<const NOX::Epetra::Vector&>(finalGroup.getX())).getEpetraVector();
 
-  cout << "Computed solution : " << endl;
-  cout << finalSolution;
+  //cout << "Computed solution : " << endl;
+  //cout << finalSolution;
+  x_in = boost::shared_ptr<VectorEpetra<T> > ( new VectorEpetra<T>(&finalSolution) );
 
-return std::make_pair(1,finalGroup.getNormF());
-
+  return std::make_pair(1,finalGroup.getNormF());
 }
 
 template <typename T>
