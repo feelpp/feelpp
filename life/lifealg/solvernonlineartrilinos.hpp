@@ -57,9 +57,7 @@ namespace Life
 template<typename T>
 class SolverNonLinearTrilinos
     :
-        public SolverNonLinear<T>,
-        public NOX::Epetra::Interface::Required,
-        public NOX::Epetra::Interface::Jacobian
+        public SolverNonLinear<T>
 {
     typedef SolverNonLinear<T> super;
 public:
@@ -154,10 +152,10 @@ public:
     /**
      * Methods for NOX::Epetra::Interface::Required and NOX::Epetra::Interface::Jacobian
      */
-    bool computeF( const Epetra_Vector & x, Epetra_Vector & f, NOX::Epetra::Interface::Required::FillType F );
-    bool computeJacobian( const Epetra_Vector & x, Epetra_Operator & Jac );
-    bool computePrecMatrix( const Epetra_Vector & x, Epetra_RowMatrix & M );
-    bool computePreconditioner( const Epetra_Vector & x, Epetra_Operator & O );
+    //bool computeF( const Epetra_Vector & x, Epetra_Vector & f, NOX::Epetra::Interface::Required::FillType F );
+    //bool computeJacobian( const Epetra_Vector & x, Epetra_Operator & Jac );
+    //bool computePrecMatrix( const Epetra_Vector & x, Epetra_RowMatrix & M );
+    //bool computePreconditioner( const Epetra_Vector & x, Epetra_Operator & O );
 
 private:
 

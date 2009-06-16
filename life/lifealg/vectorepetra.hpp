@@ -140,13 +140,18 @@ public:
         _M_emap( v->Map() ),
         _M_vec ( _M_emap )
     {
-        double** V;
-        // v->ExtractView(&V);
-        // printf("first val : %f\n",V[0][0]);
+        this->init( _M_emap, true );
+        //double** V;
+        //v->ExtractView(&V);
+        //printf("first val : %f\n",V[0][0]);
+
 
         _M_vec.Update(1.0,*v,1.0);
 
-        this->init( _M_emap, true );
+        //for( size_type i = 0; i < this->localSize(); ++i )
+        //    {
+        //        this->set( i,  V[ 0 ][i] );
+        //    }
     }
 
 
