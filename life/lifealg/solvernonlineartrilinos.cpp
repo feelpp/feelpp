@@ -54,16 +54,10 @@ public:
         boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>(&x) );
         boost::shared_ptr<Vector<double> > F( new VectorEpetra<double>(&x) );
 
-        //double norm[1];
-        //if (x.Norm2(norm) != 0) printf("Error in norm2()\n");
-        //printf("|x|_L2=%f\n",norm[0]);
-        //printf("length of x : %d\n",x.MyLength());
-        //printf("|X|_L2=%f\n",X->l2Norm());
-        //printf("length of X : %d\n",X->size());
-
         if (solver->residual != NULL) solver->residual (X, F );
         f=*(dynamic_cast<VectorEpetra<double>*>(F.get())->epetraVector());
-        //printf("|F|_L2=%f\n",F->l2Norm());
+        //std::cout << "X.use_count()=" << X.use_count() << std::endl;
+        //std::cout << "F.use_count()=" << F.use_count() << std::endl;
         return true;
     }
     bool computeJacobian( const Epetra_Vector & x,
@@ -76,19 +70,21 @@ public:
         if (solver->jacobian != NULL) solver->jacobian (X, M_Jac );
 
         Jac = dynamic_cast<MatrixEpetra*>(M_Jac.get())->mat();
+        //std::cout << "X.use_count()=" << X.use_count() << std::endl;
+        //std::cout << "M_Jac.use_count()=" << M_Jac.use_count() << std::endl;
         //printf("End computeJacobian...\n");
         return true;
     }
     bool computePrecMatrix( const Epetra_Vector & x,
                             Epetra_RowMatrix & M )
     {
-        printf("End computePrecMatrix...\n");
+        //printf("End computePrecMatrix...\n");
         return true;
     }
     bool computePreconditioner( const Epetra_Vector & x,
                                 Epetra_Operator & O )
     {
-        printf("End computePreconditioner...\n");
+        //printf("End computePreconditioner...\n");
         return true;
     }
 };
@@ -169,7 +165,7 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
     Teuchos::ParameterList& lsParams = newtonParams.sublist("Linear Solver");
     lsParams.set("Aztec Solver", "GMRES");
     lsParams.set("Max Iterations", 800);
-    lsParams.set("Tolerance", 1e-5);
+    lsParams.set("Tolerance", 1e-10);
     lsParams.set("Output Frequency", 50);
     lsParams.set("Aztec Preconditioner", "ilu");
 
@@ -177,7 +173,13 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
     // -> InitialGuess : first value x0
     //printf("convert vectors...\n");
     boost::shared_ptr<Epetra_Vector> InitialGuess = x->epetraVector();
-    Teuchos::RCP<Epetra_CrsMatrix> A = Teuchos::rcp(((boost::shared_ptr<Epetra_CrsMatrix>)(jac->matrix())).get());
+
+    // has_ownership=false in order to let the matrix jac be destroyed by boost
+    // and not by Teuchos::RCP
+    Teuchos::RCP<Epetra_CrsMatrix> A =
+        Teuchos::rcp(((boost::shared_ptr<Epetra_CrsMatrix>)(jac->matrix())).get(),false);
+
+    //std::cout << "A.has_ownership()=" << A.has_ownership() << std::endl;
 
     Teuchos::RCP<NOX::Epetra::Interface::Required> iReq =
         Teuchos::rcp(new SolverNonLinearTrilinosInterface(this));
@@ -201,7 +203,7 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
 
   // Set up the status tests
     Teuchos::RCP<NOX::StatusTest::NormF> testNormF =
-        Teuchos::rcp(new NOX::StatusTest::NormF(1.0e-4));
+        Teuchos::rcp(new NOX::StatusTest::NormF(1.0e-10));
     Teuchos::RCP<NOX::StatusTest::MaxIters> testMaxIters =
         Teuchos::rcp(new NOX::StatusTest::MaxIters(20));
 
@@ -235,6 +237,10 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
   //cout << "Computed solution : " << endl;
   //cout << finalSolution;
   x_in = boost::shared_ptr<VectorEpetra<T> > ( new VectorEpetra<T>(&finalSolution) );
+
+  //std::cout << "InitialGuess.use_count()=" << InitialGuess.use_count() << std::endl;
+  //std::cout << "jac.use_count()=" << jac->matrix().use_count() << std::endl;
+  //std::cout << "x_in.use_count()=" << x_in.use_count() << std::endl;
 
   return std::make_pair(1,finalGroup.getNormF());
 }
