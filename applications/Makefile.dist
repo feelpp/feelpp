@@ -5,3 +5,4 @@ all:
 #	autoheader
 	automake
 	autoconf
+	-test -d opus/ && ( cd opus && make -f Makefile.dist)
