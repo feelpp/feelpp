@@ -22,14 +22,17 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-EXTRA_DIST=mymeshpartition.png\
-           laplacian_mesh.png\
-           laplacian.png\
-           laplacian_warp.png\
-           stokes-p.png\
-           stokes-u.png\
-           \
-           note.png\
-           \
-           logo-ujf.png\
-           logo-ljk.png
+EXTRA_DIST=\
+         debit_grashof.png\
+         flow_grashof.png\
+         laplacian_mesh.png\
+         laplacian.png\
+         laplacian_warp.png\
+         logo-ljk.png\
+         logo-ujf.png\
+         mymeshpartition.png\
+         note.png\
+         stokes-p.png\
+         stokes-u.png\
+         temp_grashof.png\
+         mymeshpartition.png
