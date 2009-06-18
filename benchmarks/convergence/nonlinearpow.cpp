@@ -167,7 +167,7 @@ private:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( element_type& u );
+    void exportResults( element_type& u , element_type& ue);
 
 private:
 
@@ -318,6 +318,8 @@ NonLinearPow<Dim, Order, Entity>::run()
 
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
+    element_type ue( M_Xh, "ue" );
+
 
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
 
@@ -339,6 +341,7 @@ NonLinearPow<Dim, Order, Entity>::run()
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
 
     u = project( M_Xh, elements(mesh), constant(0.) );
+    ue = project( M_Xh, elements(mesh), u_exact );
 
     vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
     *U = u;
@@ -365,7 +368,7 @@ NonLinearPow<Dim, Order, Entity>::run()
     Log() << "||error||_L2=" << L2error << "\n";
     Log() << "L2 norm computed in " << t1.elapsed() << "s\n";
 
-    exportResults( u );
+    exportResults( u , ue);
 
     this->addOutputValue( 0.0 ).addOutputValue( 0.0 );
     this->postProcessing();
@@ -387,13 +390,14 @@ NonLinearPow<Dim, Order, Entity>::solve( sparse_matrix_ptrtype& D, element_type&
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-NonLinearPow<Dim, Order, Entity>::exportResults( element_type& U )
+NonLinearPow<Dim, Order, Entity>::exportResults( element_type& U , element_type& UE)
 {
     Log() << "exportResults starts\n";
     exporter->step(0)->setMesh( U.functionSpace()->mesh() );
     if ( !this->vm().count( "export-mesh-only" ) )
         {
             exporter->step(0)->add( "u", U );
+            exporter->step(0)->add( "ue", UE );
         }
     exporter->save();
 } // NonLinearPow::export
