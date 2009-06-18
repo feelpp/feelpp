@@ -48,7 +48,7 @@ makeOptions()
 {
     Life::po::options_description nonlinearpowoptions("Nonlinearpow problem options");
     nonlinearpowoptions.add_options()
-        ("lambda", Life::po::value<int>()->default_value( 2 ), "power of u")
+        ("lambda", Life::po::value<double>()->default_value( 2.0 ), "power of u")
 
         ("penalbc", Life::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
         ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
@@ -190,7 +190,7 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
     super( argc, argv, ad, od ),
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].template as<double>() ),
-    M_lambda( this->vm()["lambda"].template as<int>() ),
+    M_lambda( this->vm()["lambda"].template as<double>() ),
     M_Xh(),
     exporter()
 {
@@ -198,7 +198,7 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
     this->
         addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
         .addParameter( Parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str()) )
-        .addParameter( Parameter(_name="lambda",_type=DISC_ATTR,_latex="\\lambda",_values="2") )
+        .addParameter( Parameter(_name="lambda",_type=DISC_ATTR,_latex="\\lambda",_values="1,2,3") )
         .addParameter( h );
 
     std::vector<Parameter> depend;
@@ -256,10 +256,10 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
     element_type v( M_Xh, "v" );
 
     u = *X;
-    AUTO( g, constant(0.0) );
+    AUTO( g, Px()*Px()+Py()*Py() );
 
     *M_residual =
-        integrate( elements( mesh ), _Q<2*Order>(), + gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) +id(v) ) +
+        integrate( elements( mesh ), _Q<2*Order>(), + gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) ) +
         integrate( boundaryfaces(mesh), _Q<2*Order>(),
                    ( - trans(id(v))*(gradv(u)*N())
                      - trans(idv(u))*(grad(v)*N())
@@ -312,6 +312,8 @@ NonLinearPow<Dim, Order, Entity>::run()
 
     using namespace Life::vf;
 
+    boost::timer t1;
+
     mesh_ptrtype mesh = M_Xh->mesh();
 
     element_type u( M_Xh, "u" );
@@ -331,7 +333,7 @@ NonLinearPow<Dim, Order, Entity>::run()
     M_jac = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
     M_residual = funlin_ptrtype( new funlin_type( M_Xh, M_backend ) );
 
-
+    AUTO( u_exact, Px()*Px()+Py()*Py() );
 
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
@@ -349,6 +351,19 @@ NonLinearPow<Dim, Order, Entity>::run()
     *U = u;
     this->updateResidual( U, R );
     std::cout << "R( u ) = " << M_backend->dot( U, R ) << "\n";
+
+    Log() << "solution computed in " << t1.elapsed() << "s\n";
+    Log() << "R( u ) = " << M_backend->dot( U, R ) << "\n";
+
+    t1.restart();
+
+    double L2error2 = integrate( elements(mesh), _Q<2*Order>(),
+                                 (idv(u)-u_exact)*trans(idv(u)-u_exact) ).evaluate()( 0, 0 );
+    double L2error = math::sqrt( L2error2 );
+
+    std::cout << "||error||_L2=" << L2error << "\n";
+    Log() << "||error||_L2=" << L2error << "\n";
+    Log() << "L2 norm computed in " << t1.elapsed() << "s\n";
 
     exportResults( u );
 
