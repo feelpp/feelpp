@@ -256,10 +256,10 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
     element_type v( M_Xh, "v" );
 
     u = *X;
-    AUTO( g, Px()*Px()+Py()*Py() );
+    AUTO( g, (Px()*Px()+Py()*Py()) );
 
     *M_residual =
-        integrate( elements( mesh ), _Q<2*Order>(), + gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) ) +
+        integrate( elements( mesh ), _Q<2*Order>(), + gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) - (-4+pow(g,M_lambda))*id(v) ) +
         integrate( boundaryfaces(mesh), _Q<2*Order>(),
                    ( - trans(id(v))*(gradv(u)*N())
                      - trans(idv(u))*(grad(v)*N())
@@ -335,7 +335,7 @@ NonLinearPow<Dim, Order, Entity>::run()
     M_jac = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
     M_residual = funlin_ptrtype( new funlin_type( M_Xh, M_backend ) );
 
-    AUTO( u_exact, Px()*Px()+Py()*Py() );
+    AUTO( u_exact, (Px()*Px()+Py()*Py()) );
 
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
