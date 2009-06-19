@@ -213,8 +213,8 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
     funcs2.push_back(oss.str());
 
     this->
-        addOutput( Output(_name="norm_L2",_latex="\\left\\| u \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) )
-        .addOutput( Output(_name="norm_H1",_latex="\\left\\| u \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs2) );
+        addOutput( Output(_name="norm_L2",_latex="\\left\\| u \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) );
+        //.addOutput( Output(_name="norm_H1",_latex="\\left\\| u \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs2) );
 
     mesh_ptrtype mesh = createMesh( meshSize );
     M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
@@ -370,7 +370,7 @@ NonLinearPow<Dim, Order, Entity>::run()
 
     exportResults( u , ue);
 
-    this->addOutputValue( 0.0 ).addOutputValue( 0.0 );
+    this->addOutputValue( L2error );
     this->postProcessing();
 
 } // NonLinearPow::run
