@@ -110,9 +110,15 @@ class graphBuilder:
 				c1={'x':11,'y':6.8}
 				c2={'x':11,'y':4.5}
 				YTslope=2.0
-				XTslope=YTslope/float(Tslope)
+				if float(Tslope)>0:
+					XTslope=YTslope/float(Tslope)
+				else:
+					XTslope=0
 				YPslope=2.0
-				XPslope=YPslope/float(Pslope)
+				if float(Pslope)>0:
+					XPslope=YPslope/float(Pslope)
+				else:
+					XPslope=0
 				# Theoritical error triangle
 				self.__c.stroke(path.line(c1['x']-XTslope/2,
 								          c1['y']-YTslope/2,
