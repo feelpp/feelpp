@@ -165,7 +165,7 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
     Teuchos::ParameterList& lsParams = newtonParams.sublist("Linear Solver");
     lsParams.set("Aztec Solver", "GMRES");
     lsParams.set("Max Iterations", 800);
-    lsParams.set("Tolerance", 1e-10);
+    lsParams.set("Tolerance", 1e-7);
     lsParams.set("Output Frequency", 50);
     lsParams.set("Aztec Preconditioner", "ilu");
 
@@ -203,7 +203,7 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
 
   // Set up the status tests
     Teuchos::RCP<NOX::StatusTest::NormF> testNormF =
-        Teuchos::rcp(new NOX::StatusTest::NormF(1.0e-10));
+        Teuchos::rcp(new NOX::StatusTest::NormF(1.0e-7));
     Teuchos::RCP<NOX::StatusTest::MaxIters> testMaxIters =
         Teuchos::rcp(new NOX::StatusTest::MaxIters(20));
 
