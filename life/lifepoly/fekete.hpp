@@ -33,7 +33,7 @@
 #include <life/lifepoly/pointsetinterpolation.hpp>
 #include <life/lifepoly/geomap.hpp>
 #include <life/lifepoly/warpblend.hpp>
-
+#include <life/lifepoly/gausslobatto.hpp>
 #include <life/lifepoly/equispaced.hpp>
 
 #include <boost/assign/list_of.hpp>
@@ -41,6 +41,16 @@
 
 namespace Life
 {
+template< class Convex,
+          uint16_type Order,
+          typename T >
+class PointSetWarpBlend;
+
+template< class Convex,
+          uint16_type Order,
+          typename T >
+class PointSetGaussLobatto;
+
 template< class Convex,
           uint16_type Order,
           typename T = double >
@@ -1234,11 +1244,13 @@ private :
 template< class Convex,
           uint16_type Order,
           typename T = double >
-class PointSetFekete : public mpl::if_<mpl::equal_to<mpl::bool_<Convex::is_simplex_product>, mpl::bool_<true> >,
+class PointSetFekete : public mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_simplex_product>, mpl::bool_<true> >,
+                                                mpl::equal_to<mpl::bool_<Convex::nDim>, mpl::int_<1> > >,
                                        mpl::identity<PointSetGaussLobatto<Convex,Order,T> >,
                                        mpl::identity<PointSetFeketeSimplex<Convex,Order,T> > >::type::type
 {
-    typedef typename mpl::if_<mpl::equal_to<mpl::bool_<Convex::is_simplex_product>, mpl::bool_<true> >,
+    typedef typename mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_simplex_product>, mpl::bool_<true> >,
+                                       mpl::equal_to<mpl::bool_<Convex::nDim>, mpl::int_<1> > >,
                               mpl::identity<PointSetGaussLobatto<Convex,Order,T> >,
                               mpl::identity<PointSetFeketeSimplex<Convex,Order,T> > >::type::type super;
 public:
