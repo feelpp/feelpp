@@ -23,7 +23,7 @@
    \author Goncalo Pena <goncalo.pena@epfl.ch>
    \date 2008-04-17
 */
-
+#include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <life/lifediscr/ale.hpp>
 
 namespace Life
@@ -186,12 +186,17 @@ ALE<Convex>::generateP1Map( p1_element_type& p )
 
 #if defined( LIFE_INSTANTIATION_MODE )
 template class ALE< Simplex<2,1> >;
-#if LIFE_MESH_MAX_ORDER >= 2
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
 template class ALE< Simplex<2,2> >;
-#elif LIFE_MESH_MAX_ORDER >= 3
+#endif
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 3 )
 template class ALE< Simplex<2,3> >;
-#elif LIFE_MESH_MAX_ORDER >= 4
+#endif
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 4 )
 template class ALE< Simplex<2,4> >;
+#endif // LIFE_MESH_MAX_ORDER
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 5 )
+template class ALE< Simplex<2,5> >;
 #endif // LIFE_MESH_MAX_ORDER
 #endif // LIFE_INSTANTIATION_MODE
 }
