@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-07-31
  */
-
+#include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <life/lifediscr/partitioner.hpp>
 #include <life/lifediscr/partitionermetis.hpp>
 #include <life/lifediscr/partitionerparmetis.hpp>
@@ -156,20 +156,23 @@ template class Partitioner<Mesh<Simplex<1,1,1> > >;
 template class Partitioner<Mesh<Simplex<1,1,2> > >;
 // 2D
 template class Partitioner<Mesh<Simplex<2,1,2> > >;
-#if LIFE_MESH_MAX_ORDER >= 2
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
 template class Partitioner<Mesh<Simplex<2,2,2> > >;
-#elif LIFE_MESH_MAX_ORDER >= 3
+#endif
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 3 )
 template class Partitioner<Mesh<Simplex<2,3,2> > >;
-#elif LIFE_MESH_MAX_ORDER >= 4
+#endif
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 4 )
 template class Partitioner<Mesh<Simplex<2,4,2> > >;
-#elif LIFE_MESH_MAX_ORDER >= 5
+#endif
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 5 )
 template class Partitioner<Mesh<Simplex<2,5,2> > >;
 #endif
 // 2D3D
 template class Partitioner<Mesh<Simplex<2,1,3> > >;
 // 3D
 template class Partitioner<Mesh<Simplex<3,1,3> > >;
-#if LIFE_MESH_MAX_ORDER >= 2
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
 template class Partitioner<Mesh<Simplex<3,2,3> > >;
 #endif
 template class Partitioner<Mesh<SimplexProduct<1,1,1> > >;

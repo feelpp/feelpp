@@ -26,6 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-08-07
  */
+#include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <life/lifemesh/geoentity.hpp>
 #include <life/lifemesh/simplex.hpp>
 #include <life/lifemesh/simplexproduct.hpp>
@@ -973,14 +974,17 @@ template class Mesh<SimplexProduct<1, 1, 2> >;
 template class Mesh<Simplex<2, 1, 2> >;
 template class Mesh<SimplexProduct<2, 1, 2> >;
 
-#if LIFE_MESH_MAX_ORDER >= 2
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
 template class Mesh<Simplex<2, 2, 2> >;
 template class Mesh<SimplexProduct<2, 2, 2> >;
-#elif LIFE_MESH_MAX_ORDER >= 3
+#endif
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 3 )
 template class Mesh<Simplex<2, 3, 2> >;
-#elif LIFE_MESH_MAX_ORDER >= 4
+#endif
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 4 )
 template class Mesh<Simplex<2, 4, 2> >;
-#elif LIFE_MESH_MAX_ORDER >= 5
+#endif
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 5 )
 template class Mesh<Simplex<2, 5, 2> >;
 #endif
 
@@ -991,7 +995,7 @@ template class Mesh<Simplex<3, 1, 3> >;
 template class Mesh<SimplexProduct<3, 1, 3> >;
 
 
-#if LIFE_MESH_MAX_ORDER >= 2
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
 template class Mesh<Simplex<3, 2, 3> >;
 template class Mesh<SimplexProduct<3, 2, 3> >;
 #endif
