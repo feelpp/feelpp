@@ -276,6 +276,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo_ ) const
 {
     std::ostringstream ofsgeo;
     ofsgeo << "Mesh.ElementOrder=" << _M_order << ";\n"
+           << "Mesh.SecondOrderExperimental = 1;\n"
            << __geo_;
     std::string __geo = ofsgeo.str();
 
@@ -386,6 +387,9 @@ const bool meshs22s = Gmsh::Factory::type::instance().registerProduct( "simplex(
 
 const bool meshs112ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,Simplex)",
                                                                          &detail::createTensorizedDomain<1,1,2,Simplex> );
+
+const bool meshs21tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1)",
+                                                                          &detail::createTensorizedDomain<2,1,2,Simplex> );
 
 const bool meshs21ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,Simplex)",
                                                                         &detail::createTensorizedDomain<2,1,2,Simplex> );
