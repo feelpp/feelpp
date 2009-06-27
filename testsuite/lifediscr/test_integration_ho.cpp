@@ -38,6 +38,7 @@ using boost::unit_test::test_suite;
 #include <boost/test/floating_point_comparison.hpp>
 #endif
 
+#include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <life/options.hpp>
 #include <life/lifecore/life.hpp>
 #include <life/lifecore/application.hpp>
@@ -476,8 +477,7 @@ struct test_integration_sin
         u = project( Xh, elements(*mesh), constant(1.0) );
         double v0 = integrate( elements(*mesh), IM<2,(Order-1)*(Order-1),value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
         //double v0 = integrate( elements(*mesh), IM<2,2*Order,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
-        std::cout << "int( 1 )=" << v0 << "  (should be 1+1/2*pi = 1.15915494309190)\n";
-
+        std::cout << "int( 1 )=" << v0 << "  (=pi) error= " << math::abs( v0 - M_PI ) << std::endl;
 
     }
     double meshSize;
@@ -531,33 +531,37 @@ main( int argc, char** argv )
     Life::Application mpi( argc, argv, makeAbout(), makeOptions() );
     Life::Assert::setLog( "test_integration.assert");
 
-
-    std::cout << "Order = " << mpi.vm()["order"].as<int>()<< "\n";
-
+    std::cout << "Order = " << mpi.vm()["order"].as<int>() << " / " << LIFE_MESH_MAX_ORDER << "\n";
     if ( mpi.vm()["order"].as<int>() == 1 )
         {
             test_integration_sin<1,double> t1( mpi.vm()["hsize"].as<double>() ); t1();
         }
-#if LIFE_MESH_MAX_ORDER >= 2
+
     else if ( mpi.vm()["order"].as<int>() == 2 )
         {
+#if BOOST_PP_GREATER_EQUAL(LIFE_MESH_MAX_ORDER, 2)
             test_integration_sin<2,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
+#endif
         }
-#elif LIFE_MESH_MAX_ORDER >= 3
+
     else if ( mpi.vm()["order"].as<int>() == 3 )
         {
+#if BOOST_PP_GREATER_EQUAL(LIFE_MESH_MAX_ORDER, 3)
             test_integration_sin<3,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
+#endif
         }
-#elif LIFE_MESH_MAX_ORDER >= 4
     else if ( mpi.vm()["order"].as<int>() == 4 )
         {
+#if BOOST_PP_GREATER_EQUAL(LIFE_MESH_MAX_ORDER, 4)
             test_integration_sin<4,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
+#endif
         }
-#elif LIFE_MESH_MAX_ORDER >= 5
     else if ( mpi.vm()["order"].as<int>() == 5 )
         {
+#if BOOST_PP_GREATER_EQUAL(LIFE_MESH_MAX_ORDER, 5)
             test_integration_sin<5,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
-        }
 #endif
+        }
+
 }
 #endif // USE_BOOST_TEST
