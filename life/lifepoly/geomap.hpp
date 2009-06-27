@@ -48,6 +48,7 @@
 
 #include <life/lifepoly/context.hpp>
 #include <life/lifepoly/lagrange.hpp>
+#include <life/lifepoly/fekete.hpp>
 #include <life/lifemesh/marker.hpp>
 
 
