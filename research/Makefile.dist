@@ -6,4 +6,5 @@ all:
 	automake
 	autoconf
 	-test -d meta_life_ifp/ && ( cd meta_life_ifp && make -f Makefile.dist)
+	-test -d crb/ && ( cd crb && make -f Makefile.dist)
 
