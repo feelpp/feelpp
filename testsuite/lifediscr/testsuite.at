@@ -38,27 +38,27 @@ AT_KEYWORDS([discr integration])
 AT_CHECK([ $abs_top_builddir/testsuite/lifediscr/test_integration],[0],[ignore],[ignore])
 AT_CLEANUP
 
-AT_SETUP([test_integration_ho])
+AT_SETUP([test_integration_ho (Order=1)])
 AT_KEYWORDS([discr integration highorder])
 AT_CHECK([ln -sf $abs_srcdir/lifediscr/test_integration_ho_geometry.geo && $abs_top_builddir/testsuite/lifediscr/test_integration_ho --order=1],[0],[ignore],[ignore])
 AT_CLEANUP
 
-AT_SETUP([test_integration_ho])
+AT_SETUP([test_integration_ho (Order=2)])
 AT_KEYWORDS([discr integration highorder])
 AT_CHECK([ln -sf $abs_srcdir/lifediscr/test_integration_ho_geometry.geo && $abs_top_builddir/testsuite/lifediscr/test_integration_ho --order=2],[0],[ignore],[ignore])
 AT_CLEANUP
 
-AT_SETUP([test_integration_ho])
+AT_SETUP([test_integration_ho (Order=3)])
 AT_KEYWORDS([discr integration highorder])
 AT_CHECK([ln -sf $abs_srcdir/lifediscr/test_integration_ho_geometry.geo && $abs_top_builddir/testsuite/lifediscr/test_integration_ho --order=3],[0],[ignore],[ignore])
 AT_CLEANUP
 
-AT_SETUP([test_integration_ho])
+AT_SETUP([test_integration_ho (Order=4)])
 AT_KEYWORDS([discr integration highorder])
 AT_CHECK([ln -sf $abs_srcdir/lifediscr/test_integration_ho_geometry.geo && $abs_top_builddir/testsuite/lifediscr/test_integration_ho --order=4],[0],[ignore],[ignore])
 AT_CLEANUP
 
-AT_SETUP([test_integration_ho])
+AT_SETUP([test_integration_ho (Order=5)])
 AT_KEYWORDS([discr integration highorder])
 AT_CHECK([ln -sf $abs_srcdir/lifediscr/test_integration_ho_geometry.geo && $abs_top_builddir/testsuite/lifediscr/test_integration_ho --order=5],[0],[ignore],[ignore])
 AT_CLEANUP
