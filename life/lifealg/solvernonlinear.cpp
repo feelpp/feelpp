@@ -70,13 +70,13 @@ boost::shared_ptr<SolverNonLinear<T> >
 SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefix )
 {
     SolverPackage solver_package;
-    if ( vm["nlsolver"].template as<std::string>() == "petsc" )
+    if ( vm["backend"].template as<std::string>() == "petsc" )
         {
 #if defined( HAVE_PETSC )
             solver_package = SOLVERS_PETSC;
 #endif
         }
-    else if ( vm["nlsolver"].template as<std::string>() == "trilinos" )
+    else if ( vm["backend"].template as<std::string>() == "trilinos" )
         {
 #if defined( HAVE_TRILINOS )
             solver_package = SOLVERS_TRILINOS;
@@ -84,7 +84,7 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
         }
     else
         {
-            Log() << "[SolverNonLinear] solver " << vm["nlsolver"].template as<std::string>() << " not available\n";
+            Log() << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
             Log() << "[Backend] use fallback  gmm\n";
 #if defined( HAVE_PETSC )
             solver_package = SOLVERS_PETSC;
@@ -185,11 +185,11 @@ template class SolverNonLinear<double>;
 po::options_description nlsolver_options()
 {
     po::options_description _options( "Non Linear Solver options");
-    _options.add_options()
-        // solver options
-        ("nlsolver", Life::po::value<std::string>()->default_value( "petsc" ), "nonlinear solver type: petsc")
-        ("nlsolver", Life::po::value<std::string>()->default_value( "trilinos" ), "nonlinear solver type: trilinos NOX")
-        ;
+    //_options.add_options()
+    // solver options
+        //("backend", Life::po::value<std::string>()->default_value( "petsc" ), "nonlinear solver type: petsc")
+        //("backend", Life::po::value<std::string>()->default_value( "trilinos" ), "nonlinear solver type: trilinos NOX")
+    //;
     return _options;
 }
 
