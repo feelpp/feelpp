@@ -1,0 +1,64 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2009-07-02
+
+  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file crouzeixraviart.hpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2009-07-02
+ */
+#ifndef __pcrouzeixraviart_H
+#define __pcrouzeixraviart_H 1
+
+#include "basisgen.hpp"
+#include <life/lifepoly/crouzeixraviart.hpp>
+
+namespace Life
+{
+namespace detail
+{
+template<typename Convex, uint16_type Order>
+PolyvisBase*
+createCrouzeixRaviart()
+{
+    std::cout << "Creating CrouzeixRaviart(" << Convex::nDim << "," << Order << ")\n";
+    return new Polyvis<basis_type<CrouzeixRaviart<Order> >,convex_type<Convex> >;
+}
+# /* Generates code for all dim and order. */
+# define CROUZEIXRAVIART_FACTORY_OP(_, GDO)           \
+    CROUZEIXRAVIART_FACTORY GDO                        \
+    /**/
+#
+# define GEN_CROUZEIXRAVIART(LDIM,LORDER,CONVEX)              \
+    "crouzeixraviart(" #LDIM "," #LORDER "," #CONVEX ")"       \
+    /**/
+#
+#
+#define CROUZEIXRAVIART_FACTORY(LDIM,LORDER,CONVEX)                     \
+    const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT(lag, CONVEX), LDIM), LORDER ) = \
+        PolyvisBase::factory_type::instance()                           \
+        .registerProduct( GEN_CROUZEIXRAVIART(LDIM,LORDER,CONVEX), &createCrouzeixRaviart<CONVEX< LDIM >,LORDER> );
+
+} // detail
+} // Life
+#endif /* __crouzeixraviart_H */
+
