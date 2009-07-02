@@ -30,6 +30,7 @@ bin_PROGRAMS    = life_polyvis
 
 life_polyvis_LDADD    = $(LIFE_LIBS)
 life_polyvis_SOURCES  = polyvisapp.cpp polyvisbase.cpp \
+                        crouzeixraviart2d.cpp\
                         lagrange1d.cpp lagrange2d.cpp lagrange3d.cpp\
                         orthonormalpset1d.cpp orthonormalpset2d.cpp orthonormalpset3d.cpp
 
