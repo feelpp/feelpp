@@ -53,9 +53,9 @@ namespace Life
 {
 namespace fem
 {
-namespace details
+namespace detail
 {
-template<typename Basis, typename ContinuityType, template<class, uint16_type, class> class PointSetType>
+template<typename Basis, template<class, uint16_type, class> class PointSetType>
 class CrouzeixRaviartDual
     :
         public DualBasis<Basis>
@@ -188,7 +188,7 @@ FunctionalSet<primal_space_type> _M_fset;
 
 
 };
-}// details
+}// detail
 
 
 /*!
@@ -203,12 +203,12 @@ template<uint16_type N,
          template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
 class CrouzeixRaviart
     :
-    public FiniteElement<OrthonormalPolynomialSet<N, 1, PolySetType, T, Convex>,
-                         details::CrouzeixRaviartDual,
-                         PointSetEquiSpaced >
+        public FiniteElement<Life::detail::OrthonormalPolynomialSet<N, 1, PolySetType, T, Convex>,
+                             detail::CrouzeixRaviartDual,
+                             PointSetEquiSpaced >
 {
-    typedef FiniteElement<OrthonormalPolynomialSet<N, 1, PolySetType, T, Convex>,
-                          details::CrouzeixRaviartDual,
+    typedef FiniteElement<Life::detail::OrthonormalPolynomialSet<N, 1, PolySetType, T, Convex>,
+                          detail::CrouzeixRaviartDual,
                           PointSetEquiSpaced > super;
 public:
 
@@ -234,11 +234,6 @@ public:
     static const uint16_type nComponents = polyset_type::nComponents;
 
     typedef CrouzeixRaviart<N, Scalar, T, Convex> component_basis_type;
-    /**
-     * Polynomial Set continuity type: continuous or discontinuous
-     */
-    typedef typename super::continuity_type continuity_type;
-    static const bool is_continuous = super::is_continuous;
 
     typedef typename dual_space_type::convex_type convex_type;
     typedef typename dual_space_type::pointset_type pointset_type;
@@ -307,6 +302,10 @@ public:
      */
     //@{
 
+    /**
+     * \return the family name of the finite element
+     */
+    std::string familyName() const { return "CrouzeixRaviart"; }
 
     //@}
 
@@ -319,5 +318,26 @@ private:
 };
 
 } // fem
+
+template<uint16_type Order,
+         template<uint16_type Dim> class PolySetType = Scalar,
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+class CrouzeixRaviart
+{
+public:
+    template<uint16_type N,
+             typename T = double,
+             typename Convex = Simplex<N> >
+    struct apply
+    {
+        typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
+                                  mpl::identity<fem::CrouzeixRaviart<N,PolySetType,T,Simplex> >,
+                                  mpl::identity<fem::CrouzeixRaviart<N,PolySetType,T,SimplexProduct> > >::type::type result_type;
+        typedef result_type type;
+    };
+
+    typedef CrouzeixRaviart<Order,Scalar,Pts> component_basis_type;
+};
+
 } // Life
 #endif /* __CrouzeixRaviart_H */
