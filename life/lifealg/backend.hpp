@@ -116,7 +116,7 @@ public:
     template<typename DomainSpace, typename ImageSpace>
     sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im  )
     {
-        return this->newMatrix( im->map(), dm->map() );
+        return this->newMatrix( dm->map(), im->map() );
     }
 
     /**

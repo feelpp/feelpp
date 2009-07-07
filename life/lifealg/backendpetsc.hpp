@@ -94,8 +94,8 @@ public:
                                             DualImageSpace const& Yh )
     {
         sparse_matrix_ptrtype  m ( new sparse_matrix_type );
-        m->init( Xh->nDof(), Yh->nDof(),
-                 Yh->nLocalDof(), Yh->nLocalDof() );
+        m->init( Yh->nDof(), Xh->nDof(),
+                 Yh->nLocalDof(), Xh->nLocalDof() );
         return m;
     }
 

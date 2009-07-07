@@ -106,7 +106,7 @@ void MatrixPetsc<T>::init (const size_type m,
     if ((m_l == m) && (n_l == n))
     {
         // Create matrix.  Revisit later to do preallocation and make more efficient
-        ierr = MatCreateSeqAIJ (Application::COMM_WORLD, n_global, n_global,
+        ierr = MatCreateSeqAIJ (Application::COMM_WORLD, m_global, n_global,
                                 n_nz, PETSC_NULL, &_M_mat);
         CHKERRABORT(Application::COMM_WORLD,ierr);
 
@@ -223,7 +223,7 @@ void MatrixPetsc<T>::init (const size_type m,
                    dnz );
 
         //std::copy( dnz, dnz+this->graph()->nNzOnProc().size(), std::ostream_iterator<PetscInt>( std::cout, "\n" ) );
-        ierr = MatCreateSeqAIJ (Application::COMM_WORLD, n_global, n_global,
+        ierr = MatCreateSeqAIJ (Application::COMM_WORLD, m_global, n_global,
                                 0,
                                 dnz,
                                 //(int*) this->graph()->nNzOnProc().data(),
