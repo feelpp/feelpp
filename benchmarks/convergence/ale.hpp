@@ -23,7 +23,7 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file test_mesh.hpp
+   \file ale.hpp
    \author Goncalo Pena <goncalo.pena@epfl.ch>
    \date 2007-12-12
 */
@@ -36,18 +36,16 @@
 #include <life/options.hpp>
 
 #include <life/lifepoly/fekete.hpp>
-#include <life/lifealg/backendtrilinos.hpp>
 #include <life/lifealg/backend.hpp>
 
 #include <life/lifefilters/importergmsh.hpp>
 #include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
 
-#include <life/lifecore/application.hpp>
+#include <life/lifecore/applicationxml.hpp>
 
 #include <life/lifevf/vf.hpp>
 #include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/exporterensight.hpp>
 
 #include <life/lifediscr/operatorlagrangep1.hpp>
 
@@ -66,6 +64,7 @@ makeOptions()
     Life::po::options_description meshHighOrderoptions("TestALE options");
     meshHighOrderoptions.add_options()
         ("h", Life::po::value<double>()->default_value( 2 ), "meshsize")
+        ("export", "export results")
         ;
 
     return meshHighOrderoptions.add( Life::life_options() );
@@ -92,34 +91,34 @@ namespace Life
 template< int N >
 class TestALE
     :
-        public Application
+        public ApplicationXML
 {
-    typedef Application super;
+    typedef ApplicationXML super;
 
     typedef Simplex<2, 1> convex_type;
 
-    typedef Mesh<GeoEntity<Simplex<1, 1> > > struct_mesh_type;
-    typedef Mesh<GeoEntity<Simplex<2, 1> > > mesh_type;
-    typedef Mesh<GeoEntity<Simplex<2, N> > > new_mesh_type;
+    typedef Mesh<Simplex<1, 1> > struct_mesh_type;
+    typedef Mesh<Simplex<2, 1> > mesh_type;
+    typedef Mesh<Simplex<2, N> > new_mesh_type;
 
-    typedef fusion::vector<fem::Lagrange<1, N, Scalar, Continuous, double, Simplex, PointSetWarpBlend> > struct_basis_type;
+    typedef bases<Lagrange<N, Scalar, PointSetFekete> > struct_basis_type;
     typedef FunctionSpace<struct_mesh_type, struct_basis_type, double> struct_functionspace_type;
     typedef boost::shared_ptr<struct_functionspace_type> struct_functionspace_ptrtype;
     typedef typename struct_functionspace_type::element_type struct_element_type;
 
     typedef typename PointSetEquiSpaced<SimplexProduct<1,1>, N, double>::points_type node_points_type;
 
-    typedef fusion::vector<fem::Lagrange<2, 1, Vectorial, Continuous, double, Simplex, PointSetFekete> > p1_ale_basis_type;
+    typedef bases<Lagrange<1, Vectorial, PointSetFekete> > p1_ale_basis_type;
     typedef FunctionSpace< mesh_type, p1_ale_basis_type, double> p1_functionspace_type;
     typedef boost::shared_ptr<p1_functionspace_type> p1_functionspace_ptrtype;
 
-    typedef fusion::vector<fem::Lagrange<2, N, Vectorial, Continuous, double, Simplex, PointSetFekete> > pN_ale_basis_type;
+    typedef bases<Lagrange<N, Vectorial, PointSetFekete> > pN_ale_basis_type;
     typedef FunctionSpace< new_mesh_type, pN_ale_basis_type, double> pN_visualize_functionspace_type;
     typedef boost::shared_ptr<pN_visualize_functionspace_type> pN_visualize_functionspace_ptrtype;
     typedef typename pN_visualize_functionspace_type::element_type pN_element_type;
 
 
-    typedef fusion::vector<fem::Lagrange<2, N, Scalar, Continuous, double, Simplex, PointSetFekete> > basis_type;
+    typedef bases<Lagrange<N, Scalar, PointSetFekete> > basis_type;
     typedef FunctionSpace< new_mesh_type, basis_type, double> functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type fs_element_type;
@@ -127,10 +126,6 @@ class TestALE
 
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    typedef typename export_type::timeset_type timeset_type;
-
-
-
 
     /*matrix*/
     typedef Backend<double> backend_type;
@@ -140,51 +135,33 @@ class TestALE
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
-    typedef OperatorMatrix op_mat_type;
-    typedef boost::shared_ptr<OperatorMatrix> op_mat_ptrtype;
-
-    typedef IM<2, 3*N, double, Simplex> im_type;
-
-
-
-
-
 public:
-
-    TestALE( int argc, char** argv, AboutData const& ad )
-        :
-        super( argc, argv, ad ),
-        exporter( new ExporterEnsight<mesh_type>( "testALE" ) ),
-        timeSet( new timeset_type( "testALE" ) ),
-        M_backend( backend_type::build( this->vm() ) )
-    {
-        meshSize = this->vm()["h"].template as<double>();
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
-    }
 
     TestALE( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
-        exporter( new ExporterEnsight<mesh_type>( "testALE" ) ),
-        timeSet( new timeset_type( "testALE" ) ),
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         M_backend( backend_type::build( this->vm() ) )
     {
         meshSize = this->vm()["h"].template as<double>();
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
-    }
 
-    TestALE( TestALE const& tc )
-        :
-        super( tc ),
-        meshSize( tc.meshSize ),
-        exporter( new ExporterEnsight<mesh_type>( "testALE" ) ),
-        timeSet( new timeset_type( "testALE" ) ),
-        M_backend( tc.M_backend )
-    {
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
+        Parameter h;
+        if ( N < 4 )
+            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="h",_values="0.05:0.05:0.2" );
+        else
+            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="h",_values="0.5:0.5:2" );
+        this->addParameter( Parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( N  ).c_str() ) )
+            .addParameter( h );
+
+        std::vector<Parameter> depend;
+        std::vector<std::string> funcs;
+        depend.push_back(h);
+        std::ostringstream oss;
+        oss << "h**" << boost::lexical_cast<std::string>( N + 1  ) ;
+        funcs.push_back(oss.str());
+
+        this->
+            addOutput( Output(_name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) );
     }
 
     /**
@@ -197,22 +174,21 @@ public:
 
     void exportResults( double tn, pN_element_type& U )
     {
-        typename timeset_type::step_ptrtype timeStep = timeSet->step( tn );
+        if ( this->vm().count( "export" ) )
+            {
+#if 1
+                functionspace_ptrtype Wh = functionspace_type::New( U.functionSpace()->mesh() );
 
-        functionspace_ptrtype Wh = functionspace_type::New( U.functionSpace()->mesh() );
+                OperatorLagrangeP1<functionspace_type> I( Wh, M_backend );
 
-        OperatorLagrangeP1<functionspace_type> I( Wh, M_backend );
-
-        typename OperatorLagrangeP1<functionspace_type>::dual_image_space_ptrtype Yh( I.dualImageSpace() );
-        typename OperatorLagrangeP1<functionspace_type>::dual_image_space_type::element_type w( Yh, "w" );
-        typename OperatorLagrangeP1<functionspace_type>::dual_image_space_type::element_type e( Yh, "e" );
-
-        timeStep->setMesh( Yh->mesh() );
-
-        timeStep->add( "compX", U.comp(X) );
-        timeStep->add( "compY", U.comp(Y) );
-
-        exporter->save();
+                typename OperatorLagrangeP1<functionspace_type>::dual_image_space_ptrtype Yh( I.dualImageSpace() );
+                exporter->step(tn)->setMesh( Yh->mesh() );
+#else
+                exporter->step(tn)->setMesh( U.mesh() );
+#endif
+                exporter->step(tn)->add( "U", U );
+                exporter->save();
+            }
     }
 
     /**
@@ -225,7 +201,6 @@ private:
     double meshSize;
 
     export_ptrtype exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
     backend_ptrtype M_backend;
 }; // TestALE
@@ -236,22 +211,20 @@ template<int N>
 void
 TestALE<N>::run()
 {
-    this->changeRepository( boost::format( "%1%/P%2%/h_%3%/" )
-                            % this->about().appName()
-                            % N
-                            % this->vm()["h"].template as<double>()
-                            );
 
-    using namespace Life::vf;
+    this->addParameterValue( N )
+        .addParameterValue( this->vm()["h"].template as<double>() );
+
+    if (this->preProcessing() == RUN_EXIT) return;
 
     boost::timer time;
-
+    using namespace Life::vf;
     /*
       Define mesh for the curved boundaries
     */
     boost::shared_ptr<struct_mesh_type> struct_mesh( new struct_mesh_type );
     std::string fname;
-    GmshTensorizedDomain<1,1,Simplex> td;
+    GmshTensorizedDomain<1,1,1,Simplex> td;
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( 0, 5 ) );
     fname = td.generate( "structure" );
@@ -293,7 +266,7 @@ TestALE<N>::run()
     boost::shared_ptr<mesh_type> mesh( new mesh_type );
     std::ostringstream ostr;
 
-    ostr << "Mesh.MshFileVersion = 1;\n"
+    ostr << "Mesh.MshFileVersion = 2;\n"
          << "h=" << meshSize << ";\n"
          << "Point(1) = { 0, -1,0.0,h};\n"
          << "Point(2) = { 5, -1,0.0,h};\n"
@@ -349,7 +322,7 @@ TestALE<N>::run()
     /*
       Create the ale map
     */
-    ALE< Simplex<2,N> > aleFactory( std::make_pair(0,5), mesh );
+    ALE< Simplex<2,N> > aleFactory( std::make_pair(0,5), mesh, this->vm() );
     aleFactory.generateHighOrderMap( flagSet["moving_bc"], referencePolyBoundarySet, polyBoundarySet );
 
     MeshHighOrder< Simplex<2, N> > auxiliar_mesh ( mesh );
@@ -368,14 +341,13 @@ TestALE<N>::run()
       Test ale map in boundary
     */
 
-    im_type im;
     double error_bottom = math::sqrt(integrate( markedfaces( mesh, 1 ),
-                                                im,
+                                                _Q<3*N>(),
                                                 trans(idv(aleFactory.getMap()) - (f2*oneY() + Px()*oneX()))*(idv(aleFactory.getMap()) - (f2*oneY() + Px()*oneX()))
                                                 ).evaluate()( 0, 0 ));
 
     double error_top = math::sqrt(integrate( markedfaces( mesh, 3 ),
-                                             im,
+                                             _Q<3*N>(),
                                              trans(idv(aleFactory.getMap()) - (f*oneY() + Px()*oneX()))*(idv(aleFactory.getMap()) - (f*oneY() + Px()*oneX()))
                                              ).evaluate()( 0, 0 ));
 
@@ -388,6 +360,9 @@ TestALE<N>::run()
 
     aux_element = project( visH, elements(visH->mesh()), sin(Px())*cos(Py())*oneX() + sin(Py())*cos(Px())*oneY());
     this->exportResults( 1.0, aux_element);
+
+    this->addOutputValue( error_top+error_bottom );
+    this->postProcessing();
 
 } // end run routine
 
