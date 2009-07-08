@@ -93,6 +93,9 @@ Circle(23)  = {5 ,1, 2};
 
 Line Loop(24) = {20,21,22,23};
 
+//Line(31) = {1, 2};
+//Line(32) = {3, 1};
+//Line Loop(24) = {31,20,32};
 Plane Surface(30) = {24};
 
 Physical Line(1) = {24};
