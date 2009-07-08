@@ -250,7 +250,7 @@ public:
                                 node[1] = pts(1,i);
 
                                 point_type new_point( nodesCount, node, false );
-                                new_point.marker().value( 0 );
+                                new_point.marker().assign( 0 );
 
                                 new_mesh->addPoint( new_point );
 
