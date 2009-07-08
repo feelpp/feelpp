@@ -1245,12 +1245,12 @@ template< class Convex,
           uint16_type Order,
           typename T = double >
 class PointSetFekete : public mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_simplex_product>, mpl::bool_<true> >,
-                                                mpl::equal_to<mpl::bool_<Convex::nDim>, mpl::int_<1> > >,
+                                                mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<1> > >,
                                        mpl::identity<PointSetGaussLobatto<Convex,Order,T> >,
                                        mpl::identity<PointSetFeketeSimplex<Convex,Order,T> > >::type::type
 {
     typedef typename mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_simplex_product>, mpl::bool_<true> >,
-                                       mpl::equal_to<mpl::bool_<Convex::nDim>, mpl::int_<1> > >,
+                                       mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<1> > >,
                               mpl::identity<PointSetGaussLobatto<Convex,Order,T> >,
                               mpl::identity<PointSetFeketeSimplex<Convex,Order,T> > >::type::type super;
 public:
