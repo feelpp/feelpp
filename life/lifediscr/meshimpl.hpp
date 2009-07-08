@@ -961,44 +961,4 @@ Mesh<Shape, T>::Inverse::distribute( bool extrapolation )
     Debug( 4015 ) << "[Mesh::Inverse] distribute mesh points in kdtree done\n";
 }
 
-//
-// Explicit instatiations
-//
-#if defined( LIFE_INSTANTIATION_MODE )
-
-template class Mesh<Simplex<1, 1, 1> >;
-template class Mesh<Simplex<1, 1, 2> >;
-template class Mesh<SimplexProduct<1, 1, 1> >;
-template class Mesh<SimplexProduct<1, 1, 2> >;
-
-template class Mesh<Simplex<2, 1, 2> >;
-template class Mesh<SimplexProduct<2, 1, 2> >;
-
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
-template class Mesh<Simplex<2, 2, 2> >;
-template class Mesh<SimplexProduct<2, 2, 2> >;
-#endif
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 3 )
-template class Mesh<Simplex<2, 3, 2> >;
-#endif
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 4 )
-template class Mesh<Simplex<2, 4, 2> >;
-#endif
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 5 )
-template class Mesh<Simplex<2, 5, 2> >;
-#endif
-
-template class Mesh<Simplex<2, 1, 3> >;
-
-
-template class Mesh<Simplex<3, 1, 3> >;
-template class Mesh<SimplexProduct<3, 1, 3> >;
-
-
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
-template class Mesh<Simplex<3, 2, 3> >;
-template class Mesh<SimplexProduct<3, 2, 3> >;
-#endif
-
-#endif // LIFE_INSTANTIATION_MODE
 }
