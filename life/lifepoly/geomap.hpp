@@ -87,7 +87,9 @@ template<uint16_type Dim,
 class GeoMap
     :
     public PP<Order,Scalar, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
+//public PP<Order,Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
 {
+    //typedef typename PP<Order, Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
     typedef typename PP<Order, Scalar, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
 
     typedef mpl::vector<boost::none_t, boost::none_t, GeoMap<1, Order, T, Entity, PP>, GeoMap<2, Order, T, Entity, PP> > geomap_faces_t;
