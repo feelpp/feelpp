@@ -95,7 +95,10 @@ MatrixEpetra::init ( const size_type m,
         if ( _M_emap.MaxAllGID() < _M_col_emap.MaxAllGID() )
             graph_map = boost::shared_ptr<Epetra_Map>(new Epetra_Map(_M_col_emap));
 
-        Epetra_FECrsGraph epetra_graph( Copy, _M_emap, _M_col_emap, (int*)this->graph()->nNz().data() );
+        std::vector<int> nnz( this->graph()->nNz().size() );
+        std::copy( this->graph()->nNz().begin(), this->graph()->nNz().end(), nnz.begin() );
+        //Epetra_FECrsGraph epetra_graph( Copy, _M_emap, _M_col_emap, (int*)this->graph()->nNz().data() );
+        Epetra_FECrsGraph epetra_graph( Copy, _M_emap, _M_col_emap, nnz.data() );
 
         //Epetra_FECrsGraph epetra_graph( Copy, _M_emap, (int*)this->graph()->nNz().data() );
         //int start = _M_emap.MinMyGID();
@@ -118,12 +121,14 @@ MatrixEpetra::init ( const size_type m,
                 rows[0] =  ii;
                 const int numCols = it->second.get<2>().size();
 
-                const int *cols = (int*)it->second.get<2>().data();
+                std::vector<int> cols( it->second.get<2>().size() );
+                std::copy( it->second.get<2>().begin(), it->second.get<2>().end(), cols.begin() );
+                //const int *cols = (int*)it->second.get<2>().data();
 
                 //std::cout << "Inserted row number: " << ii << " and column: " << *cols << "\n";
 
                 int ierr = epetra_graph.InsertGlobalIndices( numRows, rows,
-                                                             numCols, cols );
+                                                             numCols, cols.data() );
 
 
                 Life::detail::ignore_unused_variable_warning(ierr);
@@ -131,8 +136,9 @@ MatrixEpetra::init ( const size_type m,
                 LIFE_ASSERT( ierr == 0 )( ierr )( it->first )( it->second.get<0>() )( it->second.get<1>() )( it->second.get<2>().size() ).warn( "problem with Epetra_FECrsGraph::InsertGlobalIndices" );
                 //                 Debug( 10010 ) << "row = " << ii << " irow.size " << irow.size() <<  " ierr = " << ierr << "\n";
             }
-
+        //std::cout << "------------------------------------------------------------\n";
         //std::cout << "Epetra graph: " << epetra_graph << "\n";
+        //std::cout << "------------------------------------------------------------\n";
 
         //int ierr = epetra_graph.GlobalAssemble( _M_dom_map, _M_range_map );
         //std::cout << "_M_dom_map " << _M_dom_map << "\n";
