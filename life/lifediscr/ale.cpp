@@ -32,9 +32,9 @@ namespace Life
 template < class Convex >
 ALE<Convex>::ALE( interval_type const& intX,
                   mesh_ptrtype& mesh,
-                  BackendType backendStr )
+                  po::variables_map const& vm )
     :
-    b( backend_type::build( backendStr ) ),
+    b( backend_type::build( vm ) ),
     intervalX( intX ),
     reference_mesh( mesh ),
     p1_fspace( p1_functionspace_type::New( reference_mesh ) ),
@@ -52,17 +52,17 @@ ALE<Convex>::ALE( interval_type const& intX,
     p1_element_type u( p1_fspace, "u" );
     p1_element_type v( p1_fspace, "v" );
 
-    im_type im;
-
     M_timer.restart();
     size_type pattern = DOF_PATTERN_COUPLED;
     form2( p1_fspace, p1_fspace, harmonic, _init=true, _pattern = pattern ) =
-        integrate( elements(reference_mesh), im,
+        integrate( elements(reference_mesh), _Q<0>(),
                    trace( trans(gradt(u))*grad(v) ) );
 
     form2( p1_fspace, p1_fspace, harmonic ) +=
-        integrate( boundaryfaces(reference_mesh), im,
+        integrate( boundaryfaces(reference_mesh), _Q<2>(),
                    - trans((gradt(u)*N()))*id(v)
+                   //- trans((grad(u)*N()))*idt(v)
+                   //+10*trans(idt(u))*id(v)/hFace()
                    );
 
     harmonic->close();
@@ -149,7 +149,9 @@ void
 ALE<Convex>::displacement2Map( pN_element_type const& disp, pN_element_type& u )
 {
     u = getIdentity();
+
     u += disp;
+    u.updateGlobalValues();
 }
 
 
@@ -160,6 +162,7 @@ ALE<Convex>::map2Displacement( pN_element_type const& u,
 {
     disp = u;
     disp -= getIdentity();
+    disp.updateGlobalValues();
 }
 
 
@@ -168,11 +171,12 @@ void
 ALE<Convex>::generateP1Map( p1_element_type& p )
 {
     using namespace Life::vf;
-
+    ExporterQuick<mesh_type> exp( "harmonic", "ensight" );
     p1_element_type v( p1_fspace, "v");
-    im_type im;
-
+    exp.save( 0, p );
     vector_ptrtype rhs( b->newVector( p1_fspace ) );
+    //form1( p1_fspace, rhs, _init=true ) = integrate( boundaryfaces(reference_mesh), _Q<2>(),
+    //trans(idv(p))*(- grad(v)*N()+10*id(v)/hFace() ) );
     rhs->zero();
     rhs->close();
 
@@ -182,6 +186,8 @@ ALE<Convex>::generateP1Map( p1_element_type& p )
     vector_ptrtype U( b->newVector( p1_fspace ) );
     b->solve(harmonic, harmonic, U, rhs);
     p = *U;
+
+    exp.save( 1, p );
 }
 
 #if defined( LIFE_INSTANTIATION_MODE )

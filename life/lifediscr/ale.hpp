@@ -90,9 +90,7 @@ class ALE
     {
         typedef typename MyPointSet<i>::type pointSet_type;
 
-        typedef typename mpl::if_< mpl::bool_< is_simplex >,
-                                   fusion::vector<Lagrange<i, Vectorial, PointSetFekete> >,
-                                   fusion::vector<Lagrange<i, Vectorial, PointSetGaussLobatto> > >::type type;
+        typedef bases<Lagrange<i, Vectorial, PointSetFekete> > type;
     };
 
 
@@ -137,17 +135,6 @@ class ALE
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
-    /*quadrature*/
-    typedef IM<Dim, 2, double, Simplex> im_type;
-    typedef IM<Dim, 2*Order, double, Simplex> n_im_type;
-
-
-    /* export */
-    typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
-    typedef typename export_type::timeset_type timeset_type;
-
-
     typedef std::pair<double,double> interval_type;
 
     typedef MeshHighOrder< new_convex_type > ho_mesh_type;
@@ -161,20 +148,41 @@ public:
     typedef typename pN_functionspace_type::element_type pN_element_type;
 
 
-    ALE( interval_type const& intX,
-         mesh_ptrtype& mesh,
-         BackendType backendStr = BACKEND_TRILINOS );
+    /**
+     * constructor
+     * \param intX pair of doubles describing the inlet and outlet points coordinates (1D)
+     */
+    ALE( interval_type const& intX, mesh_ptrtype& mesh, po::variables_map const& vm );
 
+    /**
+     * copy constructor
+     */
     ALE( ALE const& tc );
 
+    /**
+     * desctructor
+     */
     ~ALE();
 
+    /**
+     * \return the high order ALE map
+     */
     pN_element_type& getMap();
 
+    /**
+     * \return the high order dispacement
+     */
     pN_element_type& getDisplacement();
 
+    /**
+     * \returns an element containing the position of the points in
+     * the reference mesh
+     */
     pN_element_type& getIdentity();
 
+    /**
+     * \return the reference mesh
+     */
     mesh_ptrtype getReferenceMesh();
 
     new_mesh_ptrtype getMovingMesh();
@@ -284,7 +292,6 @@ ALE<Convex>::generateHighOrderMap( std::vector<flag_type>& flagSet,
     updatePointsInFaces( flagSet, referencePolyBoundarySet, polyDisplacementSet, pN_ale, mpl::bool_< (Order > 1) >() );
     map2Displacement( pN_ale, pN_displacement );
 
-    im_type im;
 }
 
 
