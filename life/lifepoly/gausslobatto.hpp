@@ -400,7 +400,7 @@ public:
 
     PointSetGaussLobatto( int interior = 0 )
     {
-        LIFE_ASSERT( is_simplex_product ).error("gauss lobatto points are just defined in simplex products");
+        LIFE_ASSERT( is_simplex_product || (Dim == 1)  ).error("gauss lobatto points are just defined in simplex products");
 
         nodes_type pts( Dim, numPoints );
 
