@@ -624,7 +624,7 @@ Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
 } // Life
 
 #if !defined(LIFE_INSTANTIATION_MODE)
-# include <life/lifediscr/mesh.cpp>
+# include <life/lifediscr/meshimpl.hpp>
 #endif //
 
 #endif /* __mesh_H */

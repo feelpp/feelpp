@@ -30,7 +30,7 @@ liblifediscr_la_SOURCES	=  bdf2.cpp \
                            oseendata.cpp
 
 if ENABLE_INSTANTIATION_MODE
-liblifediscr_la_SOURCES += mesh.cpp partitioner.cpp ale.cpp meshhighorder.cpp
+liblifediscr_la_SOURCES += mesh1.cpp mesh2.cpp mesh3.cpp partitioner.cpp ale.cpp meshhighorder.cpp
 endif
 
 liblifediscr_la_LIBADD	= ../lifemesh/liblifemesh.la ../lifealg/liblifealg.la
