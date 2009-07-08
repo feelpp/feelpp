@@ -427,7 +427,8 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func, mpl::bool_<true> )
         {
-            int same_mesh = ( func.mesh() == _M_mesh )?INTERPOLATE_SAME_MESH:INTERPOLATE_DIFFERENT_MESH;
+            //int same_mesh = ( func.mesh() == _M_mesh )?INTERPOLATE_SAME_MESH:INTERPOLATE_DIFFERENT_MESH;
+            int same_mesh = INTERPOLATE_DIFFERENT_MESH;
             Debug( 8000 ) << "[TimeSet::add] use same mesh: " << same_mesh << " (" << INTERPOLATE_SAME_MESH << "," << INTERPOLATE_DIFFERENT_MESH << ")\n";
             if ( FunctionType::is_scalar )
                 {
@@ -491,7 +492,8 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func, mpl::bool_<false> )
         {
-            int same_mesh = ( func.mesh() == _M_mesh )?INTERPOLATE_SAME_MESH:INTERPOLATE_DIFFERENT_MESH;
+            //int same_mesh = ( func.mesh() == _M_mesh )?INTERPOLATE_SAME_MESH:INTERPOLATE_DIFFERENT_MESH;
+            int same_mesh = INTERPOLATE_DIFFERENT_MESH;
             Debug( 8000 ) << "[TimeSet::add] use same mesh: " << same_mesh << " (" << INTERPOLATE_SAME_MESH << "," << INTERPOLATE_DIFFERENT_MESH << ")\n";
             if ( FunctionType::is_scalar )
                 {
