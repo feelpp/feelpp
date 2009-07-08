@@ -479,6 +479,7 @@ struct test_integration_sin
         //double v0 = integrate( elements(*mesh), IM<2,2*Order,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
         std::cout << "int( 1 )=" << v0 << "  (=pi) error= " << math::abs( v0 - M_PI ) << std::endl;
 
+        //BOOST_CHECK_SMALL( math::abs( v0 - M_PI ), 3*exp(-4*Order));
     }
     double meshSize;
 };
@@ -521,7 +522,7 @@ init_unit_test_suite( int argc, char** argv )
     Life::Assert::setLog( "test_integration.assert");
     test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
 
-    test->add( BOOST_TEST_CASE( ( test_integration_circle<double>( mpi->vm()["hsize"].as<double>() ) ) ) );
+    test->add( BOOST_TEST_CASE( ( test_integration_sin<1,double>( mpi->vm()["hsize"].as<double>() ) ) ) );
     return test;
 }
 #else
