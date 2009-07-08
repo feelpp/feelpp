@@ -88,6 +88,7 @@ struct Scalar
     }
 };
 
+
 /**
  * Policy for \c Vectorial polynomials or polynomial sets of dimension
  * \p Dim
@@ -173,6 +174,57 @@ struct Vectorial
             }
         return __c_reshaped;
     }
+};
+
+/**
+ * Policy for \c Scalar polynomials or polynomial set of dimension
+ * \p Dim
+ */
+namespace detail
+{
+template<uint16_type N, uint16_type M>
+struct Field
+{
+    static const uint16_type rank = (M > 1);
+    static const uint16_type nDim = N;
+    static const uint16_type nVariables = N;
+
+    static const bool is_scalar = (M==1);
+    static const bool is_vectorial = (N==M);
+    static const bool is_tensor2 = false;
+    static const bool is_tensor3 = false;
+
+    static const uint16_type nComponents = M;
+    static const uint16_type nComponents1 = M;
+    static const uint16_type nComponents2 = 1;
+    static const uint16_type nComponents3 = 1;
+    static const uint16_type nComponentsLast = 1;
+
+    template<typename T>
+    static
+    inline ublas::matrix<T> const&
+    toMatrix( ublas::matrix<T> const&  __c )
+    {
+        return __c;
+    }
+    template<typename T>
+    static
+    inline ublas::matrix<T> const&
+    toType( ublas::matrix<T> const&  __c )
+    {
+        return __c;
+    }
+};
+}
+
+template<uint16_type M>
+struct Field
+{
+    template <uint16_type Nvar>
+    struct apply
+    {
+        typedef detail::Field<Nvar,M> type;
+    };
 };
 
 /**
