@@ -33,8 +33,11 @@ check_PROGRAMS		= test_bdf \
                       test_interpolation \
                       test_integration test_integration_ho test_integration_3d \
                       test_space \
-                      test_geomap
+                      test_geomap test_mixed
 
+
+test_mixed_SOURCES	= test_mixed.cpp
+test_mixed_LDADD      = ../../life/liblife.la
 
 test_bdf_SOURCES	= test_bdf.cpp
 test_bdf_LDADD      = ../../life/liblife.la
