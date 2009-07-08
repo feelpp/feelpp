@@ -159,7 +159,7 @@ public:
 		{
 			Epetra_Map eimagemap = BackendTrilinos::epetraMap( domainmap );
 			//std::cout << "Imagemap: " << eimagemap << "\n";
-            return sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap, eimagemap, edomainmap ) );
+            return sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap, edomainmap, eimagemap ) );
 		}
 	else
 		return sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap ) );
