@@ -22,12 +22,12 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file test_ale.cpp
+   \file ale.cpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \author Goncalo Pena <goncalo.pena@epfl.ch>
    \date 2006-06-20
  */
-#include "test_ale.hpp"
+#include "ale.hpp"
 
 int
 main( int argc, char** argv )
@@ -36,7 +36,7 @@ main( int argc, char** argv )
 
   Life::TestALE<1> mesh1( argc, argv, makeAbout(), makeOptions());
   mesh1.run();
-  /*
+    /*
   Life::TestALE<2> mesh2( argc, argv, makeAbout(), makeOptions());
   mesh2.run();
   */
