@@ -412,4 +412,97 @@ AT_SETUP([stokes 2d])
 
 AT_CLEANUP
 
-fi
+
+
+AT_BANNER([ale...])
+
+AT_SETUP([ale 2d P1 ])
+
+
+ if test x$with_python_support = x1;
+ then
+
+  AT_KEYWORDS([ale 2d P1])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=ale1 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+
+ else
+
+  AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+ fi
+
+AT_CLEANUP
+
+AT_SETUP([ale 2d P2])
+
+
+ if test x$with_python_support = x1;
+ then
+
+  AT_KEYWORDS([ale 2d P2])
+  AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=ale2 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+
+ else
+
+  AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+ fi
+
+AT_CLEANUP
+
+
+# AT_SETUP([ale 2d P3])
+
+
+#  if test x$with_python_support = x1;
+#  then
+
+#   AT_KEYWORDS([ale 2d P3])
+#   AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=ale3 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+
+#  else
+
+#   AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+#  fi
+
+# AT_CLEANUP
+
+# AT_SETUP([ale 2d P4])
+
+
+#  if test x$with_python_support = x1;
+#  then
+
+#   AT_KEYWORDS([ale 2d P4])
+#   AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=ale4 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+
+#  else
+
+#   AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+#  fi
+
+# AT_CLEANUP
+
+
+# AT_SETUP([ale 2d P5])
+
+
+#  if test x$with_python_support = x1;
+#  then
+
+#   AT_KEYWORDS([ale 2d P5])
+#   AT_CHECK([ $abs_srcdir/python/batch_validation.py --program=ale5 --path=$abs_top_builddir/convergence/],[0],[ignore],[ignore])
+
+#  else
+
+#   AT_CHECK([exit 77],[0],[ignore],[ignore])
+
+#  fi
+
+# AT_CLEANUP
+
+
+
+
