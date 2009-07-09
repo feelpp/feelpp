@@ -156,8 +156,8 @@ private:
         uint16_type npts = pts.nPoints();
 
         // generate all permutations
-        //generateFacePermutations( npts, mpl::bool_<is_simplex>() );
-        generateFacePermutations( npts, mpl::bool_<false>() );
+        generateFacePermutations( npts, mpl::bool_<is_simplex>() );
+        //generateFacePermutations( npts, mpl::bool_<false>() );
         face_permutation_type pbegin( face_permutation_type::IDENTITY );
         face_permutation_type pend( face_permutation_type::N_PERMUTATIONS );
         for( face_permutation_type p = pbegin; p < pend; ++p )
@@ -239,8 +239,8 @@ private:
         //uint16_type n_side_points = (uint16_type) (-1 + math::sqrt( (double)8*npoints + 1 ))/2;
         uint16_type n_side_points = (uint16_type)math::sqrt((double)npoints);
         //LIFE_ASSERT( npoints == (n_side_points-1)*(n_side_points-2)/2 )
-        LIFE_ASSERT( npoints == (n_side_points)*(n_side_points))
-            ( npoints )( n_side_points ).error( "invalid number of points" );
+        //LIFE_ASSERT( npoints == (n_side_points)*(n_side_points))
+        //( npoints )( n_side_points ).error( "invalid number of points" );
         permutation_vector_type _vec(npoints);
         _vec.clear();
         //define hypotenuse reverse permutation
@@ -271,17 +271,17 @@ private:
         vector_permutation[face_permutation_type(face_permutation_type::REVERSE_BASE)] = _vec;
         matrix_permutation[face_permutation_type(face_permutation_type::REVERSE_BASE)] = vectorToMatrixPermutation(_vec);
 
-        setPermutation( face_permutation_type::ROTATION_ANTICLOCK,
-                        face_permutation_type::REVERSE_BASE,
-                        face_permutation_type::REVERSE_HYPOTENUSE);
+        setPermutation( (face_permutation_type)face_permutation_type::ROTATION_ANTICLOCK,
+                        (face_permutation_type)face_permutation_type::REVERSE_BASE,
+                        (face_permutation_type)face_permutation_type::REVERSE_HYPOTENUSE);
 
-        setPermutation( face_permutation_type::ROTATION_CLOCKWISE,
-                        face_permutation_type::REVERSE_HYPOTENUSE,
-                        face_permutation_type::REVERSE_BASE);
+        setPermutation( (face_permutation_type)face_permutation_type::ROTATION_CLOCKWISE,
+                        (face_permutation_type)face_permutation_type::REVERSE_HYPOTENUSE,
+                        (face_permutation_type)face_permutation_type::REVERSE_BASE);
 
-        setPermutation( face_permutation_type::REVERSE_HEIGHT,
-                        face_permutation_type::REVERSE_BASE,
-                        face_permutation_type::ROTATION_CLOCKWISE);
+        setPermutation( (face_permutation_type)face_permutation_type::REVERSE_HEIGHT,
+                        (face_permutation_type)face_permutation_type::REVERSE_BASE,
+                        (face_permutation_type)face_permutation_type::ROTATION_CLOCKWISE);
     }
 
     //Permutations for hexahedra
