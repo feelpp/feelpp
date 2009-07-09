@@ -5,5 +5,5 @@ all:
 #	autoheader
 	automake
 	autoconf
-
+	-test -d fsi/ && ( cd fsi && make -f Makefile.dist)
 
