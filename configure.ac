@@ -425,9 +425,9 @@ AC_DEFUN([LIFE_WITH_MESH_MAX_ORDER],
 [
  AC_ARG_WITH(meshmaxorder,
              AC_HELP_STRING([--with-meshmaxorder@<:@=INT@:>@],
-                            [build with maximum mesh (order @<:@]m4_default([$1], 1)[@:>@ mesh in 1D,2D,3D) support]),
+                            [build with maximum mesh (order @<:@]m4_default([$1], 5)[@:>@ mesh in 1D,2D,3D) support]),
       mesh_max_order=$withval,
-      mesh_max_order=1)
+      mesh_max_order=5)
 
  AC_MSG_NOTICE([enabling mesh geometries up to order $mesh_max_order])
  AC_DEFINE_UNQUOTED(LIFE_MESH_MAX_ORDER, m4_default([$mesh_max_order], 1), [Define if minimal mesh support is required (order 1 mesh in 1D,2D,3D)])
