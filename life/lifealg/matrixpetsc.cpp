@@ -810,29 +810,69 @@ template<typename T>
 void
 MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 {
+    int ierr = 0;
+
+    // first check if the matrix is symmetric
+    Mat Atrans;
+    MatTranspose( _M_mat, MAT_INITIAL_MATRIX, &Atrans );
+    PetscTruth isSymmetric;
+    MatEqual( _M_mat, Atrans, &isSymmetric);
+    if (isSymmetric) {
+        Log() << "[MatrixPetsc<T>::symmetricPart] Matrix is already symmetric, don't do anything\n";
+        MatSetOption(_M_mat,MAT_SYMMETRIC,PETSC_TRUE);
+
+        // duplicate the matrix
+        MatrixPetsc<T>* B = dynamic_cast<MatrixPetsc<T>*> (&Mt);
+        ierr = MatDuplicate( _M_mat, MAT_COPY_VALUES, &B->_M_mat );
+        MatSetOption( B->_M_mat, MAT_SYMMETRIC, PETSC_TRUE );
+        return ;
+    }
+
+    // The matrix was not symmetric, compute 1/2 (A + A^T )
     Mat A[2];
-    MatDuplicate(_M_mat,MAT_COPY_VALUES,&A[0]);
-    MatDuplicate(_M_mat,MAT_COPY_VALUES,&A[1]);
-    MatTranspose( A[1], MAT_INITIAL_MATRIX, &A[1] );
-    
+    ierr = MatDuplicate(_M_mat,MAT_COPY_VALUES,&A[0]);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
+    ierr = MatDuplicate(_M_mat,MAT_COPY_VALUES,&A[1]);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
+    ierr = MatTranspose( A[1], MAT_INITIAL_MATRIX, &A[1] );
+    CHKERRABORT(Application::COMM_WORLD,ierr);
 
     MatrixPetsc<T>* B = dynamic_cast<MatrixPetsc<T>*> (&Mt);
-    MatCreateComposite(PETSC_COMM_WORLD,2,A,&B->_M_mat);
-    MatCompositeSetType(B->_M_mat,MAT_COMPOSITE_ADDITIVE);
-    MatCompositeMerge(B->_M_mat);
-    MatShift( B->_M_mat, 0.5 );
+    LIFE_ASSERT( B ).error ( "[symmetricPart] invalid dynamic_cast<MatrixPetsc>" );
 
+    ierr = MatCreateComposite(PETSC_COMM_WORLD,2,A,&B->_M_mat);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
+    ierr = MatCompositeSetType(B->_M_mat,MAT_COMPOSITE_ADDITIVE);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
+    ierr = MatCompositeMerge(B->_M_mat);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
+    ierr = MatShift( B->_M_mat, 0.5 );
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
+    // check that B is now symmetric
     Mat Btrans;
-    MatTranspose( B->_M_mat, MAT_INITIAL_MATRIX, &Btrans );
-    PetscTruth isSymmetric;
-    MatEqual( B->_M_mat, Btrans, &isSymmetric);
+    ierr = MatTranspose( B->_M_mat, MAT_INITIAL_MATRIX, &Btrans );
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
+    ierr = MatEqual( B->_M_mat, Btrans, &isSymmetric);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
     if (isSymmetric) {
-        Log() << "[MatrixPetsc<T>::symmetricPart] Matrix is symmetric\n";
-        MatSetOption(B->_M_mat,MAT_SYMMETRIC,PETSC_TRUE);
+        Log() << "[MatrixPetsc<T>::symmetricPart] symmetric part is really symmetric\n";
+
+        ierr = MatSetOption(B->_M_mat,MAT_SYMMETRIC,PETSC_TRUE);
+        CHKERRABORT(Application::COMM_WORLD,ierr);
+
     } else {
         PetscPrintf(PETSC_COMM_WORLD,"Warning: Petsc matrix is non-symmetric \n");
     }
-
+    ierr = MatDestroy (Btrans);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
 }
 
 template class MatrixPetsc<double>;
