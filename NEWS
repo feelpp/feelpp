@@ -1,110 +1,129 @@
-# -*- readme-debian -*-
+# -*- org -*-
 
-New in 0.9.11
-=============
+#+TITLE: Life News 
+#+AUTHOR: Christophe Prud'homme 
+#+EMAIL: christophe.prudhomme@ujf-grenoble.fr
 
-== Libraries ==
+* New in 0.9.11
 
-=== lifepoly ===
+** Libraries 
 
- * now Lagrange polynomials can be instantiated using only
-   Lagrange<Order,Scalar|Vectorial>
+*** lifepoly 
 
-=== lifediscr ===
+    - now Lagrange polynomials can be instantiated using only
+      Lagrange<Order,Scalar|Vectorial>
+      
+*** lifediscr 
 
- * Simplified FunctionSpace<>
+    - Simplified FunctionSpace<>
 
- * Bdf: allow to set time step and final time, added setSteady() to
-   set time step and final time to a very big value for the
-   computation of the steady state
+    - Bdf: allow to set time step and final time, added setSteady() to set
+      time step and final time to a very big value for the computation of the
+      steady state
 
- * support for high order nodal basis function in case of periodic
-   conditions in 1D and 2D is complete see #20
+    - support for high order nodal basis function in case of periodic
+      conditions in 1D and 2D is complete see #20
 
-=== lifealg ===
+*** lifealg 
 
- * Improve robustness of linear algebra backends see #21
+    - Improve robustness of linear algebra backends see #21
 
-=== lifefilters ===
+    - Improve SolverEigen interface allowing for boost::shared_ptr<> and
+      initializing from po::variables_map
 
- * Simplfy Exporter interface, old interface still supported, but
-   might be obsoleted in a future release. The simplification is that
-   the TimeSet data structure should not be used directly but through
-   the Exporter class interface.
+    - Fixed bug on 64 bits architecture for the construction of the FE CRS
+      graph for trilinos
 
-=== lifevf ===
+*** lifefilters 
+    
+    - Simplify Exporter interface, old interface still supported, but might be
+      obsoleted in a future release. The simplification is that the TimeSet
+      data structure should not be used directly but through the Exporter class
+      interface.
+      
+*** lifevf
 
- * reflect simplifications made in lifepoly and lifediscr
+    - reflect simplifications made in lifepoly and lifediscr
 
- * mat(),vec(): supports for trial and test functions added, now you
-   can write vec(0.,idt(v)).
+    - mat(),vec(): supports for trial and test functions added, now you can
+      write vec(0.,idt(v)).
 
-== Applications ==
+** Applications
 
-=== Polyvis ===
+*** Polyvis
 
- * resurrected a tool to visualize polynomial set called polyvis
+    - resurrected a tool to visualize polynomial set called polyvis. It
+      generates Ensight case files (to be visualized with Paraview) for Lagrange
+      and Dubiner polynomials in 1D, 2D and 3D and Crouzeix-Raviart polynomials
+      of order 1 in 2D in the triangle.
+      
+** Benchmarks
+
+*** Convergence
+
+    - new benchmark system: added a Python framework to check for the
+      convergence (e.g. L_2 or H_1 norms) for a few problems
+
+    - added new benchmarks to benchmark/convergence: stokes and ale  
+
+* New in 0.9.10
+
+** Libraries
+
+*** lifediscr
+
+    - started support for high order nodal basis function in case of periodic
+      conditions
+      
+*** lifefilters
+
+    - Gmsh : throw an exception if gmsh is execute when not available
+
+** Documentation
+
+*** Tutorial
+
+    - updated the building section
+
+    - updated the Backend<> section
+
+    - started new examples (nonlinear pde)
+
+** Build System
+   
+*** Configure
+    
+    - better feedback to users
+
+    - a summary text file provides what is available and what is not
+
+*** Gmsh
+
+    - configure: better support
+
+
 
 
-New in 0.9.10
-=============
+* New in 0.9.9
 
-== Libraries ==
+  - If Petsc is supported then use Petsc as default backend.
+    
+  - Slepc(Petsc) support has been updated to latest version.
 
-=== lifediscr ===
+  - Added periodic boundary conditions support in FunctionSpace<>.
 
- * started support for high order nodal basis function in case of periodic
-   conditions
-
-=== lifefilters ===
-
- * Gmsh : throw an exception if gmsh is execute when not available
-
-== Documentation ==
-
-=== Tutorial ===
-
- * updated the building section
-
- * updated the Backend<> section
-
- * started new examples (nonlinear pde)
-
-== Build System ==
-
-=== Configure ===
-
- * better feedback to users
-
- * a summary text file provides what is available and what is not
-
-=== Gmsh ===
-
- * configure: better support
-
-
-
-
-New in 0.9.9
-============
-
-* If Petsc is supported then use Petsc as default backend.
-
-* Slepc(Petsc) support has been updated to latest version.
-
-* Added periodic boundary conditions support in FunctionSpace<>.
-
-* New Build system framework still using the Autotools: the Life
+  - New Build system framework still using the Autotools: the Life
   Developement Plateform (LDP).
    - split the directories into submodules which can hold extra (external
      to life) modules: examples, benchmarks, doc, applications, research
    - allow for easy creation of new projets which can build on top of the
      LDP.
 
-* [Experimental] System<FunctionSpaceType> framework implementation.
+   - [Experimental] System<FunctionSpaceType> framework implementation.
 
-* [Experimental] Shell matrices (only support matrix/vector
+   - [Experimental] Shell matrices (only support matrix/vector
   multiplication) support.
 
 
- -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Thu, 30 Apr 2009 19:36:01 +0200
+ -- prudhomm <prudhomm@orphu.prudhomm.org>, Thu,  6 Aug 2009 14:12:24 +0200
+ 
