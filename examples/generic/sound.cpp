@@ -183,7 +183,7 @@ private:
     double meshSize;
     boost::shared_ptr<SolverEigen<value_type> > eigen;
 
-    
+
     boost::shared_ptr<export_type> exporter;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
@@ -313,26 +313,16 @@ Sound<Dim, Order, Entity>::run()
 
     int ncv = this->vm()["solvereigen-ncv"].template as<int>();;
 
-#if 1
-    eigen->setEigenProblemType( HEP );
-    unsigned int nconv, nits;
-    boost::tie( nconv, nits)  =     eigen->solve( S,  nev, ncv, tol, maxit );
-    Log() << "number of converged eigenmodes = " << nconv << "\n";
-    Log() << "number of iterations = " << nits << "\n";
-    //#else
-    eigen->setEigenProblemType( GHEP );
-    boost::tie( nconv, nits)  =     eigen->solve( S, M,  nev, ncv, tol, maxit );
-    Log() << "number of converged eigenmodes = " << nconv << "\n";
-    Log() << "number of iterations = " << nits << "\n";
-#endif
-
-    element_type mode( Xh, "mode" );
-    vector_ptrtype modepetsc( M_backend->newVector( Xh ) );
-
-    Log() << "Extracting eigen mode\n";
-
     double eigen_real, eigen_imag;
-    boost::tie( eigen_real, eigen_imag)  = eigen->eigenPair( 0, modepetsc );
+    vector_ptrtype modepetsc( M_backend->newVector( Xh ) );
+    int nconv;
+    boost::tie( nconv, eigen_real, eigen_imag, modepetsc )  =
+        eigs( _matrixA=S,
+              _matrixB=M,
+              _nev=nev,
+              _ncv=ncv,
+              _spectrum=LARGEST_MAGNITUDE );
+    element_type mode( Xh, "mode" );
     Log() << "eigenvalue " << 0 << " = (" << eigen_real << "," << eigen_imag  << ")\n";
     //Log() << "eigenvalue " << 0 << " relative error = " << eigen->relativeError( 0 ) << "\n";
 
