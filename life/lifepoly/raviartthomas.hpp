@@ -1,11 +1,12 @@
 /* -*- mode: c++ -*-
 
-  This file is part of the LifeV library
+  This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2006-01-14
 
   Copyright (C) 2006 EPFL
+  Copyright (C) 2008, 2009 Université de Grenoble 1 (Joseph Fourier)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -56,7 +57,7 @@
 #include <life/lifepoly/functionals2.hpp>
 #include <life/lifepoly/quadpoint.hpp>
 #include <life/lifepoly/fe.hpp>
-namespace LifeV
+namespace Life
 {
 namespace detail
 {
@@ -69,14 +70,21 @@ struct times_x
         :
         _M_p ( p ),
         _M_c( c )
-    {}
+    {
+        std::cout << "component : " << c << std::endl;
+    }
     typename ublas::vector<value_type> operator() ( points_type const& __pts ) const
     {
+        std::cout << "times_x(pts) : " << __pts << std::endl;
+        std::cout << "times_x(pts) : " << _M_p.evaluate(__pts) << std::endl;
+        std::cout << "times_x(coeff) : " << _M_p.coefficients() << std::endl;
+
         // __pts[c] * p( __pts )
         return ublas::element_prod( ublas::row( __pts, _M_c ),
                                     ublas::row( _M_p.evaluate( __pts ), 0 ) );
     }
-    P const& _M_p;
+    //P const& _M_p;
+    P _M_p;
     int _M_c;
 };
 
@@ -102,16 +110,16 @@ template<uint16_type N,
          template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
 class RaviartThomasPolynomialSet
     :
-    public OrthonormalPolynomialSet<N, O+1, Vectorial, T, Convex>
+        public detail::OrthonormalPolynomialSet<N, O+1, Vectorial, T, Convex>
 {
-    typedef OrthonormalPolynomialSet<N, O+1, Vectorial, T, Convex> super;
+    typedef detail::OrthonormalPolynomialSet<N, O+1, Vectorial, T, Convex> super;
 
 public:
-    typedef OrthonormalPolynomialSet<N, O, Vectorial, T, Convex> Pk_v_type;
-    typedef OrthonormalPolynomialSet<N, O+1, Vectorial, T, Convex> Pkp1_v_type;
-    typedef OrthonormalPolynomialSet<N, O-1, Vectorial, T, Convex> Pkm1_v_type;
-    typedef OrthonormalPolynomialSet<N, O, Scalar, T, Convex> Pk_s_type;
-    typedef OrthonormalPolynomialSet<N, O+1, Scalar, T, Convex> Pkp1_s_type;
+    typedef detail::OrthonormalPolynomialSet<N, O, Vectorial, T, Convex> Pk_v_type;
+    typedef detail::OrthonormalPolynomialSet<N, O+1, Vectorial, T, Convex> Pkp1_v_type;
+    typedef detail::OrthonormalPolynomialSet<N, O-1, Vectorial, T, Convex> Pkm1_v_type;
+    typedef detail::OrthonormalPolynomialSet<N, O, Scalar, T, Convex> Pk_s_type;
+    typedef detail::OrthonormalPolynomialSet<N, O+1, Scalar, T, Convex> Pkp1_s_type;
 
     typedef PolynomialSet<typename super::basis_type,Vectorial> vectorial_polynomialset_type;
     typedef typename vectorial_polynomialset_type::polynomial_type vectorial_polynomial_type;
@@ -136,40 +144,47 @@ public:
         uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
         uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
         uint16_type dim_Pkm1 = (nOrder==1)?0:convex_type::polyDims( nOrder-2 );
+        std::cout << "[RTPset] dim_Pkp1 = " << dim_Pkp1 << "\n";
+        std::cout << "[RTPset] dim_Pk   = " << dim_Pk << "\n";
+        std::cout << "[RTPset] dim_Pkm1 = " << dim_Pkm1 << "\n";
 
         // (P_k)^d
         Pkp1_v_type Pkp1_v;
         vectorial_polynomialset_type Pk_v( Pkp1_v.polynomialsUpToDimension( dim_Pk ) );
-        //std::cout << "Pk_v =" << Pk_v.coeff() << "\n";
+        std::cout << "[RTPset] Pk_v =" << Pk_v.coeff() << "\n";
 
         // P_k
         Pkp1_s_type Pkp1;
         scalar_polynomialset_type Pk ( Pkp1.polynomialsUpToDimension( dim_Pk ) );
-        //std::cout << "Pk =" << Pk.coeff() << "\n";
+        std::cout << "[RTPset] Pk =" << Pk.coeff() << "\n";
+        std::cout << "[RTPset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
 
         // x P_k \ P_{k-1}
-        IM_PK<convex_type::nDim, 2*nOrder,value_type> im;
-        ublas::matrix<value_type> xPkc( nComponents*(dim_Pk-dim_Pkm1), Pk.coeff().size2() );
+        IMGeneral<convex_type::nDim, 2*nOrder,value_type> im;
+        std::cout << "[RTPset] im.points() = " << im.points() << std::endl;
+        ublas::matrix<value_type> xPkc( nComponents*(dim_Pk-dim_Pkm1),Pk.coeff().size2() );
 
-        //std::cout << "xPkc = " << xPkc << "\n";
-        for( int j = dim_Pkm1, l = 0; j < dim_Pk; ++j, ++l )
+        std::cout << "[RTPset] before xPkc = " << xPkc << "\n";
+        for( int l = dim_Pkm1, i = 0; l < dim_Pk; ++l, ++i )
             {
-                for( int i = 0; i < convex_type::nDim; ++i )
+                for( int j = 0; j < convex_type::nDim; ++j )
                     {
-                        detail::times_x<scalar_polynomial_type> xp( Pk.polynomial( j ), i );
-                        ublas::row(xPkc,l*nComponents+i) = ublas::row( LifeV::project( Pkp1,
-                                                                                       xp,
-                                                                                       im ).coeff(), 0);
+                        detail::times_x<scalar_polynomial_type> xp( Pk.polynomial( l ), j );
+                        ublas::row(xPkc,i*nComponents+j)=
+                            ublas::row( Life::project( Pkp1,
+                                                       xp,
+                                                       im ).coeff(), 0);
                     }
             }
 
 
-        //std::cout << "xPkc = " << xPkc << "\n";
+        std::cout << "[RTPset] after xPkc = " << xPkc << "\n";
         vectorial_polynomialset_type xPk( typename super::basis_type(), xPkc, true );
-
+        std::cout << "[RTPset] here 1\n";
         // (P_k)^d + x P_k
+        std::cout << "[RTPset] RT Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
         this->setCoefficient( unite( Pk_v, xPk ).coeff(), true );
-
+        std::cout << "[RTPset] here 2\n";
     }
 
 
@@ -178,13 +193,13 @@ public:
 namespace fem
 {
 
-namespace details
+namespace detail
 {
 
 
 
 template<typename Basis,
-         template<class, class> class PointSetType>
+         template<class, uint16_type, class> class PointSetType>
 class RaviartThomasDual
     :
         public DualBasis<Basis>
@@ -207,124 +222,128 @@ public:
     typedef typename primal_space_type::vectorial_polynomialset_type vectorial_polynomialset_type;
 
     // point set type associated with the functionals
-    typedef PointSetType<convex_type, value_type> pointset_type;
+    typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
     static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                                                     mpl::int_<reference_convex_type::nbPtsPerEdge>,
-                                                     mpl::int_<0> >::type::value;
-static const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                                                 mpl::int_<reference_convex_type::nbPtsPerFace>,
-                                                 mpl::int_<0> >::type::value;
-static const uint16_type nbPtsPerVolume = 0;
-static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
-                                       reference_convex_type::numEdges*nbPtsPerEdge );
+    static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,mpl::int_<reference_convex_type::nbPtsPerEdge>,mpl::int_<0> >::type::value;
+    static const uint16_type nbPtsPerFace =mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,mpl::int_<reference_convex_type::nbPtsPerFace>,mpl::int_<0> >::type::value;
+    static const uint16_type nbPtsPerVolume = 0;
+    static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
 
-/** Number of degrees of freedom per vertex */
-static const uint16_type nbDofPerVertex = 0;
+    /** Number of degrees of freedom per vertex */
+    static const uint16_type nDofPerVertex = 0;
 
-/** Number of degrees of freedom per edge */
-static const uint16_type nbDofPerEdge = nbPtsPerEdge;
+    /** Number of degrees of freedom per edge */
+    static const uint16_type nDofPerEdge = nbPtsPerEdge;
 
-/** Number of degrees of freedom per face */
-static const uint16_type nbDofPerFace = nbPtsPerFace;
+    /** Number of degrees of freedom per face */
+    static const uint16_type nDofPerFace = nbPtsPerFace;
 
-/** Number of degrees  of freedom per volume */
-static const uint16_type nbDofPerVolume = 0;
+    /** Number of degrees  of freedom per volume */
+    static const uint16_type nDofPerVolume = 0;
 
-/** Total number of degrees of freedom (equal to refEle::nbDof) */
-static const uint16_type nbLocalDof = 1;
+    /** Total number of degrees of freedom (equal to refEle::nDof) */
+    static const uint16_type nLocalDof = numPoints;
 
-RaviartThomasDual( primal_space_type const& primal )
-    :
-    super( primal ),
-    _M_convex_ref(),
-    _M_eid(_M_convex_ref.topologicalDimension()+1),
-    _M_pts( nDim, numPoints ),
-    _M_fset( primal )
-{
+    RaviartThomasDual( primal_space_type const& primal )
+        :
+        super( primal ),
+        _M_convex_ref(),
+        _M_eid(_M_convex_ref.topologicalDimension()+1),
+        _M_pts( nDim, numPoints ),
+        _M_fset( primal )
+    {
 #if 1
-    std::cout << "Raviart-Thomas finite element: \n";
-    std::cout << " o- dim   = " << nDim << "\n";
-    std::cout << " o- order = " << nOrder << "\n";
-    std::cout << " o- numPoints      = " << numPoints << "\n";
-    std::cout << " o- nbPtsPerVertex = " << (int)nbPtsPerVertex << "\n";
-    std::cout << " o- nbPtsPerEdge   = " << (int)nbPtsPerEdge << "\n";
-    std::cout << " o- nbPtsPerFace   = " << (int)nbPtsPerFace << "\n";
-    std::cout << " o- nbPtsPerVolume = " << (int)nbPtsPerVolume << "\n";
+        std::cout << "Raviart-Thomas finite element(dual): \n";
+        std::cout << " o- dim   = " << nDim << "\n";
+        std::cout << " o- order = " << nOrder << "\n";
+        std::cout << " o- numPoints      = " << numPoints << "\n";
+        std::cout << " o- nbPtsPerVertex = " << (int)nbPtsPerVertex << "\n";
+        std::cout << " o- nbPtsPerEdge   = " << (int)nbPtsPerEdge << "\n";
+        std::cout << " o- nbPtsPerFace   = " << (int)nbPtsPerFace << "\n";
+        std::cout << " o- nbPtsPerVolume = " << (int)nbPtsPerVolume << "\n";
+        std::cout << " o- nLocalDof      = " << nLocalDof << "\n";
 #endif
-    std::vector<points_type> pts_per_face( convex_type::numFaces );
-    // loop on each entity forming the convex of topological
-    // dimension nDim-1 ( the faces)
-    for ( int p = 0, e = _M_convex_ref.entityRange( nDim-1 ).begin();
-          e < _M_convex_ref.entityRange( nDim-1 ).end();
-          ++e )
-        {
-            points_type Gt ( _M_convex_ref.makePoints( nDim-1, e ) );
-            pts_per_face[e] =  Gt ;
-            if ( Gt.size2() )
-                {
-                    //Debug() << "Gt = " << Gt << "\n";
-                    //Debug() << "p = " << p << "\n";
-                    ublas::subrange( _M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
-                    //for ( size_type j = 0; j < Gt.size2(); ++j )
-                    //_M_eid[d].push_back( p+j );
-                    p+=Gt.size2();
-                }
-        }
+        std::vector<points_type> pts_per_face( convex_type::numTopologicalFaces );
+        // loop on each entity forming the convex of topological
+        // dimension nDim-1 ( the faces)
+        for ( int p = 0, e = _M_convex_ref.entityRange( nDim-1 ).begin();
+              e < _M_convex_ref.entityRange( nDim-1 ).end();
+              ++e )
+            {
+                points_type Gt ( _M_convex_ref.makePoints( nDim-1, e ) );
+                pts_per_face[e] =  Gt ;
+                if ( Gt.size2() )
+                    {
+                        //Debug() << "Gt = " << Gt << "\n";
+                        //Debug() << "p = " << p << "\n";
+                        ublas::subrange( _M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
+                        //for ( size_type j = 0; j < Gt.size2(); ++j )
+                        //_M_eid[d].push_back( p+j );
+                        p+=Gt.size2();
+                    }
+            }
+        std::cout << "[RT Dual] done 1\n";
+        // compute  \f$ \ell_e( U ) = (U * n[e]) (edge_pts(e)) \f$
+        typedef Functional<primal_space_type> functional_type;
+        std::vector<functional_type> fset;
+        double j[3] = {2.8284271247461903,2.0,2.0};
 
-    // compute  \f$ \ell_e( U ) = (U * n[e]) (edge_pts(e)) \f$
-    typedef Functional<primal_space_type> functional_type;
-    std::vector<functional_type> fset;
-    // loopover the each edge entities and add the correponding functionals
-    for ( int e = _M_convex_ref.entityRange( nDim-1 ).begin();
-          e < _M_convex_ref.entityRange( nDim-1 ).end();
-          ++e )
-        {
-            typedef LifeV::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
+        //for( int k = 0; k < nDim; ++k )
+            {
+                // loopover the each edge entities and add the correponding functionals
+                for ( int e = _M_convex_ref.entityRange( nDim-1 ).begin();
+                      e < _M_convex_ref.entityRange( nDim-1 ).end();
+                      ++e )
+                    {
+                        typedef Life::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
 
-            dcpe_type __dcpe( primal, _M_convex_ref.normal(e), pts_per_face[e] );
-            std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
-        }
+                        dcpe_type __dcpe( primal, 1, _M_convex_ref.normal(e)*j[e], pts_per_face[e] );
+                        std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
+                    }
+            }
+        std::cout << "[RT Dual] done 2" << std::endl;
+        if ( nOrder-1 > 0 )
+            {
+                // we need more equations : add interior moment
+                // indeed the space is orthogonal to Pk-1
+                uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
+                uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
+                uint16_type dim_Pm1 = convex_type::polyDims( nOrder-2 );
 
-    if ( nOrder-1 > 0 )
-        {
-            // we need more equations : add interior moment
-            // indeed the space is orthogonal to Pk-1
-            uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
-            uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
-            uint16_type dim_Pm1 = convex_type::polyDims( nOrder-2 );
+                Pkp1_v_type Pkp1;
 
-            Pkp1_v_type Pkp1;
+                vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
+                for( int i = 0; i < Pkm1.polynomialDimension(); ++i )
+                    {
+                        typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
+                        fset.push_back( fim_type( primal, Pkm1.polynomial( i ) ) );
+                    }
+            }
+        std::cout << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
+        _M_fset.setFunctionalSet( fset );
+        std::cout << "[RT Dual] done 4\n";
 
-            vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
-            for( int i = 0; i < Pkm1.polynomialDimension(); ++i )
-                {
-                    typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
-                    fset.push_back( fim_type( primal, Pkm1.polynomial( i ) ) );
-                }
-        }
-    _M_fset.setFunctionalSet( fset );
+    }
 
-}
-
-points_type const& points() const { return _M_pts; }
+    points_type const& points() const { return _M_pts; }
 
 
-matrix_type operator()( primal_space_type const& pset ) const
-{
-    return _M_fset( pset );
-}
+    matrix_type operator()( primal_space_type const& pset ) const
+    {
+        std::cout << "RT matrix = " << _M_fset( pset ) << std::endl;
+        return _M_fset( pset );
+    }
 
 private:
-reference_convex_type _M_convex_ref;
-std::vector<std::vector<uint16_type> > _M_eid;
-points_type _M_pts;
-FunctionalSet<primal_space_type> _M_fset;
+    reference_convex_type _M_convex_ref;
+    std::vector<std::vector<uint16_type> > _M_eid;
+    points_type _M_pts;
+    FunctionalSet<primal_space_type> _M_fset;
 
 
 };
-}// details
+}// detail
 
 
 /**
@@ -341,12 +360,12 @@ template<uint16_type N,
          template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
 class RaviartThomas
     :
-    public FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
-                         details::RaviartThomasDual,
-                         PointSetEquiSpaced >
+        public FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
+                             detail::RaviartThomasDual,
+                             PointSetEquiSpaced >
 {
     typedef FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
-                          details::RaviartThomasDual,
+                          detail::RaviartThomasDual,
                           PointSetEquiSpaced > super;
 public:
 
@@ -357,8 +376,7 @@ public:
     //@{
 
     static const uint16_type nDim = N;
-    static const uint16_type nOrder =  O;
-
+    static const polynomial_transformation_type transformation = POLYNOMIAL_CONTEXT_NEEDS_1ST_PIOLA_TRANSFORMATION;
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
@@ -379,27 +397,18 @@ public:
     typedef typename reference_convex_type::points_type points_type;
 
 
+    static const uint16_type nOrder =  dual_space_type::nOrder;
     static const uint16_type nbPtsPerVertex = 0;
     static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
                                                      mpl::int_<reference_convex_type::nbPtsPerEdge>,
                                                      mpl::int_<0> >::type::value;
-static const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                                                 mpl::int_<reference_convex_type::nbPtsPerFace>,
-                                                 mpl::int_<0> >::type::value;
+    static const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
+                                                     mpl::int_<reference_convex_type::nbPtsPerFace>,
+                                                     mpl::int_<0> >::type::value;
     static const uint16_type nbPtsPerVolume = 0;
     static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
                                            reference_convex_type::numEdges*nbPtsPerEdge );
 
-    //!< Total number of degrees of freedom (equal to refEle::nbDof)
-    static const uint16_type nbLocalDof = dual_space_type::nbLocalDof;
-    //!< Number of degrees of freedom per vertex
-    static const uint16_type nbDofPerVertex = dual_space_type::nbDofPerVertex;
-    //!< Number of degrees  of freedom per edge
-    static const uint16_type nbDofPerEdge = dual_space_type::nbDofPerEdge;
-    //!< Number of degrees  of freedom per face
-    static const uint16_type nbDofPerFace = dual_space_type::nbDofPerFace;
-    //!< Number of degrees  of freedom per volume
-    static const uint16_type nbDofPerVolume = dual_space_type::nbDofPerVolume;
 
     //@}
 
@@ -411,7 +420,17 @@ static const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,m
         :
         super( dual_space_type( primal_space_type() ) ),
         _M_refconvex()
-    {}
+    {
+        std::cout << "[RT] nPtsPerEdge = " << nbPtsPerEdge << "\n";
+        std::cout << "[RT] nPtsPerFace = " << nbPtsPerFace << "\n";
+        std::cout << "[RT] numPoints = " << numPoints << "\n";
+
+        std::cout << "[RT] nDof = " << super::nDof << "\n";
+
+        std::cout << "[RT] coeff : " << this->coeff() << "\n";
+        std::cout << "[RT] pts : " << this->points() << "\n";
+        std::cout << "[RT] eval at pts : " << this->evaluate( this->points() ) << "\n";
+    }
     RaviartThomas( RaviartThomas const & cr )
         :
         super( cr ),
@@ -463,14 +482,36 @@ protected:
 private:
 
 };
-
 template<uint16_type N,
          uint16_type O,
          typename T,
          template<uint16_type, uint16_type, uint16_type> class Convex>
-const uint16_type RaviartThomas<N,O,T,Convex>::nbLocalDof;
+const uint16_type RaviartThomas<N,O,T,Convex>::nDim;
+template<uint16_type N,
+         uint16_type O,
+         typename T,
+         template<uint16_type, uint16_type, uint16_type> class Convex>
+const uint16_type RaviartThomas<N,O,T,Convex>::nOrder;
 
 } // fem
-} // LifeV
+template<uint16_type Order>
+class RaviartThomas
+{
+public:
+    template<uint16_type N,
+             typename T = double,
+             typename Convex = Simplex<N> >
+    struct apply
+    {
+        typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
+                                  mpl::identity<fem::RaviartThomas<N,Order,T,Simplex> >,
+                                  mpl::identity<fem::RaviartThomas<N,Order,T,SimplexProduct> > >::type::type result_type;
+        typedef result_type type;
+    };
+
+    typedef Lagrange<Order,Scalar> component_basis_type;
+};
+
+} // Life
 #endif /* __RaviartThomas_H */
 
