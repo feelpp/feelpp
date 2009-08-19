@@ -139,6 +139,7 @@ template<typename T, typename LayoutType>
 void
 MatrixGmm<T, LayoutType>::transpose( MatrixSparse<value_type>& Mt ) const
 {
+    LIFE_ASSERT( 0 ).warn( "not implemented yet" );
 }
 
 
