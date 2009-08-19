@@ -92,7 +92,13 @@ public:
      */
     SolverEigenSlepc()
     {
-        this->M_eigen_solver_type = ARNOLDI;
+        this->M_eigen_solver_type = KRYLOVSCHUR;
+    }
+
+    SolverEigenSlepc( po::variables_map const& vm, std::string const& prefix = "" )
+        :
+        super( vm, prefix )
+    {
     }
 
     SolverEigenSlepc( SolverEigenSlepc const & );

@@ -35,7 +35,7 @@ namespace Life
 po::options_description
 solvereigenslepc_options( std::string const& prefix )
 {
-        std::string _prefix = prefix;
+    std::string _prefix = prefix;
     if ( !_prefix.empty() )
         _prefix += "-";
 
@@ -47,6 +47,7 @@ solvereigenslepc_options( std::string const& prefix )
     po::options_description _options( "Solver EigenValue Slepc -- " + prefix + " solver options");
     _options.add_options()
         // solver options
+        ((_prefix+"slepc-solver-type").c_str(), Life::po::value<std::string>()->default_value( "krylovschur" ), "type of eigenvalue solver")
         ((_prefix+"slepc-nev").c_str(), Life::po::value<int>()->default_value( 1 ), "number of requested eigenpairs")
         ((_prefix+"slepc-ncv").c_str(), Life::po::value<int>()->default_value( 3 ), "number of basis vectors")
         ((_prefix+"slepc-tol").c_str(), Life::po::value<double>()->default_value( 1e-10 ), "solver tolerance")
@@ -74,7 +75,7 @@ SolverEigenSlepc<T>::clear ()
             CHKERRABORT(Application::COMM_WORLD,ierr);
 
             // SLEPc default eigenproblem solver
-            this->M_eigen_solver_type = ARNOLDI;
+            //this->M_eigen_solver_type = ARNOLDI;
 
         }
 }
@@ -230,7 +231,7 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
                 }
             else
                 {
-                    ierr = PetscPrintf(Application::COMM_WORLD,"   %12f       %12f\n", re, error);
+                    ierr = PetscPrintf(Application::COMM_WORLD,"   %12e       %12e\n", re, error);
                     CHKERRABORT(Application::COMM_WORLD,ierr);
                 }
         }
@@ -346,8 +347,8 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     PetscPrintf(PETSC_COMM_WORLD," Stopping condition: tol=%.4g, maxit=%d\n",_tol,maxit);
 
     PetscScalar shift;
-    //STGetShift(_st, &shift );
-    PetscPrintf(PETSC_COMM_WORLD," shif=%.4g\n",shift);
+    //STGetShift(M_st, &shift );
+    //PetscPrintf(PETSC_COMM_WORLD," shift=%.4g\n",shift);
 #if 1 //!defined( NDEBUG )
     // ierr = PetscPrintf(Application::COMM_WORLD,
     //         "\n Number of iterations: %d\n"
@@ -382,7 +383,7 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
                 }
             else
                 {
-                    ierr = PetscPrintf(Application::COMM_WORLD,"   %12f       %12e\n", re, error);
+                    ierr = PetscPrintf(Application::COMM_WORLD,"   %12e       %12e\n", re, error);
                     CHKERRABORT(Application::COMM_WORLD,ierr);
                 }
         }
@@ -402,7 +403,7 @@ template <typename T>
 void SolverEigenSlepc<T>::setSlepcSolverType()
 {
     int ierr = 0;
-
+#if 1
     switch (this->M_eigen_solver_type)
         {
         case POWER:
@@ -413,12 +414,21 @@ void SolverEigenSlepc<T>::setSlepcSolverType()
             ierr = EPSSetType (M_eps, (char*) EPSLAPACK);   CHKERRABORT(Application::COMM_WORLD,ierr); break;
         case ARNOLDI:
             ierr = EPSSetType (M_eps, (char*) EPSARNOLDI);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
+        case KRYLOVSCHUR:
+            ierr = EPSSetType (M_eps, (char*) EPSKRYLOVSCHUR);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
+        case LANCZOS:
+            ierr = EPSSetType (M_eps, (char*) EPSLANCZOS);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
 
         default:
             std::cerr << "ERROR:  Unsupported SLEPc Eigen Solver: "
                       << this->M_eigen_solver_type         << std::endl
                       << "Continuing with SLEPc defaults" << std::endl;
         }
+#else
+    ierr = EPSSetType (M_eps, (char*) EPSKRYLOVSCHUR);
+    //ierr = EPSSetType (M_eps, (char*) EPSARPACK);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+#endif
     const EPSType etype;
     ierr = EPSGetType(M_eps,&etype);
     CHKERRABORT(Application::COMM_WORLD,ierr);
@@ -452,6 +462,7 @@ SolverEigenSlepc<T>::setSlepcProblemType()
                       << "Continuing with SLEPc defaults" << std::endl;
         }
 #endif
+    Debug() << "Problem  type:  " <<  this->M_eigen_problem_type  << "\n";
     return;
 }
 
@@ -484,6 +495,7 @@ SolverEigenSlepc<T>:: setSlepcPositionOfSpectrum()
                       << this->M_position_of_spectrum        << std::endl;
             throw std::logic_error( "invalid SLEPc position of spectrum parameter" );
         }
+    ierr = EPSSetWhichEigenpairs (M_eps, EPS_SMALLEST_REAL);
 }
 
 
@@ -540,3 +552,4 @@ template class SolverEigenSlepc<double>;
 #endif // #ifdef HAVE_SLEPC
 
 }
+ 

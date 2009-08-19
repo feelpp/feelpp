@@ -68,6 +68,26 @@ public:
      */
     SolverEigen();
 
+    /**
+     *  Constructor. Initializes Solver data structures
+     * 
+     * The \p prefix parameter allows to set different eigensolver options for
+     * different eigensolver. It allows to distinguish between these options
+     * \code 
+     * // register two slepc eigensolver options
+     * add_options( solvereigen_options( "eigen1" ) ).add_options( solvereigen_options( "eigen2" ));
+     * // build an eigen solver associated with option set eigen1
+     * SolverEigen<double>::build( vm, "eigen1" );
+     * \endcode
+     *
+     * \param vm variables map
+     * \param prefix string that allows for various options of the same type 
+     */
+    SolverEigen( po::variables_map const& vm, std::string const& prefix = "" );
+
+    /**
+     * copy constructor
+     */
     SolverEigen( SolverEigen const & );
 
     /**
@@ -82,6 +102,15 @@ public:
     static boost::shared_ptr<SolverEigen<value_type> > build(const SolverPackage solver_package = SOLVERS_SLEPC);
 
     /**
+     * Builds a \p SolverEigen using the linear solver package
+     * specified by \p vm
+     * \param vm variables_map that contains the command line options and their defaults
+     * \param prefix string that allows for various options of the same type 
+     */
+    static boost::shared_ptr<SolverEigen<value_type> > build( po::variables_map const& vm, 
+                                                              std::string const& prefix = std::string() );
+
+    /**
      * Returns the \p ith eigenvalue (real and imaginary part), and
      * copies the \ ith eigen vector to the solution vector.
      */
@@ -94,7 +123,7 @@ public:
     virtual std::pair<real_type, real_type> eigenPair (unsigned int i,
                                                        boost::shared_ptr<Vector<value_type> > &solution)
         {
-            this->eigenPair( i, *solution );
+            return this->eigenPair( i, *solution );
         }
 
     //@}
@@ -183,6 +212,20 @@ public:
                                                          const unsigned int m_its) = 0;
 
     /**
+     * Solves the standard eigen problem and returns the
+     * number of converged eigenpairs and the number
+     * of iterations.
+     */
+    std::pair<unsigned int, unsigned int> solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
+                                                  int nev,
+                                                  int ncv,
+                                                  const double tol,
+                                                  const unsigned int m_its) 
+        {
+            return this->solve( *matrix_A, nev, ncv, tol, m_its );
+        }
+
+    /**
      * Solves the generalized eigen value problem \f$A x = \lambda
      * Bx\f$ and returns the number of converged eigenpairs and the
      * number of iterations.
@@ -194,6 +237,21 @@ public:
                                                          const double tol,
                                                          const unsigned int m_its) = 0;
 
+    /**
+     * Solves the generalized eigen value problem \f$A x = \lambda
+     * Bx\f$ and returns the number of converged eigenpairs and the
+     * number of iterations.
+     */
+    std::pair<unsigned int, unsigned int> solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
+                                                  boost::shared_ptr<MatrixSparse<value_type> > &matrix_B,
+                                                  int nev,
+                                                  int ncv,
+                                                  const double tol,
+                                                  const unsigned int m_its)
+        {
+            return this->solve( *matrix_A, *matrix_B, nev, ncv, tol, m_its );
+        }
+    
 
 
 
@@ -228,5 +286,20 @@ protected:
     bool M_is_initialized;
 
 };
+/**
+ * defines solver eigen options
+ *
+ * The \p prefix parameter allows to set different eigensolver options for
+ * different eigensolver. It allows to distinguish between these options
+ * \code 
+ * // register two slepc eigensolver options
+ * add_options( solvereigen_options( "eigen1" ) ).add_options( solvereigen_options( "eigen2" ));
+ * // build an eigen solver associated with option set eigen1
+ * SolverEigen<double>::build( vm, "eigen1" );
+ * \endcode
+ *
+ * \param prefix prefix allows to prefix options 
+ */
+po::options_description solvereigen_options( std::string const& prefix = "" );
 } // Life
 #endif /* __SolverEigen_H */

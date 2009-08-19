@@ -30,7 +30,7 @@
 #include <life/lifealg/backend.hpp>
 #include <life/lifealg/backendgmm.hpp>
 #include <life/lifealg/backendpetsc.hpp>
-#include <life/lifealg/solvereigenslepc.hpp>
+#include <life/lifealg/solvereigen.hpp>
 #include <life/lifealg/backendtrilinos.hpp>
 #include <life/lifediscr/oseendata.hpp>
 #include <life/lifediscr/bdf2.hpp>
@@ -50,9 +50,7 @@ life_options( std::string const& prefix  )
 #if defined(HAVE_PETSC_H)
         .add( backendpetsc_options( prefix ) )
 #endif
-#if defined(HAVE_SLEPC) && defined(HAVE_PETSC)
-        .add( solvereigenslepc_options( prefix ) )
-#endif // HAVE_SLEPC && HAVE_PETSC
+        .add( solvereigen_options( prefix ) )
 #if defined( HAVE_TRILINOS_EPETRA )
         .add( backendtrilinos_options( prefix ) )
 #endif
