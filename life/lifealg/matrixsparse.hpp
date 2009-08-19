@@ -306,7 +306,7 @@ public:
     boost::shared_ptr<MatrixSparse<T> > transpose() const
         {
             boost::shared_ptr<MatrixSparse<T> > Mt;
-            transpose( Mt );
+            transpose( *Mt );
             return Mt;
         }
 
@@ -316,7 +316,7 @@ public:
      * \param M the matrix to transpose
      * \param Mt the matrix transposed
      */
-    void transpose( boost::shared_ptr<MatrixSparse<value_type> >& Mt )
+    void transpose( boost::shared_ptr<MatrixSparse<value_type> >& Mt ) const
         {
             this->transpose( *Mt );
         }
