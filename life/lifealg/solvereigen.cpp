@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-04
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007, 2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -66,7 +66,9 @@ SolverEigen<T>::SolverEigen()
     M_eigen_solver_type    (ARNOLDI),
     M_eigen_problem_type   (NHEP),
     M_position_of_spectrum (LARGEST_MAGNITUDE),
-    M_is_initialized       (false)
+    M_is_initialized       (false),
+    M_nev(1),
+    M_ncv(3)
 {
 }
 
@@ -77,7 +79,9 @@ SolverEigen<T>::SolverEigen( po::variables_map const& vm, std::string const& pre
     M_eigen_solver_type    ((EigenSolverType)vm[M_prefix+"solvereigen-solver-type"].template as<int>() ),
     M_eigen_problem_type   ((EigenProblemType)vm[M_prefix+"solvereigen-problem-type"].template as<int>() ),
     M_position_of_spectrum ((PositionOfSpectrum)vm[M_prefix+"solvereigen-position"].template as<int>() ),
-    M_is_initialized       (false)
+    M_is_initialized       (false),
+    M_nev(vm[M_prefix+"solvereigen-nev"].template as<int>()),
+    M_ncv(vm[M_prefix+"solvereigen-ncv"].template as<int>())
 {
 }
 
@@ -87,7 +91,9 @@ SolverEigen<T>::SolverEigen( SolverEigen const& eis )
     M_eigen_solver_type    ( eis.M_eigen_solver_type ),
     M_eigen_problem_type   ( eis.M_eigen_problem_type ),
     M_position_of_spectrum ( eis.M_position_of_spectrum ),
-    M_is_initialized       ( eis.M_is_initialized )
+    M_is_initialized       ( eis.M_is_initialized ),
+    M_nev( eis.M_nev ),
+    M_ncv( eis.M_ncv )
 {
 }
 
