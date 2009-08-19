@@ -392,8 +392,8 @@ fi
 ## Enhance maintainer mode and SUBST variables
 ## (must be placed after any compilation tests since our overprotective flags
 ##  let some tests fail)
-
-AM_MAINTAINER_MODE
+# enable maintainer mode by default
+AM_MAINTAINER_MODE([enable])
 if test x$USE_MAINTAINER_MODE = xyes
 then
    # Maintainers have no choice ! I'm a BOFH, and I plainly assume. [Mt]
