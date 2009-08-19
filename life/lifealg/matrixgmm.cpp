@@ -135,6 +135,12 @@ MatrixGmm<T, LayoutType>::close() const
     gmm::resize( _M_wmat, 0, 0 );
 }
 
+template<typename T, typename LayoutType>
+void
+MatrixGmm<T, LayoutType>::transpose( MatrixSparse<value_type>& Mt ) const
+{
+}
+
 
 
 template<typename T, typename LayoutType>
