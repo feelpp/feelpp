@@ -28,4 +28,4 @@ lib_LTLIBRARIES		= liblifematerial.la
 liblifematerial_la_SOURCES	=  material.cpp materiallib.cpp
 
 liblifematerial_la_LIBADD   = ../lifecore/liblifecore.la $(BOOST_SERIALIZATION_LIB)
-liblifematerial_la_LDFLAGS  = -no-undefined -version-info 0:0;0
+liblifematerial_la_LDFLAGS  = -no-undefined -version-info 0:0:0
