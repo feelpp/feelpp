@@ -135,9 +135,10 @@ enum EigenSolverType
         LAPACK,
         SUBSPACE,
         ARNOLDI,
+        LANCZOS,
+        KRYLOVSCHUR,
         // SLEPc optional packages
-        // EPSARPACK,
-        // EPSLAPACK,
+        ARPACK,
         // EPSBLZPACK,
         // EPSPLANSO,
         // EPSTRLAN,
