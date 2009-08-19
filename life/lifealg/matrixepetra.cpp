@@ -5,7 +5,7 @@
    Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    Date: 2007-08-14
 
-   Copyright (C) 2008 Christophe Prud'homme
+   Copyright (C) 2008, 2009 Christophe Prud'homme
    Copyright (C) 2007,2008 Universit� Joseph Fourier (Grenoble I)
    Copyright (C) 2007 �cole Polytechnique F�d�rale de Lausanne (EPFL)
 

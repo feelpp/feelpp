@@ -8,7 +8,7 @@
 
   Date: 2009-02-22
 
-  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Université de Grenoble 1
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
