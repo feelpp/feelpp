@@ -851,7 +851,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
     ierr = MatCompositeMerge(B->_M_mat);
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
-    ierr = MatShift( B->_M_mat, 0.5 );
+    ierr = MatScale( B->_M_mat, 0.5 );
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // check that B is now symmetric
