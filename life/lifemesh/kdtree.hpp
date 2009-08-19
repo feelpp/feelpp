@@ -46,6 +46,12 @@ namespace Life
  * \class KDTree
  * \brief KDTree class
  *
+ * In computer science, a kd-tree (short for k-dimensional tree) is a
+ * space-partitioning data structure for organizing points in a k-dimensional
+ * space. kd-trees are a useful data structure for several applications, such as
+ * searches involving a multidimensional search key (e.g. range searches and
+ * nearest neighbor searches). kd-trees are a special case of BSP trees.
+ *
  * @author Christophe Prud'homme
  * @see RegionTree
  */
