@@ -2,6 +2,10 @@
 /.gitignore~
 /Makefile.headers
 /Makefile.in
+/NEWS.html
+/NEWS.pdf
+/NEWS.tex
+/NEWS.txt
 /Templates
 /aclocal.m4
 /admin
