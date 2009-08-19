@@ -512,7 +512,20 @@ inner_product( Vector<T> const& v1, Vector<T> const& v2 )
 #endif
     return global_res;
 }
-
+/**
+ * Computes the inner product of two vectors and eventually in parallel
+ * \param v1 vector (eventually distributed)
+ * \param v2 vector (eventually distributed)
+ *
+ * \return the inner product of \p v1 and \p v2
+ */
+template <typename T>
+typename type_traits<T>::real_type
+inner_product( boost::shared_ptr<Vector<T> > const& v1,
+               boost::shared_ptr<Vector<T> > const& v2 )
+{
+    return inner_product( *v1, *v2 );
+}
 
 
 
