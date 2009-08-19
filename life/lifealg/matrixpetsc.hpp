@@ -348,6 +348,20 @@ public:
     void addMatrix (const T a, MatrixSparse<T> &X);
 
     void scale( const T a ){}
+
+    /**
+     * Returns the transpose of a matrix
+     *
+     * \param M the matrix to transpose
+     * \param Mt the matrix transposed
+     */
+    void transpose( MatrixSparse<value_type>& Mt ) const;
+
+     /**
+     * Returns the symmetric part of the matrix
+     */
+    virtual void symmetricPart( MatrixSparse<value_type>& Ms ) const;
+
     /**
      * Returns the raw PETSc matrix context pointer.  Note this is generally
      * not required in user-level code. Just don't do anything crazy like

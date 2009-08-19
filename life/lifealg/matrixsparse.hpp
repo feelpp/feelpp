@@ -294,6 +294,37 @@ public:
         return *this;
     }
     /**
+     * Returns the transpose of a matrix
+     *
+     * \param Mt the matrix transposed
+     */
+    virtual void transpose( MatrixSparse<value_type>& Mt ) const = 0;
+
+    /**
+     * Returns the transpose of a matrix
+     *
+     * \param M the matrix to transpose
+     * \param Mt the matrix transposed
+     */
+    void transpose( boost::shared_ptr<MatrixSparse<value_type> >& Mt )
+        {
+            this->transpose( *Mt );
+        }
+
+    /**
+     * Returns the symmetric part of the matrix
+     */
+    virtual void symmetricPart( MatrixSparse<value_type>& Ms ) const {}
+
+    /**
+     * Returns the symmetric part of the matrix
+     */
+    virtual void symmetricPart( boost::shared_ptr<MatrixSparse<value_type> >& Ms ) const 
+        {
+            symmetricPart( *Ms );
+        }
+
+    /**
      * compute the A scalar product \f$v^T A u\f$
      *
      * \param u a vector
