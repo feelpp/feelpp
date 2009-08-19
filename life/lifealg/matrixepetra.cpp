@@ -34,6 +34,7 @@
 #if defined( HAVE_TRILINOS_EPETRA )
 #include <Epetra_FECrsGraph.h>
 #include <Epetra_Time.h>
+#include <Epetra_RowMatrixTransposer.h>
 #endif
 
 
@@ -206,6 +207,27 @@ void
 MatrixEpetra::multiplyMatrix( const MatrixEpetra& A, const MatrixEpetra& B )
 {
     EpetraExt::MatrixMatrix::Multiply( A.mat(), false, B.mat(), false, (*this).mat() );
+}
+
+void
+MatrixEpetra::transpose( MatrixSparse<value_type>& Mt ) const
+{
+#if 0
+ 	Epetra_FECrsMatrix* Atrans;
+    
+    Epetra_RowMatrixTransposer transposer ( &*_M_mat );
+    transposer.CreateTranspose( true, Atrans );
+    
+    Mt =  new MatrixEpetra( *Atrans );
+    bool isSymmetric;
+
+    if (isSymmetric) {
+        
+    } else {
+        
+    }
+#endif
+
 }
 
 
