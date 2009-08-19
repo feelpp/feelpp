@@ -3,6 +3,7 @@
 
   Author: Christophe Prud'homme (christophe.prudhomme@ujf-grenoble.fr)
 
+  Copyright (C) 2009 Université de Grenoble 1
   Copyright (C) 2004 EPFL
 
   This library is free software; you can redistribute it and/or

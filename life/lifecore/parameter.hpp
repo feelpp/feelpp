@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-04-03
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Université de Grenoble 1
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -65,6 +65,12 @@ BOOST_PARAMETER_NAME(do_threshold)
 BOOST_PARAMETER_NAME(threshold)
 BOOST_PARAMETER_NAME(init)
 BOOST_PARAMETER_NAME(name)
+BOOST_PARAMETER_NAME(nev)
+BOOST_PARAMETER_NAME(ncv)
+BOOST_PARAMETER_NAME(backend)
+BOOST_PARAMETER_NAME(problem)
+BOOST_PARAMETER_NAME(solver)
+BOOST_PARAMETER_NAME(spectrum)
 // parameter for description of geometries
 BOOST_PARAMETER_NAME(h)
 BOOST_PARAMETER_NAME(dim)

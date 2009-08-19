@@ -28,7 +28,7 @@ using namespace std;
 #define _GIVARO_REF_COUNTER_H_
 // ==================================================================== //
 // Definition of the Counter class, Counter
-// (c) copyright GIVARO 1994
+// (c) copyright GIVARO 1994, 2009
 // author: Th. Gautier
 // version : 2.7
 // date: 1995

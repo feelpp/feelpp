@@ -301,6 +301,16 @@ public:
     virtual void transpose( MatrixSparse<value_type>& Mt ) const = 0;
 
     /**
+     * \return the transpose of the matrix
+     */
+    boost::shared_ptr<MatrixSparse<T> > transpose() const
+        {
+            boost::shared_ptr<MatrixSparse<T> > Mt;
+            transpose( Mt );
+            return Mt;
+        }
+
+    /**
      * Returns the transpose of a matrix
      *
      * \param M the matrix to transpose
@@ -319,7 +329,7 @@ public:
     /**
      * Returns the symmetric part of the matrix
      */
-    virtual void symmetricPart( boost::shared_ptr<MatrixSparse<value_type> >& Ms ) const 
+    virtual void symmetricPart( boost::shared_ptr<MatrixSparse<value_type> >& Ms ) const
         {
             symmetricPart( *Ms );
         }
@@ -489,6 +499,8 @@ protected:
     graph_ptrtype _M_graph;
 };
 
+typedef MatrixSparse<double> d_sparse_matrix_type;
+typedef boost::shared_ptr<d_sparse_matrix_type> d_sparse_matrix_ptrtype;
 
 
 //-----------------------------------------------------------------------

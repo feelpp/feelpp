@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2006-04-25
 
-  Copyright (C) 2006 EPFL
+  Copyright (C) 2006, 2009 EPFL
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public

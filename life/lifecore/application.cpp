@@ -3,10 +3,11 @@
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2005-03-17
+  Date: 2005-03-17
 
+  Copyright (C) 2007,2008,2009 Université de Grenoble 1
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
