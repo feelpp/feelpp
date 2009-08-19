@@ -237,6 +237,10 @@ private:
      */
     IP M_ip;
 
+    /**
+     * eigenmode
+     */
+    Vec M_mode;
 };
 po::options_description solvereigenslepc_options( std::string const& prefix = "" );
 

@@ -256,9 +256,7 @@ public:
                                     tag,
                                     (required
                                      (matrixA,(sparse_matrix_ptrtype))
-                                     (matrixB,(sparse_matrix_ptrtype))
-                                     (solution,(vector_ptrtype))
-                                     (rhs,(vector_ptrtype)))
+                                     (matrixB,(sparse_matrix_ptrtype)))
                                     (optional
                                      (maxit,(size_type), 1000 )
                                      (tolerance,(double), 1e-11)
@@ -267,7 +265,7 @@ public:
         {
             this->setMaxIterations( maxit );
             this->setTolerance( tolerance );
-            solve_return_type ret =  solve( matrixA, matrixB, solution, rhs, this->tolerance(), this->maxIterations() );
+            solve_return_type ret =  solve( matrixA, matrixB, M_nev, M_ncv, this->tolerance(), this->maxIterations() );
             return ret;
         }
 
@@ -390,7 +388,8 @@ BOOST_PARAMETER_MEMBER_FUNCTION((boost::tuple<size_type, double, double, boost::
     )
 {
     typedef boost::shared_ptr<Vector<double> > vector_ptrtype;
-    boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
+    //boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
+    boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build();
     eigen->setEigenSolverType( solver );
     eigen->setEigenProblemType( problem );
     eigen->setPositionOfSpectrum( spectrum );
