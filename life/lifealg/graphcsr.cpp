@@ -111,12 +111,17 @@ GraphCSR::close()
             if ( boost::get<0>( irow ) == Application::processId() )
                 {
                     std::vector<size_type> const& ivec = boost::get<2>( irow );
-                    int globalindex = it->first;
-                    int localindex = boost::get<1>( irow );
+                    size_type globalindex = it->first;
+                    size_type localindex = boost::get<1>( irow );
 
 
-                    LIFE_ASSERT( globalindex >= firstRowEntryOnProc() )( globalindex <= lastRowEntryOnProc() )( globalindex )( firstRowEntryOnProc() )( lastRowEntryOnProc() ).error ( "invalid local/global index" );
-                    LIFE_ASSERT( globalindex >= 0 )( globalindex < M_n_total_nz.size() )( globalindex )( M_n_total_nz.size() ).error ( "invalid local/global index for M_n_total_nz" );
+                    LIFE_ASSERT( globalindex >= firstRowEntryOnProc() )
+                        ( globalindex <= lastRowEntryOnProc() )
+                        ( globalindex )( firstRowEntryOnProc() )
+                        ( lastRowEntryOnProc() ).error ( "invalid local/global index" );
+                    LIFE_ASSERT( globalindex >= 0 )( globalindex < M_n_total_nz.size() )
+                        ( globalindex )
+                        ( M_n_total_nz.size() ).error ( "invalid local/global index for M_n_total_nz" );
                     M_n_total_nz[localindex] = ivec.size();
 
                     for (size_type j=0; j< ivec.size(); j++)
@@ -124,13 +129,15 @@ GraphCSR::close()
                             if ( (ivec[j] < firstColEntryOnProc()) ||
                                  (ivec[j] > lastColEntryOnProc() ))
                                 {
-                                    //Debug() << "globalindex=" << globalindex << " localindex=" << localindex << " off-block diag: " << M_n_oz[localindex] << "\n";
+                                    //Debug() << "globalindex=" << globalindex << " localindex="
+                                    //<< localindex << " off-block diag: " << M_n_oz[localindex] << "\n";
                                     // entry is off block-diagonal
                                     ++M_n_oz[localindex];
                                 }
                             else
                                 {
-                                    //Debug() << "globalindex=" << globalindex << " localindex=" << localindex << " on-block diag: " << M_n_nz[localindex] << "\n";
+                                    //Debug() << "globalindex=" << globalindex << " localindex="
+                                    //<< localindex << " on-block diag: " << M_n_nz[localindex] << "\n";
                                     // entry is in block-diagonal
                                     ++M_n_nz[localindex];
                                 }
