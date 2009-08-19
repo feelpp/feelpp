@@ -81,6 +81,11 @@ public:
     typedef typename super::solvereigen_type solvereigen_type;
     typedef typename super::solvereigen_ptrtype solvereigen_ptrtype;
 
+    typedef typename super::vector_ptrtype vector_ptrtype;
+    typedef typename super::sparse_matrix_type sparse_matrix_type;
+
+    typedef typename super::solve_return_type solve_return_type;
+    typedef typename super::eigenpair_type eigenpair_type;
     //@}
 
     /** @name Constructors, destructor
@@ -139,7 +144,7 @@ public:
      * vector. Note that also in case of purely real matrix entries the
      * eigenpair may be complex values.
      */
-    std::pair<real_type, real_type> eigenPair (unsigned int i, Vector<T> &solution_in);
+    eigenpair_type eigenPair ( unsigned int i );
 
     /**
      * @computes and returns the relative error
@@ -174,11 +179,11 @@ public:
      * converged eigen values and the number of the iterations carried
      * out by the eigen solver.
      */
-    std::pair<unsigned int, unsigned int>  solve (MatrixSparse<T> &matrix_A,
-                                                  int nev,
-                                                  int ncv,
-                                                  const double tol,
-                                                  const unsigned int m_its);
+    solve_return_type  solve (MatrixSparse<T> &matrix_A,
+                              int nev,
+                              int ncv,
+                              const double tol,
+                              const unsigned int m_its);
 
     /**
      * This function calls the SLEPc solver to compute the eigenpairs
@@ -189,12 +194,12 @@ public:
      * values and the number of the iterations carried out by the
      * eigen solver.
      */
-    std::pair<unsigned int, unsigned int>  solve (MatrixSparse<T> &matrix_A,
-                                                  MatrixSparse<T> &matrix_B,
-                                                  int nev,
-                                                  int ncv,
-                                                  const double tol,
-                                                  const unsigned int m_its);
+    solve_return_type  solve (MatrixSparse<T> &matrix_A,
+                              MatrixSparse<T> &matrix_B,
+                              int nev,
+                              int ncv,
+                              const double tol,
+                              const unsigned int m_its);
 
 
 

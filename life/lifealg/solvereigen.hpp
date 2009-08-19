@@ -29,6 +29,10 @@
 #ifndef __SolverEigen_H
 #define __SolverEigen_H 1
 
+#include <boost/tuple/tuple.hpp>
+#include <boost/parameter.hpp>
+#include <life/lifecore/parameter.hpp>
+
 #include <life/lifealg/enums.hpp>
 #include <life/lifecore/traits.hpp>
 #include <life/lifealg/vector.hpp>
@@ -57,6 +61,17 @@ public:
 
     typedef SolverEigen<value_type> solvereigen_type;
     typedef boost::shared_ptr<solvereigen_type> solvereigen_ptrtype;
+
+    typedef boost::tuple<size_type, size_type, value_type> solve_return_type;
+
+
+    typedef Vector<value_type> vector_type;
+    typedef boost::shared_ptr<vector_type> vector_ptrtype;
+    typedef MatrixSparse<value_type> sparse_matrix_type;
+    typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
+
+    typedef boost::tuple<real_type, real_type, vector_ptrtype> eigenpair_type;
+
     //@}
 
     /** @name Constructors, destructor
@@ -114,17 +129,7 @@ public:
      * Returns the \p ith eigenvalue (real and imaginary part), and
      * copies the \ ith eigen vector to the solution vector.
      */
-    virtual std::pair<real_type, real_type> eigenPair (unsigned int i, Vector<value_type> &solution) = 0;
-
-    /**
-     * Returns the \p ith eigenvalue (real and imaginary part), and
-     * copies the \ ith eigen vector to the solution vector.
-     */
-    virtual std::pair<real_type, real_type> eigenPair (unsigned int i,
-                                                       boost::shared_ptr<Vector<value_type> > &solution)
-        {
-            return this->eigenPair( i, *solution );
-        }
+    virtual eigenpair_type eigenPair ( unsigned int i ) = 0;
 
     //@}
 
@@ -159,6 +164,26 @@ public:
      */
     PositionOfSpectrum postitionOfSpectrum () const { return M_position_of_spectrum;}
 
+    /**
+     * Returns the number of eigenvalues to compute
+     */
+    size_type numberOfEigenvalues() const { return M_nev; }
+
+    /**
+     * Returns the number of eigenvalues to compute
+     */
+    size_type numberOfEigenvaluesConverged() const { return M_ncv; }
+
+    /**
+     * Returns the tolerance to be reached by eigenvalue solver
+     */
+    value_type tolerance() const { return M_tolerance;}
+
+    /**
+     * Returns the maximum number of iterations
+     */
+    size_type maxIterations() const { return M_maxit; }
+
     //@}
 
     /** @name  Mutators
@@ -180,6 +205,28 @@ public:
      * Sets the position of the spectrum.
      */
     void setPositionOfSpectrum (PositionOfSpectrum pos) { M_position_of_spectrum= pos; }
+
+    /**
+     * set the tolerance
+     * \param tol tolerance to reach
+     */
+    void setTolerance( value_type tol ) { M_tolerance = tol; }
+
+    /**
+     * set the max number of iterations
+     * \param maxiter maximum number of iterations
+     */
+    void setMaxIterations( size_type maxiter ) { M_maxit = maxiter; }
+
+    /**
+     * set the number of eigenvalues to compute
+     */
+    void setNumberOfEigenValues( size_type nev ) { M_nev = nev; }
+
+    /**
+     * set the number of eigenvalues to have converged
+     */
+    void setNumberOfEigenValuesConverged( size_type ncv ) { M_ncv = ncv; }
 
     //@}
 
@@ -204,28 +251,47 @@ public:
     virtual void init () = 0;
 
 
+    BOOST_PARAMETER_MEMBER_FUNCTION((solve_return_type),
+                                    solve,
+                                    tag,
+                                    (required
+                                     (matrixA,(sparse_matrix_ptrtype))
+                                     (matrixB,(sparse_matrix_ptrtype))
+                                     (solution,(vector_ptrtype))
+                                     (rhs,(vector_ptrtype)))
+                                    (optional
+                                     (maxit,(size_type), 1000 )
+                                     (tolerance,(double), 1e-11)
+                                        )
+        )
+        {
+            this->setMaxIterations( maxit );
+            this->setTolerance( tolerance );
+            solve_return_type ret =  solve( matrixA, matrixB, solution, rhs, this->tolerance(), this->maxIterations() );
+            return ret;
+        }
 
     /**
      * Solves the standard eigen problem and returns the
      * number of converged eigenpairs and the number
      * of iterations.
      */
-    virtual std::pair<unsigned int, unsigned int> solve (MatrixSparse<value_type> &matrix_A,
-                                                         int nev,
-                                                         int ncv,
-                                                         const double tol,
-                                                         const unsigned int m_its) = 0;
+    virtual solve_return_type solve (MatrixSparse<value_type> &matrix_A,
+                                     int nev,
+                                     int ncv,
+                                     const double tol,
+                                     const unsigned int m_its) = 0;
 
     /**
      * Solves the standard eigen problem and returns the
      * number of converged eigenpairs and the number
      * of iterations.
      */
-    std::pair<unsigned int, unsigned int> solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
-                                                  int nev,
-                                                  int ncv,
-                                                  const double tol,
-                                                  const unsigned int m_its)
+    solve_return_type solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
+                              int nev,
+                              int ncv,
+                              const double tol,
+                              const unsigned int m_its)
         {
             return this->solve( *matrix_A, nev, ncv, tol, m_its );
         }
@@ -235,24 +301,24 @@ public:
      * Bx\f$ and returns the number of converged eigenpairs and the
      * number of iterations.
      */
-    virtual std::pair<unsigned int, unsigned int> solve (MatrixSparse<value_type> &matrix_A,
-                                                         MatrixSparse<value_type> &matrix_B,
-                                                         int nev,
-                                                         int ncv,
-                                                         const double tol,
-                                                         const unsigned int m_its) = 0;
+    virtual solve_return_type solve (MatrixSparse<value_type> &matrix_A,
+                                     MatrixSparse<value_type> &matrix_B,
+                                     int nev,
+                                     int ncv,
+                                     const double tol,
+                                     const unsigned int m_its) = 0;
 
     /**
      * Solves the generalized eigen value problem \f$A x = \lambda
      * Bx\f$ and returns the number of converged eigenpairs and the
      * number of iterations.
      */
-    std::pair<unsigned int, unsigned int> solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
-                                                  boost::shared_ptr<MatrixSparse<value_type> > &matrix_B,
-                                                  int nev,
-                                                  int ncv,
-                                                  const double tol,
-                                                  const unsigned int m_its)
+    solve_return_type solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
+                              boost::shared_ptr<MatrixSparse<value_type> > &matrix_B,
+                              int nev,
+                              int ncv,
+                              const double tol,
+                              const unsigned int m_its)
         {
             return this->solve( *matrix_A, *matrix_B, nev, ncv, tol, m_its );
         }
@@ -292,7 +358,73 @@ protected:
      */
     bool M_is_initialized;
 
+    //! number of eigenvalues
+    size_type M_nev;
+
+    //! number of eigenvalues
+    size_type M_ncv;
+
+    //! max number of iterations
+    size_type M_maxit;
+
+    //! tolerance
+    value_type M_tolerance;
 };
+
+BOOST_PARAMETER_MEMBER_FUNCTION((boost::tuple<size_type, double, double, boost::shared_ptr<Vector<double> > > ),
+                                eigs,
+                                tag,
+                                (required
+                                 (matrixA,(d_sparse_matrix_ptrtype))
+                                 (matrixB,(d_sparse_matrix_ptrtype)))
+                                (optional
+                                 (nev, (int), 1 )
+                                 (ncv, (int), 3 )
+                                 (backend,(BackendType), BACKEND_PETSC )
+                                 (solver,(EigenSolverType), KRYLOVSCHUR )
+                                 (problem,(EigenProblemType), GHEP )
+                                 (spectrum,(PositionOfSpectrum), LARGEST_MAGNITUDE )
+                                 (maxit,(size_type), 1000 )
+                                 (tolerance,(double), 1e-11)
+                                    )
+    )
+{
+    typedef boost::shared_ptr<Vector<double> > vector_ptrtype;
+    boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
+    eigen->setEigenSolverType( solver );
+    eigen->setEigenProblemType( problem );
+    eigen->setPositionOfSpectrum( spectrum );
+    eigen->setNumberOfEigenValues( nev );
+    eigen->setNumberOfEigenValuesConverged( ncv );
+    eigen->setMaxIterations( maxit );
+    eigen->setTolerance( tolerance );
+
+    Log() << "number of eigen values = " << nev << "\n";
+    Log() << "number of eigen values converged = " << ncv << "\n";
+    Log() << "number of eigen value solver iterations = " << maxit << "\n";
+    Log() << "eigenvalue tolerance = " << tolerance << "\n";
+
+    unsigned int nconv, nits;
+    boost::tie( nconv, nits, boost::tuples::ignore)  = eigen->solve( matrixA, matrixB );
+
+    Log() << "number of converged eigenmodes = " << nconv << "\n";
+    Log() << "number of iterations = " << nits << "\n";
+
+    vector_ptrtype mode;
+
+    double eigen_real, eigen_imag;
+    if ( nconv )
+    {
+            Log() << "Extracting eigen mode (" << ncv << ")\n";
+
+            boost::tie( eigen_real, eigen_imag, mode )  = eigen->eigenPair( 0 );
+            Log() << "eigenvalue " << 0 << " = (" << eigen_real << "," << eigen_imag  << ")\n";
+            //Log() << "eigenvalue " << 0 << " relative error = " << eigen->relativeError( 0 ) << "\n";
+            return boost::make_tuple( nconv, eigen_real, eigen_imag, mode );
+    }
+    return boost::make_tuple( 0, 0, 0, mode );
+}
+
 /**
  * defines solver eigen options
  *

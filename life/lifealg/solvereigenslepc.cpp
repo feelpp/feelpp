@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-04
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007, 2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -122,7 +122,7 @@ SolverEigenSlepc<T>::init ()
 
 
 template <typename T>
-std::pair<unsigned int, unsigned int>
+typename SolverEigenSlepc<T>::solve_return_type
 SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
                             int nev,                  // number of requested eigenpairs
                             int ncv,                  // number of basis vectors
@@ -240,14 +240,19 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     CHKERRABORT(Application::COMM_WORLD,ierr);
 #endif // DEBUG
 
+    error = 1;
+    if ( nconv >= 1 )
+    {
+            ierr = EPSComputeRelativeError(M_eps, 1, &error);
+            CHKERRABORT(Application::COMM_WORLD,ierr);
+    }
     // return the number of converged eigenpairs
     // and the number of iterations
-    return std::make_pair(nconv, its);
-
+    return boost::make_tuple(nconv, its, (value_type)error );
 }
 
 template <typename T>
-std::pair<unsigned int, unsigned int>
+typename SolverEigenSlepc<T>::solve_return_type
 SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
                             MatrixSparse<T> &matrix_B_in,
                             int nev,                  // number of requested eigenpairs
@@ -392,9 +397,15 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     CHKERRABORT(Application::COMM_WORLD,ierr);
 #endif // DEBUG
 
+    error = 1;
+    if ( nconv >= 1 )
+        {
+            ierr = EPSComputeRelativeError(M_eps, 1, &error);
+            CHKERRABORT(Application::COMM_WORLD,ierr);
+        }
     // return the number of converged eigenpairs
     // and the number of iterations
-    return std::make_pair(nconv, its);
+    return boost::make_tuple(nconv, its, (value_type)error );
 
 }
 
@@ -501,21 +512,23 @@ SolverEigenSlepc<T>:: setSlepcPositionOfSpectrum()
 
 
 template <typename T>
-std::pair<typename SolverEigenSlepc<T>::real_type, typename SolverEigenSlepc<T>::real_type>
-SolverEigenSlepc<T>::eigenPair(unsigned int i, Vector<T> &solution_in)
+typename SolverEigenSlepc<T>::eigenpair_type
+SolverEigenSlepc<T>::eigenPair( unsigned int i )
 {
     int ierr=0;
 
     PetscReal re, im;
 
-    VectorPetsc<T>* solution = dynamic_cast<VectorPetsc<T>*>(&solution_in);
+    Vec sol;
+
+
 
     // real and imaginary part of the ith eigenvalue.
     PetscScalar kr, ki;
 
-    solution->close();
 
-    ierr = EPSGetEigenpair(M_eps, i, &kr, &ki, solution->vec(), PETSC_NULL);
+
+    ierr = EPSGetEigenpair(M_eps, i, &kr, &ki, sol, PETSC_NULL);
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
 #ifdef USE_COMPLEX_NUMBERS
@@ -526,7 +539,10 @@ SolverEigenSlepc<T>::eigenPair(unsigned int i, Vector<T> &solution_in)
     im = ki;
 #endif
 
-    return std::make_pair(re, im);
+    vector_ptrtype solution( new VectorPetsc<value_type>( sol ) );
+    solution->close();
+
+    return boost::make_tuple( re, im, solution );
 }
 
 
@@ -552,4 +568,4 @@ template class SolverEigenSlepc<double>;
 #endif // #ifdef HAVE_SLEPC
 
 }
- 
+
