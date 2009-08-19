@@ -817,6 +817,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
     MatTranspose( _M_mat, MAT_INITIAL_MATRIX, &Atrans );
     PetscTruth isSymmetric;
     MatEqual( _M_mat, Atrans, &isSymmetric);
+    MatDestroy( Atrans );
     if (isSymmetric) {
         Log() << "[MatrixPetsc<T>::symmetricPart] Matrix is already symmetric, don't do anything\n";
         MatSetOption(_M_mat,MAT_SYMMETRIC,PETSC_TRUE);
