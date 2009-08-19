@@ -56,12 +56,7 @@ makeOptions()
     soundoptions.add_options()
         ("kc2", Life::po::value<double>()->default_value( 1 ), "k/c parameter")
         ("sigma", Life::po::value<double>()->default_value( 20 ), "shift parameter for the eigenvalue problem")
-        ("nev", Life::po::value<int>()->default_value( 3 ), "number of eigenmodes to compute")
-        ("ncv", Life::po::value<int>()->default_value( 3 ), "number of basis vectors to be used for eigenmode computation")
         ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-
-        ("tol", Life::po::value<double>()->default_value( 1e-10 ), "tolerance for eigen value solver")
-        ("maxiter", Life::po::value<int>()->default_value( 1000 ), "maximum number of iterations for eigenvalue solver")
 
         ("export", "export results(ensight, data file(1D)")
         ("export-mesh-only", "export mesh only in ensight format")
@@ -149,6 +144,7 @@ public:
         super( argc, argv, ad, od ),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
+        eigen( SolverEigen<value_type>::build( this->vm() ) ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers(),
         stats()
@@ -185,7 +181,9 @@ private:
 
     backend_ptrtype M_backend;
     double meshSize;
+    boost::shared_ptr<SolverEigen<value_type> > eigen;
 
+    
     boost::shared_ptr<export_type> exporter;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
@@ -267,9 +265,9 @@ Sound<Dim, Order, Entity>::run()
 
 
     if ( Dim == 2 )
-        form( Xh, *F )  = integrate( markedfaces(*mesh,2), im, val(Py()*(1-Py()))*id(v) );
+        form( Xh, *F )  = integrate( markedfaces(mesh,2), im, val(Py()*(1-Py()))*id(v) );
     else
-        form( Xh, *F )  = integrate( markedfaces(*mesh,51), im, val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) );
+        form( Xh, *F )  = integrate( markedfaces(mesh,51), im, val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) );
 
     if ( this->vm().count( "export-matlab" ) )
         F->printMatlab( "F.m" );
@@ -284,45 +282,46 @@ Sound<Dim, Order, Entity>::run()
 
     timers["assembly"].first.restart();
 
-    form( Xh, Xh, *D ) = integrate( elements(*mesh), im, ( kc2*idt(u)*id(v)-gradt(u)*trans(grad(v))) );
+    form2( Xh, Xh, D ) = integrate( elements(mesh), im, ( kc2*idt(u)*id(v)-gradt(u)*trans(grad(v))) );
     D->close();
 
     timers["assembly"].second += timers["assembly"].first.elapsed();
 
     if ( this->vm().count( "export-matlab" ) )
-        D->printMatlab( "D" );
+        D->printMatlab( "D.m" );
 
     this->solve( D, u, F, true );
 
     // eigen modes
-    boost::shared_ptr<SolverEigen<value_type> > eigen = SolverEigen<value_type>::build();
-
     double sigma = this->vm()["sigma"].template as<double>();
     sparse_matrix_ptrtype S( M_backend->newMatrix( Xh, Xh ) );
-    form( Xh, Xh, *S ) = integrate( elements(*mesh), im, gradt(u)*trans(grad(v)) );
+    form2( Xh, Xh, S ) = integrate( elements(mesh), im, gradt(u)*trans(grad(v)) );
     S->close();
+    if ( this->vm().count( "export-matlab" ) )
+        S->printMatlab( "S" );
 
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
-    form( Xh, Xh, *M ) = integrate( elements(*mesh), im, idt(u)*id(v));
+    form2( Xh, Xh, M ) = integrate( elements(mesh), im, idt(u)*id(v));
     M->close();
+    if ( this->vm().count( "export-matlab" ) )
+        M->printMatlab( "M.m" );
 
+    int maxit = this->vm()["solvereigen-maxiter"].template as<int>();
+    int tol = this->vm()["solvereigen-tol"].template as<double>();
 
-    int maxit = this->vm()["maxiter"].template as<int>();
-    int tol = this->vm()["tol"].template as<double>();
+    int nev = this->vm()["solvereigen-nev"].template as<int>();
 
-    int nev = this->vm()["nev"].template as<int>();
-
-    int ncv = this->vm()["ncv"].template as<int>();;
+    int ncv = this->vm()["solvereigen-ncv"].template as<int>();;
 
 #if 1
     eigen->setEigenProblemType( HEP );
     unsigned int nconv, nits;
-    boost::tie( nconv, nits)  =     eigen->solve( *S,  nev, ncv, tol, maxit );
+    boost::tie( nconv, nits)  =     eigen->solve( S,  nev, ncv, tol, maxit );
     Log() << "number of converged eigenmodes = " << nconv << "\n";
     Log() << "number of iterations = " << nits << "\n";
     //#else
     eigen->setEigenProblemType( GHEP );
-    boost::tie( nconv, nits)  =     eigen->solve( *S, *M,  nev, ncv, tol, maxit );
+    boost::tie( nconv, nits)  =     eigen->solve( S, M,  nev, ncv, tol, maxit );
     Log() << "number of converged eigenmodes = " << nconv << "\n";
     Log() << "number of iterations = " << nits << "\n";
 #endif
@@ -333,7 +332,7 @@ Sound<Dim, Order, Entity>::run()
     Log() << "Extracting eigen mode\n";
 
     double eigen_real, eigen_imag;
-    boost::tie( eigen_real, eigen_imag)  = eigen->eigenPair( 0, *modepetsc );
+    boost::tie( eigen_real, eigen_imag)  = eigen->eigenPair( 0, modepetsc );
     Log() << "eigenvalue " << 0 << " = (" << eigen_real << "," << eigen_imag  << ")\n";
     //Log() << "eigenvalue " << 0 << " relative error = " << eigen->relativeError( 0 ) << "\n";
 
