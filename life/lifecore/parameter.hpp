@@ -48,6 +48,8 @@ namespace Life
 namespace parameter = boost::parameter;
 
 BOOST_PARAMETER_NAME(matrix)    // Note: no semicolon
+BOOST_PARAMETER_NAME(matrixA)
+BOOST_PARAMETER_NAME(matrixB)
 BOOST_PARAMETER_NAME(rhs)
 BOOST_PARAMETER_NAME(solution)
 BOOST_PARAMETER_NAME(prec)
