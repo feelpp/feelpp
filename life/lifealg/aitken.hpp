@@ -32,8 +32,37 @@
 
 namespace Life
 {
+/**
+ * \class Aitken
+ * \brief Aitken relaxation method
+ *
+ * \code
+ * space_ptrtype Xh;
+ * space_type::element_type residual( Xh );
+ * space_type::element_type u_old( Xh );
+ * space_type::element_type u_new( Xh );
+ * Aitken<space_type> aitken( Xh );
+ * // initialize aitken
+ * aitken.initialize( residual, u_new );
+ * // reset aitken parameter before entering the fixed point loop
+ * aitken.resetPreviousParameter();
+ * // fixed point loop
+ * for( int i = 0; i < niter; ++i )
+ * {
+ *   // do some computation
+ *   aitken.SetElement( residual, u_new );
+ *   theta = aitken.calculateParameter();
+ *   // exploit aitken relaxation parameter
+ *   u = theta * u_old + (1-theta)* u_new;
+ *   aitken.shiftRight();
+ *   u_old = u_new;
+ * }
+ * \endcode
+ *
+ * \author Goncalo Pena
+ * \author Christophe Prud'homme
+ */
 template< typename fs_type >
-
 class Aitken
 {
 
@@ -44,6 +73,16 @@ public:
 
     typedef typename functionspace_type::element_type element_type;
 
+    /**
+     * Constructor
+     *
+     * the \p _failsafeParameter is set to 1 by default. The _failsafeParameter
+     * parameter provides an upper value for the relaxation parameter that will
+     * not be exceeded.
+     *
+     * \param _Xh the function space from which the element will be used
+     * \param _failsafeParameter fail safe parameter value
+     */
     Aitken( functionspace_ptrtype& _Xh, double _failsafeParameter = 1  )
     :
         Xh( _Xh ),
@@ -56,6 +95,9 @@ public:
     {
     }
 
+    /**
+     * copy constructor
+     */
     Aitken( Aitken const& tc )
         :
         Xh( tc.Xh ),
@@ -68,49 +110,42 @@ public:
     {
     }
 
+    /**
+     * destructor
+     */
     ~Aitken() {}
 
-    void initialize( element_type& residual, element_type& elem )
+    /**
+     * initiliaze the aitken algorithm
+     * \param residual  previous residual
+     * \param elem previous element
+     */
+    void initialize( element_type const& residual, element_type const& elem )
     {
         previousResidual = residual;
         previousElement = elem;
     }
 
-    void setElement( element_type& residual, element_type& elem )
+    /**
+     * Set the current element
+     * \param residual current residual
+     * \param elem current element
+     */
+    void setElement( element_type const& residual, element_type const& elem )
     {
         currentResidual = residual;
         currentElement = elem;
     }
 
-    double calculateParameter()
-    {
-        element_type aux( Xh, "aux");
+    /**
+     * \return the Aitken parameter
+     */
+    double calculateParameter();
 
-        aux = currentResidual;
-        aux -= previousResidual;
-
-        double scalar = inner_product( aux, aux );
-
-        aux.scale( 1.0/scalar );
-
-        element_type aux2( Xh, "aux2");
-
-        aux2 = currentElement;
-        aux2 -= previousElement;
-
-        scalar = inner_product( aux2, aux );
-
-        if ( scalar > failsafeParameter )
-            scalar = previousParameter;
-
-        if ( scalar < 1-failsafeParameter )
-            scalar = previousParameter;
-
-        previousParameter = scalar;
-
-        return scalar;
-    }
-
+    /**
+     * Do a relaxation step
+     * \param new_elem new element to compute the relaxation step
+     */
     void relaxationStep( element_type& new_elem )
     {
         new_elem = currentResidual;
@@ -119,12 +154,19 @@ public:
         new_elem += currentElement;
     }
 
+    /**
+     * shift current step to previous step. After the call, we are ready for the
+     * next step.
+     */
     void shiftRight()
     {
         previousResidual = currentResidual;
         previousElement = currentElement;
     }
 
+    /**
+     * reset the previous parameter
+     */
     void resetPreviousParameter()
     {
         previousParameter = failsafeParameter;
@@ -132,6 +174,9 @@ public:
 
 private:
 
+    /**
+     * function space
+     */
     functionspace_ptrtype Xh;
 
     double failsafeParameter, previousParameter;
@@ -140,6 +185,36 @@ private:
 
 };
 
+template< typename fs_type >
+double
+Aitken<fs_type>::calculateParameter()
+{
+    element_type aux( Xh, "aux");
+
+    aux = currentResidual;
+    aux -= previousResidual;
+
+    double scalar = inner_product( aux, aux );
+
+    aux.scale( 1.0/scalar );
+
+    element_type aux2( Xh, "aux2");
+
+    aux2 = currentElement;
+    aux2 -= previousElement;
+
+    scalar = inner_product( aux2, aux );
+
+    if ( scalar > failsafeParameter )
+        scalar = previousParameter;
+
+    if ( scalar < 1-failsafeParameter )
+        scalar = previousParameter;
+
+    previousParameter = scalar;
+
+    return scalar;
+}
 
 } // End namespace Life
 
