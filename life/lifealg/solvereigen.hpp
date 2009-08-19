@@ -70,10 +70,10 @@ public:
 
     /**
      *  Constructor. Initializes Solver data structures
-     * 
+     *
      * The \p prefix parameter allows to set different eigensolver options for
      * different eigensolver. It allows to distinguish between these options
-     * \code 
+     * \code
      * // register two slepc eigensolver options
      * add_options( solvereigen_options( "eigen1" ) ).add_options( solvereigen_options( "eigen2" ));
      * // build an eigen solver associated with option set eigen1
@@ -81,7 +81,7 @@ public:
      * \endcode
      *
      * \param vm variables map
-     * \param prefix string that allows for various options of the same type 
+     * \param prefix string that allows for various options of the same type
      */
     SolverEigen( po::variables_map const& vm, std::string const& prefix = "" );
 
@@ -105,9 +105,9 @@ public:
      * Builds a \p SolverEigen using the linear solver package
      * specified by \p vm
      * \param vm variables_map that contains the command line options and their defaults
-     * \param prefix string that allows for various options of the same type 
+     * \param prefix string that allows for various options of the same type
      */
-    static boost::shared_ptr<SolverEigen<value_type> > build( po::variables_map const& vm, 
+    static boost::shared_ptr<SolverEigen<value_type> > build( po::variables_map const& vm,
                                                               std::string const& prefix = std::string() );
 
     /**
@@ -138,6 +138,11 @@ public:
     /** @name Accessors
      */
     //@{
+
+    /**
+     * \return the prefix that differentiates the eigen solvers
+     */
+    std::string const& prefix() const { return M_prefix; }
 
     /**
      * Returns the type of eigensolver to use.
@@ -220,7 +225,7 @@ public:
                                                   int nev,
                                                   int ncv,
                                                   const double tol,
-                                                  const unsigned int m_its) 
+                                                  const unsigned int m_its)
         {
             return this->solve( *matrix_A, nev, ncv, tol, m_its );
         }
@@ -251,7 +256,7 @@ public:
         {
             return this->solve( *matrix_A, *matrix_B, nev, ncv, tol, m_its );
         }
-    
+
 
 
 
@@ -263,6 +268,8 @@ public:
 
 protected:
 
+    /** prefix to differentiate eigen solvers */
+    std::string M_prefix;
 
     /**
      * Enum stating which type of eigensolver to use.
@@ -291,14 +298,14 @@ protected:
  *
  * The \p prefix parameter allows to set different eigensolver options for
  * different eigensolver. It allows to distinguish between these options
- * \code 
+ * \code
  * // register two slepc eigensolver options
  * add_options( solvereigen_options( "eigen1" ) ).add_options( solvereigen_options( "eigen2" ));
  * // build an eigen solver associated with option set eigen1
  * SolverEigen<double>::build( vm, "eigen1" );
  * \endcode
  *
- * \param prefix prefix allows to prefix options 
+ * \param prefix prefix allows to prefix options
  */
 po::options_description solvereigen_options( std::string const& prefix = "" );
 } // Life
