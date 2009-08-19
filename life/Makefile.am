@@ -32,10 +32,10 @@ dist_pkgdata_DATA  = debug.areas
 lib_LTLIBRARIES		= liblife.la
 
 liblife_la_SOURCES	=  options.cpp
-liblife_la_LDFLAGS  = -no-undefined
 liblife_la_LIBADD   = lifematerial/liblifematerial.la \
                       lifefilters/liblifefilters.la \
                       lifediscr/liblifediscr.la     \
                       lifemesh/liblifemesh.la       \
                       lifealg/liblifealg.la         \
                       lifecore/liblifecore.la
+liblife_la_LDFLAGS  = -no-undefined -version-info 0:0;0

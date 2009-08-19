@@ -34,5 +34,4 @@ liblifediscr_la_SOURCES += mesh1.cpp mesh2.cpp mesh3.cpp partitioner.cpp ale.cpp
 endif
 
 liblifediscr_la_LIBADD	= ../lifemesh/liblifemesh.la ../lifealg/liblifealg.la
-
-
+liblifediscr_la_LDFLAGS  = -version-info 0:0:0

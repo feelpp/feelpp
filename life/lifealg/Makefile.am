@@ -51,5 +51,5 @@ liblifealg_la_SOURCES	= dummy.cpp datamap.cpp \
                           $(PARDISO_SRCS)
 
 liblifealg_la_LIBADD	=  ../lifecore/liblifecore.la $(petsc_libs) $(umfpack_libs) $(aztec_libs)
-
+liblifealg_la_LDFLAGS  = -version-info 0:0:0
 
