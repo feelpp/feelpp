@@ -388,6 +388,12 @@ public:
 
     bool HaveColMap() const;
 
+    /**
+     * Returns the transpose of a matrix
+     *
+     * \param Mt the matrix transposed
+     */
+    void transpose( MatrixSparse<value_type>& Mt ) const;
 
     /**
      * Return the energy v1^T M v2
