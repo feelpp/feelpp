@@ -217,7 +217,7 @@ public:
             boost::tie( fit, fen ) = M_mesh.elementsRange();
             while( fit != fen )
                 {
-                    if ( fit->marker().value() == boost::get<1>( marker ) )
+                    if ( fit->marker().value() == (int)boost::get<1>( marker ) )
                         {
                             M_dof.addDofFromElement( *fit, next_free_dof, 0 );
                         }
