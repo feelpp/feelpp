@@ -303,6 +303,15 @@ public:
     virtual void add (const value_type& a, const Vector<value_type>& v) = 0;
 
     /**
+     * \f$U+=a*V\f$.
+     * Simple vector addition, equal to the
+     * \p operator +=.
+     */
+    void add (const value_type& a, const boost::shared_ptr<Vector<value_type> >& v)
+        {
+            add( a, *v );
+        }
+    /**
      * \f$ U+=v \f$ where v is a ublas::vector<T>
      * and you
      * want to specify WHERE to add it
