@@ -29,6 +29,7 @@ liblifemesh_la_SOURCES	= marker.cpp bareitems.cpp \
                           meshbase.cpp
 
 liblifemesh_la_LIBADD	= ../lifecore/liblifecore.la
+liblifemesh_la_LDFLAGS  = -version-info 0:0:0
 
 
 #bin_PROGRAMS    = tt

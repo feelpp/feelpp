@@ -32,7 +32,7 @@ smartassert.cpp $(MPFR_SOURCES) \
 pslogger.cpp
 
 liblifecore_la_LIBADD	= $(aztec_libs) $(BOOST_MPI_LIB) $(BOOST_SERIALIZATION_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_FILESYSTEM_LIB)
-
+liblifecore_la_LDFLAGS  = -version-info 0:0:0
 
 # if HAVE_PETSC
 # liblifecore_la_SOURCES += applicationpetsc.cpp
