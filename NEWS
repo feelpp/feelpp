@@ -1,19 +1,58 @@
 # -*- org -*-
 
-#+TITLE: Life News 
-#+AUTHOR: Christophe Prud'homme 
+#+TITLE: Life News
+#+AUTHOR: Christophe Prud'homme
 #+EMAIL: christophe.prudhomme@ujf-grenoble.fr
+#+OPTIONS: toc:t
 
 * New in 0.9.11
 
-** Libraries 
+** Programming environment
 
-*** lifepoly 
+*** Directory layout and autotools
+
+    Now Life splits the entire framework into various modules
+
+*** Libtool
+
+   Now the libraries follow libtool versioning scheme
+
+   So, libtool library versions are described by three integers:
+   - current: The most recent interface number that this library implements.
+   - revision: The implementation number of the current interface.
+   - age: The difference between the newest and oldest interfaces that this
+     library implements.
+
+   In other words, the library implements all the interface numbers in the range
+   from number 'current - age' to current.
+
+   Here are a set of rules that are used to update the library version information:
+   1. Start with version information of ‘0:0:0’ for each libtool library.
+   2. Update the version information only immediately before a public release of
+      your software. More frequent updates are unnecessary, and only guarantee
+      that the current interface number gets larger faster.
+   3. If the library source code has changed at all since the last update, then
+      increment revision (‘c:r:a’ becomes ‘c:r+1:a’).
+   4. If any interfaces have been added, removed, or changed since the last
+      update, increment current, and set revision to 0.
+   5. If any interfaces have been added since the last public release, then
+      increment age.
+   6. If any interfaces have been removed since the last public release, then
+      set age to 0.
+
+   See http://www.gnu.org/software/libtool/manual/libtool.html#Versioning for
+   more details
+
+
+** Libraries
+
+
+*** lifepoly
 
     - now Lagrange polynomials can be instantiated using only
       Lagrange<Order,Scalar|Vectorial>
-      
-*** lifediscr 
+
+*** lifediscr
 
     - Simplified FunctionSpace<>
 
@@ -24,7 +63,7 @@
     - support for high order nodal basis function in case of periodic
       conditions in 1D and 2D is complete see #20
 
-*** lifealg 
+*** lifealg
 
     - Improve robustness of linear algebra backends see #21
 
@@ -34,13 +73,13 @@
     - Fixed bug on 64 bits architecture for the construction of the FE CRS
       graph for trilinos
 
-*** lifefilters 
-    
+*** lifefilters
+
     - Simplify Exporter interface, old interface still supported, but might be
       obsoleted in a future release. The simplification is that the TimeSet
       data structure should not be used directly but through the Exporter class
       interface.
-      
+
 *** lifevf
 
     - reflect simplifications made in lifepoly and lifediscr
@@ -56,7 +95,7 @@
       generates Ensight case files (to be visualized with Paraview) for Lagrange
       and Dubiner polynomials in 1D, 2D and 3D and Crouzeix-Raviart polynomials
       of order 1 in 2D in the triangle.
-      
+
 ** Benchmarks
 
 *** Convergence
@@ -64,7 +103,7 @@
     - new benchmark system: added a Python framework to check for the
       convergence (e.g. L_2 or H_1 norms) for a few problems
 
-    - added new benchmarks to benchmark/convergence: stokes and ale  
+    - added new benchmarks to benchmark/convergence: stokes and ale
 
 * New in 0.9.10
 
@@ -74,7 +113,7 @@
 
     - started support for high order nodal basis function in case of periodic
       conditions
-      
+
 *** lifefilters
 
     - Gmsh : throw an exception if gmsh is execute when not available
@@ -90,9 +129,9 @@
     - started new examples (nonlinear pde)
 
 ** Build System
-   
+
 *** Configure
-    
+
     - better feedback to users
 
     - a summary text file provides what is available and what is not
@@ -107,7 +146,7 @@
 * New in 0.9.9
 
   - If Petsc is supported then use Petsc as default backend.
-    
+
   - Slepc(Petsc) support has been updated to latest version.
 
   - Added periodic boundary conditions support in FunctionSpace<>.
@@ -126,4 +165,4 @@
 
 
  -- prudhomm <prudhomm@orphu.prudhomm.org>, Thu,  6 Aug 2009 14:12:24 +0200
- 
+
