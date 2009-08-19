@@ -240,6 +240,11 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     CHKERRABORT(Application::COMM_WORLD,ierr);
 #endif // DEBUG
 
+    // TODO: possible memory leak here
+    //VecDestroy( M_mode );
+    ierr = MatGetVecs(matrix_A->mat(),PETSC_NULL,&M_mode);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
     error = 1;
     if ( nconv >= 1 )
     {
@@ -262,6 +267,7 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
 {
 
     this->init ();
+
 
     MatrixPetsc<T>* matrix_A   = dynamic_cast<MatrixPetsc<T>*>(&matrix_A_in);
     MatrixPetsc<T>* matrix_B   = dynamic_cast<MatrixPetsc<T>*>(&matrix_B_in);
@@ -397,10 +403,15 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     CHKERRABORT(Application::COMM_WORLD,ierr);
 #endif // DEBUG
 
+    // TODO: possible memory leak here
+    //VecDestroy( M_mode );
+    ierr = MatGetVecs(matrix_A->mat(),PETSC_NULL,&M_mode);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
     error = 1;
     if ( nconv >= 1 )
         {
-            ierr = EPSComputeRelativeError(M_eps, 1, &error);
+            ierr = EPSComputeRelativeError(M_eps, 0, &error);
             CHKERRABORT(Application::COMM_WORLD,ierr);
         }
     // return the number of converged eigenpairs
@@ -519,16 +530,12 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
 
     PetscReal re, im;
 
-    Vec sol;
-
-
-
     // real and imaginary part of the ith eigenvalue.
     PetscScalar kr, ki;
 
 
 
-    ierr = EPSGetEigenpair(M_eps, i, &kr, &ki, sol, PETSC_NULL);
+    ierr = EPSGetEigenpair(M_eps, i, &kr, &ki, M_mode, PETSC_NULL);
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
 #ifdef USE_COMPLEX_NUMBERS
@@ -539,7 +546,7 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
     im = ki;
 #endif
 
-    vector_ptrtype solution( new VectorPetsc<value_type>( sol ) );
+    vector_ptrtype solution( new VectorPetsc<value_type>( M_mode ) );
     solution->close();
 
     return boost::make_tuple( re, im, solution );
