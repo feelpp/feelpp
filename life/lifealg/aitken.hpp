@@ -34,7 +34,7 @@ namespace Life
 {
 /**
  * \class Aitken
- * \brief Aitken relaxation method
+ * \brief Aitken relaxation method for fixed point iterations
  *
  * \code
  * space_ptrtype Xh;
