@@ -788,6 +788,52 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> 
 
 }
 
+template<typename T>
+void
+MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
+{
+    MatrixPetsc<T>* Atrans = dynamic_cast<MatrixPetsc<T>*> (&Mt);
+
+    int ierr = MatTranspose( _M_mat, MAT_INITIAL_MATRIX,&Atrans->_M_mat);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
+    PetscTruth isSymmetric;
+    MatEqual( _M_mat, Atrans->_M_mat, &isSymmetric);
+    if (isSymmetric) {
+        MatSetOption(_M_mat,MAT_SYMMETRIC,PETSC_TRUE);
+    } else {
+        PetscPrintf(PETSC_COMM_WORLD,"Warning: Petsc matrix is non-symmetric \n");
+    }
+}
+
+template<typename T>
+void
+MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
+{
+    Mat A[2];
+    MatDuplicate(_M_mat,MAT_COPY_VALUES,&A[0]);
+    MatDuplicate(_M_mat,MAT_COPY_VALUES,&A[1]);
+    MatTranspose( A[1], MAT_INITIAL_MATRIX, &A[1] );
+    
+
+    MatrixPetsc<T>* B = dynamic_cast<MatrixPetsc<T>*> (&Mt);
+    MatCreateComposite(PETSC_COMM_WORLD,2,A,&B->_M_mat);
+    MatCompositeSetType(B->_M_mat,MAT_COMPOSITE_ADDITIVE);
+    MatCompositeMerge(B->_M_mat);
+    MatShift( B->_M_mat, 0.5 );
+
+    Mat Btrans;
+    MatTranspose( B->_M_mat, MAT_INITIAL_MATRIX, &Btrans );
+    PetscTruth isSymmetric;
+    MatEqual( B->_M_mat, Btrans, &isSymmetric);
+    if (isSymmetric) {
+        Log() << "[MatrixPetsc<T>::symmetricPart] Matrix is symmetric\n";
+        MatSetOption(B->_M_mat,MAT_SYMMETRIC,PETSC_TRUE);
+    } else {
+        PetscPrintf(PETSC_COMM_WORLD,"Warning: Petsc matrix is non-symmetric \n");
+    }
+
+}
 
 template class MatrixPetsc<double>;
 } // Life
