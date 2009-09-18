@@ -575,4 +575,3 @@ template class SolverEigenSlepc<double>;
 #endif // #ifdef HAVE_SLEPC
 
 }
-
