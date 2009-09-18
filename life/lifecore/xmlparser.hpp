@@ -126,7 +126,7 @@ public:
  * \brief parameter class to describe code inputs
  */
 class Parameter : public Parameter_impl {
-    public:
+public:
     Parameter() {}
     BOOST_PARAMETER_CONSTRUCTOR(
         Parameter, (Parameter_impl), tag
@@ -140,10 +140,15 @@ private:
 
 public:
     template <class ArgumentPack>
-    Output_impl(ArgumentPack const& args) : Parameter(_name=args[_name], _type=0, _latex=args[_latex]) {
-        dependencies=args[_dependencies];
-        funcs=args[_funcs];
-    }
+    Output_impl(ArgumentPack const& args)
+        :
+        Parameter(_name=args[_name],
+                  _type=0,
+                  _latex=args[_latex ])
+        {
+            dependencies=args[_dependencies | std::vector<Parameter>() ];
+            funcs=args[_funcs | std::vector<std::string>() ];
+        }
     /**
      * \return the dependencies of the output
      */
@@ -163,10 +168,16 @@ public:
  * \brief output class to describe code outputs
  */
 class Output : public Output_impl {
-    public:
+public:
     BOOST_PARAMETER_CONSTRUCTOR(
-        Output, (Output_impl), tag
-        , (required (name,*)) (optional (latex,*)) (required (dependencies,*)) (required (funcs,*)))
+        Output,
+        (Output_impl),
+        tag,
+        (required (name,*))
+        (optional (latex,*))
+        (optional (dependencies,*))
+        (optional (funcs,*))
+        )
 };
 
 class xmlParser {
@@ -292,7 +303,7 @@ private:
             xmlNodeSetContent(aNewNode,(xmlChar*) value.c_str());
         return aNewNode;
     }
-	};
+};
 }
 
 #endif /* XML_PARSER_H */
