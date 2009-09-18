@@ -88,9 +88,10 @@ SolverEigen<T>::SolverEigen( po::variables_map const& vm, std::string const& pre
 template <typename T>
 SolverEigen<T>::SolverEigen( po::variables_map const& vm, std::string const& prefix )
     :
-    M_eigen_solver_type    ((EigenSolverType)vm[prefix+"solvereigen-solver-type"].template as<int>() ),
-    M_eigen_problem_type   ((EigenProblemType)vm[prefix+"solvereigen-problem-type"].template as<int>() ),
-    M_position_of_spectrum ((PositionOfSpectrum)vm[prefix+"solvereigen-position"].template as<int>() ),
+    M_prefix( (!prefix.empty() && !boost::algorithm::ends_with( prefix, "-" ))? (prefix+"-"):prefix ),
+    M_eigen_solver_type    ((EigenSolverType)vm[M_prefix+"solvereigen-solver-type"].template as<int>() ),
+    M_eigen_problem_type   ((EigenProblemType)vm[M_prefix+"solvereigen-problem-type"].template as<int>() ),
+    M_position_of_spectrum ((PositionOfSpectrum)vm[M_prefix+"solvereigen-position"].template as<int>() ),
     M_is_initialized       (false)
 {
 }
