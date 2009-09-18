@@ -131,6 +131,16 @@ public:
      */
     virtual eigenpair_type eigenPair ( unsigned int i ) = 0;
 
+    /**
+     * Returns the \p ith eigenvalue (real and imaginary part), and
+     * copies the \ ith eigen vector to the solution vector.
+     */
+    virtual std::pair<real_type, real_type> eigenPair (unsigned int i,
+                                                       boost::shared_ptr<Vector<value_type> > &solution)
+        {
+            this->eigenPair( i, *solution );
+        }
+
     //@}
 
     /** @name Operator overloads
