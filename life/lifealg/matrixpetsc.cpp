@@ -569,6 +569,13 @@ MatrixPetsc<T>::addMatrix (const T a_in, MatrixSparse<T> &X_in)
 }
 
 template <typename T>
+void
+MatrixPetsc<T>::scale( T const a )
+{
+    int ierr = MatScale( _M_mat, a );
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+}
+template <typename T>
 inline
 typename MatrixPetsc<T>::real_type
 MatrixPetsc<T>::l1Norm() const
@@ -814,6 +821,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 
     // first check if the matrix is symmetric
     Mat Atrans;
+    MatDuplicate(_M_mat,MAT_COPY_VALUES,&Atrans);
     MatTranspose( _M_mat, MAT_INITIAL_MATRIX, &Atrans );
     PetscTruth isSymmetric;
     MatEqual( _M_mat, Atrans, &isSymmetric);
@@ -854,8 +862,8 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     ierr = MatScale( B->_M_mat, 0.5 );
-
     CHKERRABORT(Application::COMM_WORLD,ierr);
+
 
     // check that B is now symmetric
     Mat Btrans;
