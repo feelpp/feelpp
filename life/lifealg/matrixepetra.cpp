@@ -223,7 +223,6 @@ MatrixEpetra::transpose( MatrixSparse<value_type>& Mt ) const
     bool isSymmetric;
 
     if (isSymmetric) {
-
     } else {
 
     }
