@@ -1,4 +1,5 @@
 # -*- org -*-
+# This file is better edited using Emacs
 
 #+TITLE: Life News
 #+AUTHOR: Christophe Prud'homme
@@ -52,13 +53,13 @@
 *** lifepoly
 
     - now Lagrange polynomials can be instantiated using only
-      Lagrange<Order,Scalar|Vectorial>
+      =Lagrange<Order,Scalar|Vectorial>=
 
 *** lifediscr
 
-    - Simplified FunctionSpace<>
+    - Simplified =FunctionSpace<>=
 
-    - Bdf: allow to set time step and final time, added setSteady() to set
+    - Bdf: allow to set time step and final time, added =setSteady()= to set
       time step and final time to a very big value for the computation of the
       steady state
 
@@ -69,15 +70,20 @@
 
     - Improve robustness of linear algebra backends see #21
 
-    - Improve SolverEigen interface allowing for boost::shared_ptr<> and
-      initializing from po::variables_map
+    - Improve =SolverEigen= interface allowing for =boost::shared_ptr<>= and
+      initializing from =po::variables_map=
+
+    - Provide a standalone function =eigs()= using Boost.Parameter, the interface
+      is quite simple and typically looks like
+      =eigs( _matrixA=A, _matrixB=B, _spectrum=LARGEST_MAGNITUDE );=
+      to solve for A x = \lambda B x
 
     - Fixed bug on 64 bits architecture for the construction of the FE CRS
       graph for trilinos
 
 *** lifefilters
 
-    - Simplify Exporter interface, old interface still supported, but might be
+    - Simplify =Exporter= interface, old interface still supported, but might be
       obsoleted in a future release. The simplification is that the TimeSet
       data structure should not be used directly but through the Exporter class
       interface.
@@ -86,8 +92,8 @@
 
     - reflect simplifications made in lifepoly and lifediscr
 
-    - mat(),vec(): supports for trial and test functions added, now you can
-      write vec(0.,idt(v)).
+    - =mat()=,=vec()=: supports for trial and test functions added, now you can
+      write =vec(0.,idt(v))=.
 
 ** Applications
 
@@ -98,6 +104,14 @@
       and Dubiner polynomials in 1D, 2D and 3D and Crouzeix-Raviart polynomials
       of order 1 in 2D in the triangle.
 
+** Examples
+
+   - reflect (simplification) changes made in =Exporter= class in all examples.
+
+*** Generic
+
+   - =sound=: use new eigs interface and simplify the code
+
 ** Benchmarks
 
 *** Convergence
@@ -105,7 +119,7 @@
     - new benchmark system: added a Python framework to check for the
       convergence (e.g. L_2 or H_1 norms) for a few problems
 
-    - added new benchmarks to benchmark/convergence: stokes and ale
+    - added new benchmarks to =benchmark/convergence=: stokes and ale
 
 * New in 0.9.10
 
@@ -163,10 +177,4 @@
 
    - [Experimental] Shell matrices (only support matrix/vector
   multiplication) support.
-
-
-<<<<<<< HEAD
-=======
- -- prudhomm <prudhomm@orphu.prudhomm.org>, Thu,  6 Aug 2009 14:12:24 +0200
->>>>>>> update News
 

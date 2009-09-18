@@ -324,7 +324,6 @@ Sound<Dim, Order, Entity>::run()
               _ncv=ncv,
               _spectrum=LARGEST_MAGNITUDE );
     element_type mode( Xh, "mode" );
-
     Log() << "eigenvalue " << 0 << " = (" << eigen_real << "," << eigen_imag  << ")\n";
     //Log() << "eigenvalue " << 0 << " relative error = " << eigen->relativeError( 0 ) << "\n";
 
