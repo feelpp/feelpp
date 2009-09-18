@@ -174,6 +174,13 @@ enum PositionOfSpectrum {LARGEST_MAGNITUDE=0,
                          INVALID_Postion_of_Spectrum};
 
 /**
+ * Spectral transform type
+ */
+enum SpectralTransformType {SHIFT=0,
+                            SINVERT,
+                            FOLD,
+                            CAYLEY };
+/**
  * Defines an \p enum for various linear solver packages.  This
  * allows for run-time switching between solver packages
  *

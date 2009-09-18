@@ -71,6 +71,7 @@ public:
     typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
 
     typedef boost::tuple<real_type, real_type, vector_ptrtype> eigenpair_type;
+    typedef std::map<real_type, eigenpair_type> eigenmodes_type;
 
     //@}
 
@@ -140,6 +141,10 @@ public:
         {
             return this->eigenPair( i, *solution );
         }
+    /*
+     * Returns the eigen modes in a map
+     */
+    virtual eigenmodes_type eigenModes () = 0;
 
     //@}
 
@@ -173,6 +178,11 @@ public:
      * Returns the position of the spectrum to compute.
      */
     PositionOfSpectrum postitionOfSpectrum () const { return M_position_of_spectrum;}
+
+    /**
+     * Returns the spectral transforms
+     */
+    SpectralTransformType spectralTransform() const { return M_spectral_transform; }
 
     /**
      * Returns the number of eigenvalues to compute
@@ -215,6 +225,11 @@ public:
      * Sets the position of the spectrum.
      */
     void setPositionOfSpectrum (PositionOfSpectrum pos) { M_position_of_spectrum= pos; }
+
+    /**
+     * set the spectral transform
+     */
+    void setSpectralTransform( SpectralTransformType st ) { M_spectral_transform = st; }
 
     /**
      * set the tolerance
@@ -389,6 +404,10 @@ protected:
      */
     PositionOfSpectrum M_position_of_spectrum;
 
+    /**
+     * spectral transformation type
+     */
+    SpectralTransformType M_spectral_transform;
 
     /**
      * Flag indicating if the data structures have been initialized.
@@ -408,7 +427,7 @@ protected:
     value_type M_tolerance;
 };
 
-BOOST_PARAMETER_MEMBER_FUNCTION((boost::tuple<size_type, double, double, boost::shared_ptr<Vector<double> > > ),
+BOOST_PARAMETER_MEMBER_FUNCTION((typename SolverEigen<double>::eigenmodes_type),
                                 eigs,
                                 tag,
                                 (required
@@ -420,6 +439,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION((boost::tuple<size_type, double, double, boost::
                                  (backend,(BackendType), BACKEND_PETSC )
                                  (solver,(EigenSolverType), KRYLOVSCHUR )
                                  (problem,(EigenProblemType), GHEP )
+                                 (transform,(SpectralTransformType), SHIFT )
                                  (spectrum,(PositionOfSpectrum), LARGEST_MAGNITUDE )
                                  (maxit,(size_type), 1000 )
                                  (tolerance,(double), 1e-11)
@@ -435,6 +455,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION((boost::tuple<size_type, double, double, boost::
     eigen->setNumberOfEigenValues( nev );
     eigen->setNumberOfEigenValuesConverged( ncv );
     eigen->setMaxIterations( maxit );
+    eigen->setSpectralTransform( transform );
     eigen->setTolerance( tolerance );
 
     Log() << "number of eigen values = " << nev << "\n";
@@ -445,22 +466,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION((boost::tuple<size_type, double, double, boost::
     unsigned int nconv, nits;
     boost::tie( nconv, nits, boost::tuples::ignore)  = eigen->solve( matrixA, matrixB );
 
-    Log() << "number of converged eigenmodes = " << nconv << "\n";
-    Log() << "number of iterations = " << nits << "\n";
-
-    vector_ptrtype mode;
-
-    double eigen_real, eigen_imag;
-    if ( nconv )
-    {
-            Log() << "Extracting eigen mode (" << ncv << ")\n";
-
-            boost::tie( eigen_real, eigen_imag, mode )  = eigen->eigenPair( 0 );
-            Log() << "eigenvalue " << 0 << " = (" << eigen_real << "," << eigen_imag  << ")\n";
-            //Log() << "eigenvalue " << 0 << " relative error = " << eigen->relativeError( 0 ) << "\n";
-            return boost::make_tuple( nconv, eigen_real, eigen_imag, mode );
-    }
-    return boost::make_tuple( 0, 0, 0, mode );
+    return eigen->eigenModes();
 }
 
 /**
