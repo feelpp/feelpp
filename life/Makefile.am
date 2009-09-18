@@ -39,4 +39,3 @@ liblife_la_LIBADD   = lifematerial/liblifematerial.la \
                       lifealg/liblifealg.la         \
                       lifecore/liblifecore.la
 liblife_la_LDFLAGS  = -no-undefined -version-info 0:0:0
-
