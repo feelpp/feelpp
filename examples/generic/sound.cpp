@@ -314,6 +314,7 @@ Sound<Dim, Order, Entity>::run()
     int ncv = this->vm()["solvereigen-ncv"].template as<int>();;
 
     double eigen_real, eigen_imag;
+
     vector_ptrtype modepetsc( M_backend->newVector( Xh ) );
     int nconv;
     boost::tie( nconv, eigen_real, eigen_imag, modepetsc )  =
@@ -323,6 +324,7 @@ Sound<Dim, Order, Entity>::run()
               _ncv=ncv,
               _spectrum=LARGEST_MAGNITUDE );
     element_type mode( Xh, "mode" );
+
     Log() << "eigenvalue " << 0 << " = (" << eigen_real << "," << eigen_imag  << ")\n";
     //Log() << "eigenvalue " << 0 << " relative error = " << eigen->relativeError( 0 ) << "\n";
 
