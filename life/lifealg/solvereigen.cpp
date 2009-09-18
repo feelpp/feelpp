@@ -92,7 +92,9 @@ SolverEigen<T>::SolverEigen( po::variables_map const& vm, std::string const& pre
     M_eigen_solver_type    ((EigenSolverType)vm[M_prefix+"solvereigen-solver-type"].template as<int>() ),
     M_eigen_problem_type   ((EigenProblemType)vm[M_prefix+"solvereigen-problem-type"].template as<int>() ),
     M_position_of_spectrum ((PositionOfSpectrum)vm[M_prefix+"solvereigen-position"].template as<int>() ),
-    M_is_initialized       (false)
+    M_is_initialized       (false),
+    M_nev(vm[M_prefix+"solvereigen-nev"].template as<int>()),
+    M_ncv(vm[M_prefix+"solvereigen-ncv"].template as<int>())
 {
 }
 

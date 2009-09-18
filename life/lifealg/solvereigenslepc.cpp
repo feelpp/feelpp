@@ -535,7 +535,9 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
 
 
 
+
     ierr = EPSGetEigenpair(M_eps, i, &kr, &ki, M_mode, PETSC_NULL);
+
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
 #ifdef USE_COMPLEX_NUMBERS
