@@ -818,6 +818,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
     PetscTruth isSymmetric;
     MatEqual( _M_mat, Atrans, &isSymmetric);
     MatDestroy( Atrans );
+
     if (isSymmetric) {
         Log() << "[MatrixPetsc<T>::symmetricPart] Matrix is already symmetric, don't do anything\n";
         MatSetOption(_M_mat,MAT_SYMMETRIC,PETSC_TRUE);
@@ -853,6 +854,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     ierr = MatScale( B->_M_mat, 0.5 );
+
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // check that B is now symmetric
