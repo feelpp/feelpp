@@ -138,7 +138,7 @@ public:
     virtual std::pair<real_type, real_type> eigenPair (unsigned int i,
                                                        boost::shared_ptr<Vector<value_type> > &solution)
         {
-            this->eigenPair( i, *solution );
+            return this->eigenPair( i, *solution );
         }
 
     //@}
@@ -305,6 +305,20 @@ public:
         }
 
     /**
+     * Solves the standard eigen problem and returns the
+     * number of converged eigenpairs and the number
+     * of iterations.
+     */
+    std::pair<unsigned int, unsigned int> solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
+                                                  int nev,
+                                                  int ncv,
+                                                  const double tol,
+                                                  const unsigned int m_its)
+        {
+            return this->solve( *matrix_A, nev, ncv, tol, m_its );
+        }
+
+    /**
      * Solves the generalized eigen value problem \f$A x = \lambda
      * Bx\f$ and returns the number of converged eigenpairs and the
      * number of iterations.
@@ -327,6 +341,21 @@ public:
                               int ncv,
                               const double tol,
                               const unsigned int m_its)
+        {
+            return this->solve( *matrix_A, *matrix_B, nev, ncv, tol, m_its );
+        }
+
+    /**
+     * Solves the generalized eigen value problem \f$A x = \lambda
+     * Bx\f$ and returns the number of converged eigenpairs and the
+     * number of iterations.
+     */
+    std::pair<unsigned int, unsigned int> solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
+                                                  boost::shared_ptr<MatrixSparse<value_type> > &matrix_B,
+                                                  int nev,
+                                                  int ncv,
+                                                  const double tol,
+                                                  const unsigned int m_its)
         {
             return this->solve( *matrix_A, *matrix_B, nev, ncv, tol, m_its );
         }
