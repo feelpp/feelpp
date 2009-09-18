@@ -86,6 +86,8 @@ public:
 
     typedef typename super::solve_return_type solve_return_type;
     typedef typename super::eigenpair_type eigenpair_type;
+
+    typedef typename super::eigenmodes_type eigenmodes_type;
     //@}
 
     /** @name Constructors, destructor
@@ -145,6 +147,11 @@ public:
      * eigenpair may be complex values.
      */
     eigenpair_type eigenPair ( unsigned int i );
+
+    /**
+     * Returns the eigen modes in a map
+     */
+    virtual eigenmodes_type eigenModes () ;
 
     /**
      * @computes and returns the relative error
@@ -226,6 +233,11 @@ private:
      * stored in \p _position_of_spectrum
      */
     void setSlepcPositionOfSpectrum();
+
+    /**
+     * set the spectral transforms
+     */
+    void setSlepcSpectralTransform();
 
     /**
      * Eigenproblem solver context

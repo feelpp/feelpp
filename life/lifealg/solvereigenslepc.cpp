@@ -173,7 +173,7 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // Set the tolerance and maximum iterations.
-    ierr = EPSSetTolerances (M_eps, tol, m_its);
+    ierr = EPSSetTolerances (M_eps, this->tolerance(), this->maxIterations() );
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // Set runtime options, e.g.,
@@ -197,7 +197,7 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
 
-#if 1 //!defined( NDEBUG )
+#if 0 //!defined( NDEBUG )
     // ierr = PetscPrintf(Application::COMM_WORLD,
     //         "\n Number of iterations: %d\n"
     //         " Number of converged eigenpairs: %d\n\n", its, nconv);
@@ -313,7 +313,7 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // Set the tolerance and maximum iterations.
-    ierr = EPSSetTolerances (M_eps, tol, m_its);
+    ierr = EPSSetTolerances (M_eps, this->tolerance(), this->maxIterations() );
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // Set runtime options, e.g.,
@@ -340,27 +340,27 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
       Optional: Get some information from the solver and display it
     */
     EPSGetIterationNumber(M_eps, &its);
-    PetscPrintf(PETSC_COMM_WORLD," Number of iterations of the method: %d\n",its);
+    //PetscPrintf(PETSC_COMM_WORLD," Number of iterations of the method: %d\n",its);
     int lits;
     EPSGetOperationCounters(M_eps,PETSC_NULL,PETSC_NULL,&lits);
-    PetscPrintf(PETSC_COMM_WORLD," Number of linear iterations of the method: %d\n",lits);
+    //PetscPrintf(PETSC_COMM_WORLD," Number of linear iterations of the method: %d\n",lits);
 
     const EPSType              type;
     EPSGetType(M_eps,&type);
-    PetscPrintf(PETSC_COMM_WORLD," Solution method: %s\n\n",type);
+    //PetscPrintf(PETSC_COMM_WORLD," Solution method: %s\n\n",type);
 
     int ncv1, mdv;
     EPSGetDimensions(M_eps,&nev,&ncv1,&mdv);
-    PetscPrintf(PETSC_COMM_WORLD," Number of requested eigenvalues: %d\n",nev);
+    //PetscPrintf(PETSC_COMM_WORLD," Number of requested eigenvalues: %d\n",nev);
 
     int maxit;double _tol;
     EPSGetTolerances(M_eps,&_tol,&maxit);
-    PetscPrintf(PETSC_COMM_WORLD," Stopping condition: tol=%.4g, maxit=%d\n",_tol,maxit);
+    //PetscPrintf(PETSC_COMM_WORLD," Stopping condition: tol=%.4g, maxit=%d\n",_tol,maxit);
 
     PetscScalar shift;
     //STGetShift(M_st, &shift );
     //PetscPrintf(PETSC_COMM_WORLD," shift=%.4g\n",shift);
-#if 1 //!defined( NDEBUG )
+#if 0//!defined( NDEBUG )
     // ierr = PetscPrintf(Application::COMM_WORLD,
     //         "\n Number of iterations: %d\n"
     //         " Number of converged eigenpairs: %d\n\n", its, nconv);
@@ -377,6 +377,10 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
             CHKERRABORT(Application::COMM_WORLD,ierr);
 
             ierr = EPSComputeRelativeError(M_eps, i, &error);
+            CHKERRABORT(Application::COMM_WORLD,ierr);
+
+            double norm;
+            ierr = EPSComputeResidualNorm(M_eps, i, &norm);
             CHKERRABORT(Application::COMM_WORLD,ierr);
 
 #ifdef USE_COMPLEX_NUMBERS
@@ -397,6 +401,9 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
                     ierr = PetscPrintf(Application::COMM_WORLD,"   %12e       %12e\n", re, error);
                     CHKERRABORT(Application::COMM_WORLD,ierr);
                 }
+
+            ierr = PetscPrintf(Application::COMM_WORLD, "Residual norm=%12e\n", norm );
+            CHKERRABORT(Application::COMM_WORLD,ierr);
         }
 
     ierr = PetscPrintf(Application::COMM_WORLD,"\n" );
@@ -520,6 +527,35 @@ SolverEigenSlepc<T>:: setSlepcPositionOfSpectrum()
     ierr = EPSSetWhichEigenpairs (M_eps, EPS_SMALLEST_REAL);
 }
 
+template <typename T>
+void
+SolverEigenSlepc<T>:: setSlepcSpectralTransform()
+{
+    int ierr = 0;
+
+    ST st;
+    ierr = EPSGetST (M_eps, &st);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
+    switch( this->spectralTransform() )
+            {
+            case SINVERT:
+                ierr = STSetType( st, STSINV );
+                break;
+            case FOLD:
+                ierr = STSetType( st, STFOLD );
+                break;
+            case CAYLEY:
+                ierr = STSetType( st, STCAYLEY );
+                break;
+            case SHIFT:
+            default:
+                ierr = STSetType( st, STSHIFT );
+                break;
+            }
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+}
+
 
 
 template <typename T>
@@ -532,8 +568,6 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
 
     // real and imaginary part of the ith eigenvalue.
     PetscScalar kr, ki;
-
-
 
 
     ierr = EPSGetEigenpair(M_eps, i, &kr, &ki, M_mode, PETSC_NULL);
@@ -552,6 +586,26 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
     solution->close();
 
     return boost::make_tuple( re, im, solution );
+}
+
+template <typename T>
+typename SolverEigenSlepc<T>::eigenmodes_type
+SolverEigenSlepc<T>::eigenModes()
+{
+    int ierr=0;
+
+    int ncv;
+    ierr = EPSGetConverged(M_eps,&ncv);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+    eigenmodes_type modes;
+    for ( int i = 0; i < ncv; ++i )
+    {
+        eigenpair_type mode = this->eigenPair( i );
+        // sort with respect to magnitude
+        real_type mod2 = mode.template get<0>()*mode.template get<0>()+mode.template get<1>()*mode.template get<1>();
+        modes[mod2] = mode;
+    }
+    return modes;
 }
 
 
