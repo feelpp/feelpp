@@ -132,15 +132,6 @@ public:
      */
     virtual eigenpair_type eigenPair ( unsigned int i ) = 0;
 
-    /**
-     * Returns the \p ith eigenvalue (real and imaginary part), and
-     * copies the \ ith eigen vector to the solution vector.
-     */
-    virtual std::pair<real_type, real_type> eigenPair (unsigned int i,
-                                                       boost::shared_ptr<Vector<value_type> > &solution)
-        {
-            return this->eigenPair( i, *solution );
-        }
     /*
      * Returns the eigen modes in a map
      */
@@ -319,19 +310,6 @@ public:
             return this->solve( *matrix_A, nev, ncv, tol, m_its );
         }
 
-    /**
-     * Solves the standard eigen problem and returns the
-     * number of converged eigenpairs and the number
-     * of iterations.
-     */
-    solve_return_type solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
-                              int nev,
-                              int ncv,
-                              const double tol,
-                              const unsigned int m_its)
-        {
-            return this->solve( *matrix_A, nev, ncv, tol, m_its );
-        }
 
     /**
      * Solves the generalized eigen value problem \f$A x = \lambda
@@ -359,24 +337,6 @@ public:
         {
             return this->solve( *matrix_A, *matrix_B, nev, ncv, tol, m_its );
         }
-
-    /**
-     * Solves the generalized eigen value problem \f$A x = \lambda
-     * Bx\f$ and returns the number of converged eigenpairs and the
-     * number of iterations.
-     */
-    solve_return_type solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
-                              boost::shared_ptr<MatrixSparse<value_type> > &matrix_B,
-                              int nev,
-                              int ncv,
-                              const double tol,
-                              const unsigned int m_its)
-        {
-            return this->solve( *matrix_A, *matrix_B, nev, ncv, tol, m_its );
-        }
-
-
-
 
     //@}
 
