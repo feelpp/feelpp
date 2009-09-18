@@ -157,12 +157,12 @@ public:
     ImporterGmsh()
         :
         super( GMSH ),
-        _M_version( "2.0" )
+        _M_version( "2.1" )
     {
         showMe();
     }
 
-    explicit ImporterGmsh( std::string const& fname, std::string version = "2.0" )
+    explicit ImporterGmsh( std::string const& fname, std::string version = "2.1" )
         :
         super( fname, GMSH ),
         _M_version( version )
@@ -266,7 +266,9 @@ template<typename MeshType>
 void
 ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 {
-    if ( this->version() != "1.0" && this->version() != "2.0" )
+    if ( this->version() != "1.0" &&
+         this->version() != "2.0" &&
+         this->version() != "2.1" )
         throw std::logic_error( "invalid gmsh file format version" );
 
     Debug( 8011 ) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit()] starts\n";
@@ -279,27 +281,33 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     char __buf[256];
     __is >> __buf;
 
-    if ( this->version() == "2.0" && std::string( __buf ) == "$MeshFormat" )
+    if ( ( (this->version() == "2.0") ||
+           (this->version() == "2.1") ) &&
+         std::string( __buf ) == "$MeshFormat" )
         {
             std::string theversion;
             // version file-type(0=ASCII,1=BINARY) data-size(sizeof(double))
             __is >> theversion >> __buf >> __buf;
-            LIFE_ASSERT( theversion == "2" )( theversion )( this->version() ).error( "invalid gmsh file format version ");
+            LIFE_ASSERT( boost::lexical_cast<double>( theversion ) >= 2 )( theversion )( this->version() ).warn( "invalid gmsh file format version ");
             // should be $EndMeshFormat
             __is >> __buf;
             LIFE_ASSERT( std::string( __buf ) == "$EndMeshFormat" )
                 ( __buf )
                 ( "$EndMeshFormat").error ( "invalid file format entry" );
             __is >> __buf;
+            Debug() << "[importergmsh] " << __buf << " (expect $PhysicalNames)\n";
             if ( std::string( __buf ) == "$PhysicalNames" )
                 {
                     int nnames;
                     __is >> nnames;
                     for( int n = 0; n < nnames; ++n )
                         {
-                            int id;
+                            int id, topodim;
                             std::string name;
-                            __is >> id >> name;
+                            if ( this->version() == "2.1" )
+                                __is >> topodim >> id >> name;
+                            else if ( this->version() == "2.0" )
+                                __is >> id >> name;
                             boost::trim( name );
                             boost::trim_if(name,boost::is_any_of("\""));
 
@@ -427,7 +435,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                          >> __np; // number-of-nodes
                     LIFE_ASSERT( __np == nptable[__t] )( __np )( __t )( nptable[__t] ).error( "invalid number of nodes" );
                 }
-            else if ( this->version() == "2.0" )
+            else if ( boost::lexical_cast<double>( this->version()) >= 2  )
                 {
                     int __ntag;
                     __is >> __ne  // elm-number
@@ -468,7 +476,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         ( "$ENDELM" )( "$EndElements" ).error("invalid end elements string in gmsh importer");
 
     // read physical names
-    if ( this->version() == "2.0" )
+    if ( boost::lexical_cast<double>( this->version()) >= 2  )
         {
 
         }
