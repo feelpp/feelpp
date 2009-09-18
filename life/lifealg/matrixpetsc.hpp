@@ -347,7 +347,11 @@ public:
      */
     void addMatrix (const T a, MatrixSparse<T> &X);
 
-    void scale( const T a ){}
+    /**
+     * scale the matrix by the factor \p a
+     * \param a scaling factor
+     */
+    void scale( T const a );
 
     /**
      * Returns the transpose of a matrix
