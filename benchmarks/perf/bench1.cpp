@@ -359,27 +359,27 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     //
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, idt(u)*id(v) );
-    Log() << " o- R<const> time : " << timer.elapsed() << "\n";
+    Log() << " o- R<const> time : " << timer.elapsed() << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, idv(w)*idt(u)*id(v) );
-    Log() << " o- R<p0 const> time : " << timer.elapsed() << "\n";
+    Log() << " o- R<p0 const> time : " << timer.elapsed() << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, ((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v) );
-    Log() << " o-   R<xyz> time : " << timer.elapsed() << "\n";
+    Log() << " o-   R<xyz> time : " << timer.elapsed() << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, idv(w)*((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v) );
-    Log() << " o-   R<dp0 xyz> time : " << timer.elapsed() << "\n";
+    Log() << " o-   R<dp0 xyz> time : " << timer.elapsed() << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v) );
-    Log() << " o-   R<val xyz> time : " << timer.elapsed() << "\n";
+    Log() << " o-   R<val xyz> time : " << timer.elapsed() << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, idv(w)*val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v) );
-    Log() << " o-   R<dp0 val xyz> time : " << timer.elapsed() << "\n";
+    Log() << " o-   R<dp0 val xyz> time : " << timer.elapsed() << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
@@ -405,19 +405,19 @@ Bench1::D( boost::shared_ptr<FSType> const& Xh, IMType const& im  )
     //
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, gradt(u)*trans(grad(v)) );
-    Log() << " o- D<const> time : " << timer.elapsed() << "\n";
+    Log() << " o- D<const> time : " << timer.elapsed()  << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, dxt(u)*dx(v)+dyt(u)*dy(v) );
-    Log() << " o- D<const2> time : " << timer.elapsed() << "\n";
+    Log() << " o- D<const2> time : " << timer.elapsed()  << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, dxt(u)*dx(v)+dyt(u)*dy(v)+dzt(u)*dz(v) );
-    Log() << " o- D<const3> time : " << timer.elapsed() << "\n";
+    Log() << " o- D<const3> time : " << timer.elapsed()  << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im, val((Px()^(3))+(Py()^(2))*Pz())*gradt(u)*trans(grad(v)) );
-    Log() << " o-   D<xyz> time : " << timer.elapsed() << "\n";
+    Log() << " o-   D<xyz> time : " << timer.elapsed()  << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
@@ -541,7 +541,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, IMType const& im, mpl::int_<3>
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im,
                                            gradt(u)*trans(grad(v))+idt( u )*id( v ) +
                                            (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v));
-    Log() << " o- ADR<const> time : " << timer.elapsed() << "\n";
+    Log() << " o- ADR<const> time : " << timer.elapsed() << " " << timer.elapsed()/Xh->mesh()->numElements()<< "\n";
 
     timer.restart();
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  im,
@@ -592,8 +592,8 @@ Bench1::bench1( boost::shared_ptr<MeshType> & mesh )
 
     R( Xh,  im );
     D( Xh,  IM<nDim, 2*(Order-1),double>() );
-    DR( Xh, im );
-    ADR( Xh, im, mpl::int_<nDim>() );
+    //DR( Xh, im );
+    //ADR( Xh, im, mpl::int_<nDim>() );
     Log() << "------------------------------------------------------------" << "\n";
 
 }
