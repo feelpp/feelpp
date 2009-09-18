@@ -309,11 +309,11 @@ public:
      * number of converged eigenpairs and the number
      * of iterations.
      */
-    std::pair<unsigned int, unsigned int> solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
-                                                  int nev,
-                                                  int ncv,
-                                                  const double tol,
-                                                  const unsigned int m_its)
+    solve_return_type solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
+                              int nev,
+                              int ncv,
+                              const double tol,
+                              const unsigned int m_its)
         {
             return this->solve( *matrix_A, nev, ncv, tol, m_its );
         }
@@ -350,12 +350,12 @@ public:
      * Bx\f$ and returns the number of converged eigenpairs and the
      * number of iterations.
      */
-    std::pair<unsigned int, unsigned int> solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
-                                                  boost::shared_ptr<MatrixSparse<value_type> > &matrix_B,
-                                                  int nev,
-                                                  int ncv,
-                                                  const double tol,
-                                                  const unsigned int m_its)
+    solve_return_type solve ( boost::shared_ptr<MatrixSparse<value_type> > &matrix_A,
+                              boost::shared_ptr<MatrixSparse<value_type> > &matrix_B,
+                              int nev,
+                              int ncv,
+                              const double tol,
+                              const unsigned int m_its)
         {
             return this->solve( *matrix_A, *matrix_B, nev, ncv, tol, m_its );
         }
