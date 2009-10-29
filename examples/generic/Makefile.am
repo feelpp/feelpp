@@ -23,7 +23,16 @@
 #
 include $(top_srcdir)/admin/common.am
 
-check_PROGRAMS=pmesh laplacian laplacian_p laplacian_p2 advection dar stokes wave laplacian_multiplicateur_lagrange periodic
+check_PROGRAMS=life_pmesh \
+               life_laplacian \
+			   life_laplacian_p\
+			   life_laplacian_p2\
+               life_advection \
+               life_dar\
+               life_stokes \
+               life_wave \
+               life_laplacian_multiplicateur_lagrange\
+               life_periodic
 
 # stokesT  test_ale  #test_formulation nonlinear
 #CXXFLAGS= -DLIFE_USE_BOOST_LAMBDA
@@ -31,50 +40,50 @@ check_PROGRAMS=pmesh laplacian laplacian_p laplacian_p2 advection dar stokes wav
 
 
 
-pmesh_SOURCES=pmesh.cpp
-pmesh_LDADD =$(LIFE_LIBS)
+life_pmesh_SOURCES=pmesh.cpp
+life_pmesh_LDADD =$(LIFE_LIBS)
 
-laplacian_p_SOURCES=laplacian_p.cpp
-laplacian_p_LDADD = $(LIFE_LIBS)
+life_laplacian_p_SOURCES=laplacian_p.cpp
+life_laplacian_p_LDADD = $(LIFE_LIBS)
 
-laplacian_p2_SOURCES=laplacian_p2.cpp
-laplacian_p2_LDADD = $(LIFE_LIBS)
+life_laplacian_p2_SOURCES=laplacian_p2.cpp
+life_laplacian_p2_LDADD = $(LIFE_LIBS)
 
-laplacian_SOURCES=laplacian.cpp
-laplacian_LDADD = $(LIFE_LIBS)
+life_laplacian_SOURCES=laplacian.cpp
+life_laplacian_LDADD = $(LIFE_LIBS)
 
-laplacian_multiplicateur_lagrange_SOURCES=laplacian_multiplicateur_lagrange.cpp
-laplacian_multiplicateur_lagrange_LDADD = $(LIFE_LIBS)
-laplacian_multiplicateur_lagrange_LDFLAGS = -static
+life_laplacian_multiplicateur_lagrange_SOURCES=laplacian_multiplicateur_lagrange.cpp
+life_laplacian_multiplicateur_lagrange_LDADD = $(LIFE_LIBS)
+life_laplacian_multiplicateur_lagrange_LDFLAGS = -static
 
-periodic_SOURCES=periodic.cpp
-periodic_LDADD = $(LIFE_LIBS)
-periodic_LDFLAGS = -static
+life_periodic_SOURCES=periodic.cpp
+life_periodic_LDADD = $(LIFE_LIBS)
+life_periodic_LDFLAGS = -static
 
-advection_SOURCES=advection.cpp mesh.cpp
-advection_LDADD = $(LIFE_LIBS)
+life_advection_SOURCES=advection.cpp mesh.cpp
+life_advection_LDADD = $(LIFE_LIBS)
 
 
 
-dar_SOURCES=dar.cpp
-dar_LDADD = $(LIFE_LIBS)
+life_dar_SOURCES=dar.cpp
+life_dar_LDADD = $(LIFE_LIBS)
 
-stokes_SOURCES=stokes.cpp
-stokes_LDADD = $(LIFE_LIBS)
-stokes_LDFLAGS=-static
+life_stokes_SOURCES=stokes.cpp
+life_stokes_LDADD = $(LIFE_LIBS)
+life_stokes_LDFLAGS=-static
 
 #stokesT_SOURCES=stokesT.cpp
 #stokesT_LDADD = $(LIFE_LIBS)
 
-wave_SOURCES=wave.cpp
-wave_LDADD = $(LIFE_LIBS)
+life_wave_SOURCES=wave.cpp
+life_wave_LDADD = $(LIFE_LIBS)
 
 if WITH_PETSC
 
-check_PROGRAMS += bratu
+check_PROGRAMS += life_bratu
 
-bratu_SOURCES=bratu.cpp
-bratu_LDADD = $(LIFE_LIBS)
+life_bratu_SOURCES=bratu.cpp
+life_bratu_LDADD = $(LIFE_LIBS)
 
 endif
 
@@ -90,10 +99,10 @@ endif
 
 if WITH_SLEPC
 
-check_PROGRAMS += sound
+check_PROGRAMS += life_sound
 
-sound_SOURCES=sound.cpp room.cpp
-sound_LDADD = $(LIFE_LIBS)
+life_sound_SOURCES=sound.cpp room.cpp
+life_sound_LDADD = $(LIFE_LIBS)
 
 endif
 
