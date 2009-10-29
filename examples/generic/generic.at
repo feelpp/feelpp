@@ -2,30 +2,30 @@ AT_BANNER([generic examplesuite ...])
 
 # pmesh
 AT_SETUP([pmesh])
-AT_CHECK([${at_dir}/examples/generic/pmesh],[0],[ignore],[ignore])
+AT_CHECK([${at_dir}/examples/generic/life_pmesh],[0],[ignore],[ignore])
 AT_KEYWORDS([examples generic pmesh elliptic])
 AT_CLEANUP
 
 # laplacian
 AT_SETUP([laplacian])
-AT_CHECK([${at_dir}/examples/generic/laplacian],[0],[ignore],[ignore])
+AT_CHECK([${at_dir}/examples/generic/life_laplacian],[0],[ignore],[ignore])
 AT_KEYWORDS([examples generic laplacian elliptic])
 AT_CLEANUP
 
 # dar
 AT_SETUP([dar])
-AT_CHECK([${at_dir}/examples/generic/dar],[0],[ignore],[ignore])
+AT_CHECK([${at_dir}/examples/generic/life_dar],[0],[ignore],[ignore])
 AT_KEYWORDS([examples generic dar diffusion advection reaction])
 AT_CLEANUP
 
 # sound
 AT_SETUP([sound])
-AT_CHECK([${at_dir}/examples/generic/sound],[0],[ignore],[ignore])
+AT_CHECK([${at_dir}/examples/generic/life_sound],[0],[ignore],[ignore])
 AT_KEYWORDS([examples generic sound eig helmholtz])
 AT_CLEANUP
 
 # stokes
 AT_SETUP([stokes])
-AT_CHECK([${at_dir}/examples/generic/stokes --hsize=0.1],[0],[ignore],[ignore])
+AT_CHECK([${at_dir}/examples/generic/life_stokes --hsize=0.1],[0],[ignore],[ignore])
 AT_KEYWORDS([examples generic stokes mixed])
 AT_CLEANUP
