@@ -242,9 +242,9 @@ gmsh_save_ascii( ExporterGmsh<MeshType> const& egmsh )
 
             Debug( 8007 ) << "[ExporterGmsh] saving model " << __ts->name() << " at time step " << __ts->index() << " in " << filename << "\n";
 
-            out << "$PostFormat\n"
-                << "1.4 0 " << sizeof(double) << "\n"
-                << "$EndPostFormat\n";
+            out << "MeshFormat\n"
+                << "2.0 0 " << sizeof(double) << "\n"
+                << "$EndMeshFormat\n";
 
             //
             // write time step values
