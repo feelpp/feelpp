@@ -147,14 +147,15 @@ enum EigenSolverType
     }; // EigenSolverType
 
 /**
- * Defines an \p enum for  eigenproblem  types.
- * This can be Hermitian (HEP), generalized Hermitian (GHEP),
- * non-Hermitian (NHEP), and generalized non-Hermitian (GNHEP)
+ * Defines an \p enum for eigenproblem types.  This can be Hermitian (HEP),
+ * generalized Hermitian (GHEP), non-Hermitian (NHEP), generalized non-Hermitian
+ * (GNHEP) and Generalized Non-Hermitian GNHEP with positive (semi-)deﬁnite B
  */
 enum EigenProblemType {NHEP=0,
                        HEP,
                        GNHEP,
                        GHEP,
+                       PGNHEP,
 
                        INVALID_EIGENPROBLEMTYPE};
 
