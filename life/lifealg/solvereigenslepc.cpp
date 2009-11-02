@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-04
 
-  Copyright (C) 2007, 2009 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2007, 2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -478,14 +478,19 @@ SolverEigenSlepc<T>::setSlepcProblemType()
 
     switch (this->M_eigen_problem_type)
         {
+            // non Hermitian
         case NHEP:
             ierr = EPSSetProblemType (M_eps, EPS_NHEP);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
+            // generalized non-Hermitian 
         case GNHEP:
             ierr = EPSSetProblemType (M_eps, EPS_GNHEP); CHKERRABORT(Application::COMM_WORLD,ierr); break;
+            // Hermitian
         case HEP:
             ierr = EPSSetProblemType (M_eps, EPS_HEP);   CHKERRABORT(Application::COMM_WORLD,ierr); break;
+            // generalized Hermitian 
         case GHEP:
             ierr = EPSSetProblemType (M_eps, EPS_GHEP);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
+            // Generalized Non-Hermitian with positive (semi-)deﬁnite B 
         case PGNHEP:
             ierr = EPSSetProblemType (M_eps, EPS_PGNHEP);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
 
