@@ -486,6 +486,8 @@ SolverEigenSlepc<T>::setSlepcProblemType()
             ierr = EPSSetProblemType (M_eps, EPS_HEP);   CHKERRABORT(Application::COMM_WORLD,ierr); break;
         case GHEP:
             ierr = EPSSetProblemType (M_eps, EPS_GHEP);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
+        case PGNHEP:
+            ierr = EPSSetProblemType (M_eps, EPS_PGNHEP);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
 
         default:
             std::cerr << "ERROR:  Unsupported SLEPc Eigen Problem: "
