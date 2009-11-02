@@ -167,6 +167,7 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     //set the problem type and the position of the spectrum
     setSlepcProblemType();
     setSlepcPositionOfSpectrum();
+    setSlepcSpectralTransform();
 
     // Set eigenvalues to be computed.
     ierr = EPSSetDimensions (M_eps, nev, ncv, 2*ncv);
@@ -307,6 +308,7 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     //set the problem type and the position of the spectrum
     setSlepcProblemType();
     setSlepcPositionOfSpectrum();
+    setSlepcSpectralTransform();
 
     // Set eigenvalues to be computed.
     ierr = EPSSetDimensions (M_eps, nev, ncv, 2*ncv);
