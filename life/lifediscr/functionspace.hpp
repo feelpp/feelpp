@@ -3010,10 +3010,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
                                             {
 
                                                 v[i][j][q] += v_*context.B3()[i][j][k][l]*pc.hessian( ldof, k, l, q );
+
+#if 0
                                                 std::cout << "[" << i << "][" << j << "][" << q << "] B3=" << context.B3()[i][j][k][l] << "\n";
                                                 std::cout << "[" << i << "][" << j << "][" << q << "] pc=" << pc.hessian( ldof, k, l, q ) << "\n";
                                                 std::cout << "[" << i << "][" << j << "][" << q << "] v_=" << v_ << "\n";
                                                 std::cout << "[" << i << "][" << j << "][" << q << "] v=" << v[i][j][q] << "\n";
+
+#endif // 0
                                                 //v[i][j][q] += context.B3()[i][j][k][l]*hess_p(nDim*nDim*(nDim*l+k)+nDim*k+l,q);
 
 
