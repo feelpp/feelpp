@@ -1,1 +1,15 @@
+/CMakeFiles
+/CTestTestfile.cmake
+/Makefile
 /Makefile.in
+/Testing
+/cmake_install.cmake
+/test_boostmpi
+/test_context
+/test_debug
+/test_factory
+/test_material
+/test_mpi
+/test_openmp
+/test_singleton
+/test_traits
