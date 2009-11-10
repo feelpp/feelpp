@@ -1247,12 +1247,16 @@ template< class Convex,
 class PointSetFekete : public mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_simplex_product>, mpl::bool_<true> >,
                                                 mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<1> > >,
                                        mpl::identity<PointSetGaussLobatto<Convex,Order,T> >,
-                                       mpl::identity<PointSetFeketeSimplex<Convex,Order,T> > >::type::type
+                                       typename mpl::if_<mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<3> >,
+                                                         mpl::identity<PointSetWarpBlend<Convex,Order,T> >,
+                                                         mpl::identity<PointSetFeketeSimplex<Convex,Order,T> > >::type >::type::type
 {
     typedef typename mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_simplex_product>, mpl::bool_<true> >,
                                        mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<1> > >,
                               mpl::identity<PointSetGaussLobatto<Convex,Order,T> >,
-                              mpl::identity<PointSetFeketeSimplex<Convex,Order,T> > >::type::type super;
+                              typename mpl::if_<mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<3> >,
+                                                mpl::identity<PointSetWarpBlend<Convex,Order,T> >,
+                                                mpl::identity<PointSetFeketeSimplex<Convex,Order,T> > >::type>::type::type super;
 public:
     PointSetFekete( int interior = 0 ) : super( interior ) {}
 };

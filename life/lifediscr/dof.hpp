@@ -2226,7 +2226,7 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::generateDofPoints(  mesh
     std::fill( dof_done.begin(), dof_done.end(), false );
     for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
     {
-        __c->update( *it_elt, __geopc );
+        __c->update( *it_elt );
         for( uint16_type l =0; l < fe_type::nLocalDof; ++l )
             {
                 for( uint16_type c1 = 0; c1 < nComponents; ++c1 )
@@ -2298,7 +2298,7 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::generatePeriodicDofPoint
     std::fill( dof_done.begin(), dof_done.end(), false );
     for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
     {
-        __c->update( *it_elt->template get<0>(), __geopc );
+        __c->update( *it_elt->template get<0>() );
 
         face_type const& __face = *it_elt->template get<1>();
 

@@ -316,7 +316,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     _M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
                     _M_pc( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), \
                     _M_pcf(),                                           \
-                    _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ) \
+                    _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
+                    M_did_init( false )                                 \
                         {                                               \
                             /*update( geom );*/                         \
                         }                                               \
@@ -331,7 +332,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     _M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
                     _M_pc( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), \
                     _M_pcf(),                                           \
-                    _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ) \
+                    _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
+                    M_did_init( false )                                 \
                         {                                               \
                             /*update( geom );*/                         \
                         }                                               \
@@ -343,7 +345,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     _M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
                     _M_pc( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), \
                     _M_pcf(),                                           \
-                    _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ) \
+                    _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
+                    M_did_init( false )                                 \
                         {                                               \
                             /*update( geom ); */                        \
                             BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_CONSTRUCTOR, ()); \
@@ -351,6 +354,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 template<typename IM>                                   \
                     void init( IM const& im )                           \
                 {                                                       \
+                    M_did_init = true;                                  \
                     QuadMapped<IM> qm;                                  \
                     typedef typename QuadMapped<IM>::permutation_type permutation_type; \
                     typename QuadMapped<IM>::permutation_points_type ppts( qm( im ) ); \
@@ -378,25 +382,26 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
                 void update( Geo_t const& geom )                        \
                 {                                                       \
+                    BOOST_STATIC_ASSERT( dim_ok );                      \
                     update( geom, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
+                }                                                       \
+                void update( Geo_t const& geom, uint16_type face )      \
+                {                                                       \
+                    BOOST_STATIC_ASSERT( dim_ok );                      \
+                    update( geom, face, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
+                }                                                       \
+                void update( Geo_t const& geom, uint16_type face1, mpl::bool_<true> ) \
+                {                                                       \
+                    std::fill( _M_loc.data(), _M_loc.data()+_M_loc.num_elements(), value_type( 0 ) ); \
+                                                                        \
+                    uint16_type face = fusion::at_key<key_type>( geom )->faceId(); \
+                    uint16_type perm = fusion::at_key<key_type>( geom )->permutation().value(); \
+                    _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), *_M_pcf[face][perm], _M_loc ); \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<true> )      \
                 {                                                       \
-                    if ( dim_ok )                                       \
-                        {                                               \
-                            std::fill( _M_loc.data(), _M_loc.data()+_M_loc.num_elements(), value_type( 0 ) ); \
-                            if ( fusion::at_key<key_type>( geom )->elementIsAFace() ) \
-                                {                                       \
-                                    if (_M_pcf.empty()) return;         \
-                                    uint16_type face = fusion::at_key<key_type>( geom )->faceId(); \
-                                    uint16_type perm = fusion::at_key<key_type>( geom )->permutation().value(); \
-                                    _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), *_M_pcf[face][perm], _M_loc ); \
-                                }                                       \
-                            else                                        \
-                                {                                       \
-                                    _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), _M_pc, _M_loc ); \
-                                }                                       \
-                        }                                               \
+                    std::fill( _M_loc.data(), _M_loc.data()+_M_loc.num_elements(), value_type( 0 ) ); \
+                    _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), _M_pc, _M_loc ); \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<false> )     \
                 {                                                       \
@@ -502,6 +507,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 std::vector<std::map<uint16_type, pc_ptrtype> > _M_pcf; \
                 array_type _M_loc;                                      \
                 /*typename element_type::BOOST_PP_CAT( VF_OPERATOR_TERM( O ), _type) _M_loc;*/ \
+                bool M_did_init;                                        \
             };                                                          \
                                                                         \
         protected:                                                      \

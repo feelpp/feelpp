@@ -908,7 +908,7 @@ Mesh<Shape, T>::Inverse::distribute( bool extrapolation )
     for( ; el_it != el_en; ++el_it )
         {
             // get geometric transformation
-            __c->update( *el_it, __geopc );
+            __c->update( *el_it );
             gic_type gic( M_mesh->gm(), *el_it );
 
             // create bounding box

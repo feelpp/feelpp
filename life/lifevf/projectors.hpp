@@ -218,7 +218,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MES
     std::fill( points_done.begin(), points_done.end(),false );
     for ( ; it!=en ; ++it )
     {
-        __c->update( *it, __geopc );
+        __c->update( *it );
         map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
         tensor_expr.update( mapgmc );
 
@@ -301,19 +301,21 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MES
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
     //
+    typedef typename geoelement_type::permutation_type permutation_type;
     typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
     typedef typename gm_type::precompute_type geopc_type;
     Debug(5066)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
-    std::vector<geopc_ptrtype> __geopc( geoelement_type::numTopologicalFaces );
+    std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
     for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
         {
-            __geopc[__f] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
+            permutation_type __p( permutation_type::IDENTITY );
+            __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
             //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-            LIFE_ASSERT( __geopc[__f]->nPoints() ).error( "invalid number of points" );
+            LIFE_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
         }
 
     uint16_type __face_id = __face_it->pos_first();
-    gmc_ptrtype __c( new gmc_type( __gm, __face_it->element(0), __geopc[__face_id], __face_id ) );
+    gmc_ptrtype __c( new gmc_type( __gm, __face_it->element(0), __geopc, __face_id ) );
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
     t_expr_type expr( _M_expr, mapgmc );
@@ -402,7 +404,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MES
             Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __face_it->G() << "\n";
 
             uint16_type __face_id = __face_it->pos_first();
-            __c->update( __face_it->element(0), __geopc[__face_id], __face_id );
+            __c->update( __face_it->element(0), __face_id );
 
             Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
             Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
@@ -432,7 +434,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MES
 #if 0
     for ( ; it!=en ; ++it )
     {
-        __c->update( *it, __geopc );
+        __c->update( *it );
 
         map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
         t_expr_type tensor_expr( _M_expr, mapgmc );

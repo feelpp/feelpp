@@ -301,7 +301,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
             Debug(5035) << "global element " << it->id() << " oriented ok ? : " << it->isAnticlockwiseOriented() << "\n";
             Debug(5035) << "global element G=" << it->G() << "\n";
 
-            gmc->update( *it, _M_gmpc );
+            gmc->update( *it );
 
             // accumulate the local mesh in element *it in the new mesh
             typename image_mesh_type::element_const_iterator itl = _M_p2m.mesh()->beginElement();
