@@ -1,7 +1,15 @@
+/CMakeFiles
+/CTestTestfile.cmake
+/Makefile
 /Makefile.in
+/cmake_install.cmake
 /conv_geo_ho.py~
 /geoconv.m~
 /integral.maxima~
+/test_bdf
+/test_geomap
+/test_integration
+/test_integration_3d
 /test_integration_ho.geo~
 /test_integration_ho_geometry.geo~
 /vars.geo

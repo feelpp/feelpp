@@ -2,6 +2,8 @@
 /.gitignore~
 /CMakeCache.txt
 /CMakeFiles
+/CPackConfig.cmake
+/CPackSourceConfig.cmake
 /CTestTestfile.cmake
 /Makefile
 /Makefile.headers
