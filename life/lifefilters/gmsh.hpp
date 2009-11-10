@@ -354,8 +354,10 @@ BOOST_PARAMETER_FUNCTION(
 
     gmsh_ptr->setCharacteristicLength( h );
     gmsh_ptr->setX( std::make_pair( xmin, xmax ) );
-    gmsh_ptr->setY( std::make_pair( ymin, ymax ) );
-    gmsh_ptr->setZ( std::make_pair( zmin, zmax ) );
+    if ( dim >= 2 )
+        gmsh_ptr->setY( std::make_pair( ymin, ymax ) );
+    if ( dim >= 3 )
+        gmsh_ptr->setZ( std::make_pair( zmin, zmax ) );
     return boost::make_tuple( name, gmsh_ptr->description(), gmsh_ptr );
 }
 
