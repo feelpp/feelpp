@@ -26,6 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2006-12-29
  */
+#ifndef __GMSHTENSORIZEDDOMAIN_HPP
+#define __GMSHTENSORIZEDDOMAIN_HPP 1
+
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
 #include <life/lifemesh/geoentity.hpp>
 
@@ -213,3 +216,5 @@ template class GmshTensorizedDomain<3,2,3,SimplexProduct>;
 #endif // LIFE_INSTANTIATION_MODE
 
 }
+
+#endif // __GMSHTENSORIZEDDOMAIN_HPP
