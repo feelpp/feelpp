@@ -63,11 +63,11 @@ extern "C"
 
 
 #if defined(HAVE_TRILINOS_EPETRA)
-#if defined(HAVE_MPI)
+#if defined(HAVE_MPI_H)
 #include <Epetra_MpiComm.h>
 #else
 #include <Epetra_SerialComm.h>
-#endif /* HAVE_MPI */
+#endif /* HAVE_MPI_H */
 #endif /* HAVE_TRILINOS_EPETRA */
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
@@ -138,7 +138,7 @@ Application::initTrilinos()
 void
 Application::initMPI( int argc, char** argv, MPI_Comm comm )
 {
-#if defined( HAVE_MPI )
+#if defined( HAVE_MPI_H )
     int is_mpi_initialized;
     MPI_Initialized (&is_mpi_initialized);
     //std::cout << "is_mpi_initialized = " << is_mpi_initialized << "\n";
@@ -162,11 +162,11 @@ Application::initMPI( int argc, char** argv, MPI_Comm comm )
     _S_process_id = S_world.rank();
     _S_n_process = S_world.size();
 #endif
-#endif // HAVE_MPI
+#endif // HAVE_MPI_H
 
 }
 
-#if defined( HAVE_MPI )
+#if defined( HAVE_MPI_H )
 MPI_Comm Application::COMM_WORLD = MPI_COMM_NULL;
 
 Application::Application( int argc,
@@ -177,13 +177,13 @@ Application::Application( int argc,
 Application::Application( int argc,
                           char** argv,
                           AboutData const& ad )
-#endif // HAVE_MPI
+#endif // HAVE_MPI_H
     :
 _M_about( ad ),
 _M_desc( "Allowed options" ),
 _M_vm(),
 _M_to_pass_further()
-#if defined( HAVE_MPI )
+#if defined( HAVE_MPI_H )
     ,
     M_env()
 #endif
@@ -194,7 +194,7 @@ _M_to_pass_further()
 
     doOptions( argc, argv );
 
-#if defined( HAVE_MPI )
+#if defined( HAVE_MPI_H )
     char * __env = getenv("DEBUG");
     std::string env_str;
     if ( __env )
@@ -218,7 +218,7 @@ _M_to_pass_further()
 #endif /* HAVE_TAU */
 }
 
-#if defined( HAVE_MPI )
+#if defined( HAVE_MPI_H )
 Application::Application( int argc,
                           char** argv,
                           AboutData const& ad,
@@ -229,13 +229,13 @@ Application::Application( int argc,
                           char** argv,
                           AboutData const& ad,
                           po::options_description const& od )
-#endif // HAVE_MPI
+#endif // HAVE_MPI_H
     :
     _M_about( ad ),
     _M_desc( "Allowed options" ),
     _M_vm(),
     _M_to_pass_further()
-#if defined( HAVE_MPI )
+#if defined( HAVE_MPI_H )
     ,
     M_env()
 #endif
@@ -249,7 +249,7 @@ Application::Application( int argc,
 
     doOptions( argc, argv );
 
-#if defined( HAVE_MPI )
+#if defined( HAVE_MPI_H )
     char * __env = getenv("DEBUG");
     std::string env_str;
     if ( __env )

@@ -27,7 +27,7 @@
    \date 2009-03-24
  */
 
-#include <applicationxml.hpp>
+#include <life/lifecore/applicationxml.hpp>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/fstream.hpp>
