@@ -1,1 +1,10 @@
 /Makefile.in
+/codeCalcul.pyc
+/codeCalculParaview.pyc
+/displayGraphics.pyc
+/displaySolution.pyc
+/error.pyc
+/util.pyc
+/validation.pyc
+/view.pyc
+/xmlParser.pyc
