@@ -12,7 +12,7 @@ project (Life C CXX Fortran)
 #   Subversion_WC_LOG(${PROJECT_SOURCE_DIR} Project)
 #   MESSAGE("Last changed log is ${Project_LAST_CHANGED_LOG}")
 # ENDIF(Subversion_FOUND)
- 
+
 SET(LIFE_VERSION "0.9.11")
 SET(LIFE_VERSION_MAJOR "0")
 SET(LIFE_VERSION_MINOR "9")
@@ -84,6 +84,13 @@ Include(FindBoost)
 FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  mpi regex  serialization)
 SET(Boost_ADDITIONAL_VERSIONS "1.39" )
 ADD_DEFINITIONS( -DBOOST_PARAMETER_MAX_ARITY=15 -DBOOST_TEST_DYN_LINK )
+
+#
+# Scotch
+#
+#CheckIncludeFileCXX( ptscotch.h HAVE_PTSCOTCH_H )
+#CheckIncludeFileCXX( scotch.h HAVE_SCOTCH_H )
+
 #
 # Petsc
 #
@@ -95,7 +102,7 @@ endif()
 FIND_PATH(
   SLEPC_INCLUDE_DIR
   NAMES slepc.h
-  PATHS /usr/include/slepc 
+  PATHS /usr/include/slepc
   )
 SET(CMAKE_REQUIRED_INCLUDES "${SLEPC_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
 CHECK_INCLUDE_FILE( slepc.h HAVE_SLEPC_H )
@@ -116,12 +123,15 @@ INCLUDE_DIRECTORIES(${TRILINOS_INCLUDE_DIR})
 INCLUDE(FindVTK)
 FIND_PACKAGE(VTK)
 
+#
+#
+#
 INCLUDE_DIRECTORIES (
   ${LIFE_SOURCE_DIR}/
   ${LIFE_SOURCE_DIR}/contrib/gmm/include
 
   ${SLEPC_INCLUDE_DIR}
-  ${PETSC_INCLUDE_DIR} 
+  ${PETSC_INCLUDE_DIR}
   ${PETSCCONF_INCLUDE_DIR}
 
   ${MPI_INCLUDE_PATH}
@@ -132,33 +142,43 @@ INCLUDE_DIRECTORIES (
 LINK_DIRECTORIES(
   ${BOOST_LIBRARY_PATH}
   ${MPI_LIBRARY_PATH}
-  ${LAPACK_LIBRARIES}
-  ${LIBXML2_LIBRARIES}
   )
 
-  # ${LIFE_SOURCE_DIR}/life/lifecore
-  # ${LIFE_SOURCE_DIR}/life/lifealg
-  # ${LIFE_SOURCE_DIR}/life/lifemesh
-  # ${LIFE_SOURCE_DIR}/life/lifepoly
-  # ${LIFE_SOURCE_DIR}/life/lifediscr
-  # ${LIFE_SOURCE_DIR}/life/lifevf
-  # ${LIFE_SOURCE_DIR}/life/lifefilters
-  # ${LIFE_SOURCE_DIR}/life/lifesystem
+#
+# programs
+#
+find_program( GMSH gmsh DOC "Gmsh mesh generator" )
+if ( GMSH )
+  ADD_DEFINITIONS( -DHAVE_GMSH=1 )
+endif()
+mark_as_advanced( GMSH )
+
+# ${LIFE_SOURCE_DIR}/life/lifecore
+# ${LIFE_SOURCE_DIR}/life/lifealg
+# ${LIFE_SOURCE_DIR}/life/lifemesh
+# ${LIFE_SOURCE_DIR}/life/lifepoly
+# ${LIFE_SOURCE_DIR}/life/lifediscr
+# ${LIFE_SOURCE_DIR}/life/lifevf
+# ${LIFE_SOURCE_DIR}/life/lifefilters
+# ${LIFE_SOURCE_DIR}/life/lifesystem
 
 
 ADD_SUBDIRECTORY ( life )
 
-SET(LIFE_LIBRARIES 
-  life 
-  lifematerial 
-  lifefilters 
-  lifediscr 
-  lifealg 
-  lifemesh 
+SET(LIFE_LIBRARIES
+  life
+  lifematerial
+  lifefilters
+  lifediscr
+  lifealg
+  lifemesh
   lifecore
-  ${PETSC_LIBRARIES} 
-  ${Boost_LIBRARIES} 
+  ${TRILINOS_LIBRARIES}
+  ${PETSC_LIBRARIES}
+  ${Boost_LIBRARIES}
   ${MPI_LIBRARIES}
+  ${LAPACK_LIBRARIES}
+  ${LIBXML2_LIBRARIES}
   )
 
 ADD_SUBDIRECTORY ( doc )
@@ -167,7 +187,7 @@ ADD_SUBDIRECTORY ( doc )
 # Enable testing
 #
 macro(life_add_test testname)
-  
+
   set(targetname test_${testname})
   set(filename test_${testname}.cpp)
   add_executable(${targetname} ${filename})
@@ -177,7 +197,11 @@ endmacro(life_add_test)
 
 
 ENABLE_TESTING()
-foreach( testdir core alg mesh poly )
+foreach( testdir core alg mesh poly filters material discr )
   add_subdirectory( testsuite/life${testdir} )
 endforeach()
 
+#
+# Packaging
+#
+include( CPack )

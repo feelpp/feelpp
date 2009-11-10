@@ -2,9 +2,17 @@
 /CTestTestfile.cmake
 /Makefile
 /Makefile.in
+/Testing
 /cmake_install.cmake
+/cube-1-1.geo
+/cube-1-1.msh
+/line.1.geo
+/line.1.msh
 /test_entity
 /test_mesh
 /test_mesh_codim1
 /test_mesh_codim1.cpp~
+/test_mesh_filters.assert
 /test_regiontree
+/triangle.1.geo
+/triangle.1.msh

@@ -5,7 +5,9 @@
     (indent-tabs-mode . nil)
     (fill-column . 80)
     (user-company . "Université de Grenoble")
-    (user-mail-address . "christophe.prudhomme@ujf-grenoble.fr")))
+    (user-mail-address . "christophe.prudhomme@ujf-grenoble.fr")
+    (debian-changelog-mailing-address . "christophe.prudhomme@ujf-grenoble.fr")
+    ))
 (c++-mode .
   (
     (indent-tabs-mode . nil)
