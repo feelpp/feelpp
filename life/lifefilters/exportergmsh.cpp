@@ -231,7 +231,7 @@ gmsh_save_ascii( ExporterGmsh<MeshType> const& egmsh )
     while ( __ts_it != __ts_en )
         {
             timeset_ptrtype __ts = *__ts_it;
-            std::string filename =  egmsh.prefix() + ".msh_data";
+            std::string filename =  egmsh.prefix() + ".msh";
 
             std::ofstream out(filename.c_str());
             if (out.fail())
@@ -242,10 +242,23 @@ gmsh_save_ascii( ExporterGmsh<MeshType> const& egmsh )
 
             Debug( 8007 ) << "[ExporterGmsh] saving model " << __ts->name() << " at time step " << __ts->index() << " in " << filename << "\n";
 
-            out << "MeshFormat\n"
-                << "2.0 0 " << sizeof(double) << "\n"
+            out << "$MeshFormat\n"
+                << "2 0 0 " << sizeof(double) << "\n"
                 << "$EndMeshFormat\n";
 
+            out << "$PhysicalNames\n";
+            // write Physical names here
+            out << "$EndPhysicalNames\n";
+
+            out << "$Nodes\n";
+            // Save mesh nodes here
+            out << "$EndNodes\n";
+
+            out << "$Elements\n";
+            // Save mesh elements here
+            out << "$EndElements\n";
+
+#if 0
             //
             // write time step values
             //
@@ -301,9 +314,10 @@ gmsh_save_ascii( ExporterGmsh<MeshType> const& egmsh )
                         }
                     ++__it;
                 }
-
+#endif
             ++__ts_it;
         }
+
 }
 template<typename MeshType>
 void
