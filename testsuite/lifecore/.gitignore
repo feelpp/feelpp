@@ -4,6 +4,7 @@
 /Makefile.in
 /Testing
 /cmake_install.cmake
+/lifeconfig.h
 /test_boostmpi
 /test_context
 /test_debug

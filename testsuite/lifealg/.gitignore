@@ -1,1 +1,9 @@
+/CMakeFiles
+/CTestTestfile.cmake
+/Makefile
 /Makefile.in
+/cmake_install.cmake
+/test_matrix
+/test_petsc
+/test_ublas
+/test_umfpack

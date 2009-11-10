@@ -1,2 +1,10 @@
+/CMakeFiles
+/CTestTestfile.cmake
+/Makefile
 /Makefile.in
+/cmake_install.cmake
+/test_entity
+/test_mesh
+/test_mesh_codim1
 /test_mesh_codim1.cpp~
+/test_regiontree
