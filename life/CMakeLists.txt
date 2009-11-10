@@ -1,0 +1,11 @@
+add_subdirectory (lifecore)
+add_subdirectory (lifealg)
+add_subdirectory (lifemesh)
+#add_subdirectory (lifepoly)
+add_subdirectory (lifediscr)
+add_subdirectory (lifefilters)
+add_subdirectory (lifematerial)
+add_subdirectory (lifesystem)
+
+add_library( life options.cpp )
+target_link_libraries (life lifematerial lifefilters lifediscr lifealg lifemesh lifecore )
