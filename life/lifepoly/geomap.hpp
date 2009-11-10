@@ -86,7 +86,7 @@ template<uint16_type Dim,
                   template<class, uint16_type, class> class Pts> class PP = Lagrange>
 class GeoMap
     :
-    public PP<Order,Scalar, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
+        public PP<Order,Scalar, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
 //public PP<Order,Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
 {
     //typedef typename PP<Order, Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
@@ -553,13 +553,73 @@ public:
 
     Context( gm_ptrtype __gm,
              element_type const& __e,
-             precompute_ptrtype const& __pc,
-             uint16_type __f = invalid_uint16_type_value )
+             precompute_ptrtype const& __pc )
         :
         _M_gm( __gm ),
         _M_element( __e ),
         _M_pc( __pc ),
+        _M_pc_faces(),
         _M_npoints( _M_pc.get()->nPoints() ),
+
+        //_M_xref( PDim ),
+        //_M_xreal( NDim ),
+        //_M_x0( NDim ),
+        _M_J( 0 ),
+        _M_G( __e.G() ),
+        _M_n( _M_gm->referenceConvex().normals() ),
+        _M_n_real( NDim ),
+        _M_u_n_real( NDim ),
+        _M_n_norm( 0 ),
+        _M_xrefq( PDim, nPoints() ),
+        _M_xrealq( NDim, nPoints() ),
+        _M_nrealq( NDim, nPoints() ),
+        _M_unrealq( NDim, nPoints() ),
+        _M_nnormq( nPoints() ),
+
+        _M_g( _M_G.size2(), PDim ),
+        _M_K( NDim, PDim ),
+        _M_CS( PDim, PDim ),
+        _M_CSi( PDim, PDim ),
+        _M_B( NDim, PDim ),
+        _M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
+        _M_id( __e.id() ),
+        _M_e_marker( __e.marker() ),
+        _M_e_marker2( __e.marker2() ),
+        _M_e_marker3( __e.marker3() ),
+        _M_elem_id_1( invalid_size_type_value ),// __e.ad_first() ),
+        _M_pos_in_elem_id_1( invalid_uint16_type_value ),  //__e.pos_first() ),
+        _M_elem_id_2( invalid_size_type_value ),  //__e.ad_second() ),
+        _M_pos_in_elem_id_2( invalid_uint16_type_value ),  //__e.pos_second() ),
+        _M_face_id( invalid_uint16_type_value ),
+        _M_h( __e.h() ),
+        _M_h_face(0),
+        _M_Jt(),
+        _M_Bt(),
+        _M_perm( )
+    {
+
+        if ( is_linear )
+            {
+                _M_gm->gradient( node_t_type(), _M_g_linear );
+            }
+        else
+            {
+                _M_Jt.resize( nPoints() );
+                _M_Bt.resize( nPoints() );
+            }
+        update( __e );
+    }
+
+    Context( gm_ptrtype __gm,
+             element_type const& __e,
+             std::vector<std::map<permutation_type, precompute_ptrtype> > & __pc,
+             uint16_type __f )
+        :
+        _M_gm( __gm ),
+        _M_element( __e ),
+        _M_pc(),
+        _M_pc_faces( __pc ),
+        _M_npoints( __pc[__f][__e.permutation( __f )]->nPoints() ),
 
         //_M_xref( PDim ),
         //_M_xreal( NDim ),
@@ -607,7 +667,7 @@ public:
                 _M_Jt.resize( nPoints() );
                 _M_Bt.resize( nPoints() );
             }
-        update( __e, __pc, __f );
+        update( __e, __f );
     }
 
     /**
@@ -622,35 +682,26 @@ public:
      *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^{-T} K )^{-1} \f$
      *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
      */
-    void update( element_type const& __e,
-                 precompute_ptrtype const& pc,
-                 uint16_type __f = invalid_uint16_type_value )
+    void update( element_type const& __e, uint16_type __f )
     {
-        _M_pc = pc;
+        _M_face_id = __f;
+
+        _M_perm = __e.permutation( _M_face_id );
+
+        _M_h_face = __e.hFace( _M_face_id );
+
+        _M_pc = _M_pc_faces[__f][_M_perm];
         _M_G = __e.G();
         _M_id = __e.id();
         _M_e_marker = __e.marker();
         _M_e_marker2 = __e.marker2();
         _M_e_marker3 = __e.marker3();
-        _M_face_id = __f;
         _M_h = __e.h();
-        _M_xrefq = pc->nodes();
+        _M_xrefq = _M_pc.get()->nodes();
 
         LIFE_ASSERT( __e.G().size2() == _M_gm->nbPoints() )( __e.G().size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
         LIFE_ASSERT( _M_pc ).error( "invalid precompute data structure" );
 
-        if (  _M_face_id != invalid_uint16_type_value )
-            {
-                _M_perm = __e.permutation( _M_face_id );
-
-                _M_h_face = __e.hFace( _M_face_id );
-#if 0
-                std::cout << "[geomap] _M_face_id = " << _M_face_id << "\n"
-                          << "[geomap] _M_h = " << _M_h << "\n"
-                          << "[geomap] _M_h_face = " << _M_h_face << "\n";
-#endif
-
-            }
         if ( vm::has_point<context>::value )
             {
 
@@ -658,25 +709,61 @@ public:
                 std::fill( _M_xrealq.data().begin(), _M_xrealq.data().end(), value_type(0));
                 const uint16_type size1 = _M_G.size1();
                 const uint16_type size3 = _M_G.size2();
-                const uint16_type size2 = pc->nPoints();
+                const uint16_type size2 = _M_pc.get()->nPoints();
 
                 for( uint16_type i = 0; i < size1; ++i )
                     for( uint16_type j = 0; j < size2; ++j )
                         {
                             for( uint16_type k = 0; k < size3; ++k )
-                                _M_xrealq( i, j ) += _M_G( i, k ) * pc->phi()[k][0][0][j];
+                                _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc.get()->phi()[k][0][0][j];
                         }
-#if 0
-                std::cerr << "calling gemm\n";
-                atlas::gemm( traits::NO_TRANSPOSE, traits::NO_TRANSPOSE,
-                             1.0, _M_G, __pc->phi(),
-                             0.0, _M_xrealq );
-                std::cerr << "done calling gemm\n";
+            }
+        if ( vm::has_jacobian<context>::value )
+            {
+                updateJKBN( mpl::bool_<is_linear>() );
+            }
 
-                std::cout <<"xref = " << _M_xrefq << "\n"
-                          << "xrealq = " << _M_xrealq << "\n"
-                          << "G=" << _M_G << "\n";
-#endif
+    }
+
+    /**
+     * update information on this context
+     *
+     *  - update the coordinate of the real points
+     *  - update the pseudo-inverse of the gradient of the transformation
+     *
+     *  compute \f$ K(x_{\mathrm{ref}}) = G \nabla_{\mathrm{ref}} \phi(x_{\mathrm{ref}}) \f$
+     *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
+     *
+     *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^{-T} K )^{-1} \f$
+     *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
+     */
+    void update( element_type const& __e )
+    {
+        _M_G = __e.G();
+        _M_id = __e.id();
+        _M_e_marker = __e.marker();
+        _M_e_marker2 = __e.marker2();
+        _M_e_marker3 = __e.marker3();
+        _M_face_id = invalid_uint16_type_value;
+        _M_h = __e.h();
+        _M_xrefq = _M_pc.get()->nodes();
+
+        LIFE_ASSERT( __e.G().size2() == _M_gm->nbPoints() )( __e.G().size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
+        LIFE_ASSERT( _M_pc ).error( "invalid precompute data structure" );
+
+        if ( vm::has_point<context>::value )
+            {
+                std::fill( _M_xrealq.data().begin(), _M_xrealq.data().end(), value_type(0));
+                const uint16_type size1 = _M_G.size1();
+                const uint16_type size3 = _M_G.size2();
+                const uint16_type size2 = _M_pc.get()->nPoints();
+
+                for( uint16_type i = 0; i < size1; ++i )
+                    for( uint16_type j = 0; j < size2; ++j )
+                        {
+                            for( uint16_type k = 0; k < size3; ++k )
+                                _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc.get()->phi()[k][0][0][j];
+                        }
             }
         if ( vm::has_jacobian<context>::value )
             {
@@ -1135,15 +1222,15 @@ private:
                     {
                         _M_J = math::abs( det<NDim>( _M_K ) );
                         //if ( vm::has_kb<context>::value )
-                            {
+                        {
 #if 0
-                                inverse<NDim>( _M_K, _M_CS, _M_J );
-                                ublas::noalias(_M_B) = ublas::trans( _M_CS );
+                            inverse<NDim>( _M_K, _M_CS, _M_J );
+                            ublas::noalias(_M_B) = ublas::trans( _M_CS );
 #else
-                                inverse<NDim>( _M_K, _M_CS );
-                                ublas::noalias(_M_B) = ublas::trans( _M_CS );
+                            inverse<NDim>( _M_K, _M_CS );
+                            ublas::noalias(_M_B) = ublas::trans( _M_CS );
 #endif
-                            }
+                        }
                     }
                 else // N != P
                     {
@@ -1160,18 +1247,18 @@ private:
 
                         _M_J = math::sqrt( math::abs( det<PDim>( _M_CS ) ) );
                         //if ( vm::has_kb<context>::value )
-                            {
-                                inverse<PDim>( _M_CS, _M_CSi );
-                                // B = K CS
+                        {
+                            inverse<PDim>( _M_CS, _M_CSi );
+                            // B = K CS
 #if 0
-                                if ( boost::is_arithmetic<value_type>::value )
-                                    atlas::gemm( traits::NO_TRANSPOSE, traits::NO_TRANSPOSE,
-                                                 1.0, _M_K, _M_CSi,
-                                                 0.0, _M_B );
-                                else
+                            if ( boost::is_arithmetic<value_type>::value )
+                                atlas::gemm( traits::NO_TRANSPOSE, traits::NO_TRANSPOSE,
+                                             1.0, _M_K, _M_CSi,
+                                             0.0, _M_B );
+                            else
 #endif
-                                    ublas::axpy_prod( _M_K, _M_CSi, _M_B, true );
-                            }
+                                ublas::axpy_prod( _M_K, _M_CSi, _M_B, true );
+                        }
 
                     }
 
@@ -1180,10 +1267,10 @@ private:
                         // cache J, K and B
                         _M_gm->addJ( _M_id, _M_J );
                         //if ( vm::has_kb<context>::value )
-                            {
-                                _M_gm->addK( _M_id, _M_K );
-                                _M_gm->addB( _M_id, _M_B );
-                            }
+                        {
+                            _M_gm->addK( _M_id, _M_K );
+                            _M_gm->addB( _M_id, _M_B );
+                        }
                         _M_gm->setCached( _M_id, true );
 
                         //Log() << "(add to cache) J[" << _M_id << "]=" <<  _M_J << "\n";
@@ -1195,11 +1282,11 @@ private:
                 _M_J = _M_gm->J( _M_id );
                 //Log() << "(use cache) J[" << _M_id << "]=" <<  _M_J << "\n";
                 //if ( vm::has_kb<context>::value )
-                    {
-                        _M_K = _M_gm->K( _M_id );
-                        _M_B = _M_gm->B( _M_id );
-                        //Log() << "(use cache) B[" << _M_id << "]=" <<  _M_B << "\n";
-                    }
+                {
+                    _M_K = _M_gm->K( _M_id );
+                    _M_B = _M_gm->B( _M_id );
+                    //Log() << "(use cache) B[" << _M_id << "]=" <<  _M_B << "\n";
+                }
 
 
             }
@@ -1373,6 +1460,7 @@ private:
     element_type const& _M_element;
 
     boost::optional<precompute_ptrtype> _M_pc;
+    std::vector<std::map<permutation_type, precompute_ptrtype> > _M_pc_faces;
     uint16_type _M_npoints;
 
     value_type _M_J;

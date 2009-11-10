@@ -481,7 +481,7 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
             typename GM::template Context<vm::JACOBIAN|vm::POINT|vm::KB,element_type> __c( __gm->boundaryMap(),
                                                                                            ref_convex_face,
                                                                                            __geopc );
-            __c.update( ref_convex_face, __geopc );
+            __c.update( ref_convex_face );
             Debug( 5048 ) << "[quadpt] ref_convex_face "  << __f << " xref" << __c.xRefs() << "\n";
             Debug( 5048 ) << "[quadpt] ref_convex_face "  << __f << " xreal" << __c.xReal() << "\n";
 

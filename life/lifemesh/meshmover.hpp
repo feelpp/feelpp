@@ -180,7 +180,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
     for( ; it_elt != en_elt; ++it_elt )
         {
-            __c->update( *it_elt, __geopc );
+            __c->update( *it_elt );
 
 
             typename DisplType::id_type interp_displ( u.id( *__c, pc ) );

@@ -286,6 +286,26 @@ ALE<Convex>::generateHighOrderMap( std::vector<flag_type>& flagSet,
 
     ExporterQuick<mesh_type> exp( "ALE", "ensight" );
     exp.save( aux_mesh );
+
+    MeshHighOrder< convex_type > auxiliar_mesh2 ( reference_mesh );
+    auxiliar_mesh2.generateMesh(flagSet, referencePolyBoundarySet);
+    mesh_ptrtype aux_mesh2 = auxiliar_mesh2.getMesh();
+
+    p1_element_type p1_ex_displacement( p1_fspace, "p1_ex_displacement" );
+    p1_element_type p1_ex_diff( p1_fspace, "p1_ex_diff" );
+    AUTO( f,  (0.02096834639998*Px()*Px()*Px()    -0.09351398506873*Px()*Px()    -0.09961900352798*Px()+    1.3000 )  ) ;
+    AUTO( f2, (-0.0210*Px()*Px()*Px() + 0.0935*Px()*Px() + 0.0996*Px() -1.4000)  );
+    p1_ex_displacement = vf::project( p1_fspace, markedfaces(p1_fspace->mesh(),3), vec(Px(),f) );
+    p1_ex_diff = vf::project( p1_fspace, markedfaces(p1_fspace->mesh(),3), idv(pN_displacement)-vec(constant(0.),f) );
+    //p1_ex_displacement = vf::project( p1_fspace, markedfaces(mesh,1), vec(Px(),f2) );
+    //exp.save( 0, p1_displacement, pN_displacement );
+
+    //MeshMover<mesh_type> p1_mesh_mover2;
+    //p1_mesh_mover2.apply(aux_mesh2, p1_ex_displacement);
+
+    ExporterQuick<mesh_type> exp_ex( "ALE_ex", "ensight" );
+    exp_ex.save( 0, p1_ex_displacement, p1_ex_diff );
+
 #endif
 
     displacement2Map( pN_displacement, pN_ale );
@@ -502,14 +522,14 @@ ALE<Convex>::updatePointsInFaces( std::vector<flag_type>& flagSet,
 
                     // generate points in reference element and apply Gordon Hall transformation
                     __geopc->update( pts );
-                    __c->update( reference_mesh->element(it_elt->id()), __geopc );
+                    __c->update( reference_mesh->element(it_elt->id()) );
                     typename pN_element_type::pc_type pc( pN_ale.functionSpace()->fe(), __c->xRefs() );
                     typename pN_element_type::id_type interpfunc( pN_ale.id( *__c, pc ) );
                     points_type pts_reference = __c->xReal();
 
 
                     __geopc->update( pointset.pointsByEntity(0) );
-                    __c->update( reference_mesh->element(it_elt->id()), __geopc );
+                    __c->update( reference_mesh->element(it_elt->id()) );
                     typename pN_element_type::pc_type pc2( pN_ale.functionSpace()->fe(), __c->xRefs() );
                     typename pN_element_type::id_type interpfunc_vertices( pN_ale.id( *__c, pc2 ) );
 

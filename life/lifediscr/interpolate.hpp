@@ -175,7 +175,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
             size_type first_dof = space->dof()->firstDof();
             for( ; it != en; ++ it )
                 {
-                    __c->update( *it, __dgeopc );
+                    __c->update( *it );
                     meshinv.pointsInConvex( it->id(), itab );
                     if (itab.size() == 0)
                         continue;
@@ -195,7 +195,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                                     dof_done[dof-first_dof]=true;
                                     ublas::column( pts, 0 ) = meshinv.referenceCoords()[dof];
                                     __dgeopc->update( pts );
-                                    __c->update( *it, __dgeopc );
+                                    __c->update( *it );
                                     typename FunctionType::pc_type pc( f.functionSpace()->fe(), __c->xRefs() );
                                     typename FunctionType::id_type interpfunc( f.id( *__c, pc ) );
                                     //std::cout << "interpfunc :  " << interpfunc << "\n";

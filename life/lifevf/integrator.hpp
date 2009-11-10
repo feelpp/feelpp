@@ -394,7 +394,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
         {
 #if 1
             ti0.restart();
-            __c->update( *it, __geopc );
+            __c->update( *it );
             t0+=ti0.elapsed();
 #if 0
             Debug( 5065 ) << "Element: " << it->id() << "\n"
@@ -419,7 +419,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
             //Debug( 5065 )  << "assemble : " << ti3.elapsed() << "\n";
             t3+=ti3.elapsed();
 #else
-            __c->update( *it, __geopc );
+            __c->update( *it );
             map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
             formc.update( mapgmc );
             formc.integrate();
@@ -494,10 +494,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
     //Debug( 5065 ) << "element " << it->element(0)  << "face " << __face_id_in_elt_0 << " permutation " << it->element(0).permutation( __face_id_in_elt_0 ) << "\n";
     gm_ptrtype __gm = it->element(0).gm();
     Debug( 5065 ) << "[integrator] evaluate(faces), gm is cached: " << __gm->isCached() << "\n";
-    gmc_ptrtype __c0( new gmc_type( __gm,
-                                    it->element( 0 ),
-                                    __geopc[__face_id_in_elt_0][it->element(0).permutation( __face_id_in_elt_0 )],
-                                    __face_id_in_elt_0 ) );
+    gmc_ptrtype __c0( new gmc_type( __gm, it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
 
 
 
@@ -525,10 +522,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
         {
             uint16_type __face_id_in_elt_1 = it->pos_second();
 
-            __c1 = gmc_ptrtype( new gmc_type( __gm,
-                                              it->element( 1 ),
-                                              __geopc[__face_id_in_elt_1][it->element(1).permutation(__face_id_in_elt_1)],
-                                              __face_id_in_elt_1 ) );
+            __c1 = gmc_ptrtype( new gmc_type( __gm, it->element( 1 ), __geopc, __face_id_in_elt_1 ) );
             map2_gmc_type mapgmc2( fusion::make_pair<detail::gmc<0> >( __c0 ),
                                    fusion::make_pair<detail::gmc<1> >( __c1 ) );
 
@@ -556,12 +550,8 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
                     uint16_type __face_id_in_elt_0 = it->pos_first();
                     uint16_type __face_id_in_elt_1 = it->pos_second();
 
-                    __c0->update( it->element(0),
-                                  __geopc[__face_id_in_elt_0][it->element(0).permutation(__face_id_in_elt_0)],
-                                  __face_id_in_elt_0 );
-                    __c1->update( it->element(1),
-                                  __geopc[__face_id_in_elt_1][it->element(1).permutation(__face_id_in_elt_1)],
-                                  __face_id_in_elt_1 );
+                    __c0->update( it->element(0), __face_id_in_elt_0 );
+                    __c1->update( it->element(1), __face_id_in_elt_1 );
                     t0 += ti0.elapsed();
 
                     ti1.restart();
@@ -584,9 +574,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
 #if 1
                     ti0.restart();
                     uint16_type __face_id_in_elt_0 = it->pos_first();
-                    __c0->update( it->element(0),
-                                  __geopc[__face_id_in_elt_0][it->element(0).permutation(__face_id_in_elt_0)],
-                                  __face_id_in_elt_0 );
+                    __c0->update( it->element(0),__face_id_in_elt_0 );
                     t0 += ti0.elapsed();
 
                     LIFE_ASSERT( __face_id_in_elt_0 == __c0->faceId() )
@@ -689,7 +677,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     for ( ; it != en; ++it )
         {
             boost::timer ti;
-            __c->update( *it, __geopc );
+            __c->update( *it );
             map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
             expr.update( mapgmc );
             const gmc_type& gmc = *__c;
@@ -772,10 +760,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
     uint16_type __face_id_in_elt_0 = it->pos_first();
 
     // get the geometric mapping associated with element 0
-    gmc_ptrtype __c0( new gmc_type( gm,
-                                    it->element( 0 ),
-                                    __geopc[__face_id_in_elt_0][it->element(0).permutation(__face_id_in_elt_0)],
-                                    __face_id_in_elt_0 ) );
+    gmc_ptrtype __c0( new gmc_type( gm, it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
 
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
@@ -802,10 +787,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
         {
             uint16_type __face_id_in_elt_1 = it->pos_second();
 
-            __c1 = gmc_ptrtype( new gmc_type( gm,
-                                              it->element( 1 ),
-                                              __geopc[__face_id_in_elt_1][it->element(1).permutation(__face_id_in_elt_1)],
-                                              __face_id_in_elt_1 ) );
+            __c1 = gmc_ptrtype( new gmc_type( gm, it->element( 1 ), __geopc, __face_id_in_elt_1 ) );
 
             map2_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ),
                                   fusion::make_pair<detail::gmc<1> >( __c1 ) );
@@ -842,12 +824,8 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
                     uint16_type __face_id_in_elt_0 = it->pos_first();
                     uint16_type __face_id_in_elt_1 = it->pos_second();
 
-                    __c0->update( it->element(0),
-                                  __geopc[__face_id_in_elt_0][it->element(0).permutation(__face_id_in_elt_0)],
-                                  __face_id_in_elt_0 );
-                    __c1->update( it->element(1),
-                                  __geopc[__face_id_in_elt_1][it->element(1).permutation(__face_id_in_elt_1)],
-                                  __face_id_in_elt_1 );
+                    __c0->update( it->element(0), __face_id_in_elt_0 );
+                    __c1->update( it->element(1), __face_id_in_elt_1 );
 
 #if 0
                     std::cout << "face " << it->id() << "\n"
@@ -886,9 +864,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
             else
                 {
                     uint16_type __face_id_in_elt_0 = it->pos_first();
-                    __c0->update( it->element(0),
-                                  __geopc[__face_id_in_elt_0][it->element(0).permutation(__face_id_in_elt_0)],
-                                  __face_id_in_elt_0 );
+                    __c0->update( it->element(0), __face_id_in_elt_0 );
                     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
                     expr->update( mapgmc );
                     const gmc_type& gmc = *__c0;
