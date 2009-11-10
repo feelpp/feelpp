@@ -26,6 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-07-25
  */
+#ifndef __EXPORTERGNUPLOT_CPP 
+#define __EXPORTERGNUPLOT_CPP 1
+
 #include <life/lifecore/life.hpp>
 #include <life/lifefilters/exportergnuplot.hpp>
 
@@ -170,3 +173,4 @@ template class ExporterGnuplot<Mesh<Simplex<1,1> > >;
 #endif // LIFE_INSTANTIATION_MODE
 
 }
+#endif // __EXPORTERGNUPLOT_CPP

@@ -23,6 +23,9 @@
    \author Goncalo Pena <goncalo.pena@epfl.ch>
    \date 2008-04-17
 */
+#ifndef __ALE_CPP
+#define __ALE_CPP
+
 #include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <life/lifediscr/ale.hpp>
 
@@ -206,3 +209,5 @@ template class ALE< Simplex<2,5> >;
 #endif // LIFE_MESH_MAX_ORDER
 #endif // LIFE_INSTANTIATION_MODE
 }
+
+#endif // __ALE_HPP

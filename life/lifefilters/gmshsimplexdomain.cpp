@@ -26,6 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-10-11
  */
+#ifndef __GMSHSIMPLEXDOMAIN_CPP
+#define __GMSHSIMPLEXDOMAIN_CPP
+
 #include <life/lifefilters/gmshsimplexdomain.hpp>
 #include <life/lifemesh/geoentity.hpp>
 
@@ -129,3 +132,4 @@ template class GmshSimplexDomain<3,2>;
 #endif // LIFE_INSTANTIATION_MODE
 
 }
+#endif // __GMSHSIMPLEXDOMAIN_CPP

@@ -26,6 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-07-21
  */
+#ifndef __EXPORTERGMSH_CPP
+#define __EXPORTERGMSH_CPP 1
+
 #include <life/lifecore/life.hpp>
 
 #include <life/lifefilters/exportergmsh.hpp>
@@ -615,3 +618,4 @@ template class ExporterGmsh<Mesh<SimplexProduct<2,1> > >;
 template class ExporterGmsh<Mesh<SimplexProduct<3,1> > >;
 #endif // LIFE_INSTANTIATION_MODE
 }
+#endif // __EXPORTERGMSH_CPP

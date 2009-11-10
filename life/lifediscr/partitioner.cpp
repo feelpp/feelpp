@@ -26,6 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-07-31
  */
+#ifndef __PARTITIONER_CPP 
+#define __PARTITIONER_CPP 1
+
 #include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <life/lifediscr/partitioner.hpp>
 #include <life/lifediscr/partitionermetis.hpp>
@@ -180,3 +183,5 @@ template class Partitioner<Mesh<SimplexProduct<2,1,2> > >;
 template class Partitioner<Mesh<SimplexProduct<3,1,3> > >;
 #endif // LIFE_INSTANTIATION_MODE
 }
+
+#endif // __PARTITIONER_CPP

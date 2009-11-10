@@ -26,6 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-07-21
  */
+#ifndef __EXPORTERENSIGHT_CPP
+#define __EXPORTERENSIGHT_CPP
+
 #include <life/lifecore/life.hpp>
 
 #include <life/lifediscr/mesh.hpp>
@@ -642,3 +645,4 @@ template class ExporterEnsight<Mesh<SimplexProduct<2,1,2> > >;
 template class ExporterEnsight<Mesh<SimplexProduct<3,1,3> > >;
 #endif // LIFE_INSTANTIATION_MODE
 }
+#endif // __EXPORTERENSIGHT_CPP

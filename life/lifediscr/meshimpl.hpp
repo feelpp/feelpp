@@ -22,10 +22,13 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file mesh.cpp
+   \file meshimpl.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-08-07
  */
+#ifndef __MESHIMPL_HPP
+#define __MESHIMPL_HPP 1
+
 #include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <life/lifemesh/geoentity.hpp>
 #include <life/lifemesh/simplex.hpp>
@@ -962,3 +965,5 @@ Mesh<Shape, T>::Inverse::distribute( bool extrapolation )
 }
 
 }
+
+#endif // __MESHIMPL_HPP
