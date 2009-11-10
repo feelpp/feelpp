@@ -87,6 +87,7 @@ AC_CACHE_SAVE
 
 #
 LIFE_EXTRAMODULE([crb])
+LIFE_EXTRAMODULE([fbm])
 LIFE_EXTRAMODULE([meta_life_ifp])
 
 # research
@@ -96,6 +97,7 @@ AC_CONFIG_FILES([ admin/Makefile ])
 AC_OUTPUT
 
 test "x$ENABLE_EXTRAMODULE_CRB" = xcrb                          && sum_research_crb=OK              || sum_research_crb="no"
+test "x$ENABLE_EXTRAMODULE_FBM" = xfbm      && sum_research_fbm=OK    || sum_research_fbm="no"
 test "x$ENABLE_EXTRAMODULE_META_LIFE_IFP" = xmeta_life_ifp      && sum_research_meta_life_ifp=OK    || sum_research_meta_life_ifp="no"
 
 cat <<EOT > summary
@@ -106,6 +108,7 @@ Applications Sub-Module Summary:
  Extra-Modules        Activation
  -------------------------------
  CRB                 ${sum_research_crb}
+ FBM                 ${sum_research_fbm}
  META-LIFE-IFP       ${sum_research_meta_life_ifp}
 
 EOT

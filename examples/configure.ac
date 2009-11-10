@@ -91,7 +91,6 @@ AC_SUBST(life_revision)
 AC_CACHE_SAVE
 
 #
-LIFE_EXTRAMODULE([fbm])
 LIFE_EXTRAMODULE([fsi])
 
 # examples
@@ -108,7 +107,7 @@ AC_CONFIG_FILES([ heat/Makefile ])
 dnl AC_CONFIG_FILES([ poly/Makefile ])
 AC_OUTPUT
 
-test "x$ENABLE_EXTRAMODULE_FBM" = xfbm      && sum_examples_fbm=OK    || sum_examples_fbm="no"
+
 test "x$ENABLE_EXTRAMODULE_FSI" = xfsi      && sum_examples_fsi=OK    || sum_examples_fsi="no"
 
 cat <<EOT > summary
@@ -118,7 +117,6 @@ Examples Sub-Module Summary:
 
  Extra-Modules        Activation
  -------------------------------
- Examples/Fbm         ${sum_examples_fbm}
  Examples/Fsi         ${sum_examples_fsi}
 
 EOT
