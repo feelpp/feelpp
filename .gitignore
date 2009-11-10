@@ -1,5 +1,9 @@
 
 /.gitignore~
+/CMakeCache.txt
+/CMakeFiles
+/CTestTestfile.cmake
+/Makefile
 /Makefile.headers
 /Makefile.in
 /NEWS.html
@@ -7,9 +11,11 @@
 /NEWS.tex
 /NEWS.txt
 /Templates
+/Testing
 /aclocal.m4
 /admin
 /autom4te.cache
+/cmake_install.cmake
 /configure
 /lifeconfig.h.in
 /lifeconfig.h.in~

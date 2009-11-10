@@ -1,2 +1,6 @@
+/CMakeFiles
+/Makefile
 /Makefile.in
+/cmake_install.cmake
+/liblifediscr.a
 /periodic.hpp~

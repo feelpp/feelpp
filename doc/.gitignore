@@ -1,4 +1,8 @@
+/CMakeCache.txt
+/CMakeFiles
+/Makefile
 /Makefile.in
 /aclocal.m4
 /autom4te.cache
+/cmake_install.cmake
 /configure
