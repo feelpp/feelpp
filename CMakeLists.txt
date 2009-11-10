@@ -13,12 +13,13 @@ project (Life C CXX Fortran)
 #   MESSAGE("Last changed log is ${Project_LAST_CHANGED_LOG}")
 # ENDIF(Subversion_FOUND)
 
-SET(LIFE_VERSION "0.9.11")
-SET(LIFE_VERSION_MAJOR "0")
-SET(LIFE_VERSION_MINOR "9")
-SET(LIFE_VERSION_MICRO "11")
-SET(LIFE_REVISION "11")
-SET(LIFE_BUILDID "0")
+set(LIFE_VERSION_MAJOR "0")
+set(LIFE_VERSION_MINOR "9")
+set(LIFE_VERSION_MICRO "11")
+set(LIFE_REVISION "")
+set(LIFE_BUILDID "")
+set(LIFE_VERSION "(((${LIFE_VERSION_MAJOR}) << 16) | ((${LIFE_VERSION_MINOR}) << 9) | (${LIFE_VERSION_MICRO}))" )
+
 
 SET(LIFE_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(LIFE_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
@@ -29,17 +30,6 @@ SET( CMAKE_MODULE_PATH
   #    ${LIFE_HOME_DIR}/cmake/package_arch
   #    ${LIFE_HOME_DIR}/cmake/config_tests
   )
-CONFIGURE_FILE(lifeconfig.h.in lifeconfig.h)
-
-
-add_definitions(
-   -DLIFE_BUILDID=${LIFE_BUILDID}
-   -DLIFE_VERSION=911
-   -DLIFE_VERSION_MAJOR=${LIFE_VERSION_MAJOR}
-   -DLIFE_VERSION_MINOR=${LIFE_VERSION_MINOR}
-   -DLIFE_VERSION_MICRO=${LIFE_VERSION_MICRO}
-   -DLIFE_REVISION=${LIFE_REVISION}
-   )
 
 OPTION(ENABLE_INSTANTIATION_MODE "Instantiation mode" ON )
 MARK_AS_ADVANCED(ENABLE_INSTANTIATION_MODE)
@@ -47,7 +37,7 @@ IF ( ENABLE_INSTANTIATION_MODE )
 ADD_DEFINITIONS( -DLIFE_INSTANTIATION_MODE=1 )
 ENDIF()
 
-OPTION( LIFE_MESH_MAX_ORDER "build with maximum mesh" 5 )
+set(LIFE_MESH_MAX_ORDER "5")
 
 #INCLUDE(PackageArchGlobalMacros)
 # INCLUDE(LifeGlobalMacros)
@@ -123,6 +113,9 @@ INCLUDE_DIRECTORIES(${TRILINOS_INCLUDE_DIR})
 INCLUDE(FindVTK)
 FIND_PACKAGE(VTK)
 
+# generate configuration header
+CONFIGURE_FILE(lifeconfig.h.in lifeconfig.h)
+
 #
 #
 #
@@ -182,6 +175,7 @@ SET(LIFE_LIBRARIES
   )
 
 ADD_SUBDIRECTORY ( doc )
+ADD_SUBDIRECTORY ( examples )
 
 #
 # Enable testing
@@ -194,6 +188,7 @@ macro(life_add_test testname)
   target_link_libraries(${targetname} ${LIFE_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
   add_test( ${testname} "${targetname}" )
 endmacro(life_add_test)
+
 
 
 ENABLE_TESTING()
