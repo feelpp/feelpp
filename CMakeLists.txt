@@ -87,7 +87,11 @@ ADD_DEFINITIONS( -DBOOST_PARAMETER_MAX_ARITY=15 -DBOOST_TEST_DYN_LINK )
 #
 # Petsc
 #
-INCLUDE(FindPetsc)
+INCLUDE(FindPETSc)
+find_package( PETSc )
+if ( PETSC_FOUND )
+  add_definitions( -DHAVE_PETSC -DHAVE_PETSC_H )
+endif()
 FIND_PATH(
   SLEPC_INCLUDE_DIR
   NAMES slepc.h
@@ -144,12 +148,36 @@ LINK_DIRECTORIES(
 
 ADD_SUBDIRECTORY ( life )
 
-SET(LIFE_LIBRARIES life ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES})
+SET(LIFE_LIBRARIES 
+  life 
+  lifematerial 
+  lifefilters 
+  lifediscr 
+  lifealg 
+  lifemesh 
+  lifecore
+  ${PETSC_LIBRARIES} 
+  ${Boost_LIBRARIES} 
+  ${MPI_LIBRARIES}
+  )
 
 ADD_SUBDIRECTORY ( doc )
 
 #
 # Enable testing
 #
+macro(life_add_test testname)
+  
+  set(targetname test_${testname})
+  set(filename test_${testname}.cpp)
+  add_executable(${targetname} ${filename})
+  target_link_libraries(${targetname} ${LIFE_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
+  add_test( ${testname} "${targetname}" )
+endmacro(life_add_test)
+
+
 ENABLE_TESTING()
-ADD_SUBDIRECTORY( testsuite/lifecore )
+foreach( testdir core alg mesh poly )
+  add_subdirectory( testsuite/life${testdir} )
+endforeach()
+

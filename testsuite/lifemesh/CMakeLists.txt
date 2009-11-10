@@ -1,5 +1,5 @@
  
-foreach(TEST boostmpi traits singleton factory debug openmp context material)
+foreach(TEST entity mesh regiontree mesh_codim1)
   
   life_add_test( ${TEST} )
 

@@ -1,5 +1,5 @@
  
-foreach(TEST boostmpi traits singleton factory debug openmp context material)
+foreach(TEST petsc umfpack matrix ublas )
   
   life_add_test( ${TEST} )
 
