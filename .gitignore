@@ -19,7 +19,6 @@
 /autom4te.cache
 /cmake_install.cmake
 /configure
-/lifeconfig.h.in
 /lifeconfig.h.in~
 /package.m4
 /subdirs
