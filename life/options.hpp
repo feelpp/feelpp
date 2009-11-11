@@ -29,6 +29,7 @@
 #ifndef _LIFE_OPTIONS_HPP
 #define _LIFE_OPTIONS_HPP 1
 
+#include <lifeconfig.h>
 #include <boost/program_options.hpp>
 
 namespace Life
