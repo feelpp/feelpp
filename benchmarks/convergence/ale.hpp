@@ -8,7 +8,7 @@
    Copyright (C) 2005,2006 EPFL
    Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
 
-   This library is free software; you can redistribute it and/or
+   This library is free softwarey; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
@@ -219,15 +219,15 @@ TestALE<N>::run()
 
     boost::timer time;
     using namespace Life::vf;
-    /*
+
+        /*
       Define mesh for the curved boundaries
     */
     boost::shared_ptr<struct_mesh_type> struct_mesh( new struct_mesh_type );
-    std::string fname;
     GmshTensorizedDomain<1,1,1,Simplex> td;
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( 0, 5 ) );
-    fname = td.generate( "structure" );
+    std::string fname = td.generate( "boundary_description" );
     ImporterGmsh<struct_mesh_type> struct_import( fname );
     struct_mesh->accept( struct_import );
 
@@ -238,11 +238,11 @@ TestALE<N>::run()
     struct_functionspace_ptrtype Xh = struct_functionspace_type::New( struct_mesh );
     struct_element_type bc_top( Xh, "bc_top" );
     AUTO( f,  (0.02096834639998*Px()*Px()*Px()    -0.09351398506873*Px()*Px()    -0.09961900352798*Px()+    1.3000 )  ) ;
-    bc_top = project( Xh, elements(*struct_mesh), f );
+    bc_top = project( Xh, elements(struct_mesh), f );
 
     struct_element_type bc_bottom( Xh, "bc_bottom" );
     AUTO( f2, (-0.0210*Px()*Px()*Px() + 0.0935*Px()*Px() + 0.0996*Px() -1.4000)  );
-    bc_bottom = project( Xh, elements(*struct_mesh), f2 );
+    bc_bottom = project( Xh, elements(struct_mesh), f2 );
 
     struct_element_type bc_reference_top( Xh, "bc_reference_top" );
     bc_reference_top = project( Xh, elements(*struct_mesh), constant(1.0) );
@@ -259,54 +259,28 @@ TestALE<N>::run()
     bc_disp_bottom -= bc_reference_bottom;
 
 
-
     /*
       Define mesh for the domain
     */
     boost::shared_ptr<mesh_type> mesh( new mesh_type );
-    std::ostringstream ostr;
 
-    ostr << "Mesh.MshFileVersion = 2;\n"
-         << "h=" << meshSize << ";\n"
-         << "Point(1) = { 0, -1,0.0,h};\n"
-         << "Point(2) = { 5, -1,0.0,h};\n"
-         << "Point(3) = { 5,  1,0.0,h};\n"
-         << "Point(4) = { 0,  1,0.0,h};\n"
-         << "Line(1) = {1,2};\n"
-         << "Line(2) = {2,3};\n"
-         << "Line(3) = {3,4};\n"
-         << "Line(4) = {4,1};\n"
-         << "Line Loop(7) = {4,3,2,1};\n"
-         << "Plane Surface(8) = {7};\n"
-         << "Physical Line(1) = {1};\n"
-         << "Physical Line(2) = {2};\n"
-         << "Physical Line(3) = {3};\n"
-         << "Physical Line(4) = {4};\n"
-         << "Physical Surface(8) = {8};\n";
-
-    Gmsh gmsh;
-
-    std::string meshName = gmsh.generate( "geometry", ostr.str() );
-
-    time.restart();
-    ImporterGmsh<mesh_type> import( meshName );
-
+    GmshTensorizedDomain<2,1,2,Simplex> td2;
+    td2.setCharacteristicLength( meshSize );
+    td2.setX( std::make_pair( 0, 5 ) );
+    td2.setY( std::make_pair( -1, 1 ) );
+    std::string fname2 = td2.generate( "geometry" );
+    ImporterGmsh<mesh_type> import( fname2 );
     mesh->accept( import );
-    mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
-    mesh->updateForUse();
-
-
-
 
 
     p1_functionspace_ptrtype Ah = p1_functionspace_type::New( mesh );
 
     //define set of flags
     std::map< std::string, std::vector<flag_type> > flagSet;
-    flagSet["fixed_bc"].push_back(2);
-    flagSet["fixed_bc"].push_back(4);
-    flagSet["moving_bc"].push_back(1);
-    flagSet["moving_bc"].push_back(3);
+    flagSet["fixed_bc"].push_back(1);
+    flagSet["fixed_bc"].push_back(3);
+    flagSet["moving_bc"].push_back(2);
+    flagSet["moving_bc"].push_back(4);
 
     //define set of polynomials that describe boundary
     std::vector<struct_element_type> polyBoundarySet;
@@ -323,7 +297,10 @@ TestALE<N>::run()
       Create the ale map
     */
     ALE< Simplex<2,N> > aleFactory( std::make_pair(0,5), mesh, this->vm() );
+
+
     aleFactory.generateHighOrderMap( flagSet["moving_bc"], referencePolyBoundarySet, polyBoundarySet );
+
 
     MeshHighOrder< Simplex<2, N> > auxiliar_mesh ( mesh );
     auxiliar_mesh.generateMesh(flagSet["moving_bc"], referencePolyBoundarySet);
@@ -336,18 +313,14 @@ TestALE<N>::run()
     this->exportResults( 0.0, aux_element);
 
 
-
     /*
       Test ale map in boundary
     */
-
-    double error_bottom = math::sqrt(integrate( markedfaces( mesh, 1 ),
-                                                _Q<3*N>(),
+    double error_bottom = math::sqrt(integrate( markedfaces( mesh, 2 ), _Q<20>(),
                                                 trans(idv(aleFactory.getMap()) - (f2*oneY() + Px()*oneX()))*(idv(aleFactory.getMap()) - (f2*oneY() + Px()*oneX()))
                                                 ).evaluate()( 0, 0 ));
 
-    double error_top = math::sqrt(integrate( markedfaces( mesh, 3 ),
-                                             _Q<3*N>(),
+    double error_top = math::sqrt(integrate( markedfaces( mesh, 4 ), _Q<20>(),
                                              trans(idv(aleFactory.getMap()) - (f*oneY() + Px()*oneX()))*(idv(aleFactory.getMap()) - (f*oneY() + Px()*oneX()))
                                              ).evaluate()( 0, 0 ));
 
@@ -356,9 +329,11 @@ TestALE<N>::run()
 
 
     MeshMover<new_mesh_type> mesh_mover;
-    mesh_mover.apply(aux_mesh, aleFactory.getDisplacement() );
+    mesh_mover.apply(visH->mesh(), aleFactory.getDisplacement() );
+    visH->updateRegionTree();
 
     aux_element = project( visH, elements(visH->mesh()), sin(Px())*cos(Py())*oneX() + sin(Py())*cos(Px())*oneY());
+    aux_element.updateGlobalValues();
     this->exportResults( 1.0, aux_element);
 
     this->addOutputValue( error_top+error_bottom );
