@@ -1,7 +1,7 @@
 /* lifeconfig.h.in.  Generated from configure.ac by autoheader.  */
 
 /* the maximum of parameters for boost.parameter */
-#cmakedefine BOOST_PARAMETER_MAX_ARITY
+#cmakedefine BOOST_PARAMETER_MAX_ARITY @BOOST_PARAMETER_MAX_ARITY@
 
 /* Define to dummy `main' function (if any) required to link to the Fortran
    libraries. */
@@ -31,6 +31,9 @@
 
 /* Define if the OPENMP is supported by the compiler. */
 #cmakedefine HAVE_OPENMP
+
+/* Define to 1 if you have slepc. */
+#cmakedefine HAVE_SLEPC @HAVE_SLEPC@
 
 /* Define to 1 if you have the <slepc.h> header file. */
 #cmakedefine HAVE_SLEPC_H @HAVE_SLEPC_H@
@@ -79,6 +82,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
+
+/* Define to 1 if you have VTK . */
+#cmakedefine HAVE_VTK
 
 /* The path of installation */
 #cmakedefine INSTALL_PATH

@@ -5,6 +5,7 @@
 /CPackConfig.cmake
 /CPackSourceConfig.cmake
 /CTestTestfile.cmake
+/Debug
 /Makefile
 /Makefile.headers
 /Makefile.in
@@ -16,10 +17,12 @@
 /Testing
 /aclocal.m4
 /admin
+/auto
 /autom4te.cache
 /cmake_install.cmake
 /configure
 /lifeconfig.h.in~
+/opt
 /package.m4
 /subdirs
 /tools
