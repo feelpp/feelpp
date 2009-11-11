@@ -27,6 +27,7 @@
    \date 2007-07-21
  */
 #include <life/options.hpp>
+#include <life/lifecore/life.hpp>
 #include <life/lifealg/backend.hpp>
 #include <life/lifealg/backendgmm.hpp>
 #include <life/lifealg/backendpetsc.hpp>

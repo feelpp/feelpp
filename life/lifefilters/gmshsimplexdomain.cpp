@@ -29,7 +29,7 @@
 #ifndef __GMSHSIMPLEXDOMAIN_CPP
 #define __GMSHSIMPLEXDOMAIN_CPP
 
-#include <lifeconfig.h>
+#include <life/lifecore/life.hpp>
 
 #include <life/lifefilters/gmshsimplexdomain.hpp>
 #include <life/lifemesh/geoentity.hpp>
