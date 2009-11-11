@@ -34,6 +34,7 @@
 #define __TestALE 1
 
 #include <life/options.hpp>
+#include <life/lifecore/life.hpp>
 
 #include <life/lifepoly/fekete.hpp>
 #include <life/lifealg/backend.hpp>
