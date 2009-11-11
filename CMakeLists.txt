@@ -122,6 +122,7 @@ CONFIGURE_FILE(lifeconfig.h.in lifeconfig.h  )
 #
 #
 INCLUDE_DIRECTORIES (
+  ${LIFE_BUILD_DIR}/
   ${LIFE_SOURCE_DIR}/
   ${LIFE_SOURCE_DIR}/contrib/gmm/include
 
