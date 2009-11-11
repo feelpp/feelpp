@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 
-SET( CMAKE_CXX_FLAGS "-pipe -Wall -O2 ")
-SET( CMAKE_C_FLAGS "-pipe -Wall -O2")
+#SET( CMAKE_CXX_FLAGS "-pipe -Wall -O2 ")
+#SET( CMAKE_C_FLAGS "-pipe -Wall -O2")
 
 project (Life C CXX Fortran)
 
@@ -72,10 +72,11 @@ INCLUDE(FindLAPACK)
 FIND_PACKAGE(LAPACK)
 
 
-Include(FindBoost)
-FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  mpi regex  serialization)
-SET(Boost_ADDITIONAL_VERSIONS "1.39" )
-ADD_DEFINITIONS( -DBOOST_PARAMETER_MAX_ARITY=15 -DBOOST_TEST_DYN_LINK )
+include(FindBoost)
+find_package(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  mpi regex  serialization)
+set(Boost_ADDITIONAL_VERSIONS "1.39" )
+set( BOOST_PARAMETER_MAX_ARITY 15 )
+add_definitions( -DBOOST_TEST_DYN_LINK )
 
 #
 # Scotch
@@ -91,15 +92,21 @@ find_package( PETSc )
 if ( PETSC_FOUND )
   add_definitions( -DHAVE_PETSC -DHAVE_PETSC_H )
 endif()
-FIND_PATH(
-  SLEPC_INCLUDE_DIR
-  NAMES slepc.h
-  PATHS /usr/include/slepc
-  )
+
+find_path (SLEPC_DIR include/slepc.h
+  HINTS ENV SLEPC_DIR
+  PATHS
+  /usr/lib/slepcdir/3.0.0 # Debian
+  $ENV{HOME}/slepc
+  DOC "SLEPc Directory")
 SET(CMAKE_REQUIRED_INCLUDES "${SLEPC_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
 CHECK_INCLUDE_FILE( slepc.h HAVE_SLEPC_H )
 FIND_LIBRARY(SLEPC_LIB_SLEPC     slepc )
 SET(SLEPC_LIBRARIES ${SLEPC_LIB_SLEPC})
+if (SLEPC_INCLUDE_DIR)
+  set(HAVE_SLEPC 1)
+  set(HAVE_SLEPC_H 1)
+endif()
 
 
 
@@ -112,8 +119,14 @@ INCLUDE(FindTrilinos)
 INCLUDE_DIRECTORIES(${TRILINOS_INCLUDE_DIR})
 #ENDIF( ENABLE_TRILINOS )
 
-INCLUDE(FindVTK)
-FIND_PACKAGE(VTK)
+#
+# VTK
+#
+include(FindVTK)
+find_package(VTK)
+if ( VTK_FOUND )
+  set(HAVE_VTK 1)
+endif()
 
 # generate configuration header
 CONFIGURE_FILE(lifeconfig.h.in lifeconfig.h  )
@@ -130,12 +143,15 @@ INCLUDE_DIRECTORIES (
   ${PETSC_INCLUDE_DIR}
   ${PETSCCONF_INCLUDE_DIR}
 
+  ${VTK_INCLUDE_DIRS}
+
   ${MPI_INCLUDE_PATH}
   ${BOOST_INCLUDE_PATH}
   ${LIBXML2_INCLUDE_DIR}
   )
 
 LINK_DIRECTORIES(
+  ${VTK_LIBRARY_DIRS}
   ${BOOST_LIBRARY_PATH}
   ${MPI_LIBRARY_PATH}
   )
