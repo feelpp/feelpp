@@ -1,0 +1,318 @@
+/* lifeconfig.h.in.  Generated from configure.ac by autoheader.  */
+
+/* the maximum of parameters for boost.parameter */
+#undef BOOST_PARAMETER_MAX_ARITY
+
+/* Define to dummy `main' function (if any) required to link to the Fortran
+   libraries. */
+#undef F77_DUMMY_MAIN
+
+/* Define to a macro mangling the given C identifier (in lower and upper
+   case), which must not contain underscores, for linking with Fortran. */
+#undef F77_FUNC
+
+/* As F77_FUNC, but for C identifiers containing underscores. */
+#undef F77_FUNC_
+
+/* Define if F77 and FC dummy `main' functions are identical. */
+#undef FC_DUMMY_MAIN_EQ_F77
+
+/* defined if GMSH is available */
+#undef GMSH_EXECUTABLE_NAME
+
+/* defined if GMSH is available */
+#undef GMSH_VERSION
+
+/* Support for regular expression library */
+#undef HAS_LIBXML2
+
+/* defined if the arprec library was found and is working */
+#undef HAVE_ARPREC
+
+/* Define if the Trilinos AztecOO-Teuchos library is used. */
+#undef HAVE_AZTECOO_TEUCHOS
+
+/* define if the Boost library is available */
+#undef HAVE_BOOST
+
+/* define if the Boost::Date_Time library is available */
+#undef HAVE_BOOST_DATE_TIME
+
+/* define if the Boost::Filesystem library is available */
+#undef HAVE_BOOST_FILESYSTEM
+
+/* define if the Boost::Math library is available */
+#undef HAVE_BOOST_MATH
+
+/* define if the Boost::Mpi library is available */
+#undef HAVE_BOOST_MPI
+
+/* define if the Boost::PROGRAM_OPTIONS library is available */
+#undef HAVE_BOOST_PROGRAM_OPTIONS
+
+/* define if the Boost::Regex library is available */
+#undef HAVE_BOOST_REGEX
+
+/* define if the Boost::Serialization library is available */
+#undef HAVE_BOOST_SERIALIZATION
+
+/* define if the Boost::Signals library is available */
+#undef HAVE_BOOST_SIGNALS
+
+/* define if the Boost::Unit_Test_Framework library is available */
+#undef HAVE_BOOST_UNIT_TEST_FRAMEWORK
+
+/* Define to 1 if you have the <Cnames.h> header file. */
+#undef HAVE_CNAMES_H
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* Define to 1 if you have the <Eigen/Core> header file. */
+#undef HAVE_EIGEN_CORE
+
+/* defined if GMSH is available */
+#undef HAVE_GMSH
+
+/* Define to 1 if you have the <google/profiler.h> header file. */
+#undef HAVE_GOOGLE_PROFILER_H
+
+/* defined if hypre is installed */
+#undef HAVE_HYPRE
+
+/* Define to 1 if you have the <HYPRE.h> header file. */
+#undef HAVE_HYPRE_H
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define if the superlu library can be used. */
+#undef HAVE_LIBSUPERLU
+
+/* Define to 1 if you have the <libxml/parser.h> header file. */
+#undef HAVE_LIBXML_PARSER_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* defined if metis is installed */
+#undef HAVE_METIS
+
+/* Define to 1 if you have the <metis.h> header file. */
+#undef HAVE_METIS_H
+
+/* Define to 1 if you have the <metis/metis.h> header file. */
+#undef HAVE_METIS_METIS_H
+
+/* Define if the Trilinos ML-AztecOO library is used. */
+#undef HAVE_ML_AZTECOO
+
+/* Define if the Trilinos ML-Epetra library is used. */
+#undef HAVE_ML_EPETRA
+
+/* Define if the Trilinos ML-Teuchos library is used. */
+#undef HAVE_ML_TEUCHOS
+
+/* define if mpfr is available */
+#undef HAVE_MPFR
+
+/* Define if you have the MPI library. */
+#undef HAVE_MPI
+
+/* Define to 1 if you have the <mpi.h> header file. */
+#undef HAVE_MPI_H
+
+/* Define if the OPENMP is supported by the compiler. */
+#undef HAVE_OPENMP
+
+/* Flag indicating whether or not PETSc is available */
+#undef HAVE_PETSC
+
+/* Define to 1 if you have the <petsc.h> header file. */
+#undef HAVE_PETSC_H
+
+/* defined if the qd library was found and is working */
+#undef HAVE_QDLIB
+
+/* defined if scotch is installed */
+#undef HAVE_SCOTCH
+
+/* Define to 1 if you have the <scotch.h> header file. */
+#undef HAVE_SCOTCH_H
+
+/* Flag indicating whether or not SLEPc is available */
+#undef HAVE_SLEPC
+
+/* Define to 1 if you have the <slu_Cnames.h> header file. */
+#undef HAVE_SLU_CNAMES_H
+
+/* Define if the Spooles library is used. */
+#undef HAVE_SPOOLES
+
+/* defined if sprng is installed */
+#undef HAVE_SPRNG
+
+/* Define to 1 if you have the <sprng.h> header file. */
+#undef HAVE_SPRNG_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <suitesparse/umfpack.h> header file. */
+#undef HAVE_SUITESPARSE_UMFPACK_H
+
+/* Define to 1 if you have the <superlu/Cnames.h> header file. */
+#undef HAVE_SUPERLU_CNAMES_H
+
+/* Define to 1 if you have the <superlu/slu_Cnames.h> header file. */
+#undef HAVE_SUPERLU_SLU_CNAMES_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* define when trilinos is available */
+#undef HAVE_TRILINOS
+
+/* Define if the Trilinos Amesos library is used. */
+#undef HAVE_TRILINOS_AMESOS
+
+/* Define if the Trilinos Anasazi library is used. */
+#undef HAVE_TRILINOS_ANASAZI
+
+/* Define if the Trilinos AztecOO library is used. */
+#undef HAVE_TRILINOS_AZTECOO
+
+/* Define if the Trilinos Epetra library is used. */
+#undef HAVE_TRILINOS_EPETRA
+
+/* Define if the Trilinos EpetraExt library is used. */
+#undef HAVE_TRILINOS_EPETRAEXT
+
+/* Define if the Trilinos Galeri library is used. */
+#undef HAVE_TRILINOS_GALERI
+
+/* Define if the Trilinos Ifpack library is used. */
+#undef HAVE_TRILINOS_IFPACK
+
+/* Define if the Trilinos ML library is used. */
+#undef HAVE_TRILINOS_ML
+
+/* Define if the Trilinos NOX library is used. */
+#undef HAVE_TRILINOS_NOX
+
+/* Define if the Trilinos Teuchos library is used. */
+#undef HAVE_TRILINOS_TEUCHOS
+
+/* Define if the Trilinos TriUtils library is used. */
+#undef HAVE_TRILINOS_TRIUTILS
+
+/* Define to 1 if you have the <ufsparse/umfpack.h> header file. */
+#undef HAVE_UFSPARSE_UMFPACK_H
+
+/* Define if the UMFPACK library is used. */
+#undef HAVE_UMFPACK
+
+/* Define to 1 if you have the <umfpack.h> header file. */
+#undef HAVE_UMFPACK_H
+
+/* Define to 1 if you have the <umfpack/umfpack.h> header file. */
+#undef HAVE_UMFPACK_UMFPACK_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* define if vtk is available */
+#undef HAVE_VTK
+
+/* The path of installation */
+#undef INSTALL_PATH
+
+/* buildid */
+#undef LIFE_BUILDID
+
+/* Add debug information */
+#undef LIFE_DEBUG_LEVEL
+
+/* Define if support for c++ class instantiation is enabled) */
+#undef LIFE_INSTANTIATION_MODE
+
+/* Define if minimal mesh support is required (order 1 mesh in 1D,2D,3D) */
+#undef LIFE_MESH_MAX_ORDER
+
+/* define prefix dir for life installation */
+#undef LIFE_PREFIX
+
+/* revision */
+#undef LIFE_REVISION
+
+/* sizeof(size_t)==sizeof(uint) */
+#undef LIFE_SIZET_SAME_AS_UINT
+
+/* full blown version */
+#undef LIFE_VERSION
+
+/* extra version information: date, cvs, ... */
+#undef LIFE_VERSION_EXTRA
+
+/* major version number */
+#undef LIFE_VERSION_MAJOR
+
+/* micro version number */
+#undef LIFE_VERSION_MICRO
+
+/* minor version number */
+#undef LIFE_VERSION_MINOR
+
+/* Life version string */
+#undef LIFE_VERSION_STRING
+
+/* Define to ensure that ML will use MPI. */
+#undef ML_MPI
+
+/* Define to 1 if your C compiler doesn't accept -c and -o together. */
+#undef NO_MINUS_C_MINUS_O
+
+/* Name of package */
+#undef PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* petsc version 2.2.0 */
+#undef PETSC_VERSION
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Version number of package */
+#undef VERSION
+
+/* Define to `unsigned' if <sys/types.h> does not define. */
+#undef size_t
