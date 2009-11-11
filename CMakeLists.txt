@@ -126,6 +126,7 @@ include(FindVTK)
 find_package(VTK)
 if ( VTK_FOUND )
   set(HAVE_VTK 1)
+  SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging -lvtkCommon" )
 endif()
 
 # generate configuration header
@@ -186,6 +187,8 @@ SET(LIFE_LIBRARIES
   lifemesh
   lifecore
   ${TRILINOS_LIBRARIES}
+  ${VTK_LIBRARIES}
+  ${SLEPC_LIBRARIES}
   ${PETSC_LIBRARIES}
   ${Boost_LIBRARIES}
   ${MPI_LIBRARIES}
