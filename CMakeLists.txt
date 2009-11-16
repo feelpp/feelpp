@@ -76,7 +76,7 @@ include(FindBoost)
 find_package(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  mpi regex  serialization)
 set(Boost_ADDITIONAL_VERSIONS "1.39" )
 set( BOOST_PARAMETER_MAX_ARITY 15 )
-add_definitions( -DBOOST_TEST_DYN_LINK )
+add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOST_TEST_DYN_LINK )
 
 #
 # Scotch

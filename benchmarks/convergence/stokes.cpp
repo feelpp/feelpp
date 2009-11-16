@@ -28,6 +28,7 @@
    \date 2009-01-04
  */
 #include <life/options.hpp>
+#include <life/lifecore/life.hpp>
 #include <life/lifecore/application.hpp>
 
 #include <life/lifealg/backend.hpp>

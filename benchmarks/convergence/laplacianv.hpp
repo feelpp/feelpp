@@ -37,7 +37,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <life/options.hpp>
-
+#include <life/lifecore/life.hpp>
 #include <life/lifealg/backend.hpp>
 
 #include <life/lifediscr/functionspace.hpp>
