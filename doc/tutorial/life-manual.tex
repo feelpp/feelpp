@@ -334,11 +334,45 @@ Here is the list of optional packages:
 Note that all these packages are available under Debian/GNU/Linux and
 Ubuntu. They should be available
 
-\subsection{Compiling Life}
+\subsection{Compiling Life with the CMake}
 
-If you have passed all the previous chapter without problems, the
-compilation will be a formality.  Go in the same folder in wich you
-have done the checkout and type the following commands :
+Life build system supports
+\cmake\index{cmake}\footnote{\url{http://www.cmake.org}}. This should become the
+preferred way to build \life as it is much simpler and more powerful in many
+ways than the autotools.
+
+\life, using \cmake, can be built either in source and out of source and different
+build type:
+\begin{itemize}
+\item minsizerel : minimal size release
+\item release release
+\item debug : debug
+\item none(default)
+\end{itemize}
+
+\paragraph{CMake In Source Build}
+
+Enter the source tree and type
+\begin{unixcom}
+  cmake .
+  make
+\end{unixcom}
+
+To customize or change some build setting one can use the \cmake curse interface
+\ccmake
+\begin{unixcom}
+  ccmake . # configure and generate 
+  make
+\end{unixcom}
+
+\paragraph{CMake Out Source Build}
+
+Create a build directory
+
+\subsection{Compiling Life with the AutoTools}
+
+Go in the same folder in wich you have done the checkout and type the following
+commands :
 
 \subsubsection{From tarball}
 \label{sec:from-tarball}
