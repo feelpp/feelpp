@@ -382,12 +382,12 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
                 void update( Geo_t const& geom )                        \
                 {                                                       \
-                    BOOST_STATIC_ASSERT( dim_ok );                      \
+                    /*BOOST_STATIC_ASSERT( dim_ok );*/                  \
                     update( geom, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
                 }                                                       \
                 void update( Geo_t const& geom, uint16_type face )      \
                 {                                                       \
-                    BOOST_STATIC_ASSERT( dim_ok );                      \
+                    /*BOOST_STATIC_ASSERT( dim_ok );*/                  \
                     update( geom, face, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
                 }                                                       \
                 void update( Geo_t const& geom, uint16_type face1, mpl::bool_<true> ) \
