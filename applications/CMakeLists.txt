@@ -22,7 +22,7 @@
 #
 #
 project( life-applications )
-add_subdirectory( polyvis )
+# add_subdirectory( polyvis )
 if ( EXISTS ${LIFE_SOURCE_DIR}/applications/opus )
   add_subdirectory( opus )
 endif()
