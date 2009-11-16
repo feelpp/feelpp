@@ -199,6 +199,8 @@ SET(LIFE_LIBRARIES
 ADD_SUBDIRECTORY ( doc )
 ADD_SUBDIRECTORY ( benchmarks )
 ADD_SUBDIRECTORY ( examples )
+ADD_SUBDIRECTORY ( applications )
+ADD_SUBDIRECTORY ( research )
 
 
 #
