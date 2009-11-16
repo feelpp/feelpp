@@ -99,13 +99,13 @@ find_path (SLEPC_DIR include/slepc.h
   /usr/lib/slepcdir/3.0.0 # Debian
   $ENV{HOME}/slepc
   DOC "SLEPc Directory")
-SET(CMAKE_REQUIRED_INCLUDES "${SLEPC_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
+SET(CMAKE_REQUIRED_INCLUDES "${SLEPC_DIR}/include;${CMAKE_REQUIRED_INCLUDES}")
 CHECK_INCLUDE_FILE( slepc.h HAVE_SLEPC_H )
 FIND_LIBRARY(SLEPC_LIB_SLEPC     slepc )
 SET(SLEPC_LIBRARIES ${SLEPC_LIB_SLEPC})
-if (SLEPC_INCLUDE_DIR)
+message( "*** SLEPc directory : ${SLEPC_DIR}" )
+if (HAVE_SLEPC_H AND SLEPC_DIR)
   set(HAVE_SLEPC 1)
-  set(HAVE_SLEPC_H 1)
 endif()
 
 
@@ -200,7 +200,9 @@ ADD_SUBDIRECTORY ( doc )
 ADD_SUBDIRECTORY ( benchmarks )
 ADD_SUBDIRECTORY ( examples )
 ADD_SUBDIRECTORY ( applications )
-ADD_SUBDIRECTORY ( research )
+if ( EXISTS ${LIFE_SOURCE_DIR}/research )
+  ADD_SUBDIRECTORY ( research )
+endif()
 
 
 #
@@ -225,4 +227,25 @@ endforeach()
 #
 # Packaging
 #
+INCLUDE(InstallRequiredSystemLibraries)
+
+SET(CPACK_GENERATOR "TGZ")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "life")
+SET(CPACK_PACKAGE_VENDOR "Christophe Prud'homme")
+SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README")
+SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
+SET(CPACK_PACKAGE_VERSION_MAJOR "${LIFE_VERSION_MAJOR}")
+SET(CPACK_PACKAGE_VERSION_MINOR "${LIFE_VERSION_MINOR}")
+SET(CPACK_PACKAGE_VERSION_PATCH "${LIFE_VERSION_MICRO}")
+SET(CPACK_PACKAGE_INSTALL_DIRECTORY "life")
+SET(CPACK_SOURCE_GENERATOR "TGZ")
+SET(CPACK_SOURCE_OUTPUT_CONFIG_FILE "CPackSourceConfig.cmake")
+SET(CPACK_SOURCE_PACKAGE_FILE_NAME "life-${LIFE_VERSION_MAJOR}.${LIFE_VERSION_MINOR}.${LIFE_VERSION_MICRO}")
+SET(CPACK_SOURCE_STRIP_FILES "")
+# The following components are regex's to match anywhere (unless anchored)
+# in absolute path + filename to find files or directories to be excluded
+# from source tarball.
+set(CPACK_SOURCE_IGNORE_FILES
+  "\\\\.gitignore;/admin/;/auto/;/auto.*/;${PROJECT_SOURCE_DIR}/applications/opus/;${PROJECT_SOURCE_DIR}/research/;"  )
+
 include( CPack )
