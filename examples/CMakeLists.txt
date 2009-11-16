@@ -8,4 +8,6 @@ macro(life_add_example examplename)
   target_link_libraries(${targetname} ${LIFE_LIBRARIES} )
 endmacro(life_add_example)
 
-add_subdirectory( generic )
+foreach( DIR generic heat solid fluid pbeq bloodflow )
+  add_subdirectory( ${DIR} )
+endforeach()

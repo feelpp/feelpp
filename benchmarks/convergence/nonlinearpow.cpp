@@ -27,6 +27,7 @@
    \date 2008-04-14
  */
 #include <life/options.hpp>
+#include <life/lifecore/life.hpp>
 #include <life/lifecore/applicationxml.hpp>
 #include <life/lifecore/xmlparser.hpp>
 
