@@ -32,6 +32,12 @@
 /* Define if the OPENMP is supported by the compiler. */
 #cmakedefine HAVE_OPENMP
 
+/* Define to 1 if you have petsc. */
+#cmakedefine HAVE_PETSC @HAVE_PETSC@
+
+/* Define to 1 if you have the <petsc.h> header file. */
+#cmakedefine HAVE_PETSC_H @HAVE_PETSC_H@
+
 /* Define to 1 if you have slepc. */
 #cmakedefine HAVE_SLEPC @HAVE_SLEPC@
 
