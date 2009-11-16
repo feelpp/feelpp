@@ -1,7 +1,7 @@
 if( PETSC_FOUND )
   set( LIFE_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp)
 
-  if ( SLEPC_FOUND )
+  if ( HAVE_SLEPC )
     set( LIFE_SLEPC_SRCS solvereigenslepc.cpp )
   endif()
 endif()
