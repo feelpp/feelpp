@@ -28,3 +28,13 @@ project( life-research )
 if ( EXISTS ${LIFE_SOURCE_DIR}/research/apee )
   add_subdirectory( apee )
 endif()
+
+# fluid-structure interaction project
+if ( EXISTS ${LIFE_SOURCE_DIR}/research/fsi )
+  add_subdirectory( fsi )
+endif()
+
+# integro-differential equations project
+if ( EXISTS ${LIFE_SOURCE_DIR}/research/idf )
+  add_subdirectory( idf )
+endif()
