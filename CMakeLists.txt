@@ -197,32 +197,47 @@ SET(LIFE_LIBRARIES
   )
 
 ADD_SUBDIRECTORY ( doc )
-ADD_SUBDIRECTORY ( benchmarks )
-ADD_SUBDIRECTORY ( examples )
-ADD_SUBDIRECTORY ( applications )
-if ( EXISTS ${LIFE_SOURCE_DIR}/research )
+
+OPTION(ENABLE_BENCHMARKS "enable benchmakrs" OFF)
+if ( ${ENABLE_BENCHMARKS} )
+ ADD_SUBDIRECTORY ( benchmarks )
+endif()
+
+OPTION(ENABLE_EXAMPLES "enable examples" OFF)
+if ( ${ENABLE_EXAMPLES} )
+ ADD_SUBDIRECTORY ( examples )
+endif()
+
+OPTION(ENABLE_APPLICATIONS "enable applications" OFF)
+if ( ${ENABLE_APPLICATIONS} )
+ ADD_SUBDIRECTORY ( applications )
+ if ( EXISTS ${LIFE_SOURCE_DIR}/research )
   ADD_SUBDIRECTORY ( research )
+ endif()
 endif()
 
 
 #
 # Enable testing
 #
-macro(life_add_test testname)
+OPTION(ENABLE_TESTS "enable tests" OFF)
+if ( ${ENABLE_TESTS} )
+  macro(life_add_test testname)
 
-  set(targetname test_${testname})
-  set(filename test_${testname}.cpp)
-  add_executable(${targetname} ${filename})
-  target_link_libraries(${targetname} ${LIFE_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
-  add_test( ${testname} "${targetname}" )
-endmacro(life_add_test)
+    set(targetname test_${testname})
+    set(filename test_${testname}.cpp)
+    add_executable(${targetname} ${filename})
+    target_link_libraries(${targetname} ${LIFE_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
+    add_test( ${testname} "${targetname}" )
+  endmacro(life_add_test)
 
 
 
-ENABLE_TESTING()
-foreach( testdir core alg mesh poly filters material discr )
-  add_subdirectory( testsuite/life${testdir} )
-endforeach()
+  ENABLE_TESTING()
+  foreach( testdir core alg mesh poly filters material discr )
+    add_subdirectory( testsuite/life${testdir} )
+  endforeach()
+endif()
 
 #
 # Packaging

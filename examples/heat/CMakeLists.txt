@@ -22,7 +22,8 @@
 #
 #
 set( EXAMPLES thermalfin resistance )
-
+add_library(fin fin.cpp)
 foreach( EXAMPLE ${EXAMPLES} )
   life_add_example( ${EXAMPLE} )
 endforeach()
+target_link_libraries( life_thermalfin fin)
