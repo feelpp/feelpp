@@ -174,6 +174,11 @@ const size_type jp = vm::JACOBIAN|vm::POINT;
             {                                                           \
                 _M_gmc = fusion::at_key<key_type>( geom ).get();        \
             }                                                           \
+            void update( Geo_t const& geom, uint16_type face )          \
+            {                                                           \
+                /*BOOST_STATIC_ASSERT( dim_ok );*/                      \
+                update( geom );                                         \
+            }                                                           \
             template<typename AnyIndexI,typename AnyIndexJ>             \
                 value_type                                              \
                 evalijq( AnyIndexI const& /*i*/, AnyIndexJ const& /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const \

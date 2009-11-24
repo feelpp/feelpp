@@ -866,7 +866,8 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
                     uint16_type __face_id_in_elt_0 = it->pos_first();
                     __c0->update( it->element(0), __face_id_in_elt_0 );
                     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
-                    expr->update( mapgmc );
+                    expr->update( mapgmc, __face_id_in_elt_0 );
+                    //expr->update( mapgmc );
                     const gmc_type& gmc = *__c0;
 
                     __integrators[__face_id_in_elt_0].update( gmc );

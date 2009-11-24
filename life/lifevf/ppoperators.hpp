@@ -450,6 +450,13 @@
                 if ( is_zero::update_and_eval_right )                   \
                     _M_right.update( geom );                            \
             }                                                           \
+            void update( Geo_t const& geom, uint16_type face )          \
+            {                                                           \
+                if ( is_zero::update_and_eval_left )                    \
+                    _M_left.update( geom, face );                            \
+                if ( is_zero::update_and_eval_right )                   \
+                    _M_right.update( geom, face );                           \
+            }                                                           \
             template<typename IndexI, typename IndexJ>                  \
                 value_type                                              \
                 evalij( IndexI const& i, IndexJ const& j ) const        \

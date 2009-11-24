@@ -247,6 +247,10 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             {                                                           \
                 _M_expr.update( geom );                                 \
             }                                                           \
+            void update( Geo_t const& geom, uint16_type face )          \
+            {                                                           \
+                _M_expr.update( geom, face );                           \
+            }                                                           \
             template<typename IndexI, typename IndexJ>                  \
                 value_type                                              \
                 evalijq( IndexI const& /*i*/, IndexJ const& /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const \

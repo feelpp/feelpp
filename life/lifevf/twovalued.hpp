@@ -202,6 +202,22 @@ public:
 
 
         }
+        void update( Geo_t const& geom, uint16_type face )
+        {
+            typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
+            LIFE_ASSERT( map_size::value == 2 )( map_size::value ).error( "invalid map size (should be 2)" );
+
+            _M_gmc_left = fusion::at_key<detail::gmc<0> >( geom );
+            _M_gmc_right =  fusion::at_key<gmc1 >( geom );
+            LIFE_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong");
+
+            _M_left_map = fusion::make_map<detail::gmc<0> >( _M_gmc_left );
+            _M_right_map = fusion::make_map<detail::gmc<0> >( _M_gmc_right );
+            _M_tensor_expr_left.update(  _M_left_map );
+            _M_tensor_expr_right.update( _M_right_map  );
+
+
+        }
 
         template<typename IndexI, typename IndexJ>
         value_type

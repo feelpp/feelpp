@@ -172,6 +172,10 @@ public:
         {
             _M_tensor_expr.update( geom );
         }
+        void update( Geo_t const& geom, uint16_type face )
+            {
+                _M_tensor_expr.update( geom, face );
+            }
 
         template<typename IndexI, typename IndexJ>
         value_type
@@ -392,6 +396,10 @@ public:
         {
             _M_tensor_expr.update( geom );
         }
+        void update( Geo_t const& geom, uint16_type face )
+            {
+                _M_tensor_expr.update( geom, face );
+            }
 
         template<typename IndexI, typename IndexJ>
         value_type
@@ -631,6 +639,10 @@ public:
         {
             _M_tensor_expr.update( geom );
         }
+        void update( Geo_t const& geom, uint16_type face )
+            {
+                _M_tensor_expr.update( geom, face );
+            }
 
         template<typename IndexI, typename IndexJ>
         value_type
@@ -990,6 +1002,9 @@ public:
         void update( Geo_t const& )
         {
         }
+        void update( Geo_t const&, uint16_type )
+        {
+        }
         template<typename IndexI, typename IndexJ>
         value_type
         evalij( IndexI const& /*i*/, IndexJ const& /*j*/ ) const
@@ -1157,6 +1172,9 @@ public:
         void update( Geo_t const& /*geom*/ )
         {
         }
+        void update( Geo_t const& /*geom*/, uint16_type /*face*/ )
+        {
+        }
         template<typename IndexI, typename IndexJ>
         value_type const&
         evalijq( IndexI const& /*i*/, IndexJ const& /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
@@ -1293,6 +1311,10 @@ public:
         {
             _M_t_expr.update( geom );
         }
+        void update( Geo_t const& geom, uint16_type face )
+        {
+            _M_t_expr.update( geom, face );
+        }
         template<typename IndexI, typename IndexJ>
         value_type
         evalij( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2 ) const
@@ -1416,6 +1438,10 @@ public:
         void update( Geo_t const& geom )
         {
             _M_t_expr.update( geom );
+        }
+        void update( Geo_t const& geom, uint16_type face )
+        {
+            _M_t_expr.update( geom, face );
         }
         template<typename IndexI, typename IndexJ>
         value_type
@@ -1569,6 +1595,13 @@ public:
             _M_gmc = fusion::at_key<key_type>( geom ).get();
             _M_left.update( geom );
             _M_right.update( geom );
+
+        }
+        void update( Geo_t const& geom, uint16_type face )
+        {
+            _M_gmc = fusion::at_key<key_type>( geom ).get();
+            _M_left.update( geom, face );
+            _M_right.update( geom, face );
 
         }
         template<typename IndexI, typename IndexJ>
@@ -1744,6 +1777,13 @@ public:
             _M_gmc = fusion::at_key<key_type>( geom ).get();
             _M_left.update( geom );
             _M_right.update( geom );
+
+        }
+        void update( Geo_t const& geom, uint16_type face )
+        {
+            _M_gmc = fusion::at_key<key_type>( geom ).get();
+            _M_left.update( geom, face );
+            _M_right.update( geom, face );
 
         }
         template<typename IndexI, typename IndexJ>
@@ -1928,6 +1968,21 @@ public:
             _M_gmc = fusion::at_key<key_type>( geom ).get();
             _M_left.update( geom );
             _M_right.update( geom );
+
+            for( int c1 = 0; c1 < shape::M; ++c1 )
+                for( int c2 = 0; c2 < shape::N; ++c2 )
+                    for ( int q = 0; q < _M_gmc->nPoints(); ++q )
+                        {
+                            value_type left = _M_left.evalq( c1, c2, q );
+                            value_type right = _M_right.evalq( c1, c2, q );
+                            _M_loc[c1][c2][q] = std::pow( left, right );
+                        }
+        }
+        void update( Geo_t const& geom, uint16_type face )
+        {
+            _M_gmc = fusion::at_key<key_type>( geom ).get();
+            _M_left.update( geom, face );
+            _M_right.update( geom, face );
 
             for( int c1 = 0; c1 < shape::M; ++c1 )
                 for( int c2 = 0; c2 < shape::N; ++c2 )
