@@ -198,18 +198,22 @@ SET(LIFE_LIBRARIES
 
 ADD_SUBDIRECTORY ( doc )
 
-OPTION(ENABLE_BENCHMARKS "enable benchmakrs" OFF)
-if ( ${ENABLE_BENCHMARKS} )
+OPTION(ENABLE_BENCHMARKS "enable benchmarks" OFF)
+OPTION(ENABLE_EXAMPLES "enable examples" OFF)
+OPTION(ENABLE_APPLICATIONS "enable applications" OFF)
+OPTION(ENABLE_TESTS "enable tests" OFF)
+
+if ( ENABLE_BENCHMARKS )
  ADD_SUBDIRECTORY ( benchmarks )
 endif()
 
-OPTION(ENABLE_EXAMPLES "enable examples" OFF)
-if ( ${ENABLE_EXAMPLES} )
+
+if ( ENABLE_EXAMPLES )
  ADD_SUBDIRECTORY ( examples )
 endif()
 
-OPTION(ENABLE_APPLICATIONS "enable applications" OFF)
-if ( ${ENABLE_APPLICATIONS} )
+
+if ( ENABLE_APPLICATIONS )
  ADD_SUBDIRECTORY ( applications )
  if ( EXISTS ${LIFE_SOURCE_DIR}/research )
   ADD_SUBDIRECTORY ( research )
@@ -220,8 +224,9 @@ endif()
 #
 # Enable testing
 #
-OPTION(ENABLE_TESTS "enable tests" OFF)
-if ( ${ENABLE_TESTS} )
+
+
+if ( ENABLE_TESTS )
   macro(life_add_test testname)
 
     set(targetname test_${testname})
