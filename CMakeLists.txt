@@ -202,10 +202,18 @@ OPTION(ENABLE_BENCHMARKS "enable benchmarks" OFF)
 OPTION(ENABLE_EXAMPLES "enable examples" OFF)
 OPTION(ENABLE_APPLICATIONS "enable applications" OFF)
 OPTION(ENABLE_TESTS "enable tests" OFF)
+OPTION(ENABLE_ALL "enable all modules" OFF)
+
+if ( ENABLE_ALL )
+  set( ENABLE_BENCHMARKS ON )
+  set( ENABLE_EXAMPLES ON )
+  set( ENABLE_APPLICATIONS ON )
+  set( ENABLE_TESTS ON )
+endif( ENABLE_ALL )
 
 if ( ENABLE_BENCHMARKS )
  ADD_SUBDIRECTORY ( benchmarks )
-endif()
+endif( ENABLE_BENCHMARKS )
 
 
 if ( ENABLE_EXAMPLES )
@@ -218,7 +226,7 @@ if ( ENABLE_APPLICATIONS )
  if ( EXISTS ${LIFE_SOURCE_DIR}/research )
   ADD_SUBDIRECTORY ( research )
  endif()
-endif()
+endif( ENABLE_APPLICATIONS )
 
 
 #
@@ -242,7 +250,7 @@ if ( ENABLE_TESTS )
   foreach( testdir core alg mesh poly filters material discr )
     add_subdirectory( testsuite/life${testdir} )
   endforeach()
-endif()
+endif( ENABLE_TESTS )
 
 #
 # Packaging
