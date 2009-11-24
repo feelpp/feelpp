@@ -170,6 +170,10 @@ public:
         {
             _M_tensor_expr.update( geom );
         }
+        void update( Geo_t const& geom, uint16_type face )
+        {
+            _M_tensor_expr.update( geom, face );
+        }
 
         template<typename IndexI, typename IndexJ>
         value_type

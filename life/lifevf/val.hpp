@@ -206,6 +206,16 @@ public:
                             _M_loc[c1][c2][q] = _M_expr.evalq( c1, c2, q );
                         }
         }
+        void update( Geo_t const& geom, uint16_type face )
+        {
+            _M_expr.update( geom, face );
+            for( int c1 = 0; c1 < shape::M; ++c1 )
+                for( int c2 = 0; c2 < shape::N; ++c2 )
+                    for ( int q = 0; q < _M_gmc->nPoints(); ++q )
+                        {
+                            _M_loc[c1][c2][q] = _M_expr.evalq( c1, c2, q );
+                        }
+        }
         template<typename IndexI, typename IndexJ>
         value_type
         evalijq( IndexI const& /*i*/, IndexJ const& /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
