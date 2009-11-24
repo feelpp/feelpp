@@ -252,11 +252,46 @@ struct update_expression_g
     {}
 
     template <typename ExprT>
-    void operator()(ExprT& expr) const
+    void operator()( ExprT& expr ) const
     {
         expr.update( M_geom );
     }
     const Geo_t& M_geom;
+};
+
+
+template<typename Geo_t>
+struct update_expression_face_g
+{
+    update_expression_face_g( Geo_t const& geom, uint16_type face )
+        :
+        M_geom( geom ),
+        M_face( face )
+    {}
+
+    template <typename ExprT>
+    void operator()( ExprT& expr ) const
+    {
+        expr.update( M_geom, M_face );
+    }
+    const Geo_t& M_geom;
+    const uint16_type M_face;
+};
+
+template<typename IM_t>
+struct init_expression
+{
+    init_expression( IM_t const& im )
+        :
+        M_im( im )
+    {}
+
+    template <typename ExprT>
+    void operator()( ExprT& expr ) const
+    {
+        expr.init( M_im );
+    }
+    const IM_t& M_im;
 };
 
 template<typename IndexI, typename IndexJ, typename T>
@@ -552,7 +587,7 @@ public:
         template<typename IM>
         void init( IM const& im )
         {
-            //_M_expr.init( im );
+            fusion::for_each( M_expr, detail::init_expression<Geo_t>( im ) );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
@@ -566,6 +601,10 @@ public:
         void update( Geo_t const& geom )
         {
             fusion::for_each( M_expr, detail::update_expression_g<Geo_t>( geom ) );
+        }
+        void update( Geo_t const& geom, uint16_type face )
+        {
+            fusion::for_each( M_expr, detail::update_expression_face_g<Geo_t>( geom, face ) );
         }
         template<typename IndexI, typename IndexJ>
         value_type
@@ -801,7 +840,7 @@ public:
         template<typename IM>
         void init( IM const& im )
         {
-            //_M_expr.init( im );
+            fusion::for_each( M_expr, detail::init_expression<Geo_t>( im ) );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
@@ -815,6 +854,10 @@ public:
         void update( Geo_t const& geom )
         {
             fusion::for_each( M_expr, detail::update_expression_g<Geo_t>( geom ) );
+        }
+        void update( Geo_t const& geom, uint16_type face )
+        {
+            fusion::for_each( M_expr, detail::update_expression_face_g<Geo_t>( geom, face ) );
         }
         template<typename IndexI, typename IndexJ>
         value_type

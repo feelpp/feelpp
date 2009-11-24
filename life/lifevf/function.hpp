@@ -169,6 +169,11 @@ public:
             M_gmc =  fusion::at_key<key_type>( geom ).get();
         }
 
+        void update( Geo_t const& geom, uint16_type /*face*/ )
+        {
+            M_gmc =  fusion::at_key<key_type>( geom ).get();
+        }
+
         template<typename IndexI, typename IndexJ>
         value_type
         evalij( IndexI const& i, IndexJ const& j ) const
