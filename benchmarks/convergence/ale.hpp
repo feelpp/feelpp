@@ -34,7 +34,6 @@
 #define __TestALE 1
 
 #include <life/options.hpp>
-#include <life/lifecore/life.hpp>
 
 #include <life/lifepoly/fekete.hpp>
 #include <life/lifealg/backend.hpp>
@@ -77,12 +76,12 @@ makeAbout()
 {
     Life::AboutData about( "TestALE" ,
                            "TestALE" ,
-                           "0.1",
+                           "0.2",
                            "Test High order meshes",
                            Life::AboutData::License_GPL,
                            "Copyright (c) 2007 Universite Joseph Fourier");
 
-    about.addAuthor("Goncalo Pena", "developer", "goncalo.pena@epfl.ch", "");
+    about.addAuthor("Goncalo Pena", "developer", "gpena@mat.uc.pt", "");
     return about;
 }
 
@@ -112,6 +111,7 @@ class TestALE
     typedef bases<Lagrange<1, Vectorial, PointSetFekete> > p1_ale_basis_type;
     typedef FunctionSpace< mesh_type, p1_ale_basis_type, double> p1_functionspace_type;
     typedef boost::shared_ptr<p1_functionspace_type> p1_functionspace_ptrtype;
+    typedef typename p1_functionspace_type::element_type p1_element_type;
 
     typedef bases<Lagrange<N, Vectorial, PointSetFekete> > pN_ale_basis_type;
     typedef FunctionSpace< new_mesh_type, pN_ale_basis_type, double> pN_visualize_functionspace_type;
@@ -184,6 +184,7 @@ public:
 
                 typename OperatorLagrangeP1<functionspace_type>::dual_image_space_ptrtype Yh( I.dualImageSpace() );
                 exporter->step(tn)->setMesh( Yh->mesh() );
+
 #else
                 exporter->step(tn)->setMesh( U.mesh() );
 #endif
@@ -212,7 +213,6 @@ template<int N>
 void
 TestALE<N>::run()
 {
-
     this->addParameterValue( N )
         .addParameterValue( this->vm()["h"].template as<double>() );
 
@@ -221,7 +221,8 @@ TestALE<N>::run()
     boost::timer time;
     using namespace Life::vf;
 
-        /*
+
+    /*
       Define mesh for the curved boundaries
     */
     boost::shared_ptr<struct_mesh_type> struct_mesh( new struct_mesh_type );
@@ -238,27 +239,30 @@ TestALE<N>::run()
     */
     struct_functionspace_ptrtype Xh = struct_functionspace_type::New( struct_mesh );
     struct_element_type bc_top( Xh, "bc_top" );
-    AUTO( f,  (0.02096834639998*Px()*Px()*Px()    -0.09351398506873*Px()*Px()    -0.09961900352798*Px()+    1.3000 )  ) ;
-    bc_top = project( Xh, elements(struct_mesh), f );
+    AUTO( f,  val(1.0 + 0.3*cos(Px()))  );
+    bc_top = project( Xh, elements(Xh->mesh()), f );
 
     struct_element_type bc_bottom( Xh, "bc_bottom" );
-    AUTO( f2, (-0.0210*Px()*Px()*Px() + 0.0935*Px()*Px() + 0.0996*Px() -1.4000)  );
-    bc_bottom = project( Xh, elements(struct_mesh), f2 );
+
+    AUTO( f2, val(-1.1 - 0.3*cos(Px()))  );
+
+    bc_bottom = project( Xh, elements(Xh->mesh()), f2 );
 
     struct_element_type bc_reference_top( Xh, "bc_reference_top" );
-    bc_reference_top = project( Xh, elements(*struct_mesh), constant(1.0) );
+    bc_reference_top = project( Xh, elements(Xh->mesh()), constant(1.0) );
 
     struct_element_type bc_reference_bottom( Xh, "bc_reference_bottom" );
-    bc_reference_bottom = project( Xh, elements(*struct_mesh), constant(-1.0) );
+    bc_reference_bottom = project( Xh, elements(Xh->mesh()), constant(-1.0) );
 
     struct_element_type bc_disp_top( Xh, "bc_top" );
     bc_disp_top = bc_top;
     bc_disp_top -= bc_reference_top;
+    bc_disp_top.updateGlobalValues();
 
     struct_element_type bc_disp_bottom( Xh, "bc_bottom" );
     bc_disp_bottom = bc_bottom;
     bc_disp_bottom -= bc_reference_bottom;
-
+    bc_disp_bottom.updateGlobalValues();
 
     /*
       Define mesh for the domain
@@ -273,13 +277,13 @@ TestALE<N>::run()
     ImporterGmsh<mesh_type> import( fname2 );
     mesh->accept( import );
 
-
     p1_functionspace_ptrtype Ah = p1_functionspace_type::New( mesh );
+
 
     //define set of flags
     std::map< std::string, std::vector<flag_type> > flagSet;
-    flagSet["fixed_bc"].push_back(1);
     flagSet["fixed_bc"].push_back(3);
+    flagSet["fixed_bc"].push_back(1);
     flagSet["moving_bc"].push_back(2);
     flagSet["moving_bc"].push_back(4);
 
@@ -299,9 +303,7 @@ TestALE<N>::run()
     */
     ALE< Simplex<2,N> > aleFactory( std::make_pair(0,5), mesh, this->vm() );
 
-
     aleFactory.generateHighOrderMap( flagSet["moving_bc"], referencePolyBoundarySet, polyBoundarySet );
-
 
     MeshHighOrder< Simplex<2, N> > auxiliar_mesh ( mesh );
     auxiliar_mesh.generateMesh(flagSet["moving_bc"], referencePolyBoundarySet);
@@ -313,31 +315,42 @@ TestALE<N>::run()
     aux_element = project( visH, elements(visH->mesh()), sin(Px())*cos(Py())*oneX() + sin(Py())*cos(Px())*oneY());
     this->exportResults( 0.0, aux_element);
 
-
     /*
       Test ale map in boundary
     */
-    double error_bottom = math::sqrt(integrate( markedfaces( mesh, 2 ), _Q<20>(),
-                                                trans(idv(aleFactory.getMap()) - (f2*oneY() + Px()*oneX()))*(idv(aleFactory.getMap()) - (f2*oneY() + Px()*oneX()))
-                                                ).evaluate()( 0, 0 ));
+    double error_bottom_first = math::sqrt(integrate( markedfaces( Ah->mesh(), 2 ), _Q<10>(),
+                                                      (trans(idv(aleFactory.getMap()))*oneX() - Px())*(trans(idv(aleFactory.getMap()))*oneX() - Px())
+                                                      ).evaluate()( 0, 0 ));
 
-    double error_top = math::sqrt(integrate( markedfaces( mesh, 4 ), _Q<20>(),
-                                             trans(idv(aleFactory.getMap()) - (f*oneY() + Px()*oneX()))*(idv(aleFactory.getMap()) - (f*oneY() + Px()*oneX()))
+    double error_bottom_second = math::sqrt(integrate( markedfaces( Ah->mesh(), 2 ), _Q<10>(),
+                                                      (trans(idv(aleFactory.getMap()))*oneY() - f2)*(trans(idv(aleFactory.getMap()))*oneY() - f2)
+                                                      ).evaluate()( 0, 0 ));
+
+    std::cout << "Error in first component of ALE map: " << error_bottom_first << "\n";
+    std::cout << "Error in second component of ALE map: " << error_bottom_second << "\n";
+
+
+
+    double error_bottom = math::sqrt(integrate( markedfaces( Ah->mesh(), 2 ), _Q<10>(),
+                                         (idv(aleFactory.getMap()) - vec(Px(),f2) )*(idv(aleFactory.getMap()) - vec(Px(),f2) )
+                                         ).evaluate()( 0, 0 ));
+
+    double error_top = math::sqrt(integrate( markedfaces( Ah->mesh(), 4 ), _Q<10>(),
+                                             (idv(aleFactory.getMap()) - vec(Px(),f))*(idv(aleFactory.getMap()) - vec(Px(),f))
                                              ).evaluate()( 0, 0 ));
 
-    std::cout << "Error in the boundary: " << error_top + error_bottom << "\n";
-
+    std::cout << "Error in the boundary: " << error_top+error_bottom << "\n";
+    Log() << "Error in the boundary: " << error_top + error_bottom << "\n";
 
 
     MeshMover<new_mesh_type> mesh_mover;
     mesh_mover.apply(visH->mesh(), aleFactory.getDisplacement() );
-    visH->updateRegionTree();
 
     aux_element = project( visH, elements(visH->mesh()), sin(Px())*cos(Py())*oneX() + sin(Py())*cos(Px())*oneY());
     aux_element.updateGlobalValues();
     this->exportResults( 1.0, aux_element);
 
-    this->addOutputValue( error_top+error_bottom );
+    this->addOutputValue( error_bottom+error_top );
     this->postProcessing();
 
 } // end run routine
