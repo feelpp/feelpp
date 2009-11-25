@@ -332,13 +332,15 @@ TestALE<N>::run()
 
 
     double error_bottom = math::sqrt(integrate( markedfaces( Ah->mesh(), 2 ), _Q<10>(),
-                                         (idv(aleFactory.getMap()) - vec(Px(),f2) )*(idv(aleFactory.getMap()) - vec(Px(),f2) )
+                                                trans(idv(aleFactory.getMap()) - vec(Px(),f2) )*(idv(aleFactory.getMap()) - vec(Px(),f2) )
                                          ).evaluate()( 0, 0 ));
 
     double error_top = math::sqrt(integrate( markedfaces( Ah->mesh(), 4 ), _Q<10>(),
-                                             (idv(aleFactory.getMap()) - vec(Px(),f))*(idv(aleFactory.getMap()) - vec(Px(),f))
-                                             ).evaluate()( 0, 0 ));
+                                             trans(idv(aleFactory.getMap()) - vec(Px(),f))*(idv(aleFactory.getMap()) - vec(Px(),f))
+                                      ).evaluate()( 0, 0 ));
 
+    std::cout << "Error top in the boundary: " << error_top << "\n";
+    std::cout << "Error bottom in the boundary: " << error_bottom << "\n";
     std::cout << "Error in the boundary: " << error_top+error_bottom << "\n";
     Log() << "Error in the boundary: " << error_top + error_bottom << "\n";
 
