@@ -801,7 +801,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
 {
     MatrixPetsc<T>* Atrans = dynamic_cast<MatrixPetsc<T>*> (&Mt);
 
-  
+
 #if (PETSC_VERSION_MAJOR >= 3)
     int ierr = MatTranspose( _M_mat, MAT_INITIAL_MATRIX,&Atrans->_M_mat );
 #else
@@ -888,7 +888,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 #if (PETSC_VERSION_MAJOR >= 3)
     ierr = MatCompositeSetType(B->_M_mat,MAT_COMPOSITE_ADDITIVE);
 #endif
-    
+
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     ierr = MatCompositeMerge(B->_M_mat);
@@ -905,7 +905,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 #else
     ierr = MatTranspose( B->_M_mat, &Btrans );
 #endif
-    
+
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     ierr = MatEqual( B->_M_mat, Btrans, &isSymmetric);
@@ -927,6 +927,51 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
     CHKERRABORT(Application::COMM_WORLD,ierr);
 }
 
+
+template<typename T>
+typename MatrixPetsc<T>::value_type
+MatrixPetsc<T>::energy( Vector<value_type> const& __v,
+                        Vector<value_type> const& __u,
+                        bool transpose ) const
+{
+    PetscScalar e;
+    if ( dynamic_cast<VectorPetsc<T> const*>( &__v ) != (VectorPetsc<T> const*)0 )
+    {
+        VectorPetsc<T> const& v   = dynamic_cast<VectorPetsc<T> const&>( __v );
+        VectorPetsc<T> const& u   = dynamic_cast<VectorPetsc<T> const&>( __u );
+        VectorPetsc<value_type> z( __u.size(), __u.localSize() );
+        if ( !transpose )
+            MatMult( _M_mat, u.vec(), z.vec() );
+        else
+            MatMultTranspose( _M_mat, u.vec(), z.vec() );
+        VecDot( v.vec(), z.vec(), &e );
+    }
+    else
+    {
+        VectorPetsc<value_type> u( __u.size(), __u.localSize() );
+        {
+            size_type s = u.localSize();
+            size_type start = u.firstLocalIndex();
+            for( size_type i = 0; i < s; ++i )
+                u.set( start + i, __u( start + i ) );
+        }
+        VectorPetsc<value_type> v( __v.size(), __v.localSize() );
+        {
+            size_type s = v.localSize();
+            size_type start = v.firstLocalIndex();
+            for( size_type i = 0; i < s; ++i )
+                v.set( start + i, __v( start + i ) );
+        }
+        VectorPetsc<value_type> z( __u.size(), __u.localSize() );
+        if ( !transpose )
+            MatMult( _M_mat, u.vec(), z.vec() );
+        else
+            MatMultTranspose( _M_mat, u.vec(), z.vec() );
+
+        VecDot( v.vec(), z.vec(), &e );
+    }
+    return e;
+}
 template class MatrixPetsc<double>;
 } // Life
 
