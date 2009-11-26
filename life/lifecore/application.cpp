@@ -31,10 +31,12 @@
 #include <cstdlib>
 
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <sstream>
 
 #include <boost/foreach.hpp>
+#include <boost/format.hpp>
 
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -317,6 +319,13 @@ Application::doOptions( int argc, char** argv )
 
 
         this->parseAndStoreOptions( po::command_line_parser(argc, argv), true );
+
+        std::string config_name = (boost::format( "%1%.cfg" ) % this->about().appName()).str();
+        if ( !fs::exists( config_name ) )
+        {
+            std::ifstream ifs( config_name.c_str() );
+            store(parse_config_file(ifs, _M_desc), _M_vm);
+        }
 
         //po::store(po::parse_command_line(argc, argv, _M_desc), _M_vm);
         po::notify(_M_vm);
