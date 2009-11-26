@@ -274,6 +274,13 @@ SET(CPACK_SOURCE_STRIP_FILES "")
 # in absolute path + filename to find files or directories to be excluded
 # from source tarball.
 set(CPACK_SOURCE_IGNORE_FILES
-  "\\\\.gitignore;/admin/;/auto/;/auto.*/;${PROJECT_SOURCE_DIR}/applications/opus/;${PROJECT_SOURCE_DIR}/research/;"  )
+  "/\\\\.git/;\\\\.gitignore;"
+  "/admin/;/tools/;/Templates/"
+  "/auto/;/auto.*/"
+  "${PROJECT_SOURCE_DIR}/examples/fluid/"
+  "${PROJECT_SOURCE_DIR}/examples/levelset/"
+  "${PROJECT_SOURCE_DIR}/examples/pbeq/"
+  "${PROJECT_SOURCE_DIR}/applications/opus/"
+  "${PROJECT_SOURCE_DIR}/research/"  )
 
 include( CPack )
