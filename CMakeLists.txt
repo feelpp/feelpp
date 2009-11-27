@@ -257,6 +257,22 @@ endif( ENABLE_TESTS )
 #
 INCLUDE(InstallRequiredSystemLibraries)
 
+
+foreach(includedir lifecore lifealg lifemesh lifefilters lifevf lifematerial )
+  FILE(GLOB files "life/${includedir}/*.hpp")
+  INSTALL(FILES ${files} DESTINATION include/life/${includedir})
+endforeach()
+FILE(GLOB files "life/*.hpp")
+INSTALL(FILES ${files} DESTINATION include/life)
+FILE(GLOB files ${CMAKE_CURRENT_BINARY_DIR}/lifeconfig.h)
+INSTALL(FILES ${files} DESTINATION include/)
+foreach(libdir lifecore lifealg lifemesh lifefilters lifevf lifematerial )
+  FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/life/${libdir}/*.a")
+  INSTALL(FILES ${files} DESTINATION lib/)
+endforeach()
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/life/*.a")
+INSTALL(FILES ${files} DESTINATION lib/)
+
 SET(CPACK_GENERATOR "TGZ")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "life")
 SET(CPACK_PACKAGE_VENDOR "Christophe Prud'homme")
@@ -284,3 +300,5 @@ set(CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/research/"  )
 
 include( CPack )
+
+
