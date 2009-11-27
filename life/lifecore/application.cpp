@@ -321,10 +321,24 @@ Application::doOptions( int argc, char** argv )
         this->parseAndStoreOptions( po::command_line_parser(argc, argv), true );
 
         std::string config_name = (boost::format( "%1%.cfg" ) % this->about().appName()).str();
-        if ( !fs::exists( config_name ) )
+        Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
+        if ( fs::exists( config_name ) )
         {
+
             std::ifstream ifs( config_name.c_str() );
             store(parse_config_file(ifs, _M_desc), _M_vm);
+        }
+        else
+        {
+            // try with a prefix life_
+            std::string config_name = (boost::format( "life_%1%.cfg" ) % this->about().appName()).str();
+            Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
+
+            if ( fs::exists( config_name ) )
+            {
+                std::ifstream ifs( config_name.c_str() );
+                store(parse_config_file(ifs, _M_desc), _M_vm);
+            }
         }
 
         //po::store(po::parse_command_line(argc, argv, _M_desc), _M_vm);
