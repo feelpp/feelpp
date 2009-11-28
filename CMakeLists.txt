@@ -232,6 +232,8 @@ endif( ENABLE_APPLICATIONS )
 #
 # Enable testing
 #
+INCLUDE(CTest)
+IF(BUILD_TESTING)
 
 
 if ( ENABLE_TESTS )
@@ -251,7 +253,7 @@ if ( ENABLE_TESTS )
     add_subdirectory( testsuite/life${testdir} )
   endforeach()
 endif( ENABLE_TESTS )
-
+ENDIF(BUILD_TESTING)
 #
 # Packaging
 #
