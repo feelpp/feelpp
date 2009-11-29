@@ -1,4 +1,4 @@
-Include(FindDoxygen)
-FIND_PACKAGE(Doxygen)
+include(UseDoxygen)
+
 
 
