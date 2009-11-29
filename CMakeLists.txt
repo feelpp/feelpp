@@ -249,9 +249,8 @@ if ( ENABLE_TESTS )
 
 
   ENABLE_TESTING()
-  foreach( testdir core alg mesh poly filters material discr )
-    add_subdirectory( testsuite/life${testdir} )
-  endforeach()
+  add_subdirectory( testsuite )
+  
 endif( ENABLE_TESTS )
 ENDIF(BUILD_TESTING)
 #
