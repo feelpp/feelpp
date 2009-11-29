@@ -233,10 +233,8 @@ endif( ENABLE_APPLICATIONS )
 # Enable testing
 #
 INCLUDE(CTest)
-IF(BUILD_TESTING)
+IF(BUILD_TESTING OR ENABLE_TESTS )
 
-
-if ( ENABLE_TESTS )
   macro(life_add_test testname)
 
     set(targetname test_${testname})
@@ -251,8 +249,7 @@ if ( ENABLE_TESTS )
   ENABLE_TESTING()
   add_subdirectory( testsuite )
   
-endif( ENABLE_TESTS )
-ENDIF(BUILD_TESTING)
+endif()
 #
 # Packaging
 #
