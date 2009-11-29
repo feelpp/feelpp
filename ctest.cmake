@@ -6,8 +6,8 @@ IF(${CTEST_SCRIPT_ARG} MATCHES Continuous)
   SET(MODEL Continuous)
 ENDIF()
 
-SET (CTEST_SOURCE_DIRECTORY "/scratch/prudhomm/life/life")
-set(CTEST_BINARY_DIRECTORY  "${CTEST_SOURCE_DIRECTORY}/build-${CTEST_BUILD_NAME}")
+SET (CTEST_SOURCE_DIRECTORY "/home/prudhomm/sources/life")
+set(CTEST_BINARY_DIRECTORY  "${CTEST_SOURCE_DIRECTORY}/sources/build-${CTEST_BUILD_NAME}")
 set (CTEST_COMMAND "ctest -D ${MODEL}" )
 SET (CTEST_CMAKE_COMMAND "cmake" )
 
