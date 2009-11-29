@@ -155,6 +155,8 @@ prod,element_prod, range, subrange, inner_prod,unite,elements,markedelements,mar
 \newcommand{\nel}{{\ensuremath{N_{\text{el}}}}}
 \newcommand{\polyP}[1]{\ensuremath{\mathbb{P}_{#1}}\xspace}
 \newcommand{\life}{Life\xspace}
+\newcommand{\cmake}{\texttt{cmake}\xspace}
+\newcommand{\ccmake}{\texttt{ccmake}\xspace}
 
 \InputIfFileExists{version}{}{\def\lifeversion{\texttt{x.y.z}}}
 \title{Life Manual\\
@@ -361,7 +363,7 @@ Enter the source tree and type
 To customize or change some build setting one can use the \cmake curse interface
 \ccmake
 \begin{unixcom}
-  ccmake . # configure and generate 
+  ccmake . # configure and generate
   make
 \end{unixcom}
 

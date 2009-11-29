@@ -1,2 +1,3 @@
 ADD_SUBDIRECTORY( api )
+ADD_SUBDIRECTORY( tutorial )
 
