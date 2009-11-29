@@ -1,5 +1,5 @@
 
-foreach(TEST boostmpi traits singleton factory debug openmp context )
+foreach(TEST boostmpi traits singleton factory debug context )
 
   life_add_test( ${TEST} )
 
