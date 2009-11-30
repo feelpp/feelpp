@@ -121,7 +121,7 @@ public:
 
     /*mesh*/
     typedef Simplex<Dim, 1,Dim> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
@@ -130,7 +130,9 @@ public:
        for the velocity and
        a lagrange scalar basis of continuous functions for the pressure
     */
-    typedef fusion::vector<fem::Lagrange<Dim, uOrder, Vectorial, Continuous, value_type>,fem::Lagrange<Dim, pOrder, Scalar, Continuous, value_type> > basis_type;
+    typedef Lagrange<uOrder, Vectorial> basis_u_type;    
+    typedef Lagrange<pOrder, Scalar> basis_p_type;
+    typedef bases<basis_u_type,basis_p_type> basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;

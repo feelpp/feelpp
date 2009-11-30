@@ -34,7 +34,7 @@ std::string
 createCavity( double h )
 {
     std::ostringstream ostr;
-    ostr << "Mesh.MshFileVersion = 1;\n"
+    ostr << "Mesh.MshFileVersion = 2;\n"
          << "a=0;\n"
          << "b=1;\n"
          << "c=0;\n"
