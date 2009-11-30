@@ -17,8 +17,8 @@ foreach( LAPLACIAN laplacian1dP1 laplacian1dP5
 
   add_test( ${LAPLACIAN} life_${LAPLACIAN}
     COMMAND
-      ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
-      --program="$<TARGET_FILE:${LAPLACIAN}>"
+      python ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
+      --program="life_${LAPLACIAN}"
       --path="${LIFE_BUILD_DIR}/benchmarks/convergence/"
       --cmdargs="--backend=gmm" )
 endforeach()
