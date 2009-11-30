@@ -1,3 +1,13 @@
+find_program(UNAME NAMES uname)
+macro(getuname name flag)
+  exec_program("${UNAME}" ARGS "${flag}" OUTPUT_VARIABLE "${name}")
+endmacro(getuname)
+
+getuname(osname -s)
+getuname(osrel  -r)
+getuname(cpu    -m)
+set(CTEST_BUILD_NAME        "${osname}-${cpu}")
+
 SET(MODEL Nightly)
 IF(${CTEST_SCRIPT_ARG} MATCHES Experimental)
   SET(MODEL Experimental)
@@ -6,16 +16,21 @@ IF(${CTEST_SCRIPT_ARG} MATCHES Continuous)
   SET(MODEL Continuous)
 ENDIF()
 
-SET (CTEST_SOURCE_DIRECTORY "/home/prudhomm/sources/life")
-set(CTEST_BINARY_DIRECTORY  "${CTEST_SOURCE_DIRECTORY}/sources/build-${CTEST_BUILD_NAME}")
+SET (CTEST_INITIAL_CACHE "
+// Enable tests
+ENABLE_TESTS:BOOL=ON
+")
+
+SET (CTEST_SOURCE_DIRECTORY "$ENV{HOME}/sources/life")
+set(CTEST_BINARY_DIRECTORY  "$ENV{HOME}/sources/life-${CTEST_BUILD_NAME}")
 set (CTEST_COMMAND "ctest -D ${MODEL}" )
 SET (CTEST_CMAKE_COMMAND "cmake" )
 
 SET (CTEST_SVN_COMMAND    "svn" )
-SET (CTEST_SVN_CHECKOUT   "${CTEST_SVN_COMMAND} co -q svn://scm.ljkforge.imag.fr/svn/life/life/trunk ${CTEST_SOURCE_DIRECTORY}")
+SET (CTEST_SVN_CHECKOUT   "${CTEST_SVN_COMMAND} co svn://scm.ljkforge.imag.fr/svn/life/life/trunk ${CTEST_SOURCE_DIRECTORY}")
 set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
 
-
+# set(CTEST_BUILD_COMMAND     "make -j2")
 
 if (${MODEL} MATCHES Nightly )
 
