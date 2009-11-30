@@ -12,21 +12,21 @@ foreach( LAPLACIAN laplacian1dP1 laplacian1dP5
     laplacian3dP1h
     laplacian2dP1v laplacian2dP4v )
 
-  life_add_bench( ${LAPLACIAN} )
+    life_add_bench( ${LAPLACIAN} )
 
-
-  add_test( ${LAPLACIAN} life_${LAPLACIAN}
-    COMMAND
-      python ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
-      --program="life_${LAPLACIAN}"
+message(${targetname})
+  add_test( ${LAPLACIAN} #life_${LAPLACIAN}
+#    COMMAND
+      ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
+      --program="${targetname}"
       --path="${LIFE_BUILD_DIR}/benchmarks/convergence/"
-      --cmdargs="--backend=gmm" )
+      --cmdargs="--backend=petsc" )
 endforeach()
 
 # foreach( bench stokes nonlinearpow )
 #   life_add_bench( ${bench} )
 # endforeach()
 
-foreach( ALE ale1 ale2 ale3 ale4 ale5 )
-  life_add_bench( ${ALE} )
-endforeach()
+#foreach( ALE ale1 ale2 ale3 ale4 ale5 )
+#  life_add_bench( ${ALE} )
+#endforeach()
