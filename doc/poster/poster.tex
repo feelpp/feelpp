@@ -1,0 +1,224 @@
+ \documentclass[final,hyperref={pdfpagelabels=false}]{beamer} 
+  \mode<presentation> { 
+  % \usetheme{I6dv}
+  %\usetheme{I6pd}
+  %\usetheme{I6pd2}
+  \usetheme{LJK}
+  }
+  \usepackage[english]{babel}
+  \usepackage[latin1]{inputenc}
+  \usepackage{amsmath,amsthm, amssymb, latexsym}
+
+  \usepackage{dg,general}
+  \usepackage{tikz}
+
+  \usetikzlibrary{arrows,shapes}
+
+%%
+%% Colors
+%%
+\definecolor{grey40}{gray}{.9}
+\definecolor{lbcolor}{rgb}{0.9,0.9,0.9}
+\definecolor{cgreen}{rgb}{0.,0.6,0.0}
+
+%% listings
+\usepackage{listings}
+\lstset{language=c++}
+%\lstset{float}
+\lstset{basicstyle=\small\ttfamily}
+\lstset{mathescape}
+\lstset{keywordstyle=\color{red}\bfseries}
+\lstset{emph={val,integrate,on,grad,gradt,gradv,dot,id,dx,dy,dz,idt,dxt,dyt,dzt,div,divt,idv,dxv,dyv,dzv,dn,dnt,mass,stiffness,trans,trace,jump,jumpt,average,averaget,maxface,project,P,Px,Py,Pz,h,H,Hface,hFace,N,Nx,Ny,Nz,sqrt,sin,cos,min,max,abs,sign,pow,chi,exp,log,LinearForm,BilinearForm,MixedLinearForm,MixedBilinearForm,FESpace,MixedFESpace,
+prod,element_prod, range, subrange, inner_prod,unite},emphstyle=\color{blue}}
+%\lstset{stringstyle=\ttfamily}
+%\lstset{commentstyle=\ttfamily\color{cgreen}}
+\lstset{commentstyle=\ttfamily\color{red!25!black}}
+%\lstset{numbers=left}
+%\lstset{numbers={none}}
+\lstset{numberstyle=\tiny}
+
+\newcommand{\inputsnapshot}[1]{
+  \lstinputlisting[frame={top,bottom}, basicstyle=\small\ttfamily]{#1}
+}
+
+
+
+  %\usepackage{times}\usefonttheme{professionalfonts}  % times is obsolete
+  \usefonttheme[onlymath]{serif}
+  \boldmath
+  \usepackage[orientation=portrait,size=a0,scale=1.4,debug]{beamerposter}                       % e.g. for DIN-A0 poster
+  %\usepackage[orientation=portrait,size=a1,scale=1.4,grid,debug]{beamerposter}                  % e.g. for DIN-A1 poster, with optional grid and debug output
+  %\usepackage[size=custom,width=200,height=120,scale=2,debug]{beamerposter}                     % e.g. for custom size poster
+  %\usepackage[orientation=portrait,size=a0,scale=1.0,printer=rwth-glossy-uv.df]{beamerposter}   % e.g. for DIN-A0 poster with rwth-glossy-uv printer check
+  % ...
+  %
+  \title[Life]{Life: A Modern C++ Library for Galerkin Methods}
+  \author[V. Chabannes, G. Pena \& C. Prud'homme]{V. Chabannes, G. Pena \& C. Prud'homme}
+  \institute[U. Coimbra \& U. Grenoble]{U. Coimbra and U. de Grenoble}
+  \date{Dec 15, 2009}
+  \begin{document}
+  \begin{frame}[containsverbatim]{} 
+    \vfill
+    %% 
+    %% Start two columns
+    %% 
+    \begin{columns}[c]
+      \column{.5\linewidth}
+
+    \begin{block}{Introduction: Complexity in scientific computing codes}
+      \begin{itemize}
+      \item Algebraic (large scale nonlinear systems)
+      \item Numerical (complex methods, complex meshes, etc)
+      \item Models (physical laws, closure laws, etc)
+      \item Computer science (parallelism, efficiency, hybrid arch, ...)
+      \end{itemize}
+      
+      Complexity Treatments:
+      \begin{itemize}
+      \item Numerical and model complexity are better treated by a
+        \alert{high level language}
+      \item Algebraic and computer science complexity perform often better with
+        \alert{low level languages}
+      \end{itemize}
+    \end{block}
+    
+    \vfill
+
+    \begin{block}{Introduction: Generative Programming}
+      \begin{itemize}
+      \item Generative paradigm
+        \begin{itemize}
+        \item The generative paradigm is available in C++ since 1989
+        \item It allows to  \alert{distribute/partition complexity}
+        \item The computer science and algebraic complexity is managed by the \alert{developer}
+        \item The numerical and model complexity is managed by the
+          \alert{user(s)}
+        \end{itemize}
+      \item Definitions
+        \begin{itemize}
+        \item A \alert{\emph{Domain Specific Language} (DSL)} is a programming or specification language
+          dedicated to a particular domain, problem and/or a solution technique
+        \item A \alert{\emph{Domain Specific Embedded Language} (DSEL)}
+          is a DSL integrated into another programming language (e.g. C++)
+        \end{itemize}
+      \end{itemize}
+    \end{block}
+    \vfill
+%     \begin{block}{Life: Example of a DSEL -- Navier-Stokes}
+%     \begin{itemize}
+%     \item Life: C++ library C++ for partial differential solves developed at U. Grenoble(LJK)
+%     \item We consider a Navier-Stokes solver
+%       \cite{christophe09:_const_of_high_order_fluid}
+%     \item The non-stabilized version reads in  C++
+%       \inputsnapshot{ns.cpp}
+%     \end{itemize}
+%   \end{block}
+%   \vfill
+% \begin{block}{Life: Example of DSEL -- Stabilization}
+%   \begin{itemize}
+%     \item At large Reynolds number, we can, for stabilization the
+%       following term \cite{Burman.Fernandez:2007},
+%       \begin{equation*}
+%         j_{\beta}(u, v)\eqbydef\sum_{F\in{\cal F}_h^i}\int_F
+%         \left(\gamma_{\beta}+\module{\beta\SCAL n}\right)
+%         \frac{h_F^2}{N^{3.5}}\jump{\GRAD u}\SSCAL\jump{\GRAD v}
+%       \end{equation*}
+%     \item To add it, just write
+%       \inputsnapshot{stab.cpp}
+%     \end{itemize}
+%   \end{block}
+
+      \column{.5\linewidth}
+    \vfill
+    \begin{block}{Some Features}
+      \begin{itemize}
+      \item Support 1D, 2D, 3D and basic entities: simplices and product of simplices
+      \item Support various point sets on these basic entities: equispaced points, quadrature points, interpolation points (Gauss-Lobatto, Fekete, WarpBlend, Electrostatic)
+      \item Support  various polynomial sets (Lagrange, Dubiner/BA, Legendre/BA, \dots)
+        % \begin{itemize}
+        % \item Lagrange(continuous,discontinuous,all dimensions,all interpolation point sets)
+        % \item Dubiner(discontinuous), boundary adapted(continuous)
+        % \item Legendre(discontinuous), boundary adapted(continuous)
+        % \end{itemize}
+      \item Support continuous and discontinuous Galerkin methods
+      \item Support for parallel computation and interfaces to GMM, PETSc/SLEPc, Trilinos
+        % \item Provide mathematical concept for higher order abstraction
+      \item Interpolation in 1D, 2D, 3D
+      \item Provide a language embedded in C++ ala FreeFem++
+      \end{itemize}
+    \end{block}
+
+    \begin{block}{Ingredients}
+      \begin{itemize}
+      \item Mesh \hfill\lstinline!Mesh<Convex>!
+      \item Basis functions  \hfill\lstinline[mathescape]!Lagrange<$d$,$k$,Convex>!
+      \item Approximation spaces \hfill\lstinline!Space<Mesh,Basis,T>!
+      \item Forms/Operators \hfill\lstinline!Form<Space1(,Space2),Container>!
+      \end{itemize}
+
+      \begin{itemize}
+      \item Forms/Operators are the glue between the linear algebra, the
+        function spaces and the variational formulation
+      \item Special operators: Interpolators, Projectors
+      \end{itemize}
+    \end{block}
+    \vfill
+    \begin{block}{Life: A Language for PDEs}
+      
+      
+      \tikzstyle{mybox} = [draw=gray!10!white!, fill=gray!10!white, very thick,
+      rectangle, rounded corners, inner sep=10pt, inner ysep=20pt]
+      \tikzstyle{fancytitle} =[draw=gray,fill=gray!10!white, text=red, ellipse]
+      % 
+      \begin{tikzpicture}[transform shape, baseline=-3.5cm]
+        \node [mybox] (box) {%
+        \begin{minipage}{.94\textwidth}
+          \begin{lstlisting}
+//standard terms
+integrate( elements(mesh), im,
+           nu*trace(gradt(u)*trans(grad(v)))+
+           trans(idt(u))*id(v)/dt+
+           (idv(u)*trans(gradt(u)))*id(v) +
+           - idt(p)*div(v) + id(q)*divt(u) ) );
+  // stabilization for equal-order approximation
++integrate(internalfaces(mesh), im,
+           maxface( coeff * pow(h(),3.0) / max( h() *
+                    sqrt( trans(beta)*(beta) ), (nu)))
+           * ( jump(grad(q)*N())*jumpt (gradt(p)*N())));
+\end{lstlisting}
+      \end{minipage}
+      };
+      \node[fancytitle] at (box.north) {Example: a Navier-Stokes code};
+    \end{tikzpicture}
+  \end{block}
+
+  
+    \begin{block}{More information}
+      \begin{itemize}
+      \item Web sites: \url{http://ljkforge.imag.fr/life}, http://ljkforge.imag.fr/projects/life}
+      \end{itemize}
+      \begin{itemize}
+      \item LJK/EDP, Université Joseph Fourier Grenoble 1
+      \item CMCS, EPF Lausanne (Switz.)
+      \end{itemize}
+
+      Copyright (C) 2006-2009 Université Joseph Fourier Grenoble 1\\
+      Copyright (C) 2005-2009 EPFL\\
+      Copyright (C) 2009 U. Coimbra\\
+      
+      This program is free software; you can redistribute it and/or\\
+      modify it under the terms of the GNU LGPL-3.
+
+      {\huge Developers and contributors}
+      \begin{itemize}
+      \item Grenoble: C. Prud'homme, V. Chabannes, V. Milisic\\[-4mm]
+      \item Coimbra: G. Pena \\[-4mm]
+      \item EPFL: S. Deparis, C. Winkelmann(formerly), B. Stamm(formerly), G. Steiner\\[-4mm]
+      \end{itemize}
+    \end{block}
+  
+  \end{columns}
+  
+  \end{frame}
+
+  \end{document}
