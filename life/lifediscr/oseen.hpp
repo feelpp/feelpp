@@ -89,12 +89,10 @@ public:
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
 
     /* P0 basis */
-    typedef fusion::vector<fem::Lagrange<Dim, 0,
-                                         Scalar, Discontinuous,
-                                         value_type, Entity> > basis_i_type;
+    typedef bases<Lagrange<0,Scalar> > basis_i_type;
 
     /* spaces */
-    typedef FunctionSpace<mesh_type, basis_i_type, value_type> space_i_type;
+    typedef FunctionSpace<mesh_type, basis_i_type, Discontinuous,value_type > space_i_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef boost::shared_ptr<space_i_type> space_i_ptrtype;
     typedef typename space_type::element_type element_type;
