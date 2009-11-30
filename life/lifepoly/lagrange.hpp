@@ -388,6 +388,9 @@ public:
     };
 
     typedef Lagrange<Order,Scalar,Pts> component_basis_type;
+
+    static const uint16_type nOrder =  Order;
+
 };
 
 } // namespace Life
