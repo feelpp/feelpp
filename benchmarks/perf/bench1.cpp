@@ -313,7 +313,7 @@ Bench1::run2d()
 void
 Bench1::run3d()
 {
-#if 0
+#if 1
     using namespace Life;
 
     typedef Mesh<Simplex<3> > mesh_type;
