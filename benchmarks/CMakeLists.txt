@@ -8,4 +8,6 @@ macro(life_add_bench examplename)
   target_link_libraries(${targetname} ${LIFE_LIBRARIES} )
 endmacro(life_add_bench)
 
-add_subdirectory( convergence )
+foreach( DIR convergence perf )
+  add_subdirectory( ${DIR} )
+endforeach()
