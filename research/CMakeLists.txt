@@ -38,3 +38,8 @@ endif()
 if ( EXISTS ${LIFE_SOURCE_DIR}/research/idf )
   add_subdirectory( idf )
 endif()
+
+# IFP project
+if ( EXISTS ${LIFE_SOURCE_DIR}/research/ifp )
+  add_subdirectory( ifp )
+endif()
