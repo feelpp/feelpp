@@ -387,6 +387,24 @@ protected:
     value_type M_tolerance;
 };
 
+/**
+ * \fn eigs
+ * \brief solve for \f$A x =\lambda B x\f$
+ *
+ * \param A sparse matrix
+ * \param B sparse matrix
+ * \param ncv number of converged eigen values (dimension of Krylov space)
+ * \param nev number of eigen values
+ * \param backend type of backend (default BACKEND_PETSC)
+ * \param solver type of solver (default KRYLOVSCHUR)
+ * \param problem type of problem (default GHEP)
+ * \param transform type of spectral transform (default SHIFT)
+ * \param spectrum type of eigenvalue (default LARGEST_MAGNITUDE)
+ * \param maxit number of maximum iterations
+ * \param tolerance tolerance for the eigenvalue solver (default 1e-11)
+ *
+ * \return eigen modes
+ */
 BOOST_PARAMETER_MEMBER_FUNCTION((typename SolverEigen<double>::eigenmodes_type),
                                 eigs,
                                 tag,
