@@ -34,7 +34,7 @@
 #include <life/lifefilters/gmsh.hpp>
 
 // gmsh importer
-#include <life/lifefilters/importergmsh.hpp>
+#include <life/lifefilters/gmsh.hpp>
 
 
 
