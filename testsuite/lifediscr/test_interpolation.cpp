@@ -49,7 +49,6 @@ using boost::unit_test::test_suite;
 #include <life/lifediscr/interpolate.hpp>
 #include <life/lifemesh/filters.hpp>
 #include <life/lifepoly/im.hpp>
-#include <life/lifefilters/importergmsh.hpp>
 #include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
 #include <life/lifefilters/exporterquick.hpp>

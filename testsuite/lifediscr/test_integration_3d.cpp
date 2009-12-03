@@ -224,7 +224,7 @@ int
 main( int argc, char** argv )
 {
     Life::Application mpi( argc, argv, makeAbout(), makeOptions() );
-    Life::Assert::setLog( "test_integration.assert");
+    Life::Assert::setLog( "test_integration_3d.assert");
 
     test_integration_internal_faces<double> c ( mpi.vm()["hsize"].as<double>() );
     c();

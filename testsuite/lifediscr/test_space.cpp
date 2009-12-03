@@ -41,7 +41,6 @@
 #include <life/lifediscr/mesh.hpp>
 #include <life/lifediscr/functionspace.hpp>
 
-#include <life/lifefilters/importergmsh.hpp>
 #include <life/lifefilters/gmsh.hpp>
 
 #include <testsuite/testsuite.hpp>
