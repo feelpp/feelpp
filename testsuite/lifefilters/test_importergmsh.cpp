@@ -45,19 +45,18 @@ public:
         :
         M_mesh()
     {}
-    void test( double hsize, int version  = 1 )
+    void test( double hsize )
     {
         M_mesh = mesh_ptr_type( new mesh_type );
         Debug() << "testing ImporterGmsh with file format version " << version << "\n";
         std::string fname;
         GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
-        td.setVersion( version );
+
+
         td.setCharacteristicLength( hsize );
         fname = td.generate( entity_type::name().c_str() );
         ImporterGmsh<mesh_type> import( fname );
         std::ostringstream ostr;
-        ostr << version << ".0";
-        import.setVersion( ostr.str() );
         M_mesh->accept( import );
         Debug() << "testing ImporterGmsh with file format version " << version << " done\n";
     }
@@ -76,7 +75,7 @@ int main( int argc, char** argv )
 
     //TestImporterGmsh<1,Simplex> test_simplex_1;
     TestImporterGmsh<2,Simplex> test_simplex_2;
-    test_simplex_2.test( h, 1 );
-    test_simplex_2.test( h, 2 );
+    test_simplex_2.test( h );
+    test_simplex_2.test( h );
     //TestImporterGmsh<2,Simplex> test_simplex_2;
 }
