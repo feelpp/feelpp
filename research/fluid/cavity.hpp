@@ -35,7 +35,6 @@
 #include <life/lifepoly/im.hpp>
 #include <life/lifepoly/polynomialset.hpp>
 
-#include <life/lifefilters/importergmsh.hpp>
 #include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/exporter.hpp>
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
@@ -130,7 +129,7 @@ public:
        for the velocity and
        a lagrange scalar basis of continuous functions for the pressure
     */
-    typedef Lagrange<uOrder, Vectorial> basis_u_type;    
+    typedef Lagrange<uOrder, Vectorial> basis_u_type;
     typedef Lagrange<pOrder, Scalar> basis_p_type;
     typedef bases<basis_u_type,basis_p_type> basis_type;
 
