@@ -35,7 +35,7 @@
 #include <life/lifediscr/functionspace.hpp>
 #include <life/lifepoly/im.hpp>
 
-#include <life/lifefilters/importergmsh.hpp>
+#include <life/lifefilters/gmsh.hpp>
 #include <life/lifepoly/polynomialset.hpp>
 
 #include <boost/filesystem/operations.hpp>
