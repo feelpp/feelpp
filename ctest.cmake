@@ -19,6 +19,8 @@ ENDIF()
 SET (CTEST_INITIAL_CACHE "
 // Enable tests
 ENABLE_TESTS:BOOL=ON
+CMAKE_CXX_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
+CMAKE_C_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
 ")
 
 SET (CTEST_SOURCE_DIRECTORY "$ENV{HOME}/sources/life")
@@ -45,7 +47,7 @@ if ( ${MODEL} MATCHES Continuous )
     ctest_start (Continuous)
 
     SET (CTEST_START_WITH_EMPTY_BINARY_DIRECTORY_ONCE 1)
-    
+
     ctest_sleep( ${START_TIME} 300 ${CTEST_ELAPSED_TIME})
   endwhile()
 endif()
