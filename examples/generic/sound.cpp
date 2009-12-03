@@ -205,7 +205,6 @@ Sound<Dim,Order,Entity>::createMesh( double meshSize )
     std::string fname = gmsh.generate( mesh_name, mesh_desc );
 
     ImporterGmsh<mesh_type> import( fname );
-    import.setVersion( "2.0" );
     //mesh->setRenumber( false );
     mesh->accept( import );
 

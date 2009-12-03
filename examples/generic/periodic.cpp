@@ -230,14 +230,12 @@ PeriodicLaplacian<Dim,Order>::createMesh()
     //mesh->setRenumber( false );
 
     GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
-    td.setVersion( 2 );
     td.setCharacteristicLength( h );
     td.setX( std::make_pair( -1., 1. ) );
     td.setY( std::make_pair( -1., 1. ) );
     std::string fname = td.generate( "square" );
 
     ImporterGmsh<mesh_type> import( fname );
-    import.setVersion( "2.0" );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
     Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
