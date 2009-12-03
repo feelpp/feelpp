@@ -47,6 +47,7 @@ public:
     {}
     void test( double hsize )
     {
+        Debug() << "testing ImporterGmsh with file format\n";
         M_mesh = mesh_ptr_type( new mesh_type );
         std::string fname;
         GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
@@ -57,7 +58,7 @@ public:
         ImporterGmsh<mesh_type> import( fname );
         std::ostringstream ostr;
         M_mesh->accept( import );
-        Debug() << "testing ImporterGmsh with file format version " << version << " done\n";
+        Debug() << "testing ImporterGmsh with file format done\n";
     }
 private:
     mesh_ptr_type M_mesh;
