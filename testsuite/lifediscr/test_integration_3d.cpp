@@ -44,7 +44,7 @@ using boost::unit_test::test_suite;
 #include <life/lifepoly/im.hpp>
 #include <life/lifealg/matrixgmm.hpp>
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifefilters/importergmsh.hpp>
+#include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/gmsh.hpp>
 
 #include <life/lifevf/vf.hpp>

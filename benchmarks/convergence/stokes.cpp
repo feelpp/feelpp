@@ -37,7 +37,7 @@
 
 #include <life/lifepoly/im.hpp>
 
-#include <life/lifefilters/importergmsh.hpp>
+#include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/exporter.hpp>
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
 #include <life/lifepoly/polynomialset.hpp>

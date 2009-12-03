@@ -38,7 +38,6 @@
 #include <life/lifepoly/fekete.hpp>
 #include <life/lifealg/backend.hpp>
 
-#include <life/lifefilters/importergmsh.hpp>
 #include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
 
