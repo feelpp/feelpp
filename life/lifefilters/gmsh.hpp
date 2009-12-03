@@ -37,11 +37,15 @@
 #include <life/lifecore/factory.hpp>
 #include <life/lifecore/singleton.hpp>
 
+namespace Life
+{
+const std::string LIFE_GMSH_FORMAT_VERSION="2.1";
+}
+
 #include <life/lifefilters/importergmsh.hpp>
 
 namespace Life
 {
-
 enum GMSH_ORDER
 {
     GMSH_ORDER_ONE = 1,
@@ -106,7 +110,7 @@ public:
     Gmsh()
         :
         _M_order( GMSH_ORDER_ONE ),
-        M_version( 2 )
+        M_version( LIFE_GMSH_FORMAT_VERSION )
         {}
     Gmsh( Gmsh const & __g )
         :
@@ -157,7 +161,7 @@ public:
     /**
      * @return the file format version
      */
-    int version() const { return M_version; }
+    std::string version() const { return M_version; }
 
     /**
      * \return the description string of the mesh (i.e. in the geo format)
@@ -209,9 +213,9 @@ public:
     /**
      * set the file format version
      */
-    void setVersion( int version )
+    void setVersion( std::string version )
     {
-        if ( version != 1 && version != 2 )
+        if ( version != "1" && version != "2" && version != LIFE_GMSH_FORMAT_VERSION )
             throw std::invalid_argument( "invalid gmsh file format version" );
         M_version = version;
     }
@@ -267,7 +271,7 @@ private:
 
 private:
     GMSH_ORDER _M_order;
-    int M_version;
+    std::string M_version;
 };
 
 ///! \typedef gmsh_type Gmsh
