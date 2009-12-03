@@ -48,7 +48,6 @@ using boost::unit_test::test_suite;
 #include <life/lifediscr/mesh.hpp>
 #include <life/lifemesh/filters.hpp>
 #include <life/lifepoly/im.hpp>
-#include <life/lifefilters/importergmsh.hpp>
 #include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/gmshsimplexdomain.hpp>
 #include <life/lifevf/vf.hpp>

@@ -69,7 +69,7 @@ public:
         :
         M_mesh()
     {}
-    void test( double hsize, int version  = 1 )
+    void test( double hsize, std::string version  = LIFE_GMSH_FORMAT_VERSION )
     {
         M_mesh = mesh_ptr_type( new mesh_type );
         Debug() << "testing Interp with file format version " << version << "\n";
@@ -80,9 +80,7 @@ public:
         td.setCharacteristicLength( hsize );
         fname = td.generate( entity_type::name().c_str() );
         ImporterGmsh<mesh_type> import( fname );
-        std::ostringstream ostr;
-        ostr << version << ".0";
-        import.setVersion( ostr.str() );
+        import.setVersion( version );
         M_mesh->accept( import );
 
         typename mesh_type::element_iterator el_it;
@@ -144,8 +142,8 @@ main( int argc, char** argv )
 
     if ( argc == 2 )
         {
-            test_interp.test( std::atof( argv[1] ), 1 );
+            test_interp.test( std::atof( argv[1] ), LIFE_GMSH_FORMAT_VERSION );
         }
     else
-        test_interp.test( 2.0, 1 );
+        test_interp.test( 2.0, LIFE_GMSH_FORMAT_VERSION );
 }

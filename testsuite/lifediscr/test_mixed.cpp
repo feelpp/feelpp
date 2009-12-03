@@ -36,7 +36,7 @@
 #include <life/lifediscr/region.hpp>
 
 #include <life/lifepoly/im.hpp>
-#include <life/lifefilters/importergmsh.hpp>
+#include <life/lifefilters/gmsh.hpp>
 
 /** include gmsh generator for tensorized domains */
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
