@@ -222,7 +222,7 @@ endif( ENABLE_ALL )
 if ( BUILD_TESTING OR ENABLE_BENCHMARKS )
   ENABLE_TESTING()
   ADD_SUBDIRECTORY ( benchmarks )
-endif( ENABLE_BENCHMARKS )
+endif()
 
 
 if ( ENABLE_EXAMPLES )
@@ -257,7 +257,7 @@ IF(BUILD_TESTING OR ENABLE_TESTS )
 
   ENABLE_TESTING()
   add_subdirectory( testsuite )
-  
+
 endif()
 #
 # Packaging
