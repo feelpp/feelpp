@@ -2179,7 +2179,7 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::buildBoundaryDofMap( mes
                     addEdgeBoundaryDof( __face_it, c, lc );
                     addFaceBoundaryDof( __face_it, c, lc );
 
-                    LIFE_ASSERT( lc == (c+1)*nDofF )( lc )( c )( nDofF )( (c+1)*nDofF ).error( "invalid face local dof construction");
+                    LIFE_ASSERT( lc == (c+1)*nDofF )( lc )( c )( nDofF )( (c+1)*nDofF ).warn( "invalid face local dof construction");
                 }
         }
 #if !defined(NDEBUG)
