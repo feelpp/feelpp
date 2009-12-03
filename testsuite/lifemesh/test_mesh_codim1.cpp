@@ -37,7 +37,6 @@ using boost::unit_test::test_suite;
 
 #include <life/lifediscr/mesh.hpp>
 #include <life/lifemesh/filters.hpp>
-#include <life/lifefilters/importergmsh.hpp>
 #include <life/lifefilters/gmsh.hpp>
 
 namespace Life

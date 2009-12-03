@@ -37,7 +37,6 @@
 
 #include <life/lifediscr/mesh.hpp>
 
-#include <life/lifefilters/importergmsh.hpp>
 #include <life/lifefilters/gmsh.hpp>
 
 

@@ -35,7 +35,7 @@
 #include <life/lifediscr/mesh.hpp>
 #include <life/lifediscr/region.hpp>
 #include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/importergmsh.hpp>
+#include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/exporterensight.hpp>
 
 #include <life/lifevf/vf.hpp>

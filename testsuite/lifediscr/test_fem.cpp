@@ -43,7 +43,7 @@ using boost::unit_test::test_suite;
 #include <life/lifealg/matrixublas.hpp>
 #include <life/lifealg/vectorublas.hpp>
 
-#include <life/lifefilters/importergmsh.hpp>
+#include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/gmsh.hpp>
 
 

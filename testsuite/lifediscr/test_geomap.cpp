@@ -32,7 +32,7 @@
 
 #include <life/lifecore/debug.hpp>
 #include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/importergmsh.hpp>
+#include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/exporterensight.hpp>
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
 #include <life/lifefilters/gmshsimplexdomain.hpp>

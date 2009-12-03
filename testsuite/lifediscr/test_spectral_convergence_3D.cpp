@@ -63,7 +63,7 @@ using boost::unit_test::test_suite;
 #include <life/lifealg/matrixgmm.hpp>
 #include <life/lifevf/vf.hpp>
 
-#include <life/lifefilters/importergmsh.hpp>
+#include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/gmsh.hpp>
 #include <gmm_iter_solvers.h>
 

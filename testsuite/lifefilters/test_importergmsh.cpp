@@ -29,7 +29,7 @@
 #include <sstream>
 
 #include <life/lifediscr/mesh.hpp>
-#include <life/lifefilters/importergmsh.hpp>
+#include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
 
 using namespace Life;
