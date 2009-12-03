@@ -70,7 +70,7 @@ makeAbout()
                            "assembly performance",
                            Life::AboutData::License_LGPL,
                            "Copyright (c) 2005,2006 EPFL"
-                           "Copyright (c) 2007,2008 Université Joseph Fourier (Grenoble 1)"
+                           "Copyright (c) 2007,2009 Université Joseph Fourier (Grenoble 1)"
                            );
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
