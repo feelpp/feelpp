@@ -295,7 +295,6 @@ ResistanceLaplacian<Dim,Order>::createMesh()
     std::string fname = gmsh.generate( "square", ostr.str()  );
 
     ImporterGmsh<mesh_type> import( fname );
-    import.setVersion( "2.0" );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
     Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
@@ -327,7 +326,6 @@ ResistanceLaplacian<Dim,Order>::createLine()
     std::string fname = gmsh.generate( "line", ostr.str()  );
 
     ImporterGmsh<line_mesh_type> import( fname );
-    import.setVersion( "2.0" );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
     Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
