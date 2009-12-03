@@ -48,7 +48,6 @@ public:
     void test( double hsize )
     {
         M_mesh = mesh_ptr_type( new mesh_type );
-        Debug() << "testing ImporterGmsh with file format version " << version << "\n";
         std::string fname;
         GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
 
