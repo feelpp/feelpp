@@ -157,12 +157,12 @@ public:
     ImporterGmsh()
         :
         super( GMSH ),
-        _M_version( "2.1" )
+        _M_version( LIFE_GMSH_FORMAT_VERSION )
     {
         showMe();
     }
 
-    explicit ImporterGmsh( std::string const& fname, std::string version = "2.1" )
+    explicit ImporterGmsh( std::string const& fname, std::string version = LIFE_GMSH_FORMAT_VERSION )
         :
         super( fname, GMSH ),
         _M_version( version )
@@ -268,7 +268,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 {
     if ( this->version() != "1.0" &&
          this->version() != "2.0" &&
-         this->version() != "2.1" )
+         this->version() != "2.1" &&
+         this->version() != LIFE_GMSH_FORMAT_VERSION )
         throw std::logic_error( "invalid gmsh file format version" );
 
     Debug( 8011 ) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit()] starts\n";
@@ -282,7 +283,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     __is >> __buf;
 
     if ( ( (this->version() == "2.0") ||
-           (this->version() == "2.1") ) &&
+           (this->version() == "2.1") ||
+           (this->version() == LIFE_GMSH_FORMAT_VERSION ) )  &&
          std::string( __buf ) == "$MeshFormat" )
         {
             std::string theversion;
