@@ -43,7 +43,7 @@ foreach( BENCH laplacian1dP1 laplacian1dP5
 
     # test each backend
     foreach( BACKEND gmm petsc trilinos )
-      add_test( ${BENCH}-${BENCH}
+      add_test( ${BENCH}-${BACKEND}
         ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --path="${LIFE_BUILD_DIR}/benchmarks/convergence/"
