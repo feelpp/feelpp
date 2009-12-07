@@ -56,7 +56,7 @@ po::options_description backendtrilinos_options( std::string const& prefix )
         ((_prefix+"trilinos-order").c_str(), Life::po::value<int>()->default_value( 2 ), "order of the Neumann polynomial expansion for preconditioners")
         ((_prefix+"trilinos-local-parts").c_str(), Life::po::value<int>()->default_value( 4 ), "check Trilinos documentation")
         ((_prefix+"trilinos-local-solver-type").c_str(), Life::po::value<std::string>()->default_value( "Amesos" ), "Local domain subsolver for Ifpack")
-        ((_prefix+"trilinos-local-solver").c_str(), Life::po::value<std::string>()->default_value( "Amesos_KLU" ), "(Amesos_KLU, Amesos_Umfpack, Amesos_Superlu ) Local domain direct subsolver for Ifpack")
+        ((_prefix+"trilinos-local-solver").c_str(), Life::po::value<std::string>()->default_value( "Amesos_Umfpack" ), "(Amesos_KLU, Amesos_Umfpack, Amesos_Superlu ) Local domain direct subsolver for Ifpack")
 
 
         // solver control options
@@ -83,6 +83,7 @@ BackendTrilinos::BackendTrilinos( po::variables_map const& vm, std::string const
 
     set_maxiter( vm[_prefix+"trilinos-maxiter"].as<int>() );
     set_tol( vm[_prefix+"trilinos-tolerance"].as<double>() );
+    set_verbose( vm[_prefix+"trilinos-verbose"].as<std::string>() );
 
     set_drop( vm[_prefix+"trilinos-drop"].as<double>() );
     set_overlap( vm[_prefix+"trilinos-overlap"].as<int>() );
@@ -227,18 +228,18 @@ BackendTrilinos::solve( base_sparse_matrix_ptrtype const& A,
                         base_vector_ptrtype& x,
                         base_vector_ptrtype const& b )
 {
+#if 0
     BackendTrilinos opt;
     opt.set_verbose("none");
     opt.set_tol(1e-14);
     opt.set_solver("gmres");
     opt.set_residual("rhs");
+#endif
+    operator_ptrtype prec = IfpackPrec( B, this->get_options() );
 
-    operator_ptrtype prec = IfpackPrec( B, opt.get_options() );
-
-    op_mat_ptrtype matrixOp = op_mat_ptrtype( new op_mat_type( A, opt.get_options(), "A", prec ) );
+    op_mat_ptrtype matrixOp = op_mat_ptrtype( new op_mat_type( A, this->get_options(), "A", prec ) );
 
     int iter = matrixOp->ApplyInverse( b, x );
-
     return boost::make_tuple( true, iter, 1e-16 );
 }
 
