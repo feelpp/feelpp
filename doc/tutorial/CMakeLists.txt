@@ -43,3 +43,7 @@ endmacro()
 foreach( docex myapp mymesh myintegrals laplacian stokes bratu nonlinearpow )
   add_docex( ${docex} )
 endforeach()
+
+# Natural convection problem
+add_executable( life_doc_convection convection.hpp convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp )
+target_link_libraries( life_doc_convection ${LIFE_LIBRARIES} )
