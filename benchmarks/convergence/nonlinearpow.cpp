@@ -39,7 +39,6 @@
 
 #include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
 
 #include <life/lifevf/vf.hpp>
 
@@ -119,15 +118,10 @@ public:
     /*basis*/
     typedef bases<Lagrange<Order, Scalar> > basis_type;
 
-    /* number of dofs per element */
-    static const uint16_type nLocalDof = boost::remove_reference<typename fusion::result_of::at<basis_type,mpl::int_<0> >::type>::type::nLocalDof;
-
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type> functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
-    typedef typename element_type::template sub_element<0>::type element_0_type;
-    typedef typename element_type::template sub_element<1>::type element_1_type;
 
     typedef OperatorLinear<functionspace_type,functionspace_type> oplin_type;
     typedef boost::shared_ptr<oplin_type> oplin_ptrtype;
@@ -217,32 +211,15 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
         addOutput( Output(_name="norm_L2",_latex="\\left\\| u \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) );
         //.addOutput( Output(_name="norm_H1",_latex="\\left\\| u \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs2) );
 
-    mesh_ptrtype mesh = createMesh( meshSize );
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain(_name="square",
+                                                     _shape="hypercube",
+                                                     _dim=Dim,
+                                                     _h=meshSize ) );
     M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
 
     exporter = export_ptrtype( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
 }
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-typename NonLinearPow<Dim,Order,Entity>::mesh_ptrtype
-NonLinearPow<Dim,Order,Entity>::createMesh( double meshSize )
-{
-    mesh_ptrtype mesh( new mesh_type );
-    //mesh->setRenumber( false );
-
-    GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
-    td.setCharacteristicLength( meshSize );
-    td.setX( std::make_pair( -1, 1 ) );
-    if ( Dim >=2 )
-        td.setY( std::make_pair( -1, 1 ) );
-    if ( Dim >=3 )
-        td.setZ( std::make_pair( -1, 1 ) );
-    std::string fname = td.generate( entity_type::name().c_str() );
-
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-
-    return mesh;
-} // NonLinearPow::createMesh
 
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -256,11 +233,11 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
 
-    u = *X;
     AUTO( g, (Px()*Px()+Py()*Py()) );
+    u = *X;
 
     *M_residual =
-        integrate( elements( mesh ), _Q<2*Order>(), + gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) - (-4+pow(g,M_lambda))*id(v) ) +
+        integrate( elements( mesh ), _Q<4*Order>(), + gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) - (-4+pow(g,M_lambda))*id(v) ) +
         integrate( boundaryfaces(mesh), _Q<2*Order>(),
                    ( - trans(id(v))*(gradv(u)*N())
                      - trans(idv(u))*(grad(v)*N())
@@ -270,6 +247,7 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
 
     M_residual->close();
     *R = M_residual->container();
+
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -279,22 +257,32 @@ NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, spars
     boost::timer ti;
     Log() << "[updateJacobian] start\n";
     static bool is_init = false;
+    value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
     u = *X;
+#if 1
+
+    *M_jac = integrate( elements( mesh ), _Q<2*Order+2>(), gradt(u)*trans(grad(v))+M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) )
+        + integrate( boundaryfaces(mesh), _Q<2*Order>(),
+                     ( - id(v)*(gradt(u)*N())
+                       - idt(u)*(grad(v)*N())
+                       + penalisation_bc*idt(u)*id(v)/hFace() ) );
+#else
     if ( is_init == false )
         {
-            *M_jac = integrate( elements( mesh ), _Q<2*Order>(), M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) );
+            *M_jac = integrate( elements( mesh ), _Q<2*Order+2>(), M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) );
             is_init = true;
         }
     else
         {
             M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ), _Q<2*Order>(), M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) );
+            *M_jac += integrate( elements( mesh ), _Q<2*Order+2>(), M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) );
         }
     M_jac->close();
     M_jac->matPtr()->addMatrix( 1.0, M_oplin->mat() );
+#endif
     J = M_jac->matPtr();
     Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
@@ -326,11 +314,11 @@ NonLinearPow<Dim, Order, Entity>::run()
 
     M_oplin = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
     *M_oplin =
-        integrate( elements( mesh ), _Q<2*Order>(), gradt(u)*trans(grad(v)) ) +
+        integrate( elements( mesh ), _Q<2*(Order-1)>(), gradt(u)*trans(grad(v)) ) +
         integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                   ( - trans(id(v))*(gradt(u)*N())
-                     - trans(idt(u))*(grad(v)*N())
-                     + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
+                   ( - id(v)*(gradt(u)*N())
+                     - idt(u)*(grad(v)*N())
+                     + penalisation_bc*idt(u)*id(v)/hFace() ) );
     M_oplin->close();
 
     M_jac = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
@@ -341,15 +329,22 @@ NonLinearPow<Dim, Order, Entity>::run()
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
 
-    u = project( M_Xh, elements(mesh), constant(0.) );
+    //u = project( M_Xh, elements(mesh), constant(0.) );
+    u = project( M_Xh, elements(mesh), u_exact );
     ue = project( M_Xh, elements(mesh), u_exact );
 
     vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
     *U = u;
     vector_ptrtype R( M_backend->newVector( u.functionSpace() ) );
     this->updateResidual( U, R );
+    *U = u;
+    this->updateResidual( U, R );
+    std::cout << "initial R( u ) = " << M_backend->dot( U, R ) << "\n";
+
     sparse_matrix_ptrtype J;
     this->updateJacobian( U, J );
+    std::cout << "initial J( u, u ) = " << J->energy( U, U ) << "\n";
+
     solve( J, u, R );
 
     *U = u;
