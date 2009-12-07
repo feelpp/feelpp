@@ -40,7 +40,7 @@ macro( add_docex target )
  target_link_libraries( life_doc_${target} ${LIFE_LIBRARIES} )
  # test each backend
  foreach( BACKEND gmm petsc trilinos)
-   add_test( life_doc_${target}-${BENCH} life_doc_${target} --hsize=0.1 --backend=${BENCH})
+   add_test( life_doc_${target}-${BENCH} life_doc_${target} --hsize=0.1 --backend=${BACKEND})
  endforeach()
 endmacro()
 
@@ -49,5 +49,6 @@ foreach( docex myapp mymesh myintegrals laplacian stokes bratu nonlinearpow )
 endforeach()
 
 # Natural convection problem
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 add_executable( life_doc_convection convection.hpp convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp )
 target_link_libraries( life_doc_convection ${LIFE_LIBRARIES} )
