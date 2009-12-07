@@ -39,7 +39,7 @@ macro( add_docex target )
  add_executable( life_doc_${target} ${target}.cpp )
  target_link_libraries( life_doc_${target} ${LIFE_LIBRARIES} )
  # test each backend
- foreach( BACKEND gmm petsc trilinos)
+ foreach( BACKEND petsc trilinos)
    add_test( life_doc_${target}-${BENCH} life_doc_${target} --hsize=0.1 --backend=${BACKEND})
  endforeach()
 endmacro()
