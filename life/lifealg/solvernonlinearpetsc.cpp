@@ -151,7 +151,7 @@ extern "C"
     Jac->close();
     //*PC = Jac;
     //PC->printMatlab( "pc.m" );
-    Jac->printMatlab( "jac.m" );
+    //Jac->printMatlab( "jac.m" );
     *msflag = SAME_NONZERO_PATTERN;
     //*msflag = DIFFERENT_NONZERO_PATTERN;
 #if 0
