@@ -34,3 +34,12 @@ add_latex_document(life-manual.tex
   USE_INDEX
   DEFAULT_PDF
   )
+
+macro( add_docex target )
+ add_executable( life_doc_${target} ${target}.cpp )
+ target_link_libraries( life_doc_${target} ${LIFE_LIBRARIES} )
+endmacro()
+
+foreach( docex myapp mymesh myintegrals laplacian stokes bratu nonlinearpow )
+  add_docex( ${docex} )
+endforeach()
