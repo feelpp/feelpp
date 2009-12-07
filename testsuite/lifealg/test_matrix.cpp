@@ -73,7 +73,7 @@ public:
         VectorPetsc<double> vec;
         MatrixPetsc<double> mat;
         std::cout << "is initialized ? " << mat.isInitialized() << "\n";
-        mat.init( m*n, m*n, n/Application::nProcess(), n );
+        mat.init( m*n, m*n, m*n/Application::nProcess(), m*n );
         std::cout << "is initialized ? " << mat.isInitialized() << "\n";
 
         /*
