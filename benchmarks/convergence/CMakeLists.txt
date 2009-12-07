@@ -47,7 +47,7 @@ foreach( BENCH laplacian1dP1 laplacian1dP5
         ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --path="${LIFE_BUILD_DIR}/benchmarks/convergence/"
-        --cmdargs="--backend=${BACKEND}" )
+        --cmdargs="--backend=${BACKEND}  --no-export" )
     endforeach()
 
 endforeach()
