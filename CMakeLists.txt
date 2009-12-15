@@ -229,6 +229,9 @@ if ( ENABLE_EXAMPLES )
  ADD_SUBDIRECTORY ( examples )
 endif()
 
+if ( ENABLE_EXAMPLES )
+ ADD_SUBDIRECTORY ( myExamples )
+endif()	  
 
 if ( ENABLE_APPLICATIONS )
  ADD_SUBDIRECTORY ( applications )
@@ -265,15 +268,19 @@ endif()
 INCLUDE(InstallRequiredSystemLibraries)
 
 
-foreach(includedir lifecore lifealg lifemesh lifefilters lifevf lifematerial )
+foreach(includedir lifecore lifealg lifemesh lifefilters lifevf
+lifematerial lifediscr)
   FILE(GLOB files "life/${includedir}/*.hpp")
   INSTALL(FILES ${files} DESTINATION include/life/${includedir})
 endforeach()
 FILE(GLOB files "life/*.hpp")
 INSTALL(FILES ${files} DESTINATION include/life)
+FILE(GLOB files "contrib/gmm/include/*.h")
+INSTALL(FILES ${files} DESTINATION include/life)
 FILE(GLOB files ${CMAKE_CURRENT_BINARY_DIR}/lifeconfig.h)
 INSTALL(FILES ${files} DESTINATION include/)
-foreach(libdir lifecore lifealg lifemesh lifefilters lifevf lifematerial )
+foreach(libdir lifecore lifealg lifemesh lifefilters lifevf
+lifematerial lifediscr)
   FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/life/${libdir}/*.a")
   INSTALL(FILES ${files} DESTINATION lib/)
 endforeach()
