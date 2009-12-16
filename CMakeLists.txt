@@ -215,47 +215,52 @@ SET(LIFE_LIBRARIES
   ${PARPACK_LIBRARIES}
   )
 
-ADD_SUBDIRECTORY ( doc )
 
-OPTION(ENABLE_BENCHMARKS "enable benchmarks" OFF)
-OPTION(ENABLE_EXAMPLES "enable examples" OFF)
-OPTION(ENABLE_APPLICATIONS "enable applications" OFF)
-OPTION(ENABLE_TESTS "enable tests" OFF)
-OPTION(ENABLE_ALL "enable all modules" OFF)
 
-if ( ENABLE_ALL )
-  set( ENABLE_BENCHMARKS ON )
-  set( ENABLE_EXAMPLES ON )
-  set( ENABLE_APPLICATIONS ON )
-  set( ENABLE_TESTS ON )
-endif( ENABLE_ALL )
+OPTION(LIFE_ENABLE_DOCUMENTATION "enable life documentation" OFF)
+OPTION(LIFE_ENABLE_BENCHMARKS "enable life benchmarks" OFF)
+OPTION(LIFE_ENABLE_EXAMPLES "enable life examples" OFF)
+OPTION(LIFE_ENABLE_APPLICATIONS "enable life applications" OFF)
+OPTION(LIFE_ENABLE_TESTS "enable life tests" OFF)
+OPTION(LIFE_ENABLE_ALL "enable all life modules" OFF)
 
-if ( BUILD_TESTING OR ENABLE_BENCHMARKS )
-  ENABLE_TESTING()
+if ( LIFE_ENABLE_ALL )
+  set( LIFE_ENABLE_BENCHMARKS ON )
+  set( LIFE_ENABLE_EXAMPLES ON )
+  set( LIFE_ENABLE_APPLICATIONS ON )
+  set( LIFE_ENABLE_TESTS ON )
+endif( LIFE_ENABLE_ALL )
+
+if ( LIFE_ENABLE_DOCUMENTATION )
+  ADD_SUBDIRECTORY ( doc )
+endif ( LIFE_ENABLE_DOCUMENTATION )
+
+if ( BUILD_TESTING OR LIFE_ENABLE_BENCHMARKS )
   ADD_SUBDIRECTORY ( benchmarks )
 endif()
 
 
-if ( ENABLE_EXAMPLES )
+if ( LIFE_ENABLE_EXAMPLES )
  ADD_SUBDIRECTORY ( examples )
 endif()
 
-if ( ENABLE_APPLICATIONS )
+if ( LIFE_ENABLE_APPLICATIONS )
  ADD_SUBDIRECTORY ( applications )
  if ( EXISTS ${LIFE_SOURCE_DIR}/research )
   ADD_SUBDIRECTORY ( research )
  endif()
-endif( ENABLE_APPLICATIONS )
+endif( LIFE_ENABLE_APPLICATIONS )
 
 
 #
 # Enable testing
 #
 INCLUDE(CTest)
-IF(BUILD_TESTING OR ENABLE_TESTS )
+ENABLE_TESTING()
 
+IF(BUILD_TESTING OR LIFE_ENABLE_TESTS )
+  
   macro(life_add_test testname)
-
     set(targetname test_${testname})
     set(filename test_${testname}.cpp)
     add_executable(${targetname} ${filename})
@@ -263,9 +268,6 @@ IF(BUILD_TESTING OR ENABLE_TESTS )
     add_test( ${testname} "${targetname}" )
   endmacro(life_add_test)
 
-
-
-  ENABLE_TESTING()
   add_subdirectory( testsuite )
 
 endif()
@@ -287,11 +289,15 @@ FILE(GLOB files ${CMAKE_CURRENT_BINARY_DIR}/lifeconfig.h)
 INSTALL(FILES ${files} DESTINATION include/)
 foreach(libdir lifecore lifealg lifemesh lifefilters lifevf
 lifematerial lifediscr)
-  FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/life/${libdir}/*.a")
+  FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/life/${libdir}/*.so*")
   INSTALL(FILES ${files} DESTINATION lib/)
 endforeach()
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/life/*.a;${CMAKE_CURRENT_BINARY_DIR}/life/*.so*")
-INSTALL(FILES ${files} DESTINATION lib/)
+FILE(GLOB libso "${CMAKE_CURRENT_BINARY_DIR}/life/*.so*")
+INSTALL(FILES ${libso} DESTINATION lib/)
+foreach( examples generic heat solid )
+  FILE(GLOB programs "${CMAKE_CURRENT_BINARY_DIR}/examples/${examples}/life_*")
+  INSTALL(FILES ${programs} DESTINATION bin/)
+endforeach()
 
 SET(CPACK_GENERATOR "TGZ")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "life")
