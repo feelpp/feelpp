@@ -1,9 +1,0 @@
-# -*- mode: makefile -*-
-
-all:
-	aclocal -I admin
-#	autoheader
-	automake
-	autoconf
-
-
