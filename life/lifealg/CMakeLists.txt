@@ -10,7 +10,7 @@ if ( TRILINOS_LIBRARIES )
   set( LIFE_TRILINOS_SRCS vectorepetra.cpp matrixepetra.cpp preconditionerml.cpp preconditionerifpack.cpp backendtrilinos.cpp solvernonlineartrilinos.cpp )
 endif()
 
-add_library( lifealg
+add_library( lifealg SHARED
   dummy.cpp datamap.cpp
   vector.cpp vectorublas.cpp
   backend.cpp backendgmm.cpp backend_adaptive_reuse_pc.cpp backendpetsc.cpp
@@ -20,5 +20,6 @@ add_library( lifealg
   ${LIFE_SLEPC_SRCS}
   ${LIFE_TRILINOS_SRCS}
   )
-
+set_target_properties( lifealg PROPERTIES VERSION ${LIFE_SHARED_VERSION} SOVERSION ${LIFE_SHARED_SOVERSION})
 target_link_libraries (lifealg lifecore)
+
