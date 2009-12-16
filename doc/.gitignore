@@ -3,6 +3,7 @@
 /Makefile
 /Makefile.in
 /aclocal.m4
+/auto
 /autom4te.cache
 /cmake_install.cmake
 /configure
