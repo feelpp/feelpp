@@ -102,6 +102,7 @@ INCLUDE(FindPETSc)
 find_package( PETSc )
 if ( PETSC_FOUND )
   add_definitions( -DHAVE_PETSC -DHAVE_PETSC_H )
+  MARK_AS_ADVANCED( PETSC_CURRENT PETSC_DIR PETSC_ARCH )
 endif()
 
 find_path (SLEPC_DIR include/slepc.h
@@ -114,10 +115,11 @@ SET(CMAKE_REQUIRED_INCLUDES "${SLEPC_DIR}/include;${CMAKE_REQUIRED_INCLUDES}")
 CHECK_INCLUDE_FILE( slepc.h HAVE_SLEPC_H )
 FIND_LIBRARY(SLEPC_LIB_SLEPC     slepc )
 SET(SLEPC_LIBRARIES ${SLEPC_LIB_SLEPC})
-message( "*** SLEPc directory : ${SLEPC_DIR}" )
+# message( "*** SLEPc directory : ${SLEPC_DIR}" )
 if (HAVE_SLEPC_H AND SLEPC_DIR)
   set(HAVE_SLEPC 1)
 endif()
+MARK_AS_ADVANCED( SLEPC_DIR SLEPC_LIB_SLEPC )
 
 #
 # parpack
@@ -126,16 +128,14 @@ FIND_LIBRARY(PARPACK_LIBRARY NAMES parpack)
 if (PARPACK_LIBRARY)
     SET(PARPACK_LIBRARIES ${PARPACK_LIBRARY})
 endif()
+MARK_AS_ADVANCED( PARPACK_LIBRARY )
 
 
 #
 # Trilinos
 #
-OPTION(ENABLE_TRILINOS "enable trilinos" ON)
-#IF ( ENABLE_TRILINOS )
 INCLUDE(FindTrilinos)
 INCLUDE_DIRECTORIES(${TRILINOS_INCLUDE_DIR})
-#ENDIF( ENABLE_TRILINOS )
 
 #
 # VTK
@@ -145,6 +145,7 @@ find_package(VTK)
 if ( VTK_FOUND )
   set(HAVE_VTK 1)
   SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging -lvtkCommon" )
+  MARK_AS_ADVANCED( VTK_DIR )
 endif()
 
 # generate configuration header
@@ -259,7 +260,7 @@ INCLUDE(CTest)
 ENABLE_TESTING()
 
 IF(BUILD_TESTING OR LIFE_ENABLE_TESTS )
-  
+
   macro(life_add_test testname)
     set(targetname test_${testname})
     set(filename test_${testname}.cpp)
