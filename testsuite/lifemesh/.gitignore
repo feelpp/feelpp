@@ -2,6 +2,7 @@
 /CTestTestfile.cmake
 /Makefile
 /Makefile.in
+/TAGS
 /Testing
 /cmake_install.cmake
 /cube-1-1.geo

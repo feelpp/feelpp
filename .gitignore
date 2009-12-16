@@ -1,4 +1,6 @@
 
+/#CTestConfig.cmake#
+/#ctest.make#
 /.gitignore~
 /CMakeCache.txt
 /CMakeFiles
@@ -21,7 +23,9 @@
 /autom4te.cache
 /cmake_install.cmake
 /configure
+/ctest.make
 /lifeconfig.h.in~
+/octave-core
 /opt
 /package.m4
 /subdirs

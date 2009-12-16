@@ -2,4 +2,5 @@
 /CTestTestfile.cmake
 /Makefile
 /Makefile.in
+/TAGS
 /cmake_install.cmake
