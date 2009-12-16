@@ -95,8 +95,6 @@ class NonLinearPow
 public:
 
     // -- TYPEDEFS --
-    static const uint16_type imOrder = 4*Order;
-
     typedef NonLinearPow<Dim,Order, Entity> self_type;
 
     typedef double value_type;
@@ -235,13 +233,14 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
 
     AUTO( g, (Px()*Px()+Py()*Py()) );
     u = *X;
-
+    //u = project( M_Xh, elements(mesh), g );
     *M_residual =
-        integrate( elements( mesh ), _Q<4*Order>(), + gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) - (-4+pow(g,M_lambda))*id(v) ) +
+        //integrate( elements( mesh ), _Q<4*Order>(), -(+ gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) - (-4+pow(g,M_lambda))*id(v) ) ) +
+        integrate( elements( mesh ), _Q<4*Order>(), -(+ gradv(u)*trans(grad(v)) + idv(u)*id(v) - (-4+g)*id(v)) ) +
         integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                   ( - trans(id(v))*(gradv(u)*N())
-                     - trans(idv(u))*(grad(v)*N())
-                     + penalisation_bc*trans(idv(u))*id(v)/hFace())-
+                   -( - id(v)*(gradv(u)*N())
+                      //- idv(u)*(grad(v)*N())
+                     + penalisation_bc*idv(u)*id(v)/hFace())+
                    g*( - grad(v)*N() + penalisation_bc*id(v)/hFace() )
                    );
 
@@ -262,13 +261,17 @@ NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, spars
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
     u = *X;
+    AUTO( g, (Px()*Px()+Py()*Py()) );
+    //u = project( M_Xh, elements(mesh), g );
 #if 1
 
-    *M_jac = integrate( elements( mesh ), _Q<2*Order+2>(), gradt(u)*trans(grad(v))+M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) )
+    //*M_jac = integrate( elements( mesh ), _Q<2*Order+2>(), gradt(u)*trans(grad(v))+M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) )
+    *M_jac = integrate( elements( mesh ), _Q<2*Order+2>(), gradt(u)*trans(grad(v)) + idt(u)*id(v) )
         + integrate( boundaryfaces(mesh), _Q<2*Order>(),
                      ( - id(v)*(gradt(u)*N())
                        - idt(u)*(grad(v)*N())
                        + penalisation_bc*idt(u)*id(v)/hFace() ) );
+    M_jac->close();
 #else
     if ( is_init == false )
         {
@@ -337,13 +340,9 @@ NonLinearPow<Dim, Order, Entity>::run()
     *U = u;
     vector_ptrtype R( M_backend->newVector( u.functionSpace() ) );
     this->updateResidual( U, R );
-    *U = u;
-    this->updateResidual( U, R );
-    std::cout << "initial R( u ) = " << M_backend->dot( U, R ) << "\n";
 
     sparse_matrix_ptrtype J;
     this->updateJacobian( U, J );
-    std::cout << "initial J( u, u ) = " << J->energy( U, U ) << "\n";
 
     solve( J, u, R );
 
@@ -357,7 +356,7 @@ NonLinearPow<Dim, Order, Entity>::run()
     t1.restart();
 
     double L2error2 = integrate( elements(mesh), _Q<2*Order>(),
-                                 (idv(u)-u_exact)*trans(idv(u)-u_exact) ).evaluate()( 0, 0 );
+                                 pow(idv(u)-u_exact,2) ).evaluate()( 0, 0 );
     double L2error = math::sqrt( L2error2 );
 
     std::cout << "||error||_L2=" << L2error << "\n";
