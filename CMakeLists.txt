@@ -20,7 +20,8 @@ set(LIFE_VERSION_EXTRA "0")
 set(LIFE_REVISION "1")
 set(LIFE_BUILDID "1")
 set(LIFE_VERSION "(((${LIFE_VERSION_MAJOR}) << 16) | ((${LIFE_VERSION_MINOR}) << 9) | (${LIFE_VERSION_MICRO}))" )
-
+set(LIFE_SHARED_VERSION "1.0.0" )
+set(LIFE_SHARED_SOVERSION "1" )
 
 SET(LIFE_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(LIFE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
@@ -38,6 +39,7 @@ MARK_AS_ADVANCED(ENABLE_INSTANTIATION_MODE)
 IF ( ENABLE_INSTANTIATION_MODE )
 ADD_DEFINITIONS( -DLIFE_INSTANTIATION_MODE=1 )
 ENDIF()
+set(CMAKE_SKIP_RPATH OFF)
 
 set(LIFE_MESH_MAX_ORDER "5")
 
@@ -51,6 +53,16 @@ INCLUDE(CheckIncludeFile)
 INCLUDE(CheckIncludeFiles)
 INCLUDE(CheckIncludeFileCXX)
 INCLUDE(CheckLibraryExists)
+# INCLUDE(parse_arguments)
+
+# MACRO(CAR var)
+#   SET(${var} ${ARGV1})
+# ENDMACRO(CAR)
+
+# MACRO(CDR var junk)
+#   SET(${var} ${ARGN})
+# ENDMACRO(CDR)
+
 
 
 Include(FindMPI)
@@ -231,7 +243,7 @@ endif()
 
 if ( ENABLE_EXAMPLES )
  ADD_SUBDIRECTORY ( myExamples )
-endif()	  
+endif()
 
 if ( ENABLE_APPLICATIONS )
  ADD_SUBDIRECTORY ( applications )
@@ -268,8 +280,7 @@ endif()
 INCLUDE(InstallRequiredSystemLibraries)
 
 
-foreach(includedir lifecore lifealg lifemesh lifefilters lifevf
-lifematerial lifediscr)
+foreach(includedir lifecore lifealg lifemesh lifefilters lifediscr lifevf lifematerial lifesystem )
   FILE(GLOB files "life/${includedir}/*.hpp")
   INSTALL(FILES ${files} DESTINATION include/life/${includedir})
 endforeach()
@@ -284,7 +295,7 @@ lifematerial lifediscr)
   FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/life/${libdir}/*.a")
   INSTALL(FILES ${files} DESTINATION lib/)
 endforeach()
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/life/*.a")
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/life/*.a;${CMAKE_CURRENT_BINARY_DIR}/life/*.so*")
 INSTALL(FILES ${files} DESTINATION lib/)
 
 SET(CPACK_GENERATOR "TGZ")
@@ -305,8 +316,10 @@ SET(CPACK_SOURCE_STRIP_FILES "")
 # from source tarball.
 set(CPACK_SOURCE_IGNORE_FILES
   "/\\\\.git/;\\\\.gitignore;"
-  "/admin/;/tools/;/Templates/"
-  "/auto/;/auto.*/"
+  "/admin/;/tools/;/Templates/;"
+  "/auto/;/auto.*/;"
+  "/TAGS;/#.*;/.*~;/.cvsignore;/.bzrignore"
+  "${PROJECT_SOURCE_DIR}/doc/poster/"
   "${PROJECT_SOURCE_DIR}/examples/fluid/"
   "${PROJECT_SOURCE_DIR}/examples/levelset/"
   "${PROJECT_SOURCE_DIR}/examples/pbeq/"
