@@ -93,8 +93,8 @@ show :
   petsc_get_variable (PETSC_EXTERNAL_LIB_BASIC petsc_libs_external)
   petsc_get_variable (PETSC_CCPPFLAGS          petsc_cpp_line)
   petsc_get_variable (PETSC_INCLUDE            petsc_include)
-  petsc_get_variable (PCC                      petsc_cc)
-  petsc_get_variable (MPIEXEC                  petsc_mpiexec)
+  #petsc_get_variable (PCC                      petsc_cc)
+  #petsc_get_variable (MPIEXEC                  petsc_mpiexec)
   # We are done with the temporary Makefile, calling PETSC_GET_VARIABLE after this point is invalid!
   file (REMOVE ${petsc_config_makefile})
  
