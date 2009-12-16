@@ -241,10 +241,6 @@ if ( ENABLE_EXAMPLES )
  ADD_SUBDIRECTORY ( examples )
 endif()
 
-if ( ENABLE_EXAMPLES )
- ADD_SUBDIRECTORY ( myExamples )
-endif()
-
 if ( ENABLE_APPLICATIONS )
  ADD_SUBDIRECTORY ( applications )
  if ( EXISTS ${LIFE_SOURCE_DIR}/research )
