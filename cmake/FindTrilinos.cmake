@@ -1,7 +1,7 @@
 find_package(EXPAT)
 
 FIND_PATH(TRILINOS_INCLUDE_DIR Teuchos_Utils.hpp PATHS /opt/trilinos/include/ /usr/include/trilinos /usr/ljk/include/trilinos )
-
+MARK_AS_ADVANCED( TRILINOS_INCLUDE_DIR )
 if( TRILINOS_INCLUDE_DIR )
 
   SET(CMAKE_REQUIRED_INCLUDES "${TRILINOS_INCLUDE_DIR};${CMAKE_REQUIRED_INCLUDES}")
@@ -39,6 +39,21 @@ if( TRILINOS_INCLUDE_DIR )
   FIND_LIBRARY(TRILINOS_LIB_NOX       NAMES trilinos_nox nox             PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
   FIND_LIBRARY(TRILINOS_LIB_NOXEPETRA NAMES trilinos_noxepetra noxepetra PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
   FIND_LIBRARY(TRILINOS_LIB_NOXLAPACK NAMES trilinos_noxlapack noxlapack PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
+
+  MARK_AS_ADVANCED(
+    TRILINOS_LIB_TEUCHOS
+    TRILINOS_LIB_EPETRA
+    TRILINOS_LIB_EPETRAEXT
+    TRILINOS_LIB_TRIUTILS
+    TRILINOS_LIB_AZTECOO
+    TRILINOS_LIB_AMESOS
+    TRILINOS_LIB_IFPACK
+    TRILINOS_LIB_ML
+    TRILINOS_LIB_GALERI
+    TRILINOS_LIB_NOX
+    TRILINOS_LIB_NOXEPETRA
+    TRILINOS_LIB_NOXLAPACK
+    )
 
   SET(TRILINOS_LIBRARIES
     ${TRILINOS_LIB_NOX}
