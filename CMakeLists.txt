@@ -301,7 +301,15 @@ foreach( programs_dir examples/generic examples/heat examples/solid doc/tutorial
   FILE(GLOB programs "${CMAKE_CURRENT_BINARY_DIR}/${programs_dir}/life_*")
   INSTALL(FILES ${programs} DESTINATION bin/)
 endforeach()
+# documentation and examples
+INSTALL(FILES life-manual.pdf DESTINATION share/doc/life/)
+FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/tutorial/*.*pp")
+INSTALL(FILES ${examples} DESTINATION share/doc/life/examples/)
 
+
+##
+## Archive generation using cpack
+##
 SET(CPACK_GENERATOR "TGZ")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "life")
 SET(CPACK_PACKAGE_VENDOR "Christophe Prud'homme")
