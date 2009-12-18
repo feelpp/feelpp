@@ -302,7 +302,8 @@ foreach( programs_dir examples/generic examples/heat examples/solid doc/tutorial
   INSTALL(FILES ${programs} DESTINATION bin/)
 endforeach()
 # documentation and examples
-INSTALL(FILES life-manual.pdf DESTINATION share/doc/life/)
+FILE(GLOB pdfs "${CMAKE_CURRENT_BINARY_DIR}/doc/tutorial/life-manual.pdf")
+INSTALL(FILES ${pdfs} DESTINATION share/doc/life/)
 FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/tutorial/*.*pp")
 INSTALL(FILES ${examples} DESTINATION share/doc/life/examples/)
 
