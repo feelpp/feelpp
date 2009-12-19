@@ -312,7 +312,7 @@ Here is the list of required packages:
 \item MPI : openmpi (preferred) or mpich
 \item Boost (>=1.37)
 \item Petsc (>=2.3.3)
-\item autoconf, automake, libtool (required in subversion mode)
+\item Cmake (>=2.6)
 \item Gmsh\footnote{Gmsh is a pre/post processing software for scientific
 computing available at \url{http://www.geuz.org/gmsh}}
 \item Libxml2
@@ -354,6 +354,8 @@ build type:
 
 \paragraph{CMake In Source Build}
 
+This is not advised, yoiu should consider out source builds, see next paragraph.
+
 Enter the source tree and type
 \begin{unixcom}
   cmake .
@@ -370,96 +372,114 @@ To customize or change some build setting one can use the \cmake curse interface
 \paragraph{CMake Out Source Build}
 
 Create a build directory
-
-\subsection{Compiling Life with the AutoTools}
-
-Go in the same folder in wich you have done the checkout and type the following
-commands :
-
-\subsubsection{From tarball}
-\label{sec:from-tarball}
-
-The steps are as follows to configure the \life Development Plateform
-
 \begin{unixcom}
-  cd life-x.y.z
-  mkdir opt
-  cd opt
-
-  ../configure --enable-opt2
-\end{unixcom}
-
-Then type
-\begin{unixcom}
+  mkdir life.opt
+  cd life.opt
+  cmake <directory where the life source are>
+  # e.g cmake ../life if life.opt is at the same 
+  # directory level as life
   make
 \end{unixcom}
 
-to compile the library and the tutorial. And finally type
+you can customize the build type:
 \begin{unixcom}
-  make check
-\end{unixcom}
-In order to compile the testsuite, the examples and the benchmarks and
-execute some of them to verity that the \life library is functional.
-
-
-\subsubsection{From subversion}
-\label{sec:from-subversion}
-
-The steps are as follows to configure the \life Development Plateform
-
-\begin{unixcom}
-  cd life
-  make -f Makefile.dist
-  mkdir opt
-  cd opt
-
-  ../configure --enable-opt2
-\end{unixcom}
-
-Then, to build  the \life library, type
-\begin{unixcom}
-  make
-\end{unixcom}
-
-And finally to check the library, type
-\begin{unixcom}
-  make check
+  # Debug build type (-g...)
+  cmake -D CMAKE_BUILD_TYPE=Debug
+  # Release build type (-O3...)
+  cmake -D CMAKE_BUILD_TYPE=Release
+  ...
 \end{unixcom}
 
 
-\begin{note}
-  The script \lstinline!configure! supports many command line
-  options. In particular if you are interested in writing some code or
-  examples inside the \life environment you have to enable the so
-  called \emph{maintainer mode} to ensure that the makefiles are
-  properly regenerated when you modify a \lstinline!Makefile.am! or if
-  you modify \lstinline!configure.ac!, to achieve this type
-  \begin{unixcom}
-    configure --enable-maintainer-mode
-  \end{unixcom}
-  To list all configure options, type
-  \begin{unixcom}
-    configure --help
-  \end{unixcom}
-\end{note}
+% \subsection{Compiling Life with the AutoTools}
+
+% Go in the same folder in wich you have done the checkout and type the following
+% commands :
+
+% \subsubsection{From tarball}
+% \label{sec:from-tarball}
+
+% The steps are as follows to configure the \life Development Plateform
+
+% \begin{unixcom}
+%   cd life-x.y.z
+%   mkdir opt
+%   cd opt
+
+%   ../configure --enable-opt2
+% \end{unixcom}
+
+% Then type
+% \begin{unixcom}
+%   make
+% \end{unixcom}
+
+% to compile the library and the tutorial. And finally type
+% \begin{unixcom}
+%   make check
+% \end{unixcom}
+% In order to compile the testsuite, the examples and the benchmarks and
+% execute some of them to verity that the \life library is functional.
 
 
-\subsubsection{Compiling an extra module}
-\label{sec:compile-an-extra}
+% \subsubsection{From subversion}
+% \label{sec:from-subversion}
 
-If you work with an extra module, \emph{e.g.} \lstinline!validation!, the steps are as follows
-\begin{unixcom}
-cd life
-make -f Makefile.dist
-cd benchmarks/validation
-make -f Makefile.dist
-cd ../../..
-mkdir opt
-cd opt
-../life/configure --enable-opt2 --enable-maintainer-mode
-make
-make check
-\end{unixcom}
+% The steps are as follows to configure the \life Development Plateform
+
+% \begin{unixcom}
+%   cd life
+%   make -f Makefile.dist
+%   mkdir opt
+%   cd opt
+
+%   ../configure --enable-opt2
+% \end{unixcom}
+
+% Then, to build  the \life library, type
+% \begin{unixcom}
+%   make
+% \end{unixcom}
+
+% And finally to check the library, type
+% \begin{unixcom}
+%   make check
+% \end{unixcom}
+
+
+% \begin{note}
+%   The script \lstinline!configure! supports many command line
+%   options. In particular if you are interested in writing some code or
+%   examples inside the \life environment you have to enable the so
+%   called \emph{maintainer mode} to ensure that the makefiles are
+%   properly regenerated when you modify a \lstinline!Makefile.am! or if
+%   you modify \lstinline!configure.ac!, to achieve this type
+%   \begin{unixcom}
+%     configure --enable-maintainer-mode
+%   \end{unixcom}
+%   To list all configure options, type
+%   \begin{unixcom}
+%     configure --help
+%   \end{unixcom}
+% \end{note}
+
+
+% \subsubsection{Compiling an extra module}
+% \label{sec:compile-an-extra}
+
+% If you work with an extra module, \emph{e.g.} \lstinline!validation!, the steps are as follows
+% \begin{unixcom}
+% cd life
+% make -f Makefile.dist
+% cd benchmarks/validation
+% make -f Makefile.dist
+% cd ../../..
+% mkdir opt
+% cd opt
+% ../life/configure --enable-opt2 --enable-maintainer-mode
+% make
+% make check
+% \end{unixcom}
 
 
 \subsubsection{Compiling the Life tutorial}
