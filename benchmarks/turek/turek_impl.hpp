@@ -232,22 +232,22 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
     AUTO( SigmaN, (-id(p)*N()+2*this->nu()*def*N()) );
     AUTO( SigmaNv, (-idv(p)*N()+2*this->nu()*defv*N()) );
 
-    *M_mass_v = integrate( elements(mesh), MyIm<2*uOrder+2*(GeoOrder-1)>(), trans(idt(u))*id(v) );
+    *M_mass_v = integrate( elements(mesh), _Q<2*uOrder+2*(GeoOrder-1)>(), trans(idt(u))*id(v) );
     M_mass_v->close();
-    *M_mass_s = integrate( elements(mesh), MyIm<2*uOrder+2*(GeoOrder-1)>(), trans(idt(p))*id(q) );
+    *M_mass_s = integrate( elements(mesh), _Q<2*uOrder+2*(GeoOrder-1)>(), trans(idt(p))*id(q) );
     M_mass_s->close();
 
     // oplin
     Log() << "[add element stokes terms] (nu * (nabla u+ nabla^T u)  : nabla v)\n";
     *M_oplin =
-        integrate( elements(mesh), MyIm<2*(uOrder-1)+4*(GeoOrder-1)>(),
+        integrate( elements(mesh), _Q<2*(uOrder-1)+4*(GeoOrder-1)>(),
                    2*this->nu()*trace(deft*def) );
     Log() << "[add element stokes terms] (nu * (nabla u+ nabla^T u)  : nabla v) done in " << ti.elapsed() << "s\n";
     ti.restart();
 
     Log() << "[add element stokes terms] ( p, div(v) ) + ( div(u), q )\n";
     *M_oplin +=
-        integrate( elements(mesh), MyIm<2*(uOrder-1)+3*(GeoOrder-1)>(),
+        integrate( elements(mesh), _Q<2*(uOrder-1)+3*(GeoOrder-1)>(),
                    - div(v)*idt(p) + divt(u)*id(q)
                    );
     Log() << "[add element stokes terms] ( p, div(v) ) + ( div(u), q ) done in " << ti.elapsed()<< "s\n";
@@ -256,7 +256,7 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
 
 #if 1
     *M_oplin +=
-        integrate( elements(mesh), MyIm<2*(uOrder-1)+2*(GeoOrder-1)>(),
+        integrate( elements(mesh), _Q<2*(uOrder-1)+2*(GeoOrder-1)>(),
                    this->epsPseudoCompressibility()*idt(p)*id(q)
                    );
     Log() << "[add element stokes terms] ( epsilon p, q) ) done in " << ti.elapsed() << "s\n";
@@ -265,7 +265,7 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
 #endif
 #if 0
     *M_oplin +=
-        integrate( elements(mesh), MyIm<2*(uOrder-1)+2*(GeoOrder-1)>(),
+        integrate( elements(mesh), _Q<2*(uOrder-1)+2*(GeoOrder-1)>(),
                    idt(p)*id(lambda) + id(p)*idt(lambda)
                    );
 #endif
@@ -274,7 +274,7 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
         {
             Log() << "[add element divdiv term] (h delta div u,div v)\n";
             *M_oplin +=
-                integrate( elements(mesh), MyIm<2*uOrder-2+3*(GeoOrder-1)>(),
+                integrate( elements(mesh), _Q<2*uOrder-2+3*(GeoOrder-1)>(),
                            h()*this->deltaDivDiv()*div(v)*divt(u)
                            );
         }
@@ -283,12 +283,12 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
         {
             Log() << "[add weakbc boundary terms velocity] boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
             *M_oplin +=
-                integrate( markedfaces(mesh,mesh->markerName( marker )), MyIm<(2*uOrder-1)+3*(GeoOrder-1)>(),
+                integrate( markedfaces(mesh,mesh->markerName( marker )), _Q<(2*uOrder-1)+3*(GeoOrder-1)>(),
                            -trans(SigmaNt)*id(v)
                            -trans(SigmaN)*idt(u)
                            );
             *M_oplin +=
-                integrate( markedfaces(mesh,mesh->markerName( marker )), MyIm<2*uOrder+2*(GeoOrder-1)>(),
+                integrate( markedfaces(mesh,mesh->markerName( marker )), _Q<2*uOrder+2*(GeoOrder-1)>(),
                            +this->gammaBc()*trans(idt(u))*id(v)/hFace()
 
 
@@ -302,12 +302,12 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
         {
             Log() << "[add weakbc boundary terms pressure] boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
             *M_oplin +=
-                integrate( markedfaces(mesh,mesh->markerName( marker )), MyIm<(2*uOrder-1)+3*(GeoOrder-1)>(),
+                integrate( markedfaces(mesh,mesh->markerName( marker )), _Q<(2*uOrder-1)+3*(GeoOrder-1)>(),
                            -trans(-idt(p)*N())*id(v)
                            -trans(-id(q)*N())*idt(u)
                            );
             *M_oplin +=
-                integrate( markedfaces(mesh,mesh->markerName( marker )), MyIm<2*(uOrder-1)+2*(GeoOrder-1)>(),
+                integrate( markedfaces(mesh,mesh->markerName( marker )), _Q<2*(uOrder-1)+2*(GeoOrder-1)>(),
                            +this->gammaBc()*idt(p)*id(q)/hFace()
 
 
@@ -323,7 +323,7 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
 
     // stokes linear form
     *M_stokes_rhs =
-        integrate( markedfaces(mesh,mesh->markerName( "inflow" )), MyIm<3*uOrder+2*Dim+2*(GeoOrder-1)>(),
+        integrate( markedfaces(mesh,mesh->markerName( "inflow" )), _Q<3*uOrder+2*Dim+2*(GeoOrder-1)>(),
                    trans(idf( this->inflow(time) ))*( -SigmaN+this->gammaBc()*id(v)/hFace() ) );
     Log() << "[Turek::initLinearOperators] stokes  in " << ti.elapsed() << "s\n";
     ti.restart();
@@ -368,12 +368,12 @@ Turek<Dim, Order, GeoOrder>::updateResidual( const vector_ptrtype& X, vector_ptr
     // add the right hand side contribution from the non-homogeneous
     // Dirichlet contribution
     *M_residual =
-        integrate( elements(mesh), MyIm<3*uOrder-1+3*(GeoOrder-1)>(),
+        integrate( elements(mesh), _Q<3*uOrder-1+3*(GeoOrder-1)>(),
                    this->rho()* ( trans(idv(u))*id(v)*M_bdf->polyDerivCoefficient(0) +
                                   trans(gradv(u)*idv(u))*id(v)
                                   - trans(idv( M_bdf->polyDeriv().template element<0>() ) ) *id(v) ) ) +
 
-        integrate( markedfaces(mesh,mesh->markerName( "inflow" )), MyIm<3*uOrder+2*Dim+2*(GeoOrder-1)>(),
+        integrate( markedfaces(mesh,mesh->markerName( "inflow" )), _Q<3*uOrder+2*Dim+2*(GeoOrder-1)>(),
                    //- this->gammaBc()*max(sqrt(trans(beta)*beta),this->nu()/hFace())*(trans(idf(this->inflow(time)))*N())*(trans(id(v))*N())
                    //-trans(vec( 4*this->Um()*Py()*(this->H()-Py())/math::pow(this->H(),2), constant(0.)))*( -SigmaN+this->gammaBc()*id(v)/hFace() ) );
                    - trans(idf( this->inflow(time) ))*( -SigmaN+this->gammaBc()*id(v)/hFace() ) );
@@ -409,13 +409,13 @@ Turek<Dim, Order, GeoOrder>::updateJacobian( const vector_ptrtype& X, sparse_mat
 
     if ( is_init == false )
         {
-            *M_jac = integrate( elements( mesh ), MyIm<3*uOrder-1+3*(GeoOrder-1)>(),
+            *M_jac = integrate( elements( mesh ), _Q<3*uOrder-1+3*(GeoOrder-1)>(),
                                 this->rho()*trans(idt(u))*id(v)*M_bdf->polyDerivCoefficient( 0 ) +
                                 this->rho()*trans(gradt(u)*idv(u))*id(v) );
-            *M_jac += integrate( elements( mesh ), MyIm<3*uOrder-1+3*(GeoOrder-1)>(),
+            *M_jac += integrate( elements( mesh ), _Q<3*uOrder-1+3*(GeoOrder-1)>(),
                                  +0*div(v)*idt(p)+0*divt(u)*id(q) +0*idt(p)*id(q) );
 #if 0
-            *M_jac += integrate( elements( mesh ), MyIm<3*uOrder-1+3*(GeoOrder-1)>(),
+            *M_jac += integrate( elements( mesh ), _Q<3*uOrder-1+3*(GeoOrder-1)>(),
                                  +0*idt(lambda)*id(p)+0*id(lambda)*idt(p) );
 #endif
             //this->rho()*trans(gradt(u)*idv(u))*id(v) );
@@ -424,13 +424,13 @@ Turek<Dim, Order, GeoOrder>::updateJacobian( const vector_ptrtype& X, sparse_mat
     else
         {
             M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ), MyIm<3*uOrder-1+3*(GeoOrder-1)>(),
+            *M_jac += integrate( elements( mesh ), _Q<3*uOrder-1+3*(GeoOrder-1)>(),
                                  this->rho()*trans(idt(u))*id(v)*M_bdf->polyDerivCoefficient( 0 ) +
                                  this->rho()*trans(gradt(u)*idv(u))*id(v) );
         }
 #if 0
     AUTO( beta, idv(u) );
-    *M_jac += integrate( boundaryfaces( mesh ), MyIm<4*uOrder+2*(GeoOrder-1)>(),
+    *M_jac += integrate( boundaryfaces( mesh ), _Q<4*uOrder+2*(GeoOrder-1)>(),
                          this->gammaBc()*max(sqrt(trans(beta)*beta),this->nu()/hFace())*(trans(idt(u))*N())*(trans(id(v))*N()) );
 #endif
     M_jac->close();
@@ -537,23 +537,23 @@ Turek<Dim, Order, GeoOrder>::normL2Div( fluid_element_type& U ) const
     fluid_element_1_type p = U.template element<1>();
     mesh_ptrtype mesh = M_Xh->mesh();
 
-    double int_one_times_N = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "cylinder" )), MyIm<2*(GeoOrder-1)>(), trans(one())*N() ).evaluate()( 0, 0 );
+    double int_one_times_N = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "cylinder" )), _Q<2*(GeoOrder-1)>(), trans(one())*N() ).evaluate()( 0, 0 );
     Log() << "             int 1.N = " << int_one_times_N << "\n";
     //
     // average pressure
     //
-    double measure = integrate( elements(u.functionSpace()->mesh()), MyIm<2*(GeoOrder-1)>(), constant(1.0) ).evaluate()( 0, 0 );
+    double measure = integrate( elements(u.functionSpace()->mesh()), _Q<2*(GeoOrder-1)>(), constant(1.0) ).evaluate()( 0, 0 );
     Log() << "                    area = " << measure << "\n";
-    double meanp = integrate( elements(u.functionSpace()->mesh()), MyIm<(uOrder-1)+2*(GeoOrder-1)>(), idv( p )).evaluate()( 0, 0 )/measure;
+    double meanp = integrate( elements(u.functionSpace()->mesh()), _Q<(uOrder-1)+2*(GeoOrder-1)>(), idv( p )).evaluate()( 0, 0 )/measure;
     Log() << "                mean( p )= " << meanp << "\n";
 
     //
     // average pressure at outflow
     //
-    double measure_outflow = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "outflow" )), MyIm<2*(GeoOrder-1)>(),
+    double measure_outflow = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "outflow" )), _Q<2*(GeoOrder-1)>(),
                                         constant(1.0) ).evaluate()( 0, 0 );
     Log() << "         measure outflow = " << measure_outflow << "\n";
-    double meanp_outflow = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "outflow" )), MyIm<(uOrder-1)+2*(GeoOrder-1)>(),
+    double meanp_outflow = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "outflow" )), _Q<(uOrder-1)+2*(GeoOrder-1)>(),
                                       idv( p )).evaluate()( 0, 0 )/measure_outflow;
     Log() << "        mean_outflow( p )= " << meanp_outflow << "\n";
 
@@ -561,17 +561,17 @@ Turek<Dim, Order, GeoOrder>::normL2Div( fluid_element_type& U ) const
     //
     // Divergence
     //
-    double intdiv2 = math::sqrt( integrate( elements(u.functionSpace()->mesh()), MyIm<2*(uOrder-1)+4*(GeoOrder-1)>(), divv( u )*divv( u )).evaluate()( 0, 0 ) );
+    double intdiv2 = math::sqrt( integrate( elements(u.functionSpace()->mesh()), _Q<2*(uOrder-1)+4*(GeoOrder-1)>(), divv( u )*divv( u )).evaluate()( 0, 0 ) );
     Log() << "             |div(un)|_2 = " << intdiv2 << "\n";
-    double intdiv = integrate( elements(u.functionSpace()->mesh()), MyIm<(uOrder-1)+3*(GeoOrder-1)>(), divv( u )).evaluate()( 0, 0 );
+    double intdiv = integrate( elements(u.functionSpace()->mesh()), _Q<(uOrder-1)+3*(GeoOrder-1)>(), divv( u )).evaluate()( 0, 0 );
     Log() << "            int( div(un))= " << intdiv << "\n";
-    double intun_wall = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "wall" )), MyIm<uOrder+2*(GeoOrder-1)>(), idv( u )*N()).evaluate()( 0, 0 );
+    double intun_wall = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "wall" )), _Q<uOrder+2*(GeoOrder-1)>(), idv( u )*N()).evaluate()( 0, 0 );
     Log() << "          int(u.n)|_wall = " << intun_wall << "\n";
-    double intun_inflow = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "inflow" )), MyIm<uOrder+2*(GeoOrder-1)>(), idv( u )*N()).evaluate()( 0, 0 );
+    double intun_inflow = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "inflow" )), _Q<uOrder+2*(GeoOrder-1)>(), idv( u )*N()).evaluate()( 0, 0 );
     Log() << "        int(u.n)|_inflow = " << intun_inflow << "\n";
-    double intun_outflow = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "outflow" )), MyIm<uOrder+2*(GeoOrder-1)>(), idv( u )*N()).evaluate()( 0, 0 );
+    double intun_outflow = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "outflow" )), _Q<uOrder+2*(GeoOrder-1)>(), idv( u )*N()).evaluate()( 0, 0 );
     Log() << "       int(u.n)|_outflow = " << intun_outflow << "\n";
-    double intun_cylinder = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "cylinder" )), MyIm<uOrder+2*(GeoOrder-1)>(), idv( u )*N()).evaluate()( 0, 0 );
+    double intun_cylinder = integrate( markedfaces(u.functionSpace()->mesh(),mesh->markerName( "cylinder" )), _Q<uOrder+2*(GeoOrder-1)>(), idv( u )*N()).evaluate()( 0, 0 );
     Log() << "      int(u.n)|_cylinder = " << intun_cylinder << "\n";
 
     return intdiv;
@@ -597,7 +597,7 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U)
     AUTO( defv, 0.5*( gradv(u)+trans(gradv(u)) ) );
     AUTO( SigmaNv, (-idv(p)*N()+2*this->nu()*defv*N()) );
 
-    ublas::matrix<double> Force = integrate( markedfaces(mesh,mesh->markerName( "cylinder" )), MyIm<uOrder-1+3*(GeoOrder-1)>(), SigmaNv ).evaluate();
+    ublas::matrix<double> Force = integrate( markedfaces(mesh,mesh->markerName( "cylinder" )), _Q<uOrder-1+3*(GeoOrder-1)>(), SigmaNv ).evaluate();
     Log() << "Force=" << Force << "\n";
     Log() << "Scaling=" << this->scalingForce() << "\n";
     Force *= this->scalingForce();
@@ -683,7 +683,7 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U)
 
                     vector_ptrtype F_vort( M_backend->newVector( M_Xh->template functionSpace<0>() ) );
                     form1( M_Xh->template functionSpace<0>(), F_vort ) = integrate( elements( mesh ),
-                                                                                    MyIm<uOrder+3*(GeoOrder-1)>(),
+                                                                                    _Q<uOrder+3*(GeoOrder-1)>(),
                                                                                     trans(curlv( u ))*id(vort) );
                     F_vort->close();
 
@@ -698,7 +698,7 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U)
                 {
                     vector_ptrtype F_vort( M_backend->newVector( M_Xh->template functionSpace<1>() ) );
                     form1( M_Xh->template functionSpace<1>(), F_vort ) = integrate( elements( mesh ),
-                                                                                    MyIm<uOrder+3*(GeoOrder-1)>(),
+                                                                                    _Q<uOrder+3*(GeoOrder-1)>(),
                                                                                     (dxv(u.comp(Y))-dyv(u.comp(X)))*id(aux ) );
                     F_vort->close();
 
