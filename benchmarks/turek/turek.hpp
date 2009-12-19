@@ -125,17 +125,6 @@ public:
     typedef FunctionSpace<typename velocity_oplagp1_type::image_mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
-    /*quadrature*/
-#if 0
-    template<int IMORDER> struct MyIm : public IM<Dim, IMORDER, value_type, Entity> {};
-#else
-    template<int IMORDER> struct MyIm
-        :
-        public mpl::if_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<6> >,
-                        mpl::identity<IMSimplex<Dim, IMORDER, value_type> >,
-                        mpl::identity<IM<Dim, IMORDER, value_type, Entity> > >::type::type
-    {};
-#endif
     /* time */
     typedef Bdf<fluid_functionspace_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
