@@ -33,11 +33,7 @@ foreach( BENCH laplacian1dP1 laplacian1dP5
     laplacian2dP1h laplacian2dP5h
     laplacian3dP1 laplacian3dP2 laplacian3dP3 laplacian3dP5
     laplacian3dP1h
-    laplacian2dP1v laplacian2dP4v
-
-    stokes nonlinearpow
-
-    ale1 ale2 ale3 ale4 ale5 )
+    laplacian2dP1v laplacian2dP4v )
 
     life_add_bench( ${BENCH} )
 
@@ -54,6 +50,24 @@ foreach( BENCH laplacian1dP1 laplacian1dP5
         --path=${LIFE_BUILD_DIR}/benchmarks/convergence/
         --cmdargs="--backend=${BACKEND} --weak --no-export")
 
+    endforeach()
+
+endforeach()
+
+
+foreach( BENCH
+    stokes nonlinearpow
+    ale1 ale2 ale3 ale4 ale5 )
+
+    life_add_bench( ${BENCH} )
+
+    # test each backend
+    foreach( BACKEND petsc trilinos )
+      add_test( life_bench_${BENCH}-${BACKEND}-strong
+        ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
+        --program=${targetname}
+        --path=${LIFE_BUILD_DIR}/benchmarks/convergence/
+        --cmdargs="--backend=${BACKEND} --no-export" )
     endforeach()
 
 endforeach()
