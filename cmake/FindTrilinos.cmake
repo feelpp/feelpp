@@ -1,3 +1,26 @@
+# -*- mode: makefile -*-
+#
+#  This file is part of the Life library
+#
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#       Date: 2009-12-21
+#
+#  Copyright (C) 2009 Université Joseph Fourier
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+#
 find_package(EXPAT)
 
 FIND_PATH(TRILINOS_INCLUDE_DIR Teuchos_Utils.hpp PATHS /opt/trilinos/include/ /usr/include/trilinos /usr/ljk/include/trilinos )
@@ -21,7 +44,7 @@ if( TRILINOS_INCLUDE_DIR )
   CHECK_INCLUDE_FILE_CXX(Amesos.h HAVE_TRILINOS_AMESOS "-ltrilinos_teuchos ${MPI_EXTRA_LIBRARY} ${MPI_LIBRARY}")
   CHECK_INCLUDE_FILE_CXX(Ifpack.h HAVE_TRILINOS_IFPACK "-ltrilinos_teuchos ${MPI_EXTRA_LIBRARY} ${MPI_LIBRARY}")
   CHECK_INCLUDE_FILE_CXX(ml_vec.h HAVE_TRILINOS_ML "-ltrilinos_teuchos ${MPI_EXTRA_LIBRARY} ${MPI_LIBRARY}")
-  CHECK_INCLUDE_FILE_CXX(NOX_Utils.H HAVE_TRILINOS_NOX "-ltrilinos_nox -ltrilinos_noxepetra -ltrilinos_noxlapack -lteuchos ${MPI_EXTRA_LIBRARY} ${MPI_LIBRARY}")
+  CHECK_INCLUDE_FILE_CXX(NOX_Utils.H HAVE_TRILINOS_NOX "-ltrilinos_nox -ltrilinos_noxepetra  -lteuchos ${MPI_EXTRA_LIBRARY} ${MPI_LIBRARY}")
 
   IF( HAVE_TRILINOS_TEUCHOS )
     ADD_DEFINITIONS( -DHAVE_TRILINOS -DHAVE_TRILINOS_TEUCHOS -DHAVE_TRILINOS_EPETRA -DHAVE_TRILINOS_EPETRAEXT -DAVE_TRILINOS_TRIUTILS -DHAVE_TRILINOS_AZTECOO -DHAVE_AZTECOO_TEUCHOS -DHAVE_TRILINOS_AMESOS -DHAVE_TRILINOS_IFPACK  -DHAVE_TRILINOS_ML -DML_MPI -DHAVE_ML_TEUCHOS -DHAVE_ML_EPETRA -DHAVE_ML_AZTECOO )
@@ -38,7 +61,7 @@ if( TRILINOS_INCLUDE_DIR )
   FIND_LIBRARY(TRILINOS_LIB_GALERI    NAMES trilinos_galeri galeri       PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
   FIND_LIBRARY(TRILINOS_LIB_NOX       NAMES trilinos_nox nox             PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
   FIND_LIBRARY(TRILINOS_LIB_NOXEPETRA NAMES trilinos_noxepetra noxepetra PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
-  FIND_LIBRARY(TRILINOS_LIB_NOXLAPACK NAMES trilinos_noxlapack noxlapack PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
+#  FIND_LIBRARY(TRILINOS_LIB_NOXLAPACK NAMES trilinos_noxlapack noxlapack PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
 
   MARK_AS_ADVANCED(
     TRILINOS_LIB_TEUCHOS
@@ -52,13 +75,13 @@ if( TRILINOS_INCLUDE_DIR )
     TRILINOS_LIB_GALERI
     TRILINOS_LIB_NOX
     TRILINOS_LIB_NOXEPETRA
-    TRILINOS_LIB_NOXLAPACK
+#    TRILINOS_LIB_NOXLAPACK
     )
 
   SET(TRILINOS_LIBRARIES
     ${TRILINOS_LIB_NOX}
     ${TRILINOS_LIB_NOXEPETRA}
-    ${TRILINOS_LIB_NOXLAPACK}
+#    ${TRILINOS_LIB_NOXLAPACK}
     ${TRILINOS_LIB_ML}
     ${TRILINOS_LIB_GALERI}
     ${TRILINOS_LIB_IFPACK}
