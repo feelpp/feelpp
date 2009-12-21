@@ -12,15 +12,20 @@
 
 ** Programming environment
 
-*** Directory layout and autotools
+*** Directory layout and cmake
 
-    Now Life splits the entire framework into various modules
+    - Now Life splits the entire framework into various modules and uses cmake as
+      build system. REferences to the autotools and scons have been removed
 
-*** Libtool
+    - A CDash dashboard is available at
+      http://my.cdash.org/index.php?project=Life Tests are running every night
+      and reported on the dashboard.
 
-   Now the libraries follow libtool versioning scheme
+*** Shared libraries
 
-   So, libtool library versions are described by three integers:
+   Now the libraries follow this versioning scheme
+
+   So, shared library versions are described by three integers:
    - current: The most recent interface number that this library implements.
    - revision: The implementation number of the current interface.
    - age: The difference between the newest and oldest interfaces that this
@@ -30,7 +35,7 @@
    from number 'current - age' to current.
 
    Here are a set of rules that are used to update the library version information:
-   1. Start with version information of ‘0:0:0’ for each libtool library.
+   1. Start with version information of ‘0:0:0’ for each  library.
    2. Update the version information only immediately before a public release of
       your software. More frequent updates are unnecessary, and only guarantee
       that the current interface number gets larger faster.
