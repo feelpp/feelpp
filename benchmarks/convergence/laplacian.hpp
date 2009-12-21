@@ -214,7 +214,7 @@ private:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( element_type& u );
+    void exportResults( element_type& u, element_type& v );
 
 private:
 
@@ -319,10 +319,10 @@ Laplacian<Dim, Order, RDim, Entity>::run()
         {
             form1( Xh, F ) +=
                 integrate( markedfaces(mesh,tag1), _Q<Order+2>(),
-                           zf*(-grad(v)*N()+M_gammabc*id(v)/hFace() ) );
+                           zf*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
             form1( Xh, F ) +=
                 integrate( markedfaces(mesh,tag2), _Q<Order+2>(),
-                           zf*(-grad(v)*N()+M_gammabc*id(v)/hFace() ) );
+                           zf*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
 
         }
 
@@ -343,12 +343,12 @@ Laplacian<Dim, Order, RDim, Entity>::run()
         {
 
             form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag1), _Q<2*(Order+2)>(),
-                                             ( - trans(id(v))*(gradt(u)*N())
-                                               - trans(idt(u))*(grad(v)*N())
+                                             ( - nu*trans(id(v))*(gradt(u)*N())
+                                               - nu*trans(idt(u))*(grad(v)*N())
                                                + M_gammabc*trans(idt(u))*id(v)/hFace()) );
             form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag2), _Q<2*(Order+2)>(),
-                                             ( - trans(id(v))*(gradt(u)*N())
-                                               - trans(idt(u))*(grad(v)*N())
+                                             ( - nu*trans(id(v))*(gradt(u)*N())
+                                               - nu*trans(idt(u))*(grad(v)*N())
                                                + M_gammabc*trans(idt(u))*id(v)/hFace()) );
 
 
@@ -398,7 +398,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     Log() << "H1 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
 
-    this->exportResults( u );
+    this->exportResults( u, v );
 
 
     this->addOutputValue( L2error ).addOutputValue( H1error );
@@ -422,7 +422,7 @@ Laplacian<Dim, Order, RDim, Entity>::solve( sparse_matrix_ptrtype& D,
 
 template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Laplacian<Dim, Order, RDim, Entity>::exportResults( element_type& U )
+Laplacian<Dim, Order, RDim, Entity>::exportResults( element_type& U, element_type& v )
 {
     if ( M_do_export )
         {
@@ -433,6 +433,7 @@ Laplacian<Dim, Order, RDim, Entity>::exportResults( element_type& U )
             exporter->step(0)->add( "pid",
                            regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
             exporter->step(0)->add( "u", U );
+            exporter->step(0)->add( "exact", v );
 
             exporter->save();
         }
