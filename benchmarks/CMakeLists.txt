@@ -2,7 +2,7 @@ project( life-benchmarks )
 
 macro(life_add_bench examplename)
 
-  set(targetname life_${examplename})
+  set(targetname life_bench_${examplename})
   set(filename ${examplename}.cpp)
   add_executable(${targetname} ${filename})
   target_link_libraries(${targetname} ${LIFE_LIBRARIES} )
