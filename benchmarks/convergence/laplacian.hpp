@@ -152,6 +152,10 @@ public:
         M_do_export( !this->vm().count( "no-export" ) ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
+        if ( M_use_weak_dirichlet )
+            Log() << "use weak Dirichlet BC\n";
+        if ( M_do_export )
+            Log() << "export results to ensight format\n";
         Parameter h;
         if (Dim == 1)           //=== 1D ===
             if (Order < 5)
