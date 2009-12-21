@@ -34,6 +34,7 @@ from optparse import OptionParser
 import codeCalcul
 import util
 import sys
+import string
 
 
 # Creation des options
@@ -67,7 +68,7 @@ except IOError:
 	sys.exit(-1)
 
 # Ajout des eventuelles options
-code.addOptions(options.cmdargs)
+code.addOptions(string.replace(string.replace(options.cmdargs,"\ ", " "), "\"", "" ) )
 
 # Initialisation des variables
 val_param={}
