@@ -43,11 +43,16 @@ foreach( BENCH laplacian1dP1 laplacian1dP5
 
     # test each backend
     foreach( BACKEND petsc trilinos )
-      add_test( ${BENCH}-${BACKEND}
+      add_test( life_bench_${BENCH}-${BACKEND}-strong
         ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --path="${LIFE_BUILD_DIR}/benchmarks/convergence/"
         --cmdargs="--backend=${BACKEND}  --no-export" )
+      add_test( life_bench_${BENCH}-${BACKEND}-weak
+        ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
+        --program=${targetname}
+        --path="${LIFE_BUILD_DIR}/benchmarks/convergence/"
+        --cmdargs="--backend=${BACKEND}  --no-export --weak" )
     endforeach()
 
 endforeach()
