@@ -25,7 +25,7 @@ INCLUDE_DIRECTORIES (
   ${LIFE_SOURCE_DIR}/benchmarks/convergence
   )
 ENABLE_TESTING()
-
+set(petsc_SOLVER_OPTIONS "-ksp_monitor" )
 foreach( BENCH laplacian1dP1 laplacian1dP5
     laplacian1d2dP1 laplacian1d2dP5
     laplacian2dP1 laplacian2dP5
@@ -43,12 +43,12 @@ foreach( BENCH laplacian1dP1 laplacian1dP5
         ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --path=${LIFE_BUILD_DIR}/benchmarks/convergence/
-        --cmdargs="--backend=${BACKEND} --no-export" )
+        --cmdargs="--backend=${BACKEND} --no-export ${${BACKEND}_SOLVER_OPTIONS}" )
       add_test( life_bench_${BENCH}-${BACKEND}-weak
         ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --path=${LIFE_BUILD_DIR}/benchmarks/convergence/
-        --cmdargs="--backend=${BACKEND} --weak --no-export")
+        --cmdargs="--backend=${BACKEND} --weak --no-export ${${BACKEND}_SOLVER_OPTIONS}")
 
     endforeach()
 
@@ -67,7 +67,7 @@ foreach( BENCH
         ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --path=${LIFE_BUILD_DIR}/benchmarks/convergence/
-        --cmdargs="--backend=${BACKEND} --no-export" )
+        --cmdargs="--backend=${BACKEND} --no-export ${${BACKEND}_SOLVER_OPTIONS}" )
     endforeach()
 
 endforeach()
