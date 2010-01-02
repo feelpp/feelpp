@@ -199,7 +199,7 @@ inline
 SolverLinear<T>::SolverLinear () :
 
     _M_solver_type         (GMRES),
-    _M_preconditioner_type (ILU_PRECOND),
+    _M_preconditioner_type (LU_PRECOND),
     _M_is_initialized      (false),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN )
 {

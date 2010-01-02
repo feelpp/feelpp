@@ -243,7 +243,7 @@ inline
 SolverLinearPetsc<T>::SolverLinearPetsc ()
 {
   if (Application::nProcess() == 1)
-    this->setPreconditionerType(  ILU_PRECOND );
+    this->setPreconditionerType(  LU_PRECOND );
   else
     this->setPreconditionerType( BLOCK_JACOBI_PRECOND );
 }

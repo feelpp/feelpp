@@ -83,7 +83,7 @@ SolverLinearPetsc<T>::clear ()
         this->setSolverType(  GMRES );
 
         if (Application::nProcess() == 1)
-            this->setPreconditionerType( ILU_PRECOND );
+            this->setPreconditionerType( LU_PRECOND );
         else
             this->setPreconditionerType( BLOCK_JACOBI_PRECOND );
     }
@@ -464,7 +464,17 @@ template <typename T>
 void
 SolverLinearPetsc<T>::setPetscPreconditionerType()
 {
+
   int ierr = 0;
+  ierr = PCFactorSetMatSolverPackage(_M_pc,MAT_SOLVER_UMFPACK);
+  if ( ierr )
+  {
+      ierr = PCFactorSetMatSolverPackage(_M_pc,MAT_SOLVER_SUPERLU );
+      if ( ierr )
+      {
+          ierr = PCFactorSetMatSolverPackage(_M_pc,MAT_SOLVER_PETSC );
+      }
+  }
   Debug() << "[SolverLinearPetsc] preconditioner type:  " << this->preconditionerType() << "\n";
   switch (this->preconditionerType())
     {
@@ -511,6 +521,7 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
 		<< this->preconditionerType()       << std::endl
 		<< "Continuing with PETSC defaults" << std::endl;
     }
+
 }
 
 
