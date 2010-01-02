@@ -7,6 +7,7 @@ getuname(osname -s)
 getuname(osrel  -r)
 getuname(cpu    -m)
 set(CTEST_BUILD_NAME        "${osname}-${cpu}")
+set(CTEST_TIMEOUT           "600")
 
 SET(MODEL Nightly)
 IF(${CTEST_SCRIPT_ARG} MATCHES Experimental)
