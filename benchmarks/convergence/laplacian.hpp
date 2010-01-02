@@ -367,9 +367,9 @@ Laplacian<Dim, Order, RDim, Entity>::run()
         {
             t1.restart();
             form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, tag1), u, F, zf )+
-                on( markedfaces(mesh, tag2), u, F, zf );
-            Log() << "Strong Dirichlet assembled in " << t1.elapsed() << "s\n";
+                on( markedfaces(mesh, tag1), u, F, g )+
+                on( markedfaces(mesh, tag2), u, F, g );
+            Log() << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << tag1 << " and " << tag2 << " \n";
         }
 
     t1.restart();
