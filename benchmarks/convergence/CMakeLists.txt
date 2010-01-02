@@ -25,7 +25,7 @@ INCLUDE_DIRECTORIES (
   ${LIFE_SOURCE_DIR}/benchmarks/convergence
   )
 ENABLE_TESTING()
-set(petsc_SOLVER_OPTIONS "-ksp_monitor" )
+set(petsc_SOLVER_OPTIONS "-ksp_monitor -pc_type asm -pc_asm_blocks 2" )
 foreach( BENCH laplacian1dP1 laplacian1dP5
     laplacian1d2dP1 laplacian1d2dP5
     laplacian2dP1 laplacian2dP5
