@@ -10,7 +10,13 @@
 
 * New in 0.9.12
 ** Programming environment
-   - now tests in testsuite are prefixed by test_
+   - tests in testsuite are prefixed by test_
+   - benchmarks are prefixed by life_bench
+   - convergence benchmarks are run with string and weak Dirichlet treatment if
+     applicable
+
+** Bugs
+   - Bug in on() for 1D problem (Fixes #32)
 
 
 * New in 0.9.11
