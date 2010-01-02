@@ -63,7 +63,7 @@ foreach( BENCH
 
     # test each backend
     foreach( BACKEND petsc trilinos )
-      add_test( life_bench_${BENCH}-${BACKEND}-strong
+      add_test( life_bench_${BENCH}-${BACKEND}
         ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --path=${LIFE_BUILD_DIR}/benchmarks/convergence/
