@@ -1119,14 +1119,35 @@ private:
     template<typename FaceIterator>
     void addVertexBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc )
     {
-        addVertexBoundaryDof( __face_it, c, lc, mpl::bool_<fe_type::nDofPerVertex>() );
+        addVertexBoundaryDof( __face_it, c, lc, mpl::bool_<fe_type::nDofPerVertex>(), mpl::int_<nDim>() );
     }
+    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*__face_it*/, uint16_type /*c*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
+    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*__face_it*/, uint16_type /*c*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
+    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*__face_it*/, uint16_type /*c*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) {}
     template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator /*__face_it*/, uint16_type /*c*/, uint16_type& /*lc*/, mpl::bool_<false> )
+    void addVertexBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc, mpl::bool_<true>, mpl::int_<1>  )
     {
+        BOOST_STATIC_ASSERT( face_type::numVertices );
+
+        // id of the element adjacent to the face
+        // \warning NEED TO INVESTIGATE THIS
+        size_type iElAd = __face_it->ad_first();
+        LIFE_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+
+        // local id of the face in its adjacent element
+        uint16_type iFaEl = __face_it->pos_first();
+        LIFE_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+
+        // Loop number of Dof per vertex
+        for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
+        {
+            _M_face_l2g[ __face_it->id()][ lc++ ] = this->localToGlobal( iElAd,
+                                                                         iFaEl * fe_type::nDofPerVertex + l,
+                                                                         c );
+        }
     }
     template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc, mpl::bool_<true>  )
+    void addVertexBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc, mpl::bool_<true>, mpl::int_<2>  )
     {
         BOOST_STATIC_ASSERT( face_type::numVertices );
 
@@ -1157,7 +1178,11 @@ private:
                     }
             }
     }
-
+    template<typename FaceIterator>
+    void addVertexBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc, mpl::bool_<true>, mpl::int_<3>  )
+    {
+        addVertexBoundaryDof( __face_it, c, lc, mpl::bool_<true>(), mpl::int_<2>() );
+    }
     template<typename FaceIterator>
     void addEdgeBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc )
     {
