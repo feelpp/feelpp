@@ -8,6 +8,9 @@
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
+* New in 0.9.13
+
+
 * New in 0.9.12
 ** Programming environment
    - tests in testsuite are prefixed by test_
