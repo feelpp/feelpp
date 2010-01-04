@@ -281,7 +281,7 @@ endif()
 INCLUDE(InstallRequiredSystemLibraries)
 
 
-foreach(includedir lifecore lifealg lifemesh lifefilters lifediscr lifevf lifematerial lifesystem )
+foreach(includedir lifecore lifealg lifemesh lifepoly lifefilters lifediscr lifevf lifematerial lifesystem )
   FILE(GLOB files "life/${includedir}/*.hpp")
   INSTALL(FILES ${files} DESTINATION include/life/${includedir})
 endforeach()
