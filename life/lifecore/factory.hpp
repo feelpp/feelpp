@@ -56,14 +56,14 @@ struct FactoryDefaultError
         public std::exception
     {
     public:
-        Exception( IdentifierType /*id*/ )
+        Exception( IdentifierType id )
             :
             std::exception(),
             _M_ex()
             {
                 std::ostringstream __ex_str;
-                //__ex_str << "[Factory] Unknown Type : " << id;
-                __ex_str << "[Factory] Unknown Type : ";
+                __ex_str << "[Factory] Unknown Type : " << id;
+                //__ex_str << "[Factory] Unknown Type : ";
                 _M_ex = __ex_str.str();
 
             }
