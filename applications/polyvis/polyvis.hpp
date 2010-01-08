@@ -45,14 +45,10 @@
 /** include integration methods */
 #include <life/lifepoly/im.hpp>
 /** include gmsh mesh importer */
-#include <life/lifefilters/importergmsh.hpp>
+#include <life/lifefilters/gmsh.hpp>
 
 /** include exporter factory class */
 #include <life/lifefilters/exporter.hpp>
-
-/** include gmsh generator for tensorized domains */
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifefilters/gmshsimplexdomain.hpp>
 
 /** include  polynomialset header */
 #include <life/lifepoly/polynomialset.hpp>
