@@ -9,6 +9,12 @@
 #+LATEX_class: cparticle
 
 * New in 0.9.13
+** Programming environment
+ - fixed installation of Life, was missing life/lifepoly headers
+
+** Application
+ - added cmake support to polyvis
+ - added ctests using polyvis
 
 
 * New in 0.9.12
