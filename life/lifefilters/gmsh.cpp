@@ -385,6 +385,9 @@ const bool meshs12s = Gmsh::Factory::type::instance().registerProduct( "simplex(
 const bool meshs21s = Gmsh::Factory::type::instance().registerProduct( "simplex(2,1)", &detail::createSimplexDomain<2,1> );
 const bool meshs22s = Gmsh::Factory::type::instance().registerProduct( "simplex(2,2)", &detail::createSimplexDomain<2,2> );
 
+const bool meshs31s = Gmsh::Factory::type::instance().registerProduct( "simplex(3,1)", &detail::createSimplexDomain<3,1> );
+const bool meshs32s = Gmsh::Factory::type::instance().registerProduct( "simplex(3,2)", &detail::createSimplexDomain<3,2> );
+
 const bool meshs112ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,Simplex)",
                                                                          &detail::createTensorizedDomain<1,1,2,Simplex> );
 
