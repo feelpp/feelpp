@@ -10,9 +10,23 @@
 
 * New in 0.9.13
 ** Programming environment
+
  - fixed installation of Life, was missing life/lifepoly headers
 
+** Libraries
+
+*** life/lifecore
+
+ - /Factory/: added info about missing component in Factory when throwing
+   exception
+
+*** life/lifefilters
+
+ - /Gmsh/: added simplex(3,1) domain in gmsh generator and accessible fromn
+   Gmsh::Factory (from GmshSimplexDomain class).
+
 ** Application
+
  - added cmake support to polyvis
  - added ctests using polyvis
 
