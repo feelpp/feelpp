@@ -53,6 +53,7 @@ parser.add_option("--element_type", dest="element", type="string", help="type of
 parser.add_option("--order", dest="order", type="int", help="pointset order", default=1)
 parser.add_option("--numbering", dest="numbers", type="int", help="adds numbering to points: 0 for no numbering, 1 to add the numbers", default=0)
 parser.add_option("--circle_radius", dest="circle_radius", type="float", help="radius of the circles that mark the nodes", default=0.07)
+parser.add_option("--size", dest="line_size", type="float", help="length of the side of the element", default=5)
 (options, args) = parser.parse_args()
 
 
@@ -77,6 +78,9 @@ if not (options.circle_radius > 0):
 	print "[validation] error : radius must be positive"
 	sys.exit(-1)
 
+if not (options.line_size > 0):
+	print "[validation] error : length must be positive"
+	sys.exit(-1)
 
 #print options.order
 #print options.numbers
@@ -86,23 +90,22 @@ if not (options.circle_radius > 0):
 
 c = canvas.canvas()
 
-line_size = 5
 
 if (options.dim == 1):
         x0 = [0,0]
-        x1 = [line_size,0]
+        x1 = [options.line_size,0]
 
         hypercube.line(c, x0, x1)
 
         for i in range(2):
-                hypercube.Vertex(c, line_size, x0, i, options.circle_radius)
+                hypercube.Vertex(c, options.line_size, x0, i, options.circle_radius)
                 if ( options.numbers == 1 ):
-                        hypercube.numberVertex(c, line_size, x0, i, options.circle_radius, 0.1)
+                        hypercube.numberVertex(c, options.line_size, x0, i, options.circle_radius, 0.1)
 
-        hypercube.Edge(c, line_size, x0, 0, options.order, options.circle_radius)
+        hypercube.Edge(c, options.line_size, x0, 0, options.order, options.circle_radius)
 
         if ( options.numbers == 1 ):
-                hypercube.numberLine(c, line_size, x0, options.order, options.circle_radius, 0.1)
+                hypercube.numberLine(c, options.line_size, x0, options.order, options.circle_radius, 0.1)
 
 
 
@@ -112,37 +115,37 @@ if (options.dim == 2):
         x0 = [0,0]
 
         if ( options.element == "hypercube" ):
-                hypercube.border(c, x0, line_size)
+                hypercube.border(c, x0, options.line_size)
 
                 for i in range(4):
-                        hypercube.Vertex(c, line_size, x0, i, options.circle_radius)
-                        hypercube.Edge(c, line_size, x0, i, options.order, options.circle_radius)
+                        hypercube.Vertex(c, options.line_size, x0, i, options.circle_radius)
+                        hypercube.Edge(c, options.line_size, x0, i, options.order, options.circle_radius)
 
                         if ( options.numbers == 1 ):
-                                hypercube.numberVertex(c, line_size, x0, i, options.circle_radius, 0.1)
-                                hypercube.numberEdge(c, line_size, x0, i, options.order, options.circle_radius, 0.1)
+                                hypercube.numberVertex(c, options.line_size, x0, i, options.circle_radius, 0.1)
+                                hypercube.numberEdge(c, options.line_size, x0, i, options.order, options.circle_radius, 0.1)
 
-                                hypercube.Face(c, line_size, x0, options.order, options.circle_radius)
+                                hypercube.Face(c, options.line_size, x0, options.order, options.circle_radius)
 
                                 if ( options.numbers == 1 ):
-                                        hypercube.numberFace(c, line_size, x0, options.order, options.circle_radius, 0.1)
+                                        hypercube.numberFace(c, options.line_size, x0, options.order, options.circle_radius, 0.1)
 
 
         if ( options.element == "simplex" ):
-                simplex.border(c, x0, line_size)
+                simplex.border(c, x0, options.line_size)
 
                 for i in range(3):
-                        simplex.Vertex(c, line_size, x0, i, options.circle_radius)
-                        simplex.Edge(c, line_size, x0, i, options.order, options.circle_radius)
+                        simplex.Vertex(c, options.line_size, x0, i, options.circle_radius)
+                        simplex.Edge(c, options.line_size, x0, i, options.order, options.circle_radius)
 
                         if ( options.numbers == 1 ):
-                                simplex.numberVertex(c, line_size, x0, i, options.circle_radius, 0.1)
-                                simplex.numberEdge(c, line_size, x0, i, options.order, options.circle_radius, 0.1)
+                                simplex.numberVertex(c, options.line_size, x0, i, options.circle_radius, 0.1)
+                                simplex.numberEdge(c, options.line_size, x0, i, options.order, options.circle_radius, 0.1)
 
-                        simplex.Face(c, line_size, x0, options.order, options.circle_radius)
+                        simplex.Face(c, options.line_size, x0, options.order, options.circle_radius)
 
                         if ( options.numbers == 1 ):
-                                simplex.numberFace(c, line_size, x0, options.order, options.circle_radius, 0.1)
+                                simplex.numberFace(c, options.line_size, x0, options.order, options.circle_radius, 0.1)
 
 
 homename = os.path.expanduser("~/")
