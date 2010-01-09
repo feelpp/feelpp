@@ -25,12 +25,12 @@
 #
 #   University of Coimbra
 #
-# \file square.py
+# \file hypercube.py
 # \author Goncalo Pena <gpena@mat.uc.pt>
 # \date 2010-01-09
 #
 
-# This file contains the functions to draw the contours of a square,
+# This file contains the functions to draw the contours of a hypercube,
 # draw the equispaced pointset up to any order, 
 # and draw the numbering of the points (in the pointset) by subentity
 
@@ -38,6 +38,17 @@ from pyx import *
 import math
 from scipy import *
 
+
+def line(c, x0, x1):
+    a, b = x0
+    d, e = x1
+    result = []
+
+    sqa = path.path( path.moveto(a, b), path.lineto(d,e), path.closepath())
+
+    c.stroke(sqa, [style.linewidth(0.04)])
+
+    return result
 
 
 def border(c, x0, line_size):
@@ -143,11 +154,32 @@ def Face(c, line_size, origin, order, circle_radius):
 
 	       c.stroke(path.circle(p0, p1, circle_radius), [style.linewidth.thin, deco.filled([color.rgb.green])])
 
-
     return result
 
 
+def numberLine(c, line_size, origin, order, circle_radius, shift):
 
+    result = []
+
+    local_id = 0
+
+    x = origin[0]
+    y = origin[1]
+
+    h = 1.0*line_size/order
+
+    x = origin[0] - shift
+    y = origin[1] - 4.0*shift
+    v = [1,0]
+    first = 2
+
+    for i in range(order-1):
+        p0 = x + (i+1)*h*v[0]
+        p1 = y + (i+1)*h*v[1]
+
+        c.text(p0, p1, i+first, [text.halign.boxleft])
+	
+    return result
 
 def numberVertex(c, line_size, origin, local_id, circle_radius, shift):
 
@@ -173,8 +205,6 @@ def numberVertex(c, line_size, origin, local_id, circle_radius, shift):
         c.text(x, y, local_id, [text.halign.boxright])
 
     return result
-
-
 
 def numberEdge(c, line_size, origin, local_id, order, circle_radius, shift):
 
@@ -227,8 +257,6 @@ def numberEdge(c, line_size, origin, local_id, order, circle_radius, shift):
 
     return result
 
-
-
 def numberFace(c, line_size, origin, order, circle_radius, shift):
 
     result = []
@@ -262,7 +290,7 @@ def identity(order, i):
 
 def base(order, index):
     N = n_side_points(order)
-    
+
     p = 0
 
     result = index

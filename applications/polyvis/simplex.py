@@ -1,3 +1,40 @@
+#! /usr/bin/python
+
+# -*- mode: python -*-
+#
+#  This file is part of the Life library
+#
+#  Author(s): Goncalo Pena <gpena@mat.uc.pt>
+#        Date: 2010-01-09
+#
+#   Copyright (C) 2010
+#
+#   This library is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU Lesser General Public
+#   License as published by the Free Software Foundation; either
+#   version 2.1 of the License, or (at your option) any later version.
+#
+#   This library is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#   Lesser General Public License for more details.
+#
+#   You should have received a copy of the GNU Lesser General Public
+#   License along with this library; if not, write to the Free Software
+#   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+#
+#   University of Coimbra
+#
+# \file simplex.py
+# \author Goncalo Pena <gpena@mat.uc.pt>
+# \date 2010-01-09
+#
+
+# This file contains the functions to draw the contours of a simplex,
+# draw the equispaced pointset up to any order, 
+# and draw the numbering of the points (in the pointset) by subentity
+
+
 from pyx import *
 import math
 from scipy import *
@@ -9,7 +46,6 @@ def border(c, x0, line_size):
     result = []
 
     #border of triangle
-
     tri = path.path( path.moveto(a, b), path.lineto(a+line_size, b),
                      path.lineto(a, b+line_size),
                      path.closepath())
@@ -17,9 +53,6 @@ def border(c, x0, line_size):
     c.stroke(tri, [style.linewidth(0.04)])
 
     return result
-
-
-
 
 
 def Vertex(c, line_size, origin, local_id, circle_radius):
@@ -41,13 +74,9 @@ def Vertex(c, line_size, origin, local_id, circle_radius):
 
 def Edge(c, line_size, origin, local_id, order, circle_radius):
     # plots the points in an edge of a triangle
-
-
     result = []
 
     h = 1.0*line_size/order
-
-    print origin
 
     x0 = origin[0]
     x1 = origin[1]
@@ -184,11 +213,6 @@ def numberFace(c, line_size, origin, order, circle_radius, shift):
 
     return result
 
-
-
-
-
-
 def n_side_points(order):
     return order-2
 
@@ -235,7 +259,7 @@ def clockwise(order, index):
     p = base(order, index)
     return height(order, p)
 
-    
+
 
 def addIndices(c, index, line_size, origin, order, circle_radius, shift):
 
@@ -275,7 +299,6 @@ def addIndices(c, index, line_size, origin, order, circle_radius, shift):
 	    if index == 5:
 	    	c.text(p0, p1, index_shift + clockwise(order, p), [text.halign.boxright])
 
-	    
 	    p = p+1
     return result
 
@@ -298,5 +321,5 @@ def addLegend(c, index, x0, hpos, vpos):
     	c.text(p0, p1, "$\sigma_4$", [text.halign.boxcenter])
     if index == 5:
     	c.text(p0, p1, "$\sigma_5$", [text.halign.boxcenter])
-    
+
     return result
