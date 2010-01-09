@@ -1,11 +1,14 @@
 from pyx import *
 from scipy import *
+
+import os
+import sys
+import string
+
 import math
 import square
 import triangle
 
-import sys
-import string
 
 from optparse import OptionParser
 # Define options
@@ -60,7 +63,6 @@ if (options.dim == 2):
                         square.Edge(c, line_size, x0, i, options.order, 0.07)
 
                         if ( options.numbers == 1 ):
-                                print "cucu"
                                 square.numberVertex(c, line_size, x0, i, 0.07, 0.1)
                                 square.numberEdge(c, line_size, x0, i, options.order, 0.07, 0.1)
 
@@ -81,9 +83,18 @@ if (options.dim == 2):
                                 triangle.numberVertex(c, line_size, x0, i, 0.07, 0.1)
                                 triangle.numberEdge(c, line_size, x0, i, options.order, 0.07, 0.1)
 
-                                triangle.Face(c, line_size, x0, options.order, 0.07)
+                        triangle.Face(c, line_size, x0, options.order, 0.07)
 
-                                if ( options.numbers == 1 ):
-                                        triangle.numberFace(c, line_size, x0, options.order, 0.07, 0.1)
+                        if ( options.numbers == 1 ):
+                                triangle.numberFace(c, line_size, x0, options.order, 0.07, 0.1)
 
-c.writePDFfile("~/life/pointsetvis/equidistributed/" + options.element + "/" + str(options.dim) + "D/P"+ str(options.order) + "/pointset")
+
+homename = os.path.expanduser("~/")
+dirname = homename + "life/pointsetvis/equidistributed/" + options.element + "/" + str(options.dim) + "D/P"+ str(options.order)
+
+print dirname
+
+if not os.path.isdir(dirname + "/"):
+        os.makedirs(dirname + "/")
+
+c.writePDFfile(dirname + "/pointset")
