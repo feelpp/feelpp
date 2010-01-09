@@ -61,10 +61,7 @@ struct FactoryDefaultError
             std::exception(),
             _M_ex()
             {
-                std::ostringstream __ex_str;
-                __ex_str << "[Factory] Unknown Type : " << id;
-                //__ex_str << "[Factory] Unknown Type : ";
-                _M_ex = __ex_str.str();
+                _M_ex = this->getEx( id );
 
             }
         ~Exception() throw()
@@ -72,6 +69,19 @@ struct FactoryDefaultError
         const char* what() const throw ()
             {
                 return _M_ex.c_str();
+            }
+        std::string getEx( std::string const& id )
+            {
+                std::ostringstream __ex_str;
+                __ex_str << "[Factory] Unknown Type : " << id;
+                return __ex_str.str();
+            }
+        template<typename T>
+        std::string getEx( T const& id )
+            {
+                std::ostringstream __ex_str;
+                __ex_str << "[Factory] Unknown Type : ";
+                return __ex_str.str();
             }
     private:
         std::string _M_ex;
