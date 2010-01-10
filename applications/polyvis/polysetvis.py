@@ -155,3 +155,11 @@ if not os.path.isdir(dirname + "/"):
         os.makedirs(dirname + "/")
 
 c.writePDFfile(dirname + "/pointset")
+
+
+
+
+# Local Variables:
+# indent-tabs-mode: t
+# End:
+

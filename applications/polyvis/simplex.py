@@ -234,7 +234,7 @@ def base(order, index):
 
 	    if first == index:
 		return last
-		
+
 def height(order, index):
     N = n_side_points(order)
 
@@ -323,3 +323,7 @@ def addLegend(c, index, x0, hpos, vpos):
     	c.text(p0, p1, "$\sigma_5$", [text.halign.boxcenter])
 
     return result
+
+# Local Variables:
+# indent-tabs-mode: t
+# End:
