@@ -27,8 +27,10 @@
 
 ** Application
 
- - added cmake support to polyvis
- - added ctests using polyvis
+ - polyvis: added cmake support to polyvis
+ - polyvis: added ctests using polyvis
+ - polysetvis: added new application polysetvis to plot pointsets for simplices
+   and hypercubes in pdf
 
 
 * New in 0.9.12
