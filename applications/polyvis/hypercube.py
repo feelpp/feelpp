@@ -7,7 +7,7 @@
 #  Author(s): Goncalo Pena <gpena@mat.uc.pt>
 #        Date: 2010-01-09
 #
-#   Copyright (C) 2010
+#   Copyright (C) 2010 University of Coimbra
 #
 #   This library is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU Lesser General Public
