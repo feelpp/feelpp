@@ -298,7 +298,7 @@ lifematerial lifediscr)
 endforeach()
 FILE(GLOB libso "${CMAKE_CURRENT_BINARY_DIR}/life/*.so*")
 INSTALL(FILES ${libso} DESTINATION lib/)
-foreach( programs_dir examples/generic examples/heat examples/solid doc/tutorial )
+foreach( programs_dir examples/generic examples/heat examples/solid doc/tutorial applications/polyvis )
   FILE(GLOB programs "${CMAKE_CURRENT_BINARY_DIR}/${programs_dir}/life_*")
   INSTALL(FILES ${programs} DESTINATION bin/)
 endforeach()
@@ -329,7 +329,7 @@ SET(CPACK_SOURCE_STRIP_FILES "")
 # in absolute path + filename to find files or directories to be excluded
 # from source tarball.
 set(CPACK_SOURCE_IGNORE_FILES
-  "/\\\\.git/;\\\\.gitignore;"
+  "/\\\\.git/;\\\\.gitignore;/\\\\.svn;"
   "/admin/;/tools/;/Templates/;"
   "/auto/;/auto.*/;"
   "/TAGS;/#.*;/.*~;/.cvsignore;/.bzrignore"
@@ -338,6 +338,7 @@ set(CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/benchmarks/ethiersteinman/"
   "${PROJECT_SOURCE_DIR}/benchmarks/kovasznay/"
   "${PROJECT_SOURCE_DIR}/doc/poster/"
+  "${PROJECT_SOURCE_DIR}/doc/poster/pdfs/"
   "${PROJECT_SOURCE_DIR}/examples/fluid/"
   "${PROJECT_SOURCE_DIR}/examples/levelset/"
   "${PROJECT_SOURCE_DIR}/examples/pbeq/"
