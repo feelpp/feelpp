@@ -429,3 +429,8 @@ def addLegend(c, index, x0, hpos, vpos):
 
 
     return result
+
+# Local Variables:
+# indent-tabs-mode: t
+# End:
+
