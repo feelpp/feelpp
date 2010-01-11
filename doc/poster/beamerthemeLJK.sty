@@ -6,23 +6,24 @@
 \selectcolormodel{cmyk}
 \mode<presentation>
 
+\definecolor{ljk}{rgb}{0.50, 0.625, 0.70}		
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\setbeamercolor{headline}{fg=tabutter,bg=black}
-\setbeamercolor{footline}{fg=tabutter, bg=ta3gray}
+\setbeamercolor{headline}{fg=ljk,bg=white}
+\setbeamercolor{footline}{fg=ljk, bg=white}
 \setbeamerfont{footline}{size=\large,series=\tt}
-\setbeamercolor{separation line}{bg=ta2orange}
-\setbeamercolor{title in headline}{fg=tabutter}
-\setbeamercolor{author in headline}{fg=ta2orange}
-\setbeamercolor{institute in headline}{fg=ta3orange}
+\setbeamercolor{separation line}{bg=ljk}
+\setbeamercolor{title in headline}{fg=ljk}
+\setbeamercolor{author in headline}{fg=ljk}
+\setbeamercolor{institute in headline}{fg=ljk}
 
 \setbeamercolor{framesubtitle}{fg=ta3orange, bg=ta2gray}
 \setbeamercolor{author in head/foot}{fg=ta2orange, bg=black}
 \setbeamercolor{title in head/foot}{fg=ta2orange, bg=black}
 
 \setbeamercolor*{normal text}{fg=tachameleon, bg=ta3gray}
-\setbeamercolor*{block body}{bg=ta3aluminium,fg=black}
-\setbeamercolor*{block title}{fg=taorange,bg=ta2gray}
+\setbeamercolor*{block body}{bg=white,fg=black!80}
+\setbeamercolor*{block title}{fg=tascarletred,bg=white}
 \setbeamerfont{block title}{size=\large,series=\bf}
 \setbeamercolor{upper separation line head}{fg=ta2orange}
 
@@ -56,32 +57,32 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \setbeamertemplate{headline}{  
   \leavevmode
-
+  \usebackgroundtemplate{\includegraphics[width=\paperwidth]{fond_ljk_diapo_seul}}
   \begin{beamercolorbox}[wd=\paperwidth]{headline}
     \begin{columns}[T]
       \begin{column}{.02\paperwidth}
       \end{column}
-      \begin{column}{.07\paperwidth}
+      \begin{column}{.2\paperwidth}
         \begin{center}
-          %\includegraphics[width=.6\linewidth]{logos/i6-hks44}
+          \includegraphics[height=10cm]{logoLJK}
         \end{center}
         \vskip1ex
       \end{column}
-      \begin{column}{.675\paperwidth}
+      \begin{column}{.6\paperwidth}
         \vskip4ex
         \raggedleft
         \usebeamercolor{title in headline}{\color{fg}\textbf{\LARGE{\inserttitle}}\\[1ex]}
         \usebeamercolor{author in headline}{\color{fg}\large{\insertauthor}\\[1ex]}
         \usebeamercolor{institute in headline}{\color{fg}\large{\insertinstitute}\\[1ex]}     
       \end{column}
-      \begin{column}{.25\paperwidth}
+      \begin{column}{.2\paperwidth}
         \vskip1cm
         \begin{center}
-          \includegraphics[width=.7\linewidth]{../tutorial/pngs/logo-ujf.png}
+          \includegraphics[height=10cm]{logo-ujf}
         \end{center}
         \vskip1.5cm
       \end{column}
-      \begin{column}{.03\paperwidth}
+      \begin{column}{.02\paperwidth}
       \end{column}
     \end{columns}
   \end{beamercolorbox}
