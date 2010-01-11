@@ -174,7 +174,7 @@ prod,element_prod, range, subrange, inner_prod,unite},emphstyle=\color{blue}}
         \begin{itemize}
         \item LJK/EDP, Université Joseph Fourier Grenoble 1
         \item CMCS, EPF Lausanne (Switz.)
-        \item Mathematics Dept., U. Coimbra (Portugal)
+        \item CMUC, U. Coimbra (Portugal)
         \end{itemize}
       \item Usage Context:
         \begin{itemize}
@@ -308,5 +308,70 @@ meshmove.apply( mesh, u );
   \end{columns}
   
   \end{frame}
+
+  \begin{frame}[containsverbatim]{} 
+    \vfill
+
+  \begin{columns}[c]
+      \column{.5\linewidth}
+
+
+  \begin{block}{Applications: Fluid-Structure Interaction in Hemodynamics}
+    
+    \begin{columns}[t]
+      \begin{column}{.40\textwidth}
+
+      \begin{figure}
+	\begin{minipage}[b]{0.6\linewidth} % A minipage that covers half the page
+	  \centering
+	  \subfigure[$t=0ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0000}} \vspace{0.5cm}\\
+	  \subfigure[$t=2ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0004}} \vspace{0.5cm}\\
+	  \subfigure[$t=4ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0008}} \vspace{0.5cm}\\
+	  \subfigure[$t=6ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0012}} \vspace{0.5cm}\\
+	  \subfigure[$t=8ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0016}} \vspace{0.5cm}\\
+	  \subfigure[$t=10ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0020}}
+	\end{minipage}
+	\begin{minipage}[t]{0.25\linewidth}
+	  \centering
+	  \subfigure[Legend]{\includegraphics[width=4cm]{figures/pressure_wave_magnify_legend}}
+	\end{minipage}
+	\caption{Pressure pulse travelling through the artery}
+	\label{pressure_wave}
+	\end{figure}
+
+
+      \end{column}
+      \begin{column}{.56\textwidth}
+          \begin{block}{Navier-Stokes + generalized string}
+	    \begin{itemize}
+	      \item Fix point method for fully coupled problem
+	      \item Semi-implicit method approach
+	      \item Triangular spectral elements in space
+% 	      \item Continuous Galerkin setting
+	      \item High order schemes in time: BDF, AFM
+	      \item High order mesh couples structure and fluid
+	      \item Aitken relaxation strategy
+	    \end{itemize}
+	  \end{block}
+	  \begin{block}{Properties (fix point iterations)}
+	    \begin{itemize}
+	      \item unchanged wrt $k$, using $\mathbb P_k$ - $\mathbb P_{k-2}$
+	      \item increases, with increased $N_{geo}$
+	      \item decreases, increasing  BDF order for the structure
+	      \item increases, increasing BDF order for the fluid
+	    \end{itemize}
+	  \end{block}
+        \end{column}
+      \end{columns}
+
+  \end{block}
+
+  \end{columns}
+  
+  \end{frame}
+
+
+
+
 
   \end{document}
