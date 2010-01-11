@@ -219,27 +219,24 @@ integrate( elements(mesh),
     \node [mybox] (box) {%
       \begin{minipage}{.94\textwidth}
 \lstset{escapechar=@}
+%//Identity matrix
+%auto( Id , oneX()*trans(oneX()) + oneY()*trans(oneY()) ); @\vspace{0.3cm}@
+%//Gradient des deformations $F = Id + \nabla u$
+%//Tenseur de Green-Lagrange : $E=\frac{1}{2}\left( \nabla u + \left(\nabla u\right)^{T} \right) + \frac{1}{2}\left( \left(\nabla u\right)^{T} \nabla u \right)$
+%//Loi de comportement St-Venant-Kirchhoff : $S = \lambda tr\left(E\right) Id + 2 \mu E$
+%//Force volumique
+%//$-\int_{\Omega} FS:\nabla v + \int_{\Omega} \rho \ \eta \vec{n_{y}} \cdot v$ + C.L.
+\vspace{0.3cm}
 \begin{lstlisting}
-//Identity matrix
-auto( Id , oneX()*trans(oneX()) + oneY()*trans(oneY()) ); @\vspace{0.3cm}@
-//Gradient des deformations $F = Id + \nabla u$
 auto( F , Id + gradv(u));
-//Tenseur de Green-Lagrange : $E=\frac{1}{2}\left( \nabla u + \left(\nabla u\right)^{T} \right) + \frac{1}{2}\left( \left(\nabla u\right)^{T} \nabla u \right)$
 auto( E , 0.5*(gradv(u)+trans(gradv(u)))
-         +0.5*trans(gradv(u))*gradv(u)); @\vspace{0.3cm}@
-//Loi de comportement St-Venant-Kirchhoff : $S = \lambda tr\left(E\right) Id + 2 \mu E$
-auto( S, lambda*trace(E)*Id + 2*mu*E );		@\vspace{0.3cm}@ 
-//Force volumique
-auto( eta, 1000*(Px()-0.4)*(Px()-0.45)
-               *chi(Px()>=0.4 && Px()<=0.45) ); @\vspace{0.3cm}@
-//$-\int_{\Omega} FS:\nabla v + \int_{\Omega} \rho \ \eta \vec{n_{y}} \cdot v$ + C.L.
-form1( Xh, R ) =
- integrate( elements(mesh), im,
-     - trace((F*S)*trans(grad(v))) 
-     + rho*trans(eta*oneY())*id(v) ) +
- on( markedfaces(mesh,"clamped"),
+         +0.5*trans(gradv(u))*gradv(u)); 
+auto( S, lambda*trace(E)*Id + 2*mu*E );		
+auto(eta,(Px()-0.4)*(Px()-0.45)*chi(Px()>=0.4 && Px()<=0.45)); @\vspace{0.3cm}@
+form1( Xh, R ) = integrate( elements(mesh), im,
+ - trace((F*S)*trans(grad(v))) + rho*trans(eta*oneY())*id(v) )
+ + on( markedfaces(mesh,"clamped"),
      u, F, constant(0)*one() ); @\vspace{0.3cm}@
-
 \end{lstlisting}
 %// move the mesh according the displacement $u$
 %MeshMover<mesh_type> meshmove;
