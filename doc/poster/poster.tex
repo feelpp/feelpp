@@ -200,6 +200,9 @@ prod,element_prod, range, subrange, inner_prod,unite},emphstyle=\color{blue}}
       % \end{itemize}
     \end{block}
   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 2nd column of the Poster
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \column{.5\linewidth}
     \vfill
         \begin{block}{Life: A Language for PDEs -- Navier-Stokes}
@@ -264,7 +267,7 @@ meshmove.apply( mesh, u );
   \begin{block}{Applications: Navier-Stokes incompressible Multi-Fluid}
     
     \begin{columns}[t]
-      \begin{column}{.48\textwidth}
+      \begin{column}{.45\textwidth}
         \begin{figure}
       \centering
       \subfigure[$t=2s$]{\includegraphics[width=.45\linewidth]{duebolle2-2}}\goodgap
@@ -277,7 +280,7 @@ meshmove.apply( mesh, u );
       \label{fig:1}
     \end{figure}
       \end{column}
-      \begin{column}{.48\textwidth}
+      \begin{column}{.54\textwidth}
           \begin{block}{Navier-Stokes Bi-Fluid}
             \begin{itemize}
             \item N(=2) incompressible fluid flows
@@ -290,7 +293,7 @@ meshmove.apply( mesh, u );
             \item Reinitialisation of the  level set function
               
             \item Fixed point iterations for all nonlinearities
-            \item P2/P1 not stabilized for NS and P1 stabilized for CIP for levelset
+            %\item P2/P1 not stabilized for NS and P1 stabilized for CIP for levelset
               
             \item Changes in topology: 2 bubles (a-d) 1 buble (e), 1 droplet (f)
             \item Filament in (e) takes back the form of a circular bubble due
@@ -305,45 +308,34 @@ meshmove.apply( mesh, u );
 
   \end{block}
 
-  \end{columns}
-  
-  \end{frame}
-
-  \begin{frame}[containsverbatim]{} 
-    \vfill
-
-  \begin{columns}[c]
-      \column{.5\linewidth}
-
-
   \begin{block}{Applications: Fluid-Structure Interaction in Hemodynamics}
     
     \begin{columns}[t]
-      \begin{column}{.40\textwidth}
-
-      \begin{figure}
-	\begin{minipage}[b]{0.6\linewidth} % A minipage that covers half the page
-	  \centering
-	  \subfigure[$t=0ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0000}} \vspace{0.5cm}\\
-	  \subfigure[$t=2ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0004}} \vspace{0.5cm}\\
-	  \subfigure[$t=4ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0008}} \vspace{0.5cm}\\
-	  \subfigure[$t=6ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0012}} \vspace{0.5cm}\\
-	  \subfigure[$t=8ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0016}} \vspace{0.5cm}\\
-	  \subfigure[$t=10ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0020}}
-	\end{minipage}
-	\begin{minipage}[t]{0.25\linewidth}
-	  \centering
-	  \subfigure[Legend]{\includegraphics[width=4cm]{figures/pressure_wave_magnify_legend}}
-	\end{minipage}
-	\caption{Pressure pulse travelling through the artery}
-	\label{pressure_wave}
-	\end{figure}
-
-
+      \begin{column}{.40\linewidth}
+        
+        \begin{figure}
+          \begin{minipage}[b]{0.6\linewidth} % A minipage that covers half the page
+            \centering
+            \subfigure[$t=0ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0000}} \vspace{0.5cm}\\
+            \subfigure[$t=2ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0004}} \vspace{0.5cm}\\
+            \subfigure[$t=4ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0008}} \vspace{0.5cm}\\
+            \subfigure[$t=6ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0012}} \vspace{0.5cm}\\
+            \subfigure[$t=8ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0016}} \vspace{0.5cm}\\
+            \subfigure[$t=10ms$]{\includegraphics[width=.8\linewidth]{figures/pressure_wave_magnify_0020}}
+          \end{minipage}
+          \begin{minipage}[t]{0.25\linewidth}
+            \centering
+            \subfigure[Legend]{\includegraphics[width=4cm]{figures/pressure_wave_magnify_legend}}
+          \end{minipage}
+          \caption{Pressure pulse travelling through the artery}
+          \label{pressure_wave}
+        \end{figure}
+        
+        
       \end{column}
-      \begin{column}{.56\textwidth}
-          \begin{block}{Navier-Stokes + generalized string}
-	    \begin{itemize}
+      \begin{column}{.48\textwidth}
+        \begin{block}{Navier-Stokes + generalized string}
+          \begin{itemize}
 	      \item Fix point method for fully coupled problem
 	      \item Semi-implicit method approach
 	      \item Triangular spectral elements in space
@@ -351,23 +343,21 @@ meshmove.apply( mesh, u );
 	      \item High order schemes in time: BDF, AFM
 	      \item High order mesh couples structure and fluid
 	      \item Aitken relaxation strategy
-	    \end{itemize}
-	  \end{block}
-	  \begin{block}{Properties (fix point iterations)}
-	    \begin{itemize}
+          \end{itemize}
+        \end{block}
+        \begin{block}{Properties (fix point iterations)}
+          \begin{itemize}
 	      \item unchanged wrt $k$, using $\mathbb P_k$ - $\mathbb P_{k-2}$
 	      \item increases, with increased $N_{geo}$
 	      \item decreases, increasing  BDF order for the structure
 	      \item increases, increasing BDF order for the fluid
-	    \end{itemize}
-	  \end{block}
-        \end{column}
-      \end{columns}
-
+          \end{itemize}
+        \end{block}
+      \end{column}
+    \end{columns}
   \end{block}
 
   \end{columns}
-  
   \end{frame}
 
 
