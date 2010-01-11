@@ -8,6 +8,11 @@
   \usepackage[english]{babel}
   \usepackage[latin1]{inputenc}
   \usepackage{amsmath,amsthm, amssymb, latexsym}
+  \usepackage{subfigure}
+  \newcommand{\goodgap}{%
+  \hspace{\subfigtopskip}%
+  \hspace{\subfigbottomskip}}
+
 
   \usepackage{dg,general}
   \usepackage{tikz}
@@ -57,6 +62,7 @@ prod,element_prod, range, subrange, inner_prod,unite},emphstyle=\color{blue}}
   \institute[U. Coimbra \& U. Grenoble]{U. Coimbra and U. de Grenoble}
   \date{Dec 15, 2009}
   \begin{document}
+  %\usebackgroundtemplate{\includegraphics[width=\paperwidth]{fond_ljk_diapo_seul}}
   \begin{frame}[containsverbatim]{} 
     \vfill
     %% 
@@ -128,8 +134,6 @@ prod,element_prod, range, subrange, inner_prod,unite},emphstyle=\color{blue}}
 %     \end{itemize}
 %   \end{block}
 
-      \column{.5\linewidth}
-    \vfill
     \begin{block}{Some Features}
       \begin{itemize}
       \item Support 1D, 2D, 3D and basic entities: simplices and product of simplices
@@ -149,21 +153,39 @@ prod,element_prod, range, subrange, inner_prod,unite},emphstyle=\color{blue}}
     \end{block}
 
     \begin{block}{Ingredients}
-      \begin{itemize}
-      \item Mesh \hfill\lstinline!Mesh<Convex>!
-      \item Basis functions  \hfill\lstinline[mathescape]!Lagrange<$d$,$k$,Convex>!
-      \item Approximation spaces \hfill\lstinline!Space<Mesh,Basis,T>!
-      \item Forms/Operators \hfill\lstinline!Form<Space1(,Space2),Container>!
-      \end{itemize}
-
-      \begin{itemize}
-      \item Forms/Operators are the glue between the linear algebra, the
-        function spaces and the variational formulation
-      \item Special operators: Interpolators, Projectors
-      \end{itemize}
+      \centerline{\includegraphics[width=\linewidth]{arch2.pdf}}
     \end{block}
     \vfill
-    \begin{block}{Life: A Language for PDEs}
+
+  
+    \begin{block}{More information}
+      \begin{itemize}
+      \item Web sites: \url{http://ljkforge.imag.fr/life}, \url{http://ljkforge.imag.fr/projects/life}
+      \end{itemize}
+      \begin{itemize}
+      \item LJK/EDP, Université Joseph Fourier Grenoble 1
+      \item CMCS, EPF Lausanne (Switz.)
+      \item Mathematics Dept., U. Coimbra (Portugal)
+      \end{itemize}
+
+      Copyright (C) 2006-2010 Université Joseph Fourier Grenoble 1\\
+      Copyright (C) 2005-2009 École Polytechnique Fédérale de Lausanne (EPFL)\\
+      Copyright (C) 2009-2010 U. Coimbra (Portugal)\\
+      
+      This program is free software; you can redistribute it and/or\\
+      modify it under the terms of the GNU LGPL-3.
+
+      {\huge Developers and contributors}
+      \begin{itemize}
+      \item Grenoble: C. Prud'homme, V. Chabannes, V. Milisic\\[-4mm]
+      \item Coimbra: G. Pena \\[-4mm]
+      \item EPFL: S. Deparis, C. Winkelmann(formerly), B. Stamm(formerly), G. Steiner\\[-4mm]
+      \end{itemize}
+    \end{block}
+  
+    \column{.5\linewidth}
+    \vfill
+        \begin{block}{Life: A Language for PDEs -- Navier-Stokes}
       
       
       \tikzstyle{mybox} = [draw=gray!10!white!, fill=gray!10!white, very thick,
@@ -192,31 +214,80 @@ integrate( elements(mesh), im,
     \end{tikzpicture}
   \end{block}
 
-  
-    \begin{block}{More information}
-      \begin{itemize}
-      \item Web sites: \url{http://ljkforge.imag.fr/life}, http://ljkforge.imag.fr/projects/life}
-      \end{itemize}
-      \begin{itemize}
-      \item LJK/EDP, Université Joseph Fourier Grenoble 1
-      \item CMCS, EPF Lausanne (Switz.)
-      \end{itemize}
+  \begin{block}{Life: A Language for PDEs -- Linear Elasticity}
+      \tikzstyle{mybox} = [draw=gray!10!white!, fill=gray!10!white, very thick,
+  rectangle, rounded corners, inner sep=10pt, inner ysep=20pt]
+  \tikzstyle{fancytitle} =[draw=gray,fill=gray!10!white, text=red, ellipse]
+  %
+  \begin{tikzpicture}[transform shape, baseline=-3.5cm]
+    \node [mybox] (box) {%
+      \begin{minipage}{.94\textwidth}
+\begin{lstlisting}
+auto deft = 0.5*( gradt(u)+trans(gradt(u)) );
+auto def = 0.5*( grad(v)+trans(grad(v)) );
+form( Xh, Xh, D ) =
+ integrate( elements(mesh), im,
+     lambda*divt(u)*div(v)  +
+     2*mu*trace(trans(deft)*def) ) +
+ on( markedfaces(mesh,"clamped"),
+     u, F, constant(0)*one() );
+// move the mesh according the displacement $u$
+MeshMover<mesh_type> meshmove;
+meshmove.apply( mesh, u );
+\end{lstlisting}
+      \end{minipage}
+      };
+      \node[fancytitle] at (box.north) {Example: a Linear-Elasticity code};
 
-      Copyright (C) 2006-2009 Université Joseph Fourier Grenoble 1\\
-      Copyright (C) 2005-2009 EPFL\\
-      Copyright (C) 2009 U. Coimbra\\
-      
-      This program is free software; you can redistribute it and/or\\
-      modify it under the terms of the GNU LGPL-3.
+    \end{tikzpicture}
 
-      {\huge Developers and contributors}
-      \begin{itemize}
-      \item Grenoble: C. Prud'homme, V. Chabannes, V. Milisic\\[-4mm]
-      \item Coimbra: G. Pena \\[-4mm]
-      \item EPFL: S. Deparis, C. Winkelmann(formerly), B. Stamm(formerly), G. Steiner\\[-4mm]
-      \end{itemize}
-    \end{block}
-  
+  \end{block}
+
+
+  \begin{block}{Applications: Navier-Stokes incompressible Multi-Fluid}
+    
+    \begin{columns}[t]
+      \begin{column}{.48\textwidth}
+        \begin{figure}
+      \centering
+      \subfigure[$t=2s$]{\includegraphics[width=.45\linewidth]{duebolle2-2}}\goodgap
+      \subfigure[$t=20s$]{\includegraphics[width=.45\linewidth]{duebolle2-20}}\\
+      \subfigure[$t=30s$]{\includegraphics[width=.45\linewidth]{duebolle2-30}}\goodgap
+      \subfigure[$t=50s$]{\includegraphics[width=.45\linewidth]{duebolle2-50}}\\
+      \subfigure[$t=70s$]{\includegraphics[width=.45\linewidth]{duebolle2-70}}\goodgap
+      \subfigure[$t=90s$]{\includegraphics[width=.45\linewidth]{duebolle2-90}}
+      \caption{Two bubbles}
+      \label{fig:1}
+    \end{figure}
+      \end{column}
+      \begin{column}{.48\textwidth}
+          \begin{block}{Navier-Stokes Bi-Fluid}
+            \begin{itemize}
+            \item N(=2) incompressible fluid flows
+            \item Navier-Stokes equations in all  $\Omega$
+            \item Variable density and viscosity
+              
+            \item Advection of the level set function
+            \item Explicit determination of the interface
+            \item Integration on the interface (surfacic tension)
+            \item Reinitialisation of the  level set function
+              
+            \item Fixed point iterations for all nonlinearities
+            \item P2/P1 not stabilized for NS and P1 stabilized for CIP for levelset
+              
+            \item Changes in topology: 2 bubles (a-d) 1 buble (e), 1 droplet (f)
+            \item Filament in (e) takes back the form of a circular bubble due
+              to surfacic tension
+
+            \item Quantities of the benchmark recovered reliably
+            \item Skirt formation
+            \end{itemize}
+          \end{block}
+        \end{column}
+      \end{columns}
+
+  \end{block}
+
   \end{columns}
   
   \end{frame}
