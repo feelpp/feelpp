@@ -185,7 +185,7 @@ prod,element_prod, range, subrange, inner_prod,unite},emphstyle=\color{blue}}
     \column{.5\linewidth}
     \vfill
         \begin{block}{Life: A Language for PDEs -- Navier-Stokes}
-      
+   
       
       \tikzstyle{mybox} = [draw=gray!10!white!, fill=gray!10!white, very thick,
       rectangle, rounded corners, inner sep=10pt, inner ysep=20pt]
@@ -194,21 +194,34 @@ prod,element_prod, range, subrange, inner_prod,unite},emphstyle=\color{blue}}
       \begin{tikzpicture}[transform shape, baseline=-3.5cm]
         \node [mybox] (box) {%
         \begin{minipage}{.94\textwidth}
+         \begin{columns}[t]
+        \begin{column}{.55\textwidth}  
           \begin{lstlisting}
-//standard terms
-integrate( elements(mesh), 
-  $\nu$*trace(gradt(u)*trans(grad(v)))+ trans(idt(u))*id(v)/dt+
-  ($\beta$*trans(gradt(u)))*id(v) - idt(p)*div(v) + id(q)*divt(u))
+ //standard terms
+ integrate( elements(mesh), 
+    $\nu$*trace(gradt(u)*trans(grad(v)))
+  + trans(idt(u))*id(v)/dt
+  + ($\beta$*trans(gradt(u)))*id(v) 
+  - idt(p)*div(v) + id(q)*divt(u))
 \end{lstlisting}
 %// stabilization for equal-order approximation
 % +integrate(internalfaces(mesh), 
 %   maxface($\gamma$*pow(h(),3)/max(h()*sqrt(trans($\bf\beta$)*($\bf\beta$)), $\nu$))
 %   * ( jump(grad(q)*N())*jumpt (gradt(p)*N())));
-
+\end{column}
+\begin{column}{.52\textwidth}
+\begin{figure}[H]
+\centering
+\includegraphics[width=.6\linewidth,height=0.4\linewidth]{../tutorial/pngs/flow_grashof}
+\end{figure}
+    \end{column}
+      \end{columns}
       \end{minipage}
       };
       \node[fancytitle] at (box.north) {Example: a Navier-Stokes code};
     \end{tikzpicture}
+    
+    
   \end{block}
 
   \begin{block}{Life: A Language for PDEs -- Linear Elasticity}
