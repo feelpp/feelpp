@@ -231,9 +231,9 @@ integrate( elements(mesh),
 \begin{lstlisting}
 auto F=Id + gradv(u); auto S=lambda*trace(E)*Id + 2*mu*E;
 auto E=0.5*(gradv(u)+trans(gradv(u))+trans(gradv(u))*gradv(u)); 
-auto eta=(Px()-0.4)*(Px()-0.45)*chi(Px()>=0.4 && Px()<=0.45); @\vspace{0.3cm}@
+auto $\eta$=(Px()-0.4)*(Px()-0.45)*chi(Px()>=0.4 && Px()<=0.45); @\vspace{0.3cm}@
 form1( Xh, R ) = integrate( elements(mesh),
- - trace((F*S)*trans(grad(v))) + rho*trans(eta*oneY())*id(v) )
+ - trace((F*S)*trans(grad(v))) + trans($\rho \eta \vec{\jmath}$)*id(v) )
  + on( markedfaces(mesh,"clamped"), u, F, constant(0)*one() ); @\vspace{0.3cm}@
 \end{lstlisting}
 %// move the mesh according the displacement $u$
@@ -249,6 +249,7 @@ form1( Xh, R ) = integrate( elements(mesh),
 \centering
 \label{fig:schemaint}	
 \includegraphics[width=.9\linewidth]{structure}
+\caption{A clamped Saint-Venant Kirchhoff structure.}
 \end{figure}
 
 
