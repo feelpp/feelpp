@@ -199,11 +199,12 @@ prod,element_prod, range, subrange, inner_prod,unite},emphstyle=\color{blue}}
 integrate( elements(mesh), 
   $\nu$*trace(gradt(u)*trans(grad(v)))+ trans(idt(u))*id(v)/dt+
   ($\beta$*trans(gradt(u)))*id(v) - idt(p)*div(v) + id(q)*divt(u))
-// stabilization for equal-order approximation
-+integrate(internalfaces(mesh), 
-  maxface($\gamma$*pow(h(),3)/max(h()*sqrt(trans($\bf\beta$)*($\bf\beta$)), $\nu$))
-  * ( jump(grad(q)*N())*jumpt (gradt(p)*N())));
 \end{lstlisting}
+%// stabilization for equal-order approximation
+% +integrate(internalfaces(mesh), 
+%   maxface($\gamma$*pow(h(),3)/max(h()*sqrt(trans($\bf\beta$)*($\bf\beta$)), $\nu$))
+%   * ( jump(grad(q)*N())*jumpt (gradt(p)*N())));
+
       \end{minipage}
       };
       \node[fancytitle] at (box.north) {Example: a Navier-Stokes code};
@@ -228,15 +229,12 @@ integrate( elements(mesh),
 %//$-\int_{\Omega} FS:\nabla v + \int_{\Omega} \rho \ \eta \vec{n_{y}} \cdot v$ + C.L.
 \vspace{0.3cm}
 \begin{lstlisting}
-auto( F , Id + gradv(u));
-auto( E , 0.5*(gradv(u)+trans(gradv(u)))
-         +0.5*trans(gradv(u))*gradv(u)); 
-auto( S, lambda*trace(E)*Id + 2*mu*E );		
-auto(eta,(Px()-0.4)*(Px()-0.45)*chi(Px()>=0.4 && Px()<=0.45)); @\vspace{0.3cm}@
-form1( Xh, R ) = integrate( elements(mesh), im,
+auto F=Id + gradv(u); auto S=lambda*trace(E)*Id + 2*mu*E;
+auto E=0.5*(gradv(u)+trans(gradv(u))+trans(gradv(u))*gradv(u)); 
+auto eta=(Px()-0.4)*(Px()-0.45)*chi(Px()>=0.4 && Px()<=0.45); @\vspace{0.3cm}@
+form1( Xh, R ) = integrate( elements(mesh),
  - trace((F*S)*trans(grad(v))) + rho*trans(eta*oneY())*id(v) )
- + on( markedfaces(mesh,"clamped"),
-     u, F, constant(0)*one() ); @\vspace{0.3cm}@
+ + on( markedfaces(mesh,"clamped"), u, F, constant(0)*one() ); @\vspace{0.3cm}@
 \end{lstlisting}
 %// move the mesh according the displacement $u$
 %MeshMover<mesh_type> meshmove;
@@ -247,11 +245,11 @@ form1( Xh, R ) = integrate( elements(mesh), im,
       \node[fancytitle] at (box.north) {Example: a Nonlinear-Elasticity code : Residual Part};
 
     \end{tikzpicture}
-%\begin{figure}[H]
-%\centering
-%\label{fig:schemaint}	
-%\includegraphics[width=.9\linewidth]{structure}
-%\end{figure}
+\begin{figure}[H]
+\centering
+\label{fig:schemaint}	
+\includegraphics[width=.9\linewidth]{structure}
+\end{figure}
 
 
   \end{block}
