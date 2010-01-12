@@ -234,7 +234,7 @@ auto E=0.5*(gradv(u)+trans(gradv(u))+trans(gradv(u))*gradv(u));
 auto $\eta$=(Px()-0.4)*(Px()-0.45)*chi(Px()>=0.4 && Px()<=0.45); @\vspace{0.3cm}@
 form1( Xh, R ) = integrate( elements(mesh),
  - trace((F*S)*trans(grad(v))) + trans($\rho \eta \vec{\jmath}$)*id(v) )
- + on( markedfaces(mesh,"clamped"), u, F, constant(0)*one() ); @\vspace{0.3cm}@
+ + on( markedfaces(mesh,"clamped"), u, R, constant(0)*one() ); @\vspace{0.3cm}@
 \end{lstlisting}
 %// move the mesh according the displacement $u$
 %MeshMover<mesh_type> meshmove;
