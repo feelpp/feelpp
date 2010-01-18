@@ -18,7 +18,7 @@
   \usepackage{dg,general}
   \usepackage{tikz}
 
-  \usetikzlibrary{arrows,shapes,mindmap}
+  \usetikzlibrary{calc,arrows,patterns,plotmarks,shapes,snakes,er,3d,automata,backgrounds,topaths,trees,petri,mindmap}
 
 %%
 %% Colors
@@ -71,98 +71,60 @@ prod,element_prod, range, subrange, inner_prod,unite},emphstyle=\color{blue}}
     %% 
     \begin{columns}[t]
       \column{.5\linewidth}
-
     \begin{block}{Introduction: Complexity in scientific computing codes}
-      % \tikzstyle{root concept}+=[concept color=white!80]
-      % \tikzstyle{level 1 concept}+=[concept color=ljk!80, sibling angle=90]
-      % % \tikzstyle{every annotation}=[fill=black!50,opacity=0.5,text=white]
-      % \begin{tikzpicture}[mindmap,concept color=black!60,text=white]
-      %   \node[concept] {Complexity}
-      %   [clockwise from=45]
-      %   child[concept] { node[concept] (mod) {Models} }
-      %   child[concept] { node[concept] (alg) {Algebraic} }
-      %   child[concept] { node[concept] (cs) {Computer Science} }
-      %   child[concept] { node[concept] (num) {Numerical} };
-        
-    % \node [annotation,left] at (mod.west)
-    % {
+      Generative Programming allows to decouple the high level complexity from
+      the low level one.
+      \begin{columns}[t]
+        \column{.48\linewidth}
+        \begin{figure}[c]
+          \includegraphics[width=.9\linewidth]{genprog1-crop}
+          \caption{Code complexity.}
+          \label{fig:10}
+      \end{figure}
+        \column{.48\linewidth}
+        \begin{figure}[c]
+          \includegraphics[width=.9\linewidth]{genprog2-crop}
+          \caption{Code complexity is decoupled, the user writes in the language
+          specific to the domain of Galerkin methods.}
+          \label{fig:10}
+      \end{figure}
+      \end{columns}
     %   \begin{itemize}
-    %   \item Geophysics
-    %   \item Astrophysics
-    %   \item Weather forecast
-    %   \item Global Change
-    %   \item Plasma physics
-    %   \item Aerodynamics
-    %   \item Hydrodynamics
-    %   \item MHD
-    %   \item Rheology
-    %   \item Materials processing
-    %   \item Molten metals
-    %   \item Finance
+    %   \item Algebraic (large scale nonlinear systems)
+    %   \item Numerical (complex methods, complex meshes, etc)
+    %   \item Models (physical laws, closure laws, etc)
+    %   \item Computer science (parallelism, efficiency, hybrid arch, ...)
     %   \end{itemize}
-    % };
-    % \node [annotation,left] at (sim.south west)
-    % {
-    %   \begin{itemize}
-    %   \item Applied Mathematics
-    %   \item Numerical Analysis
-    %   \item Computer Science
-    %   \end{itemize}
-    % };
-    % \node [annotation,right] at (exp.south)
-    % {
-    %   \begin{itemize}
-    %   \item Construction d'expériences (laboratoire + numerique)
-    %   \item Comparaison entre expériences en laboratoire et numériques
-    %   \item Création et correction de modèles
-    %   \end{itemize}
-    % };
-
-    % \begin{pgfonlayer}{background}
-    %   \draw [concept connection]
-    %   (exp) edge node[below,sloped,scale=.7]{Analyser,Modéliser} (mod)
-    %   (mod) edge node[above,sloped,scale=.7]{Analyser,Discrétiser,Simuler} (sim)
-    %   (sim) edge node[above,sloped,scale=.7]{Valider} (exp);
-    % \end{pgfonlayer}
-
-    %\end{tikzpicture}
-
-      \begin{itemize}
-      \item Algebraic (large scale nonlinear systems)
-      \item Numerical (complex methods, complex meshes, etc)
-      \item Models (physical laws, closure laws, etc)
-      \item Computer science (parallelism, efficiency, hybrid arch, ...)
-      \end{itemize}
       
-      Complexity Treatments:
-      \begin{itemize}
-      \item Numerical and model complexity are better treated by a
-        \alert{high level language}
-      \item Algebraic and computer science complexity perform often better with
-        \alert{low level languages}
-      \end{itemize}
-    \end{block}
+    %   Complexity Treatments:
+    %   \begin{itemize}
+    %   \item Numerical and model complexity are better treated by a
+    %     \alert{high level language}
+    %   \item Algebraic and computer science complexity perform often better with
+    %     \alert{low level languages}
+    %   \end{itemize}
+    % \end{block}
     
-    \vfill
+    % \vfill
 
-    \begin{block}{Introduction: Generative Programming}
-      \begin{itemize}
-      \item Generative paradigm
-        \begin{itemize}
-        \item The generative paradigm is available in C++ since 1989
-        \item It allows to  \alert{distribute/partition complexity}
-        \item The computer science and algebraic complexity is managed by the \alert{developer}
-        \item The numerical and model complexity is managed by the
-          \alert{user(s)}
-        \end{itemize}
-      \item Definitions
-        \begin{itemize}
-        \item A \alert{\emph{Domain Specific Language} (DSL)} is a programming or specification language
-          dedicated to a particular domain, problem and/or a solution technique
-        \item A \alert{\emph{Domain Specific Embedded Language} (DSEL)}
-          is a DSL integrated into another programming language (e.g. C++)
-        \end{itemize}
-      \end{itemize}
+    % \begin{block}{Introduction: Generative Programming}
+    %   \begin{itemize}
+    %   \item Generative paradigm
+    %     \begin{itemize}
+    %     \item The generative paradigm is available in C++ since 1989
+    %     \item It allows to  \alert{distribute/partition complexity}
+    %     \item The computer science and algebraic complexity is managed by the \alert{developer}
+    %     \item The numerical and model complexity is managed by the
+    %       \alert{user(s)}
+    %     \end{itemize}
+    %   \item Definitions
+    %     \begin{itemize}
+    %     \item A \alert{\emph{Domain Specific Language} (DSL)} is a programming or specification language
+    %       dedicated to a particular domain, problem and/or a solution technique
+    %     \item A \alert{\emph{Domain Specific Embedded Language} (DSEL)}
+    %       is a DSL integrated into another programming language (e.g. C++)
+    %     \end{itemize}
+    %   \end{itemize}
     \end{block}
     \vfill
 %     \begin{block}{Life: Example of a DSEL -- Navier-Stokes}
