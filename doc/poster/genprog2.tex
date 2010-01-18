@@ -16,10 +16,10 @@
 
 \tikzstyle{root concept}+=[concept color=white!80]
 \tikzstyle{level 1 concept}+=[concept color=ljk!80, sibling angle=90]
-\tikzstyle{every annotation}=[fill=black!50,opacity=0.5,text=white]
-\begin{tikzpicture}[mindmap,concept color=black!60,text=white]
+\tikzstyle{every annotation}=[fill=black!50,opacity=0.5,text=black]
+\begin{tikzpicture}[mindmap,concept color=black!60,text=black]
   %%\path[clip] (-6,0) rectangle (6,6);
-  \node[concept] (root)  {Complexity of Scientific Computing Software}
+  \node[concept,text=white] (root)  {Complexity of Scientific Computing Software}
   [clockwise from=45]
   child[concept] { node[concept] (mod) {Physical Models} }
   child[concept] { node[concept] (alg) {Algebraic Methods} }
@@ -27,12 +27,12 @@
   child[concept] { node[concept] (num) {Numerical Methods} };
   
   \node[name=dsl,fill=ljk!50,ellipse,decorate,decoration=snake,minimum width=3cm,
-  minimum height=2cm] at (root.center) {Domain Specific
+  minimum height=2cm] at (root.center) {\bf Domain Specific
   Embedded Language for Galerkin Methods};
   
-  \node[name=a1,single arrow, draw=white!80, rotate=-90,scale=.2,fill=black!60] at
+  \node[name=a1,single arrow, draw=white!80, rotate=-90,scale=.2,fill=red] at
   (dsl.north) {};
-  \node[name=a2,single arrow, draw, white!80, rotate=-90,scale=.2,fill=black!60] at
+  \node[name=a2,single arrow, draw, white!80, rotate=-90,scale=.2,fill=red] at
   (dsl.south) {};
   \node[decorate,decoration=snake,fill=ljk!50,above,ellipse,minimum
   height=1cm] at (a1.west)  {Express};
