@@ -15,11 +15,11 @@
 \begin{center}
 
 \tikzstyle{root concept}+=[concept color=white!80]
-\tikzstyle{level 1 concept}+=[concept color=ljk!80, sibling angle=90]
-\tikzstyle{every annotation}=[fill=black!50,opacity=0.5,text=white]
-\begin{tikzpicture}[mindmap,concept color=black!60,text=white]
+\tikzstyle{level 1 concept}+=[concept color=ljk!80, sibling angle=90,text=black]
+\tikzstyle{every annotation}=[fill=black!50,opacity=0.5,text=tabutter]
+\begin{tikzpicture}[mindmap,concept color=black!60]
   %%\path[clip] (-6,0) rectangle (6,6);
-  \node[concept] (root)  {Complexity of Scientific Computing Software}
+  \node[concept,text=white] (root)  {\bf Complexity of Scientific Computing Software}
   [clockwise from=45]
   child[concept] { node[concept] (mod) {Physical Models} }
   child[concept] { node[concept] (alg) {Algebraic Methods} }
