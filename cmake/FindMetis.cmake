@@ -10,27 +10,27 @@
 # PARMETIS_LIBRARIES   - List of fully qualified libraries to link against.
 # PARMETIS_FOUND       - Do not attempt to use if "no" or undefined.
 
-FIND_PATH(PARMETIS_INCLUDE_DIR parmetis.h
+FIND_PATH(METIS_INCLUDE_DIR metis.h
   /usr/local/include
   /usr/include
-  /usr/include/parmetis
+  /usr/include/metis
   )
-
-FIND_LIBRARY(PARMETIS_LIBRARY parmetis
-  /usr/local/lib
-  /usr/lib
-  )
+message( STATUS ${METIS_INCLUDE_DIR} )
+#FIND_LIBRARY(PARMETIS_LIBRARY parmetis
+#  /usr/local/lib
+#  /usr/lib
+#  )
 
 FIND_LIBRARY(METIS_LIBRARY metis
   /usr/local/lib
   /usr/lib
   )
 
-IF(PARMETIS_INCLUDE_DIR)
+IF(METIS_INCLUDE_DIR)
   ADD_DEFINITIONS( -DHAVE_METIS_H=1 )
 
-  IF(PARMETIS_LIBRARY)
-    SET( PARMETIS_LIBRARIES ${PARMETIS_LIBRARY} ${METIS_LIBRARY})
-    SET( PARMETIS_FOUND "YES" )
-  ENDIF(PARMETIS_LIBRARY)
-ENDIF(PARMETIS_INCLUDE_DIR)
+  IF(METIS_LIBRARY)
+    SET( METIS_LIBRARIES ${PARMETIS_LIBRARY} ${METIS_LIBRARY})
+    SET( METIS_FOUND "YES" )
+  ENDIF(METIS_LIBRARY)
+ENDIF(METIS_INCLUDE_DIR)
