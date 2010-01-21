@@ -56,7 +56,7 @@ endforeach()
 
 
 foreach( BENCH
-    stokes nonlinearpow
+    nonlinearpow stokes21 stokes22 stokes31 stokes32 stokes33
     ale1 ale2 ale3 ale4 ale5 )
 
     life_add_bench( ${BENCH} )
@@ -71,4 +71,7 @@ foreach( BENCH
     endforeach()
 
 endforeach()
+
+#add_executable( stokes stokesbase.cpp )
+#target_link_libraries(stokes ${LIFE_LIBRARIES} )
 
