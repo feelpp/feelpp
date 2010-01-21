@@ -69,9 +69,9 @@ makeOptions()
     stokesoptions.add_options()
         ("penal", Life::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
         ("f", Life::po::value<double>()->default_value( 0 ), "forcing term")
-        ("mu", Life::po::value<double>()->default_value( 1.0 ), "viscosity coefficient")
+        ("mu", Life::po::value<double>()->default_value( 1.0/40. ), "viscosity coefficient (default from Sherwin/Karnyadakis book)")
         ("beta", Life::po::value<double>()->default_value( 0.0 ), "convection coefficient")
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("hsize", Life::po::value<double>()->default_value( 0.1 ), "first h value to start convergence")
         ("bctype", Life::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
         ("bccoeff", Life::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
         ("penalisation", Life::po::value<double>()->default_value( 1.0 ), "penalisation parameter for equal order approximation")
@@ -273,8 +273,8 @@ void
                                                       _shape="hypercube",
                                                       _dim=Dim,
                                                       _h=meshSize,
-                                                      _xmin=0.,
-                                                      _ymin=0.) );
+                                                      _xmin=-0.5,_xmax=1.,
+                                                      _ymin=-0.5,_ymax=1.5 ) );
 
     /*
      * The function space and some associate elements are then defined
@@ -330,7 +330,10 @@ void
 
     AUTO( convection, grad_exact*beta);
 
-    AUTO( p_exact, val((1-exp(2.*M_lambda*Px()))/2.0) );
+    AUTO( p_exact_kov, val((1-exp(2.*M_lambda*Px()))/2.0) );
+    double pmeas = integrate( elements(mesh), _Q<OrderU>(), constant(1.) ).evaluate()( 0, 0 );
+    double pmean = integrate( elements(mesh), _Q<OrderU>(), p_exact_kov ).evaluate()( 0, 0 )/pmeas;
+    AUTO( p_exact, p_exact_kov-pmean );
 
     AUTO( f1, val(exp( M_lambda * Px() )*((M_lambda*M_lambda - 4.*pi*pi)*mu*cos(2.*pi*Py()) - M_lambda*exp( M_lambda * Px() ))) );
     AUTO( f2, val(exp( M_lambda * Px() )*mu*(M_lambda/(2.*pi))*sin(2.*pi*Py())*(-M_lambda*M_lambda +4*pi*pi)) );
@@ -339,6 +342,7 @@ void
 #else
     // u exact solution
     AUTO( u_exact, vec(cos(Px())*cos(Py()),sin(Px())*sin(Py()) ) );
+
 
     // this is the exact solution which has zero mean : the mean of
     // cos(x)*sin(y) is sin(1)*(1-cos(1))) on [0,1]^2
@@ -474,7 +478,7 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::exportResults( element_type& U, element_t
 
 
 template<int Dim,int _OrderU,int _OrderP,template<uint16_type,uint16_type,uint16_type> class Entity>
-const uint16_type Stokes<Dim, _OrderU, _OrderP, Entity>::OrderU = 2;
+const uint16_type Stokes<Dim, _OrderU, _OrderP, Entity>::OrderU;
 template<int Dim,int _OrderU,int _OrderP,template<uint16_type,uint16_type,uint16_type> class Entity>
-const uint16_type Stokes<Dim, _OrderU, _OrderP, Entity>::OrderP = 1;
+const uint16_type Stokes<Dim, _OrderU, _OrderP, Entity>::OrderP;
 } // Life
