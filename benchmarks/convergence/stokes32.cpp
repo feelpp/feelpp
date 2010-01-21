@@ -39,7 +39,7 @@ main( int argc, char** argv )
 
     /* change parameters below */
     const int nDim = 2;
-    const int OrderU = 2;
+    const int OrderU = 3;
     const int OrderP = 2;
 
     typedef Life::Stokes<nDim, OrderU, OrderP, Simplex> stokes_type;
