@@ -69,12 +69,14 @@ makeOptions()
     stokesoptions.add_options()
         ("penal", Life::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
         ("f", Life::po::value<double>()->default_value( 0 ), "forcing term")
-        ("mu", Life::po::value<double>()->default_value( 1.0 ), "reaction coefficient component")
+        ("mu", Life::po::value<double>()->default_value( 1.0 ), "viscosity coefficient")
+        ("beta", Life::po::value<double>()->default_value( 0.0 ), "convection coefficient")
         ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
         ("bctype", Life::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
         ("bccoeff", Life::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
         ("penalisation", Life::po::value<double>()->default_value( 1.0 ), "penalisation parameter for equal order approximation")
         ("stab", Life::po::value<bool>()->default_value( true ), "0 = no stabilisation for equal order approx., 1 = stabilisation for equal order approx.")
+
         ("export", "export results(ensight, data file(1D)")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
@@ -209,14 +211,10 @@ public:
             .addOutput( Output(_name="norm_L2_p",_latex="\\left\\| p \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs2) );
 
         mu = this->vm()["mu"].template as<value_type>();
+        M_lambda = 1./(2.*mu) - math::sqrt( 1./(4.*mu*mu) + 4.*M_PI*M_PI);
         penalbc = this->vm()["bccoeff"].template as<value_type>();
+        M_beta = this->vm()["beta"].template as<value_type>();
     }
-
-
-    /**
-     * create the mesh using mesh size \c meshSize
-     */
-    mesh_ptrtype createMesh( double meshSize );
 
 
     /**
@@ -242,28 +240,13 @@ private:
     double meshSize;
 
     double mu;
+    double M_lambda;
     double penalbc;
+    double M_beta;
 
     boost::shared_ptr<export_type> exporter;
     typename export_type::timeset_ptrtype timeSet;
 }; // Stokes
-
-    template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
-    typename Stokes<Dim, _OrderU, _OrderP,Entity>::mesh_ptrtype
-    Stokes<Dim,_OrderU,_OrderP,Entity>::createMesh( double meshSize )
-{
-    mesh_ptrtype mesh( new mesh_type );
-
-
-    GmshTensorizedDomain<convex_type::nDim,convex_type::nOrder,convex_type::nRealDim,Entity> td;
-    td.setCharacteristicLength( meshSize );
-    std::string fname = td.generate( convex_type::name().c_str() );
-
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-    return mesh;
-} // Stokes::createMesh
-
 
 template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
@@ -282,9 +265,16 @@ void
     using namespace Life::vf;
 
     /*
-     * First we create the mesh
+     * First we create the mesh : a square [0,1]x[0,1] with characteristic
+     * length = meshSize
      */
-    mesh_ptrtype mesh = createMesh( meshSize );
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name="square",
+                                                      _shape="hypercube",
+                                                      _dim=Dim,
+                                                      _h=meshSize,
+                                                      _xmin=0.,
+                                                      _ymin=0.) );
 
     /*
      * The function space and some associate elements are then defined
@@ -320,10 +310,33 @@ void
 #endif
     // total stress tensor (trial)
     AUTO( SigmaNt, (-idt(p)*N()+mu*deft*N()) );
-
+#if 1 // the Kovasznay flow (2D)
     // total stress tensor (test)
     AUTO( SigmaN, (-id(p)*N()+mu*def*N()) );
+    double pi = 4*math::atan(1.0);
+    AUTO( u1, val(1. - exp( M_lambda * Px() ) * cos(2.*pi*Py())) );
+    AUTO( u2, val((M_lambda/(2.*pi)) * exp( M_lambda * Px() ) * sin(2.*pi*Py())) );
 
+    AUTO( u_exact, u1*oneX() + u2*oneY());
+
+    AUTO( du_dx, val(-M_lambda*exp( M_lambda * Px() )*cos(2.*pi*Py())));
+    AUTO( du_dy, val(2*pi*exp( M_lambda * Px() )*sin(2.*pi*Py())));
+    AUTO( dv_dx, val((M_lambda*M_lambda/(2*pi))*exp( M_lambda * Px() )*sin(2.*pi*Py())));
+    AUTO( dv_dy, val(M_lambda*exp( M_lambda * Px() )*cos(2.*pi*Py())));
+
+    AUTO( grad_exact, (mat<2,2>(du_dx, du_dy, dv_dx, dv_dy)) );
+
+    AUTO( beta, M_beta*(oneX() + oneY()) );
+
+    AUTO( convection, grad_exact*beta);
+
+    AUTO( p_exact, val((1-exp(2.*M_lambda*Px()))/2.0) );
+
+    AUTO( f1, val(exp( M_lambda * Px() )*((M_lambda*M_lambda - 4.*pi*pi)*mu*cos(2.*pi*Py()) - M_lambda*exp( M_lambda * Px() ))) );
+    AUTO( f2, val(exp( M_lambda * Px() )*mu*(M_lambda/(2.*pi))*sin(2.*pi*Py())*(-M_lambda*M_lambda +4*pi*pi)) );
+
+    AUTO( f, f1*oneX() + f2*oneY() + convection );
+#else
     // u exact solution
     AUTO( u_exact, vec(cos(Px())*cos(Py()),sin(Px())*sin(Py()) ) );
 
@@ -334,7 +347,7 @@ void
     // f is such that f = \Delta u_exact + \nabla p_exact
     AUTO( f, vec(2*cos(Px())*cos(Py())-sin(Px())*sin(Py()),
                  2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) ) );
-
+#endif
     // right hand side
     form1( Xh, F, _init=true )  =
         integrate( elements(mesh), _Q<OrderU+5>(), trans(f)*id(v) )+
@@ -351,8 +364,10 @@ void
     sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
     size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
     Log() << "[assembly] add diffusion terms\n";
-    form2( Xh, Xh, D, _init=true, _pattern=pattern )=integrate( elements(mesh), _Q<2*(OrderU-1)>(),
-                                                                mu*trace(deft*trans(def)) );
+    form2( Xh, Xh, D, _init=true, _pattern=pattern )=
+        integrate( elements(mesh), _Q<2*(OrderU-1)>(),
+                   mu*trace(deft*trans(def)) +
+                   trans(gradt(u)*beta)*id(v) );
     Log() << "[assembly] add velocity/pressure terms\n";
     form2( Xh, Xh, D )+=integrate( elements(mesh), _Q<2*(OrderU-1)>(),
                                    - div(v)*idt(p) + divt(u)*id(q) );
@@ -453,30 +468,13 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::exportResults( element_type& U, element_t
         exporter->save();
     }
 } // Stokes::export
+
+
+
+
+
+template<int Dim,int _OrderU,int _OrderP,template<uint16_type,uint16_type,uint16_type> class Entity>
+const uint16_type Stokes<Dim, _OrderU, _OrderP, Entity>::OrderU = 2;
+template<int Dim,int _OrderU,int _OrderP,template<uint16_type,uint16_type,uint16_type> class Entity>
+const uint16_type Stokes<Dim, _OrderU, _OrderP, Entity>::OrderP = 1;
 } // Life
-
-int
-main( int argc, char** argv )
-{
-
-    using namespace Life;
-    /* assertions handling */
-    Life::Assert::setLog( "stokes.assert");
-
-    /* change parameters below */
-    const int nDim = 2;
-    const int OrderU = 2;
-    const int OrderP = 2;
-
-    typedef Life::Stokes<nDim, OrderU, OrderP, Simplex> stokes_type;
-
-
-    /* define and run application */
-    stokes_type stokes( argc, argv, makeAbout(), makeOptions() );
-    stokes.run();
-}
-
-
-
-
-
