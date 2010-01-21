@@ -18,7 +18,7 @@
 ** Benchmarks
 
  - stokes: added support for P_k/P_{k-1}, P_k/P_{k-2} and P_k/P_k (with CIP
-   stabilisation)
+   stabilisation), this is a 2D Kovasznay flow.
 
 
 
