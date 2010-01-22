@@ -72,6 +72,3 @@ foreach( BENCH
 
 endforeach()
 
-#add_executable( stokes stokesbase.cpp )
-#target_link_libraries(stokes ${LIFE_LIBRARIES} )
-
