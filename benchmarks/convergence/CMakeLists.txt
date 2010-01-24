@@ -26,6 +26,7 @@ INCLUDE_DIRECTORIES (
   )
 ENABLE_TESTING()
 set(petsc_SOLVER_OPTIONS "-ksp_monitor -pc_type asm -pc_asm_blocks 2" )
+set(petsc_LU_SOLVER_OPTIONS "-ksp_monitor -pc_type lu" )
 foreach( BENCH laplacian1dP1 laplacian1dP5
     laplacian1d2dP1 laplacian1d2dP5
     laplacian2dP1 laplacian2dP5
@@ -67,7 +68,7 @@ foreach( BENCH
         ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --path=${LIFE_BUILD_DIR}/benchmarks/convergence/
-        --cmdargs="--backend=${BACKEND} --no-export ${${BACKEND}_SOLVER_OPTIONS}" )
+        --cmdargs="--backend=${BACKEND} --no-export ${${BACKEND}_LU_SOLVER_OPTIONS}" )
     endforeach()
 
 endforeach()
