@@ -68,7 +68,6 @@ makeOptions()
     Life::po::options_description stokesoptions("Stokes options");
     stokesoptions.add_options()
         ("penal", Life::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
-        ("f", Life::po::value<double>()->default_value( 0 ), "forcing term")
         ("mu", Life::po::value<double>()->default_value( 1.0/40. ), "viscosity coefficient (default from Sherwin/Karnyadakis book)")
         ("beta", Life::po::value<double>()->default_value( 0.0 ), "convection coefficient")
         ("hsize", Life::po::value<double>()->default_value( 0.1 ), "first h value to start convergence")
@@ -187,12 +186,10 @@ public:
 
         Parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.04:0.08:0.2" );
         this->
-            addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
+            addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu",_values="0.01:1:10") )
+            .addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
             .addParameter( Parameter(_name="orderU",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderU  ).c_str()) )
             .addParameter( Parameter(_name="orderP",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderP  ).c_str()) )
-            .addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu",_values="0.01:1:10") )
-            .addParameter( Parameter(_name="f",_type=CONT_ATTR,_values="0:0:0") )
-            .addParameter( Parameter(_name="penal",_type=CONT_ATTR,_values="0.1:0.5:1") )
             .addParameter( h );
 
         std::vector<Parameter> depend;
@@ -252,12 +249,10 @@ template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uin
 void
     Stokes<Dim, _OrderU, _OrderP, Entity>::run()
 {
-    this->addParameterValue( Dim )
+    this->addParameterValue( this->vm()["mu"].template as<double>() )
+        .addParameterValue( Dim )
         .addParameterValue( OrderU )
         .addParameterValue( OrderP )
-        .addParameterValue( this->vm()["mu"].template as<double>() )
-        .addParameterValue( this->vm()["f"].template as<double>() )
-        .addParameterValue( this->vm()["penal"].template as<double>() )
         .addParameterValue( this->vm()["hsize"].template as<double>() );
 
     if (this->preProcessing() == RUN_EXIT) return;
@@ -378,7 +373,7 @@ void
     Log() << "[assembly] add lagrange multipliers terms for zero mean pressure\n";
     form2( Xh, Xh, D )+=integrate( elements(mesh), _Q<OrderU-1>(),
                                    id(q)*idt(lambda) + idt(p)*id(nu) );
-    Log() << "[assembly] add terms for weak Dirichlet condition handling\n";
+     Log() << "[assembly] add terms for weak Dirichlet condition handling\n";
     form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), _Q<2*OrderU>(),
                                    -trans(SigmaNt)*id(v)
                                    -trans(SigmaN)*idt(u)
