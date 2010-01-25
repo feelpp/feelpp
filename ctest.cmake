@@ -7,7 +7,7 @@ getuname(osname -s)
 getuname(osrel  -r)
 getuname(cpu    -m)
 set(CTEST_BUILD_NAME        "${osname}-${cpu}")
-set(CTEST_TIMEOUT           "600")
+
 
 SET(MODEL Nightly)
 IF(${CTEST_SCRIPT_ARG} MATCHES Experimental)
@@ -23,6 +23,8 @@ LIFE_ENABLE_ALL:BOOL=ON
 CMAKE_CXX_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
 CMAKE_C_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
 ")
+
+set(CTEST_TIMEOUT           "600")
 
 SET (CTEST_SOURCE_DIRECTORY "$ENV{HOME}/sources/life")
 set(CTEST_BINARY_DIRECTORY  "$ENV{HOME}/sources/life-${CTEST_BUILD_NAME}")
