@@ -57,7 +57,7 @@ endforeach()
 
 
 foreach( BENCH
-    nonlinearpow stokes21 stokes22 stokes31 stokes32 stokes33
+    nonlinearpow stokes11 stokes21 stokes22 stokes31 stokes32 stokes33
     ale1 ale2 ale3 ale4 ale5 )
 
     life_add_bench( ${BENCH} )
