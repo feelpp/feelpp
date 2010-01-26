@@ -39,15 +39,19 @@
 
 void breakIntoDebugger()
 {
+// Disabled for now, it is never used anyway.
+#if 0
   // MSVC, BCB,
 #if (defined _MSC_VER) || (defined __BORLANDC__)
   __asm { int 3 };
 #elif defined(__GNUC__)
   // GCC
+  // works only on x86 and x86_64 architectures
   __asm ("int $0x3");
 #else
     #  error Please supply instruction to break into code
 #endif
+#endif // 0
 }
 
 namespace Life
