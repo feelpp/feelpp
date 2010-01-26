@@ -9,6 +9,10 @@
 #+LATEX_class: cparticle
 
 * New in 0.9.15
+** Programming environment
+
+ - port Life on non x86 platforms. The non x86 Debian platforms should now be
+   able to compile Life.
 
 
 * New in 0.9.14
