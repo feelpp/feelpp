@@ -184,9 +184,10 @@ public:
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
 
+        mu = this->vm()["mu"].template as<value_type>();
         Parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.04:0.08:0.2" );
         this->
-            addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu",_values="0.01:1:10") )
+            addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu", _values=boost::lexical_cast<std::string>( mu ).c_str()))
             .addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
             .addParameter( Parameter(_name="orderU",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderU  ).c_str()) )
             .addParameter( Parameter(_name="orderP",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderP  ).c_str()) )
@@ -207,7 +208,7 @@ public:
             addOutput( Output(_name="norm_L2_u",_latex="\\left\\| u \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) )
             .addOutput( Output(_name="norm_L2_p",_latex="\\left\\| p \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs2) );
 
-        mu = this->vm()["mu"].template as<value_type>();
+
         M_lambda = 1./(2.*mu) - math::sqrt( 1./(4.*mu*mu) + 4.*M_PI*M_PI);
         penalbc = this->vm()["bccoeff"].template as<value_type>();
         M_beta = this->vm()["beta"].template as<value_type>();
@@ -249,7 +250,7 @@ template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uin
 void
     Stokes<Dim, _OrderU, _OrderP, Entity>::run()
 {
-    this->addParameterValue( this->vm()["mu"].template as<double>() )
+    this->addParameterValue( mu )
         .addParameterValue( Dim )
         .addParameterValue( OrderU )
         .addParameterValue( OrderP )
