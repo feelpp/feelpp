@@ -168,7 +168,9 @@ public:
             else
                 h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.08:0.09:0.4" );
         else
-            if (Order <= 2)      //=== 3D ===
+            if (Order == 1)      //=== 3D ===
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.05:0.02:0.1" );
+            else if (Order <= 3)      //=== 3D ===
                 h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.08:0.02:0.2" );
             else if (Order < 5)      //=== 3D ===
                 h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.1:0.5" );
