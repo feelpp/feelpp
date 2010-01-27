@@ -42,6 +42,7 @@ parser = OptionParser()
 parser.add_option("--path", dest="path", help="path of the program to execute")
 parser.add_option("--program", dest="program", help="program to execute")
 parser.add_option("--precision", type="float",dest="precision", help="precision of the validation", default=0.2)
+parser.add_option("--mode", type="int",dest="mode", help="mode of the validation(1=range verification, 0=no range verification)", default=1)
 parser.add_option("--cmdargs", dest="cmdargs", help="command line arguments for the c++ code execution", default="")
 parser.add_option("--launchnbr", dest="lnbr", type="int", help="number of times the c++ code is launched", default=3)
 parser.add_option("--method", dest="method", type="int", help="method for generating intervals : 0 - linear, 1 - logarithmic", default=1)
@@ -109,7 +110,7 @@ print val_depend
 
 # Lancement de la validation
 try:
-		valide,graphfile,imgs=code.launch(val_param,val_depend,dep_outputs,options.precision,1)
+		valide,graphfile,imgs=code.launch(val_param,val_depend,dep_outputs,options.precision,options.mode)
 except IOError:
 		print "[validation] error : the test case stopped unexpectedly..."
 		valide=0

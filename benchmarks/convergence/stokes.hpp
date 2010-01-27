@@ -394,6 +394,11 @@ void
     F->close();
     Log() << "[stokes] vector/matrix global assembly done\n";
 
+    if( this->vm().count( "export-matlab" ) )
+    {
+        D->printMatlab( "S.m" );
+        F->printMatlab( "F.m" );
+    }
 
     this->solve( D, U, F, false );
 
