@@ -175,7 +175,7 @@ public:
             else if (Order < 5)      //=== 3D ===
                 h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.1:0.5" );
             else
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.3:0.1:0.8" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.2:0.1:0.7" );
 
         this->
             addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )

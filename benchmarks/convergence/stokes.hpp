@@ -187,8 +187,8 @@ public:
         mu = this->vm()["mu"].template as<value_type>();
         Parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.04:0.08:0.2" );
         this->
-            addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu", _values=boost::lexical_cast<std::string>( mu ).c_str()))
-            .addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
+            //addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu", _values=boost::lexical_cast<std::string>( mu ).c_str()))
+            addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
             .addParameter( Parameter(_name="orderU",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderU  ).c_str()) )
             .addParameter( Parameter(_name="orderP",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderP  ).c_str()) )
             .addParameter( h );
@@ -250,8 +250,8 @@ template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uin
 void
     Stokes<Dim, _OrderU, _OrderP, Entity>::run()
 {
-    this->addParameterValue( mu )
-        .addParameterValue( Dim )
+    this->//addParameterValue( mu )
+        addParameterValue( Dim )
         .addParameterValue( OrderU )
         .addParameterValue( OrderP )
         .addParameterValue( this->vm()["hsize"].template as<double>() );
