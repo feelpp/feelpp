@@ -49,6 +49,7 @@ foreach( BENCH laplacian1dP1 laplacian1dP5
       add_test( life_bench_${BENCH}-${BACKEND}-weak
         ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
+        --mode=0
         --path=${LIFE_BUILD_DIR}/benchmarks/convergence/
         --cmdargs="--backend=${BACKEND} --weak --no-export ${${BACKEND}_SOLVER_OPTIONS}")
 
@@ -68,6 +69,7 @@ foreach( BENCH
       add_test( life_bench_${BENCH}-${BACKEND}
         ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
+        --mode=0
         --path=${LIFE_BUILD_DIR}/benchmarks/convergence/
         --cmdargs="--backend=${BACKEND} --no-export ${${BACKEND}_LU_SOLVER_OPTIONS}" )
     endforeach()
