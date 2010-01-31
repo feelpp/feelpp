@@ -185,7 +185,7 @@ public:
     {
 
         mu = this->vm()["mu"].template as<value_type>();
-        Parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.04:0.08:0.2" );
+        Parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.02:0.05:0.1" );
         this->
             //addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu", _values=boost::lexical_cast<std::string>( mu ).c_str()))
             addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
