@@ -66,10 +66,17 @@ public:
     struct Element; struct Leaf; struct Node;
 
     typedef ublas::vector<double> node_type;
-    typedef boost::tuple<node_type, size_type, uint16_type > index_node_type;
+    //le dernier size_type du template correspond a l'indice global du noeud dans le maillage
+    typedef boost::tuple<node_type, size_type, uint16_type, size_type> index_node_type;
     typedef std::vector<index_node_type> points_type;
     typedef points_type::iterator points_iterator;
     typedef points_type::const_iterator points_const_iterator;
+    
+    //ici, le double correspond à la distance avec le noeud que l'on recherche
+    typedef boost::tuple<node_type, size_type, uint16_type,double > index_node_search_type;
+    typedef std::vector<index_node_search_type> points_search_type;
+    typedef points_search_type::iterator points_search_iterator;
+    typedef points_search_type::const_iterator points_search_const_iterator;
 
     //@}
 
@@ -80,12 +87,20 @@ public:
     KDTree()
         :
         M_tree( 0 ),
-        M_pts()
+        M_pts(),
+        M_node_search(),
+        M_PtsNearest(),
+        M_distanceMax(INT_MAX),
+        M_nbPtMax(4)
     {}
     KDTree( KDTree const & tree )
         :
         M_tree( tree.M_tree ),
-        M_pts( tree.M_pts )
+        M_pts( tree.M_pts ),
+        M_node_search(tree.M_node_search),
+        M_PtsNearest(tree.M_PtsNearest),
+        M_distanceMax(tree.M_distanceMax),
+        M_nbPtMax(tree.M_nbPtMax)
     {}
 
     ~KDTree()
@@ -122,6 +137,14 @@ public:
     {
         return M_pts;
     }
+    
+    /**
+     * get the points Near Neighbor set
+     */
+    const points_search_type &pointsNearNeighbor() const
+    {
+        return M_PtsNearest;
+    }
 
 
     //@}
@@ -157,20 +180,20 @@ public:
      * insert a new point in the tree
      * @return  the index of the point
      */
-    size_type addPoint( node_type const& n )
+    size_type addPoint( node_type const& n, size_type indice_global=0 )
     {
         size_type i = M_pts.size();
-        addPointWithId(n,i,0);
+        addPointWithId(n,i,0,indice_global);
         return i;
     }
     /**
      * insert a new point, with an associated number.
      */
-    void addPointWithId(const node_type& n, size_type i, uint16_type comp  )
+    void addPointWithId(const node_type& n, size_type i, uint16_type comp, size_type indice_global=0  )
     {
         if (M_tree)
             clearTree();
-        M_pts.push_back( boost::make_tuple( n, i, comp ) );
+        M_pts.push_back( boost::make_tuple( n, i, comp,indice_global ) );
     }
     /**
      * fills ipts with the indexes of points in the box
@@ -179,6 +202,16 @@ public:
     void pointsInBox( points_type &inpts,
                       const node_type &min,
                       const node_type &max);
+                      
+    /**
+     * recherche les points voisins de M_node_search dans le kd-tree
+     */
+    void search(const node_type & node_);
+    
+    /**
+     * affiche le resultat de la recherche
+     */
+    void showResultSearch();
 
     //@}
 
@@ -189,10 +222,29 @@ private:
      * destroy the tree data structure
      */
     void clearTree();
+    
+    /**
+     * Lance la recherche des voisins de M_node_search (recursif)
+     */
+    void run_search( Element * tree, uint iter);
+    
+    /**
+     * Mise a jour de la liste des points les plus proches
+     */
+    void update_Pts_search(const index_node_type & p);
 
 private:
     Element* M_tree;
     points_type M_pts;
+
+    //le point dont on cherche les plus proches voisins
+    node_type M_node_search;
+    //vecteur des plus proches voisins
+    points_search_type M_PtsNearest;
+    //plus grande distance du vecteur des plus proches voisins
+    double M_distanceMax;
+    //le nbre max de pt voisin que l'on veut chercher
+    uint M_nbPtMax;
 
 
 };
