@@ -59,14 +59,19 @@ struct KDTree::Leaf : public KDTree::Element
 struct KDTree::Node : public KDTree::Element
 {
     scalar_type split_v;
+    
+    //pts decrivant le decoupage du noeud
+    node_type ptmin,ptmax;
 
     /* left: <=v, right: >v */
     Element *left, *right;
 
-    Node(scalar_type v, Element *left_, Element *right_)
+    Node(scalar_type v, node_type min, node_type max, Element *left_, Element *right_)
         :
         Element(0),
         split_v(v),
+        ptmin(min),
+        ptmax(max),
         left(left_),
         right(right_)
     {}
@@ -149,6 +154,7 @@ build_tree( KDTree::points_iterator begin,
             KDTree::points_iterator itmedian;
             scalar_type median;
             size_type N = boost::get<0>(*begin).size();
+            KDTree::node_type ptmin(N), ptmax(N);
             unsigned ndir_tests = dir/N;
             dir %= N;
             if (npts > 50)
@@ -162,6 +168,18 @@ build_tree( KDTree::points_iterator begin,
                     median = ( boost::get<0>( v[v.size()/2-1] )(dir)+
                                boost::get<0>( v[v.size()/2] )(dir))/2;
                     itmedian = partition(begin,end,dir,median);
+                    if (N==2) {
+                        //permet de borner le plan median
+                        std::vector<KDTree::index_node_type> v2(30);
+
+                        for (size_type i=0; i < v2.size(); ++i)
+                            v2[i] = begin[rand() % npts];
+                        std::sort(v2.begin(), v2.end(), component_sort( (dir+1)%N ));
+                        ptmin(dir)=median;
+                        ptmin( (dir+1)%N )= boost::get<0>( *(v2.begin()) ) ((dir+1)%N) ;
+                        ptmax(dir)=median;
+                        ptmax( (dir+1)%N )= boost::get<0>( *(--v2.end()) ) ((dir+1)%N) ;
+                    }
                 }
             else
                 {
@@ -172,6 +190,19 @@ build_tree( KDTree::points_iterator begin,
                     while ( itmedian < end &&
                             boost::get<0>(*itmedian)[dir] == median )
                         itmedian++;
+                        
+                    if (N==2) {
+                        //permet de borner le plan median
+                        std::vector<KDTree::index_node_type> v2(npts);
+
+                        for (size_type i=0; i < v2.size(); ++i)
+                            v2[i] = begin[rand() % npts];
+                        std::sort(v2.begin(), v2.end(), component_sort( (dir+1)%N ));
+                        ptmin(dir)=median;
+                        ptmin( (dir+1)%N )= boost::get<0>( *(v2.begin()) ) ((dir+1)%N) ;
+                        ptmax(dir)=median;
+                        ptmax( (dir+1)%N )= boost::get<0>( *(--v2.end()) ) ((dir+1)%N) ;
+                    }
                 }
             /* could not split the set (all points have same value for component 'dir' !) */
             if (itmedian == end)
@@ -180,7 +211,7 @@ build_tree( KDTree::points_iterator begin,
                     if (ndir_tests == N-1)
                         return new KDTree::Leaf(begin,end);
                     else
-                        return new KDTree::Node(median,
+                        return new KDTree::Node(median, ptmin, ptmax,
                                                 build_tree(begin,
                                                            itmedian,
                                                            (dir+1)%N + (ndir_tests+1)*N),
@@ -196,7 +227,7 @@ build_tree( KDTree::points_iterator begin,
                         (boost::get<0>(*(itmedian-1))[dir])
                         (median).error( "invalid median iterator" );
 
-                    return new KDTree::Node(median,
+                    return new KDTree::Node(median, ptmin, ptmax,
                                             build_tree(begin, itmedian, (dir+1)%N),
                                             build_tree(itmedian,end, (dir+1)%N));
                 }
@@ -300,6 +331,51 @@ points_in_box(const points_in_box_data& p,
         }
 }
 
+/* Calcul la distance entre 2 points (norme au carré) */
+double 
+distanceNodes(const KDTree::node_type & p1, const KDTree::node_type & p2) {
+    
+    double res=0.0;
+
+    for (uint i=0;i<p1.size();++i) {
+        res+=(p2(i)-p1(i))*(p2(i)-p1(i));
+    }
+
+    //return math::sqrt(res);
+    return res;
+}
+
+/**
+* Calcul la projection orthogonale du point node_search sur un segment [p1,p2]
+* Si le projete n'appartient pas au segment, on renvoie le plus proche appartenant au segment
+*/
+KDTree::node_type 
+projection2d(const KDTree::node_type & pMin, const KDTree::node_type & pMax, const KDTree::node_type & node_search) {
+
+    //calcul du point projete
+    double a=pMax(1)-pMin(1);
+    double b=pMax(0)-pMin(0);
+
+    double f1=-pMax(0)*pMin(1) + pMin(0)*pMax(1);
+    double f2=-a*node_search(1) - b*node_search(0);
+
+    double det=-a*a - b*b;
+
+    KDTree::node_type res(2);
+
+    res(0) = (1./det)*(-a*f1 + b*f2);
+    res(1) = (1./det)*(b*f1 + a*f2);
+
+    //verifie si le point est sur le segment
+    if ( res(0)<pMin(0) || res(1)>pMax(0)) {
+        if (res(0)<pMin(0)) {res=pMin;}
+        else {res=pMax;}
+    }
+    
+    return res;
+
+}
+
 
 
 } // detail namespace
@@ -346,6 +422,124 @@ KDTree::pointsInBox( points_type &inpts,
     detail::points_in_box(p, M_tree, 0);
 
     Debug( 4011 ) << "size inpts = " << inpts.size() << "\n";
+
+}
+
+
+void 
+KDTree::search(const node_type & node_) {
+
+    M_node_search = node_;
+
+    // construct the tree from the points set
+    if (M_tree == 0)
+        {
+            M_tree = detail::build_tree( M_pts.begin(),
+                                         M_pts.end(),
+                                         0 );
+            if (!M_tree)
+                return;
+        }
+        
+    // run search
+    run_search(M_tree,0);
+ 
+}
+
+void
+KDTree::showResultSearch() {
+   
+    std::cout<<"\n["<<M_PtsNearest.size()<<"]\n";
+
+    points_search_const_iterator itpts=M_PtsNearest.begin();
+    points_search_const_iterator itpts_end=M_PtsNearest.end();
+
+    for ( ;itpts<itpts_end;++itpts) {
+        std::cout<<"("<<boost::get<0>(*itpts)<<" "<<boost::get<1>(*itpts)<<" "<<boost::get<2>(*itpts)<<" "<<boost::get<3>(*itpts)<<")\n";
+    }
+
+}
+
+void 
+KDTree::run_search( KDTree::Element * tree, uint iter) {
+
+    if ( ! tree->isleaf() ) { 
+        bool aGauche=false;
+        const KDTree::Node *tn = static_cast<const KDTree::Node*>(tree);
+        if ((iter%2)==0) {
+            if (M_node_search(0)<tn->split_v && tn->left) { run_search(tn->left,iter+1);aGauche=true;}
+            else if (tn->right) {run_search(tn->right,iter+1);aGauche=false;}
+        }
+        else if ((iter%2)==1) {
+            if (M_node_search(1)<tn->split_v && tn->left) {run_search(tn->left,iter+1);aGauche=true;}
+            else if (tn->right) {run_search(tn->right,iter+1);aGauche=false;}
+        }
+
+        //calcul de la distance du pt de recherche avec la frontière de decoupage du kd-tree
+        node_type proj=detail::projection2d(tn->ptmin, tn->ptmax,M_node_search);
+
+        //si la frontière est assez proche on parcourt l'autre partie du graphe
+        if (detail::distanceNodes(proj,M_node_search)<(M_distanceMax)) {
+            if (aGauche) {
+                if (tn->right) run_search(tn->right,iter+1);
+            }
+            else if (tn->left) run_search(tn->left,iter+1);
+        }
+        
+
+    }
+    else {
+        const KDTree::Leaf *tl = static_cast<const KDTree::Leaf*>(tree);
+        
+        KDTree::points_const_iterator itpt = tl->it;
+        for (size_type i=0;i<tl->n;++i,++itpt)
+            update_Pts_search(*itpt);
+        
+    }
+
+
+}
+
+void 
+KDTree::update_Pts_search(const index_node_type & p) {
+
+    points_search_iterator itpts;
+    points_search_iterator itpts_end;
+
+    double d=detail::distanceNodes( boost::get<0>(p) , this->M_node_search);
+    
+    if (M_PtsNearest.size()<this->M_nbPtMax) {
+        index_node_search_type newEl( boost::make_tuple( boost::get<0>(p),
+                                                                 boost::get<1>(p),
+                                                                 boost::get<2>(p),
+                                                                 d  ) 
+                                            );
+        itpts=M_PtsNearest.begin();
+        itpts_end=M_PtsNearest.end();
+        
+        while ( itpts!=itpts_end && d > boost::get<3>(*itpts) ) { ++itpts;}
+        
+        M_PtsNearest.insert(itpts,newEl);
+    }
+    else if (d<this->M_distanceMax) {
+        itpts=M_PtsNearest.begin();
+        itpts_end=M_PtsNearest.end();
+        for ( ;itpts<itpts_end;++itpts) {
+            if (d < boost::get<3>(*itpts)) {
+                index_node_search_type newEl( boost::make_tuple( boost::get<0>(p),
+                                                                 boost::get<1>(p),
+                                                                 boost::get<2>(p),
+                                                                 d  ) 
+                                            );
+                M_PtsNearest.insert(itpts,newEl);
+                M_PtsNearest.pop_back();
+                M_distanceMax= boost::get<3>(M_PtsNearest.back());
+                itpts=itpts_end;
+            }
+            
+        }       
+    
+    }
 
 }
 
