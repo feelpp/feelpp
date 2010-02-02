@@ -8,6 +8,16 @@
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
+* New in 0.9.16
+** Programming environment
+  - make trilinos optional. That should ease the porting on platforms where
+    trilinos does not compile (yet)
+
+** Libraries
+
+ - improvements in the kdtree data structure
+
+
 * New in 0.9.15
 ** Programming environment
 
