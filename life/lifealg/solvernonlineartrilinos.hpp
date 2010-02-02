@@ -37,7 +37,7 @@
 #include <life/lifealg/vectorepetra.hpp>
 // #include <life/lifealg/operatortrilinos.hpp>
 
-#if defined( HAVE_TRILINOS_NOX )
+#if defined( HAVE_TRILINOS )
 #include "NOX.H"
 #include "NOX_Epetra_Interface_Required.H"
 #include "NOX_Epetra_Interface_Jacobian.H"
