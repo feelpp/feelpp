@@ -37,11 +37,12 @@
 
 #include <life/lifealg/solverlineartrilinos.hpp>
 
+#if defined( HAVE_TRILINOS_EPETRA )
 #include "Epetra_ConfigDefs.h"
 #include "Epetra_Operator.h"
 
 
-#ifdef HAVE_MPI
+#if defined( HAVE_MPI )
 #include "mpi.h"
 #include "Epetra_MpiComm.h"
 #else
@@ -878,4 +879,6 @@ private:
 
 
 } // Life
+
+#endif // HAVE_TRILINOS_EPETRA
 #endif /* __operator_trilinos_matrix_H */
