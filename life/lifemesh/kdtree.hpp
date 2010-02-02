@@ -73,7 +73,7 @@ public:
     typedef points_type::const_iterator points_const_iterator;
     
     //ici, le double correspond à la distance avec le noeud que l'on recherche
-    typedef boost::tuple<node_type, size_type, uint16_type,double > index_node_search_type;
+    typedef boost::tuple<node_type, size_type, uint16_type, size_type, double > index_node_search_type;
     typedef std::vector<index_node_search_type> points_search_type;
     typedef points_search_type::iterator points_search_iterator;
     typedef points_search_type::const_iterator points_search_const_iterator;
@@ -176,6 +176,15 @@ public:
     {
         M_pts.reserve(n);
     }
+    
+    /**
+     * define the max number of point for the research( Default is 4 )
+     */
+    void nbNearNeighbor(size_type n)
+    {
+        M_nbPtMax=n;
+    }
+    
     /**
      * insert a new point in the tree
      * @return  the index of the point

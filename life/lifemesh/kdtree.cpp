@@ -430,7 +430,7 @@ void
 KDTree::search(const node_type & node_) {
 
     M_node_search = node_;
-
+    
     // construct the tree from the points set
     if (M_tree == 0)
         {
@@ -440,6 +440,10 @@ KDTree::search(const node_type & node_) {
             if (!M_tree)
                 return;
         }
+    
+    // clean the old research
+    M_PtsNearest.clear();
+    M_distanceMax = INT_MAX;
         
     // run search
     run_search(M_tree,0);
@@ -510,14 +514,15 @@ KDTree::update_Pts_search(const index_node_type & p) {
     
     if (M_PtsNearest.size()<this->M_nbPtMax) {
         index_node_search_type newEl( boost::make_tuple( boost::get<0>(p),
-                                                                 boost::get<1>(p),
-                                                                 boost::get<2>(p),
-                                                                 d  ) 
-                                            );
+                                                         boost::get<1>(p),
+                                                         boost::get<2>(p),
+                                                         boost::get<3>(p),
+                                                         d  ) 
+                                    );
         itpts=M_PtsNearest.begin();
         itpts_end=M_PtsNearest.end();
         
-        while ( itpts!=itpts_end && d > boost::get<3>(*itpts) ) { ++itpts;}
+        while ( itpts!=itpts_end && d > boost::get<4>(*itpts) ) { ++itpts;}
         
         M_PtsNearest.insert(itpts,newEl);
     }
@@ -525,15 +530,16 @@ KDTree::update_Pts_search(const index_node_type & p) {
         itpts=M_PtsNearest.begin();
         itpts_end=M_PtsNearest.end();
         for ( ;itpts<itpts_end;++itpts) {
-            if (d < boost::get<3>(*itpts)) {
+            if (d < boost::get<4>(*itpts)) {
                 index_node_search_type newEl( boost::make_tuple( boost::get<0>(p),
                                                                  boost::get<1>(p),
                                                                  boost::get<2>(p),
+                                                                 boost::get<3>(p),
                                                                  d  ) 
                                             );
                 M_PtsNearest.insert(itpts,newEl);
                 M_PtsNearest.pop_back();
-                M_distanceMax= boost::get<3>(M_PtsNearest.back());
+                M_distanceMax= boost::get<4>(M_PtsNearest.back());
                 itpts=itpts_end;
             }
             
