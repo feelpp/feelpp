@@ -1,4 +1,4 @@
-# -*- mode: makefile -*-
+# -*- mode: cmake -*-
 #
 #  This file is part of the Life library
 #
@@ -21,10 +21,14 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
-find_package(EXPAT)
+FIND_PACKAGE(EXPAT)
 
-FIND_PATH(TRILINOS_INCLUDE_DIR Teuchos_Utils.hpp PATHS /opt/trilinos/include/ /usr/include/trilinos /usr/ljk/include/trilinos )
+FIND_PATH(TRILINOS_INCLUDE_DIR
+    Teuchos_Utils.hpp
+    PATHS /opt/trilinos/include/ /usr/include/trilinos /usr/ljk/include/trilinos
+    DOC "Directory where Trilinos header files are stored" )
 MARK_AS_ADVANCED( TRILINOS_INCLUDE_DIR )
+
 if( TRILINOS_INCLUDE_DIR )
 
   SET(CMAKE_REQUIRED_INCLUDES "${TRILINOS_INCLUDE_DIR};${CMAKE_REQUIRED_INCLUDES}")
@@ -94,5 +98,20 @@ if( TRILINOS_INCLUDE_DIR )
     ${EXPAT_LIBRARIES}
     )
 
-#SET( TRILINOS_FOUND )
-endif()
+if ( TRILINOS_LIB_NOX AND
+    TRILINOS_LIB_NOXEPETRA AND
+    TRILINOS_LIB_ML AND
+    TRILINOS_LIB_GALERI AND
+    TRILINOS_LIB_IFPACK AND
+    TRILINOS_LIB_AMESOS AND
+    TRILINOS_LIB_AZTECOO AND
+    TRILINOS_LIB_TRIUTILS AND
+    TRILINOS_LIB_EPETRAEXT AND
+    TRILINOS_LIB_EPETRA AND
+    TRILINOS_LIB_TEUCHOS AND
+    EXPAT_LIBRARIES )
+
+  SET( TRILINOS_FOUND "YES")
+endif ()
+
+endif( TRILINOS_INCLUDE_DIR )
