@@ -15,7 +15,7 @@ project (Life C CXX Fortran)
 
 set(LIFE_VERSION_MAJOR "0")
 set(LIFE_VERSION_MINOR "9")
-set(LIFE_VERSION_MICRO "15")
+set(LIFE_VERSION_MICRO "16")
 set(LIFE_VERSION_EXTRA "0")
 set(LIFE_REVISION "1")
 set(LIFE_BUILDID "1")
@@ -68,31 +68,25 @@ INCLUDE(CheckLibraryExists)
 #   SET(${var} ${ARGN})
 # ENDMACRO(CDR)
 
-
-
-Include(FindMPI)
 FIND_PACKAGE(MPI)
 SET(CMAKE_REQUIRED_INCLUDES "${MPI_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
 IF ( MPI_FOUND )
   SET( HAVE_MPI 1 )
   SET( HAVE_MPI_H 1 )
   ADD_DEFINITIONS( -DHAVE_MPI=1 -DHAVE_MPI_H=1 )
+  SET(LIFE_BOOST_MPI mpi)
 ENDIF()
 
 #
 # Xml2
 #
-Include(FindLibXml2)
 FIND_PACKAGE(LibXml2)
 #
 # Blas and Lapack
 #
-INCLUDE(FindLAPACK)
 FIND_PACKAGE(LAPACK)
 
-
-include(FindBoost)
-find_package(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  mpi regex  serialization)
+FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${LIFE_BOOST_MPI} regex  serialization)
 set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" )
 set( BOOST_PARAMETER_MAX_ARITY 15 )
 add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOST_TEST_DYN_LINK )
@@ -105,15 +99,16 @@ add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOS
 #
 # Metis
 #
-INCLUDE(FindMetis)
-INCLUDE_DIRECTORIES(${METIS_INCLUDE_DIR})
-LINK_DIRECTORIES(${METIS_LIBRARIES})
+FIND_PACKAGE(Metis)
+if ( METIS_FOUND )
+  INCLUDE_DIRECTORIES(${METIS_INCLUDE_DIR})
+  LINK_DIRECTORIES(${METIS_LIBRARIES})
+endif( METIS_FOUND )
 
 #
 # Petsc
 #
-INCLUDE(FindPETSc)
-find_package( PETSc )
+FIND_PACKAGE( PETSc REQUIRED)
 if ( PETSC_FOUND )
   SET(CMAKE_REQUIRED_INCLUDES "${PETSC_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
 endif( PETSC_FOUND )
@@ -121,8 +116,7 @@ endif( PETSC_FOUND )
 #
 # SLEPc
 #
-INCLUDE(FindSLEPc)
-find_package( SLEPc )
+FIND_PACKAGE( SLEPc )
 if ( SLEPC_FOUND )
   SET(CMAKE_REQUIRED_INCLUDES "${SLEPC_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
 endif(SLEPC_FOUND)
@@ -140,14 +134,15 @@ MARK_AS_ADVANCED( PARPACK_LIBRARY )
 #
 # Trilinos
 #
-INCLUDE(FindTrilinos)
-INCLUDE_DIRECTORIES(${TRILINOS_INCLUDE_DIR})
+FIND_PACKAGE(Trilinos)
+if ( TRILINOS_FOUND )
+  INCLUDE_DIRECTORIES(${TRILINOS_INCLUDE_DIR})
+endif( TRILINOS_FOUND )
 
 #
 # VTK
 #
-include(FindVTK)
-find_package(VTK)
+FIND_PACKAGE(VTK)
 if ( VTK_FOUND )
   set(HAVE_VTK 1)
   SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging -lvtkCommon" )
