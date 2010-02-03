@@ -27,11 +27,13 @@ find_path (PETSC_DIR include/petsc.h
   $ENV{HOME}/petsc
   DOC "PETSc Directory")
 
-IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
-  set( DEBIAN_FLAVORS linux-gnu-c-debug linux-gnu-c-opt )
-ELSE()
-  set( DEBIAN_FLAVORS linux-gnu-c-opt linux-gnu-c-debug)
-ENDIF()
+foreach( debian_arches linux kfreebsd )
+  IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
+    set( DEBIAN_FLAVORS ${debian_arches}-gnu-c-debug ${debian_arches}-gnu-c-opt ${DEBIAN_FLAVORS})
+  ELSE()
+    set( DEBIAN_FLAVORS ${debian_arches}-gnu-c-opt ${debian_arches}-gnu-c-debug ${DEBIAN_FLAVORS})
+  ENDIF()
+endforeach()
 
 if (PETSC_DIR AND NOT PETSC_ARCH)
   set (_petsc_arches
