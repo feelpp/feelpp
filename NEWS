@@ -8,6 +8,10 @@
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
+* New in 0.9.17
+  - minor changes for Debian ports
+
+
 * New in 0.9.16
 ** Programming environment
   - make trilinos optional. That should ease the porting on platforms where
