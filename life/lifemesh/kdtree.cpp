@@ -168,17 +168,33 @@ build_tree( KDTree::points_iterator begin,
                     median = ( boost::get<0>( v[v.size()/2-1] )(dir)+
                                boost::get<0>( v[v.size()/2] )(dir))/2;
                     itmedian = partition(begin,end,dir,median);
+                    ptmin(dir)=median;
+                    ptmax(dir)=median;
                     if (N==2) {
-                        //permet de borner le plan median
+                        //allows to confine the median plane
                         std::vector<KDTree::index_node_type> v2(30);
 
                         for (size_type i=0; i < v2.size(); ++i)
                             v2[i] = begin[rand() % npts];
+
                         std::sort(v2.begin(), v2.end(), component_sort( (dir+1)%N ));
-                        ptmin(dir)=median;
                         ptmin( (dir+1)%N )= boost::get<0>( *(v2.begin()) ) ((dir+1)%N) ;
-                        ptmax(dir)=median;
                         ptmax( (dir+1)%N )= boost::get<0>( *(--v2.end()) ) ((dir+1)%N) ;
+                    }
+                    else if (N==3) {
+                        //allows to confine the median plane
+                        std::vector<KDTree::index_node_type> v2(30);
+
+                        for (size_type i=0; i < v2.size(); ++i)
+                            v2[i] = begin[rand() % npts];
+
+                        std::sort(v2.begin(), v2.end(), component_sort( (dir+1)%N ));
+                        ptmin( (dir+1)%N )= boost::get<0>( *(v2.begin()) ) ((dir+1)%N) ;
+                        ptmax( (dir+1)%N )= boost::get<0>( *(--v2.end()) ) ((dir+1)%N) ;
+
+                        std::sort(v2.begin(), v2.end(), component_sort( (dir+2)%N ));
+                        ptmin( (dir+2)%N )= boost::get<0>( *(v2.begin()) ) ((dir+2)%N) ;
+                        ptmax( (dir+2)%N )= boost::get<0>( *(--v2.end()) ) ((dir+2)%N) ;
                     }
                 }
             else
@@ -191,17 +207,33 @@ build_tree( KDTree::points_iterator begin,
                             boost::get<0>(*itmedian)[dir] == median )
                         itmedian++;
 
+                    ptmin(dir)=median;
+                    ptmax(dir)=median;
                     if (N==2) {
-                        //permet de borner le plan median
+                        //allows to confine the median plane
                         std::vector<KDTree::index_node_type> v2(npts);
 
                         for (size_type i=0; i < v2.size(); ++i)
                             v2[i] = begin[rand() % npts];
+
                         std::sort(v2.begin(), v2.end(), component_sort( (dir+1)%N ));
-                        ptmin(dir)=median;
                         ptmin( (dir+1)%N )= boost::get<0>( *(v2.begin()) ) ((dir+1)%N) ;
-                        ptmax(dir)=median;
                         ptmax( (dir+1)%N )= boost::get<0>( *(--v2.end()) ) ((dir+1)%N) ;
+                    }
+                    else if (N==3) {
+                        //allows to confine the median plane
+                        std::vector<KDTree::index_node_type> v2(30);
+
+                        for (size_type i=0; i < v2.size(); ++i)
+                            v2[i] = begin[rand() % npts];
+
+                        std::sort(v2.begin(), v2.end(), component_sort( (dir+1)%N ));
+                        ptmin( (dir+1)%N )= boost::get<0>( *(v2.begin()) ) ((dir+1)%N) ;
+                        ptmax( (dir+1)%N )= boost::get<0>( *(--v2.end()) ) ((dir+1)%N) ;
+
+                        std::sort(v2.begin(), v2.end(), component_sort( (dir+2)%N ));
+                        ptmin( (dir+2)%N )= boost::get<0>( *(v2.begin()) ) ((dir+2)%N) ;
+                        ptmax( (dir+2)%N )= boost::get<0>( *(--v2.end()) ) ((dir+2)%N) ;
                     }
                 }
             /* could not split the set (all points have same value for component 'dir' !) */
@@ -347,35 +379,69 @@ distanceNodes(const KDTree::node_type & p1, const KDTree::node_type & p2) {
     return res;
 }
 
+
+double
+restriction(const double & min, const double & max, const double & x)
+{
+    if ( x < min) {
+        return min;
+    }
+    else if (x > max) {
+        return max;
+    }
+    else return x;
+}
+
 /**
 * Compute the orthogonal project of a node \c node_search on the segment [p1,p2]
 * if the projection is not in the segment, the closest point in the segment is
 * returned
 */
+
 KDTree::node_type
 projection2d(const KDTree::node_type & pMin,
              const KDTree::node_type & pMax,
              const KDTree::node_type & node_search)
 {
-
-    // computation of the projection
-    double a=pMax(1)-pMin(1);
-    double b=pMax(0)-pMin(0);
-
-    double f1=-pMax(0)*pMin(1) + pMin(0)*pMax(1);
-    double f2=-a*node_search(1) - b*node_search(0);
-
-    double det=-a*a - b*b;
-
     KDTree::node_type res(2);
 
-    res(0) = (1./det)*(-a*f1 + b*f2);
-    res(1) = (1./det)*(b*f1 + a*f2);
+    // computation of the projection
+    if (pMin(0)==pMax(0)) {
+        res(0)=pMin(0);
+        res(1)=restriction(pMin(1),pMax(1),node_search(1));
+    }
+    else {
+        res(1)=pMin(1);
+        res(0)=restriction(pMin(0),pMax(0),node_search(0));
+    }
 
-    // verify that the point is in the segment
-    if ( res(0)<pMin(0) || res(1)>pMax(0)) {
-        if (res(0)<pMin(0)) {res=pMin;}
-        else {res=pMax;}
+    return res;
+
+}
+
+KDTree::node_type
+projection3d(const KDTree::node_type & pMin,
+             const KDTree::node_type & pMax,
+             const KDTree::node_type & node_search)
+{
+    KDTree::node_type res(3);
+
+    double var_temp1,var_temp2;
+    // computation of the projection
+    if (pMin(0)==pMax(0)) {
+        res(0)=pMin(0);
+        res(1)=restriction(pMin(1),pMax(1),node_search(1));
+        res(2)=restriction(pMin(2),pMax(2),node_search(2));
+    }
+    else if (pMin(1)==pMax(1)) {
+        res(0)=restriction(pMin(0),pMax(0),node_search(0));
+        res(1)=pMin(1);
+        res(2)=restriction(pMin(2),pMax(2),node_search(2));
+    }
+    else if (pMin(2)==pMax(2)) {
+        res(0)=restriction(pMin(0),pMax(0),node_search(0));
+        res(1)=restriction(pMin(1),pMax(1),node_search(1));
+        res(2)=pMin(2);
     }
 
     return res;
@@ -476,19 +542,30 @@ KDTree::run_search( KDTree::Element * tree, uint iter) {
     if ( ! tree->isleaf() ) {
         bool aGauche=false;
         const KDTree::Node *tn = static_cast<const KDTree::Node*>(tree);
-        if ((iter%2)==0) {
+        size_type N = tn->ptmin.size();
+        if ((iter%N)==0) {
             if (M_node_search(0)<tn->split_v && tn->left) { run_search(tn->left,iter+1);aGauche=true;}
             else if (tn->right) {run_search(tn->right,iter+1);aGauche=false;}
         }
-        else if ((iter%2)==1) {
+        else if ((iter%N)==1) {
             if (M_node_search(1)<tn->split_v && tn->left) {run_search(tn->left,iter+1);aGauche=true;}
             else if (tn->right) {run_search(tn->right,iter+1);aGauche=false;}
         }
+        else if ((iter%N)==2) {
+            if (M_node_search(2)<tn->split_v && tn->left) {run_search(tn->left,iter+1);aGauche=true;}
+            else if (tn->right) {run_search(tn->right,iter+1);aGauche=false;}
+        }
 
-        //calcul de la distance du pt de recherche avec la frontière de decoupage du kd-tree
-        node_type proj=detail::projection2d(tn->ptmin, tn->ptmax,M_node_search);
+        //compute the distance from the point of research with the border cutting kd-tree
+        node_type proj;
+        switch (N)
+            {
+            case 1: { proj=tn->ptmin; }
+            case 2: { proj=detail::projection2d(tn->ptmin, tn->ptmax,M_node_search); }
+            case 3: { proj=detail::projection3d(tn->ptmin, tn->ptmax,M_node_search); }
+            }
 
-        //si la frontière est assez proche on parcourt l'autre partie du graphe
+        //if the border is close enough runs on the other side of the graph
         if (detail::distanceNodes(proj,M_node_search)<(M_distanceMax)) {
             if (aGauche) {
                 if (tn->right) run_search(tn->right,iter+1);
