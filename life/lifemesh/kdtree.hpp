@@ -66,13 +66,13 @@ public:
     struct Element; struct Leaf; struct Node;
 
     typedef ublas::vector<double> node_type;
-    //le dernier size_type du template correspond a l'indice global du noeud dans le maillage
+    //in the following template, the last size_type corresponds to the global index of node in the mesh
     typedef boost::tuple<node_type, size_type, uint16_type, size_type> index_node_type;
     typedef std::vector<index_node_type> points_type;
     typedef points_type::iterator points_iterator;
     typedef points_type::const_iterator points_const_iterator;
-    
-    //ici, le double correspond à la distance avec le noeud que l'on recherche
+
+    //here, the double corresponds at the distance with the node that is search
     typedef boost::tuple<node_type, size_type, uint16_type, size_type, double > index_node_search_type;
     typedef std::vector<index_node_search_type> points_search_type;
     typedef points_search_type::iterator points_search_iterator;
@@ -137,7 +137,7 @@ public:
     {
         return M_pts;
     }
-    
+
     /**
      * get the points Near Neighbor set
      */
@@ -176,7 +176,7 @@ public:
     {
         M_pts.reserve(n);
     }
-    
+
     /**
      * define the max number of point for the research( Default is 4 )
      */
@@ -184,7 +184,7 @@ public:
     {
         M_nbPtMax=n;
     }
-    
+
     /**
      * insert a new point in the tree
      * @return  the index of the point
@@ -211,14 +211,14 @@ public:
     void pointsInBox( points_type &inpts,
                       const node_type &min,
                       const node_type &max);
-                      
+
     /**
-     * recherche les points voisins de M_node_search dans le kd-tree
+     * search the neighbors points of M_node_search in the kd-tree
      */
     void search(const node_type & node_);
-    
+
     /**
-     * affiche le resultat de la recherche
+     * print the result of the research
      */
     void showResultSearch();
 
@@ -231,14 +231,14 @@ private:
      * destroy the tree data structure
      */
     void clearTree();
-    
+
     /**
-     * Lance la recherche des voisins de M_node_search (recursif)
+     * Run the the research of M_node_search neighbors(recursive)
      */
     void run_search( Element * tree, uint iter);
-    
+
     /**
-     * Mise a jour de la liste des points les plus proches
+     * Updating the list of nearest points
      */
     void update_Pts_search(const index_node_type & p);
 
@@ -246,13 +246,13 @@ private:
     Element* M_tree;
     points_type M_pts;
 
-    //le point dont on cherche les plus proches voisins
+    //the point which we search the nearest neighbors
     node_type M_node_search;
-    //vecteur des plus proches voisins
+    //vector of the closest neighbors
     points_search_type M_PtsNearest;
-    //plus grande distance du vecteur des plus proches voisins
+    //greater distance from the vector of nearest neighbors
     double M_distanceMax;
-    //le nbre max de pt voisin que l'on veut chercher
+    //the maximum number of neighbors points that we want to search
     uint M_nbPtMax;
 
 
