@@ -416,6 +416,43 @@ public:
 
     }; // Inverse
 
+    struct Localisation
+    {
+
+        typedef boost::tuple<node_type, std::list<size_type> > node_elem_type;
+
+        Localisation(boost::shared_ptr<self_type> const& m) :
+            M_mesh ( m )
+        {
+            init();
+        }
+
+        Localisation(Localisation const & L) :
+            M_mesh(L.M_mesh),
+            M_kd_tree(L.M_kd_tree),
+            M_geoGlob_Elts(L.M_geoGlob_Elts)
+        {}
+
+        /*
+         *research the element wich contains the node p
+         */
+        boost::tuple<bool, size_type> searchElement(const node_type & p);
+
+    private :
+
+        /*
+         *initializes the kd tree and the map between node and list elements
+         */
+        void init();
+
+    private:
+
+        boost::shared_ptr<self_type> M_mesh;
+        KDTree M_kd_tree;
+        //map between node and list elements
+        std::map<size_type, node_elem_type > M_geoGlob_Elts;
+    };
+
 
     /** @name  Signals
      */
