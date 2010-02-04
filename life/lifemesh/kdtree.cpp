@@ -531,7 +531,13 @@ KDTree::showResultSearch() {
     points_search_const_iterator itpts_end=M_PtsNearest.end();
 
     for ( ;itpts<itpts_end;++itpts) {
-        std::cout<<"("<<boost::get<0>(*itpts)<<" "<<boost::get<1>(*itpts)<<" "<<boost::get<2>(*itpts)<<" "<<boost::get<3>(*itpts)<<")\n";
+        std::cout<<"("
+                 <<boost::get<0>(*itpts)<<" "
+                 <<boost::get<1>(*itpts)<<" "
+                 <<boost::get<2>(*itpts)<<" "
+                 <<boost::get<3>(*itpts)<<" "
+                 <<boost::get<4>(*itpts)
+                 <<")\n";
     }
 
 }
