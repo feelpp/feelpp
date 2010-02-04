@@ -964,6 +964,111 @@ Mesh<Shape, T>::Inverse::distribute( bool extrapolation )
     Debug( 4015 ) << "[Mesh::Inverse] distribute mesh points in kdtree done\n";
 }
 
+template<typename Shape, typename T>
+void
+Mesh<Shape, T>::Localisation::init()
+{
+
+  typename self_type::element_iterator el_it;
+  typename self_type::element_iterator el_en;
+  boost::tie( boost::tuples::ignore, el_it, el_en ) = Life::elements( *M_mesh );
+
+  for( ; el_it != el_en; ++el_it ) {
+    for (int i=0;i<el_it->nPoints();++i) {
+      if (boost::get<1>( M_geoGlob_Elts[el_it->point(i).id()] ).size()==0) {
+	boost::get<0>( M_geoGlob_Elts[el_it->point(i).id()] ) = el_it->point(i).node();
+
+	M_kd_tree.addPoint(el_it->point(i).node(),el_it->point(i).id() );
+      }
+      boost::get<1>( M_geoGlob_Elts[el_it->point(i).id()] ).push_back(el_it->id());
+    }
+  }
+
+}
+
+template<typename Shape, typename T>
+boost::tuple<bool, size_type>
+Mesh<Shape, T>::Localisation::searchElement(const node_type & p)
+{
+    //search for nearest points
+    M_kd_tree.search(p);
+
+    //get the results of research
+    typename KDTree::points_search_type ptsNN = M_kd_tree.pointsNearNeighbor();
+    typename KDTree::points_search_const_iterator itNN = ptsNN.begin();
+    typename KDTree::points_search_const_iterator itNN_end = ptsNN.end();
+
+    //iterator on a list index element
+    typename std::list<size_type>::iterator itL;
+    typename std::list<size_type>::iterator itL_end;
+
+    //ListTri will contain the indices of elements (size_type)
+    //and the number of occurence(uint)
+    std::list< std::pair<size_type, uint> > ListTri;
+    std::list< std::pair<size_type, uint> >::iterator itLT;
+    std::list< std::pair<size_type, uint> >::iterator itLT_end;
+
+    //create of ListTri : sort largest to smallest occurrences
+    //In case of equality : if the point is closer than another then it will be before
+    //                      if it is in the same point then  the lowest index will be before
+    for( ; itNN != itNN_end; ++itNN ) {
+        itL= boost::get<1>( M_geoGlob_Elts[boost::get<3>( *itNN )] ).begin();
+        itL_end= boost::get<1>( M_geoGlob_Elts[boost::get<3>( *itNN )] ).end();
+        for( ; itL != itL_end; ++itL ) {
+            itLT=ListTri.begin();
+            itLT_end=ListTri.end();bool find=false;
+            while (itLT != itLT_end && !find ) {
+                if (itLT->first == *itL) find=true;
+                else ++itLT;
+            }
+            if (find) {
+                uint nb=itLT->second+1;
+                size_type numEl=itLT->first;
+                ListTri.remove(*itLT);
+                itLT=ListTri.begin();
+                itLT_end=ListTri.end();bool find=false;
+                while (itLT != itLT_end && !find ) {
+                    if (itLT->second < nb) find=true;
+                    else ++itLT;
+                }
+                ListTri.insert(itLT,std::make_pair(numEl,nb));
+            }
+            else ListTri.push_back(std::make_pair(*itL,1));
+        }
+    }
+
+    typename self_type::element_type elt;
+    typename self_type::gm_type::reference_convex_type refelem;
+
+    bool isin=false;
+    double dmin;
+
+    //research the element which contains the point p
+    itLT=ListTri.begin();
+    itLT_end=ListTri.end();
+    while (itLT != itLT_end && !isin  )  {
+
+        //get element with the id
+        elt= M_mesh->element(itLT->first );
+
+        // get inverse geometric transformation
+        typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
+
+        //apply the inverse geometric transformation for the point p
+        gic.setXReal( p);
+
+        // the point is in the reference element ?
+        boost::tie( isin, dmin ) = refelem.isIn( gic.xRef() );
+
+        //if not inside, continue the research with an other element
+        if (!isin) ++itLT;
+    }
+
+    if (itLT == itLT_end) return boost::make_tuple( false, 0 );
+    else return boost::make_tuple( true, itLT->first);
+}
+
+
 }
 
 #endif // __MESHIMPL_HPP
