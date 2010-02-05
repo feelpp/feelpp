@@ -14,6 +14,10 @@
   - improved Trilinos and PETSc cmake support
   - minor changes in manual (version...)
 
+** Library
+
+  - improvements to the kdtree structure
+
 
 * New in 0.9.17
   - minor changes for Debian ports
