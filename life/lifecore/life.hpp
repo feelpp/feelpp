@@ -202,6 +202,7 @@ typedef detail::integer<8>::type  int8_type;
 typedef detail::integer<16>::type int16_type;
 typedef detail::integer<32>::type int32_type;
 typedef detail::integer<64>::type int64_type;
+typedef detail::integer<128>::type int128_type;
 
 typedef detail::real<32>::type real32_type;
 typedef detail::real<64>::type real64_type;
@@ -241,6 +242,7 @@ typedef detail::unsigned_integer<8>::type  uint8_type;
 typedef detail::unsigned_integer<16>::type uint16_type;
 typedef detail::unsigned_integer<32>::type uint32_type;
 typedef detail::unsigned_integer<64>::type uint64_type;
+typedef detail::unsigned_integer<128>::type uint128_type;
 
 /**
  * @typedef int64_type marker_type

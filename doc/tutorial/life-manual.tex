@@ -5,7 +5,6 @@
 \usepackage{a4wide}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage{svninfo}
 %%\usepackage{fullpage}
 \usepackage{longtable}
 
@@ -167,12 +166,11 @@ A Library for Finite and Spectral Element Methods in 1D, 2D and 3D\\
 {\small \lifeversion }}
 \author{Christophe Prud'homme\thanks{Université de Grenoble,
 51, rue des Mathématiques, BP53,38041 Grenoble}}
-\date{\svnToday}
+\date{}
 
 \thispagestyle{empty}
 \begin{document}
 \thispagestyle{empty}
-\svnInfo $Id$
 
 
 % \CssFile
@@ -198,16 +196,17 @@ A Library for Finite and Spectral Element Methods in 1D, 2D and 3D\\
     A LIBRARY FOR \\
     FINITE AND SPECTRAL ELEMENT METHODS IN\\
     1D, 2D AND 3D\\
-    {\small \lifeversion }}\\[0.6cm]
+    \bigskip
+    {\small Version \lifeversion }}\\[0.6cm]
   Christophe \textsc{Prud'homme}\\
   \texttt{christophe.prudhomme@ujf-grenoble.fr}\\
   \par\vspace{2cm}
 
-  \begin{flushright}
-    \footnotesize
-    Version du \svnInfoDate\\
-    Revision \svnInfoRevision
-  \end{flushright}
+  % \begin{flushright}
+  %   \footnotesize
+  %   Version du \lifesvndate\\
+  %   Revision \lifesvnrevision
+  % \end{flushright}
   % \par\vspace{5cm}
 
   % \centerline{\begin{minipage}[l]{0.35\linewidth}
@@ -379,7 +378,7 @@ Create a build directory
   mkdir life.opt
   cd life.opt
   cmake <directory where the life source are>
-  # e.g cmake ../life if life.opt is at the same 
+  # e.g cmake ../life if life.opt is at the same
   # directory level as life
   make
 \end{unixcom}

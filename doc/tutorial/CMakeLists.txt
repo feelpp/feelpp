@@ -26,9 +26,21 @@ include(UseLATEX)
 FILE(GLOB CPPFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
 FILE(GLOB STYFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "styles/*.sty")
 
+FILE(WRITE version.tex "\\newcommand{\\lifeversion}{${LIFE_VERSION_STRING}}")
+
+# FIND_PACKAGE(Subversion)
+# IF(Subversion_FOUND)
+#   Subversion_WC_INFO(${PROJECT_SOURCE_DIR} LIFE)
+#   MESSAGE("Current revision is ${LIFE_WC_REVISION}")
+#   MESSAGE("Last changed date is ${LIFE_WC_LAST_CHANGED_DATE}")
+
+#   FILE(APPEND version.tex "\\newcommand{\\lifesvnrevision}{${LIFE_WC_REVISION}}")
+#   FILE(APPEND version.tex "\\newcommand{\\lifesvndate}{${LIFE_WC_LAST_CHANGED_DATE}}")
+# ENDIF(Subversion_FOUND)
+
 
 add_latex_document(life-manual.tex
-  INPUTS example-heatns.tex ${CPPFILES} ${STYFILES}
+  INPUTS example-heatns.tex version.tex ${CPPFILES} ${STYFILES}
   BIBFILES life-manual.bib
   IMAGE_DIRS pngs pdfs
   USE_INDEX
