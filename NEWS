@@ -8,6 +8,13 @@
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
+* New in 0.9.18
+** Programming Environment
+
+  - improved Trilinos and PETSc cmake support
+  - minor changes in manual (version...)
+
+
 * New in 0.9.17
   - minor changes for Debian ports
 

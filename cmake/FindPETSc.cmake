@@ -211,12 +211,6 @@ int main(int argc,char *argv[]) {
   mark_as_advanced (PETSC_INCLUDES PETSC_LIBRARIES PETSC_COMPILER PETSC_DEFINITIONS PETSC_MPIEXEC PETSC_EXECUTABLE_RUNS)
 endif (petsc_conf_base AND NOT petsc_config_current)
 
-if ( PETSC_FOUND )
-  add_definitions( -DHAVE_PETSC -DHAVE_PETSC_H )
-  SET( HAVE_PETSC 1 )
-  SET( HAVE_PETSC_H 1 )
-  MARK_AS_ADVANCED( PETSC_CURRENT PETSC_DIR PETSC_ARCH )
-endif( PETSC_FOUND )
 
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (PETSc
@@ -224,3 +218,9 @@ find_package_handle_standard_args (PETSc
   PETSC_INCLUDES PETSC_LIBRARIES PETSC_EXECUTABLE_RUNS)
 
 
+if ( PETSC_FOUND )
+  add_definitions( -DHAVE_PETSC -DHAVE_PETSC_H )
+  SET( HAVE_PETSC 1 )
+  SET( HAVE_PETSC_H 1 )
+  MARK_AS_ADVANCED( PETSC_CURRENT PETSC_DIR PETSC_ARCH )
+endif( PETSC_FOUND )
