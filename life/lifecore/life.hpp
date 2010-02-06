@@ -53,7 +53,7 @@
 
 #include <boost/program_options.hpp>
 
-
+#include <boost/cstdint.hpp>
 
 
 #include <cmath>
@@ -195,7 +195,7 @@ struct real
         >::type type;
 };
 }
-
+#if 0
 typedef detail::integer<1>::type  int1_type;
 
 typedef detail::integer<8>::type  int8_type;
@@ -203,7 +203,14 @@ typedef detail::integer<16>::type int16_type;
 typedef detail::integer<32>::type int32_type;
 typedef detail::integer<64>::type int64_type;
 typedef detail::integer<128>::type int128_type;
-
+#else
+typedef boost::int8_t   int8_type;
+typedef boost::int16_t  int16_type;
+typedef boost::int32_t  int32_type;
+#if !defined( BOOST_NO_INT64_T )
+    typedef boost::int64_t  int64_type;
+#endif // BOOST_NO_INT64_T
+#endif // 0
 typedef detail::real<32>::type real32_type;
 typedef detail::real<64>::type real64_type;
 typedef detail::real<96>::type real96_type;
@@ -237,12 +244,19 @@ struct unsigned_integer
     >::type type;
 };
 }
+#if 0
 typedef detail::unsigned_integer<1>::type  uint1_type;
 typedef detail::unsigned_integer<8>::type  uint8_type;
 typedef detail::unsigned_integer<16>::type uint16_type;
 typedef detail::unsigned_integer<32>::type uint32_type;
 typedef detail::unsigned_integer<64>::type uint64_type;
 typedef detail::unsigned_integer<128>::type uint128_type;
+#else
+typedef boost::uint8_t   uint8_type;
+typedef boost::uint16_t  uint16_type;
+typedef boost::uint32_t  uint32_type;
+#if !defined( BOOST_NO_INT64_T )
+typedef boost::uint64_t  uint64_type;
 
 /**
  * @typedef int64_type marker_type
@@ -251,8 +265,13 @@ typedef detail::unsigned_integer<128>::type uint128_type;
  */
 typedef int64_type flag_type;
 
-const int64_type invalid_flag_type_value = std::numeric_limits<int64_type>::min();
+const int64_type invalid_flag_type_value = std::numeric_limits<int32_type>::min();
+#else
+typedef int32_type flag_type;
 
+const int32_type invalid_flag_type_value = std::numeric_limits<int32_type>::min();
+#endif // BOOST_NO_INT64_T
+#endif
 //! dimension type
 typedef uint16_type dim_type;
 
@@ -279,11 +298,12 @@ const uint16_type invalid_uint16_type_value = uint16_type( -1 );
  */
 const uint32_type invalid_uint32_type_value = uint32_type( -1 );
 
+#if !defined( BOOST_NO_INT64_T )
 /**
  * Invalid uint64_type value
  */
 const uint64_type invalid_uint64_type_value = uint64_type( -1 );
-
+#endif  // BOOST_NO_INT64_T
 /**
  * Invalid dim type value
  */
