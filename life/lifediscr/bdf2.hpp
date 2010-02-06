@@ -54,6 +54,9 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 
+#include <boost/parameter.hpp>
+#include <life/lifecore/parameter.hpp>
+
 #include <life/lifecore/life.hpp>
 #include <life/lifealg/glas.hpp>
 
@@ -90,6 +93,25 @@ public:
         M_beta( BDF_MAX_ORDER )
     {}
 
+#if 0
+    template <class ArgumentPack>
+    BdfBase(ArgumentPack const& args)
+        :
+        M_order( args[_order | 1] ),
+        M_name( args[_name | "bdf"] ),
+        M_time( args[_initial_time | 0] ),
+        M_Ti( args[_initial_time | 0] ),
+        M_Tf( args[_final_time | 1] ),
+        M_dt( args[_time_step | 0.1] ),
+        M_strategy( (BDFStragegy)args[_strategy | BDF_STRATEGY_DT_CONSTANT] ),
+        M_state( BDF_UNITIALIZED ),
+        M_n_restart( 0 ),
+        M_alpha( BDF_MAX_ORDER ),
+        M_beta( BDF_MAX_ORDER )
+        {
+
+        }
+#endif
     BdfBase( po::variables_map const& vm, std::string name )
         :
         M_order( vm["bdf-time-order"].as<int>() ),
@@ -99,6 +121,22 @@ public:
         M_Tf( vm["bdf-time-final"].as<double>() ),
         M_dt( vm["bdf-time-step"].as<double>() ),
         M_strategy( (BDFStragegy)vm["bdf-time-strategy"].as<int>() ),
+        M_state( BDF_UNITIALIZED ),
+        M_n_restart( 0 ),
+        M_alpha( BDF_MAX_ORDER ),
+        M_beta( BDF_MAX_ORDER )
+    {
+        this->init();
+    }
+    BdfBase( std::string name )
+        :
+        M_order( 1 ),
+        M_name( name ),
+        M_time( 0. ),
+        M_Ti( 0. ),
+        M_Tf( 1.0 ),
+        M_dt( 1.0 ),
+        M_strategy( (BDFStragegy)0 ),
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
         M_alpha( BDF_MAX_ORDER ),
@@ -518,7 +556,17 @@ public:
     typedef typename node<value_type>::type node_type;
 
     typedef typename super::time_iterator time_iterator;
-
+#if 0
+    BOOST_PARAMETER_CONSTRUCTOR(
+        Bdf, (BdfBase), tag,
+        (required (final_time,*))
+        (optional
+         (name,*)
+         (order,*)
+         (initial_time,*)
+         (time_step,*)
+         (strategy,* )))
+#endif
     /**
      * Constructor
      *
@@ -526,6 +574,14 @@ public:
      * @param n order of the BDF
      */
     Bdf( po::variables_map const& vm, space_ptrtype const& space, std::string const& name );
+
+    /**
+     * Constructor
+     * @param space approximation space
+     * @param name name of the BDF
+     */
+    Bdf( space_ptrtype const& space, std::string const& name );
+
 
     ~Bdf();
 
@@ -600,6 +656,16 @@ Bdf<SpaceType>::Bdf( po::variables_map const& vm,
                      std::string const& name  )
     :
     super( vm, name ),
+    M_space( __space )
+{
+    this->init();
+}
+
+template <typename SpaceType>
+Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
+                     std::string const& name  )
+    :
+    super( name ),
     M_space( __space )
 {
     this->init();
