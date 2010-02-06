@@ -77,6 +77,8 @@ extern "C"
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
 
+#include <life/lifecore/mpicompat.hpp>
+
 
 namespace Life
 {
@@ -276,6 +278,62 @@ Application::Application( int argc,
 
 
 
+
+}
+
+#if defined( HAVE_MPI_H )
+Application::Application( AboutData const& ad,
+                          MPI_Comm comm )
+#else
+Application::Application( AboutData const& ad )
+
+#endif // HAVE_MPI_H
+    :
+    _M_about( ad ),
+    _M_desc( "Allowed options" ),
+    _M_vm(),
+    _M_to_pass_further()
+#if defined( HAVE_MPI_H )
+    ,
+    M_env()
+#endif
+
+{
+#if 1
+
+    OPENMPI_dlopen_libmpi();
+
+    int argc = 1;
+    char** argv = new char*[argc];
+    argv[0] = new char[_M_about.appName().size()+1];
+    ::strcpy( argv[0], _M_about.appName().c_str() );
+
+
+    initMPI( argc, argv, comm );
+#endif
+
+#if defined( HAVE_MPI_H )
+    char * __env = getenv("DEBUG");
+    std::string env_str;
+    if ( __env )
+        env_str = __env;
+    mpi::broadcast( S_world, env_str, 0 );
+    if ( _S_process_id != 0 )
+        {
+            setenv( "DEBUG", env_str.c_str(), 1 );
+            //Debug() << "DEBUG is set to " << env_str << "\n";
+            //std::cout << "DEBUG is set to " << env_str << "\n";
+        }
+#endif // MPI
+
+    initPETSc();
+    initTrilinos();
+
+#if defined(HAVE_TAU)
+    TAU_PROFILE("Application", "Application::Application( int, char**, AboutData const&, po::options_description const&, bool)", TAU_DEFAULT);
+    TAU_PROFILE_INIT(argc,argv);
+    TAU_PROFILE_SET_NODE(0);
+#endif /* HAVE_TAU */
 
 }
 Application::Application( Application const& __app )

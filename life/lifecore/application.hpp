@@ -82,6 +82,18 @@ public:
     /**
      * Construct an MPI Application
      *
+     * @param ad \p AboutData structure for this \p Application
+     * @param Comm MPI communicator
+     */
+#if defined( HAVE_MPI )
+    Application( AboutData const& ad, MPI_Comm Comm = MPI_COMM_WORLD );
+#else
+    Application( AboutData const& ad );
+#endif
+
+    /**
+     * Construct an MPI Application
+     *
      * @param argc number of arguments on the command line
      * @param argv arguments in the command line
      * @param ad \p AboutData structure for this \p Application
