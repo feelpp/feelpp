@@ -134,10 +134,13 @@ public:
     DebugStream& operator<<( bool );
     DebugStream& operator<<( int16_type );
     DebugStream& operator<<( int32_type );
-    DebugStream& operator<<( int64_type );
     DebugStream& operator<<( uint16_type );
     DebugStream& operator<<( uint32_type );
+
+#if !defined( BOOST_NO_INT64_T )
+    DebugStream& operator<<( int64_type );
     DebugStream& operator<<( uint64_type );
+#endif
 
     DebugStream& operator<<( double );
     DebugStream& operator<<( std::complex<double> );
@@ -195,10 +198,13 @@ public:
     NdebugStream& operator<<( bool ) { return *this; }
     NdebugStream& operator<<( int16_type ) { return *this; }
     NdebugStream& operator<<( int32_type ) { return *this; }
-    NdebugStream& operator<<( int64_type ) { return *this; }
     NdebugStream& operator<<( uint16_type ) { return *this; }
     NdebugStream& operator<<( uint32_type ) { return *this; }
+
+#if !defined( BOOST_NO_INT64_T )
     NdebugStream& operator<<( uint64_type ) { return *this; }
+    NdebugStream& operator<<( int64_type ) { return *this; }
+#endif
 
     NdebugStream& operator<<( double ) { return *this; }
     NdebugStream& operator<<( std::complex<double> ) { return *this; }

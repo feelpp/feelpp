@@ -205,29 +205,29 @@ Marker::printFlag( std::ostream & out ) const
 
 
 
-class Marker1 : public boost::detail::identifier< int64_type, Marker1 >
+class Marker1 : public boost::detail::identifier< size_type, Marker1 >
 {
 public:
-    typedef boost::detail::identifier< int64_type, Marker1 >::value_type value_type;
-    Marker1()                           : boost::detail::identifier<int64_type,Marker1>(0){}
-    explicit Marker1( value_type v )    : boost::detail::identifier<int64_type,Marker1>(v){}
+    typedef boost::detail::identifier< size_type, Marker1 >::value_type value_type;
+    Marker1()                           : boost::detail::identifier<size_type,Marker1>(0){}
+    explicit Marker1( value_type v )    : boost::detail::identifier<size_type,Marker1>(v){}
     Marker1 & operator=( value_type v ) { this->assign(v); return *this; }
 };
 
-class Marker2 : public boost::detail::identifier< int64_type, Marker2 >
+class Marker2 : public boost::detail::identifier< size_type, Marker2 >
 {
 public:
-    typedef boost::detail::identifier< int64_type, Marker2 >::value_type value_type;
-    Marker2()                           : boost::detail::identifier<int64_type,Marker2>(0){}
-    explicit Marker2( value_type v )    : boost::detail::identifier<int64_type,Marker2>(v){}
+    typedef boost::detail::identifier< size_type, Marker2 >::value_type value_type;
+    Marker2()                           : boost::detail::identifier<size_type,Marker2>(0){}
+    explicit Marker2( value_type v )    : boost::detail::identifier<size_type,Marker2>(v){}
     Marker2 & operator=( value_type v ) { this->assign(v); return *this; }
 };
-class Marker3 : public boost::detail::identifier< int64_type, Marker3 >
+class Marker3 : public boost::detail::identifier< size_type, Marker3 >
 {
 public:
-    typedef boost::detail::identifier< int64_type, Marker3 >::value_type value_type;
-    Marker3()                           : boost::detail::identifier<int64_type,Marker3>(0){}
-    explicit Marker3( value_type v )    : boost::detail::identifier<int64_type,Marker3>(v){}
+    typedef boost::detail::identifier< size_type, Marker3 >::value_type value_type;
+    Marker3()                           : boost::detail::identifier<size_type,Marker3>(0){}
+    explicit Marker3( value_type v )    : boost::detail::identifier<size_type,Marker3>(v){}
     Marker3 & operator=( value_type v ) { this->assign(v); return *this; }
 };
 #endif
