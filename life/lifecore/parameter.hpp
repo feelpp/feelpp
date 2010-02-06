@@ -97,6 +97,10 @@ BOOST_PARAMETER_NAME(convex)
 BOOST_PARAMETER_NAME(order_u)
 BOOST_PARAMETER_NAME(order_p)
 
+BOOST_PARAMETER_NAME(initial_time)
+BOOST_PARAMETER_NAME(final_time)
+BOOST_PARAMETER_NAME(time_step)
+BOOST_PARAMETER_NAME(strategy)
 
 }
 #endif /* __lifecore_parameter_H */
