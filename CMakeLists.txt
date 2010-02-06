@@ -15,7 +15,7 @@ project (Life C CXX Fortran)
 
 set(LIFE_VERSION_MAJOR "0")
 set(LIFE_VERSION_MINOR "9")
-set(LIFE_VERSION_MICRO "18")
+set(LIFE_VERSION_MICRO "19")
 set(LIFE_VERSION_EXTRA "0")
 set(LIFE_REVISION "1")
 set(LIFE_BUILDID "1")
@@ -58,6 +58,9 @@ set(LIFE_MESH_MAX_ORDER "5")
 INCLUDE(CheckIncludeFile)
 INCLUDE(CheckIncludeFiles)
 INCLUDE(CheckIncludeFileCXX)
+INCLUDE(CheckFunctionExists)
+INCLUDE(CheckSymbolExists)
+INCLUDE(CheckCXXSourceCompiles)
 INCLUDE(CheckLibraryExists)
 # INCLUDE(parse_arguments)
 
@@ -89,6 +92,21 @@ IF ( MPI_FOUND )
   SET(LIFE_BOOST_MPI mpi)
 ENDIF()
 
+
+
+Check_Include_File_CXX(dlfcn.h HAVE_DLFCN_H)
+if ( HAVE_DLFCN_H )
+  add_definitions(-DHAVE_DLFCN_H)
+endif()
+CHECK_LIBRARY_EXISTS (dl dlopen "" HAVE_LIBDL)
+IF (HAVE_LIBDL)
+  set(DL_LIBRARY dl)
+  SET (HAVE_DLOPEN 1)
+  add_definitions(-DHAVE_DLOPEN)
+ELSE ()
+  CHECK_FUNCTION_EXISTS (dlopen HAVE_DLOPEN)
+ENDIF (HAVE_LIBDL)
+
 #
 # Xml2
 #
@@ -100,7 +118,7 @@ FIND_PACKAGE(LibXml2 REQUIRED)
 FIND_PACKAGE(LAPACK)
 
 FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${LIFE_BOOST_MPI} regex  serialization)
-set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" )
+set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" )
 set( BOOST_PARAMETER_MAX_ARITY 15 )
 add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOST_TEST_DYN_LINK )
 
@@ -237,6 +255,7 @@ SET(LIFE_LIBRARIES
   ${LAPACK_LIBRARIES}
   ${LIBXML2_LIBRARIES}
   ${PARPACK_LIBRARIES}
+  ${DL_LIBRARY}
   )
 
 
