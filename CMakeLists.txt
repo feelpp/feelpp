@@ -92,7 +92,8 @@ ENDIF()
 #
 # Xml2
 #
-FIND_PACKAGE(LibXml2)
+FIND_PACKAGE(LibXml2 REQUIRED)
+
 #
 # Blas and Lapack
 #
@@ -152,6 +153,11 @@ if ( TRILINOS_FOUND )
 endif( TRILINOS_FOUND )
 
 #
+# OpenTURNS
+#
+FIND_PACKAGE( OpenTURNS )
+
+#
 # VTK
 #
 FIND_PACKAGE(VTK)
@@ -171,6 +177,8 @@ INCLUDE_DIRECTORIES (
   ${LIFE_BUILD_DIR}/
   ${LIFE_SOURCE_DIR}/
   ${LIFE_SOURCE_DIR}/contrib/gmm/include
+
+  ${OT_INCLUDE_DIR}
 
   ${SLEPC_INCLUDE_DIR}
   ${PETSC_INCLUDE_DIR}
@@ -218,6 +226,7 @@ SET(LIFE_LIBRARIES
   lifealg
   lifemesh
   lifecore
+  ${OT_LIBRARIES}
   ${TRILINOS_LIBRARIES}
   ${VTK_LIBRARIES}
   ${SLEPC_LIBRARIES}
