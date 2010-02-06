@@ -19,6 +19,8 @@
    - allow Application class without (argc,argv). This permits to wrap
      Application classes in Python scripts. At the moment this is being used to
      write wrappers for OpenTURNS.
+   - use boost::integer to compute the exact int#_type and #ifdef int64 support
+     if it is not available on the platform.
 
 
 * New in 0.9.18
