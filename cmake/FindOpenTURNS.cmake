@@ -21,6 +21,12 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
+FIND_PACKAGE(Threads)
+CHECK_INCLUDE_FILE_CXX(pthread.h HAVE_PTHREAD_H )
+if ( HAVE_PTHREAD_H )
+  add_definitions( -DHAVE_PTHREAD_H )
+  set( HAVE_PTHREAD_H 1 )
+endif( HAVE_PTHREAD_H )
 
 FIND_PACKAGE(LibXml2 REQUIRED)
 SET(CMAKE_REQUIRED_FLAGS "${LIBXML2_INCLUDE_DIR};${CMAKE_REQUIRED_FLAGS}")
@@ -34,18 +40,20 @@ MARK_AS_ADVANCED( OT_INCLUDE_DIR )
 if( OT_INCLUDE_DIR )
 
   FIND_PATH(OT_WRAPPERS_DIR
-    wrapper.dtd
+    wrapper.xml
     PATHS /opt/openturns/wrappers/ /usr/lib/openturns/wrappers
     DOC "Directory where OpenTURNS wrappers are stored" )
   MARK_AS_ADVANCED( WRAPPERS_DIR )
+  FIND_PATH(OT_WRAPPER_DTD_PATH
+    wrapper.dtd
+    PATHS /opt/openturns/wrappers/ /usr/lib/openturns/wrappers
+    DOC "Directory where OpenTURNS dtd for the wrappers  is stored" )
+  MARK_AS_ADVANCED( OT_WRAPPER_DTD_PATH )
 
   FIND_LIBRARY(OT_LIB   NAMES OT     PATHS /usr/lib /opt/openturns/lib  /usr/lib/openturns)
   FIND_PATH(OT_LIBRARY_PATH   ${OT_LIB}     PATHS /usr/lib /opt/openturns/lib  /usr/lib/openturns)
 
-  SET(OT_LIBRARIES
-    ${OT_LIB}
-    ${LIBXML2_LIBRARIES}
-    )
+  SET(OT_LIBRARIES ${OT_LIB} )
   MARK_AS_ADVANCED(OT_LIBRARIES OT_LIB)
 
   SET(CMAKE_REQUIRED_FLAGS "${OT_LIBRARIES};${CMAKE_REQUIRED_FLAGS}")
@@ -55,10 +63,20 @@ if( OT_INCLUDE_DIR )
 
   CHECK_INCLUDE_FILE_CXX(OT.hxx HAVE_OT_HXX )
   CHECK_INCLUDE_FILE_CXX(WrapperCommon.h HAVE_WRAPPER_COMMON_H )
-
-
-  if ( OT_LIB )
-    SET( OT_FOUND "YES")
-  endif (OT_LIB)
-
 endif( OT_INCLUDE_DIR )
+
+if (OT_INCLUDE_DIR AND OT_LIB)
+  set(OT_FOUND TRUE)
+endif (OT_INCLUDE_DIR AND OT_LIB)
+
+if (OT_FOUND)
+  if (NOT OT_FIND_QUIETLY)
+    message(STATUS "Found OT: ${OT_LIBRARIES}")
+  endif (NOT OT_FIND_QUIETLY)
+else (OT_FOUND)
+  if (OT_FIND_REQUIRED)
+    message(FATAL_ERROR "Could not find OT")
+  endif (OT_FIND_REQUIRED)
+endif (OT_FOUND)
+
+
