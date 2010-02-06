@@ -8,6 +8,19 @@
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
+* New in 0.9.19
+** Programming Environment
+
+   - added support cmake support for OpenTURNS
+     http://www.openturns.org
+
+** Libraries
+*** life/lifecore
+   - allow Application class without (argc,argv). This permits to wrap
+     Application classes in Python scripts. At the moment this is being used to
+     write wrappers for OpenTURNS.
+
+
 * New in 0.9.18
 ** Programming Environment
 
