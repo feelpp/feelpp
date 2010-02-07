@@ -590,7 +590,8 @@ ExporterGmsh<MeshType>::save() const
     Debug( 8007 ) << "[ExporterGmsh] save()...\n";
 
     if( this->fileType() == ASCII )
-        detail::gmsh_save_ascii( *this );
+        gmsh_save_ascii();
+        //detail::gmsh_save_ascii( *this );
     else if( this->fileType() == BINARY )
         detail::gmsh_save_binary( *this );
 
@@ -602,6 +603,254 @@ void
 ExporterGmsh<MeshType>::visit( mesh_type* )
 {
 }
+
+template<typename MeshType>
+void
+ExporterGmsh<MeshType>::gmsh_save_ascii() const
+{
+    Debug( 8007 ) << "[gmsh_save_ascii] saving in gmsh ascii file format\n";
+
+    timeset_const_iterator __ts_it = this->beginTimeSet();
+    timeset_const_iterator __ts_en = this->endTimeSet();
+    while ( __ts_it != __ts_en )
+        {
+            timeset_ptrtype __ts = *__ts_it;
+            std::string filename =  this->prefix() + ".msh";
+            std::ofstream out(filename.c_str());
+            if (out.fail())
+                {
+                    Debug( 8007 ) << "cannot open " << filename.c_str() << "\n";
+                    exit(0);
+                }
+
+            Debug( 8007 ) << "[ExporterGmsh] saving model "
+                          << __ts->name() << " at time step "
+                          << __ts->index() << " in "
+                          << filename << "\n";
+
+
+            gmsh_save_Format( out );
+
+            // out << "$PhysicalNames\n";
+            // write Physical names here
+            //out << "$EndPhysicalNames\n";
+
+            gmsh_save_Nodes( out, __ts);
+
+            gmsh_save_Elements( out, __ts);
+
+            //gmsh_save_NodeData( out, __ts);
+
+            gmsh_save_ElementNodeData( out, __ts);
+
+            ++__ts_it;
+        }
+}
+
+template<typename MeshType>
+void
+ExporterGmsh<MeshType>::gmsh_save_file( std::ostream& out ) const
+{
+}
+
+template<typename MeshType>
+void
+ExporterGmsh<MeshType>::gmsh_save_Format( std::ostream& out ) const
+{
+    out << "$MeshFormat\n"
+        << "2.1 0 " << sizeof(double) << "\n"
+        << "$EndMeshFormat\n";
+
+}
+
+
+template<typename MeshType>
+void
+ExporterGmsh<MeshType>::gmsh_save_Nodes( std::ostream& out, timeset_ptrtype timeset ) const
+{
+    out << "$Nodes\n";
+
+    //on parcourt le temp
+    step_const_iterator __it = timeset->beginStep();
+    step_const_iterator __end = timeset->endStep();
+
+    mesh_ptrtype mesh = (*__it)->mesh();
+
+    out << mesh->numPoints() << "\n";//number points
+
+    point_const_iterator pt_it = mesh->beginPoint();
+    point_const_iterator pt_en = mesh->endPoint();
+    for ( ; pt_it!=pt_en ; ++pt_it )
+        {
+            out << pt_it->id()+1
+                <<" " << pt_it->node()[0];
+            if ( mesh_type::nRealDim >= 2 )
+                out << " " << pt_it->node()[1];
+            else
+                out << " 0";
+            if ( mesh_type::nRealDim >= 3 )
+                out << " " << pt_it->node()[2];
+            else
+                out << " 0";
+            out << "\n";
+       }
+
+    out << "$EndNodes\n";
+
+}
+
+template<typename MeshType>
+void
+ExporterGmsh<MeshType>::gmsh_save_Elements( std::ostream& out,
+                                            timeset_ptrtype timeset ) const
+{
+    out << "$Elements\n";
+
+    //on parcourt le temp
+    step_const_iterator __it = timeset->beginStep();
+    step_const_iterator __end = timeset->endStep();
+    mesh_ptrtype mesh = (*__it)->mesh();
+
+    out << mesh->numElements() << "\n";//number element
+
+    typename mesh_type::element_const_iterator elt_it = mesh->beginElement();
+    typename mesh_type::element_const_iterator elt_en = mesh->endElement();
+    uint16_type nLocGeoPt;
+    for ( ; elt_it != elt_en; ++elt_it )
+        {
+            out << elt_it->id()+1<<" ";
+            nLocGeoPt = elt_it->nPoints();
+            if (elt_it->isATriangleShape())
+                {
+                    if (mesh_type::nOrder==1)
+                        {
+                            out << 2 ;//type triangle order 1
+                            out<<" 2 99 2";
+                            for (uint16_type p=0;p<nLocGeoPt;++p)
+                                out << " " << elt_it->point( p ).id()+1;
+                        }
+                    else if (mesh_type::nOrder==2)
+                        {
+                            out << 9 ;//type triangle order 2
+                            out<<" 2 99 2";
+                            out << " " << elt_it->point( 0 ).id()+1;
+                            out << " " << elt_it->point( 1 ).id()+1;
+                            out << " " << elt_it->point( 2 ).id()+1;
+                            out << " " << elt_it->point( 5 ).id()+1;
+                            out << " " << elt_it->point( 3 ).id()+1;
+                            out << " " << elt_it->point( 4 ).id()+1;
+                        }
+                    else if (mesh_type::nOrder>2)
+                        {
+#warning TOFILL
+                        }
+                }
+            out<<"\n";
+        }
+    out << "$EndElements\n";
+}
+
+
+
+template<typename MeshType>
+void
+ExporterGmsh<MeshType>::gmsh_save_NodeData( std::ostream& out, timeset_ptrtype timeset ) const
+{
+
+    //!!!Not functionnal for curve element!!!
+
+    typedef typename step_type::nodal_scalar_type nodal_scalar_type;
+    typedef typename step_type::nodal_scalar_const_iterator nodal_scalar_const_iterator;
+
+    out << "$NodeData\n";
+
+    //on parcourt le temp
+    step_const_iterator __it = timeset->beginStep();
+    step_const_iterator __end = timeset->endStep();
+
+    nodal_scalar_const_iterator __var = (*__it)->beginNodalScalar();
+    nodal_scalar_const_iterator __varen = (*__it)->endNodalScalar();
+
+    nodal_scalar_type const& __u = __var->second;
+    //mesh_ptrtype mesh =__u.mesh();
+    mesh_ptrtype mesh = (*__it)->mesh();
+
+    out << "1\n";//number of string tag
+    out << "a scalar node\n";
+    out << "1\n";//number of real tag
+    out << "0.0\n";
+    out << "3\n";//number of integer tags:
+    out << "0\n";//the time step (0; time steps always start at 0)
+    out << "1\n";//n-component (1 is scalar) field
+    out << mesh->numPoints() << "\n";//number associated nodal values
+
+    point_const_iterator pt_it = mesh->beginPoint();
+    point_const_iterator pt_en = mesh->endPoint();
+    for ( ; pt_it!=pt_en ; ++pt_it )
+        {
+            out << pt_it->id()+1
+                <<" ";
+            out <<__u(pt_it->id());
+            //__u(pt_it->node());
+            out << "\n";
+        }
+    out << "$EndNodeData\n";
+}
+
+template<typename MeshType>
+void
+ExporterGmsh<MeshType>::gmsh_save_ElementNodeData( std::ostream& out,
+                                                   timeset_ptrtype timeset) const
+{
+    typedef typename step_type::nodal_scalar_type nodal_scalar_type;
+    typedef typename step_type::nodal_scalar_const_iterator nodal_scalar_const_iterator;
+
+    out << "$ElementNodeData\n";
+
+    //on parcourt le temp
+    step_const_iterator __it = timeset->beginStep();
+    step_const_iterator __end = timeset->endStep();
+
+    mesh_ptrtype mesh = (*__it)->mesh();
+    nodal_scalar_const_iterator __var = (*__it)->beginNodalScalar();
+    nodal_scalar_const_iterator __varen = (*__it)->endNodalScalar();
+
+    nodal_scalar_type const& __u = __var->second;
+    //mesh_ptrtype mesh =__u.functionSpace()->mesh();
+    //std:: cout << "\n"<<__u.functionSpace()->mesh()->numElements() <<" - " << mesh->numElements()<<"\n";
+
+    out << "1\n";//number of string tag
+    out << "a scalar node\n";
+    out << "1\n";//number of real tag
+    out << "0.0\n";//the time value (0.0)
+    out << "3\n";//number of integer tags:
+    out << "0\n";//the time step (0; time steps always start at 0)
+    out << "1\n";//n-component (1 is scalar) field
+    out << mesh->numElements() << "\n";//number associated nodal values
+    typename mesh_type::element_const_iterator elt_it = mesh->beginElement();
+    typename mesh_type::element_const_iterator elt_en = mesh->endElement();
+    uint16_type nLocalDof;//nLocGeoPt;
+    size_type globaldof;
+    for ( ; elt_it!=elt_en ; ++elt_it )
+        {
+            out << elt_it->id()+1;
+
+            //nLocGeoPt = elt_it->nPoints();
+            //out << " " << nLocGeoPt;
+            nLocalDof = nodal_scalar_type::functionspace_type::basis_type::nLocalDof;
+            out << " " << nLocalDof;
+            for ( uint16_type l = 0; l < nLocalDof; ++l )
+                {
+                    globaldof = boost::get<0>(__u.functionSpace()
+                                                        ->dof()
+                                                        ->localToGlobal(elt_it->id(), l, 0 ));
+                    out << " " <<__u( globaldof);
+                }
+            out << "\n";
+        }
+    out << "$ElementEndNodeData\n";
+}
+
 
 #if defined( LIFE_INSTANTIATION_MODE )
 //
