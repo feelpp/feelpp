@@ -62,6 +62,8 @@ public:
     //@{
 
     typedef MeshType mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef typename mesh_type::point_const_iterator point_const_iterator;
 
     typedef Exporter<MeshType> super;
     typedef typename mesh_type::value_type value_type;
@@ -69,6 +71,9 @@ public:
     typedef typename super::timeset_ptrtype timeset_ptrtype;
     typedef typename super::timeset_iterator timeset_iterator;
     typedef typename super::timeset_const_iterator timeset_const_iterator;
+
+    typedef typename timeset_type::step_type step_type;
+    typedef typename timeset_type::step_const_iterator step_const_iterator;
 
     typedef typename matrix_node<value_type>::type matrix_node_type;
     //@}
@@ -135,6 +140,26 @@ public:
 protected:
 
 private:
+
+    void gmsh_save_ascii() const;
+
+    void gmsh_save_file( std::ostream& out ) const;
+
+    void gmsh_save_Format( std::ostream& out) const;
+
+    void gmsh_save_Nodes( std::ostream& out,
+                          timeset_ptrtype timeset ) const;
+
+    void gmsh_save_Elements( std::ostream& out,
+                             timeset_ptrtype timeset ) const;
+
+    void gmsh_save_NodeData( std::ostream& out,
+                             timeset_ptrtype timeset ) const;
+
+    void gmsh_save_ElementNodeData( std::ostream& out,
+                                    timeset_ptrtype timeset ) const;
+
+
 };
 
 } // Life
