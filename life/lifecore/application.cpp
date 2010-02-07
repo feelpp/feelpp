@@ -301,7 +301,14 @@ Application::Application( AboutData const& ad )
 {
 #if 1
 
+//
+// if we are using openmpi, then we need to dlopen mpi with some special flags
+// to avoid some undefined symbol when using Application classes in Python code
+// for example.
+//
+#if OPEN_MPI
     OPENMPI_dlopen_libmpi();
+#endif
 
     int argc = 1;
     char** argv = new char*[argc];
