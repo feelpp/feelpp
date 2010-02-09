@@ -987,7 +987,7 @@ Mesh<Shape, T>::Localisation::init()
 }
 
 template<typename Shape, typename T>
-boost::tuple<bool, size_type>
+boost::tuple<bool, size_type, typename Mesh<Shape, T>::node_type>
 Mesh<Shape, T>::Localisation::searchElement(const node_type & p)
 {
     //search for nearest points
@@ -1042,6 +1042,7 @@ Mesh<Shape, T>::Localisation::searchElement(const node_type & p)
 
     bool isin=false;
     double dmin;
+    node_type __x_ref;
 
     //research the element which contains the point p
     itLT=ListTri.begin();
@@ -1056,6 +1057,7 @@ Mesh<Shape, T>::Localisation::searchElement(const node_type & p)
 
         //apply the inverse geometric transformation for the point p
         gic.setXReal( p);
+        __x_ref=gic.xRef();
 
         // the point is in the reference element ?
         boost::tie( isin, dmin ) = refelem.isIn( gic.xRef() );
@@ -1064,8 +1066,8 @@ Mesh<Shape, T>::Localisation::searchElement(const node_type & p)
         if (!isin) ++itLT;
     }
 
-    if (itLT == itLT_end) return boost::make_tuple( false, 0 );
-    else return boost::make_tuple( true, itLT->first);
+    if (itLT == itLT_end) return boost::make_tuple( false, 0, __x_ref );
+    else return boost::make_tuple( true, itLT->first, __x_ref);
 }
 
 
