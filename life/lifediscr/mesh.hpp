@@ -436,7 +436,7 @@ public:
         /*
          *research the element wich contains the node p
          */
-        boost::tuple<bool, size_type> searchElement(const node_type & p);
+        boost::tuple<bool, size_type,node_type> searchElement(const node_type & p);
 
     private :
 
