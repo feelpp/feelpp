@@ -190,15 +190,9 @@ enum SolverPackage
     {
         SOLVERS_LIFE=0,
         SOLVERS_GMM,
-#ifdef HAVE_PETSC
         SOLVERS_PETSC,
-#endif
-#ifdef HAVE_TRILINOS
         SOLVERS_TRILINOS,
-#endif
-
         SOLVERS_SLEPC,
-
         SOLVER_INVALID_PACKAGE
     };
 
