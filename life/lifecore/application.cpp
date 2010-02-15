@@ -432,7 +432,8 @@ Application::unknownArgv() const
     ++n_a;
     BOOST_FOREACH( std::string const& s, _M_to_pass_further )
         {
-            Debug( 1000 ) << "new arg " << s << " size = " << s.size() << "\n";
+            size_type ssize=s.size();
+            Debug( 1000 ) << "new arg " << s << " size = " << ssize << "\n";
             argv[n_a] = new char[ s.size()+1 ];
             strncpy( argv[n_a], s.c_str(), s.size() );
             argv[n_a][s.size()] = '\0';
