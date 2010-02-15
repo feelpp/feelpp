@@ -1,82 +1,206 @@
-# -*- mode: cmake -*-
+# - Try to find OpenTURNS
+# Once done this will define
 #
-#  This file is part of the OPUS Project
+#  OpenTURNS_FOUND - system has OT
+#  OpenTURNS_INCLUDE_DIR - the OT include directory
+#  OpenTURNS_INCLUDE_DIRS - the OT include directory and dependencies include directories
+#  OpenTURNS_LIBRARY - Where to find the OT library
+#  OpenTURNS_LIBRARIES - Link these to use OT
+#  OpenTURNS_WRAPPER_DIR - Wrappers directory
+#  OpenTURNS_WRAPPER_DEFINITIONS - Compiler switches required for using OT wrapper
+#  OpenTURNS_MODULE_DIR - OT module directory
+#  OpenTURNS_MODULE_DEFINITIONS - Compiler switches required for using OT module
+#  OpenTURNS_SWIG_INCLUDE_DIR - the OT include directory to swig interface
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2010-02-05
+#  Copyright (c) 2009 Mathieu Lapointe <lapointe@phimeca.com>
+#  Copyright (c) 2010 Julien Schueller <schueller@phimeca.com>
 #
-#  Copyright (C) 2010 Université Joseph Fourier
+#  Redistribution and use is allowed according to the terms of the New
+#  BSD license.
+#  For details see the accompanying COPYING-CMAKE-SCRIPTS file.
 #
-#  This library is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU Lesser General Public
-#  License as published by the Free Software Foundation; either
-#  version 3.0 of the License, or (at your option) any later version.
-#
-#  This library is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public
-#  License along with this library; if not, write to the Free Software
-#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-#
-FIND_PACKAGE(Threads)
-CHECK_INCLUDE_FILE_CXX(pthread.h HAVE_PTHREAD_H )
-if ( HAVE_PTHREAD_H )
-  add_definitions( -DHAVE_PTHREAD_H )
-  set( HAVE_PTHREAD_H 1 )
-endif( HAVE_PTHREAD_H )
 
-FIND_PACKAGE(LibXml2 REQUIRED)
-SET(CMAKE_REQUIRED_FLAGS "${LIBXML2_INCLUDE_DIR};${CMAKE_REQUIRED_FLAGS}")
+include (CheckIncludeFileCXX)
+include (FindPackageHandleStandardArgs)
 
-FIND_PATH(OT_INCLUDE_DIR
-  OT.hxx
-  PATHS /opt/openturns/include/ /usr/include/openturns
-  DOC "Directory where OpenTURNS header files are stored" )
-MARK_AS_ADVANCED( OT_INCLUDE_DIR )
+# check dependencies
+find_package(LibXml2 2.6.27)
+find_package(PythonLibs 2.5)
 
-if( OT_INCLUDE_DIR )
+# test if variables are not already in cache
+if (NOT (OpenTURNS_INCLUDE_DIR
+          AND OpenTURNS_SWIG_INCLUDE_DIR
+          AND OpenTURNS_INCLUDE_DIRS
+          AND OpenTURNS_LIBRARY
+          AND OpenTURNS_LIBRARIES
+          AND OpenTURNS_WRAPPER_DIR
+          AND OpenTURNS_MODULE_DIR))
 
-  FIND_PATH(OT_WRAPPERS_DIR
-    wrapper.xml
-    PATHS /opt/openturns/wrappers/ /usr/lib/openturns/wrappers
-    DOC "Directory where OpenTURNS wrappers are stored" )
-  MARK_AS_ADVANCED( WRAPPERS_DIR )
-  FIND_PATH(OT_WRAPPER_DTD_PATH
-    wrapper.dtd
-    PATHS /opt/openturns/wrappers/ /usr/lib/openturns/wrappers
-    DOC "Directory where OpenTURNS dtd for the wrappers  is stored" )
-  MARK_AS_ADVANCED( OT_WRAPPER_DTD_PATH )
+  # set include dir
+  if (NOT OpenTURNS_INCLUDE_DIR)
+    find_path (OpenTURNS_INCLUDE_DIR
+      NAMES
+        OT.hxx
+      PATHS
+        /usr/include
+        /usr/local/include
+        /opt/local/include
+        /sw/include
+      PATH_SUFFIXES
+        openturns
+      DOC
+        "OpenTURNS include directory"
+    )
+  endif ()
 
-  FIND_LIBRARY(OT_LIB   NAMES OT     PATHS /usr/lib /opt/openturns/lib  /usr/lib/openturns)
-  FIND_PATH(OT_LIBRARY_PATH   ${OT_LIB}     PATHS /usr/lib /opt/openturns/lib  /usr/lib/openturns)
+  # set swig include dir
+  if (NOT OpenTURNS_SWIG_INCLUDE_DIR)
+    set(OpenTURNS_SWIG_INCLUDE_DIR "${OpenTURNS_INCLUDE_DIR}/swig")
+  endif ()
 
-  SET(OT_LIBRARIES ${OT_LIB} )
-  MARK_AS_ADVANCED(OT_LIBRARIES OT_LIB)
+  # dependencies includes
+  if (NOT OpenTURNS_INCLUDE_DIRS)
+    set (OpenTURNS_INCLUDE_DIRS ${OpenTURNS_INCLUDE_DIR})
+    list (APPEND OpenTURNS_INCLUDE_DIRS ${LIBXML2_INCLUDE_DIR})
+    list (APPEND OpenTURNS_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS})
+  endif ()
 
-  SET(CMAKE_REQUIRED_FLAGS "${OT_LIBRARIES};${CMAKE_REQUIRED_FLAGS}")
-  SET(CMAKE_REQUIRED_INCLUDES "${OT_INCLUDE_DIR};${CMAKE_REQUIRED_INCLUDES}")
-  MESSAGE( STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+  # check for library directory
+  if (NOT OpenTURNS_LIBRARY)
+    find_library (OpenTURNS_LIBRARY
+      NAMES
+        ot
+      PATHS
+        /usr/lib
+        /usr/local/lib
+        /opt/local/lib
+        /sw/lib
+      PATH_SUFFIXES
+        openturns
+      DOC
+        "OpenTURNS library location"
+    )
+  endif ()
 
+  # find dependent libraries
+  if (NOT OpenTURNS_LIBRARIES)
+    set (OpenTURNS_LIBRARIES ${OpenTURNS_LIBRARY} ${LIBXML2_LIBRARIES} ${PYTHON_LIBRARIES})
+    list (APPEND OpenTURNS_LIBRARIES ${LIBXML2_LIBRARIES})
+    list (APPEND OpenTURNS_LIBRARIES ${PYTHON_LIBRARIES})
+  endif ()
 
-  CHECK_INCLUDE_FILE_CXX(OT.hxx HAVE_OT_HXX )
-  CHECK_INCLUDE_FILE_CXX(WrapperCommon.h HAVE_WRAPPER_COMMON_H )
-endif( OT_INCLUDE_DIR )
+  # retrieve path to lib
+  get_filename_component (OpenTURNS_LIBRARY_PATH "${OpenTURNS_LIBRARY}" PATH)
 
-if (OT_INCLUDE_DIR AND OT_LIB)
-  set(OT_FOUND TRUE)
-endif (OT_INCLUDE_DIR AND OT_LIB)
+  # retrieve install path
+  set (OpenTURNS_INSTALL_PATH "${OpenTURNS_LIBRARY_PATH}/../..")
 
-if (OT_FOUND)
-  if (NOT OT_FIND_QUIETLY)
-    message(STATUS "Found OT: ${OT_LIBRARIES}")
-  endif (NOT OT_FIND_QUIETLY)
-else (OT_FOUND)
-  if (OT_FIND_REQUIRED)
-    message(FATAL_ERROR "Could not find OT")
-  endif (OT_FIND_REQUIRED)
-endif (OT_FOUND)
+  # find wrappers dir
+  if (NOT OpenTURNS_WRAPPER_DIR)
+    find_path (OpenTURNS_WRAPPER_DIR
+      NAMES
+        wrapper.xml wrapper.dtd
+      PATHS
+        "${OpenTURNS_INSTALL_PATH}"
+        /usr/lib
+        /usr/local/lib
+        /opt/lib
+        /opt
+      PATH_SUFFIXES
+        share/openturns/wrappers
+      DOC
+        "OpenTURNS wrappers location"
+    )
+  endif ()
 
+  # set wrapper definitions
+  if (NOT OpenTURNS_WRAPPER_DEFINITIONS)
+    set(OpenTURNS_WRAPPER_DEFINITIONS)
+    check_include_file_cxx (pthread.h HAVE_PTHREAD_H)
+    if (HAVE_PTHREAD_H)
+      list (APPEND OpenTURNS_WRAPPER_DEFINITIONS -DHAVE_PTHREAD_H)
+    endif ()
+  endif ()
 
+  # find module directory
+  if (NOT OpenTURNS_MODULE_DIR)
+    set (OpenTURNS_MODULE_DIR
+      "${OpenTURNS_LIBRARY_PATH}/module"
+    )
+  endif ()
+
+  # set module definitions
+  if (NOT OpenTURNS_MODULE_DEFINITIONS)
+    set (OpenTURNS_MODULE_DEFINITIONS)
+
+    # check for STDC_HEADERS
+    check_include_files (stdlib.h HAVE_STDLIB_H)
+    check_include_files (stdarg.h HAVE_STDARG_H)
+    check_include_files (string.h HAVE_STRING_H)
+    check_include_files (float.h HAVE_FLOAT_H)
+    check_function_exists (memchr HAVE_MEMCHR)
+    check_function_exists (free HAVE_FREE)
+    check_include_files (ctype.h HAVE_CTYPE_H)
+    if(HAVE_STDLIB_H AND HAVE_STDARG_H AND HAVE_STRING_H AND HAVE_FLOAT_H AND HAVE_MEMCHR AND HAVE_FREE AND HAVE_CTYPE_H)
+      list (APPEND OpenTURNS_MODULE_DEFINITIONS -DSTDC_HEADERS_H=1)
+    else ()
+      list (APPEND OpenTURNS_MODULE_DEFINITIONS -DSTDC_HEADERS_H=0)
+    endif ()
+
+    # this macro checks a header and defines the corresponding macro
+    macro(check_include_files_define_macro header_file)
+      # get macro name from header_file
+      string(TOUPPER "${header_file}" macro_name)
+      string(REGEX REPLACE "[/.]" "_" macro_name ${macro_name})
+      set(macro_name HAVE_${macro_name})
+      # check for header
+      check_include_files(${header_file} ${macro_name})
+      # define macro
+      if(${macro_name})
+        list (APPEND OpenTURNS_MODULE_DEFINITIONS -D${macro_name}=1)
+      else()
+        list (APPEND OpenTURNS_MODULE_DEFINITIONS -D${macro_name}=0)
+      endif()
+    endmacro()
+
+    # check for some headers
+    check_include_files_define_macro(sys/types.h)
+    check_include_files_define_macro(sys/stat.h)
+    check_include_files_define_macro(stdlib.h)
+    check_include_files_define_macro(string.h)
+    check_include_files_define_macro(memory.h)
+    check_include_files_define_macro(strings.h)
+    check_include_files_define_macro(inttypes.h)
+    check_include_files_define_macro(stdint.h)
+    check_include_files_define_macro(unistd.h)
+    check_include_files_define_macro(dlfcn.h)
+    check_include_files_define_macro(stdbool.h)
+    check_include_files_define_macro(regex.h)
+
+  endif ()
+
+endif ()
+
+# handle the QUIETLY and REQUIRED arguments and set OpenTURNS_FOUND to TRUE if
+# all listed variables are TRUE
+find_package_handle_standard_args (OpenTURNS DEFAULT_MSG
+  OpenTURNS_LIBRARY
+  OpenTURNS_INCLUDE_DIR
+  OpenTURNS_SWIG_INCLUDE_DIR
+  OpenTURNS_INCLUDE_DIRS
+  OpenTURNS_LIBRARIES
+  OpenTURNS_WRAPPER_DIR
+  OpenTURNS_MODULE_DIR
+)
+
+mark_as_advanced (
+  OpenTURNS_LIBRARY
+  OpenTURNS_INCLUDE_DIR
+  OpenTURNS_SWIG_INCLUDE_DIR
+  OpenTURNS_INCLUDE_DIRS
+  OpenTURNS_LIBRARIES
+  OpenTURNS_WRAPPER_DIR
+  OpenTURNS_WRAPPER_DEFINITIONS
+  OpenTURNS_MODULE_DIR
+  OpenTURNS_MODULE_DEFINITIONS
+)
