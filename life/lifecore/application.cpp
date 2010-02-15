@@ -650,7 +650,7 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 
     _M_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
 
-    Debug( 1000 ) << "[Application::Application] number of unrecognized options: " << _M_to_pass_further.size() << "\n";
+    Debug( 1000 ) << "[Application::Application] number of unrecognized options: " << (_M_to_pass_further.size()) << "\n";
 
     BOOST_FOREACH( std::string const& s, _M_to_pass_further )
         {
