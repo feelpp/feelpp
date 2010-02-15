@@ -50,7 +50,18 @@ CMAKE_CXX_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
 CMAKE_C_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
 ")
 
-set(CTEST_TIMEOUT           "600")
+# -----------------------------------------------------------  
+# -- build specific
+# -----------------------------------------------------------  
+
+## -- make command
+## -----------------
+find_program(MAKE NAMES make)
+
+## -- Build options
+set(OPTION_BUILD                        "-j2")
+
+
 
 SET (CTEST_SOURCE_DIRECTORY "$ENV{HOME}/sources/life")
 set(CTEST_BINARY_DIRECTORY  "$ENV{HOME}/sources/life-${CTEST_BUILD_NAME}")
@@ -62,6 +73,18 @@ SET (CTEST_SVN_CHECKOUT   "${CTEST_SVN_COMMAND} co svn://scm.ljkforge.imag.fr/sv
 set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
 
 # set(CTEST_BUILD_COMMAND     "make -j2")
+
+# -----------------------------------------------------------  
+# -- commands
+# -----------------------------------------------------------  
+
+set(CTEST_BUILD_COMMAND                "${MAKE} ${OPTION_BUILD}")
+
+# -----------------------------------------------------------  
+# -- Settings
+# -----------------------------------------------------------  
+
+set(CTEST_TIMEOUT           "600")
 
 if (${MODEL} MATCHES Nightly )
 
