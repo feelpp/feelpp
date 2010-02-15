@@ -69,7 +69,7 @@ if (NOT (OpenTURNS_INCLUDE_DIR
   if (NOT OpenTURNS_LIBRARY)
     find_library (OpenTURNS_LIBRARY
       NAMES
-        ot
+        OT
       PATHS
         /usr/lib
         /usr/local/lib
@@ -108,6 +108,7 @@ if (NOT (OpenTURNS_INCLUDE_DIR
         /opt
       PATH_SUFFIXES
         share/openturns/wrappers
+        openturns/wrappers
       DOC
         "OpenTURNS wrappers location"
     )
