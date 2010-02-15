@@ -274,6 +274,30 @@ public:
     virtual void scale ( const T ) = 0;
 
     /**
+     * Multiplies the matrix with \p arg and stores the result in \p
+     * dest.
+     */
+    void multVector ( const Vector<T>& arg,
+                      Vector<T>& dest ) const;
+
+    /**
+     * Multiplies the matrix with \p arg and stores the result in \p
+     * dest.
+     */
+    void multVector ( const boost::shared_ptr<Vector<T> >& arg,
+                      boost::shared_ptr<Vector<T> >& dest ) const
+        {
+            this->multVector( *arg, *dest );
+        }
+
+    /**
+     * Multiplies the matrix with \p arg and adds the result to \p dest.
+     */
+    void multAddVector ( const Vector<T>& arg,
+                         Vector<T>& dest ) const;
+
+
+    /**
      * Return the value of the entry \p (i,j).  This may be an
      * expensive operation and you should always take care where to
      * call this function.  In order to avoid abuse, this function
@@ -534,6 +558,24 @@ void MatrixSparse<T>::print(std::ostream& os) const
     }
 }
 
+template <typename T>
+void MatrixSparse<T>::multVector ( const Vector<T>& arg,
+                                   Vector<T>& dest ) const
+{
+    dest.zero();
+    this->multAddVector(arg,dest);
+}
+
+
+
+template <typename T>
+void MatrixSparse<T>::multAddVector ( const Vector<T>& arg,
+                                      Vector<T>& dest ) const
+{
+    /* This functionality is actually implemented in the \p
+       Vector class.  */
+    dest.addVector(arg,*this);
+}
 
 
 #if 0
