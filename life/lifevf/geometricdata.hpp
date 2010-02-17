@@ -51,12 +51,13 @@ namespace vf
 # /* Information about C operators */
 #
 # /* Accessors for the operator datatype. */
-# define VF_GD_SYMBOL(O)      BOOST_PP_TUPLE_ELEM(6, 0, O)
-# define VF_GD_NAME(O)        BOOST_PP_TUPLE_ELEM(6, 1, O)
-# define VF_GD_DIM(O)         BOOST_PP_TUPLE_ELEM(6, 2, O)
-# define VF_GD_CONTEXT(O)     BOOST_PP_TUPLE_ELEM(6, 3, O)
-# define VF_GD_RETURN(O)      BOOST_PP_TUPLE_ELEM(6, 4, O)
-# define VF_GD_VALUE(O)       BOOST_PP_TUPLE_ELEM(6, 5, O)
+# define VF_GD_SYMBOL(O)      BOOST_PP_TUPLE_ELEM(7, 0, O)
+# define VF_GD_NAME(O)        BOOST_PP_TUPLE_ELEM(7, 1, O)
+# define VF_GD_DIM(O)         BOOST_PP_TUPLE_ELEM(7, 2, O)
+# define VF_GD_CONTEXT(O)     BOOST_PP_TUPLE_ELEM(7, 3, O)
+# define VF_GD_RETURN(O)      BOOST_PP_TUPLE_ELEM(7, 4, O)
+# define VF_GD_VALUE(O)       BOOST_PP_TUPLE_ELEM(7, 5, O)
+# define VF_GD_IMORDER(O)     BOOST_PP_TUPLE_ELEM(7, 6, O)
 
 #
 
@@ -69,26 +70,26 @@ const size_type jp = vm::JACOBIAN|vm::POINT;
    BOOST_PP_TUPLE_TO_LIST(                                              \
       20,                                                               \
       (                                                                 \
-       ( N       , GDN       , 0, jn, Vectorial, _M_gmc->unitNormal( q )[ c1 ] ), \
-       ( Nx      , GDNx      , 0, jn, Scalar   , _M_gmc->unitNormal( q )[ 0 ] ), \
-       ( Ny      , GDNy      , 1, jn, Scalar   , _M_gmc->unitNormal( q )[ 1 ] ), \
-       ( Nz      , GDNz      , 2, jn, Scalar   , _M_gmc->unitNormal( q )[ 2 ] ), \
-       ( T       , GDT       , 0, jn, Vectorial, _M_gmc->unitTangent( q )[ c1 ] ), \
-       ( Tx      , GDTx      , 0, jn, Scalar   , _M_gmc->unitTangent( q )[ 0 ] ), \
-       ( Ty      , GDTy      , 1, jn, Scalar   , _M_gmc->unitTangent( q )[ 1 ] ), \
-       ( Tz      , GDTz      , 2, jn, Scalar   , _M_gmc->unitTangent( q )[ 2 ] ), \
-       ( P       , GDP       , 0, jp, Vectorial, _M_gmc->xReal( q )[ c1 ]      ), \
-       ( Px      , GDPx      , 0, jp, Scalar   , _M_gmc->xReal( q )[ 0 ]      ), \
-       ( Py      , GDPy      , 1, jp, Scalar   , _M_gmc->xReal( q )[ 1 ]      ), \
-       ( Pz      , GDPz      , 2, jp, Scalar   , _M_gmc->xReal( q )[ 2 ]      ), \
-       ( C       , GDC       , 0, jp, Vectorial, _M_gmc->barycenterReal()[c1] ), \
-       ( Cx      , GDCx      , 0, jp, Scalar   , _M_gmc->barycenterReal()[0]  ), \
-       ( Cy      , GDCy      , 1, jp, Scalar   , _M_gmc->barycenterReal()[1]  ), \
-       ( Cz      , GDCz      , 2, jp, Scalar   , _M_gmc->barycenterReal()[2]  ), \
-       ( h       , GDH       , 0, 0 , Scalar   , _M_gmc->h()                  ), \
-       ( hFace   , GDHFace   , 0, 0 , Scalar   , _M_gmc->hFace()              ), \
-       ( eid     , GDEid     , 0, 0 , Scalar   , _M_gmc->id()                 ), \
-       ( emarker , GDEmarker , 0, 0 , Scalar   , _M_gmc->marker().value()     ) \
+       ( N       , GDN       , 0, jn, Vectorial, _M_gmc->unitNormal( q )[ c1 ] , 0), \
+       ( Nx      , GDNx      , 0, jn, Scalar   , _M_gmc->unitNormal( q )[ 0 ]  , 0), \
+       ( Ny      , GDNy      , 1, jn, Scalar   , _M_gmc->unitNormal( q )[ 1 ]  , 0), \
+       ( Nz      , GDNz      , 2, jn, Scalar   , _M_gmc->unitNormal( q )[ 2 ]  , 0), \
+       ( T       , GDT       , 0, jn, Vectorial, _M_gmc->unitTangent( q )[ c1 ], 0), \
+       ( Tx      , GDTx      , 0, jn, Scalar   , _M_gmc->unitTangent( q )[ 0 ] , 0), \
+       ( Ty      , GDTy      , 1, jn, Scalar   , _M_gmc->unitTangent( q )[ 1 ] , 0), \
+       ( Tz      , GDTz      , 2, jn, Scalar   , _M_gmc->unitTangent( q )[ 2 ] , 0), \
+       ( P       , GDP       , 0, jp, Vectorial, _M_gmc->xReal( q )[ c1 ]      , 1), \
+       ( Px      , GDPx      , 0, jp, Scalar   , _M_gmc->xReal( q )[ 0 ]       , 1), \
+       ( Py      , GDPy      , 1, jp, Scalar   , _M_gmc->xReal( q )[ 1 ]       , 1), \
+       ( Pz      , GDPz      , 2, jp, Scalar   , _M_gmc->xReal( q )[ 2 ]       , 1), \
+       ( C       , GDC       , 0, jp, Vectorial, _M_gmc->barycenterReal()[c1]  , 0), \
+       ( Cx      , GDCx      , 0, jp, Scalar   , _M_gmc->barycenterReal()[0]   , 0), \
+       ( Cy      , GDCy      , 1, jp, Scalar   , _M_gmc->barycenterReal()[1]   , 0), \
+       ( Cz      , GDCz      , 2, jp, Scalar   , _M_gmc->barycenterReal()[2]   , 0), \
+       ( h       , GDH       , 0, 0 , Scalar   , _M_gmc->h()                   , 0), \
+       ( hFace   , GDHFace   , 0, 0 , Scalar   , _M_gmc->hFace()               , 0), \
+       ( eid     , GDEid     , 0, 0 , Scalar   , _M_gmc->id()                  , 0), \
+       ( emarker , GDEmarker , 0, 0 , Scalar   , _M_gmc->marker().value()      , 0) \
       )                                                                          \
    )                                                                             \
 /**/
@@ -105,6 +106,10 @@ const size_type jp = vm::JACOBIAN|vm::POINT;
     public:                                                             \
                                                                         \
         static const size_type context = VF_GD_CONTEXT( O );            \
+                                                                        \
+        static const uint16_type imorder = VF_GD_IMORDER(O);            \
+        static const bool imIsPoly = true;                              \
+                                                                        \
         template<typename Func>                                         \
             struct HasTestFunction                                      \
         {                                                               \

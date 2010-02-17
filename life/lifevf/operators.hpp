@@ -51,16 +51,17 @@ namespace vf
 {
 /// \cond detail
 # /* Accessors for the operator datatype. */
-# define VF_OPERATOR_NAME(O)           BOOST_PP_TUPLE_ELEM(9, 0, O)
-# define VF_OPERATOR_SYMBOL(O)         BOOST_PP_TUPLE_ELEM(9, 1, O)
-# define VF_OPERATOR_TERM(O)           BOOST_PP_TUPLE_ELEM(9, 2, O)
+# define VF_OPERATOR_NAME(O)           BOOST_PP_TUPLE_ELEM(10, 0, O)
+# define VF_OPERATOR_SYMBOL(O)         BOOST_PP_TUPLE_ELEM(10, 1, O)
+# define VF_OPERATOR_TERM(O)           BOOST_PP_TUPLE_ELEM(10, 2, O)
 # // 0 means any rank, 1 or more is the rank for which the operator is defined
-# define VF_OPERATOR_TYPE_RANK_DEF(O)  BOOST_PP_TUPLE_ELEM(9, 3, O)
-# define VF_OPERATOR_TYPE_IS_COMP(O)   BOOST_PP_TUPLE_ELEM(9, 4, O)
-# define VF_OPERATOR_TYPE_COMP(O)      BOOST_PP_TUPLE_ELEM(9, 5, O)
-# define VF_OPERATOR_CONTEXT(O)        BOOST_PP_TUPLE_ELEM(9, 6, O)
-# define VF_OPERATOR_RANK(O)           BOOST_PP_TUPLE_ELEM(9, 7, O)
-# define VF_OPERATOR_TRANSPOSE(O)      BOOST_PP_TUPLE_ELEM(9, 8, O)
+# define VF_OPERATOR_TYPE_RANK_DEF(O)  BOOST_PP_TUPLE_ELEM(10, 3, O)
+# define VF_OPERATOR_TYPE_IS_COMP(O)   BOOST_PP_TUPLE_ELEM(10, 4, O)
+# define VF_OPERATOR_TYPE_COMP(O)      BOOST_PP_TUPLE_ELEM(10, 5, O)
+# define VF_OPERATOR_CONTEXT(O)        BOOST_PP_TUPLE_ELEM(10, 6, O)
+# define VF_OPERATOR_RANK(O)           BOOST_PP_TUPLE_ELEM(10, 7, O)
+# define VF_OPERATOR_TRANSPOSE(O)      BOOST_PP_TUPLE_ELEM(10, 8, O)
+# define VF_OPERATOR_DIFFORDERIM(O)    BOOST_PP_TUPLE_ELEM(10, 9, O)
 
 const size_type jk = vm::JACOBIAN|vm::KB;
 const size_type jkd = jkd|vm::FIRST_DERIVATIVE;
@@ -74,18 +75,18 @@ const size_type jkh = jkd|vm::HESSIAN;
    BOOST_PP_TUPLE_TO_LIST( \
       12, \
       (                                                                 \
-       ( OpId   , id   , id   , 0, 0, 0, vm::JACOBIAN          , RankSame,false ), \
-       ( OpDx   , dx   , dx   , 0, 1, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false ), \
-       ( OpDy   , dy   , dy   , 0, 1, 1, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false ), \
-       ( OpDz   , dz   , dz   , 0, 1, 2, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false ), \
-       ( OpDn   , dn   , dn   , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::NORMAL|vm::FIRST_DERIVATIVE|vm::FIRST_DERIVATIVE_NORMAL , RankSame,false ), \
-       ( OpGrad , grad , grad , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankUp,true ), \
-       ( OpDiv  , div  , div  , 1, 0, 0, vm::DIV|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false ), \
-       ( OpCurl , curl , curl , 1, 0, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankSame,false ), \
-       ( OpCurlX, curlx, curlx, 1, 1, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false ), \
-       ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false ), \
-       ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false ), \
-       ( OpHess , hess , hess,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false ) \
+       ( OpId   , id   , id   , 0, 0, 0, vm::JACOBIAN          , RankSame,false, 0 ), \
+       ( OpDx   , dx   , dx   , 0, 1, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1 ), \
+       ( OpDy   , dy   , dy   , 0, 1, 1, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1 ), \
+       ( OpDz   , dz   , dz   , 0, 1, 2, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1 ), \
+       ( OpDn   , dn   , dn   , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::NORMAL|vm::FIRST_DERIVATIVE|vm::FIRST_DERIVATIVE_NORMAL , RankSame,false,-1 ), \
+       ( OpGrad , grad , grad , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankUp,true,-1 ), \
+       ( OpDiv  , div  , div  , 1, 0, 0, vm::DIV|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1 ), \
+       ( OpCurl , curl , curl , 1, 0, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankSame,false,-1 ), \
+       ( OpCurlX, curlx, curlx, 1, 1, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1 ), \
+       ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1 ), \
+       ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1 ), \
+       ( OpHess , hess , hess,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2 ) \
       ) \
    ) \
    /**/
@@ -214,6 +215,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             static const uint16_type rank = fe_type::rank;              \
             static const uint16_type nComponents1 = fe_type::nComponents1; \
             static const uint16_type nComponents2 = fe_type::nComponents2; \
+                                                                        \
+            static const uint16_type imorder = element_type::functionspace_type::basis_type::nOrder + VF_OPERATOR_DIFFORDERIM(O); \
+            static const bool imIsPoly = true;                          \
                                                                         \
             template<typename Func>                                     \
                 struct HasTestFunction                                  \

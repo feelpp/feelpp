@@ -65,16 +65,20 @@ public:
 
     static const size_type context = ExprT::context|vm::POINT;
 
-
     typedef FunctionSpaceType functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
 
+    static const uint16_type imorder = functionspace_type::basis_type::nOrder;
+    static const bool imIsPoly = true;
+
     typedef typename boost::tuples::template element<0, IteratorRange>::type idim_type;
     typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_type;
     typedef IteratorRange range_iterator;
+
+
     //@}
 
     /** @name Constructors, destructor

@@ -71,34 +71,35 @@ sign( T const& x )
 # /* Information about functions  */
 #
 # /* Accessors for the operator datatype. */
-# define VF_FUNC_SYMBOL(O)      BOOST_PP_TUPLE_ELEM(7, 0, O)
-# define VF_FUNC_NAME(O)        BOOST_PP_TUPLE_ELEM(7, 1, O)
-# define VF_FUNC_IMPL(O)        BOOST_PP_TUPLE_ELEM(7, 2, O)
-# define VF_FUNC_NAME_STRING(O) BOOST_PP_TUPLE_ELEM(7, 3, O)
-# define VF_FUNC_DOMAIN(O)      BOOST_PP_TUPLE_ELEM(7, 4, O)
-# define VF_FUNC_IS_FLOATING(O) BOOST_PP_TUPLE_ELEM(7, 5, O)
-# define VF_FUNC_IS_LOGICAL(O)  BOOST_PP_TUPLE_ELEM(7, 6, O)
+# define VF_FUNC_SYMBOL(O)        BOOST_PP_TUPLE_ELEM(8, 0, O)
+# define VF_FUNC_NAME(O)          BOOST_PP_TUPLE_ELEM(8, 1, O)
+# define VF_FUNC_IMPL(O)          BOOST_PP_TUPLE_ELEM(8, 2, O)
+# define VF_FUNC_NAME_STRING(O)   BOOST_PP_TUPLE_ELEM(8, 3, O)
+# define VF_FUNC_DOMAIN(O)        BOOST_PP_TUPLE_ELEM(8, 4, O)
+# define VF_FUNC_IS_FLOATING(O )  BOOST_PP_TUPLE_ELEM(8, 5, O)
+# define VF_FUNC_IS_LOGICAL(O)    BOOST_PP_TUPLE_ELEM(8, 6, O)
+# define VF_FUNC_IS_POLYNOMIAL(O) BOOST_PP_TUPLE_ELEM(8, 7, O)
 #
 # /* List of applicative unary functions. */
 # define VF_APPLICATIVE_UNARY_FUNCS \
    BOOST_PP_TUPLE_TO_LIST( \
       15, \
       ( \
-         ( abs  , __Abs__ , Life::math::abs     ,"absolute value"      , UnboundedDomain<value_type>()      , 1, 0), \
-         ( cos  , __Cos__ , Life::math::cos     ,"cosine"              , UnboundedDomain<value_type>()      , 1, 0), \
-         ( sin  , __Sin__ , Life::math::sin     ,"sine"                , UnboundedDomain<value_type>()      , 1, 0), \
-         ( tan  , __Tan__ , Life::math::tan     ,"tangent"             , UnboundedDomain<value_type>()      , 1, 0), \
-         ( acos , __ACos__, Life::math::acos    ,"inverse cosine"      , BoundedDomain<value_type>(-1.0,1.0), 1, 0), \
-         ( asin , __ASin__, Life::math::asin    ,"inverse sine"        , BoundedDomain<value_type>(-1.0,1.0), 1, 0), \
-         ( atan , __ATan__, Life::math::atan    ,"inverse tangent"     , UnboundedDomain<value_type>()      , 1, 0), \
-         ( cosh , __Cosh__, Life::math::cosh    ,"hyperbolic cosine"   , UnboundedDomain<value_type>()      , 1, 0), \
-         ( sinh , __Sinh__, Life::math::sinh    ,"hyperbolic sine"     , UnboundedDomain<value_type>()      , 1, 0), \
-         ( tanh , __Tanh__, Life::math::tanh    ,"hyperbolic tangent"  , UnboundedDomain<value_type>()      , 1, 0), \
-         ( exp  , __Exp__ , Life::math::exp     ,"exponential"         , UnboundedDomain<value_type>()      , 1, 0), \
-         ( log  , __Log__ , Life::math::log     ,"logarithm"           , PositiveDomain<value_type>()       , 1, 0), \
-         ( sqrt , __Sqrt__, Life::math::sqrt    ,"square root"         , PositiveDomain<value_type>()       , 1, 0), \
-         ( sign , __Sign__, details::sign  ,"sign"                , UnboundedDomain<value_type>()      , 1, 0), \
-         ( chi  , __Chi__ ,                ,"chi"                 , UnboundedDomain<value_type>()      , 0, 1) \
+         ( abs  , __Abs__ , Life::math::abs     ,"absolute value"      , UnboundedDomain<value_type>()      , 1, 0, 0), \
+         ( cos  , __Cos__ , Life::math::cos     ,"cosine"              , UnboundedDomain<value_type>()      , 1, 0, 0), \
+         ( sin  , __Sin__ , Life::math::sin     ,"sine"                , UnboundedDomain<value_type>()      , 1, 0, 0), \
+         ( tan  , __Tan__ , Life::math::tan     ,"tangent"             , UnboundedDomain<value_type>()      , 1, 0, 0), \
+         ( acos , __ACos__, Life::math::acos    ,"inverse cosine"      , BoundedDomain<value_type>(-1.0,1.0), 1, 0, 0), \
+         ( asin , __ASin__, Life::math::asin    ,"inverse sine"        , BoundedDomain<value_type>(-1.0,1.0), 1, 0, 0), \
+         ( atan , __ATan__, Life::math::atan    ,"inverse tangent"     , UnboundedDomain<value_type>()      , 1, 0, 0), \
+         ( cosh , __Cosh__, Life::math::cosh    ,"hyperbolic cosine"   , UnboundedDomain<value_type>()      , 1, 0, 0), \
+         ( sinh , __Sinh__, Life::math::sinh    ,"hyperbolic sine"     , UnboundedDomain<value_type>()      , 1, 0, 0), \
+         ( tanh , __Tanh__, Life::math::tanh    ,"hyperbolic tangent"  , UnboundedDomain<value_type>()      , 1, 0, 0), \
+         ( exp  , __Exp__ , Life::math::exp     ,"exponential"         , UnboundedDomain<value_type>()      , 1, 0, 0), \
+         ( log  , __Log__ , Life::math::log     ,"logarithm"           , PositiveDomain<value_type>()       , 1, 0, 0), \
+         ( sqrt , __Sqrt__, Life::math::sqrt    ,"square root"         , PositiveDomain<value_type>()       , 1, 0, 0), \
+         ( sign , __Sign__, details::sign       ,"sign"                , UnboundedDomain<value_type>()      , 1, 0, 1), \
+         ( chi  , __Chi__ ,                     ,"chi"                 , UnboundedDomain<value_type>()      , 0, 1, 1) \
       ) \
    ) \
    /**/
@@ -142,6 +143,15 @@ sign( T const& x )
    /**/
 #endif
 
+# define VF_IM_IS_POLY(O)                                               \
+    BOOST_PP_IF( BOOST_PP_EQUAL( VF_FUNC_IS_POLYNOMIAL(O) , 0) ,        \
+                 0 ,                                                    \
+                 1   )                                                  \
+    /**/
+
+
+
+
 #define VF_UNARY_FUNCTIONS_CODE(O)                                      \
     template < typename ExprT1 >                                        \
 class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>              \
@@ -149,6 +159,10 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
     public:                                                             \
                                                                         \
         static const size_type context = ExprT1::context;               \
+                                                                        \
+        static const uint16_type imorder = ExprT1::imorder;             \
+        static const bool imIsPoly = (VF_IM_IS_POLY(O) || (ExprT1::imorder==0)); \
+                                                                        \
         template<typename Func>                                         \
             struct HasTestFunction                                      \
         {                                                               \

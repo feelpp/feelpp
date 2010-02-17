@@ -48,6 +48,9 @@ public:
 
     static const size_type context = ExprT::context;
 
+    static const uint16_type imorder = ExprT::imorder;
+    static const bool imIsPoly = ExprT::imIsPoly;
+
     template<typename Func>
     struct HasTestFunction
     {

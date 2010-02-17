@@ -37,6 +37,7 @@
 /// \cond detail
 
 # include <boost/preprocessor/comparison/less.hpp>
+# include <boost/preprocessor/comparison/equal.hpp>
 # include <boost/preprocessor/logical/and.hpp>
 # include <boost/preprocessor/control/if.hpp>
 # include <boost/preprocessor/list/at.hpp>
@@ -53,14 +54,15 @@
 # /* Information about C operators */
 #
 # /* Accessors for the operator datatype. */
-# define VF_OP_SYMBOL(O)      BOOST_PP_TUPLE_ELEM(8, 0, O)
-# define VF_OP_NAME(O)        BOOST_PP_TUPLE_ELEM(8, 1, O)
-# define VF_OP_IS_FLOATING(O) BOOST_PP_TUPLE_ELEM(8, 2, O)
-# define VF_OP_IS_LOGICAL(O)  BOOST_PP_TUPLE_ELEM(8, 3, O)
-# define VF_OP_IS_SHIFT(O)    BOOST_PP_TUPLE_ELEM(8, 4, O)
-# define VF_OP_IS_ADD(O)      BOOST_PP_TUPLE_ELEM(8, 5, O)
-# define VF_OP_IS_SYMETRIC(O) BOOST_PP_TUPLE_ELEM(8, 6, O)
-# define VF_OP_SHAPE(O)       BOOST_PP_TUPLE_ELEM(8, 7, O)
+# define VF_OP_SYMBOL(O)      BOOST_PP_TUPLE_ELEM(9, 0, O)
+# define VF_OP_NAME(O)        BOOST_PP_TUPLE_ELEM(9, 1, O)
+# define VF_OP_IS_FLOATING(O) BOOST_PP_TUPLE_ELEM(9, 2, O)
+# define VF_OP_IS_LOGICAL(O)  BOOST_PP_TUPLE_ELEM(9, 3, O)
+# define VF_OP_IS_SHIFT(O)    BOOST_PP_TUPLE_ELEM(9, 4, O)
+# define VF_OP_IS_ADD(O)      BOOST_PP_TUPLE_ELEM(9, 5, O)
+# define VF_OP_IS_SYMETRIC(O) BOOST_PP_TUPLE_ELEM(9, 6, O)
+# define VF_OP_SHAPE(O)       BOOST_PP_TUPLE_ELEM(9, 7, O)
+# define VF_OP_IMORDER(O)     BOOST_PP_TUPLE_ELEM(9, 8, O)
 #
 # /* List of applicative unary operators. */
 # define VF_APPLICATIVE_UNARY_OPS \
@@ -108,18 +110,18 @@
    BOOST_PP_TUPLE_TO_LIST( \
       12, \
       ( \
-         ( *  , vf_mul           ,1 ,0 ,0 ,0 ,1, shape_op_mul), \
-         ( /  , vf_div           ,1 ,0 ,0 ,0 ,0, shape_op_div), \
-         ( +  , vf_add           ,1 ,0 ,0 ,1 ,1, shape_op_samerank), \
-         ( -  , vf_sub           ,1 ,0 ,0 ,1 ,0, shape_op_samerank), \
-         ( <  , vf_less          ,1 ,1 ,0 ,0 ,0, shape_op_id), \
-         ( <= , vf_less_equal    ,1 ,1 ,0 ,0 ,0, shape_op_id), \
-         ( >= , vf_greater_equal ,1 ,1 ,0 ,0 ,0, shape_op_id), \
-         ( >  , vf_greater       ,1 ,1 ,0 ,0 ,0, shape_op_id), \
-         ( == , vf_equal         ,1 ,1 ,0 ,0 ,0, shape_op_id), \
-         ( != , vf_not_equal     ,1 ,1 ,0 ,0 ,0, shape_op_id), \
-         ( && , vf_logical_and   ,1 ,1 ,0 ,0 ,0, shape_op_id), \
-         ( || , vf_logical_or    ,1 ,1 ,0 ,0, 0, shape_op_id) \
+         ( *  , vf_mul           ,1 ,0 ,0 ,0 ,1, shape_op_mul      ,2 ), \
+         ( /  , vf_div           ,1 ,0 ,0 ,0 ,0, shape_op_div      ,1 ), \
+         ( +  , vf_add           ,1 ,0 ,0 ,1 ,1, shape_op_samerank ,1 ), \
+         ( -  , vf_sub           ,1 ,0 ,0 ,1 ,0, shape_op_samerank ,1 ), \
+         ( <  , vf_less          ,1 ,1 ,0 ,0 ,0, shape_op_id       ,0 ), \
+         ( <= , vf_less_equal    ,1 ,1 ,0 ,0 ,0, shape_op_id       ,0 ), \
+         ( >= , vf_greater_equal ,1 ,1 ,0 ,0 ,0, shape_op_id       ,0 ), \
+         ( >  , vf_greater       ,1 ,1 ,0 ,0 ,0, shape_op_id       ,0 ), \
+         ( == , vf_equal         ,1 ,1 ,0 ,0 ,0, shape_op_id       ,0 ), \
+         ( != , vf_not_equal     ,1 ,1 ,0 ,0 ,0, shape_op_id       ,0 ), \
+         ( && , vf_logical_and   ,1 ,1 ,0 ,0 ,0, shape_op_id       ,0 ), \
+         ( || , vf_logical_or    ,1 ,1 ,0 ,0, 0, shape_op_id       ,0 )  \
       ) \
    ) \
    /**/
@@ -285,15 +287,25 @@
   BOOST_PP_IF(BOOST_PP_OR( BOOST_PP_NOT( VF_TYPE_IS_EXPR(L) ),     \
                            BOOST_PP_NOT( VF_TYPE_IS_EXPR(R) ) ),   \
               BOOST_PP_IDENTITY(<VF_TYPE_TYPE(L)),                 \
-              BOOST_PP_EMPTY)()                                   \
+              BOOST_PP_EMPTY)()                                    \
   BOOST_PP_IF(BOOST_PP_OR( BOOST_PP_NOT( VF_TYPE_IS_EXPR(L) ),     \
                            BOOST_PP_NOT( VF_TYPE_IS_EXPR(R) ) ),   \
-              BOOST_PP_COMMA,                                   \
-              BOOST_PP_EMPTY)()                                 \
+              BOOST_PP_COMMA,                                      \
+              BOOST_PP_EMPTY)()                                    \
   BOOST_PP_IF(BOOST_PP_OR( BOOST_PP_NOT( VF_TYPE_IS_EXPR(L) ),     \
                            BOOST_PP_NOT( VF_TYPE_IS_EXPR(R) ) ),   \
               BOOST_PP_IDENTITY(VF_TYPE_TYPE(R)>),                 \
-              BOOST_PP_EMPTY)()                                   \
+              BOOST_PP_EMPTY)()                                    \
+    /**/
+#
+# define VF_IM_ORDER(O,L,R)                                             \
+    BOOST_PP_IF( BOOST_PP_EQUAL( VF_OP_IMORDER(O) , 0) ,                \
+                 0 ,                                                    \
+                 BOOST_PP_IF(  BOOST_PP_EQUAL( VF_OP_IMORDER(O) , 1)  , \
+                               (VF_TYPE_TYPE(L)::imorder < VF_TYPE_TYPE(R)::imorder)*VF_TYPE_TYPE(R)::imorder \
+                               + (VF_TYPE_TYPE(L)::imorder >= VF_TYPE_TYPE(R)::imorder)*VF_TYPE_TYPE(L)::imorder , \
+                               VF_TYPE_TYPE(L)::imorder + VF_TYPE_TYPE(R)::imorder ) \
+                 )                                                      \
     /**/
 #
 #
@@ -348,6 +360,10 @@
         typedef VF_TYPE_TYPE( R ) R_type;                               \
                                                                         \
         static const size_type context = L_type::context | R_type::context; \
+                                                                        \
+        static const uint16_type imorder = VF_IM_ORDER(O,L,R) ;         \
+        static const bool imIsPoly = L_type::imIsPoly && R_type::imIsPoly; \
+                                                                        \
         template<typename Func>                                         \
             struct HasTestFunction                                      \
         {                                                               \

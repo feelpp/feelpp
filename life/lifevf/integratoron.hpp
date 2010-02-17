@@ -130,8 +130,8 @@ public:
     //@{
     static const size_type context = OnExpr::context|vm::POINT;
 
-
-
+    static const uint16_type imorder = OnExpr::imorder;
+    static const bool imIsPoly = OnExpr::imIsPoly;
 
     typedef typename boost::tuples::template element<1, ElementRange>::type element_iterator;
 
