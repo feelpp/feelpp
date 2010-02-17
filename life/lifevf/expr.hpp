@@ -77,6 +77,12 @@ public:
 
     static const size_type context = ExprT::context;
 
+    //integration order
+    static const uint16_type imorder = ExprT::imorder;
+    //the expression is a polynomial type?
+    static const bool imIsPoly = ExprT::imIsPoly;
+
+
     template<typename Func>
     struct HasTestFunction
     {
@@ -307,6 +313,9 @@ class PrintExpr
 public:
 
     static const size_type context = PrintExprT::context;
+
+    static const uint16_type imorder = PrintExprT::imorder;
+    static const bool imIsPoly = PrintExprT::imIsPoly;
 
     template<typename Func>
     struct HasTestFunction
@@ -553,6 +562,9 @@ public:
 
     static const size_type context = ExprT::context;
 
+    static const uint16_type imorder = ExprT::imorder;
+    static const bool imIsPoly = ExprT::imIsPoly;
+
     template<typename Func>
     struct HasTestFunction
     {
@@ -735,6 +747,9 @@ public:
 
     static const size_type context = ExprT::context;
 
+    static const uint16_type imorder = ExprT::imorder;
+    static const bool imIsPoly = ExprT::imIsPoly;
+
     template<typename Func>
     struct HasTestFunction
     {
@@ -915,6 +930,9 @@ public:
 
     static const size_type context = vm::JACOBIAN;
 
+    static const uint16_type imorder = 0;
+    static const bool imIsPoly = true;
+
     template<typename Func>
     struct HasTestFunction
     {
@@ -1089,6 +1107,10 @@ class One
 public:
     static const size_type context = 0;
 
+    static const uint16_type imorder = 0;
+    static const bool imIsPoly = true;
+
+
     template<typename Func>
     struct HasTestFunction
     {
@@ -1244,6 +1266,9 @@ public:
 
     static const size_type context = ExprT::context;
 
+    static const uint16_type imorder = ExprT::imorder;
+    static const bool imIsPoly = ExprT::imIsPoly;
+
     template<typename Func>
     struct HasTestFunction
     {
@@ -1372,6 +1397,9 @@ public:
 
     static const size_type context = ExprT::context;
 
+    static const uint16_type imorder = ExprT::imorder;
+    static const bool imIsPoly = ExprT::imIsPoly;
+
     template<typename Func>
     struct HasTestFunction
     {
@@ -1494,6 +1522,9 @@ class OpMax
 {
 public:
     static const size_type context = ExprT1::context | ExprT2::context;
+
+    static const uint16_type imorder = (ExprT1::imorder<ExprT2::imorder)*ExprT2::imorder + (ExprT1::imorder>=ExprT2::imorder)*ExprT1::imorder;
+    static const bool imIsPoly = ExprT1::imIsPoly && ExprT2::imIsPoly;
 
     template<typename Func>
     struct HasTestFunction
@@ -1675,6 +1706,9 @@ class OpMin
 public:
     static const size_type context = ExprT1::context | ExprT2::context;
 
+    static const uint16_type imorder = (ExprT1::imorder<ExprT2::imorder)*ExprT2::imorder + (ExprT1::imorder>=ExprT2::imorder)*ExprT1::imorder;
+    static const bool imIsPoly = ExprT1::imIsPoly && ExprT2::imIsPoly;
+
     template<typename Func>
     struct HasTestFunction
     {
@@ -1854,6 +1888,9 @@ class Pow
 public:
 
     static const size_type context = ExprT1::context|ExprT2::context;
+
+    static const uint16_type imorder = ExprT2::imorder*ExprT1::imorder;
+    static const bool imIsPoly = ExprT1::imIsPoly && ExprT2::imIsPoly;
 
     template<typename Func>
     struct HasTestFunction
@@ -2109,6 +2146,8 @@ public:
 
     static const size_type context = ExprT::context;
 
+    static const uint16_type imorder = ExprT::imorder;
+    static const bool imIsPoly = ExprT::imIsPoly;
     /** @name Typedefs
      */
     //@{
@@ -2270,6 +2309,9 @@ public:
     static const uint16_type nComponents1 = fe_type::nComponents1;
     static const uint16_type nComponents2 = fe_type::nComponents2;
     typedef std::map<size_type,std::vector<element_ptrtype> > basis_type;
+
+    static const uint16_type imorder = element_type::functionspace_type::basis_type::nOrder;
+    static const bool imIsPoly = true;
 
     template<typename Func>
     struct HasTestFunction

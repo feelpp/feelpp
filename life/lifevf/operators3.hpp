@@ -44,6 +44,9 @@ public:
 
     static const size_type context = LeftExprType::context|RightExprType::context;
 
+    static const uint16_type imorder = LeftExprType::imorder + RightExprType::imorder;
+    static const bool imIsPoly = LeftExprType::imIsPoly && RightExprType::imIsPoly;
+
     typedef LeftExprType left_expression_type;
     typedef RightExprType right_expression_type;
     typedef OpDot<LeftExprType, RightExprType> this_type;

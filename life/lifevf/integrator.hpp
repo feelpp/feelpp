@@ -77,6 +77,10 @@ public:
     //@{
 
     static const size_type context = Expr::context;
+
+    static const uint16_type imorder = 0;
+    static const bool imIsPoly = true;
+
     template<typename Func>
     struct HasTestFunction
     {
@@ -900,6 +904,33 @@ integrate( IntElts const& elts,
     typedef Integrator<IntElts, Im, ExprT> expr_t;
     return Expr<expr_t>( expr_t( elts, im, expr ) );
 }
+
+
+
+//Macro which get the good integration order
+# define VF_VALUE_OF_IM(O)                                              \
+    boost::mpl::if_< boost::mpl::bool_< O::imIsPoly > ,                 \
+                     typename boost::mpl::if_< boost::mpl::less_equal< boost::mpl::int_<O::imorder>, boost::mpl::int_<0> > , \
+                                               boost::mpl::int_<1>,     \
+                                               typename boost::mpl::if_< boost::mpl::greater< boost::mpl::int_<O::imorder>, boost::mpl::int_<19> > , \
+                                                                         boost::mpl::int_<19>, \
+                                                                         boost::mpl::int_<O::imorder> >::type >::type , \
+                     boost::mpl::int_<10> >::type::value               \
+    /**/
+
+/**
+ * integrate an expression \c expr over a set of convexes \c elts
+ * using an automatic integration rule .
+ */
+template<typename IntElts, typename ExprT>
+Expr<Integrator<IntElts, _Q< VF_VALUE_OF_IM(ExprT) >, ExprT> >
+integrate( IntElts const& elts,
+           ExprT const& expr )
+{
+    typedef Integrator<IntElts, _Q< VF_VALUE_OF_IM(ExprT) >, ExprT> expr_t;
+    return Expr<expr_t>( expr_t( elts, _Q< VF_VALUE_OF_IM(ExprT) >(), expr ) );
+}
+
 
 } // vf
 } // life

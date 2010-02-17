@@ -58,6 +58,9 @@ public:
     //@{
     static const size_type context = DiracExpr::context;
 
+    static const uint16_type imorder = DiracExpr::imorder;
+    static const bool imIsPoly = DiracExpr::imIsPoly;
+
     template<typename Func>
     struct HasTestFunction
     {

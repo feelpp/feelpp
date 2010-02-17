@@ -44,6 +44,9 @@ public:
 
     static const size_type context = vm::JACOBIAN;
 
+    static const uint16_type imorder = Element1::functionspace_type::basis_type::nOrder+Element2::functionspace_type::basis_type::nOrder;
+    static const bool imIsPoly = true;
+
     typedef Element1 test_element_type;
     typedef Element2 trial_element_type;
     typedef OpMass<test_element_type, trial_element_type> this_type;

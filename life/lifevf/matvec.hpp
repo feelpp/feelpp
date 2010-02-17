@@ -35,6 +35,10 @@
 #include <boost/mpl/bitwise.hpp>
 #include <boost/mpl/transform.hpp>
 
+#include <boost/mpl/plus.hpp>
+#include <boost/mpl/arithmetic.hpp>
+
+
 namespace Life
 {
 namespace fusion = boost::fusion;
@@ -70,6 +74,46 @@ struct GetContext
     {
         return lhs | rhs;
     }
+};
+struct GetImOrder
+{
+    template<typename Sig>
+    struct result;
+
+    template<typename Lhs, typename Rhs>
+    struct result<GetImOrder(Lhs,Rhs)>
+        : boost::remove_reference<Lhs>
+    {
+
+        typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
+        typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
+        typedef typename boost::mpl::max< boost::mpl::size_t<lhs_noref_type::imorder>, rhs_noref_type >::type type;
+    };
+
+    template<typename Lhs, typename Rhs>
+    Lhs operator()(const Lhs& lhs, const Rhs& rhs) const
+    {
+ 	}
+};
+struct GetImIsPoly
+{
+    template<typename Sig>
+    struct result;
+
+    template<typename Lhs, typename Rhs>
+    struct result<GetImIsPoly(Lhs,Rhs)>
+        : boost::remove_reference<Lhs>
+    {
+
+        typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
+        typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
+         typedef typename boost::mpl::and_< boost::mpl::size_t<lhs_noref_type::imIsPoly>, rhs_noref_type >::type type;
+    };
+
+    template<typename Lhs, typename Rhs>
+    Lhs operator()(const Lhs& lhs, const Rhs& rhs) const
+    {
+ 	}
 };
 template<typename Func>
 struct ExprHasTestFunction
@@ -467,6 +511,9 @@ public:
     static const size_type context = fusion::result_of::accumulate<VectorExpr,mpl::size_t<0>,GetContext>::type::value;
     //static const size_type context = fusion::accumulate( VectorExpr(),size_type(0),GetContext() );
 
+    static const uint16_type imorder = fusion::result_of::accumulate<VectorExpr,mpl::size_t<0>,GetImOrder>::type::value;
+    static const bool imIsPoly = fusion::result_of::accumulate<VectorExpr,mpl::size_t<0>,GetImIsPoly>::type::value;
+
     template<typename Func>
     struct HasTestFunction
     {
@@ -704,6 +751,9 @@ public:
 
     static const size_type context = fusion::result_of::accumulate<MatrixExpr,mpl::size_t<0>,GetContext>::type::value;
     //static const size_type context = fusion::accumulate( MatrixExpr(),size_type(0),GetContext() );
+
+    static const uint16_type imorder = fusion::result_of::accumulate<MatrixExpr,mpl::size_t<0>,GetImOrder>::type::value;
+    static const bool imIsPoly = fusion::result_of::accumulate<MatrixExpr,mpl::size_t<0>,GetImIsPoly>::type::value;
 
     template<typename Func>
     struct HasTestFunction

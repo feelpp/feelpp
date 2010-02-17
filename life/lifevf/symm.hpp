@@ -55,6 +55,9 @@ public:
     static const bool is_symmetric = true;
     static const int pattern = vm::SYMM;
 
+    static const uint16_type imorder = ExprT::imorder;
+    static const bool imIsPoly = ExprT::imIsPoly;
+
     template<typename Func>
     struct HasTestFunction
     {
@@ -248,6 +251,9 @@ public:
     static const size_type context = ExprT::context|vm::UNSYMM;
     static const bool is_unsymmetric = true;
     static const int pattern = vm::UNSYMM;
+
+    static const uint16_type imorder = ExprT::imorder;
+    static const bool imIsPoly = ExprT::imIsPoly;
 
     template<typename Func>
     struct HasTestFunction

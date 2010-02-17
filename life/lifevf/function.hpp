@@ -54,6 +54,9 @@ public:
 
     static const size_type context = vm::POINT;
 
+    static const uint16_type imorder = 10;
+    static const bool imIsPoly = false;
+
     template<typename Funct>
     struct HasTestFunction
     {
