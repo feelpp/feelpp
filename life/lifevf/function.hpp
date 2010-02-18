@@ -54,8 +54,8 @@ public:
 
     static const size_type context = vm::POINT;
 
-    static const uint16_type imorder = 10;
-    static const bool imIsPoly = false;
+    static const uint16_type imorder = Func::imorder;
+    static const bool imIsPoly = Func::imIsPoly;
 
     template<typename Funct>
     struct HasTestFunction
