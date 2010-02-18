@@ -1,4 +1,4 @@
-foreach(TEST bdf interpolation integration integration_ho integration_3d space geomap mixed)
+foreach(TEST bdf interpolation integration integration_ho integration_3d space geomap mixed auto_order_integrate)
 
   life_add_test( ${TEST} )
 
