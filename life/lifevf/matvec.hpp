@@ -107,7 +107,7 @@ struct GetImIsPoly
 
         typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
         typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
-         typedef typename boost::mpl::and_< boost::mpl::size_t<lhs_noref_type::imIsPoly>, rhs_noref_type >::type type;
+        typedef typename boost::mpl::and_< boost::mpl::bool_<lhs_noref_type::imIsPoly>, rhs_noref_type >::type type;
     };
 
     template<typename Lhs, typename Rhs>
@@ -512,7 +512,7 @@ public:
     //static const size_type context = fusion::accumulate( VectorExpr(),size_type(0),GetContext() );
 
     static const uint16_type imorder = fusion::result_of::accumulate<VectorExpr,mpl::size_t<0>,GetImOrder>::type::value;
-    static const bool imIsPoly = fusion::result_of::accumulate<VectorExpr,mpl::size_t<0>,GetImIsPoly>::type::value;
+    static const bool imIsPoly = fusion::result_of::accumulate<VectorExpr,mpl::bool_<true>,GetImIsPoly>::type::value;
 
     template<typename Func>
     struct HasTestFunction
@@ -753,7 +753,7 @@ public:
     //static const size_type context = fusion::accumulate( MatrixExpr(),size_type(0),GetContext() );
 
     static const uint16_type imorder = fusion::result_of::accumulate<MatrixExpr,mpl::size_t<0>,GetImOrder>::type::value;
-    static const bool imIsPoly = fusion::result_of::accumulate<MatrixExpr,mpl::size_t<0>,GetImIsPoly>::type::value;
+    static const bool imIsPoly = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<true>,GetImIsPoly>::type::value;
 
     template<typename Func>
     struct HasTestFunction
