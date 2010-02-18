@@ -18,7 +18,9 @@
  - fixed compilation if PETSc or Trilinos are not installed
  - added a matrix-vector multiplication interface to the class MatrixSparse
    which used the interface already available in the Vector class.
-
+*** lifevf
+ - the integration order is optional in the integrate(..)
+    
 
 * New in 0.9.20
  - minor change
