@@ -8,9 +8,13 @@
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
-* New in 0.9.21
+* New in 0.9.22
 ** Documentation
  - added a Random Notes chapter to the manual
+
+** Libraries
+*** lifecore and lifealg
+ - remove support for long double
 
 
 * New in 0.9.21
