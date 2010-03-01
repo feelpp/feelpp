@@ -162,14 +162,10 @@ $\mathbf{L}^2(\Omega)= \Big\{ \mathbf{v} \in [L^2(\Omega)]^d\Big\}$ that is to s
 
   \begin{lstlisting}
 /*basis*/
-typedef fem::Lagrange<Dim, Order, Vectorial,
-                      Continuous, double, Entity> basis_u_type; // velocity
-typedef fem::Lagrange<Dim, Order-1, Scalar,
-                      Continuous, double, Entity> basis_p_type; // pressure
-typedef fem::Lagrange<Dim, 0, Scalar,
-                      Continuous, double, Entity> basis_l_type; // multipliers
-typedef fusion::vector<basis_u_type,
-                       basis_p_type, basis_l_type> basis_type;
+typedef Lagrange<Order, Vectorial> basis_u_type; // velocity
+typedef Lagrange<Order-1, Scalar> basis_p_type; // pressure
+typedef Lagrange<0, Scalar> basis_l_type; // multipliers
+typedef bases<basis_u_type, basis_p_type, basis_l_type> basis_type;
 /*space: product of the velocity, pressure and multiplier spaces*/
 typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
 // ...
@@ -845,7 +841,7 @@ called \emph{Stabilisation Methods}, here some some examples:
   \end{remark}
 
 
-  \begin{lstlisting}
+\begin{lstlisting}
     // define the stabilisation coefficient expression
     AUTO( stab_coeff , ($\gamma_\beta$ abs(trans(N())*idv(beta)))*
                         vf::pow(hFace(),2.0));
@@ -859,8 +855,26 @@ called \emph{Stabilisation Methods}, here some some examples:
         _Q<OrderOfPolynomialToBeIntegratedExactely>,
         // stabilisation term
         stab_coeff*(trans(jumpt(gradt(u)))*jump(grad(v))));
-  \end{lstlisting}
+\end{lstlisting}
 
+\section{Interpolation}
+
+In order to interpolate a function defined on one domain to another domain, one
+can use the \lstinline{interpolate} function. The basis function of the image
+space must be of \lstinline{Lagrange} type.
+
+\begin{lstlisting}
+typedef bases<Lagrange<Order, Vectorial> > basis_type; // velocity
+typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+// ...
+space_ptrtype Xh = space_type::New( mesh1 );
+element_type u( Xh, "u" );
+space_ptrtype Yh = space_type::New( mesh2 );
+element_type v( Yh, "v" );
+
+// interpolate u on mesh2 and store the result in v
+interpolate( Yh, u, v );
+\end{lstlisting}
 
 %%% Local Variables:
 %%% coding: utf-8
