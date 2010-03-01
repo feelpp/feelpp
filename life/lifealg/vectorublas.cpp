@@ -48,6 +48,7 @@ struct fake<ublas::vector<double> >: public ublas::vector<double>
     {}
 };
 
+#if 0
 template<>
 struct fake<ublas::vector<long double> >: public ublas::vector<long double>
 {
@@ -56,7 +57,7 @@ struct fake<ublas::vector<long double> >: public ublas::vector<long double>
         ublas::vector<long double>( v )
     {}
 };
-
+#endif //  0
 template<>
 struct fake<ublas::vector_range<ublas::vector<double> > >: public ublas::vector_range<ublas::vector<double> >
 {
@@ -67,6 +68,7 @@ struct fake<ublas::vector_range<ublas::vector<double> > >: public ublas::vector_
 
 };
 
+#if 0
 template<>
 struct fake<ublas::vector_range<ublas::vector<long double> > >: public ublas::vector_range<ublas::vector<long double> >
 {
@@ -76,6 +78,7 @@ struct fake<ublas::vector_range<ublas::vector<long double> > >: public ublas::ve
     {}
 
 };
+#endif
 
 template<typename T>
 void resize( ublas::vector<T>& v, size_type s, bool preserve = true )
@@ -529,8 +532,8 @@ VectorUblas<T,Storage>::checkInvariant() const
 //
 template class VectorUblas<double,ublas::vector<double> >;
 template class VectorUblas<double,ublas::vector_range<ublas::vector<double> > >;
-template class VectorUblas<long double,ublas::vector<long double> >;
-template class VectorUblas<long double,ublas::vector_range<ublas::vector<long double> > >;
+//template class VectorUblas<long double,ublas::vector<long double> >;
+//template class VectorUblas<long double,ublas::vector_range<ublas::vector<long double> > >;
 
 
 } // Life

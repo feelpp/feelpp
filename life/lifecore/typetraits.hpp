@@ -259,7 +259,7 @@ const float  factor_from_eps_fl = 50;
 #define MPFR_MP_TYPE
 #endif // HAVE_MPFR
 
-#define LIFE_NUMERICAL_NTYPES BOOST_PP_ADD(6, BOOST_PP_ADD( QD_NTYPES, MPFR_NTYPES ) )
+#define LIFE_NUMERICAL_NTYPES BOOST_PP_ADD(4, BOOST_PP_ADD( QD_NTYPES, MPFR_NTYPES ) )
 # define LIFE_TRAITS_TYPES \
    BOOST_PP_TUPLE_TO_LIST( \
       LIFE_NUMERICAL_NTYPES, \
@@ -269,10 +269,8 @@ const float  factor_from_eps_fl = 50;
        MPFR_MP_TYPE                                                     \
        ( float      , float      , 1, 0, 7 , std::numeric_limits<float>::epsilon()*factor_from_eps_fl , 0 ), \
        ( double     , double     , 1, 0, 8 , std::numeric_limits<double>::epsilon()*factor_from_eps, 0 ), \
-       ( real96_type, real96_type, 1, 0, 9 , std::numeric_limits<real96_type>::epsilon()*factor_from_eps, 0 ), \
        ( std::complex<float>, float, 1, 1, 10, std::numeric_limits<float>::epsilon()*factor_from_eps_fl , 3 ), \
-       ( std::complex<double>, double, 1, 1, 11, std::numeric_limits<double>::epsilon()*factor_from_eps , 3 ), \
-       ( std::complex<real96_type>, real96_type, 1, 1, 12, std::numeric_limits<real96_type>::epsilon()*factor_from_eps , 3 ) \
+       ( std::complex<double>, double, 1, 1, 11, std::numeric_limits<double>::epsilon()*factor_from_eps , 3 ) \
       ) \
    ) \
    /**/

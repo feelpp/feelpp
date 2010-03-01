@@ -813,7 +813,7 @@ struct linalg_traits<Life::VectorUblas<T,Storage> >
 };
 
 template class linalg_traits<Life::VectorUblas<double> >;
-template class linalg_traits<Life::VectorUblas<long double> >;
+//template class linalg_traits<Life::VectorUblas<long double> >;
 //template class linalg_traits<ublas::vector<dd_real> >;
 
 template <typename T, typename Storage>

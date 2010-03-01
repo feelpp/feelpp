@@ -222,7 +222,7 @@ Vector<double>::compare (const Vector<double> &other_vector,
 
     return rvalue;
 }
-
+#if 0
 // Full specialization for long double datatypes
 template <>
  int
@@ -248,7 +248,7 @@ Vector<long double>::compare (const Vector<long double> &other_vector,
 
     return rvalue;
 }
-
+#endif
 #if 0
 
 // Full specialization for Complex datatypes
@@ -295,6 +295,6 @@ void Vector<T>::print(std::ostream& os) const
 
 
 template class Vector<double>;
-template class Vector<long double>;
+//template class Vector<long double>;
 
 }
