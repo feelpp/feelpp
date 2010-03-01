@@ -9,6 +9,11 @@
 #+LATEX_class: cparticle
 
 * New in 0.9.21
+** Documentation
+ - added a Random Notes chapter to the manual
+
+
+* New in 0.9.21
 ** Programming environment
  - fixes for armel and s90 port
  - update FindOpenTURNS.cmake script
