@@ -213,15 +213,9 @@ typedef boost::int32_t  int32_type;
 #endif // 0
 typedef detail::real<32>::type real32_type;
 typedef detail::real<64>::type real64_type;
-typedef detail::real<96>::type real96_type;
 
 BOOST_STATIC_ASSERT( ( boost::is_same<real32_type, float>::value ) );
 BOOST_STATIC_ASSERT( ( boost::is_same<real64_type, double>::value ) );
-
-// don't check for this, it fails on armel arch.
-#if 0
-BOOST_STATIC_ASSERT( ( boost::is_same<real96_type, long double>::value ) );
-#endif // 0
 
 /*! \namespace detail
   \internal
