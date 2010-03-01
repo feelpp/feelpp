@@ -563,15 +563,13 @@ KDTree::run_search( KDTree::Element * tree, uint iter) {
         }
 
         //compute the distance from the point of research with the border cutting kd-tree
-        node_type proj;
+        KDTree::node_type proj;
         switch (N)
             {
-            case 1: { proj=tn->ptmin; }
-            case 2: { proj=detail::projection2d(tn->ptmin, tn->ptmax,M_node_search); }
-            case 3: { proj=detail::projection3d(tn->ptmin, tn->ptmax,M_node_search); }
+            case 1: { proj=tn->ptmin;break; }
+            case 2: { proj=detail::projection2d(tn->ptmin, tn->ptmax,M_node_search);break; }
+            case 3: { proj=detail::projection3d(tn->ptmin, tn->ptmax,M_node_search);break; }
             }
-
-        proj.resize(N);//bugg which be fixed!
 
         //if the border is close enough runs on the other side of the graph
         if (detail::distanceNodes(proj,M_node_search)<(M_distanceMax)) {
