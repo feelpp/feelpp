@@ -354,7 +354,7 @@ Laplacian<Dim>::run()
 
     value_type nu = this->vm()["nu"].template as<double>();
 
-    //! assemble \f$\int_\Omega \nu \nabla u \cdot \nabla v\f$
+    //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
     /** \code */
     form2( Xh, Xh, D, _init=true ) =
         integrate( elements(mesh), _Q<2*Order>(),

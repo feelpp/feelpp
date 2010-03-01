@@ -143,7 +143,7 @@ void MyApp::run()
     /** \endcode */
 
     /**
-     * store all subsequent data files in a $HOME/life/doc/tutorial/myapp/
+     * store all subsequent data files in a HOME/life/doc/tutorial/myapp/
      */
     /** \code */
     //# marker8 #
@@ -154,7 +154,7 @@ void MyApp::run()
 
     /**
      * print some information that will be written in the log file in
-     * $HOME/life/doc/tutorial/myapp/myapp-1.0
+     * HOME/life/doc/tutorial/myapp/myapp-1.0
      */
     /** \code */
     Log() << "the value of dt is " << this->vm()["dt"].as<double>() << "\n";
