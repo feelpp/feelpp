@@ -119,6 +119,7 @@
 
 \usepackage{xcolor}
 \newtheorem{problem}{Problem}
+\newtheorem{remark}{Remark}
 
 
 
@@ -127,7 +128,7 @@
 
 \usepackage[colorlinks=true]{hyperref}
 \usepackage{filecontents,listings}
-\lstset{language=c++,showspaces=false,showstringspaces=false,captionpos=t,literate={>>}{\ensuremath{>>}}1}
+\lstset{language=c++,showspaces=false,showstringspaces=false,captionpos=t,literate={>>}{\ensuremath{>>}}1,mathescape}
 %\lstset{float}
 \lstset{basicstyle=\small\ttfamily}
 \lstset{lineskip=-2pt}
@@ -153,12 +154,49 @@ prod,element_prod, range, subrange, inner_prod,unite,elements,markedelements,mar
 \newcommand{\asin}{\ensuremath{\mathrm{asin}}\xspace}
 \newcommand{\atan}{\ensuremath{\mathrm{atan}}\xspace}
 %\newcommand{\tanh}{\ensuremath{\mathrm{tanh}}\xspace}
+\newcommand{\cc}{{\sl\sffamily C}\xspace}
 \newcommand{\cpp}{C{\hspace{-.3em}\vspace{-.2em}\tiny++}\xspace}
-\newcommand{\nel}{{\ensuremath{N_{\text{el}}}}}
 \newcommand{\polyP}[1]{\ensuremath{\mathbb{P}_{#1}}\xspace}
 \newcommand{\life}{Life\xspace}
 \newcommand{\cmake}{\texttt{cmake}\xspace}
 \newcommand{\ccmake}{\texttt{ccmake}\xspace}
+
+
+\newcommand{\In}{\operatorname{in}}
+\newcommand{\Out}{\operatorname{out}}
+
+\newcommand{\setR}[1]{{\ensuremath{\mathbb{R}^{#1}}}\xspace}
+\newcommand{\Om}[1]{{\ensuremath{\Omega^{#1}}}\xspace}
+\newcommand{\Omst}{{\ensuremath{\Omega^{\text{st}}}}\xspace}
+
+\newcommand{\aloc}[1]{{\ensuremath{a^{#1}_{\text{loc}}}}\xspace}
+\newcommand{\iloc}{{\ensuremath{i_{\text{loc}}}}\xspace}
+\newcommand{\jloc}{{\ensuremath{j_{\text{loc}}}}\xspace}
+\newcommand{\nldof}{{\ensuremath{N_{\text{localdof}}}}\xspace}
+\newcommand{\ngdof}{{\ensuremath{N_{\text{geomdof}}}}\xspace}
+\newcommand{\ndof}{{\ensuremath{N_{\text{dof}}}}\xspace}
+\newcommand{\nel}{{\ensuremath{N_{\text{el}}}}\xspace}
+\newcommand{\PS}[1]{{\ensuremath{\mathbb{P}_N}}\xspace}
+\newcommand{\QS}[1]{{\ensuremath{\mathbb{Q}_N}}\xspace}
+\newcommand{\GT}[1]{{\ensuremath{\mathcal{T}^{#1}}}\xspace}
+\newcommand{\GQ}[1]{{\ensuremath{\mathcal{Q}^{#1}}}\xspace}
+
+%% Macros
+\renewcommand{\div}{\operatorname{div}}
+\newcommand{\rot}{\operatorname{rot}}
+
+\newcommand{\meter}{\ensuremath{\mathrm{m}}\xspace}
+
+\newcommand{\PP}[1]{{\ensuremath{\mathbb{P}_{#1}}}\xspace}
+
+\newcommand{\pHat}{{\ensuremath{\Hat{p}}}\xspace}
+\newcommand{\xHat}{{\ensuremath{\Hat{x}}}\xspace}
+\newcommand{\wHat}{{\ensuremath{\Hat{w}}}\xspace}
+\newcommand{\THat}{{\ensuremath{\Hat{T}}}\xspace}
+\newcommand{\Pk}{\ensuremath{\mathbb{P}_k(K)}\xspace}
+\newcommand{\PN}{\ensuremath{\mathbb{P}_N(K)}\xspace}
+\newcommand{\Pkmun}{\ensuremath{\mathbb{P}_{k-1}(K)}\xspace}
+
 
 \InputIfFileExists{version}{}{\def\lifeversion{\texttt{x.y.z}}}
 \title{Life Manual\\
@@ -1696,6 +1734,7 @@ combustion.
 % after a failure.
 
 
+\include{randomnotes}
 \include{feel}
 \include{gfdl}
 
