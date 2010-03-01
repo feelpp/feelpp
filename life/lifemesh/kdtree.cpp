@@ -571,6 +571,8 @@ KDTree::run_search( KDTree::Element * tree, uint iter) {
             case 3: { proj=detail::projection3d(tn->ptmin, tn->ptmax,M_node_search); }
             }
 
+        proj.resize(N);//bugg which be fixed!
+
         //if the border is close enough runs on the other side of the graph
         if (detail::distanceNodes(proj,M_node_search)<(M_distanceMax)) {
             if (aGauche) {

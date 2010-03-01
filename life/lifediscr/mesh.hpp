@@ -249,6 +249,9 @@ public:
         return M_markername.find( marker )->second;
     }
 
+    struct Localization;
+    boost::shared_ptr<typename self_type::Localization> tool_localization() { return M_tool_localization;}
+
     //@}
 
     /** @name  Methods
@@ -416,31 +419,103 @@ public:
 
     }; // Inverse
 
-    struct Localisation
+    struct Localization
     {
 
+        typedef Localization localization_type;
+        typedef boost::shared_ptr<localization_type> localization_ptrtype;
+
+        typedef typename matrix_node<typename node_type::value_type>::type matrix_node_type;
+
+        // a node x => a list of id elt which contain the node x
         typedef boost::tuple<node_type, std::list<size_type> > node_elem_type;
 
-        Localisation(boost::shared_ptr<self_type> const& m) :
-            M_mesh ( m )
+        //map between element id and list of node described in the reference elt
+        typedef std::map<size_type, std::list<boost::tuple<size_type,node_type> > > container_search_type;
+        typedef typename container_search_type::const_iterator container_search_const_iterator_type;
+        typedef typename container_search_type::iterator container_search_iterator_type;
+
+        /**--------------------------------------------------------------
+         * Constructors
+         */
+        Localization() :
+            M_mesh (),
+            IsInit(false)
+
         {
-            init();
+            M_kd_tree.nbNearNeighbor(5);
+            M_resultAnalysis.clear();
         }
 
-        Localisation(Localisation const & L) :
+        Localization(boost::shared_ptr<self_type> m, bool init_b = true ) :
+            M_mesh ( m ),
+            IsInit(init_b)
+        {
+            if (!IsInit)
+                init();
+
+            M_kd_tree.nbNearNeighbor(5);
+            M_resultAnalysis.clear();
+        }
+
+        Localization(Localization const & L) :
             M_mesh(L.M_mesh),
             M_kd_tree(L.M_kd_tree),
-            M_geoGlob_Elts(L.M_geoGlob_Elts)
+            M_geoGlob_Elts(L.M_geoGlob_Elts),
+            IsInit(L.IsInit),
+            M_resultAnalysis(L.M_resultAnalysis)
         {}
 
-        /*
-         *research the element wich contains the node p
+        /*--------------------------------------------------------------
+         * Define the mesh whith or not init
+         */
+        void
+        setMesh(boost::shared_ptr<self_type> const& m,bool b=true)
+        {
+            M_mesh=m;
+            if (b)
+                init();
+            else IsInit=b;
+            M_resultAnalysis.clear();
+        }
+
+        /*--------------------------------------------------------------
+         * Run the init function if necessary
+         */
+        void updateForUse()
+        {
+            if (IsInit==false)
+                init();
+        }
+
+        /*--------------------------------------------------------------
+         * Access
+         */
+
+        bool isInit() { return IsInit;}
+
+        container_search_type const & result_analysis() { return M_resultAnalysis;}
+
+        //container_search_type & result_analysis() { return M_resultAnalysis;}
+
+        container_search_iterator_type result_analysis_begin() { return M_resultAnalysis.begin();}
+        container_search_iterator_type result_analysis_end() { return M_resultAnalysis.end();}
+
+
+        /*---------------------------------------------------------------
+         * Research the element wich contains the node p
          */
         boost::tuple<bool, size_type,node_type> searchElement(const node_type & p);
 
+        /*---------------------------------------------------------------
+         * Research the element wich contains the node p, forall p in the
+         * matrix_node_type m. The result is save by this object
+         */
+        void run_analysis(const matrix_node_type & m);
+
     private :
 
-        /*
+        /*---------------------------------------------------------------
          *initializes the kd tree and the map between node and list elements
          */
         void init();
@@ -451,6 +526,8 @@ public:
         KDTree M_kd_tree;
         //map between node and list elements
         std::map<size_type, node_elem_type > M_geoGlob_Elts;
+        bool IsInit;
+        container_search_type M_resultAnalysis;
     };
 
 
@@ -521,6 +598,11 @@ private:
      * marker name disctionnary ( std::string -> int )
      */
     std::map<std::string, int> M_markername;
+
+    /**
+     * tool for localize point in the mesh
+     */
+    boost::shared_ptr<Localization> M_tool_localization;
 };
 
 

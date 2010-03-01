@@ -1,3 +1,4 @@
+
 /* -*- mode: c++ -*-
 
   This file is part of the Life library
@@ -321,8 +322,11 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     _M_pc( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), \
                     _M_pcf(),                                           \
                     _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
-                    M_did_init( false )                                 \
+                    M_did_init( false ),                                \
+                    _M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh() ==expr.e().functionSpace()->mesh().get()) \
                         {                                               \
+                            if(!_M_same_mesh)                           \
+                                expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
                             /*update( geom );*/                         \
                         }                                               \
                 tensor( this_type const& expr,                          \
@@ -337,8 +341,11 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     _M_pc( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), \
                     _M_pcf(),                                           \
                     _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
-                    M_did_init( false )                                 \
+                    M_did_init( false ),                                \
+                    _M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh() ==expr.e().functionSpace()->mesh().get()) \
                         {                                               \
+                            if(!_M_same_mesh)                           \
+                                expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
                             /*update( geom );*/                         \
                         }                                               \
                 tensor( this_type const& expr,                          \
@@ -350,8 +357,11 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     _M_pc( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), \
                     _M_pcf(),                                           \
                     _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
-                    M_did_init( false )                                 \
+                    M_did_init( false ),                                \
+                    _M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh() ==expr.e().functionSpace()->mesh().get()) \
                         {                                               \
+                            if(!_M_same_mesh)                           \
+                                expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
                             /*update( geom ); */                        \
                             BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_CONSTRUCTOR, ()); \
                         }                                               \
@@ -405,7 +415,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 void update( Geo_t const& geom, mpl::bool_<true> )      \
                 {                                                       \
                     std::fill( _M_loc.data(), _M_loc.data()+_M_loc.num_elements(), value_type( 0 ) ); \
-                    _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), _M_pc, _M_loc ); \
+                    if (_M_same_mesh) \
+                        _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), _M_pc, _M_loc ); \
+                    else                                                \
+                        _M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),_interp)( *fusion::at_key<key_type>( geom ), _M_pc, _M_loc ); \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<false> )     \
                 {                                                       \
@@ -512,6 +525,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 array_type _M_loc;                                      \
                 /*typename element_type::BOOST_PP_CAT( VF_OPERATOR_TERM( O ), _type) _M_loc;*/ \
                 bool M_did_init;                                        \
+                bool _M_same_mesh;                                      \
             };                                                          \
                                                                         \
         protected:                                                      \

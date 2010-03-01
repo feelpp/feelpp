@@ -44,7 +44,8 @@ Mesh<Shape, T>::Mesh( std::string partitioner )
     :
     super(),
     _M_gm( new gm_type ),
-    M_part()
+    M_part(),
+    M_tool_localization(new Localization())
 {
     Debug( 4015 ) << "[Mesh::Mesh] setting partitioner to " << partitioner << "\n";
     this->setPartitioner( partitioner );
@@ -189,6 +190,8 @@ Mesh<Shape, T>::updateForUse()
             this->setUpdatedForUse( true );
 
             _M_gm->initCache( this );
+
+            M_tool_localization->setMesh( self_ptrtype(this),false );
         }
     Debug( 4015 ) << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
 }
@@ -966,39 +969,59 @@ Mesh<Shape, T>::Inverse::distribute( bool extrapolation )
 
 template<typename Shape, typename T>
 void
-Mesh<Shape, T>::Localisation::init()
+Mesh<Shape, T>::Localization::init()
 {
 
-  typename self_type::element_iterator el_it;
-  typename self_type::element_iterator el_en;
-  boost::tie( boost::tuples::ignore, el_it, el_en ) = Life::elements( *M_mesh );
+#if !defined( NDEBUG )
+    LIFE_ASSERT( isInit == false )
+        ( IsInit ).warn( "You have already initialized the tool of localization" );
+#endif
 
-  for( ; el_it != el_en; ++el_it ) {
-    for (int i=0;i<el_it->nPoints();++i) {
-      if (boost::get<1>( M_geoGlob_Elts[el_it->point(i).id()] ).size()==0) {
-	boost::get<0>( M_geoGlob_Elts[el_it->point(i).id()] ) = el_it->point(i).node();
+    typename self_type::element_iterator el_it;
+    typename self_type::element_iterator el_en;
+    boost::tie( boost::tuples::ignore, el_it, el_en ) = Life::elements( *M_mesh );
 
-	M_kd_tree.addPoint(el_it->point(i).node(),el_it->point(i).id() );
-      }
-      boost::get<1>( M_geoGlob_Elts[el_it->point(i).id()] ).push_back(el_it->id());
-    }
-  }
+    for( ; el_it != el_en; ++el_it )
+        {
+            for (int i=0;i<el_it->nPoints();++i)
+                {
+                    if (boost::get<1>( M_geoGlob_Elts[el_it->point(i).id()] ).size()==0)
+                        {
+                            boost::get<0>( M_geoGlob_Elts[el_it->point(i).id()] ) = el_it->point(i).node();
+                            M_kd_tree.addPoint(el_it->point(i).node(),el_it->point(i).id() );
+                        }
+                    boost::get<1>( M_geoGlob_Elts[el_it->point(i).id()] ).push_back(el_it->id());
+                }
+        }
+
+    IsInit=true;
 
 }
 
 template<typename Shape, typename T>
 boost::tuple<bool, size_type, typename Mesh<Shape, T>::node_type>
-Mesh<Shape, T>::Localisation::searchElement(const node_type & p)
+Mesh<Shape, T>::Localization::searchElement(const node_type & p)
 {
+
+#if !defined( NDEBUG )
+    LIFE_ASSERT( isInit == true )
+        ( IsInit ).warn( "You don't have initialized the tool of localization" );
+#endif
+
     //search for nearest points
     M_kd_tree.search(p);
 
     //get the results of research
     typename KDTree::points_search_type ptsNN = M_kd_tree.pointsNearNeighbor();
+
     typename KDTree::points_search_const_iterator itNN = ptsNN.begin();
     typename KDTree::points_search_const_iterator itNN_end = ptsNN.end();
 
-    //iterator on a list index element
+#if !defined( NDEBUG )
+    LIFE_ASSERT( std::distance(itNN,itNN_end)>0 ).error( "none Near Neighbor Points are find" );
+#endif
+
+    //iterator on a l(ist index element
     typename std::list<size_type>::iterator itL;
     typename std::list<size_type>::iterator itL_end;
 
@@ -1047,29 +1070,60 @@ Mesh<Shape, T>::Localisation::searchElement(const node_type & p)
     //research the element which contains the point p
     itLT=ListTri.begin();
     itLT_end=ListTri.end();
-    while (itLT != itLT_end && !isin  )  {
+    if(std::distance(itLT,itLT_end)==0) std::cout<<"\nListTri vide\n";
+    while (itLT != itLT_end && !isin  )
+        {
+            //get element with the id
+            elt= M_mesh->element(itLT->first );
 
-        //get element with the id
-        elt= M_mesh->element(itLT->first );
+            // get inverse geometric transformation
+            typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
 
-        // get inverse geometric transformation
-        typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
+            //apply the inverse geometric transformation for the point p
+            gic.setXReal( p);
+            __x_ref=gic.xRef();
 
-        //apply the inverse geometric transformation for the point p
-        gic.setXReal( p);
-        __x_ref=gic.xRef();
+            // the point is in the reference element ?
+            boost::tie( isin, dmin ) = refelem.isIn( gic.xRef() );
 
-        // the point is in the reference element ?
-        boost::tie( isin, dmin ) = refelem.isIn( gic.xRef() );
-
-        //if not inside, continue the research with an other element
-        if (!isin) ++itLT;
-    }
+            //if not inside, continue the research with an other element
+            if (!isin) ++itLT;
+        }
 
     if (itLT == itLT_end) return boost::make_tuple( false, 0, __x_ref );
     else return boost::make_tuple( true, itLT->first, __x_ref);
+
+
 }
 
+template<typename Shape, typename T>
+void
+Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m)
+{
+
+#if !defined( NDEBUG )
+    LIFE_ASSERT( isInit == true )
+        ( IsInit ).warn( "You don't have initialized the tool of localization" );
+#endif
+
+    bool find_x;
+    size_type __cv_id;
+    node_type __x_ref;
+
+    M_resultAnalysis.clear();
+
+    for (size_type i=0;i< m.size2();++i)
+        {
+            boost::tie( find_x, __cv_id, __x_ref ) = this->searchElement(ublas::column( m, i ));
+
+            if (find_x)
+                {
+                    M_resultAnalysis[__cv_id].push_back( boost::make_tuple(i,__x_ref) );
+                }
+            //else { std::cout<<"\nProbleme de Localisation : "<<ublas::column( m, i )<<"\n";
+            // this->M_kd_tree.showResultSearch();
+        }
+}
 
 }
 
