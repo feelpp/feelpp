@@ -1213,6 +1213,10 @@ public:
             id_( context, pc, v );
         }
 
+        template<typename Context_t>
+        void
+        id_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+
         gmc_ptrtype geomapPtr( geoelement_type const& elt ) const
         {
             gm_ptrtype __gm = functionSpace()->gm();
@@ -1352,6 +1356,7 @@ public:
             v.resize( gradExtents(  *gmc ) );
             grad_( *gmc, *pcPtr( elt ), v );
         }
+
         /**
          * interpolate the function derivative in the first component
          * at a set of points(defined in the reference element) in an
@@ -1374,6 +1379,10 @@ public:
         {
             grad_( context, pc, v );
         }
+
+        template<typename Context_t>
+        void
+        grad_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
 
         /**
          * interpolate the gradient of the function at node (real coordinate) x
@@ -2238,7 +2247,6 @@ private:
     proc_dist_map_type procDistMap;
 
 
-
 }; // FunctionSpace
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -2350,6 +2358,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     procDistMap = fusion::accumulate( _M_functionspaces,
                                       emptyMap,
                                       detail::searchIndicesBySpace<proc_dist_map_type>() );
+
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -2734,6 +2743,81 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
+template<typename Context_t>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+{
+
+    //new context for the interpolation
+    typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
+    typedef boost::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+    typedef typename Context_t::gm_type::precompute_type geopc_interp_type;
+    typedef typename Context_t::gm_type::precompute_ptrtype geopc_interp_ptrtype;
+
+    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
+    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+
+    typedef typename matrix_node<value_type>::type matrix_node_type;
+
+    // precompute the geomap
+    geopc_interp_ptrtype __dgeopc( new geopc_interp_type(  context.geometricMapping(), context.xRefs() ) );
+    // precompute the geomap for an element
+    gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),  __dgeopc ) );
+
+
+    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+
+    __loc->run_analysis(__c_interp->xReal());
+    // get the result
+    analysis_iterator_type it = __loc->result_analysis_begin();
+    analysis_iterator_type it_end = __loc->result_analysis_end();
+
+    gm_ptrtype __gm = this->functionSpace()->gm();
+
+    typename std::list<boost::tuple<size_type,node_type> >::iterator itL,itL_end;
+
+    size_type nbPtsElt=it->second.size();
+    uint nbCoord=boost::get<1>(*(it->second.begin())).size();
+    matrix_node_type pts( nbCoord, nbPtsElt );
+    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+    pc_type __pc( this->functionSpace()->fe(), pts );
+
+    for ( ;it!=it_end;++it)
+        {
+            nbPtsElt = it->second.size();
+
+            //parcours de la liste de pt de l'element
+            itL=it->second.begin();
+            itL_end=it->second.end();
+
+            pts= matrix_node_type( nbCoord, nbPtsElt );
+            for (size_type i=0;i<nbPtsElt;++i,++itL)
+                ublas::column( pts, i ) = boost::get<1>(*itL);
+
+            __geopc->update( pts );
+
+            gmc_ptrtype __c( new gmc_type( __gm,
+                                           this->functionSpace()->mesh()->element( it->first ),
+                                           __geopc ) );
+
+            __pc.update( pts );
+
+            id_type __id( this->id( *__c, __pc ));
+
+            for( typename array_type::index i = 0; i < nComponents1; ++i )
+                {
+                    itL=it->second.begin();
+                    for (uint k=0;k<nbPtsElt;++k,++itL){
+                        v[i][0][boost::get<0>(*itL)] =  __id(i,0,k);
+                    }
+                }
+        }
+
+}
+
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
@@ -2835,6 +2919,83 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
             }
 #endif
 }
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename Context_t>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+{
+
+    //new context for the interpolation
+    typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT|vm::JACOBIAN|vm::KB, typename Context_t::element_type> gmc_interp_type;
+    typedef boost::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+    typedef typename Context_t::gm_type::precompute_type geopc_interp_type;
+    typedef typename Context_t::gm_type::precompute_ptrtype geopc_interp_ptrtype;
+
+    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
+    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+
+    typedef typename matrix_node<value_type>::type matrix_node_type;
+
+    // precompute the geomap
+    geopc_interp_ptrtype __dgeopc( new geopc_interp_type(  context.geometricMapping(), context.xRefs() ) );
+    // precompute the geomap for an element
+    gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),  __dgeopc ) );
+
+
+    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+
+    __loc->run_analysis(__c_interp->xReal());
+    // get the result
+    analysis_iterator_type it = __loc->result_analysis_begin();
+    analysis_iterator_type it_end = __loc->result_analysis_end();
+
+    gm_ptrtype __gm = this->functionSpace()->gm();
+
+    typename std::list<boost::tuple<size_type,node_type> >::iterator itL,itL_end;
+
+    size_type nbPtsElt=it->second.size();
+    uint nbCoord=boost::get<1>(*(it->second.begin())).size();
+    matrix_node_type pts( nbCoord, nbPtsElt );
+    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+    pc_type __pc( this->functionSpace()->fe(), pts );
+
+    for ( ;it!=it_end;++it)
+        {
+            nbPtsElt = it->second.size();
+
+            //parcours de la liste de pt de l'element
+            itL=it->second.begin();
+            itL_end=it->second.end();
+
+            pts= matrix_node_type( nbCoord, nbPtsElt );
+            for (size_type i=0;i<nbPtsElt;++i,++itL)
+                ublas::column( pts, i ) = boost::get<1>(*itL);
+
+            __geopc->update( pts );
+
+            gmc_ptrtype __c( new gmc_type( __gm,
+                                           this->functionSpace()->mesh()->element( it->first ),
+                                           __geopc ) );
+
+            __pc.update( pts );
+            grad_type __grad( this->grad( *__c, __pc ));
+
+            for( typename array_type::index i = 0; i < nComponents1; ++i )
+                for( uint j = 0; j < nRealDim; ++j )
+                    {
+                        itL=it->second.begin();
+                        for (uint k=0;k<nbPtsElt;++k,++itL){
+                            v[i][j][boost::get<0>(*itL)] = __grad(i,j,k);
+                        }
+                    }
+
+        }
+
+}
+
+
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename ContextType>
