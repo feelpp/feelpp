@@ -1519,6 +1519,18 @@ public:
             d_( 2, context, pc, v );
         }
 
+        template<typename Context_t>
+        void
+        dx_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+
+        template<typename Context_t>
+        void
+        dy_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+
+        template<typename Context_t>
+        void
+        dz_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+
 
         //@}
 
@@ -1552,6 +1564,10 @@ public:
         }
         template<typename ContextType>
         void div_( ContextType const & context, pc_type const& pc, array_type& v ) const;
+
+        template<typename Context_t>
+        void
+        div_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
 
         typedef detail::Curl<value_type,-1> curl_type;
         typedef detail::Curl<value_type,0> curlx_type;
@@ -1625,6 +1641,20 @@ public:
             BOOST_STATIC_ASSERT( rank == 1 );
             curl_( context, pc, v );
         }
+
+        template<typename Context_t>
+        void
+        curlx_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+
+        template<typename Context_t>
+        void
+        curly_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+
+        template<typename Context_t>
+        void
+        curlz_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+
+
         template<typename ContextType>
         boost::array<typename array_type::index, 3>
         hessExtents( ContextType const & context ) const
@@ -1655,6 +1685,10 @@ public:
 
         template<typename ContextType>
         void hess_( ContextType const & context, pc_type const& pc, array_type& v, mpl::int_<0> ) const;
+
+        template<typename Context_t>
+        void
+        hess_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
 
         typedef detail::H<value_type> hess_type;
 
@@ -3033,6 +3067,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
                 }
         }
 }
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename Context_t>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+{
+#warning TOFILL
+}
+
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename ContextType>
@@ -3090,6 +3134,33 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
+template<typename Context_t>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlx_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+{
+#warning TOFILL
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename Context_t>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curly_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+{
+#warning TOFILL
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename Context_t>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlz_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+{
+#warning TOFILL
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
@@ -3126,6 +3197,32 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const
         }
 }
 
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename Context_t>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dx_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+{
+#warning TOFILL
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename Context_t>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dy_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+{
+#warning TOFILL
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename Context_t>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dz_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+{
+#warning TOFILL
+}
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
@@ -3206,6 +3303,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
         }
 
 }
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename Context_t>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+{
+#warning TOFILL
+}
+
 template<typename T>
 std::ostream&
 operator<<( std::ostream& os, detail::ID<T> const& id )
