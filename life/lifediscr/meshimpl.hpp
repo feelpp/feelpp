@@ -973,7 +973,7 @@ Mesh<Shape, T>::Localization::init()
 {
 
 #if !defined( NDEBUG )
-    LIFE_ASSERT( isInit == false )
+    LIFE_ASSERT( IsInit == false )
         ( IsInit ).warn( "You have already initialized the tool of localization" );
 #endif
 
@@ -1004,7 +1004,7 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
 {
 
 #if !defined( NDEBUG )
-    LIFE_ASSERT( isInit == true )
+    LIFE_ASSERT( IsInit == true )
         ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
 
@@ -1102,7 +1102,7 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m)
 {
 
 #if !defined( NDEBUG )
-    LIFE_ASSERT( isInit == true )
+    LIFE_ASSERT( IsInit == true )
         ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
 
