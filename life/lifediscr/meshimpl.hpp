@@ -1071,6 +1071,10 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
     itLT=ListTri.begin();
     itLT_end=ListTri.end();
     if(std::distance(itLT,itLT_end)==0) std::cout<<"\nListTri vide\n";
+#if !defined( NDEBUG )
+    LIFE_ASSERT( std::distance(itLT,itLT_end)>0 ).error( " problem in list localization : is empty" );
+#endif
+
     while (itLT != itLT_end && !isin  )
         {
             //get element with the id
@@ -1098,6 +1102,7 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
 
 template<typename Shape, typename T>
 void
+
 Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m)
 {
 
@@ -1120,8 +1125,13 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m)
                 {
                     M_resultAnalysis[__cv_id].push_back( boost::make_tuple(i,__x_ref) );
                 }
-            //else { std::cout<<"\nProbleme de Localisation : "<<ublas::column( m, i )<<"\n";
-            // this->M_kd_tree.showResultSearch();
+#if !defined( NDEBUG )
+            LIFE_ASSERT( false )
+                ( false ).warn( "problem localization" );
+            //std::cout<<"\nProbleme de Localisation : "<<ublas::column( m, i )<<"\n";
+            //this->M_kd_tree.showResultSearch();}
+#endif
+
         }
 }
 

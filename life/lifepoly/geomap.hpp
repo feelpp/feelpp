@@ -1167,8 +1167,12 @@ public:
     /**
      * \return the precompute type
      */
-    precompute_ptrtype const& pc() { return _M_pc; }
+    precompute_ptrtype const& pc() const { return *_M_pc; }
 
+    /**
+     * \return the precompute type for the faces
+     */
+    std::vector<std::map<permutation_type, precompute_ptrtype> > const & pcFaces() const { return _M_pc_faces;}
     //@}
 
     /** @name  Mutators

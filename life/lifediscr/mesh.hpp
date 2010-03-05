@@ -430,8 +430,11 @@ public:
         // a node x => a list of id elt which contain the node x
         typedef boost::tuple<node_type, std::list<size_type> > node_elem_type;
 
+        typedef typename std::list<boost::tuple<size_type,node_type> > container_output_type;
+        typedef typename std::list<boost::tuple<size_type,node_type> >::iterator container_output_iterator_type;
         //map between element id and list of node described in the reference elt
-        typedef std::map<size_type, std::list<boost::tuple<size_type,node_type> > > container_search_type;
+        //typedef std::map<size_type, std::list<boost::tuple<size_type,node_type> > > container_search_type
+        typedef std::map<size_type, container_output_type > container_search_type;
         typedef typename container_search_type::const_iterator container_search_const_iterator_type;
         typedef typename container_search_type::iterator container_search_iterator_type;
 
@@ -443,7 +446,7 @@ public:
             IsInit(false)
 
         {
-            M_kd_tree.nbNearNeighbor(5);
+            M_kd_tree.nbNearNeighbor(15);
             M_resultAnalysis.clear();
         }
 
@@ -454,7 +457,7 @@ public:
             if (!IsInit)
                 init();
 
-            M_kd_tree.nbNearNeighbor(5);
+            M_kd_tree.nbNearNeighbor(15);
             M_resultAnalysis.clear();
         }
 

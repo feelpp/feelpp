@@ -270,8 +270,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 typedef typename mpl::if_<mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>, \
                     mpl::identity<mpl::int_<0> >,                       \
                     mpl::identity<typename fusion::result_of::value_at_key<map_basis_context_type,basis_context_key_type>::type::pointer > >::type::type basis_context_ptrtype; \
-                                                                        \
                 typedef typename element_type::value_type value_type;   \
+                typedef typename matrix_node<value_type>::type matrix_node_type; \
                 typedef boost::multi_array<value_type,3> array_type;    \
                                                                         \
                 typedef value_type result_type;                         \
@@ -410,15 +410,22 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                         \
                     uint16_type face = fusion::at_key<key_type>( geom )->faceId(); \
                     uint16_type perm = fusion::at_key<key_type>( geom )->permutation().value(); \
-                    _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), *_M_pcf[face][perm], _M_loc ); \
+                    if (_M_same_mesh)                                   \
+                        _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), *_M_pcf[face][perm], _M_loc ); \
+                    else  {                                             \
+                        matrix_node_type __ptsreal = _M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), *_M_pcf[face][perm], mpl::int_<2>()); \
+                        _M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( *fusion::at_key<key_type>( geom ), *_M_pcf[face][perm], __ptsreal, _M_loc ); \
+                    }                                                   \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<true> )      \
                 {                                                       \
                     std::fill( _M_loc.data(), _M_loc.data()+_M_loc.num_elements(), value_type( 0 ) ); \
                     if (_M_same_mesh) \
                         _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), _M_pc, _M_loc ); \
-                    else                                                \
-                        _M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),_interp)( *fusion::at_key<key_type>( geom ), _M_pc, _M_loc ); \
+                    else {                                              \
+                        matrix_node_type __ptsreal = _M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<1>()); \
+                        _M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( *fusion::at_key<key_type>( geom ), _M_pc, __ptsreal, _M_loc ); \
+                    }                                                   \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<false> )     \
                 {                                                       \

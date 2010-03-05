@@ -1213,9 +1213,53 @@ public:
             id_( context, pc, v );
         }
 
+
+
         template<typename Context_t>
         void
-        id_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+        idInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
+
+        /*
+         * Get the reals points matrix in a context
+         * 1 : Element
+         */
+        template<typename Context_t>
+        matrix_node_type
+        ptsInContext( Context_t const & context, mpl::int_<1>) const
+        {
+            //new context for evaluate the points
+            typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
+            typedef boost::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+
+            gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),  context.pc() ) );
+
+            return __c_interp->xReal();
+        }
+
+        /*
+         * Get the real point matrix in a context
+         * 2 : Face
+         */
+        template<typename Context_t>
+        matrix_node_type
+        ptsInContext( Context_t const & context,  mpl::int_<2> ) const
+        {
+            //new context for the interpolation
+            typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
+            typedef boost::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+
+            typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::permutation_type permutation_type;
+            typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::precompute_ptrtype precompute_ptrtype;
+
+            //not good because ?
+            //gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),context.pcFaces(), context.faceId()) );
+            //good with this
+            std::vector<std::map<permutation_type, precompute_ptrtype> > __geo_pcfaces = context.pcFaces();
+            gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(), __geo_pcfaces , context.faceId()) );
+
+            return __c_interp->xReal();
+        }
+
 
         gmc_ptrtype geomapPtr( geoelement_type const& elt ) const
         {
@@ -1382,7 +1426,7 @@ public:
 
         template<typename Context_t>
         void
-        grad_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+        gradInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const;
 
         /**
          * interpolate the gradient of the function at node (real coordinate) x
@@ -1521,15 +1565,15 @@ public:
 
         template<typename Context_t>
         void
-        dx_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+        dxInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const;
 
         template<typename Context_t>
         void
-        dy_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+        dyInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const;
 
         template<typename Context_t>
         void
-        dz_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+        dzInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const;
 
 
         //@}
@@ -1567,7 +1611,7 @@ public:
 
         template<typename Context_t>
         void
-        div_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+        divInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const;
 
         typedef detail::Curl<value_type,-1> curl_type;
         typedef detail::Curl<value_type,0> curlx_type;
@@ -1593,6 +1637,13 @@ public:
             BOOST_STATIC_ASSERT( rank == 1 );
             curl_( context, pc, v );
         }
+
+        template<typename Context_t>
+        void
+        curlInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const
+        {
+        }
+
         template<typename ContextType>
         void curl_( ContextType const & context, pc_type const& pc, array_type& v ) const;
 
@@ -1644,15 +1695,15 @@ public:
 
         template<typename Context_t>
         void
-        curlx_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+        curlxInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
 
         template<typename Context_t>
         void
-        curly_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+        curlyInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
 
         template<typename Context_t>
         void
-        curlz_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+        curlzInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
 
 
         template<typename ContextType>
@@ -1681,19 +1732,22 @@ public:
          * incorporate the pseudo-inverse of the jacobian for the derivative
          */
         template<typename ContextType>
-        void hess_( ContextType const & context, pc_type const& pc, array_type& v ) const;
+        void
+        hess_( ContextType const & context, pc_type const& pc, array_type& v ) const;
 
         template<typename ContextType>
-        void hess_( ContextType const & context, pc_type const& pc, array_type& v, mpl::int_<0> ) const;
+        void
+        hess_( ContextType const & context, pc_type const& pc, array_type& v, mpl::int_<0> ) const;
 
         template<typename Context_t>
         void
-        hess_interp( Context_t const & context, pc_type const& pc, array_type& v ) const;
+        hessInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
 
         typedef detail::H<value_type> hess_type;
 
         template<typename ContextType>
-        void hess( ContextType const & context, pc_type const& pc, array_type& v ) const
+        void
+        hess( ContextType const & context, pc_type const& pc, array_type& v ) const
         {
             hess_( context, pc, v );
         }
@@ -2779,40 +2833,32 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const
 {
-
-    //new context for the interpolation
-    typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
-    typedef boost::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
-    typedef typename Context_t::gm_type::precompute_type geopc_interp_type;
-    typedef typename Context_t::gm_type::precompute_ptrtype geopc_interp_ptrtype;
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
     typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
 
-    typedef typename matrix_node<value_type>::type matrix_node_type;
-
-    // precompute the geomap
-    geopc_interp_ptrtype __dgeopc( new geopc_interp_type(  context.geometricMapping(), context.xRefs() ) );
-    // precompute the geomap for an element
-    gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),  __dgeopc ) );
-
-
+    // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-
-    __loc->run_analysis(__c_interp->xReal());
-    // get the result
+    __loc->run_analysis(__ptsReal);
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
+    analysis_output_iterator_type itL,itL_end;
 
+    //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
 
-    typename std::list<boost::tuple<size_type,node_type> >::iterator itL,itL_end;
+    //if analysis map is empty : no interpolation
+    if (it==it_end) return;
 
+    //alocate a point matrix
     size_type nbPtsElt=it->second.size();
     uint nbCoord=boost::get<1>(*(it->second.begin())).size();
     matrix_node_type pts( nbCoord, nbPtsElt );
+
+    //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_type __pc( this->functionSpace()->fe(), pts );
 
@@ -2820,24 +2866,28 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_interp( Context_t const &
         {
             nbPtsElt = it->second.size();
 
-            //parcours de la liste de pt de l'element
+            //iterate in the list pt for a element
             itL=it->second.begin();
             itL_end=it->second.end();
 
+            //compute a point matrix with the list of point
             pts= matrix_node_type( nbCoord, nbPtsElt );
             for (size_type i=0;i<nbPtsElt;++i,++itL)
                 ublas::column( pts, i ) = boost::get<1>(*itL);
 
+            //update geomap context
             __geopc->update( pts );
 
             gmc_ptrtype __c( new gmc_type( __gm,
                                            this->functionSpace()->mesh()->element( it->first ),
                                            __geopc ) );
-
+            //update precompute of basis functions
             __pc.update( pts );
 
+            //evaluate element for these points
             id_type __id( this->id( *__c, __pc ));
 
+            //update the output data
             for( typename array_type::index i = 0; i < nComponents1; ++i )
                 {
                     itL=it->second.begin();
@@ -2848,7 +2898,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_interp( Context_t const &
         }
 
 }
-
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
@@ -2958,36 +3007,23 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const
 {
-
-    //new context for the interpolation
-    typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT|vm::JACOBIAN|vm::KB, typename Context_t::element_type> gmc_interp_type;
-    typedef boost::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
-    typedef typename Context_t::gm_type::precompute_type geopc_interp_type;
-    typedef typename Context_t::gm_type::precompute_ptrtype geopc_interp_ptrtype;
-
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
     typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
 
-    typedef typename matrix_node<value_type>::type matrix_node_type;
-
-    // precompute the geomap
-    geopc_interp_ptrtype __dgeopc( new geopc_interp_type(  context.geometricMapping(), context.xRefs() ) );
-    // precompute the geomap for an element
-    gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),  __dgeopc ) );
-
-
+    // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-
-    __loc->run_analysis(__c_interp->xReal());
-    // get the result
+    __loc->run_analysis(__ptsReal);
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
+    analysis_output_iterator_type itL,itL_end;
 
     gm_ptrtype __gm = this->functionSpace()->gm();
 
-    typename std::list<boost::tuple<size_type,node_type> >::iterator itL,itL_end;
+    //if analysis map is empty : no interpolation
+    if (it==it_end) return;
 
     size_type nbPtsElt=it->second.size();
     uint nbCoord=boost::get<1>(*(it->second.begin())).size();
@@ -2999,23 +3035,29 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_interp( Context_t const
         {
             nbPtsElt = it->second.size();
 
-            //parcours de la liste de pt de l'element
+            //iterate in the list pt for a element
             itL=it->second.begin();
             itL_end=it->second.end();
 
+            //compute a point matrix with the list of point
             pts= matrix_node_type( nbCoord, nbPtsElt );
             for (size_type i=0;i<nbPtsElt;++i,++itL)
                 ublas::column( pts, i ) = boost::get<1>(*itL);
 
+            //update geomap context
             __geopc->update( pts );
 
             gmc_ptrtype __c( new gmc_type( __gm,
                                            this->functionSpace()->mesh()->element( it->first ),
                                            __geopc ) );
 
+            //update precompute of basis functions
             __pc.update( pts );
+
+            //evaluate element for these points
             grad_type __grad( this->grad( *__c, __pc ));
 
+            //update the output data
             for( typename array_type::index i = 0; i < nComponents1; ++i )
                 for( uint j = 0; j < nRealDim; ++j )
                     {
@@ -3072,7 +3114,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const
 {
 #warning TOFILL
 }
@@ -3136,7 +3178,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlx_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
 {
 #warning TOFILL
 }
@@ -3145,7 +3187,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curly_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
 {
 #warning TOFILL
 }
@@ -3154,7 +3196,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlz_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
 {
 #warning TOFILL
 }
@@ -3201,7 +3243,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dx_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
 {
 #warning TOFILL
 }
@@ -3210,7 +3252,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dy_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
 {
 #warning TOFILL
 }
@@ -3219,7 +3261,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dz_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
 {
 #warning TOFILL
 }
@@ -3308,7 +3350,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_interp( Context_t const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const
 {
 #warning TOFILL
 }
