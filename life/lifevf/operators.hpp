@@ -413,7 +413,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     if (_M_same_mesh)                                   \
                         _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), *_M_pcf[face][perm], _M_loc ); \
                     else  {                                             \
-                        matrix_node_type __ptsreal = _M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), *_M_pcf[face][perm], mpl::int_<2>()); \
+                        matrix_node_type __ptsreal = _M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<2>()); \
                         _M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( *fusion::at_key<key_type>( geom ), *_M_pcf[face][perm], __ptsreal, _M_loc ); \
                     }                                                   \
                 }                                                       \
