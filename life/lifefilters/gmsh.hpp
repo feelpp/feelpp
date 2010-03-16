@@ -110,12 +110,14 @@ public:
     Gmsh()
         :
         _M_order( GMSH_ORDER_ONE ),
-        M_version( LIFE_GMSH_FORMAT_VERSION )
+        M_version( LIFE_GMSH_FORMAT_VERSION ),
+        M_addmidpoint( true )
         {}
     Gmsh( Gmsh const & __g )
         :
         _M_order( __g._M_order ),
-        M_version( __g.M_version )
+        M_version( __g.M_version ),
+        M_addmidpoint( __g.M_addmidpoint )
         {}
     ~Gmsh()
         {}
@@ -139,6 +141,7 @@ public:
             {
                 _M_order = __g._M_order;
                 M_version = __g.M_version;
+                M_addmidpoint = __g.M_addmidpoint;
             }
             return *this;
         }
@@ -167,6 +170,11 @@ public:
      * \return the description string of the mesh (i.e. in the geo format)
      */
     virtual std::string description() const { return std::string();};
+
+    /**
+     * add the mid point of the domain
+     */
+    bool addMidPoint() const { return M_addmidpoint; }
 
     //@}
 
@@ -224,6 +232,12 @@ public:
     virtual void setY( std::pair<double,double> const& y ) {};
     virtual void setZ( std::pair<double,double> const& z ) {};
 
+    /**
+     * if add is true, set M_addmidpoint to true, false otherwise
+     */
+    void setAddMidPoint( bool add ) { M_addmidpoint = add; }
+
+
     //@}
 
     /** \name  Methods
@@ -272,6 +286,8 @@ private:
 private:
     GMSH_ORDER _M_order;
     std::string M_version;
+    bool M_addmidpoint;
+
 };
 
 ///! \typedef gmsh_type Gmsh
@@ -347,6 +363,7 @@ BOOST_PARAMETER_FUNCTION(
                           (order,          *(boost::is_integral<mpl::_>)      , 1)
                           (h,              *(boost::is_floating_point<mpl::_>), double(0.1) )
                           (convex,         *(boost::is_convertible<mpl::_,std::string>), "simplex")
+                          (addmidpoint,    *(boost::is_integral<mpl::_>), true )
                           (xmin,           *(boost::is_floating_point<mpl::_>), 0. )
                           (xmax,           *(boost::is_floating_point<mpl::_>), 1 )
                           (ymin,           *(boost::is_floating_point<mpl::_>), 0. )
@@ -357,6 +374,7 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, dim, order, convex );
 
     gmsh_ptr->setCharacteristicLength( h );
+    gmsh_ptr->setAddMidPoint( addmidpoint );
     gmsh_ptr->setX( std::make_pair( xmin, xmax ) );
     if ( dim >= 2 )
         gmsh_ptr->setY( std::make_pair( ymin, ymax ) );
