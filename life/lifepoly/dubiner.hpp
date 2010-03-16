@@ -173,7 +173,7 @@ public:
     static const uint16_type nOrder = traits_type::nOrder;
     static const uint16_type nConvexOrderDiff = traits_type::nConvexOrderDiff;
     static const bool is_normalized = traits_type::is_normalized;
-
+    static const bool isTransformationEquivalent = true;
     /** @name Typedefs
      */
     //@{

@@ -188,11 +188,13 @@ public:
             // update matrix associated with functionals applied to the
             // basis of the function space
             _M_mat = ublas::zero_matrix<value_type>( fset.size(), fset[0].coeff().size2() );
+            //std::cout << "mat size" << _M_mat << "\n";
             for ( uint16_type i = 0; i < fset.size(); ++i )
             {
                 //std::cout << "Functional " << i << "=" << fset[i].coeff() << "\n";
                 ublas::row( _M_mat, i ) = ublas::row( fset[i].coeff(), 0 );
             }
+            //std::cout << "mat size" << _M_mat << "\n";
 
         }
         else

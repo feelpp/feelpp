@@ -3,15 +3,14 @@
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2005-08-18
+       Date: 2010-03-04
 
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2008,2009 UniversitÃ© de Grenoble 1 (Joseph Fourier)
+  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
+  version 2.1 of the License, or (at your option) any later version.
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -23,12 +22,12 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file lagrange.hpp
+   \file hermite.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-   \date 2005-08-18
+   \date 2010-03-04
  */
-#ifndef __lagrange_H
-#define __lagrange_H 1
+#ifndef __hermite_H
+#define __hermite_H 1
 
 #include <boost/ptr_container/ptr_vector.hpp>
 
@@ -46,7 +45,6 @@
 #include <life/lifepoly/functionalset.hpp>
 #include <life/lifepoly/functionals.hpp>
 #include <life/lifepoly/fe.hpp>
-
 namespace Life
 {
 
@@ -57,7 +55,7 @@ namespace fem
 namespace details
 {
 template<typename Basis, template<class, uint16_type, class> class PointSetType>
-class LagrangeDual
+class HermiteDual
     :
         public DualBasis<Basis>
 {
@@ -76,13 +74,8 @@ public:
     typedef typename reference_convex_type::node_type node_type;
 
     // point set type associated with the functionals
-    typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
+    typedef PointSetType<convex_type, 3, value_type> pointset_type;
 
-    static const uint16_type numPoints = reference_convex_type::numPoints;
-    static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
 
 #if 0
     /**
@@ -101,21 +94,27 @@ public:
     static const uint16_type nEdges = reference_convex_type::numEdges;
     static const uint16_type nNormals = reference_convex_type::numNormals;
 
+    static const uint16_type nbPtsPerVertex = 1;//reference_convex_type::nbPtsPerVertex;
+    static const uint16_type nbPtsPerEdge = 0;//reference_convex_type::nbPtsPerEdge;
+    static const uint16_type nbPtsPerFace = (nDim==2)?1:0;//reference_convex_type::nbPtsPerFace;
+    static const uint16_type nbPtsPerVolume = 0;//reference_convex_type::nbPtsPerVolume;
+    static const uint16_type numPoints = nVertices*nbPtsPerVertex+nFaces*nbPtsPerFace;
+
 
     /** Number of degrees of freedom per vertex */
-    static const uint16_type nDofPerVertex = nbPtsPerVertex;
+    static const uint16_type nDofPerVertex = (nDim+1)*nbPtsPerVertex;
 
     /** Number of degrees of freedom per edge */
-    static const uint16_type nDofPerEdge = nbPtsPerEdge;
+    static const uint16_type nDofPerEdge =  0;//(nDim+1)*nbPtsPerEdge;
 
     /** Number of degrees of freedom per face */
-    static const uint16_type nDofPerFace = nbPtsPerFace;
+    static const uint16_type nDofPerFace =  (nDim==2)?1:0;//(nDim+1)*nbPtsPerFace;
 
     /** Number of degrees  of freedom per volume */
-    static const uint16_type nDofPerVolume = nbPtsPerVolume;
+    static const uint16_type nDofPerVolume =  0;//(nDim+1)*nbPtsPerVolume;
 
     /** Total number of degrees of freedom (equal to refEle::nDof) */
-    static const uint16_type nLocalDof = numPoints;
+    static const uint16_type nLocalDof =  nDofPerVertex*nVertices + nDofPerFace*nFaces;
 
     static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
                                                         mpl::int_<nVertices>,
@@ -123,7 +122,7 @@ public:
                                                                           mpl::int_<nEdges>,
                                                                           mpl::int_<nFaces> >::type >::type::value;
 
-    LagrangeDual( primal_space_type const& primal )
+    HermiteDual( primal_space_type const& primal )
         :
         super( primal ),
         _M_convex_ref(),
@@ -132,7 +131,7 @@ public:
         _M_points_face( nFacesInConvex ),
         _M_fset( primal )
     {
-        Debug( 5045 ) << "Lagrange finite element: \n";
+        Debug( 5045 ) << "Hermite finite element: \n";
         Debug( 5045 ) << " o- dim   = " << nDim << "\n";
         Debug( 5045 ) << " o- order = " << nOrder << "\n";
         Debug( 5045 ) << " o- numPoints      = " << numPoints << "\n";
@@ -141,24 +140,39 @@ public:
         Debug( 5045 ) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
         Debug( 5045 ) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
 
+        Debug( 5045 ) << " o- nbDofPerVertex = " << nDofPerVertex << "\n";
+        Debug( 5045 ) << " o- nbDofPerEdge   = " << nDofPerEdge << "\n";
+        Debug( 5045 ) << " o- nbDofPerFace   = " << nDofPerFace << "\n";
+        Debug( 5045 ) << " o- nbDofPerVolume = " << nDofPerVolume << "\n";
+        Debug( 5045 ) << " o- nLocalDof = " << nLocalDof << "\n";
+
         pointset_type pts;
 
-        _M_pts = pts.points();
+        //_M_pts = pts.points();
 
-        if ( nOrder > 0 )
+        int i = 0;
+        for ( uint16_type e = _M_convex_ref.entityRange( 0 ).begin();
+              e < _M_convex_ref.entityRange( 0 ).end();
+              ++e )
+        {
+            _M_points_face[e] = pts.pointsBySubEntity(0, e, 1);
+            points_type _pts = pts.pointsBySubEntity(0, e, 1);
+            for( int j = 0;j < _pts.size2(); ++j, ++i )
             {
-                for ( uint16_type e = _M_convex_ref.entityRange( nDim-1 ).begin();
-                      e < _M_convex_ref.entityRange( nDim-1 ).end();
-                      ++e )
-                    {
-                        _M_points_face[e] = pts.pointsBySubEntity(nDim-1, e, 1);
-                        Debug(5045) << "face " << e << " pts " <<  _M_points_face[e] << "\n";
-                    }
+                ublas::column( _M_pts, i ) = ublas::column( _pts, j );
+                Debug(5045) << "pts " << i << " = " <<  ublas::column( _M_pts, i ) << "\n";
             }
+        }
+        if ( nDim == 2 )
+        {
+            points_type _pts = pts.pointsBySubEntity(2, 0, 0);
+            ublas::column( _M_pts, i ) = ublas::column( _pts, 0 );
+            Debug(5045) << "pts " << i << " = " <<  ublas::column( _M_pts, i ) << "\n";
+        }
 
         setFset( primal, _M_pts, mpl::bool_<primal_space_type::is_scalar>() );
     }
-    ~LagrangeDual()
+    ~HermiteDual()
     {
 
     }
@@ -185,14 +199,29 @@ private:
 
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<true> )
     {
-        _M_fset.setFunctionalSet( functional::PointsEvaluation<primal_space_type>( primal,
-                                                                                   __pts ) );
+        std::vector<std::vector<Functional<primal_space_type> > > pd( 2 );
+        pd[0] = functional::PointsEvaluation<primal_space_type>( primal, __pts );
+        //std::cout << "pd[0].size=" << pd[0].size() << "\n";
+
+        points_type _pts = ublas::project( __pts,
+                                           ublas::range(0,nDim),
+                                           ublas::range( 0, nDim+1 ) );
+        //std::cout << "_pts = " << _pts << "\n";
+        pd[1] = functional::PointsGradient<primal_space_type>( primal, _pts );
+        //std::cout << "pd[" << 1 << "].size=" << pd[1].size() << "\n";
+
+        std::vector<Functional<primal_space_type> > fs( nLocalDof );
+        typename std::vector<Functional<primal_space_type> >::iterator it = fs.begin();
+        for( int i = 0; i < 2; ++i )
+            it = std::copy( pd[i].begin(), pd[i].end(), it );
+        //std::cout << "fs.size() = " << fs.size() << "\n";
+        _M_fset.setFunctionalSet( fs );
     }
 
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<false> )
     {
-        _M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
-                                                                                             __pts ) );
+        //_M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
+        //__pts ) );
     }
 
     /**
@@ -217,13 +246,13 @@ private:
 /// \endcond detail
 
 /**
- * \class Lagrange
- * \brief Lagrange polynomial set
+ * \class Hermite
+ * \brief Hermite polynomial set
  *
- * The \p Lagrange polynomial set is parametrized by
+ * The \p Hermite polynomial set is parametrized by
  *
  * -# dimension of the geometrical space
- * -# order of the Lagrange polynomials
+ * -# order of the Hermite polynomials
  * -# the numerical type
  * -# the geometry it applies to (convexes such as simplices or product of simplices)
  *
@@ -237,11 +266,11 @@ template<uint16_type N,
          typename T = double,
          template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced >
-class Lagrange
+class Hermite
     :
-    public FiniteElement<detail::OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::LagrangeDual, Pts >
+    public FiniteElement<detail::OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::HermiteDual, Pts >
 {
-    typedef FiniteElement<detail::OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::LagrangeDual, Pts > super;
+    typedef FiniteElement<detail::OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::HermiteDual, Pts > super;
 public:
 
     BOOST_STATIC_ASSERT( ( boost::is_same<PolySetType<N>, Scalar<N> >::value ||
@@ -254,7 +283,7 @@ public:
 
     static const uint16_type nDim = N;
     static const uint16_type nOrder =  O;
-    static const bool isTransformationEquivalent = true;
+    static const bool isTransformationEquivalent = false;
 
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
@@ -270,11 +299,11 @@ public:
     static const uint16_type nComponents = polyset_type::nComponents;
 
 
-    typedef Lagrange<N, O, Scalar, T, Convex,  Pts> component_basis_type;
+    typedef Hermite<N, O, Scalar, T, Convex,  Pts> component_basis_type;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
                               mpl::identity<boost::none_t>,
-                              mpl::identity< Lagrange<N-1, O, Scalar, T, Convex,  Pts> > >::type::type face_basis_type;
+                              mpl::identity< Hermite<N-1, O, Scalar, T, Convex,  Pts> > >::type::type face_basis_type;
 
     typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
 
@@ -290,14 +319,14 @@ public:
     static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
     static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
 
-
+    static const uint16_type nLocalDof = super::nLocalDof;
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
 
-    Lagrange()
+    Hermite()
         :
         super( dual_space_type( primal_space_type() ) ),
         _M_refconvex()
@@ -306,10 +335,10 @@ public:
 
 
 
-        // std::cout << "[LagrangeDual] points= " << _M_pts << "\n";
+        // std::cout << "[HermiteDual] points= " << _M_pts << "\n";
     }
 
-    virtual ~Lagrange() {}
+    virtual ~Hermite() {}
 
     //@}
 
@@ -325,14 +354,14 @@ public:
     //@{
 
     /**
-     * \return the reference convex associated with the lagrange polynomials
+     * \return the reference convex associated with the hermite polynomials
      */
     reference_convex_type const& referenceConvex() const { return _M_refconvex; }
 
     /**
      * \return the family name of the finite element
      */
-    std::string familyName() const { return "lagrange"; }
+    std::string familyName() const { return "hermite"; }
 
     //@}
 
@@ -346,7 +375,63 @@ public:
     /** @name  Methods
      */
     //@{
+    template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
+    static void transform( boost::shared_ptr<GMContext> gmc,  boost::shared_ptr<PC> const& pc,
+                           Phi& phi_t,
+                           GPhi& g_phi_t, const bool do_gradient,
+                           HPhi& h_phi_t, const bool do_hessian
 
+        )
+        {
+            transform ( *gmc, *pc, phi_t, g_phi_t, do_gradient, h_phi_t, do_hessian );
+        }
+    template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
+    static void transform( GMContext const& gmc,
+                           PC const& pc,
+                           Phi& phi_t,
+                           GPhi& g_phi_t, const bool do_gradient,
+                           HPhi& h_phi_t, const bool do_hessian
+
+        )
+        {
+            //phi_t = phi; return ;
+            typename GMContext::gm_type::matrix_type const& B = gmc.B( 0 );
+            std::fill( phi_t.data(), phi_t.data()+phi_t.num_elements(), value_type(0));
+            if ( do_gradient )
+                std::fill( g_phi_t.data(), g_phi_t.data()+g_phi_t.num_elements(), value_type(0));
+            if ( do_hessian )
+                std::fill( h_phi_t.data(), h_phi_t.data()+g_phi_t.num_elements(), value_type(0));
+
+            const uint16_type Q = gmc.nPoints();//_M_grad.size2();
+
+            // transform
+            for ( uint16_type i = numPoints; i < nLocalDof; i+=nDim )
+            {
+                for ( uint16_type l = 0; l < nDim; ++l )
+                {
+                    for ( uint16_type p = 0; p < nDim; ++p )
+                    {
+                        for ( uint16_type q = 0; q < Q; ++q )
+                        {
+                            // \warning : here the transformation depends on the
+                            // numbering of the degrees of freedom of the finite
+                            // element
+                            phi_t[i+l][0][0][q] += B( l, p ) * pc.phi(i+p,0,0,q);
+                            if ( do_gradient )
+                            {
+                                for ( uint16_type j = 0; j < nDim; ++j )
+                                {
+                                    g_phi_t[i+l][0][p][q] += B( l, j ) * pc.grad(i+j,0,p,q);
+                                }
+                            }
+                            if ( do_hessian )
+                            {
+                            }
+                        }
+                    }
+                }
+            }
+        }
     //@}
 
 private:
@@ -360,7 +445,7 @@ template<uint16_type N,
          typename T,
          template<uint16_type, uint16_type, uint16_type> class Convex,
          template<class, uint16_type, class> class Pts >
-const uint16_type Lagrange<N,O,PolySetType,T,Convex,Pts>::nDim;
+const uint16_type Hermite<N,O,PolySetType,T,Convex,Pts>::nDim;
 
 template<uint16_type N,
          uint16_type O,
@@ -368,14 +453,14 @@ template<uint16_type N,
          typename T,
          template<uint16_type, uint16_type, uint16_type> class Convex,
          template<class, uint16_type, class> class Pts >
-const uint16_type Lagrange<N,O,PolySetType,T,Convex,Pts>::nOrder;
+const uint16_type Hermite<N,O,PolySetType,T,Convex,Pts>::nOrder;
 
 } // namespace fem
 
 template<uint16_type Order,
          template<uint16_type Dim> class PolySetType = Scalar,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
-class Lagrange
+class Hermite
 {
 public:
     template<uint16_type N,
@@ -384,16 +469,17 @@ public:
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<fem::Lagrange<N,Order,PolySetType,T,Simplex, Pts> >,
-                                  mpl::identity<fem::Lagrange<N,Order,PolySetType,T,SimplexProduct, Pts> > >::type::type result_type;
+                                  mpl::identity<fem::Hermite<N,Order,PolySetType,T,Simplex, Pts> >,
+                                  mpl::identity<fem::Hermite<N,Order,PolySetType,T,SimplexProduct, Pts> > >::type::type result_type;
         typedef result_type type;
     };
 
-    typedef Lagrange<Order,Scalar,Pts> component_basis_type;
+    typedef Hermite<Order,Scalar,Pts> component_basis_type;
 
     static const uint16_type nOrder =  Order;
 
 };
 
 } // namespace Life
-#endif /* __lagrange_H */
+#endif /* __hermite_H */
+

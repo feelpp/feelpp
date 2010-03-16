@@ -155,7 +155,7 @@ public:
         super()
     {}
     PointDerivative( space_type const& b, int i, node_type const& __pt )
-        : super( b, b.derivate( i ).evaluate(  __pt ) )
+        : super( b, ublas::trans(b.derivate( i ).evaluate(  __pt ) ) )
     {
 
     }
@@ -205,6 +205,97 @@ public:
 
     }
 }; // PointsEvaluation
+
+
+/**
+ * \class PointsDerivative
+ * \brief generate the functionals associated with  point set
+ *
+ * Given a function space \f$ E \f$ and a set of points in the
+ * geometric space \f$ \{y_i\}_{i=1...N} \f$, generate the set of
+ * functionals
+ * \f{eqnarray*}
+ * \ell_i,j :& E \longrightarrow R, i = 1...N\\
+ *         & f \longrightarrow \partial f(y_i)/ \partial x_j
+ * \f}
+ * associated with the evaluation of the basis functions of the
+ * function space at the set of points in the geometric space.
+ *
+ * \author Christophe Prud'homme
+ */
+template<typename Space>
+struct PointsDerivative
+    :
+        public std::vector<Functional<Space> >
+{
+    typedef std::vector<Functional<Space> > super;
+public:
+
+    typedef PointsDerivative<Space> self_type;
+    typedef Space space_type;
+    typedef typename space_type::points_type points_type;
+
+
+    PointsDerivative()
+        :
+        super()
+    {}
+    PointsDerivative( space_type const& b, int i, points_type const& __pts )
+        : super()
+    {
+        for ( uint16_type c = 0; c < __pts.size2(); ++c )
+        {
+            //std::cout << "[PointsDerivative] eval at point " << ublas::column( __pts, c)  << "\n";
+            this->push_back( PointDerivative<Space>( b, i, ublas::column( __pts, c) ) );
+        }
+
+    }
+}; // PointsDerivative
+
+/**
+ * \class PointsGradient
+ * \brief generate the functionals associated with  point set
+ *
+ * Given a function space \f$ E \f$ and a set of points in the
+ * geometric space \f$ \{y_i\}_{i=1...N} \f$, generate the set of
+ * functionals
+ * \f{eqnarray*}
+ * \ell_i,j :& E \longrightarrow R, i = 1...N\\
+ *         & f \longrightarrow \partial f(y_i)/ \partial x_j
+ * \f}
+ * associated with the evaluation of the basis functions of the
+ * function space at the set of points in the geometric space.
+ *
+ * \author Christophe Prud'homme
+ */
+template<typename Space>
+struct PointsGradient
+    :
+        public std::vector<Functional<Space> >
+{
+    typedef std::vector<Functional<Space> > super;
+public:
+
+    typedef PointsGradient<Space> self_type;
+    typedef Space space_type;
+    typedef typename space_type::points_type points_type;
+
+
+    PointsGradient()
+        :
+        super()
+    {}
+    PointsGradient( space_type const& b, points_type const& __pts )
+        : super()
+    {
+        for ( uint16_type c = 0; c < __pts.size2(); ++c )
+        {
+            for ( int j = 0; j < __pts.size1(); ++j )
+                this->push_back( PointDerivative<Space>( b, j, ublas::column( __pts, c) ) );
+        }
+
+    }
+}; // PointsGradient
 
 /**
  * \class ComponentsPointsEvaluation

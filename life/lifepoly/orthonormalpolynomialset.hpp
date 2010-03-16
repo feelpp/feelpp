@@ -62,7 +62,7 @@ public:
 
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
-
+    static const bool isTransformationEquivalent = true;
     typedef OrthonormalPolynomialSet<Dim, Order, PolySetType, T, Simplex> self_type;
     typedef self_type component_basis_type;
 
@@ -158,6 +158,7 @@ public:
 
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
+    static const bool isTransformationEquivalent = true;
 
     typedef OrthonormalPolynomialSet<Dim, Order, PolySetType, T, SimplexProduct> self_type;
     typedef self_type component_basis_type;
