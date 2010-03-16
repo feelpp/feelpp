@@ -562,7 +562,9 @@ MatrixPetsc<T>::addMatrix (const T a_in, MatrixSparse<T> &X_in)
 #else
 
     //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SAME_NONZERO_PATTERN);
-    ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SUBSET_NONZERO_PATTERN );
+    //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SUBSET_NONZERO_PATTERN );
+    std::cout << "a = " << a << "\n";
+    ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)DIFFERENT_NONZERO_PATTERN);
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
 #endif
