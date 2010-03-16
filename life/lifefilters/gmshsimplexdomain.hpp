@@ -74,7 +74,7 @@ public:
         _M_I( nDim ),
         _M_h( 0.1 ),
         _M_descr()
-    {
+        {
         switch (dt)
             {
             case GMSH_REAL_DOMAIN:
@@ -141,6 +141,7 @@ public:
      */
     std::string description() const { return this->getDescription(); }
 
+
     //@}
 
     /** @name  Mutators
@@ -205,8 +206,7 @@ private:
 
     std::vector<std::pair<double,double> > _M_I;
     double _M_h;
- std::string _M_descr;
-
+    std::string _M_descr;
 
 };
 

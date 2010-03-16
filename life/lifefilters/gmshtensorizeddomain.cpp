@@ -60,20 +60,30 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<1>,  m
         ostr << _M_I[1].second;
     else
         ostr << 0;
-    ostr << ",0,h};\n"
-         << "Point(3) = {" << (_M_I[0].second+_M_I[0].first)/2 << ",";
-    if ( nRealDim == nDim + 1 )
-        ostr << (_M_I[1].second+_M_I[1].first)/2;
+    ostr << ",0,h};\n";
+    if ( this->addMidPoint() )
+    {
+        ostr << "Point(3) = {" << (_M_I[0].second+_M_I[0].first)/2 << ",";
+        if ( nRealDim == nDim + 1 )
+            ostr << (_M_I[1].second+_M_I[1].first)/2;
+        else
+            ostr << 0;
+        ostr << ",0,h};\n"
+             << "Line(1) = {1,3};\n"
+             << "Line(2) = {3,2};\n"
+             << "Physical Point(1) = {1};\n"
+             << "Physical Point(3) = {2};\n"
+             << "Physical Point(2) = {3};\n"
+             << "Physical Line(1) = {1};\n"
+             << "Physical Line(2) = {2};\n";
+    }
     else
-        ostr << 0;
-    ostr << ",0,h};\n"
-         << "Line(1) = {1,2};\n"
-        //<< "Line(2) = {3,2};\n"
-         << "Physical Point(1) = {1};\n"
-         << "Physical Point(2) = {2};\n"
-        //<< "Physical Point(3) = {3};\n"
-         << "Physical Line(1) = {1};\n";
-        //<< "Physical Line(2) = {2};\n";
+    {
+        ostr << "Line(1) = {1,2};\n"
+             << "Physical Point(1) = {1};\n"
+             << "Physical Point(3) = {2};\n"
+             << "Physical Line(1) = {1};\n";
+    }
     return ostr.str();
 }
 // 2D
