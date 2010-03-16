@@ -220,6 +220,7 @@ public:
 
     static const uint16_type nDim = N;
     static const uint16_type nOrder =  1;
+    static const bool isTransformationEquivalent = true;
 
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;

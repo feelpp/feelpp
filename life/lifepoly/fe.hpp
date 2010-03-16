@@ -34,8 +34,15 @@
 
 namespace Life
 {
-
-
+template<typename Poly, template<uint16_type> class PolySetType > class PolynomialSet;
+    namespace detail {
+template<uint16_type Dim,
+         uint16_type Order,
+         template<uint16_type> class PolySetType,
+         typename T,
+         template<uint16_type,uint16_type,uint16_type> class Convex>
+class OrthonormalPolynomialSet;
+    }
 /**
  * \class FiniteElement
  * \brief Finite element following Ciarlet framework
@@ -116,7 +123,7 @@ public:
         Debug( 5030 ) << "============================================================\n";
         Debug( 5030 ) << "New FE \n";
         ublas::matrix<value_type> A( _M_dual( _M_primal ) );
-        //std::cout << "[FiniteElement " << this->familyName() << "] A = " << A << "\n";
+        //std::cout << "[FiniteElement] A = " << A << "\n";
 
         ublas::matrix<value_type> D = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
         LU<ublas::matrix<value_type> > lu(A);

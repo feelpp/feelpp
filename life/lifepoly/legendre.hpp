@@ -164,7 +164,7 @@ public:
     static const uint16_type nOrder = Degree;
     static const uint16_type nConvexOrder = nOrder+2;
     static const bool is_normalized = NormalizationPolicy::is_normalized;
-
+    static const bool isTransformationEquivalent = true;
 
     /** @name Typedefs
      */
