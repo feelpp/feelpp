@@ -196,6 +196,7 @@ Polyvis<A0,A1,A2,A3,A4>::run()
                                                                  _shape="simplex",
                                                                  _dim=Dim,
                                                                  _h=2.0,
+                                                                 _addmidpoint=false,
                                                                  _xmin=-1.,
                                                                  _ymin=-1.,
                                                                  _zmin=-1. ) );
