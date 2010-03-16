@@ -806,6 +806,9 @@ public:
         {
             return _M_grad[i][c1][c2][q];
         }
+
+        hessian_type const& hessian() const { return _M_hessian; }
+
         value_type hessian(size_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return _M_hessian[i][c1][c2][q];
@@ -1159,23 +1162,55 @@ public:
             update( __gmc );
         }
 
+        /**
+         * if isTransformationEquivalent is set to true in basis then no
+         * transformation is required
+         */
+        void transformationEquivalence( geometric_mapping_context_ptrtype const& __gmc,
+                                        mpl::bool_<true> )
+            {
+                // _M_phi = phi;
+                // if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+                //     _M_gradphi = _M_pc->grad();
+                // if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
+                //     _M_hessphi = _M_pc->hessian();
+            }
+
+        /**
+         * if isTransformationEquivalent is set to false in basis then a
+         * transformation is required to ensure that the basis function are
+         * equivalent on the reference and real elements.
+         * We deleguate the transformation to the basis
+         */
+        void transformationEquivalence( geometric_mapping_context_ptrtype const& __gmc,
+                                        mpl::bool_<false> )
+            {
+                //_M_ref_ele->transform( __gmc, phi, _M_phi, _M_gradphi, _M_hessphi );
+                _M_ref_ele->transform( __gmc, _M_pc.get(), _M_phi,
+                                       _M_gradphi, ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value ),
+                                       _M_hessphi, ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
+                    );
+            }
+
         void update( geometric_mapping_context_ptrtype const& __gmc,
                      precompute_ptrtype const& __pc )
         {
             _M_pc = __pc;
             _M_phi = __pc->phi();
-
             //precompute_type* __pc = _M_pc.get().get();
             update( __gmc );
         }
         void update( geometric_mapping_context_ptrtype const& __gmc )
         {
             static const bool do_opt= (nOrder<=1) && (Geo_t::nOrder==1) && (convex_type::is_simplex);
+            transformationEquivalence( __gmc, mpl::bool_<Basis_t::isTransformationEquivalent>() );
             update( __gmc, mpl::int_<rank>(), mpl::bool_<do_opt>() );
             //update( __gmc, mpl::int_<rank>(), mpl::bool_<false>() );
         }
         void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_<true> )
         {
+
+
             //#pragma omp parallel
             //precompute_type* __pc = _M_pc.get().get();
             geometric_mapping_context_type* thegmc = __gmc.get();
@@ -1196,7 +1231,9 @@ public:
                                     for ( uint16_type p = 0; p < PDim; ++p )
                                         {
                                             // can take any quad points (polynomial is P1, so grad is constant)
+                                            // CHANGE:
                                             value_type g = B( l, p ) * __pc->grad( i, 0, p, 0 );
+                                            //value_type g = B( l, p ) * _M_gradphi[i][0][l][q]
                                             for ( uint16_type q = 0; q < Q; ++q )
                                                 {
 
@@ -1471,7 +1508,7 @@ public:
                 } // grad
         }
         void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_<true> )
-        {
+            {
             //precompute_type* __pc = _M_pc.get().get();
             geometric_mapping_context_type* thegmc = __gmc.get();
             if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
@@ -1813,6 +1850,8 @@ public:
         geometric_mapping_context_ptrtype _M_gmc;
 
         boost::multi_array<value_type,4> _M_phi;
+        boost::multi_array<value_type,4> _M_gradphi;
+        boost::multi_array<value_type,4> _M_hessphi;
         boost::multi_array<value_type,4> _M_dn;
         boost::multi_array<value_type,4> _M_grad;
         boost::multi_array<value_type,2> _M_div;
