@@ -49,15 +49,27 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<1> ) const
     ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
          << "h=" << _M_h << ";\n"
          << "Point(1) = {" << _M_I[0].first << ",0,0,h};\n"
-         << "Point(2) = {" << _M_I[0].second << ",0,0,h};\n"
-         << "Point(3) = {" << (_M_I[0].second+_M_I[0].first)/2 << ",0,0,h};\n"
-         << "Line(1) = {1,3};\n"
-         << "Line(2) = {3,2};\n"
-         << "Physical Point(1) = {1};\n"
-         << "Physical Point(2) = {2};\n"
-         << "Physical Point(3) = {3};\n"
-         << "Physical Line(1) = {1};\n"
-         << "Physical Line(2) = {2};\n";
+         << "Point(2) = {" << _M_I[0].second << ",0,0,h};\n";
+    //if ( this->addMidPoint() )
+    if ( 1 )
+        {
+            ostr << "Point(3) = {" << (_M_I[0].second+_M_I[0].first)/2 << ",0,0,h};\n"
+                 << "Line(1) = {1,3};\n"
+                 << "Line(2) = {3,2};\n"
+                 << "Physical Point(1) = {1};\n"
+                 << "Physical Point(3) = {2};\n"
+                 << "Physical Point(2) = {3};\n"
+                 << "Physical Line(1) = {1};\n"
+                 << "Physical Line(2) = {2};\n";
+            std::cout << ostr.str() << "\n";
+        }
+    else
+        {
+            ostr << "Line(1) = {1,2};\n"
+                 << "Physical Point(1) = {1};\n"
+                 << "Physical Point(3) = {2};\n"
+                 << "Physical Line(1) = {1};\n";
+        }
     return ostr.str();
 }
 // 2D
