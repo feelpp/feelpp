@@ -376,6 +376,7 @@ public:
     //@{
 
     static const uint16_type nDim = N;
+    static const bool isTransformationEquivalent = false;
     static const polynomial_transformation_type transformation = POLYNOMIAL_CONTEXT_NEEDS_1ST_PIOLA_TRANSFORMATION;
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
