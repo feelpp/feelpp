@@ -13,10 +13,26 @@
  - added a Random Notes chapter to the manual
 
 ** Libraries
+
 *** lifecore and lifealg
  - remove support for long double
+ - Application accepts now constructor with only a AboutData class as argument,
+   this is useful to integrate life in environment such as Python or Sofa.
+
+*** lifepoly
+ - start support for non transformation equivalent finite elements (eg. Hermite,
+   RTk, Nk,...)
+ - start support for Hermite finite elements
+
 *** lifevf
- - the integration order is optional in the integrate(..)
+ - the integration order is optional in the integrate(.), the order is computed
+   automatically from the expression
+
+** Applications
+
+*** polyvis
+
+ - start support for Hermite polynomials visualisation
 
 
 * New in 0.9.21
