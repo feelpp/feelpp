@@ -315,15 +315,14 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     vector_ptrtype F( backend->newVector( Xh ) );
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), _Q<2*(Order+2)>(),
-                   f*id(v) );
+        integrate( elements(mesh), f*id(v) );
     if ( M_use_weak_dirichlet )
         {
             form1( Xh, F ) +=
-                integrate( markedfaces(mesh,tag1), _Q<Order+2>(),
+                integrate( markedfaces(mesh,tag1),
                            zf*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
             form1( Xh, F ) +=
-                integrate( markedfaces(mesh,tag2), _Q<Order+2>(),
+                integrate( markedfaces(mesh,tag2),
                            zf*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
 
         }
@@ -337,18 +336,18 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     sparse_matrix_ptrtype D( backend->newMatrix( Xh, Xh ) );
 
     form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), _Q<2*(Order+2)>(),
+        integrate( elements(mesh),
                    nu*(gradt(u)*trans(grad(v)))
                    + beta*(idt(u)*id(v)) );
 
     if ( M_use_weak_dirichlet )
         {
 
-            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag1), _Q<2*(Order+2)>(),
+            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag1),
                                              ( - nu*trans(id(v))*(gradt(u)*N())
                                                - nu*trans(idt(u))*(grad(v)*N())
                                                + M_gammabc*trans(idt(u))*id(v)/hFace()) );
-            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag2), _Q<2*(Order+2)>(),
+            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag2),
                                              ( - nu*trans(id(v))*(gradt(u)*N())
                                                - nu*trans(idt(u))*(grad(v)*N())
                                                + M_gammabc*trans(idt(u))*id(v)/hFace()) );
@@ -377,7 +376,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     Log() << "solve in " << t1.elapsed() << "s\n";
     t1.restart();
 
-    double L2error2 =integrate( elements(mesh), _Q<2*(Order+2)+2>(),
+    double L2error2 =integrate( elements(mesh),
                                 (idv(u)-g)*trans(idv(u)-g) ).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
@@ -387,7 +386,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 
 
     v = project( Xh, elements(mesh), g );
-    double semiH1error2 =integrate( elements(mesh), _Q<4*(Order)>(),
+    double semiH1error2 =integrate( elements(mesh),
                                     (gradv(u)-gradv(v))*trans(gradv(u)-gradv(v)) ).evaluate()( 0, 0 ) ;
 
     Log() << "semi H1 norm computed in " << t1.elapsed() << "s\n";
