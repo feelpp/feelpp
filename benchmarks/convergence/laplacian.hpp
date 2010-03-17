@@ -297,16 +297,10 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     AUTO( zf, 0*Px()+0*Py() );
 
     int tag1,tag2;
-    if ( Dim == 1 )
-        {
-            tag1 = 1;
-            tag2 = 2;
-        }
-    else if ( Dim == 2 )
+    if ( ( Dim == 1 ) || ( Dim == 2 ) )
         {
             tag1 = 1;
             tag2 = 3;
-
         }
     else if ( Dim == 3 )
         {
