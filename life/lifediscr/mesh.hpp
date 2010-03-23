@@ -64,6 +64,9 @@
 #include <boost/preprocessor/punctuation/comma.hpp>
 #include <boost/preprocessor/facilities/identity.hpp>
 
+#include <boost/enable_shared_from_this.hpp>
+
+
 namespace Life
 {
 const size_type EXTRACTION_KEEP_POINTS_IDS                = ( 1<<0 );
@@ -87,6 +90,8 @@ template<typename Mesh> class Partitioner;
   @author Christophe Prud'homme
   @see
 */
+//    template <typename GeoShape, typename T > class Mesh;
+
 template <typename GeoShape, typename T = double>
 class Mesh
     :
@@ -94,7 +99,8 @@ class Mesh
                         mpl::identity<Mesh1D<GeoShape > >,
                         typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
                                           mpl::identity<Mesh2D<GeoShape> >,
-                                          mpl::identity<Mesh3D<GeoShape> > >::type>::type::type
+                                          mpl::identity<Mesh3D<GeoShape> > >::type>::type::type,
+        public boost::enable_shared_from_this< Mesh<GeoShape,T> >
 {
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<1> >,
                               mpl::identity<Mesh1D<GeoShape> >,
@@ -473,7 +479,7 @@ public:
          * Define the mesh whith or not init
          */
         void
-        setMesh(boost::shared_ptr<self_type> const& m,bool b=true)
+        setMesh(boost::shared_ptr<self_type> m,bool b=true)
         {
             M_mesh=m;
             if (b)
