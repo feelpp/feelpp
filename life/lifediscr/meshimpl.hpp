@@ -191,7 +191,9 @@ Mesh<Shape, T>::updateForUse()
 
             _M_gm->initCache( this );
 
-            M_tool_localization->setMesh( self_ptrtype(this),false );
+            //M_tool_localization->setMesh( self_ptrtype(this),false );
+            M_tool_localization->setMesh( this->shared_from_this(),false );
+
         }
     Debug( 4015 ) << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
 }
