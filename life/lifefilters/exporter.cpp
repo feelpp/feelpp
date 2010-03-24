@@ -85,6 +85,30 @@ template<typename MeshType>
 Exporter<MeshType>::~Exporter()
 {}
 
+template<typename MeshType>
+static
+Exporter<MeshType>*
+Exporter<MeshType>::New( std::string const& exportername, std::string prefix )
+{
+    Exporter<MeshType>* exporter =  Factory::type::instance().createObject( exportername  );
+
+    exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
+    exporter->setPrefix( prefix );
+    return exporter;
+}
+
+static
+Exporter<MeshType>*
+Exporter<MeshType>::New( po::variables_map const& vm, std::string prefix = "export" )
+{
+    std::string estr = vm["exporter"].template as<std::string>();
+    Exporter<MeshType>* exporter =  Factory::type::instance().createObject( estr  );
+    exporter->setOptions( vm );
+
+    exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
+    exporter->setPrefix( prefix );
+    return exporter;
+}
 
 template<typename MeshType>
 Exporter<MeshType>*

@@ -103,29 +103,45 @@ public:
      */
     //@{
 
+    /**
+     * Constructor
+     * \param type string containing the type of exporter (gmsh, ensight,...)
+     * \param prefix the prefix for the file names of the exported data
+     * \param freq an integer giving the frequency at which the data should be saved
+     */
     Exporter( std::string const& type, std::string const& prefix = "", int freq = 1 );
 
+    /**
+     * Constructor
+     * \param vm \p variables_map containing the type of exporter and other exporter options
+     * \param prefix the prefix for the file names of the exported data
+     * \param freq an integer giving the frequency at which the data should be saved
+     */
     Exporter( po::variables_map const& vm, std::string const& exporter_prefix = "" );
 
+    /**
+     * copy constructor
+     */
     Exporter( Exporter const & exporter );
 
+    /**
+     * destructor
+     */
     virtual ~Exporter();
 
-    static Exporter<MeshType>* New( std::string const& exporter )
-    {
-        return Factory::type::instance().createObject( exporter );
-    }
+    /**
+     * Static fonction instantiating from the Exporter Factory an exporter out
+     * of the \p exportername and using \p prefix for the prefix of the data
+     * files.
+     */
+    static Exporter<MeshType>* New( std::string const& exportername, std::string prefix = "export" );
 
-    static Exporter<MeshType>* New( po::variables_map const& vm, std::string prefix = "export" )
-    {
-        std::string estr = vm["exporter"].template as<std::string>();
-        Exporter<MeshType>* exporter =  Factory::type::instance().createObject( estr  );
-        exporter->setOptions( vm );
-
-        exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
-        exporter->setPrefix( prefix );
-        return exporter;
-    }
+    /**
+     * Static fonction instantiating from the Exporter Factory an exporter out
+     * of the variables_map \p vm and using \p prefix for the prefix of the data
+     * files.
+     */
+    static Exporter<MeshType>* New( po::variables_map const& vm, std::string prefix = "export" );
 
     //@}
 
@@ -171,26 +187,48 @@ public:
      */
     //@{
 
+    /**
+     * set the options from the \p variables_map \p vm as well as the prefix \p
+     * exp_prefix
+     */
     virtual Exporter<MeshType>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" );
 
+    /**
+     * set to \p __type the type of exporter (gmsh, ensight...)
+     */
     Exporter<MeshType>* setType( std::string const& __type )
     {
         M_type = __type;
         return this;
     }
+
+    /**
+     * add an extra path to the current directory to save the data using the \p
+     * boost::format object \p fmt
+     */
     Exporter<MeshType>* addPath( boost::format fmt );
+
+    /**
+     * set the prefix to \p __prefix
+     */
     Exporter<MeshType>* setPrefix( std::string const& __prefix )
     {
         M_prefix = __prefix;
         return this;
     }
 
+    /**
+     * set the save frequency to \p __freq
+     */
     Exporter<MeshType>* setFreq( int __freq )
     {
         M_freq = __freq;
         return this;
     }
 
+    /**
+     * set the \p file type to \p __ft (binary or ascii)
+     */
     Exporter<MeshType>* setFileType( file_type __ft )
     {
         M_ft = __ft;
@@ -216,6 +254,9 @@ public:
      */
     //@{
 
+    /**
+     * add the timeset \p __ts to the Exporter
+     */
     void addTimeSet( timeset_ptrtype const& __ts )
     {
         if ( __ts )
@@ -223,6 +264,10 @@ public:
     }
 
 
+    /**
+     * this p save function is defined by the Exporter subclasses and implement
+     * saving the data to files
+     */
     virtual void save() const = 0;
 
 
