@@ -86,7 +86,6 @@ Exporter<MeshType>::~Exporter()
 {}
 
 template<typename MeshType>
-static
 Exporter<MeshType>*
 Exporter<MeshType>::New( std::string const& exportername, std::string prefix )
 {
@@ -97,9 +96,9 @@ Exporter<MeshType>::New( std::string const& exportername, std::string prefix )
     return exporter;
 }
 
-static
+template<typename MeshType>
 Exporter<MeshType>*
-Exporter<MeshType>::New( po::variables_map const& vm, std::string prefix = "export" )
+Exporter<MeshType>::New( po::variables_map const& vm, std::string prefix )
 {
     std::string estr = vm["exporter"].template as<std::string>();
     Exporter<MeshType>* exporter =  Factory::type::instance().createObject( estr  );
