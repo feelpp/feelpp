@@ -8,6 +8,21 @@
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
+* New in 0.9.23
+** Libraries
+
+*** lifediscr
+ - mesh*: fix the mesh test cases that were failing the last few weeks
+
+*** lifealg
+ - MatrixPETSC::addMatrix() allows now DIFFERENT_NONZERO_PATTERN, remove some
+   std::cout outputs that went in the release 0.9.22
+
+*** lifefitters
+ - Exporter::New(std::string,std::string): it now takes care of the the timeset
+   allocation and returns a fully functional exporter
+
+
 * New in 0.9.22
 ** Documentation
  - added a Random Notes chapter to the manual
