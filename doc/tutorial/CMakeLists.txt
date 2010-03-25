@@ -40,7 +40,7 @@ FILE(WRITE version.tex "\\newcommand{\\lifeversion}{${LIFE_VERSION_STRING}}")
 
 
 add_latex_document(life-manual.tex
-  INPUTS example-heatns.tex version.tex ${CPPFILES} ${STYFILES}
+  INPUTS feel.tex randomnotes.tex gfdl.tex example-heatns.tex version.tex ${CPPFILES} ${STYFILES}
   BIBFILES life-manual.bib
   IMAGE_DIRS pngs pdfs
   USE_INDEX
