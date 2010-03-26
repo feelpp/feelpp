@@ -22,6 +22,12 @@
  - Exporter::New(std::string,std::string): it now takes care of the the timeset
    allocation and returns a fully functional exporter
 
+** Documentation
+
+*** Tutorial
+ - fixed the tutorial : make sure that the language reference and the license
+   are present in the manual
+
 
 * New in 0.9.22
 ** Documentation
