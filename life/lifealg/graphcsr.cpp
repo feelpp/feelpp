@@ -59,10 +59,13 @@ GraphCSR::GraphCSR( GraphCSR const & g )
     M_n_nz( g.M_n_nz ),
     M_n_oz( g.M_n_oz ),
     M_storage( g.M_storage )
-{}
+{
+}
 
 GraphCSR::~GraphCSR()
-{}
+{
+    M_storage.clear();
+}
 
 GraphCSR&
 GraphCSR::operator=( GraphCSR const& g )
