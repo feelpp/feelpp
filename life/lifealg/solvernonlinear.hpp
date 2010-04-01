@@ -164,6 +164,13 @@ public:
      */
     virtual MatrixStructure precMatrixStructure() const { return M_prec_matrix_structure; }
 
+    SolverNonLinearType getType() const { return M_snl_type; }
+
+    double getAbsoluteResidualTol() const { return M_absoluteResidualTol; }
+    double getRelativeResidualTol() const { return M_relativeResidualTol; }
+    double getAbsoluteSolutionTol() const { return M_absoluteSolutionTol; }
+
+    uint getNbItMax() const { return M_nbItMax; }
     //@}
 
     /** @name  Mutators
@@ -176,6 +183,23 @@ public:
      */
     virtual void setPrecMatrixStructure( MatrixStructure mstruct  ) { M_prec_matrix_structure = mstruct; }
 
+
+    /**
+     * Select type of non linear solver : LINEAR_SEARCH, TRUST_REGION, ...
+     */
+    void setType(SolverNonLinearType snl_type) { M_snl_type=snl_type; }
+
+    /**
+     * Define values of tolerance for the non linear solver
+     */
+    void setRelativeResidualTol(double tol) { M_relativeResidualTol = tol; }
+    void setAbsoluteResidualTol(double tol) { M_absoluteResidualTol = tol; }
+    void setAbsoluteSolutionTol(double tol) { M_absoluteSolutionTol = tol; }
+
+    /**
+     * Define the number max of iteration
+     */
+    void setNbItMax(uint n) { M_nbItMax=n; }
     //@}
 
     /** @name  Methods
@@ -252,6 +276,27 @@ protected:
     bool M_is_initialized;
 
     MatrixStructure M_prec_matrix_structure;
+
+    /**
+     * Define the type of non linear solver
+     */
+    SolverNonLinearType M_snl_type;
+
+    /**
+     * Two differents tolerances on the residual for the resolution of non linear system
+     */
+    double M_relativeResidualTol;
+    double M_absoluteResidualTol;
+
+    /**
+     * Absolute tolerances between successive iteration
+     */
+    double M_absoluteSolutionTol;
+
+    /**
+     * The maximum numbers of allowable nonlinear iterations
+     */
+    uint M_nbItMax;
 };
 
 

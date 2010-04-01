@@ -196,5 +196,16 @@ enum SolverPackage
         SOLVER_INVALID_PACKAGE
     };
 
+/**
+ * Define an \p enum for non linear solver type
+ * if SELECT_IN_ARGLIST the choice is done by the arguments in the line command
+ */
+enum SolverNonLinearType
+    {
+        SELECT_IN_ARGLIST=0,
+        LINE_SEARCH,
+        TRUST_REGION
+    };
+
 } // Life
 #endif /* __LifeAlgEnums_H */
