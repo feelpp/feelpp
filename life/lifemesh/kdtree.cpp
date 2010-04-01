@@ -27,6 +27,7 @@
    \date 2007-06-07
  */
 #include <life/lifemesh/kdtree.hpp>
+#include <fstream>
 
 namespace Life
 {
@@ -448,6 +449,68 @@ projection3d(const KDTree::node_type & pMin,
 
 }
 
+/**
+ * Recursive function wich wrote in latex format the hyperplan associated with a node
+ */
+void
+writeDecompositionData(KDTree::Element * tree, boost::shared_ptr<std::ostringstream> __ostr)
+{
+    if ( ! tree->isleaf() )
+        {
+            const KDTree::Node *tn = static_cast<const KDTree::Node*>(tree);
+
+            if (tn->ptmin.size()==2) //2d
+                {
+                    *__ostr << "\\draw[-,gray!100,dashed] ("
+                            << tn->ptmin(0) << "," << tn->ptmin(1)
+                            << ") -- ("
+                            << tn->ptmax(0) << "," << tn->ptmax(1)
+                            << ");" << "\n";
+                }
+            else if (tn->ptmin.size()==3) //3d
+                {
+                    if (tn->ptmin(2)==tn->ptmax(2))
+                        *__ostr << "\\draw[-,gray!100,fill=gray!20,opacity=0.5] ("
+                                << tn->ptmin(0) << "," << tn->ptmin(1) << "," << tn->ptmin(2)
+                                << ") -- ("
+                                << tn->ptmin(0) << "," << tn->ptmax(1) << "," << tn->ptmin(2)
+                                << ") -- ("
+                                << tn->ptmax(0) << "," << tn->ptmax(1) << "," << tn->ptmax(2)
+                                << ") -- ("
+                                << tn->ptmax(0) << "," << tn->ptmin(1) << "," << tn->ptmin(2)
+                                << ") -- ("
+                                << tn->ptmin(0) << "," << tn->ptmin(1) << "," << tn->ptmin(2)
+                                << ");" << "\n";
+                    else if (tn->ptmin(1)==tn->ptmax(1))
+                        *__ostr << "\\draw[-,gray!100,fill=gray!20,opacity=0.5] ("
+                                << tn->ptmin(0) << "," << tn->ptmin(1) << "," << tn->ptmin(2)
+                                << ") -- ("
+                                << tn->ptmin(0) << "," << tn->ptmin(1) << "," << tn->ptmax(2)
+                                << ") -- ("
+                                << tn->ptmax(0) << "," << tn->ptmin(1) << "," << tn->ptmax(2)
+                                << ") -- ("
+                                << tn->ptmax(0) << "," << tn->ptmin(1) << "," << tn->ptmin(2)
+                                << ") -- ("
+                                << tn->ptmin(0) << "," << tn->ptmin(1) << "," << tn->ptmin(2)
+                                << ");" << "\n";
+                    else if (tn->ptmin(0)==tn->ptmax(0))
+                        *__ostr << "\\draw[-,gray!100,fill=gray!20,opacity=0.5] ("
+                                << tn->ptmin(0) << "," << tn->ptmin(1) << "," << tn->ptmin(2)
+                                << ") -- ("
+                                << tn->ptmin(0) << "," << tn->ptmin(1) << "," << tn->ptmax(2)
+                                << ") -- ("
+                                << tn->ptmin(0) << "," << tn->ptmax(1) << "," << tn->ptmax(2)
+                                << ") -- ("
+                                << tn->ptmin(0) << "," << tn->ptmax(1) << "," << tn->ptmin(2)
+                                << ") -- ("
+                                << tn->ptmin(0) << "," << tn->ptmin(1) << "," << tn->ptmin(2)
+                                << ");" << "\n";
+                }
+
+            if (tn->right) writeDecompositionData(tn->right,__ostr);
+            if (tn->left) writeDecompositionData(tn->left,__ostr);
+        }
+}
 
 
 } // detail namespace
@@ -635,6 +698,62 @@ KDTree::update_Pts_search(const index_node_type & p) {
         }
 
     }
+
+}
+
+
+
+void
+KDTree::writeLatexData(std::string __nameFile)
+{
+    std::ofstream __file(__nameFile.c_str());
+    __file << "\\begin{figure}[h]" << "\n"
+           << "\\begin{center}" << "\n"
+           << "\\subfigure[Organisation des points de l'espace] {" << "\n"
+           << "\\begin{tikzpicture}[scale=1]" << "\n";
+
+    points_const_iterator itpts = M_pts.begin();
+    points_const_iterator itpts_end = M_pts.end();
+    uint __dim = boost::get<0>(*itpts).size();
+    if (__dim==2)
+        for ( ; itpts!=itpts_end ; ++itpts)
+            {
+                __file << "\\draw ("
+                       << boost::get<0>(*itpts)(0) << ","
+                       << boost::get<0>(*itpts)(1) << ") node {$\\bullet$};"
+                       << "\n";
+            }
+    else if (__dim==3)
+        for ( ; itpts!=itpts_end ; ++itpts)
+            {
+                __file << "\\draw ("
+                       << boost::get<0>(*itpts)(0) << ","
+                       << boost::get<0>(*itpts)(1) << ","
+                       << boost::get<0>(*itpts)(2) << ") node {$\\bullet$};"
+                       << "\n";
+            }
+
+
+    // construct the tree from the points set
+    if (M_tree == 0)
+        {
+            M_tree = detail::build_tree( M_pts.begin(),
+                                         M_pts.end(),
+                                         0 );
+            if (!M_tree)
+                return;
+        }
+
+    boost::shared_ptr<std::ostringstream> __ostr(new std::ostringstream());
+    detail::writeDecompositionData(M_tree,__ostr);
+    __file << __ostr->str();
+
+
+    __file <<"\\end{tikzpicture}" << "\n"
+           << "}" <<"\n"
+           << "\\end{center}" << "\n"
+           << "\\end{figure}" << "\n";
+
 
 }
 
