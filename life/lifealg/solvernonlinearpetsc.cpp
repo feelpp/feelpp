@@ -304,11 +304,72 @@ void SolverNonLinearPetsc<T>::init ()
 
 #endif
 
-
-
             ierr = SNESSetFromOptions(M_snes);
             CHKERRABORT(Application::COMM_WORLD,ierr);
+
         }
+
+
+    int ierr=0;
+
+    // if the non linear solver type is define by the user int the code
+    if (this->getType() != SELECT_IN_ARGLIST )
+        {
+            switch (this->getType())
+                {
+                case LINE_SEARCH :
+                    {
+                        ierr = SNESSetType(M_snes, SNESLS);
+                        CHKERRABORT(Application::COMM_WORLD,ierr);
+                    }
+                    break;
+                case TRUST_REGION :
+                    {
+                        ierr = SNESSetType(M_snes, SNESTR);
+                        CHKERRABORT(Application::COMM_WORLD,ierr);
+                    }
+                    break;
+                }
+        }
+
+
+    double __relResTol,__absResTol,__absSolTol;
+    int __nbItMax, __nbEvalFuncMax;
+
+    if ( this->getAbsoluteResidualTol()==0)
+        {
+            ierr = SNESGetTolerances(M_snes, &__absResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+            CHKERRABORT(Application::COMM_WORLD,ierr);
+        }
+    else __absResTol = this->getAbsoluteResidualTol();
+
+    if ( this->getRelativeResidualTol()==0)
+        {
+            ierr = SNESGetTolerances(M_snes, PETSC_NULL, &__relResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+            CHKERRABORT(Application::COMM_WORLD,ierr);
+        }
+    else __relResTol = this->getRelativeResidualTol();
+
+    if ( this->getAbsoluteSolutionTol()==0)
+        {
+            ierr = SNESGetTolerances(M_snes, PETSC_NULL, PETSC_NULL, &__absSolTol, PETSC_NULL, PETSC_NULL);
+            CHKERRABORT(Application::COMM_WORLD,ierr);
+        }
+    else __absSolTol = this->getAbsoluteSolutionTol();
+
+    if ( this->getNbItMax()==0)
+        {
+            ierr = SNESGetTolerances(M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbItMax, PETSC_NULL);
+            CHKERRABORT(Application::COMM_WORLD,ierr);
+        }
+    else __nbItMax = this->getNbItMax();
+
+    ierr = SNESGetTolerances(M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbEvalFuncMax);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
+    ierr = SNESSetTolerances(M_snes,__absResTol,__relResTol,__absSolTol,__nbItMax,__nbEvalFuncMax);
+    CHKERRABORT(Application::COMM_WORLD,ierr);
+
 }
 
 

@@ -41,7 +41,12 @@ SolverNonLinear<T>::SolverNonLinear ()
     jacobian        (0),
     matvec          (0),
     M_is_initialized (false),
-    M_prec_matrix_structure( SAME_NONZERO_PATTERN )
+    M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
+    M_snl_type( SELECT_IN_ARGLIST ),
+    M_relativeResidualTol( 0 ),
+    M_absoluteResidualTol( 0 ),
+    M_absoluteSolutionTol( 0 ),
+    M_nbItMax(0)
 {
 }
 
@@ -53,7 +58,12 @@ SolverNonLinear<T>::SolverNonLinear ( SolverNonLinear const& snl )
     jacobian        ( snl.jacobian ),
     matvec          ( snl.matvec ),
     M_is_initialized (snl.M_is_initialized ),
-    M_prec_matrix_structure( snl.M_prec_matrix_structure )
+    M_prec_matrix_structure( snl.M_prec_matrix_structure ),
+    M_snl_type( snl.M_snl_type),
+    M_relativeResidualTol( snl.M_relativeResidualTol),
+    M_absoluteResidualTol( snl.M_absoluteResidualTol),
+    M_absoluteSolutionTol( snl.M_absoluteSolutionTol),
+    M_nbItMax( snl.M_nbItMax)
 {
 }
 
