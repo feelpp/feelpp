@@ -191,7 +191,6 @@ Mesh<Shape, T>::updateForUse()
 
             _M_gm->initCache( this );
 
-            //M_tool_localization->setMesh( self_ptrtype(this),false );
             M_tool_localization->setMesh( this->shared_from_this(),false );
 
         }
@@ -1127,6 +1126,8 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m)
                 {
                     M_resultAnalysis[__cv_id].push_back( boost::make_tuple(i,__x_ref) );
                 }
+            //else std::cout<<"\nProbleme Localization\n";
+
 #if !defined( NDEBUG )
             LIFE_ASSERT( false )
                 ( false ).warn( "problem localization" );
