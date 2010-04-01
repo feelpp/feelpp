@@ -460,7 +460,7 @@ public:
             M_mesh ( m ),
             IsInit(init_b)
         {
-            if (!IsInit)
+            if (IsInit)
                 init();
 
             M_kd_tree.nbNearNeighbor(15);
@@ -502,6 +502,8 @@ public:
          */
 
         bool isInit() { return IsInit;}
+
+        KDTree kdtree() { return M_kd_tree; }
 
         container_search_type const & result_analysis() { return M_resultAnalysis;}
 
