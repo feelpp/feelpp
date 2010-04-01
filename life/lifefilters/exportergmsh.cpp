@@ -722,14 +722,16 @@ ExporterGmsh<MeshType>::gmsh_save_Elements( std::ostream& out,
             nLocGeoPt = elt_it->nPoints();
             if (elt_it->isATriangleShape())
                 {
-                    if (mesh_type::nOrder==1)
+                    switch (mesh_type::nOrder) {
+                    case 1 : //if (mesh_type::nOrder==1)
                         {
                             out << 2 ;//type triangle order 1
                             out<<" 2 99 2";
                             for (uint16_type p=0;p<nLocGeoPt;++p)
                                 out << " " << elt_it->point( p ).id()+1;
+                            break;
                         }
-                    else if (mesh_type::nOrder==2)
+                    case 2 : //else if (mesh_type::nOrder==2)
                         {
                             out << 9 ;//type triangle order 2
                             out<<" 2 99 2";
@@ -739,11 +741,79 @@ ExporterGmsh<MeshType>::gmsh_save_Elements( std::ostream& out,
                             out << " " << elt_it->point( 5 ).id()+1;
                             out << " " << elt_it->point( 3 ).id()+1;
                             out << " " << elt_it->point( 4 ).id()+1;
+                            break;
                         }
-                    else if (mesh_type::nOrder>2)
+                    case 3 : //else if (mesh_type::nOrder==3)
                         {
+                            out << 21 ;//type triangle order 3
+                            out<<" 2 99 2";
+                            out << " " << elt_it->point( 0 ).id()+1;
+                            out << " " << elt_it->point( 1 ).id()+1;
+                            out << " " << elt_it->point( 2 ).id()+1;
+                            out << " " << elt_it->point( 7 ).id()+1;
+                            out << " " << elt_it->point( 8 ).id()+1;
+                            out << " " << elt_it->point( 3 ).id()+1;
+                            out << " " << elt_it->point( 4 ).id()+1;
+                            out << " " << elt_it->point( 5 ).id()+1;
+                            out << " " << elt_it->point( 6 ).id()+1;
+                            out << " " << elt_it->point( 9 ).id()+1;
+                            break;
+                        }
+                    case 4 : //else if (mesh_type::nOrder>3)
+                        {
+                            break;
 #warning TOFILL
                         }
+                    }
+                }
+            else if ( elt_it->isAQuadrangleShape())
+                {
+                    switch (mesh_type::nOrder) {
+                    case 1 :
+                        {
+                            out << 4 ;//type quadrangle order 1
+                            out<<" 2 99 2";
+                            for (uint16_type p=0;p<nLocGeoPt;++p)
+                                out << " " << elt_it->point( p ).id()+1;
+                            break;
+                        }
+                    case 2 :
+                        {
+                            out << 10 ;//type quadrangle order 2
+                            out<<" 2 99 2";
+                            out << " " << elt_it->point( 0 ).id()+1;
+                            out << " " << elt_it->point( 1 ).id()+1;
+                            out << " " << elt_it->point( 2 ).id()+1;
+                            out << " " << elt_it->point( 3 ).id()+1;
+                            out << " " << elt_it->point( 7 ).id()+1;
+                            out << " " << elt_it->point( 4 ).id()+1;
+                            out << " " << elt_it->point( 5 ).id()+1;
+                            out << " " << elt_it->point( 6 ).id()+1;
+                            break;
+                        }
+                    case 3 :
+                        {
+                            out << 21 ;//type triangle order 3
+                            out<<" 2 99 2";
+                            out << " " << elt_it->point( 0 ).id()+1;
+                            out << " " << elt_it->point( 1 ).id()+1;
+                            out << " " << elt_it->point( 2 ).id()+1;
+                            out << " " << elt_it->point( 7 ).id()+1;
+                            out << " " << elt_it->point( 8 ).id()+1;
+                            out << " " << elt_it->point( 3 ).id()+1;
+                            out << " " << elt_it->point( 4 ).id()+1;
+                            out << " " << elt_it->point( 5 ).id()+1;
+                            out << " " << elt_it->point( 6 ).id()+1;
+                            out << " " << elt_it->point( 9 ).id()+1;
+                            break;
+                        }
+                    case 4 : //else if (mesh_type::nOrder>3)
+                        {
+                            break;
+#warning TOFILL
+                        }
+                    }
+
                 }
             out<<"\n";
         }
@@ -865,6 +935,12 @@ template class ExporterGmsh<Mesh<Simplex<3,1> > >;
 template class ExporterGmsh<Mesh<SimplexProduct<1,1> > >;
 template class ExporterGmsh<Mesh<SimplexProduct<2,1> > >;
 template class ExporterGmsh<Mesh<SimplexProduct<3,1> > >;
+
+template class ExporterGmsh<Mesh<Simplex<2,3> > >;
+template class ExporterGmsh<Mesh<SimplexProduct<2,2> > >;
+template class ExporterGmsh<Mesh<SimplexProduct<2,3> > >;
+
+
 #endif // LIFE_INSTANTIATION_MODE
 }
 #endif // __EXPORTERGMSH_CPP
