@@ -407,7 +407,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     nptable[19]=13; // node second order pyramid (5 nodes associated with the vertices and 8 with the edges).
 
     // ho triangle
-    nptable[20]=10;
+    nptable[20]=9;// node order 3 triangle (9 nodes)
     nptable[21]=10;
     nptable[22]=15;
     nptable[23]=15;

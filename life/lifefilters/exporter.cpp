@@ -191,6 +191,14 @@ const bool meshs22e = Exporter<meshs22_t>::Factory::type::instance().registerPro
 const bool meshs22g = Exporter<meshs22_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshs22_t> );
 
 //
+// Simplex 2,3
+//
+typedef Mesh<Simplex<2,3> > meshs23_t;
+const bool meshs23e = Exporter<meshs23_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshs23_t> );
+const bool meshs23g = Exporter<meshs23_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshs23_t> );
+
+
+//
 // Simplex 3,1
 //
 typedef Mesh<Simplex<3,1> > meshs31_t;
@@ -212,6 +220,20 @@ const bool meshsp21e = Exporter<meshsp21_t>::Factory::type::instance().registerP
 const bool meshsp21g = Exporter<meshsp21_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshsp21_t> );
 
 //
+// SimplexProduct 2,2
+//
+typedef Mesh<SimplexProduct<2,2> > meshsp22_t;
+const bool meshsp22e = Exporter<meshsp22_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshsp22_t> );
+const bool meshsp22g = Exporter<meshsp22_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshsp22_t> );
+
+//
+// SimplexProduct 2,3
+//
+typedef Mesh<SimplexProduct<2,3> > meshsp23_t;
+const bool meshsp23e = Exporter<meshsp23_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshsp23_t> );
+const bool meshsp23g = Exporter<meshsp23_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshsp23_t> );
+
+//
 // SimplexProduct 3,1
 //
 typedef Mesh<SimplexProduct<3,1> > meshsp31_t;
@@ -231,6 +253,11 @@ template class Exporter<Mesh<Simplex<3,1,3> > >;
 template class Exporter<Mesh<SimplexProduct<1,1,1> > >;
 template class Exporter<Mesh<SimplexProduct<2,1,2> > >;
 template class Exporter<Mesh<SimplexProduct<3,1,3> > >;
+
+    template class Exporter<Mesh<Simplex<2,3,2> > >;
+    template class Exporter<Mesh<SimplexProduct<2,2,2> > >;
+    template class Exporter<Mesh<SimplexProduct<2,3,2> > >;
+
 //#endif // LIFE_INSTANTIATION_MODE
 
 //

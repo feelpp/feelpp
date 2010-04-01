@@ -643,6 +643,11 @@ template class ExporterEnsight<Mesh<Simplex<3,1,3> > >;
 template class ExporterEnsight<Mesh<SimplexProduct<1,1,1> > >;
 template class ExporterEnsight<Mesh<SimplexProduct<2,1,2> > >;
 template class ExporterEnsight<Mesh<SimplexProduct<3,1,3> > >;
+
+template class ExporterEnsight<Mesh<Simplex<2,3,2> > >;
+template class ExporterEnsight<Mesh<SimplexProduct<2,2> > >;
+template class ExporterEnsight<Mesh<SimplexProduct<2,3> > >;
+
 #endif // LIFE_INSTANTIATION_MODE
 }
 #endif // __EXPORTERENSIGHT_CPP
