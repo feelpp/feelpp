@@ -52,8 +52,6 @@
 #include <life/lifemesh/marker.hpp>
 
 
-
-
 namespace Life
 {
 //namespace blas = boost::numeric::bindings::blas;
@@ -1620,7 +1618,18 @@ public:
     /**
        \return the barycenter of the reference nodes
     */
-    node_type barycenterRef() const;
+    node_type barycenterRef() const
+    {
+        node_type __barycenter( _M_gm->dim() );
+        __barycenter.clear();
+        for ( uint16_type __c = 0;__c < _M_gm->referenceConvex().nPoints();++__c )
+            {
+                __barycenter += _M_gm->refNode( __c );
+            }
+        __barycenter /= _M_gm->referenceConvex().nPoints();
+        return __barycenter;
+    }
+
 
     /**
        \return the barycenter of the geometric nodes
@@ -1865,6 +1874,7 @@ private:
         size_type N = _M_xreal.size();
         size_type P = _M_xref.size();
 
+#if 0
         /*
           find an initial guess: closest geometric node to _M_xreal
         */
@@ -1882,6 +1892,11 @@ private:
                     }
             }
         _M_xref = x0;
+        node_type x0 = barycenterRef();
+
+#else
+        _M_xref = barycenterRef();
+#endif
 
         dense_matrix_type J( N, N );
         dense_vector_type R( N );
@@ -1890,6 +1905,8 @@ private:
         updateJacobian( _M_xref, J );
 
         // find xref by solving the non linear equation
+        _M_nlsolver->setType(TRUST_REGION);
+        _M_nlsolver->setRelativeResidualTol(1e-16);
         _M_nlsolver->solve( J, _M_xref, R, 1e-10, 10 );
 
 
