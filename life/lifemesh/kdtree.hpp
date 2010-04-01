@@ -222,6 +222,10 @@ public:
      */
     void showResultSearch();
 
+    /**
+     * print in a file the scatterplot with the cuts of hyperplan (2d et 3d)
+     */
+    void writeLatexData(std::string __nameFile = "kdtreeData.tex");
     //@}
 
 
