@@ -73,6 +73,7 @@ public:
     typedef typename super::timeset_const_iterator timeset_const_iterator;
 
     typedef typename timeset_type::step_type step_type;
+    typedef typename timeset_type::step_ptrtype step_ptrtype;
     typedef typename timeset_type::step_const_iterator step_const_iterator;
 
     typedef typename matrix_node<value_type>::type matrix_node_type;
@@ -148,16 +149,16 @@ private:
     void gmsh_save_Format( std::ostream& out) const;
 
     void gmsh_save_Nodes( std::ostream& out,
-                          timeset_ptrtype timeset ) const;
+                          step_ptrtype __step ) const;
 
     void gmsh_save_Elements( std::ostream& out,
-                             timeset_ptrtype timeset ) const;
+                             step_ptrtype __step ) const;
 
     void gmsh_save_NodeData( std::ostream& out,
-                             timeset_ptrtype timeset ) const;
+                             step_ptrtype __step ) const;
 
     void gmsh_save_ElementNodeData( std::ostream& out,
-                                    timeset_ptrtype timeset ) const;
+                                    step_ptrtype __step ) const;
 
 
 };
