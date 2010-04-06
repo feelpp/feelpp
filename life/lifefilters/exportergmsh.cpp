@@ -639,11 +639,11 @@ namespace Life
 
                                 if (__step->index()==1)
                                     {
-                                        out.open(__fname.str().c_str(), ios::out);
+                                        out.open(__fname.str().c_str(), std::ios::out);
                                     }
                                 else
                                     {
-                                        out.open(__fname.str().c_str(), ios::out | ios::app);
+                                        out.open(__fname.str().c_str(), std::ios::out | std::ios::app);
                                     }
 
                                 if (out.fail())
