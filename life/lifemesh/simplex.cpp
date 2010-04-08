@@ -52,19 +52,53 @@ const uint16_type line::__e2p[2] = { 0, 1 };
          0 ------- 1
               2
 */
-const uint16_type triangle::__e2p[6] =
+template<uint16_type Order>
+const uint16_type triangle<Order>::__e2p_order1[6] =
     {
         1, 2, // edge 0
         2, 0, // edge 1
         0, 1  // edge 2
     };
-const uint16_type triangle::__f2p[3] =
+template<uint16_type Order>
+const uint16_type triangle<Order>::__e2p_order2[9] =
+    {
+        1, 2, 3, // edge 0
+        2, 0, 4, // edge 1
+        0, 1, 5  // edge 2
+    };
+template<uint16_type Order>
+const uint16_type triangle<Order>::__e2p_order3[12] =
+    {
+        1, 2, 3, 4, // edge 0
+        2, 0, 5, 6, // edge 1
+        0, 1, 7, 8  // edge 2
+    };
+template<uint16_type Order>
+const uint16_type triangle<Order>::__e2p_order4[15] =
+    {
+        1, 2, 3, 4, 5, // edge 0
+        2, 0, 6, 7, 8, // edge 1
+        0, 1, 9,10,11  // edge 2
+    };
+template<uint16_type Order>
+const uint16_type triangle<Order>::__e2p_order5[18] =
+    {
+        1, 2, 3, 4, 5, 6, // edge 0
+        2, 0, 7, 8, 9,10, // edge 1
+        0, 1,11,12,13,14  // edge 2
+    };
+
+
+template<uint16_type Order>
+const uint16_type triangle<Order>::__f2p[3] =
     {
         0, // point 0
         1, // point 1
         2  // point 2
     };
-const uint16_type triangle::__f2e[3] =
+
+template<uint16_type Order>
+const uint16_type triangle<Order>::__f2e[3] =
     {
         0, // edge 0
         1, // edge 1
@@ -129,3 +163,10 @@ const int16_type tetra::__f2e_orientation[12] =
 /// \endcond
 
 } // Life
+
+
+template class Life::details::triangle<1>;
+template class Life::details::triangle<2>;
+template class Life::details::triangle<3>;
+template class Life::details::triangle<4>;
+template class Life::details::triangle<5>;
