@@ -33,6 +33,7 @@
 #include <life/lifemesh/entities.hpp>
 #include <life/lifemesh/convex.hpp>
 
+
 namespace Life
 {
 
@@ -70,7 +71,7 @@ struct line
         }
 };
 
-
+template<uint16_type Order >
 struct triangle
 {
     static uint16_type f2e( uint16_type /*f*/, uint16_type e ) { return __f2e[e]; }
@@ -79,14 +80,36 @@ struct triangle
     static uint16_type f2p( uint16_type /*f*/, uint16_type p ) { return __f2p[p]; }
     static const uint16_type __f2p[3];
 
-    static uint16_type e2p( uint16_type e, uint16_type p ) { return __e2p[2*e+p]; }
-    static const uint16_type __e2p[6];
+    static uint16_type e2p( uint16_type e, uint16_type p ) { return e2p(e,p,boost::mpl::int_<Order>()); }
+        /*        switch (Order)
+            {
+            case 1 : return __e2p_order1[2*e+p];break;
+            case 2 : return __e2p_order2[3*e+p];break;
+            case 3 : return __e2p_order3[4*e+p];break;
+            case 4 : return __e2p_order4[5*e+p];break;
+            case 5 : return __e2p_order5[6*e+p];break;
+            default : {std::cout<<"\nPROBLEME "<<Order<<"\n";return 0;}
+            }*/
+
+    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<1>) { return __e2p_order1[2*e+p]; }
+    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<2>) { return __e2p_order2[3*e+p]; }
+    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<3>) { return __e2p_order3[4*e+p]; }
+    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<4>) { return __e2p_order4[5*e+p]; }
+    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<5>) { return __e2p_order5[6*e+p]; }
+
+
+    static const uint16_type __e2p_order1[6];
+    static const uint16_type __e2p_order2[9];
+    static const uint16_type __e2p_order3[12];
+    static const uint16_type __e2p_order4[15];
+    static const uint16_type __e2p_order5[18];
+
 
     std::vector<uint16_type> entity( uint16_type /*topo_dim*/, uint16_type id ) const
         {
             std::vector<uint16_type> __entity( 2 );
-            __entity[0] = __e2p[2*id];
-            __entity[1] = __e2p[2*id+1];
+            __entity[0] = __e2p_order1[2*id];
+            __entity[1] = __e2p_order1[2*id+1];
             return __entity;
         }
 };
@@ -157,7 +180,13 @@ private:
     typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_TRIANGLE, SHAPE_TETRA> shapes_t;
     typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME> geometries_t;
 
-    typedef mpl::vector<boost::none_t, details::line, details::triangle, details::tetra> map_entity_to_point_t;
+    static const uint16_type orderTriangle = boost::mpl::if_<boost::mpl::greater< boost::mpl::int_<Order>,
+                                                                                  boost::mpl::int_<5> >,
+                                                             boost::mpl::int_<5>,
+                                                             boost::mpl::int_<Order>
+                                                             >::type::value;
+;
+    typedef mpl::vector<boost::none_t, details::line, details::triangle<orderTriangle>, details::tetra> map_entity_to_point_t;
 
     typedef mpl::vector_c<uint16_type, 0, 1, 2, 6> permutations_t;
 
