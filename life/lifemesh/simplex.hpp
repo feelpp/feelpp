@@ -81,22 +81,12 @@ struct triangle
     static const uint16_type __f2p[3];
 
     static uint16_type e2p( uint16_type e, uint16_type p ) { return e2p(e,p,boost::mpl::int_<Order>()); }
-        /*        switch (Order)
-            {
-            case 1 : return __e2p_order1[2*e+p];break;
-            case 2 : return __e2p_order2[3*e+p];break;
-            case 3 : return __e2p_order3[4*e+p];break;
-            case 4 : return __e2p_order4[5*e+p];break;
-            case 5 : return __e2p_order5[6*e+p];break;
-            default : {std::cout<<"\nPROBLEME "<<Order<<"\n";return 0;}
-            }*/
 
     static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<1>) { return __e2p_order1[2*e+p]; }
     static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<2>) { return __e2p_order2[3*e+p]; }
     static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<3>) { return __e2p_order3[4*e+p]; }
     static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<4>) { return __e2p_order4[5*e+p]; }
     static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<5>) { return __e2p_order5[6*e+p]; }
-
 
     static const uint16_type __e2p_order1[6];
     static const uint16_type __e2p_order2[9];
