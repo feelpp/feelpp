@@ -173,9 +173,13 @@ private:
     static const uint16_type orderTriangle = boost::mpl::if_<boost::mpl::greater< boost::mpl::int_<Order>,
                                                                                   boost::mpl::int_<5> >,
                                                              boost::mpl::int_<5>,
-                                                             boost::mpl::int_<Order>
-                                                             >::type::value;
-;
+                                                             typename boost::mpl::if_<boost::mpl::less< boost::mpl::int_<Order>,
+                                                                                                        boost::mpl::int_<1> >,
+                                                                                      boost::mpl::int_<1>,
+                                                                                      boost::mpl::int_<Order>
+                                                                                      >::type
+                                                                                      >::type::value;
+
     typedef mpl::vector<boost::none_t, details::line, details::triangle<orderTriangle>, details::tetra> map_entity_to_point_t;
 
     typedef mpl::vector_c<uint16_type, 0, 1, 2, 6> permutations_t;
