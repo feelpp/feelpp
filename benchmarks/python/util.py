@@ -46,6 +46,7 @@ def strToSci(str):
 		return "%.5e" % (float(str))
 
 def intervalLog(Vmin,Vmax,nbVal):
+		print "Vmin,Vmax=",Vmin, Vmax
 		return scipy.exp(scipy.arange(scipy.log(Vmin),
                                       scipy.log(Vmax),
                                       (scipy.log(Vmax)-scipy.log(Vmin))/nbVal)).tolist()[1:]
@@ -55,9 +56,11 @@ def intervalLin(Vmin,Vmax,nbVal):
 
 def pickInInterval(Vmin,Vmax,nbVal,nbPos,method):
 		if method==0:
-				return random.sample(intervalLin(Vmin,Vmax,nbPos),nbVal)
+				return intervalLin(Vmin,Vmax,nbPos)[:nbVal]
+				#return random.sample(intervalLin(Vmin,Vmax,nbPos),nbVal)
 		if method==1:
-				return random.sample(intervalLog(Vmin,Vmax,nbPos),nbVal)
+				return intervalLog(Vmin,Vmax,nbPos)[:nbVal]
+				#return random.sample(intervalLog(Vmin,Vmax,nbPos),nbVal)
 
 class Parameter:
 	def __init__(self,attrNames="",attrValues="",values=""):
