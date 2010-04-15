@@ -375,7 +375,8 @@ void
     if ( is_equal_order && this->vm()["stab"].template as<bool>() )
         pattern |= DOF_PATTERN_NEIGHBOR;
     Life::Context graph( pattern );
-    Log() << "[stokes] test : " << ( graph.test ( DOF_PATTERN_COUPLED ) || graph.test ( DOF_PATTERN_NEIGHBOR ) ) << "\n";
+    Log() << "[stokes] test : " << ( graph.test ( DOF_PATTERN_DEFAULT ) || graph.test ( DOF_PATTERN_NEIGHBOR ) ) << "\n";
+    Log() << "[stokes]  : graph.test ( DOF_PATTERN_DEFAULT )=" <<  graph.test ( DOF_PATTERN_DEFAULT ) << "\n";
     Log() << "[stokes]  : graph.test ( DOF_PATTERN_COUPLED )=" <<  graph.test ( DOF_PATTERN_COUPLED ) << "\n";
     Log() << "[stokes]  : graph.test ( DOF_PATTERN_NEIGHBOR)=" <<  graph.test ( DOF_PATTERN_NEIGHBOR ) << "\n";
     Log() << "[assembly] add diffusion terms\n";
@@ -406,8 +407,8 @@ void
         double p_term = double(OrderU);
         p_term = math::pow(p_term, 7./2.);
         AUTO( penalisation_term, constant(this->vm()["penalisation"].template as<double>())*hFace()*hFace()/p_term );
-        form2( Xh, Xh, D ) += integrate( internalfaces(mesh),
-                                         penalisation_term*(trans(jumpt(gradt(p)))*jump(grad(q))) );
+        form2( Xh, Xh, D, _pattern=pattern ) += integrate( internalfaces(mesh),
+                                                           penalisation_term*(trans(jumpt(gradt(p)))*jump(grad(q))) );
         Log() << "[assembly] form2 D stabilisation terms in " << t.elapsed() << "s\n"; t.restart();
     }
 
