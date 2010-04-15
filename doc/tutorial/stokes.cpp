@@ -66,7 +66,6 @@ makeOptions()
         ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
         ("bctype", Life::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
         ("bccoeff", Life::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("export", "export results(ensight, data file(1D)")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
     return stokesoptions.add( Life::life_options() ) ;
@@ -387,12 +386,15 @@ template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class
 void
 Stokes<Dim, Order, Entity>::exportResults( element_type& U, element_type& V )
 {
-    exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
-    exporter->step( 0 )->add( "u", U.template element<0>() );
-    exporter->step( 0 )->add( "p", U.template element<1>() );
-    exporter->step( 0 )->add( "u_exact", V.template element<0>() );
-    exporter->step( 0 )->add( "p_exact", V.template element<1>() );
-    exporter->save();
+    if ( exporter->doExport() )
+    {
+        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->add( "u", U.template element<0>() );
+        exporter->step( 0 )->add( "p", U.template element<1>() );
+        exporter->step( 0 )->add( "u_exact", V.template element<0>() );
+        exporter->step( 0 )->add( "p_exact", V.template element<1>() );
+        exporter->save();
+    }
 } // Stokes::export
 } // Life
 
