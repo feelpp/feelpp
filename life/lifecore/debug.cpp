@@ -442,7 +442,8 @@ DebugStream::operator<<( std::string const& s)
 {
     if ( __p->debug )
         __p->_M_output  << s;
-    if ( s[s.size() -1] == '\n')
+    size_t found = s.find( '\n' );
+    if ( found != std::string::npos )
         flush();
     return *this;
 }
