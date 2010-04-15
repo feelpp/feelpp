@@ -27,14 +27,21 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2005-09-03
  */
+
 // Boost.Test
+// make sure that the init_unit_test function is defined by UTF
 #define BOOST_TEST_MAIN
+// give a name to the testsuite
+#define BOOST_TEST_MODULE mesh testsuite
+// disable the main function creation, use our own
+#define BOOST_TEST_NO_MAIN
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/parameterized_test.hpp>
 
 using boost::unit_test::test_suite;
 
-#include <life/lifecore/life.hpp>
+#include <life/lifecore/environment.hpp>
 #include <life/lifemesh/geoentity.hpp>
 #include <life/lifemesh/refentity.hpp>
 
@@ -276,4 +283,15 @@ BOOST_AUTO_TEST_CASE( test_simple_mesh2d )
 #endif
     //mesh.updateElementFaces();
 
+}
+
+
+
+int BOOST_TEST_CALL_DECL
+main( int argc, char* argv[] )
+{
+    Life::Environment env( argc, argv );
+    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
+
+    return ret;
 }

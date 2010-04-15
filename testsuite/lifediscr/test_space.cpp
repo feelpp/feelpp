@@ -34,6 +34,7 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
+#include <life/lifecore/environment.hpp>
 #include <life/lifepoly/equispaced.hpp>
 #include <life/lifepoly/lagrange.hpp>
 #include <life/lifepoly/boundaryadaptedpolynomialset.hpp>
@@ -318,9 +319,11 @@ public:
 
 #if USE_BOOST_TEST
 boost::unit_test::test_suite*
-init_unit_test_suite( int /*argc*/, char* /*argv*/[] )
+init_unit_test_suite( int argc, char* argv[] )
 // main( int argc, char* argv[] )
 {
+    Life::Environment env( argc, argv );
+
     boost::unit_test::test_suite* test = BOOST_TEST_SUITE( "FunctionSpace test suite" );
 
 #if 1 // Finite Element
@@ -373,8 +376,10 @@ init_unit_test_suite( int /*argc*/, char* /*argv*/[] )
     return test;
 }
 #else
-int main()
+int main( int argc, char** argv)
 {
+    Life::Environment env( argc, argv );
+
     Life::Assert::setLog( "test_space.assert");
     Life::TestSpace1<1, 2, double> t11;t11();
     Life::TestSpace1<2, 2, double> t12;t12();

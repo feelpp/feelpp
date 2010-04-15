@@ -61,19 +61,20 @@ public:
         :
         Application( argc, argv, makeAbout() )
     {
-        std::cout << "id: " << Application::processId() << "\n"
-                  << "nprocs: " << Application::nProcess() << "\n";
+        std::cout << "id: " << this->comm().rank()  << "\n"
+                  << "nprocs: " << this->comm().size() << "\n";
     }
 
     void operator()() const
     {
+        int nprocs = this->comm().size();
         int m = 8;//10*Application::nProcess();
         int n = 8;//10*Application::nProcess();
 
         VectorPetsc<double> vec;
         MatrixPetsc<double> mat;
         std::cout << "is initialized ? " << mat.isInitialized() << "\n";
-        mat.init( m*n, m*n, m*n/Application::nProcess(), m*n );
+        mat.init( m*n, m*n, m*n/nprocs, m*n );
         std::cout << "is initialized ? " << mat.isInitialized() << "\n";
 
         /*

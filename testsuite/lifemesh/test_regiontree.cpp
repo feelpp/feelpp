@@ -32,6 +32,7 @@
 #include <iostream>
 #include <boost/lambda/lambda.hpp>
 
+#include <life/lifecore/environment.hpp>
 #include <life/lifealg/boundingbox.hpp>
 #include <life/lifemesh/regiontree.hpp>
 
@@ -45,8 +46,9 @@ using namespace Life;
 namespace lambda = boost::lambda;
 
 
-int main( int /*argc*/,  char** /*argv*/ )
+int main( int argc,  char** argv )
 {
+    Life::Environment env( argc, argv );
     typedef Mesh<Simplex<3,1> > mesh_type;
     mesh_type aMesh;
 
