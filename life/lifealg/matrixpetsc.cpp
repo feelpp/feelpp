@@ -820,7 +820,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
     MatSetOption(_M_mat,MAT_SYMMETRIC );
 #endif
     } else {
-        PetscPrintf(PETSC_COMM_WORLD,"Warning: Petsc matrix is non-symmetric \n");
+        Debug(7013) << "[MatrixPETSc::transpose] Petsc matrix is non-symmetric \n";
     }
 }
 
