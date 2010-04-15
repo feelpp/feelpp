@@ -169,9 +169,9 @@ public:
             if (Order == 1)      //=== 3D ===
                 h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.05:0.02:0.1" );
             else if (Order <= 3)      //=== 3D ===
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.08:0.02:0.2" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.15:0.02:0.5" );
             else if (Order < 5)      //=== 3D ===
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.1:0.5" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.15:0.1:0.5" );
             else
                 h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.2:0.1:0.7" );
 
@@ -325,18 +325,21 @@ Laplacian<Dim, Order, RDim, Entity>::run()
         }
 
     F->close();
-    Log() << "F assembled in " << t1.elapsed() << "s\n";
-    t1.restart();
+    Log() << "F assembled in " << t1.elapsed() << "s\n"; t1.restart();
 
     //Construction of the left hand side
 
     sparse_matrix_ptrtype D( backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh, Xh, D, _init=true ) =
+
+    form2( Xh, Xh, D, _init=true );
+    Log() << "D initialized in " << t1.elapsed() << "s\n";t1.restart();
+
+    form2( Xh, Xh, D ) +=
         integrate( elements(mesh),
                    nu*(gradt(u)*trans(grad(v)))
                    + beta*(idt(u)*id(v)) );
-
+    Log() << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";t1.restart();
     if ( M_use_weak_dirichlet )
         {
 
@@ -348,7 +351,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
                                              ( - nu*trans(id(v))*(gradt(u)*N())
                                                - nu*trans(idt(u))*(grad(v)*N())
                                                + M_gammabc*trans(idt(u))*id(v)/hFace()) );
-
+            Log() << "D weak bc assembled in " << t1.elapsed() << "s\n";t1.restart();
 
         }
 
