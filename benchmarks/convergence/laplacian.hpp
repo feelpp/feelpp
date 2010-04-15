@@ -72,7 +72,6 @@ makeOptions()
         ("gammabc", po::value<double>()->default_value( 20 ), "weak Dirichlet penalisation parameter " )
 
         ("weak", "use weak dirichlet conditions")
-        ("no-export", "don't export results")
         ;
     return laplacianoptions.add( Life::life_options() );
 }
@@ -149,12 +148,11 @@ public:
         M_use_weak_dirichlet( this->vm().count( "weak" ) ),
         M_gammabc( this->vm()["gammabc"].template as<double>() ),
 
-        M_do_export( !this->vm().count( "no-export" ) ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         if ( M_use_weak_dirichlet )
             Log() << "use weak Dirichlet BC\n";
-        if ( M_do_export )
+        if ( exporter->doExport() )
             Log() << "export results to ensight format\n";
         Parameter h;
         if (Dim == 1)           //=== 1D ===
@@ -233,7 +231,6 @@ private:
     bool M_use_weak_dirichlet;
     double M_gammabc;
 
-    bool M_do_export;
     export_ptrtype exporter;
 
 }; // Laplacian
@@ -425,7 +422,7 @@ template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_t
 void
 Laplacian<Dim, Order, RDim, Entity>::exportResults( element_type& U, element_type& v )
 {
-    if ( M_do_export )
+    if ( exporter->doExport() )
         {
             Log() << "exportResults starts\n";
 
