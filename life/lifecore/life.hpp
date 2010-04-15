@@ -50,6 +50,7 @@
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 
+#include <boost/mpi.hpp>
 
 #include <boost/program_options.hpp>
 
@@ -74,7 +75,7 @@ namespace Life
 namespace mpl = boost::mpl;
 namespace lambda = boost::lambda;
 namespace po = boost::program_options;
-
+namespace mpi=boost::mpi;
 
 namespace detail
 {
