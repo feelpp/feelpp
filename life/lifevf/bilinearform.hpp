@@ -54,8 +54,9 @@ namespace vf
 {
 enum DofGraph
     {
-        DOF_PATTERN_COUPLED  = 1 << 0,
-        DOF_PATTERN_NEIGHBOR = 1 << 1
+        DOF_PATTERN_DEFAULT  = 1 << 0,
+        DOF_PATTERN_COUPLED  = 1 << 1,
+        DOF_PATTERN_NEIGHBOR = 1 << 2
     };
 
 /// \cond detail
@@ -493,6 +494,7 @@ public:
 
     BilinearForm( BilinearForm const& __vf )
         :
+        M_pattern( __vf.M_pattern ),
         _M_X1( __vf._M_X1 ),
         _M_X2( __vf._M_X2 ),
         _M_matrix( __vf._M_matrix ),
@@ -525,6 +527,7 @@ public:
     {
         if ( this != &form )
         {
+            M_pattern = form.M_pattern;
             _M_X1 = form._M_X1;
             _M_X2 = form._M_X2;
             _M_matrix = form._M_matrix;
@@ -567,6 +570,22 @@ public:
     /** @name Accessors
      */
     //@{
+
+    /**
+     * \return true if the pattern is coupled with respect to the components,
+     * false otherwise
+     */
+    bool isPatternCoupled() const { Life::Context ctx( M_pattern ); return ctx.test( DOF_PATTERN_COUPLED ); }
+
+    /**
+     * \return true if the pattern is the default one, false otherwise
+     */
+    bool isPatternDefault() const { Life::Context ctx( M_pattern ); return ctx.test( DOF_PATTERN_DEFAULT ); }
+
+    /**
+     * \return true if the pattern adds the neighboring elements, false otherwise
+     */
+    bool isPatternNeighbor() const { Life::Context ctx( M_pattern ); return ctx.test( DOF_PATTERN_NEIGHBOR ); }
 
     /**
      * \return the trial function space
@@ -744,6 +763,8 @@ private:
     void assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<true> );
 private:
 
+    size_type M_pattern;
+
     space_1_ptrtype _M_X1;
     space_2_ptrtype _M_X2;
 
@@ -776,6 +797,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
                                                     size_type graph_hints
                                                     )
     :
+    M_pattern( graph_hints ),
     _M_X1( Xh ),
     _M_X2( Yh ),
     _M_matrix( __M ),
@@ -825,6 +847,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
                                                     value_type threshold,
                                                     size_type graph_hints )
     :
+    M_pattern( graph_hints ),
     _M_X1( Xh ),
     _M_X2( Yh ),
     _M_matrix( __M ),
@@ -1336,8 +1359,8 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
 
     graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
-                                                    first1_dof_on_proc, last1_dof_on_proc,
-                                                    first2_dof_on_proc, last2_dof_on_proc ) );
+                                                  first1_dof_on_proc, last1_dof_on_proc,
+                                                  first2_dof_on_proc, last2_dof_on_proc ) );
 
     typedef typename mesh_type::element_const_iterator mesh_element_const_iterator;
 
@@ -1349,104 +1372,119 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
     // then all the DOFS are coupled to each other.  Furthermore,
     // we can take a shortcut and do this more quickly here.  So
     // we use an if-test.
-    Debug( 5050 ) << "[computeGraph] test : " << ( graph.test ( DOF_PATTERN_COUPLED ) || graph.test ( DOF_PATTERN_NEIGHBOR ) ) << "\n";
+    Debug( 5050 ) << "[computeGraph]  : graph.test ( DOF_PATTERN_DEFAULT )=" <<  graph.test ( DOF_PATTERN_DEFAULT ) << "\n";
     Debug( 5050 ) << "[computeGraph]  : graph.test ( DOF_PATTERN_COUPLED )=" <<  graph.test ( DOF_PATTERN_COUPLED ) << "\n";
     Debug( 5050 ) << "[computeGraph]  : graph.test ( DOF_PATTERN_NEIGHBOR)=" <<  graph.test ( DOF_PATTERN_NEIGHBOR ) << "\n";
-#if 0
-    if ( graph.test ( DOF_PATTERN_COUPLED ) ||
-         graph.test ( DOF_PATTERN_NEIGHBOR ) )
-#else
-        if (1)
-#endif
-        {
-            Debug( 5050 ) << "[computeGraph] test (DOF_PATTERN_COUPLED || DOF_PATTERN_NEIGHBOR) ok\n";
-            std::vector<size_type>
-                element_dof1,
-                element_dof2,
-                neighbor_dof;
-            std::set<size_type> dof_to_add;
+    bool do_less =  ( ( graph.test( DOF_PATTERN_DEFAULT ) &&
+                        ( _M_X1->dof()->nComponents ==
+                          _M_X2->dof()->nComponents ) ) &&
+                      !graph.test( DOF_PATTERN_COUPLED ) );
+    std::vector<size_type>
+        element_dof1,
+        element_dof2,
+        neighbor_dof;
 
-            for ( ; elem_it != elem_en; ++elem_it)
-                {
+    for ( ; elem_it != elem_en; ++elem_it)
+    {
 #if !defined(NDEBUG)
-                    Debug( 5050 ) << "[BilinearForm::computePatter] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
+        Debug( 5050 ) << "[BilinearForm::computePatter] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
 #endif /* NDEBUG */
-                    mesh_element_type const& elem = *elem_it;
+        mesh_element_type const& elem = *elem_it;
 
-                    // Get the global indices of the DOFs with support on this element
-                    element_dof1 = _M_X1->dof()->getIndices( elem.id() );
-                    element_dof2 = _M_X2->dof()->getIndices( elem.id() );
+        // Get the global indices of the DOFs with support on this element
+        element_dof1 = _M_X1->dof()->getIndices( elem.id() );
+        element_dof2 = _M_X2->dof()->getIndices( elem.id() );
 
-                    // We can be more efficient if we sort the element DOFs
-                    // into increasing order
-                    std::sort(element_dof1.begin(), element_dof1.end());
-                    std::sort(element_dof2.begin(), element_dof2.end());
+        // We can be more efficient if we sort the element DOFs
+        // into increasing order
+        std::sort(element_dof1.begin(), element_dof1.end());
+        std::sort(element_dof2.begin(), element_dof2.end());
 
-                    const uint16_type  n1_dof_on_element = element_dof1.size();
-                    const uint16_type  n2_dof_on_element = element_dof2.size();
+        const uint16_type  n1_dof_on_element = element_dof1.size();
+        const uint16_type  n2_dof_on_element = element_dof2.size();
 
-                    for (size_type i=0; i<n1_dof_on_element; i++)
-                        {
-                            const size_type ig1 = element_dof1[i];
+        for (size_type i=0; i<n1_dof_on_element; i++)
+        {
+            const size_type ig1 = element_dof1[i];
+            const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
+            const int ncomp1 = i / ndofpercomponent1;
+            const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
 
-                            // Only bother if this matrix row will be stored
-                            // on this processor.
-                            //if ((ig1 >= first1_dof_on_proc) &&
-                            //(ig1 <= last1_dof_on_proc))
-                                {
-                                    // This is what I mean
-                                    // assert ((ig - first_dof_on_proc) >= 0);
-                                    // but do the test like this because ig and
-                                    // first_dof_on_proc are size_types
+            // Only bother if this matrix row will be stored
+            // on this processor.
+            //if ((ig1 >= first1_dof_on_proc) &&
+            //(ig1 <= last1_dof_on_proc))
+            {
+                // This is what I mean
+                // assert ((ig - first_dof_on_proc) >= 0);
+                // but do the test like this because ig and
+                // first_dof_on_proc are size_types
 #if 0
-                                    LIFE_ASSERT (ig1 >= first1_dof_on_proc )( ig1 )( first1_dof_on_proc ).error ("invalid dof index");
-                                    LIFE_ASSERT ((ig1 - first1_dof_on_proc) < sparsity_graph->size() )
-                                        ( ig1 )( first1_dof_on_proc )( sparsity_graph->size() ).error( "invalid dof index" );
+                LIFE_ASSERT (ig1 >= first1_dof_on_proc )( ig1 )( first1_dof_on_proc ).error ("invalid dof index");
+                LIFE_ASSERT ((ig1 - first1_dof_on_proc) < sparsity_graph->size() )
+                    ( ig1 )( first1_dof_on_proc )( sparsity_graph->size() ).error( "invalid dof index" );
 #endif
-                                    graph_type::row_type& row = sparsity_graph->row(ig1);
-                                    bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
-                                    row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
-                                    row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
-                                    Debug( 5051 ) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
+                graph_type::row_type& row = sparsity_graph->row(ig1);
+                bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
+                row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                Debug( 5051 ) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
 
-                                    // Build a list of the DOF indices not found in the
-                                    // sparsity graph
-                                    //dof_to_add.clear();
-                                    //dof_to_add.insert( row.get<2>().begin(), row.get<2>().end() );
+                if ( do_less )
+                {
+                    if ( ncomp1 == (_M_X2->dof()->nComponents-1) )
+                        row.get<2>().insert( element_dof2.begin()+ncomp1*ndofpercomponent2,
+                                             element_dof2.end() );
+                    else
+                        row.get<2>().insert( element_dof2.begin()+ncomp1*ndofpercomponent2,
+                                             element_dof2.begin()+(ncomp1+1)*ndofpercomponent2 );
+                }
+                else
+                {
+                    row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                }
+                // Now (possibly) add dof from neighboring elements
+                if ( graph.test( DOF_PATTERN_NEIGHBOR ) )
+                {
+                    for (uint16_type ms=0; ms < elem.nNeighbors(); ms++)
+                    {
+                        mesh_element_type const* neighbor = NULL;
+                        size_type neighbor_id = elem.neighbor(ms).first;
+                        size_type neighbor_process_id = elem.neighbor(ms).second;
+                        if ( neighbor_id != invalid_size_type_value )
+                            //&& neighbor_process_id != proc_id )
+                        {
 
-                                    row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
-                                    // Now (possibly) add dof from neighboring elements
-                                    if ( graph.test( DOF_PATTERN_NEIGHBOR ) )
-                                    {
-                                        for (uint16_type ms=0; ms < elem.nNeighbors(); ms++)
-                                        {
-                                            mesh_element_type const* neighbor = NULL;
-                                            size_type neighbor_id = elem.neighbor(ms).first;
-                                            size_type neighbor_process_id = elem.neighbor(ms).second;
-                                            if ( neighbor_id != invalid_size_type_value )
-                                                //&& neighbor_process_id != proc_id )
-                                            {
+                            neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
+                                                                                 neighbor_process_id ) );
 
-                                                neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
-                                                                                                     neighbor_process_id ) );
+                            if ( neighbor_id == neighbor->id()  )
+                            {
+                                neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
+                                if ( do_less )
+                                {
+                                    if ( ncomp1 == (_M_X2->dof()->nComponents-1) )
+                                        row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
+                                                             neighbor_dof.end() );
+                                    else
+                                        row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
+                                                             neighbor_dof.begin()+(ncomp1+1)*ndofpercomponent2 );
 
-                                                if ( neighbor_id == neighbor->id()  )
-                                                {
-                                                    neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
-                                                    row.get<2>().insert( neighbor_dof.begin(), neighbor_dof.end() );
-                                                } // neighbor_id
-                                            }
+                                }
+                                else
+                                {
+                                    row.get<2>().insert( neighbor_dof.begin(), neighbor_dof.end() );
+                                }
 
-                                        } // neighbor graph
-                                    }
-                                } // only dof on proc
+                            } // neighbor_id
+                        }
 
-                        }// dof loop
-                } // element iterator loop
-        }
-    else
-        {}
+                    } // neighbor graph
+                }
+            } // only dof on proc
 
+        }// dof loop
+    } // element iterator loop
 
     sparsity_graph->close();
     Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
@@ -1636,8 +1674,40 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
     Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
 
-    for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
-        for ( uint16_type c1 = 0; c1 < test_fecontext_type::nComponents1; ++c1 )
+    if ( ( _M_form.isPatternDefault() &&
+           ( _M_test_dof->nComponents == _M_trial_dof->nComponents ) ) &&
+         !_M_form.isPatternCoupled() )
+    {
+        for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
+            for ( uint16_type c1 = 0; c1 < test_fecontext_type::nComponents1; ++c1 )
+            {
+                indi.setIndex( boost::make_tuple( i, c1, 0 ) );
+                LIFE_ASSERT( size_type(indi.index()) ==
+                             size_type(c1*test_fecontext_type::nDof+i) )
+                    ( i )( c1 )
+                    ( indi.index() )
+                    ( c1*test_fecontext_type::nDof+i ).error( "invalid test index" );
+
+                for ( uint16_type j = 0; j < trial_fecontext_type::nDof; ++j )
+                {
+                        indj.setIndex( boost::make_tuple( j, c1, 0 ) );
+                        LIFE_ASSERT( size_type(indj.index()) ==
+                                     size_type(c1*trial_fecontext_type::nDof+j) )
+                            ( j )( c1 )
+                            ( indj.index() )
+                            ( c1*trial_fecontext_type::nDof+j ).error( "invalid trial index" );
+
+                        _M_rep[i][c1][j][c1] = M_integrator( *_M_eval_expr00,
+                                                             indi,
+                                                             indj,
+                                                             0, 0 );
+                    } // j, c2
+            }
+    }
+    else
+    {
+        for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
+            for ( uint16_type c1 = 0; c1 < test_fecontext_type::nComponents1; ++c1 )
             {
                 indi.setIndex( boost::make_tuple( i, c1, 0 ) );
                 LIFE_ASSERT( size_type(indi.index()) ==
@@ -1648,53 +1718,22 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
 
                 for ( uint16_type j = 0; j < trial_fecontext_type::nDof; ++j )
                     for ( uint16_type c2 = 0; c2 < trial_fecontext_type::nComponents1; ++c2 )
-                        {
-                            indj.setIndex( boost::make_tuple( j, c2, 0 ) );
-                            LIFE_ASSERT( size_type(indj.index()) ==
-                                         size_type(c2*trial_fecontext_type::nDof+j) )
-                                ( j )( c2 )
-                                ( indj.index() )
-                                ( c2*trial_fecontext_type::nDof+j ).error( "invalid trial index" );
-#if 0
-                            if ( vm::has_symm<expression_type::context>::value )
-                                {
-                                    if ( indj.index() <= indi.index() )
-                                        {
-                                            _M_rep[i][c1][j][c2] = M_integrator( *_M_eval_expr00,
-                                                                                 indi,
-                                                                                 indj,
-                                                                                 0, 0,
-                                                                                 mpl::int_<vm::SYMM>() );
-                                            _M_rep[j][c2][i][c1] = _M_rep[i][c1][j][c2];
-                                        }
-                                }
-                            else
-#endif
-                                {
-#if 0
-                                    if ( (indj.index() <= indi.index()) &&
-                                         (test_fecontext_type::nDof*test_fecontext_type::nComponents1 ==
-                                          trial_fecontext_type::nDof*trial_fecontext_type::nComponents1) )
-                                        {
-                                            _M_rep[i][c1][j][c2] = M_integrator( *_M_eval_expr00,
-                                                                                 indi,
-                                                                                 indj,
-                                                                                 0, 0 );
-                                            _M_rep[j][c2][i][c1] = _M_rep[i][c1][j][c2];
-                                        }
-                                    else
-#endif
-                                        {
-                                            _M_rep[i][c1][j][c2] = M_integrator( *_M_eval_expr00,
-                                                                                 indi,
-                                                                                 indj,
-                                                                                 0, 0 );
-                                        }
-                                }
-                        } // j, c2
-            }
-}
+                {
+                        indj.setIndex( boost::make_tuple( j, c2, 0 ) );
+                        LIFE_ASSERT( size_type(indj.index()) ==
+                                     size_type(c2*trial_fecontext_type::nDof+j) )
+                            ( j )( c2 )
+                            ( indj.index() )
+                            ( c2*trial_fecontext_type::nDof+j ).error( "invalid trial index" );
 
+                        _M_rep[i][c1][j][c2] = M_integrator( *_M_eval_expr00,
+                                                             indi,
+                                                             indj,
+                                                             0, 0 );
+                    } // j, c2
+            }
+    }
+}
     template<typename FE1,  typename FE2, typename ElemContType>
         template<typename GeomapContext,typename ExprT,typename IM>
         void
@@ -1710,13 +1749,46 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
             //BOOST_MPL_ASSERT_MSG( eval_expr_type::shape::M == 1, INVALID_TENSOR_EXTENT_M, mpl::int_<eval_expr_type::shape::M> );
             //BOOST_MPL_ASSERT_MSG( eval_expr_type::shape::N == 1, INVALID_TENSOR_EXTENT_N, mpl::int_<eval_expr_type::shape::N> );
 
-            for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
+            if ( ( _M_form.isPatternDefault() &&
+                   ( _M_test_dof->nComponents == _M_trial_dof->nComponents ) ) &&
+                 !_M_form.isPatternCoupled() )
+            {
+                for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
                 for ( uint16_type c1 = 0; c1 < test_fecontext_type::nComponents1; ++c1 )
                     {
                         indi.setIndex( boost::make_tuple( i, c1, 0 ) );
                         for ( uint16_type j = 0; j < trial_fecontext_type::nDof; ++j )
+                        {
+                            indj.setIndex( boost::make_tuple( j, c1, 0 ) );
+                            _M_rep[i][c1][j][c1] += M_integrator( *_M_eval_expr00, indi, indj, 0, 0 );
+
+                            uint16_type ii = i;
+                            uint16_type jj = j + trial_fecontext_type::nDof;
+
+                            _M_rep[ii][c1][jj][c1] += M_integrator( *_M_eval_expr01, indi, indj, 0, 0 );
+
+                            ii = i+ test_fecontext_type::nDof;
+                            jj = j ;
+
+                            _M_rep[ii][c1][jj][c1] += M_integrator( *_M_eval_expr10, indi, indj, 0, 0 );
+
+                            ii = i+ test_fecontext_type::nDof;
+                            jj = j + trial_fecontext_type::nDof;
+
+                            _M_rep[ii][c1][jj][c1] += M_integrator( *_M_eval_expr11, indi, indj, 0, 0 );
+                        }
+
+                    }
+            }
+            else
+            {
+                for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
+                    for ( uint16_type c1 = 0; c1 < test_fecontext_type::nComponents1; ++c1 )
+                    {
+                        indi.setIndex( boost::make_tuple( i, c1, 0 ) );
+                        for ( uint16_type j = 0; j < trial_fecontext_type::nDof; ++j )
                             for ( uint16_type c2 = 0; c2 < trial_fecontext_type::nComponents1; ++c2 )
-                                {
+                            {
                                     indj.setIndex( boost::make_tuple( j, c2, 0 ) );
                                     _M_rep[i][c1][j][c2] += M_integrator( *_M_eval_expr00, indi, indj, 0, 0 );
 
@@ -1737,6 +1809,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
                                 }
 
                     }
+            }
         }
     template<typename FE1,  typename FE2, typename ElemContType>
         template<typename GeomapContext,typename ExprT,typename IM>
@@ -1755,19 +1828,44 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
             Debug( 5050 ) << "[BilinearForm::assemble] col start " << col_start << "\n";
 #endif /* NDEBUG */
 
-            for ( uint16_type i = 0 ; i < test_fecontext_type::nDof; ++i )
-                for ( uint16_type c1 = 0 ; c1 < test_fecontext_type::nComponents1; ++c1 )
+            bool do_less = ( ( _M_form.isPatternDefault() &&
+                               ( _M_test_dof->nComponents == _M_trial_dof->nComponents ) ) &&
+                             !_M_form.isPatternCoupled() );
+            if ( do_less )
+            {
+                for ( uint16_type i = 0 ; i < test_fecontext_type::nDof; ++i )
+                {
+                    for ( uint16_type c1 = 0 ; c1 < test_fecontext_type::nComponents1; ++c1 )
+                    {
+                        boost::tie( ig, isign, boost::tuples::ignore) = _M_test_dof->localToGlobal( elt_0, i, c1 );
+                        ig += row_start;
+                        for ( uint16_type j = 0 ; j < trial_fecontext_type::nDof; j++ )
+                        {
+                            boost::tie( jg, jsign, boost::tuples::ignore ) = _M_trial_dof->localToGlobal( elt_0, j, c1 );
+                            jg += col_start;
+                            _M_form.add( ig, jg, value_type(isign*jsign)*_M_rep[i][c1][j][c1] );
+                        }
+                    }
+                } // element loop
+            }
+            else // couple the components
+            {
+                for ( uint16_type i = 0 ; i < test_fecontext_type::nDof; ++i )
+                {
+                    for ( uint16_type c1 = 0 ; c1 < test_fecontext_type::nComponents1; ++c1 )
                     {
                         boost::tie( ig, isign, boost::tuples::ignore) = _M_test_dof->localToGlobal( elt_0, i, c1 );
                         ig += row_start;
                         for ( uint16_type j = 0 ; j < trial_fecontext_type::nDof; j++ )
                             for ( uint16_type c2 = 0 ; c2 < trial_fecontext_type::nComponents1; ++c2 )
-                                {
-                                    boost::tie( jg, jsign, boost::tuples::ignore ) = _M_trial_dof->localToGlobal( elt_0, j, c2 );
-                                    jg += col_start;
-                                    _M_form.add( ig, jg, value_type(isign*jsign)*_M_rep[i][c1][j][c2] );
-                                }
+                            {
+                                boost::tie( jg, jsign, boost::tuples::ignore ) = _M_trial_dof->localToGlobal( elt_0, j, c2 );
+                                jg += col_start;
+                                _M_form.add( ig, jg, value_type(isign*jsign)*_M_rep[i][c1][j][c2] );
+                            }
                     }
+                } // element loop
+            }
         }
 
     template<typename FE1,  typename FE2, typename ElemContType>
@@ -1784,8 +1882,36 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
             const uint16_type test_ndof = test_fecontext_type::nDof;
             const uint16_type trial_ndof = trial_fecontext_type::nDof;
             //std::cout << "rep_" << elt_0 << "=" << _M_rep << "\n";
-            for ( uint16_type i = 0 ; i < test_fecontext_type::nDof; ++i )
-                for ( uint16_type c1 = 0 ; c1 < test_fecontext_type::nComponents1; ++c1 )
+
+            if ( ( _M_form.isPatternDefault() &&
+                   ( _M_test_dof->nComponents == _M_trial_dof->nComponents ) ) &&
+                 !_M_form.isPatternCoupled() )
+            {
+                for ( uint16_type i = 0 ; i < test_fecontext_type::nDof; ++i )
+                    for ( uint16_type c1 = 0 ; c1 < test_fecontext_type::nComponents1; ++c1 )
+                    {
+                        boost::tie( ig0, isign0, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_0, i, c1 );
+                        boost::tie( ig1, isign1, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_1, i, c1 );
+                        ig0 += row_start;
+                        ig1 += row_start;
+                        for ( uint16_type j = 0 ; j < trial_fecontext_type::nDof; j++ )
+                        {
+                            boost::tie( jg0, jsign0, boost::tuples::ignore ) = _M_trial_dof->localToGlobal( elt_0, j, c1 );
+                            boost::tie( jg1, jsign1, boost::tuples::ignore ) = _M_trial_dof->localToGlobal( elt_1, j, c1 );
+                            jg0 += col_start;
+                            jg1 += col_start;
+
+                            _M_form.add( ig0, jg0, value_type(isign0*jsign0)*_M_rep[i][c1][j][c1] );
+                            _M_form.add( ig0, jg1, value_type(isign0*jsign1)*_M_rep[i][c1][j+trial_ndof][c1] );
+                            _M_form.add( ig1, jg0, value_type(isign0*jsign0)*_M_rep[i+test_ndof][c1][j][c1] );
+                            _M_form.add( ig1, jg1, value_type(isign0*jsign1)*_M_rep[i+test_ndof][c1][j+trial_ndof][c1] );
+                        }
+                    }
+            }
+            else
+            {
+                for ( uint16_type i = 0 ; i < test_fecontext_type::nDof; ++i )
+                    for ( uint16_type c1 = 0 ; c1 < test_fecontext_type::nComponents1; ++c1 )
                     {
                         boost::tie( ig0, isign0, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_0, i, c1 );
                         boost::tie( ig1, isign1, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_1, i, c1 );
@@ -1805,6 +1931,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
                                     _M_form.add( ig1, jg1, value_type(isign0*jsign1)*_M_rep[i+test_ndof][c1][j+trial_ndof][c2] );
                                 }
                     }
+            }
         }
 template<typename BFType, typename ExprType, typename TestSpaceType>
 template<typename SpaceType>
