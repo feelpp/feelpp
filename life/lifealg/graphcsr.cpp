@@ -111,9 +111,11 @@ GraphCSR::close()
         {
             // Get the row of the sparsity pattern
             row_type const& irow = it->second;
-            if ( boost::get<0>( irow ) == Application::processId() )
+            if ( boost::get<0>( irow ) == M_comm.rank() )
                 {
-                    std::vector<size_type> const& ivec = boost::get<2>( irow );
+                    //std::vector<size_type> const& ivec = boost::get<2>( irow );
+                    std::vector<size_type> ivec( boost::get<2>( irow ).begin(),
+                                                 boost::get<2>( irow ).end() );
                     size_type globalindex = it->first;
                     size_type localindex = boost::get<1>( irow );
 
