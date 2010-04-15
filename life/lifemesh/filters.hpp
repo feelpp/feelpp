@@ -31,7 +31,6 @@
 
 #include <utility>
 
-#include <life/lifecore/application.hpp>
 #include <life/lifemesh/traits.hpp>
 
 namespace Life
@@ -99,7 +98,7 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 elements( MeshType const& mesh, flag_type flag, mpl::bool_<false> )
 {
 
-    Debug(4000) << "[filters] elements on proc " << Application::processId() << " flag = " << flag << "\n";
+    Debug(4000) << "[filters] elements on proc " << mesh.comm().rank() << " flag = " << flag << "\n";
     Debug(4000) << "[filters] elements begin id : " << mesh.beginElementWithProcessId( flag )->id() << "\n";
     Debug(4000) << "[filters] elements n : " << std::distance( mesh.beginElementWithProcessId( flag ),
                                                                mesh.endElementWithProcessId( flag ) )
@@ -322,7 +321,7 @@ internalfaces( MeshType const& mesh, size_type __pid, mpl::bool_<false> )
 {
 
     typedef typename MeshTraits<MeshType>::location_face_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.internalFaces( __pid );
+    std::pair<iterator, iterator> p = mesh.internalFaces();
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               p.first, p.second );
 }
@@ -514,7 +513,17 @@ internalpoints( MeshType const& mesh, mpl::bool_<false> )
 } // detail
 /// \endcond
 
+template<typename MeshType>
+size_type meshrank ( MeshType const& mesh, mpl::bool_<true> )
+{
+    return mesh->comm().rank();
+}
 
+template<typename MeshType>
+size_type meshrank ( MeshType const& mesh, mpl::bool_<false> )
+{
+    return mesh.comm().rank();
+}
 /**
  * \return a pair of iterators to iterate over elements with pid \p flag
  */
@@ -536,10 +545,11 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_const_iterator,
              typename MeshTraits<MeshType>::element_const_iterator>
-elements( MeshType const& mesh, flag_type flag = Application::processId() )
+elements( MeshType const& mesh )
 {
-    return detail::elements( mesh, flag, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
-    //return elements( mesh, flag, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::elements( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    //return elements( mesh, flag, is_ptr_or_shared_ptr() );
 }
 /**
  * \return a pair of iterators to iterate over elements of the mesh
@@ -549,9 +559,10 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::location_element_const_iterator,
              typename MeshTraits<MeshType>::location_element_const_iterator>
-boundaryelements( MeshType const& mesh, size_type pid  = Application::processId() )
+boundaryelements( MeshType const& mesh )
 {
-    return detail::boundaryelements( mesh, pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::boundaryelements( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 
@@ -564,9 +575,10 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::location_element_const_iterator,
              typename MeshTraits<MeshType>::location_element_const_iterator>
-internalelements( MeshType const& mesh, size_type pid  = Application::processId() )
+internalelements( MeshType const& mesh )
 {
-    return detail::internalelements( mesh, pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::internalelements( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -577,9 +589,10 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::marker_element_const_iterator,
              typename MeshTraits<MeshType>::marker_element_const_iterator>
-markedelements( MeshType const& mesh, flag_type flag, size_type pid  = Application::processId() )
+markedelements( MeshType const& mesh, flag_type flag )
 {
-    return detail::markedelements( mesh, flag, pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::markedelements( mesh, flag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -590,9 +603,10 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::marker2_element_const_iterator,
              typename MeshTraits<MeshType>::marker2_element_const_iterator>
-marked2elements( MeshType const& mesh, flag_type flag, size_type pid  = Application::processId() )
+marked2elements( MeshType const& mesh, flag_type flag )
 {
-    return detail::marked2elements( mesh, flag, pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::marked2elements( mesh, flag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -603,9 +617,10 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::marker3_element_const_iterator,
              typename MeshTraits<MeshType>::marker3_element_const_iterator>
-marked3elements( MeshType const& mesh, flag_type flag, size_type pid  = Application::processId() )
+marked3elements( MeshType const& mesh, flag_type flag )
 {
-    return detail::marked3elements( mesh, flag, pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::marked3elements( mesh, flag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -617,7 +632,8 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_const_iterator>
 idedelements( MeshType const& mesh, flag_type flag )
 {
-    return detail::idedelements( mesh, flag, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::idedelements( mesh, flag, is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -633,9 +649,10 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::pid_face_const_iterator,
              typename MeshTraits<MeshType>::pid_face_const_iterator>
-faces( MeshType const& mesh, size_type __pid = Application::processId() )
+faces( MeshType const& mesh )
 {
-    return detail::faces( mesh, __pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::faces( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -647,7 +664,8 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::face_const_iterator>
 idedfaces( MeshType const& mesh, size_type id )
 {
-    return detail::idedfaces( mesh, id, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::idedfaces( mesh, id, is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -665,10 +683,11 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::marker_face_const_iterator,
              typename MeshTraits<MeshType>::marker_face_const_iterator>
 markedfaces( MeshType const& mesh,
-             flag_type __marker, size_type __pid = Application::processId() )
+             flag_type __marker )
 {
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
     Debug(4000) << "[markedfaces] marker = " << __marker << "\n";
-    return detail::markedfaces( mesh, __marker, __pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    return detail::markedfaces( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -679,9 +698,10 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::location_face_const_iterator,
              typename MeshTraits<MeshType>::location_face_const_iterator>
-boundaryfaces( MeshType const& mesh, size_type __pid = Application::processId()  )
+boundaryfaces( MeshType const& mesh  )
 {
-    return detail::boundaryfaces( mesh, __pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::boundaryfaces( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 
@@ -693,9 +713,10 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::location_face_const_iterator,
              typename MeshTraits<MeshType>::location_face_const_iterator>
-internalfaces( MeshType const& mesh, size_type __pid = Application::processId() )
+internalfaces( MeshType const& mesh )
 {
-    return detail::internalfaces( mesh, __pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::internalfaces( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -706,9 +727,10 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::interprocess_face_const_iterator,
              typename MeshTraits<MeshType>::interprocess_face_const_iterator>
-interprocessfaces( MeshType const& mesh, size_type __pid = Application::processId() )
+interprocessfaces( MeshType const& mesh )
 {
-    return detail::interprocessfaces( mesh, __pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::interprocessfaces( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 
@@ -725,10 +747,10 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
              typename MeshTraits<MeshType>::pid_edge_const_iterator,
              typename MeshTraits<MeshType>::pid_edge_const_iterator>
-edges( MeshType const& mesh,
-       size_type __pid = Application::processId() )
+edges( MeshType const& mesh )
 {
-    return detail::edges( mesh, __pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::edges( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 
@@ -747,9 +769,10 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
              typename MeshTraits<MeshType>::marker_edge_const_iterator,
              typename MeshTraits<MeshType>::marker_edge_const_iterator>
 markededges( MeshType const& mesh,
-             flag_type __marker, size_type __pid = Application::processId() )
+             flag_type __marker )
 {
-    return detail::markededges( mesh, __marker, __pid, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::markededges( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -762,7 +785,8 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
              typename MeshTraits<MeshType>::location_edge_const_iterator>
 boundaryedges( MeshType const& mesh )
 {
-    return detail::boundaryedges( mesh, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::boundaryedges( mesh, is_ptr_or_shared_ptr() );
 }
 
 
@@ -776,7 +800,8 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
              typename MeshTraits<MeshType>::location_edge_const_iterator>
 internaledges( MeshType const& mesh )
 {
-    return detail::internaledges( mesh, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::internaledges( mesh, is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -789,7 +814,8 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
              typename MeshTraits<MeshType>::point_const_iterator>
 points( MeshType const& mesh )
 {
-    return detail::points( mesh, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::points( mesh, is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -802,7 +828,8 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
              typename MeshTraits<MeshType>::marked_point_const_iterator>
 markedpoints( MeshType const& mesh, size_type flag )
 {
-    return detail::markedpoints( mesh, flag, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::markedpoints( mesh, flag, is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -815,7 +842,8 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
              typename MeshTraits<MeshType>::location_point_const_iterator>
 boundarypoints( MeshType const& mesh )
 {
-    return detail::boundarypoints( mesh, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::boundarypoints( mesh, is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -828,8 +856,9 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
              typename MeshTraits<MeshType>::location_point_const_iterator>
 internalpoints( MeshType const& mesh )
 {
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
 
-    return detail::internalpoints( mesh, mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >() );
+    return detail::internalpoints( mesh, is_ptr_or_shared_ptr() );
 }
 
 /**

@@ -619,12 +619,12 @@ namespace Life
                 std::ostringstream __fname;
 
                 __fname << __ts->name()  //<< this->prefix() //this->path()
-                        << "-" << Application::nProcess() << "_" << Application::processId()
+                        << "-" << M_comm.size() << "_" << M_comm.rank()
                         << ".msh";
 
                 /*std::string filename =  this->prefix()
                   + __ts->name()
-                  + "-" + Application::nProcess() + "_" + Application::processId()
+                  + "-" + M_comm.size() + "_" + M_comm.rank()
                   + ".msh";*/
                 std::ofstream out;
 

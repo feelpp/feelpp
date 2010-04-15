@@ -46,6 +46,7 @@ const std::string LIFE_GMSH_FORMAT_VERSION="2.1";
 
 namespace Life
 {
+
 enum GMSH_ORDER
 {
     GMSH_ORDER_ONE = 1,
@@ -284,6 +285,7 @@ private:
     std::string  prefix( std::string const& __name, uint16_type dim ) const;
 
 private:
+    mpi::communicator M_comm;
     GMSH_ORDER _M_order;
     std::string M_version;
     bool M_addmidpoint;

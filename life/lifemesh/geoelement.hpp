@@ -60,7 +60,7 @@ public:
     {
     }
     bool
-    isInterProcessDomain( size_type /*p*/ = Application::processId() ) const
+    isInterProcessDomain( size_type /*p*/ ) const
     {
         return false;
     }
@@ -171,14 +171,14 @@ public:
 
 
     bool
-    isInterProcessDomain( size_type p = Application::processId() ) const
+    isInterProcessDomain( size_type p ) const
     {
         return ( ( boost::get<3>( _M_element1 ) != invalid_size_type_value ) &&
                  ( boost::get<3>( _M_element0 ) == p ) &&
                  ( boost::get<3>( _M_element0 ) != boost::get<3>( _M_element1 )) );
     }
     bool
-    isIntraProcessDomain( size_type p = Application::processId() ) const
+    isIntraProcessDomain( size_type p ) const
     {
         return ( ( boost::get<3>( _M_element0 ) == p ) &&
                  ( boost::get<3>( _M_element1 ) == p ) );
@@ -321,7 +321,7 @@ public:
      */
     bool isInterProcessDomain() const
     {
-        return super2::isInterProcessDomain( Application::processId()  );
+        return super2::isInterProcessDomain( super::processId()  );
     }
 
 
@@ -529,7 +529,7 @@ public:
      */
     bool isInterProcessDomain() const
     {
-        return super2::isInterProcessDomain( Application::processId() );
+        return super2::isInterProcessDomain( super::processId() );
     }
 
     /**
@@ -742,7 +742,7 @@ public:
      */
     bool isInterProcessDomain() const
     {
-        return super2::isInterProcessDomain( Application::processId() );
+        return super2::isInterProcessDomain( super::processId() );
     }
 
     /**
@@ -1035,7 +1035,7 @@ public:
      */
     bool isInterProcessDomain() const
     {
-        return super2::isInterProcessDomain( Application::processId() );
+        return super2::isInterProcessDomain( super::processId() );
     }
 
     /**

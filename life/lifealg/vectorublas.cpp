@@ -233,8 +233,8 @@ VectorUblas<T,Storage>::init ( const size_type n,
 {
     LIFE_ASSERT (n_local <= n)
         ( n_local )( n )
-        ( Application::processId() )
-        ( Application::nProcess() ).error( "Invalid local vector size" );
+        ( M_comm.rank() )
+        ( M_comm.size() ).error( "Invalid local vector size" );
 
     // Clear the data structures if already initialized
     if (this->isInitialized())
@@ -312,7 +312,7 @@ VectorUblas<T,Storage>::printMatlab(const std::string filename ) const
     ublas::vector<value_type> v_local;
     this->localizeToOneProcessor ( v_local, 0 );
 
-    if ( Application::processId() == 0 )
+    if ( M_comm.rank() == 0 )
         {
             std::ofstream file_out( name.c_str() );
 
@@ -435,7 +435,7 @@ VectorUblas<T, Storage>::localize ( ublas::vector<value_type>& v_local) const
 
 #ifdef HAVE_MPI
 
-    if( Application::nProcess() > 1 )
+    if( M_comm.size() > 1 )
         {
             std::fill (v_local.begin(), v_local.end(), value_type(0.) );
             std::fill (v_local_in.begin(), v_local_in.end(), value_type(0.) );
@@ -446,7 +446,7 @@ VectorUblas<T, Storage>::localize ( ublas::vector<value_type>& v_local) const
                 }
 
             MPI_Allreduce (&v_local_in[0], &v_local[0], v_local.size(),
-                           MPI_DOUBLE, MPI_SUM, Application::COMM_WORLD);
+                           MPI_DOUBLE, MPI_SUM, M_comm);
             Debug( 5600 ) << "[VectorUblas::localize] Allreduce size = " << v_local.size() << "\n";
 
         }
@@ -483,10 +483,10 @@ VectorUblas<T,Storage>::localizeToOneProcessor ( ublas::vector<value_type>& v_lo
 
 #ifdef HAVE_MPI
 
-    if ( Application::nProcess() > 1 )
+    if ( M_comm.size() > 1 )
         {
             MPI_Reduce (&v_tmp[0], &v_local[0], v_local.size(),
-                        MPI_DOUBLE, MPI_SUM, pid, Application::COMM_WORLD);
+                        MPI_DOUBLE, MPI_SUM, pid, M_comm);
         }
     else
         {

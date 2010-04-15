@@ -32,24 +32,32 @@ namespace Life
 {
 DataMap::DataMap()
     :
+    M_comm(),
     M_closed( false ),
     _M_n_dofs( 0 ),
-    _M_first_df( Application::nProcess()),
-    _M_last_df( Application::nProcess() ),
-    M_myglobalelements()
-{}
-DataMap::DataMap( size_type n, size_type n_local )
-    :
-    M_closed( false ),
-    _M_n_dofs( n ),
-    _M_first_df( Application::nProcess()),
-    _M_last_df( Application::nProcess() ),
+    _M_first_df( ),
+    _M_last_df(),
     M_myglobalelements()
 {
+    _M_first_df.resize( M_comm.size() );
+    _M_last_df.resize( M_comm.size() );
+}
+DataMap::DataMap( size_type n, size_type n_local )
+    :
+    M_comm(),
+    M_closed( false ),
+    _M_n_dofs( n ),
+    _M_first_df(),
+    _M_last_df(),
+    M_myglobalelements()
+{
+    _M_first_df.resize( M_comm.size() );
+    _M_last_df.resize( M_comm.size() );
+
     LIFE_ASSERT (n_local <= n)
         ( n_local )( n )
-        ( Application::processId() )
-        ( Application::nProcess() ).error( "Invalid local vector size" );
+        ( M_comm.rank() )
+        ( M_comm.size() ).error( "Invalid local vector size" );
 
     _M_n_dofs = n;
 
@@ -58,34 +66,34 @@ DataMap::DataMap( size_type n, size_type n_local )
     size_type M_first_local_index = 0;
 
 #ifdef HAVE_MPI
-    std::vector<int> local_sizes     ( Application::nProcess(), 0);
-    std::vector<int> local_sizes_send( Application::nProcess(), 0);
+    std::vector<int> local_sizes     ( M_comm.size(), 0);
+    std::vector<int> local_sizes_send( M_comm.size(), 0);
 
-    if ( Application::nProcess() > 1 )
+    if ( M_comm.size() > 1 )
         {
-            local_sizes_send[Application::processId()] = n_local;
+            local_sizes_send[M_comm.rank()] = n_local;
 #if 1
             MPI_Allreduce (&local_sizes_send[0],
                            &local_sizes[0],
                            local_sizes.size(),
                            MPI_INT,
                            MPI_SUM,
-                           Application::COMM_WORLD );
+                           M_comm );
 #else
-            mpi::all_reduce( Application::comm(), local_sizes_send, local_sizes, std::plus<std::vector<int> >() );
+            mpi::all_reduce( M_comm, local_sizes_send, local_sizes, std::plus<std::vector<int> >() );
 #endif
-            std::vector<int> M_recvcounts( Application::nProcess() );
-            std::vector<int> M_displs( Application::nProcess() );
+            std::vector<int> M_recvcounts( M_comm.size() );
+            std::vector<int> M_displs( M_comm.size() );
 
             // _first_local_index is the sum of _local_size
             // for all processor ids less than ours
-            for ( int p=0; p<Application::processId(); p++ )
+            for ( int p=0; p<M_comm.rank(); p++ )
                 {
                     M_first_local_index += local_sizes[p];
                 }
 
             int _local_index = 0;
-            for ( int p=0; p<Application::nProcess(); p++ )
+            for ( int p=0; p<M_comm.size(); p++ )
                 {
                     // size of data per processor
                     M_recvcounts[p] = local_sizes[p];
@@ -105,26 +113,26 @@ DataMap::DataMap( size_type n, size_type n_local )
     else
         {
             M_first_local_index = 0;
-            local_sizes[Application::processId()] = n_local;
+            local_sizes[M_comm.rank()] = n_local;
 
-            _M_first_df[Application::processId()] = 0;
-            _M_last_df[Application::processId()] = n_local-1;
+            _M_first_df[M_comm.rank()] = 0;
+            _M_last_df[M_comm.rank()] = n_local-1;
         }
     if ( n == invalid_size_type_value )
-        _M_n_dofs = _M_last_df[Application::processId()]+1;
+        _M_n_dofs = _M_last_df[M_comm.rank()]+1;
 #  ifdef DEBUG
     // Make sure all the local sizes sum up to the global
     // size, otherwise there is big trouble!
     int sum=0;
 
-    for (int p=0; p< Application::nProcess(); p++)
+    for (int p=0; p< M_comm.size(); p++)
         sum += local_sizes[p];
 
     if ( n != invalid_size_type_value )
         LIFE_ASSERT (sum == static_cast<int>(n))
             ( sum )( n )
-            ( Application::processId() )
-            ( Application::nProcess() ).warn( "invalid distributed vector construction" );
+            ( M_comm.rank() )
+            ( M_comm.size() ).warn( "invalid distributed vector construction" );
 
 #  endif
 
@@ -154,6 +162,7 @@ DataMap::DataMap( size_type n, size_type n_local )
 
 DataMap::DataMap( DataMap const & dm )
     :
+    M_comm( dm.M_comm ),
     M_closed( dm.M_closed ),
     _M_n_dofs( dm._M_n_dofs ),
     _M_first_df( dm._M_first_df ),

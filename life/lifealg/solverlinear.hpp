@@ -20,12 +20,14 @@
 #ifndef __linear_solver_h__
 #define __linear_solver_h__
 
+#include <boost/mpi/communicator.hpp>
+
 #include <life/lifealg/enums.hpp>
 #include <life/lifecore/traits.hpp>
 
 namespace Life
 {
-
+namespace mpi=boost::mpi;
 template<typename T> class Vector;
 template<typename T> class MatrixSparse;
 
@@ -171,7 +173,6 @@ protected:
 
 protected:
 
-
     /**
      * Enum stating which type of iterative solver to use.
      */
@@ -188,6 +189,11 @@ protected:
     bool _M_is_initialized;
 
     MatrixStructure M_prec_matrix_structure;
+
+private:
+
+    mpi::communicator M_comm;
+
 };
 
 

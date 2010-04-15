@@ -217,6 +217,7 @@ private:
     void saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const;
 
 private:
+    mpi::communicator M_comm;
     mutable std::string _M_filename;
     std::string _M_element_type;
 };

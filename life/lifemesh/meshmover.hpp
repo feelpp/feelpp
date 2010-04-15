@@ -160,8 +160,8 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     //mesh_ptrtype omesh( new mesh_type );
     //*omesh = *imesh;
 
-    element_iterator it_elt = imesh->beginElementWithProcessId( Application::processId() );
-    element_iterator en_elt = imesh->endElementWithProcessId( Application::processId() );
+    element_iterator it_elt = imesh->beginElementWithProcessId( imesh->comm().rank() );
+    element_iterator en_elt = imesh->endElementWithProcessId( imesh->comm().rank() );
 
     gm_context_ptrtype __c( new gm_context_type( gm, *it_elt, __geopc ) );
 

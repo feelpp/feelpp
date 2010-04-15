@@ -122,10 +122,10 @@ void
 ExporterEnsight<MeshType>::_F_writeSoSFile() const
 {
     // only on proc 0
-    if ( Application::processId() == 0 )
+    if ( M_comm.rank() == 0 )
         {
             std::ostringstream filestr;
-            filestr << this->path() << "/" << this->prefix() << "-" << Application::nProcess() << ".sos";
+            filestr << this->path() << "/" << this->prefix() << "-" << M_comm.size() << ".sos";
             std::ofstream __out(filestr.str().c_str());
             if ( __out.fail() )
                 {
@@ -135,15 +135,15 @@ ExporterEnsight<MeshType>::_F_writeSoSFile() const
             __out << "FORMAT:\n"
                   << "type: master_server gold \n"
                   << "SERVERS\n"
-                  << "number of servers: " << Application::nProcess() << "\n";
-            for ( size_type pid = 0 ; pid < Application::nProcess(); ++pid )
+                  << "number of servers: " << M_comm.size() << "\n";
+            for ( size_type pid = 0 ; pid < M_comm.size(); ++pid )
                 {
 
                     __out << "#Server " << pid+1 << "\n"
-                          << "machine id: " << Application::processorName() << "\n"
+                          << "machine id: " << mpi::environment::processor_name() << "\n"
                           << "executable: /usr/local/bin/ensight76/bin/ensight7.server\n"
                           << "data_path: " << fs::current_path().string() << "\n"
-                          << "casefile: " << this->prefix() << "-" << Application::nProcess() << "_" << pid << ".case\n";
+                          << "casefile: " << this->prefix() << "-" << M_comm.size() << "_" << pid << ".case\n";
                 }
         }
 }
@@ -154,7 +154,7 @@ ExporterEnsight<MeshType>::_F_writeCaseFile() const
     std::ostringstream filestr;
     filestr << this->path() << "/"
             << this->prefix() << "-"
-            << Application::nProcess() << "_" << Application::processId() << ".case";
+            << M_comm.size() << "_" << M_comm.rank() << ".case";
     std::ofstream __out(filestr.str().c_str());
     if ( __out.fail() )
         {
@@ -171,7 +171,7 @@ ExporterEnsight<MeshType>::_F_writeCaseFile() const
         {
             timeset_ptrtype __ts = *__ts_it;
             __out << "model: " << __ts->index() << " " << __ts->name()
-                  << "-" << Application::nProcess() << "_" << Application::processId() << ".geo***"  << "\n";
+                  << "-" << M_comm.size() << "_" << M_comm.rank() << ".geo***"  << "\n";
             ++__ts_it;
         }
 
@@ -188,7 +188,7 @@ ExporterEnsight<MeshType>::_F_writeCaseFile() const
                 {
                     __out << "scalar per node: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __it->first << " " << __it->first << "-" << Application::nProcess() << "_" << Application::processId() << ".***" << "\n";
+                          << __it->first << " " << __it->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
                     ++__it;
                 }
             typename timeset_type::step_type::nodal_vector_const_iterator __itv = ( *__ts->rbeginStep() )->beginNodalVector();
@@ -197,7 +197,7 @@ ExporterEnsight<MeshType>::_F_writeCaseFile() const
                 {
                     __out << "vector per node: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __itv->first << " " << __itv->first << "-" << Application::nProcess() << "_" << Application::processId() << ".***" << "\n";
+                          << __itv->first << " " << __itv->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
                     ++__itv;
                 }
 
@@ -207,7 +207,7 @@ ExporterEnsight<MeshType>::_F_writeCaseFile() const
                 {
                     __out << "tensor per node: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __itt->first << " " << __itt->first << "-" << Application::nProcess() << "_" << Application::processId() << ".***" << "\n";
+                          << __itt->first << " " << __itt->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
                     ++__itt;
                 }
 
@@ -217,7 +217,7 @@ ExporterEnsight<MeshType>::_F_writeCaseFile() const
                 {
                     __out << "scalar per element: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __it_el->first << " " << __it_el->first << "-" << Application::nProcess() << "_" << Application::processId() << ".***" << "\n";
+                          << __it_el->first << " " << __it_el->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
                     ++__it_el;
                 }
             typename timeset_type::step_type::element_vector_const_iterator __itv_el = ( *__ts->rbeginStep() )->beginElementVector();
@@ -226,7 +226,7 @@ ExporterEnsight<MeshType>::_F_writeCaseFile() const
                 {
                     __out << "vector per element: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __itv_el->first << " " << __itv_el->first << "-" << Application::nProcess() << "_" << Application::processId() << ".***" << "\n";
+                          << __itv_el->first << " " << __itv_el->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
                     ++__itv_el;
                 }
             typename timeset_type::step_type::element_tensor2_const_iterator __itt_el = ( *__ts->rbeginStep() )->beginElementTensor2();
@@ -235,7 +235,7 @@ ExporterEnsight<MeshType>::_F_writeCaseFile() const
                 {
                     __out << "tensor per element: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __itt_el->first << " " << __itt_el->first << "-" << Application::nProcess() << "_" << Application::processId() << ".***" << "\n";
+                          << __itt_el->first << " " << __itt_el->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
                     ++__itt_el;
                 }
             ++__ts_it;
@@ -301,7 +301,7 @@ ExporterEnsight<MeshType>::_F_writeGeoFiles() const
 
                     __geofname << this->path() << "/"
                                << __ts->name()
-                               << "-" << Application::nProcess() << "_" << Application::processId()
+                               << "-" << M_comm.size() << "_" << M_comm.rank()
                                << ".geo" << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
 
                     if ( __step->isInMemory() )
@@ -367,7 +367,7 @@ ExporterEnsight<MeshType>::saveNodal( typename timeset_type::step_ptrtype __step
             std::ostringstream __varfname;
 
             __varfname << this->path() << "/" << __var->first
-                       << "-" << Application::nProcess() << "_" << Application::processId()
+                       << "-" << M_comm.size() << "_" << M_comm.rank()
                        << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
             Debug( 8006 ) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "...\n";
             std::fstream __out( __varfname.str().c_str(), std::ios::out | std::ios::binary );
@@ -432,7 +432,7 @@ ExporterEnsight<MeshType>::saveElement( typename timeset_type::step_ptrtype __st
             std::ostringstream __evarfname;
 
             __evarfname << this->path() << "/" << __evar->first
-                        << "-" << Application::nProcess() << "_" << Application::processId()
+                        << "-" << M_comm.size() << "_" << M_comm.rank()
                         << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
             Debug( 8006 ) << "[ExporterEnsight::saveElement] saving " << __evarfname.str() << "...\n";
             std::fstream __out( __evarfname.str().c_str(), std::ios::out | std::ios::binary );
@@ -463,7 +463,7 @@ ExporterEnsight<MeshType>::saveElement( typename timeset_type::step_ptrtype __st
                     typename mesh_type::marker_element_const_iterator elt_it;
                     typename mesh_type::marker_element_const_iterator elt_en;
                     boost::tie( elt_it, elt_en ) = __step->mesh()->elementsWithMarker(p_it->first,
-                                                                                      Application::processId() );
+                                                                                      M_comm.rank() );
                     if ( !__evar->second.areGlobalValuesUpdated() )
                         __evar->second.updateGlobalValues();
 
@@ -473,7 +473,7 @@ ExporterEnsight<MeshType>::saveElement( typename timeset_type::step_ptrtype __st
                     size_type e = 0;
                     for ( ; elt_it != elt_en; ++elt_it, ++e )
                         {
-                            Debug( 8006 ) << "pid : " << Application::processId()
+                            Debug( 8006 ) << "pid : " << M_comm.rank()
                                           << " elt_it :  " << elt_it->id()
                                           << " e : " << e << "\n";
 
@@ -594,7 +594,7 @@ ExporterEnsight<MeshType>::visit( mesh_type* __mesh )
             typename mesh_type::marker_element_const_iterator elt_it;// = __mesh->beginElementWithMarker(p_it->first);
             typename mesh_type::marker_element_const_iterator elt_en;// = __mesh->endElementWithMarker(p_it->first);
             boost::tie( elt_it, elt_en ) = __mesh->elementsWithMarker( p_it->first,
-                                                                       Application::processId() );
+                                                                       M_comm.rank() );
 
             //	int __ne = __mesh->numElements();
             //int __ne = p_it->second;
@@ -615,7 +615,7 @@ ExporterEnsight<MeshType>::visit( mesh_type* __mesh )
 
             //	elt_it = __mesh->beginElement();
             boost::tie( elt_it, elt_en ) = __mesh->elementsWithMarker(p_it->first,
-                                                                      Application::processId() );
+                                                                      M_comm.rank() );
             //elt_it = __mesh->beginElementWithMarker(p_it->first);
 
             for ( ; elt_it != elt_en; ++elt_it )

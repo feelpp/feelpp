@@ -92,7 +92,7 @@ public:
         :
         super(),
 #ifdef HAVE_MPI
-        _M_emap( Epetra_BlockMap( -1, 0, 0, Epetra_MpiComm(Application::COMM_WORLD)) ),
+        _M_emap( Epetra_BlockMap( -1, 0, 0, Epetra_MpiComm(super::comm())) ),
         _M_vec( _M_emap ) // false (zerout)?
 #else
         _M_emap( Epetra_BlockMap( -1, 0, 0, Epetra_SerialComm) ),

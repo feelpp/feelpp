@@ -107,8 +107,8 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     if ( same_mesh == INTERPOLATE_SAME_MESH )
         {
             Debug( 5010 ) << "[interpolate] Same mesh but not same space\n";
-            for( mesh_element_iterator it = space->mesh()->beginElementWithProcessId( Application::processId() );
-                 it != space->mesh()->endElementWithProcessId( Application::processId() ); ++ it )
+            for( mesh_element_iterator it = space->mesh()->beginElementWithProcessId( space->mesh()->comm().rank() );
+                 it != space->mesh()->endElementWithProcessId( space->mesh()->comm().rank() ); ++ it )
                 {
                     gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
                     typename FunctionType::pc_type pc( f.functionSpace()->fe(), __c->xRefs() );
@@ -167,8 +167,8 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
             std::fill( dof_done.begin(), dof_done.end(), false );
             std::vector<boost::tuple<size_type,uint16_type > > itab;
             typename matrix_node<value_type>::type pts( mesh_type::nDim, 1 );
-            domain_mesh_element_iterator it = f.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
-            domain_mesh_element_iterator en = f.functionSpace()->mesh()->endElementWithProcessId( Application::processId() );
+            domain_mesh_element_iterator it = f.functionSpace()->mesh()->beginElementWithProcessId( f.functionSpace()->mesh()->comm().rank() );
+            domain_mesh_element_iterator en = f.functionSpace()->mesh()->endElementWithProcessId( f.functionSpace()->mesh()->comm().rank() );
 
             domain_gmc_ptrtype __c( new domain_gmc_type( __dgm, *it, __dgeopc ) );
 

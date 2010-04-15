@@ -157,6 +157,11 @@ public:
     //@{
 
     /**
+     * \return true if doing the export, false otherwise
+     */
+    bool doExport() const { return M_do_export; }
+
+    /**
      * \return the type of exporter
      */
     std::string const& type() const { return M_type; }
@@ -186,6 +191,11 @@ public:
     /** @name  Mutators
      */
     //@{
+
+    /**
+     * set the doExport to \p do_export
+     */
+    void setDoExport( bool do_export ) {  M_do_export = do_export; }
 
     /**
      * set the options from the \p variables_map \p vm as well as the prefix \p
@@ -275,6 +285,7 @@ public:
     //@}
 protected:
 
+    bool M_do_export;
     std::string M_type;
     std::string M_prefix;
     int M_freq;

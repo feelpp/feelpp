@@ -85,10 +85,6 @@ namespace Life
 namespace fs = boost::filesystem;
 
 
-int Application::_S_n_process = 1;
-int Application::_S_process_id = 0;
-
-
 LIFE_NO_EXPORT
 std::pair<std::string, std::string>
 at_option_parser(std::string const&s)
@@ -143,35 +139,36 @@ void
 Application::initMPI( int argc, char** argv, MPI_Comm comm )
 {
 #if defined( HAVE_MPI_H )
-    int is_mpi_initialized;
-    MPI_Initialized (&is_mpi_initialized);
-    //std::cout << "is_mpi_initialized = " << is_mpi_initialized << "\n";
-    if (!is_mpi_initialized)
+    //std::cout << "is_mpi_initialized = " << mpi::environment::initialized() << "\n";
+    //std::cout << "is_mpi_finalized = " << mpi::environment::finalized() << "\n";
+    M_env = boost::shared_ptr<mpi::environment>( new mpi::environment( argc, argv ) );
+    if (!mpi::environment::initialized())
     {
-        M_env = boost::shared_ptr<mpi::environment>( new mpi::environment( argc, argv ) );
+
         ///std::cout << "processor name = " << M_env->processor_name() << "\n";
 #if 0
         //int __argc = this->unknownArgc();
         //char** __argv = this->unknownArgv();
         MPI_Init (&argc, &argv);
 #endif
-        _S_is_mpi_initialized = true;
     }
-    MPI_Comm_dup ( comm, &COMM_WORLD);
+    M_comm = boost::shared_ptr<mpi::communicator>( new mpi::communicator() );
+    //MPI_Comm_dup ( comm, &COMM_WORLD);
     //MPI_Comm_dup ( comm, (MPI_Comm*)&S_world );
 #if 0
     MPI_Comm_rank (COMM_WORLD, &_S_process_id);
     MPI_Comm_size (COMM_WORLD, &_S_n_process);
 #else
-    _S_process_id = S_world.rank();
-    _S_n_process = S_world.size();
+    //std::cout << "rank : " << M_comm->rank() << " " << "size : " << M_comm->size() << "\n";
+    //_S_process_id = S_world.rank();
+    //_S_n_process = S_world.size();
 #endif
 #endif // HAVE_MPI_H
 
 }
 
 #if defined( HAVE_MPI_H )
-MPI_Comm Application::COMM_WORLD = MPI_COMM_NULL;
+MPI_Comm Application::COMM_WORLD = MPI_COMM_WORLD;
 
 Application::Application( int argc,
                           char** argv,
@@ -203,8 +200,8 @@ _M_to_pass_further()
     std::string env_str;
     if ( __env )
         env_str = __env;
-    mpi::broadcast( S_world, env_str, 0 );
-    if ( _S_process_id != 0 )
+    mpi::broadcast( *M_comm, env_str, 0 );
+    if ( processId() != 0 )
         {
             setenv( "DEBUG", env_str.c_str(), 1 );
             //Debug() << "DEBUG is set to " << env_str << "\n";
@@ -258,8 +255,8 @@ Application::Application( int argc,
     std::string env_str;
     if ( __env )
         env_str = __env;
-    mpi::broadcast( S_world, env_str, 0 );
-    if ( _S_process_id != 0 )
+    mpi::broadcast( *M_comm, env_str, 0 );
+    if ( processId() != 0 )
         {
             setenv( "DEBUG", env_str.c_str(), 1 );
             //Debug() << "DEBUG is set to " << env_str << "\n";
@@ -324,8 +321,8 @@ Application::Application( AboutData const& ad )
     std::string env_str;
     if ( __env )
         env_str = __env;
-    mpi::broadcast( S_world, env_str, 0 );
-    if ( _S_process_id != 0 )
+    mpi::broadcast( *M_comm, env_str, 0 );
+    if ( processId() != 0 )
         {
             setenv( "DEBUG", env_str.c_str(), 1 );
             //Debug() << "DEBUG is set to " << env_str << "\n";
@@ -359,6 +356,11 @@ Application::~Application()
 #else
     PetscFinalize();
 #endif
+#endif
+
+#if defined(HAVE_MPI_H)
+    //MPI_Finalize();
+
 #endif
 }
 
@@ -471,11 +473,11 @@ Application::setLogs()
 {
     Log().detachAll();
     std::ostringstream ostr;
-    ostr << this->about().appName() << "-" << _S_n_process  << "." << _S_process_id;
+    ostr << this->about().appName() << "-" << nProcess()  << "." << processId();
     Log().attach( ostr.str() );
 
     std::ostringstream ostr_assert;
-    ostr_assert << this->about().appName() << "_assertions" << "-" << _S_n_process  << "." << _S_process_id;
+    ostr_assert << this->about().appName() << "_assertions" << "-" << nProcess()  << "." << processId();
     Assert::setLog( ostr_assert.str().c_str() );
 }
 void
@@ -671,6 +673,4 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 
 }
 
-mpi::communicator Application::S_world;
-bool Application::_S_is_mpi_initialized = false;
 }

@@ -234,7 +234,7 @@ Backend<T>::dot( vector_type const& x, vector_type const& y ) const
             localres += x(i)*y(i);
         }
     real_type globalres=localres;
-    mpi::all_reduce( Application::comm(), localres, globalres, std::plus<real_type>() );
+    mpi::all_reduce( M_comm, localres, globalres, std::plus<real_type>() );
     return globalres;
 }
 

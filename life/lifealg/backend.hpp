@@ -161,6 +161,11 @@ public:
 
     bool transpose() const { return M_transpose; }
 
+    /**
+     * \return the communicator
+     */
+    mpi::communicator const& comm() const { return M_comm; }
+
     //@}
 
     /** @name  Mutators
@@ -334,6 +339,9 @@ private:
     void reset();
 
 private:
+
+    mpi::communicator M_comm;
+
     BackendType M_backend;
 
     solvernonlinear_ptrtype M_nlsolver;

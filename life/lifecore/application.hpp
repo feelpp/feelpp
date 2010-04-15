@@ -179,17 +179,17 @@ public:
     /**
      * \return the number of processes
      */
-    static uint16_type nProcess() { return uint16_type(_S_n_process); }
+    uint16_type nProcess() { return uint16_type(M_comm->size()); }
 
     /**
      * \return the id of the current process
      */
-    static uint16_type processId() { return uint16_type(_S_process_id); }
+    uint16_type processId() { return uint16_type(M_comm->rank()); }
 
      /**
      * \return \p true if MPI is initialized, \p false otherwise
      */
-    bool isMPIInitialized() const { return _S_is_mpi_initialized; }
+    bool isMPIInitialized() const { return mpi::environment::initialized(); }
 
     /** Determine if the MPI environment has already been initialized.
      *
@@ -275,12 +275,17 @@ public:
     /**
      * @return the communicator
      */
-    static mpi::communicator const& comm() { return S_world; }
+    mpi::communicator& comm() { return *M_comm; }
+
+    /**
+     * @return the communicator
+     */
+    mpi::communicator const& comm() const { return *M_comm; }
 
     /**
      * @return the barrier
      */
-    static void barrier() { S_world.barrier(); }
+    void barrier() { M_comm->barrier(); }
 
     //@}
 
@@ -313,10 +318,6 @@ protected:
 
 protected:
     void setLogs();
-protected:
-    static int _S_n_process;
-
-    static int _S_process_id;
 
 private:
 
@@ -339,9 +340,8 @@ private:
     std::vector<std::string> _M_to_pass_further;
 
 
-    static bool _S_is_mpi_initialized;
     boost::shared_ptr<mpi::environment> M_env;
-    static mpi::communicator S_world;
+    boost::shared_ptr<mpi::communicator> M_comm;
 };
 
 }

@@ -32,7 +32,6 @@
 #include <life/lifemesh/simplex.hpp>
 #include <life/lifemesh/simplexproduct.hpp>
 #include <life/lifemesh/refentity.hpp>
-#include <life/lifecore/application.hpp>
 
 namespace Life
 {

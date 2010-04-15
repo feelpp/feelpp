@@ -253,6 +253,10 @@ public:
         return M_map.maxMyGID()+1;
     }
 
+    /**
+     * \return the communicator
+     */
+    mpi::communicator const& comm() const { return M_map.comm(); }
 
     /**
      * Access components, returns \p U(i).
@@ -516,8 +520,8 @@ inner_product( Vector<T> const& v1, Vector<T> const& v2 )
 
     real_type global_res = res;
 #if defined( HAVE_MPI )
-    if ( Application::nProcess() > 1 )
-        mpi::all_reduce( Application::comm(), res, global_res, std::plus<real_type>() );
+    if ( v1.comm().size() > 1 )
+        mpi::all_reduce( v1.comm(), res, global_res, std::plus<real_type>() );
 #endif
     return global_res;
 }

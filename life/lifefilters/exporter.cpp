@@ -45,6 +45,7 @@ Exporter<MeshType>::Exporter( std::string const& __type, std::string const& __pr
     :
     super1(),
     super2(),
+    M_do_export( true ),
     M_type( __type ),
     M_prefix( __prefix ),
     M_freq( __freq ),
@@ -59,12 +60,14 @@ Exporter<MeshType>::Exporter( po::variables_map const& vm, std::string const& ex
     :
     super1(),
     super2(),
+    M_do_export( true ),
     M_type(),
     M_prefix( exp_prefix ),
     M_freq(1),
     M_ft( ASCII ),
     M_path( "." )
 {
+    std::cout << "[exporter::exporter] do export = " << doExport() << std::endl;
 }
 
 template<typename MeshType>
@@ -72,6 +75,7 @@ Exporter<MeshType>::Exporter( Exporter const & __ex )
     :
     super1(),
     super2(),
+    M_do_export( __ex.M_do_export ),
     M_type( __ex.M_type ),
     M_prefix( __ex.M_prefix ),
     M_freq( __ex.M_freq ),
@@ -103,7 +107,7 @@ Exporter<MeshType>::New( po::variables_map const& vm, std::string prefix )
     std::string estr = vm["exporter"].template as<std::string>();
     Exporter<MeshType>* exporter =  Factory::type::instance().createObject( estr  );
     exporter->setOptions( vm );
-
+    std::cout << "[exporter::New] do export = " << exporter->doExport() << std::endl;
     exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
     exporter->setPrefix( prefix );
     return exporter;
@@ -117,6 +121,7 @@ Exporter<MeshType>::setOptions( po::variables_map const& vm, std::string const& 
     if ( !_prefix.empty() )
         _prefix += "-";
 
+    M_do_export = vm[_prefix+"export"].template as<bool>();
     M_type =  vm[_prefix+"exporter"].template as<std::string>();
     if ( vm.count ( _prefix+"exporter-prefix" ) )
         M_prefix = vm[_prefix+"exporter-prefix"].template as<std::string>();
@@ -274,6 +279,9 @@ po::options_description exporter_options( std::string const& prefix )
 
     po::options_description _options( "Exporter " + prefix + " options");
     _options.add_options()
+        // do export
+        ((_prefix+"export").c_str(), Life::po::value<bool>()->default_value( true ), "true if export, false otherwise")
+
         // exporter type
         ((_prefix+"exporter").c_str(), Life::po::value<std::string>()->default_value( "ensight" ), "type of exporter")
 

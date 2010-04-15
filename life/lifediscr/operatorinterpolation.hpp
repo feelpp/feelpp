@@ -223,8 +223,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
         {
             Debug( 5034 ) << "[interpolate] Same mesh but not same space\n";
 
-            image_mesh_element_iterator it = this->dualImageSpace()->mesh()->beginElementWithProcessId( Application::processId() );
-            image_mesh_element_iterator en = this->dualImageSpace()->mesh()->endElementWithProcessId( Application::processId() );
+            image_mesh_element_iterator it = this->dualImageSpace()->mesh()->beginElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
+            image_mesh_element_iterator en = this->dualImageSpace()->mesh()->endElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
             for( ; it != en; ++ it )
                 {
 
@@ -268,8 +268,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
             std::fill( dof_done.begin(), dof_done.end(), false );
             std::vector<boost::tuple<size_type,uint16_type > > itab;
             typename matrix_node<value_type>::type pts( image_mesh_type::nDim, 1 );
-            domain_mesh_element_iterator it = this->domainSpace()->mesh()->beginElementWithProcessId( Application::processId() );
-            domain_mesh_element_iterator en = this->domainSpace()->mesh()->endElementWithProcessId( Application::processId() );
+            domain_mesh_element_iterator it = this->domainSpace()->mesh()->beginElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
+            domain_mesh_element_iterator en = this->domainSpace()->mesh()->endElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
 
             //size_type ndofcomp = this->dualImageSpace()->nLocalDof()/image_basis_type::nComponents;
             size_type first_dof = this->dualImageSpace()->dof()->firstDof();

@@ -1282,8 +1282,10 @@ public:
 
             node_type __x_ref;
             size_type __cv_id;
-            std::vector<int> found_pt( Application::nProcess(), 0 );
-            std::vector<int> global_found_pt( Application::nProcess(), 0 );
+            int rank = functionSpace()->mesh()->comm().rank();
+            int nprocs = functionSpace()->mesh()->comm().size();
+            std::vector<int> found_pt( nprocs, 0 );
+            std::vector<int> global_found_pt( nprocs, 0 );
             if ( functionSpace()->findPoint( __x, __cv_id, __x_ref ) || extrapolate )
                 {
 #if !defined( NDEBUG )
@@ -1304,13 +1306,13 @@ public:
                                                    __geopc ) );
                     pc_type pc( this->functionSpace()->fe(), pts );
 
-                    found_pt[ Application::processId() ] = 1;
+                    found_pt[ rank ] = 1;
 
 #if defined(HAVE_MPI)
-                    if ( Application::nProcess() > 1 )
+                    if ( nprocs > 1 )
                         {
-                            //mpi::all_reduce( Application::comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-                            mpi::all_reduce( Application::comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+                            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
+                            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
                         }
 #else
                     global_found_pt[ 0 ] = found_pt[ 0 ];
@@ -1320,10 +1322,10 @@ public:
 
                     //Debug(5010) << "[interpolation]  id = " << __id << "\n";
 #if defined(HAVE_MPI)
-                    Debug( 5010 ) << "sending interpolation context to all processors from " << Application::processId() << "\n";
-                    if ( Application::nProcess() > 1 )
+                    Debug( 5010 ) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
+                    if ( functionSpace()->mesh()->comm().size() > 1 )
                         {
-                            mpi::broadcast( Application::comm(), __id, Application::processId() );
+                            mpi::broadcast( functionSpace()->mesh()->comm(), __id, functionSpace()->mesh()->comm().rank() );
                         }
                     //Debug(5010) << "[interpolation] after broadcast id = " << __id << "\n";
 #endif /* HAVE_MPI */
@@ -1332,10 +1334,10 @@ public:
             else
                 {
 #if defined(HAVE_MPI)
-                    if ( Application::nProcess() > 1 )
+                    if ( functionSpace()->mesh()->comm().size() > 1 )
                         {
-                            //mpi::all_reduce( Application::comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-                            mpi::all_reduce( Application::comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+                            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
+                            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
                         }
 #endif /* HAVE_MPI */
                     bool found = false;
@@ -1352,8 +1354,8 @@ public:
                         {
                             Debug( 5010 ) << "receiving interpolation context from processor " << i << "\n";
 #if defined(HAVE_MPI)
-                            if ( Application::nProcess() > 1 )
-                                mpi::broadcast( Application::comm(), __id, i );
+                            if ( functionSpace()->mesh()->comm().size() > 1 )
+                                mpi::broadcast( functionSpace()->mesh()->comm(), __id, i );
 #endif /* HAVE_MPI */
 
                             Debug(5010) << "[interpolation] after broadcast id = " << __id << "\n";
@@ -1439,8 +1441,8 @@ public:
 
             node_type __x_ref;
             size_type __cv_id;
-            std::vector<int> found_pt( Application::nProcess(), 0 );
-            std::vector<int> global_found_pt( Application::nProcess(), 0 );
+            std::vector<int> found_pt( functionSpace()->mesh()->comm().size(), 0 );
+            std::vector<int> global_found_pt( functionSpace()->mesh()->comm().size(), 0 );
             if ( functionSpace()->findPoint( __x, __cv_id, __x_ref ) )
                 {
 #if !defined( NDEBUG )
@@ -1461,13 +1463,13 @@ public:
                                                    __geopc ) );
                     pc_type pc( this->functionSpace()->fe(), pts );
 
-                    found_pt[ Application::processId() ] = 1;
+                    found_pt[ functionSpace()->mesh()->comm().rank() ] = 1;
 
 #if defined(HAVE_MPI)
-                    if ( Application::nProcess() > 1 )
+                    if ( functionSpace()->mesh()->comm().size() > 1 )
                         {
-                            //mpi::all_reduce( Application::comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-                            mpi::all_reduce( Application::comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+                            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
+                            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
                         }
 #else
                     global_found_pt[ 0 ] = found_pt[ 0 ];
@@ -1476,10 +1478,10 @@ public:
                     grad_type g_( this->grad( *__c, pc ) );
                     //Debug(5010) << "[interpolation]  id = " << v << "\n";
 #if defined(HAVE_MPI)
-                    Debug( 5010 ) << "sending interpolation context to all processors from " << Application::processId() << "\n";
-                    if ( Application::nProcess() > 1 )
+                    Debug( 5010 ) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
+                    if ( functionSpace()->mesh()->comm().size() > 1 )
                         {
-                            mpi::broadcast( Application::comm(), g_, Application::processId() );
+                            mpi::broadcast( functionSpace()->mesh()->comm(), g_, functionSpace()->mesh()->comm().rank() );
                         }
                     //Debug(5010) << "[interpolation] after broadcast g_ = " << g_ << "\n";
 #endif /* HAVE_MPI */
@@ -1488,10 +1490,10 @@ public:
             else
                 {
 #if defined(HAVE_MPI)
-                    if ( Application::nProcess() > 1 )
+                    if ( functionSpace()->mesh()->comm().size() > 1 )
                         {
-                            //mpi::all_reduce( Application::comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-                            mpi::all_reduce( Application::comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+                            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
+                            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
                         }
 #endif /* HAVE_MPI */
                     bool found = false;
@@ -1508,8 +1510,8 @@ public:
                         {
                             Debug( 5010 ) << "receiving interpolation context from processor " << i << "\n";
 #if defined(HAVE_MPI)
-                            if ( Application::nProcess() > 1 )
-                                mpi::broadcast( Application::comm(), g_, i );
+                            if ( functionSpace()->mesh()->comm().size() > 1 )
+                                mpi::broadcast( functionSpace()->mesh()->comm(), g_, i );
 #endif /* HAVE_MPI */
 
                             //Debug(5010) << "[interpolation] after broadcast id = " << v << "\n";
@@ -2495,8 +2497,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::updateRegionTree() const
     BoundingBox<> __bb( _M_mesh->gm()->isLinear() );
 
     typedef typename mesh_type::element_iterator mesh_element_iterator;
-    mesh_element_iterator it = _M_mesh->beginElementWithProcessId( Application::processId() );
-    mesh_element_iterator en = _M_mesh->endElementWithProcessId( Application::processId() );
+    mesh_element_iterator it = _M_mesh->beginElementWithProcessId( _M_mesh->comm().rank() );
+    mesh_element_iterator en = _M_mesh->endElementWithProcessId( _M_mesh->comm().rank() );
     for ( size_type __i = 0; it != en; ++__i, ++it )
         {
             __bb.make( it->G() );
@@ -2526,8 +2528,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::regionTree() const
         BoundingBox<> __bb( _M_mesh->gm()->isLinear() );
 
         typedef typename mesh_type::element_iterator mesh_element_iterator;
-        mesh_element_iterator it = _M_mesh->beginElementWithProcessId( Application::processId() );
-        mesh_element_iterator en = _M_mesh->endElementWithProcessId( Application::processId() );
+        mesh_element_iterator it = _M_mesh->beginElementWithProcessId( _M_mesh->comm().rank() );
+        mesh_element_iterator en = _M_mesh->endElementWithProcessId( _M_mesh->comm().rank() );
         for ( size_type __i = 0; it != en; ++__i, ++it )
             {
                 __bb.make( it->G() );
@@ -2568,7 +2570,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint(node_type const& pt,size_type &cv ,
     region_tree_type::pbox_set_type::const_iterator ite = boxlst.end();
     for (; it != ite; ++it)
     {
-        inv_trans_type __git( _M_mesh->gm(), _M_mesh->element( ( *it )->id, Application::processId() ) );
+        inv_trans_type __git( _M_mesh->gm(), _M_mesh->element( ( *it )->id ) );
 
         size_type cv_stored = (*it)->id;
 

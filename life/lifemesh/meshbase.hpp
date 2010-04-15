@@ -29,9 +29,10 @@
 #ifndef __MeshBase_H
 #define __MeshBase_H 1
 
+#include <boost/mpi/communicator.hpp>
+
 #include <life/lifecore/life.hpp>
 #include <life/lifecore/context.hpp>
-#include <life/lifecore/application.hpp>
 
 namespace Life
 {
@@ -150,7 +151,7 @@ public:
     /**
      * \return \c true if mesh is partitioned, \c false otherwise
      */
-    bool isPartitioned() const { return M_n_parts == Application::nProcess(); }
+    bool isPartitioned() const;
 
     /**
      * \return an integer(stored  in a \p Context) that encodes the components to be updated by
@@ -240,7 +241,7 @@ protected:
      * to do that the mesh elements/faces/nodes are renumbered. That
      * will be then most helpful when generating the \p Dof table.
      * This procedure should work also with
-     * \p Application::nProcess() == 1
+     * \p comm().size() == 1
      *
      */
     virtual void renumber() = 0;
@@ -287,12 +288,13 @@ private:
      * the partitioners, and may not be changed directly by
      * the user.
      * \note The number of partitions *need not* equal
-     * Application::n_processors(), consider for example the case
+     * M_comm.size(), consider for example the case
      * where you simply want to partition a mesh on one
      * processor and view the result in GMV.
      */
     uint16_type M_n_parts;
 
+    mpi::communicator M_comm;
 };
 }
 #endif /* __MeshBase_H */

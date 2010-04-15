@@ -527,10 +527,10 @@ public:
 
 
 #ifdef HAVE_MPI
-        if ( Application::nProcess() > 1 )
+        if ( M_comm.size() > 1 )
             {
                 MPI_Allreduce (&local_min, &global_min, 1,
-                               MPI_DOUBLE, MPI_MIN, Application::COMM_WORLD);
+                               MPI_DOUBLE, MPI_MIN, M_comm);
             }
 #endif
 
@@ -551,10 +551,10 @@ public:
 
 #ifdef HAVE_MPI
 
-        if ( Application::nProcess() > 1 )
+        if ( M_comm.size() > 1 )
             {
                 MPI_Allreduce (&local_max, &global_max, 1,
-                               MPI_DOUBLE, MPI_MAX, Application::COMM_WORLD);
+                               MPI_DOUBLE, MPI_MAX, M_comm);
             }
 #endif
 
@@ -575,9 +575,9 @@ public:
 
 #ifdef HAVE_MPI
 
-        if ( Application::nProcess() > 1 )
+        if ( M_comm.size() > 1 )
             {
-                mpi::all_reduce( Application::comm(), local_l1, global_l1, std::plus<double>() );
+                mpi::all_reduce( M_comm, local_l1, global_l1, std::plus<double>() );
             }
 #endif
 
@@ -598,9 +598,9 @@ public:
 
 #ifdef HAVE_MPI
 
-        if ( Application::nProcess() > 1 )
+        if ( M_comm.size() > 1 )
             {
-                mpi::all_reduce( Application::comm(), local_norm2, global_norm2, std::plus<real_type>() );
+                mpi::all_reduce( M_comm, local_norm2, global_norm2, std::plus<real_type>() );
             }
 #endif
         return math::sqrt( global_norm2 );
@@ -619,9 +619,9 @@ public:
 
 #ifdef HAVE_MPI
 
-        if ( Application::nProcess() > 1 )
+        if ( M_comm.size() > 1 )
             {
-                mpi::all_reduce( Application::comm(), local_norminf, global_norminf, mpi::maximum<real_type>() );
+                mpi::all_reduce( M_comm, local_norminf, global_norminf, mpi::maximum<real_type>() );
             }
 #endif
         return global_norminf;
@@ -641,9 +641,9 @@ public:
 
 #ifdef HAVE_MPI
 
-        if ( Application::nProcess() > 1 )
+        if ( M_comm.size() > 1 )
             {
-                mpi::all_reduce( Application::comm(), local_sum, global_sum, std::plus<value_type>() );
+                mpi::all_reduce( M_comm, local_sum, global_sum, std::plus<value_type>() );
             }
 #endif
 
@@ -768,6 +768,7 @@ private:
     void checkInvariant() const;
 
 private:
+    mpi::communicator M_comm;
     vector_type _M_vec;
     mutable bool M_global_values_updated;
     mutable ublas::vector<value_type> M_global_values;

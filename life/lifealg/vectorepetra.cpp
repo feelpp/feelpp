@@ -73,7 +73,7 @@ VectorEpetra<T>::init(const size_type N, const size_type n_local, const bool fas
     LIFE_ASSERT(n_local < N)( n_local )( N ).error( "invalid local size" );
 
     /*
-    _M_emap = Epetra_Map( -1, epetra_n_local, 0, Epetra_MpiComm(Application::COMM_WORLD) );
+    _M_emap = Epetra_Map( -1, epetra_n_local, 0, Epetra_MpiComm(M_comm) );
     _M_vec = Epetra_FEVector(_M_emap);
     */
 

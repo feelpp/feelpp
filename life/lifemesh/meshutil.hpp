@@ -1991,7 +1991,7 @@ processorBoundingSphere (const MeshType& mesh,
   const Real  diag = Life::distance( bbox.second, bbox.first);
   const Point cent = Life::middle(bbox.second, bbox.first);
 
-  Debug( 4100 ) << "[processorBoundingSphere] processor " << Application::processId() << "\n";
+  Debug( 4100 ) << "[processorBoundingSphere] processor " << mesh.comm().rank() << "\n";
   Debug( 4100 ) << "[processorBoundingSphere] center " << cent << "\n";
   Debug( 4100 ) << "[processorBoundingSphere] radius " << 0.5*diag << "\n";
   return Sphere (cent, .5*diag);

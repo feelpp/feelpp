@@ -226,7 +226,7 @@ inline NdebugStream& flush( NdebugStream& s )    { return s; }
 DebugStream Log( int area = 0, DebugStream::stprintf = 0 );
 DebugStream Log( bool cond, int area = 0, DebugStream::stprintf = 0 );
 
-#ifndef NDEBUG_OLD
+#ifndef NDEBUG
 DebugStream Debug( int area = 0, DebugStream::stprintf = 0 );
 DebugStream Debug( bool cond, int area = 0, DebugStream::stprintf = 0 );
 #else

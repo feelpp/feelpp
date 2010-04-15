@@ -54,7 +54,7 @@ region( boost::shared_ptr<SpaceType> const& space,
     typedef typename SpaceType::element_type element_type;
     element_type v( space, "field" );
 
-    int pid = Application::processId();
+    int pid = space->mesh()->comm().rank();
     typename SpaceType::mesh_type::element_const_iterator it = space->mesh()->beginElementWithProcessId( pid );
     typename SpaceType::mesh_type::element_const_iterator en = space->mesh()->endElementWithProcessId( pid );
     for( ; it != en; ++it )
@@ -80,7 +80,7 @@ regionv( boost::shared_ptr<SpaceType> const& space,
     typedef typename SpaceType::element_type element_type;
     element_type v( space, "field" );
 
-    int pid = Application::processId();
+    int pid = space->mesh()->comm().rank();
     typename SpaceType::mesh_type::element_const_iterator it = space->mesh()->beginElementWithProcessId( pid );
     typename SpaceType::mesh_type::element_const_iterator en = space->mesh()->endElementWithProcessId( pid );
     for( ; it != en; ++it )

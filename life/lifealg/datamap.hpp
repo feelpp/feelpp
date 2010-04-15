@@ -100,18 +100,18 @@ public:
      * @return the number of degrees of freedom on this processor.
      */
     size_type nLocalDof () const
-    { return this->nDofOnProcessor (Application::processId()); }
+    { return this->nDofOnProcessor (M_comm.rank()); }
 
     /**
      * @return the number of degrees of freedom on this processor.
      */
     size_type nMyDof () const
-    { return this->nDofOnProcessor (Application::processId()); }
+    { return this->nDofOnProcessor (M_comm.rank()); }
 
     /**
      * @return the number of degrees of freedom on subdomain \p proc.
      */
-    size_type nDofOnProcessor(const size_type proc = Application::processId() ) const
+    size_type nDofOnProcessor(const size_type proc) const
     {
         LIFE_ASSERT(proc < _M_first_df.size())( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
         return ( _M_last_df[proc] - _M_first_df[proc]+1);
@@ -119,22 +119,40 @@ public:
 
     size_type nProcessors() const
     {
-        return ( Application::nProcess() );
+        return ( M_comm.size() );
     }
 
     /**
+     * @return the first dof index that is in  local subdomain
+     */
+    size_type firstDof() const
+    {
+        size_type proc = M_comm.rank();
+        LIFE_ASSERT(proc < _M_first_df.size())( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
+        return _M_first_df[proc];
+    }
+    /**
      * @return the first dof index that is local to subdomain \p proc.
      */
-    size_type firstDof(const size_type proc = Application::processId()) const
+    size_type firstDof(const size_type proc) const
     {
         LIFE_ASSERT(proc < _M_first_df.size())( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
         return _M_first_df[proc];
     }
 
     /**
+     * Returns the last dof index that is in local  subdomain
+     */
+    size_type lastDof() const
+    {
+        size_type proc = M_comm.rank();
+        LIFE_ASSERT(proc < _M_last_df.size())( proc )( _M_last_df.size() ).error( "invalid proc id or dof table" );
+        return _M_last_df[proc];
+    }
+    /**
      * Returns the last dof index that is local to subdomain \p proc.
      */
-    size_type lastDof(const unsigned int proc = Application::processId()) const
+    size_type lastDof(const unsigned int proc) const
     {
         LIFE_ASSERT(proc < _M_last_df.size())( proc )( _M_last_df.size() ).error( "invalid proc id or dof table" );
         return _M_last_df[proc];
@@ -144,7 +162,7 @@ public:
     //! Returns local ID of global ID, return invalid_size_type_value if not found on this processor.
     size_type  lid(size_type GID) const
     {
-        uint16_type pid = Application::processId();
+        uint16_type pid = M_comm.rank();
         if ( GID >= firstDof( pid ) &&
              GID <= lastDof( pid ) )
             return GID - firstDof( pid );
@@ -154,7 +172,7 @@ public:
     //! Returns global ID of local ID, return -1 if not found on this processor.
     size_type gid( size_type LID) const
     {
-        uint16_type pid = Application::processId();
+        uint16_type pid = M_comm.rank();
         if ( LID < ( lastDof( pid )-firstDof( pid ) + 1 ) )
             return firstDof( pid ) + LID;
         return invalid_size_type_value;
@@ -170,19 +188,19 @@ public:
     size_type  minAllGID() const {return(firstDof( 0 ));}
 
     //! Returns the maximum global ID across the entire map.
-    size_type  maxAllGID() const {return(lastDof( Application::nProcess()-1 ) );}
+    size_type  maxAllGID() const {return(lastDof( M_comm.size()-1 ) );}
 
     //! Returns the maximum global ID owned by this processor.
-    size_type  minMyGID() const {return firstDof( Application::processId() );}
+    size_type  minMyGID() const {return firstDof( M_comm.rank() );}
 
     //! Returns the maximum global ID owned by this processor.
-    size_type  maxMyGID() const {return lastDof( Application::processId() );};
+    size_type  maxMyGID() const {return lastDof( M_comm.rank() );};
 
     //!  The minimum local index value on the calling processor.
     size_type  minLID() const {return 0;};
 
     //! The maximum local index value on the calling processor.
-    size_type  maxLID() const {return lastDof( Application::processId() )-firstDof( Application::processId() );};
+    size_type  maxLID() const {return lastDof( M_comm.rank() )-firstDof( M_comm.rank() );};
 
     //! number of elements across all processors.
     size_type nGlobalElements() const {return _M_n_dofs;};
@@ -195,6 +213,11 @@ public:
 
     //! \return true if DataMap is close, false otherwise
     bool closed() const { return M_closed; }
+
+    /**
+     * \return the communicator
+     */
+    mpi::communicator const& comm() const { return M_comm; }
 
     //@}
 
@@ -239,6 +262,7 @@ protected:
 
     mutable std::vector<size_type> M_myglobalelements;
 
+    mpi::communicator M_comm;
 private:
 
 };

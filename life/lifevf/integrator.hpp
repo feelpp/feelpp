@@ -267,14 +267,14 @@ public:
         typename eval::ret_type loc =  evaluate( mpl::int_<iDim>() );
         typename eval::ret_type glo( loc );
 #if defined( HAVE_MPI )
-        if ( Application::nProcess() > 1 )
+        if ( M_comm.size() > 1 )
             {
                 MPI_Allreduce( loc.data().begin(),
                                glo.data().begin(),
                                loc.size1()*loc.size2(),
                                MPI_DOUBLE,
                                MPI_SUM,
-                               Application::COMM_WORLD );
+                               M_comm );
             }
 #endif // HAVE_MPI
         return glo;
@@ -296,7 +296,7 @@ private:
 
 private:
 
-
+    mpi::communicator M_comm;
     element_iterator _M_eltbegin;
     element_iterator _M_eltend;
     mutable im_type _M_im;
@@ -654,9 +654,9 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     it = this->beginElement();
     // wait for all the guys
 #ifdef HAVE_MPI
-        if ( Application::nProcess() > 1 )
+        if ( M_comm.size() > 1 )
             {
-                Application::barrier();
+                M_comm.barrier();
             }
 #endif
 

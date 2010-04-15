@@ -73,12 +73,12 @@ extern "C"
       SNESGetKSP( snes,&ksp);
       PetscInt lits;
       int ierr = KSPGetIterationNumber (ksp, &lits);
-      CHKERRABORT(Life::Application::COMM_WORLD,ierr);
+      CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
       PetscReal final_resid;
       // Get the norm of the final residual to return to the user.
       ierr = KSPGetResidualNorm ( ksp, &final_resid);
-      CHKERRABORT(Life::Application::COMM_WORLD,ierr);
+      CHKERRABORT(PETSC_COMM_WORLD,ierr);
       ///Life::Log() << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
       //std::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
 #endif
@@ -275,7 +275,7 @@ void SolverNonLinearPetsc<T>::clear ()
             int ierr=0;
 
             ierr = SNESDestroy(M_snes);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
         }
 }
 
@@ -294,18 +294,18 @@ void SolverNonLinearPetsc<T>::init ()
             // At least until Petsc 2.1.1, the SNESCreate had a different calling syntax.
             // The second argument was of type SNESProblemType, and could have a value of
             // either SNES_NONLINEAR_EQUATIONS or SNES_UNCONSTRAINED_MINIMIZATION.
-            ierr = SNESCreate(Application::COMM_WORLD, SNES_NONLINEAR_EQUATIONS, &M_snes);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            ierr = SNESCreate(PETSC_COMM_WORLD, SNES_NONLINEAR_EQUATIONS, &M_snes);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 #else
 
-            ierr = SNESCreate(Application::COMM_WORLD,&M_snes);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            ierr = SNESCreate(PETSC_COMM_WORLD,&M_snes);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 #endif
 
             ierr = SNESSetFromOptions(M_snes);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
         }
 
@@ -320,13 +320,13 @@ void SolverNonLinearPetsc<T>::init ()
                 case LINE_SEARCH :
                     {
                         ierr = SNESSetType(M_snes, SNESLS);
-                        CHKERRABORT(Application::COMM_WORLD,ierr);
+                        CHKERRABORT(PETSC_COMM_WORLD,ierr);
                     }
                     break;
                 case TRUST_REGION :
                     {
                         ierr = SNESSetType(M_snes, SNESTR);
-                        CHKERRABORT(Application::COMM_WORLD,ierr);
+                        CHKERRABORT(PETSC_COMM_WORLD,ierr);
                     }
                     break;
                 }
@@ -339,36 +339,36 @@ void SolverNonLinearPetsc<T>::init ()
     if ( this->getAbsoluteResidualTol()==0)
         {
             ierr = SNESGetTolerances(M_snes, &__absResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
         }
     else __absResTol = this->getAbsoluteResidualTol();
 
     if ( this->getRelativeResidualTol()==0)
         {
             ierr = SNESGetTolerances(M_snes, PETSC_NULL, &__relResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
         }
     else __relResTol = this->getRelativeResidualTol();
 
     if ( this->getAbsoluteSolutionTol()==0)
         {
             ierr = SNESGetTolerances(M_snes, PETSC_NULL, PETSC_NULL, &__absSolTol, PETSC_NULL, PETSC_NULL);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
         }
     else __absSolTol = this->getAbsoluteSolutionTol();
 
     if ( this->getNbItMax()==0)
         {
             ierr = SNESGetTolerances(M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbItMax, PETSC_NULL);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
         }
     else __nbItMax = this->getNbItMax();
 
     ierr = SNESGetTolerances(M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbEvalFuncMax);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     ierr = SNESSetTolerances(M_snes,__absResTol,__relResTol,__absSolTol,__nbItMax,__nbEvalFuncMax);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 }
 
@@ -391,7 +391,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 #else
     ierr = SNESSetMonitor (M_snes, __life_petsc_snes_monitor, this, PETSC_NULL);
 #endif
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     MatrixPetsc<T>* jac = dynamic_cast<MatrixPetsc<T>*>( jac_in.get() );
     VectorPetsc<T>* x   = dynamic_cast<VectorPetsc<T>*>( x_in.get() );
@@ -407,10 +407,10 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     int n_iterations =0;
 
     ierr = SNESSetFunction (M_snes, r->vec(), __life_petsc_snes_residual, this);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     ierr = SNESSetJacobian (M_snes, jac->mat(), jac->mat(), __life_petsc_snes_jacobian, this);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 #if 1
     KSP            ksp;         /* linear solver context */
@@ -423,7 +423,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     //PCSetType(pc,PCNONE);
     PCSetType(pc,PCLU);
     ierr = SNESSetFromOptions(M_snes);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 #endif
 
     /*
@@ -434,30 +434,30 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     PetscInt hist_its[50];
     PetscReal history[50];
     ierr = SNESSetConvergenceHistory(M_snes,history,hist_its,50,PETSC_TRUE);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // Older versions (at least up to 2.1.5) of SNESSolve took 3 arguments,
     // the last one being a pointer to an int to hold the number of iterations required.
 # if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
 
     ierr = SNESSolve (M_snes, x->vec(), &n_iterations);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // 2.2.x style
 #elif (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
 
     ierr = SNESSolve (M_snes, x->vec());
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // 2.3.x & newer style
 #else
 
     ierr = SNESSolve (M_snes, PETSC_NULL, x->vec());
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 #endif
 
-    ierr = SNESGetIterationNumber(M_snes,&n_iterations);CHKERRABORT(Application::COMM_WORLD,ierr);
+    ierr = SNESGetIterationNumber(M_snes,&n_iterations);CHKERRABORT(PETSC_COMM_WORLD,ierr);
     Log() << "[SolverNonLinearPetsc] number of nonlinear iterations = " << n_iterations << "\n";
     for (int i=0; i<n_iterations+1; i++)
         {
@@ -510,7 +510,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
         }
 
     ierr = SNESSetFunction (M_snes, petsc_r, __life_petsc_snes_dense_residual, this);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     Mat petsc_j;
     MatCreateSeqDense( PETSC_COMM_SELF, jac_in.size1(), jac_in.size2(), 0, &petsc_j );
@@ -530,7 +530,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
 
 
     ierr = SNESSetJacobian (M_snes, petsc_j, petsc_j, __life_petsc_snes_dense_jacobian, this);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 
     /*
@@ -552,19 +552,19 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
 # if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
 
     ierr = SNESSolve (M_snes, petsc_x, &n_iterations);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // 2.2.x style
 #elif (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
 
     ierr = SNESSolve (M_snes, petsc_x );
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // 2.3.x & newer style
 #else
 
     ierr = SNESSolve (M_snes, PETSC_NULL, petsc_x );
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 #endif
 

@@ -215,6 +215,11 @@ public:
         return _M_e2f[e][n];
     }
 
+    /**
+     * \return the communicator
+     */
+    mpi::communicator const& comm() const { return M_comm; }
+
     //@}
 
     /** @name  Mutators
@@ -307,7 +312,7 @@ public:
     /**
      * Call the default partitioner (currently \p metis_partition()).
      */
-    void partition ( const uint16_type n_parts = Application::nProcess() );
+    void partition ( const uint16_type n_parts = 1 );
 
     /**
      * After loading/defining a mesh, we want to have as much locality
@@ -315,7 +320,7 @@ public:
      * to do that the mesh elements/faces/nodes are renumbered. That
      * will be then most helpful when generating the \p Dof table.
      * This procedure should work also with
-     * \p Application::nProcess() == 1
+     * \p comm().size() == 1
      */
     void renumber() { renumber( mpl::bool_<(nDim > 1)>() ); }
 
@@ -585,6 +590,9 @@ private:
     void renumber( mpl::bool_<true> );
 
 private:
+
+    mpi::communicator M_comm;
+
     gm_ptrtype _M_gm;
 
     /**
