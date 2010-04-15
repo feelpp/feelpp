@@ -76,7 +76,6 @@ makeOptions()
         ("penalisation", Life::po::value<double>()->default_value( 1.0 ), "penalisation parameter for equal order approximation")
         ("stab", Life::po::value<bool>()->default_value( true ), "0 = no stabilisation for equal order approx., 1 = stabilisation for equal order approx.")
 
-        ("export", "export results(ensight, data file(1D)")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
     return stokesoptions.add( Life::life_options() ) ;
@@ -185,7 +184,7 @@ public:
     {
 
         mu = this->vm()["mu"].template as<value_type>();
-        Parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.02:0.05:0.1" );
+        Parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.025:0.06" );
         this->
             //addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu", _values=boost::lexical_cast<std::string>( mu ).c_str()))
             addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
@@ -197,15 +196,15 @@ public:
         std::vector<std::string> funcs;
         depend.push_back(h);
         std::ostringstream oss;
-        oss << "h**" << boost::lexical_cast<std::string>( OrderU + 1  ) ;
+        oss << "h**" << boost::lexical_cast<std::string>( OrderP+1  );
         funcs.push_back(oss.str());
         oss.str("");
         std::vector<std::string> funcs2;
-        oss << "h**" << boost::lexical_cast<std::string>( OrderU ) ;
+        oss << "h**" << boost::lexical_cast<std::string>( OrderP+1 ) ;
         funcs2.push_back(oss.str());
 
         this->
-            addOutput( Output(_name="norm_L2_u",_latex="\\left\\| u \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) )
+            addOutput( Output(_name="norm_H1_u",_latex="\\left\\| u \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs) )
             .addOutput( Output(_name="norm_L2_p",_latex="\\left\\| p \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs2) );
 
 
@@ -260,6 +259,8 @@ void
 
     using namespace Life::vf;
 
+    boost::timer t;
+
     /*
      * First we create the mesh : a square [0,1]x[0,1] with characteristic
      * length = meshSize
@@ -272,13 +273,19 @@ void
                                                       _xmin=-0.5,_xmax=1.,
                                                       _ymin=-0.5,_ymax=1.5 ) );
 
+    Log() << "mesh created in " << t.elapsed() << "s\n"; t.restart();
+
     /*
      * The function space and some associate elements are then defined
      */
     space_ptrtype Xh = space_type::New( mesh );
 
     element_type U( Xh, "u" );
+    element_type E( Xh, "u" );
     element_type V( Xh, "v" );
+    element_0_type ue = E.template element<0>();
+    element_1_type pe = E.template element<1>();
+    element_2_type le = E.template element<2>();
     element_0_type u = U.template element<0>();
     element_0_type v = V.template element<0>();
     element_1_type p = U.template element<1>();
@@ -291,7 +298,7 @@ void
     Log() << "  export = " << this->vm().count("export") << "\n";
     Log() << "      mu = " << mu << "\n";
     Log() << " bccoeff = " << penalbc << "\n";
-
+    Log() << "functionspace and elements created in " << t.elapsed() << "s\n"; t.restart();
 
     vector_ptrtype F( M_backend->newVector( Xh ) );
 
@@ -348,52 +355,68 @@ void
     AUTO( f, vec(2*cos(Px())*cos(Py())-sin(Px())*sin(Py()),
                  2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) ) );
 #endif
+    v = vf::project( v.functionSpace(), elements(mesh), beta );
+    ue = vf::project( ue.functionSpace(), elements(mesh), u_exact );
+    Log() << "convection terms projectd in " << t.elapsed() << "s\n"; t.restart();
+
     // right hand side
     form1( Xh, F, _init=true )  =
-        integrate( elements(mesh), _Q<OrderU+5>(), trans(f)*id(v) )+
+        integrate( elements(mesh), trans(f)*id(v) )+
         integrate( boundaryfaces(mesh),
-                   // higher order quadrature to accurately integrate u_exact
-                   _Q<OrderU+1>(),
                    trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
 
     Log() << "[stokes] vector local assembly done\n";
-
+    Log() << "form1 F created in " << t.elapsed() << "s\n"; t.restart();
     /*
      * Construction of the left hand side
      */
     sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
-    size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
+    size_type pattern = DOF_PATTERN_COUPLED;
+    if ( is_equal_order && this->vm()["stab"].template as<bool>() )
+        pattern |= DOF_PATTERN_NEIGHBOR;
+    Life::Context graph( pattern );
+    Log() << "[stokes] test : " << ( graph.test ( DOF_PATTERN_COUPLED ) || graph.test ( DOF_PATTERN_NEIGHBOR ) ) << "\n";
+    Log() << "[stokes]  : graph.test ( DOF_PATTERN_COUPLED )=" <<  graph.test ( DOF_PATTERN_COUPLED ) << "\n";
+    Log() << "[stokes]  : graph.test ( DOF_PATTERN_NEIGHBOR)=" <<  graph.test ( DOF_PATTERN_NEIGHBOR ) << "\n";
     Log() << "[assembly] add diffusion terms\n";
-    form2( Xh, Xh, D, _init=true, _pattern=pattern )=
-        integrate( elements(mesh), _Q<2*(OrderU-1)>(),
+    form2( Xh, Xh, D, _init=true, _pattern=pattern );
+    Log() << "[assembly] form2 D init in " << t.elapsed() << "s\n"; t.restart();
+    form2( Xh, Xh, D )+=
+        integrate( elements(mesh),
                    mu*trace(deft*trans(def)) +
-                   trans(gradt(u)*beta)*id(v) );
+                   trans(gradt(u)*idv(v))*id(v) );
+    Log() << "[assembly] form2 D convection and viscous terms in " << t.elapsed() << "s\n"; t.restart();
     Log() << "[assembly] add velocity/pressure terms\n";
-    form2( Xh, Xh, D )+=integrate( elements(mesh), _Q<2*(OrderU-1)>(),
+    form2( Xh, Xh, D )+=integrate( elements(mesh),
                                    - div(v)*idt(p) + divt(u)*id(q) );
+    Log() << "[assembly] form2 D velocity/pressure terms in " << t.elapsed() << "s\n"; t.restart();
     Log() << "[assembly] add lagrange multipliers terms for zero mean pressure\n";
-    form2( Xh, Xh, D )+=integrate( elements(mesh), _Q<OrderU-1>(),
+    form2( Xh, Xh, D )+=integrate( elements(mesh),
                                    id(q)*idt(lambda) + idt(p)*id(nu) );
+    Log() << "[assembly] form2 D pressure/multipliers terms in " << t.elapsed() << "s\n"; t.restart();
      Log() << "[assembly] add terms for weak Dirichlet condition handling\n";
-    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), _Q<2*OrderU>(),
+    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh),
                                    -trans(SigmaNt)*id(v)
                                    -trans(SigmaN)*idt(u)
                                    +penalbc*trans(idt(u))*id(v)/hFace() );
-
+    Log() << "[assembly] form2 D boundary terms in " << t.elapsed() << "s\n"; t.restart();
     if ( is_equal_order && this->vm()["stab"].template as<bool>() )
     {
         Log() << "[assembly] add stabilisation terms for equal order approximation ( orderU=" << OrderU << ", orderP=" << OrderP << " )\n";
         double p_term = double(OrderU);
         p_term = math::pow(p_term, 7./2.);
         AUTO( penalisation_term, constant(this->vm()["penalisation"].template as<double>())*hFace()*hFace()/p_term );
-        form2( Xh, Xh, D ) += integrate( internalfaces(mesh), _Q<2*(OrderP-1)>(),
+        form2( Xh, Xh, D ) += integrate( internalfaces(mesh),
                                          penalisation_term*(trans(jumpt(gradt(p)))*jump(grad(q))) );
+        Log() << "[assembly] form2 D stabilisation terms in " << t.elapsed() << "s\n"; t.restart();
     }
 
     Log() << "[stokes] matrix local assembly done\n";
+
     D->close();
     F->close();
     Log() << "[stokes] vector/matrix global assembly done\n";
+    Log() << "form2 D created in " << t.elapsed() << "s\n"; t.restart();
 
     if( this->vm().count( "export-matlab" ) )
     {
@@ -402,41 +425,51 @@ void
     }
 
     this->solve( D, U, F, false );
-
+    Log() << "system solved in " << t.elapsed() << "s\n"; t.restart();
     Log() << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
 
-    double u_errorL2 = integrate( elements(mesh), _Q<2*OrderU>(), trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
+    v = vf::project( u.functionSpace(), elements(mesh), idv(u)-u_exact );
+    double u_errorL2 = integrate( elements(mesh),
+                                  trans(idv(v))*(idv(v)) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
 
-    double p_errorL2 = integrate( elements(mesh), _Q<2*OrderU>(), (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
+    double u_errorsemiH1 = integrate( elements(mesh),
+                                      trace(gradv(v)*trans(gradv(v)))).evaluate()( 0, 0 );
+    double u_error_H1 = math::sqrt( u_errorL2+u_errorsemiH1 );
+    std::cout << "||u_error||_2 = " << u_error_H1 << "\n";
+
+
+    double p_errorL2 = integrate( elements(mesh), (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
     Log() << "[stokes] solve for D done\n";
 
-    double meas = integrate( elements(mesh), _Q<0>(), constant(1.0) ).evaluate()( 0, 0);
+    double meas = integrate( elements(mesh), constant(1.0) ).evaluate()( 0, 0);
     Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
-    double mean_p = integrate( elements(mesh), _Q<OrderP>(), idv(p) ).evaluate()( 0, 0 )/meas;
+    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/meas;
     Log() << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
-    double mean_div_u = integrate( elements(mesh), _Q<OrderU-1>(), divv(u) ).evaluate()( 0, 0 );
+    double mean_div_u = integrate( elements(mesh), divv(u) ).evaluate()( 0, 0 );
     Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
-    double div_u_error_L2 = integrate( elements(mesh), _Q<2*(OrderU-1)>(), divv(u)*divv(u) ).evaluate()( 0, 0 );
+    double div_u_error_L2 = integrate( elements(mesh), divv(u)*divv(u) ).evaluate()( 0, 0 );
     Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 
     v = vf::project( Xh->template functionSpace<0>(), elements( Xh->mesh() ), u_exact );
     q = vf::project( Xh->template functionSpace<1>(), elements( Xh->mesh() ), p_exact );
-
+    Log() << "postprocessing done in " << t.elapsed() << "s\n"; t.restart();
     this->exportResults( U, V );
+    Log() << "exporting done in " << t.elapsed() << "s\n"; t.restart();
 
-    this->addOutputValue( math::sqrt( u_errorL2 ) ).addOutputValue( math::sqrt( p_errorL2 ) );
+
+    this->addOutputValue( u_error_H1 ).addOutputValue( math::sqrt( p_errorL2 ) );
     this->postProcessing();
 
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
@@ -463,7 +496,7 @@ template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uin
 void
 Stokes<Dim, _OrderU, _OrderP, Entity>::exportResults( element_type& U, element_type& V )
 {
-    if ( this->vm().count("export") )
+    if ( exporter->doExport() )
     {
         exporter->step(0)->setMesh( U.functionSpace()->mesh() );
         exporter->step(0)->add( "u", U.template element<0>() );
