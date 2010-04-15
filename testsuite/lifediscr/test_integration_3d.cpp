@@ -29,13 +29,21 @@
  */
 #define USE_BOOST_TEST 1
 // Boost.Test
+
+// make sure that the init_unit_test function is defined by UTF
 #define BOOST_TEST_MAIN
+// give a name to the testsuite
+#define BOOST_TEST_MODULE 3D integration testsuite
+// disable the main function creation, use our own
+#define BOOST_TEST_NO_MAIN
+
+
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 #include <boost/test/floating_point_comparison.hpp>
 
 #include <life/options.hpp>
-#include <life/lifecore/life.hpp>
+#include <life/lifecore/environment.hpp>
 #include <life/lifemesh/geoentity.hpp>
 #include <life/lifemesh/refentity.hpp>
 #include <life/lifediscr/functionspace.hpp>
@@ -231,3 +239,13 @@ main( int argc, char** argv )
 }
 #endif /* USE_BOOST_TEST */
 #endif
+
+
+int BOOST_TEST_CALL_DECL
+main( int argc, char* argv[] )
+{
+    Life::Environment env( argc, argv );
+    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
+
+    return ret;
+}
