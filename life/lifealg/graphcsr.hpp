@@ -32,7 +32,9 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include <boost/tuple/tuple.hpp>
+#include <boost/mpi/communicator.hpp>
 
 #include <boost/shared_ptr.hpp>
 
@@ -40,7 +42,7 @@
 
 namespace Life
 {
-
+    namespace mpi=boost::mpi;
 
 /**
  * \class GraphCSR
@@ -61,7 +63,8 @@ public:
     typedef std::vector<size_type> nz_type;
     typedef boost::shared_ptr<nz_type> nz_ptrtype;
 
-    typedef boost::tuple<size_type, size_type, std::vector<size_type> > row_type;
+    //typedef boost::tuple<size_type, size_type, std::vector<size_type> > row_type;
+    typedef boost::tuple<size_type, size_type, std::set<size_type> > row_type;
     typedef std::map<size_type, row_type > storage_type;
     typedef boost::shared_ptr<storage_type> storage_ptrtype;
 
@@ -223,6 +226,12 @@ public:
         return M_n_oz;
     }
 
+    /**
+     * \return the communicator
+     */
+    mpi::communicator const& comm() const { return M_comm; }
+
+
     //@}
 
     /** @name  Mutators
@@ -256,6 +265,8 @@ public:
 protected:
 
 private:
+
+    mpi::communicator M_comm;
 
     size_type M_first_row_entry_on_proc;
     size_type M_last_row_entry_on_proc;
