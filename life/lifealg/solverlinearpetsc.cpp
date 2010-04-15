@@ -310,11 +310,11 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     // Set the tolerances for the iterative solver.  Use the user-supplied
     // tolerance for the relative residual & leave the others at default values.
     ierr = KSPSetTolerances (_M_ksp,
-                             1e-25,
-                             //PETSC_DEFAULT,
+                             //1e-25,
                              PETSC_DEFAULT,
-                             //PETSC_DEFAULT,
-                             1e30,
+                             PETSC_DEFAULT,
+                             PETSC_DEFAULT,
+                             //1e30,
                              max_its);
     CHKERRABORT(M_comm,ierr);
 
