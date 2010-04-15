@@ -309,8 +309,13 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
 
     // Set the tolerances for the iterative solver.  Use the user-supplied
     // tolerance for the relative residual & leave the others at default values.
-    ierr = KSPSetTolerances (_M_ksp, tol, PETSC_DEFAULT,
-                             PETSC_DEFAULT, max_its);
+    ierr = KSPSetTolerances (_M_ksp,
+                             1e-25,
+                             //PETSC_DEFAULT,
+                             PETSC_DEFAULT,
+                             //PETSC_DEFAULT,
+                             1e30,
+                             max_its);
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
     // Solve the linear system
@@ -326,12 +331,26 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
 
     // Get the norm of the final residual to return to the user.
     ierr = KSPGetResidualNorm (_M_ksp, &final_resid);
+    //std::cout << "final residual = " << final_resid << "\n";
     CHKERRABORT(Application::COMM_WORLD,ierr);
 
-#endif
 
-    // return the # of its. and the final residual norm.
+    KSPConvergedReason reason;
+    KSPGetConvergedReason(_M_ksp,&reason);
+    if (reason==KSP_DIVERGED_INDEFINITE_PC)
+    {
+        Log() << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";
+        Log() << "[solverlinearpetsc] Run the executable again but with '-pc_factor_shift_type POSITIVE_DEFINITE' option.\n";
+    }
+    else if (reason<0)
+    {
+        Log() <<"[solverlinearpetsc] Other kind of divergence: this should not happen.\n";
+    }
+#endif
+ // return the # of its. and the final residual norm.
     return std::make_pair(its, final_resid);
+
+
 }
 
 
@@ -406,7 +425,7 @@ void
 SolverLinearPetsc<T>::setPetscSolverType()
 {
   int ierr = 0;
-  Debug() << "[SolverLinearPetsc] solver type:  " << this->solverType() << "\n";
+  Debug(7010) << "[SolverLinearPetsc] solver type:  " << this->solverType() << "\n";
   switch (this->solverType())
     {
 
@@ -475,7 +494,7 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
           ierr = PCFactorSetMatSolverPackage(_M_pc,MAT_SOLVER_PETSC );
       }
   }
-  Debug() << "[SolverLinearPetsc] preconditioner type:  " << this->preconditionerType() << "\n";
+  Debug(7010) << "[SolverLinearPetsc] preconditioner type:  " << this->preconditionerType() << "\n";
   switch (this->preconditionerType())
     {
     case IDENTITY_PRECOND:
