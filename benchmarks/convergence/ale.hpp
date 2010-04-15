@@ -63,7 +63,6 @@ makeOptions()
     Life::po::options_description meshHighOrderoptions("TestALE options");
     meshHighOrderoptions.add_options()
         ("h", Life::po::value<double>()->default_value( 2 ), "meshsize")
-        ("export", "export results")
         ;
 
     return meshHighOrderoptions.add( Life::life_options() );
@@ -174,7 +173,7 @@ public:
 
     void exportResults( double tn, pN_element_type& U )
     {
-        if ( this->vm().count( "export" ) )
+        if ( exporter->doExport() )
             {
 #if 1
                 functionspace_ptrtype Wh = functionspace_type::New( U.functionSpace()->mesh() );
