@@ -326,17 +326,14 @@ Laplacian<Dim>::run()
     vector_ptrtype F( M_backend->newVector( Xh ) );
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), _Q<Order+5>(),
-                   f*id(v) );
+        integrate( elements(mesh), f*id(v) );
     //# endmarker2 #
     if ( Application::nProcess () != 1 || weakdir )
         {
             //# marker41 #
             form1( _test=Xh, _vector=F ) +=
-                integrate( markedfaces(mesh,1), _Q<2*Order>(),
-                           g*(-grad(v)*N()+penaldir*id(v)/hFace()) ) +
-                integrate( markedfaces(mesh,3), _Q<2*Order>(),
-                           g*(-grad(v)*N()+penaldir*id(v)/hFace()) );
+                integrate( markedfaces(mesh,1), g*(-grad(v)*N()+penaldir*id(v)/hFace()) ) +
+                integrate( markedfaces(mesh,3), g*(-grad(v)*N()+penaldir*id(v)/hFace()) );
             //# endmarker41 #
         }
     F->close();
@@ -357,8 +354,7 @@ Laplacian<Dim>::run()
     //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
     /** \code */
     form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), _Q<2*Order>(),
-                   nu*gradt(u)*trans(grad(v)) );
+        integrate( elements(mesh), nu*gradt(u)*trans(grad(v)) );
     /** \endcode */
     //# endmarker3 #
 
@@ -372,13 +368,13 @@ Laplacian<Dim>::run()
             /** \code */
             //# marker4 #
             form2( Xh, Xh, D ) +=
-                integrate( markedfaces(mesh,1), _Q<2*Order>(),
+                integrate( markedfaces(mesh,1),
 
                            -(gradt(u)*N())*id(v)
 
                            -(grad(v)*N())*idt(u)
                            +penaldir*id(v)*idt(u)/hFace()) +
-                integrate( markedfaces(mesh,3), _Q<2*Order>(),
+                integrate( markedfaces(mesh,3),
                            -(gradt(u)*N())*id(v)
                            -(grad(v)*N())*idt(u)
                            +penaldir*id(v)*idt(u)/hFace());
@@ -413,7 +409,7 @@ Laplacian<Dim>::run()
     //! compute the \f$L_2$ norm of the error
     /** \code */
     //# marker7 #
-    double L2error2 =integrate(elements(mesh), _Q<2*Order>(),
+    double L2error2 =integrate(elements(mesh),
                                (idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
     double L2error =   math::sqrt( L2error2 );
 
@@ -450,15 +446,18 @@ template<int Dim>
 void
 Laplacian<Dim>::exportResults( element_type& U )
 {
-    Log() << "exportResults starts\n";
+    if ( exporter->doExport() )
+    {
+        Log() << "exportResults starts\n";
 
-    exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+        exporter->step(0)->setMesh( U.functionSpace()->mesh() );
 
-    exporter->step(0)->add( "pid",
-                            regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-    exporter->step(0)->add( "u", U );
+        exporter->step(0)->add( "pid",
+                                regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
+        exporter->step(0)->add( "u", U );
 
-    exporter->save();
+        exporter->save();
+    }
 } // Laplacian::export
 
 
