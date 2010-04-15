@@ -20,8 +20,11 @@
 *** lifecore
  - new class Environment initializes MPI, PETSc and SLEPc if not done already
    and finalizes them if the initialization was done by the same class. This
-   avoid using the Application unnecessarily.
+   avoid using/including the Application class/header unnecessarily.
  - minor bug fix in debug.cpp
+ - Debug: disable now Debug() when compiling with -DNDEBUG which is the case in
+   the cmake Release mode. This may slightly improve performances. Note that
+   Log() is however still writing in the logfile.
 
 *** lifemesh
  - fixed edge connectivity in 2D for high order geometrical elements
@@ -34,18 +37,16 @@
 
 *** lifealg
  - GraphCSR uses std::set instead of std::vector (see
-   BilinearForm::computeGraph). This allows for faster graph computation. Other
-   interesting improvments are doable.
+   BilinearForm::computeGraph). This allows for faster graph computation.
  - SolverLinearPetsc: setting tolerances(absolute, relative and divergence) is
    easier through the Backend::solve function using Boost::parameter.
 
 *** lifevf
  - BilinearForm::computeGraph (in conjunction with GraphCSR) is now noticeably
    faster (this was taking much time). Other optimisation based on hints
-   (DO_PATTERN_COUPLED and DOF_PATTERN_NEIGHBOR), in particular at the moment we
-   consider all components coupled which fills tremendously the matrix pattern,
-   this should be set by DOF_PATTERN_COUPLED instead. Better names for those
-   hints are probably needed.
+   (DO_PATTERN_COUPLED and DOF_PATTERN_NEIGHBOR). You can choose between
+   coupling all components (DOF_PATTERN_COUPLED) or decoupling them
+   (DOF_PATTERN_DEFAULT and depending on trial and test space basis).
 
 ** Benchmarks
 *** Convergence
