@@ -68,6 +68,9 @@ makeOptions()
         ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
         ("nu", po::value<double>()->default_value( 1 ), "coef diffusion")
         ("beta", po::value<double>()->default_value( 1 ), "coef reaction " )
+
+        ("weak", "fully weak formulation (including Dirichlet conditions)" )
+        ("export-matlab", "export matrix and vectors in matlab" )
         ;
     return laplacianvoptions.add( Life::life_options() );
 }
@@ -274,60 +277,86 @@ LaplacianV<Dim, Order, RDim>::run()
 
     boost::timer t1;
 
+    int tag1,tag2;
+    if ( ( Dim == 1 ) || ( Dim == 2 ) )
+        {
+            tag1 = 1;
+            tag2 = 3;
+        }
+    else if ( Dim == 3 )
+        {
+            tag1 = 15;
+            tag2 = 23;
+        }
     // Construction of the right hand side
 
     vector_ptrtype F( backend->newVector( Xh ) );
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), _Q<2*Order>(),
+        integrate( elements(mesh),
                    trans(f)*id(v) );
+    double M_gammabc = 20;
+    if ( this->vm().count( "weak" ) )
+        {
+            form1( Xh, F ) +=
+                integrate( markedfaces(mesh,tag1),
+                           trans(zf)*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
+            form1( Xh, F ) +=
+                integrate( markedfaces(mesh,tag2),
+                           trans(zf)*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
 
+        }
     F->close();
-    Log() << "F assembled in " << t1.elapsed() << "s\n";
-    t1.restart();
+    Log() << "F assembled in " << t1.elapsed() << "s\n"; t1.restart();
 
     //Construction of the left hand side
 
     sparse_matrix_ptrtype D( backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), _Q<2*Order>(),
+    form2( Xh, Xh, D, _init=true);
+    Log() << "D initialized in " << t1.elapsed() << "s\n";t1.restart();
+
+    form2( Xh, Xh, D ) +=
+        integrate( elements(mesh),
                    nu*(trace(gradt(u)*trans(grad(v))))
                    + beta*(trans(idt(u))*id(v)) );
+    Log() << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";t1.restart();
 
+    if ( this->vm().count( "weak" ) )
+    {
+        form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag1),
+                                         ( - nu*trans(id(v))*(gradt(u)*N())
+                                           - nu*trans(idt(u))*(grad(v)*N())
+                                           + M_gammabc*trans(idt(u))*id(v)/hFace()) );
+        form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag2),
+                                         ( - nu*trans(id(v))*(gradt(u)*N())
+                                           - nu*trans(idt(u))*(grad(v)*N())
+                                           + M_gammabc*trans(idt(u))*id(v)/hFace()) );
+        Log() << "D weak bc assembled in " << t1.elapsed() << "s\n";t1.restart();
+    }
     D->close();
 
-    Log() << "D assembled in " << t1.elapsed() << "s\n";
-    t1.restart();
-    if ( Dim == 1 )
-        {
-            form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, 1), u, F, zf )+
-                on( markedfaces(mesh, 2), u, F, zf );
-        }
-    else if ( Dim == 2 )
-        {
-            form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, 1), u, F, zf )+
-                on( markedfaces(mesh, 3), u, F, zf );
 
-        }
-    else if ( Dim == 3 )
-        {
-            form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, 15), u, F, zf )+
-                on( markedfaces(mesh, 23), u, F, zf );
 
-        }
-    Log() << "D+Dirichlet assembled in " << t1.elapsed() << "s\n";
-    t1.restart();
+    if ( !this->vm().count( "weak" ) )
+    {
+        form2( Xh, Xh, D ) +=
+            on( markedfaces(mesh, tag1), u, F, zf )+
+            on( markedfaces(mesh, tag2), u, F, zf );
+        Log() << "D strong bc assembled in " << t1.elapsed() << "s\n";t1.restart();
+    }
 
+
+    if( this->vm().count( "export-matlab" ) )
+    {
+        D->printMatlab( "D.m" );
+        F->printMatlab( "F.m" );
+    }
     this->solve( D, u, F );
 
-    Log() << "solve in " << t1.elapsed() << "s\n";
-    t1.restart();
+    Log() << "solve in " << t1.elapsed() << "s\n"; t1.restart();
 
-    double L2error2 =integrate( elements(mesh), _Q<2*Order>(),
+    double L2error2 =integrate( elements(mesh),
                                 trans(idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
@@ -337,7 +366,7 @@ LaplacianV<Dim, Order, RDim>::run()
 
 
     v = project( Xh, elements(mesh), g );
-    double semiH1error2 =integrate( elements(mesh), _Q<2*Order-2>(),
+    double semiH1error2 =integrate( elements(mesh),
                                     trace((gradv(u)-gradv(v))*trans(gradv(u)-gradv(v))) ).evaluate()( 0, 0 ) ;
 
     Log() << "semi H1 norm computed in " << t1.elapsed() << "s\n";
@@ -378,13 +407,16 @@ LaplacianV<Dim, Order, RDim>::exportResults( element_type& U, element_type& E )
 {
     Log() << "exportResults starts\n";
 
-    exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+    if ( exporter->doExport() )
+    {
+        exporter->step(0)->setMesh( U.functionSpace()->mesh() );
 
-    exporter->step(0)->add( "pid",
-                   regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-    exporter->step(0)->add( "u", U );
-    exporter->step(0)->add( "exact", E );
+        exporter->step(0)->add( "pid",
+                                regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
+        exporter->step(0)->add( "u", U );
+        exporter->step(0)->add( "exact", E );
 
-    exporter->save();
+        exporter->save();
+    }
 } // LaplacianV::export
 
