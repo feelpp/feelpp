@@ -26,8 +26,8 @@ INCLUDE_DIRECTORIES (
   )
 ENABLE_TESTING()
 # set(petsc_SOLVER_OPTIONS "-ksp_monitor -pc_type asm -pc_asm_blocks 2" )
-set(petsc_SOLVER_OPTIONS "-ksp_monitor -pc_type lu" )
-set(petsc_LU_SOLVER_OPTIONS "-ksp_monitor -pc_type lu" )
+set(petsc_SOLVER_OPTIONS "-ksp_monitor -pc_type lu -pc_factor_mat_solver_package umfpack -ksp_view" )
+set(petsc_LU_SOLVER_OPTIONS "-ksp_monitor -pc_type lu -pc_factor_mat_solver_package umfpack -ksp_view" )
 foreach( BENCH laplacian1dP1 laplacian1dP5
     laplacian1d2dP1 laplacian1d2dP5
     laplacian2dP1 laplacian2dP5
