@@ -63,7 +63,7 @@ makeOptions()
         ("penal", Life::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
         ("f", Life::po::value<double>()->default_value( 0 ), "forcing term")
         ("mu", Life::po::value<double>()->default_value( 1.0 ), "reaction coefficient component")
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("hsize", Life::po::value<double>()->default_value( 0.1 ), "first h value to start convergence")
         ("bctype", Life::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
         ("bccoeff", Life::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
         ("export-matlab", "export matrix and vectors in matlab" )
@@ -296,11 +296,8 @@ Stokes<Dim, Order, Entity>::run()
 
     // right hand side
     form1( Xh, F, _init=true )  =
-        integrate( elements(mesh), _Q<Order+5>(), trans(f)*id(v) )+
-        integrate( boundaryfaces(mesh),
-                   // higher order quadrature to accurately integrate u_exact
-                   _Q<3*Order>(),
-                   trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
+        integrate( elements(mesh), trans(f)*id(v) )+
+        integrate( boundaryfaces(mesh), trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
 
     Log() << "[stokes] vector local assembly done\n";
 
@@ -310,13 +307,10 @@ Stokes<Dim, Order, Entity>::run()
     //# marker7 #
     sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh, Xh, D, _init=true )=integrate( elements(mesh), _Q<2*(Order-1)>(),
-                                              mu*trace(deft*trans(def)) );
-    form2( Xh, Xh, D )+=integrate( elements(mesh), _Q<2*(Order-1)>(),
-                                   - div(v)*idt(p) + divt(u)*id(q) );
-    form2( Xh, Xh, D )+=integrate( elements(mesh), _Q<Order-1>(),
-                                   id(q)*idt(lambda) + idt(p)*id(nu) );
-    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), _Q<2*Order>(),
+    form2( Xh, Xh, D, _init=true )=integrate( elements(mesh), mu*trace(deft*trans(def)) );
+    form2( Xh, Xh, D )+=integrate( elements(mesh), - div(v)*idt(p) + divt(u)*id(q) );
+    form2( Xh, Xh, D )+=integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
+    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh),
                                    -trans(SigmaNt)*id(v)
                                    -trans(SigmaN)*idt(u)
                                    +penalbc*trans(idt(u))*id(v)/hFace() );
@@ -326,34 +320,39 @@ Stokes<Dim, Order, Entity>::run()
     F->close();
     Log() << "[stokes] vector/matrix global assembly done\n";
 
+    if ( this->vm().count ( "export-matlab" ) )
+    {
+        D->printMatlab( "D.m" );
+        F->printMatlab( "F.m" );
+    }
 
     this->solve( D, U, F, false );
 
     Log() << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
 
-    double u_errorL2 = integrate( elements(mesh), _Q<2*Order>(), trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
+    double u_errorL2 = integrate( elements(mesh), trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
 
-    double p_errorL2 = integrate( elements(mesh), _Q<2*Order>(), (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
+    double p_errorL2 = integrate( elements(mesh), (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
     Log() << "[stokes] solve for D done\n";
 
-    double meas = integrate( elements(mesh), _Q<0>(), constant(1.0) ).evaluate()( 0, 0);
+    double meas = integrate( elements(mesh), constant(1.0) ).evaluate()( 0, 0);
     Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
-    double mean_p = integrate( elements(mesh), _Q<Order-1>(), idv(p) ).evaluate()( 0, 0 )/meas;
+    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/meas;
     Log() << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
-    double mean_div_u = integrate( elements(mesh), _Q<Order-1>(), divv(u) ).evaluate()( 0, 0 );
+    double mean_div_u = integrate( elements(mesh), divv(u) ).evaluate()( 0, 0 );
     Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
-    double div_u_error_L2 = integrate( elements(mesh), _Q<2*(Order-1)>(), divv(u)*divv(u) ).evaluate()( 0, 0 );
+    double div_u_error_L2 = integrate( elements(mesh), divv(u)*divv(u) ).evaluate()( 0, 0 );
     Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 
