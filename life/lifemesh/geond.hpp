@@ -26,8 +26,6 @@
 
 #include <boost/numeric/ublas/storage.hpp>
 
-#include <life/lifecore/application.hpp>
-
 #include <life/lifemesh/geoentity.hpp>
 #include <life/lifemesh/geo0d.hpp>
 #include <life/lifepoly/geomap.hpp>
@@ -265,7 +263,7 @@ public:
     /**
      * set the \p n -th neighbor with \p neigh
      */
-    void setNeighbor( uint16_type n, size_type neigh_id, size_type proc_id = Application::processId() )
+    void setNeighbor( uint16_type n, size_type neigh_id, size_type proc_id )
     {
         _M_neighbors[n] = std::make_pair( neigh_id, proc_id );
     }

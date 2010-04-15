@@ -99,7 +99,7 @@ protected:
      * Partition the \p mesh_type into \p n subdomains.
      */
     virtual void doPartition ( mesh_type & mesh,
-                               const uint16_type n);
+                               size_type n);
 
 private:
 };
@@ -107,7 +107,7 @@ private:
 template<typename Mesh>
 void
 PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
-                                      const uint16_type n_pieces )
+                                      size_type n_pieces )
 {
     LIFE_ASSERT (n_pieces > 0)( n_pieces ).error( "the number of partitions should be >0" );
 
@@ -366,9 +366,9 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
                         uint16_type proc1 = face.element1().processId();
                         if ( proc0 == proc1 )
                             face.setProcessId( proc0 );
-                        else if ( proc0 == Application::processId() )
+                        else if ( proc0 == this->comm().rank() )
                             face.setProcessId( proc0 );
-                        else if ( proc1 == Application::processId() )
+                        else if ( proc1 == this->comm().rank() )
                             face.setProcessId( proc1 );
                         else
                             face.setProcessId( proc0 );

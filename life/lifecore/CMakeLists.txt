@@ -1,6 +1,7 @@
 add_library(lifecore SHARED
   info.cpp
   application.cpp
+  environment.cpp
   xmlparser.hpp
   applicationxml.cpp
   about.cpp

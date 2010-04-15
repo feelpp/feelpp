@@ -260,7 +260,7 @@ BackendTrilinos::applyMatrix( sparse_matrix_type const& _A,
     catch ( std::bad_cast& )
         {
 
-            Epetra_Map map( _x.size(), _x.localSize(), 0, Epetra_MpiComm( Application::comm() ) );
+            Epetra_Map map( _x.size(), _x.localSize(), 0, Epetra_MpiComm( _x.comm() ) );
             epetra_vector_type v_ep( map );
             //v_ep = x;
             for( size_type lid =0; lid < _x.localSize(); ++lid )

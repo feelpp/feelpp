@@ -72,7 +72,7 @@ SolverEigenSlepc<T>::clear ()
             int ierr=0;
 
             ierr = EPSDestroy(M_eps);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
             // SLEPc default eigenproblem solver
             //this->M_eigen_solver_type = ARNOLDI;
@@ -94,11 +94,11 @@ SolverEigenSlepc<T>::init ()
             this->M_is_initialized = true;
 
             // Create the eigenproblem solver context
-            ierr = EPSCreate (Application::COMM_WORLD, &M_eps);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            ierr = EPSCreate (PETSC_COMM_WORLD, &M_eps);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
             ierr = EPSGetIP (M_eps, &M_ip);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
             PetscReal eta;
             // Set modified Gram-Schmidt orthogonalization as default
@@ -112,7 +112,7 @@ SolverEigenSlepc<T>::init ()
             ierr = IPGetOrthogonalization (M_ip, PETSC_NULL, &refinement, &eta);
             ierr = IPSetOrthogonalization (M_ip, IP_MGS_ORTH, refinement, eta);
 #endif // 0
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
             // Set user-specified  solver
             setSlepcSolverType();
@@ -154,15 +154,15 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
 #if 0
     char mat_file[] = "matA.petsc";
     PetscViewer petsc_viewer;
-    ierr = PetscViewerBinaryOpen(Application::COMM_WORLD, mat_file, PETSC_FILE_CREATE, &petsc_viewer);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD, mat_file, PETSC_FILE_CREATE, &petsc_viewer);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
     ierr = MatView(matrix_A->mat(),petsc_viewer);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 #endif
 
     // Set operators.
     ierr = EPSSetOperators (M_eps, matrix_A->mat(), PETSC_NULL);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     //set the problem type and the position of the spectrum
     setSlepcProblemType();
@@ -171,11 +171,11 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
 
     // Set eigenvalues to be computed.
     ierr = EPSSetDimensions (M_eps, nev, ncv, 2*ncv);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // Set the tolerance and maximum iterations.
     ierr = EPSSetTolerances (M_eps, this->tolerance(), this->maxIterations() );
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // Set runtime options, e.g.,
     //      -eps_type <type>, -eps_nev <nev>, -eps_ncv <ncv>
@@ -183,39 +183,39 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     // above as long as EPSSetFromOptions() is called _after_ any
     // other customization routines.
     ierr = EPSSetFromOptions (M_eps);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // Solve the eigenproblem.
     ierr = EPSSolve (M_eps);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // Get the number of iterations.
     ierr = EPSGetIterationNumber (M_eps, &its);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // Get number of converged eigenpairs.
     ierr = EPSGetConverged(M_eps,&nconv);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 
 #if 0 //!defined( NDEBUG )
-    // ierr = PetscPrintf(Application::COMM_WORLD,
+    // ierr = PetscPrintf(PETSC_COMM_WORLD,
     //         "\n Number of iterations: %d\n"
     //         " Number of converged eigenpairs: %d\n\n", its, nconv);
 
     // Display eigenvalues and relative errors.
-    ierr = PetscPrintf(Application::COMM_WORLD,
+    ierr = PetscPrintf(PETSC_COMM_WORLD,
                        "           k           ||Ax-kx||/|kx|\n"
                        "   ----------------- -----------------\n" );
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     for(int i=0; i<nconv; i++ )
         {
             ierr = EPSGetEigenpair(M_eps, i, &kr, &ki, PETSC_NULL, PETSC_NULL);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
             ierr = EPSComputeRelativeError(M_eps, i, &error);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 #ifdef USE_COMPLEX_NUMBERS
             re = PetscRealPart(kr);
@@ -227,30 +227,30 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
 
             if (im != .0)
                 {
-                    ierr = PetscPrintf(Application::COMM_WORLD," %9f%+9f i %12f\n", re, im, error);
-                    CHKERRABORT(Application::COMM_WORLD,ierr);
+                    ierr = PetscPrintf(PETSC_COMM_WORLD," %9f%+9f i %12f\n", re, im, error);
+                    CHKERRABORT(PETSC_COMM_WORLD,ierr);
                 }
             else
                 {
-                    ierr = PetscPrintf(Application::COMM_WORLD,"   %12e       %12e\n", re, error);
-                    CHKERRABORT(Application::COMM_WORLD,ierr);
+                    ierr = PetscPrintf(PETSC_COMM_WORLD,"   %12e       %12e\n", re, error);
+                    CHKERRABORT(PETSC_COMM_WORLD,ierr);
                 }
         }
 
-    ierr = PetscPrintf(Application::COMM_WORLD,"\n" );
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"\n" );
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 #endif // DEBUG
 
     // TODO: possible memory leak here
     //VecDestroy( M_mode );
     ierr = MatGetVecs(matrix_A->mat(),PETSC_NULL,&M_mode);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     error = 1;
     if ( nconv >= 1 )
     {
             ierr = EPSComputeRelativeError(M_eps, 1, &error);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
     }
     // return the number of converged eigenpairs
     // and the number of iterations
@@ -292,18 +292,18 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
 #if 0
     char mat_file[] = "matA.petsc";
     PetscViewer petsc_viewer;
-    ierr = PetscViewerBinaryOpen(Application::COMM_WORLD, mat_file, PETSC_FILE_CREATE, &petsc_viewer);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD, mat_file, PETSC_FILE_CREATE, &petsc_viewer);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
     ierr = MatView(matrix_A->mat(),petsc_viewer);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 #endif
 
     // Set operators.
     ierr = EPSSetOperators (M_eps, matrix_A->mat(), matrix_B->mat());
     //ierr = EPSSetOperators (M_eps, matrix_A->mat(), PETSC_NULL);
     //ierr = EPSSetOperators (M_eps, matrix_B->mat(), PETSC_NULL);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     //set the problem type and the position of the spectrum
     setSlepcProblemType();
@@ -312,11 +312,11 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
 
     // Set eigenvalues to be computed.
     ierr = EPSSetDimensions (M_eps, nev, ncv, 2*ncv);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // Set the tolerance and maximum iterations.
     ierr = EPSSetTolerances (M_eps, this->tolerance(), this->maxIterations() );
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // Set runtime options, e.g.,
     //      -eps_type <type>, -eps_nev <nev>, -eps_ncv <ncv>
@@ -324,19 +324,19 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     // above as long as EPSSetFromOptions() is called _after_ any
     // other customization routines.
     ierr = EPSSetFromOptions (M_eps);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // Solve the eigenproblem.
     ierr = EPSSolve (M_eps);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // Get the number of iterations.
     ierr = EPSGetIterationNumber (M_eps, &its);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     // Get number of converged eigenpairs.
     ierr = EPSGetConverged(M_eps,&nconv);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     /*
       Optional: Get some information from the solver and display it
@@ -363,27 +363,27 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     //STGetShift(M_st, &shift );
     //PetscPrintf(PETSC_COMM_WORLD," shift=%.4g\n",shift);
 #if 0//!defined( NDEBUG )
-    // ierr = PetscPrintf(Application::COMM_WORLD,
+    // ierr = PetscPrintf(PETSC_COMM_WORLD,
     //         "\n Number of iterations: %d\n"
     //         " Number of converged eigenpairs: %d\n\n", its, nconv);
 
     // Display eigenvalues and relative errors.
-    ierr = PetscPrintf(Application::COMM_WORLD,
+    ierr = PetscPrintf(PETSC_COMM_WORLD,
                        "           k           ||Ax-kx||/|kx|\n"
                        "   ----------------- -----------------\n" );
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     for(int i=0; i<nconv; i++ )
         {
             ierr = EPSGetEigenpair(M_eps, i, &kr, &ki, PETSC_NULL, PETSC_NULL);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
             ierr = EPSComputeRelativeError(M_eps, i, &error);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
             double norm;
             ierr = EPSComputeResidualNorm(M_eps, i, &norm);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 #ifdef USE_COMPLEX_NUMBERS
             re = PetscRealPart(kr);
@@ -395,33 +395,33 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
 
             if (im != .0)
                 {
-                    ierr = PetscPrintf(Application::COMM_WORLD," %9f%+9f i %12e\n", re, im, error);
-                    CHKERRABORT(Application::COMM_WORLD,ierr);
+                    ierr = PetscPrintf(PETSC_COMM_WORLD," %9f%+9f i %12e\n", re, im, error);
+                    CHKERRABORT(PETSC_COMM_WORLD,ierr);
                 }
             else
                 {
-                    ierr = PetscPrintf(Application::COMM_WORLD,"   %12e       %12e\n", re, error);
-                    CHKERRABORT(Application::COMM_WORLD,ierr);
+                    ierr = PetscPrintf(PETSC_COMM_WORLD,"   %12e       %12e\n", re, error);
+                    CHKERRABORT(PETSC_COMM_WORLD,ierr);
                 }
 
-            ierr = PetscPrintf(Application::COMM_WORLD, "Residual norm=%12e\n", norm );
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            ierr = PetscPrintf(PETSC_COMM_WORLD, "Residual norm=%12e\n", norm );
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
         }
 
-    ierr = PetscPrintf(Application::COMM_WORLD,"\n" );
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"\n" );
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 #endif // DEBUG
 
     // TODO: possible memory leak here
     //VecDestroy( M_mode );
     ierr = MatGetVecs(matrix_A->mat(),PETSC_NULL,&M_mode);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     error = 1;
     if ( nconv >= 1 )
         {
             ierr = EPSComputeRelativeError(M_eps, 0, &error);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
         }
     // return the number of converged eigenpairs
     // and the number of iterations
@@ -438,17 +438,17 @@ void SolverEigenSlepc<T>::setSlepcSolverType()
     switch (this->M_eigen_solver_type)
         {
         case POWER:
-            ierr = EPSSetType (M_eps, (char*) EPSPOWER);    CHKERRABORT(Application::COMM_WORLD,ierr); break;
+            ierr = EPSSetType (M_eps, (char*) EPSPOWER);    CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
         case SUBSPACE:
-            ierr = EPSSetType (M_eps, (char*) EPSSUBSPACE); CHKERRABORT(Application::COMM_WORLD,ierr); break;
+            ierr = EPSSetType (M_eps, (char*) EPSSUBSPACE); CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
         case LAPACK:
-            ierr = EPSSetType (M_eps, (char*) EPSLAPACK);   CHKERRABORT(Application::COMM_WORLD,ierr); break;
+            ierr = EPSSetType (M_eps, (char*) EPSLAPACK);   CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
         case ARNOLDI:
-            ierr = EPSSetType (M_eps, (char*) EPSARNOLDI);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
+            ierr = EPSSetType (M_eps, (char*) EPSARNOLDI);  CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
         case KRYLOVSCHUR:
-            ierr = EPSSetType (M_eps, (char*) EPSKRYLOVSCHUR);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
+            ierr = EPSSetType (M_eps, (char*) EPSKRYLOVSCHUR);  CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
         case LANCZOS:
-            ierr = EPSSetType (M_eps, (char*) EPSLANCZOS);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
+            ierr = EPSSetType (M_eps, (char*) EPSLANCZOS);  CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
 
         default:
             std::cerr << "ERROR:  Unsupported SLEPc Eigen Solver: "
@@ -458,14 +458,14 @@ void SolverEigenSlepc<T>::setSlepcSolverType()
 #else
     ierr = EPSSetType (M_eps, (char*) EPSKRYLOVSCHUR);
     //ierr = EPSSetType (M_eps, (char*) EPSARPACK);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 #endif
     const EPSType etype;
     ierr = EPSGetType(M_eps,&etype);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
     Debug() << "solution method:  " << etype << "\n";
     ierr = PetscPrintf(PETSC_COMM_WORLD," Solution method: %s\n\n",etype);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
     return;
 }
 
@@ -480,19 +480,19 @@ SolverEigenSlepc<T>::setSlepcProblemType()
         {
             // non Hermitian
         case NHEP:
-            ierr = EPSSetProblemType (M_eps, EPS_NHEP);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
-            // generalized non-Hermitian 
+            ierr = EPSSetProblemType (M_eps, EPS_NHEP);  CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
+            // generalized non-Hermitian
         case GNHEP:
-            ierr = EPSSetProblemType (M_eps, EPS_GNHEP); CHKERRABORT(Application::COMM_WORLD,ierr); break;
+            ierr = EPSSetProblemType (M_eps, EPS_GNHEP); CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
             // Hermitian
         case HEP:
-            ierr = EPSSetProblemType (M_eps, EPS_HEP);   CHKERRABORT(Application::COMM_WORLD,ierr); break;
-            // generalized Hermitian 
+            ierr = EPSSetProblemType (M_eps, EPS_HEP);   CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
+            // generalized Hermitian
         case GHEP:
-            ierr = EPSSetProblemType (M_eps, EPS_GHEP);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
-            // Generalized Non-Hermitian with positive (semi-)deﬁnite B 
+            ierr = EPSSetProblemType (M_eps, EPS_GHEP);  CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
+            // Generalized Non-Hermitian with positive (semi-)deﬁnite B
         case PGNHEP:
-            ierr = EPSSetProblemType (M_eps, EPS_PGNHEP);  CHKERRABORT(Application::COMM_WORLD,ierr); break;
+            ierr = EPSSetProblemType (M_eps, EPS_PGNHEP);  CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
 
         default:
             std::cerr << "ERROR:  Unsupported SLEPc Eigen Problem: "
@@ -515,17 +515,17 @@ SolverEigenSlepc<T>:: setSlepcPositionOfSpectrum()
     switch (this->M_position_of_spectrum)
         {
         case LARGEST_MAGNITUDE:
-            ierr = EPSSetWhichEigenpairs (M_eps, EPS_LARGEST_MAGNITUDE);  CHKERRABORT(Application::COMM_WORLD,ierr); return;
+            ierr = EPSSetWhichEigenpairs (M_eps, EPS_LARGEST_MAGNITUDE);  CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
         case SMALLEST_MAGNITUDE:
-            ierr = EPSSetWhichEigenpairs (M_eps, EPS_SMALLEST_MAGNITUDE); CHKERRABORT(Application::COMM_WORLD,ierr); return;
+            ierr = EPSSetWhichEigenpairs (M_eps, EPS_SMALLEST_MAGNITUDE); CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
         case LARGEST_REAL:
-            ierr = EPSSetWhichEigenpairs (M_eps, EPS_LARGEST_REAL);       CHKERRABORT(Application::COMM_WORLD,ierr); return;
+            ierr = EPSSetWhichEigenpairs (M_eps, EPS_LARGEST_REAL);       CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
         case SMALLEST_REAL:
-            ierr = EPSSetWhichEigenpairs (M_eps, EPS_SMALLEST_REAL);      CHKERRABORT(Application::COMM_WORLD,ierr); return;
+            ierr = EPSSetWhichEigenpairs (M_eps, EPS_SMALLEST_REAL);      CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
         case LARGEST_IMAGINARY:
-            ierr = EPSSetWhichEigenpairs (M_eps, EPS_LARGEST_IMAGINARY);  CHKERRABORT(Application::COMM_WORLD,ierr); return;
+            ierr = EPSSetWhichEigenpairs (M_eps, EPS_LARGEST_IMAGINARY);  CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
         case SMALLEST_IMAGINARY:
-            ierr = EPSSetWhichEigenpairs (M_eps, EPS_SMALLEST_IMAGINARY); CHKERRABORT(Application::COMM_WORLD,ierr); return;
+            ierr = EPSSetWhichEigenpairs (M_eps, EPS_SMALLEST_IMAGINARY); CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
 
 
         default:
@@ -544,7 +544,7 @@ SolverEigenSlepc<T>:: setSlepcSpectralTransform()
 
     ST st;
     ierr = EPSGetST (M_eps, &st);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     switch( this->spectralTransform() )
             {
@@ -562,7 +562,7 @@ SolverEigenSlepc<T>:: setSlepcSpectralTransform()
                 ierr = STSetType( st, STSHIFT );
                 break;
             }
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 }
 
 
@@ -581,7 +581,7 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
 
     ierr = EPSGetEigenpair(M_eps, i, &kr, &ki, M_mode, PETSC_NULL);
 
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 #ifdef USE_COMPLEX_NUMBERS
     re = PetscRealPart(kr);
@@ -605,7 +605,7 @@ SolverEigenSlepc<T>::eigenModes()
 
     int ncv;
     ierr = EPSGetConverged(M_eps,&ncv);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
     eigenmodes_type modes;
     for ( int i = 0; i < ncv; ++i )
     {
@@ -626,7 +626,7 @@ SolverEigenSlepc<T>::relativeError(unsigned int i)
     PetscReal error;
 
     ierr = EPSComputeRelativeError(M_eps, i, &error);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
     return error;
 }

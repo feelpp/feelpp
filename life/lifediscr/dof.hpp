@@ -1825,7 +1825,7 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::buildPeriodicDofMap( mes
 
     typedef Container::index index;
 
-    const size_type n_proc  = Application::nProcess();
+    const size_type n_proc  = M.comm().size();
 
     //! list of elements which have a periodic face Tag2
     periodic_element_list_type periodic_elements;
@@ -2090,7 +2090,7 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::buildDofMap( mesh_type& 
 
     typedef Container::index index;
 
-    const size_type n_proc  = Application::nProcess();
+    const size_type n_proc  = M.comm().size();
 
     //! list of elements which have a periodic face Tag2
     std::list<std::pair<element_type const*, face_type const*> > periodic_elements;
@@ -2138,7 +2138,7 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::buildDofMap( mesh_type& 
 
     Debug( 5005 ) << " n global dof " << nDof() << "\n";
     Debug( 5005 ) << " n local dof " << nLocalDof() << "\n";
-    for (size_type processor=0; processor<Application::nProcess(); processor++)
+    for (size_type processor=0; processor<M.comm().size(); processor++)
         {
             Debug( 5005 ) << "o processor " << processor << "\n";
             Debug( 5005 ) << "  - n dof on proc " << nDofOnProcessor(processor) << "\n";
@@ -2238,8 +2238,8 @@ Dof<MeshType, FEType, PeriodicityType, ContinuityType>::generateDofPoints(  mesh
 
     //const uint16_type ndofv = fe_type::nDof;
 
-    element_const_iterator it_elt = M.beginElementWithProcessId( Application::processId() );
-    element_const_iterator en_elt = M.endElementWithProcessId( Application::processId() );
+    element_const_iterator it_elt = M.beginElementWithProcessId( M.comm().rank() );
+    element_const_iterator en_elt = M.endElementWithProcessId( M.comm().rank() );
 
     if ( it_elt == en_elt )
         return;

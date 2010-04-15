@@ -36,7 +36,8 @@ MeshBase::MeshBase()
     M_components( MESH_ALL_COMPONENTS ),
     M_is_updated( false ),
     M_n_vertices( 0 ),
-    M_n_parts( 1 )
+    M_n_parts( 1 ),
+    M_comm()
 {}
 
 MeshBase::MeshBase( MeshBase const& m )
@@ -44,7 +45,8 @@ MeshBase::MeshBase( MeshBase const& m )
     M_components( m.M_components ),
     M_is_updated( m.M_is_updated ),
     M_n_vertices( m.M_n_vertices ),
-    M_n_parts( m.M_n_parts )
+    M_n_parts( m.M_n_parts ),
+    M_comm()
 {}
 
 MeshBase::~MeshBase()
@@ -82,4 +84,12 @@ MeshBase::updateForUse( size_type components )
     this->updateForUse();
 }
 
+bool
+MeshBase::isPartitioned() const
+{
+    if ( mpi::environment::initialized() )
+        return M_n_parts == M_comm.size();
+    else
+        return M_n_parts == 1;
+}
 } // Life

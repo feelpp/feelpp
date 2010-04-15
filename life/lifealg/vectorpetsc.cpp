@@ -81,13 +81,13 @@ VectorPetsc<T>::scale ( T factor_in )
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
 
     ierr = VecScale(&factor, _M_vec);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     // 2.3.x & later style
 #else
 
     ierr = VecScale(_M_vec, factor);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
 #endif
 }
@@ -104,17 +104,17 @@ VectorPetsc<T>::add (const value_type& v_in )
     for (int i=0; i<n; i++)
         {
             ierr = VecGetArray (_M_vec, &values);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
 
             int ig = fli + i;
 
             PetscScalar value = (values[ig] + v);
 
             ierr = VecRestoreArray (_M_vec, &values);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
 
             ierr = VecSetValues (_M_vec, 1, &ig, &value, INSERT_VALUES);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
         }
 }
 template <typename T>
@@ -139,13 +139,13 @@ VectorPetsc<T>::add (const value_type& a_in, const Vector<value_type>& v_in)
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
 
     ierr = VecAXPY(&a, v->_M_vec, _M_vec);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     // 2.3.x & later style
 #else
 
     ierr = VecAXPY(_M_vec, a, v->_M_vec);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
 #endif
 }
@@ -161,7 +161,7 @@ VectorPetsc<T>::min () const
     PetscReal min=0.;
 
     ierr = VecMin (_M_vec, &index, &min);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     // this return value is correct: VecMin returns a PetscReal
     return static_cast<Real>(min);
@@ -177,7 +177,7 @@ VectorPetsc<T>::max() const
     PetscReal max=0.;
 
     ierr = VecMax (_M_vec, &index, &max);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     // this return value is correct: VecMax returns a PetscReal
     return static_cast<Real>(max);
@@ -193,7 +193,7 @@ VectorPetsc<T>:: l1Norm () const
     double value=0.;
 
     ierr = VecNorm (_M_vec, NORM_1, &value);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     return static_cast<Real>(value);
 }
@@ -208,7 +208,7 @@ VectorPetsc<T>::l2Norm () const
     double value=0.;
 
     ierr = VecNorm (_M_vec, NORM_2, &value);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     return static_cast<Real>(value);
 }
@@ -223,7 +223,7 @@ VectorPetsc<T>::linftyNorm () const
     double value=0.;
 
     ierr = VecNorm (_M_vec, NORM_INFINITY, &value);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     return static_cast<Real>(value);
 }
@@ -238,7 +238,7 @@ VectorPetsc<T>:: sum () const
     double value=0.;
 
     ierr = VecSum (_M_vec, &value);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     return static_cast<Real>(value);
 }
@@ -262,13 +262,13 @@ VectorPetsc<T>::localize (Vector<T>& v_local_in) const
     std::vector<int> idx(n); Life::iota (idx.begin(), idx.end(), 0);
 
     // Create the index set & scatter object
-    ierr = ISCreateGeneral(Application::COMM_WORLD, n, &idx[0], &is);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    ierr = ISCreateGeneral(M_comm, n, &idx[0], &is);
+    CHKERRABORT(M_comm,ierr);
 
     ierr = VecScatterCreate(const_cast<Vec>(this->_M_vec), is,
                             v_local->_M_vec, is,
                             &scatter);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     // Perform the scatter
 #if ( (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) ) || ( PETSC_VERSION_MAJOR >= 3 )
@@ -279,7 +279,7 @@ VectorPetsc<T>::localize (Vector<T>& v_local_in) const
     ierr = VecScatterBegin( _M_vec, v_local->_M_vec, INSERT_VALUES,
                             SCATTER_FORWARD, scatter );
 #endif
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3)|| ( PETSC_VERSION_MAJOR >= 3 )
     ierr = VecScatterEnd  (scatter, const_cast<Vec>(_M_vec), v_local->_M_vec, INSERT_VALUES,
@@ -288,14 +288,14 @@ VectorPetsc<T>::localize (Vector<T>& v_local_in) const
     ierr = VecScatterEnd  ( _M_vec, v_local->_M_vec, INSERT_VALUES,
                             SCATTER_FORWARD, scatter );
 #endif
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     // Clean up
     ierr = ISDestroy (is);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     ierr = VecScatterDestroy(scatter);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 }
 
 
@@ -322,14 +322,14 @@ void VectorPetsc<T>::localize (Vector<T>& v_local_in,
         idx[i] = static_cast<int>(send_list[i]);
 
     // Create the index set & scatter object
-    ierr = ISCreateGeneral(Application::COMM_WORLD, n_sl, &idx[0], &is);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    ierr = ISCreateGeneral(M_comm, n_sl, &idx[0], &is);
+    CHKERRABORT(M_comm,ierr);
 
     ierr = VecScatterCreate(const_cast<Vec>(_M_vec),          is,
                             v_local->_M_vec, is,
                             &scatter);
 
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
 
     // Perform the scatter
@@ -338,21 +338,21 @@ void VectorPetsc<T>::localize (Vector<T>& v_local_in,
 #else
     ierr = VecScatterBegin( _M_vec, v_local->_M_vec, INSERT_VALUES, SCATTER_FORWARD, scatter );
 #endif
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) || ( PETSC_VERSION_MAJOR >= 3 )
     ierr = VecScatterEnd  (scatter, const_cast<Vec>(_M_vec), v_local->_M_vec, INSERT_VALUES, SCATTER_FORWARD);
 #else
     ierr = VecScatterEnd  ( _M_vec, v_local->_M_vec, INSERT_VALUES, SCATTER_FORWARD, scatter );
 #endif
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     // Clean up
     ierr = ISDestroy (is);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     ierr = VecScatterDestroy(scatter);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 }
 
 
@@ -394,13 +394,13 @@ void VectorPetsc<T>::localize (const size_type first_local_idx,
         Life::iota (idx.begin(), idx.end(), first_local_idx);
 
         // Create the index set & scatter object
-        ierr = ISCreateGeneral(Application::COMM_WORLD, local_size, &idx[0], &is);
-        CHKERRABORT(Application::COMM_WORLD,ierr);
+        ierr = ISCreateGeneral(M_comm, local_size, &idx[0], &is);
+        CHKERRABORT(M_comm,ierr);
 
         ierr = VecScatterCreate(_M_vec,              is,
                                 parallel_vec._M_vec, is,
                                 &scatter);
-        CHKERRABORT(Application::COMM_WORLD,ierr);
+        CHKERRABORT(M_comm,ierr);
 
         // Perform the scatter
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) || ( PETSC_VERSION_MAJOR >= 3 )
@@ -408,21 +408,21 @@ void VectorPetsc<T>::localize (const size_type first_local_idx,
 #else
         ierr = VecScatterBegin(_M_vec, parallel_vec._M_vec, INSERT_VALUES, SCATTER_FORWARD, scatter);
 #endif
-        CHKERRABORT(Application::COMM_WORLD,ierr);
+        CHKERRABORT(M_comm,ierr);
 
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) || ( PETSC_VERSION_MAJOR >= 3 )
         ierr = VecScatterEnd  (scatter, _M_vec, parallel_vec._M_vec, INSERT_VALUES, SCATTER_FORWARD );
 #else
         ierr = VecScatterEnd  (_M_vec, parallel_vec._M_vec, INSERT_VALUES, SCATTER_FORWARD, scatter);
 #endif
-        CHKERRABORT(Application::COMM_WORLD,ierr);
+        CHKERRABORT(M_comm,ierr);
 
         // Clean up
         ierr = ISDestroy (is);
-        CHKERRABORT(Application::COMM_WORLD,ierr);
+        CHKERRABORT(M_comm,ierr);
 
         ierr = VecScatterDestroy(scatter);
-        CHKERRABORT(Application::COMM_WORLD,ierr);
+        CHKERRABORT(M_comm,ierr);
     }
 
     // localize like normal
@@ -451,13 +451,13 @@ void VectorPetsc<double>::localize (std::vector<double>& v_local) const
     if (n == nl)
         {
             ierr = VecGetArray (const_cast<Vec>(_M_vec), &values);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
 
             for (int i=0; i<n; i++)
                 v_local[i] = static_cast<double>(values[i]);
 
             ierr = VecRestoreArray (const_cast<Vec>(_M_vec), &values);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
         }
 
     // otherwise multiple processors
@@ -468,17 +468,17 @@ void VectorPetsc<double>::localize (std::vector<double>& v_local) const
 
             {
                 ierr = VecGetArray (const_cast<Vec>(_M_vec), &values);
-                CHKERRABORT(Application::COMM_WORLD,ierr);
+                CHKERRABORT(M_comm,ierr);
 
                 for (int i=0; i<nl; i++)
                     local_values[i+ioff] = static_cast<double>(values[i]);
 
                 ierr = VecRestoreArray (const_cast<Vec>(_M_vec), &values);
-                CHKERRABORT(Application::COMM_WORLD,ierr);
+                CHKERRABORT(M_comm,ierr);
             }
 
             MPI_Allreduce (&local_values[0], &v_local[0], n, MPI_REAL, MPI_SUM,
-                           Application::COMM_WORLD);
+                           M_comm);
         }
 }
 
@@ -504,13 +504,13 @@ void VectorPetsc<Complex>::localize (std::vector<Complex>& v_local) const
     if (n == nl)
         {
             ierr = VecGetArray (_M_vec, &values);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
 
             for (int i=0; i<n; i++)
                 v_local[i] = static_cast<Complex>(values[i]);
 
             ierr = VecRestoreArray (_M_vec, &values);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
         }
 
     // otherwise multiple processors
@@ -526,7 +526,7 @@ void VectorPetsc<Complex>::localize (std::vector<Complex>& v_local) const
 
             {
                 ierr = VecGetArray (_M_vec, &values);
-                CHKERRABORT(Application::COMM_WORLD,ierr);
+                CHKERRABORT(M_comm,ierr);
 
                 // provide my local share to the real and imag buffers
                 for (int i=0; i<nl; i++)
@@ -536,7 +536,7 @@ void VectorPetsc<Complex>::localize (std::vector<Complex>& v_local) const
                     }
 
                 ierr = VecRestoreArray (_M_vec, &values);
-                CHKERRABORT(Application::COMM_WORLD,ierr);
+                CHKERRABORT(M_comm,ierr);
             }
 
             /* have buffers of the real and imaginary part of v_local.
@@ -549,10 +549,10 @@ void VectorPetsc<Complex>::localize (std::vector<Complex>& v_local) const
 
             // collect entries from other proc's in real_v_local, imag_v_local
             MPI_Allreduce (&real_local_values[0], &real_v_local[0], n,
-                           MPI_DOUBLE, MPI_SUM, Application::COMM_WORLD);
+                           MPI_DOUBLE, MPI_SUM, M_comm);
 
             MPI_Allreduce (&imag_local_values[0], &imag_v_local[0], n,
-                           MPI_DOUBLE, MPI_SUM, Application::COMM_WORLD);
+                           MPI_DOUBLE, MPI_SUM, M_comm);
 
             // copy real_v_local and imag_v_local to v_local
             for (int i=0; i<n; i++)
@@ -579,13 +579,13 @@ void VectorPetsc<Real>::localizeToOneProcessor (std::vector<Real>& v_local,
     if (n == nl)
         {
             ierr = VecGetArray (const_cast<Vec>(_M_vec), &values);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
 
             for (int i=0; i<n; i++)
                 v_local[i] = static_cast<Real>(values[i]);
 
             ierr = VecRestoreArray (const_cast<Vec>(_M_vec), &values);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
         }
 
     // otherwise multiple processors
@@ -596,18 +596,18 @@ void VectorPetsc<Real>::localizeToOneProcessor (std::vector<Real>& v_local,
 
             {
                 ierr = VecGetArray (const_cast<Vec>(_M_vec), &values);
-                CHKERRABORT(Application::COMM_WORLD,ierr);
+                CHKERRABORT(M_comm,ierr);
 
                 for (int i=0; i<nl; i++)
                     local_values[i+ioff] = static_cast<Real>(values[i]);
 
                 ierr = VecRestoreArray (const_cast<Vec>(_M_vec), &values);
-                CHKERRABORT(Application::COMM_WORLD,ierr);
+                CHKERRABORT(M_comm,ierr);
             }
 
 
             MPI_Reduce (&local_values[0], &v_local[0], n, MPI_REAL, MPI_SUM,
-                        pid, Application::COMM_WORLD);
+                        pid, M_comm);
         }
 }
 
@@ -627,9 +627,9 @@ void VectorPetsc<T>::printMatlab (const std::string name) const
     PetscViewer petsc_viewer;
 
 
-    ierr = PetscViewerCreate (Application::COMM_WORLD,
+    ierr = PetscViewerCreate (M_comm,
                               &petsc_viewer);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 
     /**
      * Create an ASCII file containing the matrix
@@ -637,17 +637,17 @@ void VectorPetsc<T>::printMatlab (const std::string name) const
      */
     if (name != "NULL")
         {
-            ierr = PetscViewerASCIIOpen( Application::COMM_WORLD,
+            ierr = PetscViewerASCIIOpen( M_comm,
                                          name.c_str(),
                                          &petsc_viewer);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
 
             ierr = PetscViewerSetFormat (petsc_viewer,
                                          PETSC_VIEWER_ASCII_MATLAB);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
 
             ierr = VecView (const_cast<Vec>(_M_vec), petsc_viewer);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
         }
 
     /**
@@ -657,10 +657,10 @@ void VectorPetsc<T>::printMatlab (const std::string name) const
         {
             ierr = PetscViewerSetFormat (PETSC_VIEWER_STDOUT_WORLD,
                                          PETSC_VIEWER_ASCII_MATLAB);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
 
             ierr = VecView (const_cast<Vec>(_M_vec), PETSC_VIEWER_STDOUT_WORLD);
-            CHKERRABORT(Application::COMM_WORLD,ierr);
+            CHKERRABORT(M_comm,ierr);
         }
 
 
@@ -668,7 +668,7 @@ void VectorPetsc<T>::printMatlab (const std::string name) const
      * Destroy the viewer.
      */
     ierr = PetscViewerDestroy (petsc_viewer);
-    CHKERRABORT(Application::COMM_WORLD,ierr);
+    CHKERRABORT(M_comm,ierr);
 }
 
 

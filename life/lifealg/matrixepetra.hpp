@@ -544,6 +544,9 @@ public:
 protected:
 
 private:
+
+    mpi::communicator M_comm;
+
     /**
      * Constructor; initializes the matrix to
      * be empty, without any structure, i.e.
@@ -583,10 +586,10 @@ MatrixEpetra::MatrixEpetra()
     super(),
 
 #ifdef HAVE_MPI
-    _M_emap( Epetra_Map( -1, 0, 0, Epetra_MpiComm(Application::COMM_WORLD)) ),
-    _M_col_emap( Epetra_Map( -1, 0, 0, Epetra_MpiComm(Application::COMM_WORLD)) ),
-    _M_dom_map( Epetra_Map( -1, 0, 0, Epetra_MpiComm(Application::COMM_WORLD)) ),
-    _M_range_map( Epetra_Map( -1, 0, 0, Epetra_MpiComm(Application::COMM_WORLD)) ),
+    _M_emap( Epetra_Map( -1, 0, 0, Epetra_MpiComm(M_comm)) ),
+    _M_col_emap( Epetra_Map( -1, 0, 0, Epetra_MpiComm(M_comm)) ),
+    _M_dom_map( Epetra_Map( -1, 0, 0, Epetra_MpiComm(M_comm)) ),
+    _M_range_map( Epetra_Map( -1, 0, 0, Epetra_MpiComm(M_comm)) ),
     _M_mat( new Epetra_FECrsMatrix(Copy, _M_emap, 0) )
 #else
     _M_emap( Epetra_Map( -1, 0, 0, Epetra_SerialComm) ),
@@ -678,8 +681,8 @@ MatrixEpetra::MatrixEpetra( const size_type m,
                             const size_type /*noz*/ )
     :
     super(),
-    _M_emap( Epetra_Map( m, m_l, 0, Epetra_MpiComm(Application::COMM_WORLD)) ),
-    _M_col_emap(Epetra_Map( n, n, 0, Epetra_MpiComm(Application::COMM_WORLD))),
+    _M_emap( Epetra_Map( m, m_l, 0, Epetra_MpiComm(M_comm)) ),
+    _M_col_emap(Epetra_Map( n, n, 0, Epetra_MpiComm(M_comm))),
     _M_dom_map( _M_emap ),
     _M_range_map( _M_emap ),
     _M_mat(new Epetra_FECrsMatrix(Copy, _M_emap, _M_col_emap, nnz))

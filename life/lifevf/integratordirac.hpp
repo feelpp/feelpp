@@ -252,8 +252,8 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem
     typedef mesh_type::element_type geoelement_type;
     typedef mesh_type::element_iterator mesh_element_iterator;
 
-    mesh_element_iterator it = M_mesh->beginElementWithProcessId( Application::processId() );
-    mesh_element_iterator en = M_mesh->endElementWithProcessId( Application::processId() );
+    mesh_element_iterator it = M_mesh->beginElementWithProcessId( M_mesh->comm().rank() );
+    mesh_element_iterator en = M_mesh->endElementWithProcessId( M_mesh->comm().rank() );
 
     // geometric mapping context
     typedef mesh_type::gm_type gm_type;
@@ -355,8 +355,8 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
     typedef mesh_type::element_type geoelement_type;
     typedef mesh_type::element_iterator mesh_element_iterator;
 
-    mesh_element_iterator it = M_mesh->beginElementWithProcessId( Application::processId() );
-    mesh_element_iterator en = M_mesh->endElementWithProcessId( Application::processId() );
+    mesh_element_iterator it = M_mesh->beginElementWithProcessId( M_mesh->comm().size() );
+    mesh_element_iterator en = M_mesh->endElementWithProcessId( M_mesh->comm().size() );
 
     // geometric mapping context
     typedef mesh_type::gm_type gm_type;

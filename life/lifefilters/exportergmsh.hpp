@@ -161,6 +161,8 @@ private:
                                     step_ptrtype __step ) const;
 
 
+private:
+    mpi::communicator M_comm;
 };
 
 } // Life

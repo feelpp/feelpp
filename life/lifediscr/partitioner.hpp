@@ -85,6 +85,11 @@ public:
     virtual ~Partitioner() {}
 
     /**
+     * \return the communicator
+     */
+    mpi::communicator const& comm() const { return M_comm; }
+
+    /**
      * create object \p partitioner from factory
      */
     static Partitioner<Mesh>* New( std::string const& partitioner )
@@ -96,17 +101,37 @@ public:
     }
 
     /**
-     * Partition the \p mesh_type into \p n parts.  If the
-     * user does not specify a number of pieces into which the
-     * mesh should be partitioned, then the default behavior
-     * of the partitioner is to partition according to the number
-     * of processors defined in libMesh::n_processors().
-     * The partitioner currently does not modify the subdomain_id
-     * of each element.  This number is reserved for things like
-     * material properties, etc.
+     * Partition the \p mesh_type into \p n parts corresponding to the number of
+     * processors.  If the user does not specify a number of pieces into which
+     * the mesh should be partitioned, then the default behavior of the
+     * partitioner is to partition according to the number of processors defined
+     * in libMesh::n_processors().  The partitioner currently does not modify
+     * the subdomain_id of each element.  This number is reserved for things
+     * like material properties, etc.
      */
-    void partition ( Mesh& mesh,
-                     const uint16_type n = Application::nProcess());
+    void partition ( Mesh& mesh ) { partition( mesh, M_comm.size() ); }
+
+    /**
+     * Partition the \p mesh_type into \p n parts.  If the user does not specify
+     * a number of pieces into which the mesh should be partitioned, then the
+     * default behavior of the partitioner is to partition according to the
+     * number of processors defined in libMesh::n_processors().  The partitioner
+     * currently does not modify the subdomain_id of each element.  This number
+     * is reserved for things like material properties, etc.
+     */
+    void partition ( Mesh& mesh, size_type n_parts );
+
+    /**
+     * Repartitions the \p mesh_type into \p n parts corresponding to the number
+     * of processors.  This is required since some partitoning algorithms can
+     * repartition more efficiently than computing a new partitioning from
+     * scratch.  The default behavior is to simply call this->partition(n)
+     */
+    void repartition ( mesh_type& mesh )
+        {
+            repartition( mesh, M_comm.size() );
+        }
+
 
     /**
      * Repartitions the \p mesh_type into \p n parts.  This
@@ -114,8 +139,7 @@ public:
      * more efficiently than computing a new partitioning from scratch.
      * The default behavior is to simply call this->partition(n)
      */
-    void repartition ( mesh_type& mesh,
-                       const uint16_type n = Application::nProcess());
+    void repartition ( mesh_type& mesh, size_type n_parts );
 
 
 protected:
@@ -134,7 +158,7 @@ protected:
      * method above by the user.
      */
     virtual void doPartition(mesh_type& mesh,
-                             const uint16_type n) = 0;
+                             const size_type n) = 0;
 
     /**
      * This is the actual re-partitioning method which can be overloaded
@@ -142,16 +166,20 @@ protected:
      * call the partition function.
      */
     virtual void doRepartition (mesh_type& mesh,
-                                const uint16_type n)
+                                const size_type n)
     {
         this->doPartition (mesh, n);
     }
+
+private:
+
+    mpi::communicator M_comm;
 };
 
 template<typename Mesh>
 void
 Partitioner<Mesh>::partition ( mesh_type& mesh,
-                               const uint16_type n)
+                               size_type n)
 {
     // Set the number of partitions in the mesh
     mesh.setNumberOfPartitions( n );
@@ -165,7 +193,7 @@ Partitioner<Mesh>::partition ( mesh_type& mesh,
 template<typename Mesh>
 void
 Partitioner<Mesh>::repartition ( mesh_type& mesh,
-                                 const uint16_type n)
+                                 size_type n)
 {
     // Set the number of partitions in the mesh
     mesh.setNumberOfPartitions( n );

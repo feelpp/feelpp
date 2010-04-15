@@ -126,13 +126,13 @@ public:
         std::copy( dmap.myGlobalElements().begin(),
                    dmap.myGlobalElements().end(),
                    e.begin() );
-        return Epetra_Map( -1, dmap.nMyElements(), e.data(), 0, Epetra_MpiComm( Application::comm() ) );
+        return Epetra_Map( -1, dmap.nMyElements(), e.data(), 0, Epetra_MpiComm( dmap.comm() ) );
     }
 
 
     static Epetra_Map epetraMapStatic( DataMap const& dmap )
     {
-        return Epetra_Map( dmap.nGlobalElements(), dmap.nMyElements(), 0, Epetra_MpiComm( Application::comm() ) );
+        return Epetra_Map( dmap.nGlobalElements(), dmap.nMyElements(), 0, Epetra_MpiComm( dmap.comm() ) );
     }
 
 
@@ -382,6 +382,8 @@ public:
     bool converged() { return true; }
 
 private:
+
+    mpi::communicator M_comm;
 
     list_type M_options;
 

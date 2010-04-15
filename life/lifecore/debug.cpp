@@ -573,7 +573,7 @@ Log( bool cond, int area, DebugStream::stprintf /*func*/ )
         return DebugStream( 0, 0, false );
 }
 
-#ifndef NDEBUG_OLD
+#ifndef NDEBUG
 DebugStream
 Debug( int area, DebugStream::stprintf func )
 {

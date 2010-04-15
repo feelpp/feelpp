@@ -300,9 +300,9 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
                         uint16_type proc1 = face.element1().processId();
                         if ( proc0 == proc1 )
                             face.setProcessId( proc0 );
-                        else if ( proc0 == Application::processId() )
+                        else if ( proc0 == this->comm().rank() )
                             face.setProcessId( proc0 );
-                        else if ( proc1 == Application::processId() )
+                        else if ( proc1 == this->comm().rank() )
                             face.setProcessId( proc1 );
                         else
                             face.setProcessId( proc0 );

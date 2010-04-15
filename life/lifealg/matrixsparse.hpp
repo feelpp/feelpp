@@ -169,6 +169,11 @@ public:
     void setGraph( graph_ptrtype const& graph ) { _M_graph = graph; }
 
     /**
+     * \return the communicator
+     */
+    mpi::communicator const& comm() const { return M_comm; }
+
+    /**
      * Release all memory and return to a state just like after having
      * called the default constructor.
      */
@@ -513,6 +518,9 @@ protected:
                   << std::endl;
         LIFE_ASSERT( 0 ).error("invalid call");
     }
+
+    //! mpi communicator
+    mpi::communicator M_comm;
 
     /**
      * Flag indicating whether or not the matrix

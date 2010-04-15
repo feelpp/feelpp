@@ -324,7 +324,7 @@ std::string
 Gmsh::generate( std::string const& __name, std::string const& __geo, bool const __forceRebuild ) const
 {
     std::string fname;
-    if ( Application::processId() == 0 )
+    if ( !mpi::environment::initialized() || (mpi::environment::initialized()  && M_comm.rank() == 0 ) )
         {
             bool geochanged (generateGeo(__name,__geo));
             std::ostringstream __geoname;
@@ -352,7 +352,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
             fname=__meshname.str();
         }
     if ( mpi::environment::initialized() )
-        mpi::broadcast( Application::comm(), fname, 0 );
+        mpi::broadcast( M_comm, fname, 0 );
     return fname;
 }
 void

@@ -240,10 +240,10 @@ public:
     marker_face_iterator endFaceWithMarker( size_type m ) { return _M_faces.template get<detail::by_marker>().upper_bound(Marker1(m)); }
     marker_face_const_iterator endFaceWithMarker( size_type m ) const { return _M_faces.template get<detail::by_marker>().upper_bound(Marker1(m)); }
 
-    face_iterator beginFaceWithId( size_type m, size_type p = Application::processId() ) { return _M_faces.lower_bound( face_type(m) ); }
-    face_const_iterator beginFaceWithId( size_type m, size_type p = Application::processId() ) const { return _M_faces.lower_bound( face_type(m) ); }
-    face_iterator endFaceWithId( size_type m, size_type p = Application::processId() ) { return _M_faces.upper_bound( face_type(m) ); }
-    face_const_iterator endFaceWithId( size_type m, size_type p = Application::processId() ) const { return _M_faces.upper_bound( face_type(m)); }
+    face_iterator beginFaceWithId( size_type m ) { return _M_faces.lower_bound( face_type(m) ); }
+    face_const_iterator beginFaceWithId( size_type m ) const { return _M_faces.lower_bound( face_type(m) ); }
+    face_iterator endFaceWithId( size_type m ) { return _M_faces.upper_bound( face_type(m) ); }
+    face_const_iterator endFaceWithId( size_type m ) const { return _M_faces.upper_bound( face_type(m)); }
 
     /**
      * \return the range of iterator \c (begin,end) over the faces
@@ -274,16 +274,16 @@ public:
      * on processor \p p
      */
     std::pair<location_face_iterator, location_face_iterator>
-    internalFaces( size_type p = Application::processId()  ) const
-    { return _M_faces.template get<detail::by_location>().equal_range(boost::make_tuple( INTERNAL, p )); }
+    internalFaces() const
+    { return _M_faces.template get<detail::by_location>().equal_range(boost::make_tuple( INTERNAL, M_comm.rank() )); }
 
     /**
      * \return the range of iterator \c (begin,end) over the inter-process domain faces
      * on processor \p p
      */
     std::pair<interprocess_face_iterator, interprocess_face_iterator>
-    interProcessFaces( size_type p = Application::processId()  ) const
-    { return _M_faces.template get<detail::by_interprocessdomain>().equal_range(boost::make_tuple( true, p )); }
+    interProcessFaces() const
+    { return _M_faces.template get<detail::by_interprocessdomain>().equal_range(boost::make_tuple( true, M_comm.rank() )); }
 
 #if 0
     /**
@@ -291,8 +291,8 @@ public:
      * on processor \p p
      */
     std::pair<interprocess_face_iterator, interprocess_face_iterator>
-    intraProcessFaces( size_type p = Application::processId()  ) const
-    { return _M_faces.template get<detail::by_interprocessdomain>().equal_range(boost::make_tuple( false, p )); }
+    intraProcessFaces() const
+    { return _M_faces.template get<detail::by_interprocessdomain>().equal_range(boost::make_tuple( false, M_comm.rank() )); }
 #endif
 
     /**
@@ -300,8 +300,8 @@ public:
      * on processor \p p
      */
     std::pair<pid_face_iterator, pid_face_iterator>
-    facesWithProcessId( size_type p = Application::processId() ) const
-    { return _M_faces.template get<detail::by_pid>().equal_range(p); }
+    facesWithProcessId( ) const
+        { return _M_faces.template get<detail::by_pid>().equal_range( M_comm.rank() ); }
 
     /**
      * get the faces container by id
@@ -379,18 +379,18 @@ public:
      *
      * @return the begin() iterator on all the internal faces
      */
-    location_face_iterator beginInternalFace( size_type p = Application::processId() )
+    location_face_iterator beginInternalFace()
         {
-            return _M_faces.template get<detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, p ));
+            return _M_faces.template get<detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, M_comm.rank() ));
         }
     /**
      * get the end() iterator on all the internal faces
      *
      * @return the end() iterator on all the internal faces
      */
-    location_face_iterator endInternalFace( size_type p = Application::processId() )
+    location_face_iterator endInternalFace()
         {
-            return _M_faces.template get<detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, p ));
+            return _M_faces.template get<detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, M_comm.rank() ));
         }
 
     /**
@@ -398,9 +398,9 @@ public:
      *
      * @return the begin() iterator on all the internal faces
      */
-    location_face_const_iterator beginInternalFace( size_type p = Application::processId()) const
+    location_face_const_iterator beginInternalFace() const
         {
-            return _M_faces.template get<detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, p ));
+            return _M_faces.template get<detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, M_comm.rank() ));
         }
 
     /**
@@ -408,9 +408,9 @@ public:
      *
      * @return the end() iterator on all the internal faces
      */
-    location_face_const_iterator endInternalFace( size_type p = Application::processId()) const
+    location_face_const_iterator endInternalFace() const
         {
-            return _M_faces.template get<detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, p ));
+            return _M_faces.template get<detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, M_comm.rank() ));
         }
 
     /**
@@ -418,18 +418,18 @@ public:
      *
      * @return the begin() iterator on all the boundary faces
      */
-    location_face_iterator beginFaceOnBoundary( size_type p = Application::processId())
+    location_face_iterator beginFaceOnBoundary()
         {
-            return _M_faces.template get<detail::by_location>().lower_bound(boost::make_tuple( ON_BOUNDARY, p ) );
+            return _M_faces.template get<detail::by_location>().lower_bound(boost::make_tuple( ON_BOUNDARY, M_comm.rank() ) );
         }
     /**
      * get the end() iterator on all the boundary faces
      *
      * @return the end() iterator on all the boundary faces
      */
-    location_face_iterator endFaceOnBoundary( size_type p = Application::processId())
+    location_face_iterator endFaceOnBoundary()
         {
-            return _M_faces.template get<detail::by_location>().upper_bound(boost::make_tuple( ON_BOUNDARY, p ) );
+            return _M_faces.template get<detail::by_location>().upper_bound(boost::make_tuple( ON_BOUNDARY, M_comm.rank() ) );
         }
 
     /**
@@ -437,9 +437,9 @@ public:
      *
      * @return the begin() iterator on all the boundary faces
      */
-    location_face_const_iterator beginFaceOnBoundary( size_type p = Application::processId()) const
+    location_face_const_iterator beginFaceOnBoundary() const
         {
-            return _M_faces.template get<detail::by_location>().lower_bound(boost::make_tuple( ON_BOUNDARY, p ) );
+            return _M_faces.template get<detail::by_location>().lower_bound(boost::make_tuple( ON_BOUNDARY, M_comm.rank() ) );
         }
 
     /**
@@ -447,9 +447,9 @@ public:
      *
      * @return the end() iterator on all the boundary faces
      */
-    location_face_const_iterator endFaceOnBoundary( size_type p = Application::processId()) const
+    location_face_const_iterator endFaceOnBoundary() const
         {
-            return _M_faces.template get<detail::by_location>().upper_bound(boost::make_tuple(ON_BOUNDARY, p ) );
+            return _M_faces.template get<detail::by_location>().upper_bound(boost::make_tuple(ON_BOUNDARY, M_comm.rank() ) );
         }
 
     //@}
@@ -494,7 +494,7 @@ public:
     //@}
 
 private:
-
+    mpi::communicator M_comm;
     faces_type _M_faces;
 };
 /// \endcond

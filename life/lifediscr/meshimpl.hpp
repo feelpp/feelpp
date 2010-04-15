@@ -137,7 +137,7 @@ Mesh<Shape, T>::updateForUse()
                 } // element loop
             Debug( 4015 ) << "Compute adjacency graph done in " << ti.elapsed() << "\n";
             // partition mesh
-            if ( this->components().test( MESH_PARTITION ) || ( Application::nProcess() > 1 ) )
+            if ( this->components().test( MESH_PARTITION ) || ( M_comm.size() > 1 ) )
                 {
                     boost::timer ti1;
                     this->partition();
@@ -681,8 +681,8 @@ Mesh<Shape, T>::check() const
 {
 #if !defined( NDEBUG )
     Debug( 4015 ) << "[Mesh::check] numLocalFaces = " << this->numLocalFaces() << "\n";
-    element_iterator iv = this->beginElementWithProcessId( Application::processId() );
-    element_iterator en = this->endElementWithProcessId( Application::processId() );
+    element_iterator iv = this->beginElementWithProcessId( M_comm.rank() );
+    element_iterator en = this->endElementWithProcessId( M_comm.rank() );
     //boost::tie( iv, en ) = this->elementsRange();
     for ( ;iv != en; ++iv )
         {
@@ -742,7 +742,7 @@ Mesh<Shape, T>::findNeighboringProcessors()
 {
     // Don't need to do anything if there is
     // only one processor.
-    if (Application::nProcess() == 1)
+    if (M_comm.size() == 1)
         return;
 
 #ifdef HAVE_MPI
@@ -750,7 +750,7 @@ Mesh<Shape, T>::findNeighboringProcessors()
     _M_neighboring_processors.clear();
 
     // Get the bounding sphere for the local processor
-    Sphere bounding_sphere = processorBoundingSphere (*this, Application::processId() );
+    Sphere bounding_sphere = processorBoundingSphere (*this, M_comm.rank() );
 
     // Just to be sure, increase its radius by 10%.  Sure would suck to
     // miss a neighboring processor!
@@ -760,7 +760,7 @@ Mesh<Shape, T>::findNeighboringProcessors()
     {
         std::vector<float>
             send (4,                         0),
-            recv (4*Application::nProcess(), 0);
+            recv (4*M_comm.size(), 0);
 
         send[0] = bounding_sphere.center()(0);
         send[1] = bounding_sphere.center()(1);
@@ -769,10 +769,10 @@ Mesh<Shape, T>::findNeighboringProcessors()
 
         MPI_Allgather (&send[0], send.size(), MPI_FLOAT,
                        &recv[0], send.size(), MPI_FLOAT,
-                       Application::COMM_WORLD);
+                       M_comm );
 
 
-        for (unsigned int proc=0; proc<Application::nProcess(); proc++)
+        for (unsigned int proc=0; proc<M_comm.size(); proc++)
             {
                 const Point center (recv[4*proc+0],
                                     recv[4*proc+1],
@@ -787,7 +787,7 @@ Mesh<Shape, T>::findNeighboringProcessors()
             }
 
         // Print out the _neighboring_processors list
-        Debug( 4015 ) << "Processor " << Application::processId() << " intersects:\n";
+        Debug( 4015 ) << "Processor " << M_comm.rank() << " intersects:\n";
         for (unsigned int p=0; p< _M_neighboring_processors.size(); p++)
             Debug( 4015 ) << " - proc " << _M_neighboring_processors[p] << "\n";
     }

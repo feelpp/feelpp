@@ -73,7 +73,7 @@ PartitionerParmetis<Mesh>::doPartition ( mesh_type& mesh,
 
     // Partition the graph
     std::vector<int>  local_part(M_part);
-    MPI_Comm mpi_comm = Application::COMM_WORLD;
+    MPI_Comm mpi_comm = this->comm();
 
 
     // Call the ParMETIS k-way partitioning algorithm.
@@ -88,7 +88,7 @@ PartitionerParmetis<Mesh>::doPartition ( mesh_type& mesh,
     LIFE_ASSERT (M_part.size() == local_part.size())
         (M_part.size())(local_part.size()).error( "invalid partitioning info" );
     MPI_Allreduce (&local_part[0], &M_part[0], M_part.size(), MPI_INT, MPI_SUM,
-                   Application::COMM_WORLD);
+                   this->comm());
 
     // Assign the returned processor ids
     this->assignPartitioning (mesh);
@@ -105,10 +105,10 @@ PartitionerParmetis<Mesh>::initialize (const mesh_type& mesh,
                                        const unsigned int n_sbdmns)
 {
     const unsigned int n_elem               = mesh.elements().size();
-    const unsigned int n_active_local_elem  = std::distance( mesh.beginElementWithProcessId( Application::processId() ),
-                                                             mesh.endElementWithProcessId( Application::processId() ) );
+    const unsigned int n_active_local_elem  = std::distance( mesh.beginElementWithProcessId( this->comm().rank() ),
+                                                             mesh.endElementWithProcessId( this->comm().rank() ) );
     const unsigned int n_active_elem        = n_elem;//mesh.n_active_elem();
-    const unsigned int n_procs              = Application::nProcess();
+    const unsigned int n_procs              = this->comm().size();
 
     // Set parameters.
     M_wgtflag = 2;                          // weights on vertices only
@@ -138,11 +138,11 @@ PartitionerParmetis<Mesh>::initialize (const mesh_type& mesh,
             ( M_vtxdist.size() )( n_procs+1 ).error( "invalid vtxdist array size" );
         LIFE_ASSERT (M_vtxdist[0] == 0)( M_vtxdist[0] ).error( "invalid vtxdist entry 0" );
 
-        for (uint16_type proc_id=0; proc_id<Application::nProcess(); proc_id++)
+        for (uint16_type proc_id=0; proc_id<this->comm().size(); proc_id++)
             M_vtxdist[proc_id+1] = M_vtxdist[proc_id] + std::distance( mesh.beginElementWithProcessId( proc_id ),
                                                                        mesh.endElementWithProcessId( proc_id ) );
 
-        assert (M_vtxdist[Application::nProcess()] == static_cast<int>(n_active_elem));
+        assert (M_vtxdist[this->comm().size()] == static_cast<int>(n_active_elem));
     }
 
     // Metis will only consider the active elements.
@@ -155,9 +155,9 @@ PartitionerParmetis<Mesh>::initialize (const mesh_type& mesh,
     size_type el_num = 0;
     size_type local_el_num = 0;
 
-    for (unsigned int proc_id=0; proc_id<Application::nProcess(); proc_id++)
+    for (unsigned int proc_id=0; proc_id<this->comm().size(); proc_id++)
         {
-            if (proc_id == Application::processId() )
+            if (proc_id == this->comm().rank() )
                 M_first_local_elem = el_num;
 
             element_const_iterator elem_it  = mesh.beginElementWithProcessId(proc_id);
@@ -172,7 +172,7 @@ PartitionerParmetis<Mesh>::initialize (const mesh_type& mesh,
                     el_num++;
 
                     // maybe there is a better weight?
-                    if ( proc_id == Application::processId() )
+                    if ( proc_id == this->comm().rank() )
                         M_vwgt[local_el_num++] = elem_it->nPoints();
                 }
         }
@@ -196,8 +196,8 @@ PartitionerParmetis<Mesh>::buildGraph (const mesh_type& mesh)
 
     std::vector<element_type const*> neighbors_offspring;
 
-    element_iterator       elem_it  = mesh.beginElementWithProcessId( Application::processId() );
-    const element_iterator elem_end = mesh.endElementWithProcessId( Application::processId() );
+    element_iterator       elem_it  = mesh.beginElementWithProcessId( this->comm().rank() );
+    const element_iterator elem_end = mesh.endElementWithProcessId( this->comm().rank() );
 
     for (; elem_it != elem_end; ++elem_it)
         {

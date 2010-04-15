@@ -175,7 +175,7 @@ public:
             typedef typename mesh_type::element_const_iterator element_const_iterator;
 
             element_const_iterator fit, fen;
-            //boost::tie( fit, fen ) = M_mesh.elementsWithMarker( boost::get<1>( marker ), Application::processId() );
+            //boost::tie( fit, fen ) = M_mesh.elementsWithMarker( boost::get<1>( marker ), M_mesh.rank() );
             boost::tie( fit, fen ) = M_mesh.elementsRange();
             Debug( 5015 ) << "[DiscontinuousInterfaces::build] n_elements = " << std::distance( fit, fen )
                           << " with marker " << boost::get<1>( marker ) << "\n";
@@ -229,7 +229,7 @@ public:
 
             Debug( 5015 ) << "[DiscontinuousInterfaces::build] n_dof = " << n_dof << "\n";
 
-            //boost::tie( fit, fen ) = M_mesh.elementsWithMarker( boost::get<2>( marker ), Application::processId() );
+            //boost::tie( fit, fen ) = M_mesh.elementsWithMarker( boost::get<2>( marker ), M_mesh.rank() );
             boost::tie( fit, fen ) = M_mesh.elementsRange();
             Debug( 5015 ) << "[DiscontinuousInterfaces::build] n_elements = " << std::distance( fit, fen )
                           << " with marker " << boost::get<2>( marker ) << "\n";

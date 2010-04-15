@@ -75,8 +75,8 @@ MatrixEpetra::init ( const size_type m,
             this->clear();
 
         /*
-          _M_emap = Epetra_Map( m, m_l, 0, Epetra_MpiComm(Application::COMM_WORLD));
-          _M_col_emap = Epetra_Map( n, n, 0, Epetra_MpiComm(Application::COMM_WORLD));
+          _M_emap = Epetra_Map( m, m_l, 0, Epetra_MpiComm(M_comm));
+          _M_col_emap = Epetra_Map( n, n, 0, Epetra_MpiComm(M_comm));
           _M_dom_map = _M_emap;
           _M_range_map = _M_emap;
         */
