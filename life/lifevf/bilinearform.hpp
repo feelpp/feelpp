@@ -30,11 +30,14 @@
 #ifndef __BilinearForm_H
 #define __BilinearForm_H 1
 
+#include <set>
+
 #include <boost/fusion/support/pair.hpp>
 #include <boost/fusion/container.hpp>
 #include <boost/fusion/sequence.hpp>
 #include <boost/fusion/algorithm.hpp>
-
+#include <boost/spirit/home/phoenix.hpp>
+#include <boost/spirit/home/phoenix/core/argument.hpp>
 #include <life/lifecore/context.hpp>
 #include <life/lifealg/matrixvalue.hpp>
 #include <life/lifealg/vectorublas.hpp>
@@ -794,8 +797,10 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
             M_n_nz.resize (n1_dof_on_proc);
             M_n_oz.resize (n1_dof_on_proc);
 
+            boost::timer t;
             Debug( 5050 ) << "compute graph\n";
             graph_ptrtype graph = computeGraph( graph_hints, mpl::bool_<(FE1::nSpaces == 1)>() );
+            Debug( 5050 ) << "computed graph in " << t.elapsed() << "s\n"; t.restart();
             //_M_X1.setState( space_1_type::SOLUTION );
             // _M_X2->setState( space_2_type::TRIAL );
 
@@ -803,6 +808,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
             //_M_matrix.resize( _M_X2->nDof(), _M_X1->nDof(), false );
             _M_matrix.init( _M_X1->nDof(), _M_X2->nDof(), _M_X1->nLocalDof(), _M_X2->nLocalDof(),
                             graph );
+            Debug( 5050 ) << "initialized matrix in " << t.elapsed() << "s\n"; t.restart();
             //_M_X2->dof()->nLocalDof(), _M_X1->dof()->nLocalDof() );
 
 
@@ -1005,9 +1011,14 @@ BilinearForm<FE1,FE2,ElemContType>::mergeGraph( int row, int col, graph_ptrtype 
                     M_graph->row(theglobalrow).template get<1>() = thelocalrow;
 
                     // Get the row of the sparsity pattern
-                    std::vector<size_type> const& ivec = boost::get<2>( it->second );
-                    std::vector<size_type> iout( ivec.size()+ M_graph->row(theglobalrow).template get<2>().size() );
+                    std::vector<size_type> ivec( boost::get<2>( it->second ).begin(), boost::get<2>( it->second ).end() );
+                    std::for_each( ivec.begin(), ivec.end(), boost::phoenix::arg_names::arg1 += col );
+                    //std::set<size_type> iout( ivec.size()+ M_graph->row(theglobalrow).template get<2>().size() );
+                    std::set<size_type> iout( ivec.begin(), ivec.end() );
 
+                    iout.insert( M_graph->row(theglobalrow).template get<2>().begin(),
+                                 M_graph->row(theglobalrow).template get<2>().end() );
+#if 0
                     size_type start1 = M_graph->row(theglobalrow).template get<2>().size();
                     std::copy( M_graph->row(theglobalrow).template get<2>().begin(),
                                M_graph->row(theglobalrow).template get<2>().end(),
@@ -1018,7 +1029,7 @@ BilinearForm<FE1,FE2,ElemContType>::mergeGraph( int row, int col, graph_ptrtype 
                             //Debug( 5050 ) << "[mergeGraph] ivec[" << i << "] = " << ivec[i] << "\n";
                             iout[start1+i]=col+ivec[i];
                         }
-
+#endif
                     M_graph->row(theglobalrow).template get<2>() = iout;
                 }
 
@@ -1033,9 +1044,10 @@ template<typename FE1,  typename FE2, typename ElemContType>
 typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
 BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<false> )
 {
+    boost::timer t;
     Debug( 5050 ) << "compute graph for composite bilinear form\n";
     fusion::for_each( _M_X1->functionSpaces(), compute_graph1<self_type>( *this, hints ) );
-    Debug( 5050 ) << "closing graph for composite bilinear form done\n";
+    Debug( 5050 ) << "closing graph for composite bilinear form done in " << t.elapsed() << "s\n"; t.restart();
 
 #if 0
     typename graph_type::const_iterator it = M_graph->begin();
@@ -1048,20 +1060,23 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<fa
         }
 #endif
     M_graph->close();
-    Debug( 5050 ) << "compute graph for composite bilinear form done\n";
+    Debug( 5050 ) << "compute graph for composite bilinear form done in " << t.elapsed() << "s\n";
 
 
     return M_graph;
 }
+#if 0
 template<typename FE1,  typename FE2, typename ElemContType>
 typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
 BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<true> )
 {
+    boost::timer t;
     // Compute the sparsity structure of the global matrix.  This can be
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
-    const size_type proc_id           = Application::processId();
+    const size_type nprocs           = _M_X1->mesh()->comm().size();
+    const size_type proc_id           = _M_X1->mesh()->comm().rank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
     const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
@@ -1139,7 +1154,7 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
 #endif
                                     graph_type::row_type& row = sparsity_graph->row(ig1);
                                     bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
-                                    row.get<0>() = is_on_proc?Application::processId():invalid_size_type_value;
+                                    row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
                                     row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
                                     Debug( 5051 ) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
 
@@ -1214,7 +1229,7 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
                                                 size_type neighbor_id = elem.neighbor(ms).first;
                                                 size_type neighbor_process_id = elem.neighbor(ms).second;
                                                 if ( neighbor_id != invalid_size_type_value )
-                                                    //&& neighbor_process_id != Application::processId() )
+                                                    //&& neighbor_process_id != proc_id )
                                                     {
 
 #if 0
@@ -1298,10 +1313,146 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
 
 
     sparsity_graph->close();
-
+    Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
     return sparsity_graph;
 }
+#else
+template<typename FE1,  typename FE2, typename ElemContType>
+typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
+BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<true> )
+{
+    boost::timer t;
+    // Compute the sparsity structure of the global matrix.  This can be
+    // fed into a PetscMatrix to allocate exacly the number of nonzeros
+    // necessary to store the matrix.  This algorithm should be linear
+    // in the (# of elements)*(# nodes per element)
+    const size_type nprocs           = _M_X1->mesh()->comm().size();
+    const size_type proc_id           = _M_X1->mesh()->comm().rank();
+    const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
+    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
+    const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
+    const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
+    const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
+    const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
 
+    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
+                                                    first1_dof_on_proc, last1_dof_on_proc,
+                                                    first2_dof_on_proc, last2_dof_on_proc ) );
+
+    typedef typename mesh_type::element_const_iterator mesh_element_const_iterator;
+
+    mesh_element_const_iterator       elem_it  = _M_X1->mesh()->beginElementWithProcessId( proc_id );
+    const mesh_element_const_iterator elem_en  = _M_X1->mesh()->endElementWithProcessId( proc_id );
+
+    Life::Context graph( hints );
+    // If the user did not explicitly specify the DOF coupling
+    // then all the DOFS are coupled to each other.  Furthermore,
+    // we can take a shortcut and do this more quickly here.  So
+    // we use an if-test.
+    Debug( 5050 ) << "[computeGraph] test : " << ( graph.test ( DOF_PATTERN_COUPLED ) || graph.test ( DOF_PATTERN_NEIGHBOR ) ) << "\n";
+    Debug( 5050 ) << "[computeGraph]  : graph.test ( DOF_PATTERN_COUPLED )=" <<  graph.test ( DOF_PATTERN_COUPLED ) << "\n";
+    Debug( 5050 ) << "[computeGraph]  : graph.test ( DOF_PATTERN_NEIGHBOR)=" <<  graph.test ( DOF_PATTERN_NEIGHBOR ) << "\n";
+#if 0
+    if ( graph.test ( DOF_PATTERN_COUPLED ) ||
+         graph.test ( DOF_PATTERN_NEIGHBOR ) )
+#else
+        if (1)
+#endif
+        {
+            Debug( 5050 ) << "[computeGraph] test (DOF_PATTERN_COUPLED || DOF_PATTERN_NEIGHBOR) ok\n";
+            std::vector<size_type>
+                element_dof1,
+                element_dof2,
+                neighbor_dof;
+            std::set<size_type> dof_to_add;
+
+            for ( ; elem_it != elem_en; ++elem_it)
+                {
+#if !defined(NDEBUG)
+                    Debug( 5050 ) << "[BilinearForm::computePatter] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
+#endif /* NDEBUG */
+                    mesh_element_type const& elem = *elem_it;
+
+                    // Get the global indices of the DOFs with support on this element
+                    element_dof1 = _M_X1->dof()->getIndices( elem.id() );
+                    element_dof2 = _M_X2->dof()->getIndices( elem.id() );
+
+                    // We can be more efficient if we sort the element DOFs
+                    // into increasing order
+                    std::sort(element_dof1.begin(), element_dof1.end());
+                    std::sort(element_dof2.begin(), element_dof2.end());
+
+                    const uint16_type  n1_dof_on_element = element_dof1.size();
+                    const uint16_type  n2_dof_on_element = element_dof2.size();
+
+                    for (size_type i=0; i<n1_dof_on_element; i++)
+                        {
+                            const size_type ig1 = element_dof1[i];
+
+                            // Only bother if this matrix row will be stored
+                            // on this processor.
+                            //if ((ig1 >= first1_dof_on_proc) &&
+                            //(ig1 <= last1_dof_on_proc))
+                                {
+                                    // This is what I mean
+                                    // assert ((ig - first_dof_on_proc) >= 0);
+                                    // but do the test like this because ig and
+                                    // first_dof_on_proc are size_types
+#if 0
+                                    LIFE_ASSERT (ig1 >= first1_dof_on_proc )( ig1 )( first1_dof_on_proc ).error ("invalid dof index");
+                                    LIFE_ASSERT ((ig1 - first1_dof_on_proc) < sparsity_graph->size() )
+                                        ( ig1 )( first1_dof_on_proc )( sparsity_graph->size() ).error( "invalid dof index" );
+#endif
+                                    graph_type::row_type& row = sparsity_graph->row(ig1);
+                                    bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
+                                    row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                                    row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                                    Debug( 5051 ) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
+
+                                    // Build a list of the DOF indices not found in the
+                                    // sparsity graph
+                                    //dof_to_add.clear();
+                                    //dof_to_add.insert( row.get<2>().begin(), row.get<2>().end() );
+
+                                    row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                                    // Now (possibly) add dof from neighboring elements
+                                    if ( graph.test( DOF_PATTERN_NEIGHBOR ) )
+                                    {
+                                        for (uint16_type ms=0; ms < elem.nNeighbors(); ms++)
+                                        {
+                                            mesh_element_type const* neighbor = NULL;
+                                            size_type neighbor_id = elem.neighbor(ms).first;
+                                            size_type neighbor_process_id = elem.neighbor(ms).second;
+                                            if ( neighbor_id != invalid_size_type_value )
+                                                //&& neighbor_process_id != proc_id )
+                                            {
+
+                                                neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
+                                                                                                     neighbor_process_id ) );
+
+                                                if ( neighbor_id == neighbor->id()  )
+                                                {
+                                                    neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
+                                                    row.get<2>().insert( neighbor_dof.begin(), neighbor_dof.end() );
+                                                } // neighbor_id
+                                            }
+
+                                        } // neighbor graph
+                                    }
+                                } // only dof on proc
+
+                        }// dof loop
+                } // element iterator loop
+        }
+    else
+        {}
+
+
+    sparsity_graph->close();
+    Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
+    return sparsity_graph;
+}
+#endif
 
 //
 // Context
@@ -1702,6 +1853,7 @@ template<typename SpaceType>
 void
 compute_graph2<BFType,TestSpaceType>::operator()( boost::shared_ptr<SpaceType> const& trial ) const
 {
+    boost::timer t;
     Debug( 5050 ) << "[compute_graph2::operator()] begin ==================================================\n";
     Debug( 5050 ) << "[compute_graph2::operator()] testindex: " << M_test_index << "\n";
     Debug( 5050 ) << "[compute_graph2::operator()] trialindex: " << M_trial_index << "\n";
@@ -1737,7 +1889,9 @@ compute_graph2<BFType,TestSpaceType>::operator()( boost::shared_ptr<SpaceType> c
             M_bf.addToNNz( start+i, bf.nNz( i ) );
         }
 #endif
+    Debug( 5050 ) << "[compute_graph2] trial index " << M_trial_index << " done in " << t.elapsed() << "s\n";
     ++M_trial_index;
+
     Debug( 5050 ) << "[compute_graph2::operator()] end ==================================================\n";
 }
 
