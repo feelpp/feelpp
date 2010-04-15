@@ -8,6 +8,51 @@
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
+* New in 0.9.24
+** Libraries
+
+*** All
+ - change the way we are retrieving the mpi communicator: we don't use the
+   Application::processId() and Application::nProcess() anymore but rather the
+   mpi::communicator from boost::mpi directly. This allows a less tight
+   dependency between Application class and other classes for one thing.
+
+*** lifecore
+ - new class Environment initializes MPI, PETSc and SLEPc if not done already
+   and finalizes them if the initialization was done by the same class. This
+   avoid using the Application unnecessarily.
+ - minor bug fix in debug.cpp
+
+*** lifemesh
+ - fixed edge connectivity in 2D for high order geometrical elements
+ - fixed edge and face connectivity in 3D for high order geometrical elements
+
+*** lifefilters
+ - Exporter defines  --export=[0|1] in the command line which sets
+   Exporter::doExport() to true or false. Then it is up to the developer to use
+   it and save some time if he doesn't want to export the results at runtime.
+
+*** lifealg
+ - GraphCSR uses std::set instead of std::vector (see
+   BilinearForm::computeGraph). This allows for faster graph computation. Other
+   interesting improvments are doable.
+ - SolverLinearPetsc: setting tolerances(absolute, relative and divergence) is
+   easier through the Backend::solve function using Boost::parameter.
+
+*** lifevf
+ - BilinearForm::computeGraph (in conjunction with GraphCSR) is now noticeably
+   faster (this was taking much time). Other optimisation based on hints
+   (DO_PATTERN_COUPLED and DOF_PATTERN_NEIGHBOR), in particular at the moment we
+   consider all components coupled which fills tremendously the matrix pattern,
+   this should be set by DOF_PATTERN_COUPLED instead. Better names for those
+   hints are probably needed.
+
+** Benchmarks
+*** Convergence
+ - Stokes: added some timings; now use properly DOF_PATTERN_NEIGHBOR, removed
+   all _Q<>
+
+
 * New in 0.9.23
 ** Libraries
 
