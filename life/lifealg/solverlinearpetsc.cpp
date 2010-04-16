@@ -238,8 +238,11 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
 
     // Set the tolerances for the iterative solver.  Use the user-supplied
     // tolerance for the relative residual & leave the others at default values.
-    ierr = KSPSetTolerances (_M_ksp, tol, PETSC_DEFAULT,
-                             PETSC_DEFAULT, max_its);
+    ierr = KSPSetTolerances (_M_ksp,
+                             this->rTolerance(),
+                             this->aTolerance(),
+                             this->dTolerance(),
+                             this->maxIterations() );
     CHKERRABORT(M_comm,ierr);
 
 
@@ -269,10 +272,10 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     // it is the *maximum* of the two values, the larger of which will almost
     // always be rtol*||b||_2.
     ierr = KSPSetTolerances (_M_ksp,
-                             tol,           // rtol   = relative decrease in residual  (1.e-5)
-                             PETSC_DEFAULT, // abstol = absolute convergence tolerance (1.e-50)
-                             PETSC_DEFAULT, // dtol   = divergence tolerance           (1.e+5)
-                             max_its);
+                             this->rTolerance(),
+                             this->aTolerance(),
+                             this->dTolerance(),
+                             this->maxIterations() );
     CHKERRABORT(M_comm,ierr);
 
 
@@ -310,12 +313,10 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     // Set the tolerances for the iterative solver.  Use the user-supplied
     // tolerance for the relative residual & leave the others at default values.
     ierr = KSPSetTolerances (_M_ksp,
-                             //1e-25,
-                             PETSC_DEFAULT,
-                             PETSC_DEFAULT,
-                             PETSC_DEFAULT,
-                             //1e30,
-                             max_its);
+                             this->rTolerance(),
+                             this->aTolerance(),
+                             this->dTolerance(),
+                             this->maxIterations());
     CHKERRABORT(M_comm,ierr);
 
     // Solve the linear system

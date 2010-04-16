@@ -151,9 +151,25 @@ public:
      */
     MatrixStructure precMatrixStructure() const { return M_prec_matrix_structure; }
 
-    value_type tolerance() const { return M_tolerance;}
+    /**
+     * \return the relative tolerance
+     */
+    value_type rTolerance() const { return M_rtolerance;}
 
-    size_type maxIterations() const { return M_maxiter; }
+    /**
+     * \return the divergence tolerance
+     */
+    value_type dTolerance() const { return M_dtolerance;}
+
+    /**
+     * \return the absolute tolerance
+     */
+    value_type aTolerance() const { return M_atolerance;}
+
+    /**
+     * \return the maximum number of iterations
+     */
+    size_type maxIterations() const { return M_maxit; }
 
     bool converged() const { return M_converged; }
 
@@ -173,6 +189,28 @@ public:
     //@{
 
     /**
+     * set tolerances: relative tolerance \p rtol, divergence tolerance \p dtol
+     * and absolute tolerance \p atol
+     */
+    BOOST_PARAMETER_MEMBER_FUNCTION((void),
+                                    setTolerances,
+                                    tag,
+                                    (required
+                                     (rtolerance, (double))
+                                        )
+                                    (optional
+                                     (maxit,      (size_type), 1000 )
+                                     (atolerance, (double),    1e-50)
+                                     (dtolerance, (double),    1e5)
+                                        ) )
+        {
+            M_rtolerance = rtolerance;
+            M_dtolerance = dtolerance;
+            M_atolerance = atolerance;
+            M_maxit = maxit;
+        }
+
+    /**
      * set the type of preconditioner associated to the matrix
      */
     void setPrecMatrixStructure( MatrixStructure mstruct ) {  M_prec_matrix_structure = mstruct; }
@@ -181,10 +219,6 @@ public:
      * \return the non linear solver
      */
     solvernonlinear_ptrtype nlSolver() { return M_nlsolver; }
-
-    void setTolerance( value_type tol ) { M_tolerance = tol; }
-
-    void setMaxIterations( size_type maxiter ) { M_maxiter = maxiter; }
 
     void setTranspose( bool transpose ) { M_transpose = transpose; }
 
@@ -251,14 +285,18 @@ public:
                                     (optional
                                      (prec,(sparse_matrix_ptrtype), matrix )
                                      (maxit,(size_type), 1000 )
-                                     (tolerance,(double), 1e-11)
+                                     (rtolerance,(double), 1e-13)
+                                     (atolerance,(double), 1e-50)
+                                     (dtolerance,(double), 1e5)
                                      (reuse_prec,(bool), false )
                                      (transpose,(bool), false )
                                      )
                                     )
     {
-        this->setMaxIterations( maxit );
-        this->setTolerance( tolerance );
+        this->setTolerances( _dtolerance=dtolerance,
+                             _rtolerance=rtolerance,
+                             _atolerance=atolerance,
+                             _maxit=maxit );
         this->setTranspose( transpose );
         if ( reuse_prec == false )
             return solve( matrix, prec, solution, rhs );
@@ -352,7 +390,9 @@ private:
     double M_lastSolveIter;
     double M_firstSolveTime;
     double M_residual;
-    double M_tolerance;
+    double M_rtolerance;
+    double M_dtolerance;
+    double M_atolerance;
     size_t M_nUsePC;
     bool   M_converged;
     bool   M_reusePC;
@@ -360,7 +400,7 @@ private:
     bool   M_reuseFailed;
     boost::timer M_timer;
     bool   M_transpose;
-    size_type    M_maxiter;
+    size_type    M_maxit;
     size_type    M_iteration;
 
 };
