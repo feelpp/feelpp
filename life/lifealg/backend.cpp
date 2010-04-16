@@ -68,11 +68,11 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     :
     M_nlsolver( solvernonlinear_type::build( vm ) ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
-    M_rtolerance( 1e-13 ),
-    M_dtolerance( 1e5 ),
-    M_atolerance( 1e-50 ),
+    M_rtolerance( vm["rtol"].template as<double>() ),
+    M_dtolerance( vm["dtol"].template as<double>() ),
+    M_atolerance( vm["atol"].template as<double>() ),
     M_transpose( false ),
-    M_maxit( 1000 )
+    M_maxit( vm["maxit"].template as<size_type>() )
 {
 }
 template <typename T>
@@ -323,6 +323,7 @@ po::options_description backend_options()
         ("rtol", Life::po::value<double>()->default_value( 1e-13 ), "relative tolerance")
         ("atol", Life::po::value<double>()->default_value( 1e-50 ), "absolute tolerance")
         ("dtol", Life::po::value<double>()->default_value( 1e5 ), "divergence tolerance")
+        ("maxit", Life::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations")
         ;
     return _options;
 }
