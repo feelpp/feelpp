@@ -42,9 +42,11 @@ Backend<T>::Backend()
     M_backend    (BACKEND_GMM),
 #endif
     M_nlsolver(),
-    M_tolerance( 1e-10 ),
+    M_rtolerance( 1e-13 ),
+    M_dtolerance( 1e5 ),
+    M_atolerance( 1e-50 ),
     M_transpose( false ),
-    M_maxiter( 1000 )
+    M_maxit( 1000 )
 {
 }
 
@@ -54,9 +56,11 @@ Backend<T>::Backend( Backend const& backend )
     M_backend    ( backend.M_backend ),
     M_nlsolver( backend.M_nlsolver ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
-    M_tolerance( backend.M_tolerance ),
+    M_rtolerance( backend.M_rtolerance ),
+    M_dtolerance( backend.M_dtolerance ),
+    M_atolerance( backend.M_atolerance ),
     M_transpose( backend.M_transpose ),
-    M_maxiter( backend.M_maxiter )
+    M_maxit( backend.M_maxit )
 {
 }
 template <typename T>
@@ -64,9 +68,11 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     :
     M_nlsolver( solvernonlinear_type::build( vm ) ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
-    M_tolerance( 1e-10 ),
+    M_rtolerance( 1e-13 ),
+    M_dtolerance( 1e5 ),
+    M_atolerance( 1e-50 ),
     M_transpose( false ),
-    M_maxiter( 1000 )
+    M_maxit( 1000 )
 {
 }
 template <typename T>
@@ -258,7 +264,7 @@ Backend<T>::stop()
             M_reusePC = true;
             M_firstSolveTime = solveTime;
             if ( !M_reuseFailed )
-                M_maxiter = std::min( M_maxiter, (size_type)(1.5*solveIter + 10.5));
+                M_maxit = std::min( M_maxit, (size_type)(1.5*solveIter + 10.5));
         }
     else
         {
@@ -281,7 +287,7 @@ Backend<T>::stop()
             M_lastSolveIter = solveIter;
             if ( M_reusePC )
                 {
-                    M_maxiter = std::min( M_maxiter, (size_type)( M_totalSolveIter/M_nUsePC + 0.5 ) );
+                    M_maxit = std::min( M_maxit, (size_type)( M_totalSolveIter/M_nUsePC + 0.5 ) );
                 }
         }
 }
@@ -293,7 +299,7 @@ Backend<T>::reset()
     M_reusePC = false;
     M_totalSolveIter = 0.0;
     M_nUsePC = 0;
-    //M_backend->set_maxiter( M_maxiter );
+    //M_backend->set_maxiter( M_maxit );
 
 }
 /*
@@ -310,10 +316,13 @@ po::options_description backend_options()
     _options.add_options()
         // solver options
 #if defined( HAVE_PETSC_H )
-        ("backend", Life::po::value<std::string>()->default_value( "petsc" ), "backend type: gmm, petsc, trilinos")
+        ("backend", Life::po::value<std::string>()->default_value( "petsc" ), "backend type: PETSc, trilinos, gmm")
 #else
-        ("backend", Life::po::value<std::string>()->default_value( "gmm" ), "backend type: gmm, petsc, trilinos")
+        ("backend", Life::po::value<std::string>()->default_value( "gmm" ), "backend type: PETSc, trilinos, gmm")
 #endif
+        ("rtol", Life::po::value<double>()->default_value( 1e-13 ), "relative tolerance")
+        ("atol", Life::po::value<double>()->default_value( 1e-50 ), "absolute tolerance")
+        ("dtol", Life::po::value<double>()->default_value( 1e5 ), "divergence tolerance")
         ;
     return _options;
 }

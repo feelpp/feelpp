@@ -179,11 +179,11 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
                         vector_ptrtype const& b )
 {
     M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
-    std::pair<size_type,value_type> res = M_solver_petsc.solve( *A, *x, *b, this->tolerance(), this->maxIterations(), this->transpose() );
+    std::pair<size_type,value_type> res = M_solver_petsc.solve( *A, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
     Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.first << "\n";
     Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.second << "\n";
 
-    bool converged = (res.first < this->maxIterations()) && (res.second < this->tolerance());
+    bool converged = (res.first < this->maxIterations()) && (res.second < this->rTolerance());
     return boost::make_tuple( converged, res.first, res.second );
 } // BackendPetsc::solve
 
@@ -195,11 +195,11 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
                         vector_type const& b )
 {
     M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
-    std::pair<size_type,value_type> res = M_solver_petsc.solve( A, x, b, this->tolerance(), this->maxIterations() );
+    std::pair<size_type,value_type> res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations() );
     Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.first << "\n";
     Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.second << "\n";
 
-    bool converged = (res.first < this->maxIterations()) && (res.second < this->tolerance());
+    bool converged = (res.first < this->maxIterations()) && (res.second < this->rTolerance());
     return boost::make_tuple( converged, res.first, res.second );
 } // BackendPetsc::solve
 

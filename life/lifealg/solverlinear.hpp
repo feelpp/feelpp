@@ -22,6 +22,7 @@
 
 #include <boost/mpi/communicator.hpp>
 
+#include <life/lifecore/parameter.hpp>
 #include <life/lifealg/enums.hpp>
 #include <life/lifecore/traits.hpp>
 
@@ -79,9 +80,51 @@ public:
     virtual void init () = 0;
 
     /**
+     * \return the relative tolerance
+     */
+    value_type rTolerance() const { return M_rtolerance;}
+
+    /**
+     * \return the divergence tolerance
+     */
+    value_type dTolerance() const { return M_dtolerance;}
+
+    /**
+     * \return the absolute tolerance
+     */
+    value_type aTolerance() const { return M_atolerance;}
+
+    /**
      * Returns the type of solver to use.
      */
     SolverType solverType () const { return _M_solver_type; }
+
+    /**
+     * \return the maximum number of iterations
+     */
+    size_type maxIterations() const { return M_maxit; }
+
+    /**
+     * set tolerances: relative tolerance \p rtol, divergence tolerance \p dtol
+     * and absolute tolerance \p atol
+     */
+    BOOST_PARAMETER_MEMBER_FUNCTION((void),
+                                    setTolerances,
+                                    tag,
+                                    (required
+                                     (rtolerance,(double))
+                                        )
+                                    (optional
+                                     (maxit,(size_type), 1000 )
+                                     (atolerance,(double), 1e-50)
+                                     (dtolerance,(double), 1e5)
+                                        ) )
+        {
+            M_rtolerance = rtolerance;
+            M_dtolerance = dtolerance;
+            M_atolerance = atolerance;
+            M_maxit=maxit;
+        }
 
     /**
      * Sets the type of solver to use.
@@ -172,6 +215,18 @@ protected:
     }
 
 protected:
+
+    /// relative tolerance
+    double M_rtolerance;
+
+    /// divergence tolerance
+    double M_dtolerance;
+
+    /// absolute tolerance
+    double M_atolerance;
+
+    /// maximum number of iterations
+    size_type M_maxit;
 
     /**
      * Enum stating which type of iterative solver to use.
