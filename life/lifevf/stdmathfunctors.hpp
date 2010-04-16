@@ -85,21 +85,21 @@ sign( T const& x )
    BOOST_PP_TUPLE_TO_LIST( \
       15, \
       ( \
-         ( abs  , __Abs__ , Life::math::abs     ,"absolute value"      , UnboundedDomain<value_type>()      , 1, 0, 0), \
-         ( cos  , __Cos__ , Life::math::cos     ,"cosine"              , UnboundedDomain<value_type>()      , 1, 0, 0), \
-         ( sin  , __Sin__ , Life::math::sin     ,"sine"                , UnboundedDomain<value_type>()      , 1, 0, 0), \
-         ( tan  , __Tan__ , Life::math::tan     ,"tangent"             , UnboundedDomain<value_type>()      , 1, 0, 0), \
-         ( acos , __ACos__, Life::math::acos    ,"inverse cosine"      , BoundedDomain<value_type>(-1.0,1.0), 1, 0, 0), \
-         ( asin , __ASin__, Life::math::asin    ,"inverse sine"        , BoundedDomain<value_type>(-1.0,1.0), 1, 0, 0), \
-         ( atan , __ATan__, Life::math::atan    ,"inverse tangent"     , UnboundedDomain<value_type>()      , 1, 0, 0), \
-         ( cosh , __Cosh__, Life::math::cosh    ,"hyperbolic cosine"   , UnboundedDomain<value_type>()      , 1, 0, 0), \
-         ( sinh , __Sinh__, Life::math::sinh    ,"hyperbolic sine"     , UnboundedDomain<value_type>()      , 1, 0, 0), \
-         ( tanh , __Tanh__, Life::math::tanh    ,"hyperbolic tangent"  , UnboundedDomain<value_type>()      , 1, 0, 0), \
-         ( exp  , __Exp__ , Life::math::exp     ,"exponential"         , UnboundedDomain<value_type>()      , 1, 0, 0), \
-         ( log  , __Log__ , Life::math::log     ,"logarithm"           , PositiveDomain<value_type>()       , 1, 0, 0), \
-         ( sqrt , __Sqrt__, Life::math::sqrt    ,"square root"         , PositiveDomain<value_type>()       , 1, 0, 0), \
-         ( sign , __Sign__, details::sign       ,"sign"                , UnboundedDomain<value_type>()      , 1, 0, 1), \
-         ( chi  , __Chi__ ,                     ,"chi"                 , UnboundedDomain<value_type>()      , 0, 1, 1) \
+         ( abs  , __Abs__ , Life::math::abs     ,"absolute value"      , UnboundedDomain<value_type>()      , 1, 0, 2), \
+         ( cos  , __Cos__ , Life::math::cos     ,"cosine"              , UnboundedDomain<value_type>()      , 1, 0, 2), \
+         ( sin  , __Sin__ , Life::math::sin     ,"sine"                , UnboundedDomain<value_type>()      , 1, 0, 2), \
+         ( tan  , __Tan__ , Life::math::tan     ,"tangent"             , UnboundedDomain<value_type>()      , 1, 0, 2), \
+         ( acos , __ACos__, Life::math::acos    ,"inverse cosine"      , BoundedDomain<value_type>(-1.0,1.0), 1, 0, 2), \
+         ( asin , __ASin__, Life::math::asin    ,"inverse sine"        , BoundedDomain<value_type>(-1.0,1.0), 1, 0, 2), \
+         ( atan , __ATan__, Life::math::atan    ,"inverse tangent"     , UnboundedDomain<value_type>()      , 1, 0, 2), \
+         ( cosh , __Cosh__, Life::math::cosh    ,"hyperbolic cosine"   , UnboundedDomain<value_type>()      , 1, 0, 2), \
+         ( sinh , __Sinh__, Life::math::sinh    ,"hyperbolic sine"     , UnboundedDomain<value_type>()      , 1, 0, 2), \
+         ( tanh , __Tanh__, Life::math::tanh    ,"hyperbolic tangent"  , UnboundedDomain<value_type>()      , 1, 0, 2), \
+         ( exp  , __Exp__ , Life::math::exp     ,"exponential"         , UnboundedDomain<value_type>()      , 1, 0, 2), \
+         ( log  , __Log__ , Life::math::log     ,"logarithm"           , PositiveDomain<value_type>()       , 1, 0, 2), \
+         ( sqrt , __Sqrt__, Life::math::sqrt    ,"square root"         , PositiveDomain<value_type>()       , 1, 0, 2), \
+         ( sign , __Sign__, details::sign       ,"sign"                , UnboundedDomain<value_type>()      , 1, 0, 2), \
+         ( chi  , __Chi__ ,                     ,"chi"                 , UnboundedDomain<value_type>()      , 0, 1, 2) \
       ) \
    ) \
    /**/
@@ -160,7 +160,7 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                                                                         \
         static const size_type context = ExprT1::context;               \
                                                                         \
-        static const uint16_type imorder = ExprT1::imorder;             \
+        static const uint16_type imorder = VF_FUNC_IS_POLYNOMIAL(O)*ExprT1::imorder;             \
         static const bool imIsPoly = (VF_IM_IS_POLY(O) || (ExprT1::imorder==0)); \
                                                                         \
         template<typename Func>                                         \
