@@ -79,22 +79,22 @@ public:
 
     //-----------------------------------------------------------------------------------//
 
-    // mixte FunctionSpace
+    // mixed FunctionSpace
     typedef Lagrange<2, Vectorial> basis_u_type;
     typedef Lagrange<4, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
-    typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_mixte_type;
-    typedef FunctionSpace<mesh_type, basis_mixte_type> space_mixte_type;
-    BOOST_MPL_ASSERT( ( boost::is_same< space_mixte_type::bases_list, basis_mixte_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixte_type::bases_list,mpl::int_<0> >::type, basis_u_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixte_type::bases_list,mpl::int_<1> >::type, basis_p_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixte_type::bases_list,mpl::int_<2> >::type, basis_l_type> ) );
-    typedef boost::shared_ptr<space_mixte_type> space_mixte_ptrtype;
+    typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_mixed_type;
+    typedef FunctionSpace<mesh_type, basis_mixed_type> space_mixed_type;
+    BOOST_MPL_ASSERT( ( boost::is_same< space_mixed_type::bases_list, basis_mixed_type> ) );
+    BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<0> >::type, basis_u_type> ) );
+    BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<1> >::type, basis_p_type> ) );
+    BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<2> >::type, basis_l_type> ) );
+    typedef boost::shared_ptr<space_mixed_type> space_mixed_ptrtype;
     // functions
-    typedef space_mixte_type::element_type element_mixte_type;
-    typedef element_mixte_type::sub_element<0>::type element_mixte_0_type;
-    typedef element_mixte_type::sub_element<1>::type element_mixte_1_type;
-    typedef element_mixte_type::sub_element<2>::type element_mixte_2_type;
+    typedef space_mixed_type::element_type element_mixed_type;
+    typedef element_mixed_type::sub_element<0>::type element_mixed_0_type;
+    typedef element_mixed_type::sub_element<1>::type element_mixed_1_type;
+    typedef element_mixed_type::sub_element<2>::type element_mixed_2_type;
 
     //-----------------------------------------------------------------------------------//
 
@@ -171,10 +171,10 @@ Test_AOI::run()
     space_scalar_ptrtype Xh = space_scalar_type::New( mesh );
     element_scalar_type us( Xh, "us" );
 
-    space_mixte_ptrtype Xh_Mixte = space_mixte_type::New( mesh );
-    element_mixte_type U_mixte(Xh_Mixte,"U_mixte");
-    element_mixte_0_type u_mixte = U_mixte.element<0>();
-    element_mixte_1_type p_mixte = U_mixte.element<1>();
+    space_mixed_ptrtype Xh_Mixed = space_mixed_type::New( mesh );
+    element_mixed_type U_mixed(Xh_Mixed,"U_mixed");
+    element_mixed_0_type u_mixed = U_mixed.element<0>();
+    element_mixed_1_type p_mixed = U_mixed.element<1>();
 
     //-----------------------------------------------------------------------------------//
 
@@ -182,53 +182,53 @@ Test_AOI::run()
     AUTO (g , Px()*(Px()-1)*0.5*Py() );
 
     us = project( Xh, elements(mesh), g );
-    p_mixte = project( p_mixte.functionSpace() , elements(mesh), f);
+    p_mixed = project( p_mixed.functionSpace() , elements(mesh), f);
 
     //-----------------------------------------------------------------------------------//
 
-    BOOST_CHECK( cst(1.0).imorder == 0 && cst(1.0).imIsPoly );
-    BOOST_CHECK( cos(cst(M_PI)).imorder == 0 && cos(cst(M_PI)).imIsPoly );
+    BOOST_CHECK( cst(1.0).imorder == 0 );
+    BOOST_CHECK( cos(cst(M_PI)).imorder == 2 );
 
     //-----------------------------------------------------------------------------------//
 
     const uint16_type us_order = element_scalar_type::functionspace_type::basis_type::nOrder;
-    BOOST_CHECK( id(us).imorder == us_order && id(us).imIsPoly );
-    BOOST_CHECK( grad(us).imorder == us_order-1 && grad(us).imIsPoly );
-    BOOST_CHECK( hess(us).imorder == us_order-2 && hess(us).imIsPoly );
-    BOOST_CHECK( (id(us)+id(us)).imorder == us_order && (id(us)+id(us)).imIsPoly );
-    BOOST_CHECK( (id(us)*id(us)).imorder == 2*us_order && (id(us)*id(us)).imIsPoly );
+    BOOST_CHECK( id(us).imorder == us_order );
+    BOOST_CHECK( grad(us).imorder == us_order-1 );
+    BOOST_CHECK( hess(us).imorder == us_order-2 );
+    BOOST_CHECK( (id(us)+id(us)).imorder == us_order );
+    BOOST_CHECK( (id(us)*id(us)).imorder == 2*us_order );
 
     //-----------------------------------------------------------------------------------//
 
-    const uint16_type u_mixte_order = element_mixte_0_type::functionspace_type::basis_type::nOrder;
-    BOOST_CHECK( idt(u_mixte).imorder == u_mixte_order && idt(u_mixte).imIsPoly );
-    BOOST_CHECK( gradt(u_mixte).imorder == u_mixte_order-1 && gradt(u_mixte).imIsPoly );
-    BOOST_CHECK( hesst(u_mixte).imorder == u_mixte_order-2 && hesst(u_mixte).imIsPoly );
-    BOOST_CHECK( (idt(u_mixte)+idt(u_mixte)).imorder == u_mixte_order && (idt(u_mixte)+idt(u_mixte)).imIsPoly );
-    BOOST_CHECK( (idt(u_mixte)*idt(u_mixte)).imorder == 2*u_mixte_order && (idt(u_mixte)*idt(u_mixte)).imIsPoly );
+    const uint16_type u_mixed_order = element_mixed_0_type::functionspace_type::basis_type::nOrder;
+    BOOST_CHECK( idt(u_mixed).imorder == u_mixed_order );
+    BOOST_CHECK( gradt(u_mixed).imorder == u_mixed_order-1 );
+    BOOST_CHECK( hesst(u_mixed).imorder == u_mixed_order-2 );
+    BOOST_CHECK( (idt(u_mixed)+idt(u_mixed)).imorder == u_mixed_order );
+    BOOST_CHECK( (idt(u_mixed)*idt(u_mixed)).imorder == 2*u_mixed_order );
 
-    const uint16_type p_mixte_order = element_mixte_1_type::functionspace_type::basis_type::nOrder;
-    BOOST_CHECK( idt(p_mixte).imorder == p_mixte_order && idt(p_mixte).imIsPoly );
-    BOOST_CHECK( gradt(p_mixte).imorder == p_mixte_order-1 && gradt(p_mixte).imIsPoly );
-    BOOST_CHECK( hesst(p_mixte).imorder == p_mixte_order-2 && hesst(p_mixte).imIsPoly );
-    BOOST_CHECK( (idt(p_mixte)+idt(p_mixte)).imorder == p_mixte_order && (idt(p_mixte)+idt(p_mixte)).imIsPoly );
-    BOOST_CHECK( (idt(p_mixte)*idt(p_mixte)).imorder == 2*p_mixte_order && (idt(p_mixte)*idt(p_mixte)).imIsPoly );
-
-    //-----------------------------------------------------------------------------------//
-
-    BOOST_CHECK( (idt(us)+idt(p_mixte)).imorder == std::max(us_order,p_mixte_order) && (idt(us)+idt(p_mixte)).imIsPoly );
-    BOOST_CHECK( (idt(us)*idt(p_mixte)).imorder == us_order+p_mixte_order && (idt(us)*idt(p_mixte)).imIsPoly );
+    const uint16_type p_mixed_order = element_mixed_1_type::functionspace_type::basis_type::nOrder;
+    BOOST_CHECK( idt(p_mixed).imorder == p_mixed_order );
+    BOOST_CHECK( gradt(p_mixed).imorder == p_mixed_order-1 );
+    BOOST_CHECK( hesst(p_mixed).imorder == p_mixed_order-2 );
+    BOOST_CHECK( (idt(p_mixed)+idt(p_mixed)).imorder == p_mixed_order );
+    BOOST_CHECK( (idt(p_mixed)*idt(p_mixed)).imorder == 2*p_mixed_order );
 
     //-----------------------------------------------------------------------------------//
 
-    BOOST_CHECK( vec(idv(us),idv(p_mixte)).imorder == std::max(us_order,p_mixte_order) && vec(idv(us),idv(p_mixte)).imIsPoly );
-
-    BOOST_CHECK( (mat<2,2>( idv(us),cst(1),idv(us),idv(p_mixte))).imorder == std::max(us_order,p_mixte_order) && (mat<2,2>(idv(us),cst(1),idv(us),idv(p_mixte))).imIsPoly );
+    BOOST_CHECK( (idt(us)+idt(p_mixed)).imorder == std::max(us_order,p_mixed_order) );
+    BOOST_CHECK( (idt(us)*idt(p_mixed)).imorder == us_order+p_mixed_order );
 
     //-----------------------------------------------------------------------------------//
 
-    BOOST_CHECK( !exp(Px()).imIsPoly );
-    BOOST_CHECK( chi(Px()>0.5).imorder == 0 && chi(Px()>0.5).imIsPoly );
+    BOOST_CHECK( vec(idv(us),idv(p_mixed)).imorder == std::max(us_order,p_mixed_order) );
+
+    BOOST_CHECK( (mat<2,2>( idv(us),cst(1),idv(us),idv(p_mixed))).imorder == std::max(us_order,p_mixed_order) );
+
+    //-----------------------------------------------------------------------------------//
+
+    BOOST_CHECK( exp(Px()).imorder == 2 );
+    BOOST_CHECK( chi(Px()>0.5).imorder == 2 );
 
     //-----------------------------------------------------------------------------------//
 
@@ -241,8 +241,8 @@ Test_AOI::run()
     double int22=integrate(elements(mesh), g ).evaluate()(0,0);
     BOOST_CHECK_EQUAL(int21,int22);
 
-    double int31=integrate(elements(mesh),_Q<us_order+p_mixte_order-1 >(), gradv(p_mixte)*idv(u_mixte) ).evaluate()(0,0);
-    double int32=integrate(elements(mesh), gradv(p_mixte)*idv(u_mixte)  ).evaluate()(0,0);
+    double int31=integrate(elements(mesh),_Q<us_order+p_mixed_order-1 >(), gradv(p_mixed)*idv(u_mixed) ).evaluate()(0,0);
+    double int32=integrate(elements(mesh), gradv(p_mixed)*idv(u_mixed)  ).evaluate()(0,0);
     BOOST_CHECK_EQUAL(int31,int32);
 
 
