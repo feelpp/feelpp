@@ -949,6 +949,7 @@ integrate( IntElts const& elts,
            ExprT const& expr )
 {
     typedef Integrator<IntElts, _Q< ExpressionOrder<ExprT>::value >, ExprT> expr_t;
+    Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<ExprT>::value << "\n";
     return Expr<expr_t>( expr_t( elts, _Q< ExpressionOrder<ExprT>::value >(), expr ) );
 }
 
