@@ -1889,7 +1889,11 @@ public:
 
     static const size_type context = ExprT1::context|ExprT2::context;
 
-    static const uint16_type imorder = ExprT2::imorder*ExprT1::imorder;
+    /**
+     * \warning the Pow order computation is wrong here, we actually need the
+     * ExprT2 value (and not imorder) to multiply by ExprT1::imorder.
+     */
+    static const uint16_type imorder = ExprT1::imorder;
     static const bool imIsPoly = ExprT1::imIsPoly && ExprT2::imIsPoly;
 
     template<typename Func>
