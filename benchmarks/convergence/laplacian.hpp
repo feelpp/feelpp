@@ -129,11 +129,16 @@ public:
 
     /*basis*/
     typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
+    typedef fusion::vector<Lagrange<5, Scalar> > exact_basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
+
+    typedef FunctionSpace<mesh_type, exact_basis_type, value_type> exact_space_type;
+    typedef boost::shared_ptr<exact_space_type> exact_space_ptrtype;
+    typedef typename exact_space_type::element_type exact_element_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -166,15 +171,23 @@ public:
             else
                 h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.08:0.09:0.4" );
         else
-            if (Order == 1)      //=== 3D ===
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.05:0.02:0.1" );
-            else if (Order <= 3)      //=== 3D ===
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.15:0.02:0.5" );
-            else if (Order < 5)      //=== 3D ===
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.15:0.1:0.5" );
-            else
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.2:0.1:0.7" );
-
+            //=== 3D ===
+            switch( Order )
+            {
+            case 1:
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.025:0.02:0.1" );
+                break;
+            case 2:
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.02:0.2" );
+                break;
+            case 3:
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.15:0.02:0.25" );
+                break;
+            case 4:
+            case 5:
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.2:0.1:0.25" );
+                break;
+            }
         this->
             addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
             .addParameter( Parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str() ) )
@@ -261,6 +274,8 @@ template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_t
 void
 Laplacian<Dim, Order, RDim, Entity>::run()
 {
+    boost::timer t1;
+
     this->addParameterValue( Dim )
         .addParameterValue( Order )
         .addParameterValue( this->vm()["beta"].template as<double>() )
@@ -275,6 +290,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
      * First we create the mesh
      */
     mesh_ptrtype mesh = createMesh( meshSize );
+    Log() << "mesh created in " << t1.elapsed() << "s\n"; t1.restart();
 
     /*
      * The function space and some associate elements are then defined
@@ -282,8 +298,16 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     space_ptrtype Xh = space_type::New( mesh );
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
+    Log() << "[functionspace] Number of dof " << Xh->nLocalDof() << "\n";
+    Log() << "function space and elements created in " << t1.elapsed() << "s\n"; t1.restart();
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    exact_space_ptrtype Eh = exact_space_type::New( mesh );
+    exact_element_type fproj( Eh, "f" );
+    exact_element_type gproj( Eh, "g" );
+    Log() << "[functionspace] Number of dof " << Eh->nLocalDof() << "\n";
+    Log() << "function space and elements created in " << t1.elapsed() << "s\n"; t1.restart();
+
+
     value_type nu = this->vm()["nu"].template as<double>();
     value_type beta = this->vm()["beta"].template as<double>();
 
@@ -305,14 +329,16 @@ Laplacian<Dim, Order, RDim, Entity>::run()
             tag2 = 23;
         }
 
-    boost::timer t1;
+    fproj = vf::project( Eh, elements(mesh), f );
+    gproj = vf::project( Eh, elements(mesh), g );
 
     // Construction of the right hand side
 
     vector_ptrtype F( backend->newVector( Xh ) );
 
+
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), f*id(v) );
+        integrate( elements(mesh), idv(fproj)*id(v) );
     if ( M_use_weak_dirichlet )
         {
             form1( Xh, F ) +=
@@ -377,7 +403,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     t1.restart();
 
     double L2error2 =integrate( elements(mesh),
-                                (idv(u)-g)*trans(idv(u)-g) ).evaluate()( 0, 0 );
+                                (idv(u)-idv(gproj))*(idv(u)-idv(gproj))).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
     Log() << "||error||_L2=" << L2error << "\n";
@@ -385,9 +411,8 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     t1.restart();
 
 
-    v = project( Xh, elements(mesh), g );
     double semiH1error2 =integrate( elements(mesh),
-                                    (gradv(u)-gradv(v))*trans(gradv(u)-gradv(v)) ).evaluate()( 0, 0 ) ;
+                                    (gradv(u)-gradv(gproj))*trans(gradv(u)-gradv(gproj)) ).evaluate()( 0, 0 ) ;
 
     Log() << "semi H1 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
