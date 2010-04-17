@@ -187,7 +187,7 @@ Test_AOI::run()
     //-----------------------------------------------------------------------------------//
 
     BOOST_CHECK( cst(1.0).imorder == 0 );
-    BOOST_CHECK( cos(cst(M_PI)).imorder == 2 );
+    BOOST_CHECK( cos(cst(M_PI)).imorder == 0 );
 
     //-----------------------------------------------------------------------------------//
 
@@ -228,11 +228,11 @@ Test_AOI::run()
     //-----------------------------------------------------------------------------------//
 
     BOOST_CHECK( exp(Px()).imorder == 2 );
-    BOOST_CHECK( chi(Px()>0.5).imorder == 2 );
+    BOOST_CHECK( chi(Px()>0.5).imorder == 0 );
 
     //-----------------------------------------------------------------------------------//
 
-    double int11=integrate(elements(mesh),_Q<10>(), f ).evaluate()(0,0);
+    double int11=integrate(elements(mesh),_Q<4>(), f ).evaluate()(0,0);
     double int12=integrate(elements(mesh), f ).evaluate()(0,0);
     BOOST_CHECK_EQUAL(int11,int12);
     //BOOST_CHECK(std::abs(int11-int12)<1e-15);
