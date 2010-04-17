@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-05-25
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -178,6 +178,10 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
                         vector_ptrtype& x,
                         vector_ptrtype const& b )
 {
+    M_solver_petsc.setTolerances( _rtolerance=this->rTolerance(),
+                                  _atolerance=this->aTolerance(),
+                                  _dtolerance=this->dTolerance(),
+                                  _maxit = this->maxIterations() );
     M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
     std::pair<size_type,value_type> res = M_solver_petsc.solve( *A, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
     Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.first << "\n";
@@ -194,6 +198,10 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
                         vector_type& x,
                         vector_type const& b )
 {
+    M_solver_petsc.setTolerances( _rtolerance=this->rTolerance(),
+                                  _atolerance=this->aTolerance(),
+                                  _dtolerance=this->dTolerance(),
+                                  _maxit = this->maxIterations() );
     M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
     std::pair<size_type,value_type> res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations() );
     Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.first << "\n";
