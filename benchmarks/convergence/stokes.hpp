@@ -438,7 +438,7 @@ void
     }
 
     vector_ptrtype X( M_backend->newVector( U.functionSpace() ) );
-    M_backend->solve( _matrix=D, _solution=X, _rhs=F );
+    M_backend->solve( _matrix=D, _solution=X, _rhs=F, _rtolerance=1e-16 );
     U = *X;
 
     Log() << "system solved in " << t.elapsed() << "s\n"; t.restart();
@@ -452,7 +452,7 @@ void
 
 
     double u_errorsemiH1 = integrate( elements(mesh),
-                                      trace(gradv(v)*trans(gradv(v)))).evaluate()( 0, 0 );
+                                      trace((gradv(u)-grad_exact)*trans(gradv(u)-grad_exact))).evaluate()( 0, 0 );
     double u_error_H1 = math::sqrt( u_errorL2+u_errorsemiH1 );
     std::cout << "||u_error||_2 = " << u_error_H1 << "\n";
 
