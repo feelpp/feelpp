@@ -184,7 +184,18 @@ public:
     {
 
         mu = this->vm()["mu"].template as<value_type>();
-        Parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.025:0.06" );
+        Parameter h;
+        switch( OrderU )
+        {
+        case 1:
+        case 2:
+            h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.02:0.025:0.06" );
+            break;
+
+        case 3:
+            h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.035:0.025:0.06" );
+            break;
+        }
         this->
             //addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu", _values=boost::lexical_cast<std::string>( mu ).c_str()))
             addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
@@ -220,11 +231,6 @@ public:
     void run();
 
 private:
-
-    /**
-     * solve system
-     */
-    void solve( sparse_matrix_ptrtype const& D, element_type& u, vector_ptrtype const& F, bool is_sym );
 
     /**
      * export results to ensight format (enabled by  --export cmd line options)
@@ -265,6 +271,7 @@ void
      * First we create the mesh : a square [0,1]x[0,1] with characteristic
      * length = meshSize
      */
+    Log() << "creating mesh with hsize=" << meshSize << "\n";
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name="square",
                                                       _shape="hypercube",
@@ -299,6 +306,12 @@ void
     Log() << "      mu = " << mu << "\n";
     Log() << " bccoeff = " << penalbc << "\n";
     Log() << "functionspace and elements created in " << t.elapsed() << "s\n"; t.restart();
+    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    Log() << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
+    Log() << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
+    Log() << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
+    Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 
     vector_ptrtype F( M_backend->newVector( Xh ) );
 
@@ -360,10 +373,9 @@ void
     Log() << "convection terms projectd in " << t.elapsed() << "s\n"; t.restart();
 
     // right hand side
-    form1( Xh, F, _init=true )  =
-        integrate( elements(mesh), trans(f)*id(v) )+
-        integrate( boundaryfaces(mesh),
-                   trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
+    form1( Xh, F, _init=true ) =integrate( elements(mesh), trans(f)*id(v) );
+    form1( Xh, F )+= integrate( boundaryfaces(mesh),
+                                trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
 
     Log() << "[stokes] vector local assembly done\n";
     Log() << "form1 F created in " << t.elapsed() << "s\n"; t.restart();
@@ -425,14 +437,17 @@ void
         F->printMatlab( "F.m" );
     }
 
-    this->solve( D, U, F, false );
+    vector_ptrtype X( M_backend->newVector( U.functionSpace() ) );
+    M_backend->solve( _matrix=D, _solution=X, _rhs=F );
+    U = *X;
+
     Log() << "system solved in " << t.elapsed() << "s\n"; t.restart();
     Log() << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
 
     v = vf::project( u.functionSpace(), elements(mesh), idv(u)-u_exact );
     double u_errorL2 = integrate( elements(mesh),
-                                  trans(idv(v))*(idv(v)) ).evaluate()( 0, 0 );
+                                  trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
 
@@ -473,25 +488,7 @@ void
     this->addOutputValue( u_error_H1 ).addOutputValue( math::sqrt( p_errorL2 ) );
     this->postProcessing();
 
-    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    Log() << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
-    Log() << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
-
-template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
-void
-Stokes<Dim, _OrderU, _OrderP, Entity>::solve( sparse_matrix_ptrtype const& D,
-                                              element_type& u,
-                                              vector_ptrtype const& F,
-                                              bool is_sym )
-{
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    M_backend->solve( D, D, U, F, false );
-    u = *U;
-} // Stokes::solve
 
 template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
