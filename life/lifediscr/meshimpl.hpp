@@ -1095,9 +1095,19 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
             if (!isin) ++itLT;
         }
 
-    if (itLT == itLT_end) return boost::make_tuple( false, 0, __x_ref );
-    else return boost::make_tuple( true, itLT->first, __x_ref);
-
+    bool __extrapolation=true;
+    if (itLT != itLT_end) return boost::make_tuple( true, itLT->first, __x_ref);
+    else if (itLT == itLT_end && !__extrapolation) return boost::make_tuple( false, 0, __x_ref );
+    else
+        {
+            itLT=ListTri.begin();
+            elt= M_mesh->element(itLT->first );
+            typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
+            //apply the inverse geometric transformation for the point p
+            gic.setXReal( p);
+            __x_ref=gic.xRef();
+            return boost::make_tuple( true, itLT->first, __x_ref);
+        }
 
 }
 
