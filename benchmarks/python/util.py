@@ -47,9 +47,9 @@ def strToSci(str):
 
 def intervalLog(Vmin,Vmax,nbVal):
 		print "Vmin,Vmax=",Vmin, Vmax
-		return (scipy.ceil(1000*scipy.exp(scipy.linspace(scipy.log(Vmin),
+		return (scipy.ceil(100*scipy.exp(scipy.linspace(scipy.log(Vmin),
 														 scipy.log(Vmax),
-														 nbVal)))/1000)
+														 nbVal)))/100)
 
 def intervalLin(Vmin,Vmax,nbVal):
 		return scipy.arange(Vmin,Vmax,(Vmax-Vmin)/nbVal).tolist()[1:]
