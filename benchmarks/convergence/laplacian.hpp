@@ -167,15 +167,15 @@ public:
                 h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.08:0.09:0.4" );
         else if (Dim == 2)      //=== 2D ===
             if (Order < 5)
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.03:0.09:0.4" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.03:0.09:0.1" );
             else
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.08:0.09:0.4" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.06:0.09:0.1" );
         else
             //=== 3D ===
             switch( Order )
             {
             case 1:
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.025:0.02:0.1" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.05:0.02:0.08" );
                 break;
             case 2:
                 h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.02:0.2" );
