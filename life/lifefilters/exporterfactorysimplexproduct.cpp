@@ -27,7 +27,7 @@
    \date 2010-04-16
 */
 
-#include <life/lifefilters/exporter.hpp>
+#include <life/lifefilters/exporterimpl.hpp>
 #include <life/lifefilters/exporterensight.hpp>
 #include <life/lifefilters/exportergmsh.hpp>
 
