@@ -159,37 +159,6 @@ Exporter<MeshType>::addPath( boost::format fmt )
     return this;
 }
 
-//
-// Exporter Options
-//
-/**
- * \return the command lines options for the exporter
- */
-po::options_description exporter_options( std::string const& prefix )
-{
-    std::string _prefix = prefix;
-    if ( !_prefix.empty() )
-        _prefix += "-";
-
-    po::options_description _options( "Exporter " + prefix + " options");
-    _options.add_options()
-        // do export
-        ((_prefix+"export").c_str(), Life::po::value<bool>()->default_value( true ), "true if export, false otherwise")
-
-        // exporter type
-        ((_prefix+"exporter").c_str(), Life::po::value<std::string>()->default_value( "ensight" ), "type of exporter")
-
-        // prefix options
-        ((_prefix+"exporter-prefix").c_str(), Life::po::value<std::string>()->default_value( prefix ), "prefix for exported files")
-
-        // frequency options
-        ((_prefix+"exporter-freq").c_str(), Life::po::value<int>()->default_value( 1 ), "frequency at which results are exported")
-
-        // file type options
-        ((_prefix+"exporter-file-type").c_str(), Life::po::value<int>()->default_value( ASCII ), "file type in which the results are exported ('ascii' = 0 or 'binary' = 1)")
-        ;
-    return _options;
-}
 
 }
 
