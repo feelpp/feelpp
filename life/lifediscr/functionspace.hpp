@@ -56,6 +56,8 @@
 #include <boost/optional.hpp>
 #include <boost/preprocessor/control/if.hpp>
 
+#include <boost/smart_ptr/enable_shared_from_this.hpp>
+
 #include <stdexcept>
 #include <sstream>
 #include <limits>
@@ -75,7 +77,7 @@
 #include <life/lifediscr/continuity.hpp>
 #include <life/lifediscr/discontinuousinterfaces.hpp>
 #include <life/lifediscr/discontinuous.hpp>
-#include <life/lifediscr/dof.hpp>
+#include <life/lifediscr/doftable.hpp>
 #include <life/lifediscr/dofcomposite.hpp>
 #include <life/lifediscr/parameter.hpp>
 #include <life/lifediscr/bases.hpp>
@@ -669,7 +671,10 @@ template<
     typename A2 = parameter::void_,
     typename A3 = parameter::void_,
     typename A4 = parameter::void_>
-class FunctionSpace : public FunctionSpaceBase
+class FunctionSpace
+    :
+    public FunctionSpaceBase,
+    public boost::enable_shared_from_this<FunctionSpace<A0,A1,A2,A3,A4> >
 {
 public:
     typedef typename functionspace_signature::bind<A0,A1,A2,A3,A4>::type args;
@@ -806,7 +811,7 @@ public:
     // dof
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<DofComposite>,
-                              mpl::identity<Dof<mesh_type, basis_type, periodicity_type, continuity_type> > >::type::type dof_type;
+                              mpl::identity<DofTable<mesh_type, basis_type, periodicity_type, continuity_type> > >::type::type dof_type;
 
     typedef boost::shared_ptr<dof_type> dof_ptrtype;
 
@@ -2305,6 +2310,16 @@ private:
         mesh_ptrtype _M_mesh;
     };
 
+#if 0
+    template<typename ElementRange, typename OnExpr>
+    void
+    on( ElementRange const& _range,
+        OnExpr const& _expr )
+        {
+            M_constraints.push_back( vf::project( this->shared_from_this(), _range, _expr )  );
+        }
+#endif // 0
+
 protected:
 
     //friend class FunctionSpace<mesh_type, typename bases_list::component_basis_type, value_type>;
@@ -2335,8 +2350,9 @@ private:
     functionspace_vector_type _M_functionspaces;
 
     proc_dist_map_type procDistMap;
-
-
+#if 0
+    std::list<Element> M_constraints;
+#endif
 }; // FunctionSpace
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
