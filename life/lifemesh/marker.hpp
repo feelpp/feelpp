@@ -240,6 +240,7 @@ struct by_interprocessdomain{};
 struct by_location{};
 struct by_pid{};
 struct by_element{};
+struct by_entity{};
 }
 } // Life
 #endif
