@@ -20,13 +20,16 @@
 /*_________________________________________________*/
 /*_________________________________________________*/
 /*_________________________________________________*/
+//Bug si 0 argumÃent(a corriger)
 
-# define GEOTOOL_SHAPE                                  \
-    ( 3, ( ( Rectangle, 2, 1, 0, "rectangle", 2, RECTANGLE ), \
-           ( Circle   , 2, 1, 0, "circle"   , 2, CIRCLE    ),  \
-           ( Hexaedre , 3, 6, 1, "hexaedre" , 8, HEXAEDRE  )   \
-           )                                            \
-      )                                                 \
+# define GEOTOOL_SHAPE                                                  \
+    ( 5, ( ( Rectangle  , 2, 1, 0, "rectangle" , 2, RECTANGLE ),        \
+           ( Circle     , 2, 1, 0, "circle"    , 2, CIRCLE    ),        \
+           ( Special_1a , 2, 2, 0, "special_1a", 1, SPECIAL_1A ),       \
+           ( Special_1b , 2, 1, 0, "special_1b", 1, SPECIAL_1B ),       \
+           ( Hexaedre   , 3, 6, 1, "hexaedre"  , 8, HEXAEDRE  )         \
+           )                                                            \
+      )                                                                 \
     /**/
 
 /*_________________________________________________*/
@@ -51,6 +54,36 @@
     /**/
 
 # define GEOTOOL_MARKER_SURFACE_CIRCLE          \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
+
+/*_________________________________________________*/
+
+# define GEOTOOL_MARKER_LINE_SPECIAL_1A            \
+    ( 4, ( ( 1, 2, ( 1,5 ) ),                      \
+           ( 2, 2, ( 2,6 ) ),                      \
+           ( 3, 2, ( 3,7 ) ),                      \
+           ( 4, 2, ( 4,8 ) ) )                     \
+      )                                            \
+    /**/
+
+# define GEOTOOL_MARKER_SURFACE_SPECIAL_1A      \
+    ( 1, ( ( 1, 2, ( 1,2 ) ) )                  \
+      )                                         \
+    /**/
+
+/*_________________________________________________*/
+
+# define GEOTOOL_MARKER_LINE_SPECIAL_1B          \
+    ( 3, ( ( 1, 2, ( 1,2 ) ),                    \
+           ( 2, 1, ( 3   ) ),                      \
+           ( 3, 1, ( 4   ) )                       \
+           )                                     \
+      )                                          \
+    /**/
+
+# define GEOTOOL_MARKER_SURFACE_SPECIAL_1B      \
     ( 1, ( ( 1, 1, ( 1 ) ) )                    \
       )                                         \
     /**/
@@ -232,6 +265,10 @@ namespace Life {
                 return *this;
             }
 
+            double operator()(uint n)
+            {
+                return this->getNode()(n);
+            }
 
             /*boost::shared_ptr<*/node_type
             getNode() const { return *_M_node;}
@@ -273,7 +310,8 @@ namespace Life {
 
             typedef node<double>::type node_type;
             // list de < nameMesh, meshSize >
-            typedef std::list< boost::tuple<std::string,double> > names_type;
+            typedef boost::tuple<std::string,double> names_base_type;
+            typedef std::list< names_base_type > names_type;
             typedef std::map< std::string, names_type > map_shape_names_type;
             typedef names_type::const_iterator names_const_iterator_type;
             typedef map_shape_names_type::const_iterator map_shape_names_const_iterator_type;
@@ -313,7 +351,6 @@ namespace Life {
                 :
                 _M_cptPt(1),
                 _M_cptLine(1),
-                //_M_cptCircle(1),
                 _M_cptLineLoop(1),
                 _M_cptSurface(1),
                 _M_cptSurfaceLoop(1),
@@ -332,7 +369,6 @@ namespace Life {
                 :
                 _M_cptPt(m._M_cptPt),
                 _M_cptLine(m._M_cptLine),
-                //_M_cptCircle(m._M_cptCircle),
                 _M_cptLineLoop(m._M_cptLineLoop),
                 _M_cptSurface(m._M_cptSurface),
                 _M_cptSurfaceLoop(m._M_cptSurfaceLoop),
@@ -342,6 +378,7 @@ namespace Life {
                 _M_volumeList(new volume_name_type(*(m._M_volumeList))),
 
                 _M_ostrSurfaceLoop(new std::ostringstream()),
+
                 _M_map_Shape(new map_shape_names_type(*(m._M_map_Shape))),
                 _M_paramShape(new parameter_shape_type(*(m._M_paramShape))),
                 _M_markShape(new marker_shape_type(*(m._M_markShape))),
@@ -355,11 +392,38 @@ namespace Life {
             {
                 _M_cptPt=1;
                 _M_cptLine=1;
-                //_M_cptCircle=1;
                 _M_cptLineLoop=1;
                 _M_cptSurface=1;
                 _M_cptSurfaceLoop=1;
                 _M_cptVolume=1;
+
+                surface_name_type::iterator itSurf = this->_M_surfaceList->begin();
+                surface_name_type::iterator itSurf_end = this->_M_surfaceList->end();
+                for ( ; itSurf != itSurf_end; ++itSurf)
+                    {
+                        surface_type_type::iterator itSurf2 = itSurf->begin();
+                        surface_type_type::iterator itSurf2_end = itSurf->end();
+                        for ( ; itSurf2 != itSurf2_end; ++itSurf2)
+                            {
+                                boost::get<2>(*itSurf2)=0;
+                            }
+                    }
+
+
+                _M_ostrSurfaceLoop.reset(new std::ostringstream());
+
+                volume_name_type::iterator itVol = this->_M_volumeList->begin();
+                volume_name_type::iterator itVol_end = this->_M_volumeList->end();
+                for ( ; itVol != itVol_end; ++itVol)
+                    {
+                        volume_type_type::iterator itVol2 = itVol->begin();
+                        volume_type_type::iterator itVol2_end = itVol->end();
+                        for ( ; itVol2 != itVol2_end; ++itVol2)
+                            {
+                                boost::get<2>(*itVol2)=0;
+                            }
+                    }
+
 
             }
 
@@ -368,7 +432,6 @@ namespace Life {
             {
                 _M_cptPt = m._M_cptPt;
                 _M_cptLine = m._M_cptLine;
-                //_M_cptCircle = m._M_cptCircle;
                 _M_cptLineLoop = m._M_cptLineLoop;
                 _M_cptSurface = m._M_cptSurface;
                 _M_cptSurfaceLoop = m._M_cptSurfaceLoop;
@@ -443,10 +506,10 @@ namespace Life {
              *Utile pour la fct geoStr()
              *Pas de maj pour cptSurface et cptVolume car traitement different
              */
-            void updateData(GeoGMSHTool const & m) {
+            void updateData(GeoGMSHTool const & m)
+            {
                 _M_cptPt = m._M_cptPt;
                 _M_cptLine = m._M_cptLine;
-                //_M_cptCircle = m._M_cptCircle;
                 _M_cptLineLoop = m._M_cptLineLoop;
                 _M_cptSurfaceLoop = m._M_cptSurfaceLoop;
 
@@ -462,7 +525,6 @@ namespace Life {
 
                 _M_ostrSurfaceLoop.reset(new std::ostringstream());
                 *_M_ostrSurfaceLoop << (m._M_ostrSurfaceLoop)->str();
-
             }
 
             /*
@@ -491,7 +553,6 @@ namespace Life {
 
             uint cptPt() const { return _M_cptPt;}
             uint cptLine() const { return _M_cptLine;}
-            //double cptCircle() const { return _M_cptCircle;}
             uint cptLineLoop() const { return _M_cptLineLoop;}
             uint cptSurface() const { return _M_cptSurface;}
             uint cptSurfaceLoop() const { return _M_cptSurfaceLoop;}
@@ -610,7 +671,6 @@ namespace Life {
             // memory
             uint _M_cptPt;
             uint _M_cptLine;
-            //uint _M_cptCircle;
             uint _M_cptLineLoop;
             uint _M_cptSurface;
             uint _M_cptSurfaceLoop;
@@ -654,17 +714,6 @@ namespace Life {
         {
 
             GeoGMSHTool __geoTool;
-
-            //inutile je pense :
-            __geoTool._M_cptPt = this->_M_cptPt + m.cptPt()-1;
-            __geoTool._M_cptLine = this->_M_cptLine + m.cptLine()-1;
-            //__geoTool._M_cptCircle = this->_M_cptCircle + m.cptCircle()-1;
-            __geoTool._M_cptLineLoop = this->_M_cptLineLoop + m.cptLineLoop()-1;
-            __geoTool._M_cptSurface = this->_M_cptSurface + m.cptSurface()-1;
-
-            __geoTool._M_cptSurfaceLoop = this->_M_cptSurfaceLoop + m.cptSurfaceLoop()-1;
-            __geoTool._M_cptVolume = this->_M_cptVolume + m.cptVolume()-1;
-
 
             //Add Plane Surface for operator + : (((rect,u1,_)))+(((circ,u2,_))) -> (((rect,u1,_)),((circ,u2,_)))
             if (__typeOp==1)
@@ -718,10 +767,10 @@ namespace Life {
                     while (itName!=itName_end)
                         {
                             //verify that should not duplicate the name of shape
-                            std::list<boost::tuple<std::string,double> >::const_iterator itLs = (*(__geoTool._M_map_Shape))[itShape->first].begin();
-                            std::list<boost::tuple<std::string,double> >::const_iterator itLs_end = (*(__geoTool._M_map_Shape))[itShape->first].end();
                             bool __find=false;
-                            boost::tuple<std::string,double> __temp;
+                            names_base_type __temp;
+                            names_const_iterator_type itLs = (*(__geoTool._M_map_Shape))[itShape->first].begin();
+                            names_const_iterator_type itLs_end = (*(__geoTool._M_map_Shape))[itShape->first].end();
                             while (itLs!=itLs_end) {
                                 if ( boost::get<0>(*itLs) == boost::get<0>(*itName)) __find=true;
                                 ++itLs;
@@ -792,7 +841,7 @@ namespace Life {
             _M_ostr.reset( new std::ostringstream());
             this->zeroCpt();
 
-            // gmsh : part init
+            // version of gmsh
             init();
 
             //data memory ( type->shape->name )
@@ -804,8 +853,8 @@ namespace Life {
             while (itShape!=itShape_end)
                 {
                     //iterate on the name of shape
-                    std::list<boost::tuple<std::string,double> >::const_iterator itName = itShape->second.begin();
-                    std::list<boost::tuple<std::string,double> >::const_iterator itName_end = itShape->second.end();
+                    names_const_iterator_type itName = itShape->second.begin();
+                    names_const_iterator_type itName_end = itShape->second.end();
                     while (itName!=itName_end)
                         {
 
@@ -1068,6 +1117,30 @@ namespace Life {
             //++boost::get<0>(*__dg)->_M_cptCircle;
             ++boost::get<0>(*__dg)->_M_cptLine;
         }
+        /*_________________________________________________*/
+
+        void
+        writeSpline(uint __numLoc, data_geo_ptrtype __dg ,Loop __loop)
+        {
+            (*(boost::get<1>(*__dg)))[1][__numLoc] = boost::get<0>(*__dg)->cptLine();
+
+            std::ostringstream __ostr;
+            __ostr << "Spline(" << boost::get<0>(*__dg)->cptLine() //cptCircle
+                   << ") = {";
+
+            std::list<int>::const_iterator it= __loop.begin();
+            std::list<int>::const_iterator it_end= --__loop.end();
+            while (it!=it_end)
+                {
+                    __ostr << (*(boost::get<1>(*__dg)))[0][*it] <<"," ;
+                    ++it;
+                }
+            __ostr << (*(boost::get<1>(*__dg)))[0][*it] << "};\n";
+
+            boost::get<0>(*__dg)->updateOstr(__ostr.str());
+
+            ++boost::get<0>(*__dg)->_M_cptLine;
+        }
 
         /*_________________________________________________*/
 
@@ -1075,6 +1148,7 @@ namespace Life {
         writeLineLoop(uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop )
         {
              (*(boost::get<1>(*__dg)))[2][__numLoc] = boost::get<0>(*__dg)->cptLineLoop();
+
             std::ostringstream __ostr;
             __ostr << "Line Loop(" << boost::get<0>(*__dg)->cptLineLoop()
                    << ") = {" ;
@@ -1573,6 +1647,106 @@ namespace Life {
             writeCircle( 2, dg, 3, 2, 1);
 
             writeLineLoop( 1, dg, Loop()>>1>>2);
+
+            writePlaneSurface( 1, dg, 1);
+        }
+
+        void
+        runSpecial_1a(data_geo_ptrtype dg)
+        {
+            double yh=1.0;
+            Node a1( 0.0, yh);
+            Node a2( 3.0, yh);
+            Node a3( 6.0, yh+0.7);
+            Node a4( 7.3, yh-0.5);
+            Node a5( 8.5, yh);
+            Node a6(11.0, yh);
+            double ep=0.3;
+            //_______________________________________________//
+            writePoint( 1, dg , a1(0), a1(1) );
+            writePoint( 2, dg , a2(0), a2(1) );
+            writePoint( 3, dg , a3(0), a3(1) );
+            writePoint( 4, dg , a4(0), a4(1) );
+            writePoint( 5, dg , a5(0), a5(1) );
+            writePoint( 6, dg , a6(0), a6(1) );
+
+            writeSpline( 1, dg, Loop()>>1>>2>>3>>4>>5>>6);
+
+            writePoint( 7, dg , a1(0), a1(1)+ep );
+            writePoint( 8, dg , a2(0), a2(1)+ep );
+            writePoint( 9, dg , a3(0), a3(1)+ep );
+            writePoint( 10, dg , a4(0), a4(1)+ep );
+            writePoint( 11, dg , a5(0), a5(1)+ep );
+            writePoint( 12, dg , a6(0), a6(1)+ep );
+
+            writeSpline( 2, dg, Loop()>>7>>8>>9>>10>>11>>12);
+
+            writeLine( 3, dg, 1,7);
+            writeLine( 4, dg, 6,12);
+
+            writeLineLoop( 1, dg, Loop()>>1>>4>>-2>>-3);
+            writePlaneSurface( 1, dg, 1);
+
+            writePoint( 13, dg , a1(0), -a1(1) );
+            writePoint( 14, dg , a2(0), -a2(1) );
+            writePoint( 15, dg , a3(0), -a3(1) );
+            writePoint( 16, dg , a4(0), -a4(1) );
+            writePoint( 17, dg , a5(0), -a5(1) );
+            writePoint( 18, dg , a6(0), -a6(1) );
+
+            writeSpline( 5, dg, Loop()>>13>>14>>15>>16>>17>>18);
+
+            writePoint( 19, dg , a1(0), -a1(1)-ep );
+            writePoint( 20, dg , a2(0), -a2(1)-ep );
+            writePoint( 21, dg , a3(0), -a3(1)-ep );
+            writePoint( 22, dg , a4(0), -a4(1)-ep );
+            writePoint( 23, dg , a5(0), -a5(1)-ep );
+            writePoint( 24, dg , a6(0), -a6(1)-ep );
+
+            writeSpline( 6, dg, Loop()>>19>>20>>21>>22>>23>>24);
+
+            writeLine( 7, dg, 13,19);
+            writeLine( 8, dg, 18,24);
+
+            writeLineLoop( 2, dg, Loop()>>5>>8>>-6>>-7);
+            writePlaneSurface( 2, dg, 2);
+
+        }
+
+        void
+        runSpecial_1b(data_geo_ptrtype dg)
+        {
+            double yh=1.0;
+            Node a1( 0.0, yh);
+            Node a2( 3.0, yh);
+            Node a3( 6.0, yh+0.7);
+            Node a4( 7.3, yh-0.5);
+            Node a5( 8.5, yh);
+            Node a6(11.0, yh);
+            double ep=0.3;
+            //_______________________________________________//
+            writePoint( 1, dg , a1(0), a1(1) );
+            writePoint( 2, dg , a2(0), a2(1) );
+            writePoint( 3, dg , a3(0), a3(1) );
+            writePoint( 4, dg , a4(0), a4(1) );
+            writePoint( 5, dg , a5(0), a5(1) );
+            writePoint( 6, dg , a6(0), a6(1) );
+
+            writeSpline( 1, dg, Loop()>>1>>2>>3>>4>>5>>6);
+
+            writePoint( 7, dg , a1(0), -a1(1) );
+            writePoint( 8, dg , a2(0), -a2(1) );
+            writePoint( 9, dg , a3(0), -a3(1) );
+            writePoint( 10, dg , a4(0), -a4(1) );
+            writePoint( 11, dg , a5(0), -a5(1) );
+            writePoint( 12, dg , a6(0), -a6(1) );
+
+            writeSpline( 2, dg, Loop()>>7>>8>>9>>10>>11>>12);
+
+            writeLine( 3, dg, 1,7);
+            writeLine( 4, dg, 6,12);
+
+            writeLineLoop( 1, dg, Loop()>>1>>4>>-2>>-3);
 
             writePlaneSurface( 1, dg, 1);
 
