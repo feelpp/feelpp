@@ -55,12 +55,20 @@ struct GetContext
 
     template<typename Lhs, typename Rhs>
     struct result<GetContext(Lhs,Rhs)>
+#if BOOST_VERSION < 104200
         : boost::remove_reference<Lhs>
+#else
+        : boost::remove_reference<Rhs>
+#endif
     {
 
         typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
         typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
+#if BOOST_VERSION < 104200
         typedef typename mpl::bitor_<mpl::size_t<lhs_noref_type::context>, rhs_noref_type >::type type;
+#else
+        typedef typename mpl::bitor_<mpl::size_t<rhs_noref_type::context>, lhs_noref_type >::type type;
+#endif
     };
 #if 0
     template<typename Expr1, typename Expr2>
@@ -70,7 +78,12 @@ struct GetContext
     };
 #endif
     template<typename Lhs, typename Rhs>
-    Lhs operator()(const Lhs& lhs, const Rhs& rhs) const
+#if BOOST_VERSION < 104200
+    Lhs
+#else
+    Rhs
+#endif
+    operator()(const Lhs& lhs, const Rhs& rhs) const
     {
         return lhs | rhs;
     }
@@ -82,18 +95,31 @@ struct GetImOrder
 
     template<typename Lhs, typename Rhs>
     struct result<GetImOrder(Lhs,Rhs)>
+#if BOOST_VERSION < 104200
         : boost::remove_reference<Lhs>
+#else
+        : boost::remove_reference<Rhs>
+#endif
     {
 
         typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
         typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
+#if BOOST_VERSION < 104200
         typedef typename boost::mpl::max< boost::mpl::size_t<lhs_noref_type::imorder>, rhs_noref_type >::type type;
+#else
+        typedef typename boost::mpl::max< boost::mpl::size_t<rhs_noref_type::imorder>, lhs_noref_type >::type type;
+#endif
     };
 
     template<typename Lhs, typename Rhs>
-    Lhs operator()(const Lhs& lhs, const Rhs& rhs) const
-    {
- 	}
+#if BOOST_VERSION < 104200
+    Lhs
+#else
+    Rhs
+#endif
+    operator()(const Lhs& lhs, const Rhs& rhs) const
+        {
+        }
 };
 struct GetImIsPoly
 {
@@ -102,18 +128,31 @@ struct GetImIsPoly
 
     template<typename Lhs, typename Rhs>
     struct result<GetImIsPoly(Lhs,Rhs)>
+#if BOOST_VERSION < 104200
         : boost::remove_reference<Lhs>
+#else
+        : boost::remove_reference<Rhs>
+#endif
     {
 
         typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
         typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
+#if BOOST_VERSION < 104200
         typedef typename boost::mpl::and_< boost::mpl::bool_<lhs_noref_type::imIsPoly>, rhs_noref_type >::type type;
+#else
+        typedef typename boost::mpl::and_< boost::mpl::bool_<rhs_noref_type::imIsPoly>, lhs_noref_type >::type type;
+#endif
     };
 
     template<typename Lhs, typename Rhs>
-    Lhs operator()(const Lhs& lhs, const Rhs& rhs) const
-    {
- 	}
+#if BOOST_VERSION < 104200
+    Lhs
+#else
+    Rhs
+#endif
+    operator()(const Lhs& lhs, const Rhs& rhs) const
+        {
+        }
 };
 template<typename Func>
 struct ExprHasTestFunction
@@ -123,23 +162,36 @@ struct ExprHasTestFunction
 
     template<typename Lhs, typename Rhs>
     struct result<ExprHasTestFunction(Lhs,Rhs)>
+#if BOOST_VERSION < 104200
         : boost::remove_reference<Lhs>
+#else
+        : boost::remove_reference<Rhs>
+#endif
     {
 
         typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
         typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
+#if BOOST_VERSION < 104200
         typedef typename mpl::or_<mpl::bool_<lhs_noref_type::template HasTestFunction<Func>::result>, rhs_noref_type >::type type;
+#else
+        typedef typename mpl::or_<mpl::bool_<rhs_noref_type::template HasTestFunction<Func>::result>, lhs_noref_type >::type type;
+#endif
     };
     template<typename Lhs, typename Rhs>
-    Lhs operator()(const Lhs& lhs, const Rhs& rhs) const
-    {
-#if 0
-        typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
-        typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
-        return ( lhs_noref_type::template ExprHasTestFunction<Func>::result ||
-                 lhs_noref_type::template ExprHasTestFunction<Func>::result );
+#if BOOST_VERSION < 104200
+    Lhs
+#else
+    Rhs
 #endif
-    }
+    operator()(const Lhs& lhs, const Rhs& rhs) const
+        {
+#if 0
+            typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
+            typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
+            return ( lhs_noref_type::template ExprHasTestFunction<Func>::result ||
+                     lhs_noref_type::template ExprHasTestFunction<Func>::result );
+#endif
+        }
 };
 template<typename Func>
 struct ExprHasTrialFunction
@@ -149,21 +201,34 @@ struct ExprHasTrialFunction
 
     template<typename Lhs, typename Rhs>
     struct result<ExprHasTrialFunction(Lhs,Rhs)>
+#if BOOST_VERSION < 104200
         : boost::remove_reference<Lhs>
+#else
+        : boost::remove_reference<Rhs>
+#endif
     {
 
         typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
         typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
+#if BOOST_VERSION < 104200
         typedef typename mpl::or_<mpl::bool_<lhs_noref_type::template HasTrialFunction<Func>::result>, rhs_noref_type >::type type;
+#else
+        typedef typename mpl::or_<mpl::bool_<rhs_noref_type::template HasTrialFunction<Func>::result>, lhs_noref_type >::type type;
+#endif
     };
     template<typename Lhs, typename Rhs>
-    Lhs operator()(const Lhs& lhs, const Rhs& rhs) const
-    {
-#if 0
-        return ( Lhs::template HasTrialFunction<Func>::result ||
-                 Rhs::template HasTrialFunction<Func>::result );
+#if BOOST_VERSION < 104200
+    Lhs
+#else
+    Rhs
 #endif
-    }
+    operator()(const Lhs& lhs, const Rhs& rhs) const
+        {
+#if 0
+            return ( Lhs::template HasTrialFunction<Func>::result ||
+                     Rhs::template HasTrialFunction<Func>::result );
+#endif
+        }
 };
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
 struct initialize_expression_gij
@@ -345,7 +410,11 @@ struct evaluate_expression_gij
     struct result;
 
     template<typename ExprT, typename V>
+#if BOOST_VERSION < 104200
     struct result<evaluate_expression_gij<IndexI,IndexJ,T>(ExprT,V)>
+#else
+    struct result<evaluate_expression_gij<IndexI,IndexJ,T>(V,ExprT)>
+#endif
         :
         boost::remove_reference<V>
     {};
@@ -374,7 +443,11 @@ struct evaluate_expression_gij
 
     template <typename ExprT>
     T
+#if BOOST_VERSION < 104200
     operator()(ExprT const& expr, T const& res ) const
+#else
+    operator()( T const& res, ExprT const& expr ) const
+#endif
     {
         T ret = res;
 
@@ -399,7 +472,11 @@ struct evaluate_expression_gi
     struct result;
 
     template<typename ExprT,typename V>
+#if BOOST_VERSION < 104200
     struct result<evaluate_expression_gi<IndexI,T>(ExprT,V)>
+#else
+    struct result<evaluate_expression_gi<IndexI,T>(V,ExprT)>
+#endif
         :
         boost::remove_reference<V>
     {};
@@ -426,7 +503,11 @@ struct evaluate_expression_gi
     {}
     template <typename ExprT>
     T
+#if BOOST_VERSION < 104200
     operator()( ExprT const& expr, T const& res ) const
+#else
+    operator()( T const& res, ExprT const& expr ) const
+#endif
     {
         T ret = res;
 
@@ -451,7 +532,11 @@ struct evaluate_expression_g
     struct result;
 
     template<typename ExprT,typename V>
+#if BOOST_VERSION < 104200
     struct result<evaluate_expression_g<T>(ExprT,V)>
+#else
+    struct result<evaluate_expression_g<T>(V,ExprT)>
+#endif
         :
         boost::remove_reference<V>
     {};
@@ -477,7 +562,11 @@ struct evaluate_expression_g
 
     template <typename ExprT>
     T
+#if BOOST_VERSION < 104200
     operator()(ExprT const& expr, T const& res ) const
+#else
+    operator()( T const& res, ExprT const& expr ) const
+#endif
     {
         T ret = res;
 
