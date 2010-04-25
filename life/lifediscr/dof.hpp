@@ -130,6 +130,10 @@ public:
     /// \return the marker
     Marker1 marker() const { return this->get<4>(); }
 
+    /**
+     * \return the coordinates
+     */
+    ublas::vector<double> const& coords() const { return M_coords; }
 
     //@}
 
@@ -137,8 +141,16 @@ public:
      */
     //@{
 
-
+    /**
+     * dof coordinates
+     */
+    void
+    setCoordinates( ublas::vector<double> const& coords )
+        {
+            M_coords = coords;
+        }
     //@}
+
 
     /** @name  Methods
      */
@@ -152,7 +164,7 @@ public:
 protected:
 
 private:
-
+    ublas::vector<double> M_coords;
 };
 
 typedef multi_index::multi_index_container<
