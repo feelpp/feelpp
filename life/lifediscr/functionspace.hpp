@@ -461,6 +461,7 @@ struct InitializeSpace
 };
 struct NbDof
 {
+    typedef size_type result_type;
     NbDof( size_type start = 0, size_type size = invalid_size_type_value )
         :
         _M_cursor( start ),
@@ -485,6 +486,13 @@ struct NbDof
             ret += x->nDof();
         ++_M_cursor;
         return ret;
+    }
+
+    template <typename T>
+    size_type
+    operator()(size_type s, T const& x ) const
+    {
+        return this->operator()( x, s );
     }
 private:
     mutable size_type _M_cursor;
@@ -515,6 +523,12 @@ struct NLocalDof
             ret += x->nLocalDof();
         ++_M_cursor;
         return ret;
+    }
+    template <typename T>
+    size_type
+    operator()(size_type s, T const& x ) const
+    {
+        return this->operator()( x, s );
     }
 private:
     mutable size_type _M_cursor;
@@ -597,6 +611,12 @@ struct searchIndicesBySpace
     {
         return getIndicesFromSpace(fspace,t);
     }
+    template <typename T>
+    map_type
+    operator()(map_type t, T const& fspace ) const
+        {
+            return this->operator()( fspace, t );
+        }
 };
 
 
