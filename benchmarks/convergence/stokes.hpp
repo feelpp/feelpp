@@ -126,13 +126,6 @@ public:
 
     static const uint16_type OrderU = _OrderU;
     static const uint16_type OrderP = _OrderP;
-#if 0
-    BOOST_MPL_ASSERT_MSG(
-        ((OrderU == OrderP-1) || (OrderU == OrderP-2) || (OrderU==OrderP))
-        , ORDER_VELOCITY_AND_ORDER_PRESSURE_INCOMPATIBLE
-        , (mpl::int_<OrderU>,mpl::int_<OrderP>)
-        );
-#endif // 0
     static const bool is_equal_order = (OrderU==OrderP);
 
     typedef double value_type;
@@ -154,11 +147,6 @@ public:
     typedef Lagrange<OrderP, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
-#if 0
-    typedef Product<Expansion<Continuous,basis_u_type>,
-                    Expansion<Continuous,basis_p_type>,
-                    Expansion<Continuous,basis_l_type> > basis_type;
-#endif
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     BOOST_MPL_ASSERT( ( boost::is_same<typename space_type::bases_list, basis_type> ) );
@@ -166,6 +154,7 @@ public:
     BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<1> >::type, basis_p_type> ) );
     BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<2> >::type, basis_l_type> ) );
     typedef boost::shared_ptr<space_type> space_ptrtype;
+
     /* functions */
     typedef typename space_type::element_type element_type;
     typedef typename element_type::template sub_element<0>::type element_0_type;
@@ -175,55 +164,7 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
 
-    Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
-        :
-        super( argc, argv, ad, od ),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
-    {
-
-        mu = this->vm()["mu"].template as<value_type>();
-        Parameter h;
-        switch( OrderU )
-        {
-        case 1:
-        case 2:
-            h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.02:0.025:0.06" );
-            break;
-
-        case 3:
-            h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.035:0.025:0.06" );
-            break;
-        }
-        this->
-            //addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu", _values=boost::lexical_cast<std::string>( mu ).c_str()))
-            addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
-            .addParameter( Parameter(_name="orderU",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderU  ).c_str()) )
-            .addParameter( Parameter(_name="orderP",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderP  ).c_str()) )
-            .addParameter( h );
-
-        std::vector<Parameter> depend;
-        std::vector<std::string> funcs;
-        depend.push_back(h);
-        std::ostringstream oss;
-        oss << "h**" << boost::lexical_cast<std::string>( OrderP+1  );
-        funcs.push_back(oss.str());
-        oss.str("");
-        std::vector<std::string> funcs2;
-        oss << "h**" << boost::lexical_cast<std::string>( OrderP+1 ) ;
-        funcs2.push_back(oss.str());
-
-        this->
-            addOutput( Output(_name="norm_H1_u",_latex="\\left\\| u \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs) )
-            .addOutput( Output(_name="norm_L2_p",_latex="\\left\\| p \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs2) );
-
-
-        M_lambda = 1./(2.*mu) - math::sqrt( 1./(4.*mu*mu) + 4.*M_PI*M_PI);
-        penalbc = this->vm()["bccoeff"].template as<value_type>();
-        M_beta = this->vm()["beta"].template as<value_type>();
-    }
-
+    Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od );
 
     /**
      * run the convergence test
@@ -252,8 +193,60 @@ private:
 }; // Stokes
 
 template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
+Stokes<Dim, _OrderU, _OrderP, Entity>::Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    :
+    super( argc, argv, ad, od ),
+    M_backend( backend_type::build( this->vm() ) ),
+    meshSize( this->vm()["hsize"].template as<double>() ),
+    exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
+{
+
+    mu = this->vm()["mu"].template as<value_type>();
+    Parameter h;
+    switch( OrderU )
+    {
+    case 1:
+    case 2:
+        h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.02:0.025:0.06" );
+        break;
+
+    case 3:
+        h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.035:0.025:0.06" );
+        break;
+    }
+    this->
+        //addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu", _values=boost::lexical_cast<std::string>( mu ).c_str()))
+        addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
+        .addParameter( Parameter(_name="orderU",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderU  ).c_str()) )
+        .addParameter( Parameter(_name="orderP",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderP  ).c_str()) )
+        .addParameter( h );
+
+    std::vector<Parameter> depend;
+    std::vector<std::string> funcs;
+    depend.push_back(h);
+    std::ostringstream oss;
+    oss << "h**" << boost::lexical_cast<std::string>( OrderP+1  );
+    funcs.push_back(oss.str());
+    oss.str("");
+    std::vector<std::string> funcs2;
+    oss << "h**" << boost::lexical_cast<std::string>( OrderP+1 ) ;
+    funcs2.push_back(oss.str());
+
+    this->
+        addOutput( Output(_name="norm_H1_u",_latex="\\left\\| u \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs) )
+        .addOutput( Output(_name="norm_L2_p",_latex="\\left\\| p \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs2) );
+
+
+    M_lambda = 1./(2.*mu) - math::sqrt( 1./(4.*mu*mu) + 4.*M_PI*M_PI);
+    penalbc = this->vm()["bccoeff"].template as<value_type>();
+    M_beta = this->vm()["beta"].template as<value_type>();
+}
+
+
+
+template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-    Stokes<Dim, _OrderU, _OrderP, Entity>::run()
+Stokes<Dim, _OrderU, _OrderP, Entity>::run()
 {
     this->//addParameterValue( mu )
         addParameterValue( Dim )
@@ -319,7 +312,7 @@ void
     // viscous stress tensor (trial) : 0.5 ( \nabla u + \nabla u ^T )
     AUTO( deft, 0.5*(gradt(u)+trans(gradt(u)) ));
     /x/ viscous stress tensor (test) : 0.5 ( \nabla u + \nabla u ^T )
-    AUTO( def, 0.5*(grad(v)+trans(grad(v))) );
+         AUTO( def, 0.5*(grad(v)+trans(grad(v))) );
 #else
     AUTO( deft, gradt(u) );
     AUTO( def, grad(v) );
@@ -347,8 +340,8 @@ void
     AUTO( convection, grad_exact*beta);
 
     AUTO( p_exact_kov, val((1-exp(2.*M_lambda*Px()))/2.0) );
-    double pmeas = integrate( elements(mesh), _Q<OrderU>(), constant(1.) ).evaluate()( 0, 0 );
-    double pmean = integrate( elements(mesh), _Q<OrderU>(), p_exact_kov ).evaluate()( 0, 0 )/pmeas;
+    double pmeas = integrate( elements(mesh), constant(1.) ).evaluate()( 0, 0 );
+    double pmean = integrate( elements(mesh), p_exact_kov ).evaluate()( 0, 0 )/pmeas;
     AUTO( p_exact, p_exact_kov-pmean );
 
     AUTO( f1, val(exp( M_lambda * Px() )*((M_lambda*M_lambda - 4.*pi*pi)*mu*cos(2.*pi*Py()) - M_lambda*exp( M_lambda * Px() ))) );
@@ -394,24 +387,18 @@ void
     Log() << "[assembly] add diffusion terms\n";
     form2( Xh, Xh, D, _init=true, _pattern=pattern );
     Log() << "[assembly] form2 D init in " << t.elapsed() << "s\n"; t.restart();
-    form2( Xh, Xh, D )+=
-        integrate( elements(mesh),
-                   mu*trace(deft*trans(def)) +
-                   trans(gradt(u)*idv(v))*id(v) );
+    form2( Xh, Xh, D )+= integrate( elements(mesh), mu*trace(deft*trans(def)) + trans(gradt(u)*idv(v))*id(v) );
     Log() << "[assembly] form2 D convection and viscous terms in " << t.elapsed() << "s\n"; t.restart();
     Log() << "[assembly] add velocity/pressure terms\n";
-    form2( Xh, Xh, D )+=integrate( elements(mesh),
-                                   - div(v)*idt(p) + divt(u)*id(q) );
+    form2( Xh, Xh, D )+=integrate( elements(mesh),- div(v)*idt(p) + divt(u)*id(q) );
     Log() << "[assembly] form2 D velocity/pressure terms in " << t.elapsed() << "s\n"; t.restart();
     Log() << "[assembly] add lagrange multipliers terms for zero mean pressure\n";
-    form2( Xh, Xh, D )+=integrate( elements(mesh),
-                                   id(q)*idt(lambda) + idt(p)*id(nu) );
+    form2( Xh, Xh, D )+=integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
     Log() << "[assembly] form2 D pressure/multipliers terms in " << t.elapsed() << "s\n"; t.restart();
-     Log() << "[assembly] add terms for weak Dirichlet condition handling\n";
-    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh),
-                                   -trans(SigmaNt)*id(v)
-                                   -trans(SigmaN)*idt(u)
-                                   +penalbc*trans(idt(u))*id(v)/hFace() );
+    Log() << "[assembly] add terms for weak Dirichlet condition handling\n";
+    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaNt)*id(v) );
+    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaN)*idt(u) );
+    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*trans(idt(u))*id(v)/hFace() );
     Log() << "[assembly] form2 D boundary terms in " << t.elapsed() << "s\n"; t.restart();
     if ( is_equal_order && this->vm()["stab"].template as<bool>() )
     {
