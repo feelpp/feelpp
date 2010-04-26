@@ -471,7 +471,11 @@ struct NbDof
     struct result;
 
     template<typename T, typename S>
+#if BOOST_VERSION < 104200
     struct result<NbDof(T,S)>
+#else
+    struct result<NbDof(S,T)>
+#endif
         :
         boost::remove_reference<S>
     {};
@@ -510,7 +514,11 @@ struct NLocalDof
     struct result;
 
     template<typename T, typename S>
+#if BOOST_VERSION < 104200
     struct result<NLocalDof(T,S)>
+#else
+    struct result<NLocalDof(S,T)>
+#endif
         :
         boost::remove_reference<S>
     {};
