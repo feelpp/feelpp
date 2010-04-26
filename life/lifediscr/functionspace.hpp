@@ -561,7 +561,11 @@ struct searchIndicesBySpace
     struct result;
 
     template<typename T, typename M>
+#if BOOST_VERSION < 104200
     struct result<searchIndicesBySpace(T,M)>
+#else
+    struct result<searchIndicesBySpace(M,T)>
+#endif
         :
         boost::remove_reference<M>
     {};
@@ -612,19 +616,16 @@ struct searchIndicesBySpace
 
         return t;
     }
-
     template <typename T>
     map_type
+#if BOOST_VERSION < 104200
     operator()(T const& fspace, map_type t ) const
+#else
+    operator()(map_type t, T const& fspace ) const
+#endif
     {
         return getIndicesFromSpace(fspace,t);
     }
-    template <typename T>
-    map_type
-    operator()(map_type t, T const& fspace ) const
-        {
-            return this->operator()( fspace, t );
-        }
 };
 
 
