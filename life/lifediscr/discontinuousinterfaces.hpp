@@ -146,7 +146,11 @@ public:
             M_dof( D )
         {}
         template<typename T>
+#if BOOST_VERSION < 104200
         result_type operator()(const T& t, const size_type& start )
+#else
+        result_type operator()( const size_type& start, const T& t )
+#endif
         {
             boost::tuple<size_type,size_type,size_type> disc = boost::make_tuple( mpl::at<T,mpl::int_<0> >::type::value,
                                                                                   mpl::at<T,mpl::int_<1> >::type::value,
