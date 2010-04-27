@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-12-19
 
-  Copyright (C) 2007-2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -178,43 +178,48 @@ struct test_interpolation
 
 };
 
-template<int Dim, int Order, int RDim, typename value_type = double>
+template<int Dim, int Order, int RDim, int GeoOrder=1, typename value_type = double>
 struct test_interpolation_op
 {
-    typedef typename imesh<Dim>::type mesh_type;
+    typedef typename imesh<Dim, GeoOrder>::type mesh_type;
     test_interpolation_op( double meshSize_=DEFAULT_MESH_SIZE )
         :
         meshSize(meshSize_),
-        mesh( createMesh<Dim,1,Dim>( meshSize ) )
+        mesh( createMesh<Dim,GeoOrder,Dim>( meshSize ) )
     {}
     void operator()()
     {
         using namespace Life;
         using namespace Life::vf;
 
-        Debug() << "[test_interpolation_op]   nDim : " << Dim << "\n";
-        Debug() << "[test_interpolation_op] nOrder : " << Order << "\n";
+        Log() << "[test_interpolation_op]   nDim : " << Dim << "\n";
+        Log() << "[test_interpolation_op] nOrder : " << Order << "\n";
 
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 
-        typedef fusion::vector<Lagrange<Order+2, Scalar> > basis_type;
+        typedef fusion::vector<Lagrange<Order+2+GeoOrder-1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
 
         typename space_type::element_type u( Xh, "u" );
 
-        u = project( Xh, elements(*mesh), Px() );
+        AUTO(u_exact, Px()*Px() );
+        u = project( Xh, elements(*mesh), u_exact);
 
-        typename imesh<Dim,1,RDim>::ptrtype mesh1( createMesh<Dim,1,RDim>( meshSize/2 ) );
+        typename imesh<Dim,GeoOrder,RDim>::ptrtype mesh1( createMesh<Dim,GeoOrder,RDim>( meshSize/2 ) );
 
-        typedef fusion::vector<Lagrange<Order, Scalar> > imagebasis_type;
+        typedef fusion::vector<Lagrange<Order+GeoOrder-1, Scalar> > imagebasis_type;
         typedef FunctionSpace<mesh_type, imagebasis_type> imagespace_type;
         boost::shared_ptr<imagespace_type> Yh( new imagespace_type(mesh1) );
         typename imagespace_type::element_type v( Yh, "v" );
 
         typedef Backend<double> backend_type;
         typedef boost::shared_ptr<backend_type> backend_ptrtype;
+#if defined( HAVE_PETSC_H )
+        backend_ptrtype backend( Backend<double>::build( BACKEND_PETSC ) );
+#else
         backend_ptrtype backend( Backend<double>::build( BACKEND_GMM ) );
+#endif
         OperatorInterpolation<space_type, imagespace_type> I( Xh, Yh, backend );
 
 
@@ -227,10 +232,10 @@ struct test_interpolation_op
         typename imagespace_type::element_type w( Yh, "w" );
         w = fsv.container();
         //std::cout << "w=" << w << "\n";
-        value_type xw = math::sqrt( integrate( elements( mesh1 ), IM<Dim,Order,value_type,Simplex>(), (Px()-idv(w))*(Px()-idv(w)) ).evaluate()( 0, 0 ) );
-        value_type vw = math::sqrt( integrate( elements( mesh1 ), IM<Dim,Order,value_type,Simplex>(), (idv(v)-idv(w))*(idv(v)-idv(w)) ).evaluate()( 0, 0) );
-        Debug() << "[test_interpolation_op] ||x-w||_2 = " << xw << "\n";
-        Debug() << "[test_interpolation_op] ||v-w||_2 = " << vw << "\n";
+        value_type xw = math::sqrt( integrate( elements( mesh1 ), (u_exact-idv(w))*(u_exact-idv(w)) ).evaluate()( 0, 0 ) );
+        value_type vw = math::sqrt( integrate( elements( mesh1 ), (idv(v)-idv(w))*(idv(v)-idv(w)) ).evaluate()( 0, 0) );
+        Log() << "[test_interpolation_op] ||x-w||_2 = " << xw << "\n";
+        Log() << "[test_interpolation_op] ||v-w||_2 = " << vw << "\n";
 
         std::ostringstream ostr;
         ostr << "ointerpu-" << Dim << "." << Order;
@@ -262,10 +267,10 @@ struct test_interpolation_op_2
         using namespace Life;
         using namespace Life::vf;
 
-        Debug() << "[test_interpolation_op_2] domain   nDim : " << DimDomain << "\n";
-        Debug() << "[test_interpolation_op_2] domain nOrder : " << OrderDomain << "\n";
-        Debug() << "[test_interpolation_op_2]  image   nDim : " << DimImage << "\n";
-        Debug() << "[test_interpolation_op_2]  image nOrder : " << OrderImage << "\n";
+        Log() << "[test_interpolation_op_2] domain   nDim : " << DimDomain << "\n";
+        Log() << "[test_interpolation_op_2] domain nOrder : " << OrderDomain << "\n";
+        Log() << "[test_interpolation_op_2]  image   nDim : " << DimImage << "\n";
+        Log() << "[test_interpolation_op_2]  image nOrder : " << OrderImage << "\n";
 
 
 
@@ -303,8 +308,8 @@ struct test_interpolation_op_2
         //std::cout << "w=" << w << "\n";
         value_type xw = math::sqrt( integrate( elements( mesh1 ), IM<Dim,Order,value_type,Simplex>(), (Px()-idv(w))*(Px()-idv(w)) ).evaluate()( 0, 0 ) );
         value_type vw = math::sqrt( integrate( elements( mesh1 ), IM<Dim,Order,value_type,Simplex>(), (idv(v)-idv(w))*(idv(v)-idv(w)) ).evaluate()( 0, 0) );
-        Debug() << "[test_interpolation_op] ||x-w||_2 = " << xw << "\n";
-        Debug() << "[test_interpolation_op] ||v-w||_2 = " << vw << "\n";
+        Log() << "[test_interpolation_op] ||x-w||_2 = " << xw << "\n";
+        Log() << "[test_interpolation_op] ||v-w||_2 = " << vw << "\n";
 
         std::ostringstream ostr;
         ostr << "ointerpu-" << Dim << "." << Order;
@@ -335,8 +340,8 @@ struct test_lagrange_p1_op
     {
         using namespace Life;
         using namespace Life::vf;
-        Debug() << "[test_lagrange_p1_op]   nDim : " << Dim << "\n";
-        Debug() << "[test_lagrange_p1_op] nOrder : " << Order << "\n";
+        Log() << "[test_lagrange_p1_op]   nDim : " << Dim << "\n";
+        Log() << "[test_lagrange_p1_op] nOrder : " << Order << "\n";
 
 
 
@@ -359,7 +364,11 @@ struct test_lagrange_p1_op
 #endif
 
         typedef Backend<value_type> backend_type;
+#if defined( HAVE_PETSC_H )
+        boost::shared_ptr<backend_type> backend( backend_type::build( BACKEND_PETSC ) );
+#else
         boost::shared_ptr<backend_type> backend( backend_type::build( BACKEND_GMM ) );
+#endif
         OperatorLagrangeP1<space_type> I( Xh, backend );
         typedef typename OperatorLagrangeP1<space_type>::dual_image_space_type::mesh_type image_mesh_type;
         typename OperatorLagrangeP1<space_type>::dual_image_space_ptrtype Yh( I.dualImageSpace() );
@@ -377,12 +386,12 @@ struct test_lagrange_p1_op
         value_type xw = math::sqrt( integrate( elements( Yh->mesh() ),
                                                IM<Dim,2*Order,value_type,Simplex>(),
                                                (Px()-idv(w))*(Px()-idv(w)) ).evaluate()( 0, 0 ) );
-        Debug() << "[test_lagrange_p1_op] ||x-w||_2 = " << xw << "\n";
+        Log() << "[test_lagrange_p1_op] ||x-w||_2 = " << xw << "\n";
         e=w;
         e.setName( (boost::format( "e_%1%.%2%.%3% " ) % Dim % Order % GeoOrder ).str() );
         e-=u;
         //std::cout << "e=" << e << "\n";
-        Debug() << "[test_lagrange_p1_op] ||x-w||_infty = " << e.linftyNorm() << "\n";
+        Log() << "[test_lagrange_p1_op] ||x-w||_infty = " << e.linftyNorm() << "\n";
 
         yy = project( Yh, elements(Yh->mesh()), Px() );
         std::ostringstream ostr;
@@ -459,14 +468,14 @@ main( int argc, char** argv )
     Life::Application mpiapp( argc, argv, makeAbout(), makeOptions() );
     Life::Assert::setLog( "test_interpolation.assert");
 
-#if 0
-    test_interpolation_op<1,1> t( mpiapp->vm()["hsize"].as<double>() );
+#if 1
+    test_interpolation_op<1,1,1,1> t( mpiapp.vm()["hsize"].as<double>() );
     t();
-    test_interpolation_op<2,1> t21( mpiapp->vm()["hsize"].as<double>() );
+    test_interpolation_op<2,1,2,1> t21( mpiapp.vm()["hsize"].as<double>() );
     t21();
 
 
-    test_interpolation_op<3,1> t31( mpiapp->vm()["hsize"].as<double>() );
+    test_interpolation_op<3,1,3,1> t31( mpiapp.vm()["hsize"].as<double>() );
     t31();
 #else
     //test_interpolation<2,1,2> t212( mpiapp.vm()["hsize"].as<double>() );
