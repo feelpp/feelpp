@@ -62,7 +62,11 @@ public:
 
     FsFunctionalLinear( space_ptrtype space ) :
         super_type( space ),
+#if defined( HAVE_PETSC_H )
+        M_backend( backend_type::build( BACKEND_PETSC ) ),
+#else
         M_backend( backend_type::build( BACKEND_GMM ) ),
+#endif
         M_vector( M_backend->newVector( space->map() ) )
     {
     }
