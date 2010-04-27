@@ -146,9 +146,9 @@ public:
 
         Parameter h;
         if ( N < 4 )
-            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="h",_values="0.05:0.05:0.2" );
+            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.05:0.05:0.2" );
         else
-            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="h",_values="0.5:0.5:2" );
+            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.5:0.5:2" );
         this->addParameter( Parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( N  ).c_str() ) )
             .addParameter( h );
 
