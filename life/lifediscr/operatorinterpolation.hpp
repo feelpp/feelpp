@@ -210,8 +210,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
     Debug( 5034 ) << "domain ndof = " <<  this->domainSpace()->nDof() << "\n";
     Debug( 5034 ) << "image ndof = " <<  this->dualImageSpace()->nDof() << "\n";
 
+#if 0
     this->mat().setInitialized( true );
     this->mat().init( this->dualImageSpace()->nDof(), this->domainSpace()->nDof(), 0, 0, 0, 0 );
+#endif
 
     Debug( 5034 ) << "matrix size1 = " <<  this->mat().size1() << "\n";
     Debug( 5034 ) << "matrix size2 = " <<  this->mat().size2() << "\n";
@@ -239,7 +241,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
                                             size_type i =  boost::get<0>(imagedof->localToGlobal( it->id(), iloc, comp ));
                                             size_type j =  boost::get<0>(domaindof->localToGlobal( it->id(), jloc, comp ));
                                             value_type v = Mloc( image_basis_type::nLocalDof*comp + iloc, domain_basis_type::nLocalDof*comp + jloc );
-                                            std::cout << "value ( " << i << ", " << j << ")=" << v << "\n";
+                                            //std::cout << "value ( " << i << ", " << j << ")=" << v << "\n";
                                             this->mat().set( i, j, v );
                                         }
                                 }

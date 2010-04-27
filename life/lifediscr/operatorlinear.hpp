@@ -70,7 +70,11 @@ public:
     OperatorLinear()
         :
         super_type(),
+#if defined( HAVE_PETSC_H )
+        M_backend( backend_type::build( BACKEND_PETSC ) ),
+#else
         M_backend( backend_type::build( BACKEND_GMM ) ),
+#endif
         M_matrix()
     {}
     OperatorLinear( OperatorLinear const& ol, bool deep_copy = false )
