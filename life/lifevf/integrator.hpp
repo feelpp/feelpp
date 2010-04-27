@@ -39,7 +39,7 @@
 
 #include <life/lifemesh/filters.hpp>
 #include <life/lifepoly/quadmapped.hpp>
-
+#include <life/lifevf/formcontextbase.hpp>
 #if defined( HAVE_GOOGLE_PROFILER_H )
 #include <google/profiler.h>
 #endif
@@ -373,14 +373,16 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
 
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
     typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
+    typedef detail::FormContextBase<map_gmc_type,im_type> fcb_type;
+    typedef boost::shared_ptr<fcb_type> fcb_ptrtype;
     typedef typename form_context_type::value_type value_type;
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
 
-    form_context_type formc( __form,
-                             mapgmc,
-                             this->expression(),
-                             this->im() );
+    fcb_ptrtype formc( new form_context_type( __form,
+                                              mapgmc,
+                                              this->expression(),
+                                              this->im() ) );
 
     //int nelt = std::distance( this->beginElement(), this->endElement() );
     boost::timer ti0,ti1, ti2, ti3;
@@ -409,17 +411,17 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
 #endif
             ti1.restart();
             map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-            formc.update( mapgmc );
+            formc->update( mapgmc );
             //Debug( 5065 )  << "update gmc : " << ti1.elapsed() << "\n";
             t1+=ti1.elapsed();
 
             ti2.restart();
-            formc.integrate();
+            formc->integrate();
             //Debug( 5065 )  << "integrate : " << ti2.elapsed() << "\n";
             t2+=ti2.elapsed();
 
             ti3.restart();
-            formc.assemble( it->id() );
+            formc->assemble();
             //Debug( 5065 )  << "assemble : " << ti3.elapsed() << "\n";
             t3+=ti3.elapsed();
 #else
@@ -570,7 +572,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
                     t2 += ti2.elapsed();
 
                     ti3.restart();
-                    form2->assemble( it->element0().id(),  it->element1().id());
+                    form2->assemble();
                     t3 += ti3.elapsed();
                 }
             else
