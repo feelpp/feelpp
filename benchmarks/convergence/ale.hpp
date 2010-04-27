@@ -62,7 +62,7 @@ makeOptions()
 {
     Life::po::options_description meshHighOrderoptions("TestALE options");
     meshHighOrderoptions.add_options()
-        ("h", Life::po::value<double>()->default_value( 2 ), "meshsize")
+        ("hsize", Life::po::value<double>()->default_value( 2 ), "meshsize")
         ;
 
     return meshHighOrderoptions.add( Life::life_options() );
@@ -142,7 +142,7 @@ public:
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         M_backend( backend_type::build( this->vm() ) )
     {
-        meshSize = this->vm()["h"].template as<double>();
+        meshSize = this->vm()["hsize"].template as<double>();
 
         Parameter h;
         if ( N < 4 )
@@ -212,7 +212,7 @@ void
 TestALE<N>::run()
 {
     this->addParameterValue( N )
-        .addParameterValue( this->vm()["h"].template as<double>() );
+        .addParameterValue( this->vm()["hsize"].template as<double>() );
 
     if (this->preProcessing() == RUN_EXIT) return;
 
