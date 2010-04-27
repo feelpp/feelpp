@@ -370,11 +370,15 @@ struct scalings
         :
         _M_s( N+1,  pts.size() )
     {
+#if 0
         ublas::vector<value_type> one( ublas::scalar_vector<value_type>( pts.size(), 1.0 ) );
         ublas::row( _M_s, 0 ) = one;
+#else
+        ublas::row( _M_s, 0 ) = ublas::scalar_vector<value_type>( pts.size(), 1.0 );
+#endif
         if ( N > 0 )
         {
-            ublas::row( _M_s, 1 ) = 0.5 * ( one - pts );
+            ublas::row( _M_s, 1 ) = 0.5 * ( ublas::row( _M_s, 0 ) - pts );
             for ( uint16_type k = 2; k < N+1; ++k )
             {
                 ublas::row( _M_s, k ) = ublas::element_prod( ublas::row( _M_s, k-1 ),
