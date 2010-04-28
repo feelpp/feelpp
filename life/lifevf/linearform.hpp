@@ -124,22 +124,29 @@ public:
              typename ExprT,
              typename IM
              >
-    class Context : public FormContextBase<GeomapContext, IM>
+    class Context //: public FormContextBase<GeomapContext, IM>
     {
         typedef FormContextBase<GeomapContext, IM> super;
-    public:
+
+public:
+
         typedef Context<GeomapContext,ExprT,IM> form_context_type;
         typedef LinearForm<SpaceType,VectorType, ElemContType> form_type;
         typedef typename SpaceType::dof_type dof_type;
         typedef typename form_type::value_type value_type;
 
 
-
+#if 0
         typedef GeomapContext map_geometric_mapping_context_type;
         typedef typename fusion::result_of::value_at_key<GeomapContext,gmc<0> >::type geometric_mapping_context_ptrtype;
         typedef typename geometric_mapping_context_ptrtype::element_type geometric_mapping_context_type;
         typedef typename geometric_mapping_context_type::gm_type geometric_mapping_type;
-
+#else
+        typedef typename super::map_geometric_mapping_context_type map_geometric_mapping_context_type;
+        typedef typename super::geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
+        typedef typename super::geometric_mapping_context_type geometric_mapping_context_type;
+        typedef typename super::geometric_mapping_type geometric_mapping_type;
+#endif
 
         static const uint16_type nDim = geometric_mapping_type::nDim;
 
@@ -156,15 +163,24 @@ public:
                                                             geometric_mapping_type,
                                                             mesh_element_type> test_fecontext_type;
         typedef test_fecontext_type trial_fecontext_type;
+
+#if 0
         typedef mpl::int_<fusion::result_of::template size<GeomapContext>::type::value> map_size;
+#else
+        typedef typename super::map_size map_size;
+#endif
 
         typedef boost::shared_ptr<test_fecontext_type> test_fecontext_ptrtype;
 
-
+#if 0
         typedef typename mpl::if_<mpl::equal_to<map_size,mpl::int_<2> >,
                                   gmc<1>,
                                   gmc<0> >::type gmc1;
+#else
+        typedef typename super::gmc1 gmc1;
+#endif
 
+#if 0
         typedef typename fusion::result_of::value_at_key<GeomapContext,gmc<0> >::type left_gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<GeomapContext,gmc<0> >::type::element_type left_gmc_type;
         typedef typename fusion::result_of::value_at_key<GeomapContext,gmc1 >::type right_gmc_ptrtype;
@@ -172,6 +188,15 @@ public:
 
         typedef fusion::map<fusion::pair<gmc<0>, left_gmc_ptrtype> > map_left_gmc_type;
         typedef fusion::map<fusion::pair<gmc<0>, right_gmc_ptrtype> > map_right_gmc_type;
+#else
+        typedef typename super::left_gmc_ptrtype left_gmc_ptrtype;
+        typedef typename super::left_gmc_type left_gmc_type;
+        typedef typename super::right_gmc_ptrtype right_gmc_ptrtype;
+        typedef typename super::right_gmc_type right_gmc_type;
+
+        typedef typename super::map_left_gmc_type map_left_gmc_type;
+        typedef typename super::map_right_gmc_type map_right_gmc_type;
+#endif
 
         typedef typename mpl::if_<mpl::equal_to<map_size, mpl::int_<1> >,
                                   mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > >,
@@ -180,7 +205,6 @@ public:
 
         typedef fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > map_left_test_fecontext_type;
         typedef fusion::map<fusion::pair<gmc<1>, test_fecontext_ptrtype> > map_right_test_fecontext_type;
-
 
         typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map_left_test_fecontext_type> eval0_expr_type;
         typedef boost::shared_ptr<eval0_expr_type> eval0_expr_ptrtype;

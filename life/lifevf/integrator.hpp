@@ -373,7 +373,9 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
 
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
     typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
-    typedef detail::FormContextBase<map_gmc_type,im_type> fcb_type;
+    //typedef detail::FormContextBase<map_gmc_type,im_type> fcb_type;
+    typedef form_context_type fcb_type;
+
     typedef boost::shared_ptr<fcb_type> fcb_ptrtype;
     typedef typename form_context_type::value_type value_type;
 

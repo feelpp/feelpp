@@ -46,7 +46,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
                                                                                            ExprT const& expr,
                                                                                            IM const& im )
     :
-    super(),
+    //super(),
     _M_form( __form ),
     _M_test_dof( __form.functionSpace()->dof().get() ),
     _M_lb( __form.blockList() ),
@@ -73,7 +73,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
                                                                                            IM const& im,
                                                                                            IM2 const& im2 )
     :
-    super(),
+    //super(),
     _M_form( __form ),
     _M_test_dof( __form.functionSpace()->dof().get() ),
     _M_lb( __form.blockList() ),
@@ -100,7 +100,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
                                                                                            IM2 const& im2,
                                                                                            mpl::int_<2> )
     :
-    super(),
+    //super(),
     _M_form( __form ),
     _M_test_dof( __form.functionSpace()->dof().get() ),
     _M_lb( __form.blockList() ),
@@ -141,11 +141,11 @@ template<typename GeomapContext,typename ExprT,typename IM>
 void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::int_<2> )
 {
-    typedef mpl::int_<fusion::result_of::template size<map_geometric_mapping_context_type>::type::value> map_size;
-    BOOST_MPL_ASSERT_MSG( (mpl::equal_to<mpl::int_<map_size::value>,mpl::int_<2> >::value),
+    //    typedef mpl::int_<fusion::result_of::template size<map_geometric_mapping_context_type>::type::value> map_size;
+    /*BOOST_MPL_ASSERT_MSG( (mpl::equal_to<mpl::int_<map_size::value>,mpl::int_<2> >::value),
                           INVALID_GEOMAP,
-                          (map_size,map_geometric_mapping_context_type ));
-    _M_gmc = _gmc;
+                          (map_size,map_geometric_mapping_context_type ));*/
+    //_M_gmc = _gmc;
 #if 0
     _M_gmc_left = fusion::at_key<gmc<0> >( _gmc );
     _M_gmc_right =  fusion::at_key<gmc1 >( _gmc );
