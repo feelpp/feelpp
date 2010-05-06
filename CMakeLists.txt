@@ -246,7 +246,14 @@ mark_as_advanced( GMSH )
 # ${LIFE_SOURCE_DIR}/life/lifefilters
 # ${LIFE_SOURCE_DIR}/life/lifesystem
 
+#
+# Python
+#
+FIND_PACKAGE(PythonInterp 2.2 REQUIRED)
 
+#
+# Life
+#
 ADD_SUBDIRECTORY ( life )
 
 SET(LIFE_LIBRARIES
