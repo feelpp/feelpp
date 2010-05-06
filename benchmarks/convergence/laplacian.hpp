@@ -331,6 +331,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 
     fproj = vf::project( Eh, elements(mesh), f );
     gproj = vf::project( Eh, elements(mesh), g );
+    v = vf::project( Xh, elements(mesh), g );
 
     // Construction of the right hand side
 
