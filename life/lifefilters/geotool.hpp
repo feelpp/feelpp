@@ -23,11 +23,13 @@
 //Bug si 0 argum√ent(a corriger)
 
 # define GEOTOOL_SHAPE                                                  \
-    ( 5, ( ( Rectangle  , 2, 1, 0, "rectangle" , 2, RECTANGLE ),        \
-           ( Circle     , 2, 1, 0, "circle"    , 2, CIRCLE    ),        \
-           ( Special_1a , 2, 2, 0, "special_1a", 1, SPECIAL_1A ),       \
-           ( Special_1b , 2, 1, 0, "special_1b", 1, SPECIAL_1B ),       \
-           ( Hexaedre   , 3, 6, 1, "hexaedre"  , 8, HEXAEDRE  )         \
+    ( 7, ( ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE ),  \
+           ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
+           ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE    ),  \
+           ( PartialDisque , 2, 1, 0, "partialdisque", 3, PARTIALDISQUE), \
+           ( Special_1a    , 2, 2, 0, "special_1a"   , 1, SPECIAL_1A ), \
+           ( Special_1b    , 2, 1, 0, "special_1b"   , 1, SPECIAL_1B ), \
+           ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE  )   \
            )                                                            \
       )                                                                 \
     /**/
@@ -48,6 +50,21 @@
 
 /*_________________________________________________*/
 
+# define GEOTOOL_MARKER_LINE_QUADRANGLE         \
+    ( 4, ( ( 1, 1, ( 1 ) ),                     \
+           ( 2, 1, ( 2 ) ),                     \
+           ( 3, 1, ( 3 ) ),                     \
+           ( 4, 1, ( 4 ) ) )                    \
+      )                                         \
+    /**/
+# define GEOTOOL_MARKER_SURFACE_QUADRANGLE      \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
+
+
+/*_________________________________________________*/
+
 # define GEOTOOL_MARKER_LINE_CIRCLE             \
     ( 1, ( ( 1, 2, ( 1,2 ) ) )                  \
       )                                         \
@@ -57,6 +74,20 @@
     ( 1, ( ( 1, 1, ( 1 ) ) )                    \
       )                                         \
     /**/
+
+/*_________________________________________________*/
+
+# define GEOTOOL_MARKER_LINE_PARTIALDISQUE      \
+    ( 2, ( ( 1, 4, ( 1,2,3,4 ) ),               \
+           ( 2, 1, (    5    ) ) )              \
+      )                                         \
+    /**/
+
+# define GEOTOOL_MARKER_SURFACE_PARTIALDISQUE   \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
+
 
 /*_________________________________________________*/
 
@@ -1631,6 +1662,31 @@ namespace Life {
 
         }
 
+        void
+        runQuadrangle(data_geo_ptrtype dg)
+        {
+
+            node_type PtA = param<0>(dg);
+            node_type PtB = param<1>(dg);
+            node_type PtC = param<2>(dg);
+            node_type PtD = param<3>(dg);
+
+            writePoint( 1, dg , PtA(0), PtA(1) );
+            writePoint( 2, dg , PtB(0), PtB(1) );
+            writePoint( 3, dg , PtC(0), PtC(1) );
+            writePoint( 4, dg , PtD(0), PtD(1) );
+
+            writeLine( 1, dg , 1 , 2);
+            writeLine( 2, dg , 2 , 3);
+            writeLine( 3, dg , 3 , 4);
+            writeLine( 4, dg , 4 , 1);
+
+            writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4);
+
+            writePlaneSurface( 1, dg, 1);
+
+        }
+
 
         void
         runCircle(data_geo_ptrtype dg)
@@ -1649,6 +1705,69 @@ namespace Life {
             writeLineLoop( 1, dg, Loop()>>1>>2);
 
             writePlaneSurface( 1, dg, 1);
+        }
+
+
+
+        void
+        runPartialDisque(data_geo_ptrtype dg)
+        {
+
+            node_type center = param<0>(dg);
+            node_type rayon = param<1>(dg);
+            node_type angle1 = param<2>(dg);
+            node_type angle2 = param<3>(dg);
+
+#if 0
+            node base1;
+
+            writePoint( 1, dg , center(0), center(1) );
+            writePoint( 2, dg , ptdeb(0), ptdeb(1) );
+            writePoint( 3, dg , ptfin(0), ptfin(1) );
+
+            if (angle1<90)
+                {
+                    if (angle2>90)
+                        {
+                            writePoint( 4, dg , ref1(0), ref1(1) );
+                            if (angle2>180)
+                                {
+                                    writePoint( 5, dg , ref2(0), ref2(1) );
+                                    if (angle2>270)
+                                        {
+                                            writePoint( 6, dg , ref3(0), ref3(1) );
+                                        }
+                                }
+                        }
+                }
+            else if (angle1<180)
+                {
+                    if (angle2>180)
+                        {
+                            writePoint( 6, dg , ref2(0), ref2(1) );
+                            if (angle2>270)
+                                {
+                                    writePoint( 6, dg , ref3(0), ref3(1) );
+                                }
+                        }
+                }
+            else if (angle1<270)
+                {
+                    if (angle2>270)
+                        {
+                            writePoint( 6, dg , ref3(0), ref3(1) );
+                        }
+                }
+
+#endif
+            writeCircle( 1, dg, 1, 2, 3);
+            writeCircle( 2, dg, 3, 2, 1);
+
+            writeLineLoop( 1, dg, Loop()>>1>>2);
+
+            writePlaneSurface( 1, dg, 1);
+
+
         }
 
         void
