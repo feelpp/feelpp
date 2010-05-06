@@ -486,6 +486,7 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
 {
 
   int ierr = 0;
+#if (PETSC_VERSION_MAJOR >= 3)
   ierr = PCFactorSetMatSolverPackage(_M_pc,MAT_SOLVER_UMFPACK);
   if ( ierr )
   {
@@ -495,6 +496,7 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
           ierr = PCFactorSetMatSolverPackage(_M_pc,MAT_SOLVER_PETSC );
       }
   }
+#endif
   Debug(7010) << "[SolverLinearPetsc] preconditioner type:  " << this->preconditionerType() << "\n";
   switch (this->preconditionerType())
     {
