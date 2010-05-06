@@ -43,3 +43,8 @@ endif()
 if ( EXISTS ${LIFE_SOURCE_DIR}/research/ifp )
   add_subdirectory( ifp )
 endif()
+
+# Darcy project
+if ( EXISTS ${LIFE_SOURCE_DIR}/research/darcy )
+  add_subdirectory( darcy )
+endif()
