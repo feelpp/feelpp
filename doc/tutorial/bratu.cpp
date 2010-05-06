@@ -52,8 +52,6 @@ makeOptions()
         ("penalbc", Life::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
         ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
 
-        ("export", "export results(ensight, data file(1D)")
-        ("export-mesh-only", "export mesh only in ensight format")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
     return bratuoptions.add( Life::life_options() );
@@ -94,8 +92,6 @@ class Bratu
 public:
 
     // -- TYPEDEFS --
-    static const uint16_type imOrder = 4*Order;
-
     typedef Bratu<Dim,Order, Entity> self_type;
 
     typedef double value_type;
@@ -247,14 +243,13 @@ Bratu<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vector_ptrty
     u = *X;
     AUTO( g, constant(0.0) );
 
-    *M_residual =
-        integrate( elements( mesh ), _Q<2*Order>(), + gradv(u)*trans(grad(v)) + M_lambda*exp(idv(u))*id(v) ) +
-        integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                   ( - trans(id(v))*(gradv(u)*N())
-                     - trans(idv(u))*(grad(v)*N())
-                     + penalisation_bc*trans(idv(u))*id(v)/hFace())-
-                   g*( - grad(v)*N() + penalisation_bc*id(v)/hFace() )
-                   );
+    *M_residual = integrate( elements( mesh ), gradv(u)*trans(grad(v)) );
+    *M_residual +=  integrate( elements( mesh ), _Q<4*Order>(), -M_lambda*exp(idv(u))*id(v) );
+    *M_residual +=  integrate( boundaryfaces(mesh),
+                               ( - trans(id(v))*(gradv(u)*N())
+                                 - trans(idv(u))*(grad(v)*N())
+                                 + penalisation_bc*trans(idv(u))*id(v)/hFace())-
+                               g*( - grad(v)*N() + penalisation_bc*id(v)/hFace() ) );
 
     M_residual->close();
     *R = M_residual->container();
@@ -273,16 +268,16 @@ Bratu<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matri
     u = *X;
     if ( is_init == false )
         {
-            *M_jac = integrate( elements( mesh ), _Q<3*Order>(), M_lambda*(exp(idv(u)))*idt(u)*id(v) );
+            *M_jac = integrate( elements( mesh ), _Q<4*Order>(), -M_lambda*(exp(idv(u)))*idt(u)*id(v) );
             is_init = true;
         }
     else
         {
             M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ), _Q<3*Order>(), M_lambda*(exp(idv(u)))*idt(u)*id(v) );
+            *M_jac += integrate( elements( mesh ), _Q<4*Order>(), -M_lambda*(exp(idv(u)))*idt(u)*id(v) );
         }
     M_jac->close();
-    M_jac->matPtr()->addMatrix( 1.0, M_oplin->mat() );
+    M_jac->add( 1.0, M_oplin );
     J = M_jac->matPtr();
     Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
@@ -300,11 +295,11 @@ Bratu<Dim, Order, Entity>::run()
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
 
     M_oplin = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
-    *M_oplin = integrate( elements( mesh ), _Q<2*Order>(), gradt(u)*trans(grad(v)) );
-    *M_oplin = integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                          ( - trans(id(v))*(gradt(u)*N())
-                            - trans(idt(u))*(grad(v)*N())
-                            + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
+    *M_oplin = integrate( elements( mesh ), gradt(u)*trans(grad(v)) );
+    *M_oplin += integrate( boundaryfaces(mesh),
+                           ( - trans(id(v))*(gradt(u)*N())
+                             - trans(idt(u))*(grad(v)*N())
+                             + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
     M_oplin->close();
 
     M_jac = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
@@ -328,7 +323,7 @@ Bratu<Dim, Order, Entity>::run()
     *U = u;
     this->updateResidual( U, R );
     std::cout << "R( u ) = " << M_backend->dot( U, R ) << "\n";
-
+    std::cout << "lambda umax\n" << M_lambda << " " << u.linftyNorm() << "\n";
     exportResults( u );
 
 } // Bratu::run
@@ -350,13 +345,13 @@ template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class
 void
 Bratu<Dim, Order, Entity>::exportResults( element_type& U )
 {
-    Log() << "exportResults starts\n";
-    exporter->step(0)->setMesh( U.functionSpace()->mesh() );
-    if ( !this->vm().count( "export-mesh-only" ) )
-        {
-            exporter->step(0)->add( "u", U );
-        }
-    exporter->save();
+    if ( exporter->doExport() )
+    {
+        Log() << "exportResults starts\n";
+        exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+        exporter->step(0)->add( "u", U );
+        exporter->save();
+    }
 } // Bratu::export
 } // Life
 
