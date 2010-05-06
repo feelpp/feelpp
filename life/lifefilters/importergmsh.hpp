@@ -842,6 +842,9 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e,
 
     pv.marker().assign(  tag  );
 
+    //
+    // WARNING: not yet done for high order in 3D !!!
+    // 
     if ( type == GMSH_HEXAHEDRON ||
          type == GMSH_HEXAHEDRON_2 ||
          type == GMSH_TETRAHEDRON ||

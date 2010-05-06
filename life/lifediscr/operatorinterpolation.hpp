@@ -191,7 +191,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
 #endif
     dof_type const* imagedof = this->dualImageSpace()->dof().get();
     typedef typename domain_space_type::dof_type domain_dof_type;
+    typedef typename dual_image_space_type::dof_type dual_image_dof_type;
     domain_dof_type const* domaindof = this->domainSpace()->dof().get();
+    dual_image_dof_type const* dualimagedof = this->dualImageSpace()->dof().get();
     image_basis_type const* imagebasis = this->dualImageSpace()->basis().get();
     domain_basis_type const* domainbasis = this->domainSpace()->basis().get();
 
@@ -252,6 +254,161 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
     else
         {
             Debug( 5034 ) << "[interpolate] different meshes\n";
+#if 1
+            typedef typename domain_mesh_type::Localization::localization_ptrtype localization_ptrtype;
+            typedef typename domain_mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+            typedef typename domain_mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+
+            typename dual_image_space_type::dof_type::dof_points_const_iterator it_dofpt = this->dualImageSpace()->dof()->dofPointBegin();
+            typename dual_image_space_type::dof_type::dof_points_const_iterator en_dofpt = this->dualImageSpace()->dof()->dofPointEnd();
+
+            //init the localization tool
+            this->domainSpace()->mesh()->tool_localization()->updateForUse();
+
+            //image_mesh_element_iterator it = this->dualImageSpace()->mesh()->beginElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
+            //image_mesh_element_iterator en = this->dualImageSpace()->mesh()->endElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
+
+            //enregistre les numero locales par rapport à la place dans __ptsReal(colonne)
+            //std::vector<boost::tuple<uint,size_type> > __memLocDof(image_basis_type::nLocalDof);
+
+            typename matrix_node<value_type>::type __ptsReal( image_mesh_type::nDim, 1/*image_basis_type::nLocalDof*/);
+            typename matrix_node<value_type>::type ptsRef(image_mesh_type::nDim , /*nbPtsElt*/1 );
+            typename matrix_node<value_type>::type MlocEval(image_mesh_type::nDim,1);
+            analysis_iterator_type itanal,itanal_end;
+            analysis_output_iterator_type itL,itL_end;
+
+            // create analysys map : id -> List of pt
+            localization_ptrtype __loc = this->domainSpace()->mesh()->tool_localization();
+            __loc->kdtree()->nbNearNeighbor(3);
+
+            for( ; it_dofpt != en_dofpt; ++ it_dofpt )
+                {
+                    size_type gdof = boost::get<1>(*it_dofpt);// boost::get<0>(this->dualImageSpace()->dof()->localToGlobal( it->id(), i, 0 ));// 0 est le numero de composantes
+                    ublas::column(__ptsReal,0 )= boost::get<0>(*it_dofpt);
+
+                    __loc->run_analysis(__ptsReal);
+                    itanal = __loc->result_analysis_begin();
+                    itanal_end = __loc->result_analysis_end();
+
+                    for ( ;itanal!=itanal_end;++itanal)
+                        {
+                            //iterate in the list pt for a element
+                            itL=itanal->second.begin();
+                            itL_end=itanal->second.end();
+
+                            //compute a point matrix with the list of point
+                            ublas::column( ptsRef, 0 ) = boost::get<1>(*itL);
+
+                            /*typename matrix_node<value_type>::type*/ MlocEval = domainbasis->evaluate( ptsRef );
+
+                            itL=itanal->second.begin();
+                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                {
+                                    size_type j =  boost::get<0>(domaindof->localToGlobal( itanal->first,jloc, 0/*comp*/ ));
+                                    value_type v = MlocEval( jloc, 0 );
+                                    this->matPtr()->set( gdof, j, v );
+                                }
+                        }
+                }
+
+
+
+#elif 0
+            typedef typename domain_mesh_type::Localization::localization_ptrtype localization_ptrtype;
+            typedef typename domain_mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+            typedef typename domain_mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+
+            typename dual_image_space_type::dof_type::dof_points_const_iterator it_dofpt = this->dualImageSpace()->dof()->dofPointBegin();
+            typename dual_image_space_type::dof_type::dof_points_const_iterator en_dofpt = this->dualImageSpace()->dof()->dofPointEnd();
+
+            uint nbpts = std::distance(it_dofpt,en_dofpt);
+            std::vector<bool> dof_done( nbpts );
+            std::fill( dof_done.begin(), dof_done.end(), false );
+
+            //init the localization tool
+            this->domainSpace()->mesh()->tool_localization()->updateForUse();
+
+            image_mesh_element_iterator it = this->dualImageSpace()->mesh()->beginElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
+            image_mesh_element_iterator en = this->dualImageSpace()->mesh()->endElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
+
+            //enregistre les numero locales par rapport à la place dans __ptsReal(colonne)
+            std::vector<boost::tuple<uint,size_type> > __memLocDof(image_basis_type::nLocalDof);
+
+            typename matrix_node<value_type>::type __ptsReal( image_mesh_type::nDim, image_basis_type::nLocalDof);
+
+            // create analysys map : id -> List of pt
+            localization_ptrtype __loc = this->domainSpace()->mesh()->tool_localization();
+            __loc->kdtree()->nbNearNeighbor(3);
+
+            //__loc->run_analysis(__ptsReal);
+            for( ; it != en; ++ it )
+                {
+                    //contient les points real que l'on souhaite evaluer sur un element
+                    //typename matrix_node<value_type>::type __ptsReal( image_mesh_type::nDim, image_basis_type::nLocalDof);
+                    uint cpt=0;
+                    for (uint i=0;i<image_basis_type::nLocalDof;++i)
+                        {
+                            size_type gdof = boost::get<0>(this->dualImageSpace()->dof()->localToGlobal( it->id(), i, 0 ));// 0 est le numero de composantes
+                            ublas::column(__ptsReal,i ) = (boost::get<0>(this->dualImageSpace()->dof()->dofPoint(gdof)));
+                            //if ( true/*!dof_done[gdof]*/ ) {
+                            //dof_done[gdof]= true;
+                            //__memLocDof[cpt]= boost::make_tuple(i,gdof);//i is the num local
+                            //ublas::column(__ptsReal,/*i*/cpt ) = (boost::get<0>(this->dualImageSpace()->dof()->dofPoint(gdof)));
+                            // ++cpt;
+                            //}
+                        }
+
+                    //__ptsReal.resize(image_mesh_type::nDim,cpt);
+                    /*typename matrix_node<value_type>::type __ptsReal( image_mesh_type::nDim, cpt);
+                      for (uint i=0;i<cpt;++i){
+                      ublas::column(__ptsReal,i ) = (boost::get<0>(this->dualImageSpace()->dof()->dofPoint( boost::get<1>(__memLocDof[i]))));
+                      }*/
+
+                    __loc->run_analysis(__ptsReal);
+                    analysis_iterator_type itanal = __loc->result_analysis_begin();
+                    analysis_iterator_type itanal_end = __loc->result_analysis_end();
+                    analysis_output_iterator_type itL,itL_end;
+
+                    //alocate a point matrix
+                    size_type nbPtsElt=itanal->second.size();
+                    uint nbCoord=boost::get<1>(*(itanal->second.begin())).size();
+                    typename matrix_node<value_type>::type ptsRef( nbCoord, nbPtsElt );
+
+                    for ( ;itanal!=itanal_end;++itanal)
+                        {
+                            nbPtsElt = itanal->second.size();
+
+                            //iterate in the list pt for a element
+                            itL=itanal->second.begin();
+                            itL_end=itanal->second.end();
+
+                            //compute a point matrix with the list of point
+                            ptsRef= typename matrix_node<value_type>::type( nbCoord, nbPtsElt );
+                            for (size_type q=0;q<nbPtsElt;++q,++itL)
+                                ublas::column( ptsRef, q ) = boost::get<1>(*itL);
+
+                            //Mloc = ublas::trans( domainbasis->evaluate( pts ) );
+                            typename matrix_node<value_type>::type Mloc = /*ublas::trans*/( domainbasis->evaluate( ptsRef ) );
+
+                            itL=itanal->second.begin();
+                            for ( uint16_type k1 = 0; k1 < Mloc.size2(); ++k1,++itL )
+                                {
+                                    size_type i =  boost::get<0>(dualimagedof->localToGlobal( it->id(),  boost::get<0>(*itL) , 0/*comp*/ ));
+                                    //size_type i =  boost::get<0>(dualimagedof->localToGlobal( it->id(), __memLocDof[ boost::get<0>(*itL)] , 0/*comp*/ ));
+                                    //size_type i =  boost::get<1>(__memLocDof[ boost::get<0>(*itL)]);
+                                    for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                        {
+                                            size_type j =  boost::get<0>(domaindof->localToGlobal( itanal->first,jloc, 0/*comp*/ ));
+                                            //value_type v = Mloc( nComponents*domain_basis_type::nLocalDof*comp + nComponents*jloc + comp,k1 );
+                                            value_type v = Mloc( jloc,k1 );
+                                            this->mat().set( i, j, v );
+                                        }
+                                }
+                        }
+                }
+
+
+#elif 0 //old version
             typename domain_mesh_type::Inverse meshinv( this->domainSpace()->mesh() );
 
             /* initialisation of the mesh::inverse data structure */
@@ -320,6 +477,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
                 {
                     LIFE_ASSERT( dof_done[i] == true )( i ).warn ( "invalid dof, was not treated" );
                 }
+
+#endif
 
         }
     Debug( 5034 ) << "[OperatorInterpolation] closing interpolation matrix\n";

@@ -148,6 +148,34 @@ public:
         ie.container() = *_v2;
     }
 
+    //add by me
+    void
+    apply( typename domain_space_type::element_type& de,
+           typename dual_image_space_type::element_type& ie ) const
+    {
+        if ( ! M_matrix->closed() )
+        {
+            M_matrix->close();
+        }
+        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        *_v1 = de;
+        //vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
+        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        M_backend->prod( M_matrix, _v1, _v2 );
+        ie.container() = *_v2;
+    }
+
+    //add by me
+    typename dual_image_space_type::element_type
+    operator()(typename domain_space_type::element_type& de)
+    {
+        typename dual_image_space_type::element_type elt_image;
+        this->apply(de,elt_image);
+
+        return elt_image;
+    }
+
+
     //! apply the inverse of the operator: \f$de = O^{-1} ie\f$
     virtual void
     applyInverse( domain_element_type&      de,
@@ -244,6 +272,12 @@ public:
         M_matrix->addMatrix( scalar, *ol.M_matrix );
         return *this;
     }
+
+    backend_ptrtype& backend()
+    {
+        return M_backend;
+    }
+
 private:
 
     backend_ptrtype M_backend;

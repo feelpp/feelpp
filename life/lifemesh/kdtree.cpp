@@ -34,7 +34,7 @@ namespace Life
 
 struct KDTree::Element
 {
-    enum { POINTS_PER_LEAF = 8 };
+    enum { POINTS_PER_LEAF = 16 };
 
     /* 0 => is a tree node, != 0 => tree leaf storing n points */
     size_type n;
@@ -399,13 +399,12 @@ restriction(const double & min, const double & max, const double & x)
 * returned
 */
 
-KDTree::node_type
-projection2d(const KDTree::node_type & pMin,
+void
+projection2d(KDTree::node_type & res,
+             const KDTree::node_type & pMin,
              const KDTree::node_type & pMax,
              const KDTree::node_type & node_search)
 {
-    KDTree::node_type res(2);
-
     // computation of the projection
     if (pMin(0)==pMax(0)) {
         res(0)=pMin(0);
@@ -416,17 +415,16 @@ projection2d(const KDTree::node_type & pMin,
         res(0)=restriction(pMin(0),pMax(0),node_search(0));
     }
 
-    return res;
+    //return res;
 
 }
 
-KDTree::node_type
-projection3d(const KDTree::node_type & pMin,
+void
+projection3d(KDTree::node_type & res,
+             const KDTree::node_type & pMin,
              const KDTree::node_type & pMax,
              const KDTree::node_type & node_search)
 {
-    KDTree::node_type res(3);
-
     double var_temp1,var_temp2;
     // computation of the projection
     if (pMin(0)==pMax(0)) {
@@ -444,8 +442,6 @@ projection3d(const KDTree::node_type & pMin,
         res(1)=restriction(pMin(1),pMax(1),node_search(1));
         res(2)=pMin(2);
     }
-
-    return res;
 
 }
 
@@ -626,12 +622,12 @@ KDTree::run_search( KDTree::Element * tree, uint iter) {
         }
 
         //compute the distance from the point of research with the border cutting kd-tree
-        KDTree::node_type proj;
+        KDTree::node_type proj(N);
         switch (N)
             {
             case 1: { proj=tn->ptmin;break; }
-            case 2: { proj=detail::projection2d(tn->ptmin, tn->ptmax,M_node_search);break; }
-            case 3: { proj=detail::projection3d(tn->ptmin, tn->ptmax,M_node_search);break; }
+            case 2: { detail::projection2d(proj,tn->ptmin, tn->ptmax,M_node_search);break; }
+            case 3: { detail::projection3d(proj,tn->ptmin, tn->ptmax,M_node_search);break; }
             }
 
         //if the border is close enough runs on the other side of the graph
@@ -641,7 +637,6 @@ KDTree::run_search( KDTree::Element * tree, uint iter) {
             }
             else if (tn->left) run_search(tn->left,iter+1);
         }
-
 
     }
     else {

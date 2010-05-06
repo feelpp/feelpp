@@ -989,7 +989,7 @@ Mesh<Shape, T>::Localization::init()
                     if (boost::get<1>( M_geoGlob_Elts[el_it->point(i).id()] ).size()==0)
                         {
                             boost::get<0>( M_geoGlob_Elts[el_it->point(i).id()] ) = el_it->point(i).node();
-                            M_kd_tree.addPoint(el_it->point(i).node(),el_it->point(i).id() );
+                            M_kd_tree->addPoint(el_it->point(i).node(),el_it->point(i).id() );
                         }
                     boost::get<1>( M_geoGlob_Elts[el_it->point(i).id()] ).push_back(el_it->id());
                 }
@@ -1010,10 +1010,10 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
 #endif
 
     //search for nearest points
-    M_kd_tree.search(p);
+    M_kd_tree->search(p);
 
     //get the results of research
-    typename KDTree::points_search_type ptsNN = M_kd_tree.pointsNearNeighbor();
+    typename KDTree::points_search_type ptsNN = M_kd_tree->pointsNearNeighbor();
 
     typename KDTree::points_search_const_iterator itNN = ptsNN.begin();
     typename KDTree::points_search_const_iterator itNN_end = ptsNN.end();
@@ -1071,8 +1071,9 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
     //research the element which contains the point p
     itLT=ListTri.begin();
     itLT_end=ListTri.end();
-    if(std::distance(itLT,itLT_end)==0) std::cout<<"\nListTri vide\n";
+
 #if !defined( NDEBUG )
+    //if(std::distance(itLT,itLT_end)==0) std::cout<<"\nListTri vide\n";
     LIFE_ASSERT( std::distance(itLT,itLT_end)>0 ).error( " problem in list localization : is empty" );
 #endif
 
@@ -1142,7 +1143,7 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m)
             LIFE_ASSERT( false )
                 ( false ).warn( "problem localization" );
             //std::cout<<"\nProbleme de Localisation : "<<ublas::column( m, i )<<"\n";
-            //this->M_kd_tree.showResultSearch();}
+            //this->M_kd_tree->showResultSearch();}
 #endif
 
         }

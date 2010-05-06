@@ -438,6 +438,9 @@ public:
 
         typedef typename matrix_node<typename node_type::value_type>::type matrix_node_type;
 
+        typedef KDTree kdtree_type;
+        typedef typename boost::shared_ptr<KDTree> kdtree_ptrtype;
+
         // a node x => a list of id elt which contain the node x
         typedef boost::tuple<node_type, std::list<size_type> > node_elem_type;
 
@@ -454,10 +457,11 @@ public:
          */
         Localization() :
             M_mesh (),
+            M_kd_tree(new kdtree_type()),
             IsInit(false)
 
         {
-            M_kd_tree.nbNearNeighbor(15);
+            M_kd_tree->nbNearNeighbor(15);
             M_resultAnalysis.clear();
         }
 
@@ -468,13 +472,14 @@ public:
             if (IsInit)
                 init();
 
-            M_kd_tree.nbNearNeighbor(15);
+            M_kd_tree->nbNearNeighbor(15);
             M_resultAnalysis.clear();
         }
 
         Localization(Localization const & L) :
             M_mesh(L.M_mesh),
-            M_kd_tree(L.M_kd_tree),
+            //M_kd_tree(L.M_kd_tree),
+            M_kd_tree(new kdtree_type(*(L.M_kd_tree))),
             M_geoGlob_Elts(L.M_geoGlob_Elts),
             IsInit(L.IsInit),
             M_resultAnalysis(L.M_resultAnalysis)
@@ -508,7 +513,8 @@ public:
 
         bool isInit() { return IsInit;}
 
-        KDTree kdtree() { return M_kd_tree; }
+        //KDTree kdtree() { return M_kd_tree; }
+        kdtree_ptrtype kdtree() { return M_kd_tree; }
 
         container_search_type const & result_analysis() { return M_resultAnalysis;}
 
@@ -539,7 +545,8 @@ public:
     private:
 
         boost::shared_ptr<self_type> M_mesh;
-        KDTree M_kd_tree;
+        //KDTree M_kd_tree;
+        kdtree_ptrtype M_kd_tree;
         //map between node and list elements
         std::map<size_type, node_elem_type > M_geoGlob_Elts;
         bool IsInit;
