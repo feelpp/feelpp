@@ -31,7 +31,7 @@
 #
 
 # This file contains the functions to draw the contours of a hypercube,
-# draw the equispaced pointset up to any order, 
+# draw the equispaced pointset up to any order,
 # and draw the numbering of the points (in the pointset) by subentity
 
 from pyx import *
@@ -178,7 +178,7 @@ def numberLine(c, line_size, origin, order, circle_radius, shift):
         p1 = y + (i+1)*h*v[1]
 
         c.text(p0, p1, i+first, [text.halign.boxleft])
-	
+
     return result
 
 def numberVertex(c, line_size, origin, local_id, circle_radius, shift):

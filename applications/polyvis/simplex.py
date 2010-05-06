@@ -31,7 +31,7 @@
 #
 
 # This file contains the functions to draw the contours of a simplex,
-# draw the equispaced pointset up to any order, 
+# draw the equispaced pointset up to any order,
 # and draw the numbering of the points (in the pointset) by subentity
 
 
