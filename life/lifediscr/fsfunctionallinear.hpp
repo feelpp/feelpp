@@ -118,7 +118,7 @@ public:
     template<typename ExprT>
     this_type& operator+=( ExprT const& e )
     {
-        form( this->space(), *M_vector, false ) += e;
+        form( this->space(), *M_vector ) += e;
         return *this;
     }
 
