@@ -205,11 +205,10 @@ public:
     this_type& operator=( ExprT const& e )
     {
         //         M_matrix->clear();
-        form2( this->domainSpace(),
-               this->dualImageSpace(),
-               M_matrix,
+        form2( _trial=this->domainSpace(),
+               _test=this->dualImageSpace(),
+               _matrix=M_matrix,
                _init=true
-
               ) = e;
         return *this;
     }
@@ -227,10 +226,9 @@ public:
     template<class ExprT>
     this_type& operator+=( ExprT const& e )
     {
-        form2( this->domainSpace(),
-               this->dualImageSpace(),
-               M_matrix,
-               _init=false ) += e;
+        form2( _trial=this->domainSpace(),
+               _test=this->dualImageSpace(),
+               _matrix=M_matrix ) += e;
         return *this;
     }
 
@@ -269,6 +267,7 @@ public:
     template<typename T>
     OperatorLinear& add( T const& scalar, OperatorLinear const& ol )
     {
+        this->close();
         M_matrix->addMatrix( scalar, *ol.M_matrix );
         return *this;
     }
@@ -276,6 +275,27 @@ public:
     backend_ptrtype& backend()
     {
         return M_backend;
+    }
+
+    template<typename T>
+    OperatorLinear& add( T const& scalar, boost::shared_ptr<OperatorLinear> ol )
+    {
+        this->close();
+        this->add(scalar, *ol);
+        return *this;
+    }
+
+    OperatorLinear& operator+( boost::shared_ptr<OperatorLinear> ol )
+    {
+        this->close();
+        this->add(1.0, *ol);
+        return *this;
+    }
+    OperatorLinear& operator+( OperatorLinear const& ol )
+    {
+        this->close();
+        this->add(1.0, ol);
+        return *this;
     }
 
 private:
