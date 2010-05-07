@@ -906,6 +906,23 @@ public:
             return precompute_ptrtype( new PreCompute( p, P ) );
         }
 
+    std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> >
+    preComputeOnFaces( boost::shared_ptr<PolynomialSet<Poly, PolySetType > > p,
+                       points_type const& P )
+        {
+            typedef typename convex_type::permutation_type permutation_type;
+            std::vector<std::map<permutation_type, precompute_ptrtype> > geopc(convex_type::numTopologicalFaces);
+            for ( uint16_type __f = 0; __f < convex_type::numTopologicalFaces; ++__f )
+            {
+                for( permutation_type __p( permutation_type::IDENTITY );
+                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                {
+                    //LIFE_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                    geopc[__f][__p] = precompute_ptrtype(  new precompute_ptrtype( p, P ) );
+                }
+            }
+            return geopc;
+        }
     template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType>
     class Context
     {
