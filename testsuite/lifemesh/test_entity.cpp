@@ -93,6 +93,47 @@ BOOST_AUTO_TEST_CASE( test_entity_isin_ )
     test_entity_isin<3,1>();
 
 }
+
+BOOST_AUTO_TEST_CASE( test_simplex_ref )
+{
+    using namespace Life;
+
+    // interval
+    Reference<Simplex<1, 1, 1>, 1, 1, 1, double> intervalref;
+    ublas::vector<double> G( 1 ); G( 0 ) = 0;
+    BOOST_CHECK_SMALL( ublas::norm_2( intervalref.barycenter()-G ), 1e-14 );
+    G( 0 ) = -1;
+    BOOST_CHECK_SMALL( ublas::norm_2( intervalref.faceBarycenter(0)-G ), 1e-14 );
+    G( 0 ) = 1;
+    BOOST_CHECK_SMALL( ublas::norm_2( intervalref.faceBarycenter(1)-G ), 1e-14 );
+
+    // triangle
+    Reference<Simplex<2, 1, 2>, 2, 1, 2, double> triangleref;
+    ublas::vector<double> G2( 2 );
+    G2( 0 ) = -1./3.;G2( 1 ) = -1./3.;
+    BOOST_CHECK_SMALL( ublas::norm_2( triangleref.barycenter()-G2 ), 1e-14 );
+    G2( 0 ) = 0.;G2( 1 ) = 0;
+    BOOST_CHECK_SMALL( ublas::norm_2( triangleref.faceBarycenter(0)-G2 ), 1e-14 );
+    G2( 0 ) = -1.;G2( 1 ) = 0;
+    BOOST_CHECK_SMALL( ublas::norm_2( triangleref.faceBarycenter(1)-G2 ), 1e-14 );
+    G2( 0 ) = 0.;G2( 1 ) = -1;
+    BOOST_CHECK_SMALL( ublas::norm_2( triangleref.faceBarycenter(2)-G2 ), 1e-14 );
+
+    // tetra
+    Reference<Simplex<3, 1, 3>, 3, 1, 3, double> tetraref;
+    ublas::vector<double> G3( 3 );
+    G3( 0 ) = -1./2.;G3( 1 ) = -1./2.;G3( 2 ) = -1./2.;
+    BOOST_CHECK_SMALL( ublas::norm_2( tetraref.barycenter()-G3 ), 1e-14 );
+    G3( 0 ) = -1./3.;G3( 1 ) = -1./3.;G3( 2 ) = -1./3.;
+    BOOST_CHECK_SMALL( ublas::norm_2( tetraref.faceBarycenter(0)-G3 ), 1e-14 );
+    G3( 0 ) = -1.;G3( 1 ) = -1./3.;G3( 2 ) = -1./3.;
+    BOOST_CHECK_SMALL( ublas::norm_2( tetraref.faceBarycenter(1)-G3 ), 1e-14 );
+    G3( 0 ) = -1./3.;G3( 1 ) = -1.;G3( 2 ) = -1./3.;
+    BOOST_CHECK_SMALL( ublas::norm_2( tetraref.faceBarycenter(2)-G3 ), 1e-14 );
+    G3( 0 ) = -1./3.;G3( 1 ) = -1./3.;G3( 2 ) = -1.;
+    BOOST_CHECK_SMALL( ublas::norm_2( tetraref.faceBarycenter(3)-G3 ), 1e-14 );
+}
+
 BOOST_AUTO_TEST_CASE( test_entity_range_ )
 {
     //test_entity_range<1,1>();
