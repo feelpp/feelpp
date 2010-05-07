@@ -1,5 +1,9 @@
 cmake_minimum_required (VERSION 2.6)
 
+SET(CMAKE_CXX_FLAGS "-std=c++0x" CACHE STRING "Default flags" FORCE)
+SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++0x ${CMAKE_CXX_FLAGS_DEBUG} " CACHE STRING "Debug flags" FORCE)
+SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x ${CMAKE_CXX_FLAGS_RELEASE} " CACHE STRING "Release flags" FORCE)
+
 #SET( CMAKE_CXX_FLAGS "-pipe -Wall -O2 ")
 #SET( CMAKE_C_FLAGS "-pipe -Wall -O2")
 
