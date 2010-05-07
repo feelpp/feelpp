@@ -265,15 +265,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
             //init the localization tool
             this->domainSpace()->mesh()->tool_localization()->updateForUse();
 
-            //image_mesh_element_iterator it = this->dualImageSpace()->mesh()->beginElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
-            //image_mesh_element_iterator en = this->dualImageSpace()->mesh()->endElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
-
-            //enregistre les numero locales par rapport à la place dans __ptsReal(colonne)
-            //std::vector<boost::tuple<uint,size_type> > __memLocDof(image_basis_type::nLocalDof);
-
-            typename matrix_node<value_type>::type __ptsReal( image_mesh_type::nDim, 1/*image_basis_type::nLocalDof*/);
-            typename matrix_node<value_type>::type ptsRef(image_mesh_type::nDim , /*nbPtsElt*/1 );
-            typename matrix_node<value_type>::type MlocEval(image_mesh_type::nDim,1);
+            typename matrix_node<value_type>::type __ptsReal( image_mesh_type::nDim, 1);
+            typename matrix_node<value_type>::type ptsRef(image_mesh_type::nDim , 1 );
+            typename matrix_node<value_type>::type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
             analysis_iterator_type itanal,itanal_end;
             analysis_output_iterator_type itL,itL_end;
 
@@ -283,7 +277,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
 
             for( ; it_dofpt != en_dofpt; ++ it_dofpt )
                 {
-                    size_type gdof = boost::get<1>(*it_dofpt);// boost::get<0>(this->dualImageSpace()->dof()->localToGlobal( it->id(), i, 0 ));// 0 est le numero de composantes
+                    size_type gdof = boost::get<1>(*it_dofpt);
                     ublas::column(__ptsReal,0 )= boost::get<0>(*it_dofpt);
 
                     __loc->run_analysis(__ptsReal);
@@ -292,21 +286,21 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
 
                     for ( ;itanal!=itanal_end;++itanal)
                         {
-                            //iterate in the list pt for a element
                             itL=itanal->second.begin();
-                            itL_end=itanal->second.end();
 
-                            //compute a point matrix with the list of point
                             ublas::column( ptsRef, 0 ) = boost::get<1>(*itL);
 
-                            /*typename matrix_node<value_type>::type*/ MlocEval = domainbasis->evaluate( ptsRef );
+                            MlocEval = domainbasis->evaluate( ptsRef );
 
-                            itL=itanal->second.begin();
                             for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                 {
-                                    size_type j =  boost::get<0>(domaindof->localToGlobal( itanal->first,jloc, 0/*comp*/ ));
-                                    value_type v = MlocEval( jloc, 0 );
-                                    this->matPtr()->set( gdof, j, v );
+                                    for ( uint16_type comp = 0;comp < domain_basis_type::nComponents1;++comp )
+                                        {
+                                            size_type j =  boost::get<0>(domaindof->localToGlobal( itanal->first,jloc,comp ));
+                                            value_type v = MlocEval( domain_basis_type::nComponents1*jloc + comp ,0 );
+                                            //value_type v = MlocEval( domain_basis_type::nLocalDof*comp + jloc ,0 );
+                                            this->matPtr()->set( gdof, j, v );
+                                        }
                                 }
                         }
                 }
