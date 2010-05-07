@@ -436,8 +436,6 @@ public:
         :
         super( id ),
         super2(),
-        _M_h(),
-        _M_h_face( 2 ),
         _M_vertices( numLocalVertices, 0 )
     {
     }
@@ -448,8 +446,6 @@ public:
         :
         super( g ),
         super2( g ),
-        _M_h( g._M_h ),
-        _M_h_face( g._M_h_face ),
         _M_vertices( g._M_vertices )
     {}
 
@@ -468,56 +464,15 @@ public:
         {
             super::operator=( g );
             super2::operator=( g );
-            _M_h = g._M_h;
-            _M_h_face = g._M_h_face;
             _M_vertices = g._M_vertices;
         }
         return *this;
     }
 
-    /**
-     * get the max length of the edges of the element
-     *
-     *
-     * @return the max length of the edges of the element
-     */
-    double h() const
-    {
-        if ( !_M_h && this->hasPoints() )
-        {
-            double __h = 0;
-            for ( uint16_type __e = 0;__e < numLocalEdges;++__e )
-            {
-                node_type const& __x1 = this->point( this->eToP( __e, 0 ) ).node();
-                node_type const& __x2 = this->point( this->eToP( __e, 1 ) ).node();
-                double __l = ublas::norm_2( __x1-__x2 );
-                __h = ( __h > __l )?__h:__l;
-            }
-            _M_h = __h;
-
-        }
-        return _M_h.get();
-
-    }
 
     //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
     MeshBase const* mesh() const { return super::mesh(); }
 
-    /**
-     * get the max length of the edge in the local face \c f
-     *
-     * @param f local id of the face
-     *
-     * @return the max length of the edges of the local face
-     */
-    double hFace( uint16_type f ) const
-    {
-        if ( !_M_h_face[f] )
-        {
-            _M_h_face[f] = 1;
-        }
-        return _M_h_face[f].get();
-    }
 
     /**
      * \return \c true if on the boundary, \c false otherwise
@@ -609,8 +564,6 @@ public:
 private:
 
     std::vector<uint8_type> _M_map;
-    mutable boost::optional<double> _M_h;
-    mutable ublas::vector<boost::optional<double>,ublas::bounded_array<boost::optional<double>, 2> > _M_h_face;
     ublas::bounded_array<point_type*, numLocalVertices> _M_vertices;
 
 };
@@ -678,8 +631,6 @@ public:
         :
         super( id ),
         super2(),
-        _M_h(),
-        _M_h_face(numLocalEdges),
         _M_edges( numLocalEdges ),
         _M_edge_permutation( numLocalEdges )
     {
@@ -696,8 +647,6 @@ public:
         :
         super( g ),
         super2( g ),
-        _M_h( g._M_h ),
-        _M_h_face( g._M_h_face ),
         _M_edges( g._M_edges ),
         _M_edge_permutation( g._M_edge_permutation )
     {}
@@ -717,8 +666,6 @@ public:
         {
             super::operator=( g );
             super2::operator=( g );
-            _M_h = g._M_h;
-            _M_h_face = g._M_h_face;
             _M_edges = g._M_edges;
             _M_edge_permutation = g._M_edge_permutation;
         }
@@ -755,48 +702,7 @@ public:
      */
     uint16_type processId() const { return super::processId(); }
 
-    /**
-     * get the max length of the edges of the element
-     *
-     *
-     * @return the max length of the edges of the element
-     */
-    double h() const
-    {
-        if ( !_M_h && this->hasPoints() )
-        {
-            double __h = 0;
-            for ( uint16_type __e = 0;__e < numLocalEdges;++__e )
-            {
-                node_type const& __x1 = this->point( this->fToP( __e, 0 ) ).node();
-                node_type const& __x2 = this->point( this->fToP( __e, 1 ) ).node();
-                double __l = ublas::norm_2( __x1-__x2 );
-                __h = ( __h > __l )?__h:__l;
-            }
-            _M_h = __h;
 
-        }
-        return _M_h.get();
-
-    }
-
-    /**
-     * get the max length of the edge in the local face \c f
-     *
-     * @param f local id of the face
-     *
-     * @return the max length of the edges of the local face
-     */
-    double hFace( uint16_type f ) const
-    {
-        if ( !_M_h_face[f] && this->hasPoints() )
-        {
-            node_type const& __x1 = this->point( this->fToP( f, 0 ) ).node();
-            node_type const& __x2 = this->point( this->fToP( f, 1 ) ).node();
-            _M_h_face[f] = ublas::norm_2( __x1-__x2 );
-        }
-        return _M_h_face[f].get();
-    }
 
     /**
      * \sa face()
@@ -899,9 +805,6 @@ public:
 
 private:
 
-    mutable boost::optional<double> _M_h;
-    mutable ublas::vector<boost::optional<double>,ublas::bounded_array<boost::optional<double>, numLocalEdges> > _M_h_face;
-
     ublas::bounded_array<edge_type*, numLocalEdges> _M_edges;
     ublas::bounded_array<edge_permutation_type, numLocalEdges> _M_edge_permutation;
 };
@@ -968,8 +871,6 @@ public:
         :
         super( id ),
         super2(),
-        _M_h(),
-        _M_h_face( numLocalEdges ),
         _M_edges( numLocalEdges ),
         _M_faces( numLocalFaces ),
         _M_edge_permutation( numLocalEdges ),
@@ -986,8 +887,6 @@ public:
         :
         super( g ),
         super2( g ),
-        _M_h( g._M_h ),
-        _M_h_face( g._M_h_face ),
         _M_edges( numLocalEdges ),
         _M_faces( numLocalFaces ),
         _M_edge_permutation( g._M_edge_permutation ),
@@ -1008,8 +907,6 @@ public:
         if ( this != &g )
             {
                 super::operator=( g );
-                _M_h = g._M_h;
-                _M_h_face = g._M_h_face;
                 _M_edges = g._M_edges;
                 _M_faces = g._M_faces;
                 _M_edge_permutation = g._M_edge_permutation;
@@ -1047,59 +944,6 @@ public:
      * \return process id
      */
     uint16_type processId() const { return super::processId(); }
-
-    /**
-     * get the max length of the edges of the element
-     *
-     *
-     * @return the max length of the edges of the element
-     */
-    double h() const
-    {
-        if ( !_M_h && this->hasPoints() )
-            {
-                double __h = 0;
-                for ( uint16_type __e = 0;__e < numLocalEdges;++__e )
-                    {
-                        node_type const& __x1 = this->point( this->eToP( __e, 0 ) ).node();
-                        node_type const& __x2 = this->point( this->eToP( __e, 1 ) ).node();
-                        double __l = ublas::norm_2( __x1-__x2 );
-                        __h = ( __h > __l )?__h:__l;
-                    }
-                _M_h = __h;
-
-            }
-        return _M_h.get();
-
-    }
-
-    /**
-     * get the max length of the edge in the local face \c f
-     *
-     * @param f local id of the face
-     *
-     * @return the max length of the edges of the local face
-     */
-    double hFace( uint16_type f ) const
-    {
-        if ( !_M_h_face[f] && this->hasPoints() )
-            {
-#if 0
-                double __h = 0;
-                for ( uint16_type __e = 0;__e < FaceShape::numEdges;++__e )
-                    {
-                        node_type const& __x1 = this->point( super::eToP( super::fToE( f, __e ).first, 0 ) ).node();
-                        node_type const& __x2 = this->point( super::eToP( super::fToE( f, __e ).first, 1 ) ).node();
-                        double __l = ublas::norm_2( __x1-__x2 );
-                        __h = ( __h > __l )?__h:__l;
-                    }
-                _M_h_face[f] = __h;
-#else
-                _M_h_face[f] = 1;
-#endif
-            }
-        return _M_h_face[f].get();
-    }
 
     size_type ad_first() const { return invalid_size_type_value; }
     uint16_type pos_first() const { return invalid_uint16_type_value; }
@@ -1205,9 +1049,6 @@ public:
         return std::make_pair( _M_faces.begin(), _M_faces.end() );
     }
 private:
-
-    mutable boost::optional<double> _M_h;
-    mutable ublas::vector<boost::optional<double>,ublas::bounded_array<boost::optional<double>, numLocalEdges> > _M_h_face;
 
     ublas::bounded_array<edge_type*, numLocalEdges> _M_edges;
     ublas::bounded_array<face_type*, numLocalFaces> _M_faces;

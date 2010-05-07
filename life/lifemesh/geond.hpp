@@ -92,6 +92,7 @@ public:
     static const uint16_type numPoints = super::numPoints;
     static const uint16_type numVertices = super::numVertices;
     static const uint16_type numLocalPoints = super::numPoints;
+    static const uint16_type numLocalEdges = super::numEdges;
     static const uint16_type numLocalVertices = super::numVertices;
     static const int numFaces = super::numFaces;
     static const int numEdges = super::numEdges;
@@ -120,14 +121,18 @@ public:
     GeoND()
         :
         super( 0 ),
-        _M_points( numPoints ),
-        _M_face_points( numTopologicalFaces ),
-        _M_G( nRealDim, numPoints ),
-        _M_has_points( false ),
-        _M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
-        _M_marker1(),
-        _M_marker2(),
-        _M_marker3()
+        M_points( numPoints ),
+        M_face_points( numTopologicalFaces ),
+        M_G( nRealDim, numPoints ),
+        M_barycenter( nRealDim, 1 ),
+        M_barycenterfaces( nRealDim, numTopologicalFaces ),
+        M_h( 1 ),
+        M_h_face( numTopologicalFaces, 1 ),
+        M_has_points( false ),
+        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_marker1(),
+        M_marker2(),
+        M_marker3()
     {
     }
 
@@ -140,14 +145,18 @@ public:
     explicit GeoND( size_type id )
         :
         super( id ),
-        _M_points( numPoints ),
-        _M_face_points( numTopologicalFaces ),
-        _M_G( nRealDim, numPoints ),
-        _M_has_points( false ),
-        _M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
-        _M_marker1(),
-        _M_marker2(),
-        _M_marker3()
+        M_points( numPoints ),
+        M_face_points( numTopologicalFaces ),
+        M_G( nRealDim, numPoints ),
+        M_barycenter( nRealDim, 1 ),
+        M_barycenterfaces( nRealDim, numTopologicalFaces ),
+        M_h( 1 ),
+        M_h_face( numTopologicalFaces, 1 ),
+        M_has_points( false ),
+        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_marker1(),
+        M_marker2(),
+        M_marker3()
     {
     }
 
@@ -157,20 +166,24 @@ public:
     GeoND( GeoND const& G )
         :
         super( G ),
-        _M_points( G._M_points ),
-        _M_face_points( G._M_face_points ),
-        _M_G( G._M_G ),
-        _M_has_points( G._M_has_points ),
-        _M_neighbors( G._M_neighbors ),
-        _M_marker1( G._M_marker1 ),
-        _M_marker2( G._M_marker2 ),
-        _M_marker3( G._M_marker3 )
+        M_points( G.M_points ),
+        M_face_points( G.M_face_points ),
+        M_G( G.M_G ),
+        M_barycenter( G.M_barycenter ),
+        M_barycenterfaces( G.M_barycenterfaces ),
+        M_h( G.M_h ),
+        M_h_face( G.M_h_face ),
+        M_has_points( G.M_has_points ),
+        M_neighbors( G.M_neighbors ),
+        M_marker1( G.M_marker1 ),
+        M_marker2( G.M_marker2 ),
+        M_marker3( G.M_marker3 )
     {
 #if 0
         for ( uint16_type i = 0; i < numLocalPoints; ++i )
-            _M_points[ i ] = G._M_points[ i ];
+            M_points[ i ] = G.M_points[ i ];
 
-        _M_G = G._M_G;
+        M_G = G.M_G;
 #endif
     }
 
@@ -207,7 +220,7 @@ public:
      * \return true if points have been inserted in elements, false
      * otherwise
      */
-    bool hasPoints() const { return _M_has_points; }
+    bool hasPoints() const { return M_has_points; }
 
     /**
      * assignment operator
@@ -222,18 +235,23 @@ public:
         {
             super::operator=( G );
             for ( uint16_type i = 0; i < numLocalPoints; ++i )
-                _M_points[ i ] = G._M_points[ i ];
+                M_points[ i ] = G.M_points[ i ];
 
-            _M_face_points = G._M_face_points;
-            _M_G = G._M_G;
+            M_face_points = G.M_face_points;
+            M_G = G.M_G;
 
-            _M_has_points = G._M_has_points;
+            M_barycenter = G.M_barycenter;
+            M_barycenterfaces = G.M_barycenterfaces;
+            M_h = G.M_h;
+            M_h_face = G.M_h_face;
 
-            _M_neighbors = G._M_neighbors;
+            M_has_points = G.M_has_points;
 
-            _M_marker1 = G._M_marker1;
-            _M_marker2 = G._M_marker2;
-            _M_marker3 = G._M_marker3;
+            M_neighbors = G.M_neighbors;
+
+            M_marker1 = G.M_marker1;
+            M_marker2 = G.M_marker2;
+            M_marker3 = G.M_marker3;
         }
         return *this;
     }
@@ -258,14 +276,14 @@ public:
      *
      * \return the pair neighbor \p n index and process \p id it belongs to
      */
-    std::pair<size_type,size_type> const& neighbor( uint16_type n ) const { return _M_neighbors[n]; }
+    std::pair<size_type,size_type> const& neighbor( uint16_type n ) const { return M_neighbors[n]; }
 
     /**
      * set the \p n -th neighbor with \p neigh
      */
     void setNeighbor( uint16_type n, size_type neigh_id, size_type proc_id )
     {
-        _M_neighbors[n] = std::make_pair( neigh_id, proc_id );
+        M_neighbors[n] = std::make_pair( neigh_id, proc_id );
     }
 
     /**
@@ -274,7 +292,7 @@ public:
      */
     PointType & point( uint16_type i )
     {
-        return *( static_cast<POINTTYPE *>( _M_points[ i ] ) );
+        return *( static_cast<POINTTYPE *>( M_points[ i ] ) );
     }
 
     /**
@@ -283,7 +301,7 @@ public:
      */
     PointType const & point ( uint16_type i ) const
     {
-        return *( static_cast<POINTTYPE *>( _M_points[ i ] ) );
+        return *( static_cast<POINTTYPE *>( M_points[ i ] ) );
     }
     /**
      * It returns the pointer to an point object (possibly derived from
@@ -291,7 +309,7 @@ public:
      */
     PointType* pointPtr( uint16_type i )
     {
-        return _M_points[ i ];
+        return M_points[ i ];
     }
 
     /**
@@ -300,12 +318,12 @@ public:
      */
     PointType const* pointPtr ( uint16_type i ) const
     {
-        return _M_points[ i ];
+        return M_points[ i ];
     }
 
     /**
      */
-    PointType const & facePoint ( uint16_type __f, uint16_type const __i ) const { return _M_face_points[__f][__i]; }
+    PointType const & facePoint ( uint16_type __f, uint16_type const __i ) const { return M_face_points[__f][__i]; }
 
 
     /**
@@ -318,7 +336,7 @@ public:
      */
     PointType & reversepoint( uint16_type const i )
     {
-        return *( static_cast<POINTTYPE *>( _M_points[ detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
+        return *( static_cast<POINTTYPE *>( M_points[ detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
     }
 
 
@@ -332,7 +350,7 @@ public:
      */
     PointType const & reversepoint ( uint16_type const i ) const
     {
-        return *( static_cast<POINTTYPE *>( _M_points[ detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
+        return *( static_cast<POINTTYPE *>( M_points[ detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
     }
 
 
@@ -402,7 +420,7 @@ public:
      *
      * \return the matrix of geometric nodes
      */
-    matrix_node_type const& G() const { return _M_G; }
+    matrix_node_type const& G() const { return M_G; }
 
     /**
      * matrix of geometric nodes
@@ -412,13 +430,35 @@ public:
      *
      * \return the matrix of geometric nodes
      */
-    matrix_node_type & G() { return _M_G; }
+    matrix_node_type & G() { return M_G; }
 
-    point_iterator beginPoint() { return _M_points.begin(); }
-    point_const_iterator beginPoint() const { return _M_points.begin(); }
-    point_iterator endPoint() { return _M_points.end(); }
-    point_const_iterator endPoint() const { return _M_points.end(); }
+    point_iterator beginPoint() { return M_points.begin(); }
+    point_const_iterator beginPoint() const { return M_points.begin(); }
+    point_iterator endPoint() { return M_points.end(); }
+    point_const_iterator endPoint() const { return M_points.end(); }
 
+    /**
+     * get the max length of the edges of the element
+     *
+     *
+     * @return the max length of the edges of the element
+     */
+    double h() const
+    {
+        return M_h;
+    }
+
+    /**
+     * get the max length of the edge in the local face \c f
+     *
+     * @param f local id of the face
+     *
+     * @return the max length of the edges of the local face
+     */
+    double hFace( uint16_type f ) const
+    {
+        return M_h_face[f];
+    }
 
     struct tt
     {
@@ -494,47 +534,54 @@ public:
 
     void applyDisplacement( int i, ublas::vector<double> const& u )
     {
-        ublas::column( _M_G, i ) += u;
-        (*_M_points[ i ]) += u;
+        ublas::column( M_G, i ) += u;
+        (*M_points[ i ]) += u;
     }
     void applyDisplacementG( int i, ublas::vector<double> const& u )
     {
-        ublas::column( _M_G, i ) += u;
+        ublas::column( M_G, i ) += u;
     }
-    Marker1 const& marker() const { return _M_marker1; }
-    Marker1& marker() { return _M_marker1; }
-    void setMarker( flag_type v ) { return _M_marker1.assign( v ); }
+    Marker1 const& marker() const { return M_marker1; }
+    Marker1& marker() { return M_marker1; }
+    void setMarker( flag_type v ) { return M_marker1.assign( v ); }
 
-    Marker2 const& marker2() const { return _M_marker2; }
-    Marker2& marker2() { return _M_marker2; }
-    void setMarker2( flag_type v ) { return _M_marker2.assign( v ); }
+    Marker2 const& marker2() const { return M_marker2; }
+    Marker2& marker2() { return M_marker2; }
+    void setMarker2( flag_type v ) { return M_marker2.assign( v ); }
 
-    Marker3 const& marker3() const { return _M_marker3; }
-    Marker3& marker3() { return _M_marker3; }
-    void setMarker3( flag_type v ) { return _M_marker3.assign( v ); }
+    Marker3 const& marker3() const { return M_marker3; }
+    Marker3& marker3() { return M_marker3; }
+    void setMarker3( flag_type v ) { return M_marker3.assign( v ); }
 
+
+    void update();
 private:
 
     /** geometric nodes of the element */
-    ublas::bounded_array<point_type*, numPoints> _M_points;
+    ublas::bounded_array<point_type*, numPoints> M_points;
 
     /** geometric nodes of the faces of the element */
-    std::vector<ublas::bounded_array<point_type*, numPoints> > _M_face_points;
+    std::vector<ublas::bounded_array<point_type*, numPoints> > M_face_points;
 
     /**< matrix of the geometric nodes */
-    matrix_node_type _M_G;
+    matrix_node_type M_G;
+    matrix_node_type M_barycenter;
+    matrix_node_type M_barycenterfaces;
 
-    bool _M_has_points;
+    double M_h;
+    std::vector<double> M_h_face;
+
+    bool M_has_points;
 
     /**
      * store neighbor element id
      */
-    std::vector<std::pair<size_type,size_type> > _M_neighbors;
+    std::vector<std::pair<size_type,size_type> > M_neighbors;
 
 
-    Marker1 _M_marker1;
-    Marker2 _M_marker2;
-    Marker3 _M_marker3;
+    Marker1 M_marker1;
+    Marker2 M_marker2;
+    Marker3 M_marker3;
 
     // mesh to which the geond element belongs to
     mutable MeshBase const* M_mesh;
@@ -552,12 +599,12 @@ inline
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type const i, point_type const & p )
 {
-    _M_points[ i ] = const_cast<point_type *>( &p );
-    //Debug() << "[setPoint] üpdate point index " << i << " with "<< _M_points[i]->id() << "\n";
+    M_points[ i ] = const_cast<point_type *>( &p );
+    //Debug() << "[setPoint] üpdate point index " << i << " with "<< M_points[i]->id() << "\n";
     LIFE_ASSERT( const_cast<point_type *>( &p ) != 0 ).error( "invalid Geo0D<>" );
-    ublas::column( _M_G, i ) = _M_points[i]->node();
-    _M_has_points = true;
-    //Debug() << "[setPoint] üpdate point index " << i << " with "<< _M_points[i]->id() << "\n";
+    ublas::column( M_G, i ) = M_points[i]->node();
+    M_has_points = true;
+    //Debug() << "[setPoint] üpdate point index " << i << " with "<< M_points[i]->id() << "\n";
 }
 
 #if 0
@@ -568,9 +615,9 @@ bool GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPointBD( uint16_type const i, point_t
     if ( i > numLocalVertices )
         return false;
 
-    _M_points[ i ] = const_cast<point_type *>( &p );
-    ublas::column( _M_G, i ) = _M_points[i]->node();
-    _M_has_points = true;
+    M_points[ i ] = const_cast<point_type *>( &p );
+    ublas::column( M_G, i ) = M_points[i]->node();
+    M_has_points = true;
     return true;
 }
 
@@ -578,9 +625,9 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 inline
 void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type const i, point_type const * p )
 {
-    _M_points[ i ] = const_cast<point_type *>( p );
-    ublas::column( _M_G, i ) = _M_points[i]->node();
-    _M_has_points = true;
+    M_points[ i ] = const_cast<point_type *>( p );
+    ublas::column( M_G, i ) = M_points[i]->node();
+    M_has_points = true;
 }
 
 
@@ -591,9 +638,9 @@ bool GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPointBD( uint16_type const i, point_t
     if ( i > numLocalVertices )
         return false;
 
-    _M_points[ i ] = const_cast<point_type *>( p );
-    ublas::column( _M_G, i ) = _M_points[i]->node();
-    _M_has_points = true;
+    M_points[ i ] = const_cast<point_type *>( p );
+    ublas::column( M_G, i ) = M_points[i]->node();
+    M_has_points = true;
     return true;
 }
 #endif
@@ -607,7 +654,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::showMe( bool verbose, std::ostream & out ) co
     out << " Number of Vertices = " << numVertices << std::endl;
     out << "   Number of Points = " << numPoints << std::endl;
     out << "                 id = " << this->id() << std::endl;
-    out << "                  G = " << _M_G << "\n";
+    out << "                  G = " << M_G << "\n";
     for ( int i = 0; i < numVertices; i++ )
     {
         out << "POINT id = " << i << std::endl;
@@ -620,13 +667,14 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::showMe( bool verbose, std::ostream & out ) co
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::swapPoints( const uint16_type & pt1, const uint16_type & pt2 )
 {
-    point_type * tmp( _M_points[ pt1 ] );
-    _M_points[ pt1 ] = _M_points[ pt2 ];
-    _M_points[ pt2 ] = tmp;
+    point_type * tmp( M_points[ pt1 ] );
+    M_points[ pt1 ] = M_points[ pt2 ];
+    M_points[ pt2 ] = tmp;
 
     // swap also the entries in G
-    ublas::column( _M_G, pt1 ).swap( ublas::column( _M_G, pt2 ) );
+    ublas::column( M_G, pt1 ).swap( ublas::column( M_G, pt2 ) );
 }
+
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::exchangePoints( const uint16_type otn[ numPoints ] )
@@ -634,14 +682,34 @@ void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::exchangePoints( const uint16_type otn[ n
     point_type * tmp[ numPoints ];
     for ( unsigned int i = 0;i < numPoints;++i )
     {
-        tmp[ i ] = _M_points[ i ];
+        tmp[ i ] = M_points[ i ];
     }
     for ( unsigned int i = 0;i < numPoints;++i )
     {
-        _M_points[ i ] = tmp[ otn[ i ] ];
-        ublas::column( _M_G, i ) = _M_points[i]->node();
+        M_points[ i ] = tmp[ otn[ i ] ];
+        ublas::column( M_G, i ) = M_points[i]->node();
     }
 }
+
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
+void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
+{
+    M_h = 0;
+    for ( uint16_type __e = 0;__e < numLocalEdges;++__e )
+    {
+        node_type const& __x1 = this->point( this->eToP( __e, 0 ) ).node();
+        node_type const& __x2 = this->point( this->eToP( __e, 1 ) ).node();
+        double __l = ublas::norm_2( __x1-__x2 );
+        M_h = ( M_h > __l )?M_h:__l;
+    }
+
+    M_barycenter = glas::average( M_G );
+
+    auto ctx = M_gm->template context<vm::JACOBIAN>( *this, M_gm->preCompute( M_gm,
+                                                                              M_G ) );
+
+}
+
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 inline
