@@ -899,6 +899,13 @@ public:
     typedef PreCompute precompute_type;
     typedef boost::shared_ptr<precompute_type> precompute_ptrtype;
 
+    precompute_ptrtype
+    preCompute( boost::shared_ptr<PolynomialSet<Poly, PolySetType > > p,
+                points_type const& P )
+        {
+            return precompute_ptrtype( new PreCompute( p, P ) );
+        }
+
     template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType>
     class Context
     {
