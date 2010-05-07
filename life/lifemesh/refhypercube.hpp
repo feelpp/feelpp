@@ -721,6 +721,11 @@ private:
 
     normals_type _M_normals;
 
+
+    points_type M_barycenter;
+
+    points_type M_barycenterfaces;
+
 };
 
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>

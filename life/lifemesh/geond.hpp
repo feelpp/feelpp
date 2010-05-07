@@ -128,6 +128,9 @@ public:
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_h( 1 ),
         M_h_face( numTopologicalFaces, 1 ),
+        M_measure( 1 ),
+        M_measurefaces( nRealDim, numTopologicalFaces ),
+        M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
         M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
         M_marker1(),
@@ -152,39 +155,15 @@ public:
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_h( 1 ),
         M_h_face( numTopologicalFaces, 1 ),
+        M_measure( 1 ),
+        M_measurefaces( nRealDim, numTopologicalFaces ),
+        M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
         M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
         M_marker1(),
         M_marker2(),
         M_marker3()
     {
-    }
-
-    /**
-     * copy constructor
-     */
-    GeoND( GeoND const& G )
-        :
-        super( G ),
-        M_points( G.M_points ),
-        M_face_points( G.M_face_points ),
-        M_G( G.M_G ),
-        M_barycenter( G.M_barycenter ),
-        M_barycenterfaces( G.M_barycenterfaces ),
-        M_h( G.M_h ),
-        M_h_face( G.M_h_face ),
-        M_has_points( G.M_has_points ),
-        M_neighbors( G.M_neighbors ),
-        M_marker1( G.M_marker1 ),
-        M_marker2( G.M_marker2 ),
-        M_marker3( G.M_marker3 )
-    {
-#if 0
-        for ( uint16_type i = 0; i < numLocalPoints; ++i )
-            M_points[ i ] = G.M_points[ i ];
-
-        M_G = G.M_G;
-#endif
     }
 
     /**
@@ -222,6 +201,7 @@ public:
      */
     bool hasPoints() const { return M_has_points; }
 
+#if 0
     /**
      * assignment operator
      *
@@ -255,7 +235,7 @@ public:
         }
         return *this;
     }
-
+#endif
     /**
      * \return the number of points in convex
      */
@@ -469,6 +449,31 @@ public:
     };
 
     /**
+     * \return the measure of the element
+     */
+    double measure() const { return M_measure; }
+
+    /**
+     * \return the measure of the element face \p f
+     */
+    double faceMeasure( uint16_type f ) const { return M_measurefaces[f]; }
+
+    /**
+     * \return the measure of the element faces
+     */
+    std::vector<double> const& faceMeasures() const { return M_measurefaces; }
+
+    /**
+     * \return the normals at the barycenter of the faces
+     */
+    matrix_node_type const& normals() const { return M_normals; }
+
+    /**
+     * \return the normal at the barycenter of the face \p f
+     */
+    ublas::matrix_column<matrix_node_type const>  normal( uint16_type f ) const { return ublas::column( M_normals, f ); }
+
+    /**
      * Get the local id of the point in the element
      *
      * @param _localFace local id of a face in the element
@@ -570,6 +575,11 @@ private:
 
     double M_h;
     std::vector<double> M_h_face;
+
+    double M_measure;
+    std::vector<double> M_measurefaces;
+    matrix_node_type M_normals;
+
 
     bool M_has_points;
 
