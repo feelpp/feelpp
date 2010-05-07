@@ -26,23 +26,26 @@ FIND_PACKAGE(EXPAT)
 FIND_PATH(TRILINOS_INCLUDE_DIR
     Teuchos_Utils.hpp
     PATHS /opt/trilinos/include/ /usr/include/trilinos /usr/ljk/include/trilinos
+    $ENV{TRILINOS_DIR} 
+    PATH_SUFFIXES
+      include
     DOC "Directory where Trilinos header files are stored" )
 MARK_AS_ADVANCED( TRILINOS_INCLUDE_DIR )
 
 if( TRILINOS_INCLUDE_DIR )
 
-  FIND_LIBRARY(TRILINOS_LIB_TEUCHOS   NAMES trilinos_teuchos teuchos     PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
-  FIND_LIBRARY(TRILINOS_LIB_EPETRA    NAMES trilinos_epetra epetra       PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
-  FIND_LIBRARY(TRILINOS_LIB_EPETRAEXT NAMES trilinos_epetraext epetraext PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
-  FIND_LIBRARY(TRILINOS_LIB_TRIUTILS  NAMES trilinos_triutils triutils   PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
-  FIND_LIBRARY(TRILINOS_LIB_AZTECOO   NAMES trilinos_aztecoo aztecoo     PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
-  FIND_LIBRARY(TRILINOS_LIB_AMESOS    NAMES trilinos_amesos amesos       PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
-  FIND_LIBRARY(TRILINOS_LIB_IFPACK    NAMES trilinos_ifpack ifpack       PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
-  FIND_LIBRARY(TRILINOS_LIB_ML        NAMES trilinos_ml ml               PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
-  FIND_LIBRARY(TRILINOS_LIB_GALERI    NAMES trilinos_galeri galeri       PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
-  FIND_LIBRARY(TRILINOS_LIB_NOX       NAMES trilinos_nox nox             PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
-  FIND_LIBRARY(TRILINOS_LIB_NOXEPETRA NAMES trilinos_noxepetra noxepetra PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
-#  FIND_LIBRARY(TRILINOS_LIB_NOXLAPACK NAMES trilinos_noxlapack noxlapack PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib )
+  FIND_LIBRARY(TRILINOS_LIB_TEUCHOS   NAMES trilinos_teuchos teuchos     PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib $ENV{TRILINOS_DIR}/lib)
+  FIND_LIBRARY(TRILINOS_LIB_EPETRA    NAMES trilinos_epetra epetra       PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib $ENV{TRILINOS_DIR}/lib)
+  FIND_LIBRARY(TRILINOS_LIB_EPETRAEXT NAMES trilinos_epetraext epetraext PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib $ENV{TRILINOS_DIR}/lib)
+  FIND_LIBRARY(TRILINOS_LIB_TRIUTILS  NAMES trilinos_triutils triutils   PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib $ENV{TRILINOS_DIR}/lib)
+  FIND_LIBRARY(TRILINOS_LIB_AZTECOO   NAMES trilinos_aztecoo aztecoo     PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib $ENV{TRILINOS_DIR}/lib)
+  FIND_LIBRARY(TRILINOS_LIB_AMESOS    NAMES trilinos_amesos amesos       PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib $ENV{TRILINOS_DIR}/lib)
+  FIND_LIBRARY(TRILINOS_LIB_IFPACK    NAMES trilinos_ifpack ifpack       PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib $ENV{TRILINOS_DIR}/lib)
+  FIND_LIBRARY(TRILINOS_LIB_ML        NAMES trilinos_ml ml               PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib $ENV{TRILINOS_DIR}/lib)
+  FIND_LIBRARY(TRILINOS_LIB_GALERI    NAMES trilinos_galeri galeri       PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib $ENV{TRILINOS_DIR}/lib)
+  FIND_LIBRARY(TRILINOS_LIB_NOX       NAMES trilinos_nox nox             PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib $ENV{TRILINOS_DIR}/lib)
+  FIND_LIBRARY(TRILINOS_LIB_NOXEPETRA NAMES trilinos_noxepetra noxepetra PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib $ENV{TRILINOS_DIR}/lib)
+#  FIND_LIBRARY(TRILINOS_LIB_NOXLAPACK NAMES trilinos_noxlapack noxlapack PATHS /usr/lib /opt/trilinos/lib /usr/ljk/lib $ENV{TRILINOS_DIR}/lib)
 
   SET(TRILINOS_LIBRARIES
     ${TRILINOS_LIB_NOX}
