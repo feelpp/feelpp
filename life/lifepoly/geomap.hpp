@@ -3,7 +3,7 @@
 
   Copyright (C) 2001,2002,2003,2004 EPFL, INRIA and Politechnico di Milano
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006,2007,2008 Université Joseph Fourier Grenoble 1
+  Copyright (C) 2006-2010 Université Joseph Fourier Grenoble 1
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
 #include <boost/signal.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
 //#include <boost/numeric/bindings/traits/traits.hpp>
 //#include <boost/numeric/bindings/traits/ublas_vector.hpp>
@@ -84,7 +85,8 @@ template<uint16_type Dim,
                   template<class, uint16_type, class> class Pts> class PP = Lagrange>
 class GeoMap
     :
-        public PP<Order,Scalar, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
+        public PP<Order,Scalar, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type,
+        public boost::enable_shared_from_this<GeoMap<Dim, Order, T, Entity, PP > >
 //public PP<Order,Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
 {
     //typedef typename PP<Order, Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
@@ -1517,6 +1519,29 @@ private:
 
     permutation_type _M_perm;
 }; // Context
+
+    template<size_type context_v, typename ElementType>
+    boost::shared_ptr<Context<context_v,ElementType> >
+    context( ElementType const& e, precompute_ptrtype const& pc )
+        {
+            return boost::shared_ptr<Context<context_v,ElementType> >(
+                new Context<context_v, ElementType>( this->shared_from_this(),
+                                                     e,
+                                                     pc ) );
+        }
+
+    template<size_type context_v, typename ElementType>
+    boost::shared_ptr<Context<context_v,ElementType> >
+    context( ElementType const& e,
+             std::vector<std::map<typename ElementType::permutation_type,precompute_ptrtype> > const& pc,
+             uint16_type f )
+        {
+            return boost::shared_ptr<Context<context_v,ElementType> >(
+                new Context<context_v, ElementType>( this->shared_from_this(),
+                                                     e,
+                                                     pc,
+                                                     f ) );
+        }
 
 
 /**
