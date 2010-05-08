@@ -1533,7 +1533,7 @@ private:
     template<size_type context_v, typename ElementType>
     boost::shared_ptr<Context<context_v,ElementType> >
     context( ElementType const& e,
-             std::vector<std::map<typename ElementType::permutation_type,precompute_ptrtype> > const& pc,
+             std::vector<std::map<typename ElementType::permutation_type,precompute_ptrtype> > & pc,
              uint16_type f )
         {
             return boost::shared_ptr<Context<context_v,ElementType> >(
