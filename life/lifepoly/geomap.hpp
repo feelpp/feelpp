@@ -85,8 +85,8 @@ template<uint16_type Dim,
                   template<class, uint16_type, class> class Pts> class PP = Lagrange>
 class GeoMap
     :
-        public PP<Order,Scalar, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type,
-        public boost::enable_shared_from_this<GeoMap<Dim, Order, T, Entity, PP > >
+    public PP<Order,Scalar, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type,
+    public boost::enable_shared_from_this<GeoMap<Dim, Order, T, Entity, PP > >
 //public PP<Order,Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
 {
     //typedef typename PP<Order, Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
@@ -115,6 +115,7 @@ public:
 
     typedef typename mpl::at<geomap_elements_t, mpl::int_<nDim> >::type element_gm_type;
     typedef boost::shared_ptr<element_gm_type> element_gm_ptrtype;
+    typedef element_gm_ptrtype gm_ptrtype;
 
     typedef typename mpl::at<geomap_faces_t, mpl::int_<nDim> >::type face_gm_type;
     typedef boost::shared_ptr<face_gm_type> face_gm_ptrtype;
