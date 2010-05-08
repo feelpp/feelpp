@@ -9,6 +9,10 @@
 #+LATEX_class: cparticle
 
 * New in 0.9.24
+** Programming Environment
+ - provide cmake option LIFE_MINIMAL_CONFIGURATION (default: OFF) to enable a
+   minimal configuration for the configuration of Life
+
 ** Libraries
 
 *** All
@@ -29,6 +33,16 @@
 *** lifemesh
  - fixed edge connectivity in 2D for high order geometrical elements
  - fixed edge and face connectivity in 3D for high order geometrical elements
+ - provide various computation on geometric elements which are computed
+   automatically when Mesh::updateForUse() is called
+   - h, hFace
+   - barycenter and barycenter of faces
+   - normal at barycenters
+   - measure and measure at faces
+
+*** lifepoly
+ - helper functions for GeoMap and PreCompute classes are now provided to ease
+   their instantiation and usage
 
 *** lifefilters
  - Exporter defines  --export=[0|1] in the command line which sets
