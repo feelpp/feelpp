@@ -427,6 +427,7 @@ public:
     typedef typename super::vertex_permutation_type vertex_permutation_type;
     typedef typename super::edge_permutation_type edge_permutation_type;
     typedef typename super::face_permutation_type face_permutation_type;
+    typedef typename super::permutation_type permutation_type;
 
     /**
      * default constructor, make it explicit to avoid implict
