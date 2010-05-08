@@ -918,7 +918,7 @@ public:
                      __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
                     //LIFE_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-                    geopc[__f][__p] = precompute_ptrtype(  new precompute_ptrtype( p, P ) );
+                    geopc[__f][__p] = precompute_ptrtype(  new precompute_type( p, P ) );
                 }
             }
             return geopc;
