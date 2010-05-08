@@ -809,9 +809,11 @@ Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
     M_barycenter = ublas::column( glas::average( M_vertices ), 0 );
     for( int f = 0; f < numTopologicalFaces; ++f )
     {
-        std::cout << "face " << f << " vertices " << faceVertices( f ) << "\n";
+        //std::cout << "face " << f << " vertices " << faceVertices( f ) << "\n";
         ublas::column( M_barycenterfaces, f ) = ublas::column( glas::average( faceVertices( f ) ), 0 );
     }
 }
+
+
 }
 #endif /* __refsimplex_H */
