@@ -87,6 +87,7 @@ public:
      */
     //@{
     typedef PolynomialSet<Poly, PolySetType> self_type;
+    typedef boost::shared_ptr<self_type> self_ptrtype;
     typedef typename Poly::value_type value_type;
     typedef typename Poly::basis_type basis_type;
 
@@ -900,15 +901,13 @@ public:
     typedef boost::shared_ptr<precompute_type> precompute_ptrtype;
 
     precompute_ptrtype
-    preCompute( boost::shared_ptr<PolynomialSet<Poly, PolySetType > > p,
-                points_type const& P )
+    preCompute( self_ptrtype p, points_type const& P )
         {
             return precompute_ptrtype( new PreCompute( p, P ) );
         }
 
     std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> >
-    preComputeOnFaces( boost::shared_ptr<PolynomialSet<Poly, PolySetType > > p,
-                       points_type const& P )
+    preComputeOnFaces( self_ptrtype p, points_type const& P )
         {
             typedef typename convex_type::permutation_type permutation_type;
             std::vector<std::map<permutation_type, precompute_ptrtype> > geopc(convex_type::numTopologicalFaces);
