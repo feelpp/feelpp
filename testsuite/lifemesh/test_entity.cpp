@@ -37,6 +37,7 @@ using boost::unit_test::test_suite;
 #include <life/lifemesh/simplex.hpp>
 #include <life/lifemesh/simplexproduct.hpp>
 #include <life/lifemesh/refentity.hpp>
+#include <life/lifemesh/geond.hpp>
 
 template<int Dim, int Order>
 void
@@ -133,7 +134,97 @@ BOOST_AUTO_TEST_CASE( test_simplex_ref )
     G3( 0 ) = -1./3.;G3( 1 ) = -1./3.;G3( 2 ) = -1.;
     BOOST_CHECK_SMALL( ublas::norm_2( tetraref.faceBarycenter(3)-G3 ), 1e-14 );
 }
+BOOST_AUTO_TEST_CASE( test_interval )
+{
+    using namespace Life;
 
+    typedef GeoND<1,Simplex<1, 1, 1> >::point_type point_type;
+    // interval
+    GeoND<1,Simplex<1, 1, 1> > interval;
+    point_type V1(1);V1(0)=1;
+    point_type V2(1);V2(0)=3;
+    interval.setPoint( 0, V1 );
+    interval.setPoint( 1, V2 );
+    ublas::vector<double> G1( 1 );
+    G1(0)=2;
+    interval.update();
+    std::cout << "[interval] barycenter = " << interval.barycenter() << "\n";
+    BOOST_CHECK_SMALL( ublas::norm_2( interval.barycenter()-G1 ), 1e-14 );
+    BOOST_CHECK_CLOSE( interval.measure(), 2, 1e-14 );
+    G1(0)=-1;
+    BOOST_CHECK_SMALL( ublas::norm_2( interval.normal(0)-G1 ), 1e-14 );
+    G1(0)=1;
+    BOOST_CHECK_SMALL( ublas::norm_2( interval.normal(1)-G1 ), 1e-14 );
+}
+
+BOOST_AUTO_TEST_CASE( test_triangle )
+{
+    using namespace Life;
+
+    typedef GeoND<2,Simplex<2, 1, 2> >::point_type point_type;
+    // interval
+    GeoND<2,Simplex<2, 1, 2> > tria;
+    point_type V1; V1( 0 )=1;V1( 1 )=0;
+    point_type V2; V2( 0 )=3;V2( 1 )=0;
+    point_type V3; V3( 0 )=2;V3( 1 )=1;
+    tria.setPoint( 0, V1 );
+    tria.setPoint( 1, V2 );
+    tria.setPoint( 2, V3 );
+    ublas::vector<double> G1( 2 );
+    G1(0)=2;G1(1)=1./3.;
+    tria.update();
+    std::cout << "[tria] barycenter = " << tria.barycenter() << "\n";
+    BOOST_CHECK_SMALL( ublas::norm_2( tria.barycenter()-G1 ), 1e-14 );
+    BOOST_CHECK_CLOSE( tria.measure(), 1, 1e-14 );
+    // check normals
+    G1(0)=1./math::sqrt(2.);G1(1)=1./math::sqrt(2.);
+    BOOST_CHECK_SMALL( ublas::norm_2( tria.normal(0)-G1 ), 1e-14 );
+    G1(0)=-1./math::sqrt(2.);G1(1)=1./math::sqrt(2.);
+    BOOST_CHECK_SMALL( ublas::norm_2( tria.normal(1)-G1 ), 1e-14 );
+    G1(0)=0;G1(1)=-1.;
+    BOOST_CHECK_SMALL( ublas::norm_2( tria.normal(2)-G1 ), 1e-14 );
+    // check face measures
+    BOOST_CHECK_CLOSE( tria.faceMeasure(0), math::sqrt(2.), 2e-14 );
+    BOOST_CHECK_CLOSE( tria.faceMeasure(1), math::sqrt(2.), 1e-14 );
+    BOOST_CHECK_CLOSE( tria.faceMeasure(2), 2, 1e-14 );
+}
+BOOST_AUTO_TEST_CASE( test_tetra )
+{
+    using namespace Life;
+
+    typedef GeoND<3,Simplex<3, 1, 3> >::point_type point_type;
+    // interval
+    GeoND<3,Simplex<3, 1, 3> > tetra;
+    point_type V1; V1( 0 )=1;V1( 1 )=0;V1( 2 )=0;
+    point_type V2; V2( 0 )=3;V2( 1 )=0;V2( 2 )=0;
+    point_type V3; V3( 0 )=2;V3( 1 )=1;V3( 2 )=0;
+    point_type V4; V4( 0 )=2;V4( 1 )=1;V4( 2 )=1;
+    tetra.setPoint( 0, V1 );
+    tetra.setPoint( 1, V2 );
+    tetra.setPoint( 2, V3 );
+    tetra.setPoint( 3, V4 );
+    ublas::vector<double> G1( 3 );
+    G1(0)=2;G1(1)=1./2.;G1(2)=1./4.;
+    tetra.update();
+    std::cout << "[tetra] barycenter = " << tetra.barycenter() << "\n";
+    BOOST_CHECK_SMALL( ublas::norm_2( tetra.barycenter()-G1 ), 1e-14 );
+    BOOST_CHECK_CLOSE( tetra.measure(), 1./3., 1e-13 );
+
+    // check normals
+    G1 = cross( V3-V2, V4-V2 );
+    std::cout << "G1 = " << G1 << "\n";
+#if 0
+    BOOST_CHECK_SMALL( ublas::norm_2( tetra.normal(0)-G1 ), 1e-14 );
+    G1(0)=-1./math::sqrt(2.);G1(1)=1./math::sqrt(2.);
+    BOOST_CHECK_SMALL( ublas::norm_2( tetra.normal(1)-G1 ), 1e-14 );
+    G1(0)=0;G1(1)=-1.;
+    BOOST_CHECK_SMALL( ublas::norm_2( tetra.normal(2)-G1 ), 1e-14 );
+    // check face measures
+    BOOST_CHECK_CLOSE( tetra.faceMeasure(0), math::sqrt(2.), 2e-14 );
+    BOOST_CHECK_CLOSE( tetra.faceMeasure(1), math::sqrt(2.), 1e-14 );
+    BOOST_CHECK_CLOSE( tetra.faceMeasure(2), 2, 1e-14 );
+#endif
+}
 BOOST_AUTO_TEST_CASE( test_entity_range_ )
 {
     //test_entity_range<1,1>();
@@ -146,7 +237,7 @@ init_unit_test_suite( int argc, char* argv[] )
     Life::Assert::setLog( "assertions.log");
     test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
 
-    test->add( BOOST_TEST_CASE( ( test_entity_isin<2,1> ) ) );
+     test->add( BOOST_TEST_CASE( ( test_entity_isin<2,1> ) ) );
     test->add( BOOST_TEST_CASE( ( test_entity_isin<3,1> ) ) );
 #if 0
     test->add( BOOST_TEST_CASE( ( test_entity_range<1,1> ) ) );

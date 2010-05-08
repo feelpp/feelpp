@@ -227,6 +227,37 @@ BOOST_AUTO_TEST_CASE( test_mesh_filters_ )
     tmf();
 }
 
+BOOST_AUTO_TEST_CASE( test_mesh_lmethod )
+{
+    typedef Mesh<Simplex<2,1> >  mesh_type;
+    mesh_type mesh;
+
+    auto pit = mesh->beginPoint();
+    auto pen = mesh->endPoint();
+
+#if 0
+    while( pit != pen )
+    {
+        auto eit = pit->beginElement();
+        auto een = pit->endElement();
+        while( eit != een )
+        {
+            auto element = mesh->element( *eit );
+            for( int f = 0; f < eit->nDim; ++f )
+            {
+                // plocal local id of the vertex in the element
+                auto face = mesh->face( element->v2f( plocal, f ) );
+
+
+            }
+            ++eit;
+        }
+        ++pit;
+    }
+
+#endif
+}
+
 BOOST_AUTO_TEST_CASE( test_simple_mesh2d )
 {
     using namespace Life;
