@@ -82,6 +82,7 @@ public:
 
     typedef typename node<value_type>::type node_type;
     typedef typename matrix_node<value_type>::type points_type;
+    typedef points_type matrix_node_type;
 
     typedef typename node<value_type>::type normal_type;
     typedef ublas::vector<normal_type> normals_type;
@@ -96,83 +97,87 @@ public:
     Reference()
         :
         super(),
-        _M_id( 0 ),
-        _M_vertices( nDim, numVertices ),
-        _M_points( nDim, numPoints ),
-        _M_normals( numNormals )
+        M_id( 0 ),
+        M_vertices( nDim, numVertices ),
+        M_points( nDim, numPoints ),
+        M_normals( numNormals ),
+        M_barycenter( nDim ),
+        M_barycenterfaces( nDim, numTopologicalFaces )
         {
             if ( nDim == 1 )
             {
-                _M_vertices( 0, 0 ) = -1.0;
-                _M_vertices( 0, 1 ) =  1.0;
+                M_vertices( 0, 0 ) = -1.0;
+                M_vertices( 0, 1 ) =  1.0;
 
-                _M_points = make_line_points();
+                M_points = make_line_points();
             }
             if ( nDim == 2 )
             {
-                _M_vertices( 0, 0 ) = -1.0;
-                _M_vertices( 1, 0 ) = -1.0;
+                M_vertices( 0, 0 ) = -1.0;
+                M_vertices( 1, 0 ) = -1.0;
 
-                _M_vertices( 0, 1 ) =  1.0;
-                _M_vertices( 1, 1 ) = -1.0;
+                M_vertices( 0, 1 ) =  1.0;
+                M_vertices( 1, 1 ) = -1.0;
 
-                _M_vertices( 0, 2 ) =  1.0;
-                _M_vertices( 1, 2 ) =  1.0;
+                M_vertices( 0, 2 ) =  1.0;
+                M_vertices( 1, 2 ) =  1.0;
 
-                _M_vertices( 0, 3 ) = -1.0;
-                _M_vertices( 1, 3 ) =  1.0;
+                M_vertices( 0, 3 ) = -1.0;
+                M_vertices( 1, 3 ) =  1.0;
 
-                _M_points = make_quad_points();
+                M_points = make_quad_points();
             }
             if ( nDim == 3 )
             {
                 // z = -1
-                _M_vertices( 0, 0 ) = -1.0;
-                _M_vertices( 1, 0 ) = -1.0;
-                _M_vertices( 2, 0 ) = -1.0;
+                M_vertices( 0, 0 ) = -1.0;
+                M_vertices( 1, 0 ) = -1.0;
+                M_vertices( 2, 0 ) = -1.0;
 
-                _M_vertices( 0, 1 ) =  1.0;
-                _M_vertices( 1, 1 ) = -1.0;
-                _M_vertices( 2, 1 ) = -1.0;
+                M_vertices( 0, 1 ) =  1.0;
+                M_vertices( 1, 1 ) = -1.0;
+                M_vertices( 2, 1 ) = -1.0;
 
-                _M_vertices( 0, 2 ) =  1.0;
-                _M_vertices( 1, 2 ) =  1.0;
-                _M_vertices( 2, 2 ) = -1.0;
+                M_vertices( 0, 2 ) =  1.0;
+                M_vertices( 1, 2 ) =  1.0;
+                M_vertices( 2, 2 ) = -1.0;
 
-                _M_vertices( 0, 3 ) = -1.0;
-                _M_vertices( 1, 3 ) =  1.0;
-                _M_vertices( 2, 3 ) = -1.0;
+                M_vertices( 0, 3 ) = -1.0;
+                M_vertices( 1, 3 ) =  1.0;
+                M_vertices( 2, 3 ) = -1.0;
 
                 // z = 1
-                _M_vertices( 0, 4 ) = -1.0;
-                _M_vertices( 1, 4 ) = -1.0;
-                _M_vertices( 2, 4 ) =  1.0;
+                M_vertices( 0, 4 ) = -1.0;
+                M_vertices( 1, 4 ) = -1.0;
+                M_vertices( 2, 4 ) =  1.0;
 
-                _M_vertices( 0, 5 ) =  1.0;
-                _M_vertices( 1, 5 ) = -1.0;
-                _M_vertices( 2, 5 ) =  1.0;
+                M_vertices( 0, 5 ) =  1.0;
+                M_vertices( 1, 5 ) = -1.0;
+                M_vertices( 2, 5 ) =  1.0;
 
-                _M_vertices( 0, 6 ) =  1.0;
-                _M_vertices( 1, 6 ) =  1.0;
-                _M_vertices( 2, 6 ) =  1.0;
+                M_vertices( 0, 6 ) =  1.0;
+                M_vertices( 1, 6 ) =  1.0;
+                M_vertices( 2, 6 ) =  1.0;
 
-                _M_vertices( 0, 7 ) = -1.0;
-                _M_vertices( 1, 7 ) =  1.0;
-                _M_vertices( 2, 7 ) =  1.0;
+                M_vertices( 0, 7 ) = -1.0;
+                M_vertices( 1, 7 ) =  1.0;
+                M_vertices( 2, 7 ) =  1.0;
 
-                _M_points = make_hexa_points();
+                M_points = make_hexa_points();
             }
-            //std::cout << "P = " << _M_points << "\n";
+            //std::cout << "P = " << M_points << "\n";
             make_normals();
         }
 
     Reference( element_type const& e, uint16_type __f )
         :
         super(),
-        _M_id( __f ),
-        _M_vertices( nRealDim, numVertices ),
-        _M_points( nRealDim, numPoints ),
-        _M_normals( numNormals )
+        M_id( __f ),
+        M_vertices( nRealDim, numVertices ),
+        M_points( nRealDim, numPoints ),
+        M_normals( numNormals ),
+        M_barycenter( nDim ),
+        M_barycenterfaces( nDim, numTopologicalFaces )
         {
           if ( __f >= element_type::numTopologicalFaces )
             {
@@ -185,28 +190,30 @@ public:
             for ( int i = 0;i < numVertices; ++i )
             {
                 if ( real_dimension == 3 )
-                    ublas::column( _M_vertices, i ) = e.vertex( element_type::f2p( __f, i ) );
+                    ublas::column( M_vertices, i ) = e.vertex( element_type::f2p( __f, i ) );
                 else
-                    ublas::column( _M_vertices, i ) = e.vertex( element_type::e2p( __f, i ) );
+                    ublas::column( M_vertices, i ) = e.vertex( element_type::e2p( __f, i ) );
             }
             for ( int i = 0;i < numPoints; ++i )
             {
                 if ( real_dimension == 3 )
-                    ublas::column( _M_points, i ) = e.point( element_type::f2p( __f, i ) );
+                    ublas::column( M_points, i ) = e.point( element_type::f2p( __f, i ) );
                 else
-                    ublas::column( _M_points, i ) = e.point( element_type::e2p( __f, i ) );
+                    ublas::column( M_points, i ) = e.point( element_type::e2p( __f, i ) );
             }
-            _M_points = _M_vertices;
+            M_points = M_vertices;
             make_normals();
         }
 
     Reference( Reference const & r )
         :
         super( r ),
-        _M_id( r._M_id ),
-        _M_vertices( r._M_vertices ),
-        _M_points( r._M_points ),
-        _M_normals( r._M_normals )
+        M_id( r.M_id ),
+        M_vertices( r.M_vertices ),
+        M_points( r.M_points ),
+        M_normals( r.M_normals ),
+        M_barycenter( r.M_barycenter ),
+        M_barycenterfaces( r.M_barycenterfaces )
         {
 
         }
@@ -223,10 +230,12 @@ public:
         {
             if ( this != &r )
             {
-                _M_id = r._M_id;
-                _M_vertices = r._M_vertices;
-                _M_points = r._M_points;
-                _M_normals = r._M_normals;
+                M_id = r.M_id;
+                M_vertices = r.M_vertices;
+                M_points = r.M_points;
+                M_normals = r.M_normals;
+                M_barycenter = r.M_barycenter;
+                M_barycenterfaces = r.M_barycenterfaces;
             }
             return *this;
         }
@@ -245,18 +254,58 @@ public:
     uint16_type nEdges() const { return numEdges; }
     uint16_type nFaces() const { return numFaces; }
 
-    points_type const& vertices() const { return _M_vertices; }
+    points_type const& vertices() const { return M_vertices; }
 
-    ublas::matrix_column<points_type const> vertex( uint16_type __i ) const { return ublas::column( _M_vertices, __i ); }
+    ublas::matrix_column<points_type const> vertex( uint16_type __i ) const { return ublas::column( M_vertices, __i ); }
 
     ublas::matrix_column<points_type const> edgeVertex( uint16_type __e, uint16_type __p ) const
         {
-            return ublas::column( _M_vertices, edge_to_point_t::e2p(__e,__p) );
+            return ublas::column( M_vertices, edge_to_point_t::e2p(__e,__p) );
         }
 
-    points_type const& points() const { return _M_points; }
+    points_type const& points() const { return M_points; }
 
-    ublas::matrix_column<points_type const> point( uint16_type __i ) const { return ublas::column( _M_points, __i ); }
+    ublas::matrix_column<points_type const> point( uint16_type __i ) const { return ublas::column( M_points, __i ); }
+
+    /**
+     * \return the vertices of the face \p f
+     */
+    matrix_node_type faceVertices( uint16_type f ) const
+        {
+            const int d[3] = { 1,2,4 };
+            matrix_node_type v( nDim, d[nDim-1]  );
+            // there is exactely nDim vertices on each face on a d-simplex
+
+            for( int p = 0; p < d[nDim]; ++p )
+            {
+                switch( nDim )
+                {
+                case 1:
+                case 3:
+                    ublas::column( v, p ) = ublas::column( M_vertices, face_to_point_t::f2p(f,p) );
+                    break;
+                case 2:
+                    ublas::column( v, p ) = ublas::column( M_vertices, face_to_point_t::e2p(f,p) );
+                    break;
+                }
+            }
+            return v;
+        }
+
+    /**
+     * \return the barycenter of the reference simplex
+     */
+    node_type barycenter() const { return M_barycenter; }
+
+    /**
+     * \return the barycenter of the faces of the reference simplex
+     */
+    points_type barycenterFaces() const { return M_barycenterfaces; }
+
+    /**
+     * \return the barycenter of the face \p f of the reference simplex
+     */
+    ublas::matrix_column<matrix_node_type const> faceBarycenter( uint16_type f ) const { return ublas::column( M_barycenterfaces, f ); }
 
     /**
      * get the normals array
@@ -264,7 +313,7 @@ public:
      *
      * @return the normals
      */
-    normals_type const& normals() const { return _M_normals; }
+    normals_type const& normals() const { return M_normals; }
 
     /**
      * get the n-th normal
@@ -273,7 +322,7 @@ public:
      *
      * @return the n-th normal of the quad
      */
-    node_type const& normal( uint16_type __n ) const { return _M_normals[__n]; }
+    node_type const& normal( uint16_type __n ) const { return M_normals[__n]; }
 
     /**
      * the first iterator of the normal vector
@@ -281,7 +330,7 @@ public:
      *
      * @return the begin() iterator of the normal vector
      */
-    normal_const_iterator beginNormal() const { return _M_normals.begin(); }
+    normal_const_iterator beginNormal() const { return M_normals.begin(); }
 
     /**
      * the end() iterator
@@ -289,7 +338,7 @@ public:
      *
      * @return
      */
-    normal_const_iterator endNormal() const { return _M_normals.end(); }
+    normal_const_iterator endNormal() const { return M_normals.end(); }
 
     topological_face_type topologicalFace( uint16_type __f ) const
         {
@@ -297,7 +346,7 @@ public:
             return ref;
         }
 
-    points_type const& G() const { return _M_points; }
+    points_type const& G() const { return M_points; }
 
     size_type id() const { return 0; }
     size_type marker() const { return 0; }
@@ -441,8 +490,8 @@ public:
                 {
 
                     //std::cerr << "coucpu 2 " << topo_dim << " " << topological_dimension << " " << __id << "\n";
-                    points_type G( _M_vertices.size1(), 1 );
-                    ublas::column( G, 0 ) = ublas::column( _M_vertices, __id );
+                    points_type G( M_vertices.size1(), 1 );
+                    ublas::column( G, 0 ) = ublas::column( M_vertices, __id );
                     return G;
                 }
             // interior points of the convex
@@ -496,7 +545,7 @@ public:
                         return make_hexa_points( interior );
                 }
             else if ( nOrder == 0 )
-                return glas::average( _M_vertices );
+                return glas::average( M_vertices );
         }
     //@}
 
@@ -536,7 +585,7 @@ private:
                 return p;
             }
         else
-            return glas::average( _M_vertices );
+            return glas::average( M_vertices );
     }
 
     points_type
@@ -561,7 +610,7 @@ private:
                     return G;
                 }
             else
-                return glas::average( _M_vertices );
+                return glas::average( M_vertices );
         }
 
     points_type
@@ -592,7 +641,7 @@ private:
                     return G;
                 }
             else
-                return glas::average( _M_vertices );
+                return glas::average( M_vertices );
         }
 
     template<size_type shape>
@@ -682,47 +731,51 @@ private:
 
     void make_normals()
         {
-            _M_normals.resize( numNormals );
+            M_normals.resize( numNormals );
 
             for ( int n = 0; n < numNormals; ++n )
                 {
-                    _M_normals[n].resize( nDim );
-                    _M_normals[n].clear();
+                    M_normals[n].resize( nDim );
+                    M_normals[n].clear();
                 }
             if ( nDim == 1 )
                 {
-                    _M_normals[0][0] = -1;
-                    _M_normals[1][0] =  1;
+                    M_normals[0][0] = -1;
+                    M_normals[1][0] =  1;
                 }
             if ( nDim == 2 )
                 {
-                    _M_normals[0][1] = -1;
-                    _M_normals[1][0] =  1;
-                    _M_normals[2][1] =  1;
-                    _M_normals[3][0] = -1;
+                    M_normals[0][1] = -1;
+                    M_normals[1][0] =  1;
+                    M_normals[2][1] =  1;
+                    M_normals[3][0] = -1;
                 }
             if ( nDim == 3 )
                 {
-                    _M_normals[0][2] = -1;
-                    _M_normals[1][1] = -1;
-                    _M_normals[2][0] =  1;
-                    _M_normals[3][1] =  1;
-                    _M_normals[4][0] = -1;
-                    _M_normals[5][2] =  1;
+                    M_normals[0][2] = -1;
+                    M_normals[1][1] = -1;
+                    M_normals[2][0] =  1;
+                    M_normals[3][1] =  1;
+                    M_normals[4][0] = -1;
+                    M_normals[5][2] =  1;
                 }
         }
+
+    /// compute barycenters (cell and faces)
+    void computeBarycenters();
+
 private:
 
-    uint16_type _M_id;
+    uint16_type M_id;
 
-    points_type _M_vertices;
+    points_type M_vertices;
 
-    points_type _M_points;
+    points_type M_points;
 
-    normals_type _M_normals;
+    normals_type M_normals;
 
 
-    points_type M_barycenter;
+    node_type M_barycenter;
 
     points_type M_barycenterfaces;
 
@@ -741,6 +794,18 @@ const uint16_type Reference<SimplexProduct<Dim, Order, RDim>, Dim, Order, RDim, 
 
 template<typename T> class Entity<SHAPE_QUAD, T>: public Reference<SimplexProduct<2, 1, 2>, 2, 1, 2, T> {};
 template<typename T> class Entity<SHAPE_HEXA, T>: public Reference<SimplexProduct<3, 1, 3>, 3, 1, 3, T> {};
+
+template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+void
+Reference<SimplexProduct<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
+{
+    M_barycenter = ublas::column( glas::average( M_vertices ), 0 );
+    for( int f = 0; f < numTopologicalFaces; ++f )
+    {
+        //std::cout << "face " << f << " vertices " << faceVertices( f ) << "\n";
+        ublas::column( M_barycenterfaces, f ) = ublas::column( glas::average( faceVertices( f ) ), 0 );
+    }
+}
 
 }
 #endif /* __refhypercube_H */
