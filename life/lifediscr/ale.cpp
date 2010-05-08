@@ -79,7 +79,7 @@ ALE<Convex>::ALE( interval_type const& intX,
     new_mesh = ho_mesh->getMesh();
     //Log() << "[ALE] Time to generate high order reference mesh: " << M_timer.elapsed() << "\n";
 
-    pN_identity = project( pN_fspace, elements( reference_mesh ), P() );
+    pN_identity = vf::project( pN_fspace, elements( reference_mesh ), P() );
 }
 
 
