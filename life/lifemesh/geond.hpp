@@ -115,6 +115,16 @@ public:
                               mpl::identity<GT_Lagrange<nDim, nOrder, Simplex, T> > >::type::type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
 
+    typedef typename super::vertex_permutation_type vertex_permutation_type;
+    typedef typename super::edge_permutation_type edge_permutation_type;
+    typedef typename super::face_permutation_type face_permutation_type;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,
+                                            mpl::int_<1> >,
+                              mpl::identity<vertex_permutation_type>,
+                              typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,
+                                                              mpl::int_<2> >,
+                                                mpl::identity<edge_permutation_type>,
+                                                mpl::identity<face_permutation_type> >::type>::type::type permutation_type;
     /**
      * default constructor
      */
@@ -124,18 +134,19 @@ public:
         M_points( numPoints ),
         M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
-        M_barycenter( nRealDim, 1 ),
+        M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_h( 1 ),
         M_h_face( numTopologicalFaces, 1 ),
         M_measure( 1 ),
-        M_measurefaces( nRealDim, numTopologicalFaces ),
+        M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
         M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
         M_marker1(),
         M_marker2(),
-        M_marker3()
+        M_marker3(),
+        M_gm( new gm_type )
     {
     }
 
@@ -151,18 +162,19 @@ public:
         M_points( numPoints ),
         M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
-        M_barycenter( nRealDim, 1 ),
+        M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_h( 1 ),
         M_h_face( numTopologicalFaces, 1 ),
         M_measure( 1 ),
-        M_measurefaces( nRealDim, numTopologicalFaces ),
+        M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
         M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
         M_marker1(),
         M_marker2(),
-        M_marker3()
+        M_marker3(),
+        M_gm( new gm_type )
     {
     }
 
@@ -232,6 +244,8 @@ public:
             M_marker1 = G.M_marker1;
             M_marker2 = G.M_marker2;
             M_marker3 = G.M_marker3;
+
+            M_gm = G.M_gm;
         }
         return *this;
     }
@@ -267,6 +281,26 @@ public:
     }
 
     /**
+     * \return the barycenter of the element
+     */
+    node_type barycenter() const { return M_barycenter; }
+
+    /**
+     * \return the barycenter at the faces of the element
+     */
+    node_type faceBarycenter( uint16_type f ) const { return ublas::column( M_barycenterfaces, f ); }
+
+    /**
+     * \return the barycenters at the faces of the element
+     */
+    matrix_node_type faceBarycenters() const { return M_barycenterfaces; }
+
+    /**
+     * \return permutation
+     */
+    permutation_type permutation(uint16_type /*f*/ ) const { return permutation_type(); }
+
+    /**
      * It returns the reference to an point object (possibly derived from
      * Geo0D)
      */
@@ -274,6 +308,7 @@ public:
     {
         return *( static_cast<POINTTYPE *>( M_points[ i ] ) );
     }
+
 
     /**
      * It returns the reference to an point object (possibly derived from
@@ -304,6 +339,7 @@ public:
     /**
      */
     PointType const & facePoint ( uint16_type __f, uint16_type const __i ) const { return M_face_points[__f][__i]; }
+
 
 
     /**
@@ -562,6 +598,10 @@ public:
     void update();
 private:
 
+    void updatep( mpl::bool_<true> );
+    void updatep( mpl::bool_<false> );
+
+private:
     /** geometric nodes of the element */
     ublas::bounded_array<point_type*, numPoints> M_points;
 
@@ -570,7 +610,7 @@ private:
 
     /**< matrix of the geometric nodes */
     matrix_node_type M_G;
-    matrix_node_type M_barycenter;
+    node_type M_barycenter;
     matrix_node_type M_barycenterfaces;
 
     double M_h;
@@ -713,13 +753,44 @@ void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
         M_h = ( M_h > __l )?M_h:__l;
     }
 
-    M_barycenter = glas::average( M_G );
+    auto M = glas::average( M_G );
+    M_barycenter = ublas::column( M, 0 );
 
     auto ctx = M_gm->template context<vm::JACOBIAN>( *this, M_gm->preCompute( M_gm,
-                                                                              M_G ) );
+                                                                              M_gm->referenceConvex().vertices() ) );
+    double w = (nDim == 3)?4./3.:2;
+    M_measure = w*ctx->J(0);
 
+    updatep( typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
+}
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
+void
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( mpl::bool_<true> )
+{
+    auto pc =  M_gm->preComputeOnFaces( M_gm,
+                                        M_gm->referenceConvex().barycenterFaces() );
+    auto ctx = M_gm->template context<vm::POINT|vm::NORMAL|vm::JACOBIAN>(
+        *this,
+        pc,
+        0 );
+    double f2[3] = { 2.82842712474619, 2, 2 };
+    double f3[4] = { 3.464101615137754, 2, 2, 2 };
+    for( int f = 0; f < numTopologicalFaces; ++f )
+    {
+        ctx->update( *this, f );
+        ublas::column(M_normals, f ) = ctx->unitNormal( 0 );
+        ublas::column(M_barycenterfaces, f ) = ctx->xReal( 0 );
+
+        double w = (nDim == 3)?f3[f]:((nDim==2)?f2[f]:1);
+        M_measurefaces[f] = w*ctx->J(0)*ctx->normalNorm(0);
+    }
 }
 
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
+void
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( mpl::bool_<false> )
+{
+}
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 inline
