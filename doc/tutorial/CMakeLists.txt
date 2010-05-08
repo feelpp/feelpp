@@ -56,7 +56,13 @@ macro( add_docex target )
  endforeach()
 endmacro()
 
-foreach( docex myapp mymesh myintegrals laplacian stokes bratu nonlinearpow )
+foreach( docex myapp mymesh myintegrals laplacian  )
+  add_docex( ${docex} )
+endforeach()
+
+if ( NOT LIFE_MINIMAL_CONFIGURATION )
+
+foreach( docex stokes bratu nonlinearpow )
   add_docex( ${docex} )
 endforeach()
 
@@ -64,3 +70,5 @@ endforeach()
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 add_executable( life_doc_convection convection.hpp convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp )
 target_link_libraries( life_doc_convection ${LIFE_LIBRARIES} )
+
+endif ( NOT LIFE_MINIMAL_CONFIGURATION )

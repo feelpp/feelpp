@@ -39,7 +39,8 @@
 #include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
 #include <life/lifefilters/exporter.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <life/lifepoly/lagrange.hpp>
+#include <life/lifepoly/crouzeixraviart.hpp>
 
 
 
@@ -104,7 +105,8 @@ namespace Life
  *
  */
 template<int Dim,
-         int Order,
+         typename BasisU,
+         typename BasisP,
          template<uint16_type,uint16_type,uint16_type> class Entity>
 class Stokes
     :
@@ -130,8 +132,8 @@ public:
 
     /*basis*/
     //# marker1 #
-    typedef Lagrange<Order, Vectorial> basis_u_type;
-    typedef Lagrange<Order-1, Scalar> basis_p_type;
+    typedef BasisU basis_u_type;
+    typedef BasisP basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
     //# endmarker1 #
@@ -405,11 +407,9 @@ main( int argc, char** argv )
     /* assertions handling */
     Life::Assert::setLog( "stokes.assert");
 
-    /* change parameters below */
     const int nDim = 2;
-    const int nOrder = 2;
-
-    typedef Life::Stokes<nDim, nOrder, Simplex> stokes_type;
+    typedef Life::Stokes<nDim, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, nOrder, Simplex> stokes_type;
+    //typedef Life::Stokes<nDim, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar>, nOrder, Simplex> stokes_type;
 
 
     /* define and run application */
