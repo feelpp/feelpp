@@ -756,8 +756,8 @@ void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
     auto M = glas::average( M_G );
     M_barycenter = ublas::column( M, 0 );
 
-    auto ctx = M_gm->template context<vm::JACOBIAN>( *this, M_gm->preCompute( M_gm,
-                                                                              M_gm->referenceConvex().vertices() ) );
+    auto ctx = M_gm->template context<vm::JACOBIAN>( *this,
+                                                     M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() ) );
     double w = (nDim == 3)?4./3.:2;
     M_measure = w*ctx->J(0);
 
@@ -767,8 +767,7 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( mpl::bool_<true> )
 {
-    auto pc =  M_gm->preComputeOnFaces( M_gm,
-                                        M_gm->referenceConvex().barycenterFaces() );
+    auto pc =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
     auto ctx = M_gm->template context<vm::POINT|vm::NORMAL|vm::JACOBIAN>(
         *this,
         pc,
