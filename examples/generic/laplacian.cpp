@@ -354,15 +354,15 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     D->close();
     vector_ptrtype Un( b->newVector( u.functionSpace() ) );
     vector_ptrtype Vn( b->newVector( u.functionSpace() ) );
-    u = project( Xh, elements(mesh), g );
-    v = project( Xh, elements(mesh), constant(1.0) );
+    u = vf::project( Xh, elements(mesh), g );
+    v = vf::project( Xh, elements(mesh), constant(1.0) );
 
     std::cout << "int Px() = "  << integrate( elements(mesh), im, Px() ).evaluate() << "\n";
     std::cout << "int idv(1) = "  << integrate( elements(mesh), im, idv(v) ).evaluate() << "\n";
-    v = project( Xh, elements(mesh), Px() );
+    v = vf::project( Xh, elements(mesh), Px() );
     std::cout << "int idv(x) = "  << integrate( elements(mesh), im, idv(v) ).evaluate() << "\n";
     std::cout << "int gradv(x) = "  << integrate( elements(mesh), im, gradv(v) ).evaluate() << "\n";
-    v = project( Xh, elements(mesh), Px()*Px() );
+    v = vf::project( Xh, elements(mesh), Px()*Px() );
     std::cout << "int Px()*Px() = "  << integrate( elements(mesh), im, Px()*Px() ).evaluate() << "\n";
     std::cout << "int idv(x) = "  << integrate( elements(mesh), im, idv(v) ).evaluate() << "\n";
     std::cout << "int gradv(x) = "  << integrate( elements(mesh), im, gradv(v) ).evaluate() << "\n";
