@@ -115,7 +115,7 @@ struct test_interpolation
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
 
-        u = project( Xh, elements(*mesh), constant(1.0) );
+        u = vf::project( Xh, elements(*mesh), constant(1.0) );
 
         node_type pt(Dim);
         pt[0] = 0.11;
@@ -130,7 +130,7 @@ struct test_interpolation
         LIFE_ASSERT( math::abs( v0-1.0) < eps )( v0 )( math::abs( v0-1.0) )( eps ).warn ( "v0 != 1" );
 #endif /* USE_BOOST_TEST */
 
-        u = project( Xh, elements(*mesh), constant(2.0) - Px()*Px()-Py()*Py()-Pz()*Pz() );
+        u = vf::project( Xh, elements(*mesh), constant(2.0) - Px()*Px()-Py()*Py()-Pz()*Pz() );
         pt[0] = 0.5;
         if ( Dim >= 2 )
             pt[1] = 0.5;
@@ -204,7 +204,7 @@ struct test_interpolation_op
         typename space_type::element_type u( Xh, "u" );
 
         AUTO(u_exact, Px()*Px() );
-        u = project( Xh, elements(*mesh), u_exact);
+        u = vf::project( Xh, elements(*mesh), u_exact);
 
         typename imesh<Dim,GeoOrder,RDim>::ptrtype mesh1( createMesh<Dim,GeoOrder,RDim>( meshSize/2 ) );
 
@@ -282,7 +282,7 @@ struct test_interpolation_op_2
 
         typename domain_space_type::element_type u( Xh, "u" );
 
-        u = project( Xh, elements(mesh), Px() );
+        u = vf::project( Xh, elements(mesh), Px() );
 
         typename imesh<DimImage,1,RealDimImage>::ptrtype image_mesh( createMesh<DimImage,1,RealDimImage>( meshSize/2 ) );
 
@@ -354,7 +354,7 @@ struct test_lagrange_p1_op
 
         typename space_type::element_type u( Xh, (boost::format( "u_%1%.%2%.%3%" ) % Dim % Order % GeoOrder ).str() );
 
-        u = project( Xh, elements(*mesh), Px() );
+        u = vf::project( Xh, elements(*mesh), Px() );
 
 #if 0
         std::ostringstream ostr1;
@@ -393,7 +393,7 @@ struct test_lagrange_p1_op
         //std::cout << "e=" << e << "\n";
         Log() << "[test_lagrange_p1_op] ||x-w||_infty = " << e.linftyNorm() << "\n";
 
-        yy = project( Yh, elements(Yh->mesh()), Px() );
+        yy = vf::project( Yh, elements(Yh->mesh()), Px() );
         std::ostringstream ostr;
         ostr << "olagp1-" << Dim << "." << Order << "." << GeoOrder;
         ExporterQuick<image_mesh_type> exp( ostr.str(), "ensight" );

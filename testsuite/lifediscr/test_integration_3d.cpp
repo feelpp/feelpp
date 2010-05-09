@@ -147,7 +147,7 @@ struct test_integration_internal_faces
         space_ptrtype Xh = space_type::New( mesh );
         typedef typename space_type::element_type element_type;
         element_type u( Xh, "u" );
-        u = project( Xh, elements( *mesh ), Px()+Py()+Pz());
+        u = vf::project( Xh, elements( *mesh ), Px()+Py()+Pz());
 
         boost::shared_ptr<VectorUblas<double> > F( new VectorUblas<double>( u.size() ) );
         std::fill( F->begin(), F->end(), (double)0 );

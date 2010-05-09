@@ -267,8 +267,8 @@ void
 TwoDomainsMTApp::concentrationInit( concentration_space_type::element_type& c_l,
                                     concentration_space_type::element_type& c_w )
 {
-    c_w = project( Ch_wall, markedelements( *_M_mesh_c, WALL ), constant(0.01) );
-    c_l = project( Ch_lumen, markedelements( *_M_mesh_c, LUMEN ), constant(1.00) );
+    c_w = vf::project( Ch_wall, markedelements( *_M_mesh_c, WALL ), constant(0.01) );
+    c_l = vf::project( Ch_lumen, markedelements( *_M_mesh_c, LUMEN ), constant(1.00) );
 
 }
 void
@@ -430,22 +430,22 @@ TwoDomainsMTApp::solveSystem()
     for( double t = dt; t < T; t += dt )
         {
             // velocity in the Lumen (could have come from an NS code )
-            u_l = project( Uh_lumen,
+            u_l = vf::project( Uh_lumen,
                            elements( *_M_mesh_u_lumen ),
                            oneX()* (2.0/L_0)*u_filt*(2.0-(4.0/(L_0*L_0))*(Px()*Px()+Py()*Py()))*Px() +
                            oneY()* (2.0/L_0)*u_filt*(2.0-(4.0/(L_0*L_0))*(Px()^(2)+Py()^(2))*Py() ) +
                            oneZ()* 2.0*U_0*(1.0-(4.0/(L_0*L_0))*(Px()^(2)+Py()^(2)))*(1.0-(4.0*u_filt/(U_0*L_0))*Pz()));
 
             // velocity in the Arterial wall (could have come from an Darcy code )
-            u_w = project( Uh_wall,
+            u_w = vf::project( Uh_wall,
                            elements( *_M_mesh_u_wall ),
                            oneX()* (Klag/porosity)*u_filt*(L_0/2.0)*Px()/(Px()*Px()+Py()*Py()) +
                            oneY()* (Klag/porosity)*u_filt*(L_0/2.0)*Py()/(Px()*Px()+Py()*Py()) );
 
 
             // update P (in the future may want to update D, k, f .... whatever)
-            c_map["P_w"] = project( Ch_wall, elements( *_M_mesh_c ), constant(Pr));
-            c_map["P_l"] = project( Ch_lumen, elements( *_M_mesh_c ), constant(Pr ));
+            c_map["P_w"] = vf::project( Ch_wall, elements( *_M_mesh_c ), constant(Pr));
+            c_map["P_l"] = vf::project( Ch_lumen, elements( *_M_mesh_c ), constant(Pr ));
 
             //concentrationStep( dt, time_discr_lumen, time_discr_wall, c_l, u_l, c_w, u_w );
 
