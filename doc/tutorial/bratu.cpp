@@ -310,7 +310,7 @@ Bratu<Dim, Order, Entity>::run()
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
 
-    u = project( M_Xh, elements(mesh), constant(0.) );
+    u = vf::project( M_Xh, elements(mesh), constant(0.) );
 
     vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
     *U = u;
