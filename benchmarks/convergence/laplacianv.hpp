@@ -365,7 +365,7 @@ LaplacianV<Dim, Order, RDim>::run()
     t1.restart();
 
 
-    v = project( Xh, elements(mesh), g );
+    v = vf::project( Xh, elements(mesh), g );
     double semiH1error2 =integrate( elements(mesh),
                                     trace((gradv(u)-gradv(v))*trans(gradv(u)-gradv(v))) ).evaluate()( 0, 0 ) ;
 

@@ -238,19 +238,19 @@ TestALE<N>::run()
     struct_functionspace_ptrtype Xh = struct_functionspace_type::New( struct_mesh );
     struct_element_type bc_top( Xh, "bc_top" );
     AUTO( f,  val(1.0 + 0.3*cos(Px()))  );
-    bc_top = project( Xh, elements(Xh->mesh()), f );
+    bc_top = vf::project( Xh, elements(Xh->mesh()), f );
 
     struct_element_type bc_bottom( Xh, "bc_bottom" );
 
     AUTO( f2, val(-1.1 - 0.3*cos(Px()))  );
 
-    bc_bottom = project( Xh, elements(Xh->mesh()), f2 );
+    bc_bottom = vf::project( Xh, elements(Xh->mesh()), f2 );
 
     struct_element_type bc_reference_top( Xh, "bc_reference_top" );
-    bc_reference_top = project( Xh, elements(Xh->mesh()), constant(1.0) );
+    bc_reference_top = vf::project( Xh, elements(Xh->mesh()), constant(1.0) );
 
     struct_element_type bc_reference_bottom( Xh, "bc_reference_bottom" );
-    bc_reference_bottom = project( Xh, elements(Xh->mesh()), constant(-1.0) );
+    bc_reference_bottom = vf::project( Xh, elements(Xh->mesh()), constant(-1.0) );
 
     struct_element_type bc_disp_top( Xh, "bc_top" );
     bc_disp_top = bc_top;
@@ -310,7 +310,7 @@ TestALE<N>::run()
 
     pN_visualize_functionspace_ptrtype visH = pN_visualize_functionspace_type::New( aux_mesh );
     pN_element_type aux_element( visH, "aux");
-    aux_element = project( visH, elements(visH->mesh()), sin(Px())*cos(Py())*oneX() + sin(Py())*cos(Px())*oneY());
+    aux_element = vf::project( visH, elements(visH->mesh()), sin(Px())*cos(Py())*oneX() + sin(Py())*cos(Px())*oneY());
     this->exportResults( 0.0, aux_element);
 
     /*
@@ -346,7 +346,7 @@ TestALE<N>::run()
     MeshMover<new_mesh_type> mesh_mover;
     mesh_mover.apply(visH->mesh(), aleFactory.getDisplacement() );
 
-    aux_element = project( visH, elements(visH->mesh()), sin(Px())*cos(Py())*oneX() + sin(Py())*cos(Px())*oneY());
+    aux_element = vf::project( visH, elements(visH->mesh()), sin(Px())*cos(Py())*oneX() + sin(Py())*cos(Px())*oneY());
     aux_element.updateGlobalValues();
     this->exportResults( 1.0, aux_element);
 

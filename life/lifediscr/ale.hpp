@@ -357,7 +357,7 @@ ALE<Convex>::generateP1BoundaryMap( std::vector<flag_type>& flagSet,
 
     AUTO(aux, (cst_ref(pt1) + cst_ref(m)*( Py() - Y_coordinate_first))*oneY() );
 
-    u = project( p1_fspace, boundaryelements(*reference_mesh), aux*chi( Px() < intervalX.first + tolerance ) );
+    u = vf::project( p1_fspace, boundaryelements(*reference_mesh), aux*chi( Px() < intervalX.first + tolerance ) );
 
     pt[0] = intervalX.second;
 
@@ -371,7 +371,7 @@ ALE<Convex>::generateP1BoundaryMap( std::vector<flag_type>& flagSet,
 
     m = (pt2-pt1)/(Y_coordinate_second - Y_coordinate_first);
 
-    u += project( p1_fspace, boundaryelements(*reference_mesh), aux*chi( Px() > intervalX.second - tolerance ) );
+    u += vf::project( p1_fspace, boundaryelements(*reference_mesh), aux*chi( Px() > intervalX.second - tolerance ) );
 
     std::map< flag_type, std::vector<uint16_type> > pointIdOnBoundary;
 
@@ -420,7 +420,7 @@ ALE<Convex>::generateP1BoundaryMap( std::vector<flag_type>& flagSet,
                                                         << ") to (" << pt[0] << "," << polyNode << ")\n";
 #endif
 
-                                            u += project( p1_fspace,
+                                            u += vf::project( p1_fspace,
                                                           idedelements(*reference_mesh, face_it->ad_first()  ),
                                                           dirac_function );
 
@@ -567,7 +567,7 @@ ALE<Convex>::updatePointsInFaces( std::vector<flag_type>& flagSet,
                                         << ")" << "\n";
 #endif
 
-                            p += project( pN_fspace, idedelements(*reference_mesh, it_elt->id() ),
+                            p += vf::project( pN_fspace, idedelements(*reference_mesh, it_elt->id() ),
                                           ((pts(0,j) - interpfunc(0,0,j))*oneX() + (pts(1,j) - interpfunc(1,0,j))*oneY())*chi( ( radius < tolerance*tolerance )) );
                         }
                 }
