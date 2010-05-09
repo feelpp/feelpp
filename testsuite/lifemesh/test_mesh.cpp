@@ -229,15 +229,18 @@ BOOST_AUTO_TEST_CASE( test_mesh_filters_ )
 
 BOOST_AUTO_TEST_CASE( test_mesh_lmethod )
 {
+
+    using namespace Life;
     typedef Mesh<Simplex<2,1> >  mesh_type;
     mesh_type mesh;
 
-    auto pit = mesh->beginPoint();
-    auto pen = mesh->endPoint();
+    auto pit = mesh.beginPoint();
+    auto pen = mesh.endPoint();
 
-#if 0
+
     while( pit != pen )
     {
+#if 0
         auto eit = pit->beginElement();
         auto een = pit->endElement();
         while( eit != een )
@@ -252,10 +255,11 @@ BOOST_AUTO_TEST_CASE( test_mesh_lmethod )
             }
             ++eit;
         }
+#endif
         ++pit;
     }
 
-#endif
+
 }
 
 BOOST_AUTO_TEST_CASE( test_simple_mesh2d )
