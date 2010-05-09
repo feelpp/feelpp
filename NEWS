@@ -10,6 +10,8 @@
 
 * New in 0.9.24
 ** Programming Environment
+ - gcc >= 4.4 is now required in conjonction with -std=c++0x and the use of the
+   new keyword auto available only in 4.4 and later
  - provide cmake option LIFE_MINIMAL_CONFIGURATION (default: OFF) to enable a
    minimal configuration for the configuration of Life
 
