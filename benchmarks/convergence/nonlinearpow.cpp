@@ -233,7 +233,7 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
 
     AUTO( g, (Px()*Px()+Py()*Py()) );
     u = *X;
-    //u = project( M_Xh, elements(mesh), g );
+    //u = vf::project( M_Xh, elements(mesh), g );
     *M_residual =
         //integrate( elements( mesh ), _Q<4*Order>(), -(+ gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) - (-4+pow(g,M_lambda))*id(v) ) ) +
         integrate( elements( mesh ), _Q<4*Order>(), -(+ gradv(u)*trans(grad(v)) + idv(u)*id(v) - (-4+g)*id(v)) ) +
@@ -332,9 +332,9 @@ NonLinearPow<Dim, Order, Entity>::run()
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
 
-    //u = project( M_Xh, elements(mesh), constant(0.) );
-    u = project( M_Xh, elements(mesh), u_exact );
-    ue = project( M_Xh, elements(mesh), u_exact );
+    //u = vf::project( M_Xh, elements(mesh), constant(0.) );
+    u = vf::project( M_Xh, elements(mesh), u_exact );
+    ue = vf::project( M_Xh, elements(mesh), u_exact );
 
     vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
     *U = u;
