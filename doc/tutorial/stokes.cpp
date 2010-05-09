@@ -206,9 +206,9 @@ private:
     boost::shared_ptr<export_type> exporter;
 }; // Stokes
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-typename Stokes<Dim,Order,Entity>::mesh_ptrtype
-Stokes<Dim,Order,Entity>::createMesh( double meshSize )
+template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
+typename Stokes<Dim,BasisU,BasisP,Entity>::mesh_ptrtype
+Stokes<Dim,BasisU,BasisP,Entity>::createMesh( double meshSize )
 {
     mesh_ptrtype mesh( new mesh_type );
 
@@ -223,9 +223,9 @@ Stokes<Dim,Order,Entity>::createMesh( double meshSize )
 } // Stokes::createMesh
 
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Stokes<Dim, Order, Entity>::run()
+Stokes<Dim, BasisU, BasisP, Entity>::run()
 {
     if ( this->vm().count( "help" ) )
         {
@@ -238,7 +238,7 @@ Stokes<Dim, Order, Entity>::run()
     this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
                             % convex_type::name()
-                            % Order
+                            % BasisU::nOrder
                             % this->vm()["hsize"].template as<double>()
                             );
 
@@ -371,9 +371,9 @@ Stokes<Dim, Order, Entity>::run()
     Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Stokes<Dim, Order, Entity>::solve( sparse_matrix_ptrtype const& D,
+Stokes<Dim, BasisU, BasisP, Entity>::solve( sparse_matrix_ptrtype const& D,
                                    element_type& u,
                                    vector_ptrtype const& F,
                                    bool is_sym )
@@ -383,9 +383,9 @@ Stokes<Dim, Order, Entity>::solve( sparse_matrix_ptrtype const& D,
     u = *U;
 } // Stokes::solve
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Stokes<Dim, Order, Entity>::exportResults( element_type& U, element_type& V )
+Stokes<Dim, BasisU, BasisP, Entity>::exportResults( element_type& U, element_type& V )
 {
     if ( exporter->doExport() )
     {
@@ -408,8 +408,8 @@ main( int argc, char** argv )
     Life::Assert::setLog( "stokes.assert");
 
     const int nDim = 2;
-    typedef Life::Stokes<nDim, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, nOrder, Simplex> stokes_type;
-    //typedef Life::Stokes<nDim, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar>, nOrder, Simplex> stokes_type;
+    typedef Life::Stokes<nDim, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex> stokes_type;
+    //typedef Life::Stokes<nDim, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar>, Simplex> stokes_type;
 
 
     /* define and run application */
