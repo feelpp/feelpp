@@ -69,6 +69,7 @@ namespace detail
 # define DIM3 BOOST_PP_TUPLE_TO_LIST(1, (3))
 #
 #if 1
+# define ORDER0 BOOST_PP_TUPLE_TO_LIST(1,(0))
 # define ORDER1 BOOST_PP_TUPLE_TO_LIST(1,(1))
 
 # define ORDERS                                             \

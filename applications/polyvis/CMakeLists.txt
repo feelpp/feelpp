@@ -26,8 +26,10 @@ INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
 add_executable( life_polyvis
   polyvisapp.cpp polyvisbase.cpp
   crouzeixraviart2d.cpp crouzeixraviart3d.cpp
+  raviartthomas2d.cpp
   lagrange1d.cpp lagrange2d.cpp lagrange3d.cpp
-  orthonormalpset1d.cpp orthonormalpset2d.cpp orthonormalpset3d.cpp )
+  orthonormalpset1d.cpp orthonormalpset2d.cpp orthonormalpset3d.cpp
+)
 target_link_libraries(life_polyvis ${LIFE_LIBRARIES} )
 
 foreach( poly lagrange orthonormalpset )

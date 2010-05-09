@@ -37,6 +37,7 @@
 #include <life/lifecore/environment.hpp>
 #include <life/lifepoly/equispaced.hpp>
 #include <life/lifepoly/lagrange.hpp>
+#include <life/lifepoly/raviartthomas.hpp>
 #include <life/lifepoly/boundaryadaptedpolynomialset.hpp>
 
 #include <life/lifediscr/mesh.hpp>
@@ -249,6 +250,55 @@ public:
 };
 
 
+template<int Dim>
+class TestSpaceRT
+{
+public:
+    typedef Mesh<Simplex<Dim> > mesh_type;
+    typedef bases<RaviartThomas<0> > basis_type;
+    typedef FunctionSpace<mesh_type, basis_type> space_type;
+
+    TestSpaceRT()
+    {}
+
+    void operator()() const
+    {
+        using namespace Life;
+
+        boost::shared_ptr<mesh_type> mesh( new mesh_type );
+
+        std::string fname;
+        if ( Dim == 2 )
+        {
+            Gmsh gen;
+            fname =  gen.generateSquare("square", 0.2);
+        }
+        if ( Dim == 3 )
+        {
+            Gmsh gen;
+            fname = gen.generateCube("cube", 0.2);
+        }
+        ImporterGmsh<mesh_type> import( fname );
+        mesh->accept( import );
+        mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
+        mesh->updateForUse();
+
+        boost::shared_ptr<space_type> Xh( space_type::New( mesh ) );
+        typename space_type::element_type U( Xh, "U" );
+
+#if !defined( USE_BOOST_TEST )
+#define BOOST_CHECK( e ) LIFE_ASSERT( e ).warn( "BOOST_CHECK assertion failed" );
+#endif
+
+        BOOST_CHECK( Xh->is_scalar == false );
+        BOOST_CHECK( Xh->is_vectorial == true );
+        BOOST_CHECK( Xh->nDof() == mesh->numEdges());
+
+
+    }
+};
+
+
 template<int Dim, int N, typename T>
 class TestBASpace
 {
@@ -386,6 +436,8 @@ int main( int argc, char** argv)
     Life::TestSpace1<3, 2, double> t13;t13();
     Life::TestSpace2<2, double> t21;t21();
     Life::TestSpace2<3, double> t22;t22();
+
+    Life::TestSpaceRT<2> trt;trt();
 
 }
 #endif
