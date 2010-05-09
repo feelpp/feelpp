@@ -394,7 +394,7 @@ struct test_integration_circle
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
-        u = project( Xh, elements(*mesh), constant(1.0) );
+        u = vf::project( Xh, elements(*mesh), constant(1.0) );
         v0 = integrate( elements(*mesh), IM<2,(Order-1)*(Order-1),value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
         std::cout << "int( 1 )=" << v0 << "  (should be pi)\n";
 #if defined(USE_BOOST_TEST)
@@ -403,7 +403,7 @@ struct test_integration_circle
         LIFE_ASSERT( math::abs( v0-pi) < math::pow(meshSize,2*Order) )( v0 )( math::abs( v0-pi) )( math::pow(meshSize,2*Order) ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
-        u = project( Xh, elements(*mesh), Px()+Py()+1 );
+        u = vf::project( Xh, elements(*mesh), Px()+Py()+1 );
         node_type pt(2);
         pt[0] = 0.111;
         pt[1] = 0.111;
@@ -416,19 +416,19 @@ struct test_integration_circle
         pt3[0] = 0;
         pt3[1] = 1;
 
-        u = project( Xh, elements(*mesh), Px() );
+        u = vf::project( Xh, elements(*mesh), Px() );
         std::cout << "error x=" << integrate( elements(mesh), IM<2,8*Order,value_type,Simplex>(), (idv(u)-Px())*(idv(u)-Px()) ).evaluate()( 0, 0 ) << "\n";
 
-        u = project( Xh, elements(*mesh), Py() );
+        u = vf::project( Xh, elements(*mesh), Py() );
         std::cout << "error y=" << integrate( elements(mesh), IM<2,8*Order,value_type,Simplex>(), (idv(u)-Py())*(idv(u)-Py()) ).evaluate()( 0, 0 ) << "\n";
 
-        u = project( Xh, elements(*mesh), Px()*Px() );
+        u = vf::project( Xh, elements(*mesh), Px()*Px() );
         std::cout << "error x^2=" << integrate( elements(mesh), IM<2,8*Order,value_type,Simplex>(), (idv(u)-Px()*Px())*(idv(u)-Px()*Px()) ).evaluate()( 0, 0 ) << "\n";
 
-        u = project( Xh, elements(*mesh), Px()*Py() );
+        u = vf::project( Xh, elements(*mesh), Px()*Py() );
         std::cout << "error xy=" << integrate( elements(mesh), IM<2,8*Order,value_type,Simplex>(), (idv(u)-Px()*Py())*(idv(u)-Px()*Py()) ).evaluate()( 0, 0 ) << "\n";
 
-        u = project( Xh, elements(*mesh), Py()*Py() );
+        u = vf::project( Xh, elements(*mesh), Py()*Py() );
         std::cout << "error y^2=" << integrate( elements(mesh), IM<2,8*Order,value_type,Simplex>(), (idv(u)-Py()*Py())*(idv(u)-Py()*Py()) ).evaluate()( 0, 0 ) << "\n";
 
 #if defined(USE_BOOST_TEST)
@@ -473,7 +473,7 @@ struct test_integration_sin
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
-        u = project( Xh, elements(*mesh), constant(1.0) );
+        u = vf::project( Xh, elements(*mesh), constant(1.0) );
         double v0 = integrate( elements(*mesh), IM<2,(Order-1)*(Order-1),value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
         //double v0 = integrate( elements(*mesh), IM<2,2*Order,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
         std::cout << "int( 1 )=" << v0 << "  (=pi) error= " << math::abs( v0 - M_PI ) << std::endl;

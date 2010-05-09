@@ -289,7 +289,7 @@ struct test_integration_circle
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
-        u = project( Xh, elements(mesh), constant(1.0) );
+        u = vf::project( Xh, elements(mesh), constant(1.0) );
         v0 = integrate( elements(mesh), IM<2,3,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v0-pi, math::pow( meshSize, 2*Order ) );
@@ -302,7 +302,7 @@ struct test_integration_circle
         boost::shared_ptr<vector_space_type> Xvh( new vector_space_type(mesh) );
         typename vector_space_type::element_type U( Xvh );
 
-        U = project( Xvh, elements(mesh), vec(constant(1.0),constant(1.0)) );
+        U = vf::project( Xvh, elements(mesh), vec(constant(1.0),constant(1.0)) );
         v0 = integrate( boundaryfaces(mesh), IM<2,3,value_type,Simplex>(), trans(idv( U ))*N() ).evaluate()( 0, 0 );
         v00 = integrate( elements(mesh), IM<2,3,value_type,Simplex>(), divv(U) ).evaluate()( 0, 0 );
 
@@ -313,7 +313,7 @@ struct test_integration_circle
         LIFE_ASSERT( math::abs( v0-v00) < eps )( v0 )(v00)( math::abs( v0-v00) ).warn ( "int 1.N() != int div 1" );
 #endif /* USE_BOOST_TEST */
 
-        U = project( Xvh, elements(mesh), vec(Px(),Py()) );
+        U = vf::project( Xvh, elements(mesh), vec(Px(),Py()) );
         v0 = integrate( boundaryfaces(mesh), IM<2,3,value_type,Simplex>(), trans(idv( U ))*N() ).evaluate()( 0, 0 );
         v00 = integrate( elements(mesh), IM<2,3,value_type,Simplex>(), divv(U) ).evaluate()( 0, 0 );
 
@@ -367,13 +367,13 @@ struct test_integration_simplex
 #endif /* USE_BOOST_TEST */
 
         // int ([-1,1],[-1,x]) 1 dx
-        u = project( Xh, elements(mesh), Px() );
+        u = vf::project( Xh, elements(mesh), Px() );
         std::cout << "[simplex] int grad(X)=" << integrate( elements(mesh), IM<2,1,value_type,Simplex>(), gradv(u) ).evaluate() << "\n";
         std::cout << "[simplex] int hess(X)=" << integrate( elements(mesh), IM<2,1,value_type,Simplex>(), hessv(u) ).evaluate() << "\n";
-        u = project( Xh, elements(mesh), Px()*Px()+Px()*Py()+Py()*Py() );
+        u = vf::project( Xh, elements(mesh), Px()*Px()+Px()*Py()+Py()*Py() );
         std::cout << "[simplex] int grad(X^2)=" << integrate( elements(mesh), IM<2,1,value_type,Simplex>(), gradv(u) ).evaluate() << "\n";
         std::cout << "[simplex] int hess(X^2)=" << integrate( elements(mesh), IM<2,1,value_type,Simplex>(), hessv(u) ).evaluate() << "\n";
-        u = project( Xh, elements(mesh), Px()*Px()*Px()+Py()*Py()*Py() );
+        u = vf::project( Xh, elements(mesh), Px()*Px()*Px()+Py()*Py()*Py() );
         std::cout << "[simplex] int grad(X^3)=" << integrate( elements(mesh), IM<2,1,value_type,Simplex>(), gradv(u) ).evaluate() << "\n";
         std::cout << "[simplex] int hess(X^3)=" << integrate( elements(mesh), IM<2,1,value_type,Simplex>(), hessv(u) ).evaluate() << "\n";
     }
@@ -550,7 +550,7 @@ struct test_integration_functions
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
-        u = project( Xh, elements(mesh), constant(1.0) );
+        u = vf::project( Xh, elements(mesh), constant(1.0) );
         value_type v0 = integrate( elements(mesh), IM<2,1,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v0-4.0, eps );
@@ -559,7 +559,7 @@ struct test_integration_functions
 #endif /* USE_BOOST_TEST */
 
         //
-        u = project( Xh, elements(mesh), Px() );
+        u = vf::project( Xh, elements(mesh), Px() );
         value_type v1 = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v1-0.0, eps );
@@ -580,7 +580,7 @@ struct test_integration_functions
         LIFE_ASSERT( math::abs( v3-0.0) < eps )( v3 )( math::abs( v3-0.0) )( eps ).warn ( "v3 != 0" );
 #endif /* USE_BOOST_TEST */
 
-        u = project( Xh, elements(mesh), exp(Px())*exp(Py()) );
+        u = vf::project( Xh, elements(mesh), exp(Px())*exp(Py()) );
         value_type v4 = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
         value_type v4_ex = (math::exp(1.0)-math::exp(-1.0))*(math::exp(1.0)-math::exp(-1.0));
 #if defined(USE_BOOST_TEST)
@@ -623,7 +623,7 @@ struct test_integration_functions
 #endif /* USE_BOOST_TEST */
 
 #if 1
-        u = project( Xh, elements(mesh), Px()*Px() );
+        u = vf::project( Xh, elements(mesh), Px()*Px() );
         std::cout << "hess(X^2)="
                   << integrate( elements(mesh), IM<2,Order-2,value_type,Simplex>(), hessv(u) ).evaluate()
                   << "\n";
@@ -682,12 +682,12 @@ struct test_integration_vectorial_functions
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
 
-        u = project( Xh, elements(mesh), P() );
+        u = vf::project( Xh, elements(mesh), P() );
         std::cout << "int(proj P() = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u ) ).evaluate() << "\n";
-        u = project( Xh, elements(mesh), one() );
+        u = vf::project( Xh, elements(mesh), one() );
         std::cout << "int(proj one() = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u ) ).evaluate() << "\n";
 
-        u = project( Xh, elements(mesh), P() );
+        u = vf::project( Xh, elements(mesh), P() );
         ublas::matrix<value_type> m(  integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), gradv( u ) ).evaluate() );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( m(0,0)-4, std::pow(10.0,-2.0*Order) );
@@ -707,13 +707,13 @@ struct test_integration_vectorial_functions
         BOOST_CHECK_SMALL( my(1,0)-4, std::pow(10.0,-2.0*Order) );
 #endif
 
-        u = project( Xh, elements(mesh), Py()*oneX() + Px()*oneY() );
+        u = vf::project( Xh, elements(mesh), Py()*oneX() + Px()*oneY() );
         ublas::matrix<value_type> int_divu( integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), divv( u ) ).evaluate());
 #if defined(USE_BOOST_TEST)
         value_type norm_int_divu = ublas::norm_frobenius(int_divu);
         BOOST_CHECK_SMALL( norm_int_divu, eps );
 #endif
-        u = project( Xh, elements(mesh), P() );
+        u = vf::project( Xh, elements(mesh), P() );
         int_divu = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), divv( u ) ).evaluate();
 #if defined(USE_BOOST_TEST)
         norm_int_divu = ublas::norm_frobenius(int_divu);
@@ -721,7 +721,7 @@ struct test_integration_vectorial_functions
 #endif
 
         // check the divergence theorem
-        u = project( Xh, elements(mesh), P() );
+        u = vf::project( Xh, elements(mesh), P() );
         int_divu = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), divv( u ) ).evaluate();
         std::cout << "int_divu = " << int_divu << "\n";
         ublas::matrix<value_type> int_un = integrate( boundaryfaces(mesh), IM<2,Order+3,value_type,Simplex>(), trans(idv( u ))*N() ).evaluate();
@@ -768,8 +768,8 @@ struct test_integration_composite_functions
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
 
-        u.template element<0>() = project( Xh->template functionSpace<0>(), elements(mesh), P() );
-        u.template element<1>() = project( Xh->template functionSpace<1>(), elements(mesh), constant(1) );
+        u.template element<0>() = vf::project( Xh->template functionSpace<0>(), elements(mesh), P() );
+        u.template element<1>() = vf::project( Xh->template functionSpace<1>(), elements(mesh), constant(1) );
         std::cout << "int(proj P() = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u.template element<0>() ) ).evaluate() << "\n";
         std::cout << "int(1 = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u.template element<1>() ) ).evaluate() << "\n";
 
@@ -807,8 +807,8 @@ struct test_integration_composite_functions
 
 #endif
 
-        u.template element<0>() = project( Xh->template functionSpace<0>(), elements(mesh), u_exact );
-        u.template element<1>() = project( Xh->template functionSpace<1>(), elements(mesh), Px()+Py() );
+        u.template element<0>() = vf::project( Xh->template functionSpace<0>(), elements(mesh), u_exact );
+        u.template element<1>() = vf::project( Xh->template functionSpace<1>(), elements(mesh), Px()+Py() );
         std::cout << "int(u) = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u.template element<0>() ) ).evaluate() << "\n";
         std::cout << "int(u - u_exact) = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(),
                                                      trans(idv( u.template element<0>() )-u_exact)*(idv( u.template element<0>() )-u_exact) ).evaluate() << "\n";

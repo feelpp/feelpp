@@ -245,8 +245,8 @@ namespace test_interp_twomesh
         AUTO (h , (Px()+1)*(Px()-1)*(Py()+1)*(Py()-1) );
         //AUTO (h , cst(1.)*Px());
 
-        u1 = project( Xh1, elements(mesh1), h );
-        u2 = project( Xh2, elements(mesh2), h );
+        u1 = vf::project( Xh1, elements(mesh1), h );
+        u2 = vf::project( Xh2, elements(mesh2), h );
 
         //-----------------------------------------------------------------------------------//
 
@@ -415,7 +415,7 @@ namespace test_interp_twomesh
         AUTO (h , (Px()+1)*(Px()-1)*(Py()+1)*(Py()-1) );
         //AUTO (h , cst(1.)*Px());
 
-        u = project( Xh, elements(mesh), h );
+        u = vf::project( Xh, elements(mesh), h );
 
         //-----------------------------------------------------------------------------------//
 

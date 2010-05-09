@@ -181,8 +181,8 @@ Test_AOI::run()
     AUTO (f , sin(0.5*M_PI*Px())*(cos(0.5*M_PI*Py())));
     AUTO (g , Px()*(Px()-1)*0.5*Py() );
 
-    us = project( Xh, elements(mesh), g );
-    p_mixed = project( p_mixed.functionSpace() , elements(mesh), f);
+    us = vf::project( Xh, elements(mesh), g );
+    p_mixed = vf::project( p_mixed.functionSpace() , elements(mesh), f);
 
     //-----------------------------------------------------------------------------------//
 
