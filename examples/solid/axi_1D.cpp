@@ -256,7 +256,7 @@ Elaxi<Order, Entity>::run()
     element_1_type phi1 = Phi.template element<1>();
 
 
-    phi0=project(Xh->template functionSpace<0>(),elements(mesh), Py());
+    phi0=vf::project(Xh->template functionSpace<0>(),elements(mesh), Py());
     phi1.zero();
 
 

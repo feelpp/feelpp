@@ -304,7 +304,7 @@ Beam<nDim,nOrder>::run()
     this->solve( D, u, F );
 
 
-    v = project( Xh, elements(Xh->mesh()), P() );
+    v = vf::project( Xh, elements(Xh->mesh()), P() );
 
     this->exportResults( 0, u, v );
 
@@ -313,9 +313,9 @@ Beam<nDim,nOrder>::run()
     meshmove.apply( Xh->mesh(), u );
 
     element_type w( Xh, "w" );
-    w = project( Xh,
-                 elements(Xh->mesh()),
-                 P() );
+    w = vf::project( Xh,
+                     elements(Xh->mesh()),
+                     P() );
 
     this->exportResults( 1, u, w );
 

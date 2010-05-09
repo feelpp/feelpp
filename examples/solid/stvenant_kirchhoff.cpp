@@ -501,7 +501,7 @@ StVenantKirchhoff<Dim, Order>::run()
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
 
-    //u = project( M_Xh, elements(mesh), constant(0.)*one() );
+    //u = vf::project( M_Xh, elements(mesh), constant(0.)*one() );
     U.zero();
 
     un->zero();
