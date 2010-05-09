@@ -297,8 +297,9 @@ public:
                       ++e )
                     {
                         typedef Life::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
-
-                        dcpe_type __dcpe( primal, 1, _M_convex_ref.normal(e)*j[e], pts_per_face[e] );
+                        node_type dir = _M_convex_ref.normal(e)*j[e];
+                        //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
+                        dcpe_type __dcpe( primal, dir, pts_per_face[e] );
                         std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
                     }
             }
@@ -377,7 +378,7 @@ public:
 
     static const uint16_type nDim = N;
     static const bool isTransformationEquivalent = false;
-    static const polynomial_transformation_type transformation = POLYNOMIAL_CONTEXT_NEEDS_1ST_PIOLA_TRANSFORMATION;
+    //static const polynomial_transformation_type transformation = POLYNOMIAL_CONTEXT_NEEDS_1ST_PIOLA_TRANSFORMATION;
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
