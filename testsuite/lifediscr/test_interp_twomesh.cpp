@@ -24,10 +24,10 @@ namespace test_interp_twomesh
     typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
     enum type_champs
-    {
-        ScalarTest = 0,
-        VectorialTest
-    };
+        {
+            ScalarTest = 0,
+            VectorialTest
+        };
 
 
     /*_________________________________________________*
@@ -225,6 +225,11 @@ namespace test_interp_twomesh
         typedef boost::shared_ptr<space_type> space_ptrtype;
         typedef typename space_type::element_type element_type;
 
+        typedef bases<Lagrange<OrderChamp,Vectorial,PointSetFekete> > basis_v_type;
+        typedef FunctionSpace<mesh_type, basis_v_type> space_v_type;
+        typedef boost::shared_ptr<space_v_type> space_v_ptrtype;
+        typedef typename space_v_type::element_type element_v_type;
+
         //-----------------------------------------------------------------------------------//
 
         mesh_ptrtype mesh1 = boost::get<0>(__mesh);
@@ -232,9 +237,13 @@ namespace test_interp_twomesh
 
         space_ptrtype Xh1 = space_type::New( mesh1 );
         space_ptrtype Xh2 = space_type::New( mesh2 );
+        space_v_ptrtype Yh1 = space_v_type::New( mesh1 );
+        space_v_ptrtype Yh2 = space_v_type::New( mesh2 );
 
         element_type u1( Xh1, "u1" );
         element_type u2( Xh2, "u2" );
+        element_v_type v1( Yh1, "v1" );
+        element_v_type v2( Yh2, "v2" );
 
         //-----------------------------------------------------------------------------------//
 
@@ -247,6 +256,8 @@ namespace test_interp_twomesh
 
         u1 = vf::project( Xh1, elements(mesh1), h );
         u2 = vf::project( Xh2, elements(mesh2), h );
+        v1 = vf::project( Yh1, elements(mesh1), vec(h,h) );
+        v2 = vf::project( Yh2, elements(mesh2), vec(h,h) );
 
         //-----------------------------------------------------------------------------------//
 
@@ -256,22 +267,75 @@ namespace test_interp_twomesh
         double  __errGrad = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
                                                  (gradv(u1)-gradv(u2))*trans(gradv(u1)-gradv(u2)) ).evaluate()(0,0));
 
+        double  __errDiv = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+                                                (divv(v1)-divv(v2))*(divv(v1)-divv(v2)) ).evaluate()(0,0));
+
+        double  __errDx = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+                                               (dxv(u1)-dxv(u2))*(dxv(u1)-dxv(u2)) ).evaluate()(0,0));
+
+        double  __errDy = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+                                               (dyv(u1)-dyv(u2))*(dyv(u1)-dyv(u2)) ).evaluate()(0,0));
+#if 0
+        double  __errDz = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+                                               (dzv(u1)-dzv(u2))*(dzv(u1)-dzv(u2)) ).evaluate()(0,0));
+#endif
+
+        double  __errCurl = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+                                                 trans(curlv(v1)-curlv(v2))*(curlv(v1)-curlv(v2)) ).evaluate()(0,0));
+
+        double  __errCurlx = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+                                                  (curlxv(v1)-curlxv(v2))*(curlxv(v1)-curlxv(v2)) ).evaluate()(0,0));
+        double  __errCurly = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+                                                  (curlyv(v1)-curlyv(v2))*(curlyv(v1)-curlyv(v2)) ).evaluate()(0,0));
+#if 0
+        double  __errCurlz = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+                                                  (curlzv(v1)-curlzv(v2))*(curlzv(v1)-curlzv(v2)) ).evaluate()(0,0));
+#endif
+        double  __errHess;
+        //if (OrderGeo==1)
+        //   __errHess = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+        //                                     trace((hessv(u1)-hessv(u2))*trans(hessv(u1)-hessv(u2))) ).evaluate()(0,0));
+
         double  __errId2 = std::sqrt(integrate( markedfaces(mesh2, mesh2->markerName("Interface")),
                                                 (idv(u1)-idv(u2))*(idv(u1)-idv(u2)) ).evaluate()(0,0));
 
         double  __errGrad2 = std::sqrt(integrate( markedfaces(mesh2, mesh2->markerName("Interface")),
                                                   (gradv(u1)-gradv(u2))*trans(gradv(u1)-gradv(u2)) ).evaluate()(0,0));
 
+        double  __errDiv2 = std::sqrt(integrate( markedfaces(mesh2, mesh2->markerName("Interface")),
+                                                 (divv(v1)-divv(v2))*(divv(v1)-divv(v2)) ).evaluate()(0,0));
+
         //-----------------------------------------------------------------------------------//
 
         Log() << "[testBoundary] idv(u1) error : " << __errId << "\n";
         Log() << "[testBoundary] gradv(u1) error : " << __errGrad <<"\n";
-        Log() << "[testBoundary] idv(u2) error : " << __errId2 << "\n";
-        Log() << "[testBoundary] gradv(u2) error : " << __errGrad2 << "\n";
+        Log() << "[testBoundary] divv(u1) error : " << __errDiv << "\n";
+        Log() << "[testBoundary] dxv(u1) error : " << __errDx << "\n";
+        Log() << "[testBoundary] dyv(u1) error : " << __errDy << "\n";
+        //Log() << "[testBoundary] dzv(u1) error : " << __errDz << "\n";
+        Log() << "[testBoundary] curlv(u1) error : " << __errCurl << "\n";
+        Log() << "[testBoundary] curlxv(u1) error : " << __errCurlx << "\n";
+        Log() << "[testBoundary] curlyv(u1) error : " << __errCurly << "\n";
+        //Log() << "[testBoundary] curlzv(u1) error : " << __errCurlz << "\n";
+        Log() << "[testBoundary] hessv(u1) error : " << __errHess << "\n";
+
         BOOST_CHECK( __errId<1e-9);
         BOOST_CHECK( __errGrad<1e-9);
+        BOOST_CHECK( __errDiv<1e-9);
+        BOOST_CHECK( __errDx<1e-9);
+        BOOST_CHECK( __errDy<1e-9);
+        //BOOST_CHECK( __errDz<1e-9);
+        BOOST_CHECK( __errCurl<1e-9);
+        BOOST_CHECK( __errCurlx<1e-9);
+        //BOOST_CHECK( __errCurly<1e-9);//bug!!!
+        BOOST_CHECK( __errHess<1e-9);//bug!!!
+
+        Log() << "[testBoundary] idv(u2) error : " << __errId2 << "\n";
+        Log() << "[testBoundary] gradv(u2) error : " << __errGrad2 << "\n";
+
         BOOST_CHECK( __errId2<1e-9);
         BOOST_CHECK( __errGrad2<1e-9);
+        BOOST_CHECK( __errDiv2<1e-9);
 
     }
 
@@ -463,38 +527,38 @@ BOOST_AUTO_TEST_CASE( interp_twomesh )
                                 );
 
 
-    Log() << "\n[main] ----------TEST_GEOMAP_START----------\n";
-    Log() << "[main] ----------------<2,6,1>---------------\n";
-    run_test_geomap<2,6,1>(test_app);
-    Log() << "[main] ----------------<2,6,2>---------------\n";
-    run_test_geomap<2,6,2>(test_app);
-    Log() << "[main] ----------------<2,6,3>---------------\n";
-    run_test_geomap<2,6,3>(test_app);
-    Log() << "[main] ----------------<2,6,4>---------------\n";
-    run_test_geomap<2,6,4>(test_app);
-    Log() << "[main] ----------------<2,6,5>---------------\n";
-    run_test_geomap<2,6,5>(test_app);
-    Log() << "[main] ----------TEST_GEOMAP_FINISH----------\n\n";
-    Log() << "[main] ----------TEST_INTERP_START-----------\n";
-    Log() << "[main] ----------------<2,7,1>---------------\n";
-    run_test_interp<2,7,1>(test_app);
-    Log() << "[main] ----------------<2,8,2>---------------\n";
-    run_test_interp<2,8,2>(test_app);
-    Log() << "[main] ----------------<2,9,3>---------------\n";
-    run_test_interp<2,9,3>(test_app);
-    Log() << "[main] ----------------<2,10,4>---------------\n";
-    run_test_interp<2,10,4>(test_app);
-    Log() << "[main] ----------------<2,11,5>---------------\n";
-    run_test_interp<2,11,5>(test_app);
-    Log() << "[main] ----------TEST_INTERP_FINISH----------\n";
-    Log() << "[main] ----------TEST_EXPORT_START-----------\n";
-    Log() << "[main] ----------------<2,7,1>---------------\n";
-    run_test_export<2,7,1>(test_app);
-    Log() << "[main] ----------------<2,8,2>---------------\n";
-    run_test_export<2,8,2>(test_app);
-    Log() << "[main] ----------------<2,9,3>---------------\n";
-    run_test_export<2,9,3>(test_app);
-    Log() << "[main] ----------TEST_EXPORT_FINISH----------\n";
+      Log() << "\n[main] ----------TEST_GEOMAP_START----------\n";
+      Log() << "[main] ----------------<2,6,1>---------------\n";
+      run_test_geomap<2,6,1>(test_app);
+      Log() << "[main] ----------------<2,6,2>---------------\n";
+      run_test_geomap<2,6,2>(test_app);
+      Log() << "[main] ----------------<2,6,3>---------------\n";
+      run_test_geomap<2,6,3>(test_app);
+      Log() << "[main] ----------------<2,6,4>---------------\n";
+      run_test_geomap<2,6,4>(test_app);
+      Log() << "[main] ----------------<2,6,5>---------------\n";
+      run_test_geomap<2,6,5>(test_app);
+      Log() << "[main] ----------TEST_GEOMAP_FINISH----------\n\n";
+      Log() << "[main] ----------TEST_INTERP_START-----------\n";
+      Log() << "[main] ----------------<2,7,1>---------------\n";
+      run_test_interp<2,7,1>(test_app);
+      Log() << "[main] ----------------<2,8,2>---------------\n";
+      run_test_interp<2,8,2>(test_app);
+      Log() << "[main] ----------------<2,9,3>---------------\n";
+      run_test_interp<2,9,3>(test_app);
+      Log() << "[main] ----------------<2,10,4>---------------\n";
+      run_test_interp<2,10,4>(test_app);
+      Log() << "[main] ----------------<2,11,5>---------------\n";
+      run_test_interp<2,11,5>(test_app);
+      Log() << "[main] ----------TEST_INTERP_FINISH----------\n";
+      Log() << "[main] ----------TEST_EXPORT_START-----------\n";
+      Log() << "[main] ----------------<2,7,1>---------------\n";
+      run_test_export<2,7,1>(test_app);
+      Log() << "[main] ----------------<2,8,2>---------------\n";
+      run_test_export<2,8,2>(test_app);
+      Log() << "[main] ----------------<2,9,3>---------------\n";
+      run_test_export<2,9,3>(test_app);
+      Log() << "[main] ----------TEST_EXPORT_FINISH----------\n";
 
 
 }
