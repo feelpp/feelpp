@@ -1,32 +1,32 @@
 /* -*- mode: c++ -*-
 
-  This file is part of the Life library
+   This file is part of the Life library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2004-11-22
+   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Date: 2004-11-22
 
-  Copyright (C) 2004 EPFL
-  Copyright (C) 2007,2008 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2004 EPFL
+   Copyright (C) 2007,2008 Université Joseph Fourier (Grenoble I)
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 3.0 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
    \file FunctionSpace.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2004-11-22
- */
+*/
 #ifndef __FunctionSpace_H
 #define __FunctionSpace_H 1
 
@@ -89,439 +89,439 @@
 
 namespace Life
 {
-namespace fusion = boost::fusion;
-namespace parameter = boost::parameter;
+    namespace fusion = boost::fusion;
+    namespace parameter = boost::parameter;
 
-namespace detail{
+    namespace detail{
 
-template<typename T>
-struct vector_plus
-{
-    std::vector<T> operator()( std::vector<T> const& v1, std::vector<T> const& v2 ) const
-    {
-        LIFE_ASSERT( v1.size() == v2.size() )( v1.size() )( v2.size() ).error( "invalid vector size for vector_plus<>");
-        std::vector<T> res( v1.size() );
-        for( size_type i = 0;i < v1.size(); ++i )
-            res[i]=v1[i]+v2[i];
-        return res;
-    }
-};
-template<typename T>
-struct ID
-{
-    friend class boost::serialization::access;
-    typedef T value_type;
-    typedef boost::multi_array<value_type,3> array_type;
-    typedef typename  array_type::index_range range;
-
-    struct result
-    {
-
-        typedef typename array_type::template array_view<3>::type type;
-    };
-
-    ID()
-        :
-        M_id()
-    {}
-
-    ID( ID const& id )
-        :
-        M_id( id.M_id )
-    {}
-    ID( array_type const& id )
-        :
-        M_id( id )
-    {}
-
-
-    template<typename Elem, typename ContextType, typename FEPCType>
-    ID( Elem const& elem, ContextType const & context, FEPCType const& pc )
-        :
-        M_id( elem.idExtents( context ) )
-    {
-        elem.id_( context, pc, M_id );
-    }
-
-    ID& operator=( ID const& id )
-    {
-        if ( this != &id )
+        template<typename T>
+        struct vector_plus
+        {
+            std::vector<T> operator()( std::vector<T> const& v1, std::vector<T> const& v2 ) const
             {
-                //Debug() "[ID] extent = " <<
-
-                M_id = id.M_id;
+                LIFE_ASSERT( v1.size() == v2.size() )( v1.size() )( v2.size() ).error( "invalid vector size for vector_plus<>");
+                std::vector<T> res( v1.size() );
+                for( size_type i = 0;i < v1.size(); ++i )
+                    res[i]=v1[i]+v2[i];
+                return res;
             }
-        return *this;
+        };
+        template<typename T>
+        struct ID
+        {
+            friend class boost::serialization::access;
+            typedef T value_type;
+            typedef boost::multi_array<value_type,3> array_type;
+            typedef typename  array_type::index_range range;
 
-    }
-    value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
-    {
-        return M_id[c1][c2][q];
-    }
+            struct result
+            {
 
-    template <typename ExtentList>
-    void resize(const ExtentList& extents) { M_id.resize( extents ); }
+                typedef typename array_type::template array_view<3>::type type;
+            };
 
-    array_type M_id;
+            ID()
+                :
+                M_id()
+            {}
 
-    template<class Archive>
-    void save(Archive & ar, const unsigned int /*version*/) const
-    {
-        size_type e1 = M_id.shape()[0];
-        Debug( 5010 ) << "saving in archive e1= " << e1 << "\n";
-        ar  & e1;
-        size_type e2 = M_id.shape()[1];
-        Debug( 5010 ) << "saving in archive e2= " << e2 << "\n";
-        ar  & e2;
-        size_type e3 = M_id.shape()[2];
-        Debug( 5010 ) << "saving in archive e3= " << e3 << "\n";
-        ar  & e3;
-        Debug( 5010 ) << "saving in archive array of size = " << M_id.num_elements() << "\n";
-        ar  & boost::serialization::make_array( M_id.data(), M_id.num_elements() );
-        Debug( 5010 ) << "saving in archive done\n";
-    }
-    template<class Archive>
-    void load(Archive & ar, const unsigned int /*version*/)
-    {
-        size_type e1, e2, e3;
-        ar  & e1;
-        Debug( 5010 ) << "loading from archive e1= " << e1 << "\n";
-        ar  & e2;
-        Debug( 5010 ) << "loading from archive e2= " << e2 << "\n";
-        ar  & e3;
-        Debug( 5010 ) << "loading from archive e3= " << e3 << "\n";
-        M_id.resize( boost::extents[e1][e2][e3] );
-        Debug( 5010 ) << "loading from archive array of size = " << M_id.num_elements() << "\n";
-        ar  & boost::serialization::make_array( M_id.data(), M_id.num_elements() );
-        Debug( 5010 ) << "loading from archive done\n";
-        Debug( 5010 ) << "creating view interpolation context done\n";
-    }
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-};
-template<typename T>
-struct DD
-{
-    typedef T value_type;
-    friend class boost::serialization::access;
-    typedef boost::multi_array<value_type,3> array_type;
-    typedef typename array_type::index_range range;
-    struct result
-    {
+            ID( ID const& id )
+                :
+                M_id( id.M_id )
+            {}
+            ID( array_type const& id )
+                :
+                M_id( id )
+            {}
 
-        typedef array_type type;
-    };
 
-    DD()
-        :
-        _M_grad()
-    {}
+            template<typename Elem, typename ContextType, typename FEPCType>
+            ID( Elem const& elem, ContextType const & context, FEPCType const& pc )
+                :
+                M_id( elem.idExtents( context ) )
+            {
+                elem.id_( context, pc, M_id );
+            }
 
-    template<typename Elem, typename ContextType, typename FEPCType>
-    DD( Elem const& elem, ContextType const & context, FEPCType const& pc )
-        :
-        _M_grad( elem.gradExtents( context ) )
-    {
-        elem.grad_( context, pc, _M_grad );
-    }
+            ID& operator=( ID const& id )
+            {
+                if ( this != &id )
+                    {
+                        //Debug() "[ID] extent = " <<
 
-    value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
-    {
-        return _M_grad[c1][c2][q];
-    }
-    array_type _M_grad;
+                        M_id = id.M_id;
+                    }
+                return *this;
 
-    template<class Archive>
-    void save(Archive & ar, const unsigned int /*version*/) const
-    {
-        size_type e1 = _M_grad.shape()[0];
-        Debug( 5010 ) << "saving in archive e1= " << e1 << "\n";
-        ar  & e1;
-        size_type e2 = _M_grad.shape()[1];
-        Debug( 5010 ) << "saving in archive e2= " << e2 << "\n";
-        ar  & e2;
-        size_type e3 = _M_grad.shape()[2];
-        Debug( 5010 ) << "saving in archive e3= " << e3 << "\n";
-        ar  & e3;
-        Debug( 5010 ) << "saving in archive array of size = " << _M_grad.num_elements() << "\n";
-        ar  & boost::serialization::make_array( _M_grad.data(), _M_grad.num_elements() );
-        Debug( 5010 ) << "saving in archive done\n";
-    }
-    template<class Archive>
-    void load(Archive & ar, const unsigned int /*version*/)
-    {
-        size_type e1, e2, e3;
-        ar  & e1;
-        Debug( 5010 ) << "loading from archive e1= " << e1 << "\n";
-        ar  & e2;
-        Debug( 5010 ) << "loading from archive e2= " << e2 << "\n";
-        ar  & e3;
-        Debug( 5010 ) << "loading from archive e3= " << e3 << "\n";
-        _M_grad.resize( boost::extents[e1][e2][e3] );
-        Debug( 5010 ) << "loading from archive array of size = " << _M_grad.num_elements() << "\n";
-        ar  & boost::serialization::make_array( _M_grad.data(), _M_grad.num_elements() );
-        Debug( 5010 ) << "loading from archive done\n";
-        Debug( 5010 ) << "creating view interpolation context done\n";
-    }
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
+            }
+            value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
+            {
+                return M_id[c1][c2][q];
+            }
 
-};
-template<typename T,int N>
-struct D
-{
-    typedef T value_type;
-    typedef boost::multi_array<value_type,3> array_type;
-    typedef typename array_type::index_range range;
+            template <typename ExtentList>
+            void resize(const ExtentList& extents) { M_id.resize( extents ); }
 
-    struct result
-    {
+            array_type M_id;
 
-        typedef typename array_type::template array_view<3>::type type;
-    };
+            template<class Archive>
+            void save(Archive & ar, const unsigned int /*version*/) const
+            {
+                size_type e1 = M_id.shape()[0];
+                Debug( 5010 ) << "saving in archive e1= " << e1 << "\n";
+                ar  & e1;
+                size_type e2 = M_id.shape()[1];
+                Debug( 5010 ) << "saving in archive e2= " << e2 << "\n";
+                ar  & e2;
+                size_type e3 = M_id.shape()[2];
+                Debug( 5010 ) << "saving in archive e3= " << e3 << "\n";
+                ar  & e3;
+                Debug( 5010 ) << "saving in archive array of size = " << M_id.num_elements() << "\n";
+                ar  & boost::serialization::make_array( M_id.data(), M_id.num_elements() );
+                Debug( 5010 ) << "saving in archive done\n";
+            }
+            template<class Archive>
+            void load(Archive & ar, const unsigned int /*version*/)
+            {
+                size_type e1, e2, e3;
+                ar  & e1;
+                Debug( 5010 ) << "loading from archive e1= " << e1 << "\n";
+                ar  & e2;
+                Debug( 5010 ) << "loading from archive e2= " << e2 << "\n";
+                ar  & e3;
+                Debug( 5010 ) << "loading from archive e3= " << e3 << "\n";
+                M_id.resize( boost::extents[e1][e2][e3] );
+                Debug( 5010 ) << "loading from archive array of size = " << M_id.num_elements() << "\n";
+                ar  & boost::serialization::make_array( M_id.data(), M_id.num_elements() );
+                Debug( 5010 ) << "loading from archive done\n";
+                Debug( 5010 ) << "creating view interpolation context done\n";
+            }
+            BOOST_SERIALIZATION_SPLIT_MEMBER()
+        };
+        template<typename T>
+        struct DD
+        {
+            typedef T value_type;
+            friend class boost::serialization::access;
+            typedef boost::multi_array<value_type,3> array_type;
+            typedef typename array_type::index_range range;
+            struct result
+            {
 
-    D()
-        :
-        _M_grad()
-    {}
+                typedef array_type type;
+            };
 
-    template<typename Elem, typename ContextType, typename FEPCType>
-    D( Elem const& elem, ContextType const & context, FEPCType const& pc )
-        :
-        _M_grad( elem.dExtents( context ) )
-    {
-        elem.d_( N, context, pc, _M_grad );
-    }
+            DD()
+                :
+                _M_grad()
+            {}
 
-    value_type operator()( uint16_type c1, uint16_type /*c2*/, uint16_type q  ) const
-    {
-        return _M_grad[c1][0][q];
-    }
-    array_type _M_grad;
-};
+            template<typename Elem, typename ContextType, typename FEPCType>
+            DD( Elem const& elem, ContextType const & context, FEPCType const& pc )
+                :
+                _M_grad( elem.gradExtents( context ) )
+            {
+                elem.grad_( context, pc, _M_grad );
+            }
 
-template<typename T>
-struct Div
-{
-    typedef T value_type;
-    typedef boost::multi_array<value_type,3> array_type;
-    typedef typename array_type::index_range range;
-    struct result
-    {
+            value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
+            {
+                return _M_grad[c1][c2][q];
+            }
+            array_type _M_grad;
 
-        typedef typename array_type::template array_view<3>::type type;
-    };
+            template<class Archive>
+            void save(Archive & ar, const unsigned int /*version*/) const
+            {
+                size_type e1 = _M_grad.shape()[0];
+                Debug( 5010 ) << "saving in archive e1= " << e1 << "\n";
+                ar  & e1;
+                size_type e2 = _M_grad.shape()[1];
+                Debug( 5010 ) << "saving in archive e2= " << e2 << "\n";
+                ar  & e2;
+                size_type e3 = _M_grad.shape()[2];
+                Debug( 5010 ) << "saving in archive e3= " << e3 << "\n";
+                ar  & e3;
+                Debug( 5010 ) << "saving in archive array of size = " << _M_grad.num_elements() << "\n";
+                ar  & boost::serialization::make_array( _M_grad.data(), _M_grad.num_elements() );
+                Debug( 5010 ) << "saving in archive done\n";
+            }
+            template<class Archive>
+            void load(Archive & ar, const unsigned int /*version*/)
+            {
+                size_type e1, e2, e3;
+                ar  & e1;
+                Debug( 5010 ) << "loading from archive e1= " << e1 << "\n";
+                ar  & e2;
+                Debug( 5010 ) << "loading from archive e2= " << e2 << "\n";
+                ar  & e3;
+                Debug( 5010 ) << "loading from archive e3= " << e3 << "\n";
+                _M_grad.resize( boost::extents[e1][e2][e3] );
+                Debug( 5010 ) << "loading from archive array of size = " << _M_grad.num_elements() << "\n";
+                ar  & boost::serialization::make_array( _M_grad.data(), _M_grad.num_elements() );
+                Debug( 5010 ) << "loading from archive done\n";
+                Debug( 5010 ) << "creating view interpolation context done\n";
+            }
+            BOOST_SERIALIZATION_SPLIT_MEMBER()
 
-    Div()
-        :
-        _M_div()
-    {}
+        };
+        template<typename T,int N>
+        struct D
+        {
+            typedef T value_type;
+            typedef boost::multi_array<value_type,3> array_type;
+            typedef typename array_type::index_range range;
 
-    template<typename Elem, typename ContextType, typename FEPCType>
-    Div( Elem const& elem, ContextType const & context, FEPCType const& pc )
-        :
-        _M_div( elem.divExtents( context ) )
-    {
-        elem.div_( context, pc, _M_div );
+            struct result
+            {
+
+                typedef typename array_type::template array_view<3>::type type;
+            };
+
+            D()
+                :
+                _M_grad()
+            {}
+
+            template<typename Elem, typename ContextType, typename FEPCType>
+            D( Elem const& elem, ContextType const & context, FEPCType const& pc )
+                :
+                _M_grad( elem.dExtents( context ) )
+            {
+                elem.d_( N, context, pc, _M_grad );
+            }
+
+            value_type operator()( uint16_type c1, uint16_type /*c2*/, uint16_type q  ) const
+            {
+                return _M_grad[c1][0][q];
+            }
+            array_type _M_grad;
+        };
+
+        template<typename T>
+        struct Div
+        {
+            typedef T value_type;
+            typedef boost::multi_array<value_type,3> array_type;
+            typedef typename array_type::index_range range;
+            struct result
+            {
+
+                typedef typename array_type::template array_view<3>::type type;
+            };
+
+            Div()
+                :
+                _M_div()
+            {}
+
+            template<typename Elem, typename ContextType, typename FEPCType>
+            Div( Elem const& elem, ContextType const & context, FEPCType const& pc )
+                :
+                _M_div( elem.divExtents( context ) )
+            {
+                elem.div_( context, pc, _M_div );
 #if 0
-        uint16_type nComponents1 = elem.nComponents1;
-        std::fill( _M_div.data(), _M_div.data()+_M_div.num_elements(), value_type( 0 ) );
+                uint16_type nComponents1 = elem.nComponents1;
+                std::fill( _M_div.data(), _M_div.data()+_M_div.num_elements(), value_type( 0 ) );
 
-        _M_grad( elem.div_( context, pc, _M_div ) ),
+                _M_grad( elem.div_( context, pc, _M_div ) ),
 
 
-        const uint16_type nq = context.xRefs().size2();
-        for( int c1 = 0; c1 < nComponents1; ++c1 )
-            for( uint16_type q = 0; q < nq ; ++q )
-                {
-                    _M_div[0][0][q] += _M_grad[c1][c1][q];
-                }
+                    const uint16_type nq = context.xRefs().size2();
+                for( int c1 = 0; c1 < nComponents1; ++c1 )
+                    for( uint16_type q = 0; q < nq ; ++q )
+                        {
+                            _M_div[0][0][q] += _M_grad[c1][c1][q];
+                        }
 #endif
-    }
+            }
 
-    value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
-    {
-        return _M_div[c1][c2][q];
-    }
-    array_type _M_div;
-};
-template<typename T, int N>
-struct Curl
-{
-    typedef T value_type;
-    typedef boost::multi_array<value_type,3> array_type;
-    typedef typename array_type::index_range range;
-    struct result
-    {
+            value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
+            {
+                return _M_div[c1][c2][q];
+            }
+            array_type _M_div;
+        };
+        template<typename T, int N>
+        struct Curl
+        {
+            typedef T value_type;
+            typedef boost::multi_array<value_type,3> array_type;
+            typedef typename array_type::index_range range;
+            struct result
+            {
 
-        typedef typename array_type::template array_view<3>::type type;
-    };
+                typedef typename array_type::template array_view<3>::type type;
+            };
 
-    Curl()
-        :
-        _M_curl()
-    {}
+            Curl()
+                :
+                _M_curl()
+            {}
 
-    template<typename Elem, typename ContextType, typename FEPCType>
-    Curl( Elem const& elem, ContextType const & context, FEPCType const& pc )
-        :
-        _M_curl( elem.curlExtents( context ) )
-    {
-        elem.curl_( context, pc, _M_curl );
+            template<typename Elem, typename ContextType, typename FEPCType>
+            Curl( Elem const& elem, ContextType const & context, FEPCType const& pc )
+                :
+                _M_curl( elem.curlExtents( context ) )
+            {
+                elem.curl_( context, pc, _M_curl );
 #if 0
-        std::fill( _M_curl.data(), _M_curl.data()+_M_curl.num_elements(), value_type( 0 ) );
-        const uint16_type nq = context.xRefs().size2();
-        if ( Elem::nDim == 3 )
-            for( uint16_type q = 0; q < nq ; ++q )
-                {
-                    _M_curl[0][0][q] +=  _M_grad[2][1][q] - _M_grad[1][2][q];
-                    _M_curl[1][0][q] +=  _M_grad[0][2][q] - _M_grad[2][0][q];
-                    _M_curl[2][0][q] +=  _M_grad[1][0][q] - _M_grad[0][1][q];
-                }
-        else if ( Elem::nDim == 2 )
-            for( uint16_type q = 0; q < nq ; ++q )
-                {
-                    _M_curl[0][0][q] +=  _M_grad[1][0][q] - _M_grad[0][1][q];
-                }
+                std::fill( _M_curl.data(), _M_curl.data()+_M_curl.num_elements(), value_type( 0 ) );
+                const uint16_type nq = context.xRefs().size2();
+                if ( Elem::nDim == 3 )
+                    for( uint16_type q = 0; q < nq ; ++q )
+                        {
+                            _M_curl[0][0][q] +=  _M_grad[2][1][q] - _M_grad[1][2][q];
+                            _M_curl[1][0][q] +=  _M_grad[0][2][q] - _M_grad[2][0][q];
+                            _M_curl[2][0][q] +=  _M_grad[1][0][q] - _M_grad[0][1][q];
+                        }
+                else if ( Elem::nDim == 2 )
+                    for( uint16_type q = 0; q < nq ; ++q )
+                        {
+                            _M_curl[0][0][q] +=  _M_grad[1][0][q] - _M_grad[0][1][q];
+                        }
 #endif
-    }
+            }
 
-    value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
-    {
-        return this->operator()( c1, c2, q, mpl::int_<N>() );
-    }
-    value_type operator()( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<-1>  ) const
-    {
-        return _M_curl[c1][c2][q];
-    }
-    value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<0>  ) const
-    {
-        return _M_curl[0][0][q];
-    }
-    value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<1>  ) const
-    {
-        return _M_curl[1][0][q];
-    }
-    value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<2>  ) const
-    {
-        return _M_curl[2][0][q];
-    }
-    array_type _M_curl;
-};
+            value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
+            {
+                return this->operator()( c1, c2, q, mpl::int_<N>() );
+            }
+            value_type operator()( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<-1>  ) const
+            {
+                return _M_curl[c1][c2][q];
+            }
+            value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<0>  ) const
+            {
+                return _M_curl[0][0][q];
+            }
+            value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<1>  ) const
+            {
+                return _M_curl[1][0][q];
+            }
+            value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<2>  ) const
+            {
+                return _M_curl[2][0][q];
+            }
+            array_type _M_curl;
+        };
 
-template<typename T>
-struct H
-{
-    friend class boost::serialization::access;
-    typedef T value_type;
-    typedef boost::multi_array<value_type,3> array_type;
-    typedef typename  array_type::index_range range;
+        template<typename T>
+        struct H
+        {
+            friend class boost::serialization::access;
+            typedef T value_type;
+            typedef boost::multi_array<value_type,3> array_type;
+            typedef typename  array_type::index_range range;
 
-    struct result
-    {
+            struct result
+            {
 
-        typedef typename array_type::template array_view<3>::type type;
-    };
+                typedef typename array_type::template array_view<3>::type type;
+            };
 
-    H()
-        :
-        _M_hess()
-    {}
+            H()
+                :
+                _M_hess()
+            {}
 
-    template<typename Elem, typename ContextType, typename FEPCType>
-    H( Elem const& elem, ContextType const & context, FEPCType const& pc )
-        :
-        _M_hess( elem.hessExtents( context ) )
-    {
-        elem.hess_( context, pc, _M_hess );
-    }
+            template<typename Elem, typename ContextType, typename FEPCType>
+            H( Elem const& elem, ContextType const & context, FEPCType const& pc )
+                :
+                _M_hess( elem.hessExtents( context ) )
+            {
+                elem.hess_( context, pc, _M_hess );
+            }
 
-    value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
-    {
-        return _M_hess[c1][c2][q];
-    }
-    array_type _M_hess;
-};
+            value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
+            {
+                return _M_hess[c1][c2][q];
+            }
+            array_type _M_hess;
+        };
 
-template<typename MeshType>
-struct InitializeSpace
-{
-    InitializeSpace( boost::shared_ptr<MeshType> const& mesh, std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices )
-        :
-        _M_mesh( mesh ),
-        _M_dofindices( dofindices )
+        template<typename MeshType>
+        struct InitializeSpace
+        {
+            InitializeSpace( boost::shared_ptr<MeshType> const& mesh, std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices )
+                :
+                _M_mesh( mesh ),
+                _M_dofindices( dofindices )
 
-    {}
-    template <typename T>
-    void operator()(boost::shared_ptr<T> & x) const
-    {
-        x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices ) );
-        LIFE_ASSERT( x ).error( "invalid function space" );
-    }
-    boost::shared_ptr<MeshType> _M_mesh;
-    std::vector<boost::tuple<size_type, uint16_type, size_type> > const& _M_dofindices;
-};
-struct NbDof
-{
-    typedef size_type result_type;
-    NbDof( size_type start = 0, size_type size = invalid_size_type_value )
-        :
-        _M_cursor( start ),
-        _M_finish( size )
-    {}
-    template<typename Sig>
-    struct result;
+            {}
+            template <typename T>
+            void operator()(boost::shared_ptr<T> & x) const
+            {
+                x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices ) );
+                LIFE_ASSERT( x ).error( "invalid function space" );
+            }
+            boost::shared_ptr<MeshType> _M_mesh;
+            std::vector<boost::tuple<size_type, uint16_type, size_type> > const& _M_dofindices;
+        };
+        struct NbDof
+        {
+            typedef size_type result_type;
+            NbDof( size_type start = 0, size_type size = invalid_size_type_value )
+                :
+                _M_cursor( start ),
+                _M_finish( size )
+            {}
+            template<typename Sig>
+            struct result;
 
-    template<typename T, typename S>
+            template<typename T, typename S>
 #if BOOST_VERSION < 104200
-    struct result<NbDof(T,S)>
+            struct result<NbDof(T,S)>
 #else
-    struct result<NbDof(S,T)>
+            struct result<NbDof(S,T)>
 #endif
-        :
-        boost::remove_reference<S>
-    {};
-    template <typename T>
-    size_type
-    operator()(T const& x, size_type s ) const
-    {
-        size_type ret = s;
-        if ( !x )
+                :
+                boost::remove_reference<S>
+            {};
+        template <typename T>
+        size_type
+        operator()(T const& x, size_type s ) const
+        {
+            size_type ret = s;
+            if ( !x )
+                return ret;
+            if ( _M_cursor < _M_finish )
+                ret += x->nDof();
+            ++_M_cursor;
             return ret;
-        if ( _M_cursor < _M_finish )
-            ret += x->nDof();
-        ++_M_cursor;
-        return ret;
-    }
+        }
 
-    template <typename T>
-    size_type
-    operator()(size_type s, T const& x ) const
+        template <typename T>
+        size_type
+        operator()(size_type s, T const& x ) const
+        {
+            return this->operator()( x, s );
+        }
+    private:
+        mutable size_type _M_cursor;
+        size_type _M_finish;
+    };
+
+    struct NLocalDof
     {
-        return this->operator()( x, s );
-    }
-private:
-    mutable size_type _M_cursor;
-    size_type _M_finish;
-};
+        NLocalDof( size_type start = 0, size_type size = invalid_size_type_value )
+            :
+            _M_cursor( start ),
+            _M_finish( size )
+        {}
+        template<typename Sig>
+        struct result;
 
-struct NLocalDof
-{
-    NLocalDof( size_type start = 0, size_type size = invalid_size_type_value )
-        :
-        _M_cursor( start ),
-        _M_finish( size )
-    {}
-    template<typename Sig>
-    struct result;
-
-    template<typename T, typename S>
+        template<typename T, typename S>
 #if BOOST_VERSION < 104200
-    struct result<NLocalDof(T,S)>
+        struct result<NLocalDof(T,S)>
 #else
-    struct result<NLocalDof(S,T)>
+        struct result<NLocalDof(S,T)>
 #endif
-        :
-        boost::remove_reference<S>
-    {};
+            :
+            boost::remove_reference<S>
+        {};
     template <typename T>
     size_type
     operator()(T const& x, size_type s ) const
@@ -554,7 +554,7 @@ struct searchIndicesBySpace
     template<typename T>
     searchIndicesBySpace(T const& fspace, map_type& u)
     {
-	u = getIndicesFromSpace(fspace,u);
+        u = getIndicesFromSpace(fspace,u);
     }
 
     template<typename Sig>
@@ -570,85 +570,85 @@ struct searchIndicesBySpace
         boost::remove_reference<M>
     {};
 
-    template < typename T >
-    map_type getIndicesFromSpace(T const& fspace, map_type t ) const
-    {
-        if ( fspace->mesh()->numElements() == 0 )
-            return t;
-
-        size_type nProc = fspace->dof()->nProcessors();
-
-        //search for the biggest index already in t; this will give the shift for the dofs
-        std::vector< size_type > max_per_space;
-
-        for ( size_type j=0; j<t.size(); j++)
-            {
-                size_type _end = t[j].size();
-
-                if ( _end )
-                    max_per_space.push_back( t[j][_end-1] );
-            }
-
-        //from all max indices found, determine the biggest
-        size_type max_index = 0;
-
-        if ( t.size() )
-            max_index = *max_element( max_per_space.begin(), max_per_space.end() ) + 1;
-
-        //std::cout << "maximum index " << max_index << "\n";
-
-        //loop in all processors
-        for ( size_type i=0; i<nProc; i++)
-            {
-                /*
-                std::cout << "Processor " << i << " has dofs"
-                          << " from " << fspace->dof()->firstDof(i)
-                          << " to " << fspace->dof()->lastDof(i) << "\n";
-                       */
-
-                size_type _first = fspace->dof()->firstDof(i);
-                size_type _last  = fspace->dof()->lastDof(i);
-
-                //the dofs numbering for the current space start at max_index+1
-                for ( size_type j=_first; j<=_last; j++)
-                    t[i].push_back( max_index + j );
-            }
-
+template < typename T >
+map_type getIndicesFromSpace(T const& fspace, map_type t ) const
+{
+    if ( fspace->mesh()->numElements() == 0 )
         return t;
-    }
-    template <typename T>
-    map_type
+
+    size_type nProc = fspace->dof()->nProcessors();
+
+    //search for the biggest index already in t; this will give the shift for the dofs
+    std::vector< size_type > max_per_space;
+
+    for ( size_type j=0; j<t.size(); j++)
+        {
+            size_type _end = t[j].size();
+
+            if ( _end )
+                max_per_space.push_back( t[j][_end-1] );
+        }
+
+    //from all max indices found, determine the biggest
+    size_type max_index = 0;
+
+    if ( t.size() )
+        max_index = *max_element( max_per_space.begin(), max_per_space.end() ) + 1;
+
+    //std::cout << "maximum index " << max_index << "\n";
+
+    //loop in all processors
+    for ( size_type i=0; i<nProc; i++)
+        {
+            /*
+              std::cout << "Processor " << i << " has dofs"
+              << " from " << fspace->dof()->firstDof(i)
+              << " to " << fspace->dof()->lastDof(i) << "\n";
+            */
+
+            size_type _first = fspace->dof()->firstDof(i);
+            size_type _last  = fspace->dof()->lastDof(i);
+
+            //the dofs numbering for the current space start at max_index+1
+            for ( size_type j=_first; j<=_last; j++)
+                t[i].push_back( max_index + j );
+        }
+
+    return t;
+}
+template <typename T>
+map_type
 #if BOOST_VERSION < 104200
-    operator()(T const& fspace, map_type t ) const
+operator()(T const& fspace, map_type t ) const
 #else
     operator()(map_type t, T const& fspace ) const
 #endif
-    {
-        return getIndicesFromSpace(fspace,t);
-    }
+{
+    return getIndicesFromSpace(fspace,t);
+}
 };
 
 
 } // detail
 
 enum ComponentType
-{
-    NO_COMPONENT = -1,
-    X = 0,
-    Y,
-    Z,
-    NX,
-    NY,
-    NZ,
-    TX,
-    TY,
-    TZ
-};
+    {
+        NO_COMPONENT = -1,
+        X = 0,
+        Y,
+        Z,
+        NX,
+        NY,
+        NZ,
+        TX,
+        TY,
+        TZ
+    };
 enum FunctionSpaceType
-{
-    SCALAR = 0,
-    VECTORIAL = 1
-};
+    {
+        SCALAR = 0,
+        VECTORIAL = 1
+    };
 
 template<uint16_type PN,
          uint16_type GN = 1>
@@ -922,7 +922,7 @@ public:
                                   mpl::identity<boost::none_t>,
                                   mpl::identity<typename basis_0_type::PreCompute> >::type::type pc_type;
         typedef boost::shared_ptr<pc_type> pc_ptrtype;
-    //typedef typename basis_type::polyset_type return_value_type;
+        //typedef typename basis_type::polyset_type return_value_type;
         typedef typename functionspace_type::return_type return_type;
 
         typedef typename matrix_node<value_type>::type matrix_node_type;
@@ -1558,6 +1558,27 @@ public:
                 }
 
         }
+
+        template<typename ContextType>
+        dx_type
+        dx( ContextType const & context, pc_type const& pc ) const
+        {
+            return dx_type( *this, context, pc );
+        }
+
+        template<typename ContextType>
+        dy_type
+        dy( ContextType const & context, pc_type const& pc ) const
+        {
+            return dy_type( *this, context, pc );
+        }
+        template<typename ContextType>
+        dz_type
+        dz( ContextType const & context, pc_type const& pc ) const
+        {
+            return dz_type( *this, context, pc );
+        }
+
         template<typename ContextType>
         boost::array<typename array_type::index, 3>
         dxExtents( ContextType const & context ) const
@@ -1574,12 +1595,19 @@ public:
         {
             return dxExtents( context );
         }
-                template<typename ContextType>
+        template<typename ContextType>
         boost::array<typename array_type::index, 3>
         dzExtents( ContextType const & context ) const
         {
             return dxExtents( context );
         }
+        template<typename ContextType>
+        boost::array<typename array_type::index, 3>
+        dExtents( ContextType const & context ) const
+        {
+            return dxExtents( context );
+        }
+
         template<typename ContextType>
         void d_( int N, ContextType const & context, pc_type const& pc, array_type& v ) const;
 
@@ -1631,7 +1659,7 @@ public:
         div( ContextType const & context, pc_type const& pc ) const
         {
             BOOST_STATIC_ASSERT( (rank == 1) || (rank==2) );
-            return Div( *this, context, pc );
+            return div_type( *this, context, pc );
         }
 
 
@@ -1655,6 +1683,34 @@ public:
         typedef detail::Curl<value_type,2> curlz_type;
 
         template<typename ContextType>
+        curl_type
+        curl( ContextType const & context, pc_type const& pc ) const
+        {
+            return curl_type( *this, context, pc );
+        }
+
+        template<typename ContextType>
+        curlx_type
+        curlx( ContextType const & context, pc_type const& pc ) const
+        {
+            return curlx_type( *this, context, pc );
+        }
+
+        template<typename ContextType>
+        curly_type
+        curly( ContextType const & context, pc_type const& pc ) const
+        {
+            return curly_type( *this, context, pc );
+        }
+
+        template<typename ContextType>
+        curlz_type
+        curlz( ContextType const & context, pc_type const& pc ) const
+        {
+            return curlz_type( *this, context, pc );
+        }
+
+        template<typename ContextType>
         boost::array<typename array_type::index, 3>
         curlExtents( ContextType const & context ) const
         {
@@ -1676,9 +1732,7 @@ public:
 
         template<typename Context_t>
         void
-        curlInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const
-        {
-        }
+        curlInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
 
         template<typename ContextType>
         void curl_( ContextType const & context, pc_type const& pc, array_type& v ) const;
@@ -1700,7 +1754,7 @@ public:
         {
             return curlxExtents( context );
         }
-                template<typename ContextType>
+        template<typename ContextType>
         boost::array<typename array_type::index, 3>
         curlzExtents( ContextType const & context ) const
         {
@@ -1741,7 +1795,6 @@ public:
         void
         curlzInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
 
-
         template<typename ContextType>
         boost::array<typename array_type::index, 3>
         hessExtents( ContextType const & context ) const
@@ -1780,6 +1833,13 @@ public:
         hessInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
 
         typedef detail::H<value_type> hess_type;
+
+        template<typename ContextType>
+        hess_type
+        hess( ContextType const & context, pc_type const& pc ) const
+        {
+            return hess_type( *this, context, pc );
+        }
 
         template<typename ContextType>
         void
@@ -1893,35 +1953,35 @@ public:
         ComponentType component() const
         {
             if (  _M_ct < X || _M_ct > Z )
-            {
-                std::ostringstream __str;
-                __str << "invalid component extraction (should be 0 or 1 or 2): " << _M_ct;
-                throw std::logic_error( __str.str() );
-            }
+                {
+                    std::ostringstream __str;
+                    __str << "invalid component extraction (should be 0 or 1 or 2): " << _M_ct;
+                    throw std::logic_error( __str.str() );
+                }
             return _M_ct;
         }
 
         std::string componentToString( ComponentType ct ) const
         {
             if (  ct < X || ct > Z )
-            {
-                std::ostringstream __str;
-                __str << "invalid component extraction (should be 0 or 1 or 2): " << ct;
-                throw std::logic_error( __str.str() );
-            }
+                {
+                    std::ostringstream __str;
+                    __str << "invalid component extraction (should be 0 or 1 or 2): " << ct;
+                    throw std::logic_error( __str.str() );
+                }
             switch(ct)
-            {
-            case X:
-                return "X";
-            case Y:
-                return "Y";
-            case Z:
-                return "Z";
-            default:
-                std::ostringstream __str;
-                __str << "invalid component extraction (should be 0 or 1 or 2): " << ct;
-                throw std::logic_error( __str.str() );
-            }
+                {
+                case X:
+                    return "X";
+                case Y:
+                    return "Y";
+                case Z:
+                    return "Z";
+                default:
+                    std::ostringstream __str;
+                    __str << "invalid component extraction (should be 0 or 1 or 2): " << ct;
+                    throw std::logic_error( __str.str() );
+                }
         }
 
         //@}
@@ -1957,44 +2017,44 @@ public:
             ar & boost::serialization::make_nvp( "name", _M_name );
             Debug( 5010 ) << "got name " << _M_name << "\n";
             if ( Archive::is_saving::value )
-            {
-                size_type s = this->size();
-                ar & boost::serialization::make_nvp("size", s);
-
-                typename container_type::const_iterator it = this->begin();
-                typename container_type::const_iterator en = this->end();
-                for ( size_type i = 0; it != en; ++it, ++i )
                 {
-                    T value = this->operator[](i);
-                    std::ostringstream v_str;
-                    v_str << "value_" << i;
+                    size_type s = this->size();
+                    ar & boost::serialization::make_nvp("size", s);
 
-//                     Debug( 5010 ) << "save value " << value << " at " << v_str.str() << "\n";
+                    typename container_type::const_iterator it = this->begin();
+                    typename container_type::const_iterator en = this->end();
+                    for ( size_type i = 0; it != en; ++it, ++i )
+                        {
+                            T value = this->operator[](i);
+                            std::ostringstream v_str;
+                            v_str << "value_" << i;
 
-                    ar & boost::serialization::make_nvp( v_str.str().c_str(), value );
+                            //                     Debug( 5010 ) << "save value " << value << " at " << v_str.str() << "\n";
+
+                            ar & boost::serialization::make_nvp( v_str.str().c_str(), value );
+                        }
                 }
-            }
             if ( Archive::is_loading::value )
-            {
-                size_type s( 0 );
-                ar & boost::serialization::make_nvp("size", s);
-
-                Debug( 5010 ) << "loading ublas::vector of size " << s << "\n";
-
-                this->resize(  s );
-                Debug( 5010 ) << "resize done: " << this->size() << "\n";
-
-                for ( size_type i = 0; i < s ; ++i )
                 {
-                    value_type value(  0 );
-                    std::ostringstream v_str;
-                    v_str << "value_" << i;
-//                     Debug( 5010 ) << "load value at " << v_str.str() << "\n";
-                    ar & boost::serialization::make_nvp( v_str.str().c_str(), value );
-//                     Debug( 5010 ) << "got value " << value << " at index " << i << "\n";
-                    this->operator[](i) = value;
+                    size_type s( 0 );
+                    ar & boost::serialization::make_nvp("size", s);
+
+                    Debug( 5010 ) << "loading ublas::vector of size " << s << "\n";
+
+                    this->resize(  s );
+                    Debug( 5010 ) << "resize done: " << this->size() << "\n";
+
+                    for ( size_type i = 0; i < s ; ++i )
+                        {
+                            value_type value(  0 );
+                            std::ostringstream v_str;
+                            v_str << "value_" << i;
+                            //                     Debug( 5010 ) << "load value at " << v_str.str() << "\n";
+                            ar & boost::serialization::make_nvp( v_str.str().c_str(), value );
+                            //                     Debug( 5010 ) << "got value " << value << " at index " << i << "\n";
+                            this->operator[](i) = value;
+                        }
                 }
-            }
 
 
         }
@@ -2344,9 +2404,9 @@ private:
     void
     on( ElementRange const& _range,
         OnExpr const& _expr )
-        {
-            M_constraints.push_back( vf::project( this->shared_from_this(), _range, _expr )  );
-        }
+    {
+        M_constraints.push_back( vf::project( this->shared_from_this(), _range, _expr )  );
+    }
 #endif // 0
 
 protected:
@@ -2403,10 +2463,10 @@ const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::nComponents;
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
-                                                            size_type mesh_components,
-                                                            periodicity_type const& periodicity,
-                                                            std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
-                                                            mpl::bool_<false> )
+                                         size_type mesh_components,
+                                         periodicity_type const& periodicity,
+                                         std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+                                         mpl::bool_<false> )
 {
     Debug( 5010 ) << "calling init(<space>) begin\n";
     Debug( 5010 ) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
@@ -2459,10 +2519,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
-                                                            size_type mesh_components,
-                                                            periodicity_type const& periodicity,
-                                                            std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
-                                                            mpl::bool_<true> )
+                                         size_type mesh_components,
+                                         periodicity_type const& periodicity,
+                                         std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+                                         mpl::bool_<true> )
 {
     Debug( 5010 ) << "calling init(<composite>) begin\n";
     _M_mesh = __m;
@@ -2564,31 +2624,31 @@ region_tree_ptrtype const&
 FunctionSpace<A0, A1, A2, A3, A4>::regionTree() const
 {
     if ( !_M_rt )
-    {
-        scalar_type EPS=1E-13;
+        {
+            scalar_type EPS=1E-13;
 
-        region_tree_ptrtype __rt( new region_tree_type );
+            region_tree_ptrtype __rt( new region_tree_type );
 
-        __rt->clear();
-        BoundingBox<> __bb( _M_mesh->gm()->isLinear() );
+            __rt->clear();
+            BoundingBox<> __bb( _M_mesh->gm()->isLinear() );
 
-        typedef typename mesh_type::element_iterator mesh_element_iterator;
-        mesh_element_iterator it = _M_mesh->beginElementWithProcessId( _M_mesh->comm().rank() );
-        mesh_element_iterator en = _M_mesh->endElementWithProcessId( _M_mesh->comm().rank() );
-        for ( size_type __i = 0; it != en; ++__i, ++it )
-            {
-                __bb.make( it->G() );
-                for (unsigned k=0; k < __bb.min.size(); ++k)
-                    {
-                        __bb.min[k]-=EPS;
-                        __bb.max[k]+=EPS;
-                    }
-                __rt->addBox( __bb.min, __bb.max, it->id() );
-            }
+            typedef typename mesh_type::element_iterator mesh_element_iterator;
+            mesh_element_iterator it = _M_mesh->beginElementWithProcessId( _M_mesh->comm().rank() );
+            mesh_element_iterator en = _M_mesh->endElementWithProcessId( _M_mesh->comm().rank() );
+            for ( size_type __i = 0; it != en; ++__i, ++it )
+                {
+                    __bb.make( it->G() );
+                    for (unsigned k=0; k < __bb.min.size(); ++k)
+                        {
+                            __bb.min[k]-=EPS;
+                            __bb.max[k]+=EPS;
+                        }
+                    __rt->addBox( __bb.min, __bb.max, it->id() );
+                }
 
-        //__rt->dump();
-        _M_rt = __rt;
-    }
+            //__rt->dump();
+            _M_rt = __rt;
+        }
     return _M_rt.get();
 }
 
@@ -2614,33 +2674,33 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint(node_type const& pt,size_type &cv ,
     region_tree_type::pbox_set_type::const_iterator it = boxlst.begin();
     region_tree_type::pbox_set_type::const_iterator ite = boxlst.end();
     for (; it != ite; ++it)
-    {
-        inv_trans_type __git( _M_mesh->gm(), _M_mesh->element( ( *it )->id ) );
-
-        size_type cv_stored = (*it)->id;
-
-
-        Debug( 5010 ) << "[FunctionSpace::findPoint] id : " << cv_stored << "\n";
-
-        __git.setXReal( pt );
-        ptr = __git.xRef();
-
-
-        bool isin;
-        value_type dmin;
-        boost::tie( isin, dmin ) = refelem.isIn( ptr );
-        Debug( 5010 ) << "[FunctionSpace::findPoint] isin: " << isin << " dmin: " << dmin << "\n";
-
-        closest =  ( dmin > closest.second )?std::make_pair( cv_stored, dmin ):closest;
-        if ( isin )
         {
-            Debug( 5010 ) << "[FunctionSpace::findPoint] id of the convex where " << pt << " belongs : " << cv_stored << "\n";
-            Debug( 5010 ) << "[FunctionSpace::findPoint] ref coordinate: " << ptr << "\n";
-            cv = (*it)->id;
-            //_M_prof_find_points.pause();
-            return true;
+            inv_trans_type __git( _M_mesh->gm(), _M_mesh->element( ( *it )->id ) );
+
+            size_type cv_stored = (*it)->id;
+
+
+            Debug( 5010 ) << "[FunctionSpace::findPoint] id : " << cv_stored << "\n";
+
+            __git.setXReal( pt );
+            ptr = __git.xRef();
+
+
+            bool isin;
+            value_type dmin;
+            boost::tie( isin, dmin ) = refelem.isIn( ptr );
+            Debug( 5010 ) << "[FunctionSpace::findPoint] isin: " << isin << " dmin: " << dmin << "\n";
+
+            closest =  ( dmin > closest.second )?std::make_pair( cv_stored, dmin ):closest;
+            if ( isin )
+                {
+                    Debug( 5010 ) << "[FunctionSpace::findPoint] id of the convex where " << pt << " belongs : " << cv_stored << "\n";
+                    Debug( 5010 ) << "[FunctionSpace::findPoint] ref coordinate: " << ptr << "\n";
+                    cv = (*it)->id;
+                    //_M_prof_find_points.pause();
+                    return true;
+                }
         }
-    }
     cv=closest.first;
     //_M_prof_find_points.pause();
     return false;
@@ -2676,9 +2736,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
-                                                               std::string const& __name,
-                                                               size_type __start,
-                                                               ComponentType __ct )
+                                                             std::string const& __name,
+                                                             size_type __start,
+                                                             ComponentType __ct )
     :
     super( __functionspace->map() ),
     _M_functionspace( __functionspace ),
@@ -2695,10 +2755,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
-                                                               container_type const& __c,
-                                                               std::string const& __name,
-                                                               size_type __start,
-                                                               ComponentType __ct )
+                                                             container_type const& __c,
+                                                             std::string const& __name,
+                                                             size_type __start,
+                                                             ComponentType __ct )
     :
     super( __c ),
     _M_functionspace( __functionspace ),
@@ -2724,7 +2784,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::init( functionspace_ptrtype const& __functionspace,
-                                                            container_type const& __c )
+                                                          container_type const& __c )
 {
     _M_functionspace = __functionspace;
     (container_type)*this = __c;
@@ -2862,15 +2922,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
 
                     value_type v_ = this->globalValue( gdof );
                     //for( typename array_type::index c2 = 0; c2 < nComponents2; ++c2 )
-                        {
-                            for( typename array_type::index i = 0; i < nComponents1; ++i )
-                                //for( typename array_type::index j = 0; j < nComponents2; ++j )
-                                    {
+                    {
+                        for( typename array_type::index i = 0; i < nComponents1; ++i )
+                            //for( typename array_type::index j = 0; j < nComponents2; ++j )
+                            {
 
-                                        for( uint16_type q = 0; q < nq; ++q )
-                                            v[i][0][q] += v_*pc.phi( ldof, i, 0, q );
-                                    }
-                        }
+                                for( uint16_type q = 0; q < nq; ++q )
+                                    v[i][0][q] += v_*pc.phi( ldof, i, 0, q );
+                            }
+                    }
                 }
         }
     //return v;
@@ -3001,16 +3061,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
                     value_type v_ = this->globalValue( gdof );
                     for( int k = 0; k < nComponents1; ++k )
                         for( int j = 0; j < nRealDim; ++j )
-                        {
-                            for( typename array_type::index i = 0; i < nDim; ++i )
-                                {
-                                    for( size_type q = 0; q < context.xRefs().size2(); ++q )
-                                        {
-                                            v[k][j][q] += v_*context.B(q)( j, i )*pc.grad( ldof, k, i, q );
-                                        }
-                                }
+                            {
+                                for( typename array_type::index i = 0; i < nDim; ++i )
+                                    {
+                                        for( size_type q = 0; q < context.xRefs().size2(); ++q )
+                                            {
+                                                v[k][j][q] += v_*context.B(q)( j, i )*pc.grad( ldof, k, i, q );
+                                            }
+                                    }
 
-                        }
+                            }
                 }
         }
 #if 0
@@ -3163,7 +3223,67 @@ template<typename Context_t>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const
 {
-#warning TOFILL
+
+    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
+    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+
+    // create analysys map : id -> List of pt
+    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    __loc->run_analysis(__ptsReal);
+    analysis_iterator_type it = __loc->result_analysis_begin();
+    analysis_iterator_type it_end = __loc->result_analysis_end();
+    analysis_output_iterator_type itL,itL_end;
+
+    //geomap
+    gm_ptrtype __gm = this->functionSpace()->gm();
+
+    //if analysis map is empty : no interpolation
+    if (it==it_end) return;
+
+    //alocate a point matrix
+    size_type nbPtsElt=it->second.size();
+    uint nbCoord=boost::get<1>(*(it->second.begin())).size();
+    matrix_node_type pts( nbCoord, nbPtsElt );
+
+    //init the geomap context and precompute basis function
+    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+    pc_type __pc( this->functionSpace()->fe(), pts );
+
+    for ( ;it!=it_end;++it)
+        {
+            nbPtsElt = it->second.size();
+
+            //iterate in the list pt for a element
+            itL=it->second.begin();
+            itL_end=it->second.end();
+
+            //compute a point matrix with the list of point
+            pts= matrix_node_type( nbCoord, nbPtsElt );
+            for (size_type i=0;i<nbPtsElt;++i,++itL)
+                ublas::column( pts, i ) = boost::get<1>(*itL);
+
+            //update geomap context
+            __geopc->update( pts );
+
+            gmc_ptrtype __c( new gmc_type( __gm,
+                                           this->functionSpace()->mesh()->element( it->first ),
+                                           __geopc ) );
+            //update precompute of basis functions
+            __pc.update( pts );
+
+            //evaluate element for these points
+            div_type __div( this->div( *__c, __pc ));
+
+            //update the output data
+            //for( typename array_type::index i = 0; i < nComponents1; ++i )
+            //   {
+            itL=it->second.begin();
+            for (uint k=0;k<nbPtsElt;++k,++itL)
+                v[0][0][boost::get<0>(*itL)] =  __div(0,0,k);
+            //   }
+        }
+
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -3225,9 +3345,161 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
+{
+
+    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
+    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+
+    // create analysys map : id -> List of pt
+    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    __loc->run_analysis(__ptsReal);
+    analysis_iterator_type it = __loc->result_analysis_begin();
+    analysis_iterator_type it_end = __loc->result_analysis_end();
+    analysis_output_iterator_type itL,itL_end;
+
+    //geomap
+    gm_ptrtype __gm = this->functionSpace()->gm();
+
+    //if analysis map is empty : no interpolation
+    if (it==it_end) return;
+
+    //alocate a point matrix
+    size_type nbPtsElt=it->second.size();
+    uint nbCoord=boost::get<1>(*(it->second.begin())).size();
+    matrix_node_type pts( nbCoord, nbPtsElt );
+
+    //init the geomap context and precompute basis function
+    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+    pc_type __pc( this->functionSpace()->fe(), pts );
+
+    for ( ;it!=it_end;++it)
+        {
+            nbPtsElt = it->second.size();
+
+            //iterate in the list pt for a element
+            itL=it->second.begin();
+            itL_end=it->second.end();
+
+            //compute a point matrix with the list of point
+            pts= matrix_node_type( nbCoord, nbPtsElt );
+            for (size_type i=0;i<nbPtsElt;++i,++itL)
+                ublas::column( pts, i ) = boost::get<1>(*itL);
+
+            //update geomap context
+            __geopc->update( pts );
+
+            gmc_ptrtype __c( new gmc_type( __gm,
+                                           this->functionSpace()->mesh()->element( it->first ),
+                                           __geopc ) );
+            //update precompute of basis functions
+            __pc.update( pts );
+
+            //evaluate element for these points
+            curl_type __curl( this->curl( *__c, __pc ));
+
+            //update the output data
+            itL=it->second.begin();
+            if ( nDim == 3 )
+                {
+                    itL=it->second.begin();
+                    for (uint k=0;k<nbPtsElt;++k,++itL)
+                        {
+                            v[0][0][boost::get<0>(*itL)] =  __curl(0,0,k);
+                            v[1][0][boost::get<0>(*itL)] =  __curl(1,0,k);
+                            v[2][0][boost::get<0>(*itL)] =  __curl(2,0,k);
+                        }
+                }
+            else if ( nDim == 2 )
+                {
+                    itL=it->second.begin();
+                    for (uint k=0;k<nbPtsElt;++k,++itL)
+                        v[0][0][boost::get<0>(*itL)] =  __curl(0,0,k);
+                }
+        }
+
+}
+
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename Context_t>
+void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
 {
-#warning TOFILL
+
+    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
+    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+
+    // create analysys map : id -> List of pt
+    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    __loc->run_analysis(__ptsReal);
+    analysis_iterator_type it = __loc->result_analysis_begin();
+    analysis_iterator_type it_end = __loc->result_analysis_end();
+    analysis_output_iterator_type itL,itL_end;
+
+    //geomap
+    gm_ptrtype __gm = this->functionSpace()->gm();
+
+    //if analysis map is empty : no interpolation
+    if (it==it_end) return;
+
+    //alocate a point matrix
+    size_type nbPtsElt=it->second.size();
+    uint nbCoord=boost::get<1>(*(it->second.begin())).size();
+    matrix_node_type pts( nbCoord, nbPtsElt );
+
+    //init the geomap context and precompute basis function
+    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+    pc_type __pc( this->functionSpace()->fe(), pts );
+
+    for ( ;it!=it_end;++it)
+        {
+            nbPtsElt = it->second.size();
+
+            //iterate in the list pt for a element
+            itL=it->second.begin();
+            itL_end=it->second.end();
+
+            //compute a point matrix with the list of point
+            pts= matrix_node_type( nbCoord, nbPtsElt );
+            for (size_type i=0;i<nbPtsElt;++i,++itL)
+                ublas::column( pts, i ) = boost::get<1>(*itL);
+
+            //update geomap context
+            __geopc->update( pts );
+
+            gmc_ptrtype __c( new gmc_type( __gm,
+                                           this->functionSpace()->mesh()->element( it->first ),
+                                           __geopc ) );
+            //update precompute of basis functions
+            __pc.update( pts );
+
+            //evaluate element for these points
+            curlx_type __curlx( this->curlx( *__c, __pc ));
+
+            //update the output data
+            itL=it->second.begin();
+            if ( nDim == 3 )
+                {
+                    itL=it->second.begin();
+                    for (uint k=0;k<nbPtsElt;++k,++itL)
+                        {
+                            v[0][0][boost::get<0>(*itL)] =  __curlx(0,0,k);
+                            v[1][0][boost::get<0>(*itL)] =  __curlx(1,0,k);
+                            v[2][0][boost::get<0>(*itL)] =  __curlx(2,0,k);
+                        }
+                }
+            else if ( nDim == 2 )
+                {
+                    itL=it->second.begin();
+                    for (uint k=0;k<nbPtsElt;++k,++itL)
+                        v[0][0][boost::get<0>(*itL)] =  __curlx(0,0,k);
+                }
+        }
+
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -3236,7 +3508,78 @@ template<typename Context_t>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
 {
-#warning TOFILL
+
+    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
+    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+
+    // create analysys map : id -> List of pt
+    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    __loc->run_analysis(__ptsReal);
+    analysis_iterator_type it = __loc->result_analysis_begin();
+    analysis_iterator_type it_end = __loc->result_analysis_end();
+    analysis_output_iterator_type itL,itL_end;
+
+    //geomap
+    gm_ptrtype __gm = this->functionSpace()->gm();
+
+    //if analysis map is empty : no interpolation
+    if (it==it_end) return;
+
+    //alocate a point matrix
+    size_type nbPtsElt=it->second.size();
+    uint nbCoord=boost::get<1>(*(it->second.begin())).size();
+    matrix_node_type pts( nbCoord, nbPtsElt );
+
+    //init the geomap context and precompute basis function
+    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+    pc_type __pc( this->functionSpace()->fe(), pts );
+
+    for ( ;it!=it_end;++it)
+        {
+            nbPtsElt = it->second.size();
+
+            //iterate in the list pt for a element
+            itL=it->second.begin();
+            itL_end=it->second.end();
+
+            //compute a point matrix with the list of point
+            pts= matrix_node_type( nbCoord, nbPtsElt );
+            for (size_type i=0;i<nbPtsElt;++i,++itL)
+                ublas::column( pts, i ) = boost::get<1>(*itL);
+
+            //update geomap context
+            __geopc->update( pts );
+
+            gmc_ptrtype __c( new gmc_type( __gm,
+                                           this->functionSpace()->mesh()->element( it->first ),
+                                           __geopc ) );
+            //update precompute of basis functions
+            __pc.update( pts );
+
+            //evaluate element for these points
+            curly_type __curly( this->curly( *__c, __pc ));
+
+            //update the output data
+            itL=it->second.begin();
+            if ( nDim == 3 )
+                {
+                    itL=it->second.begin();
+                    for (uint k=0;k<nbPtsElt;++k,++itL)
+                        {
+                            v[0][0][boost::get<0>(*itL)] =  __curly(0,0,k);
+                            v[1][0][boost::get<0>(*itL)] =  __curly(1,0,k);
+                            v[2][0][boost::get<0>(*itL)] =  __curly(2,0,k);
+                        }
+                }
+            else if ( nDim == 2 )
+                {
+                    itL=it->second.begin();
+                    for (uint k=0;k<nbPtsElt;++k,++itL)
+                        v[0][0][boost::get<0>(*itL)] =  __curly(0,0,k);
+                }
+        }
+
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -3245,7 +3588,78 @@ template<typename Context_t>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
 {
-#warning TOFILL
+
+    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
+    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+
+    // create analysys map : id -> List of pt
+    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    __loc->run_analysis(__ptsReal);
+    analysis_iterator_type it = __loc->result_analysis_begin();
+    analysis_iterator_type it_end = __loc->result_analysis_end();
+    analysis_output_iterator_type itL,itL_end;
+
+    //geomap
+    gm_ptrtype __gm = this->functionSpace()->gm();
+
+    //if analysis map is empty : no interpolation
+    if (it==it_end) return;
+
+    //alocate a point matrix
+    size_type nbPtsElt=it->second.size();
+    uint nbCoord=boost::get<1>(*(it->second.begin())).size();
+    matrix_node_type pts( nbCoord, nbPtsElt );
+
+    //init the geomap context and precompute basis function
+    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+    pc_type __pc( this->functionSpace()->fe(), pts );
+
+    for ( ;it!=it_end;++it)
+        {
+            nbPtsElt = it->second.size();
+
+            //iterate in the list pt for a element
+            itL=it->second.begin();
+            itL_end=it->second.end();
+
+            //compute a point matrix with the list of point
+            pts= matrix_node_type( nbCoord, nbPtsElt );
+            for (size_type i=0;i<nbPtsElt;++i,++itL)
+                ublas::column( pts, i ) = boost::get<1>(*itL);
+
+            //update geomap context
+            __geopc->update( pts );
+
+            gmc_ptrtype __c( new gmc_type( __gm,
+                                           this->functionSpace()->mesh()->element( it->first ),
+                                           __geopc ) );
+            //update precompute of basis functions
+            __pc.update( pts );
+
+            //evaluate element for these points
+            curlz_type __curlz( this->curlz( *__c, __pc ));
+
+            //update the output data
+            itL=it->second.begin();
+            if ( nDim == 3 )
+                {
+                    itL=it->second.begin();
+                    for (uint k=0;k<nbPtsElt;++k,++itL)
+                        {
+                            v[0][0][boost::get<0>(*itL)] =  __curlz(0,0,k);
+                            v[1][0][boost::get<0>(*itL)] =  __curlz(1,0,k);
+                            v[2][0][boost::get<0>(*itL)] =  __curlz(2,0,k);
+                        }
+                }
+            else if ( nDim == 2 )
+                {
+                    itL=it->second.begin();
+                    for (uint k=0;k<nbPtsElt;++k,++itL)
+                        v[0][0][boost::get<0>(*itL)] =  __curlz(0,0,k);
+                }
+        }
+
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -3292,7 +3706,67 @@ template<typename Context_t>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
 {
-#warning TOFILL
+
+    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
+    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+
+    // create analysys map : id -> List of pt
+    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    __loc->run_analysis(__ptsReal);
+    analysis_iterator_type it = __loc->result_analysis_begin();
+    analysis_iterator_type it_end = __loc->result_analysis_end();
+    analysis_output_iterator_type itL,itL_end;
+
+    //geomap
+    gm_ptrtype __gm = this->functionSpace()->gm();
+
+    //if analysis map is empty : no interpolation
+    if (it==it_end) return;
+
+    //alocate a point matrix
+    size_type nbPtsElt=it->second.size();
+    uint nbCoord=boost::get<1>(*(it->second.begin())).size();
+    matrix_node_type pts( nbCoord, nbPtsElt );
+
+    //init the geomap context and precompute basis function
+    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+    pc_type __pc( this->functionSpace()->fe(), pts );
+
+    for ( ;it!=it_end;++it)
+        {
+            nbPtsElt = it->second.size();
+
+            //iterate in the list pt for a element
+            itL=it->second.begin();
+            itL_end=it->second.end();
+
+            //compute a point matrix with the list of point
+            pts= matrix_node_type( nbCoord, nbPtsElt );
+            for (size_type i=0;i<nbPtsElt;++i,++itL)
+                ublas::column( pts, i ) = boost::get<1>(*itL);
+
+            //update geomap context
+            __geopc->update( pts );
+
+            gmc_ptrtype __c( new gmc_type( __gm,
+                                           this->functionSpace()->mesh()->element( it->first ),
+                                           __geopc ) );
+            //update precompute of basis functions
+            __pc.update( pts );
+
+            //evaluate element for these points
+            dx_type __dx( this->dx( *__c, __pc ));
+
+            //update the output data
+            for( typename array_type::index i = 0; i < nComponents1; ++i )
+                {
+                    itL=it->second.begin();
+                    for (uint k=0;k<nbPtsElt;++k,++itL)
+                        v[i][0][boost::get<0>(*itL)] =  __dx(i,0,k);
+                }
+        }
+
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -3301,7 +3775,67 @@ template<typename Context_t>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
 {
-#warning TOFILL
+
+    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
+    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+
+    // create analysys map : id -> List of pt
+    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    __loc->run_analysis(__ptsReal);
+    analysis_iterator_type it = __loc->result_analysis_begin();
+    analysis_iterator_type it_end = __loc->result_analysis_end();
+    analysis_output_iterator_type itL,itL_end;
+
+    //geomap
+    gm_ptrtype __gm = this->functionSpace()->gm();
+
+    //if analysis map is empty : no interpolation
+    if (it==it_end) return;
+
+    //alocate a point matrix
+    size_type nbPtsElt=it->second.size();
+    uint nbCoord=boost::get<1>(*(it->second.begin())).size();
+    matrix_node_type pts( nbCoord, nbPtsElt );
+
+    //init the geomap context and precompute basis function
+    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+    pc_type __pc( this->functionSpace()->fe(), pts );
+
+    for ( ;it!=it_end;++it)
+        {
+            nbPtsElt = it->second.size();
+
+            //iterate in the list pt for a element
+            itL=it->second.begin();
+            itL_end=it->second.end();
+
+            //compute a point matrix with the list of point
+            pts= matrix_node_type( nbCoord, nbPtsElt );
+            for (size_type i=0;i<nbPtsElt;++i,++itL)
+                ublas::column( pts, i ) = boost::get<1>(*itL);
+
+            //update geomap context
+            __geopc->update( pts );
+
+            gmc_ptrtype __c( new gmc_type( __gm,
+                                           this->functionSpace()->mesh()->element( it->first ),
+                                           __geopc ) );
+            //update precompute of basis functions
+            __pc.update( pts );
+
+            //evaluate element for these points
+            dy_type __dy( this->dy( *__c, __pc ));
+
+            //update the output data
+            for( typename array_type::index i = 0; i < nComponents1; ++i )
+                {
+                    itL=it->second.begin();
+                    for (uint k=0;k<nbPtsElt;++k,++itL)
+                        v[i][0][boost::get<0>(*itL)] =  __dy(i,0,k);
+                }
+        }
+
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -3310,7 +3844,67 @@ template<typename Context_t>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
 {
-#warning TOFILL
+
+    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
+    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+
+    // create analysys map : id -> List of pt
+    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    __loc->run_analysis(__ptsReal);
+    analysis_iterator_type it = __loc->result_analysis_begin();
+    analysis_iterator_type it_end = __loc->result_analysis_end();
+    analysis_output_iterator_type itL,itL_end;
+
+    //geomap
+    gm_ptrtype __gm = this->functionSpace()->gm();
+
+    //if analysis map is empty : no interpolation
+    if (it==it_end) return;
+
+    //alocate a point matrix
+    size_type nbPtsElt=it->second.size();
+    uint nbCoord=boost::get<1>(*(it->second.begin())).size();
+    matrix_node_type pts( nbCoord, nbPtsElt );
+
+    //init the geomap context and precompute basis function
+    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+    pc_type __pc( this->functionSpace()->fe(), pts );
+
+    for ( ;it!=it_end;++it)
+        {
+            nbPtsElt = it->second.size();
+
+            //iterate in the list pt for a element
+            itL=it->second.begin();
+            itL_end=it->second.end();
+
+            //compute a point matrix with the list of point
+            pts= matrix_node_type( nbCoord, nbPtsElt );
+            for (size_type i=0;i<nbPtsElt;++i,++itL)
+                ublas::column( pts, i ) = boost::get<1>(*itL);
+
+            //update geomap context
+            __geopc->update( pts );
+
+            gmc_ptrtype __c( new gmc_type( __gm,
+                                           this->functionSpace()->mesh()->element( it->first ),
+                                           __geopc ) );
+            //update precompute of basis functions
+            __pc.update( pts );
+
+            //evaluate element for these points
+            dz_type __dz( this->dz( *__c, __pc ));
+
+            //update the output data
+            for( typename array_type::index i = 0; i < nComponents1; ++i )
+                {
+                    itL=it->second.begin();
+                    for (uint k=0;k<nbPtsElt;++k,++itL)
+                        v[i][0][boost::get<0>(*itL)] =  __dz(i,0,k);
+                }
+        }
+
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -3383,10 +3977,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
 
 #if 0
                     for( int i = 0; i < nDim; ++i )
-        for( int j = 0; j < nDim; ++j )
-            for( size_type q = 0; q < context.xRefs().size2(); ++q )
-                std::cout << "v[" << i << "][" << j << "][" << q << "]="
-                          << v[i][j][q] << "\n";
+                        for( int j = 0; j < nDim; ++j )
+                            for( size_type q = 0; q < context.xRefs().size2(); ++q )
+                                std::cout << "v[" << i << "][" << j << "][" << q << "]="
+                                          << v[i][j][q] << "\n";
 #endif
                 }
         }
@@ -3399,7 +3993,66 @@ template<typename Context_t>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const
 {
-#warning TOFILL
+
+    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
+    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+
+    // create analysys map : id -> List of pt
+    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    __loc->run_analysis(__ptsReal);
+    analysis_iterator_type it = __loc->result_analysis_begin();
+    analysis_iterator_type it_end = __loc->result_analysis_end();
+    analysis_output_iterator_type itL,itL_end;
+
+    //geomap
+    gm_ptrtype __gm = this->functionSpace()->gm();
+
+    //if analysis map is empty : no interpolation
+    if (it==it_end) return;
+
+    //alocate a point matrix
+    size_type nbPtsElt=it->second.size();
+    uint nbCoord=boost::get<1>(*(it->second.begin())).size();
+    matrix_node_type pts( nbCoord, nbPtsElt );
+
+    //init the geomap context and precompute basis function
+    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+    pc_type __pc( this->functionSpace()->fe(), pts );
+
+    for ( ;it!=it_end;++it)
+        {
+            nbPtsElt = it->second.size();
+
+            //iterate in the list pt for a element
+            itL=it->second.begin();
+            itL_end=it->second.end();
+
+            //compute a point matrix with the list of point
+            pts= matrix_node_type( nbCoord, nbPtsElt );
+            for (size_type i=0;i<nbPtsElt;++i,++itL)
+                ublas::column( pts, i ) = boost::get<1>(*itL);
+
+            //update geomap context
+            __geopc->update( pts );
+
+            gmc_ptrtype __c( new gmc_type( __gm,
+                                           this->functionSpace()->mesh()->element( it->first ),
+                                           __geopc ) );
+            //update precompute of basis functions
+            __pc.update( pts );
+
+            //evaluate element for these points
+            hess_type __hess( this->hess( *__c, __pc ));
+
+            //update the output data
+            itL=it->second.begin();
+            for( int i = 0; i < nRealDim; ++i )
+                for( int j = 0; j < nRealDim; ++j )
+                    for (uint k=0;k<nbPtsElt;++k,++itL)
+                        v[i][j][boost::get<0>(*itL)] =  __hess(i,j,k);
+        }
+
 }
 
 template<typename T>
@@ -3427,13 +4080,13 @@ DebugStream&
 operator<<( DebugStream& __os, detail::ID<T> const& id )
 {
     if ( __os.doPrint() )
-    {
-        std::ostringstream __str;
+        {
+            std::ostringstream __str;
 
-        __str << id;
+            __str << id;
 
-        __os << __str.str() << "\n";
-    }
+            __os << __str.str() << "\n";
+        }
     return __os;
 }
 template<typename T>
