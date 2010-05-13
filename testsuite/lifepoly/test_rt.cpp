@@ -40,17 +40,65 @@ BOOST_AUTO_TEST_CASE( rt0 )
 {
     using namespace Life;
     typedef RaviartThomas<0>::apply<2>::type rt0_type;
-
     rt0_type rt0;
 
-    rt0_type::points_type pts(2,3);
-    pts = rt0.referenceConvex().vertices();
+    rt0_type::points_type pts(2,1);
+    pts( 0, 0 ) = -1./3.; pts( 1, 0 ) = -1./3.;
+
+    //pts = rt0.referenceConvex().barycenterFaces();
 
     std::cout << "pts= " << pts << "\n";
     auto eval_at_pts = rt0.evaluate( pts );
     std::cout << "eval at pts= " << eval_at_pts << "\n";
+}
+#if 0
+BOOST_AUTO_TEST_CASE( rt0_2 )
+{
+    using namespace Life;
+    typedef RaviartThomas<0>::apply<2>::type rt0_type;
+    typedef boost::shared_ptr<rt0_type> rt0_ptrtype;
+    rt0_ptrtype rt0( new rt0_type ) ;
+
+    rt0_type::points_type pts(2,3);
+    pts = rt0->referenceConvex().vertices();
+
+    std::cout << "pts= " << pts << "\n";
+    auto eval_at_pts = rt0->evaluate( pts );
+    std::cout << "eval at pts= " << eval_at_pts << "\n";
+
+
+
+
+#if 0
+
+
+    typedef GeoND<2,Simplex<2, 1, 2> >::point_type point_type;
+    // interval
+    typedef GeoND<2,Simplex<2, 1, 2> > tria_type;
+    tria_type tria;
+    point_type V1; V1( 0 )=1;V1( 1 )=0;
+    point_type V2; V2( 0 )=3;V2( 1 )=0;
+    point_type V3; V3( 0 )=2;V3( 1 )=1;
+    tria.setPoint( 0, V1 );
+    tria.setPoint( 1, V2 );
+    tria.setPoint( 2, V3 );
+    ublas::vector<double> G1( 2 );
+    G1(0)=2;G1(1)=1./3.;
+    tria.update();
+
+    auto bpts = tria.gm()->referenceConvex().barycenterFaces();
+    auto gmpc = tria.gm()->preCompute( tria.gm(), bpts );
+    auto rtpc = rt0->preCompute( rt0, bpts );
+    auto geoctx = tria.gm()->context<vm::JACOBIAN>( tria, gmpc );
+    //auto rtctx = rt0->ctx<vm::GRAD,rt0_type, decltype(*tria.gm()),decltype(*rtpc), tria_type>( rt0, tria.gm(), rtpc );
+    //auto rtctx = rt0->ctx( rt0, tria.gm() );
+    auto rtctx = rt0->ctx<vm::GRAD>( rt0, tria.gm(), rtpc, tria );
+    //auto rtctx = rt0->ctx();
+    //auto rtctx = rt0->context<vm::GRAD>( rt0, tria.gm(), rtpc );
+#endif
 
 }
+#endif
 BOOST_AUTO_TEST_SUITE_END()
 
 

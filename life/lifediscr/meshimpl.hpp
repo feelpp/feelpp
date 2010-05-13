@@ -166,6 +166,8 @@ Mesh<Shape, T>::updateForUse()
                 element_iterator iv,  en;
                 boost::tie( iv, en ) = this->elementsRange();
 
+                auto pc = _M_gm->preCompute( _M_gm, _M_gm->referenceConvex().vertices() );
+                auto pcf =  _M_gm->preComputeOnFaces( _M_gm, _M_gm->referenceConvex().barycenterFaces() );
                 for ( ;iv != en; ++iv )
                     {
                         this->elements().modify( iv,
@@ -174,7 +176,8 @@ Mesh<Shape, T>::updateForUse()
                                                                this, _M_gm ) );
 
                         this->elements().modify( iv,
-                                                 lambda::bind( &element_type::update, lambda::_1 ) );
+                                                 lambda::bind( &element_type::update,
+                                                               lambda::_1, pc, boost::ref(pcf) ) );
                     }
                 typedef typename super::face_const_iterator face_const_iterator;
                 face_iterator itf = this->beginFace();

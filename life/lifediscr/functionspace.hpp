@@ -770,6 +770,7 @@ public:
     static const bool is_modal = ( is_composite? false : basis_0_type::is_modal );
     static const uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
     static const uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
+    static const bool is_product = ( is_composite? invalid_uint16_type_value : basis_0_type::is_product );
 
 
     static const uint16_type nComponents = mpl::transform<bases_list,
@@ -2909,10 +2910,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
     //array_type v( boost::extents[nComponents1][nComponents2][context.xRefs().size2()] );
     for( int l = 0; l < basis_type::nDof; ++l )
         {
-            for( typename array_type::index c1 = 0; c1 < nComponents1; ++c1 )
+            const int ncdof = is_product?nComponents1:1;
+            for( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
                 {
                     typename array_type::index ldof = basis_type::nDof*c1+l;
                     size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), l, c1 ) );
+                    //std::cout << "ldof = " << ldof << "\n";
+                    //std::cout << "gdof = " << gdof << "\n";
+
                     LIFE_ASSERT( gdof < this->size() )
                         ( context.id() )
                         ( l )( c1 )( ldof)( gdof )
@@ -2921,6 +2926,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
                         .error( "FunctionSpace::Element invalid access index" );
 
                     value_type v_ = this->globalValue( gdof );
+                    //std::cout << "v_ =" << v_ << "\n";
                     //for( typename array_type::index c2 = 0; c2 < nComponents2; ++c2 )
                     {
                         for( typename array_type::index i = 0; i < nComponents1; ++i )
@@ -3045,7 +3051,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
     //std::fill( v.data(), v.data()+v.num_elements(), value_type( 0 ) );
     for( int l = 0; l < basis_type::nDof; ++l )
         {
-            for(int c1 = 0; c1 < nComponents1; ++c1 )
+            const int ncdof = is_product?nComponents1:1;
+            for(int c1 = 0; c1 < ncdof; ++c1 )
                 {
                     int ldof = c1*basis_type::nDof+l;
                     size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), l, c1 ) );
@@ -3190,7 +3197,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
         this->updateGlobalValues();
     for( int l = 0; l < basis_type::nDof; ++l )
         {
-            for(int c1 = 0; c1 < nComponents1; ++c1 )
+            const int ncdof = is_product?nComponents1:1;
+            for(int c1 = 0; c1 < ncdof; ++c1 )
                 {
                     int ldof = c1*basis_type::nDof+l;
                     size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), l, c1 ) );
@@ -3297,7 +3305,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         this->updateGlobalValues();
     for( int l = 0; l < basis_type::nDof; ++l )
         {
-            for(int c1 = 0; c1 < nComponents1; ++c1 )
+            const int ncdof = is_product?nComponents1:1;
+            for(int c1 = 0; c1 < ncdof; ++c1 )
                 {
                     int ldof = c1*basis_type::nDof+l;
                     size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), l, c1 ) );
@@ -3674,7 +3683,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const
 
     for ( int i = 0; i < basis_type::nDof; ++i )
         {
-            for(int c1 = 0; c1 < nComponents; ++c1 )
+            const int ncdof = is_product?nComponents1:1;
+            for(int c1 = 0; c1 < ncdof; ++c1 )
                 {
                     size_type ldof = basis_type::nDof*c1 + i;
                     size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), i, c1 ) );
@@ -3928,7 +3938,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
     //LIFE_ASSERT( comp < nRealDim )( comp )( nRealDim ).error( "[FunctionSpace::Element] grad: invalid component" );
     for ( int i = 0; i < basis_type::nDof; ++i )
         {
-            for(int c1 = 0; c1 < nComponents; ++c1 )
+            const int ncdof = is_product?nComponents1:1;
+            for(int c1 = 0; c1 < ncdof; ++c1 )
                 {
                     size_type ldof = basis_type::nDof*c1 + i;
                     size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), i, c1 ) );

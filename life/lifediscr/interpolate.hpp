@@ -122,7 +122,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                                                                                                l, comp ));
 
 #if 0
-                                    size_type globaldof_f =  boost::get<0>(f.functionSpace()->dof()->localToGlobal( it->id(),l, comp ));
+                                    size_type globaldof_f =  boost::get<0>(f.functionSpace()->dof()->localToGlobal( it->id(),l, 0 ));
                                     std::cout << "elt : " << it->id() << "\n"
                                               << "  l : " << l << "\n"
                                               << " comp: " << comp << "\n"
@@ -195,6 +195,8 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                                     dof_done[dof-first_dof]=true;
                                     ublas::column( pts, 0 ) = meshinv.referenceCoords()[dof];
                                     __dgeopc->update( pts );
+                                    //std::cout << "------------------------------------------------------------\n";
+                                    //std::cout << "pts = " << pts << "\n";
                                     __c->update( *it );
                                     typename FunctionType::pc_type pc( f.functionSpace()->fe(), __c->xRefs() );
                                     typename FunctionType::id_type interpfunc( f.id( *__c, pc ) );

@@ -62,6 +62,7 @@ class FiniteElement :
   typedef typename mpl::if_<mpl::bool_<P::is_scalar>,
                             mpl::identity<PolynomialSet<P, Scalar> >,
                             mpl::identity<PolynomialSet<P, Vectorial> > >::type::type super;
+
 public:
 
   /** @name Typedefs
@@ -151,7 +152,6 @@ public:
         //std::cout << "d_x = " << _M_pset.derivate(0).coeff() << "\n";
         //std::cout << "d_x = " << _M_pset.derivate(0).coeff() << "\n";
         Debug( 5030 ) << "============================================================\n";
-
     }
     FiniteElement( FiniteElement const & fe )
         :

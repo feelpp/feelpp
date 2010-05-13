@@ -136,7 +136,7 @@ public:
     static const uint16_type nDim = super::nDim;
     static const uint16_type nOrder = super::nOrder;
     static const uint16_type nComponents = super::nComponents;
-
+    static const bool is_product = false;
     RaviartThomasPolynomialSet()
         :
         super()
@@ -363,7 +363,8 @@ class RaviartThomas
     :
         public FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
                              detail::RaviartThomasDual,
-                             PointSetEquiSpaced >
+                             PointSetEquiSpaced >,
+        public boost::enable_shared_from_this<RaviartThomas<N,O,T,Convex> >
 {
     typedef FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
                           detail::RaviartThomasDual,
@@ -390,6 +391,7 @@ public:
     static const bool is_vectorial = polyset_type::is_vectorial;
     static const bool is_scalar = polyset_type::is_scalar;
     static const uint16_type nComponents = polyset_type::nComponents;
+    static const bool is_product = false;
 
 
     typedef typename dual_space_type::convex_type convex_type;
@@ -432,6 +434,7 @@ public:
         std::cout << "[RT] coeff : " << this->coeff() << "\n";
         std::cout << "[RT] pts : " << this->points() << "\n";
         std::cout << "[RT] eval at pts : " << this->evaluate( this->points() ) << "\n";
+        std::cout << "[RT] is_product : " << is_product << "\n";
     }
     RaviartThomas( RaviartThomas const & cr )
         :
@@ -474,6 +477,65 @@ public:
      */
     //@{
 
+#if 0
+    template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
+    static void transform( boost::shared_ptr<GMContext> gmc,  boost::shared_ptr<PC> const& pc,
+                           Phi& phi_t,
+                           GPhi& g_phi_t, const bool do_gradient,
+                           HPhi& h_phi_t, const bool do_hessian
+
+        )
+        {
+            transform ( *gmc, *pc, phi_t, g_phi_t, do_gradient, h_phi_t, do_hessian );
+        }
+    template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
+    static void transform( GMContext const& gmc,
+                           PC const& pc,
+                           Phi& phi_t,
+                           GPhi& g_phi_t, const bool do_gradient,
+                           HPhi& h_phi_t, const bool do_hessian
+
+        )
+        {
+            //phi_t = phi; return ;
+            typename GMContext::gm_type::matrix_type const& B = gmc.B( 0 );
+            std::fill( phi_t.data(), phi_t.data()+phi_t.num_elements(), value_type(0));
+            if ( do_gradient )
+                std::fill( g_phi_t.data(), g_phi_t.data()+g_phi_t.num_elements(), value_type(0));
+            if ( do_hessian )
+                std::fill( h_phi_t.data(), h_phi_t.data()+g_phi_t.num_elements(), value_type(0));
+
+            const uint16_type Q = gmc.nPoints();//_M_grad.size2();
+
+            // transform
+            for ( uint16_type i = numPoints; i < nLocalDof; i+=nDim )
+            {
+                for ( uint16_type l = 0; l < nDim; ++l )
+                {
+                    for ( uint16_type p = 0; p < nDim; ++p )
+                    {
+                        for ( uint16_type q = 0; q < Q; ++q )
+                        {
+                            // \warning : here the transformation depends on the
+                            // numbering of the degrees of freedom of the finite
+                            // element
+                            phi_t[i+l][0][0][q] += B( l, p ) * pc.phi(i+p,0,0,q);
+                            if ( do_gradient )
+                            {
+                                for ( uint16_type j = 0; j < nDim; ++j )
+                                {
+                                    g_phi_t[i+l][0][p][q] += B( l, j ) * pc.grad(i+j,0,p,q);
+                                }
+                            }
+                            if ( do_hessian )
+                            {
+                            }
+                        }
+                    }
+                }
+            }
+        }
+#endif
 
     //@}
 

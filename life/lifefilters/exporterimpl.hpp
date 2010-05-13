@@ -107,7 +107,7 @@ Exporter<MeshType>::New( po::variables_map const& vm, std::string prefix )
     std::string estr = vm["exporter"].template as<std::string>();
     Exporter<MeshType>* exporter =  Factory::type::instance().createObject( estr  );
     exporter->setOptions( vm );
-    std::cout << "[exporter::New] do export = " << exporter->doExport() << std::endl;
+    //std::cout << "[exporter::New] do export = " << exporter->doExport() << std::endl;
     exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
     exporter->setPrefix( prefix );
     return exporter;
@@ -121,13 +121,21 @@ Exporter<MeshType>::setOptions( po::variables_map const& vm, std::string const& 
     if ( !_prefix.empty() )
         _prefix += "-";
 
+#if 0
     M_do_export = vm[_prefix+"export"].template as<bool>();
     M_type =  vm[_prefix+"exporter"].template as<std::string>();
     if ( vm.count ( _prefix+"exporter-prefix" ) )
         M_prefix = vm[_prefix+"exporter-prefix"].template as<std::string>();
     M_freq = vm[_prefix+"exporter-freq"].template as<int>();
     M_ft = file_type( vm[_prefix+"exporter-file-type"].template as<int>() );
-
+#else
+    M_do_export = vm["export"].template as<bool>();
+    M_type =  vm["exporter"].template as<std::string>();
+    if ( vm.count ("exporter-prefix" ) )
+        M_prefix = vm["exporter-prefix"].template as<std::string>();
+    M_freq = vm["exporter-freq"].template as<int>();
+    M_ft = file_type( vm["exporter-file-type"].template as<int>() );
+#endif
     Debug() << "[Exporter] type:  " << M_type << "\n";
     Debug() << "[Exporter] prefix:  " << M_prefix << "\n";
     Debug() << "[Exporter] freq:  " << M_freq << "\n";

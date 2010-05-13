@@ -90,6 +90,7 @@ public:
     typedef boost::shared_ptr<self_type> self_ptrtype;
     typedef typename Poly::value_type value_type;
     typedef typename Poly::basis_type basis_type;
+    static const bool is_product = Poly::is_product;
 
 
     typedef PolySetType<nDim> polyset_type;
@@ -860,33 +861,45 @@ public:
               mpl::int_<1> )
         {
             typedef typename grad_type::index index;
-            //std::cout << "nbDof = " << _M_ref_ele->nbDof() << std::endl;
-            const index I = _M_ref_ele->nbDof()/nDim/nDim;
+#if 0
+            std::cout << "family = " << _M_ref_ele->familyName() << std::endl;
+            std::cout << "is_product = " << reference_element_type::is_product << std::endl;
+            std::cout << "nbDof = " << _M_ref_ele->nbDof() << std::endl;
+#endif
+            const index I = (reference_element_type::is_product?_M_ref_ele->nbDof()/nDim/nDim:_M_ref_ele->nbDof()/nDim);
             //std::cout << "I = " << I << std::endl;
             const index Q = __pts.size2();
             //std::cout << "Q = " << I << std::endl;
 
-            _M_phi.resize( boost::extents[I*nDim][nDim][1][__pts.size2()] );
-            _M_grad.resize( boost::extents[I*nDim][nDim][nDim][__pts.size2()] );
+            const int ncdof= (reference_element_type::is_product?nDim:1);
+            int nldof= (reference_element_type::is_product?I*nDim:I);
+            //std::cout << "ncdof = " << ncdof << ", nldof = " << nldof << "\n";
+            _M_phi.resize( boost::extents[nldof][nDim][1][__pts.size2()] );
+            _M_grad.resize( boost::extents[nldof][nDim][nDim][__pts.size2()] );
 
             matrix_type phiv = _M_ref_ele->evaluate( __pts );
             ublas::vector<matrix_type> __grad( _M_ref_ele->derivate( __pts ) );
 
             for(index i = 0; i < I; ++i)
-                for(index c1 = 0; c1 < nDim; ++c1)
+            {
+
+                for(index c1 = 0; c1 < ncdof; ++c1)
                     {
                         for(index j = 0; j < nDim; ++j)
                             for(index q = 0; q < Q; ++q)
-                                _M_phi[I*c1+i][j][0][q] = phiv( nDim*I*c1+nDim*i+j, q );
+                                _M_phi[I*c1+i][j][0][q] = phiv( nldof*c1+nDim*i+j, q );
+                        //_M_phi[I*c1+i][j][0][q] = phiv( nDim*I*c1+nDim*i+j, q );
 
                         for(index j = 0; j < nDim; ++j)
                             for(index l = 0; l < nDim; ++l)
                                 for(index q = 0; q < Q; ++q)
                                     {
-                                        _M_grad[I*c1+i][j][l][q] = __grad[l]( nDim*I*c1+nDim*i+j, q );
+                                        //_M_grad[I*c1+i][j][l][q] = __grad[l]( nDim*I*c1+nDim*i+j, q );
+                                        _M_grad[I*c1+i][j][l][q] = __grad[l]( nldof*c1+nDim*i+j, q );
                                         //std::cout << "grad(" << i << "," << c1 << "," << j << "," << l << "," << q << ")=" <<  _M_grad[I*c1+i][j][l][q] << "\n";
                                     }
                     }
+            }
         }
     private:
 
@@ -906,6 +919,7 @@ public:
             return precompute_ptrtype( new PreCompute( p, P ) );
         }
 
+    typedef std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> > faces_precompute_type;
     std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> >
     preComputeOnFaces( self_ptrtype p, points_type const& P )
         {
@@ -1208,6 +1222,7 @@ public:
         void transformationEquivalence( geometric_mapping_context_ptrtype const& __gmc,
                                         mpl::bool_<false> )
             {
+                std::cout << "do transformation\n";
                 //_M_ref_ele->transform( __gmc, phi, _M_phi, _M_gradphi, _M_hessphi );
                 _M_ref_ele->transform( __gmc, _M_pc.get(), _M_phi,
                                        _M_gradphi, ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value ),
@@ -1858,9 +1873,9 @@ public:
             return _M_hessian[i][c1][c2][q];
         }
 
-    private:
-        Context();
-        Context( Context const& );
+//    private:
+        Context(){}
+        Context( Context const& ){}
     private:
 
         boost::optional<precompute_ptrtype> _M_pc;
@@ -1882,6 +1897,27 @@ public:
         boost::multi_array<value_type,4> _M_hessian;
     };
 
+    template<size_type context_v, typename BasisType, typename GeoType, typename ElementType>
+    boost::shared_ptr<Context<context_v,BasisType, GeoType, ElementType> >
+    context( boost::shared_ptr<BasisType> b, boost::shared_ptr<GeoType> gm, precompute_ptrtype& pc )
+        {
+            return boost::shared_ptr<Context<context_v,BasisType, GeoType, ElementType> >(
+                new Context<context_v, BasisType, GeoType, ElementType>( context_v,
+                                                                         b,
+                                                                         gm,
+                                                                         pc ) );
+        }
+
+    template<int contextv, typename BasisType, typename GeoType,typename ElementType>
+    boost::shared_ptr<Context<contextv,BasisType, GeoType, ElementType> >
+    ctx( boost::shared_ptr<BasisType> const& b,
+         boost::shared_ptr<typename GeoType::template Context<contextv, ElementType> > const& gm,
+         precompute_ptrtype pc, ElementType& e )
+        {
+            typedef Context<contextv,BasisType, GeoType, ElementType> ctx_type;
+            return boost::shared_ptr<ctx_type>(new ctx_type( b, gm, pc ) );
+
+        }
 
 protected:
 

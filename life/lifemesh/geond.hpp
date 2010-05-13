@@ -595,11 +595,11 @@ public:
     void setMarker3( flag_type v ) { return M_marker3.assign( v ); }
 
 
-    void update();
+    void update(typename gm_type::precompute_ptrtype const& pc, typename gm_type::faces_precompute_type & pcf );
 private:
 
-    void updatep( mpl::bool_<true> );
-    void updatep( mpl::bool_<false> );
+    void updatep( typename gm_type::faces_precompute_type & pcf, mpl::bool_<true> );
+    void updatep( typename gm_type::faces_precompute_type & pcf, mpl::bool_<false> );
 
 private:
     /** geometric nodes of the element */
@@ -742,7 +742,8 @@ void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::exchangePoints( const uint16_type otn[ n
 }
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
-void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
+void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update( typename gm_type::precompute_ptrtype const& pc,
+                                                typename gm_type::faces_precompute_type& pcf )
 {
     M_h = 0;
     for ( uint16_type __e = 0;__e < numLocalEdges;++__e )
@@ -756,21 +757,43 @@ void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
     auto M = glas::average( M_G );
     M_barycenter = ublas::column( M, 0 );
 
-    auto ctx = M_gm->template context<vm::JACOBIAN>( *this,
-                                                     M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() ) );
+
+    auto ctx = M_gm->template context<vm::JACOBIAN>( *this, pc );
+                                                     //M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() ) );
     double w = (nDim == 3)?4./3.:2;
     M_measure = w*ctx->J(0);
 
-    updatep( typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
+    updatep( pcf, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
 }
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
-GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( mpl::bool_<true> )
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_type& pcf, mpl::bool_<true> )
 {
-    auto pc =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
+    if ( nRealDim==1)
+    {
+        M_h_face[0] = 1;
+        M_h_face[1] = 1;
+    }
+    else
+    {
+        int nEdges = GEOSHAPE::topological_face_type::numEdges;
+        for ( uint16_type __f = 0;__f < numTopologicalFaces;++__f )
+        {
+            M_h_face[__f] = 0;
+            for( uint16_type e =  0;  e < nEdges; ++e )
+            {
+                node_type const& __x1 = this->point( this->eToP( this->f2e( __f, e ), 0 ) ).node();
+                node_type const& __x2 = this->point( this->eToP( this->f2e( __f, e ), 1 ) ).node();
+                double __l = ublas::norm_2( __x1-__x2 );
+                M_h_face[__f] = ( M_h_face[__f] > __l )?M_h_face[__f]:__l;
+            }
+        }
+    }
+
+    //auto pc =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
     auto ctx = M_gm->template context<vm::POINT|vm::NORMAL|vm::JACOBIAN>(
         *this,
-        pc,
+        pcf,
         0 );
     double f2[3] = { 2.82842712474619, 2, 2 };
     double f3[4] = { 3.464101615137754, 2, 2, 2 };
@@ -787,7 +810,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( mpl::bool_<true> )
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
-GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( mpl::bool_<false> )
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_type& pcf, mpl::bool_<false> )
 {
 }
 
