@@ -233,6 +233,7 @@ public:
     static const bool is_vectorial = polyset_type::is_vectorial;
     static const bool is_scalar = polyset_type::is_scalar;
     static const uint16_type nComponents = polyset_type::nComponents;
+    static const bool is_product = true;
 
     typedef CrouzeixRaviart<N, Scalar, T, Convex> component_basis_type;
 

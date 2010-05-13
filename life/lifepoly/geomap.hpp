@@ -515,7 +515,7 @@ public:
     class Context
     {
     public:
-
+        static const size_type contextv = context_v;
         static const size_type context = context_v;
         // reference space dimension
         static const uint16_type PDim = ElementType::nDim;
@@ -1521,6 +1521,17 @@ private:
     permutation_type _M_perm;
 }; // Context
 
+
+    template<size_type context_v, typename ElementType>
+    boost::shared_ptr<Context<context_v,ElementType> >
+    context( geometric_mapping_ptrtype gm, ElementType const& e, precompute_ptrtype const& pc )
+        {
+            return boost::shared_ptr<Context<context_v,ElementType> >(
+                new Context<context_v, ElementType>( gm,
+                                                     e,
+                                                     pc ) );
+        }
+
     template<size_type context_v, typename ElementType>
     boost::shared_ptr<Context<context_v,ElementType> >
     context( ElementType const& e, precompute_ptrtype const& pc )
@@ -1531,6 +1542,19 @@ private:
                                                      pc ) );
         }
 
+    template<size_type context_v, typename ElementType>
+    boost::shared_ptr<Context<context_v,ElementType> >
+    context( geometric_mapping_ptrtype gm,
+             ElementType const& e,
+             std::vector<std::map<typename ElementType::permutation_type,precompute_ptrtype> > & pc,
+             uint16_type f )
+        {
+            return boost::shared_ptr<Context<context_v,ElementType> >(
+                new Context<context_v, ElementType>( gm,
+                                                     e,
+                                                     pc,
+                                                     f ) );
+        }
     template<size_type context_v, typename ElementType>
     boost::shared_ptr<Context<context_v,ElementType> >
     context( ElementType const& e,

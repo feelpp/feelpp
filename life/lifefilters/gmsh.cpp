@@ -278,6 +278,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo_ ) const
     ofsgeo << "Mesh.ElementOrder=" << _M_order << ";\n"
         //<< "Mesh.SecondOrderExperimental = 1;\n"//Ne semble plus indispensable
            << "Mesh.SecondOrderIncomplete = 0;\n"
+           << "Mesh.Algorithm = 6;\n"
            << __geo_;
     std::string __geo = ofsgeo.str();
 
