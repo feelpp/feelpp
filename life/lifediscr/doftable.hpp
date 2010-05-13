@@ -93,6 +93,7 @@ public:
     static const uint16_type nComponents1 = fe_type::nComponents1;
     static const uint16_type nComponents2 = fe_type::nComponents2;
 
+
     static const bool is_continuous = ContinuityType::is_continuous;
     static const bool is_discontinuous_locally = ContinuityType::is_discontinuous_locally;
     static const bool is_discontinuous_totally = ContinuityType::is_discontinuous_totally;
@@ -101,6 +102,7 @@ public:
     static const bool is_vectorial = FEType::is_vectorial;
     static const bool is_tensor2 = FEType::is_tensor2;
     static const bool is_modal = FEType::is_modal;
+    static const bool is_product = FEType::is_product;
 
     static const bool is_p0_continuous = ( (nOrder == 0) && is_continuous );
 
@@ -230,8 +232,9 @@ public:
             fe_type::nDofPerFace * element_type::numGeometricFaces +
             fe_type::nDofPerEdge * element_type::numEdges +
             fe_type::nDofPerVertex * element_type::numVertices;
-        std::vector<size_type> ind( nComponents*nldof );
-        for( size_type i = 0; i < nComponents*nldof; ++i )
+        const size_type ntdof = is_product?nComponents*nldof:nldof;
+        std::vector<size_type> ind( ntdof );
+        for( size_type i = 0; i < ntdof; ++i )
             ind[i] = boost::get<0>( _M_el_l2g[ id_el][ i ] );
         return ind;
     }
@@ -309,7 +312,8 @@ public:
                 dofs.insert( boost::get<2>( thedof ) );
             }
 #endif
-        _M_el_l2g.resize( boost::extents[eltid.size()][nComponents*nldof] );
+        const size_type ntdof = is_product?nComponents*nldof:nldof;
+        _M_el_l2g.resize( boost::extents[eltid.size()][ntdof] );
 
 
         BOOST_FOREACH( thedof_type thedof,  dof )
@@ -488,7 +492,8 @@ public:
             fe_type::nDofPerEdge * element_type::numEdges +
             fe_type::nDofPerVertex * element_type::numVertices;
 
-        for( int c = 0; c < nComponents; ++c )
+        const int ncdof = is_product?nComponents:1;
+        for( int c = 0; c < ncdof; ++c )
             {
                 Debug( 5005 ) << "[buildDofMap] component " << c << "\n";
                 if ( !this->isElementDone( __elt.id(), c ) )
@@ -654,7 +659,8 @@ public:
         std::vector<boost::tuple<size_type,uint16_type,size_type> > em;
         for( ; fit != fen; ++fit )
             {
-                for ( uint16_type c = 0; c < nComponents; ++c )
+                const int ncdof = is_product?nComponents:1;
+                for ( uint16_type c = 0; c < ncdof; ++c )
                     if (!this->isElementDone( fit->id(), c ) )
                     {
                         em.push_back( boost::make_tuple( fit->id(), c, fit->marker().value() ) );
@@ -804,16 +810,19 @@ public:
 #if !defined(NDEBUG)
                 _M_dof2elt[itdof->second+shift].push_back( boost::make_tuple( ie, lc_dof, lc, itdof->first.get<0>() ) );
 #endif
+#if 0
                 M_dof_view.insert( Dof( itdof->second+shift,      // global index
                                         sign,                     // sign
                                         itdof->first.get<0>(),    // entity type
                                         false,                    // is on boundary ?
                                         0                         // marker
                                        ) );
+#endif
 #if 0
                 typedef Container::index index;
 
-                for ( index i2 = 0; i2 < nComponents*fe_type::nLocalDof; ++i2 )
+                const int ntdof = is_product?nComponents:1;
+                for ( index i2 = 0; i2 < ntdof*fe_type::nLocalDof; ++i2 )
                     Debug() << "dof table( " << ie << ", " << lc  << ")=" << boost::get<0>(_M_el_l2g[ ie][ i2 ]) << "\n";
 #endif
             }
@@ -1819,10 +1828,11 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::initDofMap( mesh_ty
     // values that will allow to check whether we have a new dof or
     // not when building the table
     const size_type nV = M.numElements();
-    _M_el_l2g.resize( boost::extents[nV][nComponents*nldof] );
+    int ntldof = is_product?nComponents*nldof:nldof;
+    _M_el_l2g.resize( boost::extents[nV][ntldof] );
     typedef Container::index index;
     for ( index i1 = 0; i1 < index(nV); ++i1 )
-        for ( index i2 = 0; i2 < index(nComponents*nldof); ++i2 )
+        for ( index i2 = 0; i2 < index(ntldof); ++i2 )
             _M_el_l2g[i1][i2] = boost::make_tuple(invalid_size_type_value,0,false); // 0 is the invalid value for the sign !
 
     _M_face_sign = ublas::scalar_vector<bool>(M.numFaces(), false);
@@ -2135,10 +2145,11 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::buildDofMap( mesh_t
 
     // printing Dof table only in debug mode
 #if !defined( NDEBUG )
-    for( int c = 0; c < nComponents; ++c )
-        {
-            it_elt = M.beginElementWithProcessId( processor );
-            for (;it_elt!=en_elt; ++it_elt )
+            const int ncdof = is_product?nComponents:1;
+            for( int c = 0; c < ncdof; ++c )
+            {
+                it_elt = M.beginElementWithProcessId( processor );
+                for (;it_elt!=en_elt; ++it_elt )
                 {
                     element_type const& __elt = *it_elt;
                     std::ostringstream ostr;
@@ -2188,18 +2199,20 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::buildBoundaryDofMap
     typename mesh_type::face_const_iterator __face_en = M.endFace();
 
     const size_type nF = M.faces().size();
-    _M_face_l2g.resize( boost::extents[nF][nComponents*nDofF] );
+    int ntldof = is_product?nComponents*nDofF:nDofF;
+    _M_face_l2g.resize( boost::extents[nF][ntldof] );
     typedef Container::index index;
     global_dof_type default_dof = boost::make_tuple(invalid_size_type_value,0,false);
     for ( index i1 = 0; i1 < index(nF); ++i1 )
-        for ( index i2 = 0; i2 < index(nComponents*nDofF); ++i2 )
+        for ( index i2 = 0; i2 < index(ntldof); ++i2 )
             // 0 is the invalid value for the sign !
             _M_face_l2g[i1][i2] = default_dof;
 
     Debug( 5005 ) << "[buildBoundaryDofMap] nb faces : " << nF << "\n";
     Debug( 5005 ) << "[buildBoundaryDofMap] nb dof faces : " << nDofF*nComponents << "\n";
 
-    for( int c = 0; c < nComponents; ++c )
+    const int ncdof = is_product?nComponents:1;
+    for( int c = 0; c < ncdof; ++c )
         {
             __face_it = M.beginFace();
             for ( size_type nf = 0; __face_it != __face_en; ++__face_it, ++nf )
@@ -2228,7 +2241,7 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::buildBoundaryDofMap
         }
 #if !defined(NDEBUG)
     for ( index i1 = 0; i1 < index(nF); ++i1 )
-        for ( index i2 = 0; i2 < index(nComponents*nDofF); ++i2 )
+        for ( index i2 = 0; i2 < index(ntldof); ++i2 )
             LIFE_ASSERT( boost::get<0>(_M_face_l2g[i1][i2]) != invalid_size_type_value )( i1 )( i2 ).warn( "invalid dof table: initialized dof entries" );
 #endif
 }    // updateBoundaryDof
@@ -2273,7 +2286,8 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::generateDofPoints( 
         __c->update( *it_elt );
         for( uint16_type l =0; l < fe_type::nLocalDof; ++l )
             {
-                for( uint16_type c1 = 0; c1 < nComponents; ++c1 )
+                int ncdof  = is_product?nComponents:1;
+                for( uint16_type c1 = 0; c1 < ncdof; ++c1 )
                     {
                         size_type thedof = boost::get<0>(localToGlobal( it_elt->id(), l, c1 ));
                         if ( ( thedof >= firstDof() ) && ( thedof <= lastDof() ) )
