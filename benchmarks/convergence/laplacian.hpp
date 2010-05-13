@@ -129,7 +129,7 @@ public:
 
     /*basis*/
     typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
-    typedef fusion::vector<Lagrange<5, Scalar> > exact_basis_type;
+    typedef fusion::vector<Lagrange<Order+1, Scalar> > exact_basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -175,17 +175,17 @@ public:
             switch( Order )
             {
             case 1:
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.05:0.02:0.08" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.05:0.02:0.4" );
                 break;
             case 2:
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.02:0.2" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.02:0.4" );
                 break;
             case 3:
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.15:0.02:0.25" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.15:0.02:0.4" );
                 break;
             case 4:
             case 5:
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.2:0.1:0.25" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.2:0.1:0.4" );
                 break;
             }
         this->
