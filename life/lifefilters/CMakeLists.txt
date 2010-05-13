@@ -1,7 +1,7 @@
 IF ( ENABLE_INSTANTIATION_MODE )
   SET( LIFEFILTERS_INST_SRCS
     gmshtensorizeddomain.cpp gmshsimplexdomain.cpp
-    exporterensight.cpp exportergmsh.cpp exportergnuplot.cpp
+    exporterensight.cpp exportergmsh.cpp # exportergnuplot.cpp
     )
   endif()
 
