@@ -46,13 +46,22 @@ def strToSci(str):
 		return "%.5e" % (float(str))
 
 def intervalLog(Vmin,Vmax,nbVal):
-		print "Vmin,Vmax=",Vmin, Vmax
-		return (scipy.ceil(100*scipy.exp(scipy.linspace(scipy.log(Vmin),
-														 scipy.log(Vmax),
-														 nbVal)))/100)
+		v=[]
+		for i in scipy.arange(0,nbVal):
+				v.append(Vmax/(2**i))
+		return v
+
+		# print "Vmin,Vmax=",Vmin, Vmax
+		# return (scipy.ceil(100*scipy.exp(scipy.linspace(scipy.log(Vmin),
+		# 												 scipy.log(Vmax),
+		# 												 nbVal)))/100)
 
 def intervalLin(Vmin,Vmax,nbVal):
-		return scipy.arange(Vmin,Vmax,(Vmax-Vmin)/nbVal).tolist()[1:]
+		v=[]
+		for i in scipy.arange(0,nbVal):
+				v.append(Vmax/(2**i))
+		return v
+#		return scipy.arange(Vmin,Vmax,(Vmax-Vmin)/nbVal).tolist()[1:]
 
 def pickInInterval(Vmin,Vmax,nbVal,nbPos,method):
 		if method==0:
