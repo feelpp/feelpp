@@ -146,7 +146,7 @@ public:
         M_marker1(),
         M_marker2(),
         M_marker3(),
-        M_gm( new gm_type )
+        M_gm()
     {
     }
 
@@ -174,7 +174,7 @@ public:
         M_marker1(),
         M_marker2(),
         M_marker3(),
-        M_gm( new gm_type )
+        M_gm()
     {
     }
 
