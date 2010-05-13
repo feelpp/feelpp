@@ -146,7 +146,7 @@ public:
 
         Parameter h;
         if ( N < 4 )
-            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.05:0.05:0.2" );
+            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.05:0.5" );
         else
             h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.5:0.5:2" );
         this->addParameter( Parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( N  ).c_str() ) )
@@ -161,6 +161,7 @@ public:
 
         this->
             addOutput( Output(_name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) );
+        std::cout << "do_export = " << exporter->doExport() << "\n";
     }
 
     /**
@@ -231,6 +232,7 @@ TestALE<N>::run()
     ImporterGmsh<struct_mesh_type> struct_import( fname );
     struct_mesh->accept( struct_import );
 
+    std::cout << "mesh generation in " << time.elapsed() << "s\n"; time.restart();
 
     /*
       Define functionspace for the boundaries as well as the polynomials that define it
@@ -240,17 +242,25 @@ TestALE<N>::run()
     AUTO( f,  val(1.0 + 0.3*cos(Px()))  );
     bc_top = vf::project( Xh, elements(Xh->mesh()), f );
 
+    std::cout << "bc top in " << time.elapsed() << "s\n"; time.restart();
+
     struct_element_type bc_bottom( Xh, "bc_bottom" );
 
     AUTO( f2, val(-1.1 - 0.3*cos(Px()))  );
 
     bc_bottom = vf::project( Xh, elements(Xh->mesh()), f2 );
 
+    std::cout << "bc bottom in " << time.elapsed() << "s\n"; time.restart();
+
     struct_element_type bc_reference_top( Xh, "bc_reference_top" );
     bc_reference_top = vf::project( Xh, elements(Xh->mesh()), constant(1.0) );
 
+    std::cout << "ref bc top in " << time.elapsed() << "s\n"; time.restart();
+
     struct_element_type bc_reference_bottom( Xh, "bc_reference_bottom" );
     bc_reference_bottom = vf::project( Xh, elements(Xh->mesh()), constant(-1.0) );
+
+    std::cout << "ref bc bottom in " << time.elapsed() << "s\n"; time.restart();
 
     struct_element_type bc_disp_top( Xh, "bc_top" );
     bc_disp_top = bc_top;
@@ -262,6 +272,7 @@ TestALE<N>::run()
     bc_disp_bottom -= bc_reference_bottom;
     bc_disp_bottom.updateGlobalValues();
 
+    std::cout << "bc disp top/bottom in " << time.elapsed() << "s\n"; time.restart();
     /*
       Define mesh for the domain
     */
@@ -274,6 +285,8 @@ TestALE<N>::run()
     std::string fname2 = td2.generate( "geometry" );
     ImporterGmsh<mesh_type> import( fname2 );
     mesh->accept( import );
+
+    std::cout << "Ah mesh in " << time.elapsed() << "s\n"; time.restart();
 
     p1_functionspace_ptrtype Ah = p1_functionspace_type::New( mesh );
 
@@ -295,6 +308,7 @@ TestALE<N>::run()
     referencePolyBoundarySet.push_back(bc_reference_bottom);
     referencePolyBoundarySet.push_back(bc_reference_top);
 
+    std::cout << "Ah space in " << time.elapsed() << "s\n"; time.restart();
 
     /*
       Create the ale map
@@ -303,16 +317,20 @@ TestALE<N>::run()
 
     aleFactory.generateHighOrderMap( flagSet["moving_bc"], referencePolyBoundarySet, polyBoundarySet );
 
+    std::cout << "ALE ho map in " << time.elapsed() << "s\n"; time.restart();
+
     MeshHighOrder< Simplex<2, N> > auxiliar_mesh ( mesh );
     auxiliar_mesh.generateMesh(flagSet["moving_bc"], referencePolyBoundarySet);
     boost::shared_ptr<new_mesh_type> aux_mesh = auxiliar_mesh.getMesh();
 
+    std::cout << "ALE ho map mesh in " << time.elapsed() << "s\n"; time.restart();
 
     pN_visualize_functionspace_ptrtype visH = pN_visualize_functionspace_type::New( aux_mesh );
     pN_element_type aux_element( visH, "aux");
     aux_element = vf::project( visH, elements(visH->mesh()), sin(Px())*cos(Py())*oneX() + sin(Py())*cos(Px())*oneY());
     this->exportResults( 0.0, aux_element);
 
+    std::cout << "ALE visu in " << time.elapsed() << "s\n"; time.restart();
     /*
       Test ale map in boundary
     */
@@ -324,6 +342,7 @@ TestALE<N>::run()
                                                       (trans(idv(aleFactory.getMap()))*oneY() - f2)*(trans(idv(aleFactory.getMap()))*oneY() - f2)
                                                       ).evaluate()( 0, 0 ));
 
+    std::cout << "error bottom in " << time.elapsed() << "s\n"; time.restart();
     std::cout << "Error in first component of ALE map: " << error_bottom_first << "\n";
     std::cout << "Error in second component of ALE map: " << error_bottom_second << "\n";
 
@@ -337,20 +356,26 @@ TestALE<N>::run()
                                              trans(idv(aleFactory.getMap()) - vec(Px(),f))*(idv(aleFactory.getMap()) - vec(Px(),f))
                                       ).evaluate()( 0, 0 ));
 
+    std::cout << "error top in " << time.elapsed() << "s\n"; time.restart();
     std::cout << "Error top in the boundary: " << error_top << "\n";
     std::cout << "Error bottom in the boundary: " << error_bottom << "\n";
-    std::cout << "Error in the boundary: " << error_top+error_bottom << "\n";
-    Log() << "Error in the boundary: " << error_top + error_bottom << "\n";
+    double errbdy = math::sqrt( error_top*error_top + error_bottom*error_bottom );
+    std::cout << "Error in the boundary: " <<  errbdy << "\n";
+    Log() << "Error in the boundary: " << errbdy << "\n";
 
 
     MeshMover<new_mesh_type> mesh_mover;
     mesh_mover.apply(visH->mesh(), aleFactory.getDisplacement() );
 
+    std::cout << "mesh move in " << time.elapsed() << "s\n"; time.restart();
+
     aux_element = vf::project( visH, elements(visH->mesh()), sin(Px())*cos(Py())*oneX() + sin(Py())*cos(Px())*oneY());
     aux_element.updateGlobalValues();
     this->exportResults( 1.0, aux_element);
 
-    this->addOutputValue( error_bottom+error_top );
+    std::cout << "mesh moved visu in " << time.elapsed() << "s\n"; time.restart();
+
+    this->addOutputValue( errbdy );
     this->postProcessing();
 
 } // end run routine
