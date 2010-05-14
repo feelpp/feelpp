@@ -209,11 +209,11 @@ BOOST_AUTO_TEST_CASE( test_tetra )
     std::cout << "[tetra] barycenter = " << tetra.barycenter() << "\n";
     BOOST_CHECK_SMALL( ublas::norm_2( tetra.barycenter()-G1 ), 1e-14 );
     BOOST_CHECK_CLOSE( tetra.measure(), 1./3., 1e-13 );
-
+#if 0
     // check normals
     G1 = cross( V3-V2, V4-V2 );
     std::cout << "G1 = " << G1 << "\n";
-#if 0
+
     BOOST_CHECK_SMALL( ublas::norm_2( tetra.normal(0)-G1 ), 1e-14 );
     G1(0)=-1./math::sqrt(2.);G1(1)=1./math::sqrt(2.);
     BOOST_CHECK_SMALL( ublas::norm_2( tetra.normal(1)-G1 ), 1e-14 );
