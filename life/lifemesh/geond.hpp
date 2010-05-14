@@ -748,6 +748,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
 {
     auto pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
     auto pcf =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
+    M_gm = gm_ptrtype( new gm_type );
     update( pc, pcf );
 }
 
