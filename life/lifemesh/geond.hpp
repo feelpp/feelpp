@@ -746,9 +746,11 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
 {
+    if ( !M_gm.use_count() )
+        M_gm = gm_ptrtype( new gm_type );
     auto pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
     auto pcf =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
-    M_gm = gm_ptrtype( new gm_type );
+
     update( pc, pcf );
 }
 
