@@ -595,6 +595,7 @@ public:
     void setMarker3( flag_type v ) { return M_marker3.assign( v ); }
 
 
+    void update();
     void update(typename gm_type::precompute_ptrtype const& pc, typename gm_type::faces_precompute_type & pcf );
 private:
 
@@ -742,8 +743,18 @@ void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::exchangePoints( const uint16_type otn[ n
 }
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
-void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update( typename gm_type::precompute_ptrtype const& pc,
-                                                typename gm_type::faces_precompute_type& pcf )
+void
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
+{
+    auto pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
+    auto pcf =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
+    update( pc, pcf );
+}
+
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
+void
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update( typename gm_type::precompute_ptrtype const& pc,
+                                           typename gm_type::faces_precompute_type& pcf )
 {
     M_h = 0;
     for ( uint16_type __e = 0;__e < numLocalEdges;++__e )
