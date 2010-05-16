@@ -596,7 +596,7 @@ public:
 
 
     void update();
-    void update(typename gm_type::precompute_ptrtype const& pc, typename gm_type::faces_precompute_type & pcf );
+    void updateWithPc(typename gm_type::precompute_ptrtype const& pc, typename gm_type::faces_precompute_type & pcf );
 private:
 
     void updatep( typename gm_type::faces_precompute_type & pcf, mpl::bool_<true> );
@@ -756,8 +756,8 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
-GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update( typename gm_type::precompute_ptrtype const& pc,
-                                           typename gm_type::faces_precompute_type& pcf )
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_ptrtype const& pc,
+                                                 typename gm_type::faces_precompute_type& pcf )
 {
     M_h = 0;
     for ( uint16_type __e = 0;__e < numLocalEdges;++__e )
