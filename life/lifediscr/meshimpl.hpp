@@ -176,7 +176,7 @@ Mesh<Shape, T>::updateForUse()
                                                                this, _M_gm ) );
 
                         this->elements().modify( iv,
-                                                 lambda::bind( &element_type::update,
+                                                 lambda::bind( &element_type::updateWithPc,
                                                                lambda::_1, pc, boost::ref(pcf) ) );
                     }
                 typedef typename super::face_const_iterator face_const_iterator;
