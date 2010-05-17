@@ -751,7 +751,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
     auto pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
     auto pcf =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
 
-    update( pc, pcf );
+    updateWithPc( pc, pcf );
 }
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
