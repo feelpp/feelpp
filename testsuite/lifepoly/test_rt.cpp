@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE( rt0 )
 
     rt0_type::points_type pts(2,1);
     pts( 0, 0 ) = -1./3.; pts( 1, 0 ) = -1./3.;
-
+ 
     //pts = rt0.referenceConvex().barycenterFaces();
 
     std::cout << "pts= " << pts << "\n";
