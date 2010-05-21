@@ -1,5 +1,5 @@
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
-foreach(TEST jacobi imsimplex im poly quad_order lag hermite rt Rt)
+foreach(TEST jacobi imsimplex im poly quad_order lag hermite rt Rt Rt1 )
 
   life_add_test( ${TEST} )
 
