@@ -168,7 +168,7 @@ private:
 
     double meshSize;
     int M_lambda;
-
+    value_type M_penalisation_bc;
     functionspace_ptrtype M_Xh;
     oplin_ptrtype M_oplin;
     oplin_ptrtype M_jac;
@@ -184,6 +184,7 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].template as<double>() ),
     M_lambda( this->vm()["lambda"].template as<double>() ),
+    M_penalisation_bc( this->vm()["penalbc"].template as<value_type>() ),
     M_Xh(),
     exporter()
 {
@@ -226,7 +227,7 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
 {
     boost::timer ti;
     Log() << "[updateResidual] start\n";
-    value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
+
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
@@ -236,15 +237,16 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
     //u = vf::project( M_Xh, elements(mesh), g );
     *M_residual =
         //integrate( elements( mesh ), _Q<4*Order>(), -(+ gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) - (-4+pow(g,M_lambda))*id(v) ) ) +
-        integrate( elements( mesh ), _Q<4*Order>(), -(+ gradv(u)*trans(grad(v)) + idv(u)*id(v) - (-4+g)*id(v)) ) +
+        integrate( elements( mesh ), _Q<4*Order>(), (+ gradv(u)*trans(grad(v)) + idv(u)*id(v) - (-4+g)*id(v)) )+
         integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                   -( - id(v)*(gradv(u)*N())
-                      //- idv(u)*(grad(v)*N())
-                     + penalisation_bc*idv(u)*id(v)/hFace())+
-                   g*( - grad(v)*N() + penalisation_bc*id(v)/hFace() )
+                   ( - id(v)*(gradv(u)*N())
+                     //- idv(u)*(grad(v)*N())
+                     + M_penalisation_bc*(idv(u)-g)*id(v)/hFace())
                    );
 
     M_residual->close();
+    //if ( M_jac->matPtr()->closed() )
+    //*M_jac += on( boundaryfaces(mesh), u, M_residual->container(), g, ON_PENALISATION );
     *R = M_residual->container();
 
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
@@ -256,7 +258,6 @@ NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, spars
     boost::timer ti;
     Log() << "[updateJacobian] start\n";
     static bool is_init = false;
-    value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
@@ -266,11 +267,13 @@ NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, spars
 #if 1
 
     //*M_jac = integrate( elements( mesh ), _Q<2*Order+2>(), gradt(u)*trans(grad(v))+M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) )
-    *M_jac = integrate( elements( mesh ), _Q<2*Order+2>(), gradt(u)*trans(grad(v)) + idt(u)*id(v) )
-        + integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                     ( - id(v)*(gradt(u)*N())
-                       - idt(u)*(grad(v)*N())
-                       + penalisation_bc*idt(u)*id(v)/hFace() ) );
+    *M_jac =
+        integrate( elements( mesh ), _Q<2*Order+2>(), gradt(u)*trans(grad(v)) + idt(u)*id(v) )+
+        integrate( boundaryfaces(mesh), _Q<2*Order>(),
+                   ( - id(v)*(gradt(u)*N())
+                     //- idt(u)*(grad(v)*N())
+                     + M_penalisation_bc*idt(u)*id(v)/hFace() ) );
+
     M_jac->close();
 #else
     if ( is_init == false )
@@ -313,7 +316,6 @@ NonLinearPow<Dim, Order, Entity>::run()
     element_type ue( M_Xh, "ue" );
 
 
-    value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
 
     M_oplin = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
     *M_oplin =
@@ -321,7 +323,7 @@ NonLinearPow<Dim, Order, Entity>::run()
         integrate( boundaryfaces(mesh), _Q<2*Order>(),
                    ( - id(v)*(gradt(u)*N())
                      - idt(u)*(grad(v)*N())
-                     + penalisation_bc*idt(u)*id(v)/hFace() ) );
+                     + M_penalisation_bc*idt(u)*id(v)/hFace() ) );
     M_oplin->close();
 
     M_jac = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
@@ -338,11 +340,13 @@ NonLinearPow<Dim, Order, Entity>::run()
 
     vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
     *U = u;
+
     vector_ptrtype R( M_backend->newVector( u.functionSpace() ) );
     this->updateResidual( U, R );
 
     sparse_matrix_ptrtype J;
     this->updateJacobian( U, J );
+
 
     solve( J, u, R );
 
@@ -356,7 +360,7 @@ NonLinearPow<Dim, Order, Entity>::run()
     t1.restart();
 
     double L2error2 = integrate( elements(mesh), _Q<2*Order>(),
-                                 pow(idv(u)-u_exact,2) ).evaluate()( 0, 0 );
+                                 (idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
     double L2error = math::sqrt( L2error2 );
 
     std::cout << "||error||_L2=" << L2error << "\n";
