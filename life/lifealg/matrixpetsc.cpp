@@ -55,7 +55,9 @@ MatrixPetsc<T>::MatrixPetsc(Mat m)
     _M_destroy_mat_on_exit(false)
 {
     this->_M_mat = m;
-#if (PETSC_VERSION_MAJOR >= 3)
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
+    MatSetOption(_M_mat,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);
+#elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
     MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
 #else
     MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS);
@@ -130,7 +132,9 @@ void MatrixPetsc<T>::init (const size_type m,
     ierr = MatSetFromOptions (_M_mat);
     CHKERRABORT(this->comm(),ierr);
 
-#if (PETSC_VERSION_MAJOR >= 3)
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
+    ierr = MatSetOption(_M_mat,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);
+#elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
     ierr = MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
 #else
     ierr = MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS );
@@ -249,7 +253,9 @@ void MatrixPetsc<T>::init (const size_type m,
     ierr = MatSetFromOptions (_M_mat);
     CHKERRABORT(this->comm(),ierr);
 
-#if (PETSC_VERSION_MAJOR >= 3)
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
+    MatSetOption(_M_mat,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);
+#elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
     MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
 #else
     MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS);
@@ -700,7 +706,9 @@ template<typename T>
 void
 MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
 {
-#if (PETSC_VERSION_MAJOR >= 3)
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
+    MatSetOption(_M_mat,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);
+#elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
     MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
 #else
     MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS);
