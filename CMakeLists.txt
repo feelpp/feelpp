@@ -212,8 +212,6 @@ if ( VTK_FOUND )
   MARK_AS_ADVANCED( VTK_DIR )
 endif()
 
-# generate configuration header
-CONFIGURE_FILE(lifeconfig.h.in lifeconfig.h  )
 
 #
 #
@@ -315,6 +313,7 @@ IF( LIFE_MINIMAL_CONFIGURATION )
   UNSET( LIFE_INSTANTIATION_MODE CACHE )
   SET(LIFE_MESH_MAX_ORDER "1" CACHE STRING "maximum geometrical order in templates to instantiate" FORCE )
 ENDIF( LIFE_MINIMAL_CONFIGURATION )
+
 #
 # Enable testing
 #
@@ -357,6 +356,10 @@ IF(BUILD_TESTING OR LIFE_ENABLE_TESTS )
   add_subdirectory( testsuite )
 
 endif()
+
+# generate configuration header
+CONFIGURE_FILE(lifeconfig.h.in lifeconfig.h  )
+
 #
 # Packaging
 #
