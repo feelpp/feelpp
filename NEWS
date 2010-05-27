@@ -14,6 +14,7 @@
    new keyword auto available only in 4.4 and later
  - provide cmake option LIFE_MINIMAL_CONFIGURATION (default: OFF) to enable a
    minimal configuration for the configuration of Life
+ - added fixes for PETSc 3.1 in FindPETSc.cmake
 
 ** Libraries
 
@@ -56,6 +57,8 @@
    BilinearForm::computeGraph). This allows for faster graph computation.
  - SolverLinearPetsc: setting tolerances(absolute, relative and divergence) is
    easier through the Backend::solve function using Boost::parameter.
+ - Fixes in PETSc matrix interface due to changes in Petsc 3.1 interface (namely
+   MAT_KEEP_NONZERO_PATTERN)
 
 *** lifevf
  - BilinearForm::computeGraph (in conjunction with GraphCSR) is now noticeably
