@@ -234,21 +234,65 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
 
     AUTO( g, (Px()*Px()+Py()*Py()) );
     u = *X;
-    //u = vf::project( M_Xh, elements(mesh), g );
-    *M_residual =
+
+    //*M_residual =
+    form1( M_Xh, _vector=R ) =
         //integrate( elements( mesh ), _Q<4*Order>(), -(+ gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) - (-4+pow(g,M_lambda))*id(v) ) ) +
-        integrate( elements( mesh ), _Q<4*Order>(), (+ gradv(u)*trans(grad(v)) + idv(u)*id(v) - (-4+g)*id(v)) )+
+        integrate( elements( mesh ), _Q<4*Order>(), (+ gradv(u)*trans(grad(v)) + idv(u)*id(v) - (constant(-4.)+g)*id(v)) )+
         integrate( boundaryfaces(mesh), _Q<2*Order>(),
                    ( - id(v)*(gradv(u)*N())
                      //- idv(u)*(grad(v)*N())
                      + M_penalisation_bc*(idv(u)-g)*id(v)/hFace())
                    );
 
-    M_residual->close();
+    //M_residual->close();
+    R->close();
+
     //if ( M_jac->matPtr()->closed() )
     //*M_jac += on( boundaryfaces(mesh), u, M_residual->container(), g, ON_PENALISATION );
-    *R = M_residual->container();
+    //*R = M_residual->container();
 
+    u = *X;
+    v = vf::project( M_Xh, elements(mesh), g );
+    double i1 = integrate( elements( mesh ), _Q<4*Order>(), (+ gradv(u)*trans(gradv(v)) + idv(u)*idv(v) - (constant(-4.)+g)*idv(v)) ).evaluate()( 0, 0 );
+    double i2 = integrate( boundaryfaces(mesh), _Q<2*Order>(),
+                           - idv(v)*(gradv(u)*N())
+                           //- idv(u)*(grad(v)*N())
+        ).evaluate()(0 , 0);
+    double i3 = integrate( boundaryfaces(mesh), _Q<2*Order>(),
+                           + M_penalisation_bc*(idv(u)-g)*idv(v)/hFace()).evaluate()(0 , 0);
+
+    double i4 = integrate( elements( mesh ), _Q<4*Order>(), (+ gradv(u)*trans(gradv(v)) + idv(u)*idv(v) - (constant(-4.)+g)*idv(v)) ).evaluate()(0,0)+
+                 integrate( boundaryfaces(mesh), _Q<2*Order>(),
+                            - idv(v)*(gradv(u)*N())
+                            //- idv(u)*(grad(v)*N())
+                            + M_penalisation_bc*(idv(u)-g)*idv(v)/hFace()).evaluate()(0 , 0);
+    vector_ptrtype V( M_backend->newVector( u.functionSpace() ) );
+    *V = v;
+    std::cout << "Residual  1 = " << i1 << "\n"
+              << "Residual  2 = " << i2 << "\n"
+              << "Residual  3 = " << i3 << "\n"
+              << "sum Residuals   = " << i4 << "\n"
+              << "Residual = " << M_backend->dot( V, R ) << "\n";
+
+    vector_ptrtype R1( M_backend->newVector( u.functionSpace() ) );
+    form1( M_Xh, _vector=R1 ) =
+        //integrate( elements( mesh ), _Q<4*Order>(), -(+ gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) - (-4+pow(g,M_lambda))*id(v) ) ) +
+        integrate( elements( mesh ), _Q<4*Order>(), (+ gradv(u)*trans(grad(v)) + idv(u)*id(v) - (constant(-4.)+g)*id(v)) );
+    R1->close();
+
+    vector_ptrtype R2( M_backend->newVector( u.functionSpace() ) );
+    form1( M_Xh, _vector=R2 ) =
+        integrate( boundaryfaces(mesh), _Q<2*Order>(),
+                   - id(v)*(gradv(u)*N())
+                   //- idv(u)*(grad(v)*N())
+                   //+ M_penalisation_bc*print("tt",(idv(u)-g)*id(v)/hFace())
+            );
+    R2->close();
+    std::cout<< "Residual r1 = " << M_backend->dot( V, R1 ) << "\n";
+    std::cout<< "Residual r2 = " << M_backend->dot( V, R2 ) << "\n";
+    //M_residual->close();
+    R->close();
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
