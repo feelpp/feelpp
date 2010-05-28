@@ -316,19 +316,26 @@ Sound<Dim, Order, Entity>::run()
 
     vector_ptrtype modepetsc( M_backend->newVector( Xh ) );
     int nconv;
-    boost::tie( nconv, eigen_real, eigen_imag, modepetsc )  =
+    //boost::tie( nconv, eigen_real, eigen_imag, modepetsc )  =
+    SolverEigen<double>::eigenmodes_type modes;
+    modes=
         eigs( _matrixA=S,
               _matrixB=M,
               _nev=nev,
               _ncv=ncv,
-              _spectrum=LARGEST_MAGNITUDE );
+              _spectrum=SMALLEST_MAGNITUDE );
     element_type mode( Xh, "mode" );
-    Log() << "eigenvalue " << 0 << " = (" << eigen_real << "," << eigen_imag  << ")\n";
-    //Log() << "eigenvalue " << 0 << " relative error = " << eigen->relativeError( 0 ) << "\n";
+    if ( !modes.empty() )
+    {
+        Log() << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
+        std::cout << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>()
+                  << "," <<  modes.begin()->second.get<1>() << ")\n";
+        //Log() << "eigenvalue " << 0 << " relative error = " << eigen->relativeError( 0 ) << "\n";
 
-    mode = *modepetsc;
+        mode = *modes.begin()->second.get<2>();
+
+    }
     this->exportResults( u, mode );
-
     Log() << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
     Log() << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
 
