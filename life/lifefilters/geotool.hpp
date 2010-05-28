@@ -391,7 +391,8 @@ namespace Life {
                 _M_ostrSurfaceLoop( new std::ostringstream()),
                 _M_map_Shape( new map_shape_names_type()),
                 _M_paramShape( new parameter_shape_type()),
-                _M_markShape( new marker_shape_type()),
+                //_M_markShape( new marker_shape_type()),
+                _M_markShape( new marker_type_type()),
                 _M_ostr( new std::ostringstream())
             {
             }
@@ -412,7 +413,8 @@ namespace Life {
 
                 _M_map_Shape(new map_shape_names_type(*(m._M_map_Shape))),
                 _M_paramShape(new parameter_shape_type(*(m._M_paramShape))),
-                _M_markShape(new marker_shape_type(*(m._M_markShape))),
+                //_M_markShape(new marker_shape_type(*(m._M_markShape))),
+                _M_markShape(new marker_type_type(*(m._M_markShape))),
                 _M_ostr(new std::ostringstream())
             {
                 updateOstr((m._M_ostr)->str());
@@ -476,7 +478,8 @@ namespace Life {
 
                 _M_map_Shape.reset(new map_shape_names_type(*(m._M_map_Shape)));
                 _M_paramShape.reset(new parameter_shape_type(*(m._M_paramShape)));
-                _M_markShape.reset(new marker_shape_type(*(m._M_markShape)));
+                //_M_markShape.reset(new marker_shape_type(*(m._M_markShape)));
+                _M_markShape.reset(new marker_type_type(*(m._M_markShape)));
                 _M_ostr.reset(new std::ostringstream());
                 updateOstr((m._M_ostr)->str());
             }
@@ -622,7 +625,7 @@ namespace Life {
             /*_________________________________________________*
              * Marker
              *_________________________________________________*/
-
+            /*
             marker_shape_const_iterator_type
             markShapeBegin() const
             {
@@ -633,63 +636,69 @@ namespace Life {
             markShapeEnd() const
             {
                 return _M_markShape->end();
-            }
+            }*/
 
 
             marker_type_const_iterator_type
-            markerTypeBegin(std::string __shape) const
+            markerTypeBegin(/*std::string __shape*/) const
             {
-                return _M_markShape->find(__shape)->second.begin();
+                //return _M_markShape->find(__shape)->second.begin();
+                return _M_markShape->begin();
             }
 
             marker_type_const_iterator_type
-            markerTypeEnd(std::string __shape) const
+            markerTypeEnd(/*std::string __shape*/) const
             {
-                return _M_markShape->find(__shape)->second.end();
+                //return _M_markShape->find(__shape)->second.end();
+                return _M_markShape->end();
             }
-
+            /*
             marker_type_type
             markerType(std::string __shape) const
             {
-                return _M_markShape->find(__shape)->second;
+                //return _M_markShape->find(__shape)->second;
+                }*/
+
+            marker_markerName_const_iterator_type
+            markerMarkerNameBegin(/*std::string __shape,*/ std::string __type) const
+            {
+                //return _M_markShape->find(__shape)->second.find(__type)->second.begin();
+                return _M_markShape->find(__type)->second.begin();
             }
 
             marker_markerName_const_iterator_type
-            markerMarkerNameBegin(std::string __shape, std::string __type) const
+            markerMarkerNameEnd(/*std::string __shape,*/ std::string __type) const
             {
-                return _M_markShape->find(__shape)->second.find(__type)->second.begin();
-            }
-
-            marker_markerName_const_iterator_type
-            markerMarkerNameEnd(std::string __shape, std::string __type) const
-            {
-                return _M_markShape->find(__shape)->second.find(__type)->second.end();
+                //return _M_markShape->find(__shape)->second.find(__type)->second.end();
+                return _M_markShape->find(__type)->second.end();
             }
 
             marker_markerName_type
-            markerMarkerName(std::string __shape, std::string __type) const
+            markerMarkerName(/*std::string __shape,*/ std::string __type) const
             {
-                return _M_markShape->find(__shape)->second.find(__type)->second;
-            }
-
-
-            std::list<marker_base_type>::const_iterator
-            markerListIndiceBegin(std::string __shape, std::string __type ,std::string __markerName) const
-            {
-                return _M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second.begin();
+                //return _M_markShape->find(__shape)->second.find(__type)->second;
+                return _M_markShape->find(__type)->second;
             }
 
             std::list<marker_base_type>::const_iterator
-            markerListIndiceEnd(std::string __shape, std::string __type ,std::string __markerName) const
+            markerListIndiceBegin(/*std::string __shape,*/ std::string __type ,std::string __markerName) const
             {
-                return _M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second.end();
+                return _M_markShape->find(__type)->second.find(__markerName)->second.begin();
+            }
+
+            std::list<marker_base_type>::const_iterator
+            markerListIndiceEnd(/*std::string __shape,*/ std::string __type ,std::string __markerName) const
+            {
+                //return _M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second.end();
+                return _M_markShape->find(__type)->second.find(__markerName)->second.end();
             }
 
 
             std::list<marker_base_type>
-            getMarkerName(std::string __shape, std::string __type ,std::string __markerName) const
+            getMarkerName(/*std::string __shape,*/ std::string __type ,std::string __markerName) const
             {
-                return _M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second;
+                //return _M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second;
+                return _M_markShape->find(__type)->second.find(__markerName)->second;
             }
 
             /*_________________________________________________*
@@ -719,7 +728,8 @@ namespace Life {
             // data containers
             boost::shared_ptr<map_shape_names_type> _M_map_Shape;
             boost::shared_ptr<parameter_shape_type> _M_paramShape;
-            boost::shared_ptr<marker_shape_type> _M_markShape;
+            //boost::shared_ptr<marker_shape_type> _M_markShape;
+            boost::shared_ptr<marker_type_type> _M_markShape;
 
             // output string
             boost::shared_ptr<std::ostringstream> _M_ostr;
@@ -786,7 +796,8 @@ namespace Life {
             //get data from this (easy)
             __geoTool._M_map_Shape.reset( new map_shape_names_type( *this->_M_map_Shape) );
             __geoTool._M_paramShape.reset( new parameter_shape_type( *this->_M_paramShape) );
-            __geoTool._M_markShape.reset( new marker_shape_type (*this->_M_markShape) );
+            //__geoTool._M_markShape.reset( new marker_shape_type (*this->_M_markShape) );
+            __geoTool._M_markShape.reset( new marker_type_type (*this->_M_markShape) );
 
             //get data from (more hard because no duplication)
             map_shape_names_const_iterator_type itShape = m._M_map_Shape->begin();
@@ -816,33 +827,35 @@ namespace Life {
                 }
 
             //update marker
-            marker_shape_const_iterator_type itShape2 = m.markShapeBegin();
-            marker_shape_const_iterator_type itShape2_end = m.markShapeEnd();
-            while (itShape2!=itShape2_end)
-                {
-                    marker_type_const_iterator_type itMarkType = m.markerTypeBegin(itShape2->first);
-                    marker_type_const_iterator_type itMarkType_end = m.markerTypeEnd(itShape2->first);
+            //marker_shape_const_iterator_type itShape2 = m.markShapeBegin();
+            //marker_shape_const_iterator_type itShape2_end = m.markShapeEnd();
+            //while (itShape2!=itShape2_end)
+            //    {
+                    marker_type_const_iterator_type itMarkType = m.markerTypeBegin(/*itShape2->first*/);
+                    marker_type_const_iterator_type itMarkType_end = m.markerTypeEnd(/*itShape2->first*/);
                         while (itMarkType!=itMarkType_end)
                         {
                             if (__typeOp==1 || itMarkType->first=="line")
                                 {
-                                    marker_markerName_const_iterator_type itMarkName = m.markerMarkerNameBegin(itShape2->first,
+                                    marker_markerName_const_iterator_type itMarkName = m.markerMarkerNameBegin(/*itShape2->first,*/
                                                                                                                itMarkType->first);
-                                    marker_markerName_const_iterator_type itMarkName_end = m.markerMarkerNameEnd(itShape2->first,
+                                    marker_markerName_const_iterator_type itMarkName_end = m.markerMarkerNameEnd(/*itShape2->first,*/
                                                                                                                  itMarkType->first);
                                     while (itMarkName!=itMarkName_end)
                                         {
-                                            if ( !m.getMarkerName(itShape2->first,itMarkType->first,
-                                                                  itMarkName->first).empty() )
+                                            //Est-ce UTILE?????
+                                            if ( !m.getMarkerName(/*itShape2->first,*/itMarkType->first, itMarkName->first).empty() )
                                                 {
-                                                    std::list<marker_base_type>::const_iterator itLRef=m.markerListIndiceBegin(itShape2->first,
+                                                    std::list<marker_base_type>::const_iterator itLRef=m.markerListIndiceBegin(/*itShape2->first,*/
                                                                                                                                itMarkType->first,
                                                                                                                                itMarkName->first);
-                                                    std::list<marker_base_type>::const_iterator itLRef_end=m.markerListIndiceEnd(itShape2->first,
-                                                                                                                                 itMarkType->first,itMarkName->first);
-                                                    while(itLRef != itLRef_end ) {
-                                                        (*(__geoTool._M_markShape))[itShape2->first][itMarkType->first][itMarkName->first].push_back(*itLRef);
-                                                        ++itLRef;
+                                                    std::list<marker_base_type>::const_iterator itLRef_end=m.markerListIndiceEnd(/*itShape2->first,*/
+                                                                                                                                 itMarkType->first,
+                                                                                                                                 itMarkName->first);
+                                                    while(itLRef != itLRef_end )
+                                                        {
+                                                            (*(__geoTool._M_markShape))/*["rectangle"itShape2->first]*/[itMarkType->first][itMarkName->first].push_back(*itLRef);
+                                                            ++itLRef;
                                                         }
                                                 }
                                             ++itMarkName;
@@ -850,8 +863,8 @@ namespace Life {
                                 }
                             ++itMarkType;
                         }
-                    ++itShape2;
-                }
+                        //++itShape2;
+                        // }
 
             return __geoTool;
         }
@@ -985,17 +998,17 @@ namespace Life {
 
             //write marker
             //iterate on the shape
-            itShape =  _M_map_Shape->begin();
-            itShape_end = _M_map_Shape->end();
-            while (itShape!=itShape_end)
-                {
+            //itShape =  _M_map_Shape->begin();
+            //itShape_end = _M_map_Shape->end();
+            //while (itShape!=itShape_end)
+            //{
                     // generate the code for the marker
-                    marker_type_const_iterator_type itMarkType= (*(_M_markShape))[itShape->first].begin();
-                    marker_type_const_iterator_type itMarkType_end=(*(_M_markShape))[itShape->first].end();
+                    marker_type_const_iterator_type itMarkType= (*(_M_markShape))/*[itShape->first]*/.begin();
+                    marker_type_const_iterator_type itMarkType_end=(*(_M_markShape))/*[itShape->first]*/.end();
                     while (itMarkType!=itMarkType_end)
                         {
-                            marker_markerName_const_iterator_type itMarkName = (*(_M_markShape))[itShape->first][itMarkType->first].begin();
-                            marker_markerName_const_iterator_type itMarkName_end=(*(_M_markShape))[itShape->first][itMarkType->first].end();
+                            marker_markerName_const_iterator_type itMarkName = (*(_M_markShape))/*[itShape->first]*/[itMarkType->first].begin();
+                            marker_markerName_const_iterator_type itMarkName_end=(*(_M_markShape))/*[itShape->first]*/[itMarkType->first].end();
                             while ( itMarkName!=itMarkName_end)
                                 {
                                     if (itMarkType->first=="line")
@@ -1029,8 +1042,8 @@ namespace Life {
                                 }
                             ++itMarkType;
                         }
-                    ++itShape;
-                }
+                    //++itShape;
+                    //}
 
 
             return _M_ostr->str();
@@ -1572,7 +1585,7 @@ namespace Life {
                         marker12=true;                                   \
                     }                                                   \
                                                                         \
-                    std::list<marker_base_type > __listMarker = (*(_M_markShape))[this->shape()][type][name]; \
+                    std::list<marker_base_type > __listMarker = (*(_M_markShape))/*[this->shape()]*/[type][name]; \
                                                                         \
                                                                         \
                     if (type=="line")                                   \
@@ -1602,7 +1615,7 @@ namespace Life {
                                           GEOTOOL_FOR_MARKER_VOLUME_MACRO) \
                                 }                                       \
                                                                         \
-                    (*(_M_markShape))[this->shape()][type][name] = __listMarker; \
+                    (*(_M_markShape))/*[this->shape()]*/[type][name] = __listMarker; \
                 }                                                       \
                                                                         \
                                                                         \
