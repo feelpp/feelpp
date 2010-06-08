@@ -208,9 +208,10 @@ private:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      *
-     * \param u the function to save in ensight format
+     * \param u the function to save in ensight format.
+     * \param e the exact solution projected in the finite element space to save in ensight format.
      */
-    void exportResults( element_type& u );
+    void exportResults( element_type& u, element_type& e );
 
 private:
 
@@ -307,8 +308,10 @@ Laplacian<Dim>::run()
     /** \code */
     //# marker1 #
     value_type pi = M_PI;
-    AUTO( g, sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) );
-    AUTO( f, pi*pi*Dim*g );
+    //! deduce from expression the type of g (thanks to keyword 'auto')
+    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
+    //! deduce from expression the type of f (thanks to keyword 'auto')
+    auto f = pi*pi*Dim*g;
     //# endmarker1 #
     /** \endcode */
 
@@ -420,7 +423,11 @@ Laplacian<Dim>::run()
 
     //! save the results
     /** \code */
-    this->exportResults( u );
+    //! project the exact solution
+    element_type e( Xh, "e" );
+    e = vf::project( Xh, elements(mesh), g );
+    //std::cout << "e=" << e << "\n";
+    this->exportResults( u, e );
     /** \endcode */
 } // Laplacian::run
 
@@ -444,7 +451,7 @@ Laplacian<Dim>::solve( sparse_matrix_ptrtype& D,
 
 template<int Dim>
 void
-Laplacian<Dim>::exportResults( element_type& U )
+Laplacian<Dim>::exportResults( element_type& U, element_type& E )
 {
     if ( exporter->doExport() )
     {
@@ -452,9 +459,9 @@ Laplacian<Dim>::exportResults( element_type& U )
 
         exporter->step(0)->setMesh( U.functionSpace()->mesh() );
 
-        exporter->step(0)->add( "pid",
-                                regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
+        exporter->step(0)->add( "pid",regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
         exporter->step(0)->add( "u", U );
+        exporter->step(0)->add( "g", E );
 
         exporter->save();
     }
