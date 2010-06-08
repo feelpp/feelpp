@@ -963,6 +963,7 @@ public:
 
         typedef typename reference_element_type::value_type value_type;
 
+        typedef ElementType geometric_element_type;
         typedef typename Geo_t::template Context<context_v, ElementType> geometric_mapping_context_type;
         typedef boost::shared_ptr<geometric_mapping_context_type> geometric_mapping_context_ptrtype;
 
