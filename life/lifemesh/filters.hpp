@@ -91,6 +91,7 @@ struct marked3elements
 namespace detail
 {
 
+
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_const_iterator,
@@ -878,6 +879,19 @@ size_type
 nelements( boost::tuple<MT,Iterator,Iterator> const& its )
 {
     return std::distance( boost::get<1>( its ), boost::get<2>( its ) );
+}
+
+template<typename ElementType>
+boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+             typename std::list<ElementType>::const_iterator,
+             typename std::list<ElementType>::const_iterator>
+element( ElementType const& elt  )
+{
+    std::list<ElementType> lst;
+    lst.push_back(  elt );
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                              lst.begin(),
+                              lst.end() );
 }
 
 }
