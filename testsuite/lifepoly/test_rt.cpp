@@ -36,6 +36,7 @@ using boost::unit_test::test_suite;
 
 BOOST_AUTO_TEST_SUITE( rt_testsuite )
 
+#if 0
 BOOST_AUTO_TEST_CASE( rt0 )
 {
     using namespace Life;
@@ -44,16 +45,17 @@ BOOST_AUTO_TEST_CASE( rt0 )
 
     rt0_type::points_type pts(2,1);
     pts( 0, 0 ) = -1./3.; pts( 1, 0 ) = -1./3.;
- 
+
     //pts = rt0.referenceConvex().barycenterFaces();
 
     std::cout << "pts= " << pts << "\n";
     auto eval_at_pts = rt0.evaluate( pts );
     std::cout << "eval at pts= " << eval_at_pts << "\n";
 }
-#if 0
+#endif
 BOOST_AUTO_TEST_CASE( rt0_2 )
 {
+    BOOST_TEST_MESSAGE( "creating RT0 on reference element :" );
     using namespace Life;
     typedef RaviartThomas<0>::apply<2>::type rt0_type;
     typedef boost::shared_ptr<rt0_type> rt0_ptrtype;
@@ -66,12 +68,7 @@ BOOST_AUTO_TEST_CASE( rt0_2 )
     auto eval_at_pts = rt0->evaluate( pts );
     std::cout << "eval at pts= " << eval_at_pts << "\n";
 
-
-
-
-#if 0
-
-
+    BOOST_TEST_MESSAGE( "creating another element :" );
     typedef GeoND<2,Simplex<2, 1, 2> >::point_type point_type;
     // interval
     typedef GeoND<2,Simplex<2, 1, 2> > tria_type;
@@ -85,20 +82,28 @@ BOOST_AUTO_TEST_CASE( rt0_2 )
     ublas::vector<double> G1( 2 );
     G1(0)=2;G1(1)=1./3.;
     tria.update();
+    BOOST_TEST_MESSAGE( "evaluating the RT0 polynomialset on real element :" );
 
     auto bpts = tria.gm()->referenceConvex().barycenterFaces();
     auto gmpc = tria.gm()->preCompute( tria.gm(), bpts );
     auto rtpc = rt0->preCompute( rt0, bpts );
-    auto geoctx = tria.gm()->context<vm::JACOBIAN>( tria, gmpc );
+
+    auto geoctx = tria.gm()->context<vm::GRAD>( tria, gmpc );
+#if 1
     //auto rtctx = rt0->ctx<vm::GRAD,rt0_type, decltype(*tria.gm()),decltype(*rtpc), tria_type>( rt0, tria.gm(), rtpc );
     //auto rtctx = rt0->ctx( rt0, tria.gm() );
-    auto rtctx = rt0->ctx<vm::GRAD>( rt0, tria.gm(), rtpc, tria );
+    //auto gmctx = tria.gm()->context<vm::GRAD>( tria, gmpc );
+    //auto rtctx = rt0->ctx<vm::GRAD,rt0_type,decltype(*geoctx),decltype(*rtpc),tria_type>( rt0, geoctx, rtpc, tria );
     //auto rtctx = rt0->ctx();
     //auto rtctx = rt0->context<vm::GRAD>( rt0, tria.gm(), rtpc );
+
+    typedef rt0_type::Context<vm::GRAD,rt0_type,tria_type::gm_type,tria_type> rtctx_type;
+    boost::shared_ptr<rtctx_type> rtctx( new rtctx_type( rt0, geoctx, rtpc ) );
+
 #endif
 
 }
-#endif
+
 BOOST_AUTO_TEST_SUITE_END()
 
 
