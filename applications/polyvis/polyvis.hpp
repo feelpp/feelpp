@@ -197,9 +197,9 @@ Polyvis<A0,A1,A2,A3,A4>::run()
                                                                  _dim=Dim,
                                                                  _h=2.0,
                                                                  _addmidpoint=false,
-                                                                 _xmin=-1.,
-                                                                 _ymin=-1.,
-                                                                 _zmin=-1. ) );
+                                                                 _xmin=this->vm()["xmin"].template as<double>(),
+                                                                 _ymin=this->vm()["ymin"].template as<double>(),
+                                                                 _zmin=this->vm()["zmin"].template as<double>() ) );
     // then a fine mesh which we use to export the basis function to
     // visualize them
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -207,9 +207,9 @@ Polyvis<A0,A1,A2,A3,A4>::run()
                                                       _shape="simplex",
                                                       _dim=Dim,
                                                       _h=meshSize,
-                                                      _xmin=-1.,
-                                                      _ymin=-1.,
-                                                      _zmin=-1. ) );
+                                                      _xmin=this->vm()["xmin"].template as<double>(),
+                                                      _ymin=this->vm()["ymin"].template as<double>(),
+                                                      _zmin=this->vm()["zmin"].template as<double>() ) );
     /** \endcode */
 
     /**
@@ -231,6 +231,13 @@ Polyvis<A0,A1,A2,A3,A4>::run()
         {
             U.zero();
             U( i ) = 1;
+#if 0 // for rtk
+            using namespace vf;
+            std::cout << "flux " << i << " = " << integrate( boundaryfaces(oneelement_mesh),_Q<4>(),
+                                                             trans(idv(U))*N() ).evaluate()( 0, 0 ) << "\n";;
+            std::cout << "div " << i << " = " << integrate( elements(oneelement_mesh), _Q<4>(),
+                                                            divv(U) ).evaluate()( 0, 0 ) << "\n";
+#endif
             std::ostringstream ostr;
             ostr << Xh->basis()->familyName() << "-" << i;
             exporter->step(0)->add( ostr.str(), U );

@@ -3,9 +3,9 @@
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2010-05-09
+       Date: 2010-06-03
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,9 +22,9 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file raviartthomas2d.cpp
+   \file raviartthomas3d.cpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-   \date 2010-05-09
+   \date 2010-06-03
  */
 #include "raviartthomas.hpp"
 
@@ -32,9 +32,10 @@ namespace Life
 {
 namespace detail
 {
-BOOST_PP_LIST_FOR_EACH_PRODUCT(RAVIARTTHOMAS_FACTORY_OP, 3, (DIM2, ORDER0123, CONVEX))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(RAVIARTTHOMAS_FACTORY_OP, 3, (DIM3, ORDER0123, CONVEX))
 }
 }
+
 
 
 

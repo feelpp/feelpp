@@ -71,6 +71,8 @@ namespace detail
 #if 1
 # define ORDER0 BOOST_PP_TUPLE_TO_LIST(1,(0))
 # define ORDER1 BOOST_PP_TUPLE_TO_LIST(1,(1))
+# define ORDER01 BOOST_PP_TUPLE_TO_LIST(2,(0,1))
+# define ORDER0123 BOOST_PP_TUPLE_TO_LIST(4,(0,1,2,3))
 
 # define ORDERS                                             \
     BOOST_PP_TUPLE_TO_LIST(                                 \
