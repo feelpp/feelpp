@@ -34,6 +34,7 @@ using boost::unit_test::test_suite;
 
 #include <life/lifepoly/raviartthomas.hpp>
 
+
 BOOST_AUTO_TEST_SUITE( rt_testsuite )
 
 #if 0
@@ -53,6 +54,8 @@ BOOST_AUTO_TEST_CASE( rt0 )
     std::cout << "eval at pts= " << eval_at_pts << "\n";
 }
 #endif
+
+#if 0
 BOOST_AUTO_TEST_CASE( rt0_2 )
 {
     BOOST_TEST_MESSAGE( "creating RT0 on reference element :" );
@@ -67,15 +70,19 @@ BOOST_AUTO_TEST_CASE( rt0_2 )
     std::cout << "pts= " << pts << "\n";
     auto eval_at_pts = rt0->evaluate( pts );
     std::cout << "eval at pts= " << eval_at_pts << "\n";
+    auto deriv_at_pts = rt0->derivate( pts );
+    std::cout << "deriv0 at pts= " << deriv_at_pts[0] << "\n";
+    std::cout << "deriv1 at pts= " << deriv_at_pts[1] << "\n";
+    //std::cout << "deriv2 at pts= " << deriv_at_pts[2] << "\n";
 
     BOOST_TEST_MESSAGE( "creating another element :" );
     typedef GeoND<2,Simplex<2, 1, 2> >::point_type point_type;
     // interval
     typedef GeoND<2,Simplex<2, 1, 2> > tria_type;
     tria_type tria;
-    point_type V1; V1( 0 )=1;V1( 1 )=0;
-    point_type V2; V2( 0 )=3;V2( 1 )=0;
-    point_type V3; V3( 0 )=2;V3( 1 )=1;
+    point_type V1; V1( 0 )=-1;V1( 1 )=-1;
+    point_type V2; V2( 0 )=1;V2( 1 )=-1;
+    point_type V3; V3( 0 )=-1;V3( 1 )=1;
     tria.setPoint( 0, V1 );
     tria.setPoint( 1, V2 );
     tria.setPoint( 2, V3 );
@@ -88,7 +95,7 @@ BOOST_AUTO_TEST_CASE( rt0_2 )
     auto gmpc = tria.gm()->preCompute( tria.gm(), bpts );
     auto rtpc = rt0->preCompute( rt0, bpts );
 
-    auto geoctx = tria.gm()->context<vm::GRAD>( tria, gmpc );
+    auto geoctx = tria.gm()->context<vm::GRAD|vm::DIV|vm::KB|vm::POINT|vm::JACOBIAN>( tria, gmpc );
 #if 1
     //auto rtctx = rt0->ctx<vm::GRAD,rt0_type, decltype(*tria.gm()),decltype(*rtpc), tria_type>( rt0, tria.gm(), rtpc );
     //auto rtctx = rt0->ctx( rt0, tria.gm() );
@@ -97,11 +104,76 @@ BOOST_AUTO_TEST_CASE( rt0_2 )
     //auto rtctx = rt0->ctx();
     //auto rtctx = rt0->context<vm::GRAD>( rt0, tria.gm(), rtpc );
 
-    typedef rt0_type::Context<vm::GRAD,rt0_type,tria_type::gm_type,tria_type> rtctx_type;
+    typedef rt0_type::Context<vm::GRAD|vm::DIV|vm::KB|vm::POINT|vm::JACOBIAN,rt0_type,tria_type::gm_type,tria_type> rtctx_type;
     boost::shared_ptr<rtctx_type> rtctx( new rtctx_type( rt0, geoctx, rtpc ) );
+    for( int i = 0;i < 3; ++i )
+        for(int j = 0;j < bpts.size2(); ++j )
+        {
+            std::cout << "rt(" << i << "," << j << ")=" << rtctx->div(i,0,0,j) << "\n";
+        }
 
 #endif
 
+}
+#endif // 0
+
+BOOST_AUTO_TEST_CASE( test_rt1 )
+{
+    BOOST_TEST_MESSAGE( "creating RT1 on reference element :" );
+    using namespace Life;
+    typedef RaviartThomas<1>::apply<2>::type rt1_type;
+    typedef boost::shared_ptr<rt1_type> rt1_ptrtype;
+    rt1_ptrtype rt1( new rt1_type ) ;
+    rt1_type::points_type pts = rt1->points();
+
+    std::cout << "pts= " << pts << "\n";
+    auto eval_at_pts = rt1->evaluate( pts );
+    std::cout << "eval at pts= " << eval_at_pts << "\n";
+#if 0
+    auto deriv_at_pts = rt0->derivate( pts );
+    std::cout << "deriv0 at pts= " << deriv_at_pts[0] << "\n";
+    std::cout << "deriv1 at pts= " << deriv_at_pts[1] << "\n";
+    //std::cout << "deriv2 at pts= " << deriv_at_pts[2] << "\n";
+
+    BOOST_TEST_MESSAGE( "creating another element :" );
+    typedef GeoND<2,Simplex<2, 1, 2> >::point_type point_type;
+    // interval
+    typedef GeoND<2,Simplex<2, 1, 2> > tria_type;
+    tria_type tria;
+    point_type V1; V1( 0 )=-1;V1( 1 )=-1;
+    point_type V2; V2( 0 )=1;V2( 1 )=-1;
+    point_type V3; V3( 0 )=-1;V3( 1 )=1;
+    tria.setPoint( 0, V1 );
+    tria.setPoint( 1, V2 );
+    tria.setPoint( 2, V3 );
+    ublas::vector<double> G1( 2 );
+    G1(0)=2;G1(1)=1./3.;
+    tria.update();
+    BOOST_TEST_MESSAGE( "evaluating the RT0 polynomialset on real element :" );
+
+    auto bpts = tria.gm()->referenceConvex().barycenterFaces();
+    auto gmpc = tria.gm()->preCompute( tria.gm(), bpts );
+    auto rtpc = rt0->preCompute( rt0, bpts );
+
+    auto geoctx = tria.gm()->context<vm::GRAD|vm::DIV|vm::KB|vm::POINT|vm::JACOBIAN>( tria, gmpc );
+#if 1
+    //auto rtctx = rt0->ctx<vm::GRAD,rt0_type, decltype(*tria.gm()),decltype(*rtpc), tria_type>( rt0, tria.gm(), rtpc );
+    //auto rtctx = rt0->ctx( rt0, tria.gm() );
+    //auto gmctx = tria.gm()->context<vm::GRAD>( tria, gmpc );
+    //auto rtctx = rt0->ctx<vm::GRAD,rt0_type,decltype(*geoctx),decltype(*rtpc),tria_type>( rt0, geoctx, rtpc, tria );
+    //auto rtctx = rt0->ctx();
+    //auto rtctx = rt0->context<vm::GRAD>( rt0, tria.gm(), rtpc );
+
+    typedef rt0_type::Context<vm::GRAD|vm::DIV|vm::KB|vm::POINT|vm::JACOBIAN,rt0_type,tria_type::gm_type,tria_type> rtctx_type;
+    boost::shared_ptr<rtctx_type> rtctx( new rtctx_type( rt0, geoctx, rtpc ) );
+    for( int i = 0;i < 3; ++i )
+        for(int j = 0;j < bpts.size2(); ++j )
+        {
+            std::cout << "rt(" << i << "," << j << ")=" << rtctx->div(i,0,0,j) << "\n";
+        }
+
+#endif
+#endif
 }
 
 BOOST_AUTO_TEST_SUITE_END()

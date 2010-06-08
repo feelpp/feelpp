@@ -727,6 +727,12 @@ public:
             }
 
     }
+    void update( element_type const& __e,
+                 precompute_ptrtype const& __pc )
+    {
+        _M_pc = __pc;
+        update( __e );
+    }
 
     /**
      * update information on this context

@@ -29,6 +29,7 @@
 #ifndef __operations_H
 #define __operations_H 1
 
+
 #include <life/lifealg/svd.hpp>
 #include <life/lifepoly/im.hpp>
 #include <life/lifepoly/polynomialset.hpp>
@@ -464,9 +465,30 @@ unite( Poly1<P, Type> const& pset1,
              ublas::range( 0,pset1.coeff().size2() ) ) = pset2.coeff();
 
     M = res_type::polyset_type::toMatrix( M );
+#if 0
+    std::cout << "before SVD M = " << M << "\n";
+    Eigen::MatrixXd A (Eigen::MatrixXd::Zero( M.size1(), M.size2()));
+    for(int i = 0; i < M.size1(); ++i )
+        for(int j = 0; j < M.size2(); ++j )
+        {
+            A(i,j) = M(i,j);
+        }
+    Eigen::SVD<Eigen::MatrixXd> svdOfA(A);
+    std::cout << "SVDofA.S() = " << svdOfA.singularValues() << "\n";
+    std::cout << "SVDofA.V() = " << svdOfA.matrixV().transpose() << "\n";
+#endif
     SVD<ublas::matrix<value_type> > svd( M );
-
+#if 0
+    //std::cout << "S() = " << svd.S() << "\n";
+    ublas::matrix<value_type> m (svdOfA.singularValues().size(), M.size2() );
+    for(int i = 0; i < m.size1(); ++i )
+        for(int j = 0; j < m.size2(); ++j )
+        {
+            m(i,j) = svdOfA.matrixV()( j, i );
+        }
+#else
     ublas::matrix<value_type> m (ublas::subrange( svd.V(), 0, svd.S().size(), 0, M.size2() ) );
+#endif
     return res_type( P(), res_type::polyset_type::toType( m ), true  );
 }
 
