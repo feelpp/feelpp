@@ -313,11 +313,15 @@ Beam<nDim,nOrder>::run()
     meshmove.apply( Xh->mesh(), u );
 
     element_type w( Xh, "w" );
-    w = vf::project( Xh,
-                     elements(Xh->mesh()),
-                     P() );
 
-    this->exportResults( 1, u, w );
+    for(int i = 1; i < 5; ++i )
+    {
+        w = vf::project( Xh,
+                         elements(Xh->mesh()),
+                         P() );
+        this->exportResults( i, u, w );
+        meshmove.apply( Xh->mesh(), u );
+    }
 
     std::cout << "||v||_2 = " << v.l2Norm() << " (P() before move)\n";
     std::cout << "||w||_2 = " << w.l2Norm() << " (P() after move)\n";

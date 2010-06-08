@@ -328,7 +328,9 @@ public:
     /**
      * get the \p i -th global value
      */
-    value_type globalValue( size_type i ) const { return M_global_values( i ); }
+    value_type globalValue( size_type i ) const
+        { return this->operator()( i ); }
+    //{ return M_global_values( i ); }
 
     //@
 
