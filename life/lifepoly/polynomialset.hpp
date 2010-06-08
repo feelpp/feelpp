@@ -421,14 +421,15 @@ public:
     Polynomial<Poly, PolySetType> polynomial( uint16_type i  ) const
     {
         size_type dim_p = this->polynomialDimension();
-        matrix_type coeff( nComponents*nComponents, _M_coeff.size2() );
-        for ( int c = 0; c < nComponents; ++c )
+        matrix_type coeff( nComponents, _M_coeff.size2() );
+        //for ( int c = 0; c < nComponents; ++c )
             {
                 ublas::project( coeff,
-                                ublas::range( c*nComponents, c*nComponents+nComponents ),
+                                ublas::range( 0, nComponents ),
                                 ublas::range( 0, _M_coeff.size2() ) ) =
                     ublas::project( _M_coeff,
-                                    ublas::range( c*dim_p+nComponents*i, c*dim_p+nComponents*i+nComponents ),
+                                    //ublas::range( c*dim_p+nComponents*i, c*dim_p+nComponents*i+nComponents ),
+                                    ublas::range( nComponents*i, nComponents*(i+1) ),
                                     ublas::range( 0, _M_coeff.size2() ) );
             }
         return Polynomial<Poly, PolySetType> ( Poly(), coeff, true );
@@ -936,7 +937,7 @@ public:
             }
             return geopc;
         }
-    template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType>
+    template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g = context_v>
     class Context
     {
     public:
@@ -964,7 +965,7 @@ public:
         typedef typename reference_element_type::value_type value_type;
 
         typedef ElementType geometric_element_type;
-        typedef typename Geo_t::template Context<context_v, ElementType> geometric_mapping_context_type;
+        typedef typename Geo_t::template Context<context_g, ElementType> geometric_mapping_context_type;
         typedef boost::shared_ptr<geometric_mapping_context_type> geometric_mapping_context_ptrtype;
 
         typedef typename node<value_type>::type node_type;
@@ -973,6 +974,7 @@ public:
         typedef value_type dn_type;
         typedef value_type grad_type;
         typedef value_type div_type;
+        typedef points_type matrix_node_t_type;
 
         typedef typename matrix_type::value_type phi_type;
         typedef typename matrix_type::value_type dphi_type;
@@ -1160,6 +1162,7 @@ public:
 
             _M_gmc( __gmc ),
             _M_phi( __pc->phi() ),
+            _M_gradphi( __pc->grad() ),
             _M_dn(),
             _M_grad()
         {
@@ -1223,10 +1226,9 @@ public:
         void transformationEquivalence( geometric_mapping_context_ptrtype const& __gmc,
                                         mpl::bool_<false> )
             {
-                std::cout << "do transformation\n";
                 //_M_ref_ele->transform( __gmc, phi, _M_phi, _M_gradphi, _M_hessphi );
                 _M_ref_ele->transform( __gmc, _M_pc.get(), _M_phi,
-                                       _M_gradphi, ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value ),
+                                       _M_gradphi, ( vm::has_div<context>::value || vm::has_curl<context>::value || vm::has_grad<context>::value || vm::has_first_derivative<context>::value ),
                                        _M_hessphi, ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
                     );
             }
@@ -1235,14 +1237,20 @@ public:
                      precompute_ptrtype const& __pc )
         {
             _M_pc = __pc;
-            _M_phi = __pc->phi();
+
             //precompute_type* __pc = _M_pc.get().get();
             update( __gmc );
         }
         void update( geometric_mapping_context_ptrtype const& __gmc )
         {
+            _M_phi = _M_pc->get()->phi();
+            _M_gradphi = _M_pc->get()->grad();
             static const bool do_opt= (nOrder<=1) && (Geo_t::nOrder==1) && (convex_type::is_simplex);
             transformationEquivalence( __gmc, mpl::bool_<Basis_t::isTransformationEquivalent>() );
+#if 0
+            for( int i = 0; i < _M_gradphi.num_elements(); ++i )
+                std::cout << "_M_gradphi[" << i << "]=" << *(_M_gradphi.data()+i) << "\n";
+#endif
             update( __gmc, mpl::int_<rank>(), mpl::bool_<do_opt>() );
             //update( __gmc, mpl::int_<rank>(), mpl::bool_<false>() );
         }
@@ -1466,11 +1474,13 @@ public:
                     typedef typename boost::multi_array<value_type,4>::index_range range;
 
                     for ( uint16_type ii = 0; ii < I; ++ii )
-                        for ( uint16_type c = 0; c < nComponents1; ++c )
+                    {
+                        int ncomp= (reference_element_type::is_product?nComponents1:1);
+                        for ( uint16_type c = 0; c < ncomp; ++c )
                         {
                             uint16_type i = I*c + ii;
-                            uint16_type c1 = c;
-                            //for ( uint16_type c1 = 0; c1 < NDim; ++c1 )
+                            //uint16_type c1 = c;
+                            for ( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
                                 {
                                     //if ( c1 == c )
 
@@ -1488,7 +1498,8 @@ public:
                                                                 {
                                                                     matrix_type const& Bq = thegmc->B( q );
                                                                     //gradreal[l][q]  += Bq( l, p ) *gradref[p][q];
-                                                                    _M_grad[i][c1][l][q] += Bq( l, p ) * __pc->grad( i, c1, p, q );
+                                                                    //_M_grad[i][c1][l][q] += Bq( l, p ) * __pc->grad( i, c1, p, q );
+                                                                    _M_grad[i][c1][l][q] += Bq( l, p ) * _M_gradphi[i][c1][p][q];
                                                                 }
                                                         }
                                                 }
@@ -1498,6 +1509,7 @@ public:
                                         {
                                             for ( uint16_type q = 0; q < Q; ++q )
                                                 {
+
                                                     _M_div[i][q] +=  _M_grad[i][c1][c1][q];
                                                 }
                                         }
@@ -1543,7 +1555,7 @@ public:
                                             }
                                     }
                         }
-
+                    }
                 } // grad
         }
         void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_<true> )
@@ -1571,11 +1583,16 @@ public:
                     typedef typename boost::multi_array<value_type,4>::index_range range;
 
                     for ( uint16_type ii = 0; ii < I; ++ii )
-                        for ( uint16_type c = 0; c < nComponents1; ++c )
+                    {
+                        int ncomp= (reference_element_type::is_product?nComponents1:1);
+                        for ( uint16_type c = 0; c < ncomp; ++c )
                         {
+                            //std::cout << "component " << c << "\n";
                             uint16_type i = I*c + ii;
-                            uint16_type c1 = c;
-                            //for ( uint16_type c1 = 0; c1 < NDim; ++c1 )
+                            //uint16_type c1 = c;
+
+
+                            for ( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
                                 {
                                     //if ( c1 == c )
 
@@ -1586,11 +1603,24 @@ public:
                                                         {
                                                             matrix_type const& Bq = thegmc->B( 0 );
                                                             value_type g =
-                                                                Bq( l, p ) * __pc->grad( i, c1, p, 0 );
+                                                                Bq( l, p ) * _M_gradphi[i][c1][p][ 0];
+#if 0
+                                                            std::cout << "grad0["<< i << "," << c1 << ","
+                                                                      << p << "," << 0 << "] = "
+                                                                      << _M_gradphi[i][c1][p][0]
+                                                                      << " B(" << l << "," << p
+                                                                      << ")=" << Bq(l,p) << "\n";
+#endif
+                                                                //Bq( l, p ) * __pc->grad( i, c1, p, 0 );
                                                             for ( uint16_type q = 0; q < Q; ++q )
                                                                 {
                                                                     //gradreal[l][q]  += Bq( l, p ) *gradref[p][q];
                                                                     _M_grad[i][c1][l][q] += g;
+#if 0
+                                                                    std::cout << "grad1["<< i << "," << c1 << ","
+                                                                              << l << "," << q << "] = "
+                                                                              << _M_grad[i][c1][l][q] << "\n";
+#endif
                                                                 }
                                                         }
                                                 }
@@ -1601,10 +1631,16 @@ public:
                                             for ( uint16_type q = 0; q < Q; ++q )
                                                 {
                                                     _M_div[i][q] +=  _M_grad[i][c1][c1][q];
+#if 0
+                                                    std::cout << "grad2["<< i << "," << c1 << ","
+                                                              << c1 << "," << q << "] = "
+                                                              << _M_grad[i][c1][c1][q] << "\n";
+                                                    std::cout << "div["<< i << "," << q << "] = " << _M_div[i][q]<< "\n";
+#endif
                                                 }
                                         }
                                 } // c1
-                            // update divergence if needed
+                            // update curl if needed
                             if ( vm::has_curl<context>::value )
                                 {
                                     if ( NDim == 2 )
@@ -1624,8 +1660,8 @@ public:
                                                 }
                                         }
                                 }
-
                         }
+                    }
 
                     // we need the normal derivative
                     if ( vm::has_first_derivative_normal<context>::value )
@@ -1660,6 +1696,15 @@ public:
          */
         geometric_mapping_context_ptrtype const& gmContext() const { return _M_gmc; }
 
+        //! \return the element id
+        size_type eId() const { return _M_gmc->id(); }
+
+        //! \return the points in the reference element
+        matrix_node_t_type const& xRefs() const { return _M_gmc->xRefs(); }
+
+        //! \return the precomputation of the basis function in the reference element
+        precompute_ptrtype const& pc() const { return _M_pc.get(); }
+
         boost::multi_array<value_type,4> const& id() const { return _M_phi; }
 
         value_type const& id( uint32_type i,
@@ -1691,6 +1736,11 @@ public:
                                uint32_type q,
                                mpl::int_<2> ) const
         { return _M_phi[i][c1][c2][q]; }
+
+        value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
+        {
+            return _M_grad[i][c1][c2][q];
+        }
 
         value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
@@ -1898,7 +1948,7 @@ public:
         boost::multi_array<value_type,4> _M_hessian;
     };
 
-    template<size_type context_v, typename BasisType, typename GeoType, typename ElementType>
+    template<size_type context_v, size_type context_g, typename BasisType, typename GeoType, typename ElementType>
     boost::shared_ptr<Context<context_v,BasisType, GeoType, ElementType> >
     context( boost::shared_ptr<BasisType> b, boost::shared_ptr<GeoType> gm, precompute_ptrtype& pc )
         {
@@ -1909,6 +1959,16 @@ public:
                                                                          pc ) );
         }
 
+    template<int contextv, int contextg, typename BasisType, typename GeoType,typename ElementType>
+    boost::shared_ptr<Context<contextv,BasisType, GeoType, ElementType> >
+    ctx( boost::shared_ptr<BasisType> const& b,
+         boost::shared_ptr<typename GeoType::template Context<contextg, ElementType> > const& gm,
+         precompute_ptrtype pc, ElementType& e )
+        {
+            typedef Context<contextv,BasisType, GeoType, ElementType> ctx_type;
+            return boost::shared_ptr<ctx_type>(new ctx_type( b, gm, pc ) );
+
+        }
     template<int contextv, typename BasisType, typename GeoType,typename ElementType>
     boost::shared_ptr<Context<contextv,BasisType, GeoType, ElementType> >
     ctx( boost::shared_ptr<BasisType> const& b,

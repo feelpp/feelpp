@@ -75,10 +75,17 @@ public:
         :
         super( p )
     {
+#if 0
+        std::cout << "p.coeff = " << p.coeff() << "\n";
+        std::cout << "p.basis.coeff = " << p.basis().coeff() << "\n";
+        std::cout << "q.coeff = " << q.coeff() << "\n";
+#endif
         //ublas::matrix<value_type> m ( ublas::prod( q.coeff(), ublas::trans( p.basis().coeff() ) ) );
-        //ublas::matrix<value_type> m ( ublas::prod( q.coeff(), p.basis().coeff() ) );
-        ublas::matrix<value_type> m ( ublas::prod( q.coeff(), p.coeff() ) );
-        std::cout << "[IntegralMoment] m = " << m << "\n";
+        typename space_type::Pkp1_v_type l;
+        ublas::matrix<value_type> m ( ublas::prod( q.coeff(), ublas::trans(l.coeff() ) ));
+
+        //ublas::matrix<value_type> m ( ublas::prod( q.coeff(), p.coeff() ) );
+        //std::cout << "[IntegralMoment] m = " << m << "\n";
         this->setCoefficient( m );
     }
 

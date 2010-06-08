@@ -31,7 +31,7 @@
 #define __RaviartThomas_H 1
 
 #include <boost/ptr_container/ptr_vector.hpp>
-
+#include <boost/assign/std/vector.hpp> // for 'operator+=()'
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
@@ -71,14 +71,15 @@ struct times_x
         _M_p ( p ),
         _M_c( c )
     {
-        std::cout << "component : " << c << std::endl;
+        //std::cout << "component : " << c << std::endl;
     }
     typename ublas::vector<value_type> operator() ( points_type const& __pts ) const
     {
+#if 0
         std::cout << "times_x(pts) : " << __pts << std::endl;
         std::cout << "times_x(pts) : " << _M_p.evaluate(__pts) << std::endl;
         std::cout << "times_x(coeff) : " << _M_p.coefficients() << std::endl;
-
+#endif
         // __pts[c] * p( __pts )
         return ublas::element_prod( ublas::row( __pts, _M_c ),
                                     ublas::row( _M_p.evaluate( __pts ), 0 ) );
@@ -144,27 +145,31 @@ public:
         uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
         uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
         uint16_type dim_Pkm1 = (nOrder==1)?0:convex_type::polyDims( nOrder-2 );
+#if 0
         std::cout << "[RTPset] dim_Pkp1 = " << dim_Pkp1 << "\n";
         std::cout << "[RTPset] dim_Pk   = " << dim_Pk << "\n";
         std::cout << "[RTPset] dim_Pkm1 = " << dim_Pkm1 << "\n";
-
+#endif
         // (P_k)^d
         Pkp1_v_type Pkp1_v;
         vectorial_polynomialset_type Pk_v( Pkp1_v.polynomialsUpToDimension( dim_Pk ) );
+#if 0
         std::cout << "[RTPset] Pk_v =" << Pk_v.coeff() << "\n";
-
+#endif
         // P_k
         Pkp1_s_type Pkp1;
         scalar_polynomialset_type Pk ( Pkp1.polynomialsUpToDimension( dim_Pk ) );
+#if 0
         std::cout << "[RTPset] Pk =" << Pk.coeff() << "\n";
         std::cout << "[RTPset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
+#endif
 
         // x P_k \ P_{k-1}
         IMGeneral<convex_type::nDim, 2*nOrder,value_type> im;
-        std::cout << "[RTPset] im.points() = " << im.points() << std::endl;
+        //std::cout << "[RTPset] im.points() = " << im.points() << std::endl;
         ublas::matrix<value_type> xPkc( nComponents*(dim_Pk-dim_Pkm1),Pk.coeff().size2() );
 
-        std::cout << "[RTPset] before xPkc = " << xPkc << "\n";
+        //std::cout << "[RTPset] before xPkc = " << xPkc << "\n";
         for( int l = dim_Pkm1, i = 0; l < dim_Pk; ++l, ++i )
             {
                 for( int j = 0; j < convex_type::nDim; ++j )
@@ -178,13 +183,13 @@ public:
             }
 
 
-        std::cout << "[RTPset] after xPkc = " << xPkc << "\n";
+        //std::cout << "[RTPset] after xPkc = " << xPkc << "\n";
         vectorial_polynomialset_type xPk( typename super::basis_type(), xPkc, true );
-        std::cout << "[RTPset] here 1\n";
+        //std::cout << "[RTPset] here 1\n";
         // (P_k)^d + x P_k
-        std::cout << "[RTPset] RT Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
+        //std::cout << "[RTPset] RT Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
         this->setCoefficient( unite( Pk_v, xPk ).coeff(), true );
-        std::cout << "[RTPset] here 2\n";
+        //std::cout << "[RTPset] here 2\n";
     }
 
 
@@ -253,7 +258,7 @@ public:
         _M_pts( nDim, numPoints ),
         _M_fset( primal )
     {
-#if 1
+#if 0
         std::cout << "Raviart-Thomas finite element(dual): \n";
         std::cout << " o- dim   = " << nDim << "\n";
         std::cout << " o- order = " << nOrder << "\n";
@@ -283,27 +288,38 @@ public:
                         p+=Gt.size2();
                     }
             }
-        std::cout << "[RT Dual] done 1\n";
+        //std::cout << "[RT Dual] done 1\n";
         // compute  \f$ \ell_e( U ) = (U * n[e]) (edge_pts(e)) \f$
         typedef Functional<primal_space_type> functional_type;
         std::vector<functional_type> fset;
-        double j[3] = {2.8284271247461903,2.0,2.0};
+
+        // jacobian of the transformation from reference face to the face in the
+        // reference element
+        std::vector<double> j;
+        {
+            // bring 'operator+=()' into scope
+            using namespace boost::assign;
+            if ( nDim == 2 )
+                j += 2.8284271247461903,2.0,2.0;
+            if ( nDim == 3 )
+                j+= 3.464101615137754, 2, 2, 2;
+        }
 
         //for( int k = 0; k < nDim; ++k )
+        {
+            // loopover the each edge entities and add the correponding functionals
+            for ( int e = _M_convex_ref.entityRange( nDim-1 ).begin();
+                  e < _M_convex_ref.entityRange( nDim-1 ).end();
+                  ++e )
             {
-                // loopover the each edge entities and add the correponding functionals
-                for ( int e = _M_convex_ref.entityRange( nDim-1 ).begin();
-                      e < _M_convex_ref.entityRange( nDim-1 ).end();
-                      ++e )
-                    {
-                        typedef Life::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
-                        node_type dir = _M_convex_ref.normal(e)*j[e];
-                        //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
-                        dcpe_type __dcpe( primal, dir, pts_per_face[e] );
-                        std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
-                    }
+                typedef Life::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
+                node_type dir = _M_convex_ref.normal(e)*j[e];
+                //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
+                dcpe_type __dcpe( primal, dir, pts_per_face[e] );
+                std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
             }
-        std::cout << "[RT Dual] done 2" << std::endl;
+        }
+        //std::cout << "[RT Dual] done 2" << std::endl;
         if ( nOrder-1 > 0 )
             {
                 // we need more equations : add interior moment
@@ -315,15 +331,20 @@ public:
                 Pkp1_v_type Pkp1;
 
                 vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
+                //std::cout << "Pkm1 = " << Pkm1.coeff() << "\n";
+                //std::cout << "Primal = " << primal.coeff() << "\n";
                 for( int i = 0; i < Pkm1.polynomialDimension(); ++i )
                     {
                         typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
+                        //typedef functional::IntegralMoment<Pkp1_v_type, vectorial_polynomialset_type> fim_type;
+                        //std::cout << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
                         fset.push_back( fim_type( primal, Pkm1.polynomial( i ) ) );
                     }
             }
-        std::cout << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
+        //std::cout << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
         _M_fset.setFunctionalSet( fset );
-        std::cout << "[RT Dual] done 4\n";
+//        std::cout << "[RT DUAL matrix] mat = " << _M_fset.rep() << "\n";
+        //std::cout << "[RT Dual] done 4\n";
 
     }
 
@@ -332,7 +353,7 @@ public:
 
     matrix_type operator()( primal_space_type const& pset ) const
     {
-        std::cout << "RT matrix = " << _M_fset( pset ) << std::endl;
+        //std::cout << "RT matrix = " << _M_fset( pset ) << std::endl;
         return _M_fset( pset );
     }
 
@@ -425,6 +446,7 @@ public:
         super( dual_space_type( primal_space_type() ) ),
         _M_refconvex()
     {
+#if 0
         std::cout << "[RT] nPtsPerEdge = " << nbPtsPerEdge << "\n";
         std::cout << "[RT] nPtsPerFace = " << nbPtsPerFace << "\n";
         std::cout << "[RT] numPoints = " << numPoints << "\n";
@@ -435,6 +457,7 @@ public:
         std::cout << "[RT] pts : " << this->points() << "\n";
         std::cout << "[RT] eval at pts : " << this->evaluate( this->points() ) << "\n";
         std::cout << "[RT] is_product : " << is_product << "\n";
+#endif
     }
     RaviartThomas( RaviartThomas const & cr )
         :
@@ -496,18 +519,24 @@ public:
 
         )
         {
-            std::cout << "============================================================\n";
-            std::cout << "calling transform\n";
-
             //phi_t = phi; return ;
-            typename GMContext::gm_type::matrix_type const& B = gmc.B( 0 );
-            typename GMContext::gm_type::matrix_type JB( gmc.J(0)*B );
-            typename GMContext::gm_type::matrix_type B2( ublas::prod(JB,B) );
+            typename GMContext::gm_type::matrix_type const B = gmc.B( 0 );
+            typename GMContext::gm_type::matrix_type const K = gmc.K( 0 );
+            typename GMContext::gm_type::matrix_type JB( K/gmc.J(0) );
+#if 0
+            std::cout << "K= " << gmc.K(0) << "\n";
+            std::cout << "B= " << B << "\n";
+            std::cout << "J= " << gmc.J(0) << "\n";
+            std::cout << "JB= " << JB << "\n";
+#endif
             std::fill( phi_t.data(), phi_t.data()+phi_t.num_elements(), value_type(0));
             if ( do_gradient )
+            {
+                //std::cout << "compute gradient\n";
                 std::fill( g_phi_t.data(), g_phi_t.data()+g_phi_t.num_elements(), value_type(0));
+            }
             if ( do_hessian )
-                std::fill( h_phi_t.data(), h_phi_t.data()+g_phi_t.num_elements(), value_type(0));
+                std::fill( h_phi_t.data(), h_phi_t.data()+h_phi_t.num_elements(), value_type(0));
 
             const uint16_type Q = gmc.nPoints();//_M_grad.size2();
 
@@ -516,6 +545,7 @@ public:
             {
                 for ( uint16_type l = 0; l < nDim; ++l )
                 {
+
                     for ( uint16_type p = 0; p < nDim; ++p )
                     {
                         for ( uint16_type q = 0; q < Q; ++q )
@@ -523,29 +553,45 @@ public:
                             // \warning : here the transformation depends on the
                             // numbering of the degrees of freedom of the finite
                             // element
-                            phi_t[i][l][0][q] += gmc.J( 0 ) * B( l, p ) * pc.phi(i,l,0,q);
-                            if ( do_gradient )
-                            {
-                                for ( uint16_type j = 0; j < nDim; ++j )
-                                {
-                                    for ( uint16_type m = 0; m < nDim; ++m )
-                                    {
-                                        g_phi_t[i][l][p][q] += B2( p, j ) * pc.grad(i,j,m,q);
-                                    }
-                                }
-                            }
-                            if ( do_hessian )
-                            {
-                            }
+                            //phi_t[i][l][0][q] =  pc.phi(i,l,0,q);
+                            phi_t[i][l][0][q] += JB( l, p ) * pc.phi(i,p,0,q);
+                            //phi_t[i][l][0][q] = gmc.J( 0 ) * B( p, l ) * pc.phi(i,p,0,q);
+                            //std::cout << "pc[" << i << "][" << l << "][" << q << "]=" << pc.phi(i,l,0,q) << "\n";
+                            //std::cout << "phi_t[" << i << "][" << l << "][" << q << "]=" << phi_t[i][l][0][q] << "\n";
                         }
                     }
                 }
+                //if ( do_gradient )
+                {
+
+                    for ( uint16_type p = 0; p < nDim; ++p )
+                    {
+                        for ( uint16_type r = 0; r < nDim; ++r )
+                        {
+                            for ( uint16_type s = 0; s < Q; ++s )
+                            {
+                                g_phi_t[i][p][r][s] = 0;
+                                for ( uint16_type q = 0; q < nDim; ++q )
+                                {
+                                    g_phi_t[i][p][r][s] += JB( p, q ) * pc.grad(i,q,r,s);
+                                    //g_phi_t[i][p][r][s] = pc.grad(i,p,r,s);
+
+                                    //std::cout << "J G[" << i << "][" << q << "][" << r << "][" << s << "=" << JB( p, q ) * pc.grad(i,q,r,s) << "\n";
+                                }
+                            }
+                            //std::cout << "g_phi_t[" << i << "][" << p << "][" << r << "][" << 0 << "=" << g_phi_t[i][p][r][0] << "\n";
+
+                        }
+                    }
+                }
+                if ( do_hessian )
+                {
+                }
             }
-            std::cout << "============================================================\n";
         }
 
 
-    //@}
+//@}
 
 
 
