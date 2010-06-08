@@ -413,7 +413,7 @@ public:
     static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
                                            reference_convex_type::numEdges*nbPtsPerEdge );
 
-
+    static const uint16_type nLocalDof = dual_space_type::nLocalDof;
     //@}
 
     /** @name Constructors, destructor
@@ -477,7 +477,6 @@ public:
      */
     //@{
 
-#if 0
     template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
     static void transform( boost::shared_ptr<GMContext> gmc,  boost::shared_ptr<PC> const& pc,
                            Phi& phi_t,
@@ -497,8 +496,13 @@ public:
 
         )
         {
+            std::cout << "============================================================\n";
+            std::cout << "calling transform\n";
+
             //phi_t = phi; return ;
             typename GMContext::gm_type::matrix_type const& B = gmc.B( 0 );
+            typename GMContext::gm_type::matrix_type JB( gmc.J(0)*B );
+            typename GMContext::gm_type::matrix_type B2( ublas::prod(JB,B) );
             std::fill( phi_t.data(), phi_t.data()+phi_t.num_elements(), value_type(0));
             if ( do_gradient )
                 std::fill( g_phi_t.data(), g_phi_t.data()+g_phi_t.num_elements(), value_type(0));
@@ -508,7 +512,7 @@ public:
             const uint16_type Q = gmc.nPoints();//_M_grad.size2();
 
             // transform
-            for ( uint16_type i = numPoints; i < nLocalDof; i+=nDim )
+            for ( uint16_type i = 0; i < nLocalDof; ++i )
             {
                 for ( uint16_type l = 0; l < nDim; ++l )
                 {
@@ -519,12 +523,15 @@ public:
                             // \warning : here the transformation depends on the
                             // numbering of the degrees of freedom of the finite
                             // element
-                            phi_t[i+l][0][0][q] += B( l, p ) * pc.phi(i+p,0,0,q);
+                            phi_t[i][l][0][q] += gmc.J( 0 ) * B( l, p ) * pc.phi(i,l,0,q);
                             if ( do_gradient )
                             {
                                 for ( uint16_type j = 0; j < nDim; ++j )
                                 {
-                                    g_phi_t[i+l][0][p][q] += B( l, j ) * pc.grad(i+j,0,p,q);
+                                    for ( uint16_type m = 0; m < nDim; ++m )
+                                    {
+                                        g_phi_t[i][l][p][q] += B2( p, j ) * pc.grad(i,j,m,q);
+                                    }
                                 }
                             }
                             if ( do_hessian )
@@ -534,8 +541,9 @@ public:
                     }
                 }
             }
+            std::cout << "============================================================\n";
         }
-#endif
+
 
     //@}
 
