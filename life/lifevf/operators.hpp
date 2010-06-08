@@ -212,6 +212,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             typedef typename element_type::functionspace_type functionspace_type; \
             typedef typename functionspace_type::reference_element_type* fe_ptrtype; \
             typedef typename functionspace_type::reference_element_type fe_type; \
+            typedef typename functionspace_type::geoelement_type geoelement_type; \
+            typedef typename functionspace_type::gm_type gm_type; \
             typedef typename functionspace_type::value_type value_type; \
             static const uint16_type rank = fe_type::rank;              \
             static const uint16_type nComponents1 = fe_type::nComponents1; \
@@ -287,8 +289,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                   mpl::identity<Shape<gmc_type::NDim, Tensor2, false> > >::type>::type::type shape; \
                 typedef typename fe_type::PreCompute pc_type;           \
                 typedef boost::shared_ptr<pc_type> pc_ptrtype;          \
-                typedef typename fe_type::geometric_element_type geometric_element_type; \
-                typedef typename fe_type::template Context<VF_OPERATOR_CONTEXT( O ), fe_type, Geo_t,geometric_element_type> ctx_type; \
+                typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type; \
                 typedef boost::shared_ptr<ctx_type> ctx_ptrtype;        \
                                                                         \
                                                                         \
@@ -322,8 +323,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                           VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), \
                                                                    fusion::at_key<basis_context_key_type>( feu ).get() ) ) ), \
                     _M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
-                    _M_pc( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), \
+                    _M_pc( new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() )), \
                     _M_pcf(),                                           \
+                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), (new ctx_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom ), (pc_ptrtype const&)_M_pc ) ) ) ), \
                     _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_did_init( false ),                                \
                     _M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh() ==expr.e().functionSpace()->mesh().get()) \
@@ -341,8 +343,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     _M_fec( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TEST( T ), \
                                                      fusion::at_key<basis_context_key_type>( fev ).get() ) ), \
                     _M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
-                    _M_pc( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), \
+                    _M_pc( new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ), \
                     _M_pcf(),                                           \
+                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), (new ctx_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom ), (pc_ptrtype const&)_M_pc ) ) ) ), \
                     _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_did_init( false ),                                \
                     _M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh() ==expr.e().functionSpace()->mesh().get()) \
@@ -357,8 +360,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     _M_expr( expr ),                                    \
                     _M_geot( geom ),                                    \
                     _M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
-                    _M_pc( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), \
+                    _M_pc( new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ), \
                     _M_pcf(),                                           \
+                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), ( new ctx_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom ), (pc_ptrtype const&)_M_pc ) ) ) ), \
                     _M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_did_init( false ),                                \
                     _M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh() ==expr.e().functionSpace()->mesh().get()) \
@@ -413,21 +417,23 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                         \
                     uint16_type face = fusion::at_key<key_type>( geom )->faceId(); \
                     uint16_type perm = fusion::at_key<key_type>( geom )->permutation().value(); \
+                    M_ctx->update( fusion::at_key<key_type>( geom ), (pc_ptrtype const&) _M_pcf[face][perm] ); \
                     if (_M_same_mesh)                                   \
-                        _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), *_M_pcf[face][perm], _M_loc ); \
+                        _M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, _M_loc ); \
                     else  {                                             \
                         matrix_node_type __ptsreal = _M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<2>()); \
-                        _M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( *fusion::at_key<key_type>( geom ), *_M_pcf[face][perm], __ptsreal, _M_loc ); \
+                        _M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( *M_ctx, __ptsreal, _M_loc ); \
                     }                                                   \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<true> )      \
                 {                                                       \
                     std::fill( _M_loc.data(), _M_loc.data()+_M_loc.num_elements(), value_type( 0 ) ); \
+                    M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&)_M_pc ); \
                     if (_M_same_mesh) \
-                        _M_expr.e().VF_OPERATOR_SYMBOL( O )( *fusion::at_key<key_type>( geom ), _M_pc, _M_loc ); \
+                        _M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, _M_loc ); \
                     else {                                              \
                         matrix_node_type __ptsreal = _M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<1>()); \
-                        _M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( *fusion::at_key<key_type>( geom ), _M_pc, __ptsreal, _M_loc ); \
+                        _M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( *M_ctx, __ptsreal, _M_loc ); \
                     }                                                   \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<false> )     \
@@ -530,8 +536,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 Geo_t const& _M_geot;                                   \
                 basis_context_ptrtype _M_fec;                           \
                 const uint16_type _M_np;                                \
-                pc_type _M_pc;                                          \
+                pc_ptrtype _M_pc;                                       \
                 std::vector<std::map<uint16_type, pc_ptrtype> > _M_pcf; \
+                ctx_ptrtype M_ctx;                                      \
                 array_type _M_loc;                                      \
                 /*typename element_type::BOOST_PP_CAT( VF_OPERATOR_TERM( O ), _type) _M_loc;*/ \
                 bool M_did_init;                                        \
