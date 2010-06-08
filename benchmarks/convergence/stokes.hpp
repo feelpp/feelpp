@@ -73,7 +73,7 @@ makeOptions()
         ("hsize", Life::po::value<double>()->default_value( 0.1 ), "first h value to start convergence")
         ("bctype", Life::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
         ("bccoeff", Life::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("penalisation", Life::po::value<double>()->default_value( 1.0 ), "penalisation parameter for equal order approximation")
+        ("penalisation", Life::po::value<double>()->default_value( 1e-3 ), "penalisation parameter for equal order approximation")
         ("stab", Life::po::value<bool>()->default_value( true ), "0 = no stabilisation for equal order approx., 1 = stabilisation for equal order approx.")
 
         ("export-matlab", "export matrix and vectors in matlab" )
@@ -108,6 +108,7 @@ makeAbout()
 
 namespace Life
 {
+using namespace vf;
 /**
  * \class Stokes class
  * \brief solves the stokes equations
@@ -173,6 +174,7 @@ public:
 
 private:
 
+
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
@@ -182,7 +184,9 @@ private:
 
     backend_ptrtype M_backend;
     double meshSize;
-
+    double M_stabP;
+    space_ptrtype Xh;
+    sparse_matrix_ptrtype D;
     double mu;
     double M_lambda;
     double penalbc;
@@ -190,6 +194,11 @@ private:
 
     boost::shared_ptr<export_type> exporter;
     typename export_type::timeset_ptrtype timeSet;
+    mesh_ptrtype mesh;
+private:
+
+    void addStabilisation(element_1_type& p, element_1_type& q );
+
 }; // Stokes
 
 template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -198,6 +207,7 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::Stokes( int argc, char** argv, AboutData 
     super( argc, argv, ad, od ),
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].template as<double>() ),
+    M_stabP( this->vm()["penalisation"].template as<double>()/math::pow(double(OrderU), 7./2.) ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
 
@@ -207,11 +217,11 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::Stokes( int argc, char** argv, AboutData 
     {
     case 1:
     case 2:
-        h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.02:0.025:0.06" );
+        h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.02:0.025:0.1" );
         break;
 
     case 3:
-        h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.035:0.025:0.06" );
+        h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.035:0.025:0.2" );
         break;
     }
     this->
@@ -225,7 +235,10 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::Stokes( int argc, char** argv, AboutData 
     std::vector<std::string> funcs;
     depend.push_back(h);
     std::ostringstream oss;
-    oss << "h**" << boost::lexical_cast<std::string>( OrderP+1  );
+    if ( OrderP == OrderU )
+        oss << "h**" << boost::lexical_cast<std::string>( OrderP  );
+    else
+        oss << "h**" << boost::lexical_cast<std::string>( OrderP+1  );
     funcs.push_back(oss.str());
     oss.str("");
     std::vector<std::string> funcs2;
@@ -242,7 +255,25 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::Stokes( int argc, char** argv, AboutData 
     M_beta = this->vm()["beta"].template as<value_type>();
 }
 
+template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
+void
+Stokes<Dim, _OrderU, _OrderP, Entity>::addStabilisation( element_1_type& p,
+                                                         element_1_type& q )
+{
 
+    if ( is_equal_order && this->vm()["stab"].template as<bool>() )
+    {
+        boost::timer t;
+        Log() << "[assembly] add stabilisation terms for equal order approximation ( orderU="
+              << OrderU << ", orderP=" << OrderP << " )\n";
+        size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
+        form2( Xh, Xh, D, _pattern=pattern )  +=
+            integrate( internalfaces(mesh),
+                       M_stabP*hFace()*hFace()*(trans(jumpt(gradt(p)))*jump(grad(q))) );
+        Log() << "[assembly] form2 D stabilisation terms in " << t.elapsed() << "s\n"; t.restart();
+    }
+
+}
 
 template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
@@ -265,20 +296,20 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
      * length = meshSize
      */
     Log() << "creating mesh with hsize=" << meshSize << "\n";
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name="square",
-                                                      _shape="hypercube",
-                                                      _dim=Dim,
-                                                      _h=meshSize,
-                                                      _xmin=-0.5,_xmax=1.,
-                                                      _ymin=-0.5,_ymax=1.5 ) );
+    mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=domain( _name="square",
+                                         _shape="hypercube",
+                                         _dim=Dim,
+                                         _h=meshSize,
+                                         _xmin=-0.5,_xmax=1.,
+                                         _ymin=-0.5,_ymax=1.5 ) );
 
     Log() << "mesh created in " << t.elapsed() << "s\n"; t.restart();
 
     /*
      * The function space and some associate elements are then defined
      */
-    space_ptrtype Xh = space_type::New( mesh );
+    Xh = space_type::New( mesh );
 
     element_type U( Xh, "u" );
     element_type E( Xh, "u" );
@@ -308,20 +339,15 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
 
     vector_ptrtype F( M_backend->newVector( Xh ) );
 
-#if 0
-    // viscous stress tensor (trial) : 0.5 ( \nabla u + \nabla u ^T )
-    AUTO( deft, 0.5*(gradt(u)+trans(gradt(u)) ));
-    /x/ viscous stress tensor (test) : 0.5 ( \nabla u + \nabla u ^T )
-         AUTO( def, 0.5*(grad(v)+trans(grad(v))) );
-#else
-    AUTO( deft, gradt(u) );
-    AUTO( def, grad(v) );
-#endif
+    auto deft = gradt(u);
+    auto def = grad(v);
+
     // total stress tensor (trial)
-    AUTO( SigmaNt, (-idt(p)*N()+mu*deft*N()) );
+    auto SigmaNt = (-idt(p)*N()+mu*deft*N());
+    auto SigmaN = (-id(p)*N()+mu*def*N());
 #if 1 // the Kovasznay flow (2D)
     // total stress tensor (test)
-    AUTO( SigmaN, (-id(p)*N()+mu*def*N()) );
+
     double pi = 4*math::atan(1.0);
     AUTO( u1, val(1. - exp( M_lambda * Px() ) * cos(2.*pi*Py())) );
     AUTO( u2, val((M_lambda/(2.*pi)) * exp( M_lambda * Px() ) * sin(2.*pi*Py())) );
@@ -375,7 +401,7 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
     /*
      * Construction of the left hand side
      */
-    sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
+    D = sparse_matrix_ptrtype(  M_backend->newMatrix( Xh, Xh ) );
     size_type pattern = DOF_PATTERN_COUPLED;
     if ( is_equal_order && this->vm()["stab"].template as<bool>() )
         pattern |= DOF_PATTERN_NEIGHBOR;
@@ -400,16 +426,8 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
     form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaN)*idt(u) );
     form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*trans(idt(u))*id(v)/hFace() );
     Log() << "[assembly] form2 D boundary terms in " << t.elapsed() << "s\n"; t.restart();
-    if ( is_equal_order && this->vm()["stab"].template as<bool>() )
-    {
-        Log() << "[assembly] add stabilisation terms for equal order approximation ( orderU=" << OrderU << ", orderP=" << OrderP << " )\n";
-        double p_term = double(OrderU);
-        p_term = math::pow(p_term, 7./2.);
-        AUTO( penalisation_term, constant(this->vm()["penalisation"].template as<double>())*hFace()*hFace()/p_term );
-        form2( Xh, Xh, D, _pattern=pattern ) += integrate( internalfaces(mesh),
-                                                           penalisation_term*(trans(jumpt(gradt(p)))*jump(grad(q))) );
-        Log() << "[assembly] form2 D stabilisation terms in " << t.elapsed() << "s\n"; t.restart();
-    }
+
+    this->addStabilisation( p, q  );
 
     Log() << "[stokes] matrix local assembly done\n";
 
