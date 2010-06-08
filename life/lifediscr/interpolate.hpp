@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-01-31
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -63,17 +63,20 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     typedef typename FunctionType::functionspace_type::mesh_type domain_mesh_type;
     typedef typename domain_mesh_type::element_type domain_geoelement_type;
     typedef typename domain_mesh_type::element_iterator domain_mesh_element_iterator;
-
     // geometric mapping context
     typedef typename mesh_type::gm_type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef typename gm_type::template Context<vm::POINT, geoelement_type> gmc_type;
+    typedef typename gm_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, geoelement_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
 
     typedef typename domain_mesh_type::gm_type domain_gm_type;
     typedef boost::shared_ptr<domain_gm_type> domain_gm_ptrtype;
-    typedef typename domain_gm_type::template Context<vm::POINT, domain_geoelement_type> domain_gmc_type;
+    typedef typename domain_gm_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, domain_geoelement_type> domain_gmc_type;
     typedef boost::shared_ptr<domain_gmc_type> domain_gmc_ptrtype;
+
+    typedef typename FunctionType::functionspace_type::fe_type f_fe_type;
+    typedef typename f_fe_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, f_fe_type, domain_gm_type, domain_geoelement_type> f_fectx_type;
+    typedef boost::shared_ptr<f_fectx_type> f_fectx_ptrtype;
 
     // dof
     typedef typename SpaceType::dof_type dof_type;
@@ -104,19 +107,34 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
     // if same mesh but not same function space (different order)
     //if ( f.functionSpace()->mesh() == space->mesh() )
-    if ( same_mesh == INTERPOLATE_SAME_MESH )
+    //if ( same_mesh == INTERPOLATE_SAME_MESH )
+    if ( (MeshBase*)f.functionSpace()->mesh().get() == (MeshBase*)space->mesh().get() )
         {
             Debug( 5010 ) << "[interpolate] Same mesh but not same space\n";
-            for( mesh_element_iterator it = space->mesh()->beginElementWithProcessId( space->mesh()->comm().rank() );
-                 it != space->mesh()->endElementWithProcessId( space->mesh()->comm().rank() ); ++ it )
+            auto it = space->mesh()->beginElementWithProcessId( space->mesh()->comm().rank() );
+            auto en = space->mesh()->endElementWithProcessId( space->mesh()->comm().rank() );
+            gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
+            auto pc = f.functionSpace()->fe()->preCompute( f.functionSpace()->fe(), __c->xRefs() );
+
+            f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
+                                                     __c,
+                                                     pc ) );
+            typedef boost::multi_array<value_type,3> array_type;
+            array_type fvalues( f.idExtents( *fectx ) );
+            std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
+            f.id( *fectx, fvalues );
+
+            for( ; it != en; ++ it )
                 {
-                    gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
-                    typename FunctionType::pc_type pc( f.functionSpace()->fe(), __c->xRefs() );
-                    typename FunctionType::id_type interpfunc( f.id( *__c, pc ) );
+                    __c->update( *it );
+                    fectx->update( __c, pc );
+                    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
+                    f.id( *fectx, fvalues );
                     //std::cout << "interpfunc :  " << interpfunc << "\n";
                     for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
                         {
-                            for ( uint16_type comp = 0;comp < basis_type::nComponents;++comp )
+                            const int ncdof = basis_type::is_product?basis_type::nComponents:1;
+                            for ( uint16_type comp = 0;comp < ncdof;++comp )
                                 {
                                     size_type globaldof =  boost::get<0>(__dof->localToGlobal( it->id(),
                                                                                                l, comp ));
@@ -134,8 +152,9 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                                     if ( globaldof >= interp.firstLocalIndex() &&
                                          globaldof < interp.lastLocalIndex() )
                                         {
-                                            interp( globaldof ) = interpfunc(comp,0,l);
-                                            // Debug( 5010 ) << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
+                                            interp( globaldof ) = fvalues[comp][0][l];
+                                            //Debug( 5010 ) << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
+                                            //std::cout << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
                                         }
                                 }
                         }
@@ -171,7 +190,13 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
             domain_mesh_element_iterator en = f.functionSpace()->mesh()->endElementWithProcessId( f.functionSpace()->mesh()->comm().rank() );
 
             domain_gmc_ptrtype __c( new domain_gmc_type( __dgm, *it, __dgeopc ) );
-
+            auto pc = f.functionSpace()->fe()->preCompute( f.functionSpace()->fe(), __c->xRefs() );
+            f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
+                                                     __c,
+                                                     pc ) );
+            typedef boost::multi_array<value_type,3> array_type;
+            array_type fvalues( f.idExtents( *fectx ) );
+            std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
             size_type first_dof = space->dof()->firstDof();
             for( ; it != en; ++ it )
                 {
@@ -198,8 +223,14 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                                     //std::cout << "------------------------------------------------------------\n";
                                     //std::cout << "pts = " << pts << "\n";
                                     __c->update( *it );
-                                    typename FunctionType::pc_type pc( f.functionSpace()->fe(), __c->xRefs() );
-                                    typename FunctionType::id_type interpfunc( f.id( *__c, pc ) );
+                                    pc->update( __c->xRefs() );
+                                    fectx->update( __c, pc );
+                                    //typename FunctionType::pc_type pc( f.functionSpace()->fe(), __c->xRefs() );
+                                    //typename FunctionType::id_type interpfunc( f.id( *__c, pc ) );
+                                    //typename FunctionType::id_type interpfunc;
+
+                                    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
+                                    f.id( *fectx, fvalues );
                                     //std::cout << "interpfunc :  " << interpfunc << "\n";
 
                                     //for ( uint16_type comp = 0;comp < basis_type::nComponents;++comp )
@@ -211,12 +242,13 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                                             // update only values on the processor
                                             if ( globaldof >= interp.firstLocalIndex() &&
                                                  globaldof < interp.lastLocalIndex() )
-                                                interp( globaldof ) = interpfunc(comp,0,0);
+                                                interp( globaldof ) = fvalues[comp][0][0];
+                                                //interp( globaldof ) = interpfunc(comp,0,0);
                                         }
                                 }
                         }
                 }
-
+#if 0
             for( size_type i = 0; i < dof_done.size(); ++i )
                 {
                     if ( dof_done[i] != true )
@@ -243,6 +275,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                                 }
                         }
                 }
+#endif
         }
     //std::cout << "interp=" << interp << "\n";
 } // interpolate

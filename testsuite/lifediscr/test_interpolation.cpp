@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-12-19
  */
-//#define USE_BOOST_TEST 1
+#define USE_BOOST_TEST 1
 
 // Boost.Test
 #define BOOST_TEST_MAIN

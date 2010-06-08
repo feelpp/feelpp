@@ -135,12 +135,12 @@ namespace Life
             {}
 
 
-            template<typename Elem, typename ContextType, typename FEPCType>
-            ID( Elem const& elem, ContextType const & context, FEPCType const& pc )
+            template<typename Elem, typename ContextType>
+            ID( Elem const& elem, ContextType const & context )
                 :
                 M_id( elem.idExtents( context ) )
             {
-                elem.id_( context, pc, M_id );
+                elem.id_( context, M_id );
             }
 
             ID& operator=( ID const& id )
@@ -216,12 +216,12 @@ namespace Life
                 _M_grad()
             {}
 
-            template<typename Elem, typename ContextType, typename FEPCType>
-            DD( Elem const& elem, ContextType const & context, FEPCType const& pc )
+            template<typename Elem, typename ContextType>
+            DD( Elem const& elem, ContextType const & context )
                 :
                 _M_grad( elem.gradExtents( context ) )
             {
-                elem.grad_( context, pc, _M_grad );
+                elem.grad_( context, _M_grad );
             }
 
             value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
@@ -283,12 +283,12 @@ namespace Life
                 _M_grad()
             {}
 
-            template<typename Elem, typename ContextType, typename FEPCType>
-            D( Elem const& elem, ContextType const & context, FEPCType const& pc )
+            template<typename Elem, typename ContextType>
+            D( Elem const& elem, ContextType const & context )
                 :
                 _M_grad( elem.dExtents( context ) )
             {
-                elem.d_( N, context, pc, _M_grad );
+                elem.d_( N, context, _M_grad );
             }
 
             value_type operator()( uint16_type c1, uint16_type /*c2*/, uint16_type q  ) const
@@ -315,12 +315,12 @@ namespace Life
                 _M_div()
             {}
 
-            template<typename Elem, typename ContextType, typename FEPCType>
-            Div( Elem const& elem, ContextType const & context, FEPCType const& pc )
+            template<typename Elem, typename ContextType>
+            Div( Elem const& elem, ContextType const & context )
                 :
                 _M_div( elem.divExtents( context ) )
             {
-                elem.div_( context, pc, _M_div );
+                elem.div_( context, _M_div );
 #if 0
                 uint16_type nComponents1 = elem.nComponents1;
                 std::fill( _M_div.data(), _M_div.data()+_M_div.num_elements(), value_type( 0 ) );
@@ -360,12 +360,12 @@ namespace Life
                 _M_curl()
             {}
 
-            template<typename Elem, typename ContextType, typename FEPCType>
-            Curl( Elem const& elem, ContextType const & context, FEPCType const& pc )
+            template<typename Elem, typename ContextType>
+            Curl( Elem const& elem, ContextType const & context )
                 :
                 _M_curl( elem.curlExtents( context ) )
             {
-                elem.curl_( context, pc, _M_curl );
+                elem.curl_( context, _M_curl );
 #if 0
                 std::fill( _M_curl.data(), _M_curl.data()+_M_curl.num_elements(), value_type( 0 ) );
                 const uint16_type nq = context.xRefs().size2();
@@ -426,12 +426,12 @@ namespace Life
                 _M_hess()
             {}
 
-            template<typename Elem, typename ContextType, typename FEPCType>
-            H( Elem const& elem, ContextType const & context, FEPCType const& pc )
+            template<typename Elem, typename ContextType>
+            H( Elem const& elem, ContextType const & context )
                 :
                 _M_hess( elem.hessExtents( context ) )
             {
-                elem.hess_( context, pc, _M_hess );
+                elem.hess_( context, _M_hess );
             }
 
             value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
@@ -1221,9 +1221,9 @@ public:
 
         template<typename Context_t>
         id_type
-        id( Context_t const & context, pc_type const& pc ) const
+        id( Context_t const & context ) const
         {
-            return id_type( *this, context, pc );
+            return id_type( *this, context );
         }
 
         /**
@@ -1239,24 +1239,28 @@ public:
          */
         template<typename Context_t>
         void
-        id_( Context_t const & context, pc_type const& pc, array_type& v ) const;
+        id_( Context_t const & context, array_type& v ) const;
 
         template<typename Context_t>
         void
-        id( Context_t const & context, pc_type const& pc, array_type& v ) const
+        id( Context_t const & context, array_type& v ) const
         {
-            id_( context, pc, v );
+            id_( context, v );
         }
 
 
 
         template<typename Context_t>
         void
-        idInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
+        idInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
 
         /*
          * Get the reals points matrix in a context
          * 1 : Element
+         *
+         * \todo store a geometric mapping context to evaluate the real points
+         * from a set of point in the referene element, should probably done in
+         * the real element (geond)
          */
         template<typename Context_t>
         matrix_node_type
@@ -1274,6 +1278,7 @@ public:
         /*
          * Get the real point matrix in a context
          * 2 : Face
+         * \todo see above
          */
         template<typename Context_t>
         matrix_node_type
@@ -1295,13 +1300,20 @@ public:
             return __c_interp->xReal();
         }
 
-
+        /**
+         * \return a geometric mapping context associated with the element
+         * \todo should be in the element of the mesh
+         */
         gmc_ptrtype geomapPtr( geoelement_type const& elt ) const
         {
             gm_ptrtype __gm = functionSpace()->gm();
             geopc_ptrtype __geopc( new geopc_type( __gm, elt.G() ) );
             return gmc_ptrtype( new gmc_type( __gm, elt, __geopc ) );
         }
+        /**
+         * \return a precomputation of the basis functions
+         * \warning this seems quite buggy (where is it used?)
+         */
         pc_ptrtype pcPtr( geoelement_type const& elt ) const
         {
             return pc_ptrtype( new pc_type( functionSpace()->fe(), elt.G() ) );
@@ -1311,98 +1323,8 @@ public:
          *
          * @return the interpolated value of the function at the real point x
          */
-        id_type operator()( node_type const& __x, bool extrapolate = false ) const
-        {
-            this->updateGlobalValues();
+        id_type operator()( node_type const& __x, bool extrapolate = false ) const;
 
-            node_type __x_ref;
-            size_type __cv_id;
-            int rank = functionSpace()->mesh()->comm().rank();
-            int nprocs = functionSpace()->mesh()->comm().size();
-            std::vector<int> found_pt( nprocs, 0 );
-            std::vector<int> global_found_pt( nprocs, 0 );
-            if ( functionSpace()->findPoint( __x, __cv_id, __x_ref ) || extrapolate )
-                {
-#if !defined( NDEBUG )
-                    Debug( 5010 ) << "Point " << __x << " is in element " << __cv_id << " pt_ref=" << __x_ref << "\n";
-#endif
-                    gm_ptrtype __gm = functionSpace()->gm();
-                    typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
-                    typedef typename gm_type::precompute_type geopc_type;
-                    typename matrix_node<value_type>::type pts( __x_ref.size(), 1 );
-                    ublas::column( pts, 0 ) = __x_ref;
-                    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-
-
-                    typedef typename gm_type::template Context<vm::POINT, geoelement_type> gmc_type;
-                    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-                    gmc_ptrtype __c( new gmc_type( __gm,
-                                                   functionSpace()->mesh()->element( __cv_id ),
-                                                   __geopc ) );
-                    pc_type pc( this->functionSpace()->fe(), pts );
-
-                    found_pt[ rank ] = 1;
-
-#if defined(HAVE_MPI)
-                    if ( nprocs > 1 )
-                        {
-                            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-                            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
-                        }
-#else
-                    global_found_pt[ 0 ] = found_pt[ 0 ];
-#endif /* HAVE_MPI */
-
-                    id_type __id( this->id( *__c, pc ) );
-
-                    //Debug(5010) << "[interpolation]  id = " << __id << "\n";
-#if defined(HAVE_MPI)
-                    Debug( 5010 ) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
-                    if ( functionSpace()->mesh()->comm().size() > 1 )
-                        {
-                            mpi::broadcast( functionSpace()->mesh()->comm(), __id, functionSpace()->mesh()->comm().rank() );
-                        }
-                    //Debug(5010) << "[interpolation] after broadcast id = " << __id << "\n";
-#endif /* HAVE_MPI */
-                    return __id;
-                }
-            else
-                {
-#if defined(HAVE_MPI)
-                    if ( functionSpace()->mesh()->comm().size() > 1 )
-                        {
-                            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-                            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
-                        }
-#endif /* HAVE_MPI */
-                    bool found = false;
-                    size_type i = 0;
-                    for(;i < global_found_pt.size();++i )
-                        if ( global_found_pt[i] != 0 )
-                            {
-                                Debug(5010) << "processor " << i << " has the point " << __x << "\n";
-                                found = true;
-                                break;
-                            }
-                    id_type __id;
-                    if ( found )
-                        {
-                            Debug( 5010 ) << "receiving interpolation context from processor " << i << "\n";
-#if defined(HAVE_MPI)
-                            if ( functionSpace()->mesh()->comm().size() > 1 )
-                                mpi::broadcast( functionSpace()->mesh()->comm(), __id, i );
-#endif /* HAVE_MPI */
-
-                            Debug(5010) << "[interpolation] after broadcast id = " << __id << "\n";
-                        }
-                    else
-                        {
-                            Warning() << "no processor seems to have the point " << __x << "\n";
-                        }
-                    return __id;
-                }
-
-        }
         //@}
 
         //! gradient interpolation tool
@@ -1425,9 +1347,9 @@ public:
         }
         template<typename ContextType>
         grad_type
-        grad( ContextType const & context, pc_type const& pc ) const
+        grad( ContextType const & context ) const
         {
-            return grad_type( *this, context, pc );
+            return grad_type( *this, context );
         }
         template<typename ElementType>
         void
@@ -1453,131 +1375,43 @@ public:
          * incorporate the pseudo-inverse of the jacobian for the derivative
          */
         template<typename ContextType>
-        void grad_( ContextType const & context, pc_type const& pc, array_type& v ) const;
+        void grad_( ContextType const & context, array_type& v ) const;
 
         template<typename ContextType>
-        void grad( ContextType const & context, pc_type const& pc, array_type& v ) const
+        void grad( ContextType const & context, array_type& v ) const
         {
-            grad_( context, pc, v );
+            grad_( context, v );
         }
 
         template<typename Context_t>
         void
-        gradInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const;
+        gradInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
 
         /**
          * interpolate the gradient of the function at node (real coordinate) x
          *
          * @return the interpolated value of the gradient function at the real point x
          */
-        grad_type grad( node_type const& __x ) const
-        {
-            this->updateGlobalValues();
-
-            node_type __x_ref;
-            size_type __cv_id;
-            std::vector<int> found_pt( functionSpace()->mesh()->comm().size(), 0 );
-            std::vector<int> global_found_pt( functionSpace()->mesh()->comm().size(), 0 );
-            if ( functionSpace()->findPoint( __x, __cv_id, __x_ref ) )
-                {
-#if !defined( NDEBUG )
-                    Debug( 5010 ) << "Point " << __x << " is in element " << __cv_id << " pt_ref=" << __x_ref << "\n";
-#endif
-                    gm_ptrtype __gm = functionSpace()->gm();
-                    typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
-                    typedef typename gm_type::precompute_type geopc_type;
-                    typename matrix_node<value_type>::type pts( __x_ref.size(), 1 );
-                    ublas::column( pts, 0 ) = __x_ref;
-                    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-
-
-                    typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::KB, geoelement_type> gmc_type;
-                    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-                    gmc_ptrtype __c( new gmc_type( __gm,
-                                                   functionSpace()->mesh()->element( __cv_id ),
-                                                   __geopc ) );
-                    pc_type pc( this->functionSpace()->fe(), pts );
-
-                    found_pt[ functionSpace()->mesh()->comm().rank() ] = 1;
-
-#if defined(HAVE_MPI)
-                    if ( functionSpace()->mesh()->comm().size() > 1 )
-                        {
-                            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-                            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
-                        }
-#else
-                    global_found_pt[ 0 ] = found_pt[ 0 ];
-#endif /* HAVE_MPI */
-
-                    grad_type g_( this->grad( *__c, pc ) );
-                    //Debug(5010) << "[interpolation]  id = " << v << "\n";
-#if defined(HAVE_MPI)
-                    Debug( 5010 ) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
-                    if ( functionSpace()->mesh()->comm().size() > 1 )
-                        {
-                            mpi::broadcast( functionSpace()->mesh()->comm(), g_, functionSpace()->mesh()->comm().rank() );
-                        }
-                    //Debug(5010) << "[interpolation] after broadcast g_ = " << g_ << "\n";
-#endif /* HAVE_MPI */
-                    return g_;
-                }
-            else
-                {
-#if defined(HAVE_MPI)
-                    if ( functionSpace()->mesh()->comm().size() > 1 )
-                        {
-                            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-                            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
-                        }
-#endif /* HAVE_MPI */
-                    bool found = false;
-                    size_type i = 0;
-                    for(;i < global_found_pt.size();++i )
-                        if ( global_found_pt[i] != 0 )
-                            {
-                                Debug(5010) << "processor " << i << " has the point " << __x << "\n";
-                                found = true;
-                                break;
-                            }
-                    grad_type g_;
-                    if ( found )
-                        {
-                            Debug( 5010 ) << "receiving interpolation context from processor " << i << "\n";
-#if defined(HAVE_MPI)
-                            if ( functionSpace()->mesh()->comm().size() > 1 )
-                                mpi::broadcast( functionSpace()->mesh()->comm(), g_, i );
-#endif /* HAVE_MPI */
-
-                            //Debug(5010) << "[interpolation] after broadcast id = " << v << "\n";
-                        }
-                    else
-                        {
-                            Warning() << "no processor seems to have the point " << __x << "\n";
-                        }
-                    return g_;
-                }
-
-        }
+        grad_type grad( node_type const& __x ) const;
 
         template<typename ContextType>
         dx_type
-        dx( ContextType const & context, pc_type const& pc ) const
+        dx( ContextType const & context ) const
         {
-            return dx_type( *this, context, pc );
+            return dx_type( *this, context );
         }
 
         template<typename ContextType>
         dy_type
-        dy( ContextType const & context, pc_type const& pc ) const
+        dy( ContextType const & context ) const
         {
-            return dy_type( *this, context, pc );
+            return dy_type( *this, context );
         }
         template<typename ContextType>
         dz_type
-        dz( ContextType const & context, pc_type const& pc ) const
+        dz( ContextType const & context ) const
         {
-            return dz_type( *this, context, pc );
+            return dz_type( *this, context );
         }
 
         template<typename ContextType>
@@ -1610,35 +1444,35 @@ public:
         }
 
         template<typename ContextType>
-        void d_( int N, ContextType const & context, pc_type const& pc, array_type& v ) const;
+        void d_( int N, ContextType const & context, array_type& v ) const;
 
         template<typename ContextType>
-        void dx( ContextType const & context, pc_type const& pc, array_type& v ) const
+        void dx( ContextType const & context, array_type& v ) const
         {
-            d_( 0, context, pc, v );
+            d_( 0, context, v );
         }
         template<typename ContextType>
-        void dy( ContextType const & context, pc_type const& pc, array_type& v ) const
+        void dy( ContextType const & context, array_type& v ) const
         {
-            d_( 1, context, pc, v );
+            d_( 1, context, v );
         }
         template<typename ContextType>
-        void dz( ContextType const & context, pc_type const& pc, array_type& v ) const
+        void dz( ContextType const & context, array_type& v ) const
         {
-            d_( 2, context, pc, v );
+            d_( 2, context, v );
         }
 
         template<typename Context_t>
         void
-        dxInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const;
+        dxInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
 
         template<typename Context_t>
         void
-        dyInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const;
+        dyInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
 
         template<typename Context_t>
         void
-        dzInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const;
+        dzInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
 
 
         //@}
@@ -1657,26 +1491,26 @@ public:
         }
         template<typename ContextType>
         div_type
-        div( ContextType const & context, pc_type const& pc ) const
+        div( ContextType const & context ) const
         {
             BOOST_STATIC_ASSERT( (rank == 1) || (rank==2) );
-            return div_type( *this, context, pc );
+            return div_type( *this, context );
         }
 
 
         template<typename ContextType>
         void
-        div( ContextType const & context, pc_type const& pc, array_type& v ) const
+        div( ContextType const & context, array_type& v ) const
         {
             BOOST_STATIC_ASSERT( (rank == 1) || (rank==2) );
-            div_( context, pc, v );
+            div_( context, v );
         }
         template<typename ContextType>
-        void div_( ContextType const & context, pc_type const& pc, array_type& v ) const;
+        void div_( ContextType const & context, array_type& v ) const;
 
         template<typename Context_t>
         void
-        divInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const;
+        divInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
 
         typedef detail::Curl<value_type,-1> curl_type;
         typedef detail::Curl<value_type,0> curlx_type;
@@ -1685,30 +1519,30 @@ public:
 
         template<typename ContextType>
         curl_type
-        curl( ContextType const & context, pc_type const& pc ) const
+        curl( ContextType const & context ) const
         {
-            return curl_type( *this, context, pc );
+            return curl_type( *this, context );
         }
 
         template<typename ContextType>
         curlx_type
-        curlx( ContextType const & context, pc_type const& pc ) const
+        curlx( ContextType const & context ) const
         {
-            return curlx_type( *this, context, pc );
+            return curlx_type( *this, context );
         }
 
         template<typename ContextType>
         curly_type
-        curly( ContextType const & context, pc_type const& pc ) const
+        curly( ContextType const & context ) const
         {
-            return curly_type( *this, context, pc );
+            return curly_type( *this, context );
         }
 
         template<typename ContextType>
         curlz_type
-        curlz( ContextType const & context, pc_type const& pc ) const
+        curlz( ContextType const & context ) const
         {
-            return curlz_type( *this, context, pc );
+            return curlz_type( *this, context );
         }
 
         template<typename ContextType>
@@ -1725,18 +1559,18 @@ public:
         }
         template<typename ContextType>
         void
-        curl( ContextType const & context, pc_type const& pc, array_type& v ) const
+        curl( ContextType const & context, array_type& v ) const
         {
             BOOST_STATIC_ASSERT( rank == 1 );
-            curl_( context, pc, v );
+            curl_( context, v );
         }
 
         template<typename Context_t>
         void
-        curlInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
+        curlInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
 
         template<typename ContextType>
-        void curl_( ContextType const & context, pc_type const& pc, array_type& v ) const;
+        void curl_( ContextType const & context, array_type& v ) const;
 
 
         template<typename ContextType>
@@ -1764,37 +1598,37 @@ public:
 
         template<typename ContextType>
         void
-        curlx( ContextType const & context, pc_type const& pc, array_type& v ) const
+        curlx( ContextType const & context, array_type& v ) const
         {
             BOOST_STATIC_ASSERT( rank == 1 );
-            curl_( context, pc, v );
+            curl_( context, v );
         }
         template<typename ContextType>
         void
-        curly( ContextType const & context, pc_type const& pc, array_type& v ) const
+        curly( ContextType const & context, array_type& v ) const
         {
             BOOST_STATIC_ASSERT( rank == 1 );
-            curl_( context, pc, v );
+            curl_( context, v );
         }
         template<typename ContextType>
         void
-        curlz( ContextType const & context, pc_type const& pc, array_type& v ) const
+        curlz( ContextType const & context, array_type& v ) const
         {
             BOOST_STATIC_ASSERT( rank == 1 );
-            curl_( context, pc, v );
+            curl_( context, v );
         }
 
         template<typename Context_t>
         void
-        curlxInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
+        curlxInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
 
         template<typename Context_t>
         void
-        curlyInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
+        curlyInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
 
         template<typename Context_t>
         void
-        curlzInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
+        curlzInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
 
         template<typename ContextType>
         boost::array<typename array_type::index, 3>
@@ -1823,30 +1657,30 @@ public:
          */
         template<typename ContextType>
         void
-        hess_( ContextType const & context, pc_type const& pc, array_type& v ) const;
+        hess_( ContextType const & context, array_type& v ) const;
 
         template<typename ContextType>
         void
-        hess_( ContextType const & context, pc_type const& pc, array_type& v, mpl::int_<0> ) const;
+        hess_( ContextType const & context, array_type& v, mpl::int_<0> ) const;
 
         template<typename Context_t>
         void
-        hessInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const;
+        hessInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
 
         typedef detail::H<value_type> hess_type;
 
         template<typename ContextType>
         hess_type
-        hess( ContextType const & context, pc_type const& pc ) const
+        hess( ContextType const & context ) const
         {
-            return hess_type( *this, context, pc );
+            return hess_type( *this, context );
         }
 
         template<typename ContextType>
         void
-        hess( ContextType const & context, pc_type const& pc, array_type& v ) const
+        hess( ContextType const & context, array_type& v ) const
         {
-            hess_( context, pc, v );
+            hess_( context, v );
         }
         template<typename ElementType>
         void
@@ -2827,85 +2661,122 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( VectorExpr const&
     return *this;
 }
 
-#if 0
+
+//
+// Interpolation tools
+//
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::interpolant_type const&
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::interpolant( size_type element_id ) const
+typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::id_type
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const& __x, bool extrapolate ) const
 {
-    typedef typename polynomial_view_type::matrix_type matrix_type;
-    //matrix_type coeff ( 1, nComponents*basis_type::nDof );
-    M_interpolant_coeff.clear();
-    for(int c1 = 0; c1 < nComponents; ++c1 )
-        {
-            for ( int i = 0; i < basis_type::nDof; ++i )
-                {
-                    size_type ldof = basis_type::nDof*c1 + i;
-                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), i, c1 ) );
-                    LIFE_ASSERT( gdof < this->size() )
-                        ( context.id() )
-                        ( i )( c1 )( ldof)( gdof )
-                        ( this->size() )( this->localSize() )
-                        ( this->firstLocalIndex() )( this->lastLocalIndex() )
-                        .error( "FunctionSpace::Element invalid access index" );
+    this->updateGlobalValues();
 
-                    //value_type v = (*this)( gdof );
-                    value_type v = this->globalValue( gdof );
-                    M_interpolant_coeff( 0, ldof ) = v;
-                }
-        }
-    // construct the polynomial on the reference element
-    typedef typename mpl::if_<mpl::bool_<is_scalar>,mpl::identity<Polynomial<fe_type,Scalar> >,mpl::identity<Polynomial<fe_type,Vectorial> > >::type::type interpolant_type;
-
-    matrix_type coeff2( ublas::prod( M_interpolant_coeff, p_type::polyset_type::toMatrix( functionSpace()->fe()->coeff() ) ) );
-    //p_type p( p_type::polyset_type::toType( coeff2 ), true );
-    M_interpolant.setCoefficient( p_type::polyset_type::toType( coeff2 ), true );
-
-    return M_interpolant;
-}
+    node_type __x_ref;
+    size_type __cv_id;
+    int rank = functionSpace()->mesh()->comm().rank();
+    int nprocs = functionSpace()->mesh()->comm().size();
+    std::vector<int> found_pt( nprocs, 0 );
+    std::vector<int> global_found_pt( nprocs, 0 );
+    if ( functionSpace()->findPoint( __x, __cv_id, __x_ref ) || extrapolate )
+    {
+#if !defined( NDEBUG )
+        Debug( 5010 ) << "Point " << __x << " is in element " << __cv_id << " pt_ref=" << __x_ref << "\n";
 #endif
+        gm_ptrtype __gm = functionSpace()->gm();
+        typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
+        typedef typename gm_type::precompute_type geopc_type;
+        typename matrix_node<value_type>::type pts( __x_ref.size(), 1 );
+        ublas::column( pts, 0 ) = __x_ref;
+        geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+
+
+        typedef typename gm_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, geoelement_type> gmc_type;
+        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        gmc_ptrtype __c( new gmc_type( __gm,
+                                       functionSpace()->mesh()->element( __cv_id ),
+                                       __geopc ) );
+        pc_ptrtype pc( new pc_type( this->functionSpace()->fe(), pts ) );
+
+        typedef typename mesh_type::element_type geoelement_type;
+        typedef typename functionspace_type::fe_type fe_type;
+        typedef typename fe_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, fe_type, gm_type, geoelement_type> fectx_type;
+        typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+        fectx_ptrtype fectx( new fectx_type( this->functionSpace()->fe(),
+                                             __c,
+                                             pc ) );
+        found_pt[ rank ] = 1;
+
+#if defined(HAVE_MPI)
+        if ( nprocs > 1 )
+        {
+            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+        }
+#else
+        global_found_pt[ 0 ] = found_pt[ 0 ];
+#endif /* HAVE_MPI */
+
+        id_type __id( this->id( *fectx ) );
+
+        //Debug(5010) << "[interpolation]  id = " << __id << "\n";
+#if defined(HAVE_MPI)
+        Debug( 5010 ) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
+        if ( functionSpace()->mesh()->comm().size() > 1 )
+        {
+            mpi::broadcast( functionSpace()->mesh()->comm(), __id, functionSpace()->mesh()->comm().rank() );
+        }
+        //Debug(5010) << "[interpolation] after broadcast id = " << __id << "\n";
+#endif /* HAVE_MPI */
+        return __id;
+    }
+    else
+    {
+#if defined(HAVE_MPI)
+        if ( functionSpace()->mesh()->comm().size() > 1 )
+        {
+            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+        }
+#endif /* HAVE_MPI */
+        bool found = false;
+        size_type i = 0;
+        for(;i < global_found_pt.size();++i )
+            if ( global_found_pt[i] != 0 )
+            {
+                Debug(5010) << "processor " << i << " has the point " << __x << "\n";
+                found = true;
+                break;
+            }
+        id_type __id;
+        if ( found )
+        {
+            Debug( 5010 ) << "receiving interpolation context from processor " << i << "\n";
+#if defined(HAVE_MPI)
+            if ( functionSpace()->mesh()->comm().size() > 1 )
+                mpi::broadcast( functionSpace()->mesh()->comm(), __id, i );
+#endif /* HAVE_MPI */
+
+            Debug(5010) << "[interpolation] after broadcast id = " << __id << "\n";
+        }
+        else
+        {
+            Warning() << "no processor seems to have the point " << __x << "\n";
+        }
+        return __id;
+    }
+
+} // operator()
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, array_type& v ) const
 {
-#if 0
-    if ( context.element().mesh() == mesh() )
-        {
-            // same mesh interpolation
-        }
-    else
-        {
-            // must find element first in which the points belong to
-        }
-#endif
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
-#if 0
-    typedef typename polynomial_view_type::matrix_type matrix_type;
-    matrix_type coeff ( 1, nComponents*basis_type::nDof );
-    coeff.clear();
-    for(int c1 = 0; c1 < nComponents; ++c1 )
-        {
-            for ( int i = 0; i < basis_type::nDof; ++i )
-                {
-                    size_type ldof = basis_type::nDof*c1 + i;
-                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), i, c1 ) );
-                    LIFE_ASSERT( gdof < this->size() )
-                        ( context.id() )
-                        ( i )( c1 )( ldof)( gdof )
-                        ( this->size() )( this->localSize() )
-                        ( this->firstLocalIndex() )( this->lastLocalIndex() )
-                        .error( "FunctionSpace::Element invalid access index" );
 
-                    //value_type v = (*this)( gdof );
-                    value_type v = this->globalValue( gdof );
-                    coeff( 0, ldof ) = v;
-                }
-        }
-#endif
     const uint16_type nq = context.xRefs().size2();
     //array_type v( boost::extents[nComponents1][nComponents2][context.xRefs().size2()] );
     for( int l = 0; l < basis_type::nDof; ++l )
@@ -2914,12 +2785,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
             for( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
                 {
                     typename array_type::index ldof = basis_type::nDof*c1+l;
-                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), l, c1 ) );
+                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
                     //std::cout << "ldof = " << ldof << "\n";
                     //std::cout << "gdof = " << gdof << "\n";
 
                     LIFE_ASSERT( gdof < this->size() )
-                        ( context.id() )
+                        ( context.eId() )
                         ( l )( c1 )( ldof)( gdof )
                         ( this->size() )( this->localSize() )
                         ( this->firstLocalIndex() )( this->lastLocalIndex() )
@@ -2934,7 +2805,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
                             {
 
                                 for( uint16_type q = 0; q < nq; ++q )
-                                    v[i][0][q] += v_*pc.phi( ldof, i, 0, q );
+                                    v[i][0][q] += v_*context.id( ldof, i, 0, q );
+                                    //v[i][0][q] += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
                             }
                     }
                 }
@@ -2946,7 +2818,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -2973,7 +2845,19 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( Context_t con
 
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_type __pc( this->functionSpace()->fe(), pts );
+    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
+
+    gmc_ptrtype __c( new gmc_type( __gm,
+                                   this->functionSpace()->mesh()->element( it->first ),
+                                   __geopc ) );
+
+    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename functionspace_type::fe_type fe_type;
+    typedef typename fe_type::template Context<0, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
+                                         __c,
+                                         __pc ) );
 
     for ( ;it!=it_end;++it)
         {
@@ -2991,14 +2875,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( Context_t con
             //update geomap context
             __geopc->update( pts );
 
-            gmc_ptrtype __c( new gmc_type( __gm,
-                                           this->functionSpace()->mesh()->element( it->first ),
-                                           __geopc ) );
             //update precompute of basis functions
-            __pc.update( pts );
+            __pc->update( pts );
+
+            __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+            __ctx->update( __c, __pc );
 
             //evaluate element for these points
-            id_type __id( this->id( *__c, __pc ));
+            id_type __id( this->id( *__ctx ));
 
             //update the output data
             for( typename array_type::index i = 0; i < nComponents1; ++i )
@@ -3012,40 +2896,118 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( Context_t con
 
 }
 
+//
+// Grad
+//
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::grad_type
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x ) const
+{
+    this->updateGlobalValues();
+
+    node_type __x_ref;
+    size_type __cv_id;
+    std::vector<int> found_pt( functionSpace()->mesh()->comm().size(), 0 );
+    std::vector<int> global_found_pt( functionSpace()->mesh()->comm().size(), 0 );
+    if ( functionSpace()->findPoint( __x, __cv_id, __x_ref ) )
+    {
+#if !defined( NDEBUG )
+        Debug( 5010 ) << "Point " << __x << " is in element " << __cv_id << " pt_ref=" << __x_ref << "\n";
+#endif
+        gm_ptrtype __gm = functionSpace()->gm();
+        typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
+        typedef typename gm_type::precompute_type geopc_type;
+        typename matrix_node<value_type>::type pts( __x_ref.size(), 1 );
+        ublas::column( pts, 0 ) = __x_ref;
+        geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+
+
+        typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::KB, geoelement_type> gmc_type;
+        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        gmc_ptrtype __c( new gmc_type( __gm,
+                                       functionSpace()->mesh()->element( __cv_id ),
+                                       __geopc ) );
+        pc_ptrtype pc( new pc_type( this->functionSpace()->fe(), pts ) );
+        typedef typename mesh_type::element_type geoelement_type;
+        typedef typename functionspace_type::fe_type fe_type;
+        typedef typename fe_type::template Context<vm::GRAD, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
+        typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+        fectx_ptrtype fectx( new fectx_type( this->functionSpace()->fe(),
+                                             __c,
+                                             pc ) );
+
+        found_pt[ functionSpace()->mesh()->comm().rank() ] = 1;
+
+#if defined(HAVE_MPI)
+        if ( functionSpace()->mesh()->comm().size() > 1 )
+        {
+            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+        }
+#else
+        global_found_pt[ 0 ] = found_pt[ 0 ];
+#endif /* HAVE_MPI */
+
+        grad_type g_( this->grad( *fectx ) );
+        //Debug(5010) << "[interpolation]  id = " << v << "\n";
+#if defined(HAVE_MPI)
+        Debug( 5010 ) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
+        if ( functionSpace()->mesh()->comm().size() > 1 )
+        {
+            mpi::broadcast( functionSpace()->mesh()->comm(), g_, functionSpace()->mesh()->comm().rank() );
+        }
+        //Debug(5010) << "[interpolation] after broadcast g_ = " << g_ << "\n";
+#endif /* HAVE_MPI */
+        return g_;
+    }
+    else
+    {
+#if defined(HAVE_MPI)
+        if ( functionSpace()->mesh()->comm().size() > 1 )
+        {
+            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+        }
+#endif /* HAVE_MPI */
+        bool found = false;
+        size_type i = 0;
+        for(;i < global_found_pt.size();++i )
+            if ( global_found_pt[i] != 0 )
+            {
+                Debug(5010) << "processor " << i << " has the point " << __x << "\n";
+                found = true;
+                break;
+            }
+        grad_type g_;
+        if ( found )
+        {
+            Debug( 5010 ) << "receiving interpolation context from processor " << i << "\n";
+#if defined(HAVE_MPI)
+            if ( functionSpace()->mesh()->comm().size() > 1 )
+                mpi::broadcast( functionSpace()->mesh()->comm(), g_, i );
+#endif /* HAVE_MPI */
+
+            //Debug(5010) << "[interpolation] after broadcast id = " << v << "\n";
+        }
+        else
+        {
+            Warning() << "no processor seems to have the point " << __x << "\n";
+        }
+        return g_;
+    }
+
+} // grad
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & context, array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
-#if 0
-    //LIFE_ASSERT( comp < nRealDim )( comp )( nRealDim ).error( "[FunctionSpace::Element] grad: invalid component" );
-    typedef typename polynomial_view_type::matrix_type matrix_type;
-    matrix_type coeff ( 1, nComponents*basis_type::nDof );
-    for(int c1 = 0; c1 < nComponents; ++c1 )
-        {
-            for ( int i = 0; i < basis_type::nDof; ++i )
-                {
-                    size_type ldof = basis_type::nDof*c1 + i;
-                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), i, c1 ) );
-                    LIFE_ASSERT( gdof >= this->firstLocalIndex() &&
-                                 gdof < this->lastLocalIndex() )
-                        ( context.id() )
-                        ( i )( c1 )( ldof)( gdof )
-                        ( this->size() )( this->localSize() )
-                        ( this->firstLocalIndex() )( this->lastLocalIndex() )
-                        .error( "FunctionSpace::Element invalid access index" );
-
-                    //value_type v = (*this)( gdof );
-                    value_type v = this->globalValue( gdof );
-                    coeff( 0, ldof ) = v;
-                }
-        }
-#endif
     //std::cout << "coeff=" << coeff << "\n";
     //array_type v( boost::extents[nComponents1][nRealDim][context.xRefs().size2()] );
     //std::fill( v.data(), v.data()+v.num_elements(), value_type( 0 ) );
@@ -3055,10 +3017,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
             for(int c1 = 0; c1 < ncdof; ++c1 )
                 {
                     int ldof = c1*basis_type::nDof+l;
-                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), l, c1 ) );
+                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
                     LIFE_ASSERT( gdof >= this->firstLocalIndex() &&
                                  gdof < this->lastLocalIndex() )
-                        ( context.id() )
+                        ( context.eId() )
                         ( l )( c1 )( ldof)( gdof )
                         ( this->size() )( this->localSize() )
                         ( this->firstLocalIndex() )( this->lastLocalIndex() )
@@ -3069,14 +3031,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
                     for( int k = 0; k < nComponents1; ++k )
                         for( int j = 0; j < nRealDim; ++j )
                             {
-                                for( typename array_type::index i = 0; i < nDim; ++i )
-                                    {
-                                        for( size_type q = 0; q < context.xRefs().size2(); ++q )
-                                            {
-                                                v[k][j][q] += v_*context.B(q)( j, i )*pc.grad( ldof, k, i, q );
-                                            }
-                                    }
-
+                                for( size_type q = 0; q < context.xRefs().size2(); ++q )
+                                {
+                                    v[k][j][q] += v_*context.grad( ldof, k, j, q );
+                                }
                             }
                 }
         }
@@ -3121,7 +3079,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
 {
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
     typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
@@ -3143,7 +3101,18 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate( Context_t c
     uint nbCoord=boost::get<1>(*(it->second.begin())).size();
     matrix_node_type pts( nbCoord, nbPtsElt );
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_type __pc( this->functionSpace()->fe(), pts );
+    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
+
+    gmc_ptrtype __c( new gmc_type( __gm,
+                                   this->functionSpace()->mesh()->element( it->first ),
+                                   __geopc ) );
+    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename functionspace_type::fe_type fe_type;
+    typedef typename fe_type::template Context<vm::GRAD|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
+                                         __c,
+                                         __pc ) );
 
     for ( ;it!=it_end;++it)
         {
@@ -3161,15 +3130,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate( Context_t c
             //update geomap context
             __geopc->update( pts );
 
-            gmc_ptrtype __c( new gmc_type( __gm,
-                                           this->functionSpace()->mesh()->element( it->first ),
-                                           __geopc ) );
 
             //update precompute of basis functions
-            __pc.update( pts );
+            __pc->update( pts );
+            __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+            __ctx->update( __c, __pc );
 
             //evaluate element for these points
-            grad_type __grad( this->grad( *__c, __pc ));
+            grad_type __grad( this->grad( *__ctx ));
 
             //update the output data
             for( typename array_type::index i = 0; i < nComponents1; ++i )
@@ -3191,36 +3159,36 @@ template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & context, array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
+    const size_type Q = context.xRefs().size2();
     for( int l = 0; l < basis_type::nDof; ++l )
         {
             const int ncdof = is_product?nComponents1:1;
             for(int c1 = 0; c1 < ncdof; ++c1 )
                 {
                     int ldof = c1*basis_type::nDof+l;
-                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), l, c1 ) );
+                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
                     LIFE_ASSERT( gdof >= this->firstLocalIndex() &&
                                  gdof < this->lastLocalIndex() )
-                        ( context.id() )
+                        ( context.eId() )
                         ( l )( c1 )( ldof)( gdof )
                         ( this->size() )( this->localSize() )
                         ( this->firstLocalIndex() )( this->lastLocalIndex() )
                         .error( "FunctionSpace::Element invalid access index" );
                     //value_type v_ = (*this)( gdof );
                     value_type v_ = this->globalValue( gdof );
-                    for( int k = 0; k < nComponents1; ++k )
-                        {
-                            for( typename array_type::index i = 0; i < nDim; ++i )
-                                {
-                                    for( size_type q = 0; q < context.xRefs().size2(); ++q )
-                                        {
-                                            v[0][0][q] += v_*context.B(q)( k, i )*pc.grad( ldof, k, i, q );
-                                        }
-                                }
-                        }
+                    for( size_type q = 0; q < Q; ++q )
+                    {
+#if 0
+                        std::cout << "v(" << gdof << ")=" << v_ << "\n";
+                        std::cout << "context.div(" << ldof << "," << q << ")="
+                                  << context.div( ldof, 0, 0, q ) << "\n" ;
+#endif
+                        v[0][0][q] += v_*context.div( ldof, 0, 0, q );
+                    }
                 }
         }
 }
@@ -3229,7 +3197,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3256,7 +3224,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( Context_t co
 
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_type __pc( this->functionSpace()->fe(), pts );
+    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ));
+    gmc_ptrtype __c( new gmc_type( __gm,
+                                   this->functionSpace()->mesh()->element( it->first ),
+                                   __geopc ) );
+    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename functionspace_type::fe_type fe_type;
+    typedef typename fe_type::template Context<vm::DIV, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
+                                         __c,
+                                         __pc ) );
 
     for ( ;it!=it_end;++it)
         {
@@ -3273,15 +3251,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( Context_t co
 
             //update geomap context
             __geopc->update( pts );
-
-            gmc_ptrtype __c( new gmc_type( __gm,
-                                           this->functionSpace()->mesh()->element( it->first ),
-                                           __geopc ) );
+            __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
             //update precompute of basis functions
-            __pc.update( pts );
+            __pc->update( pts );
+            __ctx->update( __c, __pc );
 
             //evaluate element for these points
-            div_type __div( this->div( *__c, __pc ));
+            div_type __div( this->div( *__ctx ));
 
             //update the output data
             //for( typename array_type::index i = 0; i < nComponents1; ++i )
@@ -3299,7 +3275,7 @@ template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & context, array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -3309,10 +3285,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
             for(int c1 = 0; c1 < ncdof; ++c1 )
                 {
                     int ldof = c1*basis_type::nDof+l;
-                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), l, c1 ) );
+                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
                     LIFE_ASSERT( gdof >= this->firstLocalIndex() &&
                                  gdof < this->lastLocalIndex() )
-                        ( context.id() )
+                        ( context.eId() )
                         ( l )( c1 )( ldof)( gdof )
                         ( this->size() )( this->localSize() )
                         ( this->firstLocalIndex() )( this->lastLocalIndex() )
@@ -3322,29 +3298,22 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
                     value_type v_ = this->globalValue( gdof );
                     const uint16_type nq = context.xRefs().size2();
                     if ( nDim == 3 )
+                    {
                         for( typename array_type::index i = 0; i < nDim; ++i )
+                        {
+                            for( uint16_type q = 0; q < nq ; ++q )
                             {
-                                for( uint16_type q = 0; q < nq ; ++q )
-                                    {
-                                        v[2][0][q] -= v_*context.B(q)( 1, i )*pc.grad( ldof, 0, i, q );
-                                        v[2][0][q] += v_*context.B(q)( 0, i )*pc.grad( ldof, 1, i, q );
-
-                                        v[1][0][q] -= v_*context.B(q)( 2, i )*pc.grad( ldof, 0, i, q );
-                                        v[1][0][q] += v_*context.B(q)( 0, i )*pc.grad( ldof, 2, i, q );
-
-                                        v[0][0][q] -= v_*context.B(q)( 2, i )*pc.grad( ldof, 1, i, q );
-                                        v[0][0][q] += v_*context.B(q)( 1, i )*pc.grad( ldof, 2, i, q );
-                                    }
+                                v[i][0][q] += v_*context.curl( ldof, i, 0, q );
                             }
+                        }
+                    }
                     else if ( nDim == 2 )
-                        for( typename array_type::index i = 0; i < nDim; ++i )
-                            {
-                                for( uint16_type q = 0; q < nq ; ++q )
-                                    {
-                                        v[0][0][q] -= v_*context.B(q)( 1, i )*pc.grad( ldof, 0, i, q );
-                                        v[0][0][q] += v_*context.B(q)( 0, i )*pc.grad( ldof, 1, i, q );
-                                    }
-                            }
+                    {
+                        for( uint16_type q = 0; q < nq ; ++q )
+                        {
+                            v[0][0][q] += v_*context.curl( ldof, 0, 0, q );
+                        }
+                    }
                 }
         }
 
@@ -3354,7 +3323,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3381,7 +3350,18 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( Context_t c
 
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_type __pc( this->functionSpace()->fe(), pts );
+    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ));
+    gmc_ptrtype __c( new gmc_type( __gm,
+                                   this->functionSpace()->mesh()->element( it->first ),
+                                   __geopc ) );
+    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename functionspace_type::fe_type fe_type;
+    typedef typename fe_type::template Context<vm::CURL, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
+                                         __c,
+                                         __pc ) );
+
 
     for ( ;it!=it_end;++it)
         {
@@ -3398,15 +3378,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( Context_t c
 
             //update geomap context
             __geopc->update( pts );
-
-            gmc_ptrtype __c( new gmc_type( __gm,
-                                           this->functionSpace()->mesh()->element( it->first ),
-                                           __geopc ) );
+            __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
             //update precompute of basis functions
-            __pc.update( pts );
+            __pc->update( pts );
+            __ctx->update( __c, __pc );
 
             //evaluate element for these points
-            curl_type __curl( this->curl( *__c, __pc ));
+            curl_type __curl( this->curl( *__ctx ));
 
             //update the output data
             itL=it->second.begin();
@@ -3435,7 +3413,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3462,7 +3440,18 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( Context_t 
 
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_type __pc( this->functionSpace()->fe(), pts );
+    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ));
+    gmc_ptrtype __c( new gmc_type( __gm,
+                                   this->functionSpace()->mesh()->element( it->first ),
+                                   __geopc ) );
+    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename functionspace_type::fe_type fe_type;
+    typedef typename fe_type::template Context<vm::CURL, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
+                                         __c,
+                                         __pc ) );
+
 
     for ( ;it!=it_end;++it)
         {
@@ -3479,15 +3468,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( Context_t 
 
             //update geomap context
             __geopc->update( pts );
-
-            gmc_ptrtype __c( new gmc_type( __gm,
-                                           this->functionSpace()->mesh()->element( it->first ),
-                                           __geopc ) );
+            __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
             //update precompute of basis functions
-            __pc.update( pts );
+            __pc->update( pts );
+            __ctx->update( __c, __pc );
 
             //evaluate element for these points
-            curlx_type __curlx( this->curlx( *__c, __pc ));
+            curlx_type __curlx( this->curlx( *__ctx ));
 
             //update the output data
             itL=it->second.begin();
@@ -3515,7 +3502,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3542,7 +3529,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( Context_t 
 
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_type __pc( this->functionSpace()->fe(), pts );
+    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ));
+    gmc_ptrtype __c( new gmc_type( __gm,
+                                   this->functionSpace()->mesh()->element( it->first ),
+                                   __geopc ) );
+    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename functionspace_type::fe_type fe_type;
+    typedef typename fe_type::template Context<vm::CURL, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
+                                         __c,
+                                         __pc ) );
 
     for ( ;it!=it_end;++it)
         {
@@ -3559,15 +3556,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( Context_t 
 
             //update geomap context
             __geopc->update( pts );
-
-            gmc_ptrtype __c( new gmc_type( __gm,
-                                           this->functionSpace()->mesh()->element( it->first ),
-                                           __geopc ) );
+            __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
             //update precompute of basis functions
-            __pc.update( pts );
+            __pc->update( pts );
+            __ctx->update( __c, __pc );
 
             //evaluate element for these points
-            curly_type __curly( this->curly( *__c, __pc ));
+            curly_type __curly( this->curly( *__ctx ));
 
             //update the output data
             itL=it->second.begin();
@@ -3595,7 +3590,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3622,7 +3617,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( Context_t 
 
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_type __pc( this->functionSpace()->fe(), pts );
+    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ));
+    gmc_ptrtype __c( new gmc_type( __gm,
+                                   this->functionSpace()->mesh()->element( it->first ),
+                                   __geopc ) );
+    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename functionspace_type::fe_type fe_type;
+    typedef typename fe_type::template Context<vm::CURL, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
+                                         __c,
+                                         __pc ) );
 
     for ( ;it!=it_end;++it)
         {
@@ -3639,15 +3644,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( Context_t 
 
             //update geomap context
             __geopc->update( pts );
-
-            gmc_ptrtype __c( new gmc_type( __gm,
-                                           this->functionSpace()->mesh()->element( it->first ),
-                                           __geopc ) );
+            __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
             //update precompute of basis functions
-            __pc.update( pts );
+            __pc->update( pts );
+            __ctx->update( __c, __pc );
 
             //evaluate element for these points
-            curlz_type __curlz( this->curlz( *__c, __pc ));
+            curlz_type __curlz( this->curlz( *__ctx ));
 
             //update the output data
             itL=it->second.begin();
@@ -3676,7 +3679,7 @@ template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const & context, array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -3687,24 +3690,23 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const
             for(int c1 = 0; c1 < ncdof; ++c1 )
                 {
                     size_type ldof = basis_type::nDof*c1 + i;
-                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), i, c1 ) );
+                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
                     LIFE_ASSERT( gdof >= this->firstLocalIndex() &&
                                  gdof < this->lastLocalIndex() )
-                        ( context.id() )
+                        ( context.eId() )
                         ( i )( c1 )( ldof)( gdof )
                         ( this->size() )( this->localSize() )
                         ( this->firstLocalIndex() )( this->lastLocalIndex() )
                         .error( "FunctionSpace::Element invalid access index" );
 
                     value_type v_ = this->globalValue( gdof );
-                    for( int k = 0; k < nComponents1; ++k )
-                        for( typename array_type::index i = 0; i < nDim; ++i )
-                            {
-                                for( size_type q = 0; q < context.xRefs().size2(); ++q )
-                                    {
-                                        v[k][0][q] += v_*context.B(q)( N, i )*pc.grad( ldof, k, i, q );
-                                    }
-                            }
+                    for( typename array_type::index i = 0; i < nComponents1; ++i )
+                    {
+                        for( size_type q = 0; q < context.xRefs().size2(); ++q )
+                        {
+                            v[i][0][q] += v_*context.d( ldof, i, N, q );
+                        }
+                    }
 
                 }
         }
@@ -3714,7 +3716,8 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( Context_t const & context,
+                                                                   matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3741,7 +3744,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( Context_t con
 
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_type __pc( this->functionSpace()->fe(), pts );
+    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ));
+    gmc_ptrtype __c( new gmc_type( __gm,
+                                   this->functionSpace()->mesh()->element( it->first ),
+                                   __geopc ) );
+    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename functionspace_type::fe_type fe_type;
+    typedef typename fe_type::template Context<vm::GRAD, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
+                                         __c,
+                                         __pc ) );
 
     for ( ;it!=it_end;++it)
         {
@@ -3758,15 +3771,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( Context_t con
 
             //update geomap context
             __geopc->update( pts );
-
-            gmc_ptrtype __c( new gmc_type( __gm,
-                                           this->functionSpace()->mesh()->element( it->first ),
-                                           __geopc ) );
+            __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
             //update precompute of basis functions
-            __pc.update( pts );
+            __pc->update( pts );
+            __ctx->update( __c, __pc );
 
             //evaluate element for these points
-            dx_type __dx( this->dx( *__c, __pc ));
+            dx_type __dx( this->dx( *__ctx ));
 
             //update the output data
             for( typename array_type::index i = 0; i < nComponents1; ++i )
@@ -3783,7 +3794,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3810,7 +3821,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( Context_t con
 
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_type __pc( this->functionSpace()->fe(), pts );
+    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ));
+    gmc_ptrtype __c( new gmc_type( __gm,
+                                   this->functionSpace()->mesh()->element( it->first ),
+                                   __geopc ) );
+    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename functionspace_type::fe_type fe_type;
+    typedef typename fe_type::template Context<vm::GRAD, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
+                                         __c,
+                                         __pc ) );
 
     for ( ;it!=it_end;++it)
         {
@@ -3827,15 +3848,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( Context_t con
 
             //update geomap context
             __geopc->update( pts );
-
-            gmc_ptrtype __c( new gmc_type( __gm,
-                                           this->functionSpace()->mesh()->element( it->first ),
-                                           __geopc ) );
+            __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
             //update precompute of basis functions
-            __pc.update( pts );
+            __pc->update( pts );
+            __ctx->update( __c, __pc );
 
             //evaluate element for these points
-            dy_type __dy( this->dy( *__c, __pc ));
+            dy_type __dy( this->dy( *__ctx ));
 
             //update the output data
             for( typename array_type::index i = 0; i < nComponents1; ++i )
@@ -3852,7 +3871,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( Context_t const & context, pc_type const& pc,  matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3879,7 +3898,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( Context_t con
 
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_type __pc( this->functionSpace()->fe(), pts );
+    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ));
+    gmc_ptrtype __c( new gmc_type( __gm,
+                                   this->functionSpace()->mesh()->element( it->first ),
+                                   __geopc ) );
+    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename functionspace_type::fe_type fe_type;
+    typedef typename fe_type::template Context<vm::GRAD, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
+                                         __c,
+                                         __pc ) );
 
     for ( ;it!=it_end;++it)
         {
@@ -3896,15 +3925,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( Context_t con
 
             //update geomap context
             __geopc->update( pts );
-
-            gmc_ptrtype __c( new gmc_type( __gm,
-                                           this->functionSpace()->mesh()->element( it->first ),
-                                           __geopc ) );
+            __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
             //update precompute of basis functions
-            __pc.update( pts );
-
+            __pc->update( pts );
+            __ctx->update( __c, __pc );
             //evaluate element for these points
-            dz_type __dz( this->dz( *__c, __pc ));
+            dz_type __dz( this->dz( *__ctx ));
 
             //update the output data
             for( typename array_type::index i = 0; i < nComponents1; ++i )
@@ -3922,16 +3948,16 @@ template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & context, pc_type const& pc, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & context, array_type& v ) const
 {
-    hess_( context, pc, v, mpl::int_<rank>() );
+    hess_( context, v, mpl::int_<rank>() );
 }
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & context, pc_type const& pc, array_type& v, mpl::int_<0> ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & context, array_type& v, mpl::int_<0> ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -3942,10 +3968,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
             for(int c1 = 0; c1 < ncdof; ++c1 )
                 {
                     size_type ldof = basis_type::nDof*c1 + i;
-                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.id(), i, c1 ) );
+                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
                     LIFE_ASSERT( gdof >= this->firstLocalIndex() &&
                                  gdof < this->lastLocalIndex() )
-                        ( context.id() )
+                        ( context.eId() )
                         ( i )( c1 )( ldof)( gdof )
                         ( this->size() )( this->localSize() )
                         ( this->firstLocalIndex() )( this->lastLocalIndex() )
@@ -3956,43 +3982,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
                     for( int i = 0; i < nRealDim; ++i )
                         for( int j = 0; j < nRealDim; ++j )
                             {
-                                for( typename array_type::index k = 0; k < nDim; ++k )
-                                    for( typename array_type::index l = 0; l < nDim; ++l )
-                                        for( size_type q = 0; q < context.xRefs().size2(); ++q )
-                                            {
+                                for( size_type q = 0; q < context.xRefs().size2(); ++q )
+                                {
 
-                                                v[i][j][q] += v_*context.B3()[i][j][k][l]*pc.hessian( ldof, k, l, q );
-
-#if 0
-                                                std::cout << "[" << i << "][" << j << "][" << q << "] B3=" << context.B3()[i][j][k][l] << "\n";
-                                                std::cout << "[" << i << "][" << j << "][" << q << "] pc=" << pc.hessian( ldof, k, l, q ) << "\n";
-                                                std::cout << "[" << i << "][" << j << "][" << q << "] v_=" << v_ << "\n";
-                                                std::cout << "[" << i << "][" << j << "][" << q << "] v=" << v[i][j][q] << "\n";
-
-#endif // 0
-                                                //v[i][j][q] += context.B3()[i][j][k][l]*hess_p(nDim*nDim*(nDim*l+k)+nDim*k+l,q);
+                                    v[i][j][q] += v_*context.hess( ldof, j, j, q );
 
 
-                                                //v[i][j][q] += Bq(i,k)*hess_p(nDim*nDim*(nDim*l+k)+nDim*k+l,q)*Bq(j,l);
-                                                //v[i][j][q] += hess_p(nDim*nDim*(nDim*k+l)+nDim*k+l,q);
-
-#if 0
-                                                std::cout << "[" << i << "][" << j << "][" << q << "] Bq(" << i << "," << k << ")=" << Bq(i,k) << "\n"
-                                                          << "[" << i << "][" << j << "][" << q << "] hess_p(" << k << "," << l << ", " << nDim*nDim*(nDim*l+k)+nDim*k+l << ", " << nDim*nDim*(nDim*l+k)+nDim*l+k  << ", " << nDim*nDim*(nDim*k+l)+nDim*k+l << ")=" << hess_p(nDim*nDim*(nDim*l+k)+nDim*l+k,q) << ", " << hess_p(nDim*nDim*(nDim*k+l)+nDim*k+l,q) << ", " << hess_p(nDim*nDim*(nDim*k+l)+nDim*k+l,q)<< "\n"
-                                                          << "[" << i << "][" << j << "][" << q << "] Bq(" << j << "," << l << ")=" << Bq(j,l) << "\n"
-                                                          << "[" << i << "][" << j << "][" << q << "] v(" << i << "," << j << "," << q << ")=" << v[j][i][q] << "\n";
-#endif
-
-                                            } // k,l,q
+                                } // q
                             } // i,j
 
-#if 0
-                    for( int i = 0; i < nDim; ++i )
-                        for( int j = 0; j < nDim; ++j )
-                            for( size_type q = 0; q < context.xRefs().size2(); ++q )
-                                std::cout << "v[" << i << "][" << j << "][" << q << "]="
-                                          << v[i][j][q] << "\n";
-#endif
                 }
         }
 
@@ -4002,7 +4000,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( Context_t const & context, pc_type const& pc, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -4029,7 +4027,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( Context_t c
 
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_type __pc( this->functionSpace()->fe(), pts );
+    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ));
+    gmc_ptrtype __c( new gmc_type( __gm,
+                                   this->functionSpace()->mesh()->element( it->first ),
+                                   __geopc ) );
+    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename functionspace_type::fe_type fe_type;
+    typedef typename fe_type::template Context<vm::HESSIAN, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
+                                         __c,
+                                         __pc ) );
 
     for ( ;it!=it_end;++it)
         {
@@ -4046,15 +4054,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( Context_t c
 
             //update geomap context
             __geopc->update( pts );
-
-            gmc_ptrtype __c( new gmc_type( __gm,
-                                           this->functionSpace()->mesh()->element( it->first ),
-                                           __geopc ) );
+            __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
             //update precompute of basis functions
-            __pc.update( pts );
+            __pc->update( pts );
+            __ctx->update( __c, __pc );
 
             //evaluate element for these points
-            hess_type __hess( this->hess( *__c, __pc ));
+            hess_type __hess( this->hess( *__ctx ));
 
             //update the output data
             itL=it->second.begin();

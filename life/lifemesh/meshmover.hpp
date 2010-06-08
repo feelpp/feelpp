@@ -162,8 +162,21 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
     element_iterator it_elt = imesh->beginElementWithProcessId( imesh->comm().rank() );
     element_iterator en_elt = imesh->endElementWithProcessId( imesh->comm().rank() );
-
+    typedef typename DisplType::pc_type pc_type;
+    typedef boost::shared_ptr<pc_type> pc_ptrtype;
+    pc_ptrtype __pc( new pc_type( u.functionSpace()->fe(), gm->points() ) );
     gm_context_ptrtype __c( new gm_context_type( gm, *it_elt, __geopc ) );
+
+    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename fe_type::template Context<0, fe_type, gm_type, geoelement_type,gm_context_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    fectx_ptrtype __ctx( new fectx_type( u.functionSpace()->fe(),
+                                         __c,
+                                         __pc ) );
+    typedef boost::multi_array<value_type,3> array_type;
+    array_type uvalues( u.idExtents( *__ctx ) );
+    std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), 0 );
+    u.id( *__ctx, uvalues );
 
     //const uint16_type ndofv = fe_type::nDof;
 
@@ -174,23 +187,22 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     //if ( !u.areGlobalValuesUpdated() )
     u.updateGlobalValues();
 
-    typename DisplType::pc_type pc( u.functionSpace()->fe(), gm->points() );
+
     uint16_type nptsperelem = gm->points().size2();
     ublas::vector<value_type> val( fe_type::nComponents );
 
     for( ; it_elt != en_elt; ++it_elt )
         {
             __c->update( *it_elt );
-
-
-            typename DisplType::id_type interp_displ( u.id( *__c, pc ) );
-
+            __ctx->update( __c );
+            std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), 0 );
+            u.id( *__ctx, uvalues );
 
             for( uint16_type l =0; l < nptsperelem; ++l )
                 {
                     for ( uint16_type comp = 0;comp < fe_type::nComponents;++comp )
                         {
-                            val[ comp ] = interp_displ( comp, 0, l );
+                            val[ comp ] = uvalues[comp][0][l];
                         }
                     if ( points_done[ it_elt->point( l ).id() ] == false )
                         {
@@ -214,6 +226,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
                 }
         }
 
+    imesh->gm()->initCache( imesh.get() );
     // notify observers that the mesh has changed
     imesh->meshChanged( MESH_CHANGES_POINTS_COORDINATES );
     //return boost::make_tuple( omesh, 1.0  );
