@@ -287,6 +287,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                   mpl::identity<Shape<gmc_type::NDim, Tensor2, false> > >::type>::type::type shape; \
                 typedef typename fe_type::PreCompute pc_type;           \
                 typedef boost::shared_ptr<pc_type> pc_ptrtype;          \
+                typedef typename fe_type::geometric_element_type geometric_element_type; \
+                typedef typename fe_type::template Context<VF_OPERATOR_CONTEXT( O ), fe_type, Geo_t,geometric_element_type> ctx_type; \
+                typedef boost::shared_ptr<ctx_type> ctx_ptrtype;        \
                                                                         \
                                                                         \
                 template<typename E>\
