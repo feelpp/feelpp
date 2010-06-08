@@ -55,6 +55,10 @@ makeOptions()
         ("poly", po::value<std::string>()->default_value( "lagrange" ), "polynomial family")
         ("order", po::value<uint16_type>()->default_value( 2 ), "polynomial order")
         ("convex", po::value<std::string>()->default_value( "Simplex" ), "Convex type (Simplex, SimplexProduct")
+
+        ("xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element")
+        ("ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element")
+        ("zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element")
         ;
     return polyvisoptions.add( Life::life_options() );
 }
