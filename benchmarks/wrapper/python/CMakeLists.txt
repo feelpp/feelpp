@@ -36,3 +36,5 @@ endmacro(add_module)
 
 
 add_module( wrapper1 )
+
+add_module( laplacian1dP1 )
