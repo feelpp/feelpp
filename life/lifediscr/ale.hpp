@@ -147,6 +147,10 @@ public:
     typedef boost::shared_ptr<pN_functionspace_type> pN_functionspace_ptrtype;
     typedef typename pN_functionspace_type::element_type pN_element_type;
 
+    typedef typename pN_functionspace_type::fe_type fe_type;
+    typedef typename fe_type::template Context<vm::POINT|vm::JACOBIAN, fe_type, gm_type, geo_element_type, gm_context_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+
 
     /**
      * constructor
@@ -188,6 +192,12 @@ public:
     new_mesh_ptrtype getMovingMesh();
 
     pN_functionspace_ptrtype functionSpace();
+
+    template< typename elem_type >
+    std::vector<uint16_type> getFacesId( elem_type const&, std::vector<flag_type> const& flagSet );
+
+    points_type getRefFacesPoints( std::vector<uint16_type> const& facesIds,
+                                   pointset_type& pointset );
 
     template< typename elem_type >
     void generateP1BoundaryMap( std::vector<flag_type>& flagSet,
@@ -241,14 +251,61 @@ private:
                               std::vector<elem_type> const& referencePolyBoundarySet,
                               std::vector<elem_type> const& polyDisplacementSet,
                               pN_element_type& p, mpl::bool_<false> )
-    {
-    }
+        {
+        }
 
 
 };
 
+template < class Convex >
+template< typename elem_type >
+std::vector<uint16_type>
+ALE<Convex>::getFacesId( elem_type const& elt, std::vector<flag_type> const& flagSet )
+{
+    std::vector<uint16_type> facesId;
+    for ( uint8_type i = 0; i < geo_element_type::numEdges; ++i )
+    {
+        auto edge = elt.edge( i );
+
+        auto result = find( flagSet.begin(),
+                            flagSet.end(),
+                            edge.marker().value() );
+
+        if ( result != flagSet.end() )
+        {
+#if !defined ( NDEBUG )
+            Debug(1234) << "We are in element " << it_elt->id() << "\n";
+            Debug(1234) << "Marker of edge : " << edge.marker().value() << "\n";
+#endif
+            facesId.push_back(i);
+        }
+    }
+}
+
+template < class Convex >
+typename ALE<Convex>::points_type
+ALE<Convex>::getRefFacesPoints( std::vector<uint16_type> const& facesId,
+                                pointset_type& pointset )
+{
+    // generate points in reference element and apply Gordon Hall transformation
+    points_type pts ( Dim, facesId.size()*pointset_type::nbPtsPerEdge + pointset_type::nbPtsPerFace );
+    auto it_faces = facesId.begin();
+    auto en_faces = facesId.end();
 
 
+    uint16_type counter = 0;
+
+    for( ; it_faces != en_faces; ++it_faces )
+    {
+        ublas::subrange(pts, 0, Dim, counter, counter+pointset_type::nbPtsPerEdge ) =
+            pointset.pointsBySubEntity(Dim-1, *it_faces );
+
+        counter += pointset_type::nbPtsPerEdge;
+    }
+
+    ublas::subrange(pts, 0, Dim, counter, pts.size2() ) = pointset.pointsBySubEntity( Dim, 0 );
+    return pts;
+}
 template < class Convex >
 template< typename elem_type >
 void
@@ -266,11 +323,11 @@ ALE<Convex>::generateHighOrderMap( std::vector<flag_type>& flagSet,
     //Log() << "[ALE] Time to generate P1 boundary map: " << M_timer.elapsed() << "\n";
 
     if ( !leaveInternalNodesZero )
-        {
-            M_timer.restart();
-            generateP1Map( p1_displacement );
-            //Log() << "[ALE] Time to generate P1 map: " << M_timer.elapsed() << "\n";
-        }
+    {
+        M_timer.restart();
+        generateP1Map( p1_displacement );
+        //Log() << "[ALE] Time to generate P1 map: " << M_timer.elapsed() << "\n";
+    }
 
     M_timer.restart();
     interpolate( pN_fspace, p1_displacement, pN_displacement, INTERPOLATE_SAME_MESH );
@@ -385,51 +442,51 @@ ALE<Convex>::generateP1BoundaryMap( std::vector<flag_type>& flagSet,
     AUTO( dirac_function, cst_ref(polyNode)*oneY()*chi( radius < tolerance*tolerance ) );
 
     for ( uint16_type i=0; i < flagSet.size(); ++i )
+    {
+        marker_face_const_iterator face_it = reference_mesh->beginFaceWithMarker( flagSet[i] );
+        marker_face_const_iterator face_en = reference_mesh->endFaceWithMarker( flagSet[i] );
+
+        for ( ; face_it != face_en; ++face_it )
         {
-            marker_face_const_iterator face_it = reference_mesh->beginFaceWithMarker( flagSet[i] );
-            marker_face_const_iterator face_en = reference_mesh->endFaceWithMarker( flagSet[i] );
+            for (uint16_type j=0; j < 2; ++j )
+            {
+                point_type point = reference_mesh->face( face_it->id() ).point(j);
 
-            for ( ; face_it != face_en; ++face_it )
+                std::vector<uint16_type>::const_iterator result;
+
+                result = find( pointIdOnBoundary[ flagSet[i] ].begin(),
+                               pointIdOnBoundary[ flagSet[i] ].end(), point.id() );
+
+                if ( (result == pointIdOnBoundary[ flagSet[i] ].end()) || pointIdOnBoundary[ flagSet[i] ].empty() )
                 {
-                    for (uint16_type j=0; j < 2; ++j )
-                        {
-                            point_type point = reference_mesh->face( face_it->id() ).point(j);
+                    ublas::vector<double> pt_coord (2);
+                    pt_coord[0] = (point.node())[0];
 
-                            std::vector<uint16_type>::const_iterator result;
+                    if ( ( pt_coord[0] > intervalX.first + tolerance ) && ( pt_coord[0] < intervalX.second - tolerance ) )
+                    {
+                        p1 = polyDisplacementSet[i];
 
-                            result = find( pointIdOnBoundary[ flagSet[i] ].begin(),
-                                           pointIdOnBoundary[ flagSet[i] ].end(), point.id() );
+                        pt[0] = (point.node())[0];
+                        polyNode = p1(pt)(0,0,0);
 
-                            if ( (result == pointIdOnBoundary[ flagSet[i] ].end()) || pointIdOnBoundary[ flagSet[i] ].empty() )
-                                {
-                                    ublas::vector<double> pt_coord (2);
-                                    pt_coord[0] = (point.node())[0];
-
-                                    if ( ( pt_coord[0] > intervalX.first + tolerance ) && ( pt_coord[0] < intervalX.second - tolerance ) )
-                                        {
-                                            p1 = polyDisplacementSet[i];
-
-                                            pt[0] = (point.node())[0];
-                                            polyNode = p1(pt)(0,0,0);
-
-                                            pointNode0 = pt[0];
-                                            pointNode1 = point.node()[1];
+                        pointNode0 = pt[0];
+                        pointNode1 = point.node()[1];
 
 #if !defined ( NDEBUG )
-                                            Debug(1234) << "From (" << pt[0] << "," << (point.node())[1]
-                                                        << ") to (" << pt[0] << "," << polyNode << ")\n";
+                        Debug(1234) << "From (" << pt[0] << "," << (point.node())[1]
+                                    << ") to (" << pt[0] << "," << polyNode << ")\n";
 #endif
 
-                                            u += vf::project( p1_fspace,
-                                                          idedelements(*reference_mesh, face_it->ad_first()  ),
-                                                          dirac_function );
+                        u += vf::project( p1_fspace,
+                                          idedelements(*reference_mesh, face_it->ad_first()  ),
+                                          dirac_function );
 
-                                            pointIdOnBoundary[ flagSet[i] ].push_back( point.id() );
-                                        }
-                                }
-                        }
+                        pointIdOnBoundary[ flagSet[i] ].push_back( point.id() );
+                    }
                 }
+            }
         }
+    }
 }
 
 
@@ -465,113 +522,96 @@ ALE<Convex>::updatePointsInFaces( std::vector<flag_type>& flagSet,
     std::vector<elem_type> polyBoundarySet;
 
     for ( uint16_type i = 0; i < referencePolyBoundarySet.size(); ++i )
-        {
-            elem_type temp ( referencePolyBoundarySet[i].functionSpace(), "temp");
-            temp = referencePolyBoundarySet[i];
-            temp += polyDisplacementSet[i];
+    {
+        elem_type temp ( referencePolyBoundarySet[i].functionSpace(), "temp");
+        temp = referencePolyBoundarySet[i];
+        temp += polyDisplacementSet[i];
 
-            polyBoundarySet.push_back(temp);
-        }
+        polyBoundarySet.push_back(temp);
+    }
 
-    typename mesh_type::location_element_iterator it_elt = reference_mesh->beginElementOnBoundary();
-    typename mesh_type::location_element_iterator en_elt = reference_mesh->endElementOnBoundary();
+    auto it_elt = reference_mesh->beginElementOnBoundary();
+    auto en_elt = reference_mesh->endElementOnBoundary();
+    typedef boost::multi_array<double,3> array_type;
+    auto facesId = this->getFacesId( *it_elt, flagSet );
+    typedef typename pN_element_type::pc_type pN_pc_type;
+    typedef typename pN_element_type::pc_ptrtype pN_pc_ptrtype;
+    pN_pc_ptrtype pc( new pN_pc_type( pN_ale.functionSpace()->fe(), pointset.points() ) );
+    fectx_ptrtype fectx( new fectx_type( pN_ale.functionSpace()->fe(),
+                                         __c,
+                                         pc ) );
+    array_type interpfunc( pN_ale.idExtents( *fectx ) );
+    array_type interpfunc_vertices( pN_ale.idExtents( *fectx ) );
 
     for( ; it_elt != en_elt; ++it_elt )
+    {
+        // find if element has a face in the boundary
+        std::vector<uint16_type> facesId = this->getFacesId( *it_elt, flagSet );
+
+        if ( facesId.size() > 0  )
         {
-            // find if element has a face in the boundary
-            std::vector<flag_type>::iterator result;
-            std::vector<uint16_type> facesId;
+            // generate points in reference element
+            auto pts = getRefFacesPoints( facesId, pointset );
 
-            for ( uint8_type i = 0; i < geo_element_type::numEdges; ++i )
-                {
-                    typename mesh_type::edge_type edge = it_elt->edge( i );
+            // generate points in real element
+            __geopc->update( pts );
+            __c->update( reference_mesh->element(it_elt->id()) );
+            pc->update( __c->xRefs() );
+            fectx->update( __c, pc );
+            std::fill( interpfunc.data(),
+                       interpfunc.data()+interpfunc.num_elements(), 0 );
+            pN_ale.id( *fectx, interpfunc );
+            points_type pts_reference = __c->xReal();
 
-                    result = find( flagSet.begin(),
-                                   flagSet.end(),
-                                   edge.marker().value() );
+            __geopc->update( pointset.pointsByEntity(0) );
+            __c->update( reference_mesh->element(it_elt->id()) );
+            pc->update( __c->xRefs() );
+            fectx->update( __c, pc );
+            std::fill( interpfunc_vertices.data(),
+                       interpfunc_vertices.data()+interpfunc_vertices.num_elements(), 0 );
+            pN_ale.id( *fectx, interpfunc_vertices );
 
-                    if ( result != flagSet.end() )
-                        {
-#if !defined ( NDEBUG )
-                            Debug(1234) << "We are in element " << it_elt->id() << "\n";
-                            Debug(1234) << "Marker of edge : " << edge.marker().value() << "\n";
-#endif
-                            facesId.push_back(i);
-                        }
-                }
+            geo_element_type copy_elt = *it_elt;
+            ublas::vector<double> v(2);
+            std::vector< ublas::vector<double> > vertices(geo_element_type::numVertices);
 
-            if ( facesId.size() > 0  )
-                {
-                    // generate points in reference element and apply Gordon Hall transformation
-                    points_type pts ( Dim, facesId.size()*pointset_type::nbPtsPerEdge + pointset_type::nbPtsPerFace );
-                    std::vector<uint16_type>::iterator it_faces = facesId.begin();
-                    std::vector<uint16_type>::iterator en_faces = facesId.end();
+            for ( uint16_type i=0; i < geo_element_type::numVertices; ++i )
+            {
+                v(0) = interpfunc_vertices[0][0][i] - (it_elt->point(i).node())[0];
+                v(1) = interpfunc_vertices[1][0][i] - (it_elt->point(i).node())[1];
 
+                copy_elt.applyDisplacement( i, v );
+                vertices[i] = v;
+            }
+            // apply Gordon Hall transformation
+            ho_mesh->GordonHall( *it_elt, pts, flagSet, polyBoundarySet );
 
-                    uint16_type counter = 0;
+            for ( uint16_type i=0; i < geo_element_type::numVertices; ++i )
+            {
+                v(0) = -(interpfunc_vertices[0][0][i] - (it_elt->point(i).node())[0]);
+                v(1) = -(interpfunc_vertices[1][0][i] - (it_elt->point(i).node())[1]);
+                v = -vertices[i];
+                copy_elt.applyDisplacement( i, v );
+            }
 
-                    for( ; it_faces != en_faces; ++it_faces )
-                        {
-                            ublas::subrange(pts, 0, Dim, counter, counter+pointset_type::nbPtsPerEdge ) =
-                                pointset.pointsBySubEntity(Dim-1, *it_faces );
-
-                            counter += pointset_type::nbPtsPerEdge;
-                        }
-
-                    ublas::subrange(pts, 0, Dim, counter, pts.size2() ) = pointset.pointsBySubEntity( Dim, 0 );
-
-                    // generate points in reference element and apply Gordon Hall transformation
-                    __geopc->update( pts );
-                    __c->update( reference_mesh->element(it_elt->id()) );
-                    typename pN_element_type::pc_type pc( pN_ale.functionSpace()->fe(), __c->xRefs() );
-                    typename pN_element_type::id_type interpfunc( pN_ale.id( *__c, pc ) );
-                    points_type pts_reference = __c->xReal();
-
-
-                    __geopc->update( pointset.pointsByEntity(0) );
-                    __c->update( reference_mesh->element(it_elt->id()) );
-                    typename pN_element_type::pc_type pc2( pN_ale.functionSpace()->fe(), __c->xRefs() );
-                    typename pN_element_type::id_type interpfunc_vertices( pN_ale.id( *__c, pc2 ) );
-
-                    geo_element_type copy_elt = *it_elt;
-                    ublas::vector<double> v(2);
-                    std::vector< ublas::vector<double> > vertices(geo_element_type::numVertices);
-
-                    for ( uint16_type i=0; i < geo_element_type::numVertices; ++i )
-                        {
-                            v(0) = interpfunc_vertices(0,0,i) - (it_elt->point(i).node())[0];
-                            v(1) = interpfunc_vertices(1,0,i) - (it_elt->point(i).node())[1];
-
-                            copy_elt.applyDisplacement( i, v );
-                            vertices[i] = v;
-                        }
-
-                    ho_mesh->GordonHall( *it_elt, pts, flagSet, polyBoundarySet );
-
-                    for ( uint16_type i=0; i < geo_element_type::numVertices; ++i )
-                        {
-                            v(0) = -(interpfunc_vertices(0,0,i) - (it_elt->point(i).node())[0]);
-                            v(1) = -(interpfunc_vertices(1,0,i) - (it_elt->point(i).node())[1]);
-                            v = -vertices[i];
-                            copy_elt.applyDisplacement( i, v );
-                        }
-
-                    for ( uint16_type j = 0; j < pts.size2(); ++j )
-                        {
-                            node[0] = pts_reference(0,j);
-                            node[1] = pts_reference(1,j);
+            for ( uint16_type j = 0; j < pts.size2(); ++j )
+            {
+                node[0] = pts_reference(0,j);
+                node[1] = pts_reference(1,j);
 
 #if !defined ( NDEBUG )
-                            Debug(1234) << "Point (" << node[0] << "," << node[1]
-                                        << ") moves to (" << pts(0,j) << "," << pts(1,j)
-                                        << ")" << "\n";
+                Debug(1234) << "Point (" << node[0] << "," << node[1]
+                            << ") moves to (" << pts(0,j) << "," << pts(1,j)
+                            << ")" << "\n";
 #endif
 
-                            p += vf::project( pN_fspace, idedelements(*reference_mesh, it_elt->id() ),
-                                          ((pts(0,j) - interpfunc(0,0,j))*oneX() + (pts(1,j) - interpfunc(1,0,j))*oneY())*chi( ( radius < tolerance*tolerance )) );
-                        }
-                }
+                p += vf::project( pN_fspace, idedelements(*reference_mesh, it_elt->id() ),
+                                  ((pts(0,j) - interpfunc[0][0][j])*oneX() +
+                                   (pts(1,j) - interpfunc[1][0][j])*oneY())*
+                                  chi( ( radius < tolerance*tolerance )) );
+            }
         }
+    }
 
     Log() << "[ALE] Time to update PN map (faces): " << M_timer.elapsed() << "\n";
 }
