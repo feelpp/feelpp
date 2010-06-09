@@ -46,9 +46,23 @@ foreach( poly lagrange orthonormalpset )
   endforeach()
 endforeach()
 
-foreach( poly crouzeixraviart )
+foreach( poly crouzeixraviart  )
   foreach( dim 2 3)
     foreach( order 1  )
+
+      add_test( life_polyvis-${poly}-${dim}d-p${order}
+        life_polyvis
+        --poly=${poly}
+        --dim=${dim}
+        --order=${order}  )
+
+    endforeach()
+  endforeach()
+endforeach()
+
+foreach( poly raviartthomas  )
+  foreach( dim 2 3)
+    foreach( order 0 1 2 3  )
 
       add_test( life_polyvis-${poly}-${dim}d-p${order}
         life_polyvis
