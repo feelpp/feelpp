@@ -75,7 +75,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     typedef boost::shared_ptr<domain_gmc_type> domain_gmc_ptrtype;
 
     typedef typename FunctionType::functionspace_type::fe_type f_fe_type;
-    typedef typename f_fe_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, f_fe_type, domain_gm_type, domain_geoelement_type> f_fectx_type;
+    typedef typename f_fe_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, f_fe_type, domain_gm_type, domain_geoelement_type,domain_gmc_type::context> f_fectx_type;
     typedef boost::shared_ptr<f_fectx_type> f_fectx_ptrtype;
 
     // dof

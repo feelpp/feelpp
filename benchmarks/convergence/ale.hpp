@@ -187,7 +187,7 @@ public:
 #else
                 exporter->step(tn)->setMesh( U.mesh() );
 #endif
-                exporter->step(tn)->add( "U", U );
+                //exporter->step(tn)->add( "U", U );
                 exporter->save();
             }
     }
