@@ -2428,7 +2428,8 @@ public:
             LIFE_ASSERT( it != en )( fusion::at_key<key_type>( geom )->id() ).error ("invalid basis function to integrate" );
             for( uint16_type i = 0; i < _M_loc.size(); ++i )
                 {
-                    _M_loc[i] = it->second[i]->id( *fusion::at_key<key_type>( geom ), _M_pc );
+#warning TO BE FIXED
+                    //_M_loc[i] = it->second[i]->id( *fusion::at_key<key_type>( geom ), _M_pc );
                 }
         }
         template<typename IndexI, typename IndexJ>
