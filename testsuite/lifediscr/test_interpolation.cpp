@@ -207,9 +207,10 @@ struct test_interpolation_op
         u = vf::project( Xh, elements(*mesh), u_exact);
 
         typename imesh<Dim,GeoOrder,RDim>::ptrtype mesh1( createMesh<Dim,GeoOrder,RDim>( meshSize/2 ) );
+        typedef typename imesh<Dim,GeoOrder,RDim>::type mesh1_type;
 
         typedef fusion::vector<Lagrange<Order+GeoOrder-1, Scalar> > imagebasis_type;
-        typedef FunctionSpace<mesh_type, imagebasis_type> imagespace_type;
+        typedef FunctionSpace<mesh1_type, imagebasis_type> imagespace_type;
         boost::shared_ptr<imagespace_type> Yh( new imagespace_type(mesh1) );
         typename imagespace_type::element_type v( Yh, "v" );
 
@@ -244,7 +245,7 @@ struct test_interpolation_op
 
         std::ostringstream ostr2;
         ostr2 << "ointerpv-" << Dim << "." << Order;
-        ExporterQuick<mesh_type> exp2( ostr2.str(), "ensight" );
+        ExporterQuick<mesh1_type> exp2( ostr2.str(), "ensight" );
         exp2.save( 0, v, w );
     }
     double meshSize;
