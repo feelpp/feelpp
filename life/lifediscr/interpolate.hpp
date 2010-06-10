@@ -105,24 +105,32 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
     f.updateGlobalValues();
 
+    auto it = f.functionSpace()->mesh()->beginElementWithProcessId( space->mesh()->comm().rank() );
+    auto en = f.functionSpace()->mesh()->endElementWithProcessId( space->mesh()->comm().rank() );
+    //gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
+    
+    domain_gm_ptrtype __dgm = f.functionSpace()->gm();
+    typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
+    typedef typename domain_gm_type::precompute_type domain_geopc_type;
+    domain_geopc_ptrtype __dgeopc( new domain_geopc_type( __dgm, __basis->dual().points() ) );
+    
+    domain_gmc_ptrtype __c( new domain_gmc_type( __dgm, *it, __dgeopc ) );
+    auto pc = f.functionSpace()->fe()->preCompute( f.functionSpace()->fe(), __c->xRefs() );
+    
+    f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
+                                             __c,
+                                             pc ) );
+    typedef boost::multi_array<value_type,3> array_type;
+    array_type fvalues( f.idExtents( *fectx ) );
+    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
+    //f.id( *fectx, fvalues );
+    
     // if same mesh but not same function space (different order)
     //if ( f.functionSpace()->mesh() == space->mesh() )
     //if ( same_mesh == INTERPOLATE_SAME_MESH )
     if ( (MeshBase*)f.functionSpace()->mesh().get() == (MeshBase*)space->mesh().get() )
         {
             Debug( 5010 ) << "[interpolate] Same mesh but not same space\n";
-            auto it = space->mesh()->beginElementWithProcessId( space->mesh()->comm().rank() );
-            auto en = space->mesh()->endElementWithProcessId( space->mesh()->comm().rank() );
-            gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
-            auto pc = f.functionSpace()->fe()->preCompute( f.functionSpace()->fe(), __c->xRefs() );
-
-            f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
-                                                     __c,
-                                                     pc ) );
-            typedef boost::multi_array<value_type,3> array_type;
-            array_type fvalues( f.idExtents( *fectx ) );
-            std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
-            f.id( *fectx, fvalues );
 
             for( ; it != en; ++ it )
                 {
@@ -163,11 +171,6 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
         } // same mesh
     else // INTERPOLATE_DIFFERENT_MESH
         {
-            domain_gm_ptrtype __dgm = f.functionSpace()->gm();
-            typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
-            typedef typename domain_gm_type::precompute_type domain_geopc_type;
-            domain_geopc_ptrtype __dgeopc( new domain_geopc_type( __dgm, __basis->dual().points() ) );
-
             Debug( 5010 ) << "[interpolate] different meshes\n";
             typename domain_mesh_type::Inverse meshinv( f.functionSpace()->mesh() );
 
@@ -186,17 +189,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
             std::fill( dof_done.begin(), dof_done.end(), false );
             std::vector<boost::tuple<size_type,uint16_type > > itab;
             typename matrix_node<value_type>::type pts( mesh_type::nDim, 1 );
-            domain_mesh_element_iterator it = f.functionSpace()->mesh()->beginElementWithProcessId( f.functionSpace()->mesh()->comm().rank() );
-            domain_mesh_element_iterator en = f.functionSpace()->mesh()->endElementWithProcessId( f.functionSpace()->mesh()->comm().rank() );
-
-            domain_gmc_ptrtype __c( new domain_gmc_type( __dgm, *it, __dgeopc ) );
-            auto pc = f.functionSpace()->fe()->preCompute( f.functionSpace()->fe(), __c->xRefs() );
-            f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
-                                                     __c,
-                                                     pc ) );
-            typedef boost::multi_array<value_type,3> array_type;
-            array_type fvalues( f.idExtents( *fectx ) );
-            std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
+            
             size_type first_dof = space->dof()->firstDof();
             for( ; it != en; ++ it )
                 {
