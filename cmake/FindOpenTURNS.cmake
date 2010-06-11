@@ -184,16 +184,16 @@ endif ()
 
 # handle the QUIETLY and REQUIRED arguments and set OpenTURNS_FOUND to TRUE if
 # all listed variables are TRUE
+include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (OpenTURNS DEFAULT_MSG
-#  OpenTURNS_LIBRARY
-#  OpenTURNS_INCLUDE_DIR
-#  OpenTURNS_SWIG_INCLUDE_DIR
+  OpenTURNS_LIBRARY
+  OpenTURNS_INCLUDE_DIR
+  OpenTURNS_SWIG_INCLUDE_DIR
   OpenTURNS_INCLUDE_DIRS
   OpenTURNS_LIBRARIES
   OpenTURNS_WRAPPER_DIR
-#  OpenTURNS_MODULE_DIR
+  OpenTURNS_MODULE_DIR
 )
-
 mark_as_advanced (
   OpenTURNS_LIBRARY
   OpenTURNS_INCLUDE_DIR
