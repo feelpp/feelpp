@@ -386,6 +386,18 @@ DebugStream::operator<<( uint32_type s)
     }
     return *this;
 }
+#if defined (__s390x__) || defined( __s390__ )
+DebugStream&
+DebugStream::operator<<( size_type s)
+{
+    if ( __p->debug )
+    {
+        __p->_M_output  << s;
+        flush();
+    }
+    return *this;
+}
+#endif
 DebugStream&
 DebugStream::operator<<( uint64_type s)
 {
