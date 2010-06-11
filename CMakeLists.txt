@@ -207,10 +207,12 @@ endif( TRILINOS_FOUND )
 # OpenTURNS
 #
 FIND_PACKAGE( OpenTURNS )
-#if ( OpenTURNS_FOUND )
+if ( OPENTURNS_FOUND )
+  MESSAGE(STATUS "OpenTURNS Libraries: ${OpenTURNS_LIBRARIES}")
+  MESSAGE(STATUS "OpenTURNS Headers: ${OpenTURNS_INCLUDE_DIRS}")
   INCLUDE_DIRECTORIES(${OpenTURNS_INCLUDE_DIRS})
   SET(LIFE_LIBRARIES ${OpenTURNS_LIBRARIES} ${LIFE_LIBRARIES})
-#endif( OpenTURNS_FOUND )
+endif( OPENTURNS_FOUND )
 
 #
 # VTK
@@ -288,7 +290,7 @@ SET(LIFE_LIBRARIES
 
 
 
-SET(LIFE_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" FORCE )
+SET(LIFE_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
 
 OPTION(LIFE_ENABLE_DOCUMENTATION "enable life documentation" OFF)
 OPTION(LIFE_ENABLE_BENCHMARKS "enable life benchmarks" OFF)

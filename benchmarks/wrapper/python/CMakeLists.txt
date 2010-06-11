@@ -22,7 +22,7 @@
 #
 #
 
-macro(add_module modulename)
+macro(add_python_module modulename)
 
   FILE(COPY ${modulename}test.py DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
   add_custom_target( ${modulename}py DEPENDS ${modulename}test.py )
@@ -32,9 +32,10 @@ macro(add_module modulename)
   add_dependencies( ${modulename} ${modulename}test.py)
   configure_file(${modulename}.xml.in ${modulename}.xml)
 
-endmacro(add_module)
+endmacro(add_python_module)
 
-
-add_module( wrapper1 )
-
-add_module( laplacian1dP1 )
+# this depends on OpenTURNS
+if ( OPENTURNS_FOUND )
+  add_python_module( wrapper1 )
+  add_python_module( laplacian1dP1 )
+endif()

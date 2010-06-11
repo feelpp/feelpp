@@ -9,6 +9,29 @@
 #+LATEX_class: cparticle
 
 * New in 0.9.25
+** Programming Environment
+ - Added OpenTURNS check (optional)
+ - Start support python wrappers using OpenTURNS
+
+
+** Libraries
+
+*** lifecore
+
+ - Fix build on s390
+
+*** lifepoly
+
+ - support for RaviartThomas RTk in 2D and 3D
+
+*** lifediscr
+
+ - support for vectorial valued function such as RaviartThomas
+ - update the interpolation tool
+
+*** lifevf
+
+ - update the interpolation tool
 
 
 * New in 0.9.24
