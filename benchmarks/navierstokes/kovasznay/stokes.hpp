@@ -256,7 +256,10 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::Stokes( int argc, char** argv, AboutData 
     funcs2.push_back(oss.str());
     oss.str("");
     std::vector<std::string> funcs3;
-    oss << "h**" << boost::lexical_cast<std::string>( OrderU+1 ) ;
+    if ( OrderP == OrderU-2 )
+        oss << "h**" << boost::lexical_cast<std::string>( OrderU ) ;
+    else
+        oss << "h**" << boost::lexical_cast<std::string>( OrderU+1 ) ;
     funcs3.push_back(oss.str());
 
     this->
@@ -436,7 +439,9 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
     // right hand side
     form1( Xh, F, _init=true ) =integrate( elements(mesh), trans(f)*id(v) );
     form1( Xh, F )+= integrate( boundaryfaces(mesh),
-                                trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
+                                trans(u_exact)*(-SigmaN+
+                                                penalbc*id(v)/hFace() +
+                                                penalbc*(trans(id(v))*N())*N()*max(vf::sqrt( trans(idv(v))*(idv(v)) ),mu/hFace()) ) );
 
     Log() << "[stokes] vector local assembly done\n";
     Log() << "form1 F created in " << t.elapsed() << "s\n"; t.restart();
@@ -467,6 +472,7 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
     form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaNt)*id(v) );
     form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaN)*idt(u) );
     form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*trans(idt(u))*id(v)/hFace() );
+    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*(trans(idt(u))*N())*(trans(id(v))*N())*max(vf::sqrt( trans(idv(v))*(idv(v)) ),mu/hFace()) );
     Log() << "[assembly] form2 D boundary terms in " << t.elapsed() << "s\n"; t.restart();
 
     auto p_stabexpr = M_stabP*hFace()*hFace()*hFace()/max(mu,hFace()*sqrt(trans(idv(v))*idv(v)));

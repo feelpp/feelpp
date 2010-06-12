@@ -22,7 +22,7 @@
 #
 #
 INCLUDE_DIRECTORIES (
-  ${LIFE_SOURCE_DIR}/benchmarks/navierstokes/kovasznay
+  ${LIFE_SOURCE_DIR}/benchmarks/navierstokes/kovasznay/
   )
 ENABLE_TESTING()
 
@@ -37,7 +37,7 @@ foreach( BENCH stokes11 stokes22 stokes33 stokes21 stokes31 stokes32 )
         ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --mode=0
-        --path=${LIFE_BUILD_DIR}/benchmarks/convergence/
+        --path=${LIFE_BUILD_DIR}/benchmarks/navierstokes/kovasznay/
         --cmdargs="--backend=${BACKEND} --export=0 ${${BACKEND}_ILU_SOLVER_OPTIONS} --penalisation=1e-3" )
     endforeach()
 
