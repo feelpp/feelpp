@@ -216,8 +216,10 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::Stokes( int argc, char** argv, AboutData 
     switch( OrderU )
     {
     case 1:
-    case 2:
         h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.02:0.025:0.05" );
+        break;
+    case 2:
+        h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.02:0.025:0.1" );
         break;
 
     case 3:

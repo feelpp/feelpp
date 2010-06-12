@@ -62,7 +62,7 @@ endforeach()
 
 
 foreach( BENCH
-    nonlinearpow  stokes21  stokes31 stokes32
+    nonlinearpow  stokes21
     ale1 ale2 ale3 ale4 ale5 )
 
     life_add_bench( ${BENCH} )
@@ -80,7 +80,7 @@ foreach( BENCH
 endforeach()
 
 # use ilu for the test cases
-foreach( BENCH stokes11 stokes22 stokes33 )
+foreach( BENCH stokes11 stokes22 stokes33 stokes31 stokes32 )
 
     life_add_bench( ${BENCH} )
 
