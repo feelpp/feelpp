@@ -1,0 +1,32 @@
+
+* add equal order approximation terms
+  x GaLS or IP
+
+* add convection stabilisation terms
+  x GaLS or IP
+
+
+* add divergence jumps stabilisation terms
+  x IP
+
+* externalize the time loop
+  x provide a function that does a NS time loop given the time and a
+   time step
+  x allows to treat multi-physics
+
+* implement optimal quadrature formulas; the cost is really too high
+   in 3D
+
+* restart strategy in BDF
+  BDF( Tinitial, Tfinal, dt, BDF_STRATEGY )
+  enum BDF_STRATEGY { BDF_STRATEGY_DT_CONSTANT,
+   BDF_STRATEGY_DT_ADATIVE };
+
+
+- save results in subdirectory bdf_o_<oder>_dt_<dt>/ while doing
+   shiftRight()
+- use a master file to save meta data (order, Tinitial, Tfinal, dt,
+   timesteps differences saved...)
+
+
+* impose weakly pressure to 0 at outflow
