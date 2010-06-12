@@ -25,12 +25,6 @@ INCLUDE_DIRECTORIES (
   ${LIFE_SOURCE_DIR}/benchmarks/convergence
   )
 ENABLE_TESTING()
-# set(petsc_SOLVER_OPTIONS "-ksp_monitor -pc_type asm -pc_asm_blocks 2" )
-#set(petsc_SOLVER_OPTIONS "-pc_type lu -pc_factor_mat_solver_package umfpack" )
-set(petsc_SOLVER_OPTIONS "-pc_type lu" )
-#set(petsc_LU_SOLVER_OPTIONS "-ksp_monitor -pc_type lu -pc_factor_mat_solver_package umfpack -ksp_view" )
-set(petsc_LU_SOLVER_OPTIONS " -pc_type lu" )
-set(petsc_ILU_SOLVER_OPTIONS " -pc_type ilu" )
 foreach( BENCH laplacian1dP1 laplacian1dP5
     laplacian1d2dP1 laplacian1d2dP5
     laplacian2dP1 laplacian2dP5
@@ -62,7 +56,7 @@ endforeach()
 
 
 foreach( BENCH
-    nonlinearpow  stokes21
+    nonlinearpow
     ale1 ale2 ale3 ale4 ale5 )
 
     life_add_bench( ${BENCH} )
@@ -75,23 +69,6 @@ foreach( BENCH
         --mode=0
         --path=${LIFE_BUILD_DIR}/benchmarks/convergence/
         --cmdargs="--backend=${BACKEND} --export=0 ${${BACKEND}_LU_SOLVER_OPTIONS}" )
-    endforeach()
-
-endforeach()
-
-# use ilu for the test cases
-foreach( BENCH stokes11 stokes22 stokes33 stokes31 stokes32 )
-
-    life_add_bench( ${BENCH} )
-
-    # test each backend
-    foreach( BACKEND petsc trilinos )
-      add_test( life_bench_${BENCH}-${BACKEND}
-        ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
-        --program=${targetname}
-        --mode=0
-        --path=${LIFE_BUILD_DIR}/benchmarks/convergence/
-        --cmdargs="--backend=${BACKEND} --export=0 ${${BACKEND}_ILU_SOLVER_OPTIONS} --penalisation=1e-3" )
     endforeach()
 
 endforeach()
