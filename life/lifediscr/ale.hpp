@@ -280,6 +280,7 @@ ALE<Convex>::getFacesId( elem_type const& elt, std::vector<flag_type> const& fla
             facesId.push_back(i);
         }
     }
+    return facesId;
 }
 
 template < class Convex >
@@ -555,7 +556,7 @@ ALE<Convex>::updatePointsInFaces( std::vector<flag_type>& flagSet,
 
             // generate points in real element
             __geopc->update( pts );
-            __c->update( reference_mesh->element(it_elt->id()) );
+            __c->update( reference_mesh->element(it_elt->id()), __geopc );
             pc->update( __c->xRefs() );
             fectx->update( __c, pc );
             std::fill( interpfunc.data(),
@@ -564,7 +565,7 @@ ALE<Convex>::updatePointsInFaces( std::vector<flag_type>& flagSet,
             points_type pts_reference = __c->xReal();
 
             __geopc->update( pointset.pointsByEntity(0) );
-            __c->update( reference_mesh->element(it_elt->id()) );
+            __c->update( reference_mesh->element(it_elt->id()), __geopc );
             pc->update( __c->xRefs() );
             fectx->update( __c, pc );
             std::fill( interpfunc_vertices.data(),
