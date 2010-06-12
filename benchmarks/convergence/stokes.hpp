@@ -455,17 +455,17 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
     v = vf::project( u.functionSpace(), elements(mesh), idv(u)-u_exact );
     double u_errorL2 = integrate( elements(mesh),
                                   trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
-    std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
+    std::cout << "||u_error||_L2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
 
     double u_errorsemiH1 = integrate( elements(mesh),
                                       trace((gradv(u)-grad_exact)*trans(gradv(u)-grad_exact))).evaluate()( 0, 0 );
     double u_error_H1 = math::sqrt( u_errorL2+u_errorsemiH1 );
-    std::cout << "||u_error||_2 = " << u_error_H1 << "\n";
+    std::cout << "||u_error||_H1 = " << u_error_H1 << "\n";
 
 
     double p_errorL2 = integrate( elements(mesh), (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
-    std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
+    std::cout << "||p_error||_L2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
     Log() << "[stokes] solve for D done\n";
 
