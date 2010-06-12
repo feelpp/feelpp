@@ -197,7 +197,8 @@ private:
     mesh_ptrtype mesh;
 private:
 
-    void addStabilisation(element_1_type& p, element_1_type& q );
+    template<typename StabExpr>
+    void addStabilisation(element_1_type& p, element_1_type& q, StabExpr& stabexpr );
 
 }; // Stokes
 
@@ -257,10 +258,13 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::Stokes( int argc, char** argv, AboutData 
     M_beta = this->vm()["beta"].template as<value_type>();
 }
 
+
 template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<typename StabExpr>
 void
 Stokes<Dim, _OrderU, _OrderP, Entity>::addStabilisation( element_1_type& p,
-                                                         element_1_type& q )
+                                                         element_1_type& q,
+                                                         StabExpr& stabexpr)
 {
 
     if ( is_equal_order && this->vm()["stab"].template as<bool>() )
@@ -271,7 +275,7 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::addStabilisation( element_1_type& p,
         size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
         form2( Xh, Xh, D, _pattern=pattern )  +=
             integrate( internalfaces(mesh),
-                       M_stabP*hFace()*hFace()*(trans(jumpt(gradt(p)))*jump(grad(q))) );
+                       (stabexpr)*(trans(jumpt(gradt(p)))*jump(grad(q))) );
         Log() << "[assembly] form2 D stabilisation terms in " << t.elapsed() << "s\n"; t.restart();
     }
 
@@ -429,7 +433,8 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
     form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*trans(idt(u))*id(v)/hFace() );
     Log() << "[assembly] form2 D boundary terms in " << t.elapsed() << "s\n"; t.restart();
 
-    this->addStabilisation( p, q  );
+    auto stabexpr = M_stabP*hFace()*hFace()*hFace()/max(mu,hFace()*sqrt(trans(idv(v))*idv(v)));
+    this->addStabilisation( p, q, stabexpr  );
 
     Log() << "[stokes] matrix local assembly done\n";
 
