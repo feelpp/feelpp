@@ -274,7 +274,7 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::addStabilisation( element_1_type& p,
               << OrderU << ", orderP=" << OrderP << " )\n";
         size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
         form2( Xh, Xh, D, _pattern=pattern )  +=
-            integrate( internalfaces(mesh),
+            integrate( internalfaces(mesh), _Q<2*Order+2>(),
                        (stabexpr)*(trans(jumpt(gradt(p)))*jump(grad(q))) );
         Log() << "[assembly] form2 D stabilisation terms in " << t.elapsed() << "s\n"; t.restart();
     }
