@@ -515,7 +515,7 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
     double p_errorL2_2 = integrate( elements(mesh), (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
     double pex_L2 = integrate( elements(mesh), (p_exact)*(p_exact) ).evaluate()( 0, 0 );
     double p_errorL2 = math::sqrt( p_errorL2_2/pex_L2 );
-    std::cout << "||p_error||_L2 = " <<  p_errorL2 << "\n";;
+    std::cout << "||p_error||_0/||pex||_0 = " <<  p_errorL2 << "\n";;
 
     Log() << "[stokes] solve for D done\n";
 
@@ -536,7 +536,7 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
     double uex_n_L2 = integrate( boundaryfaces(mesh), trans(u_exact)*N() ).evaluate()( 0, 0 );
     std::cout << "[stokes] ||div(uexact)||=" << uex_div_L2 << "\n";
     std::cout << "[stokes] ||uexact,n||=" << uex_n_L2 << "\n";
-    double div_u_errorL2 = math::sqrt( div_u_errorL2_2/uex_n_L2 );
+    double div_u_errorL2 = math::sqrt( div_u_errorL2_2 );
     Log() << "[stokes] ||div(u)||_2=" << div_u_errorL2 << "\n";
     std::cout << "[stokes] ||div(u)||=" << div_u_errorL2 << "\n";
 
