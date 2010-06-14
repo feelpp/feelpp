@@ -74,7 +74,8 @@ makeOptions()
         ("bctype", Life::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
         ("bccoeff", Life::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
         ("penalisation", Life::po::value<double>()->default_value( 1e-3 ), "penalisation parameter for equal order approximation")
-        ("stab", Life::po::value<bool>()->default_value( true ), "0 = no stabilisation for equal order approx., 1 = stabilisation for equal order approx.")
+        ("stab-p", Life::po::value<bool>()->default_value( true ), "0 = no stabilisation for equal order approx., 1 = stabilisation for equal order approx.")
+        ("stab-div", Life::po::value<bool>()->default_value( true ), "0 = no stabilisation for divergence, 1 = stabilisation of divergence.")
 
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
@@ -283,7 +284,7 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::addPressureStabilisation( element_1_type&
                                                                  PressureStabExpr& p_stabexpr )
 {
 
-    if ( is_equal_order && this->vm()["stab"].template as<bool>() )
+    if ( is_equal_order && this->vm()["stab-p"].template as<bool>() )
     {
         boost::timer t;
         Log() << "[assembly] add stabilisation terms for equal order approximation ( orderU="
@@ -305,7 +306,7 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::addDivergenceStabilisation( element_0_typ
                                                                    DivStabExpr& d_stabexpr )
 {
 
-    if ( this->vm()["stab"].template as<bool>() )
+    if ( this->vm()["stab-div"].template as<bool>() )
     {
         boost::timer t;
         Log() << "[assembly] add stabilisation terms for divergence ( orderU="
@@ -450,7 +451,9 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
      */
     D = sparse_matrix_ptrtype(  M_backend->newMatrix( Xh, Xh ) );
     size_type pattern = DOF_PATTERN_COUPLED;
-    if ( is_equal_order && this->vm()["stab"].template as<bool>() )
+    if ( (is_equal_order &&
+          this->vm()["stab-p"].template as<bool>()) ||
+         this->vm()["stab-div"].template as<bool>())
         pattern |= DOF_PATTERN_NEIGHBOR;
     Life::Context graph( pattern );
     Log() << "[stokes] test : " << ( graph.test ( DOF_PATTERN_DEFAULT ) || graph.test ( DOF_PATTERN_NEIGHBOR ) ) << "\n";
@@ -555,8 +558,9 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
 
     this->addOutputValue( u_errorL2 )
         .addOutputValue( u_errorH1 )
-        .addOutputValue( p_errorL2 )
-        .addOutputValue( div_u_errorL2 );
+        .addOutputValue( div_u_errorL2 )
+        .addOutputValue( p_errorL2 );
+
     this->postProcessing();
 
 } // Stokes::run
