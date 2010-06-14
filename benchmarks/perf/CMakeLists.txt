@@ -21,7 +21,17 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-add_executable( life_perf bench1.cpp )
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+
+add_executable( life_perf
+  bench1_main.cpp
+  bench1_run.cpp
+  bench1_run1d.cpp
+  bench1_run2d.cpp
+  bench1_run3d.cpp
+  )
 target_link_libraries(life_perf ${LIFE_LIBRARIES} )
 # add_test( perf COMMAND life_perf --hsi
 
