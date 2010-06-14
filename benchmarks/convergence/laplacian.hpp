@@ -69,7 +69,7 @@ makeOptions()
         ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
         ("nu", po::value<double>()->default_value( 1 ), "coef diffusion")
         ("beta", po::value<double>()->default_value( 1 ), "coef reaction " )
-        ("gammabc", po::value<double>()->default_value( 20 ), "weak Dirichlet penalisation parameter " )
+        ("gammabc", po::value<double>()->default_value( 80 ), "weak Dirichlet penalisation parameter " )
 
         ("weak", "use weak dirichlet conditions")
         ;
@@ -181,11 +181,11 @@ public:
                 h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.02:0.4" );
                 break;
             case 3:
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.15:0.02:0.4" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.15:0.02:0.8" );
                 break;
             case 4:
             case 5:
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.2:0.1:0.4" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.2:0.1:1" );
                 break;
             }
         this->
