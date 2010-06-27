@@ -90,7 +90,7 @@ class ALE
     {
         typedef typename MyPointSet<i>::type pointSet_type;
 
-        typedef bases<Lagrange<i, Vectorial, PointSetFekete> > type;
+        typedef bases<Lagrange<i, Vectorial, Continuous, PointSetFekete> > type;
     };
 
 

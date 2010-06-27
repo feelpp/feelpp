@@ -167,6 +167,22 @@ struct _Q
                                   mpl::identity<IMSimplex<DIM, IMORDER, T> >,
                                   mpl::identity<IMGeneral<DIM, IMORDER, T, Entity> > >::type::type type;
     };
+
+    template<typename ContextType>
+    struct applyContext
+    {
+        static const int DIM = ContextType::PDim;
+        typedef typename ContextType::value_type T;
+        typedef typename mpl::if_<mpl::and_<mpl::or_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
+                                                               mpl::equal_to<mpl::int_<DIM>,mpl::int_<2> > >,
+                                                     mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<21> >,
+                                                               mpl::equal_to<mpl::int_<DIM>,mpl::int_<3> > > >,
+                                            mpl::bool_<ContextType::element_type::is_simplex> >,
+                                  mpl::identity<IMSimplex<DIM, IMORDER, T> >,
+                                  typename mpl::if_<mpl::bool_<ContextType::element_type::is_simplex>,
+                                                    mpl::identity<IMGeneral<DIM, IMORDER, T, Simplex> >,
+                                                    mpl::identity<IMGeneral<DIM, IMORDER, T, SimplexProduct> > >::type>::type::type type;
+    };
 };
 
 

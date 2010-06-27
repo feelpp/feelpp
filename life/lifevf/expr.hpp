@@ -283,6 +283,12 @@ public:
         Debug( 5051 ) << "calling assemble(v) done\n";
     }
 
+    template<typename P0hType>
+    typename P0hType::element_type
+    broken( boost::shared_ptr<P0hType>& P0h ) const
+    {
+        return _M_expr.broken( P0h );
+    }
     //__typeof__( _M_expr.evaluate() )
     ublas::matrix<typename expression_type::value_type>
     evaluate() const
@@ -306,6 +312,31 @@ private:
 
     mutable expression_type  _M_expr;
 };
+
+/**
+ * \class ExpressionOrder
+ *
+ * Class that compute the expression polynomial order of \p ExprT
+ *
+ * \tparam ExprT expression whose approximate order must be computed
+ *
+ * Note that if the expression is polynomial then the order is exact, however if
+ * analytic functions such as exp, cos, sin ... then the order is only an
+ * approximation.
+ */
+template<typename ExprT>
+struct ExpressionOrder
+{
+    static const bool is_polynomial = ExprT::imIsPoly;
+    static const int  value = boost::mpl::if_< boost::mpl::bool_< ExprT::imIsPoly > ,
+                                               typename boost::mpl::if_< boost::mpl::greater< boost::mpl::int_<ExprT::imorder>,
+                                                                                              boost::mpl::int_<19> > ,
+                                                                         boost::mpl::int_<19>,
+                                                                         boost::mpl::int_<ExprT::imorder> >::type,
+                                               boost::mpl::int_<10> >::type::value;
+
+};
+
 
 template<typename PrintExprT>
 class PrintExpr

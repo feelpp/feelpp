@@ -766,7 +766,8 @@ public:
     static const bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
     static const bool is_vectorial = ( is_composite? false : basis_0_type::is_vectorial );
     static const bool is_tensor2 = ( is_composite? false : basis_0_type::is_tensor2 );
-    static const bool is_continuous = ( is_composite? false : continuity_type::is_continuous );
+    //static const bool is_continuous = ( is_composite? false : continuity_type::is_continuous );
+    static const bool is_continuous = ( is_composite? false : basis_0_type::isContinuous);
     static const bool is_modal = ( is_composite? false : basis_0_type::is_modal );
     static const uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
     static const uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
@@ -1493,7 +1494,7 @@ public:
         div_type
         div( ContextType const & context ) const
         {
-            BOOST_STATIC_ASSERT( (rank == 1) || (rank==2) );
+            //BOOST_STATIC_ASSERT( (rank == 1) || (rank==2) );
             return div_type( *this, context );
         }
 
@@ -1502,7 +1503,7 @@ public:
         void
         div( ContextType const & context, array_type& v ) const
         {
-            BOOST_STATIC_ASSERT( (rank == 1) || (rank==2) );
+            //BOOST_STATIC_ASSERT( (rank == 1) || (rank==2) );
             div_( context, v );
         }
         template<typename ContextType>
@@ -1549,7 +1550,7 @@ public:
         boost::array<typename array_type::index, 3>
         curlExtents( ContextType const & context ) const
         {
-            BOOST_STATIC_ASSERT( rank == 1 );
+            //BOOST_MPL_ASSERT_MSG( ( rank == 1 ), INVALID_RANK_FOR_CURL, (mpl::int_<rank>) );
 
             boost::array<typename array_type::index, 3> shape;
             shape[0] = nComponents1;
@@ -1561,7 +1562,8 @@ public:
         void
         curl( ContextType const & context, array_type& v ) const
         {
-            BOOST_STATIC_ASSERT( rank == 1 );
+            //BOOST_MPL_ASSERT_MSG( ( rank == 1 ), INVALID_RANK_FOR_CURL, (mpl::int_<rank>) );
+
             curl_( context, v );
         }
 
@@ -1600,21 +1602,21 @@ public:
         void
         curlx( ContextType const & context, array_type& v ) const
         {
-            BOOST_STATIC_ASSERT( rank == 1 );
+            //BOOST_STATIC_ASSERT( rank == 1 );
             curl_( context, v );
         }
         template<typename ContextType>
         void
         curly( ContextType const & context, array_type& v ) const
         {
-            BOOST_STATIC_ASSERT( rank == 1 );
+            //BOOST_STATIC_ASSERT( rank == 1 );
             curl_( context, v );
         }
         template<typename ContextType>
         void
         curlz( ContextType const & context, array_type& v ) const
         {
-            BOOST_STATIC_ASSERT( rank == 1 );
+            //BOOST_STATIC_ASSERT( rank == 1 );
             curl_( context, v );
         }
 
@@ -2100,6 +2102,17 @@ public:
     functionSpaces() const { return _M_functionspaces; }
 
     /**
+     * \return an element of the function space
+     */
+    element_type
+    element( std::string const& name = "u" )
+        {
+            element_type u( this->shared_from_this(), name );
+            u.zero();
+            return u;
+        }
+
+    /**
      * get the \p i -th \c FunctionSpace out the list
      */
     template<int i>
@@ -2316,7 +2329,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
      * expansion is continuous between elements. This case handles strong
      * Dirichlet imposition
      */
-    if ( basis_type::nDofPerFace || continuity_type::is_continuous )
+    if ( basis_type::nDofPerFace || is_continuous )
         mesh_components |= MESH_UPDATE_FACES;
 
     _M_mesh->components().set( mesh_components );
@@ -2370,7 +2383,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
      * expansion is continuous between elements. This case handles
      * strong Dirichlet imposition
      */
-    if ( basis_type::nDofPerFace || continuity_type::is_continuous  )
+    if ( basis_type::nDofPerFace || is_continuous  )
         _M_mesh->components().set( MESH_UPDATE_FACES );
 #else
     _M_mesh->components().set( mesh_components | MESH_UPDATE_FACES | MESH_UPDATE_EDGES | MESH_PARTITION );
@@ -2632,12 +2645,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element const& __
 {
     if (  this != &__e )
         {
-            super::operator=( __e );
             _M_functionspace = __e._M_functionspace;
             if ( __e._M_name != "unknown" )
                 _M_name = __e._M_name;
             _M_start = __e._M_start;
             _M_ct = __e._M_ct;
+            this->resize( _M_functionspace->nLocalDof() );
+            super::operator=( __e );
             this->outdateGlobalValues();
         }
     return *this;

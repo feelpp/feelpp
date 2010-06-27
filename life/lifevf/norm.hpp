@@ -3,9 +3,9 @@
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2007-04-17
+       Date: 2010-04-17
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,7 @@
 /**
    \file norm.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-   \date 2007-04-17
+   \date 2010-04-17
  */
 #ifndef __norm_H
 #define __norm_H 1
@@ -36,15 +36,59 @@ namespace vf
 /**
  * inner product of the left and right expressions
  *
- * \note it handles scalar, vectorial or matricial cases
+ * \note it handles vectorial expressions
  *
- * \return the inner product \f$\operatorname{tr}(l * r)\f$
+ * \return the inner product \f$(l * r^T)\f$
  */
 template<typename ExprL, typename ExprR>
 inline
-//Expr<Trace<Expr<vf_mul<Expr<Trans<ExprL> >, ExprR > > > >
-__typeof__( trace( trans(ExprL()) * ExprR() ) )
-inner_prod( ExprL l, ExprR r )
+auto
+outer_prod( ExprL l, ExprR r ) -> decltype( l * trans(r) )
+{
+    return l * trans(r);
+}
+
+/**
+ * inner product of the left and right expressions
+ *
+ * \note it handles scalar, vectorial and matricial  expressions
+ *
+ * \return the inner product \f$\operatorname{tr}(l^T * r)\f$
+ */
+template<typename ExprL, typename ExprR>
+inline
+auto
+inner_prod( ExprL l, ExprR r ) -> decltype( trace( trans(l) * r ) )
+{
+    return trace( trans(l) * r );
+}
+
+/**
+ * dot product of the left and right expressions
+ *
+ * \note it handles vectorial expressions
+ *
+ * \return the dot product \f$(l \cdot r)\f$
+ */
+template<typename ExprL, typename ExprR>
+inline
+auto
+dot( ExprL l, ExprR r ) -> decltype( trans(l) * r )
+{
+    return trans(l) * r;
+}
+
+/**
+ * double dot product of the left and right expressions
+ *
+ * \note it handles matricial(rank 2 tensors) expressions
+ *
+ * \return the double dot product \f$(l : r)\f$
+ */
+template<typename ExprL, typename ExprR>
+inline
+auto
+ddot( ExprL l, ExprR r ) -> decltype( trace( trans(l) * r ) )
 {
     return trace( trans(l) * r );
 }
@@ -58,9 +102,8 @@ inner_prod( ExprL l, ExprR r )
  */
 template<typename ExprT>
 inline
-//Expr<Sqrt<Expr<Trace<Expr<vf_mul<Expr<Trans<ExprT> >, ExprT > > > > > >
-__typeof__( sqrt(  inner_prod( ExprT(), ExprT() ) ) )
-norm2( ExprT v )
+auto
+norm2( ExprT v ) -> decltype( sqrt(  inner_prod( v, v ) ) )
 {
     return sqrt(  inner_prod( v, v ) );
 }

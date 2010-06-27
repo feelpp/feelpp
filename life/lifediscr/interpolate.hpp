@@ -90,11 +90,11 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     Debug( 5010 ) << "[interpolate] are the meshes the same " << same_mesh << "\n";
     // if same space type and mesh  then return the function itself
     if ( same_basis && same_mesh == INTERPOLATE_SAME_MESH )
-        {
-            Debug( 5010 ) << "[interpolate] Same mesh and same space\n";
-            interp = f;
-            return;
-        }
+    {
+        Debug( 5010 ) << "[interpolate] Same mesh and same space\n";
+        interp = f;
+        return;
+    }
     dof_type const* __dof = space->dof().get();
     basis_type const* __basis = space->basis().get();
     gm_ptrtype __gm = space->gm();
@@ -108,168 +108,187 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     auto it = f.functionSpace()->mesh()->beginElementWithProcessId( space->mesh()->comm().rank() );
     auto en = f.functionSpace()->mesh()->endElementWithProcessId( space->mesh()->comm().rank() );
     //gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
-    
-    domain_gm_ptrtype __dgm = f.functionSpace()->gm();
-    typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
-    typedef typename domain_gm_type::precompute_type domain_geopc_type;
-    domain_geopc_ptrtype __dgeopc( new domain_geopc_type( __dgm, __basis->dual().points() ) );
-    
-    domain_gmc_ptrtype __c( new domain_gmc_type( __dgm, *it, __dgeopc ) );
-    auto pc = f.functionSpace()->fe()->preCompute( f.functionSpace()->fe(), __c->xRefs() );
-    
-    f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
-                                             __c,
-                                             pc ) );
-    typedef boost::multi_array<value_type,3> array_type;
-    array_type fvalues( f.idExtents( *fectx ) );
-    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
+
     //f.id( *fectx, fvalues );
-    
+
     // if same mesh but not same function space (different order)
     //if ( f.functionSpace()->mesh() == space->mesh() )
     //if ( same_mesh == INTERPOLATE_SAME_MESH )
     if ( (MeshBase*)f.functionSpace()->mesh().get() == (MeshBase*)space->mesh().get() )
-        {
-            Debug( 5010 ) << "[interpolate] Same mesh but not same space\n";
+    {
+        Debug( 5010 ) << "[interpolate] Same mesh but not same space\n";
 
-            for( ; it != en; ++ it )
+        domain_gm_ptrtype __dgm = f.functionSpace()->gm();
+        typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
+        typedef typename domain_gm_type::precompute_type domain_geopc_type;
+        domain_geopc_ptrtype __dgeopc( new domain_geopc_type( __dgm, __basis->dual().points() ) );
+
+        domain_gmc_ptrtype __c( new domain_gmc_type( __dgm, *it, __dgeopc ) );
+        auto pc = f.functionSpace()->fe()->preCompute( f.functionSpace()->fe(), __c->xRefs() );
+
+        f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
+                                                 __c,
+                                                 pc ) );
+        typedef boost::multi_array<value_type,3> array_type;
+        array_type fvalues( f.idExtents( *fectx ) );
+        std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
+
+        for( ; it != en; ++ it )
+        {
+            __c->update( *it );
+            fectx->update( __c, pc );
+            std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
+            f.id( *fectx, fvalues );
+            //std::cout << "interpfunc :  " << interpfunc << "\n";
+            for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
+            {
+                const int ncdof = basis_type::is_product?basis_type::nComponents:1;
+                for ( uint16_type comp = 0;comp < ncdof;++comp )
                 {
+                    size_type globaldof =  boost::get<0>(__dof->localToGlobal( it->id(),
+                                                                               l, comp ));
+
+#if 0
+                    size_type globaldof_f =  boost::get<0>(f.functionSpace()->dof()->localToGlobal( it->id(),l, 0 ));
+                    std::cout << "elt : " << it->id() << "\n"
+                              << "  l : " << l << "\n"
+                              << " comp: " << comp << "\n"
+                              << " dof: " << globaldof_f << "\n"
+                              << "  value: " << f( globaldof_f ) << "\n";
+#endif
+                    //Debug( 5010 ) << "globaldof = " << globaldof << " firstldof = " << interp.firstLocalIndex() << " lastldof " << interp.lastLocalIndex() << "\n";
+                    // update only values on the processor
+                    if ( globaldof >= interp.firstLocalIndex() &&
+                         globaldof < interp.lastLocalIndex() )
+                    {
+                        interp( globaldof ) = fvalues[comp][0][l];
+                        //Debug( 5010 ) << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
+                        //std::cout << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
+                    }
+                }
+            }
+        }
+        Debug( 5010 ) << "[interpolate] Same mesh but not same space done\n";
+    } // same mesh
+    else // INTERPOLATE_DIFFERENT_MESH
+    {
+        Debug( 5010 ) << "[interpolate] different meshes\n";
+        domain_gm_ptrtype __dgm = f.functionSpace()->gm();
+        typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
+        typedef typename domain_gm_type::precompute_type domain_geopc_type;
+        // get only one point
+        typename matrix_node<value_type>::type pts( mesh_type::nDim, 1 );
+        ublas::column(pts, 0) = ublas::column(__basis->dual().points(), 0);
+
+        domain_geopc_ptrtype __dgeopc( new domain_geopc_type( __dgm, pts ) );
+
+        domain_gmc_ptrtype __c( new domain_gmc_type( __dgm, *it, __dgeopc ) );
+        auto pc = f.functionSpace()->fe()->preCompute( f.functionSpace()->fe(), __c->xRefs() );
+
+        f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
+                                                 __c,
+                                                 pc ) );
+        typedef boost::multi_array<value_type,3> array_type;
+        array_type fvalues( f.idExtents( *fectx ) );
+        std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
+
+        typename domain_mesh_type::Inverse meshinv( f.functionSpace()->mesh() );
+
+        /* initialisation of the mesh::inverse data structure */
+        typename SpaceType::dof_type::dof_points_const_iterator it_dofpt = space->dof()->dofPointBegin();
+        typename SpaceType::dof_type::dof_points_const_iterator en_dofpt = space->dof()->dofPointEnd();
+        size_type nbpts = 0;
+        for( ; it_dofpt != en_dofpt; ++it_dofpt, ++nbpts  )
+        {
+            meshinv.addPointWithId( *it_dofpt );
+        }
+        LIFE_ASSERT( meshinv.nPoints() == nbpts )( meshinv.nPoints() )( nbpts ).error( "invalid number of points " );
+        meshinv.distribute();
+
+        std::vector<bool> dof_done( nbpts );
+        std::fill( dof_done.begin(), dof_done.end(), false );
+        std::vector<boost::tuple<size_type,uint16_type > > itab;
+
+        size_type first_dof = space->dof()->firstDof();
+        for( ; it != en; ++ it )
+        {
+            __c->update( *it );
+            meshinv.pointsInConvex( it->id(), itab );
+            if (itab.size() == 0)
+                continue;
+
+            for (size_type i = 0; i < itab.size(); ++i)
+            {
+                // get dof id in target dof table
+                size_type dof;
+                uint16_type comp;
+                boost::tie( dof, comp) = itab[i];
+#if !defined( NDEBUG )
+                Debug( 5010 ) << "[interpolate] element : " << it->id() << " npts: " << itab.size() << " ptid: " << i
+                              << " gdof: " << dof << " comp = " << comp << "\n";
+#endif
+                if ( !dof_done[dof-first_dof] )
+                {
+                    dof_done[dof-first_dof]=true;
+                    ublas::column( pts, 0 ) = meshinv.referenceCoords()[dof];
+                    __dgeopc->update( pts );
+                    //std::cout << "------------------------------------------------------------\n";
+                    //std::cout << "pts = " << pts << "\n";
                     __c->update( *it );
+                    pc->update( __c->xRefs() );
                     fectx->update( __c, pc );
+                    //typename FunctionType::pc_type pc( f.functionSpace()->fe(), __c->xRefs() );
+                    //typename FunctionType::id_type interpfunc( f.id( *__c, pc ) );
+                    //typename FunctionType::id_type interpfunc;
+
                     std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
                     f.id( *fectx, fvalues );
                     //std::cout << "interpfunc :  " << interpfunc << "\n";
-                    for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
-                        {
-                            const int ncdof = basis_type::is_product?basis_type::nComponents:1;
-                            for ( uint16_type comp = 0;comp < ncdof;++comp )
-                                {
-                                    size_type globaldof =  boost::get<0>(__dof->localToGlobal( it->id(),
-                                                                                               l, comp ));
 
-#if 0
-                                    size_type globaldof_f =  boost::get<0>(f.functionSpace()->dof()->localToGlobal( it->id(),l, 0 ));
-                                    std::cout << "elt : " << it->id() << "\n"
-                                              << "  l : " << l << "\n"
-                                              << " comp: " << comp << "\n"
-                                              << " dof: " << globaldof_f << "\n"
-                                              << "  value: " << f( globaldof_f ) << "\n";
-#endif
-                                    //Debug( 5010 ) << "globaldof = " << globaldof << " firstldof = " << interp.firstLocalIndex() << " lastldof " << interp.lastLocalIndex() << "\n";
-                                    // update only values on the processor
-                                    if ( globaldof >= interp.firstLocalIndex() &&
-                                         globaldof < interp.lastLocalIndex() )
-                                        {
-                                            interp( globaldof ) = fvalues[comp][0][l];
-                                            //Debug( 5010 ) << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
-                                            //std::cout << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
-                                        }
-                                }
-                        }
+                    //for ( uint16_type comp = 0;comp < basis_type::nComponents;++comp )
+                    {
+                        //size_type globaldof =  basis_type::nLocalDof*comp+first_dof+dof;
+                        //size_type globaldof =  first_dof+ndofcomp*comp+dof;
+                        //size_type globaldof =  first_dof+dof;
+                        size_type globaldof = dof;
+                        // update only values on the processor
+                        if ( globaldof >= interp.firstLocalIndex() &&
+                             globaldof < interp.lastLocalIndex() )
+                            interp( globaldof ) = fvalues[comp][0][0];
+                        //interp( globaldof ) = interpfunc(comp,0,0);
+                    }
                 }
-            Debug( 5010 ) << "[interpolate] Same mesh but not same space done\n";
-        } // same mesh
-    else // INTERPOLATE_DIFFERENT_MESH
-        {
-            Debug( 5010 ) << "[interpolate] different meshes\n";
-            typename domain_mesh_type::Inverse meshinv( f.functionSpace()->mesh() );
-
-            /* initialisation of the mesh::inverse data structure */
-            typename SpaceType::dof_type::dof_points_const_iterator it_dofpt = space->dof()->dofPointBegin();
-            typename SpaceType::dof_type::dof_points_const_iterator en_dofpt = space->dof()->dofPointEnd();
-            size_type nbpts = 0;
-            for( ; it_dofpt != en_dofpt; ++it_dofpt, ++nbpts  )
-                {
-                    meshinv.addPointWithId( *it_dofpt );
-                }
-            LIFE_ASSERT( meshinv.nPoints() == nbpts )( meshinv.nPoints() )( nbpts ).error( "invalid number of points " );
-            meshinv.distribute();
-
-            std::vector<bool> dof_done( nbpts );
-            std::fill( dof_done.begin(), dof_done.end(), false );
-            std::vector<boost::tuple<size_type,uint16_type > > itab;
-            typename matrix_node<value_type>::type pts( mesh_type::nDim, 1 );
-            
-            size_type first_dof = space->dof()->firstDof();
-            for( ; it != en; ++ it )
-                {
-                    __c->update( *it );
-                    meshinv.pointsInConvex( it->id(), itab );
-                    if (itab.size() == 0)
-                        continue;
-
-                    for (size_type i = 0; i < itab.size(); ++i)
-                        {
-                            // get dof id in target dof table
-                            size_type dof;
-                            uint16_type comp;
-                            boost::tie( dof, comp) = itab[i];
-#if !defined( NDEBUG )
-                            Debug( 5010 ) << "[interpolate] element : " << it->id() << " npts: " << itab.size() << " ptid: " << i
-                                          << " gdof: " << dof << " comp = " << comp << "\n";
-#endif
-                            if ( !dof_done[dof-first_dof] )
-                                {
-                                    dof_done[dof-first_dof]=true;
-                                    ublas::column( pts, 0 ) = meshinv.referenceCoords()[dof];
-                                    __dgeopc->update( pts );
-                                    //std::cout << "------------------------------------------------------------\n";
-                                    //std::cout << "pts = " << pts << "\n";
-                                    __c->update( *it );
-                                    pc->update( __c->xRefs() );
-                                    fectx->update( __c, pc );
-                                    //typename FunctionType::pc_type pc( f.functionSpace()->fe(), __c->xRefs() );
-                                    //typename FunctionType::id_type interpfunc( f.id( *__c, pc ) );
-                                    //typename FunctionType::id_type interpfunc;
-
-                                    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
-                                    f.id( *fectx, fvalues );
-                                    //std::cout << "interpfunc :  " << interpfunc << "\n";
-
-                                    //for ( uint16_type comp = 0;comp < basis_type::nComponents;++comp )
-                                        {
-                                            //size_type globaldof =  basis_type::nLocalDof*comp+first_dof+dof;
-                                            //size_type globaldof =  first_dof+ndofcomp*comp+dof;
-                                            //size_type globaldof =  first_dof+dof;
-                                            size_type globaldof = dof;
-                                            // update only values on the processor
-                                            if ( globaldof >= interp.firstLocalIndex() &&
-                                                 globaldof < interp.lastLocalIndex() )
-                                                interp( globaldof ) = fvalues[comp][0][0];
-                                                //interp( globaldof ) = interpfunc(comp,0,0);
-                                        }
-                                }
-                        }
-                }
-#if 0
-            for( size_type i = 0; i < dof_done.size(); ++i )
-                {
-                    if ( dof_done[i] != true )
-                        {
-                            Log() << "[interpolate] dof not treated\n";
-                            //LIFE_ASSERT( dof_done[i] == true )( i ).warn ( "invalid dof, was not treated" );
-
-                            typename SpaceType::dof_type::dof_points_const_iterator it_dofpt = space->dof()->dofPointBegin();
-                            typename SpaceType::dof_type::dof_points_const_iterator en_dofpt = space->dof()->dofPointEnd();
-                            size_type nbpts = 0;
-                            for( ; it_dofpt != en_dofpt; ++it_dofpt, ++nbpts  )
-                                {
-                                    //meshinv.addPointWithId( *it_dofpt );
-
-                                    // be careful with indices in parallel
-                                    if ( boost::get<1>( *it_dofpt ) == i )
-                                        {
-                                            Log() << "   id :  " << boost::get<1>( *it_dofpt ) << "\n";
-                                            Log() << "coord :  " << boost::get<0>( *it_dofpt ) << "\n";
-                                            Log() << " comp :  " << boost::get<2>( *it_dofpt ) << "\n";
-
-                                            Log() << "f( " << boost::get<0>( *it_dofpt ) << ")=" << f( boost::get<0>( *it_dofpt ) ) << "\n";
-                                        }
-                                }
-                        }
-                }
-#endif
+            }
         }
+#if 0
+        for( size_type i = 0; i < dof_done.size(); ++i )
+        {
+            if ( dof_done[i] != true )
+            {
+                Log() << "[interpolate] dof not treated\n";
+                //LIFE_ASSERT( dof_done[i] == true )( i ).warn ( "invalid dof, was not treated" );
+
+                typename SpaceType::dof_type::dof_points_const_iterator it_dofpt = space->dof()->dofPointBegin();
+                typename SpaceType::dof_type::dof_points_const_iterator en_dofpt = space->dof()->dofPointEnd();
+                size_type nbpts = 0;
+                for( ; it_dofpt != en_dofpt; ++it_dofpt, ++nbpts  )
+                {
+                    //meshinv.addPointWithId( *it_dofpt );
+
+                    // be careful with indices in parallel
+                    if ( boost::get<1>( *it_dofpt ) == i )
+                    {
+                        Log() << "   id :  " << boost::get<1>( *it_dofpt ) << "\n";
+                        Log() << "coord :  " << boost::get<0>( *it_dofpt ) << "\n";
+                        Log() << " comp :  " << boost::get<2>( *it_dofpt ) << "\n";
+
+                        Log() << "f( " << boost::get<0>( *it_dofpt ) << ")=" << f( boost::get<0>( *it_dofpt ) ) << "\n";
+                    }
+                }
+            }
+        }
+#endif
+    }
     //std::cout << "interp=" << interp << "\n";
 } // interpolate
 

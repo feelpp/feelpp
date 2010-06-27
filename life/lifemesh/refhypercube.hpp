@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-05-06
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -102,7 +102,8 @@ public:
         M_points( nDim, numPoints ),
         M_normals( numNormals ),
         M_barycenter( nDim ),
-        M_barycenterfaces( nDim, numTopologicalFaces )
+        M_barycenterfaces( nDim, numTopologicalFaces ),
+        M_meas( 0 )
         {
             if ( nDim == 1 )
             {
@@ -167,6 +168,7 @@ public:
             }
             //std::cout << "P = " << M_points << "\n";
             make_normals();
+            computeMeasure();
         }
 
     Reference( element_type const& e, uint16_type __f )
@@ -177,7 +179,8 @@ public:
         M_points( nRealDim, numPoints ),
         M_normals( numNormals ),
         M_barycenter( nDim ),
-        M_barycenterfaces( nDim, numTopologicalFaces )
+        M_barycenterfaces( nDim, numTopologicalFaces ),
+        M_meas( 0 )
         {
           if ( __f >= element_type::numTopologicalFaces )
             {
@@ -203,6 +206,7 @@ public:
             }
             M_points = M_vertices;
             make_normals();
+            computeMeasure();
         }
 
     Reference( Reference const & r )
@@ -213,7 +217,8 @@ public:
         M_points( r.M_points ),
         M_normals( r.M_normals ),
         M_barycenter( r.M_barycenter ),
-        M_barycenterfaces( r.M_barycenterfaces )
+        M_barycenterfaces( r.M_barycenterfaces ),
+        M_meas( r.M_meas )
         {
 
         }
@@ -236,6 +241,7 @@ public:
                 M_normals = r.M_normals;
                 M_barycenter = r.M_barycenter;
                 M_barycenterfaces = r.M_barycenterfaces;
+                M_meas = r.M_meas;
             }
             return *this;
         }
@@ -266,6 +272,11 @@ public:
     points_type const& points() const { return M_points; }
 
     ublas::matrix_column<points_type const> point( uint16_type __i ) const { return ublas::column( M_points, __i ); }
+
+    /**
+     * \return the measure of the reference element
+     */
+    double measure() const { return M_meas; }
 
     /**
      * \return the vertices of the face \p f
@@ -764,6 +775,8 @@ private:
     /// compute barycenters (cell and faces)
     void computeBarycenters();
 
+    /// compute the measure
+    void computeMeasure();
 private:
 
     uint16_type M_id;
@@ -779,6 +792,7 @@ private:
 
     points_type M_barycenterfaces;
 
+    value_type M_meas;
 };
 
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
@@ -804,6 +818,68 @@ Reference<SimplexProduct<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycen
     {
         //std::cout << "face " << f << " vertices " << faceVertices( f ) << "\n";
         ublas::column( M_barycenterfaces, f ) = ublas::column( glas::average( faceVertices( f ) ), 0 );
+    }
+}
+
+template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+void
+Reference<SimplexProduct<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
+{
+    if ( nDim == nRealDim )
+    {
+
+        typename matrix_node<value_type>::type M( nDim,nDim);
+        double factor = 1;
+        switch( nDim )
+        {
+        case 1:
+            M_meas = 2;
+            break;
+        case 2:
+            /**
+             * The area of a quadrilateral ABCD can be calculated using
+             * vectors. Let vectors AC and BD form the diagonals from A to C and
+             * from B to D. The area of the quadrilateral is then
+             */
+            ublas::column( M, 0 ) = this->vertex( 2 )-this->vertex( 0 );
+            ublas::column( M, 1 ) = this->vertex( 3 )-this->vertex( 1 );
+            factor = 2;
+            M_meas = 4;
+            break;
+        case 3:
+            /**
+             */
+            ublas::column( M, 0 ) = this->vertex( 1 )-this->vertex( 0 );
+            ublas::column( M, 1 ) = this->vertex( 1 )-this->vertex( 2 );
+            ublas::column( M, 2 ) = this->vertex( 2 )-this->vertex( 3 );
+            M_meas = 8;
+            break;
+        }
+        //M_meas = math::abs( details::det( M, mpl::int_<nDim>() ) );
+    }
+    else
+    {
+#if 0
+        /**
+           In three dimensions, the area of a general triangle {A = (xA, yA,
+           zA), B = (xB, yB, zB) and C = (xC, yC, zC)} is the Pythagorean sum of
+           the areas of the respective projections on the three principal planes
+           (i.e. x = 0, y = 0 and z = 0):
+        */
+        typename matrix_node<value_type>::type M( nRealDim,nRealDim);
+        value_type factor( 1 );
+        switch( nDim )
+        {
+        case 1:
+            M_meas = ublas::norm2(this->vertex( 1 )-this->vertex( 0 ));
+            break;
+        case 2:
+            ublas::column( M, 0 ) = this->vertex( 0 )-this->vertex( 1 );
+            ublas::column( M, 1 ) = this->vertex( 1 )-this->vertex( 2 );
+            factor = 2;
+            break;
+        }
+#endif
     }
 }
 

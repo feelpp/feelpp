@@ -194,10 +194,6 @@ public:
     //void setCoefficient( ublas::matrix_expression<AE> const& __coeff )
     void setCoefficient( matrix_type const& __coeff )
     {
-#if 1
-        LIFE_ASSERT( __coeff.size1() == nComponents && __coeff.size2() == _M_p.polynomialDimensionPerComponent() )
-            ( __coeff.size1() )( __coeff.size2() )( _M_p.polynomialDimensionPerComponent() ).error( "invalid coefficient size" );
-#endif
         _M_coeff = __coeff;
     }
 

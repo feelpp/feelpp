@@ -68,8 +68,10 @@ public:
     typedef FunctionSpaceType functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
+    typedef typename functionspace_type::basis_type basis_type;
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
+
 
     static const uint16_type imorder = functionspace_type::basis_type::nOrder;
     static const bool imIsPoly = true;
@@ -182,7 +184,9 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MES
     typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
     typedef fusion::map<fusion::pair<detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
     //typedef typename expression_type::template tensor<map_gmc_type,fusion::map<fusion::pair<detail::gmc<0>,boost::shared_ptr<fecontext_type> > > > t_expr_type;
-    typedef typename expression_type::template tensor<map_gmc_type> t_expr_type;
+    typedef decltype( basis_type::isomorphism( _M_expr ) ) the_expression_type;
+    typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
+    typedef typename iso_expression_type::template tensor<map_gmc_type> t_expr_type;
     typedef typename t_expr_type::value_type value_type;
 
     // we should manipulate the same type of functions on the left and
@@ -216,7 +220,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MES
                           (mpl::int_<shape::M>, mpl::int_<FunctionSpaceType::nComponents>, shape ) );
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-    t_expr_type tensor_expr( _M_expr, mapgmc );
+    t_expr_type tensor_expr( basis_type::isomorphism( _M_expr ), mapgmc );
 
     std::vector<bool> points_done( __v.functionSpace()->dof()->nLocalDof()/__v.nComponents );
     std::fill( points_done.begin(), points_done.end(),false );
@@ -280,7 +284,9 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MES
 
     // expression
     //typedef typename expression_type::template tensor<map_gmc_type,fecontext_type> t_expr_type;
-    typedef typename expression_type::template tensor<map_gmc_type> t_expr_type;
+    typedef decltype( basis_type::isomorphism( _M_expr ) ) the_expression_type;
+    typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
+    typedef typename iso_expression_type::template tensor<map_gmc_type> t_expr_type;
     typedef typename t_expr_type::shape shape;
 
     //
@@ -322,7 +328,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MES
     gmc_ptrtype __c( new gmc_type( __gm, __face_it->element(0), __geopc, __face_id ) );
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-    t_expr_type expr( _M_expr, mapgmc );
+    t_expr_type expr( basis_type::isomorphism( _M_expr ), mapgmc );
 
 
 

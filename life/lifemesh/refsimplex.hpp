@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-05-06
 
-  Copyright (C) 2010 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -98,12 +98,15 @@ public:
         :
         super(),
         M_id( 0 ),
-        M_vertices( nDim, numVertices ),
-        M_points( nDim, numPoints ),
+        M_vertices( nRealDim, numVertices ),
+        M_points( nRealDim, numPoints ),
         M_normals( numNormals ),
-        M_barycenter( nDim ),
-        M_barycenterfaces( nDim, numTopologicalFaces )
+        M_barycenter( nRealDim ),
+        M_barycenterfaces( nRealDim, numTopologicalFaces ),
+        M_meas( 0 )
         {
+            M_vertices *= 0;
+            M_points *= 0;
             if ( nDim == 1 )
             {
                 M_vertices( 0, 0 ) = -1.0;
@@ -142,6 +145,7 @@ public:
             //std::cout << "P = " << M_points << "\n";
             make_normals();
             computeBarycenters();
+            computeMeasure();
         }
 
     Reference( element_type const& e, uint16_type __f )
@@ -151,8 +155,9 @@ public:
         M_vertices( nRealDim, numVertices ),
         M_points( nRealDim, numPoints ),
         M_normals( numNormals ),
-        M_barycenter( nDim ),
-        M_barycenterfaces( nDim, numTopologicalFaces )
+        M_barycenter( nRealDim ),
+        M_barycenterfaces( nRealDim, numTopologicalFaces ),
+        M_meas(0)
         {
           if ( __f >= element_type::numTopologicalFaces )
             {
@@ -178,6 +183,7 @@ public:
             }
             make_normals();
             computeBarycenters();
+            computeMeasure();
         }
 
     Reference( Reference const & r )
@@ -188,7 +194,8 @@ public:
         M_points( r.M_points ),
         M_normals( r.M_normals ),
         M_barycenter( r.M_barycenter ),
-        M_barycenterfaces( r.M_barycenterfaces )
+        M_barycenterfaces( r.M_barycenterfaces ),
+        M_meas( r.M_meas )
         {
 
         }
@@ -211,6 +218,7 @@ public:
                 M_normals = r.M_normals;
                 M_barycenter = r.M_barycenter;
                 M_barycenterfaces = r.M_barycenterfaces;
+                M_meas = r.M_meas;
             }
             return *this;
         }
@@ -251,7 +259,7 @@ public:
      */
     matrix_node_type faceVertices( uint16_type f ) const
         {
-            matrix_node_type v( nDim, nDim  );
+            matrix_node_type v( nRealDim, nDim  );
             // there is exactely nDim vertices on each face on a d-simplex
             for( int p = 0; p < nDim; ++p )
             {
@@ -328,6 +336,11 @@ public:
         }
 
     points_type const& G() const { return M_points; }
+
+    /**
+     * \return the measure of the reference element
+     */
+    double measure() const { return M_meas; }
 
     size_type id() const { return 0; }
     flag_type marker() const { return 0; }
@@ -576,7 +589,7 @@ private:
                     ublas::vector<node_type> h ( 1 );
                     h( 0 ) = vertex( 1 ) - vertex( 0 );
 
-                    points_type p( 1, n_line_points( interior ) );
+                    points_type p( nRealDim, n_line_points( interior ) );
                     for ( int i = interior, indp = 0; i < int( Order )+1-interior;++i, ++indp )
                         {
                             ublas::column( p, indp ) = vertex( 0 ) + ( h(0) * value_type(i) )/value_type(Order);
@@ -594,17 +607,18 @@ private:
             if ( nOrder > 0 )
                 {
                     ublas::vector<node_type> h ( 2 );
+                    h *= 0;
                     h( 0 ) = vertex( 1 ) - vertex( 0 );
                     h( 1 ) = vertex( 2 ) - vertex( 0 );
                     //std::cout << "h = " << h << "\n";
                     //Debug( 4005 ) << "n triangle pts = " << n_triangle_points( interior ) << "\n";
-                    points_type G( 2, n_triangle_points( interior ) );
+                    points_type G( nRealDim, n_triangle_points( interior ) );
                     for ( int i = interior, p = 0; i < int( Order )+1-interior;++i )
                         {
                             for ( int j = interior; j < int( Order ) + 1 - i-interior;++j, ++p )
                                 {
-                                    ublas::column( G, p ) = vertex( 0 ) + ( value_type(i) * h( 1 )  +
-                                                                            value_type(j) * h( 0 ) )/ value_type(Order);
+                                    ublas::column( G, p ) = vertex( 0 ) + (value_type(j) * h( 0 )+
+                                                                           value_type(i) * h( 1 ))/ value_type(Order);
                                 }
                         }
                     return G;
@@ -770,6 +784,7 @@ private:
         }
 
     void computeBarycenters();
+    void computeMeasure();
 private:
 
     uint16_type M_id;
@@ -784,6 +799,7 @@ private:
 
     points_type M_barycenterfaces;
 
+    value_type M_meas;
 };
 
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
@@ -813,7 +829,65 @@ Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
         ublas::column( M_barycenterfaces, f ) = ublas::column( glas::average( faceVertices( f ) ), 0 );
     }
 }
+template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+void
+Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
+{
+    if ( nDim == nRealDim )
+    {
 
+        typename matrix_node<value_type>::type M( nDim,nDim);
+        value_type factor( 1 );
+        switch( nDim )
+        {
+        case 1:
+            ublas::column( M, 0 ) = this->vertex( 1 )-this->vertex( 0 );
+            factor = 1;
+            break;
+        case 2:
+            ublas::column( M, 0 ) = this->vertex( 0 )-this->vertex( 1 );
+            ublas::column( M, 1 ) = this->vertex( 1 )-this->vertex( 2 );
+            factor = 2;
+            break;
+        case 3:
+            /**
+             * tetrahedron with vertices
+             * a = (a1, a2, a3), b = (b1, b2, b3), c = (c1, c2, c3), and d = (d1, d2, d3),
+             * the volume is (1/6)·|det(a−b, b−c, c−d)|
+             */
+            ublas::column( M, 0 ) = this->vertex( 0 )-this->vertex( 1 );
+            ublas::column( M, 1 ) = this->vertex( 1 )-this->vertex( 2 );
+            ublas::column( M, 2 ) = this->vertex( 2 )-this->vertex( 3 );
+            factor = 6;
+            break;
+        }
+        M_meas = math::abs( details::det( M, mpl::int_<nDim>() ) )/factor;
+    }
+    else
+    {
+#if 0
+        /**
+           In three dimensions, the area of a general triangle {A = (xA, yA,
+           zA), B = (xB, yB, zB) and C = (xC, yC, zC)} is the Pythagorean sum of
+           the areas of the respective projections on the three principal planes
+           (i.e. x = 0, y = 0 and z = 0):
+        */
+        typename matrix_node<value_type>::type M( nRealDim,nRealDim);
+        value_type factor( 1 );
+        switch( nDim )
+        {
+        case 1:
+            M_meas = ublas::norm2(this->vertex( 1 )-this->vertex( 0 ));
+            break;
+        case 2:
+            ublas::column( M, 0 ) = this->vertex( 0 )-this->vertex( 1 );
+            ublas::column( M, 1 ) = this->vertex( 1 )-this->vertex( 2 );
+            factor = 2;
+            break;
+        }
+#endif
+    }
+}
 
 }
 #endif /* __refsimplex_H */

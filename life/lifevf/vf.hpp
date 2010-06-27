@@ -74,6 +74,12 @@ struct ExtractGm
     {
         return fusion::at_key<key_type>( geom ).get();
     }
+    static Geo_t clone( Geo_t const& geom )
+    {
+        Geo_t geom2( geom );
+        fusion::at_key<key_type>( geom2 )  = fusion::at_key<key_type>( geom )->clone();
+        return geom2;
+    }
 };
 /// \endcond
 }
@@ -91,13 +97,14 @@ struct ExtractGm
 #include <life/lifevf/stdmathfunctors.hpp>
 #include <life/lifevf/trace.hpp>
 //#include <life/lifevf/symm.hpp>
-//#include <life/lifevf/norm.hpp>
+#include <life/lifevf/norm.hpp>
 #include <life/lifevf/ones.hpp>
 #include <life/lifevf/twovalued.hpp>
 //#include <life/lifevf/eye.hpp>
 #include <life/lifevf/val.hpp>
 #include <life/lifevf/function.hpp>
 #include <life/lifevf/matvec.hpp>
+//#include <life/lifevf/integral.hpp>
 
 
 #include <life/lifevf/integrator.hpp>
