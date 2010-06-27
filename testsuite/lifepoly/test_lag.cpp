@@ -41,22 +41,22 @@ BOOST_AUTO_TEST_SUITE( lagrange_1d_simplex_testsuite )
 
 BOOST_AUTO_TEST_CASE( lag11scr64s )
 {
-    TestLagrange<fem::Lagrange<1, 1, Scalar, real64_type, Simplex> > t;
+    TestLagrange<fem::Lagrange<1, 1, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag12scr64s )
 {
-    TestLagrange<fem::Lagrange<1, 2, Scalar, real64_type, Simplex> > t;
+    TestLagrange<fem::Lagrange<1, 2, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag15scr64s )
 {
-    TestLagrange<fem::Lagrange<1, 5, Scalar, real64_type, Simplex> > t;
+    TestLagrange<fem::Lagrange<1, 5, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag110scr64s )
 {
-    TestLagrange<fem::Lagrange<1, 10, Scalar, real64_type, Simplex> > t;
+    TestLagrange<fem::Lagrange<1, 10, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
 
@@ -67,27 +67,27 @@ BOOST_AUTO_TEST_SUITE( lagrange_2d_simplex_testsuite )
 
 BOOST_AUTO_TEST_CASE( lag21scr64s )
 {
-    TestLagrange<fem::Lagrange<2, 1, Scalar, real64_type, Simplex> > t;
+    TestLagrange<fem::Lagrange<2, 1, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag21ver64s )
 {
-    TestLagrange<fem::Lagrange<2, 1, Vectorial, real64_type, Simplex> > t;
+    TestLagrange<fem::Lagrange<2, 1, Vectorial, Continuous, real64_type, Simplex> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag22scr64s )
 {
-    TestLagrange<fem::Lagrange<2, 2, Scalar, real64_type, Simplex> > t;
+    TestLagrange<fem::Lagrange<2, 2, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag25scr64s )
 {
-    TestLagrange<fem::Lagrange<2, 5, Scalar, real64_type, Simplex> > t;
+    TestLagrange<fem::Lagrange<2, 5, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag210scr64s )
 {
-    TestLagrange<fem::Lagrange<2, 10, Scalar, real64_type, Simplex> > t;
+    TestLagrange<fem::Lagrange<2, 10, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
 
@@ -97,22 +97,22 @@ BOOST_AUTO_TEST_SUITE( lagrange_3d_simplex_testsuite )
 
 BOOST_AUTO_TEST_CASE( lag31scr64s )
 {
-    TestLagrange<fem::Lagrange<3, 1, Scalar, real64_type, Simplex> > t;
+    TestLagrange<fem::Lagrange<3, 1, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag32scr64s )
 {
-    TestLagrange<fem::Lagrange<3, 2, Scalar, real64_type, Simplex> > t;
+    TestLagrange<fem::Lagrange<3, 2, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag35scr64s )
 {
-    TestLagrange<fem::Lagrange<3, 5, Scalar, real64_type, Simplex> > t;
+    TestLagrange<fem::Lagrange<3, 5, Scalar, Continuous, real64_type, Simplex> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag310scr64s )
 {
-    TestLagrange<fem::Lagrange<3, 10, Scalar, real64_type, Simplex> > t(1e-9);
+    TestLagrange<fem::Lagrange<3, 10, Scalar, Continuous, real64_type, Simplex> > t(1e-9);
     t();
 }
 
@@ -122,22 +122,22 @@ BOOST_AUTO_TEST_SUITE( lagrange_1d_simplexproduct_testsuite )
 
 BOOST_AUTO_TEST_CASE( lag11scr64s )
 {
-    TestLagrange<fem::Lagrange<1, 1, Scalar, real64_type, SimplexProduct> > t;
+    TestLagrange<fem::Lagrange<1, 1, Scalar, Continuous, real64_type, SimplexProduct> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag12scr64s )
 {
-    TestLagrange<fem::Lagrange<1, 2, Scalar, real64_type, SimplexProduct> > t;
+    TestLagrange<fem::Lagrange<1, 2, Scalar, Continuous, real64_type, SimplexProduct> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag15scr64s )
 {
-    TestLagrange<fem::Lagrange<1, 5, Scalar, real64_type, SimplexProduct> > t;
+    TestLagrange<fem::Lagrange<1, 5, Scalar, Continuous, real64_type, SimplexProduct> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag110scr64s )
 {
-    TestLagrange<fem::Lagrange<1, 10, Scalar, real64_type, SimplexProduct> > t;
+    TestLagrange<fem::Lagrange<1, 10, Scalar, Continuous, real64_type, SimplexProduct> > t;
     t();
 }
 
@@ -148,22 +148,22 @@ BOOST_AUTO_TEST_SUITE( lagrange_2d_simplexproduct_testsuite )
 
 BOOST_AUTO_TEST_CASE( lag21scr64s )
 {
-    TestLagrange<fem::Lagrange<2, 1, Scalar, real64_type, SimplexProduct> > t;
+    TestLagrange<fem::Lagrange<2, 1, Scalar, Continuous, real64_type, SimplexProduct> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag22scr64s )
 {
-    TestLagrange<fem::Lagrange<2, 2, Scalar, real64_type, SimplexProduct> > t;
+    TestLagrange<fem::Lagrange<2, 2, Scalar, Continuous, real64_type, SimplexProduct> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag25scr64s )
 {
-    TestLagrange<fem::Lagrange<2, 5, Scalar, real64_type, SimplexProduct> > t;
+    TestLagrange<fem::Lagrange<2, 5, Scalar, Continuous, real64_type, SimplexProduct> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag210scr64s )
 {
-    TestLagrange<fem::Lagrange<2, 10, Scalar, real64_type, SimplexProduct> > t;
+    TestLagrange<fem::Lagrange<2, 10, Scalar, Continuous, real64_type, SimplexProduct> > t;
     t();
 }
 
@@ -173,22 +173,22 @@ BOOST_AUTO_TEST_SUITE( lagrange_3d_simplexproduct_testsuite )
 
 BOOST_AUTO_TEST_CASE( lag31scr64s )
 {
-    TestLagrange<fem::Lagrange<3, 1, Scalar, real64_type, SimplexProduct> > t;
+    TestLagrange<fem::Lagrange<3, 1, Scalar, Continuous, real64_type, SimplexProduct> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag32scr64s )
 {
-    TestLagrange<fem::Lagrange<3, 2, Scalar, real64_type, SimplexProduct> > t;
+    TestLagrange<fem::Lagrange<3, 2, Scalar, Continuous, real64_type, SimplexProduct> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag35scr64s )
 {
-    TestLagrange<fem::Lagrange<3, 5, Scalar, real64_type, SimplexProduct> > t;
+    TestLagrange<fem::Lagrange<3, 5, Scalar, Continuous, real64_type, SimplexProduct> > t;
     t();
 }
 BOOST_AUTO_TEST_CASE( lag310scr64s )
 {
-    TestLagrange<fem::Lagrange<3, 7, Scalar, real64_type, SimplexProduct> > t;
+    TestLagrange<fem::Lagrange<3, 7, Scalar, Continuous, real64_type, SimplexProduct> > t;
     t();
 }
 
@@ -204,24 +204,24 @@ void test_scalar_continuous_simplex( test_suite* test )
 {
 #if USE_TEST
     // 1D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, Scalar, real64_type, Simplex> >() ) ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 2, Scalar, real64_type, Simplex> >() ) ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 3, Scalar, real64_type, Simplex> >() ) ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 4, Scalar, real64_type, Simplex> >() ) ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 10, Scalar, real64_type, Simplex> >() ) ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, Scalar, Continuous, real64_type, Simplex> >() ) ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 2, Scalar, Continuous, real64_type, Simplex> >() ) ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 3, Scalar, Continuous, real64_type, Simplex> >() ) ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 4, Scalar, Continuous, real64_type, Simplex> >() ) ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 10, Scalar, Continuous, real64_type, Simplex> >() ) ) );
 
     // 2D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 1, Scalar, real64_type, Simplex> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, Scalar, real64_type, Simplex> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2,10, Scalar, real64_type, Simplex> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 1, Scalar, Continuous, real64_type, Simplex> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, Scalar, Continuous, real64_type, Simplex> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2,10, Scalar, Continuous, real64_type, Simplex> >())  ) );
 
     // 3D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 1, Scalar, real64_type, Simplex> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 2, Scalar, real64_type, Simplex> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, Scalar, real64_type, Simplex> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 1, Scalar, Continuous, real64_type, Simplex> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 2, Scalar, Continuous, real64_type, Simplex> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, Scalar, Continuous, real64_type, Simplex> >())  ) );
 #else
 
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, Scalar, qd_real, Simplex> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, Scalar, Continuous, qd_real, Simplex> >())  ) );
 
 #endif
 }
@@ -230,19 +230,19 @@ void test_scalar_continuous_simplex_product( test_suite* test )
 {
 #if USE_TEST
     // 1D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, Scalar, real64_type, SimplexProduct> >() ) ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 2, Scalar, real64_type, SimplexProduct> >() ) ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1,10, Scalar, real64_type, SimplexProduct> >() ) ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, Scalar, Continuous, real64_type, SimplexProduct> >() ) ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 2, Scalar, Continuous, real64_type, SimplexProduct> >() ) ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1,10, Scalar, Continuous, real64_type, SimplexProduct> >() ) ) );
 
     // 2D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 1, Scalar, real64_type, SimplexProduct> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, Scalar, real64_type, SimplexProduct> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2,10, Scalar, real64_type, SimplexProduct> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 1, Scalar, Continuous, real64_type, SimplexProduct> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, Scalar, Continuous, real64_type, SimplexProduct> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2,10, Scalar, Continuous, real64_type, SimplexProduct> >())  ) );
 
     // 3D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 1, Scalar, real64_type, SimplexProduct> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 2, Scalar, real64_type, SimplexProduct> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, Scalar, real64_type, SimplexProduct> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 1, Scalar, Continuous, real64_type, SimplexProduct> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 2, Scalar, Continuous, real64_type, SimplexProduct> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, Scalar, Continuous, real64_type, SimplexProduct> >())  ) );
 
 
 #endif
@@ -270,39 +270,39 @@ init_unit_test_suite( int argc, char* argv[] )
 int main( int argc, char* argv[] )
 {
 #if 0
-    TestLagrange<fem::Lagrange<2, 1, Scalar, real64_type, Simplex> >();
-    TestLagrange<fem::Lagrange<2, 2, Scalar, real64_type, Simplex> >();
-    TestLagrange<fem::Lagrange<2, 10, Scalar, real64_type, Simplex> >();
+    TestLagrange<fem::Lagrange<2, 1, Scalar, Continuous, real64_type, Simplex> >();
+    TestLagrange<fem::Lagrange<2, 2, Scalar, Continuous, real64_type, Simplex> >();
+    TestLagrange<fem::Lagrange<2, 10, Scalar, Continuous, real64_type, Simplex> >();
 
-    TestLagrange<fem::Lagrange<3, 1, Scalar, real64_type, Simplex> >();
-    TestLagrange<fem::Lagrange<3, 2, Scalar, real64_type, Simplex> >();
-    TestLagrange<fem::Lagrange<3, 3, Scalar, real64_type, Simplex> >();
+    TestLagrange<fem::Lagrange<3, 1, Scalar, Continuous, real64_type, Simplex> >();
+    TestLagrange<fem::Lagrange<3, 2, Scalar, Continuous, real64_type, Simplex> >();
+    TestLagrange<fem::Lagrange<3, 3, Scalar, Continuous, real64_type, Simplex> >();
 #endif
 
 #if 0
     // 1D simplex
-    ( ( ( TestLagrange<fem::Lagrange<1, 1, Scalar, real64_type, SimplexProduct> >() ) ) );
-    ( ( ( TestLagrange<fem::Lagrange<1, 2, Scalar, real64_type, SimplexProduct> >() ) ) );
-    ( ( ( TestLagrange<fem::Lagrange<1,10, Scalar, real64_type, SimplexProduct> >() ) ) );
+    ( ( ( TestLagrange<fem::Lagrange<1, 1, Scalar, Continuous, real64_type, SimplexProduct> >() ) ) );
+    ( ( ( TestLagrange<fem::Lagrange<1, 2, Scalar, Continuous, real64_type, SimplexProduct> >() ) ) );
+    ( ( ( TestLagrange<fem::Lagrange<1,10, Scalar, Continuous, real64_type, SimplexProduct> >() ) ) );
 
     // 2D simplex
-    ( ( ( TestLagrange<fem::Lagrange<2, 1, Scalar, real64_type, SimplexProduct> >())  ) );
-    ( ( ( TestLagrange<fem::Lagrange<2, 2, Scalar, real64_type, SimplexProduct> >())  ) );
-    ( ( ( TestLagrange<fem::Lagrange<2,10, Scalar, real64_type, SimplexProduct> >())  ) );
+    ( ( ( TestLagrange<fem::Lagrange<2, 1, Scalar, Continuous, real64_type, SimplexProduct> >())  ) );
+    ( ( ( TestLagrange<fem::Lagrange<2, 2, Scalar, Continuous, real64_type, SimplexProduct> >())  ) );
+    ( ( ( TestLagrange<fem::Lagrange<2,10, Scalar, Continuous, real64_type, SimplexProduct> >())  ) );
 
     // 3D simplex
-    ( ( ( TestLagrange<fem::Lagrange<3, 1, Scalar, real64_type, SimplexProduct> >())  ) );
-    ( ( ( TestLagrange<fem::Lagrange<3, 2, Scalar, real64_type, SimplexProduct> >())  ) );
-    ( ( ( TestLagrange<fem::Lagrange<3, 3, Scalar, real64_type, SimplexProduct> >())  ) );
+    ( ( ( TestLagrange<fem::Lagrange<3, 1, Scalar, Continuous, real64_type, SimplexProduct> >())  ) );
+    ( ( ( TestLagrange<fem::Lagrange<3, 2, Scalar, Continuous, real64_type, SimplexProduct> >())  ) );
+    ( ( ( TestLagrange<fem::Lagrange<3, 3, Scalar, Continuous, real64_type, SimplexProduct> >())  ) );
 #else
 #if defined( HAVE_QD_QD_H )
 
     unsigned int old_cw;
     fpu_fix_start(&old_cw);
 
-    {TestLagrange<fem::Lagrange<2, 1, Scalar, qd_real, Simplex> > a; a();}
-    {TestLagrange<fem::Lagrange<2, 3, Scalar, dd_real, Simplex> > a; a();}
-    {TestLagrange<fem::Lagrange<3, 1, Scalar, qd_real, Simplex> > a; a();}
+    {TestLagrange<fem::Lagrange<2, 1, Scalar, Continuous, qd_real, Simplex> > a; a();}
+    {TestLagrange<fem::Lagrange<2, 3, Scalar, Continuous, dd_real, Simplex> > a; a();}
+    {TestLagrange<fem::Lagrange<3, 1, Scalar, Continuous, qd_real, Simplex> > a; a();}
 
     fpu_fix_end(&old_cw);
 
