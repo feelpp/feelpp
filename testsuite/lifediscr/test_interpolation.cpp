@@ -28,8 +28,13 @@
  */
 #define USE_BOOST_TEST 1
 
-// Boost.Test
+// make sure that the init_unit_test function is defined by UTF
 #define BOOST_TEST_MAIN
+// give a name to the testsuite
+#define BOOST_TEST_MODULE interpolation testsuite
+// disable the main function creation, use our own
+#define BOOST_TEST_NO_MAIN
+
 #if defined(USE_BOOST_TEST)
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
@@ -37,8 +42,8 @@ using boost::unit_test::test_suite;
 #endif
 
 #include <life/options.hpp>
+#include <life/lifecore/environment.hpp>
 #include <life/lifecore/life.hpp>
-#include <life/lifecore/application.hpp>
 #include <life/lifealg/backend.hpp>
 #include <life/lifemesh/geoentity.hpp>
 #include <life/lifemesh/refentity.hpp>
@@ -192,8 +197,8 @@ struct test_interpolation_op
         using namespace Life;
         using namespace Life::vf;
 
-        Log() << "[test_interpolation_op]   nDim : " << Dim << "\n";
-        Log() << "[test_interpolation_op] nOrder : " << Order << "\n";
+        BOOST_MESSAGE(  "[test_interpolation_op]   nDim : " << Dim << "\n" );
+        BOOST_MESSAGE(  "[test_interpolation_op] nOrder : " << Order << "\n" );
 
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 
@@ -232,11 +237,11 @@ struct test_interpolation_op
 
         typename imagespace_type::element_type w( Yh, "w" );
         w = fsv.container();
-        //std::cout << "w=" << w << "\n";
+        //std::cout << "w=" << w << "\n" );
         value_type xw = math::sqrt( integrate( elements( mesh1 ), (u_exact-idv(w))*(u_exact-idv(w)) ).evaluate()( 0, 0 ) );
         value_type vw = math::sqrt( integrate( elements( mesh1 ), (idv(v)-idv(w))*(idv(v)-idv(w)) ).evaluate()( 0, 0) );
-        Log() << "[test_interpolation_op] ||x-w||_2 = " << xw << "\n";
-        Log() << "[test_interpolation_op] ||v-w||_2 = " << vw << "\n";
+        BOOST_MESSAGE(  "[test_interpolation_op] ||x-w||_2 = " << xw << "\n" );
+        BOOST_MESSAGE(  "[test_interpolation_op] ||v-w||_2 = " << vw << "\n" );
 
         std::ostringstream ostr;
         ostr << "ointerpu-" << Dim << "." << Order;
@@ -268,10 +273,10 @@ struct test_interpolation_op_2
         using namespace Life;
         using namespace Life::vf;
 
-        Log() << "[test_interpolation_op_2] domain   nDim : " << DimDomain << "\n";
-        Log() << "[test_interpolation_op_2] domain nOrder : " << OrderDomain << "\n";
-        Log() << "[test_interpolation_op_2]  image   nDim : " << DimImage << "\n";
-        Log() << "[test_interpolation_op_2]  image nOrder : " << OrderImage << "\n";
+        BOOST_MESSAGE(  "[test_interpolation_op_2] domain   nDim : " << DimDomain << "\n" );
+        BOOST_MESSAGE(  "[test_interpolation_op_2] domain nOrder : " << OrderDomain << "\n" );
+        BOOST_MESSAGE(  "[test_interpolation_op_2]  image   nDim : " << DimImage << "\n" );
+        BOOST_MESSAGE(  "[test_interpolation_op_2]  image nOrder : " << OrderImage << "\n" );
 
 
 
@@ -306,11 +311,11 @@ struct test_interpolation_op_2
 
         typename imagespace_type::element_type w( Yh, "w" );
         w = fsv.container();
-        //std::cout << "w=" << w << "\n";
+        //std::cout << "w=" << w << "\n" );
         value_type xw = math::sqrt( integrate( elements( mesh1 ), IM<Dim,Order,value_type,Simplex>(), (Px()-idv(w))*(Px()-idv(w)) ).evaluate()( 0, 0 ) );
         value_type vw = math::sqrt( integrate( elements( mesh1 ), IM<Dim,Order,value_type,Simplex>(), (idv(v)-idv(w))*(idv(v)-idv(w)) ).evaluate()( 0, 0) );
-        Log() << "[test_interpolation_op] ||x-w||_2 = " << xw << "\n";
-        Log() << "[test_interpolation_op] ||v-w||_2 = " << vw << "\n";
+        BOOST_MESSAGE(  "[test_interpolation_op] ||x-w||_2 = " << xw << "\n" );
+        BOOST_MESSAGE(  "[test_interpolation_op] ||v-w||_2 = " << vw << "\n" );
 
         std::ostringstream ostr;
         ostr << "ointerpu-" << Dim << "." << Order;
@@ -341,8 +346,8 @@ struct test_lagrange_p1_op
     {
         using namespace Life;
         using namespace Life::vf;
-        Log() << "[test_lagrange_p1_op]   nDim : " << Dim << "\n";
-        Log() << "[test_lagrange_p1_op] nOrder : " << Order << "\n";
+        BOOST_MESSAGE(  "[test_lagrange_p1_op]   nDim : " << Dim << "\n" );
+        BOOST_MESSAGE(  "[test_lagrange_p1_op] nOrder : " << Order << "\n" );
 
 
 
@@ -381,18 +386,18 @@ struct test_lagrange_p1_op
         I.apply( u, fsv );
 
         w = fsv.container();
-        //std::cout << "u=" << u << "\n";
-        //std::cout << "w=" << w << "\n";
+        //std::cout << "u=" << u << "\n" );
+        //std::cout << "w=" << w << "\n" );
 
         value_type xw = math::sqrt( integrate( elements( Yh->mesh() ),
                                                IM<Dim,2*Order,value_type,Simplex>(),
                                                (Px()-idv(w))*(Px()-idv(w)) ).evaluate()( 0, 0 ) );
-        Log() << "[test_lagrange_p1_op] ||x-w||_2 = " << xw << "\n";
+        BOOST_MESSAGE(  "[test_lagrange_p1_op] ||x-w||_2 = " << xw << "\n" );
         e=w;
         e.setName( (boost::format( "e_%1%.%2%.%3% " ) % Dim % Order % GeoOrder ).str() );
         e-=u;
-        //std::cout << "e=" << e << "\n";
-        Log() << "[test_lagrange_p1_op] ||x-w||_infty = " << e.linftyNorm() << "\n";
+        //std::cout << "e=" << e << "\n" );
+        BOOST_MESSAGE(  "[test_lagrange_p1_op] ||x-w||_infty = " << e.linftyNorm() << "\n" );
 
         yy = vf::project( Yh, elements(Yh->mesh()), Px() );
         std::ostringstream ostr;
@@ -432,6 +437,7 @@ makeAbout()
 }
 
 #if defined(USE_BOOST_TEST)
+#if 0
 boost::shared_ptr<Life::Application> mpiapp;
 test_suite*
 init_unit_test_suite( int argc, char** argv )
@@ -462,6 +468,19 @@ init_unit_test_suite( int argc, char** argv )
 #endif
     return test;
 }
+#else
+BOOST_AUTO_TEST_CASE( test_interpolation12 ) { BOOST_MESSAGE( "test_interpolation<1,2>"); test_interpolation<1,2> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_interpolation22 ) { BOOST_MESSAGE( "test_interpolation<2,2>"); test_interpolation<2,2> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_interpolation32 ) { BOOST_MESSAGE( "test_interpolation<3,2>"); test_interpolation<3,2> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_interpolation222 ) { BOOST_MESSAGE( "test_interpolation<2,2,2>"); test_interpolation<2,2,2> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_interpolation_op111 ) { BOOST_MESSAGE( "test_interpolation_op<1,2,1>"); test_interpolation_op<1,2,1> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_interpolation_op112 ) { BOOST_MESSAGE( "test_interpolation_op<1,1,2>"); test_interpolation_op<1,1,2> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_lagrange_p1_op21 ) { BOOST_MESSAGE( "test_lagrange_p1_op<2,1>"); test_lagrange_p1_op<2,1> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_lagrange_p1_op22 ) { BOOST_MESSAGE( "test_lagrange_p1_op<2,2>"); test_lagrange_p1_op<2,2> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_lagrange_p1_op25 ) { BOOST_MESSAGE( "test_lagrange_p1_op<2,5>"); test_lagrange_p1_op<2,5> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_lagrange_p1_op232 ) { BOOST_MESSAGE( "test_lagrange_p1_op<2,3,2>"); test_lagrange_p1_op<2,3,2> t( 0.1 ); t(); }
+
+#endif // 0
 #else
 int
 main( int argc, char** argv )
@@ -503,3 +522,11 @@ main( int argc, char** argv )
 }
 #endif /* USE_BOOST_TEST */
 
+int BOOST_TEST_CALL_DECL
+main( int argc, char* argv[] )
+{
+    Life::Environment env( argc, argv );
+    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
+
+    return ret;
+}

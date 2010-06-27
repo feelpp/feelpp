@@ -100,10 +100,11 @@ public:
         mesh->updateForUse();
 
         boost::shared_ptr<scalar_space_type> Xh( new scalar_space_type( mesh ) );
-        typename scalar_space_type::element_type u( Xh, "u" );
+        auto u = Xh->element( "u" );
 
         boost::shared_ptr<vectorial_space_type> Xhv( new vectorial_space_type( mesh ) );
-        typename vectorial_space_type::element_type U( Xhv, "U" );
+        auto U = Xhv->element( "U" );
+
 
         const T eps = 1000*Life::type_traits<T>::epsilon();
 
@@ -159,7 +160,7 @@ public:
         mesh->updateForUse();
 
         boost::shared_ptr<space_type> Xh( space_type::New( mesh ) );
-        typename space_type::element_type U( Xh, "U" );
+        auto U = Xh->element( "U" );
 
 #if !defined( USE_BOOST_TEST )
 #define BOOST_CHECK( e ) LIFE_ASSERT( e ).warn( "BOOST_CHECK assertion failed" );
@@ -232,8 +233,8 @@ public:
 #if 0
         if ( Dim == 2 )
             {
-                typename space_type::element_type::template sub_element<0>::type::component_type ux = U.template element<0>().comp(X);
-                typename space_type::element_type::template sub_element<0>::type::component_type uy = U.template element<0>().comp(Y);
+                auto ux = U.template element<0>().comp(X);
+                auto uy = U.template element<0>().comp(Y);
                 ux = ublas::scalar_vector<double>( ux.size(), -1 );
                 //std::cout << "ux=" << ux << "\n";
                 uy = ublas::scalar_vector<double>( uy.size(), -2 );
@@ -249,7 +250,7 @@ public:
     }
 };
 
-
+#if 0
 template<int Dim>
 class TestSpaceRT
 {
@@ -297,7 +298,7 @@ public:
 
     }
 };
-
+#endif
 
 template<int Dim, int N, typename T>
 class TestBASpace
@@ -359,9 +360,9 @@ public:
 	std::cout << "Construct FESpace ...\n";
 
         boost::shared_ptr<scalar_space_type> Xh( new scalar_space_type( mesh ) );
-	typename scalar_space_type::element_type u( Xh, "u" );
+        auto u = Xh->element( "u" );
 
-	Xh.get()->dof().get()->showMe();
+        Xh.get()->dof().get()->showMe();
 
     }
 };
@@ -437,7 +438,7 @@ int main( int argc, char** argv)
     Life::TestSpace2<2, double> t21;t21();
     Life::TestSpace2<3, double> t22;t22();
 
-    Life::TestSpaceRT<2> trt;trt();
+//    Life::TestSpaceRT<2> trt;trt();
 
 }
 #endif

@@ -220,16 +220,16 @@ namespace test_interp_twomesh
         typedef Mesh<Simplex<Dim,OrderGeo,Dim> > mesh_type;
         typedef boost::shared_ptr<  mesh_type > mesh_ptrtype;
 
-        typedef bases<Lagrange<OrderChamp,Scalar,PointSetFekete> > basis_type;
+        typedef bases<Lagrange<OrderChamp,Scalar,Continuous,PointSetFekete> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type> space_type;
         typedef boost::shared_ptr<space_type> space_ptrtype;
         typedef typename space_type::element_type element_type;
 
-        typedef bases<Lagrange<OrderChamp,Vectorial,PointSetFekete> > basis_v_type;
+        typedef bases<Lagrange<OrderChamp,Vectorial,Continuous,PointSetFekete> > basis_v_type;
         typedef FunctionSpace<mesh_type, basis_v_type> space_v_type;
         typedef boost::shared_ptr<space_v_type> space_v_ptrtype;
         typedef typename space_v_type::element_type element_v_type;
-
+        //BOOST_MPL_ASSERT_MSG( ( boost::is_same<mpl::int_<space_v_type::rank>, mpl::int_<1> > ), INVALID_RANK_SHOULD_BE_1_VECTORIAL, (mpl::int_<space_v_type::rank>, space_v_type, basis_v_type) );
         //-----------------------------------------------------------------------------------//
 
         mesh_ptrtype mesh1 = boost::get<0>(__mesh);
@@ -439,7 +439,7 @@ namespace test_interp_twomesh
         typedef Mesh<Simplex<Dim,OrderGeo,Dim> > mesh_type;
         typedef boost::shared_ptr<  mesh_type > mesh_ptrtype;
 
-        typedef bases<Lagrange<OrderChamp,Scalar,PointSetFekete> > basis_type;
+        typedef bases<Lagrange<OrderChamp,Scalar,Continuous,PointSetFekete> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type> space_type;
         typedef boost::shared_ptr<space_type> space_ptrtype;
         typedef typename space_type::element_type element_type;
@@ -511,7 +511,7 @@ namespace test_interp_twomesh
 
 BOOST_AUTO_TEST_SUITE( interp_twomesh_testsuite )
 
-BOOST_AUTO_TEST_CASE( interp_twomesh )
+BOOST_AUTO_TEST_CASE( interp_twomesh_geomap )
 {
 
     using namespace test_interp_twomesh;
@@ -522,43 +522,75 @@ BOOST_AUTO_TEST_CASE( interp_twomesh )
                                                       makeOptions()
                                                       ));
 
-    test_app->changeRepository( boost::format( "/testsuite/lifediscr/%1%/" )
+    test_app->changeRepository( boost::format( "/testsuite/lifediscr/geomap/%1%/" )
                                 % test_app->about().appName()
                                 );
 
 
-      Log() << "\n[main] ----------TEST_GEOMAP_START----------\n";
-      Log() << "[main] ----------------<2,6,1>---------------\n";
+      BOOST_MESSAGE(  << "\n[main] ----------TEST_GEOMAP_START----------\n");
+      BOOST_MESSAGE(  << "[main] ----------------<2,6,1>---------------\n");
       run_test_geomap<2,6,1>(test_app);
-      Log() << "[main] ----------------<2,6,2>---------------\n";
+      BOOST_MESSAGE(  << "[main] ----------------<2,6,2>---------------\n");
       run_test_geomap<2,6,2>(test_app);
-      Log() << "[main] ----------------<2,6,3>---------------\n";
+      BOOST_MESSAGE(  << "[main] ----------------<2,6,3>---------------\n");
       run_test_geomap<2,6,3>(test_app);
-      Log() << "[main] ----------------<2,6,4>---------------\n";
+      BOOST_MESSAGE(  << "[main] ----------------<2,6,4>---------------\n");
       run_test_geomap<2,6,4>(test_app);
-      Log() << "[main] ----------------<2,6,5>---------------\n";
+      BOOST_MESSAGE(  << "[main] ----------------<2,6,5>---------------\n");
       run_test_geomap<2,6,5>(test_app);
-      Log() << "[main] ----------TEST_GEOMAP_FINISH----------\n\n";
-      Log() << "[main] ----------TEST_INTERP_START-----------\n";
-      Log() << "[main] ----------------<2,7,1>---------------\n";
+      BOOST_MESSAGE(  << "[main] ----------TEST_GEOMAP_FINISH----------\n\n");
+}
+BOOST_AUTO_TEST_CASE( interp_twomesh_interp )
+{
+
+    using namespace test_interp_twomesh;
+
+    Application_ptrtype test_app(new Application_type(boost::unit_test::framework::master_test_suite().argc,
+                                                      boost::unit_test::framework::master_test_suite().argv,
+                                                      makeAbout(),
+                                                      makeOptions()
+                                                      ));
+
+    test_app->changeRepository( boost::format( "/testsuite/lifediscr/interp/%1%/" )
+                                % test_app->about().appName()
+                                );
+
+      BOOST_MESSAGE(  << "[main] ----------TEST_INTERP_START-----------\n");
+      BOOST_MESSAGE(  << "[main] ----------------<2,7,1>---------------\n");
       run_test_interp<2,7,1>(test_app);
-      Log() << "[main] ----------------<2,8,2>---------------\n";
+      BOOST_MESSAGE(  << "[main] ----------------<2,8,2>---------------\n");
       run_test_interp<2,8,2>(test_app);
-      Log() << "[main] ----------------<2,9,3>---------------\n";
+      BOOST_MESSAGE(  << "[main] ----------------<2,9,3>---------------\n");
       run_test_interp<2,9,3>(test_app);
-      Log() << "[main] ----------------<2,10,4>---------------\n";
+      BOOST_MESSAGE(  << "[main] ----------------<2,10,4>---------------\n");
       run_test_interp<2,10,4>(test_app);
-      Log() << "[main] ----------------<2,11,5>---------------\n";
+      BOOST_MESSAGE(  << "[main] ----------------<2,11,5>---------------\n");
       run_test_interp<2,11,5>(test_app);
-      Log() << "[main] ----------TEST_INTERP_FINISH----------\n";
-      Log() << "[main] ----------TEST_EXPORT_START-----------\n";
-      Log() << "[main] ----------------<2,7,1>---------------\n";
+      BOOST_MESSAGE(  << "[main] ----------TEST_INTERP_FINISH----------\n");
+}
+BOOST_AUTO_TEST_CASE( interp_twomesh_interp )
+{
+
+    using namespace test_interp_twomesh;
+
+    Application_ptrtype test_app(new Application_type(boost::unit_test::framework::master_test_suite().argc,
+                                                      boost::unit_test::framework::master_test_suite().argv,
+                                                      makeAbout(),
+                                                      makeOptions()
+                                                      ));
+
+    test_app->changeRepository( boost::format( "/testsuite/lifediscr/export/%1%/" )
+                                % test_app->about().appName()
+                                );
+
+      BOOST_MESSAGE(  << "[main] ----------TEST_EXPORT_START-----------\n");
+      BOOST_MESSAGE(  << "[main] ----------------<2,7,1>---------------\n");
       run_test_export<2,7,1>(test_app);
-      Log() << "[main] ----------------<2,8,2>---------------\n";
+      BOOST_MESSAGE(  << "[main] ----------------<2,8,2>---------------\n");
       run_test_export<2,8,2>(test_app);
-      Log() << "[main] ----------------<2,9,3>---------------\n";
+      BOOST_MESSAGE(  << "[main] ----------------<2,9,3>---------------\n");
       run_test_export<2,9,3>(test_app);
-      Log() << "[main] ----------TEST_EXPORT_FINISH----------\n";
+      BOOST_MESSAGE(  << "[main] ----------TEST_EXPORT_FINISH----------\n");
 
 
 }

@@ -24,6 +24,7 @@ BOOST_AUTO_TEST_SUITE( ravth_testsuite )
 
 BOOST_AUTO_TEST_CASE( ravth1 )
 {
+    Life::Assert::setLog( "test_ravth.log");
     using namespace Life;
     typedef RaviartThomas<0>::apply<3>::type rt0_type;
     typedef GeoND<3,Simplex<3, 1, 3> >::point_type point_type;
