@@ -38,11 +38,10 @@ main( int argc, char** argv )
     Life::Assert::setLog( "stokes.assert");
 
     /* change parameters below */
-    const int nDim = 2;
     const int OrderU = 3;
     const int OrderP = 1;
 
-    typedef Life::Stokes<nDim, OrderU, OrderP, Simplex> stokes_type;
+    typedef Life::Stokes<OrderU, OrderP> stokes_type;
 
 
     /* define and run application */

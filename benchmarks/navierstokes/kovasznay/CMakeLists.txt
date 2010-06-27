@@ -26,10 +26,18 @@ INCLUDE_DIRECTORIES (
   )
 ENABLE_TESTING()
 
+macro(life_add_bench_kovasznay examplename)
+
+  set(targetname life_bench_${examplename})
+  set(filename ${examplename}.cpp)
+  add_executable(${targetname} ${filename}  stokes.cpp )
+  target_link_libraries(${targetname} ${LIFE_LIBRARIES} )
+endmacro(life_add_bench_kovasznay)
+
 # use ilu for the test cases
 foreach( BENCH stokes11 stokes22 stokes33 stokes21 stokes31 stokes32 )
 
-    life_add_bench( ${BENCH} )
+    life_add_bench_kovasznay( ${BENCH} )
 
     # test each backend
     foreach( BACKEND petsc trilinos )
@@ -38,7 +46,7 @@ foreach( BENCH stokes11 stokes22 stokes33 stokes21 stokes31 stokes32 )
         --program=${targetname}
         --mode=0
         --path=${LIFE_BUILD_DIR}/benchmarks/navierstokes/kovasznay/
-        --cmdargs="--backend=${BACKEND} --export=0 ${${BACKEND}_ILU_SOLVER_OPTIONS} --penalisation=1e-3" )
+        --cmdargs="--backend=${BACKEND} --export=0  --penalisation=1e-4 --beta=1 ${${BACKEND}_LU_UMFPACK_SOLVER_OPTIONS}" )
     endforeach()
 
 endforeach()
