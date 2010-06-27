@@ -805,12 +805,19 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_t
     }
 
     //auto pc =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
-    auto ctx = M_gm->template context<vm::POINT|vm::NORMAL|vm::JACOBIAN>(
+    auto ctx = M_gm->template context<vm::POINT|vm::NORMAL|vm::KB|vm::JACOBIAN>(
         *this,
         pcf,
         0 );
-    double f2[3] = { 2.82842712474619, 2, 2 };
-    double f3[4] = { 3.464101615137754, 2, 2, 2 };
+
+    // jacobian of transformation
+    std::vector<double> f2( numTopologicalFaces, 2 );
+    std::vector<double> f3( numTopologicalFaces, 2 );
+    if ( GEOSHAPE::is_simplex )
+    {
+        f2[0] = 2.82842712474619;
+        f3[0] = 3.464101615137754;
+    }
     for( int f = 0; f < numTopologicalFaces; ++f )
     {
         ctx->update( *this, f );

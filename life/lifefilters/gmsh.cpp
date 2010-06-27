@@ -357,6 +357,18 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
     return fname;
 }
 void
+Gmsh::refine( std::string const& name, int level  ) const
+{
+#if HAVE_GMSH
+    // generate mesh
+    std::ostringstream __str;
+    __str << "gmsh -refine " << name;
+    ::system( __str.str().c_str() );
+#else
+    throw std::invalid_argument("Gmsh is not available on this system");
+#endif
+}
+void
 Gmsh::generate( std::string const& __geoname, uint16_type dim  ) const
 {
 #if HAVE_GMSH

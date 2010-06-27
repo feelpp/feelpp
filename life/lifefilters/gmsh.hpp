@@ -263,6 +263,12 @@ public:
      */
     std::string generate( std::string const& name, std::string const& geo, bool const forceRebuild = false) const;
 
+    /**
+     * refine the mesh uniformly by splitting
+     * - \param name  name of the gmsh mesh file
+     * - \param level the number of refinements
+     */
+    void refine( std::string const& name, int level = 1 ) const;
 
     //@}
 
@@ -335,6 +341,7 @@ BOOST_PARAMETER_FUNCTION(
                          (optional
                           (h,              *(boost::is_floating_point<mpl::_>), 0.1 )
                           (order,          *(boost::is_integral<mpl::_>), 1 )
+                          (refine,          *(boost::is_integral<mpl::_>), 0 )
                           )
                          )
 {
@@ -343,6 +350,13 @@ BOOST_PARAMETER_FUNCTION(
 
     _mesh_ptrtype _mesh( mesh );
     std::string fname = boost::get<2>( desc )->generate( boost::get<0>( desc ), boost::get<1>( desc ) );
+
+    // refinement if option is enabled to a value greater or equal to 1
+    if ( refine )
+    {
+        Gmsh gmsh;
+        gmsh.refine( fname, refine );
+    }
 
     ImporterGmsh<_mesh_type> import( fname );
     _mesh->accept( import );

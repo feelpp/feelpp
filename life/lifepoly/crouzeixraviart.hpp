@@ -221,10 +221,12 @@ public:
     static const uint16_type nDim = N;
     static const uint16_type nOrder =  1;
     static const bool isTransformationEquivalent = true;
+    static const bool isContinuous = true;
 
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
+    typedef Continuous continuity_type;
 
     /**
      * Polynomial Set type: scalar or vectorial

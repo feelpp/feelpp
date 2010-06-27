@@ -48,9 +48,11 @@
 #include <life/lifealg/iteration.hpp>
 
 #include <life/lifepoly/context.hpp>
+#include <life/lifepoly/expansiontypes.hpp>
 #include <life/lifepoly/lagrange.hpp>
 #include <life/lifepoly/fekete.hpp>
 #include <life/lifemesh/marker.hpp>
+
 
 
 namespace Life
@@ -65,6 +67,7 @@ struct GeomapInverse
 
 template<uint16_type O,
          template<uint16_type Dim> class PolySetType,
+         typename ContinuityType,
          template<class, uint16_type, class> class Pts> class Lagrange;
 
 
@@ -81,16 +84,16 @@ template<uint16_type Dim,
          uint16_type Order,
          typename T = double,
          template<uint16_type, uint16_type, uint16_type> class Entity = Simplex,
-         template<uint16_type, template<uint16_type Dim> class PolySetType,
+         template<uint16_type, template<uint16_type Dim> class PolySetType, typename ContinuityType,
                   template<class, uint16_type, class> class Pts> class PP = Lagrange>
 class GeoMap
     :
-    public PP<Order,Scalar, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type,
+    public PP<Order,Scalar, Continuous,PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type,
     public boost::enable_shared_from_this<GeoMap<Dim, Order, T, Entity, PP > >
 //public PP<Order,Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
 {
     //typedef typename PP<Order, Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
-    typedef typename PP<Order, Scalar, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
+    typedef typename PP<Order, Scalar, Continuous, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
 
     typedef mpl::vector<boost::none_t, boost::none_t, GeoMap<1, Order, T, Entity, PP>, GeoMap<2, Order, T, Entity, PP> > geomap_faces_t;
     typedef mpl::vector<GeoMap<1, Order, T, Entity, PP>, GeoMap<2, Order, T, Entity, PP>, GeoMap<3, Order, T, Entity, PP>, boost::none_t> geomap_elements_t;
@@ -542,6 +545,9 @@ public:
 
     typedef typename gm_type::precompute_ptrtype precompute_ptrtype;
 
+    typedef Context<contextv,ElementType> gmc_type;
+    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+
     typedef node_t_type normal_type;
     typedef ublas::vector<normal_type> normals_type;
     typedef typename normals_type::const_iterator normal_const_iterator;
@@ -594,6 +600,8 @@ public:
         _M_face_id( invalid_uint16_type_value ),
         _M_h( __e.h() ),
         _M_h_face(0),
+        _M_meas( __e.measure() ),
+        _M_measface( 0 ),
         _M_Jt(),
         _M_Bt(),
         _M_perm( )
@@ -654,6 +662,8 @@ public:
         _M_face_id( __f ),
         _M_h( __e.h() ),
         _M_h_face(0),
+        _M_meas( __e.measure() ),
+        _M_measface( __e.faceMeasure( __f ) ),
         _M_Jt(),
         _M_Bt(),
         _M_perm( )
@@ -669,6 +679,69 @@ public:
                 _M_Bt.resize( nPoints() );
             }
         update( __e, __f );
+    }
+   Context( gmc_ptrtype& p )
+       :
+       _M_gm( p->_M_gm ),
+       _M_element( p->_M_element ),
+       _M_pc( p->_M_pc ),
+       _M_pc_faces( p->_M_pc_faces ),
+       _M_npoints( _M_pc.get()->nPoints() ),
+       //_M_xref( PDim ),
+       //_M_xreal( NDim ),
+       //_M_x0( NDim ),
+       _M_J( p->_M_J ),
+       _M_G( _M_element.G() ),
+       _M_n( p->_M_n ),
+       _M_n_real( p->_M_n_real ),
+       _M_u_n_real( p->_M_u_n_real ),
+       _M_n_norm( p->_M_n_norm ),
+       _M_xrefq( p->_M_xrefq ),
+       _M_xrealq( p->_M_xrealq ),
+       _M_nrealq( p->_M_nrealq ),
+       _M_unrealq( p->_M_unrealq ),
+       _M_nnormq( p->_M_nnormq ),
+       _M_g( p->_M_g ),
+       _M_K( p->_M_K ),
+       _M_CS( p->_M_CS ),
+       _M_CSi( p->_M_CSi ),
+       _M_B( p->_M_B ),
+       _M_B3( p->_M_B3 ),
+       _M_id( p->_M_id ),
+       _M_e_marker( p->_M_e_marker ),
+       _M_e_marker2( p->_M_e_marker2 ),
+       _M_e_marker3( p->_M_e_marker3 ),
+       _M_elem_id_1( invalid_size_type_value ),// _M_element.ad_first() ),
+       _M_pos_in_elem_id_1( invalid_uint16_type_value ),  //_M_element.pos_first() ),
+       _M_elem_id_2( invalid_size_type_value ),  //_M_element.ad_second() ),
+       _M_pos_in_elem_id_2( invalid_uint16_type_value ),  //_M_element.pos_second() ),
+       _M_face_id( invalid_uint16_type_value ),
+       _M_h( p->_M_h ),
+       _M_h_face( p->_M_h_face ),
+       _M_meas( p->_M_meas ),
+       _M_measface( p->_M_measface ),
+       _M_Jt(),
+       _M_Bt(),
+       _M_perm( p->_M_perm )
+     {
+         if ( is_linear )
+         {
+                _M_gm->gradient( node_t_type(), _M_g_linear );
+            }
+        else
+            {
+                _M_Jt.resize( nPoints() );
+                _M_Bt.resize( nPoints() );
+            }
+         update( _M_element );
+    }
+
+    /**
+     * clone this context
+     */
+    gmc_ptrtype clone()
+    {
+        return gmc_ptrtype( new gmc_type( *this ) );
     }
 
     /**
@@ -700,6 +773,8 @@ public:
         _M_e_marker2 = __e.marker2();
         _M_e_marker3 = __e.marker3();
         _M_h = __e.h();
+        _M_meas = __e.measure();
+        _M_measface = __e.faceMeasure( __f );
         _M_xrefq = _M_pc.get()->nodes();
 
         LIFE_ASSERT( __e.G().size2() == _M_gm->nbPoints() )( __e.G().size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
@@ -757,6 +832,7 @@ public:
         _M_e_marker3 = __e.marker3();
         _M_face_id = invalid_uint16_type_value;
         _M_h = __e.h();
+        _M_meas = __e.measure();
         _M_xrefq = _M_pc.get()->nodes();
 
         LIFE_ASSERT( __e.G().size2() == _M_gm->nbPoints() )( __e.G().size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
@@ -901,10 +977,19 @@ public:
         //BOOST_STATIC_ASSERT( vm::has_kb<context>::value );
         return B( i, mpl::bool_<is_linear>() );
     }
+    value_type B( int c1, int c2, int q ) const
+    {
+        //BOOST_STATIC_ASSERT( vm::has_kb<context>::value );
+        return B( q, mpl::bool_<is_linear>() )( c1, c2 );
+    }
 
     matrix_type const& K( int i ) const
     {
         return _M_K;
+    }
+    value_type K( int c1, int c2, int q ) const
+    {
+        return _M_K( c1, c2 );
     }
     /**
      * \internal
@@ -974,6 +1059,11 @@ public:
                                                 ublas::prod( _M_K, xRef() ) ) ) < 1e-10;
             }
         return false;
+    }
+
+    node_t_type const& refNormal( int /*q*/ ) const
+    {
+        return _M_gm->referenceConvex().normal( _M_face_id );
     }
 
     /**
@@ -1162,6 +1252,17 @@ public:
      * @return the max length of the edge of the face of the element
      */
     value_type hFace() const { return _M_h_face; }
+
+    /*
+     * @return the measure of the element
+     */
+    value_type meas() const { return _M_meas; }
+
+    /*
+     * @return the measure of the (current) face of the element
+     */
+    value_type measFace() const { return _M_measface; }
+
 
     /**
      * \return the permutation associated with the face
@@ -1520,6 +1621,8 @@ private:
 
     value_type _M_h;
     value_type _M_h_face;
+    value_type _M_meas;
+    value_type _M_measface;
 
     vector_type _M_Jt;
     std::vector<matrix_type> _M_Bt;

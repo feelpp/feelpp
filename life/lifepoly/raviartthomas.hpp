@@ -57,6 +57,9 @@
 #include <life/lifepoly/functionals2.hpp>
 #include <life/lifepoly/quadpoint.hpp>
 #include <life/lifepoly/fe.hpp>
+
+#include <life/lifevf/vf.hpp>
+
 namespace Life
 {
 namespace detail
@@ -256,9 +259,10 @@ public:
         _M_convex_ref(),
         _M_eid(_M_convex_ref.topologicalDimension()+1),
         _M_pts( nDim, numPoints ),
+        _M_pts_per_face( convex_type::numTopologicalFaces ),
         _M_fset( primal )
     {
-#if 0
+#if 1
         std::cout << "Raviart-Thomas finite element(dual): \n";
         std::cout << " o- dim   = " << nDim << "\n";
         std::cout << " o- order = " << nOrder << "\n";
@@ -269,7 +273,7 @@ public:
         std::cout << " o- nbPtsPerVolume = " << (int)nbPtsPerVolume << "\n";
         std::cout << " o- nLocalDof      = " << nLocalDof << "\n";
 #endif
-        std::vector<points_type> pts_per_face( convex_type::numTopologicalFaces );
+
         // loop on each entity forming the convex of topological
         // dimension nDim-1 ( the faces)
         for ( int p = 0, e = _M_convex_ref.entityRange( nDim-1 ).begin();
@@ -277,7 +281,7 @@ public:
               ++e )
             {
                 points_type Gt ( _M_convex_ref.makePoints( nDim-1, e ) );
-                pts_per_face[e] =  Gt ;
+                _M_pts_per_face[e] =  Gt ;
                 if ( Gt.size2() )
                     {
                         //Debug() << "Gt = " << Gt << "\n";
@@ -315,7 +319,7 @@ public:
                 typedef Life::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
                 node_type dir = _M_convex_ref.normal(e)*j[e];
                 //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
-                dcpe_type __dcpe( primal, dir, pts_per_face[e] );
+                dcpe_type __dcpe( primal, dir, _M_pts_per_face[e] );
                 std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
             }
         }
@@ -357,10 +361,34 @@ public:
         return _M_fset( pset );
     }
 
+    points_type const& points( uint16_type f ) const
+    {
+        return _M_pts_per_face[f];
+    }
+    ublas::matrix_column<points_type const> point( uint16_type f, uint32_type __i ) const
+    {
+        return ublas::column( _M_pts_per_face[f], __i );
+    }
+    ublas::matrix_column<points_type> point( uint16_type f, uint32_type __i )
+    {
+        return ublas::column( _M_pts_per_face[f], __i );
+    }
+
+private:
+    /**
+     * set the pointset at face \c f using points \c n
+     */
+    void setPoints( uint16_type f, points_type const& n )
+    {
+        _M_pts_per_face[f].resize( n.size1(), n.size2(), false );
+        _M_pts_per_face[f] = n;
+    }
+
 private:
     reference_convex_type _M_convex_ref;
     std::vector<std::vector<uint16_type> > _M_eid;
     points_type _M_pts;
+    std::vector<points_type> _M_pts_per_face;
     FunctionalSet<primal_space_type> _M_fset;
 
 
@@ -400,6 +428,9 @@ public:
 
     static const uint16_type nDim = N;
     static const bool isTransformationEquivalent = false;
+    static const bool isContinuous = true;
+    typedef Continuous continuity_type;
+
     //static const polynomial_transformation_type transformation = POLYNOMIAL_CONTEXT_NEEDS_1ST_PIOLA_TRANSFORMATION;
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
@@ -499,6 +530,15 @@ public:
     /** @name  Methods
      */
     //@{
+
+    template<typename ExprType>
+    static auto
+    isomorphism( ExprType& expr ) -> decltype( Life::vf::detJ()*(trans(Life::vf::JinvT())*expr)*Life::vf::Nref() )
+        {
+            using namespace Life::vf;
+            return detJ()*(trans(JinvT())*expr)*Nref();
+            //return expr;
+        }
 
     template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
     static void transform( boost::shared_ptr<GMContext> gmc,  boost::shared_ptr<PC> const& pc,

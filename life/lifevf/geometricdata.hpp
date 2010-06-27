@@ -64,8 +64,51 @@ namespace vf
 const size_type jn = vm::JACOBIAN|vm::NORMAL;
 const size_type jt = vm::JACOBIAN|vm::NORMAL|vm::TANGENT;
 const size_type jp = vm::JACOBIAN|vm::POINT;
+const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
 
 # /* List of applicative unary operators. */
+#if 1
+# define VF_GD                                                          \
+   BOOST_PP_TUPLE_TO_LIST(                                              \
+      20,                                                               \
+      (                                                                 \
+       ( N       , GDN       , 0, jn, Vectorial, _M_gmc->unitNormal( q )[ c1 ] , 0), \
+       ( Nx      , GDNx      , 0, jn, Scalar   , _M_gmc->unitNormal( q )[ 0 ]  , 0), \
+       ( Ny      , GDNy      , 1, jn, Scalar   , _M_gmc->unitNormal( q )[ 1 ]  , 0), \
+       ( Nz      , GDNz      , 2, jn, Scalar   , _M_gmc->unitNormal( q )[ 2 ]  , 0), \
+       ( Nref    , GDNref    , 0, 0, Vectorial, _M_gmc->refNormal( q )[ c1 ] , 0), \
+       ( T       , GDT       , 0, jn, Vectorial, _M_gmc->unitTangent( q )[ c1 ], 0), \
+       ( Tx      , GDTx      , 0, jn, Scalar   , _M_gmc->unitTangent( q )[ 0 ] , 0), \
+       ( Ty      , GDTy      , 1, jn, Scalar   , _M_gmc->unitTangent( q )[ 1 ] , 0), \
+       ( Tz      , GDTz      , 2, jn, Scalar   , _M_gmc->unitTangent( q )[ 2 ] , 0), \
+       ( detJ    , GDDetJ    , 0, jp, Scalar   , _M_gmc->J( q )                , 0), \
+       ( J       , GDJ       , 0, jkp,Tensor2  , _M_gmc->K( c1, c2, q )        , 0), \
+       ( JinvT   , GDJinv    , 0, jkp,Tensor2  , _M_gmc->B( c1, c2, q )        , 0), \
+       ( P       , GDP       , 0, jp, Vectorial, _M_gmc->xReal( q )[ c1 ]      , 1), \
+       ( Px      , GDPx      , 0, jp, Scalar   , _M_gmc->xReal( q )[ 0 ]       , 1), \
+       ( Py      , GDPy      , 1, jp, Scalar   , _M_gmc->xReal( q )[ 1 ]       , 1), \
+       ( Pz      , GDPz      , 2, jp, Scalar   , _M_gmc->xReal( q )[ 2 ]       , 1), \
+       ( C       , GDC       , 0, jp, Vectorial, _M_gmc->barycenterReal()[c1]  , 0), \
+       ( Cx      , GDCx      , 0, jp, Scalar   , _M_gmc->barycenterReal()[0]   , 0), \
+       ( Cy      , GDCy      , 1, jp, Scalar   , _M_gmc->barycenterReal()[1]   , 0), \
+       ( Cz      , GDCz      , 2, jp, Scalar   , _M_gmc->barycenterReal()[2]   , 0) \
+          )                                                             \
+       )
+/**/
+# define VF_GD2                                                         \
+    BOOST_PP_TUPLE_TO_LIST(                                             \
+        6,                                                              \
+        (                                                               \
+            ( h       , GDH       , 0, 0 , Scalar   , _M_gmc->h()                   , 0), \
+            ( hFace   , GDHFace   , 0, 0 , Scalar   , _M_gmc->hFace()               , 0), \
+            ( meas    , GDMeas    , 0, 0 , Scalar   , _M_gmc->meas()                , 0), \
+            ( measFace, GDHMeasFace,0, 0 , Scalar   , _M_gmc->measFace()            , 0), \
+            ( eid     , GDEid     , 0, 0 , Scalar   , _M_gmc->id()                  , 0), \
+            ( emarker , GDEmarker , 0, 0 , Scalar   , _M_gmc->marker().value()      , 0) \
+            )                                                           \
+        )                                                               \
+/**/
+#else
 # define VF_GD                                                          \
    BOOST_PP_TUPLE_TO_LIST(                                              \
       20,                                                               \
@@ -93,6 +136,8 @@ const size_type jp = vm::JACOBIAN|vm::POINT;
       )                                                                          \
    )                                                                             \
 /**/
+
+#endif
 #
 
 # /* Generates code for all binary operators and integral type pairs. */
@@ -237,6 +282,7 @@ const size_type jp = vm::JACOBIAN|vm::POINT;
 // Generate the code
 //
 BOOST_PP_LIST_FOR_EACH_PRODUCT(VF_ARRAY_GD, 1, (VF_GD))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(VF_ARRAY_GD, 1, (VF_GD2))
 /// \endcond
 } // vf
 } // Life

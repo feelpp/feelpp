@@ -43,6 +43,7 @@
 #include <life/lifepoly/equispaced.hpp>
 #include <life/lifepoly/warpblend.hpp>
 #include <life/lifepoly/basis.hpp>
+#include <life/lifepoly/expansiontypes.hpp>
 
 namespace Life
 {
@@ -174,6 +175,9 @@ public:
     static const uint16_type nConvexOrderDiff = traits_type::nConvexOrderDiff;
     static const bool is_normalized = traits_type::is_normalized;
     static const bool isTransformationEquivalent = true;
+    static const bool isContinuous = false;
+    typedef Discontinuous continuity_type;
+
     /** @name Typedefs
      */
     //@{

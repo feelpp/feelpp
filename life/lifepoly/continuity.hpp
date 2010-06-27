@@ -30,6 +30,7 @@
 #define __Continuity_H 1
 
 #include <boost/fusion/sequence.hpp>
+#include <boost/fusion/container.hpp>
 
 namespace Life
 {

@@ -46,7 +46,7 @@
 #include <life/lifepoly/boundadapted.hpp>
 #include <life/lifepoly/tensorisedboundadapted.hpp>
 #include <life/lifepoly/polynomial.hpp>
-
+#include <life/lifepoly/expansiontypes.hpp>
 
 
 namespace Life

@@ -397,7 +397,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 {                                                       \
                     update( geom, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
                 }                                                       \
-                void update( Geo_t const& geom, Basis_i_t const& /*fev*/ ) \
+                void update( Geo_t const& geom, Basis_i_t const& fev ) \
                 {                                                       \
                     update( geom, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
                 }                                                       \

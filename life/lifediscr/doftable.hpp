@@ -94,7 +94,7 @@ public:
     static const uint16_type nComponents2 = fe_type::nComponents2;
 
 
-    static const bool is_continuous = ContinuityType::is_continuous;
+    static const bool is_continuous = fe_type::isContinuous;
     static const bool is_discontinuous_locally = ContinuityType::is_discontinuous_locally;
     static const bool is_discontinuous_totally = ContinuityType::is_discontinuous_totally;
 
@@ -1545,13 +1545,14 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::showMe() const
 {
-    Debug(5005)  << " Degree of Freedom (DofTable) Object" << "\n";
+    Log()  << " Degree of Freedom (DofTable) Object" << "\n";
     //if ( verbose )
     {
-        Debug(5005)  << "************************************************************" << "\n";
-        Debug(5005)  << "           Local to Global DOF table" << "\n";
-        Debug(5005)  << "************************************************************" << "\n";
-        Debug(5005)  << "Element Id    Loc. N.    Global N.   Sign#    Element Id   Loc. N.  Global N.  Sign" << "\n";
+        Log() <<  "* nDof = " << this->nLocalDof() << "\n";
+        Log()  << "************************************************************" << "\n";
+        Log()  << "           Local to Global DOF table" << "\n";
+        Log()  << "************************************************************" << "\n";
+        Log()  << "Element Id    Loc. N.    Global N.   Sign#    Element Id   Loc. N.  Global N.  Sign" << "\n";
 
         for ( size_type i = 0; i < _M_n_el;++i )
             {
@@ -1559,18 +1560,18 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::showMe() const
                 for ( size_type j = 0; j < nDofPerElement();++j )
                     {
 
-                        Debug(5005)<< "elt id " << i << " : "
+                        Log()<< "elt id " << i << " : "
                                    << "(local/global/sign dof : " << j << " : "
                                    << boost::get<0>(localToGlobal( i  , j )) << " : "
                                    << boost::get<1>(localToGlobal( i  , j )) << "\n";
                     }
 
             }
-        Debug(5005)  << "\n";
+        Log()  << "\n";
 
-        Debug(5005)  << "************************************************************" << "\n";
-        Debug(5005)  << " Boundary  Local to Global DOF table" << "\n";
-        Debug(5005)  << "************************************************************" << "\n";
+        Log()  << "************************************************************" << "\n";
+        Log()  << " Boundary  Local to Global DOF table" << "\n";
+        Log()  << "************************************************************" << "\n";
         typedef typename Container::const_iterator const_iterator;
         const_iterator it = _M_face_l2g.begin();
         const_iterator en = _M_face_l2g.end();
@@ -1587,7 +1588,7 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::showMe() const
                              << boost::get<0>(*it2)<< " : "
                              << boost::get<1>(*it2) << "\n";
                     }
-                Debug(5005) << ostr.str() << "\n";
+                Log() << ostr.str() << "\n";
             }
     }
 
@@ -2166,8 +2167,10 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::buildDofMap( mesh_t
         }
     this->_M_n_dofs = next_free_dof;
 
+#if !defined(NDEBUG)
     Debug( 5005 ) << " n global dof " << nDof() << "\n";
     Debug( 5005 ) << " n local dof " << nLocalDof() << "\n";
+#endif
     for (size_type processor=0; processor<M.comm().size(); processor++)
         {
             Debug( 5005 ) << "o processor " << processor << "\n";

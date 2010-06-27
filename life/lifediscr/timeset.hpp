@@ -96,9 +96,9 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
 
-    typedef FunctionSpace<MeshType, bases<Lagrange<0,Scalar> >, Discontinuous > scalar_p0_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<0,Vectorial> >, Discontinuous > vector_p0_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<0,Tensor2> >, Discontinuous > tensor2_p0_space_type;
+    typedef FunctionSpace<MeshType, bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
+    typedef FunctionSpace<MeshType, bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
+    typedef FunctionSpace<MeshType, bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
     typedef FunctionSpace<MeshType, bases<Lagrange<1,Scalar> > > scalar_p1_space_type;
     typedef FunctionSpace<MeshType, bases<Lagrange<1,Vectorial> > > vector_p1_space_type;
     typedef FunctionSpace<MeshType, bases<Lagrange<1,Tensor2> > > tensor2_p1_space_type;
@@ -136,9 +136,9 @@ public:
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
 
-        typedef FunctionSpace<MeshType, bases<Lagrange<0,Scalar> >, Discontinuous > scalar_p0_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<0,Vectorial> >, Discontinuous > vector_p0_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<0,Tensor2> >, Discontinuous > tensor2_p0_space_type;
+        typedef FunctionSpace<MeshType, bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
+        typedef FunctionSpace<MeshType, bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
+        typedef FunctionSpace<MeshType, bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
         typedef FunctionSpace<MeshType, bases<Lagrange<1,Scalar> > > scalar_p1_space_type;
         typedef FunctionSpace<MeshType, bases<Lagrange<1,Vectorial> > > vector_p1_space_type;
         typedef FunctionSpace<MeshType, bases<Lagrange<1,Tensor2> > > tensor2_p1_space_type;
