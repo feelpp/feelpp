@@ -23,6 +23,9 @@
 *** lifepoly
 
  - support for RaviartThomas RTk in 2D and 3D
+ - Continuous or Discontinous expansion in multidomains is now taken care of in
+   the basis definition. Either the basis is intrinsiquely Discontinous
+   (e.g. Dubiner) or can be either Continuous or Discontinous (e.g. Lagrange)
 
 *** lifediscr
 
@@ -32,6 +35,33 @@
 *** lifevf
 
  - update the interpolation tool
+ - fixed dG or integration of multi-valued functions breakage
+ - added meas() and measFace() keywords in the language
+   - meas() : measure of the current element
+   - measFace(): measure of the current face
+ - added access to gradient (matrix K()) and inverse gradient transposed (matrix
+   B()) as well as jacobian (scalar J()) of the geometric transformation as
+   keywords of the language
+ - added a new function .broken( [P0h] ) to integrate() which allows to evaluate
+   the integral and store the results(local contributions) in a P0 field
+   instead of summing them like in evaluate().
+   p0 = P0h->element( "mean_f" );
+   $p0 = \int_K f/meas(K)$ where K is an element of the mesh
+   p0 = integrate( elements(mesh), f/meas() ).broken( P0h );
+
+** Benchmarks
+
+ - reorganized the benchmark directory
+
+*** Laplacian
+
+ - moved convergence to laplacian and split into ale, cG and dG directory. Now
+   test for dG convergence in 1D, 2D and 3D
+
+*** Navier-Stokes
+
+ - moved stokes testcases to navierstokes/kovasznay directory, moved all
+   stokes/navier-stokes benchmarks into the navierstokes directory
 
 
 * New in 0.9.24
