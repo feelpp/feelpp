@@ -3,15 +3,14 @@
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2009-01-04
+       Date: 2010-06-18
 
-  Copyright (C) 2009 Christophe Prud'homme
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
+  version 2.1 of the License, or (at your option) any later version.
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -23,147 +22,15 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file stokes.cpp
+   \file stokes_impl.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-   \date 2009-01-04
+   \date 2010-06-18
  */
-#include <life/options.hpp>
-#include <life/lifecore/life.hpp>
-#include <life/lifecore/application.hpp>
-
-#include <life/lifealg/backend.hpp>
-
-#include <life/lifediscr/functionspace.hpp>
-
-#include <life/lifepoly/im.hpp>
-
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
-
-
-
-#include <life/lifemesh/elements.hpp>
-
-#include <life/lifevf/vf.hpp>
-#include <fstream>
-#include <sstream>
-
-#include <life/lifecore/applicationxml.hpp>
-#include <life/lifecore/xmlparser.hpp>
-
-Life::po::options_description makeOptions();
-Life::AboutData makeAbout();
-
 
 namespace Life
 {
-using namespace vf;
-/**
- * \class Stokes class
- * \brief solves the stokes equations
- *
- */
-template<int _OrderU,
-         int _OrderP = _OrderU-1>
-class Stokes
-    :
-        public ApplicationXML
-{
-    typedef ApplicationXML super;
-public:
-
-    static const uint16_type Dim  = 2;
-    static const uint16_type OrderU = _OrderU;
-    static const uint16_type OrderP = _OrderP;
-    static const bool is_equal_order = (OrderU==OrderP);
-
-    typedef double value_type;
-
-    typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
-
-    /*matrix*/
-    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef typename backend_type::vector_ptrtype vector_ptrtype;
-
-    /*mesh*/
-    typedef Simplex<Dim,1,Dim> convex_type;
-    typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
-    /*basis*/
-    typedef Lagrange<OrderU, Vectorial> basis_u_type;
-    typedef Lagrange<OrderP, Scalar> basis_p_type;
-    typedef Lagrange<0, Scalar> basis_l_type;
-#if defined(WITH_LAGRANGE_MULTIPLIERS)
-    typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
-#else
-    typedef bases<basis_u_type,basis_p_type> basis_type;
-#endif
-    /*space*/
-    typedef FunctionSpace<mesh_type, basis_type> space_type;
-    BOOST_MPL_ASSERT( ( boost::is_same<typename space_type::bases_list, basis_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<0> >::type, basis_u_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<1> >::type, basis_p_type> ) );
-    //BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<2> >::type, basis_l_type> ) );
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-
-    /* functions */
-    typedef typename space_type::element_type element_type;
-
-    /* export */
-    typedef Exporter<mesh_type> export_type;
-
-    Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od );
-
-    /**
-     * run the convergence test
-     */
-    void run();
-
-private:
-
-    void buildLhs();
-    void buildRhs();
-
-    /**
-     * export results to ensight format (enabled by  --export cmd line options)
-     */
-    void exportResults( element_type& u, element_type& v );
-
-private:
-
-    backend_ptrtype M_backend;
-    double meshSize;
-    double M_stabP;
-    double M_stabD;
-    space_ptrtype Xh;
-    element_type U, V;
-    sparse_matrix_ptrtype D;
-    vector_ptrtype F;
-    double mu;
-    double M_lambda;
-    bool M_weak_dirichlet;
-    double penalbc;
-    double M_beta;
-
-    boost::shared_ptr<export_type> exporter;
-    typename export_type::timeset_ptrtype timeSet;
-    mesh_ptrtype mesh;
-private:
-
-    template<typename element_1_type, typename StabExpr>
-    void addPressureStabilisation(element_1_type& p, element_1_type& q, StabExpr& stabexpr );
-
-    template<typename element_0_type, typename StabExpr>
-    void addDivergenceStabilisation(element_0_type& u, element_0_type& v, StabExpr& stabexpr );
-
-}; // Stokes
-
-template<int _OrderU, int _OrderP>
-Stokes<_OrderU, _OrderP>::Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
+Stokes<Dim, _OrderU, _OrderP, Entity>::Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
     :
     super( argc, argv, ad, od ),
     M_backend( backend_type::build( this->vm() ) ),
@@ -228,12 +95,66 @@ Stokes<_OrderU, _OrderP>::Stokes( int argc, char** argv, AboutData const& ad, po
     M_lambda = 1./(2.*mu) - math::sqrt( 1./(4.*mu*mu) + 4.*M_PI*M_PI);
     penalbc = this->vm()["bccoeff"].template as<value_type>();
     M_beta = this->vm()["beta"].template as<value_type>();
+}
 
+
+template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<typename PressureStabExpr>
+void
+Stokes<Dim, _OrderU, _OrderP, Entity>::addPressureStabilisation( element_1_type& p,
+                                                                 element_1_type& q,
+                                                                 PressureStabExpr& p_stabexpr )
+{
+
+    if ( is_equal_order && this->vm()["stab-p"].template as<bool>() )
+    {
+        boost::timer t;
+        Log() << "[assembly] add stabilisation terms for equal order approximation ( orderU="
+              << OrderU << ", orderP=" << OrderP << " )\n";
+        size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
+        form2( Xh, Xh, D, _pattern=pattern )  +=
+            integrate( internalfaces(mesh), _Q<2*OrderP+2>(),
+                       (p_stabexpr)*(trans(jumpt(gradt(p)))*jump(grad(q))) );
+        Log() << "[assembly] form2 D equal order stabilisation terms in " << t.elapsed() << "s\n"; t.restart();
+    }
+
+}
+
+template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<typename DivStabExpr>
+void
+Stokes<Dim, _OrderU, _OrderP, Entity>::addDivergenceStabilisation( element_0_type& u,
+                                                                   element_0_type& v,
+                                                                   DivStabExpr& d_stabexpr )
+{
+
+    if ( this->vm()["stab-div"].template as<bool>() )
+    {
+        boost::timer t;
+        Log() << "[assembly] add stabilisation terms for divergence ( orderU="
+              << OrderU << ", orderP=" << OrderP << " )\n";
+        size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
+        form2( Xh, Xh, D, _pattern=pattern )  +=
+            integrate( internalfaces(mesh),
+                       (d_stabexpr)*(trans(jumpt(divt(u)))*jump(div(v))) );
+        Log() << "[assembly] form2 D divergence stabilisation terms in " << t.elapsed() << "s\n"; t.restart();
+    }
+
+}
+
+template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
+void
+Stokes<Dim, _OrderU, _OrderP, Entity>::run()
+{
     this->//addParameterValue( mu )
         addParameterValue( Dim )
         .addParameterValue( OrderU )
         .addParameterValue( OrderP )
         .addParameterValue( this->vm()["hsize"].template as<double>() );
+
+    if (this->preProcessing() == RUN_EXIT) return;
+
+    using namespace Life::vf;
 
     boost::timer t;
 
@@ -257,27 +178,25 @@ Stokes<_OrderU, _OrderP>::Stokes( int argc, char** argv, AboutData const& ad, po
      */
     Xh = space_type::New( mesh );
 
-    U = Xh->element( "U" );
-    V = Xh->element( "V" );
-
-    // project in V the exact solution (v,q) are just views over V
-    double pi = M_PI;
-    auto u1 = val(1. - exp( M_lambda * Px() ) * cos(2.*pi*Py()));
-    auto u2 = val((M_lambda/(2.*pi)) * exp( M_lambda * Px() ) * sin(2.*pi*Py()));
-    auto u_exact = vec(u1,u2);
-    auto p_exact = val((1-exp(2.*M_lambda*Px()))/2.0);
-
-    auto v = V.template element<0>();
-    auto q = V.template element<1>();
-    v = vf::project( Xh->template functionSpace<0>(), elements( Xh->mesh() ), u_exact );
-    q = vf::project( Xh->template functionSpace<1>(), elements( Xh->mesh() ), p_exact );
+    element_type U( Xh, "u" );
+    element_type E( Xh, "u" );
+    element_type V( Xh, "v" );
+    element_0_type ue = E.template element<0>();
+    element_1_type pe = E.template element<1>();
+    element_2_type le = E.template element<2>();
+    element_0_type u = U.template element<0>();
+    element_0_type v = V.template element<0>();
+    element_1_type p = U.template element<1>();
+    element_1_type q = V.template element<1>();
+    element_2_type lambda = U.template element<2>();
+    element_2_type nu = V.template element<2>();
 
     Log() << "Data Summary:\n";
     Log() << "   hsize = " << meshSize << "\n";
     Log() << "  export = " << this->vm().count("export") << "\n";
     Log() << "      mu = " << mu << "\n";
     Log() << " bccoeff = " << penalbc << "\n";
-    Log() << "Xh and elements created in " << t.elapsed() << "s\n"; t.restart();
+    Log() << "functionspace and elements created in " << t.elapsed() << "s\n"; t.restart();
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
     Log() << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
@@ -285,69 +204,7 @@ Stokes<_OrderU, _OrderP>::Stokes( int argc, char** argv, AboutData const& ad, po
     Log() << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
     Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 
-    F = vector_ptrtype( M_backend->newVector( Xh ) );
-    D = sparse_matrix_ptrtype(  M_backend->newMatrix( Xh, Xh ) );
-    Log() << "D and F allocated in " << t.elapsed() << "s\n"; t.restart();
-}
-
-
-template<int _OrderU, int _OrderP>
-template<typename element_1_type, typename PressureStabExpr>
-void
-Stokes<_OrderU, _OrderP>::addPressureStabilisation( element_1_type& p,
-                                                    element_1_type& q,
-                                                    PressureStabExpr& p_stabexpr )
-{
-
-    if ( is_equal_order && this->vm()["stab-p"].template as<bool>() )
-    {
-        boost::timer t;
-        Log() << "[assembly] add stabilisation terms for equal order approximation ( orderU="
-              << OrderU << ", orderP=" << OrderP << " )\n";
-        size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
-        form2( Xh, Xh, D, _pattern=pattern )  +=
-            integrate( internalfaces(mesh), _Q<2*OrderP+2>(),
-                       (p_stabexpr)*(trans(jumpt(gradt(p)))*jump(grad(q))) );
-        Log() << "[assembly] form2 D equal order stabilisation terms in " << t.elapsed() << "s\n"; t.restart();
-    }
-
-}
-
-template<int _OrderU, int _OrderP>
-template<typename element_0_type, typename DivStabExpr>
-void
-Stokes<_OrderU, _OrderP>::addDivergenceStabilisation( element_0_type& u,
-                                                      element_0_type& v,
-                                                      DivStabExpr& d_stabexpr )
-{
-#if 0
-    if ( this->vm()["stab-div"].template as<bool>() )
-    {
-        boost::timer t;
-        Log() << "[assembly] add stabilisation terms for divergence ( orderU="
-              << OrderU << ", orderP=" << OrderP << " )\n";
-        size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
-        form2( Xh, Xh, D, _pattern=pattern )  +=
-            integrate( internalfaces(mesh),
-                       (d_stabexpr)*(trans(jumpt(divt(u)))*jump(div(v))) );
-        Log() << "[assembly] form2 D divergence stabilisation terms in " << t.elapsed() << "s\n"; t.restart();
-    }
-#endif
-}
-
-template<int _OrderU, int _OrderP>
-void
-Stokes<_OrderU, _OrderP>::buildRhs()
-{
-    boost::timer t;
-    auto u = U.template element<0>();
-    auto v = V.template element<0>();
-    auto p = U.template element<1>();
-    auto q = V.template element<1>();
-#if defined(WITH_LAGRANGE_MULTIPLIERS)
-    auto lambda = U.template element<2>();
-    auto nu = V.template element<2>();
-#endif
+    vector_ptrtype F( M_backend->newVector( Xh ) );
 
     auto deft = .5*(gradt(u)+trans(gradt(u)));
     auto def = .5*(grad(v)+trans(grad(v)));
@@ -385,69 +242,28 @@ Stokes<_OrderU, _OrderP>::buildRhs()
     double meas = integrate( elements(mesh), constant(1.) ).evaluate()( 0, 0 );
     double pmean = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/meas;
 
+    v = vf::project( v.functionSpace(), elements(mesh), beta );
+    ue = vf::project( ue.functionSpace(), elements(mesh), u_exact );
+    Log() << "convection terms projectd in " << t.elapsed() << "s\n"; t.restart();
+
+    // right hand side
     form1( Xh, F, _init=true ) =integrate( elements(mesh), trans(f)*id(v) );
-#if defined(WITH_LAGRANGE_MULTIPLIERS)
     // impose pmean mean value for the solution through the lagrange multipliers
     form1( Xh, F ) += integrate( elements(mesh), pmean*id(nu) );
-#endif
     if ( M_weak_dirichlet )
     {
         form1( Xh, F )+= integrate( boundaryfaces(mesh),
                                     trans(u_exact)*(-SigmaN+
                                                     penalbc*id(v)/hFace() +
                                                     penalbc*(trans(id(v))*N())*N()*
-                                                    max(M_beta,mu/hFace()) ) );
-                                                    //max(sqrt(trans(beta)*beta),mu/hFace()) ) );
+                                                    max(sqrt(trans(idv(v))*idv(v)),mu/hFace()) ) );
     }
     Log() << "[stokes] vector local assembly done\n";
     Log() << "form1 F created in " << t.elapsed() << "s\n"; t.restart();
-
-}
-template<int _OrderU, int _OrderP>
-void
-Stokes<_OrderU, _OrderP>::buildLhs()
-{
-    boost::timer t;
-
-    auto u = U.template element<0>();
-    auto v = V.template element<0>();
-    auto p = U.template element<1>();
-    auto q = V.template element<1>();
-#if defined(WITH_LAGRANGE_MULTIPLIERS)
-    auto lambda = U.template element<2>();
-    auto nu = V.template element<2>();
-#endif
-
-
-    auto deft = .5*(gradt(u)+trans(gradt(u)));
-    auto def = .5*(grad(v)+trans(grad(v)));
-
-    // total stress tensor (trial)
-    auto SigmaNt = (-idt(p)*N()+2*mu*deft*N());
-    auto SigmaN = (-id(p)*N()+2*mu*def*N());
-
-    double pi = M_PI;
-    auto u1 = val(1. - exp( M_lambda * Px() ) * cos(2.*pi*Py()));
-    auto u2 = val((M_lambda/(2.*pi)) * exp( M_lambda * Px() ) * sin(2.*pi*Py()));
-    auto u_exact = vec(u1,u2);
-
-    auto du_dx = val(-M_lambda*exp( M_lambda * Px() )*cos(2.*pi*Py()));
-    auto du_dy = val(2*pi*exp( M_lambda * Px() )*sin(2.*pi*Py()));
-    auto dv_dx = val((M_lambda*M_lambda/(2*pi))*exp( M_lambda * Px() )*sin(2.*pi*Py()));
-    auto dv_dy = val(M_lambda*exp( M_lambda * Px() )*cos(2.*pi*Py()));
-    auto grad_exact = (mat<2,2>(du_dx, du_dy, dv_dx, dv_dy));
-    auto div_exact = du_dx + dv_dy;
-
-    auto beta = vec(cst(M_beta),cst(M_beta));
-    auto convection = grad_exact*beta;
-
-    auto p_exact = val((1-exp(2.*M_lambda*Px()))/2.0);
-
-    auto f1 = val(exp( M_lambda * Px() )*((M_lambda*M_lambda - 4.*pi*pi)*mu*cos(2.*pi*Py()) - M_lambda*exp( M_lambda * Px() )));
-    auto f2 = val(exp( M_lambda * Px() )*mu*(M_lambda/(2.*pi))*sin(2.*pi*Py())*(-M_lambda*M_lambda +4*pi*pi));
-
-    auto f = vec(f1,f2)+ convection;
-
+    /*
+     * Construction of the left hand side
+     */
+    D = sparse_matrix_ptrtype(  M_backend->newMatrix( Xh, Xh ) );
     size_type pattern = DOF_PATTERN_COUPLED;
     if ( (is_equal_order &&
           this->vm()["stab-p"].template as<bool>()) ||
@@ -461,23 +277,21 @@ Stokes<_OrderU, _OrderP>::buildLhs()
     Log() << "[assembly] add diffusion terms\n";
     form2( Xh, Xh, D, _init=true, _pattern=pattern );
     Log() << "[assembly] form2 D init in " << t.elapsed() << "s\n"; t.restart();
-    form2( Xh, Xh, D )+= integrate( elements(mesh), 2*mu*trace(deft*trans(def)) + trans(gradt(u)*beta)*id(v) );
+    form2( Xh, Xh, D )+= integrate( elements(mesh), 2*mu*trace(deft*trans(def)) + trans(gradt(u)*idv(v))*id(v) );
     Log() << "[assembly] form2 D convection and viscous terms in " << t.elapsed() << "s\n"; t.restart();
     Log() << "[assembly] add velocity/pressure terms\n";
     form2( Xh, Xh, D )+=integrate( elements(mesh),- div(v)*idt(p) + divt(u)*id(q) );
     Log() << "[assembly] form2 D velocity/pressure terms in " << t.elapsed() << "s\n"; t.restart();
     Log() << "[assembly] add lagrange multipliers terms for zero mean pressure\n";
-#if defined(WITH_LAGRANGE_MULTIPLIERS)
     form2( Xh, Xh, D )+=integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
     Log() << "[assembly] form2 D pressure/multipliers terms in " << t.elapsed() << "s\n"; t.restart();
-#endif
     if ( M_weak_dirichlet )
     {
         Log() << "[assembly] add terms for weak Dirichlet condition handling\n";
         form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaNt)*id(v) );
         form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaN)*idt(u) );
         form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*trans(idt(u))*id(v)/hFace() );
-        form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*(trans(idt(u))*N())*(trans(id(v))*N())*max(M_beta,mu/hFace()) );
+        form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*(trans(idt(u))*N())*(trans(id(v))*N())*max(sqrt(trans(idv(v))*idv(v)),mu/hFace()) );
         Log() << "[assembly] form2 D boundary terms in " << t.elapsed() << "s\n"; t.restart();
     }
 
@@ -490,11 +304,11 @@ Stokes<_OrderU, _OrderP>::buildLhs()
     else
     {
         double pterm = math::pow(double(OrderU), 4.);
-        auto p_stabexpr = M_stabP*hFace()*hFace()*hFace()/max(mu*pterm,hFace()*M_beta);
+        auto p_stabexpr = M_stabP*hFace()*hFace()*hFace()/max(mu*pterm,hFace()*sqrt(trans(idv(v))*idv(v)));
         this->addPressureStabilisation( p, q, p_stabexpr  );
     }
-    //auto d_stabexpr = M_stabD*hFace()*hFace()/math::pow(double(OrderU), 7./2.);
-    //this->addDivergenceStabilisation( u, v, d_stabexpr  );
+    auto d_stabexpr = M_stabD*hFace()*hFace()/math::pow(double(OrderU), 7./2.);
+    this->addDivergenceStabilisation( u, v, d_stabexpr  );
 
     Log() << "[stokes] matrix local assembly done\n";
 
@@ -507,43 +321,35 @@ Stokes<_OrderU, _OrderP>::buildLhs()
     Log() << "[stokes] vector/matrix global assembly done\n";
     Log() << "form2 D created in " << t.elapsed() << "s\n"; t.restart();
 
-}
-template<int _OrderU, int _OrderP>
-void
-Stokes<_OrderU, _OrderP>::run()
-{
-    if (this->preProcessing() == RUN_EXIT) return;
-
-    using namespace Life::vf;
-
-    this->buildRhs();
-    this->buildLhs();
-
     if( this->vm().count( "export-matlab" ) )
     {
-        boost::timer t;
-        D->printMatlab( "D.m" );
+        D->printMatlab( "S.m" );
         F->printMatlab( "F.m" );
-        Log() << "system saved in " << t.elapsed() << "s\n"; t.restart();
     }
 
-    boost::timer t;
     vector_ptrtype X( M_backend->newVector( U.functionSpace() ) );
     M_backend->solve( _matrix=D, _solution=X, _rhs=F, _rtolerance=1e-14 );
     U = *X;
 
     Log() << "system solved in " << t.elapsed() << "s\n"; t.restart();
+    Log() << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
+    std::cout << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
 
-    this->exportResults( U, V );
+    v = vf::project( Xh->template functionSpace<0>(), elements( Xh->mesh() ), u_exact );
+    q = vf::project( Xh->template functionSpace<1>(), elements( Xh->mesh() ), p_exact );
     Log() << "postprocessing done in " << t.elapsed() << "s\n"; t.restart();
+    this->exportResults( U, V );
+    Log() << "exporting done in " << t.elapsed() << "s\n"; t.restart();
+
+
 
     this->postProcessing();
 
 } // Stokes::run
 
-template<int _OrderU, int _OrderP>
+template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Stokes<_OrderU, _OrderP>::exportResults( element_type& U, element_type& V )
+Stokes<Dim, _OrderU, _OrderP, Entity>::exportResults( element_type& U, element_type& V )
 {
     const double pi = M_PI;
     auto u1 = val(1. - exp( M_lambda * Px() ) * cos(2.*pi*Py()));
@@ -559,8 +365,8 @@ Stokes<_OrderU, _OrderP>::exportResults( element_type& U, element_type& V )
 
     auto p_exact = val((1-exp(2.*M_lambda*Px()))/2.0);
 
-    auto u = U.template element<0>();
-    auto p = U.template element<1>();
+    element_0_type u = U.template element<0>();
+    element_1_type p = U.template element<1>();
     double u_error_L2_2 = integrate( elements(mesh),
                                      trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
     double uex_L2_2 = integrate( elements(mesh), trans(u_exact)*(u_exact) ).evaluate()( 0, 0 );
@@ -577,27 +383,23 @@ Stokes<_OrderU, _OrderP>::exportResults( element_type& U, element_type& V )
     std::cout << "||u_error||_1/||uex||_1 = " << u_errorH1 << "\n";
 
 
-    double meas = integrate( elements(mesh), constant(1.) ).evaluate()( 0, 0 );
-    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/meas;
-    double mean_pexact = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/meas;
-    Log() << "[stokes] mean(p)=" << mean_p << "\n";
-    Log() << "[stokes] mean(p_exact)=" << mean_pexact << "\n";
-    std::cout << "[stokes] mean(p)=" << mean_p << "\n";
-    std::cout << "[stokes] mean(p_exact)=" << mean_pexact << "\n";
-
-
-    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 3)\n";
-    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 3)\n";
-
-    double p_errorL2_2 = integrate( elements(mesh),
-                                    ((idv(p)-mean_p)-(p_exact-mean_pexact))*((idv(p)-mean_p)-(p_exact-mean_pexact)) ).evaluate()( 0, 0 );
-    double pex_L2 = integrate( elements(mesh), (p_exact-mean_pexact)*(p_exact-mean_pexact) ).evaluate()( 0, 0 );
+    double p_errorL2_2 = integrate( elements(mesh), (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
+    double pex_L2 = integrate( elements(mesh), (p_exact)*(p_exact) ).evaluate()( 0, 0 );
     double p_errorL2 = math::sqrt( p_errorL2_2/pex_L2 );
     std::cout << "||p_error||_0/||pex||_0 = " <<  p_errorL2 << "\n";;
 
     Log() << "[stokes] solve for D done\n";
 
+    double meas = integrate( elements(mesh), constant(1.) ).evaluate()( 0, 0 );
+    double meanpexact = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/meas;
+    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 3)\n";
+    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 3)\n";
 
+    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/meas;
+    Log() << "[stokes] mean(p)=" << mean_p << "\n";
+    Log() << "[stokes] mean(p_exact)=" << meanpexact << "\n";
+    std::cout << "[stokes] mean(p)=" << mean_p << "\n";
+    std::cout << "[stokes] mean(p_exact)=" << meanpexact << "\n";
 
     double mean_div_u = integrate( elements(mesh), divv(u) ).evaluate()( 0, 0 );
     Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
@@ -628,7 +430,4 @@ Stokes<_OrderU, _OrderP>::exportResults( element_type& U, element_type& V )
     }
 } // Stokes::export
 
-template<int _OrderU,int _OrderP> const uint16_type Stokes<_OrderU, _OrderP>::Dim;
-template<int _OrderU,int _OrderP> const uint16_type Stokes<_OrderU, _OrderP>::OrderU;
-template<int _OrderU,int _OrderP> const uint16_type Stokes<_OrderU, _OrderP>::OrderP;
-} // Life
+}
