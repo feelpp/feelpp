@@ -99,25 +99,25 @@ class TestALE
     typedef Mesh<Simplex<2, 1> > mesh_type;
     typedef Mesh<Simplex<2, N> > new_mesh_type;
 
-    typedef bases<Lagrange<N, Scalar, PointSetFekete> > struct_basis_type;
+    typedef bases<Lagrange<N, Scalar, Continuous, PointSetFekete> > struct_basis_type;
     typedef FunctionSpace<struct_mesh_type, struct_basis_type, double> struct_functionspace_type;
     typedef boost::shared_ptr<struct_functionspace_type> struct_functionspace_ptrtype;
     typedef typename struct_functionspace_type::element_type struct_element_type;
 
     typedef typename PointSetEquiSpaced<SimplexProduct<1,1>, N, double>::points_type node_points_type;
 
-    typedef bases<Lagrange<1, Vectorial, PointSetFekete> > p1_ale_basis_type;
+    typedef bases<Lagrange<1, Vectorial, Continuous, PointSetFekete> > p1_ale_basis_type;
     typedef FunctionSpace< mesh_type, p1_ale_basis_type, double> p1_functionspace_type;
     typedef boost::shared_ptr<p1_functionspace_type> p1_functionspace_ptrtype;
     typedef typename p1_functionspace_type::element_type p1_element_type;
 
-    typedef bases<Lagrange<N, Vectorial, PointSetFekete> > pN_ale_basis_type;
+    typedef bases<Lagrange<N, Vectorial, Continuous, PointSetFekete> > pN_ale_basis_type;
     typedef FunctionSpace< new_mesh_type, pN_ale_basis_type, double> pN_visualize_functionspace_type;
     typedef boost::shared_ptr<pN_visualize_functionspace_type> pN_visualize_functionspace_ptrtype;
     typedef typename pN_visualize_functionspace_type::element_type pN_element_type;
 
 
-    typedef bases<Lagrange<N, Scalar, PointSetFekete> > basis_type;
+    typedef bases<Lagrange<N, Scalar, Continuous, PointSetFekete> > basis_type;
     typedef FunctionSpace< new_mesh_type, basis_type, double> functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type fs_element_type;
