@@ -307,21 +307,19 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
     double t = 0;
     value_type pi = 4.0*math::atan(1.0);
-    AUTO( g, val( exp(-cst_ref( t ))*sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) ) );
-    AUTO( f, (-1*(t > 0)+pi*pi*Dim)*g )
-    //AUTO( g, val( Px()*Px()+Py()*Py()+Pz()*Pz() ) );
-    //AUTO( f, val( -4 ) );
+    auto g = val( exp(-cst_ref( t ))*sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) );
+    auto f = (-1*(t > 0)+pi*pi*Dim)*g;
 
     timers["assembly"].second = timers["assembly"].first.elapsed();
 
     //
     // Compute domain and boundary size
     //
-    double local_domain_size = integrate( elements(mesh), im, constant(1.0)).evaluate()(0,0);
+    double local_domain_size = integrate( elements(mesh),  constant(1.0)).evaluate()(0,0);
     double global_domain_size;
     mpi::all_reduce( Application::comm(), local_domain_size, global_domain_size, std::plus<double>() );
     Log() << "int_Omega = " << global_domain_size << "[ " << local_domain_size << " ]\n";
-    double local_boundary_size = integrate( boundaryfaces(mesh), im, constant(1.0)).evaluate()(0,0);
+    double local_boundary_size = integrate( boundaryfaces(mesh),  constant(1.0)).evaluate()(0,0);
     double global_boundary_size;
     mpi::all_reduce( Application::comm(), local_boundary_size, global_boundary_size, std::plus<double>() );
     Log() << "int_Omega = " << global_boundary_size << "[ " << local_boundary_size << " ]\n";
@@ -343,13 +341,12 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
     size_type pattern = (Cont::is_continuous?DOF_PATTERN_COUPLED:DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR );
     form2( Xh, Xh, Mt, _init=true, _pattern=pattern ) =
-        integrate( elements(mesh), im,
+        integrate( elements(mesh),
                    idt(u)*id(v)/dt );
     Mt->close();
     form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
-        integrate( elements(mesh), im,
-                   //diff*gradt(u)*trans(grad(v))
-                   -trace(hesst(u))*id(v)
+        integrate( elements(mesh),
+                   diff*gradt(u)*trans(grad(v))
                    );
     D->close();
     vector_ptrtype Un( b->newVector( u.functionSpace() ) );
@@ -357,15 +354,15 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     u = vf::project( Xh, elements(mesh), g );
     v = vf::project( Xh, elements(mesh), constant(1.0) );
 
-    std::cout << "int Px() = "  << integrate( elements(mesh), im, Px() ).evaluate() << "\n";
-    std::cout << "int idv(1) = "  << integrate( elements(mesh), im, idv(v) ).evaluate() << "\n";
+    std::cout << "int Px() = "  << integrate( elements(mesh),  Px() ).evaluate() << "\n";
+    std::cout << "int idv(1) = "  << integrate( elements(mesh),  idv(v) ).evaluate() << "\n";
     v = vf::project( Xh, elements(mesh), Px() );
-    std::cout << "int idv(x) = "  << integrate( elements(mesh), im, idv(v) ).evaluate() << "\n";
-    std::cout << "int gradv(x) = "  << integrate( elements(mesh), im, gradv(v) ).evaluate() << "\n";
+    std::cout << "int idv(x) = "  << integrate( elements(mesh),  idv(v) ).evaluate() << "\n";
+    std::cout << "int gradv(x) = "  << integrate( elements(mesh),  gradv(v) ).evaluate() << "\n";
     v = vf::project( Xh, elements(mesh), Px()*Px() );
-    std::cout << "int Px()*Px() = "  << integrate( elements(mesh), im, Px()*Px() ).evaluate() << "\n";
-    std::cout << "int idv(x) = "  << integrate( elements(mesh), im, idv(v) ).evaluate() << "\n";
-    std::cout << "int gradv(x) = "  << integrate( elements(mesh), im, gradv(v) ).evaluate() << "\n";
+    std::cout << "int Px()*Px() = "  << integrate( elements(mesh),  Px()*Px() ).evaluate() << "\n";
+    std::cout << "int idv(x) = "  << integrate( elements(mesh),  idv(v) ).evaluate() << "\n";
+    std::cout << "int gradv(x) = "  << integrate( elements(mesh),  gradv(v) ).evaluate() << "\n";
 
     for( size_type i = 0; i < u.size(); ++i )
         {
@@ -375,17 +372,17 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     Un->close();
     Vn->close();
     std::cout << "||u||_energy = " << D->energy( Vn, Un ) << "\n"
-              << "||u||_energy_2 = " << integrate( elements(mesh), im, gradv(u)*trans(gradv(v)) ).evaluate() << "\n"
-              << "||u||_energy_2' = " << integrate( boundaryfaces(mesh), im, (gradv(u)*N())*idv(v) ).evaluate() << "\n"
-              << "||u||_energy_3 = " << integrate( elements(mesh), im, -trace(hessv(u))*idv(v) ).evaluate() << "\n";
+              << "||u||_energy_2 = " << integrate( elements(mesh),  gradv(u)*trans(gradv(v)) ).evaluate() << "\n"
+              << "||u||_energy_2' = " << integrate( boundaryfaces(mesh),  (gradv(u)*N())*idv(v) ).evaluate() << "\n"
+              << "||u||_energy_3 = " << integrate( elements(mesh),  -trace(hessv(u))*idv(v) ).evaluate() << "\n";
 
     form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
-        integrate( elements(mesh), im,
+        integrate( elements(mesh),
                    diff*gradt(u)*trans(grad(v))
                    //-trace(hesst(u))*id(v)
                    );
     if ( !Cont::is_continuous )
-        form2( Xh, Xh, D ) +=integrate( internalfaces(mesh), im,
+        form2( Xh, Xh, D ) +=integrate( internalfaces(mesh),
                                         // - {grad(u)} . [v]
                                         -averaget(gradt(u))*jump(id(v))
                                         // - [u] . {grad(v)}
@@ -395,7 +392,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
                                         );
     if ( bctype == 1 || !Cont::is_continuous )
         {
-            form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh), im,
+            form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh),
                                              ( - trans(id(v))*(gradt(u)*N())
                                                - trans(idt(u))*(grad(v)*N())
                                                + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
@@ -410,7 +407,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     typename space<Continuous>::ptrtype Xch = space<Continuous>::type::New( mesh );
     typename space<Continuous>::element_type uEx( Xch, "uEx" );
     sparse_matrix_ptrtype M( b->newMatrix( Xch, Xch ) );
-    form2( Xch, Xch, M, _init=true ) = integrate( elements( mesh ), im, trans(idt(uEx))*id(uEx) );
+    form2( Xch, Xch, M, _init=true ) = integrate( elements( mesh ),  trans(idt(uEx))*id(uEx) );
     M->close();
     vector_ptrtype L( b->newVector( Xch ) );
 
@@ -423,10 +420,10 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     //
     vector_ptrtype Ft( b->newVector( Xh ) );
     timers["assembly"].first.restart();
-    form1( _test=Xh, _vector=Ft, _init=true )  = integrate( elements(mesh), im,
+    form1( _test=Xh, _vector=Ft, _init=true )  = integrate( elements(mesh),
                                                             trans(f)*id(v) );
     if ( bctype == 1 || !Cont::is_continuous )
-        form1( Xh, Ft ) += integrate( boundaryfaces(mesh), im,
+        form1( Xh, Ft ) += integrate( boundaryfaces(mesh),
                                       trans(g)*( - grad(v)*N() + penalisation_bc*id(v)/hFace() ) );
     Ft->close();
     if ( this->vm().count( "export-matlab" ) )
@@ -434,7 +431,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
     timers["assembly"].second += timers["assembly"].first.elapsed();
 
-    form1( Xch, L, _init=true ) = integrate( elements( mesh ), im, trans(g)*id(uEx) );
+    form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans(g)*id(uEx) );
     L->close();
 
     if ( this->vm().count( "export-matlab" ) )
@@ -446,9 +443,9 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
 
     // compute local error wrt the exact solution
-    double error = integrate( elements(mesh), im, val( trans(idv(u)-g)*(idv(u)-g) ) ).evaluate()(0,0);
-    double errorex = integrate( elements(mesh), im, trans(idv(u)-idv(uEx))*(idv(u)-idv(uEx)) ).evaluate()(0,0);
-    double local_jump = integrate( internalfaces(mesh), im, trans(jumpv(idv(u)))*(jumpv(idv(u))) ).evaluate()(0,0);
+    double error = integrate( elements(mesh),  val( trans(idv(u)-g)*(idv(u)-g) ) ).evaluate()(0,0);
+    double errorex = integrate( elements(mesh),  trans(idv(u)-idv(uEx))*(idv(u)-idv(uEx)) ).evaluate()(0,0);
+    double local_jump = integrate( internalfaces(mesh),  trans(jumpv(idv(u)))*(jumpv(idv(u))) ).evaluate()(0,0);
 
     // compute global error : suming all contributions from
     // all processors
@@ -472,7 +469,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     else
         {
 
-            form1( Xch, L, _init=true ) = integrate( elements( mesh ), im, trans(idv(u))*id(uEx) );
+            form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans(idv(u))*id(uEx) );
             typename space<Continuous>::element_type uc( Xch, "uc" );
             this->solve( M, uc, L, true );
             this->exportResults( t, u, uc, uEx );
@@ -492,10 +489,10 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
             //  construct right hand side
             //
             timers["assembly"].first.restart();
-            form1( _test=Xh, _vector=Ft, _init=true )  = integrate( elements(mesh), im,
+            form1( _test=Xh, _vector=Ft, _init=true )  = integrate( elements(mesh),
                                                                     trans(f)*id(v) + idv(u)*id(v)/dt );
             if ( bctype == 1 || !Cont::is_continuous )
-                form1( Xh, Ft ) += integrate( boundaryfaces(mesh), im,
+                form1( Xh, Ft ) += integrate( boundaryfaces(mesh),
                                               trans(g)*( - grad(v)*N() + penalisation_bc*id(v)/hFace() ) );
 
             Ft->close();
@@ -521,12 +518,12 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
             // find the L2-projection (with a continuous expansion) of
             // the exact solution
-            form1( Xch, L, _init=true ) = integrate( elements( mesh ), im, trans(g)*id(uEx) );
+            form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans(g)*id(uEx) );
             this->solve( M, uEx, L, true );
 
             // compute local error wrt the exact solution
-            double error = integrate( elements(mesh), im, val( trans(idv(u)-g)*(idv(u)-g) ) ).evaluate()(0,0);
-            double errorex = integrate( elements(mesh), im, trans(idv(u)-idv(uEx))*(idv(u)-idv(uEx)) ).evaluate()(0,0);
+            double error = integrate( elements(mesh),  val( trans(idv(u)-g)*(idv(u)-g) ) ).evaluate()(0,0);
+            double errorex = integrate( elements(mesh),  trans(idv(u)-idv(uEx))*(idv(u)-idv(uEx)) ).evaluate()(0,0);
 
             // compute global error : suming all contributions from
             // all processors
@@ -560,7 +557,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
             else
                 {
 
-                    form1( Xch, L, _init=true ) = integrate( elements( mesh ), im, trans(idv(u))*id(uEx) );
+                    form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans(idv(u))*id(uEx) );
                     typename space<Continuous>::element_type uc( Xch, "uc" );
                     this->solve( M, uc, L, true );
                     this->exportResults( t, u, uc, uEx );
@@ -703,8 +700,8 @@ main( int argc, char** argv )
     /* change parameters below */
     const int nDim = 1;
     const int nOrder = 2;
-    typedef Continuous MyContinuity;
-    //typedef Discontinuous MyContinuity;
+    //typedef Continuous MyContinuity;
+    typedef Discontinuous MyContinuity;
     //typedef Life::Laplacian<nDim, nOrder, MyContinuity, SimplexProduct, Scalar> laplacian_type;
 
     typedef Life::Laplacian<nDim, nOrder, MyContinuity, Simplex, Scalar> laplacian_type;
