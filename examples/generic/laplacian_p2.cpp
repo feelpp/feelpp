@@ -123,18 +123,18 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*discontinuous basis*/
-    typedef fusion::vector<Lagrange<Order, Scalar, PointSetGaussLobatto> > basis_type;
+    typedef fusion::vector<Lagrange<Order, Scalar, Discontinuous, PointSetGaussLobatto> > basis_type;
     //    typedef fusion::vector<fem::Dubiner<Dim, Order, Scalar, Discontinuous, value_type, SimplexProduct>,
     //						   fem::Dubiner<Dim, Order, Vectorial, Discontinuous, value_type, SimplexProduct>
     //						   > basis_type;
 	/*discontinuous space*/
-	typedef FunctionSpace<mesh_type, basis_type, Discontinuous, value_type> space_type;
+	typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
 	typedef boost::shared_ptr<space_type> space_ptrtype;
 	typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
-    typedef fusion::vector<Lagrange<Order, Vectorial, PointSetGaussLobatto> > vectorial_basis_type;
-    typedef FunctionSpace<mesh_type, vectorial_basis_type, Discontinuous> vectorial_space_type;
+    typedef fusion::vector<Lagrange<Order, Vectorial, Discontinuous, PointSetGaussLobatto> > vectorial_basis_type;
+    typedef FunctionSpace<mesh_type, vectorial_basis_type> vectorial_space_type;
 	typedef boost::shared_ptr<vectorial_space_type> vectorial_space_ptrtype;
 	typedef typename vectorial_space_type::element_type vectorial_element_type;
     typedef boost::shared_ptr<vectorial_element_type> vectorial_element_ptrtype;
