@@ -1146,8 +1146,8 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m)
             //else std::cout<<"\nProbleme Localization\n";
 
 #if !defined( NDEBUG )
-            LIFE_ASSERT( false )
-                ( false ).warn( "problem localization" );
+            //LIFE_ASSERT( false )
+            //( false ).warn( "problem localization" );
             //std::cout<<"\nProbleme de Localisation : "<<ublas::column( m, i )<<"\n";
             //this->M_kd_tree->showResultSearch();}
 #endif
