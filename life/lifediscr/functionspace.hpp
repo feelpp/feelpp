@@ -710,7 +710,7 @@ public:
 
     typedef typename parameter::binding<args, tag::mesh_type>::type mesh_type;
     typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
-    typedef typename parameter::binding<args, tag::continuity_type, Continuous>::type continuity_type;
+    typedef typename parameter::binding<args, tag::continuity_type, Continuous>::type _continuity_type;
     typedef typename parameter::binding<args, tag::periodicity_type, NoPeriodicity>::type periodicity_type;
     typedef typename parameter::binding<args, tag::bases_list, bases<Lagrange<1,Scalar> > >::type bases_list;
 
@@ -720,7 +720,7 @@ private:
     template<typename BasisType>
     struct ChangeBasis
     {
-        typedef boost::shared_ptr<FunctionSpace<mesh_type,bases<BasisType>,value_type, periodicity_type,continuity_type> > type;
+        typedef boost::shared_ptr<FunctionSpace<mesh_type,bases<BasisType>,value_type, periodicity_type,_continuity_type> > type;
     };
     typedef typename mpl::transform<bases_list, ChangeBasis<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type functionspace_vector_type;
 
@@ -728,7 +728,7 @@ private:
     struct ChangeBasisToComponentBasis
     {
         typedef typename BasisType::component_basis_type component_basis_type;
-        typedef boost::shared_ptr<FunctionSpace<mesh_type,bases<component_basis_type>,value_type,periodicity_type,continuity_type> > type;
+        typedef boost::shared_ptr<FunctionSpace<mesh_type,bases<component_basis_type>,value_type,periodicity_type,_continuity_type> > type;
     };
 
     typedef typename mpl::transform<bases_list,
@@ -772,7 +772,7 @@ public:
     static const uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
     static const uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
     static const bool is_product = ( is_composite? invalid_uint16_type_value : basis_0_type::is_product );
-
+    typedef typename  basis_0_type::continuity_type continuity_type;
 
     static const uint16_type nComponents = mpl::transform<bases_list,
                                                           GetNComponents<mpl::_1>,
@@ -796,7 +796,7 @@ public:
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef boost::shared_ptr<functionspace_type> pointer_type;
 
-    typedef FunctionSpace<mesh_type, component_basis_vector_type, value_type, periodicity_type, continuity_type> component_functionspace_type;
+    typedef FunctionSpace<mesh_type, component_basis_vector_type, value_type, periodicity_type, _continuity_type> component_functionspace_type;
     typedef boost::shared_ptr<component_functionspace_type> component_functionspace_ptrtype;
 
     // mesh
@@ -879,7 +879,7 @@ public:
         struct ChangeElement
         {
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
-            typedef FunctionSpace<mesh_type,bases<BasisType>,value_type,periodicity_type,continuity_type> fs_type;
+            typedef FunctionSpace<mesh_type,bases<BasisType>,value_type,periodicity_type,_continuity_type> fs_type;
             typedef typename fs_type::template Element<value_type, typename VectorUblas<T>::range::type > element_type;
             typedef element_type type;
         };
