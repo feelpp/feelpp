@@ -74,6 +74,8 @@ public:
     static const bool is_modal = true;
     static const uint16_type nComponents = polyset_type::nComponents;
     static const bool is_product = true;
+    static const bool isContinuous = false;
+    typedef Discontinuous continuity_type;
 
     typedef typename super::component_type component_type;
 
