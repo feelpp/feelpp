@@ -149,7 +149,7 @@ struct test_interpolation
 #else
         LIFE_ASSERT( math::abs( v1-v1_ex) < eps )( v1 )( math::abs( v1-v1_ex) )( eps ).warn ( "v1 != v0_ex" );
 #endif /* USE_BOOST_TEST */
-        typename space_type::element_type::grad_type gradient( u.grad( pt ) );
+        auto gradient( u.grad( pt ) );
         double g_v1_x = gradient(0,0,0);
         double g_v1_ex_x = -2*0.5;
 #if defined(USE_BOOST_TEST)
@@ -218,6 +218,7 @@ struct test_interpolation_op
         typedef FunctionSpace<mesh1_type, imagebasis_type> imagespace_type;
         boost::shared_ptr<imagespace_type> Yh( new imagespace_type(mesh1) );
         typename imagespace_type::element_type v( Yh, "v" );
+        BOOST_MESSAGE(  "[test_interpolation_op] functionspace allocated\n");
 
         typedef Backend<double> backend_type;
         typedef boost::shared_ptr<backend_type> backend_ptrtype;
@@ -226,13 +227,19 @@ struct test_interpolation_op
 #else
         backend_ptrtype backend( Backend<double>::build( BACKEND_GMM ) );
 #endif
+        BOOST_MESSAGE(  "[test_interpolation_op] backend allocated\n");
+
         OperatorInterpolation<space_type, imagespace_type> I( Xh, Yh, backend );
 
-
+        BOOST_MESSAGE(  "[test_interpolation_op] OI allocated\n");
         FsFunctionalLinear<imagespace_type> fsv( Yh );
+        BOOST_MESSAGE(  "[test_interpolation_op] FSV allocated\n");
         I.apply( u, fsv );
+        BOOST_MESSAGE(  "[test_interpolation_op] applied OI \n");
+
 
         interpolate( Yh, u, v );
+        BOOST_MESSAGE(  "[test_interpolation_op] interpolate\n");
 
 
         typename imagespace_type::element_type w( Yh, "w" );
@@ -474,12 +481,16 @@ BOOST_AUTO_TEST_CASE( test_interpolation22 ) { BOOST_MESSAGE( "test_interpolatio
 BOOST_AUTO_TEST_CASE( test_interpolation32 ) { BOOST_MESSAGE( "test_interpolation<3,2>"); test_interpolation<3,2> t( 0.1 ); t(); }
 BOOST_AUTO_TEST_CASE( test_interpolation222 ) { BOOST_MESSAGE( "test_interpolation<2,2,2>"); test_interpolation<2,2,2> t( 0.1 ); t(); }
 BOOST_AUTO_TEST_CASE( test_interpolation_op111 ) { BOOST_MESSAGE( "test_interpolation_op<1,2,1>"); test_interpolation_op<1,2,1> t( 0.1 ); t(); }
-BOOST_AUTO_TEST_CASE( test_interpolation_op112 ) { BOOST_MESSAGE( "test_interpolation_op<1,1,2>"); test_interpolation_op<1,1,2> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_interpolation_op212 ) { BOOST_MESSAGE( "test_interpolation_op<2,1,2>"); test_interpolation_op<2,1,2> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_interpolation_op313 ) { BOOST_MESSAGE( "test_interpolation_op<3,1,3>"); test_interpolation_op<3,1,3> t( 0.1 ); t(); }
+//BOOST_AUTO_TEST_CASE( test_interpolation_op112 ) { BOOST_MESSAGE( "test_interpolation_op<1,1,2>"); test_interpolation_op<1,1,2> t( 0.1 ); t(); }
+
+#if 0
 BOOST_AUTO_TEST_CASE( test_lagrange_p1_op21 ) { BOOST_MESSAGE( "test_lagrange_p1_op<2,1>"); test_lagrange_p1_op<2,1> t( 0.1 ); t(); }
 BOOST_AUTO_TEST_CASE( test_lagrange_p1_op22 ) { BOOST_MESSAGE( "test_lagrange_p1_op<2,2>"); test_lagrange_p1_op<2,2> t( 0.1 ); t(); }
 BOOST_AUTO_TEST_CASE( test_lagrange_p1_op25 ) { BOOST_MESSAGE( "test_lagrange_p1_op<2,5>"); test_lagrange_p1_op<2,5> t( 0.1 ); t(); }
 BOOST_AUTO_TEST_CASE( test_lagrange_p1_op232 ) { BOOST_MESSAGE( "test_lagrange_p1_op<2,3,2>"); test_lagrange_p1_op<2,3,2> t( 0.1 ); t(); }
-
+#endif
 #endif // 0
 #else
 int

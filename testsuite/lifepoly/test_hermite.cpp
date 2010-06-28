@@ -40,16 +40,16 @@ BOOST_AUTO_TEST_SUITE( hermite_testsuite )
 
 BOOST_AUTO_TEST_SUITE( hermite_simplex_testsuite )
 
-BOOST_AUTO_TEST_CASE( hermite )
+BOOST_AUTO_TEST_CASE( hermite1 )
 {
-    TestHermite<fem::Hermite<1, 3, Scalar, real64_type, Simplex> > t;
-    t();
-    TestHermite<fem::Hermite<2, 3, Scalar, real64_type, Simplex> > t2;
-    t2();
-    //TestHermite<fem::Hermite<3, 3, Scalar, real64_type, Simplex> > t3;
-    //t3();
+    BOOST_TEST_MESSAGE( "Hermite(1)" );
+    TestHermite<fem::Hermite<1, 3, Scalar, real64_type, Simplex> > t; t();
 }
-
+BOOST_AUTO_TEST_CASE( hermite2 )
+{
+    BOOST_TEST_MESSAGE( "Hermite(2)" );
+    TestHermite<fem::Hermite<2, 3, Scalar, real64_type, Simplex> > t2;t2();
+}
 BOOST_AUTO_TEST_SUITE_END() // hermite_1d_simplex_testsuite
 
 BOOST_AUTO_TEST_SUITE_END()

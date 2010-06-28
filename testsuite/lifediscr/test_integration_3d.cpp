@@ -79,7 +79,7 @@ createMesh( double hsize )
     GmshTensorizedDomain<Dim,1,Dim,Simplex> td;
     td.setCharacteristicLength( meshSize );
     //td.setX( std::make_pair( -1, 1 ) );
-    ImporterGmsh<typename imesh<T,Dim>::type> import( td.generate( "Simplex" ) );
+    ImporterGmsh<typename imesh<T,Dim>::type> import( td.generate( ( boost::format( "hypercube-%1%D" ) % Dim ).str() ) );
     mesh->accept( import );
     mesh->components().set( MESH_RENUMBER | MESH_UPDATE_FACES | MESH_UPDATE_EDGES | MESH_PARTITION );
     mesh->updateForUse();
@@ -104,58 +104,77 @@ struct test_integration_internal_faces
         typename imesh<value_type,Dim>::ptrtype mesh( createMesh<value_type,Dim>( meshSize ) );
 
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
-#if 0
+
         // int ([-1,1],[-1,x]) 1 dx
+        value_type meas = integrate( elements(mesh), cst(1.) ).evaluate()( 0, 0 );
         value_type v0 = integrate( elements(mesh), vf::min(constant(1.0),constant(2.0)) ).evaluate()( 0, 0 );
-        std::cout << "v0 = " << v0 << "\n";
+
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v0-8.0, eps );
+        BOOST_CHECK_CLOSE( v0, meas, eps );
 #else
         LIFE_ASSERT( math::abs( v0-1.0) < eps )( v0 )( math::abs( v0-1.0) )( eps ).warn ( "v0 != 1" );
 #endif /* USE_BOOST_TEST */
 
         value_type v1 = integrate( internalfaces(mesh), jumpv(trans(2*P())) ).evaluate()( 0, 0 );
-        std::cout << "v1 = " << v1 << "\n";
+
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v1-0.0, eps );
+        BOOST_CHECK_SMALL( v1, eps );
 #else
         LIFE_ASSERT( math::abs( v1-0.0) < eps )( v1 )( math::abs( v1-0.0) )( eps ).warn ( "v1 != 0" );
 #endif /* USE_BOOST_TEST */
 
         value_type v2 = integrate( internalfaces(mesh),
                                    leftfacev(vf::sqrt(trans(P())*P()))-rightfacev(vf::sqrt(trans(P())*P())) ).evaluate()( 0, 0 );
-        std::cout << "v2 = " << v2 << "\n";
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v2-0.0, eps );
+        BOOST_CHECK_SMALL( v2, eps );
 #else
         LIFE_ASSERT( math::abs( v2-0.0) < eps )( v2 )( math::abs( v2-0.0) )( eps ).warn ( "v2 != 0" );
 #endif /* USE_BOOST_TEST */
 
         value_type v3 = integrate( internalfaces(mesh),
                                    leftfacev(vf::sqrt(trans(P()*P())*(P()*P())))-rightfacev(vf::sqrt(trans(P()*P())*(P()*P()))) ).evaluate()( 0, 0 );
-        std::cout << "v3 = " << v3 << "\n";
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v3-0.0, eps );
+        BOOST_CHECK_SMALL( v3, eps );
 #else
         LIFE_ASSERT( math::abs( v3-0.0) < eps )( v3 )( math::abs( v3-0.0) )( eps ).warn ( "v3 != 0" );
 #endif /* USE_BOOST_TEST */
-#endif
 
         typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<3, Scalar> >, double> space_type;
         typedef boost::shared_ptr<space_type> space_ptrtype;
         space_ptrtype Xh = space_type::New( mesh );
         typedef typename space_type::element_type element_type;
         element_type u( Xh, "u" );
-        u = vf::project( Xh, elements( mesh ), Px()+Py()+Pz());
-        //u = vf::project( Xh, elements( mesh ), Px());
+        //auto u_exact = Px()+Py()+Pz();
+        //auto u_exact = Px()*Px()+Py()*Py()+Pz()*Pz();
+        auto u_exact = Px()*Px()*Pz()+Py()*Py()*Px()+Pz()*Pz()*Py();
+        //auto u_exact = Px();
+        u = vf::project( Xh, elements( mesh ), u_exact );
 
-        std::cout << "jump(u)_1 = " <<  integrate( internalfaces(mesh), averagev(idv(u)-Px()) ).evaluate()( 0, 0 ) << "\n";
-        std::cout << "left(u) = " <<  integrate( internalfaces(mesh), leftfacev(idv(u)-Px()) ).evaluate()( 0, 0) << "\n";
-        std::cout << "right(u) = " <<  integrate( internalfaces(mesh), rightfacev(idv(u)-Px())).evaluate()( 0, 0) << "\n";
-        std::cout << "jump1(u) = " <<  integrate( internalfaces(mesh), trans(leftfacev(N()))*(leftfacev(idv(u)*N())+rightfacev(idv(u)*N())) ).evaluate()( 0, 0 ) << "\n";
-        std::cout << "jump2(u) = " <<  integrate( internalfaces(mesh), trans(leftfacev(idv(u)*N())+rightfacev(idv(u)*N()))*(leftfacev(idv(u)*N())+rightfacev(idv(u)*N())) ).evaluate()( 0, 0 ) << "\n";
-        std::cout << "jump3(u) = " <<  integrate( internalfaces(mesh), trans(jumpv(idv(u)))*jumpv(idv(u)) ).evaluate()( 0, 0 ) << "\n";
-        std::cout << "jump(uexact) = " <<  integrate( internalfaces(mesh), trans(jumpv(Px()+Py()+Pz()))*jumpv(Px()+Py()+Pz()) ).evaluate()( 0, 0 ) << "\n";
+        double avgv = integrate( internalfaces(mesh), averagev(idv(u)-(u_exact)) ).evaluate()( 0, 0 );
+        BOOST_TEST_MESSAGE( "avg(v-uexact)=" << avgv << "\n" );
+        double avgv1 = integrate( internalfaces(mesh), .5*(leftfacev(idv(u)-(u_exact))+rightfacev(idv(u)-(u_exact))) ).evaluate()( 0, 0 );
+        BOOST_TEST_MESSAGE( ".5*(left(v-uexact)+right(v-uexact))=" << avgv1 << "\n" );
+        double avgv2 = integrate( internalfaces(mesh), .5*(leftfacev(idv(u))-leftfacev(u_exact)+rightfacev(idv(u))-rightfacev(u_exact))).evaluate()( 0, 0 );
+        BOOST_CHECK_SMALL( avgv, eps );
+        BOOST_CHECK_SMALL( avgv1, eps );
+        BOOST_CHECK_SMALL( avgv2, eps );
+
+
+        double leftv = integrate( internalfaces(mesh), leftfacev(idv(u)-(u_exact)) ).evaluate()( 0, 0);
+        double rightv = integrate( internalfaces(mesh), rightfacev(idv(u)-(u_exact))).evaluate()( 0, 0);
+        BOOST_TEST_MESSAGE( "leftv=" << leftv << "\n" );
+        BOOST_CHECK_SMALL( leftv, eps );
+        BOOST_TEST_MESSAGE( "rightv=" << rightv << "\n" );
+        BOOST_CHECK_SMALL( rightv, eps );
+
+
+        double n_jumpun = integrate( internalfaces(mesh), trans(leftfacev(N()))*jumpv(idv(u)) ).evaluate()( 0, 0 );
+        BOOST_CHECK_SMALL( n_jumpun, eps );
+        double n_leftun_rightun = integrate( internalfaces(mesh), trans(leftfacev(N()))*(leftfacev(idv(u)*N())+rightfacev(idv(u)*N())) ).evaluate()( 0, 0 );
+        BOOST_CHECK_SMALL( n_leftun_rightun, eps );
+
+        BOOST_CHECK_CLOSE( n_leftun_rightun, n_jumpun, eps );
+
 
         boost::shared_ptr<VectorUblas<double> > F( new VectorUblas<double>( u.size() ) );
         std::fill( F->begin(), F->end(), (double)0 );
@@ -163,47 +182,56 @@ struct test_integration_internal_faces
                                     trans(leftface(id(u)*N())+(rightface(id(u)*N())))*(leftfacev(N()))
             );
         F->close();
-        std::cout << "u^T F = " << inner_product( u, *F ) << "\n";
+        double jumpu_F = inner_product( u, *F );
+        BOOST_CHECK_SMALL( jumpu_F, eps );
+
+
+        form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), leftface(id(u))-(rightface(id(u))) );
+        double u_left_right_F = inner_product( u, *F );
+        BOOST_CHECK_SMALL( u_left_right_F, eps );
 
         form1( Xh, F, _init=true ) = integrate( internalfaces(mesh),
                                     (jump(grad(u)))
                                     );
-        std::cout << "jump(grad(u) u^T F = " << inner_product( u, *F ) << "\n";
+        double jump_gradu_F = inner_product( u, *F );
+        BOOST_TEST_MESSAGE ( "jump(grad(u) u^T F = " << jump_gradu_F << "\n" );
+        BOOST_CHECK_SMALL( jump_gradu_F, eps );
 
         form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), leftface(grad(u)*N()));
-        std::cout << "jump(left(grad(u)*N)) u^T F = " << inner_product( u, *F ) << "\n";
+        double left_gradu_n = inner_product( u, *F );
         form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), rightface(grad(u)*N()));
-        std::cout << "jump(right(grad(u)*N)) u^T F = " << inner_product( u, *F ) << "\n";
+        double right_gradu_n = inner_product( u, *F );
+        BOOST_TEST_MESSAGE(  "jump(left(grad(u)*N)) u^T F = " << left_gradu_n << "\n" );
+        BOOST_TEST_MESSAGE(  "jump(right(grad(u)*N)) u^T F = " << right_gradu_n << "\n" );
+        BOOST_CHECK_CLOSE( left_gradu_n, -right_gradu_n, eps*10 );
 
-        std::cout << "jump(left(N)) u^T F = " << integrate( internalfaces(mesh), leftfacev(N())).evaluate() << "\n";
-        std::cout << "jump(right(N)) u^T F = " << integrate( internalfaces(mesh), rightfacev(N())).evaluate() << "\n";
+        double left_n = integrate( internalfaces(mesh), leftfacev(N())).evaluate()( 0, 0 );
+        double right_n = integrate( internalfaces(mesh), rightfacev(N())).evaluate()( 0, 0);
+        BOOST_CHECK_CLOSE( left_n, -right_n, eps );
+
         u = vf::project( Xh, elements( mesh ), cst(1.));
         form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), leftface(id(u)));
-        std::cout << "jump(left(id(u))) u^T F = " << inner_product( u, *F ) << "\n";
+        double left_1 = inner_product( u, *F );
+        BOOST_TEST_MESSAGE(  "left(id(u)) u^T F = " << left_1 << "\n" );
         form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), rightface(id(u)));
-        std::cout << "jump(right(id(u))) u^T F = " << inner_product( u, *F ) << "\n";
-        F->printMatlab( "F_right_id_u.m" );
+        double right_1 = inner_product( u, *F );
+        BOOST_TEST_MESSAGE(  "right(id(u)) u^T F = " << right_1 << "\n" );
+        BOOST_CHECK_CLOSE( left_1, right_1, eps );
+
         form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), trans(N())*jump(id(u)));
-        std::cout << "jump(u) u^T F = " << inner_product( u, *F ) << "\n";
+        BOOST_CHECK_SMALL( inner_product( u, *F ), eps );
+
         form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), jump(grad(u)));
-        std::cout << "jump(grad(u)) u^T F = " << inner_product( u, *F ) << "\n";
+        BOOST_CHECK_SMALL( inner_product( u, *F ), eps );
 
+        double leftv_1 = integrate( internalfaces(mesh), leftfacev(idv(u))).evaluate()( 0, 0);
+        double rightv_1 = integrate( internalfaces(mesh), rightfacev(idv(u))).evaluate()( 0, 0);
+        double sumv_1 = integrate( internalfaces(mesh),  rightfacev(idv(u))+leftfacev(idv(u))).evaluate()( 0, 0);
+        double avgv_1 = integrate( internalfaces(mesh),  averagev(idv(u))).evaluate()( 0, 0);
+        BOOST_CHECK_CLOSE( leftv_1, rightv_1, eps );
+        BOOST_CHECK_CLOSE( leftv_1+rightv_1, sumv_1, eps );
+        BOOST_CHECK_CLOSE( 2*avgv_1, sumv_1, eps );
 
-        std::cout << "left(u) u^T F = " << integrate( internalfaces(mesh), leftfacev(idv(u))).evaluate() << "\n";
-        std::cout << "right(u) u^T F = " << integrate( internalfaces(mesh), rightfacev(idv(u))).evaluate() << "\n";
-        std::cout << "left(u)+right(u) u^T F = " << integrate( internalfaces(mesh),  rightfacev(idv(u))+leftfacev(idv(u))).evaluate() << "\n";
-#if 0
-        MatrixGmm<double,gmm::row_major> M;
-        form( Xh, Xh, M ) = integrate( internalfaces(mesh),
-                                       trans(leftfacet( idt( u )*N() )+ rightfacet( idt( u )*N() ))*
-                                       (jump(id(u)))
-
-                                       );
-        M.close();
-        M.printMatlab( "M.m" );
-        //std::cout << "u^T F = " << ublas::inner_prod( u, F ) << "\n";
-
-#endif
     }
     double meshSize;
     typename Life::imesh<value_type,Dim>::ptrtype mesh;
