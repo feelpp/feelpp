@@ -216,8 +216,8 @@ public:
 
             _M_left_map = fusion::make_map<detail::gmc<0> >( _M_gmc_left );
             _M_right_map = fusion::make_map<detail::gmc<0> >( _M_gmc_right );
-            _M_tensor_expr_left.update(  _M_left_map );
-            _M_tensor_expr_right.update( _M_right_map  );
+            _M_tensor_expr_left.update(  _M_left_map, face );
+            _M_tensor_expr_right.update( _M_right_map, face  );
 
 
         }
@@ -817,14 +817,6 @@ rightfacet( ExprT v )
     return Expr< sumT_t >(  sumT_t( v ) );
 }
 
-/**
- *
- */
-#define jumpv( u ) sumv( (u)*N() )
-/**
- *
- */
-#define averagev( u ) sumv( 0.5*(u) )
 
 /**
  *
@@ -1133,6 +1125,17 @@ rightfacev( ExprT v )
     typedef FaceExprV<ExprT, detail::right> rightface_t;
     return Expr< rightface_t >(  rightface_t( v ) );
 }
+
+/**
+ *
+ */
+//#define jumpv( u ) sumv( (u)*N() )
+#define jumpv( u )  (leftfacev((u)*N())+rightfacev((u)*N()))
+/**
+ *
+ */
+#define averagev( u ) (.5*(leftfacev((u))+rightfacev((u))))
+//#define averagev( u ) (.5*sumv((u)))
 
 } // vf
 } // Life
