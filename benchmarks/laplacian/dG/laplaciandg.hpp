@@ -158,7 +158,7 @@ public:
             if (Order < 5)
                 h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.03:0.09:0.1" );
             else
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.06:0.09:0.1" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.06:0.09:0.4" );
         else
             //=== 3D ===
             switch( Order )
