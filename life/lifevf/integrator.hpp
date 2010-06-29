@@ -1137,7 +1137,7 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
                     map2_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ),
                                           fusion::make_pair<detail::gmc<1> >( __c1 ) );
 
-                    expr2->update( mapgmc );
+                    expr2->update( mapgmc, __face_id_in_elt_0 );
                     const gmc_type& gmc = *__c0;
 
                     __integrators[__face_id_in_elt_0].update( gmc );
