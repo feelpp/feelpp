@@ -399,12 +399,12 @@ public:
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<fem::Lagrange<N,Order,PolySetType,Continuous,T,Simplex, Pts> >,
-                                  mpl::identity<fem::Lagrange<N,Order,PolySetType,Continuous,T,SimplexProduct, Pts> > >::type::type result_type;
+                                  mpl::identity<fem::Lagrange<N,Order,PolySetType,ContinuityType,T,Simplex, Pts> >,
+                                  mpl::identity<fem::Lagrange<N,Order,PolySetType,ContinuityType,T,SimplexProduct, Pts> > >::type::type result_type;
         typedef result_type type;
     };
 
-    typedef Lagrange<Order,Scalar,Continuous,Pts> component_basis_type;
+    typedef Lagrange<Order,Scalar,ContinuityType,Pts> component_basis_type;
 
     static const uint16_type nOrder =  Order;
 
