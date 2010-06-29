@@ -29,7 +29,7 @@
 #ifndef __DiscontinuousInterfaces_H
 #define __DiscontinuousInterfaces_H 1
 
-#include <life/lifediscr/continuity.hpp>
+#include <life/lifepoly/continuity.hpp>
 
 namespace Life
 {

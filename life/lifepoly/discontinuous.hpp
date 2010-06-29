@@ -30,7 +30,7 @@
 #define __Discontinuous_H 1
 
 #include <boost/fusion/sequence.hpp>
-#include <life/lifediscr/continuity.hpp>
+#include <life/lifepoly/continuity.hpp>
 
 namespace Life
 {
