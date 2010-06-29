@@ -95,8 +95,8 @@ public:
 
 
     static const bool is_continuous = fe_type::isContinuous;
-    static const bool is_discontinuous_locally = ContinuityType::is_discontinuous_locally;
-    static const bool is_discontinuous_totally = ContinuityType::is_discontinuous_totally;
+    static const bool is_discontinuous_locally = fe_type::continuity_type::is_discontinuous_locally;
+    static const bool is_discontinuous_totally = fe_type::continuity_type::is_discontinuous_totally;
 
     static const bool is_scalar = FEType::is_scalar;
     static const bool is_vectorial = FEType::is_vectorial;
@@ -109,7 +109,8 @@ public:
     typedef PeriodicityType periodicity_type;
     static const bool is_periodic = periodicity_type::is_periodic;
 
-    typedef ContinuityType continuity_type;
+    //typedef ContinuityType continuity_type;
+    typedef typename fe_type::continuity_type continuity_type;
 
     typedef DofTable<MeshType, FEType, PeriodicityType, ContinuityType> self_type;
 
@@ -2095,8 +2096,8 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 size_type
 DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::buildLocallyDiscontinuousDofMap( mesh_type& M, size_type start_next_free_dof )
 {
-    typedef typename ContinuityType::template apply<MeshType, self_type> builder;
-    return fusion::accumulate( typename ContinuityType::discontinuity_markers_type(), start_next_free_dof,  builder(M, *this ) );
+    typedef typename continuity_type::template apply<MeshType, self_type> builder;
+    return fusion::accumulate( typename continuity_type::discontinuity_markers_type(), start_next_free_dof,  builder(M, *this ) );
 }
 template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
 void
