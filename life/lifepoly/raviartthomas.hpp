@@ -650,6 +650,11 @@ template<uint16_type N,
          typename T,
          template<uint16_type, uint16_type, uint16_type> class Convex>
 const uint16_type RaviartThomas<N,O,T,Convex>::nOrder;
+template<uint16_type N,
+         uint16_type O,
+         typename T,
+         template<uint16_type, uint16_type, uint16_type> class Convex>
+const uint16_type RaviartThomas<N,O,T,Convex>::nLocalDof;
 
 } // fem
 template<uint16_type Order>
