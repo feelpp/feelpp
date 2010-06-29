@@ -74,9 +74,7 @@
 
 #include <life/lifediscr/mesh.hpp>
 #include <life/lifediscr/periodic.hpp>
-#include <life/lifediscr/continuity.hpp>
-#include <life/lifediscr/discontinuousinterfaces.hpp>
-#include <life/lifediscr/discontinuous.hpp>
+#include <life/lifepoly/expansiontypes.hpp>
 #include <life/lifediscr/doftable.hpp>
 #include <life/lifediscr/dofcomposite.hpp>
 #include <life/lifediscr/parameter.hpp>
