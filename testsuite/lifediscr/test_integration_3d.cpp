@@ -88,9 +88,9 @@ createMesh( double hsize )
 }
 }
 template<typename value_type = double, int Dim=2>
-struct test_integration_internal_faces
+struct test_integration_internal_faces_v
 {
-    test_integration_internal_faces( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_), mesh( Life::createMesh<value_type,Dim>( meshSize ) )
+    test_integration_internal_faces_v( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_), mesh( Life::createMesh<value_type,Dim>( meshSize ) )
     {}
 
     void operator()()
@@ -175,6 +175,54 @@ struct test_integration_internal_faces
 
         BOOST_CHECK_CLOSE( n_leftun_rightun, n_jumpun, eps );
 
+        double left_n = integrate( internalfaces(mesh), leftfacev(N())).evaluate()( 0, 0 );
+        double right_n = integrate( internalfaces(mesh), rightfacev(N())).evaluate()( 0, 0);
+        BOOST_CHECK_CLOSE( left_n, -right_n, eps );
+
+        u = vf::project( Xh, elements( mesh ), cst(1.));
+        double leftv_1 = integrate( internalfaces(mesh), leftfacev(idv(u))).evaluate()( 0, 0);
+        double rightv_1 = integrate( internalfaces(mesh), rightfacev(idv(u))).evaluate()( 0, 0);
+        double sumv_1 = integrate( internalfaces(mesh),  rightfacev(idv(u))+leftfacev(idv(u))).evaluate()( 0, 0);
+        double avgv_1 = integrate( internalfaces(mesh),  averagev(idv(u))).evaluate()( 0, 0);
+        BOOST_CHECK_CLOSE( leftv_1, rightv_1, eps );
+        BOOST_CHECK_CLOSE( leftv_1+rightv_1, sumv_1, eps );
+        BOOST_CHECK_CLOSE( 2*avgv_1, sumv_1, eps );
+
+    }
+    double meshSize;
+    typename Life::imesh<value_type,Dim>::ptrtype mesh;
+};
+
+template<typename value_type = double, int Dim=2>
+struct test_integration_internal_faces_lf
+{
+    test_integration_internal_faces_lf( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_), mesh( Life::createMesh<value_type,Dim>( meshSize ) )
+    {}
+
+    void operator()()
+    {
+        using namespace Life;
+        using namespace Life::vf;
+
+
+        typedef typename imesh<value_type,Dim>::type mesh_type;
+        typedef typename imesh<value_type,Dim>::ptrtype mesh_ptrtype;
+        typename imesh<value_type,Dim>::ptrtype mesh( createMesh<value_type,Dim>( meshSize ) );
+
+        const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
+
+
+        typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<3, Scalar> >, double> space_type;
+        typedef boost::shared_ptr<space_type> space_ptrtype;
+        space_ptrtype Xh = space_type::New( mesh );
+        typedef typename space_type::element_type element_type;
+        element_type u( Xh, "u" );
+        //auto u_exact = Px()+Py()+Pz();
+        //auto u_exact = Px()*Px()+Py()*Py()+Pz()*Pz();
+        auto u_exact = Px()*Px()*Pz()+Py()*Py()*Px()+Pz()*Pz()*Py();
+        //auto u_exact = Px();
+        u = vf::project( Xh, elements( mesh ), u_exact );
+
 
         boost::shared_ptr<VectorUblas<double> > F( new VectorUblas<double>( u.size() ) );
         std::fill( F->begin(), F->end(), (double)0 );
@@ -205,10 +253,6 @@ struct test_integration_internal_faces
         BOOST_TEST_MESSAGE(  "jump(right(grad(u)*N)) u^T F = " << right_gradu_n << "\n" );
         BOOST_CHECK_CLOSE( left_gradu_n, -right_gradu_n, eps*10 );
 
-        double left_n = integrate( internalfaces(mesh), leftfacev(N())).evaluate()( 0, 0 );
-        double right_n = integrate( internalfaces(mesh), rightfacev(N())).evaluate()( 0, 0);
-        BOOST_CHECK_CLOSE( left_n, -right_n, eps );
-
         u = vf::project( Xh, elements( mesh ), cst(1.));
         form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), leftface(id(u)));
         double left_1 = inner_product( u, *F );
@@ -223,14 +267,6 @@ struct test_integration_internal_faces
 
         form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), jump(grad(u)));
         BOOST_CHECK_SMALL( inner_product( u, *F ), eps );
-
-        double leftv_1 = integrate( internalfaces(mesh), leftfacev(idv(u))).evaluate()( 0, 0);
-        double rightv_1 = integrate( internalfaces(mesh), rightfacev(idv(u))).evaluate()( 0, 0);
-        double sumv_1 = integrate( internalfaces(mesh),  rightfacev(idv(u))+leftfacev(idv(u))).evaluate()( 0, 0);
-        double avgv_1 = integrate( internalfaces(mesh),  averagev(idv(u))).evaluate()( 0, 0);
-        BOOST_CHECK_CLOSE( leftv_1, rightv_1, eps );
-        BOOST_CHECK_CLOSE( leftv_1+rightv_1, sumv_1, eps );
-        BOOST_CHECK_CLOSE( 2*avgv_1, sumv_1, eps );
 
     }
     double meshSize;
@@ -264,18 +300,11 @@ makeAbout()
 
 }
 
-BOOST_AUTO_TEST_CASE( test_integration_internal_faces_double_2 )
-{
-    test_integration_internal_faces<double,2> t2( 0.2 );
-    t2();
+BOOST_AUTO_TEST_CASE( test_integration_internal_faces_v_double_2 ) { test_integration_internal_faces_v<double,2> t2( 1 ); t2(); }
+BOOST_AUTO_TEST_CASE( test_integration_internal_faces_v_double_3 ) { test_integration_internal_faces_v<double,3> t2( 1 ); t2(); }
+BOOST_AUTO_TEST_CASE( test_integration_internal_faces_lf_double_2 ) { test_integration_internal_faces_lf<double,2> t2( 1 ); t2(); }
+BOOST_AUTO_TEST_CASE( test_integration_internal_faces_lf_double_3 ) { test_integration_internal_faces_lf<double,3> t2( 1 ); t2(); }
 
-}
-BOOST_AUTO_TEST_CASE( test_integration_internal_faces_double_3 )
-{
-    test_integration_internal_faces<double,3> t2( 0.3 );
-    t2();
-
-}
 #if 0
 #if defined(USE_BOOST_TEST)
 boost::shared_ptr<Life::Application> mpi;
