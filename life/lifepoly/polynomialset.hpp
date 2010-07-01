@@ -1327,29 +1327,19 @@ public:
                         {
                             for ( uint16_type l = 0; l < NDim; ++l )
                                 {
-                                    for ( uint16_type j = l; j < NDim; ++j )
+                                    for ( uint16_type j = 0; j < NDim; ++j )
                                         {
                                             for ( uint16_type p = 0; p < PDim; ++p )
                                                 {
-                                                    // deal with _extra_ diagonal contributions
-                                                    for ( uint16_type r = p+1; r < PDim; ++r )
+                                                    for ( uint16_type r = 0; r < PDim; ++r)
                                                         {
                                                             for ( uint16_type q = 0; q < Q; ++q )
                                                                 {
                                                                     // we have twice the same contibution thanks to the symmetry
                                                                     value_type h = B3[l][j][p][r] * __pc->hessian( i, p, r, q );
-                                                                    _M_hessian[i][l][j][q]  += 2*h;
-                                                                    _M_hessian[i][j][l][q]  += 2*h;
+                                                                    _M_hessian[i][j][l][q]  += h;
                                                                 } // q
                                                         } // r
-
-                                                    // deal with diagonal contributions
-                                                    for ( uint16_type q = 0; q < Q; ++q )
-                                                        {
-                                                            value_type h = B3[l][j][p][p] * __pc->hessian( i, p, p, q );
-                                                            _M_hessian[i][l][j][q]  += h;
-                                                            _M_hessian[i][j][l][q]  += h;
-                                                        } // q
                                                 } // p
                                         } // j
                                 } // l
@@ -1419,29 +1409,22 @@ public:
                         {
                             for ( uint16_type l = 0; l < NDim; ++l )
                                 {
-                                    for ( uint16_type j = l; j < NDim; ++j )
+                                    //for ( uint16_type j = l; j < NDim; ++j )
+                                    for ( uint16_type j = 0; j < NDim; ++j )
                                         {
                                             for ( uint16_type p = 0; p < PDim; ++p )
                                                 {
                                                     // deal with _extra_ diagonal contributions
-                                                    for ( uint16_type r = p+1; r < PDim; ++r )
+                                                    //for ( uint16_type r = p+1; r < PDim; ++r )
+                                                    for ( uint16_type r = 0; r < PDim; ++r )
                                                         {
                                                             for ( uint16_type q = 0; q < Q; ++q )
                                                                 {
                                                                     // we have twice the same contibution thanks to the symmetry
                                                                     value_type h = B3[l][j][p][r] * __pc->hessian( i, p, r, q );
-                                                                    _M_hessian[i][l][j][q]  += 2*h;
-                                                                    _M_hessian[i][j][l][q]  += 2*h;
+                                                                    _M_hessian[i][l][j][q]  += h;
                                                                 } // q
                                                         } // r
-
-                                                    // deal with diagonal contributions
-                                                    for ( uint16_type q = 0; q < Q; ++q )
-                                                        {
-                                                            value_type h = B3[l][j][p][p] * __pc->hessian( i, p, p, q );
-                                                            _M_hessian[i][l][j][q]  += h;
-                                                            _M_hessian[i][j][l][q]  += h;
-                                                        } // q
                                                 } // p
                                         } // j
                                 } // l
