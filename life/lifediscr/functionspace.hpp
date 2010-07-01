@@ -3997,7 +3997,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
                                 for( size_type q = 0; q < context.xRefs().size2(); ++q )
                                 {
 
-                                    v[i][j][q] += v_*context.hess( ldof, j, j, q );
+                                    v[i][j][q] += v_*context.hess( ldof, i, j, q );
 
 
                                 } // q
