@@ -274,7 +274,7 @@ ALE<Convex>::getFacesId( elem_type const& elt, std::vector<flag_type> const& fla
         if ( result != flagSet.end() )
         {
 #if !defined ( NDEBUG )
-            Debug(1234) << "We are in element " << it_elt->id() << "\n";
+            Debug(1234) << "We are in element " << elt.id() << "\n";
             Debug(1234) << "Marker of edge : " << edge.marker().value() << "\n";
 #endif
             facesId.push_back(i);
