@@ -41,8 +41,8 @@ makeOptions()
 {
     po::options_description desc_options("test_interp_twomesh options");
     desc_options.add_options()
-        ("hsize1", po::value<double>()->default_value( 0.05 ), "mesh size1")
-        ("hsize2", po::value<double>()->default_value( 0.03 ), "mesh size2")
+        ("hsize1", po::value<double>()->default_value( 0.1 ), "mesh size1")//0.05
+        ("hsize2", po::value<double>()->default_value( 0.7 ), "mesh size2")//0.03
         ("gmsh", po::value<float>()->default_value( 2.1 ), " version of gmsh(2.0 or 2.1)")
         ;
     return desc_options.add( Life::life_options() );
@@ -261,82 +261,104 @@ test_interp_boundary(boost::tuple<
     v2 = vf::project( Yh2, elements(mesh2), vec(h,h) );
 
     //-----------------------------------------------------------------------------------//
+    //-----------------------------------------------------------------------------------//
+    //-----------------------------------------------------------------------------------//
 
     double  __errId = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
                                            (idv(u1)-idv(u2))*(idv(u1)-idv(u2)) ).evaluate()(0,0));
-
+    Log() << "[testBoundary] idv(u1) error : " << __errId << "\n";
+    BOOST_CHECK_SMALL( __errId,1e-7);
+    //-----------------------------------------------------------------------------------//
     double  __errGrad = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
                                              (gradv(u1)-gradv(u2))*trans(gradv(u1)-gradv(u2)) ).evaluate()(0,0));
-
+    Log() << "[testBoundary] gradv(u1) error : " << __errGrad <<"\n";
+    BOOST_CHECK_SMALL( __errGrad,1e-7);
+    //-----------------------------------------------------------------------------------//
     double  __errDiv = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
                                             (divv(v1)-divv(v2))*(divv(v1)-divv(v2)) ).evaluate()(0,0));
-
+    Log() << "[testBoundary] divv(u1) error : " << __errDiv << "\n";
+    BOOST_CHECK_SMALL( __errDiv,1e-7);
+    //-----------------------------------------------------------------------------------//
+    /*
+    std::cout << "\ndiv 1 :" << std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+                                            (divv(v1))*(divv(v1)) ).evaluate()(0,0));
+    std::cout << "\ndiv 2" << std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+                                                   print((divv(v2))*(divv(v2)),"div2") ).evaluate()(0,0));
+    */
+    //double  __errDiv = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+    //                                      print((divv(v1)-divv(v2))*(divv(v1)-divv(v2)),"div=") ).evaluate()(0,0));
+    //std::cout <<"\n" << std::sqrt(integrate( elements(mesh1),
+    //                                         print((divv(v1))   ,"div=") ).evaluate()(0,0)) << "\n";
+    //-----------------------------------------------------------------------------------//
+    double  __errDivx = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+                                             (dxv(v1)+dyv(v1)-dxv(v2)-dyv(v2))*(dxv(v1)+dyv(v1)-dxv(v2)-dyv(v2)) ).evaluate()(0,0));
+    Log() << "[testBoundary] dxv+dyv(v1) error : " << __errDivx << "\n";
+    BOOST_CHECK_SMALL( __errDivx,1e-7);
+    //-----------------------------------------------------------------------------------//
     double  __errDx = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
                                            (dxv(u1)-dxv(u2))*(dxv(u1)-dxv(u2)) ).evaluate()(0,0));
-
+    Log() << "[testBoundary] dxv(u1) error : " << __errDx << "\n";
+    BOOST_CHECK_SMALL( __errDx,1e-7);
+    //-----------------------------------------------------------------------------------//
     double  __errDy = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
                                            (dyv(u1)-dyv(u2))*(dyv(u1)-dyv(u2)) ).evaluate()(0,0));
+    Log() << "[testBoundary] dyv(u1) error : " << __errDy << "\n";
+    BOOST_CHECK_SMALL( __errDy,1e-7);
+    //-----------------------------------------------------------------------------------//
 #if 0
     double  __errDz = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
                                            (dzv(u1)-dzv(u2))*(dzv(u1)-dzv(u2)) ).evaluate()(0,0));
+    Log() << "[testBoundary] dzv(u1) error : " << __errDz << "\n";
+    BOOST_CHECK_SMALL( __errDz,1e-7);
 #endif
-
+    //-----------------------------------------------------------------------------------//
     double  __errCurl = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
                                              trans(curlv(v1)-curlv(v2))*(curlv(v1)-curlv(v2)) ).evaluate()(0,0));
-
+    Log() << "[testBoundary] curlv(u1) error : " << __errCurl << "\n";
+    BOOST_CHECK_SMALL( __errCurl,1e-7);
+    //-----------------------------------------------------------------------------------//
     double  __errCurlx = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
                                               (curlxv(v1)-curlxv(v2))*(curlxv(v1)-curlxv(v2)) ).evaluate()(0,0));
+    Log() << "[testBoundary] curlxv(u1) error : " << __errCurlx << "\n";
+    BOOST_CHECK_SMALL( __errCurlx,1e-7);
+    //-----------------------------------------------------------------------------------//
     double  __errCurly = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
                                               (curlyv(v1)-curlyv(v2))*(curlyv(v1)-curlyv(v2)) ).evaluate()(0,0));
+    Log() << "[testBoundary] curlyv(u1) error : " << __errCurly << "\n";
+    BOOST_CHECK_SMALL( __errCurly,1e-7);
+    //-----------------------------------------------------------------------------------//
+
 #if 0
     double  __errCurlz = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
                                               (curlzv(v1)-curlzv(v2))*(curlzv(v1)-curlzv(v2)) ).evaluate()(0,0));
-#endif
-    double  __errHess;
-    //if (OrderGeo==1)
-    //   __errHess = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
-    //                                     trace((hessv(u1)-hessv(u2))*trans(hessv(u1)-hessv(u2))) ).evaluate()(0,0));
-
-    double  __errId2 = std::sqrt(integrate( markedfaces(mesh2, mesh2->markerName("Interface")),
-                                            (idv(u1)-idv(u2))*(idv(u1)-idv(u2)) ).evaluate()(0,0));
-
-    double  __errGrad2 = std::sqrt(integrate( markedfaces(mesh2, mesh2->markerName("Interface")),
-                                              (gradv(u1)-gradv(u2))*trans(gradv(u1)-gradv(u2)) ).evaluate()(0,0));
-
-    double  __errDiv2 = std::sqrt(integrate( markedfaces(mesh2, mesh2->markerName("Interface")),
-                                             (divv(v1)-divv(v2))*(divv(v1)-divv(v2)) ).evaluate()(0,0));
-
+    Log() << "[testBoundary] curlzv(u1) error : " << __errCurlz << "\n";
     //-----------------------------------------------------------------------------------//
 
-    Log() << "[testBoundary] idv(u1) error : " << __errId << "\n";
-    Log() << "[testBoundary] gradv(u1) error : " << __errGrad <<"\n";
-    Log() << "[testBoundary] divv(u1) error : " << __errDiv << "\n";
-    Log() << "[testBoundary] dxv(u1) error : " << __errDx << "\n";
-    Log() << "[testBoundary] dyv(u1) error : " << __errDy << "\n";
-    //Log() << "[testBoundary] dzv(u1) error : " << __errDz << "\n";
-    Log() << "[testBoundary] curlv(u1) error : " << __errCurl << "\n";
-    Log() << "[testBoundary] curlxv(u1) error : " << __errCurlx << "\n";
-    Log() << "[testBoundary] curlyv(u1) error : " << __errCurly << "\n";
-    //Log() << "[testBoundary] curlzv(u1) error : " << __errCurlz << "\n";
+#endif
+#if 0
+    double  __errHess;
+    if (OrderGeo==1)
+        __errHess = std::sqrt(integrate( markedfaces(mesh1, mesh1->markerName("Interface")),
+                                        trace((hessv(u1)-hessv(u2))*trans(hessv(u1)-hessv(u2))) ).evaluate()(0,0));
     Log() << "[testBoundary] hessv(u1) error : " << __errHess << "\n";
-
-    BOOST_CHECK( __errId<1e-9);
-    BOOST_CHECK( __errGrad<1e-9);
-    BOOST_CHECK( __errDiv<1e-9);
-    BOOST_CHECK( __errDx<1e-9);
-    BOOST_CHECK( __errDy<1e-9);
-    //BOOST_CHECK( __errDz<1e-9);
-    BOOST_CHECK( __errCurl<1e-9);
-    BOOST_CHECK( __errCurlx<1e-9);
-    //BOOST_CHECK( __errCurly<1e-9);//bug!!!
-    BOOST_CHECK( __errHess<1e-9);//bug!!!
-
+    BOOST_CHECK_SMALL( __errHess,1e-7);
+#endif
+    //-----------------------------------------------------------------------------------//
+    double  __errId2 = std::sqrt(integrate( markedfaces(mesh2, mesh2->markerName("Interface")),
+                                            (idv(u1)-idv(u2))*(idv(u1)-idv(u2)) ).evaluate()(0,0));
     Log() << "[testBoundary] idv(u2) error : " << __errId2 << "\n";
+    BOOST_CHECK_SMALL( __errId2,1e-7);
+    //-----------------------------------------------------------------------------------//
+    double  __errGrad2 = std::sqrt(integrate( markedfaces(mesh2, mesh2->markerName("Interface")),
+                                              (gradv(u1)-gradv(u2))*trans(gradv(u1)-gradv(u2)) ).evaluate()(0,0));
     Log() << "[testBoundary] gradv(u2) error : " << __errGrad2 << "\n";
-
-    BOOST_CHECK( __errId2<1e-9);
-    BOOST_CHECK( __errGrad2<1e-9);
-    BOOST_CHECK( __errDiv2<1e-9);
+    BOOST_CHECK_SMALL( __errGrad2,1e-7);
+    //-----------------------------------------------------------------------------------//
+    double  __errDiv2 = std::sqrt(integrate( markedfaces(mesh2, mesh2->markerName("Interface")),
+                                             (divv(v1)-divv(v2))*(divv(v1)-divv(v2)) ).evaluate()(0,0));
+    Log() << "[testBoundary] divv(u2) error : " << __errDiv2 << "\n";
+    BOOST_CHECK_SMALL( __errDiv2,1e-7);
+    //-----------------------------------------------------------------------------------//
 
 }
 
@@ -527,7 +549,7 @@ BOOST_AUTO_TEST_CASE( interp_twomesh_geomap )
                                 % test_app->about().appName()
         );
 
-
+#if 1
       BOOST_MESSAGE(   "\n[main] ----------TEST_GEOMAP_START----------\n");
       BOOST_MESSAGE(   "[main] ----------------<2,6,1>---------------\n");
       run_test_geomap<2,6,1>(test_app);
@@ -540,9 +562,11 @@ BOOST_AUTO_TEST_CASE( interp_twomesh_geomap )
       BOOST_MESSAGE(   "[main] ----------------<2,6,5>---------------\n");
       run_test_geomap<2,6,5>(test_app);
       BOOST_MESSAGE(   "[main] ----------TEST_GEOMAP_FINISH----------\n\n");
+#endif
 }
+
 // problem with this test case
-#if 0
+#if 1
 BOOST_AUTO_TEST_CASE( interp_twomesh_interp )
 {
 
@@ -566,6 +590,7 @@ BOOST_AUTO_TEST_CASE( interp_twomesh_interp )
       BOOST_MESSAGE(   "[main] ----------TEST_INTERP_FINISH----------\n");
 }
 #endif
+#if 1
 BOOST_AUTO_TEST_CASE( interp_twomesh_export )
 {
 
@@ -586,4 +611,5 @@ BOOST_AUTO_TEST_CASE( interp_twomesh_export )
 
 
 }
+#endif
 BOOST_AUTO_TEST_SUITE_END()
