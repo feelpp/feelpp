@@ -123,8 +123,9 @@ struct test_integration_internal_faces_v
         LIFE_ASSERT( math::abs( v1-0.0) < eps )( v1 )( math::abs( v1-0.0) )( eps ).warn ( "v1 != 0" );
 #endif /* USE_BOOST_TEST */
 
-        value_type v2 = integrate( internalfaces(mesh),
-                                   leftfacev(vf::sqrt(trans(P())*P()))-rightfacev(vf::sqrt(trans(P())*P())) ).evaluate()( 0, 0 );
+        auto normp = vf::sqrt(trans(P())*P());
+        auto vnormp = vec(normp,normp);
+        value_type v2 = integrate( internalfaces(mesh), leftfacev(trans(vnormp)*N())+rightfacev(trans(vnormp)*N()) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v2, eps );
 #else
@@ -220,6 +221,7 @@ struct test_integration_internal_faces_lf
         //auto u_exact = Px()+Py()+Pz();
         //auto u_exact = Px()*Px()+Py()*Py()+Pz()*Pz();
         auto u_exact = Px()*Px()*Pz()+Py()*Py()*Px()+Pz()*Pz()*Py();
+        auto v_exact = vec(u_exact,u_exact);
         //auto u_exact = Px();
         u = vf::project( Xh, elements( mesh ), u_exact );
 
@@ -233,10 +235,6 @@ struct test_integration_internal_faces_lf
         double jumpu_F = inner_product( u, *F );
         BOOST_CHECK_SMALL( jumpu_F, eps );
 
-
-        form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), leftface(id(u))-(rightface(id(u))) );
-        double u_left_right_F = inner_product( u, *F );
-        BOOST_CHECK_SMALL( u_left_right_F, eps );
 
         form1( Xh, F, _init=true ) = integrate( internalfaces(mesh),
                                     (jump(grad(u)))
