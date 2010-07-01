@@ -1237,14 +1237,58 @@ public:
                      precompute_ptrtype const& __pc )
         {
             _M_pc = __pc;
+            _M_gmc = __gmc ;
 
-            //precompute_type* __pc = _M_pc.get().get();
+            if ( _M_npoints != __pc->nPoints() )
+                {
+                    _M_npoints = __pc->nPoints();
+
+                    if ( rank == 0 )
+                        {
+                            _M_phi.resize( boost::extents[nDof][1][1][_M_npoints] );
+                            _M_gradphi.resize( boost::extents[nDof][1][NDim][_M_npoints] );
+                            if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+                                {
+                                    _M_grad.resize( boost::extents[nDof][1][NDim][_M_npoints] );
+                                    if ( vm::has_first_derivative_normal<context>::value )
+                                        {
+                                            _M_dn.resize( boost::extents[nDof][1][1][_M_npoints] );
+                                        }
+                                    if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
+                                        {
+                                            _M_hessian.resize( boost::extents[nDof][NDim][NDim][_M_npoints] );
+                                        }
+                                }
+                        }
+                    else if ( rank == 1 )
+                        {
+                            _M_phi.resize( boost::extents[nDof*nComponents1][nComponents1][1][_M_npoints] );
+                            _M_gradphi.resize( boost::extents[nDof*nComponents1][nComponents1][NDim][_M_npoints] );
+                            _M_grad.resize( boost::extents[nDof*nComponents1][nComponents1][NDim][_M_npoints] );
+                            if ( vm::has_div<context>::value )
+                                {
+                                    _M_div.resize( boost::extents[nDof*nComponents1][_M_npoints] );
+                                }
+                            if ( vm::has_curl<context>::value )
+                                {
+                                    _M_curl.resize( boost::extents[nDof*nComponents1][3][_M_npoints] );
+                                }
+                            if ( vm::has_first_derivative_normal<context>::value )
+                                {
+                                    _M_dn.resize( boost::extents[nDof*nComponents1][nComponents1][1][_M_npoints] );
+                                }
+                        }
+                }
+
+                _M_phi = _M_pc.get()->phi();
+                _M_gradphi = _M_pc.get()->grad();
+
             update( __gmc );
         }
         void update( geometric_mapping_context_ptrtype const& __gmc )
         {
-            _M_phi = _M_pc->get()->phi();
-            _M_gradphi = _M_pc->get()->grad();
+            //_M_phi = _M_pc->get()->phi();
+            //_M_gradphi = _M_pc->get()->grad();
             static const bool do_opt= (nOrder<=1) && (Geo_t::nOrder==1) && (convex_type::is_simplex);
             transformationEquivalence( __gmc, mpl::bool_<Basis_t::isTransformationEquivalent>() );
 #if 0
@@ -1369,7 +1413,7 @@ public:
                                             for ( uint16_type q = 0; q < Q; ++q )
                                                 {
                                                     matrix_type const& Bq = thegmc->B( q );
-                                                    _M_grad[i][0][l][q]  += Bq( l, p ) * __pc->grad( i, 0, p, q );
+                                                    _M_grad[i][0][l][q]  += Bq( l, p ) * _M_pc.get()->grad( i, 0, p, q );
                                                 }
                                         }
                                 }
@@ -1436,7 +1480,7 @@ public:
         {
             //precompute_type* __pc = _M_pc.get().get();
             geometric_mapping_context_type* thegmc = __gmc.get();
-            if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+            if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value )
                 {
 
                     std::fill( _M_grad.data(), _M_grad.data()+_M_grad.num_elements(), value_type(0) );
@@ -1471,6 +1515,7 @@ public:
 #if 0
                                             typename boost::multi_array<value_type,4>::template array_view<2>::type  gradref =  __pc->grad()[boost::indices[i][c1][range()][range()]];
                                             typename boost::multi_array<value_type,4>::template array_view<2>::type  gradreal =  _M_grad[boost::indices[i][c1][range()][range()]];
+
 #endif
 
                                             for ( uint16_type l = 0; l < NDim; ++l )
@@ -1632,6 +1677,7 @@ public:
                                                 }
                                         }
                                 } // c1
+
                             // update curl if needed
                             if ( vm::has_curl<context>::value )
                                 {

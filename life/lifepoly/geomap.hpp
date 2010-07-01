@@ -806,6 +806,29 @@ public:
                  precompute_ptrtype const& __pc )
     {
         _M_pc = __pc;
+
+
+        if (_M_npoints != _M_pc.get()->nPoints() )
+            {
+                _M_npoints = _M_pc.get()->nPoints();
+
+                _M_xrefq.resize( PDim, nPoints() );
+                _M_xrealq.resize( NDim, nPoints() );
+                _M_nrealq.resize( NDim, nPoints() );
+                _M_unrealq.resize( NDim, nPoints() );
+                _M_nnormq.resize( nPoints() );
+
+                if ( is_linear )
+                    {
+                        _M_gm->gradient( node_t_type(), _M_g_linear );
+                    }
+                else
+                    {
+                        _M_Jt.resize( nPoints() );
+                        _M_Bt.resize( nPoints() );
+                    }
+            }
+
         update( __e );
     }
 
@@ -824,6 +847,7 @@ public:
     void update( element_type const& __e )
     {
         _M_G = __e.G();
+        _M_g.resize( _M_G.size2(), PDim );
         //_M_element_c = boost::shared_ptr<element_type const>(&__e);
         _M_element_c = __e;
         _M_id = __e.id();
