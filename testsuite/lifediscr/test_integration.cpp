@@ -28,10 +28,15 @@
    \date 2006-08-25
  */
 
-//#define USE_BOOST_TEST 1
+#define USE_BOOST_TEST 1
 
-// Boost.Test
+// make sure that the init_unit_test function is defined by UTF
 #define BOOST_TEST_MAIN
+// give a name to the testsuite
+#define BOOST_TEST_MODULE 3D integration testsuite
+// disable the main function creation, use our own
+#define BOOST_TEST_NO_MAIN
+
 #if defined(USE_BOOST_TEST)
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
@@ -39,6 +44,7 @@ using boost::unit_test::test_suite;
 #endif
 
 #include <life/options.hpp>
+#include <life/lifecore/environment.hpp>
 #include <life/lifecore/life.hpp>
 #include <life/lifecore/application.hpp>
 #include <life/lifealg/backendgmm.hpp>
@@ -113,7 +119,7 @@ typename imesh<T>::ptrtype
 createMesh( double hsize )
 {
     double meshSize = hsize;
-    //std::cout << "hsize = " << meshSize << std::endl;
+    //BOOST_TEST_MESSAGE( "hsize = " << meshSize << std::endl;
 
     Gmsh __gmsh;
     std::string fname;
@@ -177,7 +183,7 @@ typename imesh<T,Order>::ptrtype
 createCircle( double hsize )
 {
     double meshSize = hsize;
-    //std::cout << "hsize = " << meshSize << std::endl;
+    //BOOST_TEST_MESSAGE( "hsize = " << meshSize << std::endl;
 
     Gmsh __gmsh;
     std::string fname;
@@ -227,7 +233,7 @@ typename imesh<T,Order>::ptrtype
 createSimplex( double hsize )
 {
     double meshSize = hsize;
-    //std::cout << "hsize = " << meshSize << std::endl;
+    //BOOST_TEST_MESSAGE( "hsize = " << meshSize << std::endl;
 
     GmshSimplexDomain<2,Order> ts;
     ts.setCharacteristicLength( meshSize );
@@ -257,25 +263,25 @@ struct test_integration_circle
 
         t = 1.0;
         value_type v0 = integrate( elements(mesh), IM<2,2,value_type,Simplex>(), mycst ).evaluate()( 0, 0 );
-        std::cout << "v0=" << v0 << "\n";
+        BOOST_TEST_MESSAGE( "v0=" << v0 << "\n" );
         value_type v00 = ( integrate( boundaryelements(mesh), IM<2,2,value_type,Simplex>(), mycst ).evaluate()( 0, 0 )+
                            integrate( internalelements(mesh), IM<2,2,value_type,Simplex>(), mycst ).evaluate()( 0, 0 ) );
-        std::cout << "v00=" << v00 << "\n";
-        std::cout << "[circle] v0 0 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(), N() ).evaluate() << "\n";
-        std::cout << "[circle] v0 0 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(), N() ).evaluate() << "\n";
-        std::cout << "[circle] v0 1 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(), vec( idf(f_Nx()), idf(f_Ny() ) ) ).evaluate() << "\n";
-        std::cout << "[circle] v0 2 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(),
-                                                        trans(vec(constant(1),Ny()))*one() ).evaluate() << "\n";
+        BOOST_TEST_MESSAGE( "v00=" << v00 << "\n" );
+        BOOST_TEST_MESSAGE( "[circle] v0 0 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(), N() ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "[circle] v0 0 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(), N() ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "[circle] v0 1 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(), vec( idf(f_Nx()), idf(f_Ny() ) ) ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "[circle] v0 2 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(),
+                                                        trans(vec(constant(1),Ny()))*one() ).evaluate() << "\n" );
 
-        std::cout << "[circle] v0 3 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(),
-                                                      mat<2,2>(Nx(),constant(1),constant(1),Ny())*vec(constant(1),constant(1)) ).evaluate() << "\n";
-        std::cout << "[circle] v0 4 (==v0 3) = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(),
+        BOOST_TEST_MESSAGE( "[circle] v0 3 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(),
+                                                      mat<2,2>(Nx(),constant(1),constant(1),Ny())*vec(constant(1),constant(1)) ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "[circle] v0 4 (==v0 3) = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(),
                                                                mat<2,2>( idf(f_Nx()),constant(1),
-                                                                         constant(1),idf(f_Ny()) )*vec(constant(1),constant(1)) ).evaluate() << "\n";
+                                                                         constant(1),idf(f_Ny()) )*vec(constant(1),constant(1)) ).evaluate() << "\n" );
         value_type pi = 4.0*math::atan(1.0);
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v0-pi, math::pow( meshSize, 2*Order ) );
+        BOOST_CHECK_CLOSE( v0, pi, 1e-2 );
         BOOST_CHECK_SMALL( v0-v00, eps  );
 #else
         LIFE_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
@@ -288,11 +294,10 @@ struct test_integration_circle
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
 
-        // int ([-1,1],[-1,x]) 1 dx
         u = vf::project( Xh, elements(mesh), constant(1.0) );
         v0 = integrate( elements(mesh), IM<2,3,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v0-pi, math::pow( meshSize, 2*Order ) );
+        BOOST_CHECK_CLOSE( v0, pi, 1e-2);
 #else
         LIFE_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
@@ -303,10 +308,10 @@ struct test_integration_circle
         typename vector_space_type::element_type U( Xvh );
 
         U = vf::project( Xvh, elements(mesh), vec(constant(1.0),constant(1.0)) );
-        v0 = integrate( boundaryfaces(mesh), IM<2,3,value_type,Simplex>(), trans(idv( U ))*N() ).evaluate()( 0, 0 );
-        v00 = integrate( elements(mesh), IM<2,3,value_type,Simplex>(), divv(U) ).evaluate()( 0, 0 );
+        v0 = integrate( boundaryfaces(mesh), trans(idv( U ))*N() ).evaluate()( 0, 0 );
+        v00 = integrate( elements(mesh), divv(U) ).evaluate()( 0, 0 );
 
-        std::cout << "[circle] v0=" << v0 << " v00=" << v00 << " should be equal thanks to gauss int 1.N() != int div 1\n" ;
+        BOOST_TEST_MESSAGE( "[circle] v0=" << v0 << " v00=" << v00 << " should be equal thanks to gauss int 1.N() != int div 1\n");
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v0-v00, eps );
 #else
@@ -314,12 +319,12 @@ struct test_integration_circle
 #endif /* USE_BOOST_TEST */
 
         U = vf::project( Xvh, elements(mesh), vec(Px(),Py()) );
-        v0 = integrate( boundaryfaces(mesh), IM<2,3,value_type,Simplex>(), trans(idv( U ))*N() ).evaluate()( 0, 0 );
-        v00 = integrate( elements(mesh), IM<2,3,value_type,Simplex>(), divv(U) ).evaluate()( 0, 0 );
+        v0 = integrate( boundaryfaces(mesh), trans(idv( U ))*N() ).evaluate()( 0, 0 );
+        v00 = integrate( elements(mesh), divv(U) ).evaluate()( 0, 0 );
 
-        std::cout << "[circle] v0=" << v0 << " v00=" << v00 << " should be equal thanks to gauss int (x,y).N() != int div (x,y)\n" ;
+        BOOST_TEST_MESSAGE( "[circle] v0=" << v0 << " v00=" << v00 << " should be equal thanks to gauss int (x,y).N() != int div (x,y)\n");
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v0-v00, eps );
+        BOOST_CHECK_CLOSE( v0, v00, eps );
 #else
         LIFE_ASSERT( math::abs( v0-v00) < eps )( v0 )(v00)( math::abs( v0-v00) ).warn ( "int (x,y).N() != int div (x,y)" );
 #endif /* USE_BOOST_TEST */
@@ -337,7 +342,7 @@ struct test_integration_simplex
         using namespace Life::vf;
 
 
-
+        const value_type eps = 1e-9;
         typename imesh<value_type,1>::ptrtype mesh( createSimplex<value_type,1>( meshSize ) );
         typedef typename imesh<value_type>::type mesh_type;
 
@@ -346,36 +351,59 @@ struct test_integration_simplex
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
 
-        value_type v0 = integrate( elements(mesh), IM<2,2,value_type,Simplex>(), constant(1.0) ).evaluate()( 0, 0 );
-        std::cout << "[simplex] v0 0 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(), N() ).evaluate() << "\n";
-        std::cout << "[simplex] v0 1 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(), vec( idf(f_Nx()), idf(f_Ny() ) ) ).evaluate() << "\n";
-        std::cout << "[simplex] v0 2 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(),
-                                                        trans(vec(constant(1),Ny()))*one() ).evaluate() << "\n";
-
-        std::cout << "[simplex] v0 3 = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(),
-                                                      mat<2,2>(Nx(),constant(1),constant(1),Ny())*vec(constant(1),constant(1)) ).evaluate() << "\n";
-        std::cout << "[simplex] v0 4 (==v0 3) = " << integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(),
-                                                               mat<2,2>( idf(f_Nx()),constant(1),
-                                                                         constant(1),idf(f_Ny()) )*vec(constant(1),constant(1)) ).evaluate() << "\n";
-        value_type pi = 4.0*math::atan(1.0);
+        value_type meas = integrate( elements(mesh), constant(1.0) ).evaluate()( 0, 0 );
+        value_type v0 = integrate( elements(mesh), constant(1.0) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v0-pi, 1e-2 );
+        BOOST_CHECK_CLOSE( meas, 0.5, eps );
 #else
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 
         LIFE_ASSERT( math::abs( v0-pi) < 1e-2 )( v0 )( math::abs( v0-pi) )( eps ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
+        auto in1 = integrate( boundaryfaces(mesh), N() ).evaluate();
+        auto in2 = integrate( boundaryfaces(mesh), _Q<2>(), vec( idf(f_Nx()), idf(f_Ny() ) ) ).evaluate();
+        BOOST_CHECK_CLOSE( in1(0,0), in2(0,0), eps );
+        BOOST_CHECK_CLOSE( in1(1,0), in2(1,0), eps );
+        BOOST_TEST_MESSAGE( "[simplex] v0 0 = " << in1  << "\n" );
+        BOOST_TEST_MESSAGE( "[simplex] v0 1 = " << in2  << "\n" );
+        BOOST_TEST_MESSAGE( "[simplex] v0 2 = " << integrate( boundaryfaces(mesh), trans(vec(constant(1),Ny()))*one() ).evaluate() << "\n" );
+
+        auto in3 = integrate( boundaryfaces(mesh), _Q<2>(), mat<2,2>(Nx(),constant(1),constant(1),Ny())*vec(constant(1),constant(1)) ).evaluate();
+        auto in4 = integrate( boundaryfaces(mesh), _Q<2>(), mat<2,2>( idf(f_Nx()),constant(1),
+                                                                        constant(1),idf(f_Ny()) )*vec(constant(1),constant(1)) ).evaluate();
+        BOOST_CHECK_CLOSE( in3(0,0), in4(0,0), eps );
+        BOOST_CHECK_CLOSE( in3(1,0), in4(1,0), eps );
+
+        BOOST_TEST_MESSAGE( "[simplex] v0 3 = " << in3 << "\n" );
+        BOOST_TEST_MESSAGE( "[simplex] v0 4 (==v0 3) = " <<  in4 << "\n" );
+
         // int ([-1,1],[-1,x]) 1 dx
-        u = vf::project( Xh, elements(mesh), Px() );
-        std::cout << "[simplex] int grad(X)=" << integrate( elements(mesh), IM<2,1,value_type,Simplex>(), gradv(u) ).evaluate() << "\n";
-        std::cout << "[simplex] int hess(X)=" << integrate( elements(mesh), IM<2,1,value_type,Simplex>(), hessv(u) ).evaluate() << "\n";
-        u = vf::project( Xh, elements(mesh), Px()*Px()+Px()*Py()+Py()*Py() );
-        std::cout << "[simplex] int grad(X^2)=" << integrate( elements(mesh), IM<2,1,value_type,Simplex>(), gradv(u) ).evaluate() << "\n";
-        std::cout << "[simplex] int hess(X^2)=" << integrate( elements(mesh), IM<2,1,value_type,Simplex>(), hessv(u) ).evaluate() << "\n";
-        u = vf::project( Xh, elements(mesh), Px()*Px()*Px()+Py()*Py()*Py() );
-        std::cout << "[simplex] int grad(X^3)=" << integrate( elements(mesh), IM<2,1,value_type,Simplex>(), gradv(u) ).evaluate() << "\n";
-        std::cout << "[simplex] int hess(X^3)=" << integrate( elements(mesh), IM<2,1,value_type,Simplex>(), hessv(u) ).evaluate() << "\n";
+        u = vf::project( Xh, elements(mesh), Px()+Py() );
+        double v1 = integrate( elements(mesh), gradv(u)*trans(gradv(u) ) ).evaluate()(0,0) ;
+        BOOST_CHECK_CLOSE( v1, 2*meas, eps );
+
+        u = vf::project( Xh, elements(mesh), Px()*Px()+Py()*Py() );
+        double lapu = integrate( elements(mesh),  trace( hessv(u) ) ).evaluate()( 0, 0 );
+        BOOST_CHECK_CLOSE( lapu, 4*meas, eps );
+        double lapu1 = integrate( elements(mesh),  trace( hessv(u)*trans(hessv(u) ) )).evaluate()( 0, 0 );
+        BOOST_CHECK_CLOSE( lapu1, 4*meas, eps );
+        auto hessu = integrate( elements(mesh), print( hessv(u), "hess=") ).evaluate();
+        BOOST_CHECK_CLOSE( hessu(0,0), 2*meas, eps );
+        BOOST_CHECK_SMALL( hessu(1,0), eps );
+        BOOST_CHECK_SMALL( hessu(0,1), eps );
+        BOOST_CHECK_CLOSE( hessu(1,1), 2*meas, eps );
+
+        typedef fusion::vector<Lagrange<3, Vectorial> > v_basis_type;
+        typedef FunctionSpace<mesh_type, v_basis_type, value_type> v_space_type;
+        boost::shared_ptr<v_space_type> Yh( new v_space_type(mesh) );
+        typename v_space_type::element_type v( Yh );
+
+        auto p2 = Px()*Px()+Py()*Py();
+        v = vf::project( Yh, elements(mesh), vec(p2,p2) );
+        double divp2 = integrate( elements(mesh), divv(v) ).evaluate()( 0, 0 );
+        double unp2 = integrate( boundaryfaces(mesh), trans(idv(v))*N() ).evaluate()( 0, 0 );
+        BOOST_CHECK_CLOSE( divp2, unp2, eps );
     }
     double meshSize;
 };
@@ -391,25 +419,25 @@ struct test_integration_domain
 
         typename imesh<value_type>::ptrtype mesh( createMesh<value_type>( meshSize ) );
 
-        const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
+        const value_type eps = 1e-9;
 
         // int ([-1,1],[-1,x]) 1 dx
-        value_type v0 = integrate( elements(mesh), IM<2,1,value_type,Simplex>(),
+        value_type v0 = integrate( elements(mesh),
                                    vf::min(constant(1.0),constant(2.0)) ).evaluate()( 0, 0 );
-        value_type v00 = ( integrate( boundaryelements(mesh), IM<2,1,value_type,Simplex>(),
+        value_type v00 = ( integrate( boundaryelements(mesh),
                                       vf::min(constant(1.0),constant(2.0)) ).evaluate()( 0, 0 )+
-                           integrate( internalelements(mesh), IM<2,1,value_type,Simplex>(),
+                           integrate( internalelements(mesh),
                                       vf::min(constant(1.0),constant(2.0)) ).evaluate()( 0, 0 ) );
 
-        std::cout << "[domain] v0 = " << v0 << "\n";
-        std::cout << "[domain] v00 = " << v00 << "\n";
-        std::cout << "[domain] int(1*N()) = " << integrate( boundaryfaces(mesh), IM<2,1,value_type,Simplex>(),
-                                                   constant(1.0)*N() ).evaluate() << "\n";
-        std::cout << "[domain] int(tr(N())**N()) = " << integrate( boundaryfaces(mesh), IM<2,1,value_type,Simplex>(),
-                                                          N()*trans(N()) ).evaluate() << "\n";
+        BOOST_TEST_MESSAGE( "[domain] v0 = " << v0 << "\n" );
+        BOOST_TEST_MESSAGE( "[domain] v00 = " << v00 << "\n" );
+        BOOST_TEST_MESSAGE( "[domain] int(1*N()) = " << integrate( boundaryfaces(mesh),
+                                                   constant(1.0)*N() ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "[domain] int(tr(N())**N()) = " << integrate( boundaryfaces(mesh),
+                                                          N()*trans(N()) ).evaluate() << "\n" );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v0-4.0, eps );
-        BOOST_CHECK_SMALL( v0-v00, eps );
+        BOOST_CHECK_CLOSE( v0, 4.0, eps );
+        BOOST_CHECK_CLOSE( v0, v00, eps );
 #else
         LIFE_ASSERT( math::abs( v0-4.0) < eps )( v0 )( math::abs( v0-4.0) )( eps ).warn ( "v0 != 4" );
         LIFE_ASSERT( math::abs( v0-v00) < eps )( v0 )(v00)( math::abs( v0-v00) )( eps ).warn ( "v0 != v00" );
@@ -417,25 +445,25 @@ struct test_integration_domain
 
 
         // int ([-1,1],[-1,1]) x dx
-        value_type v1 = integrate( elements(mesh), IM<2,2,value_type,Simplex>(), Px() ).evaluate()( 0, 0 );
-        value_type v11 = integrate( elements(mesh), IM<2,2,value_type,Simplex>(), idf(f_Px()) ).evaluate()( 0, 0 );
+        value_type v1 = integrate( elements(mesh), Px() ).evaluate()( 0, 0 );
+        value_type v11 = integrate( elements(mesh), _Q<2>(), idf(f_Px()) ).evaluate()( 0, 0 );
 
-        std::cout << "[domain] int(P()) = " << integrate( elements(mesh), IM<2,1,value_type,Simplex>(),
-                                                 P() ).evaluate() << "\n";
+        BOOST_TEST_MESSAGE( "[domain] int(P()) = " << integrate( elements(mesh),
+                                                 P() ).evaluate() << "\n" );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v1-0.0, eps );
-        BOOST_CHECK_SMALL( v11-0.0, eps );
+        BOOST_CHECK_SMALL( v1- 0.0, eps );
+        BOOST_CHECK_SMALL( v11- 0.0, eps );
 #else
         LIFE_ASSERT( math::abs( v1-0.0) < eps )( v1 )( math::abs( v1-0.0) )( eps ).warn ( "v1 != 0" );
         LIFE_ASSERT( math::abs( v11-0.0) < eps )( v11 )( math::abs( v11-0.0) )( eps ).warn ( "v11 != 0" );
 #endif /* USE_BOOST_TEST */
 
          // int ([-1,1],[-1,1]) abs(x) dx
-        value_type vsin = integrate( elements(mesh), IM<2,5,value_type,Simplex>(), sin(Px()) ).evaluate()( 0, 0 );
-        value_type vsin1 = integrate( elements(mesh), IM<2,5,value_type,Simplex>(), idf(f_sinPx()) ).evaluate()( 0, 0 );
+        value_type vsin = integrate( elements(mesh), _Q<5>(), sin(Px()) ).evaluate()( 0, 0 );
+        value_type vsin1 = integrate( elements(mesh), _Q<5>(), idf(f_sinPx()) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( vsin-2*(-math::cos(1.0)+math::cos(-1.0)), eps );
-        BOOST_CHECK_SMALL( vsin1-2*(-math::cos(1.0)+math::cos(-1.0)), eps );
+        BOOST_CHECK_SMALL( vsin- 2*(-math::cos(1.0)+math::cos(-1.0)), eps );
+        BOOST_CHECK_SMALL( vsin1- 2*(-math::cos(1.0)+math::cos(-1.0)), eps );
 #else
         LIFE_ASSERT( math::abs( vsin-2.0*(-math::cos(1.0)+math::cos(-1.0))) < eps )
             ( vsin )
@@ -446,9 +474,9 @@ struct test_integration_domain
 #endif /* USE_BOOST_TEST */
 
         // int ([-1,1],[-1,1]) abs(x) dx
-        value_type vabs = integrate( elements(mesh), IM<2,5,value_type,Simplex>(), abs(Px())+abs(Py()) ).evaluate()( 0, 0 );
+        value_type vabs = integrate( elements(mesh), _Q<5>(), abs(Px())+abs(Py()) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( vabs-4.0, 1e-2 );
+        BOOST_CHECK_CLOSE( vabs, 4.0, 1e-2 );
 #else
         LIFE_ASSERT( math::abs( vabs-4.0) < 1e-2 )( vabs )( math::abs( vabs-4.0) )( 1e-2 ).warn ( "vabs != 4" );
 #endif /* USE_BOOST_TEST */
@@ -456,9 +484,9 @@ struct test_integration_domain
 
 
         // int (\partial ([-1,1],[-1,1]) 1 dx
-        value_type v2 = integrate( boundaryfaces(mesh), IM<2,1,value_type,Simplex>(), constant(1.0) ).evaluate()( 0, 0 );
+        value_type v2 = integrate( boundaryfaces(mesh), constant(1.0) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v2-8.0, eps );
+        BOOST_CHECK_CLOSE( v2, 8.0, eps );
 #else
         LIFE_ASSERT( math::abs( v2-8.0) < eps )( v2 )( math::abs( v2-8.0) )( eps ).warn ( "v2 != 8" );
 #endif /* USE_BOOST_TEST */
@@ -483,43 +511,43 @@ struct test_integration_boundary
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 
         // int (\partial ([-1,1],[-1,1]) 1 dx
-        value_type v2 = integrate( boundaryfaces(mesh), IM<2,1,value_type,Simplex>(), constant(1.0) ).evaluate()( 0, 0 );
+        value_type v2 = integrate( boundaryfaces(mesh), constant(1.0) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v2-8.0, eps );
+        BOOST_CHECK_CLOSE( v2, 8.0, eps );
 #else
         LIFE_ASSERT( math::abs( v2-8.0) < eps )( v2 )( math::abs( v2-8.0) )( eps ).warn ( "v2 != 8" );
 #endif /* USE_BOOST_TEST */
 
         // int (\partial ([-1,1],[-1,1]) x * y dx dy
-        value_type v3 = integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(), Px()*Py() ).evaluate()( 0, 0 );
+        value_type v3 = integrate( boundaryfaces(mesh), Px()*Py() ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v3-0.0, eps );
+        BOOST_CHECK_SMALL( v3- 0.0, eps );
 #else
         LIFE_ASSERT( math::abs( v3-0.0) < eps )( v3 )( math::abs( v3-0.0) )( eps ).warn ( "v3 != 0" );
 #endif /* USE_BOOST_TEST */
 
         // int (\partial ([-1,1],[-1,1]) -2*y dx dy
-        value_type v4 = integrate( boundaryfaces(mesh), IM<2,2,value_type,Simplex>(), -2*Py() ).evaluate()( 0, 0 );
+        value_type v4 = integrate( boundaryfaces(mesh), -2*Py() ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v4-0.0, eps );
+        BOOST_CHECK_SMALL( v4- 0.0, eps );
 #else
         LIFE_ASSERT( math::abs( v4-0.0) < eps )( v4 )( math::abs( v4-0.0) )( eps ).warn ( "v4 != 0" );
 #endif /* USE_BOOST_TEST */
 
         // int_10 exp(Py) dx
-        value_type v5 = integrate( markedfaces(*mesh,10), IM<2,2,value_type,Simplex>(), exp(Py()) ).evaluate()( 0, 0 );
+        value_type v5 = integrate( markedfaces(*mesh,10), exp(Py()) ).evaluate()( 0, 0 );
         value_type v5_ex = 2.0*(math::exp(1.0)+math::exp(-1.0));
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v5-v5_ex, eps );
+        BOOST_CHECK_CLOSE( v5, v5_ex, eps );
 #else
         LIFE_ASSERT( math::abs( v5-v5_ex) < eps )( v5 )(v5_ex)( math::abs( v5-v5_ex) )( eps ).warn ( "v5 != v5_ex" );
 #endif /* USE_BOOST_TEST */
 
         // int_20 exp(Py) dx
-        value_type v6 = integrate( markedfaces(*mesh,20), IM<2,5,value_type,Simplex>(), exp(Py()) ).evaluate()( 0, 0 );
+        value_type v6 = integrate( markedfaces(*mesh,20), _Q<5>(), exp(Py()) ).evaluate()( 0, 0 );
         value_type v6_ex = 2.0*(math::exp(1.0)-math::exp(-1.0));
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v6-v6_ex, eps );
+        BOOST_CHECK_CLOSE( v6, v6_ex, eps );
 #else
         LIFE_ASSERT( math::abs( v6-v6_ex) < eps )( v6 )(v6_ex)( math::abs( v6-v6_ex) )( eps ).warn ( "v6 != v6_ex" );
 #endif /* USE_BOOST_TEST */
@@ -542,7 +570,7 @@ struct test_integration_functions
         typedef typename imesh<value_type>::type mesh_type;
         typename imesh<value_type>::ptrtype mesh( createMesh<value_type>( meshSize ) );
 
-        const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
+        const value_type eps = 1e-9;
 
         typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -551,40 +579,40 @@ struct test_integration_functions
 
         // int ([-1,1],[-1,x]) 1 dx
         u = vf::project( Xh, elements(mesh), constant(1.0) );
-        value_type v0 = integrate( elements(mesh), IM<2,1,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
+        value_type v0 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v0-4.0, eps );
+        BOOST_CHECK_CLOSE( v0, 4.0, eps );
 #else
         LIFE_ASSERT( math::abs( v0-4.0) < eps )( v0 )( math::abs( v0-4.0) )( eps ).warn ( "v0 != 4" );
 #endif /* USE_BOOST_TEST */
 
         //
         u = vf::project( Xh, elements(mesh), Px() );
-        value_type v1 = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
+        value_type v1 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v1-0.0, eps );
+        BOOST_CHECK_SMALL( v1- 0.0, eps );
 #else
         LIFE_ASSERT( math::abs( v1-0.0) < eps )( v1 )( math::abs( v1-0.0) )( eps ).warn ( "v1 != 0" );
 #endif /* USE_BOOST_TEST */
-        value_type v2 = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), dxv( u ) ).evaluate()( 0, 0 );
+        value_type v2 = integrate( elements(mesh), dxv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v2-4.0, eps );
+        BOOST_CHECK_CLOSE( v2, 4.0, eps );
 #else
         LIFE_ASSERT( math::abs( v2-4.0) < eps )( v2 )( math::abs( v2-4.0) )( eps ).warn ( "v2 != 4" );
 #endif /* USE_BOOST_TEST */
 
-        value_type v3 = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), dyv( u ) ).evaluate()( 0, 0 );
+        value_type v3 = integrate( elements(mesh), dyv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v3-0.0, eps );
+        BOOST_CHECK_SMALL( v3- 0.0, eps );
 #else
         LIFE_ASSERT( math::abs( v3-0.0) < eps )( v3 )( math::abs( v3-0.0) )( eps ).warn ( "v3 != 0" );
 #endif /* USE_BOOST_TEST */
 
         u = vf::project( Xh, elements(mesh), exp(Px())*exp(Py()) );
-        value_type v4 = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
+        value_type v4 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
         value_type v4_ex = (math::exp(1.0)-math::exp(-1.0))*(math::exp(1.0)-math::exp(-1.0));
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v4-v4_ex, std::pow(10.0,-2.0*Order) );
+        BOOST_CHECK_CLOSE( v4, v4_ex, std::pow(10.0,-2.0*Order) );
 #else
         LIFE_ASSERT( math::abs( v4-v4_ex) < std::pow(10.0,-2.0*Order) )
             ( v4 )
@@ -593,7 +621,7 @@ struct test_integration_functions
 #endif /* USE_BOOST_TEST */
         value_type v4_x = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), dxv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v4_x-v4_ex, std::pow(10.0,-2.0*Order) );
+        BOOST_CHECK_CLOSE( v4_x, v4_ex, std::pow(10.0,-2.0*Order) );
 #else
         LIFE_ASSERT( math::abs( v4_x-v4_ex) < std::pow(10.0,-2.0*Order) )
             ( v4_x )
@@ -601,9 +629,9 @@ struct test_integration_functions
             ( math::abs( v4_x-v4_ex ) )( std::pow(10.0,-2.0*Order) ).warn ( "v4_x != v4_ex" );
 #endif /* USE_BOOST_TEST */
 
-        value_type v4_y = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), dyv( u ) ).evaluate()( 0, 0 );
+        value_type v4_y = integrate( elements(mesh), dyv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v4_y-v4_ex, std::pow(10.0,-2.0*Order) );
+        BOOST_CHECK_CLOSE( v4_y, v4_ex, std::pow(10.0,-2.0*Order) );
 #else
         LIFE_ASSERT( math::abs( v4_y-v4_ex) < std::pow(10.0,-2.0*Order) )
             ( v4_y )
@@ -611,10 +639,10 @@ struct test_integration_functions
             ( math::abs( v4_y-v4_ex ) )( std::pow(10.0,-2.0*Order) ).warn ( "v4_y != v4_ex" );
 #endif /* USE_BOOST_TEST */
 
-        value_type v5 = integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), idv(u) ).evaluate()( 0, 0 );
+        value_type v5 = integrate( markedfaces(*mesh,10), idv(u) ).evaluate()( 0, 0 );
         value_type v5_ex = (math::exp(1.0)-math::exp(-1.0))*(math::exp(1.0)+math::exp(-1.0));
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v5-v5_ex, std::pow(10.0,-2.0*Order) );
+        BOOST_CHECK_CLOSE( v5, v5_ex, std::pow(10.0,-2.0*Order) );
 #else
         LIFE_ASSERT( math::abs( v5-v5_ex) < std::pow(10.0,-2.0*Order) )
             ( v5 )
@@ -623,16 +651,16 @@ struct test_integration_functions
 #endif /* USE_BOOST_TEST */
 
 #if 1
-        u = vf::project( Xh, elements(mesh), Px()*Px() );
-        std::cout << "hess(X^2)="
-                  << integrate( elements(mesh), IM<2,Order-2,value_type,Simplex>(), hessv(u) ).evaluate()
-                  << "\n";
-        value_type v6 = integrate( elements(mesh), IM<2,Order-2,value_type,Simplex>(),
-                                   trace( hessv(u)*trans(hessv(u)) ) ).evaluate()( 0, 0 );
-        std::cout << "int(hess(x^2):hess(x^2)) = " << v6 << "\n";
-        value_type v6_ex = 16.0;
+        double meas = integrate( elements(mesh), cst(1.) ).evaluate()( 0, 0 );
+        u = vf::project( Xh, elements(mesh), Px()*Px() + Py()*Py() +Px()*Py()  );
+        auto hess6 = integrate( elements(mesh), hessv(u) ).evaluate();
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v6-v6_ex, std::pow(10.0,-2.0*Order) );
+        BOOST_TEST_MESSAGE( "hess6 =" << hess6 << "\n" );
+        BOOST_CHECK_CLOSE( hess6(0,0), 2*meas, eps );
+        BOOST_CHECK_CLOSE( hess6(0,1), meas, eps );
+        BOOST_CHECK_CLOSE( hess6(1,0), meas, eps );
+        BOOST_CHECK_CLOSE( hess6(1,0), hess6(0, 1), eps );
+        BOOST_CHECK_CLOSE( hess6(1,1), 2*meas, eps );
 #else
         LIFE_ASSERT( math::abs( v6-v6_ex) < std::pow(10.0,-2.0*Order) )
             ( v6 )
@@ -643,10 +671,10 @@ struct test_integration_functions
 
 
 #if 0
-        std::cout << "idv(u) = " << integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), idv(u) ).evaluate() << "\n";
-        std::cout << "gradv(u) = " << integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), gradv(u) ).evaluate() << "\n";
-        std::cout << "trans(gradv(u))*N() = " << integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), trans(gradv(u))*N() ).evaluate() << "\n";
-        std::cout << "u*Nx()+u*Ny() = " << integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), idv(u)*Nx() + idv(u)*Ny() ).evaluate() << "\n";
+        BOOST_TEST_MESSAGE( "idv(u) = " << integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), idv(u) ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "gradv(u) = " << integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), gradv(u) ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "trans(gradv(u))*N() = " << integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), trans(gradv(u))*N() ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "u*Nx()+u*Ny() = " << integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), idv(u)*Nx() + idv(u)*Ny() ).evaluate() << "\n" );
         value_type v6 = integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), trans(gradv(u))*N() ).evaluate()( 0, 0 );
         value_type v6_ex = (math::exp(1.0)-math::exp(-1.0))*(math::exp(1.0)+math::exp(-1.0));
 #if defined(USE_BOOST_TEST)
@@ -683,61 +711,61 @@ struct test_integration_vectorial_functions
         typename space_type::element_type u( Xh );
 
         u = vf::project( Xh, elements(mesh), P() );
-        std::cout << "int(proj P() = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u ) ).evaluate() << "\n";
+        BOOST_TEST_MESSAGE( "int(proj P() = " << integrate( elements(mesh), idv( u ) ).evaluate() << "\n" );
         u = vf::project( Xh, elements(mesh), one() );
-        std::cout << "int(proj one() = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u ) ).evaluate() << "\n";
+        BOOST_TEST_MESSAGE( "int(proj one() = " << integrate( elements(mesh), idv( u ) ).evaluate() << "\n" );
 
         u = vf::project( Xh, elements(mesh), P() );
-        ublas::matrix<value_type> m(  integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), gradv( u ) ).evaluate() );
+        ublas::matrix<value_type> m(  integrate( elements(mesh), gradv( u ) ).evaluate() );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( m(0,0)-4, std::pow(10.0,-2.0*Order) );
-        BOOST_CHECK_SMALL( m(0,1), std::pow(10.0,-2.0*Order) );
-        BOOST_CHECK_SMALL( m(1,0), std::pow(10.0,-2.0*Order) );
-        BOOST_CHECK_SMALL( m(1,1)-4, std::pow(10.0,-2.0*Order) );
+        BOOST_CHECK_CLOSE( m(0,0), 4, std::pow(10.0,-2.0*Order) );
+        BOOST_CHECK_SMALL( m(0,1)- 0, std::pow(10.0,-2.0*Order) );
+        BOOST_CHECK_SMALL( m(1,0)- 0, std::pow(10.0,-2.0*Order) );
+        BOOST_CHECK_CLOSE( m(1,1), 4, std::pow(10.0,-2.0*Order) );
 #endif
-        ublas::matrix<value_type> mx( integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), dxv( u ) ).evaluate());
+        ublas::matrix<value_type> mx( integrate( elements(mesh), dxv( u ) ).evaluate());
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( mx(0,0)-4, std::pow(10.0,-2.0*Order) );
-        BOOST_CHECK_SMALL( mx(1,0), std::pow(10.0,-2.0*Order) );
+        BOOST_CHECK_CLOSE( mx(0,0), 4, std::pow(10.0,-2.0*Order) );
+        BOOST_CHECK_SMALL( mx(1,0)- 0, std::pow(10.0,-2.0*Order) );
 #endif
 
-        ublas::matrix<value_type> my( integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), dyv( u ) ).evaluate());
+        ublas::matrix<value_type> my( integrate( elements(mesh), dyv( u ) ).evaluate());
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( my(0,0), std::pow(10.0,-2.0*Order) );
-        BOOST_CHECK_SMALL( my(1,0)-4, std::pow(10.0,-2.0*Order) );
+        BOOST_CHECK_SMALL( my(0,0)- 0, std::pow(10.0,-2.0*Order) );
+        BOOST_CHECK_CLOSE( my(1,0), 4, std::pow(10.0,-2.0*Order) );
 #endif
 
         u = vf::project( Xh, elements(mesh), Py()*oneX() + Px()*oneY() );
-        ublas::matrix<value_type> int_divu( integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), divv( u ) ).evaluate());
+        ublas::matrix<value_type> int_divu( integrate( elements(mesh), divv( u ) ).evaluate());
 #if defined(USE_BOOST_TEST)
         value_type norm_int_divu = ublas::norm_frobenius(int_divu);
         BOOST_CHECK_SMALL( norm_int_divu, eps );
 #endif
         u = vf::project( Xh, elements(mesh), P() );
-        int_divu = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), divv( u ) ).evaluate();
+        int_divu = integrate( elements(mesh), divv( u ) ).evaluate();
 #if defined(USE_BOOST_TEST)
         norm_int_divu = ublas::norm_frobenius(int_divu);
-        BOOST_CHECK_SMALL( norm_int_divu-8, eps );
+        BOOST_CHECK_CLOSE( norm_int_divu, 8, eps );
 #endif
 
         // check the divergence theorem
         u = vf::project( Xh, elements(mesh), P() );
-        int_divu = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), divv( u ) ).evaluate();
-        std::cout << "int_divu = " << int_divu << "\n";
-        ublas::matrix<value_type> int_un = integrate( boundaryfaces(mesh), IM<2,Order+3,value_type,Simplex>(), trans(idv( u ))*N() ).evaluate();
-        std::cout << "(1, N) = " << integrate( boundaryfaces(mesh), IM<2,Order+1,value_type,Simplex>(), trans(one())*N() ).evaluate() << "\n";
-        std::cout << "(P, N) = " << integrate( boundaryfaces(mesh), IM<2,Order+1,value_type,Simplex>(), trans(P())*N() ).evaluate() << "\n";
-        std::cout << "int_un = " << int_un << "\n";
+        int_divu = integrate( elements(mesh), divv( u ) ).evaluate();
+        BOOST_TEST_MESSAGE( "int_divu = " << int_divu << "\n" );
+        ublas::matrix<value_type> int_un = integrate( boundaryfaces(mesh), trans(idv( u ))*N() ).evaluate();
+        BOOST_TEST_MESSAGE( "(1, N) = " << integrate( boundaryfaces(mesh), IM<2,Order+1,value_type,Simplex>(), trans(one())*N() ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "(P, N) = " << integrate( boundaryfaces(mesh), IM<2,Order+1,value_type,Simplex>(), trans(P())*N() ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "int_un = " << int_un << "\n" );
 #if defined(USE_BOOST_TEST)
         value_type norm_divergence = ublas::norm_frobenius(int_divu-int_un);
         BOOST_CHECK_SMALL( norm_divergence, eps );
 #endif
 
         // check the stokes theorem
-        ublas::matrix<value_type> int_curlu = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), curlzv( u ) ).evaluate();
-        std::cout << "int_curlu = " << int_curlu << "\n";
-        ublas::matrix<value_type> int_ut = integrate( boundaryfaces(mesh), IM<2,Order+1,value_type,Simplex>(), trans( idv( u ) )*(Ny()*oneX()-Nx()*oneY() ) ).evaluate();
-        std::cout << "int_ut = " << int_ut << "\n";
+        ublas::matrix<value_type> int_curlu = integrate( elements(mesh), curlzv( u ) ).evaluate();
+        BOOST_TEST_MESSAGE( "int_curlu = " << int_curlu << "\n" );
+        ublas::matrix<value_type> int_ut = integrate( boundaryfaces(mesh), trans( idv( u ) )*(Ny()*oneX()-Nx()*oneY() ) ).evaluate();
+        BOOST_TEST_MESSAGE( "int_ut = " << int_ut << "\n" );
 #if defined(USE_BOOST_TEST)
         value_type norm_stokes = ublas::norm_frobenius(int_curlu-int_ut);
         BOOST_CHECK_SMALL( norm_stokes, eps );
@@ -770,11 +798,11 @@ struct test_integration_composite_functions
 
         u.template element<0>() = vf::project( Xh->template functionSpace<0>(), elements(mesh), P() );
         u.template element<1>() = vf::project( Xh->template functionSpace<1>(), elements(mesh), constant(1) );
-        std::cout << "int(proj P() = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u.template element<0>() ) ).evaluate() << "\n";
-        std::cout << "int(1 = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u.template element<1>() ) ).evaluate() << "\n";
+        BOOST_TEST_MESSAGE( "int(proj P() = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u.template element<0>() ) ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "int(1 = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u.template element<1>() ) ).evaluate() << "\n" );
 
         ublas::matrix<value_type> m(  integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), gradv( u.template element<0>() ) ).evaluate() );
-        std::cout << "int(grad(P()) = " << m << "\n";
+        BOOST_TEST_MESSAGE( "int(grad(P()) = " << m << "\n" );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( m(0,0)-4, std::pow(10.0,-2.0*Order) );
         BOOST_CHECK_SMALL( m(0,1), std::pow(10.0,-2.0*Order) );
@@ -782,10 +810,10 @@ struct test_integration_composite_functions
         BOOST_CHECK_SMALL( m(1,1)-4, std::pow(10.0,-2.0*Order) );
 #endif
         m = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), trace( gradv( u.template element<0>() )*trans(gradv( u.template element<0>() ) ) ) ).evaluate();
-        std::cout << "int(grad(P()*grad^T(P())) = " << m << "\n";
+        BOOST_TEST_MESSAGE( "int(grad(P()*grad^T(P())) = " << m << "\n" );
 
         m = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), trace( trans(gradv( u.template element<0>() ))*(gradv( u.template element<0>() ) ) ) ).evaluate();
-        std::cout << "int(grad(P()^T*grad(P())) = " << m << "\n";
+        BOOST_TEST_MESSAGE( "int(grad(P()^T*grad(P())) = " << m << "\n" );
 
 #if 0
         AUTO( u_exact,(P()^(2))*(Px()+Py()));
@@ -809,34 +837,34 @@ struct test_integration_composite_functions
 
         u.template element<0>() = vf::project( Xh->template functionSpace<0>(), elements(mesh), u_exact );
         u.template element<1>() = vf::project( Xh->template functionSpace<1>(), elements(mesh), Px()+Py() );
-        std::cout << "int(u) = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u.template element<0>() ) ).evaluate() << "\n";
-        std::cout << "int(u - u_exact) = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(),
-                                                     trans(idv( u.template element<0>() )-u_exact)*(idv( u.template element<0>() )-u_exact) ).evaluate() << "\n";
+        BOOST_TEST_MESSAGE( "int(u) = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u.template element<0>() ) ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "int(u - u_exact) = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(),
+                                                     trans(idv( u.template element<0>() )-u_exact)*(idv( u.template element<0>() )-u_exact) ).evaluate() << "\n" );
 
-        std::cout << "int(u<1>) = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u.template element<1>() ) ).evaluate() << "\n";
+        BOOST_TEST_MESSAGE( "int(u<1>) = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u.template element<1>() ) ).evaluate() << "\n" );
 
         m= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), gradv( u.template element<0>() ) ).evaluate();
-        std::cout << "int(grad(u)) = " << m << "\n";
+        BOOST_TEST_MESSAGE( "int(grad(u)) = " << m << "\n" );
 
         m= integrate( boundaryfaces(mesh), IM<2,Order,value_type,Simplex>(), gradv( u.template element<0>() )*N() ).evaluate();
-        std::cout << "int_bfaces(grad_u*N()) = " << m << "\n";
+        BOOST_TEST_MESSAGE( "int_bfaces(grad_u*N()) = " << m << "\n" );
 
         m= integrate( boundaryfaces(mesh), IM<2,Order,value_type,Simplex>(), grad_exact*N() ).evaluate();
-        std::cout << "int_bfaces(grad_exact*N) = " << m << "\n";
+        BOOST_TEST_MESSAGE( "int_bfaces(grad_exact*N) = " << m << "\n" );
 
         m= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), div_grad_exact ).evaluate();
-        std::cout << "int(div_grad_exact) = " << m << "\n";
+        BOOST_TEST_MESSAGE( "int(div_grad_exact) = " << m << "\n" );
 
         m= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), grad_exact  ).evaluate();
-        std::cout << "int(grad_exact) = " << m << "\n";
+        BOOST_TEST_MESSAGE( "int(grad_exact) = " << m << "\n" );
         m= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), gradv( u.template element<0>() ) - grad_exact ).evaluate();
-        std::cout << "int( grad(u)-grad_exact) = " << m << "\n";
+        BOOST_TEST_MESSAGE( "int( grad(u)-grad_exact) = " << m << "\n" );
 
 
         m= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(),
                       trace( (gradv( u.template element<0>())-grad_exact)*trans(gradv( u.template element<0>())-grad_exact) )
                       ).evaluate();
-        std::cout << "|grad(u)-grad_exact|_0^2 = " << m << "\n";
+        BOOST_TEST_MESSAGE( "|grad(u)-grad_exact|_0^2 = " << m << "\n" );
 
 
 
@@ -890,24 +918,24 @@ makeAbout()
 }
 
 #if defined(USE_BOOST_TEST)
-boost::shared_ptr<Life::Application> mpi;
-test_suite*
-init_unit_test_suite( int argc, char** argv )
+
+BOOST_AUTO_TEST_CASE( test_integration_1 ) { test_integration_circle<double> t( 0.02 ); t(); }
+BOOST_AUTO_TEST_CASE( test_integration_2 ) { test_integration_domain<double> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_integration_3 ){ test_integration_boundary<double> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_integration_4 ) { test_integration_functions<2,double> t( 0.1 ); t();}
+BOOST_AUTO_TEST_CASE( test_integration_5 ) { test_integration_vectorial_functions<2,double> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_integration_6 ) { test_integration_composite_functions<2,double> t(0.1); t(); }
+BOOST_AUTO_TEST_CASE( test_integration_7 ) { test_integration_simplex<double> t( 3 ); t(); }
+
+int BOOST_TEST_CALL_DECL
+main( int argc, char* argv[] )
 {
-    //boost::mpi::environment( argc, argv );
-    mpi = boost::shared_ptr<Life::Application>( new Life::Application( argc, argv, makeAbout(), makeOptions() ) );
-    Life::Assert::setLog( "test_integration.assert");
-    test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
+    Life::Environment env( argc, argv );
+    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
 
-    test->add( BOOST_TEST_CASE( ( test_integration_circle<double>( mpi->vm()["hsize"].as<double>() ) ) ) );
-    test->add( BOOST_TEST_CASE( ( test_integration_domain<double>( mpi->vm()["hsize"].as<double>() ) ) ) );
-    test->add( BOOST_TEST_CASE( ( test_integration_boundary<double>( mpi->vm()["hsize"].as<double>() ) ) ) );
-    test->add( BOOST_TEST_CASE( ( test_integration_functions<2,double>( mpi->vm()["hsize"].as<double>() ) ) ) );
-    test->add( BOOST_TEST_CASE( ( test_integration_vectorial_functions<2,double>(mpi->vm()["hsize"].as<double>() ) ) ) );
-    test->add( BOOST_TEST_CASE( ( test_integration_composite_functions<2,double>(mpi->vm()["hsize"].as<double>() ) ) ) );
-
-    return test;
+    return ret;
 }
+
 #else
 int
 main( int argc, char** argv )
