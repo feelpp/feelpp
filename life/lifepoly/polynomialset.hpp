@@ -1507,7 +1507,14 @@ public:
                                     // update divergence if needed
                                     if ( vm::has_div<context>::value )
                                         {
-                                            for ( uint16_type q = 0; q < Q; ++q )
+                                            if ( reference_element_type::is_product && c1 == c )
+                                                for ( uint16_type q = 0; q < Q; ++q )
+                                                {
+
+                                                    _M_div[i][q] +=  _M_grad[i][c1][c1][q];
+                                                }
+                                            else
+                                                for ( uint16_type q = 0; q < Q; ++q )
                                                 {
 
                                                     _M_div[i][q] +=  _M_grad[i][c1][c1][q];
@@ -1628,15 +1635,17 @@ public:
                                     // update divergence if needed
                                     if ( vm::has_div<context>::value )
                                         {
-                                            for ( uint16_type q = 0; q < Q; ++q )
+                                            if ( reference_element_type::is_product && c1 == c )
+                                                for ( uint16_type q = 0; q < Q; ++q )
                                                 {
+
                                                     _M_div[i][q] +=  _M_grad[i][c1][c1][q];
-#if 0
-                                                    std::cout << "grad2["<< i << "," << c1 << ","
-                                                              << c1 << "," << q << "] = "
-                                                              << _M_grad[i][c1][c1][q] << "\n";
-                                                    std::cout << "div["<< i << "," << q << "] = " << _M_div[i][q]<< "\n";
-#endif
+                                                }
+                                            else
+                                                for ( uint16_type q = 0; q < Q; ++q )
+                                                {
+
+                                                    _M_div[i][q] +=  _M_grad[i][c1][c1][q];
                                                 }
                                         }
                                 } // c1
