@@ -46,7 +46,7 @@ foreach( BENCH stokes11 stokes22 stokes33 stokes21 stokes31 stokes32 )
         --program=${targetname}
         --mode=0
         --path=${LIFE_BUILD_DIR}/benchmarks/navierstokes/kovasznay/
-        --cmdargs="--backend=${BACKEND} --export=0  --penalisation=1e-4 --beta=1 ${${BACKEND}_LU_UMFPACK_SOLVER_OPTIONS}" )
+        --cmdargs="--backend=${BACKEND} --export=0  --penalisation=1 --beta=1 ${${BACKEND}_LU_UMFPACK_SOLVER_OPTIONS}" )
     endforeach()
 
 endforeach()

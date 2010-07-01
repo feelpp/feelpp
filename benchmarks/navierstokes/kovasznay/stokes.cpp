@@ -47,7 +47,7 @@ makeOptions()
         ("hsize", Life::po::value<double>()->default_value( 0.1 ), "first h value to start convergence")
         ("weak", "use weak Dirichlet")
         ("bccoeff", Life::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("penalisation", Life::po::value<double>()->default_value( 1e-3 ), "penalisation parameter for equal order approximation")
+        ("penalisation", Life::po::value<double>()->default_value( 1 ), "penalisation parameter for equal order approximation")
         ("stab-p", Life::po::value<bool>()->default_value( true ), "0 = no stabilisation for equal order approx., 1 = stabilisation for equal order approx.")
         ("stab-div", Life::po::value<bool>()->default_value( false ), "0 = no stabilisation for divergence, 1 = stabilisation of divergence.")
 

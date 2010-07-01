@@ -484,7 +484,7 @@ Stokes<_OrderU, _OrderP>::buildLhs()
     if ( math::abs( M_beta ) < 1e-10 )
     {
         double pterm = math::pow(double(OrderU), 7./2.);
-        auto p_stabexpr = M_stabP*hFace()*hFace()/(pterm);
+        auto p_stabexpr = M_stabP*hFace()*hFace()*hFace()/(pterm);
         this->addPressureStabilisation( p, q, p_stabexpr  );
     }
     else
