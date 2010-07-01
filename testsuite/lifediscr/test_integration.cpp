@@ -237,6 +237,8 @@ createSimplex( double hsize )
 
     GmshSimplexDomain<2,Order> ts;
     ts.setCharacteristicLength( meshSize );
+    ts.setX( std::make_pair(-1,1) );
+    ts.setY( std::make_pair(-1,1) );
     std::string fname = ts.generate( "simplex" );
     typename imesh<T,Order>::ptrtype mesh( new typename imesh<T>::type );
 
@@ -354,7 +356,7 @@ struct test_integration_simplex
         value_type meas = integrate( elements(mesh), constant(1.0) ).evaluate()( 0, 0 );
         value_type v0 = integrate( elements(mesh), constant(1.0) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( meas, 0.5, eps );
+        BOOST_CHECK_CLOSE( meas, 2, eps );
 #else
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 
@@ -383,23 +385,46 @@ struct test_integration_simplex
         double v1 = integrate( elements(mesh), gradv(u)*trans(gradv(u) ) ).evaluate()(0,0) ;
         BOOST_CHECK_CLOSE( v1, 2*meas, eps );
 
-        u = vf::project( Xh, elements(mesh), Px()*Px()+Py()*Py() );
+        u = vf::project( Xh, elements(mesh), Px()*Px() );
         double lapu = integrate( elements(mesh),  trace( hessv(u) ) ).evaluate()( 0, 0 );
-        BOOST_CHECK_CLOSE( lapu, 4*meas, eps );
+        BOOST_CHECK_CLOSE( lapu, 2*meas, eps );
         double lapu1 = integrate( elements(mesh),  trace( hessv(u)*trans(hessv(u) ) )).evaluate()( 0, 0 );
         BOOST_CHECK_CLOSE( lapu1, 4*meas, eps );
-        auto hessu = integrate( elements(mesh), print( hessv(u), "hess=") ).evaluate();
+        auto hessu = integrate( elements(mesh), hessv(u) ).evaluate();
+        BOOST_CHECK_CLOSE( hessu(0,0), 2*meas, eps );
+        BOOST_CHECK_SMALL( hessu(1,0), eps );
+        BOOST_CHECK_SMALL( hessu(0,1), eps );
+        BOOST_CHECK_SMALL( hessu(1,1), eps );
+
+        u = vf::project( Xh, elements(mesh), Px()*Px()+Py()*Py() );
+        lapu = integrate( elements(mesh),  trace( hessv(u) ) ).evaluate()( 0, 0 );
+        BOOST_CHECK_CLOSE( lapu, 4*meas, eps );
+        lapu1 = integrate( elements(mesh),  trace( hessv(u)*trans(hessv(u) ) )).evaluate()( 0, 0 );
+        BOOST_CHECK_CLOSE( lapu1, 8*meas, eps );
+        hessu = integrate( elements(mesh), hessv(u) ).evaluate();
         BOOST_CHECK_CLOSE( hessu(0,0), 2*meas, eps );
         BOOST_CHECK_SMALL( hessu(1,0), eps );
         BOOST_CHECK_SMALL( hessu(0,1), eps );
         BOOST_CHECK_CLOSE( hessu(1,1), 2*meas, eps );
+
+        u = vf::project( Xh, elements(mesh), Px()*Px()+Py()*Py()+3*Px()*Py() );
+        lapu = integrate( elements(mesh),  trace( hessv(u) ) ).evaluate()( 0, 0 );
+        BOOST_CHECK_CLOSE( lapu, 4*meas, eps );
+        lapu1 = integrate( elements(mesh),  trace( hessv(u)*trans(hessv(u) ) )).evaluate()( 0, 0 );
+        BOOST_CHECK_CLOSE( lapu1, 26*meas, eps );
+        hessu = integrate( elements(mesh), hessv(u) ).evaluate();
+        BOOST_CHECK_CLOSE( hessu(0,0), 2*meas, eps );
+        BOOST_CHECK_CLOSE( hessu(1,0), 3*meas, eps );
+        BOOST_CHECK_CLOSE( hessu(0,1), 3*meas, eps );
+        BOOST_CHECK_CLOSE( hessu(1,1), 2*meas, eps );
+
 
         typedef fusion::vector<Lagrange<3, Vectorial> > v_basis_type;
         typedef FunctionSpace<mesh_type, v_basis_type, value_type> v_space_type;
         boost::shared_ptr<v_space_type> Yh( new v_space_type(mesh) );
         typename v_space_type::element_type v( Yh );
 
-        auto p2 = Px()*Px()+Py()*Py();
+        auto p2 = Px()*Px()*Py()+Py()*Py()+cos(Px());
         v = vf::project( Yh, elements(mesh), vec(p2,p2) );
         double divp2 = integrate( elements(mesh), divv(v) ).evaluate()( 0, 0 );
         double unp2 = integrate( boundaryfaces(mesh), trans(idv(v))*N() ).evaluate()( 0, 0 );
@@ -925,7 +950,7 @@ BOOST_AUTO_TEST_CASE( test_integration_3 ){ test_integration_boundary<double> t(
 BOOST_AUTO_TEST_CASE( test_integration_4 ) { test_integration_functions<2,double> t( 0.1 ); t();}
 BOOST_AUTO_TEST_CASE( test_integration_5 ) { test_integration_vectorial_functions<2,double> t( 0.1 ); t(); }
 BOOST_AUTO_TEST_CASE( test_integration_6 ) { test_integration_composite_functions<2,double> t(0.1); t(); }
-BOOST_AUTO_TEST_CASE( test_integration_7 ) { test_integration_simplex<double> t( 3 ); t(); }
+BOOST_AUTO_TEST_CASE( test_integration_7 ) { test_integration_simplex<double> t( 0.1 ); t(); }
 
 int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
