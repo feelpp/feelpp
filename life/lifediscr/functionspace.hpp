@@ -677,7 +677,6 @@ typedef parameter::parameters<
 #endif
     , parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
     , parameter::optional<parameter::deduced<tag::periodicity_type>, boost::is_base_and_derived<detail::periodicity_base,_> >
-    , parameter::optional<parameter::deduced<tag::continuity_type>, boost::is_base_and_derived<detail::continuity_base,_> >
     > functionspace_signature;
 
 
@@ -708,7 +707,6 @@ public:
 
     typedef typename parameter::binding<args, tag::mesh_type>::type mesh_type;
     typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
-    typedef typename parameter::binding<args, tag::continuity_type, Continuous>::type _continuity_type;
     typedef typename parameter::binding<args, tag::periodicity_type, NoPeriodicity>::type periodicity_type;
     typedef typename parameter::binding<args, tag::bases_list, bases<Lagrange<1,Scalar> > >::type bases_list;
 
@@ -718,7 +716,7 @@ private:
     template<typename BasisType>
     struct ChangeBasis
     {
-        typedef boost::shared_ptr<FunctionSpace<mesh_type,bases<BasisType>,value_type, periodicity_type,_continuity_type> > type;
+        typedef boost::shared_ptr<FunctionSpace<mesh_type,bases<BasisType>,value_type, periodicity_type> > type;
     };
     typedef typename mpl::transform<bases_list, ChangeBasis<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type functionspace_vector_type;
 
@@ -726,7 +724,7 @@ private:
     struct ChangeBasisToComponentBasis
     {
         typedef typename BasisType::component_basis_type component_basis_type;
-        typedef boost::shared_ptr<FunctionSpace<mesh_type,bases<component_basis_type>,value_type,periodicity_type,_continuity_type> > type;
+        typedef boost::shared_ptr<FunctionSpace<mesh_type,bases<component_basis_type>,value_type,periodicity_type> > type;
     };
 
     typedef typename mpl::transform<bases_list,
@@ -764,7 +762,6 @@ public:
     static const bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
     static const bool is_vectorial = ( is_composite? false : basis_0_type::is_vectorial );
     static const bool is_tensor2 = ( is_composite? false : basis_0_type::is_tensor2 );
-    //static const bool is_continuous = ( is_composite? false : continuity_type::is_continuous );
     static const bool is_continuous = ( is_composite? false : basis_0_type::isContinuous);
     static const bool is_modal = ( is_composite? false : basis_0_type::is_modal );
     static const uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
@@ -794,7 +791,7 @@ public:
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef boost::shared_ptr<functionspace_type> pointer_type;
 
-    typedef FunctionSpace<mesh_type, component_basis_vector_type, value_type, periodicity_type, _continuity_type> component_functionspace_type;
+    typedef FunctionSpace<mesh_type, component_basis_vector_type, value_type, periodicity_type> component_functionspace_type;
     typedef boost::shared_ptr<component_functionspace_type> component_functionspace_ptrtype;
 
     // mesh
@@ -840,7 +837,7 @@ public:
     // dof
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<DofComposite>,
-                              mpl::identity<DofTable<mesh_type, basis_type, periodicity_type, continuity_type> > >::type::type dof_type;
+                              mpl::identity<DofTable<mesh_type, basis_type, periodicity_type> > >::type::type dof_type;
 
     typedef boost::shared_ptr<dof_type> dof_ptrtype;
 
@@ -877,7 +874,7 @@ public:
         struct ChangeElement
         {
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
-            typedef FunctionSpace<mesh_type,bases<BasisType>,value_type,periodicity_type,_continuity_type> fs_type;
+            typedef FunctionSpace<mesh_type,bases<BasisType>,value_type,periodicity_type> fs_type;
             typedef typename fs_type::template Element<value_type, typename VectorUblas<T>::range::type > element_type;
             typedef element_type type;
         };
