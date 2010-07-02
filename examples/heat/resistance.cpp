@@ -127,18 +127,20 @@ public:
     typedef Mesh<line_entity_type> line_mesh_type;
     typedef boost::shared_ptr<line_mesh_type> line_mesh_ptrtype;
 
-    typedef bases<Lagrange<Order, Scalar> > basis_type;
+    typedef fusion::vector<mpl::vector<mpl::int_<4>, mpl::int_<5>, mpl::int_<6> > > discontinuity1;
+    typedef DiscontinuousInterfaces<discontinuity1>  discontinuity_type;
+    typedef bases<Lagrange<Order, Scalar, discontinuity_type> > basis_type;
     typedef bases<Lagrange<Order-1, Vectorial> > vectorial_basis_type;
-    typedef DiscontinuousInterfaces<fusion::vector<mpl::vector<mpl::int_<4>, mpl::int_<5>, mpl::int_<6> > > >  discontinuity_type;
+
     /*space*/
-    typedef FunctionSpace<mesh_type, basis_type, discontinuity_type> functionspace_type;
+    typedef FunctionSpace<mesh_type, basis_type> functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef FunctionSpace<mesh_type, vectorial_basis_type> vectorial_functionspace_type;
     typedef boost::shared_ptr<vectorial_functionspace_type> vectorial_functionspace_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> > > p0_space_type;
     typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
     typedef typename p0_space_type::element_type p0_element_type;
 
@@ -351,24 +353,24 @@ ResistanceLaplacian<Dim, Order>::run()
     double k2= this->vm()["k2"].template as<double>();
     double c= this->vm()["c"].template as<double>();
     double Q= this->vm()["Q"].template as<double>();
-    form2( Xh, Xh, M, _init=true ) = ( integrate( markedelements( mesh,  mesh->markerName( "k1" ) ), _Q<2*(Order-1)>(),
+    form2( Xh, Xh, M, _init=true ) = ( integrate( markedelements( mesh,  mesh->markerName( "k1" ) ),
                                                   k1*gradt(u)*trans(grad(v)) )+
-                                       integrate( markedelements( mesh,  mesh->markerName( "k2" ) ), _Q<2*(Order-1)>(),
+                                       integrate( markedelements( mesh,  mesh->markerName( "k2" ) ),
                                                   k2*gradt(u)*trans(grad(v)) ) );
 
-    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, mesh->markerName( "Tfixed" ) ), _Q<2*(Order-1)>(),
+    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, mesh->markerName( "Tfixed" ) ),
                                      -k1*gradt(u)*N()*id(v)
                                      -k1*grad(v)*N()*idt(u)
                                      + penalisation_bc*id(u)*idt(v)/hFace() );
     AUTO(N21,vec(constant(-1.),constant(0.)) );
-    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, mesh->markerName( "discontinuity" ) ), _Q<2*(Order)>(),
+    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, mesh->markerName( "discontinuity" ) ),
                                      c*(trans(jump(id(v)))*N21)*(trans(jumpt( idt( u ) ))*N21) );
 
     M->close();
 
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( Xh, F, _init=true ) = ( integrate( markedfaces( mesh, mesh->markerName( "flux" ) ), _Q<Order+5>(), Q*id(v) )+
-                                   integrate( markedfaces( mesh, mesh->markerName( "Tfixed" ) ), _Q<Order+5>(),
+    form1( Xh, F, _init=true ) = ( integrate( markedfaces( mesh, mesh->markerName( "flux" ) ),
+                                   integrate( markedfaces( mesh, mesh->markerName( "Tfixed" ) ),
                                               T0*(-k1*grad(v)*N()+ penalisation_bc*id(v)/hFace() ) ) );
 
     F->close();
