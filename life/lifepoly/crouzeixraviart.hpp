@@ -311,6 +311,13 @@ public:
      */
     std::string familyName() const { return "CrouzeixRaviart"; }
 
+    template<typename ExprType>
+    static auto
+    isomorphism( ExprType& expr ) -> decltype( expr )
+        {
+            return expr;
+            //return expr;
+        }
     //@}
 
 
