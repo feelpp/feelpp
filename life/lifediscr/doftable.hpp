@@ -55,7 +55,7 @@ namespace fusion = boost::fusion;
  * \author Christophe Prud'homme
  * \author Goncalo Pena
  */
-template<typename MeshType,  typename FEType, typename PeriodicityType, typename ContinuityType>
+template<typename MeshType,  typename FEType, typename PeriodicityType>
 class DofTable : public DataMap
 {
     typedef DataMap super;
@@ -112,7 +112,7 @@ public:
     //typedef ContinuityType continuity_type;
     typedef typename fe_type::continuity_type continuity_type;
 
-    typedef DofTable<MeshType, FEType, PeriodicityType, ContinuityType> self_type;
+    typedef DofTable<MeshType, FEType, PeriodicityType> self_type;
 
 
     /**
@@ -1481,11 +1481,11 @@ private:
 
 };
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
-const uint16_type DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::nComponents;
+template<typename MeshType, typename FEType, typename PeriodicityType>
+const uint16_type DofTable<MeshType, FEType, PeriodicityType>::nComponents;
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity )
+template<typename MeshType, typename FEType, typename PeriodicityType>
+DofTable<MeshType, FEType, PeriodicityType>::DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity )
     :
     super(),
     _M_fe( _fe ),
@@ -1507,8 +1507,8 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::DofTable( mesh_type
     buildBoundaryDofMap( mesh );
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::DofTable( fe_ptrtype const& _fe, periodicity_type const& periodicity )
+template<typename MeshType, typename FEType, typename PeriodicityType>
+DofTable<MeshType, FEType, PeriodicityType>::DofTable( fe_ptrtype const& _fe, periodicity_type const& periodicity )
     :
     super(),
     _M_fe( _fe ),
@@ -1525,8 +1525,8 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::DofTable( fe_ptrtyp
 {
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::DofTable( const DofTable<MeshType, FEType, PeriodicityType, ContinuityType> & dof2 )
+template<typename MeshType, typename FEType, typename PeriodicityType>
+DofTable<MeshType, FEType, PeriodicityType>::DofTable( const DofTable<MeshType, FEType, PeriodicityType> & dof2 )
     :
     super( dof2 ),
     _M_fe( dof2._M_fe ),
@@ -1542,9 +1542,9 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::DofTable( const Dof
 {
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
+template<typename MeshType, typename FEType, typename PeriodicityType>
 void
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::showMe() const
+DofTable<MeshType, FEType, PeriodicityType>::showMe() const
 {
     Log()  << " Degree of Freedom (DofTable) Object" << "\n";
     //if ( verbose )
@@ -1595,9 +1595,9 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::showMe() const
 
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
+template<typename MeshType, typename FEType, typename PeriodicityType>
 void
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::addVertexPeriodicDof( element_type const& __elt,
+DofTable<MeshType, FEType, PeriodicityType>::addVertexPeriodicDof( element_type const& __elt,
                                                                               face_type const& __face,
                                                                               size_type& next_free_dof,
                                                                               std::map<size_type,periodic_dof_map_type>& periodic_dof,
@@ -1651,9 +1651,9 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::addVertexPeriodicDo
 
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
+template<typename MeshType, typename FEType, typename PeriodicityType>
 void
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::addEdgePeriodicDof( element_type const& __elt,
+DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type const& __elt,
                                                                             face_type const& __face,
                                                                             size_type& next_free_dof,
                                                                             std::map<size_type,periodic_dof_map_type>& periodic_dof,
@@ -1698,9 +1698,9 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::addEdgePeriodicDof(
 
         }
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
+template<typename MeshType, typename FEType, typename PeriodicityType>
 void
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::addEdgePeriodicDof( element_type const& __elt,
+DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type const& __elt,
                                                                             face_type const& __face,
                                                                             size_type& next_free_dof,
                                                                             std::map<size_type,periodic_dof_map_type>& periodic_dof,
@@ -1764,9 +1764,9 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::addEdgePeriodicDof(
         }
 
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
+template<typename MeshType, typename FEType, typename PeriodicityType>
 void
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::addFacePeriodicDof( element_type const& __elt,
+DofTable<MeshType, FEType, PeriodicityType>::addFacePeriodicDof( element_type const& __elt,
                                                                             face_type const& __face,
                                                                             size_type& next_free_dof,
                                                                             std::map<size_type,periodic_dof_map_type>& periodic_dof,
@@ -1796,9 +1796,9 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::addFacePeriodicDof(
         }
 #endif // 0
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
+template<typename MeshType, typename FEType, typename PeriodicityType>
 void
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::initDofMap( mesh_type& M )
+DofTable<MeshType, FEType, PeriodicityType>::initDofMap( mesh_type& M )
 {
     _M_n_el = M.numElements();
 
@@ -1840,9 +1840,9 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::initDofMap( mesh_ty
     _M_face_sign = ublas::scalar_vector<bool>(M.numFaces(), false);
     generateFacePermutations( M, mpl::bool_< ((Shape == SHAPE_TETRA && nOrder > 2 ) || (Shape == SHAPE_HEXA && nOrder > 1 ))>() );
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
+template<typename MeshType, typename FEType, typename PeriodicityType>
 size_type
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::buildPeriodicDofMap( mesh_type& M )
+DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 {
     size_type nldof =
         fe_type::nDofPerVolume * element_type::numVolumes +
@@ -2092,16 +2092,16 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::buildPeriodicDofMap
     return max_gid+1;
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
+template<typename MeshType, typename FEType, typename PeriodicityType>
 size_type
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::buildLocallyDiscontinuousDofMap( mesh_type& M, size_type start_next_free_dof )
+DofTable<MeshType, FEType, PeriodicityType>::buildLocallyDiscontinuousDofMap( mesh_type& M, size_type start_next_free_dof )
 {
     typedef typename continuity_type::template apply<MeshType, self_type> builder;
     return fusion::accumulate( typename continuity_type::discontinuity_markers_type(), start_next_free_dof,  builder(M, *this ) );
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
+template<typename MeshType, typename FEType, typename PeriodicityType>
 void
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::buildDofMap( mesh_type& M, size_type start_next_free_dof )
+DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_type start_next_free_dof )
 {
     if ( !M_dof_indices.empty() )
         {
@@ -2186,9 +2186,9 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::buildDofMap( mesh_t
     generateDofPoints( M );
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
+template<typename MeshType, typename FEType, typename PeriodicityType>
 void
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::buildBoundaryDofMap( mesh_type& M )
+DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
 {
     size_type nDofF = ( face_type::numVertices * fe_type::nDofPerVertex +
                         face_type::numEdges * fe_type::nDofPerEdge +
@@ -2250,9 +2250,9 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::buildBoundaryDofMap
 #endif
 }    // updateBoundaryDof
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
+template<typename MeshType, typename FEType, typename PeriodicityType>
 void
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::generateDofPoints(  mesh_type& M )
+DofTable<MeshType, FEType, PeriodicityType>::generateDofPoints(  mesh_type& M )
 {
     if ( !M_dof_points.empty() )
         return;
@@ -2324,11 +2324,11 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::generateDofPoints( 
         }
     Debug( 5005 ) << "[Dof::generateDofPoints] generating dof coordinates done\n";
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename ContinuityType>
+template<typename MeshType, typename FEType, typename PeriodicityType>
 void
-DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::generatePeriodicDofPoints(  mesh_type& M,
-                                                                    periodic_element_list_type const& periodic_elements,
-                                                                    dof_points_type& periodic_dof_points )
+DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_type& M,
+                                                                         periodic_element_list_type const& periodic_elements,
+                                                                         dof_points_type& periodic_dof_points )
 {
     if ( fe_type::is_modal )
         return;
@@ -2374,75 +2374,75 @@ DofTable<MeshType, FEType, PeriodicityType, ContinuityType>::generatePeriodicDof
 
         // loop on face vertices
         for ( uint16_type iVeFa = 0; iVeFa < face_type::numVertices; ++iVeFa )
+        {
+            // local vertex number (in element)
+            uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
+            Life::detail::ignore_unused_variable_warning(iVeEl);
+
+            LIFE_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
+
+            // Loop number of Dof per vertex
+            for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
             {
-                // local vertex number (in element)
-                uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
-                Life::detail::ignore_unused_variable_warning(iVeEl);
+                uint16_type lid = iVeEl * fe_type::nDofPerVertex + l;
 
-                LIFE_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
-
-                // Loop number of Dof per vertex
-                for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
-                    {
-                        uint16_type lid = iVeEl * fe_type::nDofPerVertex + l;
-
-                        size_type thedof = boost::get<0>(localToGlobal( it_elt->template get<0>()->id(), lid, 0 ));
-                        LIFE_ASSERT( thedof < dof_done.size() )
-                            ( thedof )
-                            ( dof_done.size() )
-                            ( it_elt->template get<0>()->id() )
-                            ( lid ).error ("[generatePeriodicDofPoints] invalid dof id" );
-                        if ( dof_done[ thedof ] == false )
-                            {
-                                periodic_dof_points[thedof] = boost::make_tuple( __c->xReal( lid ), thedof, 0 );
-                                // these tests are problem specific x=0 and x=translation
-#if 0
-                                if ( __face.marker().value() == periodicity_type::tag1 )
-                                    LIFE_ASSERT( math::abs( __c->xReal( lid )[0] ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1");
-                                if ( __face.marker().value() == periodicity_type::tag2 )
-                                    LIFE_ASSERT( math::abs( __c->xReal( lid )[0] - M_periodicity.translation()[0] ) < 1e-10 )
-                                        ( __c->xReal( lid ) )( M_periodicity.translation()).warn( "[periodic] invalid p[eriodic point tag1");
-#endif
-                                dof_done[thedof] = true;
-                                ++dof_id;
-                            }
-                    }
-            }
-        // loop on edge vertices
-        for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
-            {
-                uint16_type lid = element_type::numVertices*fe_type::nDofPerVertex + iFaEl * fe_type::nDofPerEdge + l;
                 size_type thedof = boost::get<0>(localToGlobal( it_elt->template get<0>()->id(), lid, 0 ));
                 LIFE_ASSERT( thedof < dof_done.size() )
                     ( thedof )
                     ( dof_done.size() )
-                   ( it_elt->template get<0>()->id() )
+                    ( it_elt->template get<0>()->id() )
                     ( lid ).error ("[generatePeriodicDofPoints] invalid dof id" );
                 if ( dof_done[ thedof ] == false )
-                    {
-                        periodic_dof_points[thedof] = boost::make_tuple( __c->xReal( lid ), thedof, 0 );
-                        // these tests are problem specific x=0 and x=translation
+                {
+                    periodic_dof_points[thedof] = boost::make_tuple( __c->xReal( lid ), thedof, 0 );
+                    // these tests are problem specific x=0 and x=translation
 #if 0
-                        if ( __face.marker().value() == periodicity_type::tag1 )
-                            LIFE_ASSERT( math::abs( __c->xReal( lid )[1] +1 ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1");
-                        if ( __face.marker().value() == periodicity_type::tag2 )
-                            LIFE_ASSERT( math::abs( __c->xReal( lid )[1] - (M_periodicity.translation()[1]-1) ) < 1e-10 )
-                                ( __c->xReal( lid ) )( M_periodicity.translation()).warn( "[periodic] invalid p[eriodic point tag1");
+                    if ( __face.marker().value() == periodicity_type::tag1 )
+                        LIFE_ASSERT( math::abs( __c->xReal( lid )[0] ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1");
+                    if ( __face.marker().value() == periodicity_type::tag2 )
+                        LIFE_ASSERT( math::abs( __c->xReal( lid )[0] - M_periodicity.translation()[0] ) < 1e-10 )
+                            ( __c->xReal( lid ) )( M_periodicity.translation()).warn( "[periodic] invalid p[eriodic point tag1");
 #endif
-                        dof_done[thedof] = true;
-                        ++dof_id;
-                    }
+                    dof_done[thedof] = true;
+                    ++dof_id;
+                }
             }
+        }
+        // loop on edge vertices
+        for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
+        {
+            uint16_type lid = element_type::numVertices*fe_type::nDofPerVertex + iFaEl * fe_type::nDofPerEdge + l;
+            size_type thedof = boost::get<0>(localToGlobal( it_elt->template get<0>()->id(), lid, 0 ));
+            LIFE_ASSERT( thedof < dof_done.size() )
+                ( thedof )
+                ( dof_done.size() )
+                ( it_elt->template get<0>()->id() )
+                ( lid ).error ("[generatePeriodicDofPoints] invalid dof id" );
+            if ( dof_done[ thedof ] == false )
+            {
+                periodic_dof_points[thedof] = boost::make_tuple( __c->xReal( lid ), thedof, 0 );
+                // these tests are problem specific x=0 and x=translation
+#if 0
+                if ( __face.marker().value() == periodicity_type::tag1 )
+                    LIFE_ASSERT( math::abs( __c->xReal( lid )[1] +1 ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1");
+                if ( __face.marker().value() == periodicity_type::tag2 )
+                    LIFE_ASSERT( math::abs( __c->xReal( lid )[1] - (M_periodicity.translation()[1]-1) ) < 1e-10 )
+                        ( __c->xReal( lid ) )( M_periodicity.translation()).warn( "[periodic] invalid p[eriodic point tag1");
+#endif
+                dof_done[thedof] = true;
+                ++dof_id;
+            }
+        }
     }
     for ( size_type dof_id = 0; dof_id < periodic_dof_points.size() ; ++dof_id )
-        {
-            LIFE_ASSERT( boost::get<1>(periodic_dof_points[dof_id]) >= 0 &&
-                         boost::get<1>(periodic_dof_points[dof_id]) < periodic_dof_points.size() )
-                ( dof_id )( periodic_dof_points.size() )
-                ( boost::get<1>(periodic_dof_points[dof_id]) )
-                ( boost::get<0>(periodic_dof_points[dof_id]) ).error( "invalid dof point" );
-            LIFE_ASSERT( dof_done[dof_id] == true )( dof_id ).error( "invalid dof point" );
-        }
+    {
+        LIFE_ASSERT( boost::get<1>(periodic_dof_points[dof_id]) >= 0 &&
+                     boost::get<1>(periodic_dof_points[dof_id]) < periodic_dof_points.size() )
+            ( dof_id )( periodic_dof_points.size() )
+            ( boost::get<1>(periodic_dof_points[dof_id]) )
+            ( boost::get<0>(periodic_dof_points[dof_id]) ).error( "invalid dof point" );
+        LIFE_ASSERT( dof_done[dof_id] == true )( dof_id ).error( "invalid dof point" );
+    }
 }
 
 } // namespace Life
