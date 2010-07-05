@@ -1,13 +1,14 @@
 #define BOOST_TEST_MODULE Raviar-Thomas polynomials test
 // Boost.Test
 #define USE_TEST 1
+#define TEST_2D
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 
 #include <life/lifepoly/raviartthomas.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
-#include <life/lifepoly/Polynomial_set.hpp>
+#include <life/lifepoly/polynomial_set.hpp>
 
 
 
@@ -49,7 +50,7 @@ BOOST_AUTO_TEST_CASE( ravth_2D )
    std::cout<<"\n" ;
    std::cout <<"Points= " << P << std::endl ;
    std::cout<<"\n" ;
-   std::cout<<"evaluate_at_Points= " <<Poly.evaluate_Points ( P ) << std::endl ;
+   std::cout<<"evaluate_at_Points= " <<Poly.evaluates_Points ( P ) << std::endl ;
    std::cout<<"\n" ;
 
 std::cout << "*****************************************Life method***********************************************************" << std::endl ;
@@ -71,7 +72,7 @@ std::cout << "*****************************************Life method**************
    auto eval_at_pts = rt0.evaluate( pts );
    std::cout << "eval_at_pts= "<< eval_at_pts << "\n" ;
 
-   BOOST_CHECK (ublas::norm_inf(Poly.evaluate_Points( P )-eval_at_pts) < 0.001 )  ;
+   BOOST_CHECK (ublas::norm_inf(Poly.evaluates_Points( P )-eval_at_pts) < 0.001 )  ;
 
 
 }
