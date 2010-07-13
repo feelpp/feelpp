@@ -737,10 +737,9 @@ namespace Life
 
         //in GMSH format, number of elements is : number_of_faces+number_of_elements
         double numberElements=mesh->numFaces()+mesh->numElements();
-        //double numberElements=mesh->numElements();
         out << numberElements << "\n";//number element
 
-        //first : faces and then in a second time we will put elements
+        //first : elements and then in a second time we will put faces
         int elem_number=1; //initialization
 
         uint16_type nLocGeoPt;
