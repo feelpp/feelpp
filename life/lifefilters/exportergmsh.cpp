@@ -735,14 +735,26 @@ namespace Life
 
         mesh_ptrtype mesh = __step->mesh();
 
-        out << mesh->numElements() << "\n";//number element
+        //in GMSH format, number of elements is : number_of_faces+number_of_elements
+        double numberElements=mesh->numFaces()+mesh->numElements();
+        //double numberElements=mesh->numElements();
+        out << numberElements << "\n";//number element
+
+        //first : faces and then in a second time we will put elements
+        int elem_number=1; //initialization
+
+        uint16_type nLocGeoPt;
+
+
+
 
         typename mesh_type::element_const_iterator elt_it = mesh->beginElement();
         typename mesh_type::element_const_iterator elt_en = mesh->endElement();
-        uint16_type nLocGeoPt;
         for ( ; elt_it != elt_en; ++elt_it )
             {
                 out << elt_it->id()+1<<" ";
+                //out<< elem_number <<" ";
+                elem_number++;
                 nLocGeoPt = elt_it->nPoints();
                 if (elt_it->isATriangleShape())
                     {
@@ -751,6 +763,9 @@ namespace Life
                             {
                                 out << 2 ;//type triangle order 1
                                 out<<" 2 99 2";
+                                // 2   : number of tags
+                                // 99  : first tag (region number)
+                                // 2   : second tag
                                 for (uint16_type p=0;p<nLocGeoPt;++p)
                                     out << " " << elt_it->point( p ).id()+1;
                                 break;
@@ -843,6 +858,38 @@ namespace Life
                     }
                 out<<"\n";
             }
+
+
+
+        typedef typename mesh_type::face_iterator face_iterator; 
+        face_iterator face_it  = mesh->beginFace();
+        face_iterator face_end = mesh->endFace();
+        for ( ; face_it != face_end; ++face_it ){
+          out<< elem_number <<" ";
+          elem_number++;
+          nLocGeoPt = face_it->nPoints(); 
+          if (face_it->isALineShape()){
+            switch (mesh_type::nOrder) {
+              case 1 : //first order line
+                {
+                  out<< 1 ;
+                  out<<" 2 99 2";
+                  for (uint16_type p=0;p<nLocGeoPt;++p)
+                    out << " " << face_it->point( p ).id()+1;
+                  break;
+               }//end of case 1
+              case 2 :
+                {
+                  out<<"second order not yet implemented in file exportegmsh.cpp"<<endl;
+                  break;
+                }
+            }//end of switch (mesh_type::nOrder)
+           out<<"\n";
+          }//end of test "isALineShape"
+          
+          
+        }//end of loop over faces
+
         out << "$EndElements\n";
     }
 
