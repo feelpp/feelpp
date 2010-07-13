@@ -736,7 +736,10 @@ namespace Life
         mesh_ptrtype mesh = __step->mesh();
 
         //in GMSH format, number of elements is : number_of_faces+number_of_elements
-        double numberElements=mesh->numFaces()+mesh->numElements();
+        auto face_it  = mesh->endFaceOnBoundary();
+        auto face_end = mesh->endFaceOnBoundary();
+        int number_faces_on_boundary= std::distance(face_it,face_end);
+        double numberElements=number_faces_on_boundary+mesh->numElements();
         out << numberElements << "\n";//number element
 
         //first : elements and then in a second time we will put faces
@@ -860,9 +863,8 @@ namespace Life
 
 
 
-        typedef typename mesh_type::face_iterator face_iterator; 
-        face_iterator face_it  = mesh->beginFace();
-        face_iterator face_end = mesh->endFace();
+        //typedef typename mesh_type::face_iterator face_iterator; 
+
         for ( ; face_it != face_end; ++face_it ){
           out<< elem_number <<" ";
           elem_number++;
@@ -883,6 +885,7 @@ namespace Life
                   break;
                 }
             }//end of switch (mesh_type::nOrder)
+           //out<<" et marker = "<<face_it->marker();
            out<<"\n";
           }//end of test "isALineShape"
           
@@ -890,6 +893,7 @@ namespace Life
         }//end of loop over faces
 
         out << "$EndElements\n";
+        
     }
 
 
