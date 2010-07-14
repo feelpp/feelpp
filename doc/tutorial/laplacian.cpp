@@ -369,7 +369,7 @@ Laplacian<Dim>::run()
              * -# assemble \f$\int_{\partial \Omega} \frac{\gamma}{h} u v\f$
              */
             /** \code */
-            //# marker4 #
+            //# marker10 #
             form2( Xh, Xh, D ) +=
                 integrate( markedfaces(mesh,1),
 
@@ -382,7 +382,7 @@ Laplacian<Dim>::run()
                            -(grad(v)*N())*idt(u)
                            +penaldir*id(v)*idt(u)/hFace());
             D->close();
-            //# endmarker4 #
+            //# endmarker10 #
             /** \endcode */
         }
     else

@@ -50,25 +50,33 @@ add_latex_document(life-manual.tex
 macro( add_docex target )
  add_executable( life_doc_${target} ${target}.cpp )
  target_link_libraries( life_doc_${target} ${LIFE_LIBRARIES} )
+ get_target_property(target_executable life_doc_${target} LOCATION)
+ add_custom_command(
+   TARGET life_doc_${target}
+   POST_BUILD
+   COMMAND ${target_executable}
+   ARGS >${CMAKE_CURRENT_BINARY_DIR}/${target}.out
+   )
+
  # test each backend
  foreach( BACKEND petsc trilinos)
    add_test( life_doc_${target}-${BACKEND} life_doc_${target} --hsize=0.1 --backend=${BACKEND} --no-export)
  endforeach()
 endmacro()
 
-foreach( docex myapp mymesh myintegrals laplacian  )
+foreach( docex myapp ) #mymesh myintegrals laplacian  )
   add_docex( ${docex} )
 endforeach()
 
 if ( NOT LIFE_MINIMAL_CONFIGURATION )
 
 foreach( docex stokes bratu nonlinearpow )
-  add_docex( ${docex} )
+#  add_docex( ${docex} )
 endforeach()
 
 # Natural convection problem
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-add_executable( life_doc_convection convection.hpp convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp )
-target_link_libraries( life_doc_convection ${LIFE_LIBRARIES} )
+#include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
+#add_executable( life_doc_convection convection.hpp convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp )
+#target_link_libraries( life_doc_convection ${LIFE_LIBRARIES} )
 
 endif ( NOT LIFE_MINIMAL_CONFIGURATION )
