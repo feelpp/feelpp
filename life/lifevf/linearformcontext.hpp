@@ -201,12 +201,15 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
 
     //#pragma omp for private(i,c1,indi, res)
         for ( i = 0; i < test_fecontext_type::nDof; ++i )
-            for( c1 = 0;c1 < test_fecontext_type::nComponents1; ++ c1 )
+        {
+            int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
+            for( c1 = 0;c1 < ncomp; ++ c1 )
                 {
                     indi.setIndex( boost::make_tuple( i, c1, 0 ) );
                     res = M_integrator( *_M_eval0_expr, indi, 0, 0 );
                     _M_rep[i][c1] = res;
                 }
+        }
         //}
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -227,7 +230,9 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     test_index_type indi;
 
     for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
-        for( uint16_type c1 = 0;c1 < test_fecontext_type::nComponents1; ++ c1 )
+    {
+        int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
+        for( uint16_type c1 = 0;c1 < ncomp; ++ c1 )
             {
                 indi.setIndex( boost::make_tuple( i, c1, 0 ) );
 
@@ -237,6 +242,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
                 uint16_type ii = i + test_fecontext_type::nDof;
                 _M_rep[ii][c1] = M_integrator( *_M_eval1_expr, indi, 0, 0 );
             }
+    }
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
@@ -248,13 +254,16 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     int isign;
     size_type row_start = _M_lb.front().globalRowStart();
     for ( uint16_type k = 0 ; k < test_fecontext_type::nDof; k++ )
-        for( uint16_type c1 = 0;c1 < test_fecontext_type::nComponents1; ++ c1 )
+    {
+        int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
+        for( uint16_type c1 = 0;c1 < ncomp; ++ c1 )
             {
                 //uint16_type c = test_fecontext_type::nComponents2*c1+c2;
                 boost::tie( ig, isign, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_0, k, c1 );
                 ig += row_start;
                 _M_form.add( ig, value_type(isign)*_M_rep[k][c1] );
             }
+    }
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
@@ -266,7 +275,9 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     int isign0,isign1;
     size_type row_start = _M_lb.front().globalRowStart();
     for ( uint16_type k = 0 ; k < test_fecontext_type::nDof; k++ )
-        for( uint16_type c1 = 0;c1 < test_fecontext_type::nComponents1; ++ c1 )
+    {
+        int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
+        for( uint16_type c1 = 0;c1 < ncomp; ++ c1 )
             //for( uint16_type c2 = 0;c2 < test_fecontext_type::nComponents2; ++ c2 )
             {
                 //uint16_type c = test_fecontext_type::nComponents2*c1+c2;
@@ -279,6 +290,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
                 size_type l = test_fecontext_type::nDof + k;
                 _M_form.add( ig1, value_type(isign1)*_M_rep[l][c1] );
             }
+    }
 }
 
 }

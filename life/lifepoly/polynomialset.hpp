@@ -948,7 +948,7 @@ public:
         // real space dimension
         static const uint16_type NDim = ElementType::nRealDim;
         static const uint16_type nDof = Basis_t::nLocalDof;
-
+        static const bool is_product = Basis_t::is_product;
         static const bool is_scalar = Basis_t::is_scalar;
         static const bool is_vectorial = Basis_t::is_vectorial;
         static const bool is_tensor2 = Basis_t::is_tensor2;

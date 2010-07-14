@@ -533,7 +533,8 @@ public:
 
     template<typename ExprType>
     static auto
-    isomorphism( ExprType& expr ) -> decltype( Life::vf::detJ()*(trans(Life::vf::JinvT())*expr)*Life::vf::Nref() )
+    isomorphism( ExprType expr ) -> decltype( Life::vf::detJ()*(trans(Life::vf::JinvT())*expr)*Life::vf::Nref() )
+    //isomorphism( ExprType& expr ) -> decltype( expr )
         {
             using namespace Life::vf;
             return detJ()*(trans(JinvT())*expr)*Nref();
