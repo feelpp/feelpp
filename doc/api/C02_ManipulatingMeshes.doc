@@ -1,0 +1,122 @@
+/* -*- mode: c++; coding: utf-8 -*- */
+
+namespace Life
+{
+/*! \page ManipulatingMeshes Manipulating Meshes
+
+
+In this section, we present some of the mesh definition and
+manipulation tools provided by Life.
+
+\section MeshDefinitions Mesh definition
+
+We look at the definition of a mesh data structure. First, we define
+the type of geometric entities that we shall use to form our mesh. Life supports
+
+ - simplices: segment, triangle, tetrahedron
+ - tensorized entities: segment, quadrangle, hexahedron
+
+We choose between <tt>Simplex<Dim,Order,RealDim></tt>  and
+<tt>SimplexProduct<Dim,Order,RealDim></tt>. They have the same
+template arguments:
+\begin{itemize}
+\item <tt>Dim</tt>: the topological dimension of the entity
+\item <tt>Order</tt>: the order of the entity(usually 1, higher order in development)
+\item <tt>RealDim</tt>: the dimension of the real space
+\end{itemize}
+
+\dontinclude mymesh.cpp
+\skip marker1
+\until endmarker1
+
+Then we define the mesh type, <tt>Mesh<Entity></tt> by passing as
+argument the type of entity it is formed with. At the moment hybrid
+meshes are not supported.
+
+\skip marker2
+\until endmarker2
+
+
+It is customary, and usually a very good practice, to define the
+<tt>boost::shared_ptr<></tt>  counterpart which is used actually in
+practice. We can now instantiate a new mesh data structure.
+
+\skip marker3
+\until endmarker3
+
+
+The next step is to read some mesh files. Life supports essentially
+the Gmsh mesh file format. It provides also some classes to manipulate
+Gmsh <tt>.geo</tt> files and generate <tt>.msh</tt> files. To
+begin, we use some helper classes to generate a <tt>.geo</tt> file.
+
+
+ - <tt>GmshTensorizedDomain</tt> will allow to create a
+  tensorized domain (e.g. cube) in 1D, 2D and 3D. It allows to modify
+   - the characteristic size of the mesh (by default \f$h=0.1\f$)
+   - the domain, by default it is the cube \f$[0;1]\times[0;1]\times[0;1]\f$
+ - <tt>GmshSimplexDomain</tt> will allow to create a simplex
+  domain (e.g. segment, triangle or tetrahedron). Again you can modify
+   - the characteristic size of the mesh (by default \f$h=0.1\f$)
+   - the domain vertices, by default \f$(-1,-1,-1), (1,-1,-1), (-1,1,-1), (-1,-1,1)\f$
+
+
+Here is an example
+
+\skip marker4
+\until endmarker4
+
+
+The call to <tt>setCharacteristicLength</tt> allows to change the
+mesh size to <tt>M_meshSize</tt> which was given for example on the
+command line using the <tt>Application</tt> framework, see
+section~\ref{sec:creat-appl}. The call to <tt>generate</tt> creates
+the <tt>.geo</tt> file and generate the associated mesh. Note that
+<tt>fname</tt> holds the name of the <tt>.msh</tt> file,
+e.g. <tt>mymesh.msh</tt>. Life adds automatically the
+<tt>.msh</tt>  extension. Also note the last argument of
+<tt>GmshTensorizedDomain</tt>, it allows to change the type of
+geometric entities used to generate the mesh. Here we use
+<tt>Simplex</tt>, we could have also used
+<tt>SimplexProduct</tt> (quadrangle or hexahedron).
+
+
+Next we import the mesh using the <tt>ImporterGmsh</tt> class as follows:
+
+\skip marker5
+\until endmarker5
+
+At this stage we are ready to use the mesh instance: we can for
+example export the mesh to a postprocessing format. Two formats are
+supported at the moment
+
+ - <tt>Ensight</tt> (case and sos) which is supported by the
+  software Ensight\footnote{\url{http://www.ensight.com}} and
+  Paraview\footnote{\url{http://www.paraview.org}}
+ - <tt>Gmsh</tt> which is post-processing format of Gmsh
+
+The export stage reads as follows:
+
+\skip marker6
+\until endmarker6
+
+In this example, we create a \f$\mathbb{P}_{0}\f$ function space and save the
+piecewise constant function that associates to each element the
+process id it belongs to. In sequential, they all belong to processor
+0.  In a parallel setting, the mesh is partitioned using Metis and
+each element is associated with a corresponding processor. The figure
+\ref{fig:1} displays a partitioned mesh in two regions and the
+associated $\polyP{0}$ function.
+
+\image html mymeshpartition "Screenshot of Paraview (3.2.1) of a 2D mesh partitioned and distributed on two processors"
+\image latex mymeshpartition "Screenshot of Paraview (3.2.1) of a 2D mesh partitioned and distributed on two processors"  width=.7\linewidth
+
+\section MeshIterators Iterating over the entities of a mesh Iterating over the entities of a mesh
+
+Life mesh data structures provides powerful iterators that allows to
+walk though the mesh in various ways: iterate over element, faces ,
+points, marked (associated to an integer flag denoting a
+  region, material, processor) elements, marked faces, ...
+
+*/
+}
