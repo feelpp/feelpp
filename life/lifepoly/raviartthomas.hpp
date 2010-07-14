@@ -545,7 +545,7 @@ public:
             return detJ()*(trans(JinvT())*expr)*Nref();
             //return expr;
         }
-
+#if 0
     /**
      *
      * \return the value of the expression at the dof
@@ -579,7 +579,7 @@ public:
 
             // evaluate moments of the expression
         }
-
+#endif
     template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
     static void transform( boost::shared_ptr<GMContext> gmc,  boost::shared_ptr<PC> const& pc,
                            Phi& phi_t,
