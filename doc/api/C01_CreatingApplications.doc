@@ -3,6 +3,11 @@ namespace Life
 /*! \page CreatingApplications Creating applications
     \ingroup Tutorial
 
+
+\li \b Previous: \ref GettingStarted
+\li \b Next: \ref ManipulatingMeshes
+
+
 \section ApplicationOptions Application and Options
 
 As a Life user, the first step in order to use Life is to create an
@@ -128,5 +133,6 @@ Life relies on MPI for parallel computations and the class
 Life supports also the PETSc and Trilinos framework, the class takes care of
  initialize the associated environments.
 
+\li \b Next: \ref ManipulatingMeshes
 */
 }
