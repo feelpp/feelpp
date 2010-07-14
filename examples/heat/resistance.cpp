@@ -33,6 +33,7 @@
 
 #include <life/lifealg/backend.hpp>
 
+#include <life/lifepoly/expansiontypes.hpp>
 #include <life/lifediscr/functionspace.hpp>
 #include <life/lifediscr/region.hpp>
 #include <life/lifediscr/operatorlinear.hpp>
@@ -61,7 +62,7 @@ makeOptions()
         ("T0", Life::po::value<double>()->default_value( 300 ), "Temperature imposed at the left wall")
         ("k1", Life::po::value<double>()->default_value( 0.2 ), "conductivity of material 1")
         ("k2", Life::po::value<double>()->default_value( 2 ), "conductivity of material 2")
-        ("c", Life::po::value<double>()->default_value( 100 ), "Conductance between the domain 1 and 2(temperature discontinuity)")
+        ("conductance", Life::po::value<double>()->default_value( 100 ), "Conductance between the domain 1 and 2(temperature discontinuity)")
         ("Q", Life::po::value<double>()->default_value( 1000 ), "Heat flux")
 
 
@@ -90,6 +91,8 @@ std::pair<std::string,std::string> createRing( int Dim, double h, double rmin, d
 namespace Life
 {
 using namespace vf;
+
+
 /**
  * Fat boundary method for the laplacian
  *
@@ -97,7 +100,7 @@ using namespace vf;
 template<int Dim, int Order>
 class ResistanceLaplacian
     :
-    public Application
+        public Application
 {
     typedef Application super;
 public:
@@ -127,8 +130,7 @@ public:
     typedef Mesh<line_entity_type> line_mesh_type;
     typedef boost::shared_ptr<line_mesh_type> line_mesh_ptrtype;
 
-    typedef fusion::vector<mpl::vector<mpl::int_<4>, mpl::int_<5>, mpl::int_<6> > > discontinuity1;
-    typedef DiscontinuousInterfaces<discontinuity1>  discontinuity_type;
+    typedef DiscontinuousInterfaces<fusion::vector<mpl::vector<mpl::int_<4>, mpl::int_<6>, mpl::int_<7> > > > discontinuity_type;
     typedef bases<Lagrange<Order, Scalar, discontinuity_type> > basis_type;
     typedef bases<Lagrange<Order-1, Vectorial> > vectorial_basis_type;
 
@@ -215,10 +217,10 @@ ResistanceLaplacian<Dim,Order>::ResistanceLaplacian( int argc, char** argv, Abou
     timers()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
 
 
@@ -227,7 +229,7 @@ ResistanceLaplacian<Dim,Order>::ResistanceLaplacian( int argc, char** argv, Abou
                             % entity_type::name()
                             % Order
                             % h
-                            );
+        );
 
     Log() << "create mesh\n";
     mesh = createMesh();
@@ -259,7 +261,7 @@ ResistanceLaplacian<Dim,Order>::createMesh()
          << "b=" << 1 << ";\n"
          << "c=" << -1 << ";\n"
          << "d=" << 1 << ";\n"
-         << "h=" << h << ";\n"
+         << "h=" << 0.1 << ";\n"
          << "Point(1) = {a,c,0.0,h};\n"
          << "Point(2) = {b,c,0.0,h};\n"
          << "Point(3) = {b,d,0.0,h};\n"
@@ -277,21 +279,30 @@ ResistanceLaplacian<Dim,Order>::createMesh()
          << "Line(6) = {6,4};\n"
          << "Line(7) = {4,7};\n"
          << "Line(8) = {7,1};\n"
-         << "Line(9) = {7,0};\n"
-         << "Line(9) = {0,8};\n"
-         << "Line(10) = {5,0};\n"
-         << "Line(11) = {0,6};\n"
-         << "Line Loop(8) = {1,2,7,6};\n"
-         << "Line Loop(9) = {3,4,5,-7};\n"
-         << "Plane Surface(10) = {8};\n"
-         << "Plane Surface(11) = {9};\n"
-         << "Physical Line(\"insulated\") = {2,3,5,6};\n"
-         << "Physical Line(\"Tfixed\") = {1};\n"
-         << "Physical Line(\"flux\") = {4};\n"
-         << "Physical Line(\"discontinuity\") = {7};\n"
-         << "Physical Surface(\"k1\") = {10};\n"
-         << "Physical Surface(\"k2\") = {11};\n";
-
+         << "/* discontinuity (vertical line) */\n"
+         << "Line(9) = {5, 9};\n"
+         << "Line(10) = {9, 6};\n"
+         << "/* horizontal line through square */\n"
+         << "Line(11) = {7, 9};\n"
+         << "Line(12) = {9, 8};\n"
+         << "\n"
+         << "Line Loop(19) = {3, -12, -9, 2};\n"
+         << "Plane Surface(20) = {19};\n"
+         << "Line Loop(21) = {4, 5, -10, 12};\n"
+         << "Plane Surface(22) = {21};\n"
+         << "Line Loop(23) = {6, 7, 11, 10};\n"
+         << "Plane Surface(24) = {23};\n"
+         << "Line Loop(25) = {8, 1, 9, -11};\n"
+         << "Plane Surface(26) = {25};\n"
+         << "\n"
+         << "Physical Line(\"Tflux\") = {3, 4};\n"
+         << "Physical Line(\"Tfixed\") = {8, 7};\n"
+         << "Physical Line(\"Tinsulated\") = {1, 2, 6, 5};\n"
+         << "Physical Line(\"Tdiscontinuity\") = {10, 9};\n"
+         << "Physical Line(\"Tline\") = {11, 12};\n"
+         << "\n"
+         << "Physical Surface(\"k1\") = {20, 22};\n"
+         << "Physical Surface(\"k2\") = {24, 26};\n";
 
     Gmsh gmsh;
     std::string fname = gmsh.generate( "square", ostr.str()  );
@@ -351,7 +362,7 @@ ResistanceLaplacian<Dim, Order>::run()
     double T0= this->vm()["T0"].template as<double>();
     double k1= this->vm()["k1"].template as<double>();
     double k2= this->vm()["k2"].template as<double>();
-    double c= this->vm()["c"].template as<double>();
+    double c= this->vm()["conductance"].template as<double>();
     double Q= this->vm()["Q"].template as<double>();
     form2( Xh, Xh, M, _init=true ) = ( integrate( markedelements( mesh,  mesh->markerName( "k1" ) ),
                                                   k1*gradt(u)*trans(grad(v)) )+
@@ -362,29 +373,29 @@ ResistanceLaplacian<Dim, Order>::run()
                                      -k1*gradt(u)*N()*id(v)
                                      -k1*grad(v)*N()*idt(u)
                                      + penalisation_bc*id(u)*idt(v)/hFace() );
-    AUTO(N21,vec(constant(-1.),constant(0.)) );
-    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, mesh->markerName( "discontinuity" ) ),
+    auto N21 = vec(constant(-1.),constant(0.));
+    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
                                      c*(trans(jump(id(v)))*N21)*(trans(jumpt( idt( u ) ))*N21) );
 
     M->close();
 
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( Xh, F, _init=true ) = ( integrate( markedfaces( mesh, mesh->markerName( "flux" ) ),
+    form1( Xh, F, _init=true ) = ( integrate( markedfaces( mesh, mesh->markerName( "Tflux" ) ), Q*id(v) )+
                                    integrate( markedfaces( mesh, mesh->markerName( "Tfixed" ) ),
                                               T0*(-k1*grad(v)*N()+ penalisation_bc*id(v)/hFace() ) ) );
 
     F->close();
 
     if ( this->vm().count( "export-matlab" ) )
-        {
-            M->printMatlab( "M.m" );
-            F->printMatlab( "F.m" );
-        }
+    {
+        M->printMatlab( "M.m" );
+        F->printMatlab( "F.m" );
+    }
 
     this->solve( M, u, F );
 
-    double meas = integrate( markedfaces( mesh, mesh->markerName( "discontinuity" ) ), _Q<0>(),constant(1.0)).evaluate()(0,0) ;
-    double mean_jump = integrate( markedfaces( mesh, mesh->markerName( "discontinuity" ) ), _Q<Order>(),
+    double meas = integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),constant(1.0)).evaluate()(0,0) ;
+    double mean_jump = integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
                                   trans(jumpv(idv(u)))*N21).evaluate()(0,0);
     std::cout <<  "int ([[T]]) = " << mean_jump << "\n";
     Log() <<  "int ([[T]]) = " << mean_jump << "\n";
@@ -397,8 +408,9 @@ ResistanceLaplacian<Dim, Order>::run()
     k = vf::project( P0h, elements( mesh ),
                      (emarker()==mesh->markerName( "k1" ))*k1 +
                      (emarker()==mesh->markerName( "k2" ))*k2 );
-    std::cout << "flux = " << integrate( markedfaces( mesh, mesh->markerName( "discontinuity" ) ), _Q<Order>(),
-                                         jumpv(idv(k)*gradv(u))).evaluate()(0,0) << "\n";
+    std::cout << "flux = " << integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
+                                         leftfacev(idv(k)*gradv(u)*N())+
+                                         rightfacev(idv(k)*gradv(u)*N())).evaluate()(0,0) << "\n";
 
 
     exportResults( k, u, u, u );
@@ -409,8 +421,8 @@ ResistanceLaplacian<Dim, Order>::run()
 template<int Dim, int Order>
 void
 ResistanceLaplacian<Dim, Order>::solve( sparse_matrix_ptrtype& D,
-                                element_type& u,
-                                vector_ptrtype& F )
+                                        element_type& u,
+                                        vector_ptrtype& F )
 {
     timers["solver"].first.restart();
 
@@ -452,10 +464,10 @@ ResistanceLaplacian<Dim, Order>::exportResults( p0_element_type& k, element_type
     os.width(10 );
     os.setf( std::ios::right );
     for( size_type i = 0; i < line_mesh->numPoints(); ++i )
-        {
-            if ( i != 1 )
-                os  << line_mesh->point( i ).node()[0] << " " << U( line_mesh->point( i ).node() ) << std::endl;
-        }
+    {
+        if ( i != 1 )
+            os  << line_mesh->point( i ).node()[0] << " " << U( line_mesh->point( i ).node() ) << std::endl;
+    }
     // this is the last point of the 1D mesh ie y = 0.13m
     os  << line_mesh->point( 1 ).node()[0] << " " << U( line_mesh->point( 1 ).node() ) << std::endl;
 
