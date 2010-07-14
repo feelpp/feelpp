@@ -370,6 +370,7 @@ public:
     elementsWithMarker( size_type m, size_type p ) const
     { return _M_elements.template get<detail::by_marker>().equal_range(boost::make_tuple( Marker1(m), M_comm.rank() )); }
 
+
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker2 \p m on processor \p p

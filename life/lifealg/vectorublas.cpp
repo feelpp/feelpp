@@ -32,6 +32,7 @@
 
 namespace Life
 {
+/// \cond detail
 namespace detail
 {
 template<typename T>
@@ -103,6 +104,7 @@ size_type start( ublas::vector_range<ublas::vector<T> > const& v )
 }
 
 }
+/// \endcond detail
 
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas()

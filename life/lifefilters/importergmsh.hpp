@@ -313,7 +313,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                             boost::trim( name );
                             boost::trim_if(name,boost::is_any_of("\""));
 
-                            mesh->addMarkerName( std::make_pair( name, id ) );
+                            mesh->addMarkerName( std::make_pair( name, boost::make_tuple( id, topodim ) ) );
                         }
                     __is >> __buf;
                     LIFE_ASSERT( std::string( __buf ) == "$EndPhysicalNames" )
@@ -844,7 +844,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e,
 
     //
     // WARNING: not yet done for high order in 3D !!!
-    // 
+    //
     if ( type == GMSH_HEXAHEDRON ||
          type == GMSH_HEXAHEDRON_2 ||
          type == GMSH_TETRAHEDRON ||

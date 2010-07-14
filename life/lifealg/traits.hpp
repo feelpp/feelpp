@@ -56,6 +56,7 @@
 
 namespace Life
 {
+/// \cond detail
 namespace glas
 {
 namespace ublas = boost::numeric::ublas;
@@ -218,7 +219,7 @@ void resize( LIFE_GLAS_TRAITS_MATRIX_TYPE( V )( LIFE_TRAITS_TYPE( T ) )& t, size
 BOOST_PP_LIST_FOR_EACH_PRODUCT( LIFE_GLAS_TRAITS_MATRIX_OP, 2, (LIFE_TRAITS_TYPES, LIFE_GLAS_TRAITS_MATRIX_TYPES) );
 
 } // glas
-
+/// \endcond detail
 } // Life
 
 #endif /*__LIFEALG_TRAITS_HPP */

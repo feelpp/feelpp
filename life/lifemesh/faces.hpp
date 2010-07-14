@@ -235,6 +235,11 @@ public:
     face_const_iterator endFace() const { return _M_faces.end(); }
 
 
+    marker_face_iterator beginFaceWithMarker() { return _M_faces.template get<detail::by_marker>().begin(); }
+    marker_face_const_iterator beginFaceWithMarker() const { return _M_faces.template get<detail::by_marker>().begin(); }
+    marker_face_iterator endFaceWithMarker() { return _M_faces.template get<detail::by_marker>().end(); }
+    marker_face_const_iterator endFaceWithMarker() const { return _M_faces.template get<detail::by_marker>().end(); }
+
     marker_face_iterator beginFaceWithMarker( size_type m ) { return _M_faces.template get<detail::by_marker>().lower_bound(Marker1(m)); }
     marker_face_const_iterator beginFaceWithMarker( size_type m ) const { return _M_faces.template get<detail::by_marker>().lower_bound(Marker1(m)); }
     marker_face_iterator endFaceWithMarker( size_type m ) { return _M_faces.template get<detail::by_marker>().upper_bound(Marker1(m)); }
@@ -252,6 +257,7 @@ public:
     std::pair<marker_face_iterator, marker_face_iterator>
     facesWithMarker( size_type m, size_type p ) const
     { return _M_faces.template get<detail::by_marker>().equal_range(boost::make_tuple( Marker1(m), p )); }
+
 
     /**
      * \return the range of iterator \c (begin,end) over the faces
