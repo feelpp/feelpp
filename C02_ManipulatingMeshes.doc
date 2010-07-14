@@ -3,6 +3,10 @@
 namespace Life
 {
 /*! \page ManipulatingMeshes Manipulating Meshes
+\ingroup Tutorial
+
+\li \b Previous: \ref CreatingApplications
+\li \b Next: \ref ManipulatingFunctionSpaces
 
 
 In this section, we present some of the mesh definition and
@@ -108,8 +112,8 @@ each element is associated with a corresponding processor. The figure
 \ref{fig:1} displays a partitioned mesh in two regions and the
 associated $\polyP{0}$ function.
 
-\image html mymeshpartition "Screenshot of Paraview (3.2.1) of a 2D mesh partitioned and distributed on two processors"
-\image latex mymeshpartition "Screenshot of Paraview (3.2.1) of a 2D mesh partitioned and distributed on two processors"  width=.7\linewidth
+\image html mymeshpartition.png "Screenshot of Paraview (3.2.1) of a 2D mesh partitioned and distributed on two processors"
+\image latex mymeshpartition.png "Screenshot of Paraview (3.2.1) of a 2D mesh partitioned and distributed on two processors"  width=.7\linewidth
 
 \section MeshIterators Iterating over the entities of a mesh Iterating over the entities of a mesh
 
@@ -118,5 +122,6 @@ walk though the mesh in various ways: iterate over element, faces ,
 points, marked (associated to an integer flag denoting a
   region, material, processor) elements, marked faces, ...
 
+\li \b Next: \ref ManipulatingFunctionSpaces
 */
 }

@@ -3,6 +3,8 @@ namespace Life {
 /*! \page ProgEnv Getting started
   \ingroup Tutorial
 
+\li \b Next: \ref CreatingApplications
+
 \section build Building Life
 
 \subsection GettingSourceViaArchive Getting the source via an archive
@@ -196,6 +198,8 @@ Here is the list of libraries
  - <tt>life/lifevf</tt>
 
 
-\li \b Up: \ref Introduction
+\li \b Next: \ref CreatingApplications
+
+
 */
 }
