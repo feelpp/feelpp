@@ -574,6 +574,8 @@ WARN_LOGFILE           = Doxylog
 # with spaces.
 #
 INPUT                  = "@LIFE_HOME_DIR@/life/lifecore" \
+                         "@LIFE_HOME_DIR@/life/lifealg" \
+                         "@LIFE_HOME_DIR@/life/lifemesh" \
                          "@LIFE_HOME_DIR@/doc/api"\
                          "@LIFE_HOME_DIR@/doc/tutorial"
 
@@ -655,7 +657,7 @@ EXAMPLE_RECURSIVE      = NO
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             = "@LIFE_HOME_DIR@/doc/tutorial/pngs/"
+IMAGE_PATH             = @LIFE_HOME_DIR@/doc/tutorial/pngs/
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program
@@ -975,7 +977,7 @@ TREEVIEW_WIDTH         = 250
 # to manually remove any form_*.png images from the HTML output directory
 # to force them to be regenerated.
 
-FORMULA_FONTSIZE       = 10
+FORMULA_FONTSIZE       = 12
 
 #---------------------------------------------------------------------------
 # configuration options related to the LaTeX output
@@ -1046,7 +1048,7 @@ USE_PDFLATEX           = @DOXYFILE_PDFLATEX@
 # running if errors occur, instead of asking the user for help.
 # This option is also used when generating formulas in HTML.
 
-LATEX_BATCHMODE        = NO
+LATEX_BATCHMODE        = YES
 
 # If LATEX_HIDE_INDICES is set to YES then doxygen will not
 # include the index chapters (such as File Index, Compound Index, etc.)
@@ -1392,7 +1394,7 @@ COLLABORATION_GRAPH    = NO
 # If the GROUP_GRAPHS and HAVE_DOT tags are set to YES then doxygen
 # will generate a graph for groups, showing the direct groups dependencies
 
-GROUP_GRAPHS           = NO
+GROUP_GRAPHS           = YES
 
 # If the UML_LOOK tag is set to YES doxygen will generate inheritance and
 # collaboration diagrams in a style similar to the OMG's Unified Modeling
