@@ -4,6 +4,10 @@ namespace Life
 {
 /*! \mainpage Introduction
 
+<div class="lifemainmenu">
+    \ref ProgEnv       "Getting started"
+</div>
+
 \section Life
 
 Life is a unified C++ implementation of the finite and spectral element methods in 1D, 2D And 3D
@@ -36,9 +40,10 @@ could be express in various ways such as :
 
 \section toc Table of  Contents
 
- -# \ref Tutorial "Tutorial"
-
-\section people People
+  - \b Tutorial
+    - \ref ProgEnv
+    - \ref CreatingApplications
+    - \ref ManipulatingMeshes
 
 Life was initially developed at École Polytechnique Fédérale de
 Lausanne(Suisse) and is now a joint effort between UniversitÃ© Joseph Fourier
