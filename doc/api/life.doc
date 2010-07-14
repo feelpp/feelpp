@@ -2,17 +2,37 @@
 
 namespace Life
 {
-/*! \mainpage Introduction
+/*! \mainpage Feel++: Finite Element Embedded Library (or Language) in C++
 
-<div class="lifemainmenu">
-    \ref ProgEnv       "Getting started"
-</div>
+Life is a unified C++ implementation of Galerkin methods (finite and spectral
+element methods) in 1D, 2D And 3D to solve partial differential equations.
 
-\section Life
+\section toc Table of  Contents
 
-Life is a unified C++ implementation of the finite and spectral element methods in 1D, 2D And 3D
+  - \ref Introduction
+  - \b Tutorial
+    - \ref ProgEnv
+    - \ref CreatingApplications
+    - \ref ManipulatingMeshes
+    - \ref ManipulatingFunctionSpaces
+    - \ref SolvingLinearAlgebra
+    - \ref WritingVariationalFormulations
+  - \b Examples
+    - \ref SolvingNonlinearEquations
 
-\subsection General Objectives
+<hr>
+\htmlonly
+<center>
+<a href="http://creativecommons.org/licenses/LGPL/2.1/"><img alt="CC-GNU LGPL" border="0" src="http://creativecommons.org/images/public/cc-LGPL-a.png" /></a>
+
+<a href="http://life.gforge.inria.fr/"><img src="http://gforge.org/images/pow-gforge.png" alt="Back to the gforge site" border="0" /></a>
+</center>
+\endhtmlonly
+
+*/
+/*! \page Introduction Introduction
+
+\section General Objectives
 
 The objectives of this framework is quite ambitious; ambitions which
 could be express in various ways such as :
@@ -38,12 +58,7 @@ could be express in various ways such as :
  as python would not be satisfying though in many simpler cases that
  would simplify and accelerate the development.)
 
-\section toc Table of  Contents
 
-  - \b Tutorial
-    - \ref ProgEnv
-    - \ref CreatingApplications
-    - \ref ManipulatingMeshes
 
 Life was initially developed at École Polytechnique Fédérale de
 Lausanne(Suisse) and is now a joint effort between UniversitÃ© Joseph Fourier
@@ -53,7 +68,7 @@ author is
  - Christophe Prud'homme <christophe.prudhomme#ujf-grenoble.fr>
    (Lab. Jean Kuntzmann, Université Joseph Fourier, France)
 
-\subsection contributors Contributors
+\section contributors Contributors
 
  - Goncalo Pena contributed the dof handling in 3D when polynomial
    order is > 2, a 2D Fekete point set class, the 3D warpblend point
@@ -68,14 +83,6 @@ author is
 
  - Benjamin Stamm contributed bug reports
 
-<hr>
-\htmlonly
-<center>
-<a href="http://creativecommons.org/licenses/LGPL/2.1/"><img alt="CC-GNU LGPL" border="0" src="http://creativecommons.org/images/public/cc-LGPL-a.png" /></a>
-
-<a href="http://life.gforge.inria.fr/"><img src="http://gforge.org/images/pow-gforge.png" alt="Back to the gforge site" border="0" /></a>
-</center>
-\endhtmlonly
 
 */
 }
