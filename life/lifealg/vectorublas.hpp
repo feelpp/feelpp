@@ -782,7 +782,7 @@ private:
 namespace gmm
 {
 namespace ublas = boost::numeric::ublas;
-
+/// \cond detail
 template <typename T, typename Storage>
 struct linalg_traits<Life::VectorUblas<T,Storage> >
 {
@@ -826,7 +826,7 @@ nnz(const Life::VectorUblas<T,Storage>& l)
 {
     return l.size();
 }
-
+/// \endcond detail
 } // gmm
 
 #endif /* __VectorUblas_H */

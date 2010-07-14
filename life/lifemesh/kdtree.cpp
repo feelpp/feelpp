@@ -31,7 +31,7 @@
 
 namespace Life
 {
-
+/// \cond detail
 struct KDTree::Element
 {
     enum { POINTS_PER_LEAF = 16 };
@@ -510,6 +510,7 @@ writeDecompositionData(KDTree::Element * tree, boost::shared_ptr<std::ostringstr
 
 
 } // detail namespace
+/// \endcond detail
 
 void
 KDTree::clearTree()

@@ -36,7 +36,7 @@ namespace Life
  *
  */
 typedef node<double>::type node_type;
-
+/// \cond detail
 struct RegionTree::element_base
 {
     enum { RECTS_PER_LEAF=8 };
@@ -253,7 +253,7 @@ LIFE_NO_EXPORT void findMatchingBoxes( RegionTree::element_base *n,
     }
 }
 
-
+/// \endcond detail
 void
 RegionTree::addBox( node_type min, node_type max, size_type id )
 {

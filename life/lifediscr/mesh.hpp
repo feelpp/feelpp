@@ -253,12 +253,24 @@ public:
     }
 
     /**
-     * \return a marker name
+     * \return the id associated to the \p marker
      */
     int markerName( std::string const& marker ) const
     {
-        return M_markername.find( marker )->second;
+        return M_markername.find( marker )->second.template get<0>();
     }
+    /**
+     * \return the topological dimension associated to the \p marker
+     */
+    int markerDim( std::string const& marker ) const
+    {
+        return M_markername.find( marker )->second.template get<1>();
+    }
+
+    /**
+     * \return the marker names
+     */
+    std::map<std::string, boost::tuple<int, int> > markerNames() const { return M_markername; }
 
     struct Localization;
     boost::shared_ptr<typename self_type::Localization> tool_localization() { return M_tool_localization;}
@@ -272,7 +284,7 @@ public:
     /**
      * add a new marker name
      */
-    void addMarkerName( std::pair<std::string, int> marker )
+    void addMarkerName( std::pair<std::string, boost::tuple<int,int> > const& marker )
     {
         M_markername.insert( marker );
     }
@@ -621,9 +633,11 @@ private:
     boost::multi_array<element_edge_type,2> _M_e2e;
 
     /**
-     * marker name disctionnary ( std::string -> int )
+     * marker name disctionnary ( std::string -> <int,int> )
+     * get<0>() provides the id
+     * get<1>() provides the topological dimension
      */
-    std::map<std::string, int> M_markername;
+    std::map<std::string, boost::tuple<int, int> > M_markername;
 
     /**
      * tool for localize point in the mesh

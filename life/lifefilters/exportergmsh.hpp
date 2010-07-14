@@ -148,6 +148,9 @@ private:
 
     void gmsh_save_Format( std::ostream& out) const;
 
+    void gmsh_save_PhysicalNames( std::ostream& out,
+                                  step_ptrtype __step ) const;
+
     void gmsh_save_Nodes( std::ostream& out,
                           step_ptrtype __step ) const;
 
@@ -168,7 +171,7 @@ private:
 } // Life
 
 #if !defined( LIFE_INSTANTIATION_MODE )
-# include <life/lifefilters/exportergmsh.cpp>
+//# include <life/lifefilters/exportergmsh.cpp>
 #endif // LIFE_INSTANTIATION_MODE
 
 #endif /* __ExporterGmsh_H */

@@ -35,7 +35,7 @@
 namespace Life
 {
 class MeshBase;
-
+/// \cond detail
 namespace detail
 {
 struct UpdateMesh
@@ -238,6 +238,6 @@ private:
 };
 
 } // detail
-
+/// \endcond detail
 }
 #endif /* __Functor_H */

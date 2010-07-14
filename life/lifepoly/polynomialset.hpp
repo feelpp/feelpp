@@ -47,6 +47,7 @@
 #include <life/lifepoly/tensorisedboundadapted.hpp>
 #include <life/lifepoly/polynomial.hpp>
 #include <life/lifepoly/expansiontypes.hpp>
+#include <life/lifepoly/quadmapped.hpp>
 
 
 namespace Life
@@ -921,13 +922,15 @@ public:
         }
 
     typedef std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> > faces_precompute_type;
+
     std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> >
     preComputeOnFaces( self_ptrtype p, points_type const& P )
         {
+#if 0
             QuadMapped<pointset_type> qm;
             typedef typename QuadMapped<pointset_type>::permutation_type permutation_type;
             typename QuadMapped<pointset_type>::permutation_points_type ppts( qm( P ) );
-
+#endif
             typedef typename convex_type::permutation_type permutation_type;
             std::vector<std::map<permutation_type, precompute_ptrtype> > geopc(convex_type::numTopologicalFaces);
             for ( uint16_type __f = 0; __f < convex_type::numTopologicalFaces; ++__f )
@@ -936,11 +939,13 @@ public:
                      __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
                     //LIFE_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-                    geopc[__f][__p] = precompute_ptrtype(  new precompute_type( p, ppts[__f].find(__p)->second ) );
+                    geopc[__f][__p] = precompute_ptrtype(  new precompute_type( p, P ) );
                 }
             }
             return geopc;
         }
+
+
     template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g = context_v>
     class Context
     {

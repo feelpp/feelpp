@@ -51,7 +51,7 @@
 namespace gmm
 {
 namespace ublas = boost::numeric::ublas;
-
+/// \cond detail
 template <typename T>
 struct linalg_traits<ublas::vector<T, ublas::unbounded_array<T, std::allocator<T> > > >
 {
@@ -142,7 +142,7 @@ std::ostream &operator <<( std::ostream &o,
 {
     o << m; return o;
 }
-
+/// \endcond detail
 } // gmm
 
 namespace std {

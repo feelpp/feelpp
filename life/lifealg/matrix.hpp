@@ -35,7 +35,7 @@
 
 namespace boost { namespace numeric { namespace ublas {
 
-
+/// \cond detail
     // Identity matrix class
     template<class T>
     class anti_identity_matrix:
@@ -418,8 +418,9 @@ namespace boost { namespace numeric { namespace ublas {
     const typename anti_identity_matrix<T>::value_type anti_identity_matrix<T>::zero_ (0);
     template<class T>
     const typename anti_identity_matrix<T>::value_type anti_identity_matrix<T>::one_ (1);
+/// \endcond detail
 
-        }
+}
     }
 }
 
