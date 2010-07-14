@@ -352,6 +352,11 @@ public:
 
     }
 
+    /**
+     * \return the point set
+     */
+    pointset_type const& pointSet() const { return M_pset; }
+
     points_type const& points() const { return _M_pts; }
 
 
@@ -475,7 +480,7 @@ public:
     RaviartThomas()
         :
         super( dual_space_type( primal_space_type() ) ),
-        _M_refconvex()
+        M_refconvex()
     {
 #if 0
         std::cout << "[RT] nPtsPerEdge = " << nbPtsPerEdge << "\n";
@@ -493,7 +498,7 @@ public:
     RaviartThomas( RaviartThomas const & cr )
         :
         super( cr ),
-        _M_refconvex()
+        M_refconvex()
     {}
     ~RaviartThomas()
     {}
@@ -514,7 +519,7 @@ public:
     /**
      * \return the reference convex associated with the lagrange polynomials
      */
-    reference_convex_type const& referenceConvex() const { return _M_refconvex; }
+    reference_convex_type const& referenceConvex() const { return M_refconvex; }
 
     std::string familyName() const { return "raviartthomas"; }
 
@@ -539,6 +544,40 @@ public:
             using namespace Life::vf;
             return detJ()*(trans(JinvT())*expr)*Nref();
             //return expr;
+        }
+
+    /**
+     *
+     * \return the value of the expression at the dof
+     */
+    template<typename ExprType, typename ContextType>
+    std::vector<value_type>
+    interpolate( boost::shared_ptr<ContextType>& ctx, ExprType & expr )
+        {
+            using namespace Life::vf;
+            typedef boost::shared_ptr<ContextType> gmc_ptrtype;
+            typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+
+            std::vector<value_type> v( nLocalDof );
+
+            // First deal with the face dof
+            for( int face = 0; face < numTopologicalFaces; ++face )
+            {
+                // update the geomap at dof on face
+                ctx->update( _face=face, _element=ctx->id() );
+
+                map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( ctx ) );
+                expr.update( mapgmc, face );
+
+                for(int q = 0; q < nDofPerFace; ++q )
+                {
+                    int ldof = nDofPerFace*face+i;
+                    v[ldof] = expr.evalq(0,0,i);
+                }
+            }
+            // evaluate expr \cdot n  on each face
+
+            // evaluate moments of the expression
         }
 
     template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
@@ -637,7 +676,7 @@ public:
 
 
 protected:
-    reference_convex_type _M_refconvex;
+    reference_convex_type M_refconvex;
 private:
 
 };
