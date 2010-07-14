@@ -222,7 +222,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
          !_M_form.isPatternCoupled() )
     {
         for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
-            for ( uint16_type c1 = 0; c1 < test_fecontext_type::nComponents1; ++c1 )
+        {
+            int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
+            for ( uint16_type c1 = 0; c1 < ncomp; ++c1 )
             {
                 indi.setIndex( boost::make_tuple( i, c1, 0 ) );
                 LIFE_ASSERT( size_type(indi.index()) ==
@@ -246,11 +248,14 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
                                                              0, 0 );
                     } // j, c2
             }
+        }
     }
     else
     {
         for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
-            for ( uint16_type c1 = 0; c1 < test_fecontext_type::nComponents1; ++c1 )
+        {
+            int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
+            for ( uint16_type c1 = 0; c1 < ncomp; ++c1 )
             {
                 indi.setIndex( boost::make_tuple( i, c1, 0 ) );
                 LIFE_ASSERT( size_type(indi.index()) ==
@@ -260,8 +265,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
                     ( c1*test_fecontext_type::nDof+i ).error( "invalid test index" );
 
                 for ( uint16_type j = 0; j < trial_fecontext_type::nDof; ++j )
-                    for ( uint16_type c2 = 0; c2 < trial_fecontext_type::nComponents1; ++c2 )
                 {
+                    int ncomp2= (trial_fecontext_type::is_product?trial_fecontext_type::nComponents1:1);
+                    for ( uint16_type c2 = 0; c2 < ncomp2; ++c2 )
+                    {
                         indj.setIndex( boost::make_tuple( j, c2, 0 ) );
                         LIFE_ASSERT( size_type(indj.index()) ==
                                      size_type(c2*trial_fecontext_type::nDof+j) )
@@ -274,7 +281,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
                                                              indj,
                                                              0, 0 );
                     } // j, c2
+                }
             }
+        }
     }
 }
     template<typename FE1,  typename FE2, typename ElemContType>
@@ -300,7 +309,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
                  !_M_form.isPatternCoupled() )
             {
                 for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
-                for ( uint16_type c1 = 0; c1 < test_fecontext_type::nComponents1; ++c1 )
+                {
+                    int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
+                    for ( uint16_type c1 = 0; c1 < ncomp; ++c1 )
                     {
                         indi.setIndex( boost::make_tuple( i, c1, 0 ) );
                         for ( uint16_type j = 0; j < trial_fecontext_type::nDof; ++j )
@@ -323,17 +334,21 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
 
                             _M_rep[ii][c1][jj][c1] += M_integrator( *_M_eval_expr11, indi, indj, 0, 0 );
                         }
-
                     }
+                }
             }
             else
             {
                 for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
-                    for ( uint16_type c1 = 0; c1 < test_fecontext_type::nComponents1; ++c1 )
+                {
+                    int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
+                    for ( uint16_type c1 = 0; c1 < ncomp; ++c1 )
                     {
                         indi.setIndex( boost::make_tuple( i, c1, 0 ) );
                         for ( uint16_type j = 0; j < trial_fecontext_type::nDof; ++j )
-                            for ( uint16_type c2 = 0; c2 < trial_fecontext_type::nComponents1; ++c2 )
+                        {
+                            int ncomp2= (trial_fecontext_type::is_product?trial_fecontext_type::nComponents1:1);
+                            for ( uint16_type c2 = 0; c2 < ncomp2; ++c2 )
                             {
                                     indj.setIndex( boost::make_tuple( j, c2, 0 ) );
                                     _M_rep[i][c1][j][c2] += M_integrator( *_M_eval_expr00, indi, indj, 0, 0 );
@@ -353,8 +368,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
 
                                     _M_rep[ii][c1][jj][c2] += M_integrator( *_M_eval_expr11, indi, indj, 0, 0 );
                                 }
-
+                        }
                     }
+                }
             }
         }
     template<typename FE1,  typename FE2, typename ElemContType>
@@ -381,7 +397,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
             {
                 for ( uint16_type i = 0 ; i < test_fecontext_type::nDof; ++i )
                 {
-                    for ( uint16_type c1 = 0 ; c1 < test_fecontext_type::nComponents1; ++c1 )
+                    int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
+                    for ( uint16_type c1 = 0 ; c1 < ncomp; ++c1 )
                     {
                         boost::tie( ig, isign, boost::tuples::ignore) = _M_test_dof->localToGlobal( elt_0, i, c1 );
                         ig += row_start;
@@ -398,17 +415,21 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
             {
                 for ( uint16_type i = 0 ; i < test_fecontext_type::nDof; ++i )
                 {
-                    for ( uint16_type c1 = 0 ; c1 < test_fecontext_type::nComponents1; ++c1 )
+                    int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
+                    for ( uint16_type c1 = 0 ; c1 < ncomp; ++c1 )
                     {
                         boost::tie( ig, isign, boost::tuples::ignore) = _M_test_dof->localToGlobal( elt_0, i, c1 );
                         ig += row_start;
                         for ( uint16_type j = 0 ; j < trial_fecontext_type::nDof; j++ )
-                            for ( uint16_type c2 = 0 ; c2 < trial_fecontext_type::nComponents1; ++c2 )
+                        {
+                            int ncomp2= (trial_fecontext_type::is_product?trial_fecontext_type::nComponents1:1);
+                            for ( uint16_type c2 = 0 ; c2 < ncomp2; ++c2 )
                             {
                                 boost::tie( jg, jsign, boost::tuples::ignore ) = _M_trial_dof->localToGlobal( elt_0, j, c2 );
                                 jg += col_start;
                                 _M_form.add( ig, jg, value_type(isign*jsign)*_M_rep[i][c1][j][c2] );
                             }
+                        }
                     }
                 } // element loop
             }
@@ -434,7 +455,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
                  !_M_form.isPatternCoupled() )
             {
                 for ( uint16_type i = 0 ; i < test_fecontext_type::nDof; ++i )
-                    for ( uint16_type c1 = 0 ; c1 < test_fecontext_type::nComponents1; ++c1 )
+                {
+                    int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
+                    for ( uint16_type c1 = 0 ; c1 < ncomp; ++c1 )
                     {
                         boost::tie( ig0, isign0, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_0, i, c1 );
                         boost::tie( ig1, isign1, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_1, i, c1 );
@@ -453,10 +476,13 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
                             _M_form.add( ig1, jg1, value_type(isign0*jsign1)*_M_rep[i+test_ndof][c1][j+trial_ndof][c1] );
                         }
                     }
+                }
             }
             else
             {
                 for ( uint16_type i = 0 ; i < test_fecontext_type::nDof; ++i )
+                {
+                    int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
                     for ( uint16_type c1 = 0 ; c1 < test_fecontext_type::nComponents1; ++c1 )
                     {
                         boost::tie( ig0, isign0, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_0, i, c1 );
@@ -464,7 +490,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
                         ig0 += row_start;
                         ig1 += row_start;
                         for ( uint16_type j = 0 ; j < trial_fecontext_type::nDof; j++ )
-                            for ( uint16_type c2 = 0 ; c2 < trial_fecontext_type::nComponents1; ++c2 )
+                        {
+                            int ncomp2= (trial_fecontext_type::is_product?trial_fecontext_type::nComponents1:1);
+                            for ( uint16_type c2 = 0 ; c2 < ncomp2; ++c2 )
                                 {
                                     boost::tie( jg0, jsign0, boost::tuples::ignore ) = _M_trial_dof->localToGlobal( elt_0, j, c2 );
                                     boost::tie( jg1, jsign1, boost::tuples::ignore ) = _M_trial_dof->localToGlobal( elt_1, j, c2 );
@@ -476,10 +504,12 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
                                     _M_form.add( ig1, jg0, value_type(isign0*jsign0)*_M_rep[i+test_ndof][c1][j][c2] );
                                     _M_form.add( ig1, jg1, value_type(isign0*jsign1)*_M_rep[i+test_ndof][c1][j+trial_ndof][c2] );
                                 }
+                        }
                     }
+                }
             }
-        }
 
+        }
 }
 }
 }
