@@ -54,19 +54,39 @@ macro( add_docex target )
  add_custom_command(
    TARGET life_doc_${target}
    POST_BUILD
-   COMMAND ${target_executable}
-   ARGS >${CMAKE_CURRENT_BINARY_DIR}/${target}.out
+   COMMAND ${target_executable} ARGS --shape="simplex" --nochdir > ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex.out 2>&1
+   COMMAND ${target_executable} ARGS --shape="hypercube" --nochdir > ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube.out 2>&1
    )
-
+ foreach( dim 1 2 3 )
+   message( STATUS "Generate scripts for graphical results for dimension ${dim}" )
+   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex-${dim}.pos "Include \"simplex-${dim}.geo\";\n Mesh ${dim}; Include \"tutorial.pos\";\n Exit;\n")
+   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube-${dim}.pos "Include \"hypercube-${dim}.geo\";\n Mesh ${dim}; Include \"tutorial.pos\";\n Exit;\n")
+   add_custom_command(
+     TARGET life_doc_${target}
+     POST_BUILD
+     COMMAND ${GMSH} ARGS -v 0 ${target}-simplex-${dim}.pos
+     COMMAND ${GMSH} ARGS -v 0 ${target}-hypercube-${dim}.pos
+   )
+ endforeach()
  # test each backend
  foreach( BACKEND petsc trilinos)
    add_test( life_doc_${target}-${BACKEND} life_doc_${target} --hsize=0.1 --backend=${BACKEND} --no-export)
  endforeach()
 endmacro()
 
-foreach( docex myapp ) #mymesh myintegrals laplacian  )
+foreach( docex myintegrals mymesh ) # laplacian  )
   add_docex( ${docex} )
 endforeach()
+
+add_custom_target(
+  tut-prerequisites
+  ALL
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos
+                                   ${CMAKE_CURRENT_BINARY_DIR}/
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+add_dependencies(tut-prerequisites life_doc_mymesh)
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY_DIR}/tutorial.pos)
 
 if ( NOT LIFE_MINIMAL_CONFIGURATION )
 
