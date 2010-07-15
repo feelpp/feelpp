@@ -60,7 +60,6 @@ po::options_description exporter_options( std::string const& prefix )
         // file type options
         ((_prefix+"exporter-file-type").c_str(), Life::po::value<int>()->default_value( ASCII ), "file type in which the results are exported ('ascii' = 0 or 'binary' = 1)")
         ;
-    std::cout << "exporter options : " << _options << "\n";
     return _options;
 }
 
