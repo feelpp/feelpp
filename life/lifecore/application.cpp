@@ -90,7 +90,6 @@ LIFE_NO_EXPORT
 std::pair<std::string, std::string>
 at_option_parser(std::string const&s)
 {
-    //std::cout << "string =" << s << "\n";
     if ('@' == s[0])
         return std::make_pair(std::string("response-file"), s.substr(1));
     else
@@ -140,13 +139,10 @@ void
 Application::initMPI( int argc, char** argv, MPI_Comm comm )
 {
 #if defined( HAVE_MPI_H )
-    //std::cout << "is_mpi_initialized = " << mpi::environment::initialized() << "\n";
-    //std::cout << "is_mpi_finalized = " << mpi::environment::finalized() << "\n";
     M_env = boost::shared_ptr<mpi::environment>( new mpi::environment( argc, argv ) );
     if (!mpi::environment::initialized())
     {
 
-        ///std::cout << "processor name = " << M_env->processor_name() << "\n";
 #if 0
         //int __argc = this->unknownArgc();
         //char** __argv = this->unknownArgv();
@@ -386,9 +382,7 @@ Application::doOptions( int argc, char** argv )
             ("debug", po::value<std::string>()->default_value( "" ), "specify a debugging area list");
         _M_desc.add( generic ).add( debug );
 
-        std::cout << "1\n";
         this->parseAndStoreOptions( po::command_line_parser(argc, argv), true );
-        std::cout << "2\n";
         std::string config_name = (boost::format( "%1%.cfg" ) % this->about().appName()).str();
         Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
         if ( fs::exists( config_name ) )
@@ -409,12 +403,9 @@ Application::doOptions( int argc, char** argv )
                 store(parse_config_file(ifs, _M_desc), _M_vm);
             }
         }
-        std::cout << "3\n";
         //po::store(po::parse_command_line(argc, argv, _M_desc), _M_vm);
         po::notify(_M_vm);
-        std::cout << "4\n";
         processGenericOptions();
-        std::cout << "5\n";
     }
     catch( boost::program_options::unknown_option const& e )
         {
@@ -594,7 +585,6 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
     boost::shared_ptr<po::parsed_options> parsed;
     if ( extra_parser )
         {
-            std::cout << "p1\n";
             parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
                                                                                     .options(_M_desc)
                                                                                     .extra_parser(at_option_parser)
@@ -624,30 +614,24 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
     Debug( 1000 ) << "[Application::Application] parsing options done\n";
 
 #if BOOST_VERSION >= 103301
-    std::cout << "p2\n";
     _M_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
-    std::cout << "p3\n";
     Debug( 1000 ) << "[Application::Application] number of unrecognized options: " << (_M_to_pass_further.size()) << "\n";
 
     BOOST_FOREACH( std::string const& s, _M_to_pass_further )
         {
             Debug( 1000 ) << "[Application::Application] option: " << s << "\n";
         }
-    std::cout << "p5\n";
     std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
     std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
     for ( ; it != en ; ++it )
         if ( it->unregistered )
             {
                 Debug( 1000 ) << "[Application::Application] remove from vector " << it->string_key << "\n";
-                std::cout << "[Application::Application] remove from vector " << it->string_key << "\n";
                 parsed->options.erase( it );
             }
-    std::cout << "p6\n";
 #endif
 
     po::store(*parsed, _M_vm );
-    std::cout << "p7\n";
 }
 
 void
