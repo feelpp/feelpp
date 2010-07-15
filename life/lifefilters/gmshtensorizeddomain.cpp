@@ -70,19 +70,40 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<1>,  m
             ostr << 0;
         ostr << ",0,h};\n"
              << "Line(1) = {1,3};\n"
-             << "Line(2) = {3,2};\n"
-             << "Physical Point(1) = {1};\n"
-             << "Physical Point(3) = {2};\n"
-             << "Physical Point(2) = {3};\n"
-             << "Physical Line(1) = {1};\n"
-             << "Physical Line(2) = {2};\n";
+             << "Line(2) = {3,2};\n";
+        if ( 0 )
+        {
+            ostr  << "Physical Point(1) = {1};\n"
+                  << "Physical Point(3) = {2};\n"
+                  << "Physical Point(2) = {3};\n"
+                  << "Physical Line(1) = {1};\n"
+                  << "Physical Line(2) = {2};\n";
+        }
+        else
+        {
+            ostr  << "Physical Point(\"Dirichlet\") = {1};\n"
+                  << "Physical Point(\"Neumann\") = {3};\n"
+                  << "Physical Point(3) = {2};\n"
+                  << "Physical Line(\"Mat1\") = {1};\n"
+                  << "Physical Line(\"Mat2\") = {2};\n";
+        }
     }
     else
     {
-        ostr << "Line(1) = {1,2};\n"
-             << "Physical Point(1) = {1};\n"
-             << "Physical Point(3) = {2};\n"
-             << "Physical Line(1) = {1};\n";
+        if ( 0 )
+        {
+            ostr << "Line(1) = {1,2};\n"
+                 << "Physical Point(1) = {1};\n"
+                 << "Physical Point(3) = {2};\n"
+                 << "Physical Line(1) = {1};\n";
+        }
+        else
+        {
+            ostr << "Line(1) = {1,2};\n"
+                 << "Physical Point(\"Dirichlet\") = {1};\n"
+                 << "Physical Point(\"Neumann\") = {2};\n"
+                 << "Physical Line(\"Mat1\") = {1};\n";
+        }
     }
     return ostr.str();
 }
@@ -107,12 +128,21 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  m
          << "Line(3) = {2,3};\n"
          << "Line(4) = {3,4};\n"
          << "Line Loop(5) = {1,2,3,4};\n"
-         << "Plane Surface(6) = {5};\n"
-         << "Physical Line(1) = {1};\n"
-         << "Physical Line(2) = {2};\n"
-         << "Physical Line(3) = {3};\n"
-         << "Physical Line(4) = {4};\n"
-         << "Physical Surface(6) = {6};\n";
+         << "Plane Surface(6) = {5};\n";
+    if ( 0 )
+    {
+        ostr << "Physical Line(1) = {1};\n"
+             << "Physical Line(2) = {2};\n"
+             << "Physical Line(3) = {3};\n"
+             << "Physical Line(4) = {4};\n"
+             << "Physical Surface(6) = {6};\n";
+    }
+    else
+    {
+        ostr << "Physical Line(\"Dirichlet\") = {1,3};\n"
+             << "Physical Line(\"Neumann\") = {2,4};\n"
+             << "Physical Surface(\"Mat1\") = {6};\n";
+    }
     return ostr.str();
 }
 template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
@@ -166,14 +196,23 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  m
          << "Physical Line(1) = {1};\n"
          << "Physical Line(2) = {2};\n"
          << "Physical Line(3) = {3};\n"
-         << "Physical Line(4) = {4};\n"
-         << "Physical Surface(6) = {6};\n"
-         << "Physical Surface(15) = {15};\n"
-         << "Physical Surface(19) = {19};\n"
-         << "Physical Surface(23) = {23};\n"
-         << "Physical Surface(27) = {27};\n"
-         << "Physical Surface(28) = {28};\n"
-         << "Physical Volume(30) = {1};\n";
+         << "Physical Line(4) = {4};\n";
+    if ( 0 )
+    {
+        ostr << "Physical Surface(6) = {6};\n"
+             << "Physical Surface(15) = {15};\n"
+             << "Physical Surface(19) = {19};\n"
+             << "Physical Surface(23) = {23};\n"
+             << "Physical Surface(27) = {27};\n"
+             << "Physical Surface(28) = {28};\n"
+             << "Physical Volume(30) = {1};\n";
+    }
+    else
+    {
+        ostr << "Physical Surface(\"Neumann\") = {6,19,27,28};\n"
+             << "Physical Surface(\"Dirichlet\") = {15,23};\n"
+             << "Physical Volume(\"Mat1\") = {1};\n";
+    }
     return ostr.str();
 }
 template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
