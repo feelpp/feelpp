@@ -55,19 +55,40 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<1> ) const
         {
             ostr << "Point(3) = {" << (_M_I[0].second+_M_I[0].first)/2 << ",0,0,h};\n"
                  << "Line(1) = {1,3};\n"
-                 << "Line(2) = {3,2};\n"
-                 << "Physical Point(1) = {1};\n"
-                 << "Physical Point(3) = {2};\n"
-                 << "Physical Point(2) = {3};\n"
-                 << "Physical Line(1) = {1};\n"
-                 << "Physical Line(2) = {2};\n";
+                 << "Line(2) = {3,2};\n";
+            if ( 0 )
+            {
+                ostr    << "Physical Point(1) = {1};\n"
+                        << "Physical Point(3) = {2};\n"
+                        << "Physical Point(2) = {3};\n"
+                        << "Physical Line(1) = {1};\n"
+                        << "Physical Line(2) = {2};\n";
+            }
+            else
+            {
+                ostr    << "Physical Point(\"Dirichlet\") = {1};\n"
+                        << "Physical Point(\"Neumann\") = {3};\n"
+                        << "Physical Point(3) = {2};\n"
+                        << "Physical Line(\"Mat1\") = {1};\n"
+                        << "Physical Line(\"Mat2\") = {2};\n";
+            }
         }
     else
         {
-            ostr << "Line(1) = {1,2};\n"
-                 << "Physical Point(1) = {1};\n"
-                 << "Physical Point(3) = {2};\n"
-                 << "Physical Line(1) = {1};\n";
+            if ( 0 )
+            {
+                ostr << "Line(1) = {1,2};\n"
+                     << "Physical Point(1) = {1};\n"
+                     << "Physical Point(3) = {2};\n"
+                     << "Physical Line(1) = {1};\n";
+            }
+            else
+            {
+                ostr << "Line(1) = {1,2};\n"
+                     << "Physical Point(\"Dirichlet\") = {1};\n"
+                     << "Physical Point(\"Neumann\") = {2};\n"
+                     << "Physical Line(\"Mat1\") = {1};\n";
+            }
         }
     return ostr.str();
 }
@@ -85,12 +106,22 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<2> ) const
          << "Line(1) = {1,2};\n"
          << "Line(2) = {2,3};\n"
          << "Line(3) = {3,1};\n"
-         << "Line Loop(4) = {3,1,2};\n"
-         << "Plane Surface(5) = {4};\n"
-         << "Physical Line(6) = {1};\n"
-         << "Physical Line(7) = {2};\n"
-         << "Physical Line(8) = {3};\n"
-         << "Physical Surface(9) = {5};\n";
+         << "Line Loop(4) = {3,1,2};\n";
+    if ( 0 )
+    {
+        ostr << "Plane Surface(5) = {4};\n"
+             << "Physical Line(6) = {1};\n"
+             << "Physical Line(7) = {2};\n"
+             << "Physical Line(8) = {3};\n"
+             << "Physical Surface(9) = {5};\n";
+    }
+    else
+    {
+        ostr << "Plane Surface(5) = {4};\n"
+             << "Physical Line(\"Dirichlet\") = {1};\n"
+             << "Physical Line(\"Neumann\") = {2,3};\n"
+             << "Physical Surface(\"Mat1\") = {5};\n";
+    }
     return ostr.str();
 }
 // 3D
@@ -121,12 +152,21 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<3> ) const
          << "Plane Surface(15) = {14};" << "\n"
          << "Surface Loop(20) = {11, 13, 15, 5};" << "\n"
          << "Volume(21) = {20};" << "\n"
-         << "" << "\n"
-         << "Physical Surface(16) = {11};" << "\n"
-         << "Physical Surface(17) = {15};" << "\n"
-         << "Physical Surface(18) = {5};" << "\n"
-         << "Physical Surface(19) = {13};" << "\n"
-         << "Physical Volume(22) = {21};" << "\n";
+         << "" << "\n";
+    if ( 0 )
+    {
+        ostr << "Physical Surface(16) = {11};" << "\n"
+             << "Physical Surface(17) = {15};" << "\n"
+             << "Physical Surface(18) = {5};" << "\n"
+             << "Physical Surface(19) = {13};" << "\n"
+             << "Physical Volume(22) = {21};" << "\n";
+    }
+    else
+    {
+        ostr << "Physical Surface(\"Neumann\") = {11,15,13};" << "\n"
+             << "Physical Surface(\"Dirichlet\") = {5};" << "\n"
+             << "Physical Volume(\"Mat1\") = {21};" << "\n";
+    }
     return ostr.str();
 }
 
