@@ -32,6 +32,7 @@
 #include <life/lifecore/life.hpp>
 
 #include <life/lifefilters/exportergmsh.hpp>
+#include <life/lifefilters/gmshenums.hpp>
 
 namespace Life
 {
@@ -724,7 +725,7 @@ ExporterGmsh<MeshType>::gmsh_save_Nodes( std::ostream& out,
     point_const_iterator pt_en = mesh->endPoint();
     for ( ; pt_it!=pt_en ; ++pt_it )
     {
-        out << pt_it->id()+1
+        out << pt_it->id()
             << " "  << std::setw( 20 ) << std::setprecision(16) << pt_it->node()[0];
         if ( mesh_type::nRealDim >= 2 )
             out << " "  << std::setw( 20 ) << std::setprecision(16) << pt_it->node()[1];
@@ -765,9 +766,8 @@ ExporterGmsh<MeshType>::gmsh_save_Elements( std::ostream& out,
     //first : elements and then in a second time we will put faces
     int elem_number=1; //initialization
 
-    uint16_type nLocGeoPt;
-
-
+    typedef typename MeshType::element_type element_type;
+    GmshOrdering<element_type> ordering;
 
 
     auto elt_it = mesh->beginElement();
@@ -777,117 +777,29 @@ ExporterGmsh<MeshType>::gmsh_save_Elements( std::ostream& out,
         out << elt_it->id()+1<<" ";
         //out<< elem_number <<" ";
         elem_number++;
-        nLocGeoPt = elt_it->nPoints();
-        int gmshtriangletype[5] = { 0, 2, 9, 21, 0 };
-        int gmshquadtype[5] = { 0, 4, 10, 0, 0 };
-        if (elt_it->isATriangleShape())
-            out << gmshtriangletype[mesh_type::nOrder];
-        if ( elt_it->isAQuadrangleShape())
-            out << gmshquadtype[mesh_type::nOrder];
+        out << ordering.type();
         out<<" 3 " << elt_it->marker().value() << " 2 " << elt_it->processId();
-        if (elt_it->isATriangleShape())
-        {
-            switch (mesh_type::nOrder)
-            {
-            case 1 : //if (mesh_type::nOrder==1)
-            {
-                for (uint16_type p=0;p<nLocGeoPt;++p)
-                    out << " " << elt_it->point( p ).id()+1;
-                break;
-            }
-            case 2 : //else if (mesh_type::nOrder==2)
-            {
-                out << " " << elt_it->point( 0 ).id()+1;
-                out << " " << elt_it->point( 1 ).id()+1;
-                out << " " << elt_it->point( 2 ).id()+1;
-                out << " " << elt_it->point( 5 ).id()+1;
-                out << " " << elt_it->point( 3 ).id()+1;
-                out << " " << elt_it->point( 4 ).id()+1;
-                break;
-            }
-            case 3 : //else if (mesh_type::nOrder==3)
-            {
-                out << " " << elt_it->point( 0 ).id()+1;
-                out << " " << elt_it->point( 1 ).id()+1;
-                out << " " << elt_it->point( 2 ).id()+1;
-                out << " " << elt_it->point( 7 ).id()+1;
-                out << " " << elt_it->point( 8 ).id()+1;
-                out << " " << elt_it->point( 3 ).id()+1;
-                out << " " << elt_it->point( 4 ).id()+1;
-                out << " " << elt_it->point( 5 ).id()+1;
-                out << " " << elt_it->point( 6 ).id()+1;
-                out << " " << elt_it->point( 9 ).id()+1;
-                break;
-            }
-            /// \todo fill this case
-            case 4 :
-            case 5 :
-            {
-                break;
-            }
-            }
-        }
-        else if ( elt_it->isAQuadrangleShape())
-        {
-            switch (mesh_type::nOrder) {
-            case 1 :
-            {
-                for (uint16_type p=0;p<nLocGeoPt;++p)
-                    out << " " << elt_it->point( p ).id()+1;
-                break;
-            }
-            case 2 :
-            {
-                out << " " << elt_it->point( 0 ).id()+1;
-                out << " " << elt_it->point( 1 ).id()+1;
-                out << " " << elt_it->point( 2 ).id()+1;
-                out << " " << elt_it->point( 3 ).id()+1;
-                out << " " << elt_it->point( 7 ).id()+1;
-                out << " " << elt_it->point( 4 ).id()+1;
-                out << " " << elt_it->point( 5 ).id()+1;
-                out << " " << elt_it->point( 6 ).id()+1;
-                break;
-            }
-            /// \todo implement these cases
-            case 3 :
-            case 4 :
-            case 5 :
-            {
-                break;
-            }
-            }
+        for (uint16_type p=0;p<element_type::numPoints;++p)
+            out << " " << elt_it->point( ordering.id( p ) ).id();
 
-        }
         out<<"\n";
-    }
+    } // elements
+
+    typedef typename MeshType::face_type face_type;
+    GmshOrdering<face_type> ordering_face;
     // save the faces
     for ( ; face_it != face_end; ++face_it )
     {
         // elm-number elm-type number-of-tags < tag > ... node-number-list
-        out<< elem_number <<" ";
-        elem_number++;
-        nLocGeoPt = face_it->nPoints();
-        if (face_it->isALineShape()){
-            switch (mesh_type::nOrder)
-            {
-                // elm-type: first order line
-            case 1 : out << 1 ; break;
-            case 2 : out << 8; break;
-            case 3 : out << 26; break;
-            case 4 : out << 27; break;
-            case 5 : out << 28; break;
-
-            }
-            // number-of-tags < tag >
-            out<<" 3 " << face_it->marker().value() << " 2 " << face_it->processId();
-            // node-number-list
-            for (uint16_type p=0;p<nLocGeoPt;++p)
-                out << " " << face_it->point( p ).id()+1;
-            out<<"\n";
-        }//end of test "isALineShape"
-
-
-    }//end of loop over faces
+        out<< elem_number++ <<" ";
+        out << ordering_face.type();
+        // number-of-tags < tag >
+        out<<" 3 " << face_it->marker().value() << " 2 " << face_it->processId();
+        // node-number-list
+        for (uint16_type p=0;p<face_type::numPoints;++p)
+            out << " " << face_it->point( ordering_face.id( p ) ).id();
+        out<<"\n";
+    } // faces
 
     out << "$EndElements\n";
 
