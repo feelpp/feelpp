@@ -28,6 +28,13 @@
  */
 #include <life/lifecore/environment.hpp>
 
+#include <boost/tokenizer.hpp>
+#include <boost/token_functions.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/fstream.hpp>
+
 #if defined( HAVE_PETSC_H )
 extern "C"
 {
@@ -111,6 +118,48 @@ bool
 Environment::finalized()
 {
     return mpi::environment::finalized();
+}
+
+std::string
+Environment::rootRepository()
+{
+    std::string env;
+    if ( ::getenv( "LIFE_REPOSITORY" ) )
+    {
+        env = ::getenv( "LIFE_REPOSITORY" );
+    }
+    else
+    {
+        // by default create $HOME/life
+        env = ::getenv( "HOME" );
+        env += "/life";
+    }
+    return env;
+}
+void
+Environment::changeRepository( boost::format fmt )
+{
+    fs::path rep_path;
+
+    rep_path = Environment::rootRepository();
+    if ( !fs::exists( rep_path ) )
+        fs::create_directory( rep_path );
+
+    typedef std::vector< std::string > split_vector_type;
+
+    split_vector_type dirs; // #2: Search for tokens
+    std::string fmtstr = fmt.str();
+    boost::split( dirs, fmtstr, boost::is_any_of("/") );
+
+    BOOST_FOREACH( std::string const& dir, dirs )
+        {
+            //Debug( 1000 ) << "[Application::Application] option: " << s << "\n";
+            rep_path = rep_path / dir;
+            if (!fs::exists( rep_path ) )
+                fs::create_directory( rep_path );
+        }
+
+    ::chdir( rep_path.string().c_str() );
 }
 
 }

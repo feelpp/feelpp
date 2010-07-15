@@ -267,8 +267,9 @@ DebugStream::DebugStream( int area, int level, bool print )
     if ( __p->debug && level == DEBUG_INFO )
     {
         posix_time::ptime __time( posix_time::second_clock::local_time() );
-        __p->_M_output << "[" << getDescription ( area ) << "] ";
-            //<< posix_time::to_simple_string( __time )<< ") : ";
+        if ( area )
+            __p->_M_output << "[" << getDescription ( area ) << "] ";
+        //<< posix_time::to_simple_string( __time )<< ") : ";
     }
 
 }
@@ -289,7 +290,8 @@ DebugStream::DebugStream( const char* initialString, int area, int level, bool p
     if ( __p->debug && level == DEBUG_INFO )
     {
         posix_time::ptime __time( posix_time::second_clock::local_time() );
-        __p->_M_output << "[" << getDescription ( area ) << "] "
+        if ( area )
+            __p->_M_output << "[" << getDescription ( area ) << "] "
             //<< posix_time::to_simple_string( __time )<< ") : "
                        << initialString;
     }

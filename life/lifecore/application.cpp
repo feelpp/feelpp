@@ -49,6 +49,7 @@
 #include <boost/filesystem/fstream.hpp>
 
 #include <life/lifecore/life.hpp>
+#include <life/lifecore/environment.hpp>
 #include <life/lifecore/application.hpp>
 
 #if defined( HAVE_PETSC_H )
@@ -377,6 +378,7 @@ Application::doOptions( int argc, char** argv )
             ("version,v", "prints the version")
             ("lifeinfo", "prints life libraries information")
             ("verbose,V", "verbose mode")
+            ("nochdir", "Don't change repository directory even though it is called")
             ("response-file", po::value<std::string>(), "can be specified with '@name', too")
             ;
         po::options_description debug( "Debugging options" );
@@ -384,9 +386,9 @@ Application::doOptions( int argc, char** argv )
             ("debug", po::value<std::string>()->default_value( "" ), "specify a debugging area list");
         _M_desc.add( generic ).add( debug );
 
-
+        std::cout << "1\n";
         this->parseAndStoreOptions( po::command_line_parser(argc, argv), true );
-
+        std::cout << "2\n";
         std::string config_name = (boost::format( "%1%.cfg" ) % this->about().appName()).str();
         Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
         if ( fs::exists( config_name ) )
@@ -407,11 +409,12 @@ Application::doOptions( int argc, char** argv )
                 store(parse_config_file(ifs, _M_desc), _M_vm);
             }
         }
-
+        std::cout << "3\n";
         //po::store(po::parse_command_line(argc, argv, _M_desc), _M_vm);
         po::notify(_M_vm);
-
+        std::cout << "4\n";
         processGenericOptions();
+        std::cout << "5\n";
     }
     catch( boost::program_options::unknown_option const& e )
         {
@@ -571,44 +574,15 @@ Application::processGenericOptions()
 std::string
 Application::rootRepository() const
 {
-    std::string env;
-    if ( ::getenv( "LIFE_REPOSITORY" ) )
-        {
-            env = ::getenv( "LIFE_REPOSITORY" );
-        }
-    else
-        {
-            // by default create $HOME/life
-            env = ::getenv( "HOME" );
-            env += "/life";
-        }
-    return env;
+    return Environment::rootRepository();
 }
 
 Application&
 Application::changeRepository( boost::format fmt )
 {
-    fs::path rep_path;
-
-    rep_path = rootRepository();
-    if ( !fs::exists( rep_path ) )
-        fs::create_directory( rep_path );
-
-    typedef std::vector< std::string > split_vector_type;
-
-    split_vector_type dirs; // #2: Search for tokens
-    std::string fmtstr = fmt.str();
-    boost::split( dirs, fmtstr, boost::is_any_of("/") );
-
-    BOOST_FOREACH( std::string const& dir, dirs )
-        {
-            //Debug( 1000 ) << "[Application::Application] option: " << s << "\n";
-            rep_path = rep_path / dir;
-            if (!fs::exists( rep_path ) )
-                fs::create_directory( rep_path );
-        }
-
-    ::chdir( rep_path.string().c_str() );
+    if ( _M_vm.count( "nochdir" ) )
+        return *this;
+    Environment::changeRepository( fmt );
     this->setLogs();
     return *this;
 }
@@ -620,6 +594,7 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
     boost::shared_ptr<po::parsed_options> parsed;
     if ( extra_parser )
         {
+            std::cout << "p1\n";
             parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
                                                                                     .options(_M_desc)
                                                                                     .extra_parser(at_option_parser)
@@ -649,28 +624,56 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
     Debug( 1000 ) << "[Application::Application] parsing options done\n";
 
 #if BOOST_VERSION >= 103301
-
+    std::cout << "p2\n";
     _M_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
-
+    std::cout << "p3\n";
     Debug( 1000 ) << "[Application::Application] number of unrecognized options: " << (_M_to_pass_further.size()) << "\n";
 
     BOOST_FOREACH( std::string const& s, _M_to_pass_further )
         {
             Debug( 1000 ) << "[Application::Application] option: " << s << "\n";
         }
-
+    std::cout << "p5\n";
     std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
     std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
     for ( ; it != en ; ++it )
         if ( it->unregistered )
             {
                 Debug( 1000 ) << "[Application::Application] remove from vector " << it->string_key << "\n";
+                std::cout << "[Application::Application] remove from vector " << it->string_key << "\n";
                 parsed->options.erase( it );
             }
+    std::cout << "p6\n";
 #endif
 
     po::store(*parsed, _M_vm );
+    std::cout << "p7\n";
+}
 
+void
+Application::add( Simget* simget )
+{
+    M_simgets.push_back( simget );
+}
+
+void
+Application::run()
+{
+    for( auto i = M_simgets.begin(), end = M_simgets.end(); i != end; ++i )
+    {
+        i->run();
+    }
+}
+
+void
+Application::run( const double* X, unsigned long P, double* Y, unsigned long N )
+{
+    auto it = M_simgets.begin(), en = M_simgets.end();
+    int i = 0;
+    for( ; it != en; ++i, ++it )
+    {
+        it->run( &X[i*P], P, &Y[i*N], N );
+    }
 }
 
 }
