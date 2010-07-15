@@ -74,7 +74,7 @@ macro( add_docex target )
  endforeach()
 endmacro()
 
-foreach( docex myintegrals mymesh ) # laplacian  )
+foreach( docex myintegrals mymesh laplacian  )
   add_docex( ${docex} )
 endforeach()
 
