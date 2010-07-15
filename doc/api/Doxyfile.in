@@ -575,6 +575,7 @@ WARN_LOGFILE           = Doxylog
 #
 INPUT                  = "@LIFE_HOME_DIR@/life/lifecore" \
                          "@LIFE_HOME_DIR@/life/lifealg" \
+                         "@LIFE_HOME_DIR@/life/lifefilters" \
                          "@LIFE_HOME_DIR@/life/lifemesh" \
                          "@LIFE_HOME_DIR@/doc/api"\
                          "@LIFE_HOME_DIR@/doc/tutorial"
@@ -635,8 +636,8 @@ EXCLUDE_SYMBOLS        =
 # directories that contain example code fragments that are included (see
 # the \include command).
 
-EXAMPLE_PATH           = "@LIFE_HOME_DIR@/doc/tutorial"
-                         "${HOME}/life/doc/tutorial/myapp/"
+EXAMPLE_PATH           = "@LIFE_HOME_DIR@/doc/tutorial" \
+                         "@CMAKE_CURRENT_BINARY_DIR@/../"
 
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
@@ -651,13 +652,14 @@ EXAMPLE_PATTERNS       = *
 # commands irrespective of the value of the RECURSIVE tag.
 # Possible values are YES and NO. If left blank NO is used.
 
-EXAMPLE_RECURSIVE      = NO
+EXAMPLE_RECURSIVE      = YES
 
 # The IMAGE_PATH tag can be used to specify one or more files or
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             = @LIFE_HOME_DIR@/doc/tutorial/pngs/
+IMAGE_PATH             = "@LIFE_HOME_DIR@/doc/tutorial/pngs/"\
+                         "@CMAKE_CURRENT_BINARY_DIR@/../tutorial/"
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program
@@ -1221,13 +1223,13 @@ ENABLE_PREPROCESSING   = YES
 # compilation will be performed. Macro expansion can be done in a controlled
 # way by setting EXPAND_ONLY_PREDEF to YES.
 
-MACRO_EXPANSION        = NO
+MACRO_EXPANSION        = YES
 
 # If the EXPAND_ONLY_PREDEF and MACRO_EXPANSION tags are both set to YES
 # then the macro expansion is limited to the macros specified with the
 # PREDEFINED and EXPAND_AS_DEFINED tags.
 
-EXPAND_ONLY_PREDEF     = NO
+EXPAND_ONLY_PREDEF     = YES
 
 # If the SEARCH_INCLUDES tag is set to YES (the default) the includes files
 # in the INCLUDE_PATH (see below) will be search if a #include is found.
@@ -1238,7 +1240,8 @@ SEARCH_INCLUDES        = YES
 # contain include files that are not input files but should be processed by
 # the preprocessor.
 
-INCLUDE_PATH           =
+INCLUDE_PATH           = "/usr/include/boost/"\
+                         "/usr/include/boost/parameter"
 
 # You can use the INCLUDE_FILE_PATTERNS tag to specify one or more wildcard
 # patterns (like *.h and *.hpp) to filter out the header-files in the
@@ -1266,7 +1269,7 @@ PREDEFINED             = HAVE_MPI \
 # The macro definition that is found in the sources will be used.
 # Use the PREDEFINED tag if you want to use a different macro definition.
 
-EXPAND_AS_DEFINED      =
+EXPAND_AS_DEFINED      = BOOST_PARAMETER_FUNCTION
 
 # If the SKIP_FUNCTION_MACROS tag is set to YES (the default) then
 # doxygen's preprocessor will remove all function-like macros that are alone
