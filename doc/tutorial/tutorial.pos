@@ -1,0 +1,23 @@
+General.BackgroundGradient=0;
+General.LineWidth=2;
+General.Verbosity=0;
+General.GraphicsWidth=600;
+General.GraphicsHeight=600;
+General.DrawBoundingBoxes = 1;
+General.Orthographic=0;
+//General.Axes=0;
+
+Mesh.VolumeEdges=0;
+Mesh.ColorCarousel=0;
+Mesh.LineWidth=2;
+
+// recompute the bounding box of the graphic
+BoundingBox;
+
+Sleep 0.01;
+// redraw the graphics
+Draw;
+
+// print to png file
+Print StrCat( StrPrefix(General.FileName), ".png");
+
