@@ -33,6 +33,7 @@
 
 namespace Life
 {
+/// \cond detail
     namespace detail {
         template<typename MT>
         Exporter<MT>* createEnsight() { return new ExporterEnsight<MT>; }
@@ -85,6 +86,6 @@ namespace Life
 
     template class Exporter<Mesh<SimplexProduct<2,2,2> > >;
     template class Exporter<Mesh<SimplexProduct<2,3,2> > >;
-
+/// \endcond detail
 }
 //#endif // LIFE_INSTANTIATION_MODE

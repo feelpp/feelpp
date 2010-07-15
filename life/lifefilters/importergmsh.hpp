@@ -36,64 +36,12 @@
 #include <iomanip>
 
 #include <life/lifefilters/importer.hpp>
+#include <life/lifefilters/gmshenums.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
 
 namespace Life
 {
-/**
- * \enum GMSH_ENTITY
- *
- * enumerate the various elements available in gmsh
- */
-enum GMSH_ENTITY
-    {
-        GMSH_LINE = 1, //!< Line (2 nodes).
-        GMSH_TRIANGLE = 2, //!< Triangle (3 nodes).
-        GMSH_QUADRANGLE = 3,  //!< Quadrangle (4 nodes).
-        GMSH_TETRAHEDRON = 4, //!< Tetrahedron (4 nodes).
-        GMSH_HEXAHEDRON = 5, //!< Hexahedron (8 nodes).
-        GMSH_PRISM = 6,  //!< Prism (6 nodes).
-        GMSH_PYRAMID = 7, //!< Pyramid (5 nodes).
-        GMSH_LINE_2 = 8,  //!< Second order line (3 nodes: 2 associated
-        //with the vertices and 1 with the edge).
-        GMSH_TRIANGLE_2 = 9, //!< Second order triangle (6 nodes: 3
-        //associated with the vertices and 3 with the
-        //edges).
-        GMSH_QUADRANGLE_2 = 10, //!<Second order quadrangle (9 nodes: 4
-        //associated with the vertices, 4 with the
-        //edges and 1 with the face).
-        GMSH_TETRAHEDRON_2 = 11, //!< Second order tetrahedron (10 nodes:
-        //4 associated with the vertices and 6
-        //with the edges).
-        GMSH_HEXAHEDRON_2 = 12,  //!< Second order hexahedron (27 nodes: 8
-        //associated with the vertices, 12 with
-        //the edges, 6 with the faces and 1 with
-        //the volume).
-        GMSH_PRISM_2 = 13, //!<Second order prism (18 nodes: 6 associated
-        //with the vertices, 9 with the edges and 3 with
-        //the quadrangular faces).
-        GMSH_PYRAMID_2 = 14, //!<Second order pyramid (14 nodes: 5
-        //associated with the vertices, 8 with the
-        //edges and 1 with the quadrangular face).
-        GMSH_POINT = 15, //!< Point (1 node).
-
-        GMSH_TRIANGLE_INCOMPLETE_3=20, //!< triangle of order 3
-        GMSH_TRIANGLE_3=21, //!< triangle of order 3
-        GMSH_TRIANGLE_INCOMPLETE_4=22, //!< triangle of order 4
-        GMSH_TRIANGLE_4=23, //!< triangle of order 4
-        GMSH_TRIANGLE_INCOMPLETE_5=24, //!< triangle of order 5
-        GMSH_TRIANGLE_5=25, //!< triangle of order 5
-
-        GMSH_LINE_3=26, //!< line of order 3
-        GMSH_LINE_4=27, //!< line of order 4
-        GMSH_LINE_5=28, //!< line of order 5
-
-        GMSH_TETRAHEDRON_3=29, //!< tetra of order 3
-        GMSH_TETRAHEDRON_4=30, //!< tetra of order 4
-        GMSH_TETRAHEDRON_5=31, //!< tetra of order 5
-    };
-
 /**
  * \class ImporterGmsh
  * \brief gmsh importer class
@@ -159,7 +107,7 @@ public:
         super( GMSH ),
         _M_version( LIFE_GMSH_FORMAT_VERSION )
     {
-        showMe();
+        //showMe();
     }
 
     explicit ImporterGmsh( std::string const& fname, std::string version = LIFE_GMSH_FORMAT_VERSION )
@@ -167,14 +115,14 @@ public:
         super( fname, GMSH ),
         _M_version( version )
     {
-        showMe();
+        //showMe();
     }
     ImporterGmsh( ImporterGmsh const & i )
         :
         super( i ),
         _M_version( i._M_version )
     {
-        showMe();
+        //showMe();
     }
     ~ImporterGmsh()
     {}

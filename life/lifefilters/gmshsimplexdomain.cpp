@@ -61,7 +61,6 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<1> ) const
                  << "Physical Point(2) = {3};\n"
                  << "Physical Line(1) = {1};\n"
                  << "Physical Line(2) = {2};\n";
-            std::cout << ostr.str() << "\n";
         }
     else
         {

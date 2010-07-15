@@ -36,7 +36,7 @@
 #include <life/lifecore/parameter.hpp>
 #include <life/lifecore/factory.hpp>
 #include <life/lifecore/singleton.hpp>
-
+#include <life/lifefilters/gmshenums.hpp>
 namespace Life
 {
 const std::string LIFE_GMSH_FORMAT_VERSION="2.1";
@@ -322,7 +322,6 @@ struct mesh
 /// \endcond
 
 /**
- * \fn createGMSHMesh
  *
  * \brief create a mesh data structure (hold in a shared_ptr<>) using GMSH
  *
@@ -364,30 +363,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 
-/**
- * \fn domain
- * \brief generate a simple geometrical domain from required and optional parameters
- *
- * List of required parameters:
- *  - \param _name name of the file that will ge generated without extension
- *  - \param _shape shape of the domain to be generated (simplex or hypercube)
- * List of optional parameters:
- *  - \param _dim dimension of the domain (default: 2)
- *  - \param _order order of the geometry (default: 1)
- *  - \param _h characteristic size of the mesh (default: 0.1)
- *  - \param _convex type of convex used to mesh the domain (default: simplex) (simplex or hypercube)
- *  - \param _addmidpoint add middle point (default: true )
- *  - \param _xmin minimum x coordinate (default: 0)
- *  - \param _xmax maximum x coordinate (default: 1)
- *  - \param _ymin minimum y coordinate (default: 0)
- *  - \param _ymax maximum y coordinate (default: 1)
- *  - \param _zmin minimum z coordinate (default: 0)
- *  - \param _zmax maximum z coordinate (default: 1)
- *
- * \attention this function uses the Boost.Parameter library that allows to
- * enter the parameter in any order.
- *
- */
+
 BOOST_PARAMETER_FUNCTION(
                          (boost::tuple<std::string,std::string,gmsh_ptrtype>), // return type
                          domain,    // 2. function name
@@ -420,6 +396,30 @@ BOOST_PARAMETER_FUNCTION(
     return boost::make_tuple( name, gmsh_ptr->description(), gmsh_ptr );
 }
 
+/**
+ * \fn boost::tuple<std::string,std::string,gmsh_ptrtype> domain( std::string _name, std::string _shape, int _dim, int _order, double _h, std::string _convex)
+ * \brief generate a simple geometrical domain from required and optional parameters
+ *
+ * List of required parameters:
+ *  - \param _name name of the file that will ge generated without extension
+ *  - \param _shape shape of the domain to be generated (simplex or hypercube)
+ * List of optional parameters:
+ *  - \param _dim dimension of the domain (default: 2)
+ *  - \param _order order of the geometry (default: 1)
+ *  - \param _h characteristic size of the mesh (default: 0.1)
+ *  - \param _convex type of convex used to mesh the domain (default: simplex) (simplex or hypercube)
+ *  - \param _addmidpoint add middle point (default: true )
+ *  - \param _xmin minimum x coordinate (default: 0)
+ *  - \param _xmax maximum x coordinate (default: 1)
+ *  - \param _ymin minimum y coordinate (default: 0)
+ *  - \param _ymax maximum y coordinate (default: 1)
+ *  - \param _zmin minimum z coordinate (default: 0)
+ *  - \param _zmax maximum z coordinate (default: 1)
+ *
+ * \attention this function uses the Boost.Parameter library that allows to
+ * enter the parameter in any order.
+ *
+ */
 } // Life
 
 #endif /* __Gmsh_H */

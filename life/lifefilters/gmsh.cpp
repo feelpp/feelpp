@@ -409,6 +409,8 @@ const bool meshs11tsxx = Gmsh::Factory::type::instance().registerProduct( "hyper
                                                                           &detail::createTensorizedDomain<1,1,1,Simplex> );
 const bool meshs21tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1)",
                                                                           &detail::createTensorizedDomain<2,1,2,Simplex> );
+const bool meshs31tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(3,1)",
+                                                                          &detail::createTensorizedDomain<3,1,3,Simplex> );
 
 const bool meshs21ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,Simplex)",
                                                                         &detail::createTensorizedDomain<2,1,2,Simplex> );

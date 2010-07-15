@@ -36,7 +36,7 @@
 
 namespace Life
 {
-
+/// \cond detail
 namespace gambit
 {
 namespace Element
@@ -123,6 +123,7 @@ enum
     SPRING = 52
 };
 }
+
 struct quad4
 {
   static const int face[][2];
@@ -167,7 +168,7 @@ bool read( std::string const& filename,
 
 
 } // gambit namespace
-
+/// \endcond detail
 /**
  * \class ImporterGambit
  * \brief gambit(fluent mesh generator) importer class
@@ -175,9 +176,6 @@ bool read( std::string const& filename,
  * the importer concept follows the visitor pattern
  *
  * \code
- * typename Mesh2D<LinearTetra> mesh_type;
- * mesh_type mesh;
- *
  * ImporterGambit<mesh_type> import( "mesh.msh");
  * mesh.accept( import );
  * \endcode
