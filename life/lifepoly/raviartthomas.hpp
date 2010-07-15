@@ -355,7 +355,7 @@ public:
     /**
      * \return the point set
      */
-    pointset_type const& pointSet() const { return M_pset; }
+    //pointset_type const& pointSet() const { return M_pset; }
 
     points_type const& points() const { return _M_pts; }
 
