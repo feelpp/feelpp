@@ -31,7 +31,6 @@
 #include <life/lifediscr/mesh.hpp>
 #include <life/lifediscr/functionspace.hpp>
 #include <life/lifediscr/region.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
 #include <life/lifefilters/gmsh.hpp>
 
 #include <life/lifefilters/exporter.hpp>
@@ -45,6 +44,7 @@ makeOptions()
     Life::po::options_description mymeshoptions("MyMesh options");
     mymeshoptions.add_options()
         ("hsize", Life::po::value<double>()->default_value( 0.1 ), "mesh size")
+        ("shape", Life::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
         ;
 
     // return the options mymeshoptions and the life_options defined
@@ -57,10 +57,10 @@ makeAbout()
 {
     Life::AboutData about( "mymesh" ,
                            "mymesh" ,
-                           "0.1",
+                           "0.2",
                            "my first Life application",
                            Life::AboutData::License_GPL,
-                           "Copyright (c) 2008 Universite Joseph Fourier");
+                           "Copyright (c) 2008-2010 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme",
                     "developer",
@@ -69,7 +69,7 @@ makeAbout()
 }
 
 template<int Dim>
-class MyMesh: public Life::Application
+class MyMesh: public Life::Simget
 {
 public:
 
@@ -83,108 +83,80 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     //# endmarker2 #
 
+    //# marker61 #
     /* export */
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
+    //# endmarker61 #
 
     /**
      * constructor about data and options description
      */
-    MyMesh( int argc, char** argv,
-           Life::AboutData const&,
-           Life::po::options_description const&  );
+    MyMesh( po::variables_map const& vm, AboutData const& about  );
 
-    /**
-     * create the mesh
-     */
-    mesh_ptrtype createMesh();
-
-    /**
-     * must be redefined by Application subclass
-     */
     void run();
 
-private:
-
-    /**
-     * set the application member data from command line options
-     */
-    void setOptions();
+    void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
 private:
-    double M_meshSize;
-
+    double meshSize;
+    std::string shape;
     export_ptrtype exporter;
 };
 
 template<int Dim>
-MyMesh<Dim>::MyMesh(int argc, char** argv,
-                    AboutData const& ad,
-                    po::options_description const& od )
+MyMesh<Dim>::MyMesh( po::variables_map const& vm, AboutData const& about )
     :
-    Application( argc, argv, ad, od ),
-    M_meshSize( 0.1 ),
+    Simget( vm, about ),
+    meshSize( this->vm()["hsize"].template as<double>() ),
+    shape( this->vm()["shape"].template as<std::string>() ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
+{}
+
+
+template<int Dim>
+void
+MyMesh<Dim>::run()
 {
-    this->setOptions();
+    std::cout << "------------------------------------------------------------\n";
+    std::cout << "Execute MyMesh<" << Dim << ">\n";
+    std::vector<double> X( 2 );
+    X[0] = meshSize;
+    if ( shape == "hypercube" )
+        X[1] = 1;
+    else // default is simplex
+        X[1] = 0;
+    std::vector<double> Y( 3 );
+    run( X.data(), X.size(), Y.data(), Y.size() );
 }
 template<int Dim>
 void
-MyMesh<Dim>::setOptions()
+MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
-    M_meshSize = this->vm()["hsize"].template as<double>();
-}
-template<int Dim>
-typename MyMesh<Dim>::mesh_ptrtype
-MyMesh<Dim>::createMesh()
-{
-    //# marker3 #
-    mesh_ptrtype mesh( new mesh_type );
-    //# endmarker3 #
+    if ( X[1] == 0 ) shape = "simplex";
+    if ( X[1] == 1 ) shape = "hypercube";
 
+    if ( !this->vm().count( "nochdir" ) )
+        Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/h_%4%/" )
+                                       % this->about().appName()
+                                       % shape
+                                       % Dim
+                                       % meshSize );
     //# marker4 #
-    GmshTensorizedDomain<convex_type::nDim,
-                         convex_type::nOrder,
-                         convex_type::nDim,
-                         Simplex> geo;
-    geo.setCharacteristicLength( M_meshSize );
-    std::string fname = geo.generate( "mymesh" );
-    //# endmarker4 #
-
-    //# marker5 #
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                                      _shape=shape,
+                                                      _dim=Dim,
+                                                      _h=X[0] ) );
     mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
     mesh->updateForUse();
-    //# endmarker5 #
+    //#endmarker4#
 
-    return mesh;
-}
-template<int Dim>
-void MyMesh<Dim>::run()
-{
-    if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
-    this->changeRepository( boost::format( "doc/tutorial/%1%/h_%2%/" )
-                            % this->about().appName()
-                            % M_meshSize
-                            );
 
-    mesh_ptrtype mesh = this->createMesh();
-
-    //# marker6 #
-    typedef bases<Lagrange<0,Scalar> > p0_basis_type;
-    typedef FunctionSpace<mesh_type, p0_basis_type, Discontinuous> p0_space_type;
-    boost::shared_ptr<p0_space_type> P0h( new p0_space_type( mesh ) );
-
+    //# marker62 #
     exporter->step(0)->setMesh( mesh );
-    exporter->step(0)->add( "pid", regionProcess( P0h ) );
-
     exporter->save();
-    //# endmarker6 #
+    //# endmarker62 #
 }
 
 //
@@ -192,7 +164,16 @@ void MyMesh<Dim>::run()
 //
 int main( int argc, char** argv )
 {
-    MyMesh<2> app( argc, argv, makeAbout(), makeOptions() );
+    Application app( argc, argv, makeAbout(), makeOptions() );
+    if ( app.vm().count( "help" ) )
+    {
+        std::cout << app.optionsDescription() << "\n";
+        return 0;
+    }
+
+    app.add( new MyMesh<1>( app.vm(), app.about() ) );
+    app.add( new MyMesh<2>( app.vm(), app.about() ) );
+    app.add( new MyMesh<3>( app.vm(), app.about() ) );
 
     app.run();
 }

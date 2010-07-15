@@ -43,9 +43,10 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description myintegralsoptions("MyintegralsMyintegrals options");
+    po::options_description myintegralsoptions("MyIntegrals options");
     myintegralsoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
+        ("hsize", po::value<double>()->default_value( 0.2 ), "mesh size")
+        ("shape", Life::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
         ;
     return myintegralsoptions.add( Life::life_options() );
 }
@@ -55,10 +56,10 @@ makeAbout()
 {
     AboutData about( "myintegrals" ,
                      "myintegrals" ,
-                     "0.2",
+                     "0.3",
                      "nD(n=1,2,3) MyIntegrals on simplices or simplex products",
                      Life::AboutData::License_GPL,
-                     "Copyright (c) 2008 Universite Joseph Fourier");
+                     "Copyright (c) 2008-2010 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -67,143 +68,170 @@ makeAbout()
 
 
 /**
- * MyIntegrals: compute integrals over a domain of \f$\mathbb{R}^d,\ d=-1,2,3\f$
- *
+ * MyIntegrals: compute integrals over a domain
+ * \see the \ref ComputingIntegrals section in the tutorial
  * @author Christophe Prud'homme
  */
 template<int Dim>
 class MyIntegrals
     :
-    public Application
+    public Simget
 {
-    typedef Application super;
+    typedef Simget super;
 public:
     typedef double value_type;
-    typedef Application application_type;
 
     /*mesh*/
     typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    MyIntegrals( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    MyIntegrals( po::variables_map const& vm, AboutData const& about )
         :
-        super( argc, argv, ad, od ),
-        meshSize( this->vm()["hsize"].template as<double>() )
+        super( vm, about ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( this->vm()["shape"].template as<std::string>()  )
     {
     }
 
-    /**
-     * create the mesh using mesh size \c meshSize
-     */
-    mesh_ptrtype createMesh( double meshSize );
-
-    /**
-     * run the convergence test
-     */
     void run();
+
+    void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
 private:
 
     double meshSize;
-
+    std::string shape;
 }; // MyIntegrals
-
-template<int Dim>
-typename MyIntegrals<Dim>::mesh_ptrtype
-MyIntegrals<Dim>::createMesh( double meshSize )
-{
-    mesh_ptrtype mesh( new mesh_type );
-
-    GmshTensorizedDomain<convex_type::nDim,convex_type::nOrder,convex_type::nDim,Simplex> td;
-    td.setCharacteristicLength( meshSize );
-    std::string fname = td.generate( convex_type::name().c_str() );
-
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-    mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
-    mesh->updateForUse();
-    return mesh;
-} // MyIntegrals::createMesh
 
 
 template<int Dim>
 void
 MyIntegrals<Dim>::run()
 {
-    if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
-
-    //    int maxIter = 10.0/meshSize;
+    std::cout << "------------------------------------------------------------\n";
+    std::cout << "Execute MyIntegrals<" << Dim << ">\n";
+    std::vector<double> X( 2 );
+    X[0] = meshSize;
+    if ( shape == "hypercube" )
+        X[1] = 1;
+    else // default is simplex
+        X[1] = 0;
+    std::vector<double> Y( 3 );
+    run( X.data(), X.size(), Y.data(), Y.size() );
+}
+template<int Dim>
+void
+MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
+{
     using namespace Life::vf;
 
+    if ( X[1] == 0 ) shape = "simplex";
+    if ( X[1] == 1 ) shape = "hypercube";
 
-    this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/" )
-                            % this->about().appName()
-                            % convex_type::name()
-                            % this->vm()["hsize"].template as<double>()
-                            );
-    this->setLogs();
+    if ( !this->vm().count( "nochdir" ) )
+        Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/" )
+                                       % this->about().appName()
+                                       % shape
+                                       % meshSize );
 
     /*
      * First we create the mesh
      */
-    mesh_ptrtype mesh = createMesh( meshSize );
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name= (boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                                      _shape=shape,
+                                                      _dim=Dim,
+                                                      _h=X[0] ) );
+    mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
+    mesh->updateForUse();
 
     /*
      * Compute domain Area
      */
     //# marker1 #
-    double local_domain_area = integrate( elements(mesh), _Q<0>(),
+    double local_domain_area = integrate( elements(mesh),
                                           constant(1.0)).evaluate()(0,0);
     //# endmarker1 #
 
     //# marker2 #
     double global_domain_area=local_domain_area;
-    if ( Application::nProcess() > 1 )
-        mpi::all_reduce( Application::comm(),
+    if ( this->comm().size()  > 1 )
+        mpi::all_reduce( this->comm(),
                          local_domain_area,
                          global_domain_area,
                          std::plus<double>() );
     //# endmarker2 #
     //# marker3 #
-    Log() << "int_Omega = " << global_domain_area
+    Log() << "int_Omega 1 = " << global_domain_area
           << "[ " << local_domain_area << " ]\n";
     //# endmarker3 #
 
-    /*
-     * Compute domain perimeter
-     */
-    //# marker4 #
-    double local_boundary_length = integrate( boundaryfaces(mesh), _Q<0>(),
-                                            constant(1.0)).evaluate()(0,0);
-    double global_boundary_length = local_boundary_length;
-    if ( Application::nProcess() > 1 )
-        mpi::all_reduce( Application::comm(),
-                         local_boundary_length,
-                         global_boundary_length,
-                         std::plus<double>() );
-    Log() << "int_Omega = " << global_boundary_length
-          << "[ " << local_boundary_length << " ]\n";
-    //# endmarker4 #
+    if ( Dim > 1 )
+    {
+        /*
+         * Compute domain perimeter
+         */
+        //# marker4 #
+        double local_boundary_length = integrate( boundaryfaces(mesh),
+                                                  constant(1.0)).evaluate()(0,0);
+        double global_boundary_length = local_boundary_length;
+        if ( this->comm().size() > 1 )
+            mpi::all_reduce( this->comm(),
+                             local_boundary_length,
+                             global_boundary_length,
+                             std::plus<double>() );
+        Log() << "int_BoundaryOmega (1)= " << global_boundary_length
+              << "[ " << local_boundary_length << " ]\n";
+        //# endmarker4 #
+    }
 
     /*
      * Compute \int f where f= x^2 + y^2 + z^2
+     * \note Py() = Pz() = 0 in 1D
+     * \note Pz() = 0 in 2D
      */
-    double local_intf = integrate( elements(mesh), _Q<2>(),
+    //# marker5 #
+    double local_intf = integrate( elements(mesh),
                                    Px()*Px() + Py()*Py() + Pz()*Pz()
                                    ).evaluate()(0,0);
+    //# endmarker5 #
     double global_intf = local_intf;
-    if ( Application::nProcess() > 1 )
-        mpi::all_reduce( Application::comm(),
+    if ( this->comm().size() > 1 )
+        mpi::all_reduce( this->comm(),
                          local_intf,
                          global_intf,
                          std::plus<double>() );
-    Log() << "int_Omega = " << global_intf
+    Log() << "int_Omega (x^2+y^2+z^2) = " << global_intf
           << "[ " << local_intf << " ]\n";
+
+    //# marker6 #
+    double local_intsin = integrate( elements(mesh),
+                                     sin( Px()*Px() + Py()*Py() + Pz()*Pz() )
+                                    ).evaluate()(0,0);
+    //# endmarker6 #
+    double global_intsin = local_intsin;
+    if ( this->comm().size() > 1 )
+        mpi::all_reduce( this->comm(),
+                         local_intsin,
+                         global_intsin,
+                         std::plus<double>() );
+    Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << global_intsin
+          << "[ " << local_intsin << " ]\n";
+
+    //# marker7 #
+    double local_intsin2 = integrate( elements(mesh), _Q<2>(),
+                                      sin( Px()*Px() + Py()*Py() + Pz()*Pz() )
+                                    ).evaluate()(0,0);
+    //# endmarker7 #
+    double global_intsin2 = local_intsin2;
+    if ( this->comm().size() > 1 )
+        mpi::all_reduce( this->comm(),
+                         local_intsin2,
+                         global_intsin2,
+                         std::plus<double>() );
+    Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = " << global_intsin2
+          << "[ " << local_intsin2 << " ]\n";
 
 
 } // MyIntegrals::run
@@ -211,12 +239,19 @@ MyIntegrals<Dim>::run()
 int
 main( int argc, char** argv )
 {
-    MyIntegrals<2> myintegrals( argc, argv, makeAbout(), makeOptions() );
+    Application app( argc, argv, makeAbout(), makeOptions() );
 
-    /* assertions handling */
-    Life::Assert::setLog( "myintegrals.assert");
+    if ( app.vm().count( "help" ) )
+    {
+        std::cout << app.optionsDescription() << "\n";
+        return 0;
+    }
 
-    myintegrals.run();
+    app.add( new MyIntegrals<1>( app.vm(), app.about() ) );
+    app.add( new MyIntegrals<2>( app.vm(), app.about() ) );
+    app.add( new MyIntegrals<3>( app.vm(), app.about() ) );
+
+    app.run();
 }
 
 
