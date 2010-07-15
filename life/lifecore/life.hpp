@@ -56,6 +56,11 @@
 
 #include <boost/cstdint.hpp>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/fstream.hpp>
+
+#include <boost/format.hpp>
+#include <boost/foreach.hpp>
 
 #include <cmath>
 #include <numeric>
@@ -70,8 +75,10 @@
 
 #include <life/lifecore/flags.hpp>
 
+
 namespace Life
 {
+namespace fs = boost::filesystem;
 namespace mpl = boost::mpl;
 namespace lambda = boost::lambda;
 namespace po = boost::program_options;

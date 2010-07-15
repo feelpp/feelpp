@@ -32,9 +32,12 @@
 
 #include <boost/optional.hpp>
 #include <boost/format.hpp>
+#include <boost/ptr_container/ptr_list.hpp>
 
 #include <life/lifecore/life.hpp>
+#include <life/lifecore/environment.hpp>
 #include <life/lifecore/about.hpp>
+#include <life/lifecore/simget.hpp>
 
 #include <iostream>
 #include <boost/archive/binary_iarchive.hpp>
@@ -72,6 +75,11 @@ public:
      */
     //@{
 
+    //! Simget collection type
+    typedef boost::ptr_list<Simget> simgets_type;
+
+    //! Simget iterator over the collection
+    typedef simgets_type::iterator  simget_iterator;
 
     //@}
 
@@ -229,6 +237,14 @@ public:
     //! \return the root of life applications (typically $HOME/life)
     std::string rootRepository() const;
 
+    //! \return the \c begin() iterator
+    simget_iterator begin() { return M_simgets.begin(); }
+
+    //! \return the \c end() iterator
+    simget_iterator end() { return M_simgets.end(); }
+
+    //! \return the number of simgets
+    size_type nSimgets() const { return M_simgets.size(); }
 
     //@}
 
@@ -287,6 +303,25 @@ public:
      */
     void barrier() { M_comm->barrier(); }
 
+    /**
+     * add a new simget to the application
+     */
+    void add( Simget* simget );
+
+    /**
+     * execute the set of Simget stored in the Application
+     */
+    virtual void run();
+
+    /**
+     * execute the set of Simget stored in the Application following the
+     * input/output model \f$ Y=F(X) \f$. \f$ P\f$ is the number of inputs and
+     * \f$ N\f$ the number of outputs. Denote \f$ S \f$ (\c nSimgets()) the
+     * number of simgets stored in the Application. \f$ X \f$ and \f$ Y\f$ must
+     * be of size \f$ S P\f$ and \f$ S N \f$ respectively.
+     */
+    virtual void run( const double* X, unsigned long P, double* Y, unsigned long N );
+
     //@}
 
 
@@ -342,6 +377,8 @@ private:
 
     boost::shared_ptr<mpi::environment> M_env;
     boost::shared_ptr<mpi::communicator> M_comm;
+
+    simgets_type M_simgets;
 };
 
 }

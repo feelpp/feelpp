@@ -29,6 +29,10 @@
 #ifndef __Environment_H
 #define __Environment_H 1
 
+#include <cstdlib>
+
+#include <boost/format.hpp>
+
 #include <life/lifecore/life.hpp>
 
 namespace Life
@@ -134,6 +138,11 @@ public:
      */
     //@{
 
+    //! \return the root repository (default: \c $HOME/life)
+    static std::string rootRepository();
+
+    //! change the directory where the results are stored
+    static void changeRepository( boost::format fmt );
 
     //@}
 
