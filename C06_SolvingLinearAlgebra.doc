@@ -3,8 +3,7 @@ namespace Life
 /*! \page SolvingLinearAlgebra Solving Linear Algebra Problems
 \ingroup Tutorial
 
-\li \b Previous: \ref ManipulatingFunctionSpaces
-\li \b Next: \ref WritingVariationalFormulations
+\li \b Previous: \ref WritingVariationalFormulations
 
 Life supports three different linear algebra environments that we
 shall call \emph Backend .
@@ -57,7 +56,7 @@ spaces.
 
 \section Solving
 
-\li \b Next: \ref WritingVariationalFormulations
+\li \b Previous: \ref WritingVariationalFormulations
 
 */
 }

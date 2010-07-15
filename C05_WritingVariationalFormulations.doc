@@ -3,110 +3,8 @@ namespace Life
 /*! \page WritingVariationalFormulations Writing Variational Formulations
 
 \ingroup Tutorial
-\li \b Previous: \ref SolvingLinearAlgebra
-
-\section ComputingIntegrals Computing integrals
-
-We would like to compute some integrals on a domain of \f$\Omega=[0,1]^d\ \subset\ \mathbb{R}^d\f$
-and parts of the domain, i.e. subregions and (parts of) boundary.
-
-Once we have defined the computational mesh, we would like to compute
-the area of the domain. We form the integral \f$\int_\Omega 1\f$, the code
-reads as follows
-
-\dontinclude myintegrals.cpp
-\skip marker1
-\until endmarker1
-
-<tt>elements(mesh)</tt> returns a pair of iterators over the
-elements owned by the current processor, <tt>im</tt> is an instance
-of the <tt>im_type</tt> which provides a quadrature method to
-integrate exactly polynomials up to degree 2. In our case integrating
-constant(degree 0) would have sufficed, but we will reuse
-<tt>im</tt> later. Now that we have computed the integral of 1 over
-the region of \f$\Omega\f$ current processor (ie the area of the domain
-owned by the processor), we want to compute the area of \f$\Omega\f$. To
-do that we collect the integrals on all processors using a
-<tt>reduce</tt> MPI operation and sum all contributions. We have
-used here the Boost.MPI library that provides an extremely powerful
-\cpp wrapper around the MPI library. The code reads
-
-\skip marker2
-\until endmarker2
-
-
-Finally, we print to the log file the result of the local and global
-integral calculation. Another calculation is for example to compute
-the perimeter of the domain
-
-\skip marker3
-\until endmarker3
-
-
-the main difference with the domain area computation resides in the
-elements with are iterating on: here we are iterating on the boundary
-faces of the domain to compute the integral using
-<tt>boundaryfaces(mesh)</tt> to provide the pairs of iterators.
-
-
-Now say that we want to compute
-\f[
-  \int_\Omega x^2 + y^2 dx dy.
-\f]
-The Finite Element Embedded Language (FEEL++) language provides the
-keyword <tt>Px()</tt> and <tt>Py()</tt> to denote the \f$x\f$ and
-\f$y\f$ coordinates like in equation above.  The code reads then
-
-\skip marker4
-\until endmarker4
-
-Note that in this case, we really require the use of a quadrature that
-integrates exactly order 2 polynomials.
-
-Let's run now the tutrial example <tt>myintegrals</tt>. The results are stored
-in the log file under <tt>~/life/myintegrals/</tt>.
-
-\verbatim
-> cat ~/life/myintegrals/Simplex_2_1/h_0.5/myintegrals-1.0
-myintegrals-1.0 is opened for debug
-[Area 0] int_Omega = 1[ 1 ]
-[Area 0] int_Omega = 4[ 4 ]
-[Area 0] int_Omega = 0.666667[ 0.666667 ]
-\endverbatim
-
-We remark that the results are exact. Integrating higher order
-polynomials (\f$\geq 3\f$) or non-polynomial function would typically
-require higher order quadrature to get accurate results. To do that
-increase <tt>imOrder</tt> in the example and try integrating
-\f$f(x,y)=x^3 + x y^2\f$.
-
-
-In order to see what happens in parallel, use <tt>mpirun</tt> to
-launch <tt>myintegrals</tt> on several processors, for example
-
-\verbatim
-> mpirun -np 4 myintegrals --hsize=0.1
-> cat ~/life/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.0
-myintegrals-4.0 is opened for debug
-[Area 0] int_Omega = 1[ 0.253348 ]
-[Area 0] int_Omega = 4[ 1.44444 ]
-[Area 0] int_Omega = 0.666667[ 0.0701812 ]
-> cat ~/life/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.1
-myintegrals-4.1 is opened for debug
-[Area 0] int_Omega = 1[ 0.288919 ]
-[Area 0] int_Omega = 4[ 0.444444 ]
-[Area 0] int_Omega = 0.666667[ 0.186251 ]
-> cat ~/life/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.2
-myintegrals-4.2 is opened for debug
-[Area 0] int_Omega = 1[ 0.183219 ]
-[Area 0] int_Omega = 4[ 1.11111 ]
-[Area 0] int_Omega = 0.666667[ 0.105008 ]
-> cat ~/life/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.3
-myintegrals-4.3 is opened for debug
-[Area 0] int_Omega = 1[ 0.274514 ]
-[Area 0] int_Omega = 4[ 1 ]
-[Area 0] int_Omega = 0.666667[ 0.305227 ]
-\endverbatim
+\li \b Previous: \ref ComputingIntegrals
+\li \b Next: \ref SolvingLinearAlgebra
 
 \section StandardFormulationLaplacian Standard formulation: the Laplacian case
 
@@ -351,9 +249,13 @@ where \f$h\f$ is the mesh size and \f$N\f$ the polynomial order. The \f$H_1\f$
 error norm would be checked similarly in \f$h^{-N}\f$. The
 figure~\ref{fig:2} displays the results using Paraview.
 
-\image html laplacian.png "Solution of the Laplacian problem"
+\htmlonly <table><tr><td> \endhtmlonly
+\image html laplacian.png "Solution of the Laplacian problem" width=3cm
+\htmlonly </td><td> \endhtmlonly
+\image html laplacian_warp.png "Warped solution of the Laplacian problem" width=3cm
+\htmlonly </td></tr></table> \endhtmlonly
+
 \image latex laplacian.png "Solution of the Laplacian problem" width=.43\linewidth
-\image html laplacian_warp.png "Warped solution of the Laplacian problem"
 \image latex laplacian_warp.png "Warped solution of the Laplacian problem" width=.43\linewidth
 
 \section MixedFormulationStokesCase Mixed formulation: the Stokes case
@@ -524,10 +426,16 @@ The figure~\ref{fig:2} displays \f$p\f$ and \f$\mathbf{u}\f$ which are available
   ls ~/life/doc/tutorial/stokes/Simplex_2_1_2/P2/h_0.05
 \endverbatim
 
-\image html stokes-p.png "Pressure for the Stokes problem"
-\image html stokes-u.png "Velocity (magnitude and arrows colored with pressure) for the Stokes problem"
+\htmlonly <table><tr><td> \endhtmlonly
+\image html stokes-p.png "Pressure for the Stokes problem" width=3cm
+\htmlonly </td><td> \endhtmlonly
+\image html stokes-u.png "Velocity (magnitude and arrows colored with pressure) for the Stokes problem" width=3cm
+
+\htmlonly </td></tr></table> \endhtmlonly
 \image latex stokes-p.png "Pressure for the Stokes problem" width=.43\linewidth
 \image latex stokes-u.png "Velocity (magnitude and arrows colored with pressure) for the Stokes problem" width=.43\linewidth
 
+\li \b Previous: \ref ComputingIntegrals
+\li \b Next: \ref SolvingLinearAlgebra
 */
 }
