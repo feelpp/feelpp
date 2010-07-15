@@ -461,7 +461,7 @@ public:
     void initCache( MeshType const* mesh  )
     {
         size_type nelts = mesh->numElements();
-        Log() << "[Geomap] start caching J,K,B for " << nelts << " elements\n";
+        //Log() << "[Geomap] start caching J,K,B for " << nelts << " elements\n";
         M_cached.resize( nelts );
         std::fill( M_cached.begin(), M_cached.end(), false );
 
