@@ -4,8 +4,8 @@ namespace Life
 /*! \page ComputingIntegrals Computing integrals
 
 \ingroup Tutorial
-\li \b Previous: \ref ManipulatingFunctionSpaces
-\li \b Next: \ref WritingVariationalFormulations
+\li \b Previous: \ref ManipulatingMeshes
+\li \b Next: \ref ManipulatingFunctionSpaces
 
 \section ComputingIntegralsProblem Problem Statement
 
@@ -148,8 +148,8 @@ life_doc_myintegrals --shape="hypercube"--nochdir
 The output gives
 \include myintegrals-hypercube.out
 
-\li \b Previous: \ref ManipulatingFunctionSpaces
-\li \b Next: \ref WritingVariationalFormulations
+\li \b Previous: \ref ManipulatingMeshes
+\li \b Next: \ref ManipulatingFunctionSpaces
 
 */
 }
