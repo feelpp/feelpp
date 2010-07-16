@@ -14,8 +14,8 @@ element methods) in 1D, 2D And 3D to solve partial differential equations.
     - \ref ProgEnv
     - \ref CreatingApplications
     - \ref ManipulatingMeshes
-    - \ref ManipulatingFunctionSpaces
     - \ref ComputingIntegrals
+    - \ref ManipulatingFunctionSpaces
     - \ref WritingVariationalFormulations
     - \ref SolvingLinearAlgebra
   - \b Examples

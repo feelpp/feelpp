@@ -1,9 +1,10 @@
+// -*- mode: c++; coding: utf-8 -*-
 namespace Life
 {
 /*! \page WritingVariationalFormulations Writing Variational Formulations
 
 \ingroup Tutorial
-\li \b Previous: \ref ComputingIntegrals
+\li \b Previous: \ref ManipulatingFunctionSpaces
 \li \b Next: \ref SolvingLinearAlgebra
 
 \section StandardFormulationLaplacian Standard formulation: the Laplacian case
@@ -435,7 +436,7 @@ The figure~\ref{fig:2} displays \f$p\f$ and \f$\mathbf{u}\f$ which are available
 \image latex stokes-p.png "Pressure for the Stokes problem" width=.43\linewidth
 \image latex stokes-u.png "Velocity (magnitude and arrows colored with pressure) for the Stokes problem" width=.43\linewidth
 
-\li \b Previous: \ref ComputingIntegrals
+\li \b Previous: \ref ManipulatingFunctionSpaces
 \li \b Next: \ref SolvingLinearAlgebra
 */
 }
