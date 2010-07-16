@@ -18,6 +18,19 @@ Sleep 0.01;
 // redraw the graphics
 Draw;
 
-// print to png file
-Print StrCat( StrPrefix(General.FileName), ".png");
-
+If ( PostProcessing.NbViews == 0 )
+ // print to png file
+ Print StrCat( StrPrefix(General.FileName), ".png");
+EndIf
+If ( PostProcessing.NbViews > 0 )
+ For num In {0:PostProcessing.NbViews-1}
+  For num2 In {0:PostProcessing.NbViews-1}
+   View[num2].Visible=0;
+   If ( num == num2 )
+    View[num2].Visible=1;
+   EndIf
+  EndFor
+  Draw;
+  Print StrCat( StrCat( StrPrefix(General.FileName), StrCat( "-", View[num].Name)), ".png");
+ EndFor
+EndIf
