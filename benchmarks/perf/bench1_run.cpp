@@ -50,11 +50,13 @@ Bench1::run()
             std::cout << this->optionsDescription() << "\n";
             return;
         }
-    this->changeRepository( boost::format( "/benchmarks/perf/%1%/%2$dD/%3$.3f" )
-                             % this->about().appName()
-                             % this->vm()["dim"].as<int>()
-                             % this->vm()["hsize"].as<double>() );
-    this->setLogs();
+    if ( this->vm().count( "nochdir" ) )
+    {
+        this->changeRepository( boost::format( "/benchmarks/perf/%1%/%2$dD/%3$.3f" )
+                                % this->about().appName()
+                                % this->vm()["dim"].as<int>()
+                                % this->vm()["hsize"].as<double>() );
+    }
     switch(  vm()["dim"].as<int>() )
         {
         case 1:

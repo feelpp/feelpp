@@ -28,6 +28,21 @@
  */
 #include <bench1.hpp>
 
+#define DO_BENCH( TheExpr, str  )                                   \
+    {                                                               \
+    const int Qorder = ExpressionOrder<decltype(TheExpr)>::value;     \
+    typename _Q<Qorder>::template apply<FSType::fe_type::nDim,double,Simplex>::type quad; \
+    timer.restart();                                                \
+    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  TheExpr );  \
+    ofs <<  str << " "                                              \
+        << timer.elapsed() << " "                                   \
+        << Xh->mesh()->numElements() << " "                         \
+        << Xh->nLocalDof() << " "                                   \
+        << Qorder << " "                                            \
+        << quad.nPoints() << "\n";                                  \
+    }
+/**/
+
 namespace Life
 {
 
@@ -51,32 +66,16 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh  )
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
-    //
-    // R
-    //
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  idt(u)*id(v) );
-    Log() << " o- R<const> time : " << timer.elapsed() << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
+    std::ofstream ofs( (boost::format( "perf-R-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
+    ofs.precision( 4 );
+    ofs.width( 6 );
+    DO_BENCH( idt(u)*id(v), "const" );
+    DO_BENCH( idv(w)*idt(u)*id(v), "p0" );
+    DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v), "xyz" );
+    DO_BENCH( idv(w)*((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v), "p0 xyz" );
+    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v), "val(xyz)" );
+    DO_BENCH( idv(w)*val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v), "p0 val(xyz)" );
 
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  idv(w)*idt(u)*id(v) );
-    Log() << " o- R<p0 const> time : " << timer.elapsed() << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
-
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  ((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v) );
-    Log() << " o-   R<xyz> time : " << timer.elapsed() << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
-
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  idv(w)*((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v) );
-    Log() << " o-   R<dp0 xyz> time : " << timer.elapsed() << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
-
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v) );
-    Log() << " o-   R<val xyz> time : " << timer.elapsed() << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
-
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  idv(w)*val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v) );
-    Log() << " o-   R<dp0 val xyz> time : " << timer.elapsed() << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
@@ -96,24 +95,13 @@ Bench1::D( boost::shared_ptr<FSType> const& Xh  )
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
-    //
-    // D
-    //
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  gradt(u)*trans(grad(v)) );
-    Log() << " o- D<const> time : " << timer.elapsed()  << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
-
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  dxt(u)*dx(v)+dyt(u)*dy(v) );
-    Log() << " o- D<const2> time : " << timer.elapsed()  << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
-
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  dxt(u)*dx(v)+dyt(u)*dy(v)+dzt(u)*dz(v) );
-    Log() << " o- D<const3> time : " << timer.elapsed()  << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
-
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  val((Px()^(3))+(Py()^(2))*Pz())*gradt(u)*trans(grad(v)) );
-    Log() << " o-   D<xyz> time : " << timer.elapsed()  << " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
+    std::ofstream ofs( (boost::format( "perf-D-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
+    ofs.precision( 4 );
+    ofs.width( 6 );
+    DO_BENCH( gradt(u)*trans(grad(v)), "const" );
+    DO_BENCH( dxt(u)*dx(v)+dyt(u)*dy(v), "const2" );
+    DO_BENCH( dxt(u)*dx(v)+dyt(u)*dy(v)+dzt(u)*dz(v), "const3" );
+    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*gradt(u)*trans(grad(v)), "val(xyz)" );
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
@@ -133,16 +121,12 @@ Bench1::DR( boost::shared_ptr<FSType> const& Xh )
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
-    //
-    // DR
-    //
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  gradt(u)*trans(grad(v))+idt( u )*id( v ));
-    Log() << " o- DR<const> time : " << timer.elapsed() <<  " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
+    std::ofstream ofs( (boost::format( "perf-DR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
+    ofs.precision( 4 );
+    ofs.width( 6 );
+    DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v ), "const" );
+    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )), "val(xyz)" );
 
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v ) ));
-    Log() << " o-   DR<xyz> time : " << timer.elapsed() <<  " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
@@ -161,20 +145,12 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
-    //
-    // ADR
-    //
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),
-                                 gradt(u)*trans(grad(v))+idt( u )*id( v ) +
-                                 (gradt(u)*vec(constant(1.0)))*id(v));
-    Log() << " o- ADR<const> time : " << timer.elapsed() <<  " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
-
-    timer.restart();
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),
-                                 val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-                                 (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v));
-    Log() << " o-   ADR<xyz> time : " << timer.elapsed() <<  " " << timer.elapsed()*1e6/Xh->mesh()->numElements() << "\n";
+    std::ofstream ofs( (boost::format( "perf-ADR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
+    ofs.precision( 4 );
+    ofs.width( 6 );
+    DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v )+(gradt(u)*vec(constant(1.0)))*id(v), "const" );
+    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+              (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "val(xyz)" );
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
