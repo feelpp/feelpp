@@ -117,11 +117,11 @@ life_doc_myintegrals --shape="simplex"--nochdir
 \endverbatim
 
 \htmlonly <table><tr><td> \endhtmlonly
-\image html myintegrals-simplex-1.png "Line" width=5cm
+\image html myintegrals-simplex-1.png "Line" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html myintegrals-simplex-2.png "Triangle" width=5cm
+\image html myintegrals-simplex-2.png "Triangle" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html myintegrals-simplex-3.png "Tetrahedron" width=5cm
+\image html myintegrals-simplex-3.png "Tetrahedron" width=30%
 \htmlonly </td></tr></table> \endhtmlonly
 
 The output gives
@@ -137,11 +137,11 @@ life_doc_myintegrals --shape="hypercube"--nochdir
 
 
 \htmlonly <table><tr><td> \endhtmlonly
-\image html myintegrals-hypercube-1.png "Line" width=5cm
+\image html myintegrals-hypercube-1.png "Line" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html myintegrals-hypercube-2.png "Unit Square" width=5cm
+\image html myintegrals-hypercube-2.png "Unit Square" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html myintegrals-hypercube-3.png "Unit Cube" width=5cm
+\image html myintegrals-hypercube-3.png "Unit Cube" width=30%
 \htmlonly </td></tr></table> \endhtmlonly
 
 

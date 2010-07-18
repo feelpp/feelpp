@@ -115,19 +115,19 @@ the output log of the execution of this example gives
 Here are the graphical outputs on the d-simplex, d=1,2,3:
 
 \htmlonly <table><tr><td> \endhtmlonly
-\image html myfunctionspace-simplex-1-f.png "f on the Line" width=5cm
+\image html myfunctionspace-simplex-1-f.png "f on the Line" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html myfunctionspace-simplex-2-f.png "f on the Triangle" width=5cm
+\image html myfunctionspace-simplex-2-f.png "f on the Triangle" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html myfunctionspace-simplex-3-f.png "f on the Tetrahedron" width=5cm
+\image html myfunctionspace-simplex-3-f.png "f on the Tetrahedron" width=30%
 \htmlonly </td></tr></table> \endhtmlonly
 
 \htmlonly <table><tr><td> \endhtmlonly
-\image html myfunctionspace-simplex-1-g.png "g on the Line" width=5cm
+\image html myfunctionspace-simplex-1-g.png "g on the Line" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html myfunctionspace-simplex-2-g.png "g on the Triangle" width=5cm
+\image html myfunctionspace-simplex-2-g.png "g on the Triangle" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html myfunctionspace-simplex-3-g.png "g on the Tetrahedron" width=5cm
+\image html myfunctionspace-simplex-3-g.png "g on the Tetrahedron" width=30%
 \htmlonly </td></tr></table> \endhtmlonly
 
 
@@ -148,19 +148,19 @@ the output log of the execution of this example gives
 Here are the graphical outputs on the d-hypercube, d=1,2,3:
 
 \htmlonly <table><tr><td> \endhtmlonly
-\image html myfunctionspace-hypercube-1-f.png "f plot on Line" width=5cm
+\image html myfunctionspace-hypercube-1-f.png "f plot on Line" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html myfunctionspace-hypercube-2-f.png "f plot on Unit Square" width=5cm
+\image html myfunctionspace-hypercube-2-f.png "f plot on Unit Square" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html myfunctionspace-hypercube-3-f.png "f plot on Unit Cube" width=5cm
+\image html myfunctionspace-hypercube-3-f.png "f plot on Unit Cube" width=30%
 \htmlonly </td></tr></table> \endhtmlonly
 
 \htmlonly <table><tr><td> \endhtmlonly
-\image html myfunctionspace-hypercube-1-g.png "g plot on Line" width=5cm
+\image html myfunctionspace-hypercube-1-g.png "g plot on Line" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html myfunctionspace-hypercube-2-g.png "g plot on Unit Square" width=5cm
+\image html myfunctionspace-hypercube-2-g.png "g plot on Unit Square" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html myfunctionspace-hypercube-3-g.png "g plot on Unit Cube" width=5cm
+\image html myfunctionspace-hypercube-3-g.png "g plot on Unit Cube" width=30%
 \htmlonly </td></tr></table> \endhtmlonly
 
 
