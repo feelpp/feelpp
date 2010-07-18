@@ -80,20 +80,20 @@ gmsh mymesh-hypercube.pos
 \endverbatim
 
 \htmlonly <table><tr><td> \endhtmlonly
-\image html mymesh-simplex-1.png "Line" width=5cm
+\image html mymesh-simplex-1.png "Line" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html mymesh-simplex-2.png "Triangle" width=5cm
+\image html mymesh-simplex-2.png "Triangle" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html mymesh-simplex-3.png "Tetrahedron" width=5cm
+\image html mymesh-simplex-3.png "Tetrahedron" width=30%
 \htmlonly </td></tr></table> \endhtmlonly
 
 
 \htmlonly <table><tr><td> \endhtmlonly
-\image html mymesh-hypercube-1.png "Line" width=5cm
+\image html mymesh-hypercube-1.png "Line" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html mymesh-hypercube-2.png "Unit Square" width=5cm
+\image html mymesh-hypercube-2.png "Unit Square" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html mymesh-hypercube-3.png "Unit Cube" width=5cm
+\image html mymesh-hypercube-3.png "Unit Cube" width=30%
 \htmlonly </td></tr></table> \endhtmlonly
 
 Here is the output of the execution

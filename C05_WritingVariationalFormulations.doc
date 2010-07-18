@@ -251,9 +251,9 @@ error norm would be checked similarly in \f$h^{-N}\f$. The
 figure~\ref{fig:2} displays the results using Paraview.
 
 \htmlonly <table><tr><td> \endhtmlonly
-\image html laplacian.png "Solution of the Laplacian problem" width=3cm
+\image html laplacian.png "Solution of the Laplacian problem" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html laplacian_warp.png "Warped solution of the Laplacian problem" width=3cm
+\image html laplacian_warp.png "Warped solution of the Laplacian problem" width=30%
 \htmlonly </td></tr></table> \endhtmlonly
 
 \image latex laplacian.png "Solution of the Laplacian problem" width=.43\linewidth
@@ -428,9 +428,9 @@ The figure~\ref{fig:2} displays \f$p\f$ and \f$\mathbf{u}\f$ which are available
 \endverbatim
 
 \htmlonly <table><tr><td> \endhtmlonly
-\image html stokes-p.png "Pressure for the Stokes problem" width=3cm
+\image html stokes-p.png "Pressure for the Stokes problem" width=30%
 \htmlonly </td><td> \endhtmlonly
-\image html stokes-u.png "Velocity (magnitude and arrows colored with pressure) for the Stokes problem" width=3cm
+\image html stokes-u.png "Velocity (magnitude and arrows colored with pressure) for the Stokes problem" width=30%
 
 \htmlonly </td></tr></table> \endhtmlonly
 \image latex stokes-p.png "Pressure for the Stokes problem" width=.43\linewidth
