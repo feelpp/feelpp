@@ -351,7 +351,7 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh )
                             for ( int n = 0;n < 3; ++n )
                                 {
                                     int g2l[]={ 3, 2, 1, 0 };
-                                    int local_index = Life::details::tetra::f2p( g2l[numface], n );//gambit::tetra4::face[numface][n];
+                                    int local_index = Life::details::tetra<1/*mesh_type::nOrder*/>::f2p( g2l[numface], n );//gambit::tetra4::face[numface][n];
                                     int index = boost::get<2>( __elements[__i])[local_index];
                                     pf.setPoint( n, mesh->point( index ) );
                                     __n_vertices[index] = 1;

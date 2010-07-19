@@ -340,7 +340,7 @@ read( std::string const& filename,
                                 int g2l[]={ 3, 2, 1, 0 };
                                 elements[nfr].get<3>() = boost::make_tuple( g2l[face], thegroupid );
 
-                                int local_index = Life::details::tetra::f2p( g2l[face], n );
+                                int local_index = Life::details::tetra<1>::f2p( g2l[face], n );
                                 Debug( 8013 )  << "node " << local_index << " in element " << nfr
                                                << " has  condition " << thegroupid << "\n";
                                 boundary[boost::get<2>( elements[nfr] )[local_index]].get<0>() = true;

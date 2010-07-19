@@ -85,6 +85,13 @@ namespace Life
     const bool meshs31e = Exporter<meshs31_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshs31_t> );
     const bool meshs31g = Exporter<meshs31_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshs31_t> );
 
+    //
+    // Simplex 3,1
+    //
+    typedef Mesh<Simplex<3,2> > meshs32_t;
+    const bool meshs32e = Exporter<meshs32_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshs32_t> );
+    const bool meshs32g = Exporter<meshs32_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshs32_t> );
+
     //#if defined( LIFE_INSTANTIATION_MODE )
     //
     // explicit instances
@@ -95,6 +102,7 @@ namespace Life
     template class Exporter<Mesh<Simplex<2,2,2> > >;
     template class Exporter<Mesh<Simplex<2,1,3> > >;
     template class Exporter<Mesh<Simplex<3,1,3> > >;
+    template class Exporter<Mesh<Simplex<3,2,3> > >;
 
     template class Exporter<Mesh<Simplex<2,3,2> > >;
 /// \endcond detail
