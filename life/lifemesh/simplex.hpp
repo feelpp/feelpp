@@ -104,6 +104,7 @@ struct triangle
         }
 };
 
+template<uint16_type Order >
 struct tetra
 {
     static uint16_type f2e( uint16_type f, uint16_type e ) { return __f2e[3*f+e]; }
@@ -113,8 +114,20 @@ struct tetra
 
     static uint16_type f2p( uint16_type f, uint16_type p ) { return __f2p[3*f+p]; }
     static const uint16_type __f2p[12];
-    static uint16_type e2p( uint16_type e, uint16_type p ) { return __e2p[2*e+p]; }
-    static const uint16_type __e2p[12];
+
+
+    static uint16_type e2p( uint16_type e, uint16_type p ) { return e2p(e,p,boost::mpl::int_<Order>()); }
+    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<1>) { return __e2p_order1[2*e+p]; }
+    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<2>) { return __e2p_order2[2*e+p]; }
+    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<3>) { return __e2p_order3[2*e+p]; }
+    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<4>) { return __e2p_order4[2*e+p]; }
+    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<5>) { return __e2p_order5[2*e+p]; }
+
+    static const uint16_type __e2p_order1[12];
+    static const uint16_type __e2p_order2[18];
+    static const uint16_type __e2p_order3[24];
+    static const uint16_type __e2p_order4[30];
+    static const uint16_type __e2p_order5[36];
 
     std::vector<uint16_type> entity( uint16_type topo_dim, uint16_type id ) const
         {
@@ -122,8 +135,8 @@ struct tetra
 
             if ( topo_dim == 1 )
             {
-                __entity[0] = __e2p[2*id];
-                __entity[1] = __e2p[2*id+1];
+                __entity[0] = __e2p_order1[2*id];
+                __entity[1] = __e2p_order1[2*id+1];
 
             }
             else if ( topo_dim == 2 )
@@ -180,7 +193,7 @@ private:
                                                                                       >::type
                                                                                       >::type::value;
 
-    typedef mpl::vector<boost::none_t, details::line, details::triangle<orderTriangle>, details::tetra> map_entity_to_point_t;
+    typedef mpl::vector<boost::none_t, details::line, details::triangle<orderTriangle>, details::tetra<orderTriangle> > map_entity_to_point_t;
 
     typedef mpl::vector_c<uint16_type, 0, 1, 2, 6> permutations_t;
 
