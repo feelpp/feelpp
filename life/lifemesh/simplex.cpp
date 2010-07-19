@@ -120,7 +120,8 @@ const uint16_type triangle<Order>::__f2e[3] =
            |.       \!
          0 ----------1
 */
-const uint16_type tetra::__e2p[12] =
+template<uint16_type Order >
+const uint16_type tetra<Order>::__e2p_order1[12] =
     {
         1, 2,    // edge 0
         2, 0,    // edge 1
@@ -129,7 +130,54 @@ const uint16_type tetra::__e2p[12] =
         1, 3,    // edge 4
         2, 3     // edge 5
     };
-const uint16_type tetra::__f2p[12] =
+
+template<uint16_type Order >
+const uint16_type tetra<Order>::__e2p_order2[18] =
+    {
+        1, 2, 9,   // edge 0
+        2, 0, 8,   // edge 1
+        0, 1, 6,   // edge 2
+        0, 3, 4,   // edge 3
+        1, 3, 5,   // edge 4
+        2, 3, 7    // edge 5
+    };
+
+template<uint16_type Order >
+const uint16_type tetra<Order>::__e2p_order3[24] =
+    {
+        1, 2, 15, 14,   // edge 0
+        2, 0, 12, 13,   // edge 1
+        0, 1,  9,  8,   // edge 2
+        0, 3,  5,  4,   // edge 3
+        1, 3,  7,  6,   // edge 4
+        2, 3, 11, 10    // edge 5
+    };
+
+template<uint16_type Order >
+const uint16_type tetra<Order>::__e2p_order4[30] =
+    {
+        1, 2, 21, 20, 19,  // edge 0
+        2, 0, 17, 17, 18,  // edge 1
+        0, 1, 12, 11, 10,  // edge 2
+        0, 3,  6,  5,  4,  // edge 3
+        1, 3,  9,  8,  7,  // edge 4
+        2, 3, 15, 14, 13  // edge 5
+    };
+
+template<uint16_type Order >
+const uint16_type tetra<Order>::__e2p_order5[36] =
+    {
+        1, 2, 11, 10,  9,  8,  // edge 0
+        2, 0, 20, 21, 22, 23,  // edge 1
+        0, 1, 15, 14, 13, 12,  // edge 2
+        0, 3,  7,  6,  5,  4,  // edge 3
+        1, 3, 11, 10,  9,  8,  // edge 4
+        2, 3, 19, 18, 17, 16   // edge 5
+    };
+
+
+template<uint16_type Order >
+const uint16_type tetra<Order>::__f2p[12] =
     {
 #if 0 // Old numerotation
         1, 3, 2, // face 0
@@ -144,14 +192,18 @@ const uint16_type tetra::__f2p[12] =
         0, 1, 2  // face 3
 #endif
     };
-const uint16_type tetra::__f2e[12] =
+
+template<uint16_type Order >
+const uint16_type tetra<Order>::__f2e[12] =
     {
         0, 5, 4, // face 0
         1, 3, 5, // face 1
         2, 4, 3, // face 2
         2, 0, 1  // face 3
     };
-const int16_type tetra::__f2e_orientation[12] =
+
+template<uint16_type Order >
+const int16_type tetra<Order>::__f2e_orientation[12] =
     {
         1, 1,-1, // face 0
         1, 1,-1, // face 1
@@ -170,3 +222,9 @@ template class Life::details::triangle<2>;
 template class Life::details::triangle<3>;
 template class Life::details::triangle<4>;
 template class Life::details::triangle<5>;
+
+template class Life::details::tetra<1>;
+template class Life::details::tetra<2>;
+template class Life::details::tetra<3>;
+template class Life::details::tetra<4>;
+template class Life::details::tetra<5>;
