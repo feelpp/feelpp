@@ -979,9 +979,12 @@ template class ExporterGmsh<Mesh<Simplex<2,1> > >;
 template class ExporterGmsh<Mesh<Simplex<2,2> > >;
 template class ExporterGmsh<Mesh<Simplex<2,1,3> > >;
 template class ExporterGmsh<Mesh<Simplex<3,1> > >;
+template class ExporterGmsh<Mesh<Simplex<3,2> > >;
+
 template class ExporterGmsh<Mesh<SimplexProduct<1,1> > >;
 template class ExporterGmsh<Mesh<SimplexProduct<2,1> > >;
 template class ExporterGmsh<Mesh<SimplexProduct<3,1> > >;
+template class ExporterGmsh<Mesh<SimplexProduct<3,2,3> > >;
 
 template class ExporterGmsh<Mesh<Simplex<2,3> > >;
 template class ExporterGmsh<Mesh<SimplexProduct<2,2> > >;
