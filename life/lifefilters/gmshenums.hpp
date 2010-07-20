@@ -147,12 +147,18 @@ GmshOrdering<ConvexType>::GmshOrdering()
                 M_id += 0,1,2,5,3,4;
             if ( ConvexType::nOrder == 3 )
                 M_id += 0,1,2,7,8,3,4,5,6,9;
+            if ( ConvexType::nOrder == 4 )
+	            M_id += 0,1,2,9,10,11,3,4,5,6,7,8,12,13,14;
+            if ( ConvexType::nOrder == 5 )
+	            M_id += 0,1,2,11,12,13,14,3,4,5,6,7,8,9,10,15,16,17,19,20,18;
         }
         if ( ConvexType::nDim == 3 )
         {
             M_type = detail::tetrahedron_type[ConvexType::nOrder];
             if ( ConvexType::nOrder == 1 )
-                M_id+=0,1,2,3;
+	            M_id+=0,1,2,3;
+            if ( ConvexType::nOrder == 2 )
+	            M_id+=0,1,2,3,6,4,5,7,9,8;
         }
     }
     else
