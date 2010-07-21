@@ -73,7 +73,8 @@ public:
         super(),
         _M_I( nDim ),
         _M_h( 0.1 ),
-        _M_descr()
+        _M_descr(),
+        _M_usePhysicalNames( 0 )
         {
         switch (dt)
             {
@@ -107,7 +108,8 @@ public:
         super( td ),
         _M_I( td._M_I ),
         _M_h( td._M_h ),
-        _M_descr( td._M_descr )
+        _M_descr( td._M_descr ),
+        _M_usePhysicalNames( td._M_usePhysicalNames )
     {
         this->setOrder( (GMSH_ORDER) nOrder );
     }
@@ -176,6 +178,12 @@ public:
     }
     void setCharacteristicLength( double h ) { _M_h = h; }
 
+    /**
+     * Set the use of physical names to describe the boundaries of the domain
+     */
+    void usePhysicalNames( const bool option = 1 ) { _M_usePhysicalNames = option; }
+
+
     //@}
 
     /** @name  Methods
@@ -207,6 +215,7 @@ private:
     std::vector<std::pair<double,double> > _M_I;
     double _M_h;
     std::string _M_descr;
+    bool _M_usePhysicalNames;
 
 };
 

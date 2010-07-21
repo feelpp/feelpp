@@ -56,7 +56,7 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<1> ) const
             ostr << "Point(3) = {" << (_M_I[0].second+_M_I[0].first)/2 << ",0,0,h};\n"
                  << "Line(1) = {1,3};\n"
                  << "Line(2) = {3,2};\n";
-            if ( 0 )
+            if ( !_M_usePhysicalNames )
             {
                 ostr    << "Physical Point(1) = {1};\n"
                         << "Physical Point(3) = {2};\n"
@@ -75,7 +75,7 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<1> ) const
         }
     else
         {
-            if ( 0 )
+            if ( !_M_usePhysicalNames )
             {
                 ostr << "Line(1) = {1,2};\n"
                      << "Physical Point(1) = {1};\n"
@@ -107,7 +107,7 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<2> ) const
          << "Line(2) = {2,3};\n"
          << "Line(3) = {3,1};\n"
          << "Line Loop(4) = {3,1,2};\n";
-    if ( 0 )
+    if ( !_M_usePhysicalNames )
     {
         ostr << "Plane Surface(5) = {4};\n"
              << "Physical Line(6) = {1};\n"
@@ -153,7 +153,7 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<3> ) const
          << "Surface Loop(20) = {11, 13, 15, 5};" << "\n"
          << "Volume(21) = {20};" << "\n"
          << "" << "\n";
-    if ( 0 )
+    if ( !_M_usePhysicalNames )
     {
         ostr << "Physical Surface(16) = {11};" << "\n"
              << "Physical Surface(17) = {15};" << "\n"

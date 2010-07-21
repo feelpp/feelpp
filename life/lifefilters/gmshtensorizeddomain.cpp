@@ -71,7 +71,7 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<1>,  m
         ostr << ",0,h};\n"
              << "Line(1) = {1,3};\n"
              << "Line(2) = {3,2};\n";
-        if ( 0 )
+        if ( !_M_usePhysicalNames )
         {
             ostr  << "Physical Point(1) = {1};\n"
                   << "Physical Point(3) = {2};\n"
@@ -90,7 +90,7 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<1>,  m
     }
     else
     {
-        if ( 0 )
+        if ( !_M_usePhysicalNames )
         {
             ostr << "Line(1) = {1,2};\n"
                  << "Physical Point(1) = {1};\n"
@@ -129,7 +129,7 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  m
          << "Line(4) = {3,4};\n"
          << "Line Loop(5) = {1,2,3,4};\n"
          << "Plane Surface(6) = {5};\n";
-    if ( 0 )
+    if ( !_M_usePhysicalNames )
     {
         ostr << "Physical Line(1) = {1};\n"
              << "Physical Line(2) = {2};\n"
@@ -197,7 +197,7 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  m
          << "Physical Line(2) = {2};\n"
          << "Physical Line(3) = {3};\n"
          << "Physical Line(4) = {4};\n";
-    if ( 0 )
+    if ( !_M_usePhysicalNames )
     {
         ostr << "Physical Surface(6) = {6};\n"
              << "Physical Surface(15) = {15};\n"
