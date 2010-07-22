@@ -58,14 +58,12 @@ ALE<Convex>::ALE( interval_type const& intX,
     M_timer.restart();
     size_type pattern = DOF_PATTERN_COUPLED;
     form2( p1_fspace, p1_fspace, harmonic, _init=true, _pattern = pattern ) =
-        integrate( elements(reference_mesh), _Q<0>(),
+        integrate( elements(reference_mesh),
                    trace( trans(gradt(u))*grad(v) ) );
 
     form2( p1_fspace, p1_fspace, harmonic ) +=
-        integrate( boundaryfaces(reference_mesh), _Q<2>(),
+        integrate( boundaryfaces(reference_mesh),
                    - trans((gradt(u)*N()))*id(v)
-                   //- trans((grad(u)*N()))*idt(v)
-                   //+10*trans(idt(u))*id(v)/hFace()
                    );
 
     harmonic->close();
@@ -178,8 +176,6 @@ ALE<Convex>::generateP1Map( p1_element_type& p )
     p1_element_type v( p1_fspace, "v");
     exp.save( 0, p );
     vector_ptrtype rhs( b->newVector( p1_fspace ) );
-    //form1( p1_fspace, rhs, _init=true ) = integrate( boundaryfaces(reference_mesh), _Q<2>(),
-    //trans(idv(p))*(- grad(v)*N()+10*id(v)/hFace() ) );
     rhs->zero();
     rhs->close();
 
