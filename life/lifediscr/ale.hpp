@@ -2,7 +2,7 @@
   This file is part of the Life library
 
   Copyright (C) 2007,2008 EPFL
-  Copyright (C) 2010 UC
+  Copyright (C) 2010 University of Coimbra
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
