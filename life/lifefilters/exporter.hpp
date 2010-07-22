@@ -130,14 +130,14 @@ public:
     virtual ~Exporter();
 
     /**
-     * Static fonction instantiating from the Exporter Factory an exporter out
+     * Static function instantiating from the Exporter Factory an exporter out
      * of the \p exportername and using \p prefix for the prefix of the data
      * files.
      */
     static Exporter<MeshType>* New( std::string const& exportername, std::string prefix = "export" );
 
     /**
-     * Static fonction instantiating from the Exporter Factory an exporter out
+     * Static function instantiating from the Exporter Factory an exporter out
      * of the variables_map \p vm and using \p prefix for the prefix of the data
      * files.
      */

@@ -327,7 +327,7 @@ template<typename MeshType>
 void
 gmsh_save_binary( ExporterGmsh<MeshType> const& egmsh )
 {
-    Debug( 8007 ) << "[gmsh_save_ascii] saving in gmsh binary file format\n";
+    Debug( 8007 ) << "[gmsh_save_binary] saving in gmsh binary file format\n";
 
     namespace lambda = boost::lambda;
 
