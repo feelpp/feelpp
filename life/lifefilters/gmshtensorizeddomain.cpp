@@ -1,11 +1,11 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8 -*-
 
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2006-12-29
 
-  Copyright (C) 2006 Université Joseph Fourier (Grenoble)
+  Copyright (C) 2006 UniversitÃ© Joseph Fourier (Grenoble)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -71,7 +71,7 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<1>,  m
         ostr << ",0,h};\n"
              << "Line(1) = {1,3};\n"
              << "Line(2) = {3,2};\n";
-        if ( !_M_usePhysicalNames )
+        if ( this->usePhysicalNames() == false )
         {
             ostr  << "Physical Point(1) = {1};\n"
                   << "Physical Point(3) = {2};\n"
@@ -82,15 +82,15 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<1>,  m
         else
         {
             ostr  << "Physical Point(\"Dirichlet\") = {1};\n"
-                  << "Physical Point(\"Neumann\") = {3};\n"
-                  << "Physical Point(3) = {2};\n"
+                  << "Physical Point(\"Neumann\") = {2};\n"
+                  << "Physical Point(3) = {3};\n"
                   << "Physical Line(\"Mat1\") = {1};\n"
                   << "Physical Line(\"Mat2\") = {2};\n";
         }
     }
     else
     {
-        if ( !_M_usePhysicalNames )
+        if ( this->usePhysicalNames() == false )
         {
             ostr << "Line(1) = {1,2};\n"
                  << "Physical Point(1) = {1};\n"
@@ -129,7 +129,7 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  m
          << "Line(4) = {3,4};\n"
          << "Line Loop(5) = {1,2,3,4};\n"
          << "Plane Surface(6) = {5};\n";
-    if ( !_M_usePhysicalNames )
+    if ( this->usePhysicalNames() == false )
     {
         ostr << "Physical Line(1) = {1};\n"
              << "Physical Line(2) = {2};\n"
@@ -197,7 +197,7 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  m
          << "Physical Line(2) = {2};\n"
          << "Physical Line(3) = {3};\n"
          << "Physical Line(4) = {4};\n";
-    if ( !_M_usePhysicalNames )
+    if ( this->usePhysicalNames() == false )
     {
         ostr << "Physical Surface(6) = {6};\n"
              << "Physical Surface(15) = {15};\n"

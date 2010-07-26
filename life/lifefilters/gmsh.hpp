@@ -112,13 +112,15 @@ public:
         :
         _M_order( GMSH_ORDER_ONE ),
         M_version( LIFE_GMSH_FORMAT_VERSION ),
-        M_addmidpoint( true )
+        M_addmidpoint( true ),
+        M_usePhysicalNames( false )
         {}
     Gmsh( Gmsh const & __g )
         :
         _M_order( __g._M_order ),
         M_version( __g.M_version ),
-        M_addmidpoint( __g.M_addmidpoint )
+        M_addmidpoint( __g.M_addmidpoint ),
+        M_usePhysicalNames( __g.M_usePhysicalNames )
         {}
     ~Gmsh()
         {}
@@ -143,6 +145,7 @@ public:
                 _M_order = __g._M_order;
                 M_version = __g.M_version;
                 M_addmidpoint = __g.M_addmidpoint;
+		M_usePhysicalNames = __g.M_usePhysicalNames;
             }
             return *this;
         }
@@ -177,6 +180,11 @@ public:
      */
     bool addMidPoint() const { return M_addmidpoint; }
 
+    /**
+     * \return true if use the physical name, 'false' otherwise
+     */
+    bool usePhysicalNames() const { return M_usePhysicalNames; }
+    
     //@}
 
     /** \name  Mutators
@@ -238,7 +246,13 @@ public:
      */
     void setAddMidPoint( bool add ) { M_addmidpoint = add; }
 
-
+    /**
+     * Set the use of physical names to describe the boundaries of the domain: if \p option 
+     * is set to true then the generator will generate a PhysicalNames Section and replace
+     * numerical id by strings for the Physical boundaries 
+     */
+    void usePhysicalNames( bool option ) { M_usePhysicalNames = option; }
+    
     //@}
 
     /** \name  Methods
@@ -295,7 +309,7 @@ private:
     GMSH_ORDER _M_order;
     std::string M_version;
     bool M_addmidpoint;
-
+    bool M_usePhysicalNames;
 };
 
 ///! \typedef gmsh_type Gmsh
@@ -377,6 +391,7 @@ BOOST_PARAMETER_FUNCTION(
                           (h,              *(boost::is_floating_point<mpl::_>), double(0.1) )
                           (convex,         *(boost::is_convertible<mpl::_,std::string>), "simplex")
                           (addmidpoint,    *(boost::is_integral<mpl::_>), true )
+                          (usenames,       *(boost::is_integral<mpl::_>), false )
                           (xmin,           *(boost::is_floating_point<mpl::_>), 0. )
                           (xmax,           *(boost::is_floating_point<mpl::_>), 1 )
                           (ymin,           *(boost::is_floating_point<mpl::_>), 0. )
@@ -388,6 +403,7 @@ BOOST_PARAMETER_FUNCTION(
 
     gmsh_ptr->setCharacteristicLength( h );
     gmsh_ptr->setAddMidPoint( addmidpoint );
+    gmsh_ptr->usePhysicalNames( usenames );
     gmsh_ptr->setX( std::make_pair( xmin, xmax ) );
     if ( dim >= 2 )
         gmsh_ptr->setY( std::make_pair( ymin, ymax ) );
