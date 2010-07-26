@@ -2,4 +2,9 @@
 /Makefile
 /Makefile.in
 /cmake_install.cmake
+/gmsh.hpp~
+/gmshsimplexdomain.cpp~
+/gmshsimplexdomain.hpp~
+/gmshtensorizeddomain.cpp~
+/gmshtensorizeddomain.hpp~
 /liblifefilters.a

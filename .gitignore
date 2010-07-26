@@ -2,6 +2,7 @@
 /#CTestConfig.cmake#
 /#ctest.make#
 /.gitignore~
+/.kdev4
 /CMakeCache.txt
 /CMakeFiles
 /CPackConfig.cmake
@@ -25,6 +26,7 @@
 /configure
 /ctest.make
 /life-ctest-continuous.cmake
+/life.kdev4
 /lifeconfig.h.in~
 /octave-core
 /opt
