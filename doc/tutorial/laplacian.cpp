@@ -253,6 +253,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+						      _usenames=true,
                                                       _shape=shape,
                                                       _dim=Dim,
                                                       _h=X[0] ) );
@@ -339,9 +340,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
             //# marker10 #
             form2( Xh, Xh, D ) +=
                 integrate( markedfaces(mesh,mesh->markerName("Dirichlet")),
-
-                           -(gradt(u)*vf::N())*id(v)
-
+                          -(gradt(u)*vf::N())*id(v)
                            -(grad(v)*vf::N())*idt(u)
                            +penaldir*id(v)*idt(u)/hFace());
             D->close();
