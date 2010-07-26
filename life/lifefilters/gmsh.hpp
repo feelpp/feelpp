@@ -110,14 +110,14 @@ public:
 
     Gmsh()
         :
-        _M_order( GMSH_ORDER_ONE ),
+        M_order( GMSH_ORDER_ONE ),
         M_version( LIFE_GMSH_FORMAT_VERSION ),
         M_addmidpoint( true ),
         M_usePhysicalNames( false )
         {}
     Gmsh( Gmsh const & __g )
         :
-        _M_order( __g._M_order ),
+        M_order( __g.M_order ),
         M_version( __g.M_version ),
         M_addmidpoint( __g.M_addmidpoint ),
         M_usePhysicalNames( __g.M_usePhysicalNames )
@@ -142,10 +142,10 @@ public:
         {
             if (  this != &__g )
             {
-                _M_order = __g._M_order;
+                M_order = __g.M_order;
                 M_version = __g.M_version;
                 M_addmidpoint = __g.M_addmidpoint;
-		M_usePhysicalNames = __g.M_usePhysicalNames;
+                M_usePhysicalNames = __g.M_usePhysicalNames;
             }
             return *this;
         }
@@ -163,7 +163,7 @@ public:
      * get the order of the elements of the mesh
      * \return the order of the elements of the mesh
      */
-    GMSH_ORDER order() const { return _M_order; }
+    GMSH_ORDER order() const { return M_order; }
 
     /**
      * @return the file format version
@@ -224,7 +224,7 @@ public:
      */
     void setOrder( int o )
         {
-            _M_order = (GMSH_ORDER) o;
+            M_order = (GMSH_ORDER) o;
         }
 
     /**
@@ -306,7 +306,7 @@ private:
 
 private:
     mpi::communicator M_comm;
-    GMSH_ORDER _M_order;
+    GMSH_ORDER M_order;
     std::string M_version;
     bool M_addmidpoint;
     bool M_usePhysicalNames;
