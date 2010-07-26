@@ -1,11 +1,11 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8 -*-
 
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-04-03
 
-  Copyright (C) 2009 Université de Grenoble 1
+  Copyright (C) 2009 UniversitÃ© de Grenoble 1
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -80,6 +80,7 @@ BOOST_PARAMETER_NAME(h)
 BOOST_PARAMETER_NAME(dim)
 BOOST_PARAMETER_NAME(order)
 BOOST_PARAMETER_NAME(addmidpoint)
+BOOST_PARAMETER_NAME(usenames)
 BOOST_PARAMETER_NAME(xmin)
 BOOST_PARAMETER_NAME(xmax)
 BOOST_PARAMETER_NAME(ymin)
