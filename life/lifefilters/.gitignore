@@ -2,6 +2,7 @@
 /Makefile
 /Makefile.in
 /cmake_install.cmake
+/gmsh.cpp~
 /gmsh.hpp~
 /gmshsimplexdomain.cpp~
 /gmshsimplexdomain.hpp~
