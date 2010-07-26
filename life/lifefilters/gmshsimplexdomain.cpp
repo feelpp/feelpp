@@ -1,11 +1,11 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8 -*-
 
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-10-11
 
-  Copyright (C) 2007 Université Joseph Fourier Grenoble 1
+  Copyright (C) 2007 UniversitÃ© Joseph Fourier Grenoble 1
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -56,7 +56,7 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<1> ) const
             ostr << "Point(3) = {" << (_M_I[0].second+_M_I[0].first)/2 << ",0,0,h};\n"
                  << "Line(1) = {1,3};\n"
                  << "Line(2) = {3,2};\n";
-            if ( !_M_usePhysicalNames )
+            if ( this->usePhysicalNames() == false )
             {
                 ostr    << "Physical Point(1) = {1};\n"
                         << "Physical Point(3) = {2};\n"
@@ -75,7 +75,7 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<1> ) const
         }
     else
         {
-            if ( !_M_usePhysicalNames )
+            if ( this->usePhysicalNames() == false )
             {
                 ostr << "Line(1) = {1,2};\n"
                      << "Physical Point(1) = {1};\n"
@@ -107,7 +107,7 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<2> ) const
          << "Line(2) = {2,3};\n"
          << "Line(3) = {3,1};\n"
          << "Line Loop(4) = {3,1,2};\n";
-    if ( !_M_usePhysicalNames )
+    if ( this->usePhysicalNames() == false )
     {
         ostr << "Plane Surface(5) = {4};\n"
              << "Physical Line(6) = {1};\n"
@@ -153,7 +153,7 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<3> ) const
          << "Surface Loop(20) = {11, 13, 15, 5};" << "\n"
          << "Volume(21) = {20};" << "\n"
          << "" << "\n";
-    if ( !_M_usePhysicalNames )
+    if ( this->usePhysicalNames() == false )
     {
         ostr << "Physical Surface(16) = {11};" << "\n"
              << "Physical Surface(17) = {15};" << "\n"

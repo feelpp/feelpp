@@ -1,11 +1,11 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8 -*-
 
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-10-11
 
-  Copyright (C) 2007 Université Joseph Fourier Grenoble 1
+  Copyright (C) 2007 UniversitÃ© Joseph Fourier Grenoble 1
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -73,8 +73,7 @@ public:
         super(),
         _M_I( nDim ),
         _M_h( 0.1 ),
-        _M_descr(),
-        _M_usePhysicalNames( 0 )
+        _M_descr()
         {
         switch (dt)
             {
@@ -108,8 +107,7 @@ public:
         super( td ),
         _M_I( td._M_I ),
         _M_h( td._M_h ),
-        _M_descr( td._M_descr ),
-        _M_usePhysicalNames( td._M_usePhysicalNames )
+        _M_descr( td._M_descr )
     {
         this->setOrder( (GMSH_ORDER) nOrder );
     }
@@ -178,12 +176,6 @@ public:
     }
     void setCharacteristicLength( double h ) { _M_h = h; }
 
-    /**
-     * Set the use of physical names to describe the boundaries of the domain
-     */
-    void usePhysicalNames( const bool option = 1 ) { _M_usePhysicalNames = option; }
-
-
     //@}
 
     /** @name  Methods
@@ -215,8 +207,6 @@ private:
     std::vector<std::pair<double,double> > _M_I;
     double _M_h;
     std::string _M_descr;
-    bool _M_usePhysicalNames;
-
 };
 
 } // Life
