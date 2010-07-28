@@ -32,7 +32,7 @@ FIND_PATH(MadLib_INCLUDE_DIR
 
 CHECK_INCLUDE_FILE_CXX(MadLib.h HAVE_MADLIB_H)
 
-FIND_LIBRARY(MadLib_LIBRARY madlib
+FIND_LIBRARY(MadLib_LIBRARY MAdLib
   /usr/lib
   /usr/local/lib
   )
