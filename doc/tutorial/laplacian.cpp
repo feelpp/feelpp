@@ -1,4 +1,4 @@
-/* -*- mode: c++ coding: utf-8 -*-
+/* -*- mode: c++; coding: utf-8 -*-
 
   This file is part of the Life library
 
@@ -176,6 +176,7 @@ public:
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
+    {
     }
 
     void run();
@@ -374,7 +375,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     //! project the exact solution
     element_type e( Xh, "e" );
     e = vf::project( Xh, elements(mesh), g );
-    
+
     export_ptrtype exporter( export_type::New( this->vm(),
                                                (boost::format( "%1%-%2%-%3%" )
                                                 % this->about().appName()
@@ -390,6 +391,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
         exporter->step(0)->add( "g", e );
 
         exporter->save();
+        Log() << "exportResults done\n";
     }
     /** \endcode */
 } // Laplacian::run
@@ -445,7 +447,6 @@ main( int argc, char** argv )
     /** \code */
     app.run();
     /** \endcode */
-
 }
 
 
