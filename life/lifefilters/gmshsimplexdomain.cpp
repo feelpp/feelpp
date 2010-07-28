@@ -67,8 +67,8 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<1> ) const
             else
             {
                 ostr    << "Physical Point(\"Dirichlet\") = {1};\n"
-                        << "Physical Point(\"Neumann\") = {3};\n"
-                        << "Physical Point(3) = {2};\n"
+                        << "Physical Point(\"Neumann\") = {2};\n"
+                        << "Physical Point(3) = {3};\n"
                         << "Physical Line(\"Mat1\") = {1};\n"
                         << "Physical Line(\"Mat2\") = {2};\n";
             }
