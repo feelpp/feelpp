@@ -53,6 +53,22 @@ void iota (ForwardIter first, ForwardIter last, T value)
             ++first;
         }
 }
+
+template <typename T>
+void
+VectorPetsc<T>::clear ()
+{
+    if ((this->isInitialized()) && (this->_M_destroy_vec_on_exit))
+    {
+        int ierr=0;
+
+        ierr = VecDestroy(_M_vec);
+        CHKERRABORT(M_comm,ierr);
+    }
+
+    this->M_is_closed = this->M_is_initialized = false;
+}
+
 template <typename T>
 void
 VectorPetsc<T>::insert (const Vector<T>& /*V*/,

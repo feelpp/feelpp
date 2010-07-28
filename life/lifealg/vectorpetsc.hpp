@@ -96,6 +96,7 @@ public:
     VectorPetsc ()
         :
         super(),
+        M_comm(),
         _M_destroy_vec_on_exit( true )
     {
     }
@@ -106,6 +107,7 @@ public:
     VectorPetsc (const size_type n)
         :
         super( n ),
+        M_comm(),
         _M_destroy_vec_on_exit( true )
     {
         this->init(n, n, false);
@@ -119,6 +121,7 @@ public:
                  const size_type n_local)
         :
         super( n, n_local ),
+        M_comm(),
         _M_destroy_vec_on_exit( true )
     {
         this->init(n, n_local, false);
@@ -134,6 +137,7 @@ public:
     VectorPetsc(Vec v)
         :
         super(),
+        M_comm(),
         _M_destroy_vec_on_exit( false )
     {
         this->_M_vec = v;
@@ -359,18 +363,7 @@ public:
     /**
      * @returns the \p VectorPetsc<T> to a pristine state.
      */
-    void clear ()
-    {
-        if ((this->isInitialized()) && (this->_M_destroy_vec_on_exit))
-            {
-                int ierr=0;
-
-                ierr = VecDestroy(_M_vec);
-                CHKERRABORT(M_comm,ierr);
-            }
-
-        this->M_is_closed = this->M_is_initialized = false;
-    }
+    LIFE_DONT_INLINE void clear ();
 
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
