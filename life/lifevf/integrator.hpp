@@ -1167,7 +1167,7 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
                     {
                         size_type i0;
                         boost::tie( i0, boost::tuples::ignore, boost::tuples::ignore) = P0h->dof()->localToGlobal( it->element(0), 0, c1 );
-                        double v = __integrators[__face_id_in_elt_0]( *expr2, c1, 0 );
+                        double v = __integrators[__face_id_in_elt_0]( *expr, c1, 0 );
                         p0.add( i0, v );
                     }
                 } // !isConnectedTo1
