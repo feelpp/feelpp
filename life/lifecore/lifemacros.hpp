@@ -45,6 +45,12 @@
   -# #LIFE_DEPRECATED
   -# #LIFE_ISLIKELY and #LIFE_ISUNLIKELY
 */
+#ifdef __GNUC__
+  #define LIFE_GNUC_AT_LEAST(x,y) ((__GNUC__>=x && __GNUC_MINOR__>=y) || __GNUC__>x)
+#else
+  #define LIFE_GNUC_AT_LEAST(x,y) 0
+#endif
+
 /**
    \def LIFE_CONSTRUCTOR_BEGIN(Area,x)
    Inform that the constructor of the class x has started
@@ -491,5 +497,36 @@
 #else
 # define LIFE_IS_CONSTANT( n )
 #endif // __GNUC__
+
+#define LIFE_DEBUG_VAR(x) std::cerr << #x << " = " << x << std::endl;
+
+#ifdef NDEBUG
+# ifndef LIFE_NO_DEBUG
+#  define LIFE_NO_DEBUG
+# endif
+#endif
+
+// LIFE_ALWAYS_INLINE_ATTRIB should be use in the declaration of function
+// which should be inlined even in debug mode.
+#if LIFE_GNUC_AT_LEAST(4,0)
+#define LIFE_ALWAYS_INLINE_ATTRIB __attribute__((always_inline))
+#else
+#define LIFE_ALWAYS_INLINE_ATTRIB
+#endif
+
+// LIFE_FORCE_INLINE means "inline as much as possible"
+#if (defined _MSC_VER) || (defined __intel_compiler)
+#define LIFE_STRONG_INLINE __forceinline
+#else
+#define LIFE_STRONG_INLINE inline
+#endif
+
+#if (defined __GNUC__)
+#define LIFE_DONT_INLINE __attribute__((noinline))
+#elif (defined _MSC_VER)
+#define LIFE_DONT_INLINE __declspec(noinline)
+#else
+#define LIFE_DONT_INLINE
+#endif
 
 #endif /* LIFEMACROS_HPP */
