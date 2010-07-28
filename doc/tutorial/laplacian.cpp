@@ -175,9 +175,7 @@ public:
         super( vm, about ),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
-        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
-    {
+        shape( this->vm()["shape"].template as<std::string>() )
     }
 
     void run();
@@ -196,14 +194,6 @@ private:
     void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
 
 
-    /**
-     * export results to ensight format (enabled by  --export cmd line options)
-     *
-     * \param u the function to save in ensight format.
-     * \param e the exact solution projected in the finite element space to save in ensight format.
-     */
-    void exportResults( element_type& u, element_type& e );
-
 private:
 
     //! linear algebra backend
@@ -214,9 +204,6 @@ private:
 
     //! shape of the domain
     std::string shape;
-
-    //! exporter factory
-    export_ptrtype exporter;
 }; // Laplacian
 
 template<int Dim> const uint16_type Laplacian<Dim>::Order;
@@ -340,7 +327,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
             //# marker10 #
             form2( Xh, Xh, D ) +=
                 integrate( markedfaces(mesh,mesh->markerName("Dirichlet")),
-                          -(gradt(u)*vf::N())*id(v)
+                           -(gradt(u)*vf::N())*id(v)
                            -(grad(v)*vf::N())*idt(u)
                            +penaldir*id(v)*idt(u)/hFace());
             D->close();
@@ -387,8 +374,23 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     //! project the exact solution
     element_type e( Xh, "e" );
     e = vf::project( Xh, elements(mesh), g );
-    //std::cout << "e=" << e << "\n";
-    this->exportResults( u, e );
+    
+    export_ptrtype exporter( export_type::New( this->vm(),
+                                               (boost::format( "%1%-%2%-%3%" )
+                                                % this->about().appName()
+                                                % shape
+                                                % Dim).str() ) );
+    if ( exporter->doExport() )
+    {
+        Log() << "exportResults starts\n";
+
+        exporter->step(0)->setMesh( mesh );
+
+        exporter->step(0)->add( "u", u );
+        exporter->step(0)->add( "g", e );
+
+        exporter->save();
+    }
     /** \endcode */
 } // Laplacian::run
 
@@ -409,26 +411,6 @@ Laplacian<Dim>::solve( sparse_matrix_ptrtype& D,
     u = *U;
 } // Laplacian::solve
 //# endmarker6 #
-
-template<int Dim>
-void
-Laplacian<Dim>::exportResults( element_type& U, element_type& E )
-{
-    if ( exporter->doExport() )
-    {
-        Log() << "exportResults starts\n";
-
-        exporter->step(0)->setMesh( U.functionSpace()->mesh() );
-
-        exporter->step(0)->add( "pid",regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-        exporter->step(0)->add( "u", U );
-        exporter->step(0)->add( "g", E );
-
-        exporter->save();
-    }
-} // Laplacian::export
-
-
 
 /**
  * main function: entry point of the program
