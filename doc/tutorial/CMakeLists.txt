@@ -86,7 +86,7 @@ macro( add_docex2 target )
    TARGET life_doc_${target}
    POST_BUILD
    COMMAND ${target_executable} ARGS --hsize=0.05 --shape="simplex" --nochdir --exporter-format=gmsh > ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex.out 2>&1
-   COMMAND ${target_executable} ARGS --hsize=0.05 --shape="hypercube" --nochdir --exporter-format=gmsh > ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube.out 2>&1
+   COMMAND ${target_executable} ARGS --hsize=0.075 --shape="hypercube" --nochdir --exporter-format=gmsh > ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube.out 2>&1
    )
  foreach( dim 1 2 3 )
    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex-${dim}.pos "Merge \"${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex-${dim}-1_0.msh\";\nMerge \"tutorial.pos\";\nExit;\n")
