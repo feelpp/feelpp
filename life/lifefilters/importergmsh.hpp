@@ -1,4 +1,4 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8 -*-
 
   This file is part of the Life library
 
@@ -6,7 +6,7 @@
        Date: 2005-11-16
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007,2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007,2008 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -245,7 +245,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 ( __buf )
                 ( "$EndMeshFormat").error ( "invalid file format entry" );
             __is >> __buf;
-            Debug() << "[importergmsh] " << __buf << " (expect $PhysicalNames)\n";
+            Debug( 8011 ) << "[importergmsh] " << __buf << " (expect $PhysicalNames)\n";
             if ( std::string( __buf ) == "$PhysicalNames" )
                 {
                     int nnames;
