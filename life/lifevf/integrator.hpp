@@ -360,7 +360,8 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
     //
     // some typedefs
     //
-    typedef typename FormType::gm_type gm_type;
+    typedef typename eval::gm_type gm_type;
+    //typedef typename FormType::gm_type gm_type;
     typedef typename gm_type::template Context<expression_type::context, typename eval::element_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
 
@@ -464,7 +465,8 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
     //
     // some typedefs
     //
-    typedef typename FormType::gm_type gm_type;
+    typedef typename eval::gm_type gm_type;
+    //typedef typename FormType::gm_type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
     typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
@@ -579,13 +581,29 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
                     form2->update( mapgmc2, face_ims[__face_id_in_elt_0], mpl::int_<2>() );
                     t1 += ti1.elapsed();
 
-
                     ti2.restart();
                     form2->integrate( );
                     t2 += ti2.elapsed();
 
                     ti3.restart();
-                    form2->assemble( it->element(0).id(), it->element(1).id() );
+                    if (__c0->element().mesh() == __form.testSpace()->mesh().get())
+                        {
+                            //std::cout<<"\nIS SAME MESH\n";
+                            form2->assemble( it->element(0).id(), it->element(1).id() );
+                        }
+                    else
+                        {
+                            //std::cout<<"\nIS DIFF MESH\n";
+                            auto toolLoc = __form.testSpace()->mesh()->tool_localization();
+                            auto __ptsReal = __form.testSpace()->ptsInContext( *__c0 , mpl::int_<2>());
+                            toolLoc->run_analysis(__ptsReal);
+                            auto itloc = toolLoc->result_analysis_begin();
+                            auto itloc_end = toolLoc->result_analysis_end();
+                            for( ;itloc != itloc_end; ++itloc )
+                                {
+                                    form2->assemble( itloc->first );
+                                }
+                        }
                     t3 += ti3.elapsed();
                 }
             else
@@ -610,8 +628,25 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
                     t2 += ti2.elapsed();
 
                     ti3.restart();
-                    form.assemble( it->element(0).id() );
-                    t3 += ti3.elapsed();
+                    if (__c0->element().mesh() == __form.testSpace()->mesh().get())
+                        {
+                            //std::cout<<"\nIS SAME MESH\n";
+                            form.assemble( it->element(0).id() );
+                        }
+                    else
+                        {
+                            //std::cout<<"\nIS DIFF MESH\n";
+                            auto toolLoc = __form.testSpace()->mesh()->tool_localization();
+                            auto __ptsReal = __form.testSpace()->ptsInContext( *__c0 , mpl::int_<2>());
+                            toolLoc->run_analysis(__ptsReal);
+                            auto itloc = toolLoc->result_analysis_begin();
+                            auto itloc_end = toolLoc->result_analysis_end();
+                            for( ;itloc != itloc_end; ++itloc )
+                                {
+                                    form.assemble( itloc->first );
+                                }
+                        }
+                   t3 += ti3.elapsed();
 #else
                     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
                     form.update( mapgmc, face_ims[__face_id_in_elt_0] );
