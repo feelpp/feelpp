@@ -23,13 +23,14 @@
 //Bug si 0 argum√ent(a corriger)
 
 # define GEOTOOL_SHAPE                                                  \
-    ( 7, ( ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE ),  \
-           ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
+    ( 8, ( ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE ),  \
+           ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ),    \
            ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE    ),  \
            ( PartialDisque , 2, 1, 0, "partialdisque", 3, PARTIALDISQUE), \
            ( Special_1a    , 2, 2, 0, "special_1a"   , 1, SPECIAL_1A ), \
            ( Special_1b    , 2, 1, 0, "special_1b"   , 1, SPECIAL_1B ), \
-           ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE  )   \
+           ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE  ),     \
+           ( Cylindre      , 3, 3, 1, "cylindre"     , 3, CYLINDRE  )   \
            )                                                            \
       )                                                                 \
     /**/
@@ -115,6 +116,36 @@
     /**/
 
 # define GEOTOOL_MARKER_SURFACE_SPECIAL_1B      \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
+
+/*_________________________________________________*/
+
+# define GEOTOOL_MARKER_LINE_CYLINDRE           \
+    ( 12, ( (  1, 1, (  1 ) ),                  \
+            (  2, 1, (  2 ) ),                  \
+            (  3, 1, (  3 ) ),                  \
+            (  4, 1, (  4 ) ),                  \
+            (  5, 1, (  5 ) ),                  \
+            (  6, 1, (  6 ) ),                  \
+            (  7, 1, (  7 ) ),                  \
+            (  8, 1, (  8 ) ),                  \
+            (  9, 1, (  9 ) ),                  \
+            ( 10, 1, ( 10 ) ),                  \
+            ( 11, 1, ( 11 ) ),                  \
+            ( 12, 1, ( 12 ) )                   \
+            )                                   \
+      )                                         \
+    /**/
+# define GEOTOOL_MARKER_SURFACE_CYLINDRE        \
+    ( 3, ( ( 1, 1, ( 1 ) ),                     \
+           ( 2, 1, ( 2 ) ),                     \
+           ( 3, 4, ( 3,4,5,6 ) )                \
+           )                                    \
+      )                                         \
+    /**/
+# define GEOTOOL_MARKER_VOLUME_CYLINDRE         \
     ( 1, ( ( 1, 1, ( 1 ) ) )                    \
       )                                         \
     /**/
@@ -1036,8 +1067,21 @@ namespace Life {
                                                     ++itMark;
                                                 }
                                             *_M_ostr << __dataMemGlob[3][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)] << "};\n";
-
                                         }
+                                    else if (itMarkType->first=="volume")
+                                        {
+                                            *_M_ostr << "Physical Volume(\"" << itMarkName->first << "\") = {";
+
+                                            std::list<marker_base_type>::const_iterator itMark = itMarkName->second.begin();
+                                            std::list<marker_base_type>::const_iterator itMark_end = --itMarkName->second.end();
+                                            while (itMark!=itMark_end)
+                                                {
+                                                    *_M_ostr << __dataMemGlob[3][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)]<<",";
+                                                    ++itMark;
+                                                }
+                                            *_M_ostr << __dataMemGlob[3][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)] << "};\n";
+                                        }
+
                                     ++itMarkName;
                                 }
                             ++itMarkType;
@@ -1937,8 +1981,11 @@ namespace Life {
             writeVolume(1, dg, 1);
         }
 
+        void
+        runCylindre(data_geo_ptrtype dg)
+        {
 
-
+        }
 
 
     }//GeoTool
