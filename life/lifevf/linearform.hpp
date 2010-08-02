@@ -389,6 +389,10 @@ public:
     space_ptrtype const& functionSpace() const { return _M_X; }
 
     /**
+    * \return the test function space
+     */
+    space_ptrtype const& testSpace() const { return _M_X; }
+    /**
      * Geometric transformation
      */
     gm_ptrtype const& gm() const { return _M_X->gm(); }
