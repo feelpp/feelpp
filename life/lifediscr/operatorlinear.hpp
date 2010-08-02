@@ -148,10 +148,14 @@ public:
         ie.container() = *_v2;
     }
 
-    //add by me
+
+    //template <typename T1 = typename domain_space_type::element_type,
+    //          typename T2 = typename dual_image_space_type::element_type >
+    //void
+    //applyBis( T1 & de, T2 & ie ) //const
     void
-    apply( typename domain_space_type::element_type& de,
-           typename dual_image_space_type::element_type& ie ) const
+    apply( typename domain_space_type::element_type & de,
+           typename dual_image_space_type::element_type & ie)
     {
         if ( ! M_matrix->closed() )
         {
@@ -165,11 +169,12 @@ public:
         ie.container() = *_v2;
     }
 
-    //add by me
-    typename dual_image_space_type::element_type
-    operator()(typename domain_space_type::element_type& de)
+    template <typename T1 = typename domain_space_type::element_type,
+              typename T2 = typename dual_image_space_type::element_type >
+    T2
+    operator()(T1 & de)
     {
-        typename dual_image_space_type::element_type elt_image;
+        T2 elt_image(this->dualImageSpace(),"oio");
         this->apply(de,elt_image);
 
         return elt_image;
