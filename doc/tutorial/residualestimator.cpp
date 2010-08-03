@@ -21,7 +21,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   \file laplacian.cpp
+   \file residualestimator.cpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2010-07-15
  */
@@ -67,16 +67,15 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description laplacianoptions("Laplacian options");
-    laplacianoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
+    po::options_description residualestimatoroptions("ResidualEstimator options");
+    residualestimatoroptions.add_options()
+        ("hsize", po::value<double>()->default_value( 0.2), "mesh size")
         ("shape", Life::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ("nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
         ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ("penaldir", Life::po::value<double>()->default_value( 10 ),
+        ("penaldir", Life::po::value<double>()->default_value( 20 ),
          "penalisation parameter for the weak boundary Dirichlet formulation")
         ;
-    return laplacianoptions.add( Life::life_options() );
+    return residualestimatoroptions.add( Life::life_options() );
 }
 
 /**
@@ -90,10 +89,10 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "laplacian" ,
-                     "laplacian" ,
+    AboutData about( "residualestimator" ,
+                     "residualestimator" ,
                      "0.2",
-                     "nD(n=1,2,3) Laplacian on simplices or simplex products",
+                     "nD(n=1,2,3) Residual Estimator on Laplacian equation on simplices or simplex products",
                      Life::AboutData::License_GPL,
                      "Copyright (c) 2008-2009 Universite Joseph Fourier");
 
@@ -104,7 +103,7 @@ makeAbout()
 
 
 /**
- * \class Laplacian
+ * \class ResidualEstimator
  *
  * Laplacian Solver using continuous approximation spaces
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
@@ -112,7 +111,7 @@ makeAbout()
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=1, 2 or 3)
  */
 template<int Dim>
-class Laplacian
+class ResidualEstimator
     :
     public Simget
 {
@@ -152,6 +151,13 @@ public:
     //! an element type of the \f$P_0\f$ discontinuous function space
     typedef typename p0_space_type::element_type p0_element_type;
 
+
+    //! the basis type of our approximation space
+    typedef bases<Lagrange<1,Scalar> > p1_basis_type;
+    typedef FunctionSpace<mesh_type, p1_basis_type> p1_space_type;
+    typedef typename p1_space_type::element_type p1_element_type;
+
+
     //! the basis type of our approximation space
     typedef bases<Lagrange<Order,Scalar> > basis_type;
 
@@ -170,11 +176,13 @@ public:
     /**
      * Constructor
      */
-    Laplacian( po::variables_map const& vm, AboutData const& about )
+    ResidualEstimator( po::variables_map const& vm, AboutData const& about )
         :
         super( vm, about ),
         M_backend( backend_type::build( this->vm() ) ),
+        M_backendP1( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
+        exporter( Exporter<mesh_type>::New( "gmsh", this->about().appName() ) ),
         shape( this->vm()["shape"].template as<std::string>() )
     {
     }
@@ -193,28 +201,31 @@ private:
      * \param in F vector representing the right hand side of the system
      */
     void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
-
+    void solveP1( sparse_matrix_ptrtype& D, p1_element_type& u, vector_ptrtype& F );
 
 private:
 
     //! linear algebra backend
     backend_ptrtype M_backend;
+    backend_ptrtype M_backendP1;
 
     //! mesh characteristic size
     double meshSize;
 
     //! shape of the domain
     std::string shape;
-}; // Laplacian
 
-template<int Dim> const uint16_type Laplacian<Dim>::Order;
+    export_ptrtype exporter;
+}; // ResidualEstimator
+
+template<int Dim> const uint16_type ResidualEstimator<Dim>::Order;
 
 template<int Dim>
 void
-Laplacian<Dim>::run()
+ResidualEstimator<Dim>::run()
 {
     std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute Laplacian<" << Dim << ">\n";
+    std::cout << "Execute ResidualEstimator<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
     if ( shape == "hypercube" )
@@ -226,7 +237,7 @@ Laplacian<Dim>::run()
 }
 template<int Dim>
 void
-Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
+ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long n )
 {
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";
@@ -250,6 +261,9 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
      * The function space and some associated elements(functions) are then defined
      */
     /** \code */
+    auto P0h = p0_space_type::New( mesh, MESH_CHECK );
+    
+
     space_ptrtype Xh = space_type::New( mesh );
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
@@ -274,7 +288,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 
     bool weakdir = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
-    value_type nu = this->vm()["nu"].template as<double>();
+    value_type hsize = this->vm()["hsize"].template as<double>();
 
     using namespace Life::vf;
 
@@ -288,7 +302,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     vector_ptrtype F( M_backend->newVector( Xh ) );
     form1( _test=Xh, _vector=F, _init=true ) =
         integrate( elements(mesh), f*id(v) )+
-        integrate( markedfaces( mesh, mesh->markerName("Neumann") ), nu*gradv(gproj)*vf::N()*id(v) );
+        integrate( markedfaces( mesh, mesh->markerName("Neumann") ), gradv(gproj)*vf::N()*id(v) );
     //# endmarker2 #
     if ( this->comm().size() != 1 || weakdir )
         {
@@ -313,7 +327,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
     /** \code */
     form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), nu*gradt(u)*trans(grad(v)) );
+        integrate( elements(mesh), gradt(u)*trans(grad(v)) );
     /** \endcode */
     //# endmarker3 #
 
@@ -361,45 +375,105 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     //! compute the \f$L_2$ norm of the error
     /** \code */
     //# marker7 #
-    double L2error2 =integrate(elements(mesh),
-                               (idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
+    double L2error2 =integrate(elements(mesh),(idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
     double L2error =   math::sqrt( L2error2 );
+    double semiH1error2 = integrate(elements(mesh),(gradv(u)-gradv(gproj))*(gradv(u)-gradv(gproj))).evaluate()(0,0);
+    double H1error = math::sqrt(L2error2+semiH1error2);
 
 
-    Log() << "||error||_L2=" << L2error << "\n";
+    /*******************residual estimator**********************/
+   
+    auto estimatorP0 =   integrate(elements(mesh), vf::h()*vf::h()*trace(hessv(u))*trace(hessv(u)) ).broken(P0h);
+   
+    auto estimatorP0_internalfaces = integrate(internalfaces(mesh),vf::hFace()* (jumpv(gradv(u))) * (jumpv(gradv(u))) ).broken( P0h );
+    auto estimatorP0_Neumann = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
+					  vf::hFace()* (gradv(u)*vf::N()-idv(gproj)) * (gradv(u)*vf::N()-idv(gproj)) ).broken( P0h );
+    
+
+
+
+    double number_elem=mesh->numElements();
+    if(Dim==2){
+      for(int i=0;i<number_elem;i++){
+         if(estimatorP0(i)<0) std::cout<<"estimatorP0("<<i<<") = "<<estimatorP0(i)<<std::endl;
+	 if(estimatorP0_internalfaces(i)<0) std::cout<<"faces("<<i<<") = "<<estimatorP0_internalfaces(i)<<std::endl;
+	 if(estimatorP0_Neumann(i)<0) std::cout<<"Neumann("<<i<<") = "<<estimatorP0_Neumann(i)<<std::endl;
+      }
+    }
+
+    estimatorP0+=estimatorP0_internalfaces;
+    estimatorP0+=estimatorP0_Neumann;
+    estimatorP0.printMatlab("estimator_based_on_residuals.m");
+    double estimator =  math::sqrt(estimatorP0.sum()) ;
+
+
+
+    std::cout<<"Number of elements : "<<number_elem<<std::endl;
+    std::cout<<"real error in L2 norm : "<<L2error<<std::endl;
+    std::cout<<"estimated error based on residuals for L2 norm : " << estimator*hsize <<std::endl ;
+    std::cout<<"real error in H1 norm : "<<H1error<<std::endl;
+    std::cout<<"estimated error based on residuals for H1 norm : " << estimator <<std::endl ;
+    double estimated_L2error = estimator*hsize;
+    double estimated_H1error = estimator;
+
+    //Now we will project the estimatorP0 on a P1 space
+    auto P1h = p1_space_type::New( mesh, MESH_CHECK );
+    auto M1 = M_backendP1->newMatrix( P1h, P1h );
+    auto v1 = P1h->element("v1");
+    auto estimatorP1 = P1h->element("estimatorP1");
+    form2( P1h, P1h, M1, _init=true ) = integrate( elements(mesh), idt(estimatorP1)*id(v1));
+    auto F1 = M_backendP1->newVector( P1h );
+    form1( P1h, F1, _init=true ) = integrate( elements(mesh), vf::sqrt(idv(estimatorP0))*id(v1));
+    this->solveP1( M1, estimatorP1, F1 );
+
+   
+   
+   
+   
+    
+   
+    //estimatorP1 is now the representation at nodes of the error estimator
+    /*******************************/
+
+
+    //Log() << "||error||_L2=" << L2error << "\n";
     //# endmarker7 #
     /** \endcode */
 
     //! save the results
     /** \code */
     //! project the exact solution
-    element_type e( Xh, "e" );
-    e = vf::project( Xh, elements(mesh), g );
+    element_type exact_solution( Xh, "exact_solution" );
+    exact_solution = vf::project( Xh, elements(mesh), g );
 
+   
+    
+    
+    /*
     export_ptrtype exporter( export_type::New( this->vm(),
                                                (boost::format( "%1%-%2%-%3%" )
                                                 % this->about().appName()
                                                 % shape
-                                                % Dim).str() ) );
+						% Dim).str() ) );*/
     if ( exporter->doExport() )
     {
         Log() << "exportResults starts\n";
 
         exporter->step(0)->setMesh( mesh );
-
-        exporter->step(0)->add( "u", u );
-        exporter->step(0)->add( "g", e );
-
+        exporter->step(0)->add( "unknown", u );
+        exporter->step(0)->add( "exact solution", exact_solution);
+        exporter->step(0)->add( "estimated error",estimatorP1);
+       
         exporter->save();
         Log() << "exportResults done\n";
     }
     /** \endcode */
-} // Laplacian::run
+} // ResidualEstimator::run
 
 //# marker6 #
 template<int Dim>
 void
-Laplacian<Dim>::solve( sparse_matrix_ptrtype& D,
+ResidualEstimator<Dim>::solve( sparse_matrix_ptrtype& D,
                        element_type& u,
                        vector_ptrtype& F )
 {
@@ -411,8 +485,25 @@ Laplacian<Dim>::solve( sparse_matrix_ptrtype& D,
     M_backend->solve( D, D, U, F );
     //! copy U in u
     u = *U;
-} // Laplacian::solve
+} // ResidualEstimator::solve
 //# endmarker6 #
+
+template<int Dim>
+void
+ResidualEstimator<Dim>::solveP1( sparse_matrix_ptrtype& D,
+                                 p1_element_type& u,
+                            vector_ptrtype& F )
+{
+  //! solve the system, first create a vector U of the same size as
+  //! u, then call solve,
+  vector_ptrtype U = M_backendP1->newVector( u.functionSpace() );
+  //! call solve, the second D is the matrix which will be used to
+  //! create the preconditionner
+  M_backendP1->solve( _matrix=D, _solution=U, _rhs=F, _rtolerance=1e-14 );
+  //! copy U in u
+  u = *U;
+} // ElectroHeat::solve
+
 
 /**
  * main function: entry point of the program
@@ -436,9 +527,9 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    app.add( new Laplacian<1>( app.vm(), app.about() ) );
-    app.add( new Laplacian<2>( app.vm(), app.about() ) );
-    app.add( new Laplacian<3>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<1>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<2>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<3>( app.vm(), app.about() ) );
     /** \endcode */
 
     /**

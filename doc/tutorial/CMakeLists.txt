@@ -103,7 +103,7 @@ macro( add_docex2 target )
    add_test( life_doc_${target}-${BACKEND} life_doc_${target} --hsize=0.1 --backend=${BACKEND} --no-export)
  endforeach()
 endmacro()
-foreach( docex myfunctionspace laplacian)
+foreach( docex myfunctionspace laplacian residualestimator)
   add_docex2( ${docex} )
 endforeach()
 
