@@ -134,6 +134,7 @@ void toPython( RefEntity const& e, std::string str = "simplex" )
             x(1) = e.point( i )(2)+e.point( i )(1)*std::sin(M_PI/4);
         }
         ofs << "c.fill ( path.circle(" << double( x( 0 ) ) << "," << double( x( 1 ) )<< ", 0.05 ),[deco.filled([color.grey.black])])\n";
+        ofs << "c.text(" << double(x(0)) << "," << double(x(1)) << ", \"" << i << "\")\n";
     }
     ofs << "c.writePDFfile(\"" << str << "_" << RefEntity::nDim
         << "_" << RefEntity::nOrder
