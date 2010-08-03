@@ -468,7 +468,9 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
       u_minus_exact(i)=math::abs(u_minus_exact(i));
     }
 
-
+    auto meas = P0h->element();
+    meas = vf::project( P0h, elements(mesh), vf::meas() );
+    meas.printMatlab( "meas.m" );
     /*
     export_ptrtype exporter( export_type::New( this->vm(),
                                                (boost::format( "%1%-%2%-%3%" )
@@ -484,6 +486,7 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
         exporter->step(0)->add( "exact solution", exact_solution);
         exporter->step(0)->add( "estimated error",estimatorP1);
         exporter->step(0)->add( "u - exact solution", u_minus_exact) ;
+        exporter->step(0)->add( "measure", meas) ;
 
         exporter->save();
         Log() << "exportResults done\n";
