@@ -52,7 +52,8 @@ enum GMSH_ORDER
     GMSH_ORDER_ONE = 1,
     GMSH_ORDER_TWO = 2,
     GMSH_ORDER_THREE = 3,
-    GMSH_ORDER_FOUR = 4
+    GMSH_ORDER_FOUR = 4,
+    GMSH_ORDER_FIVE = 5
 };
 /**
  * \class Gmsh
@@ -108,15 +109,19 @@ public:
      */
     //@{
 
-    Gmsh()
+    Gmsh( int nDim = 1, int nOrder = GMSH_ORDER_ONE )
         :
-        M_order( GMSH_ORDER_ONE ),
+        M_dimension( nDim ),
+        M_order( nOrder ),
         M_version( LIFE_GMSH_FORMAT_VERSION ),
+        M_I( nDim ),
+        M_h( 0.1 ),
         M_addmidpoint( true ),
         M_usePhysicalNames( false )
         {}
     Gmsh( Gmsh const & __g )
         :
+        M_dimension( __g.M_dimension ),
         M_order( __g.M_order ),
         M_version( __g.M_version ),
         M_addmidpoint( __g.M_addmidpoint ),
@@ -142,6 +147,7 @@ public:
         {
             if (  this != &__g )
             {
+                M_dimension = __g.M_dimension;
                 M_order = __g.M_order;
                 M_version = __g.M_version;
                 M_addmidpoint = __g.M_addmidpoint;
@@ -160,10 +166,15 @@ public:
     //@{
 
     /**
+     * \return mesh dimension
+     */
+    int dimension() const { return M_dimension; }
+
+    /**
      * get the order of the elements of the mesh
      * \return the order of the elements of the mesh
      */
-    GMSH_ORDER order() const { return M_order; }
+    GMSH_ORDER order() const { return (GMSH_ORDER) M_order; }
 
     /**
      * @return the file format version
@@ -171,9 +182,25 @@ public:
     std::string version() const { return M_version; }
 
     /**
-     * \return the description string of the mesh (i.e. in the geo format)
+     * \return bounding box
      */
-    virtual std::string description() const { return std::string();};
+    std::vector<std::pair<double,double> > const& boundingBox() const {return M_I;}
+    double xmin() const { return M_I[0].first; }
+    double xmax() const { return M_I[0].second; }
+    double ymin() const { return M_I[1].first; }
+    double ymax() const { return M_I[1].second; }
+    double zmin() const { return M_I[2].first; }
+    double zmax() const { return M_I[2].second; }
+
+    /**
+     * \return characteristic length
+     */
+    double const& h() const {return M_h; }
+
+    /**
+     * \return the geometry description
+     */
+    std::string description() const { return this->getDescription(); }
 
     /**
      * add the mid point of the domain
@@ -184,18 +211,15 @@ public:
      * \return true if use the physical name, 'false' otherwise
      */
     bool usePhysicalNames() const { return M_usePhysicalNames; }
-    
+
+
     //@}
 
     /** \name  Mutators
      */
     //@{
 
-    //! the gmsh generator to generate a reference domain
-    virtual void setReferenceDomain() {}
 
-    //! set the characteristic length to \p h
-    virtual void setCharacteristicLength( double _h ) {}
 
     /**
      * the gmsh generator to generate a reference domain
@@ -231,15 +255,43 @@ public:
      * set the file format version
      */
     void setVersion( std::string version )
-    {
-        if ( version != "1" && version != "2" && version != LIFE_GMSH_FORMAT_VERSION )
-            throw std::invalid_argument( "invalid gmsh file format version" );
-        M_version = version;
-    }
+        {
+            if ( version != "1" && version != "2" && version != LIFE_GMSH_FORMAT_VERSION )
+                throw std::invalid_argument( "invalid gmsh file format version" );
+            M_version = version;
+        }
 
-    virtual void setX( std::pair<double,double> const& x ) {};
-    virtual void setY( std::pair<double,double> const& y ) {};
-    virtual void setZ( std::pair<double,double> const& z ) {};
+    virtual void setX( std::pair<double,double> const& x )
+        {
+            LIFE_ASSERT( dimension() >= 1 )( dimension() ).error( "invalid dimension" );
+            M_I[0] = x;
+        }
+    virtual void setY( std::pair<double,double> const& y )
+        {
+            LIFE_ASSERT( dimension() >= 2 )( dimension() ).warn( "invalid dimension" );
+            if ( dimension() >= 2 )
+                M_I[1] = y;
+        }
+    virtual void setZ( std::pair<double,double> const& z )
+        {
+            LIFE_ASSERT( dimension() >= 3 )( dimension() ).warn( "invalid dimension" );
+            if ( dimension() >= 3 )
+                M_I[2] = z;
+        }
+
+    //! the gmsh generator to generate a reference domain
+    virtual void setReferenceDomain()
+        {
+            if ( dimension() >= 1 )
+                M_I[0] = std::make_pair( -1, 1 );
+            if ( dimension() >= 2 )
+                M_I[1] = std::make_pair( -1, 1 );
+            if ( dimension() >= 3 )
+                M_I[2] = std::make_pair( -1, 1 );
+        }
+
+    //! set the characteristic length to \p h
+    virtual void setCharacteristicLength( double _h ) { M_h = _h; }
 
     /**
      * if add is true, set M_addmidpoint to true, false otherwise
@@ -247,12 +299,12 @@ public:
     void setAddMidPoint( bool add ) { M_addmidpoint = add; }
 
     /**
-     * Set the use of physical names to describe the boundaries of the domain: if \p option 
+     * Set the use of physical names to describe the boundaries of the domain: if \p option
      * is set to true then the generator will generate a PhysicalNames Section and replace
-     * numerical id by strings for the Physical boundaries 
+     * numerical id by strings for the Physical boundaries
      */
     void usePhysicalNames( bool option ) { M_usePhysicalNames = option; }
-    
+
     //@}
 
     /** \name  Methods
@@ -266,6 +318,11 @@ public:
     std::string generateCircle( std::string const& __name, double __h );
 
     std::string generateSquare( std::string const& __name, double __h );
+
+    /**
+     * generate a Gmsh msh file from \p name
+     */
+    std::string generate( std::string const& name ) const;
 
     /**
      * \param name  filename prefix to create the \c geo and \c msh file from \p geo
@@ -284,9 +341,17 @@ public:
      */
     void refine( std::string const& name, int level = 1 ) const;
 
+    //! \return the preamble for gmsh geometries
+    std::string preamble() const;
+
     //@}
 
 protected:
+
+    /**
+     * sublass must provide the geo description
+     */
+    virtual std::string getDescription() const {}
 
     /**
      * \param name  filename prefix to create the \c geo
@@ -304,11 +369,23 @@ private:
 
     std::string  prefix( std::string const& __name, uint16_type dim ) const;
 
-private:
+protected:
     mpi::communicator M_comm;
-    GMSH_ORDER M_order;
+
+    //! mesh dimension
+    int M_dimension;
+
+    //! mesh order
+    int M_order;
+    // gmsh
     std::string M_version;
+    //! bounding box
+    std::vector<std::pair<double,double> > M_I;
+    //! characteristic length
+    double M_h;
+    //! mid point
     bool M_addmidpoint;
+    //! add physical names to msh files
     bool M_usePhysicalNames;
 };
 
@@ -341,22 +418,22 @@ struct mesh
  *
  */
 BOOST_PARAMETER_FUNCTION(
-                         (typename detail::mesh<Args>::ptrtype), // return type
-                         createGMSHMesh,    // 2. function name
+    (typename detail::mesh<Args>::ptrtype), // return type
+    createGMSHMesh,    // 2. function name
 
-                         tag,           // 3. namespace of tag types
+    tag,           // 3. namespace of tag types
 
-                         (required
-                          (mesh, *)
-                          (desc, *)
-                          ) // 4. one required parameter, and
+    (required
+     (mesh, *)
+     (desc, *)
+        ) // 4. one required parameter, and
 
-                         (optional
-                          (h,              *(boost::is_floating_point<mpl::_>), 0.1 )
-                          (order,          *(boost::is_integral<mpl::_>), 1 )
-                          (refine,          *(boost::is_integral<mpl::_>), 0 )
-                          )
-                         )
+    (optional
+     (h,              *(boost::is_floating_point<mpl::_>), 0.1 )
+     (order,          *(boost::is_integral<mpl::_>), 1 )
+     (refine,          *(boost::is_integral<mpl::_>), 0 )
+        )
+    )
 {
     typedef typename detail::mesh<Args>::type _mesh_type;
     typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
@@ -373,31 +450,32 @@ BOOST_PARAMETER_FUNCTION(
 
     ImporterGmsh<_mesh_type> import( fname );
     _mesh->accept( import );
+
     return _mesh;
 }
 
 
 
 BOOST_PARAMETER_FUNCTION(
-                         (boost::tuple<std::string,std::string,gmsh_ptrtype>), // return type
-                         domain,    // 2. function name
-                         tag,           // 3. namespace of tag types
-                         (required
-                          (name,           *(boost::is_convertible<mpl::_,std::string>))
-                          (shape,          *(boost::is_convertible<mpl::_,std::string>)))
-                         (optional
-                          (dim,            *(boost::is_integral<mpl::_>)      , 2)
-                          (order,          *(boost::is_integral<mpl::_>)      , 1)
-                          (h,              *(boost::is_floating_point<mpl::_>), double(0.1) )
-                          (convex,         *(boost::is_convertible<mpl::_,std::string>), "simplex")
-                          (addmidpoint,    *(boost::is_integral<mpl::_>), true )
-                          (usenames,       *(boost::is_integral<mpl::_>), false )
-                          (xmin,           *(boost::is_floating_point<mpl::_>), 0. )
-                          (xmax,           *(boost::is_floating_point<mpl::_>), 1 )
-                          (ymin,           *(boost::is_floating_point<mpl::_>), 0. )
-                          (ymax,           *(boost::is_floating_point<mpl::_>), 1 )
-                          (zmin,           *(boost::is_floating_point<mpl::_>), 0. )
-                          (zmax,           *(boost::is_floating_point<mpl::_>), 1 )))
+    (boost::tuple<std::string,std::string,gmsh_ptrtype>), // return type
+    domain,    // 2. function name
+    tag,           // 3. namespace of tag types
+    (required
+     (name,           *(boost::is_convertible<mpl::_,std::string>))
+     (shape,          *(boost::is_convertible<mpl::_,std::string>)))
+    (optional
+     (dim,            *(boost::is_integral<mpl::_>)      , 2)
+     (order,          *(boost::is_integral<mpl::_>)      , 1)
+     (h,              *(boost::is_floating_point<mpl::_>), double(0.1) )
+     (convex,         *(boost::is_convertible<mpl::_,std::string>), "simplex")
+     (addmidpoint,    *(boost::is_integral<mpl::_>), true )
+     (usenames,       *(boost::is_integral<mpl::_>), false )
+     (xmin,           *(boost::is_floating_point<mpl::_>), 0. )
+     (xmax,           *(boost::is_floating_point<mpl::_>), 1 )
+     (ymin,           *(boost::is_floating_point<mpl::_>), 0. )
+     (ymax,           *(boost::is_floating_point<mpl::_>), 1 )
+     (zmin,           *(boost::is_floating_point<mpl::_>), 0. )
+     (zmax,           *(boost::is_floating_point<mpl::_>), 1 )))
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, dim, order, convex );
 

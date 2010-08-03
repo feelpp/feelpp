@@ -41,6 +41,7 @@ namespace Life
         Exporter<MT>* createGmsh() { return new ExporterGmsh<MT>; }
     } // detail
 
+#if 0
     //
     // SimplexProduct 1,1
     //
@@ -80,6 +81,7 @@ namespace Life
     const bool meshsp32e = Exporter<meshsp32_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshsp32_t> );
     const bool meshsp32g = Exporter<meshsp32_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshsp32_t> );
 
+#endif
     //#if defined( LIFE_INSTANTIATION_MODE )
     //
     // explicit instances
@@ -91,6 +93,7 @@ namespace Life
 
     template class Exporter<Mesh<SimplexProduct<2,2,2> > >;
     template class Exporter<Mesh<SimplexProduct<2,3,2> > >;
+
 /// \endcond detail
 }
 //#endif // LIFE_INSTANTIATION_MODE

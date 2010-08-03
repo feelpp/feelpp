@@ -42,54 +42,85 @@ template<int Dim, int Order>
 const uint16_type GmshSimplexDomain<Dim, Order>::nOrder;
 
 template<int Dim, int Order>
+GmshSimplexDomain<Dim, Order>::GmshSimplexDomain( DomainType dt )
+    :
+    super(Dim,Order),
+    _M_descr()
+{
+    switch (dt)
+    {
+    case GMSH_REAL_DOMAIN:
+    {
+
+        if ( nDim >= 1 )
+            this->M_I[0] = std::make_pair( 0, 1 );
+        if ( nDim >= 2 )
+            this->M_I[1] = std::make_pair( 0, 1 );
+        if ( nDim >= 3 )
+            this->M_I[2] = std::make_pair( 0, 1 );
+    }
+    break;
+    case GMSH_REFERENCE_DOMAIN:
+    {
+        if ( nDim >= 1 )
+            this->M_I[0] = std::make_pair( -1, 1 );
+        if ( nDim >= 2 )
+            this->M_I[1] = std::make_pair( -1, 1 );
+        if ( nDim >= 3 )
+            this->M_I[2] = std::make_pair( -1, 1 );
+    }
+    break;
+    }
+}
+
+template<int Dim, int Order>
 std::string
 GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<1> ) const
 {
     std::ostringstream ostr;
-    ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
-         << "h=" << _M_h << ";\n"
-         << "Point(1) = {" << _M_I[0].first << ",0,0,h};\n"
-         << "Point(2) = {" << _M_I[0].second << ",0,0,h};\n";
+    ostr << this->preamble() << "\n";
+    ostr << "Point(1) = {" << this->M_I[0].first << ",0,0,h};\n"
+         << "Point(2) = {" << this->M_I[0].second << ",0,0,h};\n";
     //if ( this->addMidPoint() )
     if ( 1 )
+    {
+        ostr << "Point(3) = {" << (this->M_I[0].second+this->M_I[0].first)/2 << ",0,0,h};\n"
+             << "Line(1) = {1,3};\n"
+             << "Line(2) = {3,2};\n";
+        if ( this->usePhysicalNames() == false )
         {
-            ostr << "Point(3) = {" << (_M_I[0].second+_M_I[0].first)/2 << ",0,0,h};\n"
-                 << "Line(1) = {1,3};\n"
-                 << "Line(2) = {3,2};\n";
-            if ( this->usePhysicalNames() == false )
-            {
-                ostr    << "Physical Point(1) = {1};\n"
-                        << "Physical Point(3) = {2};\n"
-                        << "Physical Point(2) = {3};\n"
-                        << "Physical Line(1) = {1};\n"
-                        << "Physical Line(2) = {2};\n";
-            }
-            else
-            {
-                ostr    << "Physical Point(\"Dirichlet\") = {1};\n"
-                        << "Physical Point(\"Neumann\") = {2};\n"
-                        << "Physical Point(3) = {3};\n"
-                        << "Physical Line(\"Mat1\") = {1};\n"
-                        << "Physical Line(\"Mat2\") = {2};\n";
-            }
+            ostr    << "Physical Point(1) = {1};\n"
+                    << "Physical Point(3) = {2};\n"
+                    << "Physical Point(2) = {3};\n"
+                    << "Physical Line(1) = {1};\n"
+                    << "Physical Line(2) = {2};\n";
         }
+        else
+        {
+            ostr    << "Physical Point(\"Dirichlet\") = {1};\n"
+                    << "Physical Point(\"Neumann\") = {2};\n"
+                    << "Physical Point(3) = {3};\n"
+                    << "Physical Line(\"Mat1\") = {1};\n"
+                    << "Physical Line(\"Mat2\") = {2};\n";
+        }
+    }
     else
+    {
+        if ( this->usePhysicalNames() == false )
         {
-            if ( this->usePhysicalNames() == false )
-            {
-                ostr << "Line(1) = {1,2};\n"
-                     << "Physical Point(1) = {1};\n"
-                     << "Physical Point(3) = {2};\n"
-                     << "Physical Line(1) = {1};\n";
-            }
-            else
-            {
-                ostr << "Line(1) = {1,2};\n"
-                     << "Physical Point(\"Dirichlet\") = {1};\n"
-                     << "Physical Point(\"Neumann\") = {2};\n"
-                     << "Physical Line(\"Mat1\") = {1};\n";
-            }
+            ostr << "Line(1) = {1,2};\n"
+                 << "Physical Point(1) = {1};\n"
+                 << "Physical Point(3) = {2};\n"
+                 << "Physical Line(1) = {1};\n";
         }
+        else
+        {
+            ostr << "Line(1) = {1,2};\n"
+                 << "Physical Point(\"Dirichlet\") = {1};\n"
+                 << "Physical Point(\"Neumann\") = {2};\n"
+                 << "Physical Line(\"Mat1\") = {1};\n";
+        }
+    }
     return ostr.str();
 }
 // 2D
@@ -98,11 +129,10 @@ std::string
 GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<2> ) const
 {
     std::ostringstream ostr;
-    ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
-         << "h=" << _M_h << ";\n"
-         << "Point(1) = {" << _M_I[0].first << "," << _M_I[1].first << ",0,h};\n"
-         << "Point(2) = {" << _M_I[0].second << "," << _M_I[1].first << ",0,h};\n"
-         << "Point(3) = {" << _M_I[0].first << "," << _M_I[1].second << ",0,h};\n"
+    ostr << this->preamble() << "\n";
+    ostr << "Point(1) = {" << this->M_I[0].first << "," << this->M_I[1].first << ",0,h};\n"
+         << "Point(2) = {" << this->M_I[0].second << "," << this->M_I[1].first << ",0,h};\n"
+         << "Point(3) = {" << this->M_I[0].first << "," << this->M_I[1].second << ",0,h};\n"
          << "Line(1) = {1,2};\n"
          << "Line(2) = {2,3};\n"
          << "Line(3) = {3,1};\n"
@@ -130,12 +160,11 @@ std::string
 GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<3> ) const
 {
     std::ostringstream ostr;
-    ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
-         << "h=" << _M_h << ";\n"
-         << "Point(1) = {" << _M_I[0].first << "," << _M_I[1].first << "," << _M_I[2].first << ",h};\n"
-         << "Point(2) = {" << _M_I[0].second << "," << _M_I[1].first << "," << _M_I[2].first << ",h};\n"
-         << "Point(3) = {" << _M_I[0].first << "," << _M_I[1].second << "," << _M_I[2].first << ",h};\n"
-         << "Point(4) = {" << _M_I[0].first << "," << _M_I[1].first << "," << _M_I[2].second << ",h};\n"
+    ostr << this->preamble() << "\n";
+    ostr << "Point(1) = {" << this->M_I[0].first << "," << this->M_I[1].first << "," << this->M_I[2].first << ",h};\n"
+         << "Point(2) = {" << this->M_I[0].second << "," << this->M_I[1].first << "," << this->M_I[2].first << ",h};\n"
+         << "Point(3) = {" << this->M_I[0].first << "," << this->M_I[1].second << "," << this->M_I[2].first << ",h};\n"
+         << "Point(4) = {" << this->M_I[0].first << "," << this->M_I[1].first << "," << this->M_I[2].second << ",h};\n"
          << "Line(1) = {1,2};" << "\n"
          << "Line(2) = {2,3};" << "\n"
          << "Line(3) = {3,1};" << "\n"
@@ -172,16 +201,11 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<3> ) const
 
 #if defined( LIFE_INSTANTIATION_MODE )
 
-// Instantiations
-// 1D
-template class GmshSimplexDomain<1,1>;
-template class GmshSimplexDomain<1,2>;
-// 2D
-template class GmshSimplexDomain<2,1>;
-template class GmshSimplexDomain<2,2>;
-// 3D
-template class GmshSimplexDomain<3,1>;
-template class GmshSimplexDomain<3,2>;
+# define DIMS BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
+# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
+# define FACTORY(LDIM,LORDER) template class GmshSimplexDomain<LDIM,LORDER>;
+# define FACTORY_OP(_, GDO) FACTORY GDO
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_OP, 2, (DIMS, ORDERS))
 #endif // LIFE_INSTANTIATION_MODE
 
 }

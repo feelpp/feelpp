@@ -39,37 +39,37 @@
 
 namespace Life
 {
-template<typename MeshType>
-ExporterEnsight<MeshType>::ExporterEnsight( std::string const& __p, int freq )
+template<typename MeshType, int N>
+ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& __p, int freq )
     :
     super( "ensight", __p, freq ),
     _M_element_type()
 {
     init();
 }
-template<typename MeshType>
-ExporterEnsight<MeshType>::ExporterEnsight( po::variables_map const& vm, std::string const& exp_prefix )
+template<typename MeshType, int N>
+ExporterEnsight<MeshType,N>::ExporterEnsight( po::variables_map const& vm, std::string const& exp_prefix )
     :
     super( vm, exp_prefix )
 {
     init();
 }
 
-template<typename MeshType>
-ExporterEnsight<MeshType>::ExporterEnsight( ExporterEnsight const & __ex )
+template<typename MeshType, int N>
+ExporterEnsight<MeshType,N>::ExporterEnsight( ExporterEnsight const & __ex )
     :
     super( __ex ),
     _M_element_type( __ex._M_element_type )
 {
 }
 
-template<typename MeshType>
-ExporterEnsight<MeshType>::~ExporterEnsight()
+template<typename MeshType, int N>
+ExporterEnsight<MeshType,N>::~ExporterEnsight()
 {}
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType>::init()
+ExporterEnsight<MeshType,N>::init()
 {
     if ( mesh_type::nDim == 1 )
         if ( mesh_type::Shape == SHAPE_LINE )
@@ -89,9 +89,9 @@ ExporterEnsight<MeshType>::init()
                 _M_element_type = (mesh_type::nOrder == 1 )?"hexa8":"hexa20";
         }
 }
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType>::save() const
+ExporterEnsight<MeshType,N>::save() const
 {
     boost::timer ti;
     Debug( 8006 ) << "[ExporterEnsight::save] export in ensight format\n";
@@ -117,9 +117,9 @@ ExporterEnsight<MeshType>::save() const
 
 }
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType>::_F_writeSoSFile() const
+ExporterEnsight<MeshType,N>::_F_writeSoSFile() const
 {
     // only on proc 0
     if ( M_comm.rank() == 0 )
@@ -147,9 +147,9 @@ ExporterEnsight<MeshType>::_F_writeSoSFile() const
                 }
         }
 }
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType>::_F_writeCaseFile() const
+ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
 {
     std::ostringstream filestr;
     filestr << this->path() << "/"
@@ -277,9 +277,9 @@ ExporterEnsight<MeshType>::_F_writeCaseFile() const
 
 }
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType>::_F_writeGeoFiles() const
+ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
 {
     namespace lambda = boost::lambda;
 
@@ -309,7 +309,7 @@ ExporterEnsight<MeshType>::_F_writeGeoFiles() const
                             //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
                             //, __ts->name(), __geofname.str() );
                             _M_filename =  __geofname.str();
-                            __step->mesh()->accept( const_cast<ExporterEnsight<MeshType>&>( *this ) );
+                            __step->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
                         }
 
                     ++__it;
@@ -318,9 +318,9 @@ ExporterEnsight<MeshType>::_F_writeGeoFiles() const
         }
 }
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType>::_F_writeVariableFiles() const
+ExporterEnsight<MeshType,N>::_F_writeVariableFiles() const
 {
     namespace lambda = boost::lambda;
 
@@ -357,10 +357,10 @@ ExporterEnsight<MeshType>::_F_writeVariableFiles() const
 }
 
 
-template<typename MeshType>
+template<typename MeshType, int N>
 template<typename Iterator>
 void
-ExporterEnsight<MeshType>::saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const
+ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const
 {
     while( __var != en )
         {
@@ -421,10 +421,10 @@ ExporterEnsight<MeshType>::saveNodal( typename timeset_type::step_ptrtype __step
             ++__var;
         }
 }
-template<typename MeshType>
+template<typename MeshType, int N>
 template<typename Iterator>
 void
-ExporterEnsight<MeshType>::saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const
+ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const
 {
     while( __evar != __evaren )
         {
@@ -521,9 +521,9 @@ ExporterEnsight<MeshType>::saveElement( typename timeset_type::step_ptrtype __st
         }
 }
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType>::visit( mesh_type* __mesh )
+ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
 {
     char buffer[ 80 ];
     std::vector<int> idnode, idelem;
@@ -630,6 +630,7 @@ ExporterEnsight<MeshType>::visit( mesh_type* __mesh )
         }
 }
 
+#if 0
 #if defined( LIFE_INSTANTIATION_MODE )
 //
 // explicit instances
@@ -653,5 +654,6 @@ template class ExporterEnsight<Mesh<SimplexProduct<2,2> > >;
 template class ExporterEnsight<Mesh<SimplexProduct<2,3> > >;
 
 #endif // LIFE_INSTANTIATION_MODE
+#endif
 }
 #endif // __EXPORTERENSIGHT_CPP

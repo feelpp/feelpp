@@ -45,14 +45,14 @@ class ExporterQuick
 public:
     typedef MeshType mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef Exporter<mesh_type> export_type;
+    typedef Exporter<mesh_type,1> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
     typedef typename export_type::timeset_type timeset_type;
     typedef typename export_type::timeset_ptrtype timeset_ptrtype;
 
     ExporterQuick( std::string const& name, po::variables_map& vm )
         :
-        exporter( new ExporterEnsight<mesh_type> ),//Exporter<mesh_type>::New( vm["exporter"].template as<std::string>() )->setOptions( vm ) ),
+        exporter( new ExporterEnsight<mesh_type,1> ),//Exporter<mesh_type>::New( vm["exporter"].template as<std::string>() )->setOptions( vm ) ),
         timeSet( new timeset_type( name ) )
     {
         exporter->setOptions( vm );
@@ -63,7 +63,7 @@ public:
     }
     ExporterQuick( std::string const& name, std::string const& exp )
         :
-        exporter( new ExporterEnsight<mesh_type> ),//Exporter<mesh_type>::New( exp ) ),
+        exporter( new ExporterEnsight<mesh_type,1> ),//Exporter<mesh_type>::New( exp ) ),
         timeSet( new timeset_type( name ) )
     {
         timeSet->setTimeIncrement( 1.0 );

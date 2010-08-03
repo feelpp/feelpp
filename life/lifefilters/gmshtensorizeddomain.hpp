@@ -64,28 +64,14 @@ public:
 
     GmshTensorizedDomain()
         :
-        super(),
-        _M_I( nRealDim ),
-        _M_h( 0.1 ),
-        _M_descr()
+        super(Dim, Order)
     {
-        if ( nRealDim >= 1 )
-            _M_I[0] = std::make_pair( 0, 1 );
-        if ( nRealDim >= 2 )
-            _M_I[1] = std::make_pair( 0, 1 );
-        if ( nRealDim >= 3 )
-            _M_I[2] = std::make_pair( 0, 1 );
-        this->setOrder( (GMSH_ORDER) nOrder );
     }
 
     GmshTensorizedDomain( GmshTensorizedDomain const & td )
         :
-        super( td ),
-        _M_I( td._M_I ),
-        _M_h( td._M_h ),
-        _M_descr( td._M_descr )
+        super( td )
     {
-        this->setOrder( (GMSH_ORDER) nOrder );
     }
     ~GmshTensorizedDomain()
     {}
@@ -103,19 +89,6 @@ public:
      */
     //@{
 
-    /**
-     * \return bounding box
-     */
-    std::vector<std::pair<double,double> > const& boundingBox() const {return _M_I;}
-    /**
-     * \return characteristic length
-     */
-    double const& h() const {return _M_h; }
-
-    /**
-     * \return the geometry description
-     */
-    std::string description() const { return this->getDescription(); }
 
     //@}
 
@@ -123,44 +96,12 @@ public:
      */
     //@{
 
-    void setX( std::pair<double,double> const& x )
-    {
-        LIFE_ASSERT( nRealDim >= 1 )( nDim )( nRealDim ) .error( "invalid dimension" );
-        _M_I[0] = x;
-    }
-    void setY( std::pair<double,double> const& y )
-    {
-        LIFE_ASSERT( nRealDim >= 2 )( nDim )( nRealDim ).error( "invalid dimension" );
-        _M_I[1] = y;
-    }
-    void setZ( std::pair<double,double> const& z )
-    {
-        LIFE_ASSERT( nRealDim >= 3 )( nDim )( nRealDim ).error( "invalid dimension" );
-        _M_I[2] = z;
-    }
-    void setReferenceDomain()
-    {
-        if ( nDim >= 1 )
-            _M_I[0] = std::make_pair( -1, 1 );
-        if ( nDim >= 2 )
-            _M_I[1] = std::make_pair( -1, 1 );
-        if ( nDim >= 3 )
-            _M_I[2] = std::make_pair( -1, 1 );
-    }
-
-    void setCharacteristicLength( double h ) { _M_h = h; }
 
     //@}
 
     /** @name  Methods
      */
     //@{
-
-    std::string generate( std::string const& name ) const
-    {
-        std::string descr = getDescription();
-        return super::generate( name, descr );
-    }
 
     //@}
 
@@ -182,9 +123,7 @@ private:
 
 private:
 
-    std::vector<std::pair<double,double> > _M_I;
-    double _M_h;
-    std::string _M_descr;
+
 };
 
 } // Life

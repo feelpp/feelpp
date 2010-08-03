@@ -47,25 +47,24 @@ std::string
 GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<1>,  mpl::bool_<false> ) const
 {
     std::ostringstream ostr;
-    ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
-         << "h=" << _M_h << ";\n"
-         << "Point(1) = {" << _M_I[0].first << ",";
+    ostr << this->preamble();
+    ostr << "Point(1) = {" << this->M_I[0].first << ",";
     if ( nRealDim == nDim + 1 )
-        ostr << _M_I[1].first;
+        ostr << this->M_I[1].first;
     else
         ostr << 0;
     ostr << ",0,h};\n"
-         << "Point(2) = {" << _M_I[0].second << ",";
+         << "Point(2) = {" << this->M_I[0].second << ",";
     if ( nRealDim == nDim + 1 )
-        ostr << _M_I[1].second;
+        ostr << this->M_I[1].second;
     else
         ostr << 0;
     ostr << ",0,h};\n";
     if ( this->addMidPoint() )
     {
-        ostr << "Point(3) = {" << (_M_I[0].second+_M_I[0].first)/2 << ",";
+        ostr << "Point(3) = {" << (this->M_I[0].second+this->M_I[0].first)/2 << ",";
         if ( nRealDim == nDim + 1 )
-            ostr << (_M_I[1].second+_M_I[1].first)/2;
+            ostr << (this->M_I[1].second+this->M_I[1].first)/2;
         else
             ostr << 0;
         ostr << ",0,h};\n"
@@ -113,12 +112,11 @@ std::string
 GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  mpl::bool_<false> ) const
 {
     std::ostringstream ostr;
-    ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
-         << "a=" << _M_I[0].first << ";\n"
-         << "b=" << _M_I[0].second << ";\n"
-         << "c=" << _M_I[1].first << ";\n"
-         << "d=" << _M_I[1].second << ";\n"
-         << "h=" << _M_h << ";\n"
+    ostr << this->preamble();
+    ostr << "a=" << this->M_I[0].first << ";\n"
+         << "b=" << this->M_I[0].second << ";\n"
+         << "c=" << this->M_I[1].first << ";\n"
+         << "d=" << this->M_I[1].second << ";\n"
          << "Point(1) = {a,c,0.0,h};\n"
          << "Point(2) = {b,c,0.0,h};\n"
          << "Point(3) = {b,d,0.0,h};\n"
@@ -150,8 +148,8 @@ std::string
 GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  mpl::bool_<true> ) const
 {
     std::ostringstream ostr;
-    ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
-         << getDescription( mpl::int_<2>(), mpl::bool_<false>() )
+    ostr << this->preamble();
+    ostr << getDescription( mpl::int_<2>(), mpl::bool_<false>() )
          << "nx = 1/h;\n"
          << "ny = 1/h;\n"
          << "\n"
@@ -168,14 +166,14 @@ std::string
 GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  mpl::bool_<false>, bool do_recombine ) const
 {
     std::ostringstream ostr;
-    ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
-         << "a=" << _M_I[0].first << ";\n"
-         << "b=" << _M_I[0].second << ";\n"
-         << "c=" << _M_I[1].first << ";\n"
-         << "d=" << _M_I[1].second << ";\n"
-         << "e=" << _M_I[2].first << ";\n"
-         << "f=" << _M_I[2].second << ";\n"
-         << "h=" << _M_h << ";\n"
+    ostr << this->preamble();
+
+    ostr << "a=" << this->M_I[0].first << ";\n"
+         << "b=" << this->M_I[0].second << ";\n"
+         << "c=" << this->M_I[1].first << ";\n"
+         << "d=" << this->M_I[1].second << ";\n"
+         << "e=" << this->M_I[2].first << ";\n"
+         << "f=" << this->M_I[2].second << ";\n"
          << "Point(1) = {a,c,e,h};\n"
          << "Point(2) = {b,c,e,h};\n"
          << "Point(3) = {b,d,e,h};\n"
@@ -220,8 +218,8 @@ std::string
 GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  mpl::bool_<true> ) const
 {
     std::ostringstream ostr;
-    ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
-         << getDescription( mpl::int_<3>(), mpl::bool_<false>(), true )
+    ostr << this->preamble();
+    ostr << getDescription( mpl::int_<3>(), mpl::bool_<false>(), true )
          << "nx = 1/h;\n"
          << "ny = 1/h;\n"
          << "nz = 1/h;\n"

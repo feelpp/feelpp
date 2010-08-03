@@ -71,7 +71,7 @@ enum file_type
  *
  * @author Christophe Prud'homme
  */
-template<typename MeshType>
+template<typename MeshType, int N = 1>
 class Exporter
     :
         public VisitorBase,
@@ -86,7 +86,7 @@ public:
     typedef VisitorBase super1;
     typedef Visitor<MeshType> super2;
 
-    typedef TimeSet<MeshType> timeset_type;
+    typedef TimeSet<MeshType,N> timeset_type;
     typedef boost::shared_ptr<timeset_type> timeset_ptrtype;
     typedef std::vector<timeset_ptrtype> timeset_set_type;
     typedef typename timeset_set_type::iterator timeset_iterator;
@@ -95,7 +95,7 @@ public:
     typedef typename timeset_type::step_ptrtype step_ptrtype;
     struct Factory
     {
-        typedef Life::Singleton< Life::Factory< Exporter<MeshType>, std::string > > type;
+        typedef Life::Singleton< Life::Factory< Exporter<MeshType,N>, std::string > > type;
     };
     //@}
 
@@ -134,14 +134,14 @@ public:
      * of the \p exportername and using \p prefix for the prefix of the data
      * files.
      */
-    static Exporter<MeshType>* New( std::string const& exportername, std::string prefix = "export" );
+    static Exporter<MeshType,N>* New( std::string const& exportername, std::string prefix = "export" );
 
     /**
      * Static function instantiating from the Exporter Factory an exporter out
      * of the variables_map \p vm and using \p prefix for the prefix of the data
      * files.
      */
-    static Exporter<MeshType>* New( po::variables_map const& vm, std::string prefix = "export" );
+    static Exporter<MeshType,N>* New( po::variables_map const& vm, std::string prefix = "export" );
 
     //@}
 
@@ -201,12 +201,12 @@ public:
      * set the options from the \p variables_map \p vm as well as the prefix \p
      * exp_prefix
      */
-    virtual Exporter<MeshType>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" );
+    virtual Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" );
 
     /**
      * set to \p __type the type of exporter (gmsh, ensight...)
      */
-    Exporter<MeshType>* setType( std::string const& __type )
+    Exporter<MeshType,N>* setType( std::string const& __type )
     {
         M_type = __type;
         return this;
@@ -216,12 +216,12 @@ public:
      * add an extra path to the current directory to save the data using the \p
      * boost::format object \p fmt
      */
-    Exporter<MeshType>* addPath( boost::format fmt );
+    Exporter<MeshType,N>* addPath( boost::format fmt );
 
     /**
      * set the prefix to \p __prefix
      */
-    Exporter<MeshType>* setPrefix( std::string const& __prefix )
+    Exporter<MeshType,N>* setPrefix( std::string const& __prefix )
     {
         M_prefix = __prefix;
         return this;
@@ -230,7 +230,7 @@ public:
     /**
      * set the save frequency to \p __freq
      */
-    Exporter<MeshType>* setFreq( int __freq )
+    Exporter<MeshType,N>* setFreq( int __freq )
     {
         M_freq = __freq;
         return this;
@@ -239,7 +239,7 @@ public:
     /**
      * set the \p file type to \p __ft (binary or ascii)
      */
-    Exporter<MeshType>* setFileType( file_type __ft )
+    Exporter<MeshType,N>* setFileType( file_type __ft )
     {
         M_ft = __ft;
         return this;
@@ -302,7 +302,7 @@ po::options_description exporter_options( std::string const& prefix = "" );
 } // Life
 
 //#if !defined( LIFE_INSTANTIATION_MODE )
-//# include <life/lifefilters/exporter.cpp>
+# include <life/lifefilters/exporterimpl.hpp>
 //#endif // LIFE_INSTANTIATION_MODE
 
 #endif /* __Exporter_H */

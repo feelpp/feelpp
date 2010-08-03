@@ -47,6 +47,7 @@
 #include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/gmshsimplexdomain.hpp>
 #include <life/lifefilters/gmshtensorizeddomain.hpp>
+#include <life/lifefilters/gmshellipsoiddomain.hpp>
 
 namespace Life
 {
@@ -66,6 +67,7 @@ Gmsh::New( std::string const& shape, uint16_type d, uint16_type o, std::string c
 {
     std::ostringstream ostr;
     ostr << shape << "(" << d << "," << o << ")";
+    std::cout << "new " << ostr.str() << "\n";
     boost::shared_ptr<Gmsh> gmsh_ptr( Gmsh::Factory::type::instance().createObject( ostr.str() ) );
     return gmsh_ptr;
 }
@@ -272,15 +274,8 @@ Gmsh::generateCube( std::string const& __name, double __h )
 }
 
 bool
-Gmsh::generateGeo( std::string const& __name, std::string const& __geo_ ) const
+Gmsh::generateGeo( std::string const& __name, std::string const& __geo ) const
 {
-    std::ostringstream ofsgeo;
-    ofsgeo << "Mesh.ElementOrder=" << M_order << ";\n"
-        //<< "Mesh.SecondOrderExperimental = 1;\n"//Ne semble plus indispensable
-           << "Mesh.SecondOrderIncomplete = 0;\n"
-           << "Mesh.Algorithm = 6;\n"
-           << __geo_;
-    std::string __geo = ofsgeo.str();
 
     // generate geo
     std::ostringstream __geoname;
@@ -319,6 +314,12 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo_ ) const
         }
 
     return geochanged;
+}
+std::string
+Gmsh::generate( std::string const& name ) const
+{
+    std::string descr = this->getDescription();
+    return this->generate( name, descr );
 }
 
 std::string
@@ -381,12 +382,36 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim  ) const
     throw std::invalid_argument("Gmsh is not available on this system");
 #endif
 }
+std::string
+Gmsh::preamble() const
+{
+    std::ostringstream ostr;
+
+    ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
+         << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
+         << "Mesh.CharacteristicLengthFromPoints=1;\n"
+         << "Mesh.ElementOrder=" << M_order << ";\n"
+         << "Mesh.SecondOrderIncomplete = 0;\n"
+         << "Mesh.Algorithm = 6;\n"
+         << "h=" << M_h << ";\n";
+    return ostr.str();
+}
 
 namespace detail {
 template<int Dim, int Order>
 Gmsh* createSimplexDomain() { return new GmshSimplexDomain<Dim, Order>; }
 template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
 Gmsh* createTensorizedDomain() { return new GmshTensorizedDomain<Dim, Order, RDim, Entity>; }
+
+struct EllipsoidDomain
+{
+    EllipsoidDomain( int _Dim, int _Order )
+        :
+        Dim( _Dim ), Order( _Order )
+        {}
+    Gmsh* operator()() { return new GmshEllipsoidDomain(Dim, Order); }
+    int Dim, Order;
+};
 
 } // detail
 
@@ -395,13 +420,41 @@ Gmsh* createTensorizedDomain() { return new GmshTensorizedDomain<Dim, Order, RDi
 //
 const bool meshs11s = Gmsh::Factory::type::instance().registerProduct( "simplex(1,1)", &detail::createSimplexDomain<1,1> );
 const bool meshs12s = Gmsh::Factory::type::instance().registerProduct( "simplex(1,2)", &detail::createSimplexDomain<1,2> );
+const bool meshs13s = Gmsh::Factory::type::instance().registerProduct( "simplex(1,3)", &detail::createSimplexDomain<1,3> );
+const bool meshs14s = Gmsh::Factory::type::instance().registerProduct( "simplex(1,4)", &detail::createSimplexDomain<1,4> );
+const bool meshs15s = Gmsh::Factory::type::instance().registerProduct( "simplex(1,5)", &detail::createSimplexDomain<1,5> );
 
 const bool meshs21s = Gmsh::Factory::type::instance().registerProduct( "simplex(2,1)", &detail::createSimplexDomain<2,1> );
 const bool meshs22s = Gmsh::Factory::type::instance().registerProduct( "simplex(2,2)", &detail::createSimplexDomain<2,2> );
+const bool meshs23s = Gmsh::Factory::type::instance().registerProduct( "simplex(2,3)", &detail::createSimplexDomain<2,3> );
+const bool meshs24s = Gmsh::Factory::type::instance().registerProduct( "simplex(2,4)", &detail::createSimplexDomain<2,4> );
+const bool meshs25s = Gmsh::Factory::type::instance().registerProduct( "simplex(2,5)", &detail::createSimplexDomain<2,5> );
 
 const bool meshs31s = Gmsh::Factory::type::instance().registerProduct( "simplex(3,1)", &detail::createSimplexDomain<3,1> );
 const bool meshs32s = Gmsh::Factory::type::instance().registerProduct( "simplex(3,2)", &detail::createSimplexDomain<3,2> );
+const bool meshs33s = Gmsh::Factory::type::instance().registerProduct( "simplex(3,3)", &detail::createSimplexDomain<3,3> );
+const bool meshs34s = Gmsh::Factory::type::instance().registerProduct( "simplex(3,4)", &detail::createSimplexDomain<3,4> );
+const bool meshs35s = Gmsh::Factory::type::instance().registerProduct( "simplex(3,5)", &detail::createSimplexDomain<3,5> );
 
+// ellipsoid
+const bool mesh11e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(1,1)", *new detail::EllipsoidDomain(1,1) );
+const bool mesh12e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(1,2)", *new detail::EllipsoidDomain(1,2) );
+const bool mesh13e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(1,3)", *new detail::EllipsoidDomain(1,3) );
+const bool mesh14e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(1,4)", *new detail::EllipsoidDomain(1,4) );
+const bool mesh15e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(1,5)", *new detail::EllipsoidDomain(1,5) );
+const bool mesh21e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(2,1)", *new detail::EllipsoidDomain(2,1) );
+const bool mesh22e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(2,2)", *new detail::EllipsoidDomain(2,2) );
+const bool mesh23e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(2,3)", *new detail::EllipsoidDomain(2,3) );
+const bool mesh24e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(2,4)", *new detail::EllipsoidDomain(2,4) );
+const bool mesh25e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(2,5)", *new detail::EllipsoidDomain(2,5) );
+const bool mesh31e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(3,1)", *new detail::EllipsoidDomain(3,1) );
+const bool mesh32e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(3,2)", *new detail::EllipsoidDomain(3,2) );
+const bool mesh33e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(3,3)", *new detail::EllipsoidDomain(3,3) );
+const bool mesh34e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(3,4)", *new detail::EllipsoidDomain(3,4) );
+const bool mesh35e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(3,5)", *new detail::EllipsoidDomain(3,5) );
+//const bool mesh12e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(1,2)", std::mem_fun(&detail::EllipsoidDomain::create), new detail::EllipsoidDomain(1,2) );
+
+// tensorized
 const bool meshs112ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,Simplex)",
                                                                          &detail::createTensorizedDomain<1,1,2,Simplex> );
 

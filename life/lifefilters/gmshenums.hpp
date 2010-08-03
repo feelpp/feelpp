@@ -29,8 +29,8 @@
 #ifndef __GmshEnums_H
 #define __GmshEnums_H 1
 
-#include <vector>
-#include <boost/assign/std/vector.hpp>
+#include <boost/bimap.hpp>
+#include <boost/assign/list_of.hpp>
 namespace Life
 {
 /**
@@ -90,16 +90,39 @@ template<typename ConvexType>
 class GmshOrdering
 {
 public:
-
+    typedef boost::bimap<int,int> id_type;
     GmshOrdering();
     ~GmshOrdering() {}
+
+    /**
+     * \return the type of ids
+     */
     int type() const { return M_type; }
-    int id( int p ) const { return M_id[p]; }
+
+    /**
+     * \return the number of ids
+     */
+    int size() const { return M_id.size(); }
+
+    /**
+     * \return the Life id from the Gmsh id \p p
+     */
+    int fromGmshId( int p ) const { return M_id.right.at(p); }
+
+    /**
+     * \return the Gmsh id from the Life id \p p
+     */
+    int toGmshId( int p ) const { return M_id.left.at(p); }
+
+    /**
+     * \return the Gmsh id from the Life id \p p
+     */
+    int id( int p ) const { return M_id.left.at(p); }
 
 private:
 
     int M_type;
-    std::vector<int> M_id;
+    id_type M_id;
 };
 
 /// \cond detail
@@ -122,43 +145,63 @@ template<typename ConvexType>
 GmshOrdering<ConvexType>::GmshOrdering()
 {
     using namespace boost::assign;
+    typedef typename id_type::relation relation;
     if ( ConvexType::nDim == 0 )
     {
         M_type = GMSH_POINT;
-        M_id.resize( ConvexType::numPoints );
         for( int i = 0; i < ConvexType::numPoints; ++i )
-            M_id[i]=i;
+            M_id.insert( id_type::value_type( i, i ) );
     }
     else if ( ConvexType::is_simplex )
     {
         if ( ConvexType::nDim == 1 )
         {
             M_type = detail::line_type[ConvexType::nOrder];
-            M_id.resize( ConvexType::numPoints );
             for( int i = 0; i < ConvexType::numPoints; ++i )
-                M_id[i]=i;
+                M_id.insert( id_type::value_type( i, i ) );
         }
         if ( ConvexType::nDim == 2 )
         {
             M_type = detail::triangle_type[ConvexType::nOrder];
             if ( ConvexType::nOrder == 1 )
-                M_id+=0,1,2;
+                M_id = list_of<relation>(0,0)(1,1)(2,2);
+            //M_id+=0,1,2;
             if ( ConvexType::nOrder == 2 )
-                M_id += 0,1,2,5,3,4;
+                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,4)(4,5)(5,3);
+            //M_id += 0,1,2,5,3,4;
             if ( ConvexType::nOrder == 3 )
-                M_id += 0,1,2,7,8,3,4,5,6,9;
+                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,5)(4,6)(5,7)(6,8)(7,3)(8,4)(9,9);
+            //M_id += 0,1,2,7,8,3,4,5,6,9;
             if ( ConvexType::nOrder == 4 )
-	            M_id += 0,1,2,9,10,11,3,4,5,6,7,8,12,13,14;
+                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,6)(4,7)(5,8)(6,9)(7,10)(8,11)(9,3)(10,4)(11,5)(12,12)(13,13)(14,14);
+            //M_id += 0,1,2,9,10,11,3,4,5,6,7,8,12,13,14;
             if ( ConvexType::nOrder == 5 )
-	            M_id += 0,1,2,11,12,13,14,3,4,5,6,7,8,9,10,15,16,17,19,20,18;
+                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,11)(4,12)(5,13)(6,14)(7,3)(8,4)(9,5)(10,6)(11,7)(12,8)(13,9)(14,10)(15,15)(16,16)(17,17)(18,19)(19,20)(20,18);
+            //M_id += 0,1,2,11,12,13,14,3,4,5,6,7,8,9,10,15,16,17,19,20,18;
         }
         if ( ConvexType::nDim == 3 )
         {
             M_type = detail::tetrahedron_type[ConvexType::nOrder];
             if ( ConvexType::nOrder == 1 )
-	            M_id+=0,1,2,3;
+                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3);
+            //M_id+=0,1,2,3;
             if ( ConvexType::nOrder == 2 )
-	            M_id+=0,1,2,3,6,4,5,7,9,8;
+                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3)(4,5)(5,6)(6,4)(7,7)(8,8)(9,9);
+            //M_id+=0,1,2,3,6,4,5,7,9,8;
+            if ( ConvexType::nOrder == 3 )
+                M_id = list_of<relation>
+                    (0,0)(1,1)(2,2)(3,3) // vertices
+                    (4,14)(5,15)   // edge 0
+                    (6,12)(7,13)   // edge 1
+                    (8,8)(9,9)     // edge 2
+                    (10,4)(11,5)   // edge 3
+                    (12,6)(13,7)   // edge 4
+                    (14,10)(15,11) // edge 5
+                    ;
+            if ( ConvexType::nOrder > 3 )
+                for( int i = 0; i < ConvexType::numPoints; ++i )
+                    M_id.insert( id_type::value_type( i, i ) );
+
         }
     }
     else
@@ -167,25 +210,36 @@ GmshOrdering<ConvexType>::GmshOrdering()
         if ( ConvexType::nDim == 1 )
         {
             M_type = detail::line_type[ConvexType::nOrder];
-            M_id.resize( ConvexType::numPoints );
             for( int i = 0; i < ConvexType::numPoints; ++i )
-                M_id[i]=i;
+                M_id.insert( id_type::value_type( i, i ) );
         }
         if ( ConvexType::nDim == 2 )
         {
             M_type = detail::quad_type[ConvexType::nOrder];
             if ( ConvexType::nOrder == 1 )
-                M_id+=0,1,2,3;
+                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3);
+            //M_id+=0,1,2,3;
             if ( ConvexType::nOrder == 2 )
-                M_id += 0,1,2,3,7,4,5,6;
+                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3)(4,7)(5,4)(6,5)(7,6);
+            //M_id += 0,1,2,3,7,4,5,6;
         }
         if ( ConvexType::nDim == 3 )
         {
             M_type = detail::hexa_type[ConvexType::nOrder];
             if ( ConvexType::nOrder == 1 )
-                M_id+=0,1,2,3,4,5,6,7;
+                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3)(4,4)(5,5)(6,6)(7,7);
+            //M_id+=0,1,2,3,4,5,6,7;
         }
 
+    }
+    std::cout << "There are " << M_id.size() << "relations" << std::endl;
+
+    for( auto iter = M_id.begin(), iend = M_id.end(); iter != iend; ++iter )
+    {
+        // iter->left  : data : int
+        // iter->right : data : std::string
+
+        std::cout << iter->left << " <--> " << iter->right << std::endl;
     }
 }
 

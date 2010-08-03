@@ -34,13 +34,49 @@
 namespace Life
 {
 /// \cond detail
+#if 0
     namespace detail {
-        template<typename MT>
-        Exporter<MT>* createEnsight() { return new ExporterEnsight<MT>; }
-        template<typename MT>
-        Exporter<MT>* createGmsh() { return new ExporterGmsh<MT>; }
+    template<typename MT>
+        Exporter<MT,1>* createEnsight() { return new ExporterEnsight<MT>; }
+    template<typename MT, int N>
+    Exporter<MT,N>* createGmsh() { return new ExporterGmsh<MT,N>; }
     } // detail
 
+
+# define DIMS BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
+# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
+# define ORDERS_FUN_ENSIGHT BOOST_PP_TUPLE_TO_LIST(1,(1))
+# define ORDERS_FUN_GMSH BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
+
+#define MeshName(name,LDIM,LORDER,ORDERFUN) BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(name,LDIM),LORDER),ORDERFUN)
+#define MeshType(name,LDIM,LORDER,ORDERFUN) BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(name,LDIM),LORDER),ORDERFUN),_t)
+
+// Ensight
+# define FACTORY_ENSIGHT(LDIM,LORDER,ORDERFUN)                          \
+    typedef Mesh<Simplex<LDIM,LORDER> > MeshType(mesh,LDIM,LORDER,ORDERFUN); \
+    const bool MeshName(meshespensight,LDIM,LORDER,ORDERFUN) =          \
+        Exporter<MeshType(mesh,LDIM,LORDER,ORDERFUN),ORDERFUN>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<MeshType(mesh,LDIM,LORDER,ORDERFUN),ORDERFUN> );
+
+
+# define FACTORY_ENSIGHT_OP(_, GDO) FACTORY_ENSIGHT GDO
+
+// Gmsh
+# define FACTORY_GMSH(LDIM,LORDER,ORDERFUN)                             \
+    typedef Mesh<Simplex<LDIM,LORDER> > MeshType(mesh,LDIM,LORDER,ORDERFUN); \
+    const bool MeshName(meshexpgmsh,LDIM,LORDER,ORDERFUN) =             \
+        Exporter<MeshType(mesh,LDIM,LORDER,ORDERFUN),ORDERFUN>::Factory::type::instance().registerProduct( "ensight", &detail::createGmsh<MeshType(mesh,LDIM,LORDER,ORDERFUN),ORDERFUN> );
+
+# define FACTORY_GMSH_OP(_, GDO) FACTORY_GMSH GDO
+
+// ensight
+# define FACTORY(LDIM,LORDER,ORDERFUN) template class Exporter<Mesh<Simplex<LDIM,LORDER,LDIM> >, ORDERFUN >;
+# define FACTORY_OP(_, GDO) FACTORY GDO
+
+//BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_ENSIGHT_OP, 3, (DIMS, ORDERS,ORDERS_FUN_ENSIGHT))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_GMSH_OP, 3, (DIMS, ORDERS,ORDERS_FUN_GMSH))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_OP, 3, (DIMS, ORDERS, ORDERS_FUN_GMSH))
+
+#if 0
     //
     // Simplex 1,1
     //
@@ -96,8 +132,8 @@ namespace Life
     //
     // explicit instances
     //
-    template class Exporter<Mesh<Simplex<1,1,1> > >;
-    template class Exporter<Mesh<Simplex<1,1,2> > >;
+template class Exporter<Mesh<Simplex<1,1,1> > >;
+template class Exporter<Mesh<Simplex<1,1,2> > >;
     template class Exporter<Mesh<Simplex<2,1,2> > >;
     template class Exporter<Mesh<Simplex<2,2,2> > >;
     template class Exporter<Mesh<Simplex<2,1,3> > >;
@@ -105,6 +141,8 @@ namespace Life
     template class Exporter<Mesh<Simplex<3,2,3> > >;
 
     template class Exporter<Mesh<Simplex<2,3,2> > >;
+#endif
+#endif
 /// \endcond detail
 }
 //#endif // LIFE_INSTANTIATION_MODE
