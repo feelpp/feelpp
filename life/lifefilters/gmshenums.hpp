@@ -183,22 +183,51 @@ GmshOrdering<ConvexType>::GmshOrdering()
         {
             M_type = detail::tetrahedron_type[ConvexType::nOrder];
             if ( ConvexType::nOrder == 1 )
-                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3);
+                M_id = list_of<relation>
+                    (0,0)(1,1)(2,2)(3,3) // vertices
+                    ;
             //M_id+=0,1,2,3;
             if ( ConvexType::nOrder == 2 )
-                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3)(4,5)(5,6)(6,4)(7,7)(8,8)(9,9);
+                M_id = list_of<relation>
+                    (0,0)(1,1)(2,2)(3,3)  // vertices
+                    (4,5) // edge 0
+                    (5,6) // edge 1
+                    (6,4) // edge 2
+                    (7,7) // edge 3
+                    (8,8) // edge 4
+                    (9,9) // edge 5
+                    ;
             //M_id+=0,1,2,3,6,4,5,7,9,8;
             if ( ConvexType::nOrder == 3 )
                 M_id = list_of<relation>
                     (0,0)(1,1)(2,2)(3,3) // vertices
-                    (4,14)(5,15)   // edge 0
-                    (6,12)(7,13)   // edge 1
-                    (8,8)(9,9)     // edge 2
-                    (10,4)(11,5)   // edge 3
-                    (12,6)(13,7)   // edge 4
-                    (14,10)(15,11) // edge 5
+                    (4,6)(5,7)     // edge 0
+                    (6,8)(7,9)    // edge 1
+                    (8,4)(9,5)     // edge 2
+                    (10,10)(11,11) // edge 3
+                    (12,12)(13,13) // edge 4
+                    (14,14)(15,15) // edge 5
+                    (16,18)        // face 0
+                    (17,17)        // face 1
+                    (18,19)        // face 2
+                    (19,16)        // face 3
                     ;
-            if ( ConvexType::nOrder > 3 )
+            if ( ConvexType::nOrder == 4 )
+                M_id = list_of<relation>
+                    (0,0)(1,1)(2,2)(3,3) // vertices
+                    (4,7)(5,8)(6,9)      // edge 0
+                    (7,10)(8,11)(9,12)   // edge 1
+                    (10,4)(11,5)(12,6)   // edge 2
+                    (13,13)(14,14)(15,15)// edge 3
+                    (16,16)(17,17)(18,18)// edge 4
+                    (19,19)(20,20)(21,21)// edge 5
+                    (22,30)(23,28)(24,29)// face 0
+                    (25,27)(26,25)(27,26)// face 1
+                    (28,33)(29,32)(30,31)// face 2
+                    (31,22)(32,23)(33,24)// face 4
+                    (34,34)              // interior point
+                    ;
+            if ( ConvexType::nOrder > 4 )
                 for( int i = 0; i < ConvexType::numPoints; ++i )
                     M_id.insert( id_type::value_type( i, i ) );
 
