@@ -110,11 +110,11 @@ typedef Mesh<Simplex<3,3,3> > meshs33_t;
 const bool meshs33e = Partitioner<meshs33_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs33_t> );
 const bool meshs33g = Partitioner<meshs33_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs33_t> );
 
-typedef Mesh<Simplex<3,4,3> > meshs33_t;
+typedef Mesh<Simplex<3,4,3> > meshs34_t;
 const bool meshs34e = Partitioner<meshs34_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs34_t> );
 const bool meshs34g = Partitioner<meshs34_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs34_t> );
 
-typedef Mesh<Simplex<3,5,3> > meshs33_t;
+typedef Mesh<Simplex<3,5,3> > meshs35_t;
 const bool meshs35e = Partitioner<meshs35_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs35_t> );
 const bool meshs35g = Partitioner<meshs35_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs35_t> );
 
