@@ -27,7 +27,7 @@
  */
 /** include predefined life command line options */
 #include <life/options.hpp>
- 
+
 /** include linear algebra backend */
 #include <life/lifealg/backend.hpp>
 
@@ -147,7 +147,8 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! function space that holds piecewise constant (\f$P_0\f$) functions (e.g. to store material properties or partitioning
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar> >, Discontinuous > p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar,Discontinuous> > > p0_space_type;
+    typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
     //! an element type of the \f$P_0\f$ discontinuous function space
     typedef typename p0_space_type::element_type p0_element_type;
 
@@ -216,6 +217,10 @@ private:
     std::string shape;
 
     export_ptrtype exporter;
+
+    //! Piecewise constant functions space
+    p0_space_ptrtype P0h;
+
 }; // ResidualEstimator
 
 template<int Dim> const uint16_type ResidualEstimator<Dim>::Order;
@@ -261,8 +266,8 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
      * The function space and some associated elements(functions) are then defined
      */
     /** \code */
-    auto P0h = p0_space_type::New( mesh, MESH_CHECK );
-    
+    P0h = p0_space_type::New( mesh, MESH_CHECK );
+    std::cout<<"P0h->nLocalDof() = "<<P0h->nLocalDof()<<std::endl;
 
     space_ptrtype Xh = space_type::New( mesh );
     element_type u( Xh, "u" );
@@ -382,17 +387,28 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
 
 
     /*******************residual estimator**********************/
-   
+
     auto estimatorP0 =   integrate(elements(mesh), vf::h()*vf::h()*trace(hessv(u))*trace(hessv(u)) ).broken(P0h);
-   
-    auto estimatorP0_internalfaces = integrate(internalfaces(mesh),vf::hFace()* (jumpv(gradv(u))) * (jumpv(gradv(u))) ).broken( P0h );
+
+    auto estimatorP0_internalfaces = integrate(internalfaces(mesh),
+                                              vf::hFace()* (jumpv(gradv(u))) * (jumpv(gradv(u))) ).broken( P0h );
+
     auto estimatorP0_Neumann = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
-					  vf::hFace()* (gradv(u)*vf::N()-idv(gproj)) * (gradv(u)*vf::N()-idv(gproj)) ).broken( P0h );
-    
+                                          vf::hFace()* (gradv(u)*vf::N()-idv(gproj)) * (gradv(u)*vf::N()-idv(gproj)) ).broken( P0h );
+    //    auto estimatorP0_Neumann = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
+    //                                      print(vf::hFace()* (gradv(u)*vf::N()-idv(gproj)) * (gradv(u)*vf::N()-idv(gproj)),"neuman:") ).broken( P0h );
 
 
 
-    double number_elem=mesh->numElements();
+    //double number_elem=mesh->numElements();
+    int number_elem=P0h->nLocalDof();
+    /*    LIFE_ASSERT( P0h->nLocalDof() == number_elem )( P0h->nLocalDof() )( number_elem ).warn( "invalid p0 space" );
+    LIFE_ASSERT( estimatorP0.size() == number_elem )( estimatorP0.size() )( number_elem ).warn( "invalid p0 function" );
+    LIFE_ASSERT( estimatorP0_internalfaces.size() == number_elem )( estimatorP0_internalfaces.size() )( number_elem ).warn( "invalid p0 internal function" );
+    LIFE_ASSERT( estimatorP0_Neumann.size() == number_elem )( estimatorP0_Neumann.size() )( number_elem ).warn( "invalid p0 neumann function" );
+    */
+
+
     if(Dim==2){
       for(int i=0;i<number_elem;i++){
          if(estimatorP0(i)<0) std::cout<<"estimatorP0("<<i<<") = "<<estimatorP0(i)<<std::endl;
@@ -426,12 +442,12 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
     form1( P1h, F1, _init=true ) = integrate( elements(mesh), vf::sqrt(idv(estimatorP0))*id(v1));
     this->solveP1( M1, estimatorP1, F1 );
 
-   
-   
-   
-   
-    
-   
+
+
+
+
+
+
     //estimatorP1 is now the representation at nodes of the error estimator
     /*******************************/
 
@@ -446,9 +462,13 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
     element_type exact_solution( Xh, "exact_solution" );
     exact_solution = vf::project( Xh, elements(mesh), g );
 
-   
-    
-    
+    auto u_minus_exact = u;
+    u_minus_exact -= exact_solution;
+    for(int i=0;i<u_minus_exact.size();i++){
+      u_minus_exact(i)=math::abs(u_minus_exact(i));
+    }
+
+
     /*
     export_ptrtype exporter( export_type::New( this->vm(),
                                                (boost::format( "%1%-%2%-%3%" )
@@ -463,7 +483,8 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
         exporter->step(0)->add( "unknown", u );
         exporter->step(0)->add( "exact solution", exact_solution);
         exporter->step(0)->add( "estimated error",estimatorP1);
-       
+        exporter->step(0)->add( "u - exact solution", u_minus_exact) ;
+
         exporter->save();
         Log() << "exportResults done\n";
     }
@@ -527,9 +548,9 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    app.add( new ResidualEstimator<1>( app.vm(), app.about() ) );
+    //app.add( new ResidualEstimator<1>( app.vm(), app.about() ) );
     app.add( new ResidualEstimator<2>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<3>( app.vm(), app.about() ) );
+    //app.add( new ResidualEstimator<3>( app.vm(), app.about() ) );
     /** \endcode */
 
     /**
