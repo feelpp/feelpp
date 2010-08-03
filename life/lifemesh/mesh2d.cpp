@@ -397,6 +397,7 @@ template class Mesh2D<GeoEntity<Simplex<2, 1, 2> > >;
 template class Mesh2D<GeoEntity<Simplex<2, 2, 2> > >;
 template class Mesh2D<GeoEntity<Simplex<2, 3, 2> > >;
 template class Mesh2D<GeoEntity<Simplex<2, 4, 2> > >;
+template class Mesh2D<GeoEntity<Simplex<2, 5, 2> > >;
 template class Mesh2D<GeoEntity<SimplexProduct<2, 1, 2> > >;
 template class Mesh2D<GeoEntity<SimplexProduct<2, 2, 2> > >;
 
