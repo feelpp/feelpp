@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-07-31
  */
-#ifndef __PARTITIONER_CPP 
+#ifndef __PARTITIONER_CPP
 #define __PARTITIONER_CPP 1
 
 #include <boost/preprocessor/comparison/greater_equal.hpp>
@@ -106,6 +106,18 @@ typedef Mesh<Simplex<3,2,3> > meshs32_t;
 const bool meshs32e = Partitioner<meshs32_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs32_t> );
 const bool meshs32g = Partitioner<meshs32_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs32_t> );
 
+typedef Mesh<Simplex<3,3,3> > meshs33_t;
+const bool meshs33e = Partitioner<meshs33_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs33_t> );
+const bool meshs33g = Partitioner<meshs33_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs33_t> );
+
+typedef Mesh<Simplex<3,4,3> > meshs33_t;
+const bool meshs34e = Partitioner<meshs34_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs34_t> );
+const bool meshs34g = Partitioner<meshs34_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs34_t> );
+
+typedef Mesh<Simplex<3,5,3> > meshs33_t;
+const bool meshs35e = Partitioner<meshs35_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs35_t> );
+const bool meshs35g = Partitioner<meshs35_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs35_t> );
+
 //
 // SimplexProduct 1,1
 //
@@ -159,25 +171,27 @@ template class Partitioner<Mesh<Simplex<1,1,1> > >;
 template class Partitioner<Mesh<Simplex<1,1,2> > >;
 // 2D
 template class Partitioner<Mesh<Simplex<2,1,2> > >;
+template class Partitioner<Mesh<Simplex<3,1,3> > >;
 #if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
-template class Partitioner<Mesh<Simplex<2,2,2> > >;
+template class Partitioner<Mesh<Simplex<2,2> > >;
+template class Partitioner<Mesh<Simplex<3,2> > >;
 #endif
 #if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 3 )
-template class Partitioner<Mesh<Simplex<2,3,2> > >;
+template class Partitioner<Mesh<Simplex<2,3> > >;
+template class Partitioner<Mesh<Simplex<3,3> > >;
 #endif
 #if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 4 )
-template class Partitioner<Mesh<Simplex<2,4,2> > >;
+template class Partitioner<Mesh<Simplex<2,4> > >;
+template class Partitioner<Mesh<Simplex<3,4> > >;
 #endif
 #if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 5 )
-template class Partitioner<Mesh<Simplex<2,5,2> > >;
+template class Partitioner<Mesh<Simplex<2,5> > >;
+template class Partitioner<Mesh<Simplex<3,5> > >;
 #endif
 // 2D3D
 template class Partitioner<Mesh<Simplex<2,1,3> > >;
 // 3D
-template class Partitioner<Mesh<Simplex<3,1,3> > >;
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
-template class Partitioner<Mesh<Simplex<3,2,3> > >;
-#endif
+
 template class Partitioner<Mesh<SimplexProduct<1,1,1> > >;
 template class Partitioner<Mesh<SimplexProduct<2,1,2> > >;
 template class Partitioner<Mesh<SimplexProduct<3,1,3> > >;

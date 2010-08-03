@@ -359,23 +359,26 @@ namespace{
 //
 template class PartitionerMetis<Mesh<Simplex<1,1> > >;
 template class PartitionerMetis<Mesh<Simplex<2,1> > >;
+template class PartitionerMetis<Mesh<Simplex<3,1> > >;
+
 #if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
 template class PartitionerMetis<Mesh<Simplex<2,2> > >;
+template class PartitionerMetis<Mesh<Simplex<3,2> > >;
 #endif
 #if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 3 )
 template class PartitionerMetis<Mesh<Simplex<2,3> > >;
+template class PartitionerMetis<Mesh<Simplex<3,3> > >;
 #endif
 #if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 4 )
 template class PartitionerMetis<Mesh<Simplex<2,4> > >;
+template class PartitionerMetis<Mesh<Simplex<3,4> > >;
 #endif
 #if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 5 )
 template class PartitionerMetis<Mesh<Simplex<2,5> > >;
+template class PartitionerMetis<Mesh<Simplex<3,5> > >;
 #endif
 
-template class PartitionerMetis<Mesh<Simplex<3,1> > >;
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
-template class PartitionerMetis<Mesh<Simplex<3,2> > >;
-#endif
+
 template class PartitionerMetis<Mesh<SimplexProduct<1,1> > >;
 template class PartitionerMetis<Mesh<SimplexProduct<2,1> > >;
 template class PartitionerMetis<Mesh<SimplexProduct<3,1> > >;

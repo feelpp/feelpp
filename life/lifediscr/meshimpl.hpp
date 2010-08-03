@@ -209,6 +209,7 @@ template<typename Shape, typename T>
 void
 Mesh<Shape, T>::renumber(mpl::bool_<true>)
 {
+    return ;
     size_type next_free_node = 0;
 
     // map old/new ids
