@@ -675,6 +675,8 @@ template<typename MeshType>
 void
 ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, int tag, GMSH_ENTITY type, mpl::int_<2> )
 {
+    GmshOrdering<element_type> ordering;
+
     element_type pf;
     pf.marker().assign(  tag  );
 
@@ -685,6 +687,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, i
          type == GMSH_TRIANGLE_4 ||
          type == GMSH_TRIANGLE_5 )
         {
+#if 0
             for( uint16_type jj = 0; jj < npoints_per_element; ++jj )
                 {
                     //std::cout << "jj = " << jj << "\n";
@@ -727,6 +730,13 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, i
                                 pf.setPoint( pt_id_start+3, mesh->point( __e[jj] ) );
                         }
                 }
+#else
+            for( uint16_type jj = 0; jj < npoints_per_element; ++jj )
+            {
+                std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
+                pf.setPoint( ordering.fromGmshId(jj), mesh->point( __e[jj] ) );
+            }
+#endif
         }
 
     mesh->addElement( pf );
@@ -741,6 +751,8 @@ template<typename MeshType>
 void
 ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, int tag, GMSH_ENTITY type, mpl::int_<3> )
 {
+    GmshOrdering<face_type> ordering;
+
     face_type pf;
     pf.setId( mesh->numFaces() );
     pf.marker().assign(  tag  );
@@ -753,7 +765,8 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, i
          type == GMSH_TRIANGLE_5 )
         {
             for( uint16_type jj = 0; jj < npoints_per_face; ++jj )
-                pf.setPoint( jj, mesh->point( __e[jj] ) );
+                pf.setPoint( ordering.fromGmshId(jj), mesh->point( __e[jj] ) );
+            //pf.setPoint( jj, mesh->point( __e[jj] ) );
         }
 
     pf.setOnBoundary( true );
@@ -787,7 +800,7 @@ void
 ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e, int tag, GMSH_ENTITY type, mpl::int_<3> )
 {
     element_type pv;
-
+    GmshOrdering<element_type> ordering;
     pv.marker().assign(  tag  );
 
     //
@@ -802,7 +815,10 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e,
          type == GMSH_TETRAHEDRON_5 )
         {
             for( uint16_type jj = 0; jj < npoints_per_element; ++jj )
-                pv.setPoint( jj, mesh->point( __e[jj] ) );
+            {
+                std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
+                pv.setPoint( ordering.fromGmshId(jj), mesh->point( __e[jj] ) );
+            }
         }
     mesh->addElement( pv );
 

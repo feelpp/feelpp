@@ -54,12 +54,12 @@ namespace fs = boost::filesystem;
  * \ingroup Exporter
  * @author Christophe Prud'homme
  */
-template<typename MeshType>
+template<typename MeshType, int N>
 class ExporterEnsight
     :
-        public Exporter<MeshType>
+        public Exporter<MeshType, N>
 {
-    typedef Exporter<MeshType> super;
+    typedef Exporter<MeshType, N> super;
 public:
 
 
@@ -156,7 +156,7 @@ public:
      */
     //@{
 
-    Exporter<MeshType>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" )
+    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" )
     {
         super::setOptions( vm, exp_prefix );
 
@@ -225,8 +225,8 @@ private:
 
 } // Life
 
-#if !defined( LIFE_INSTANTIATION_MODE )
+//#if !defined( LIFE_INSTANTIATION_MODE )
 # include <life/lifefilters/exporterensight.cpp>
-#endif // LIFE_INSTANTIATION_MODE
+//#endif // LIFE_INSTANTIATION_MODE
 
 #endif /* __ExporterEnsight_H */

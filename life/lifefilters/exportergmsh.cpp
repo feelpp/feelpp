@@ -36,548 +36,31 @@
 
 namespace Life
 {
-namespace detail
-{
-template<typename TimesetType, typename FunctionType>
-void
-gmsh_save_value( std::ostream& out,
-                 boost::shared_ptr<TimesetType> const& __ts,
-                 FunctionType const& __u )
-{
-    typedef typename FunctionType::value_type value_type;
-    typedef typename matrix_node<value_type>::type matrix_node_type;
-    out << "$View\n";
-
-    // view-name nb-time-steps
-    out << __u.name() << " " << 1  << "\n";
-
-
-    size_type nLines = 0;
-    if ( __u.mesh()->element( 0 ).isALineShape() )
-        nLines = __u.mesh()->elements().size();
-
-    size_type nTriangles = 0;
-    if ( __u.mesh()->element( 0 ).isATriangleShape() )
-        nTriangles = __u.mesh()->elements().size();
-
-    size_type nQuad = 0;
-    if ( __u.mesh()->element( 0 ).isAQuadrangleShape() )
-        nQuad = __u.mesh()->elements().size();
-
-    size_type nTetra = 0;
-    if ( __u.mesh()->element( 0 ).isATetrahedraShape() )
-        nTetra = __u.mesh()->elements().size();
-
-    size_type nHexa = 0;
-    if ( __u.mesh()->element( 0 ).isAHexahedraShape() )
-        nHexa = __u.mesh()->elements().size();
-
-
-    Debug( 8007 ) << "    nLines = " << nLines << "\n";
-    Debug( 8007 ) << "nTriangles = " << nTriangles << "\n";
-    Debug( 8007 ) << "     nQuad = " << nQuad << "\n";
-    Debug( 8007 ) << "    nTetra = " << nTetra << "\n";
-    Debug( 8007 ) << "     nHexa = " << nHexa << "\n";
-
-    // nb-scalar-points nb-vector-points nb-tensor-points
-    out << "0 0 0 " << "\n";
-
-    //nb-scalar-lines nb-vector-lines nb-tensor-lines
-    if ( __u.is_scalar )
-        out << nLines << " 0 0 " << "\n";
-    else
-        out << "0 " << nLines << " 0 " << "\n";
-
-    //nb-scalar-triangles nb-vector-triangles nb-tensor-triangles
-    if ( __u.is_scalar )
-        out << nTriangles  << " 0 0" << "\n";
-    else
-        out << "0 " << nTriangles << " 0" << "\n";
-
-    //nb-scalar-quadrangles nb-vector-quadrangles nb-tensor-quadrangles
-    if ( __u.is_scalar )
-        out << nQuad << " 0 0 " << "\n";
-    else
-        out << "0 " << nQuad << " 0 " << "\n";
-
-    // nb-scalar-tetrahedra nb-vector-tetrahedra nb-tensor-tetrahedra
-    if ( __u.is_scalar )
-        out << nTetra << " 0 0"  << "\n";
-    else
-        out << "0 " << nTetra << " 0"  << "\n";
-
-    // nb-scalar-hexahedra nb-vector-hexahedra nb-tensor-hexahedra
-    if ( __u.is_scalar )
-        out << nHexa << " 0 0"  << "\n";
-    else
-        out << "0 " << nHexa << " 0"  << "\n";
-
-    //nb-scalar-prisms nb-vector-prisms nb-tensor-prisms
-    out << "0 0 0 " << "\n";
-
-    //nb-scalar-pyramids nb-vector-pyramids nb-tensor-pyramids
-    out << "0 0 0 " << "\n";
-
-    //nb-scalar-lines2 nb-vector-lines2 nb-tensor-lines2
-    out << "0 0 0 " << "\n";
-
-    //nb-scalar-triangles2 nb-vector-triangles2 nb-tensor-triangles2
-    out << "0 0 0 " << "\n";
-
-    //nb-scalar-quadrangles2 nb-vector-quadrangles2 nb-tensor-quadrangles2
-    out << "0 0 0 " << "\n";
-
-    //nb-scalar-tetrahedra2 nb-vector-tetrahedra2 nb-tensor-tetrahedra2
-    out << "0 0 0 " << "\n";
-
-    //nb-scalar-hexahedra2 nb-vector-hexahedra2 nb-tensor-hexahedra2
-    out << "0 0 0 " << "\n";
-
-    //nb-scalar-prisms2 nb-vector-prisms2 nb-tensor-prisms2
-    out << "0 0 0 " << "\n";
-
-    //nb-scalar-pyramids2 nb-vector-pyramids2 nb-tensor-pyramids2
-    out << "0 0 0 " << "\n";
-
-    //nb-text2d nb-text2d-chars nb-text3d nb-text3d-chars
-    out << "0 0 0 " << "\n";
-
-
-
-    out.precision( 5 );
-    out.setf( std::ios::scientific );
-    std::for_each( __ts->beginStep(), __ts->endStep(),  out << lambda::bind( &TimesetType::step_type::time,
-                                                                             *lambda::_1 ) << " " );
-    out << "\n";
-
-
-    //loop on all elements
-    typedef typename FunctionType::functionspace_type::mesh_type mesh_type;
-    typedef typename mesh_type::element_const_iterator element_const_iterator;
-
-    element_const_iterator __elit = __u.mesh()->beginElement();
-    element_const_iterator __elen = __u.mesh()->endElement();
-    for ( ; __elit != __elen; ++__elit )
-    {
-        uint16_type n_vert = __elit->nVertices();
-
-        matrix_node_type const& __G = __elit->G();
-        //std::cout << __G << "\n";
-        typename matrix_node_type::const_iterator1 i1=__G.begin1();
-        for ( uint16_type __i = 0;
-              i1!=__G.end1() && __i < n_vert; ++i1 )
-        {
-            std::for_each( i1.begin(),i1.end(),
-                           out << lambda::_1 << " " );
-            out << "\n";
-        }
-        if ( __G.size1() == 1 )
-        {
-            std::for_each( __G.begin1().begin(),
-                           __G.begin1().begin()+n_vert,
-                           ( out << 0 * lambda::_1 << " " ) );
-            out << "\n";
-            std::for_each( __G.begin1().begin(),
-                           __G.begin1().begin()+n_vert,
-                           out << 0 * lambda::_1 << " " );
-            out << "\n";
-        }
-        if ( __G.size1() == 2 )
-        {
-            std::for_each( __G.begin1().begin(),
-                           __G.begin1().begin()+n_vert,
-                           out << 0 * lambda::_1 << " " );
-            out << "\n";
-        }
-
-        typedef typename mesh_type::element_type element_type;
-        typedef typename element_type::point_const_iterator point_const_iterator;
-        typedef typename FunctionType::id_type eval_fun_type;
-
-        matrix_node_type M( __u.nComponents, n_vert );
-
-        point_const_iterator __pit = __elit->beginPoint();
-        point_const_iterator __pen = __elit->endPoint();
-        for (uint16_type __i = 0 ;__pit != __pen && __i < n_vert; ++__pit, ++__i )
-        {
-            eval_fun_type eval = __u( (*__pit)->node() );
-            for ( int __c = 0; __c < __u.nComponents; ++__c )
-                out << eval(__c, 0, 0) << " ";
-            for( int __c = __u.nComponents; __c < 3; ++__c )
-                out << " 0 ";
-            out << "\n";
-        }
-    }
-    out << "$EndView\n";
-
-}
-template<typename MeshType>
-void
-gmsh_save_ascii( ExporterGmsh<MeshType> const& egmsh )
-{
-    Debug( 8007 ) << "[gmsh_save_ascii] saving in gmsh ascii file format\n";
-
-    namespace lambda = boost::lambda;
-
-    typedef ExporterGmsh<MeshType> exporter_type;
-    typedef typename exporter_type::mesh_type mesh_type;
-    typedef typename mesh_type::element_type element_type;
-    typedef typename mesh_type::value_type value_type;
-    typedef typename exporter_type::timeset_type timeset_type;
-    typedef typename exporter_type::timeset_ptrtype timeset_ptrtype;
-    typedef typename exporter_type::timeset_iterator timeset_iterator;
-    typedef typename exporter_type::timeset_const_iterator timeset_const_iterator;
-
-    typedef typename matrix_node<value_type>::type matrix_node_type;
-
-    timeset_const_iterator __ts_it = egmsh.beginTimeSet();
-    timeset_const_iterator __ts_en = egmsh.endTimeSet();
-    while ( __ts_it != __ts_en )
-    {
-        timeset_ptrtype __ts = *__ts_it;
-        std::string filename =  egmsh.prefix() + ".msh";
-
-        std::ofstream out(filename.c_str());
-        if (out.fail())
-        {
-            Debug( 8007 ) << "cannot open " << filename.c_str() << "\n";
-            exit(0);
-        }
-
-        Debug( 8007 ) << "[ExporterGmsh] saving model " << __ts->name() << " at time step " << __ts->index() << " in " << filename << "\n";
-
-        out << "$MeshFormat\n"
-            << "2 0 0 " << sizeof(double) << "\n"
-            << "$EndMeshFormat\n";
-
-        out << "$PhysicalNames\n";
-        // write Physical names here
-        out << "$EndPhysicalNames\n";
-
-        out << "$Nodes\n";
-        // Save mesh nodes here
-        out << "$EndNodes\n";
-
-        out << "$Elements\n";
-        // Save mesh elements here
-        out << "$EndElements\n";
-
-#if 0
-        //
-        // write time step values
-        //
-        typename timeset_type::step_const_iterator __it = __ts->beginStep();
-        typename timeset_type::step_const_iterator __end = __ts->endStep();
-
-        typename timeset_type::step_type::mesh_ptrtype __m = ( *__it )->mesh();
-
-        //
-        // write data
-        //
-        __it = __ts->beginStep();
-        while( __it != __end )
-        {
-            typename timeset_type::step_ptrtype __step = *__it;;
-
-            __m = __step->mesh();
-            typedef typename timeset_type::step_type::mesh_type mesh_type;
-            typedef typename mesh_type::element_const_iterator element_const_iterator;
-
-            typename timeset_type::step_type::nodal_scalar_const_iterator __var = __step->beginNodalScalar();
-            typename timeset_type::step_type::nodal_scalar_const_iterator __varen = __step->endNodalScalar();
-            while( __var != __varen )
-            {
-                typename timeset_type::step_type::nodal_scalar_type const& __u = __var->second;
-                gmsh_save_value( out, __ts, __u );
-                ++__var;
-            }
-            typename timeset_type::step_type::element_scalar_const_iterator __varelit = __step->beginElementScalar();
-            typename timeset_type::step_type::element_scalar_const_iterator __varelen = __step->endElementScalar();
-            while( __varelit != __varelen )
-            {
-                typename timeset_type::step_type::element_scalar_type const& __u = __varelit->second;
-                gmsh_save_value( out, __ts, __u );
-                ++__varelit;
-            }
-
-            typename timeset_type::step_type::nodal_vector_const_iterator __vec = __step->beginNodalVector();
-            typename timeset_type::step_type::nodal_vector_const_iterator __vecen = __step->endNodalVector();
-            while( __vec != __vecen )
-            {
-                typename timeset_type::step_type::nodal_vector_type const& __u = __vec->second;
-                gmsh_save_value( out, __ts, __u );
-                ++__vec;
-            }
-            typename timeset_type::step_type::element_vector_const_iterator __vecelem = __step->beginElementVector();
-            typename timeset_type::step_type::element_vector_const_iterator __vecelemen = __step->endElementVector();
-            while( __vec != __vecen )
-            {
-                typename timeset_type::step_type::element_vector_type const& __u = __vecelem->second;
-                gmsh_save_value( out, __ts, __u );
-                ++__vec;
-            }
-            ++__it;
-        }
-#endif
-        ++__ts_it;
-    }
-
-}
-template<typename MeshType>
-void
-gmsh_save_binary( ExporterGmsh<MeshType> const& egmsh )
-{
-    Debug( 8007 ) << "[gmsh_save_binary] saving in gmsh binary file format\n";
-
-    namespace lambda = boost::lambda;
-
-    typedef ExporterGmsh<MeshType> exporter_type;
-    typedef typename exporter_type::mesh_type mesh_type;
-    typedef typename mesh_type::value_type value_type;
-    typedef typename exporter_type::timeset_type timeset_type;
-    typedef typename exporter_type::timeset_ptrtype timeset_ptrtype;
-    typedef typename exporter_type::timeset_iterator timeset_iterator;
-    typedef typename exporter_type::timeset_const_iterator timeset_const_iterator;
-
-    typedef typename matrix_node<value_type>::type matrix_node_type;
-
-    timeset_const_iterator __ts_it = egmsh.beginTimeSet();
-    timeset_const_iterator __ts_en = egmsh.endTimeSet();
-    while ( __ts_it != __ts_en )
-    {
-        timeset_ptrtype __ts = *__ts_it;
-
-        std::string filename =  egmsh.prefix() + ".msh_data";
-
-        std::ofstream out(filename.c_str());
-        if (out.fail())
-        {
-            Debug( 8007 ) << "cannot open " << filename.c_str() << "\n";
-            exit(0);
-        }
-
-        Debug( 8007 ) << "[ExporterGmsh] saving model " << __ts->name() << " at time step " << __ts->index() << " in " << filename << "\n";
-
-        out << "$PostFormat\n"
-            << "1.4 0 " << sizeof(double) << "\n"
-            << "$EndPostFormat\n"
-            << "$View\n";
-
-        // view-name nb-time-steps
-        out << __ts->name() << " " << __ts->numberOfSteps()  << "\n";
-
-        //
-        // write time step values
-        //
-        typename timeset_type::step_const_iterator __it = __ts->beginStep();
-        typename timeset_type::step_const_iterator __end = __ts->endStep();
-
-        typename timeset_type::step_type::mesh_ptrtype __m = ( *__it )->mesh();
-
-        size_type nLines = 0;
-        if ( __m->element( 0 ).isALineShape() )
-            nLines = __m->elements().size();
-
-        size_type nTriangles = 0;
-        if ( __m->element( 0 ).isATriangleShape() )
-            nTriangles = __m->elements().size();
-
-        size_type nQuad = 0;
-        if ( __m->element( 0 ).isAQuadrangleShape() )
-            nQuad = __m->elements().size();
-
-        size_type nTetra = 0;
-        if ( __m->element( 0 ).isATetrahedraShape() )
-            nTetra = __m->elements().size();
-
-        size_type nHexa = 0;
-        if ( __m->element( 0 ).isAHexahedraShape() )
-            nHexa = __m->elements().size();
-
-
-        Debug( 8007 ) << "    nLines = " << nLines << "\n";
-        Debug( 8007 ) << "nTriangles = " << nTriangles << "\n";
-        Debug( 8007 ) << "     nQuad = " << nQuad << "\n";
-        Debug( 8007 ) << "     nHexa = " << nHexa << "\n";
-
-        // nb-scalar-points nb-vector-points nb-tensor-points
-        out << "0 0 0 " << "\n";
-
-        // nb-scalar-lines nb-vector-lines nb-tensor-lines
-        out << nLines << " 0 0 " << "\n";
-
-        // nb-scalar-triangles nb-vector-triangles nb-tensor-triangles
-        out << nTriangles  << " 0 0" << "\n";
-
-        // nb-scalar-quadrangles nb-vector-quadrangles nb-tensor-quadrangles
-        out << nQuad << " 0 0 " << "\n";
-
-        // nb-scalar-tetrahedra nb-vector-tetrahedra nb-tensor-tetrahedra
-        out << nTetra << " 0 0"  << "\n";
-
-        // nb-scalar-hexahedra nb-vector-hexahedra nb-tensor-hexahedra
-        out << nHexa << " 0 0 " << "\n";
-
-        // nb-scalar-prisms nb-vector-prisms nb-tensor-prisms
-        out << "0 0 0 " << "\n";
-
-        // nb-scalar-pyramids nb-vector-pyramids nb-tensor-pyramids
-        out << "0 0 0 " << "\n";
-
-        // nb-text2d nb-text2d-chars nb-text3d nb-text3d-chars
-        out << "0 0 0" << "\n";
-
-
-        out.precision( 5 );
-        out.setf( std::ios::scientific );
-        std::for_each( __ts->beginStep(), __ts->endStep(),  out << lambda::bind( &timeset_type::step_type::time,
-                                                                                 *lambda::_1 ) << " " );
-        out << "\n";
-
-        //
-        // write data
-        //
-        __it = __ts->beginStep();
-        while( __it != __end )
-        {
-            typename timeset_type::step_ptrtype __step = *__it;;
-
-            //typename timeset_type::step_type::mesh_ptrtype __m = __step->mesh();
-            __m = __step->mesh();
-            typedef typename timeset_type::step_type::mesh_type mesh_type;
-            typedef typename mesh_type::element_const_iterator element_const_iterator;
-
-            // < scalar-point-value > ...
-
-            // < vector-point-value > ...
-            // < tensor-point-value > ...
-            // < scalar-line-value > ...
-            // < vector-line-value > ...
-            // < tensor-line-value > ...
-            // < scalar-triangle-value > ...
-            typename timeset_type::step_type::nodal_scalar_const_iterator __var = __step->beginNodalScalar();
-            typename timeset_type::step_type::nodal_scalar_const_iterator __varen = __step->endNodalScalar();
-            while( __var != __varen )
-            {
-                //loop on all elements
-                element_const_iterator __elit = __m->beginElement();
-                element_const_iterator __elen = __m->endElement();
-                for ( ; __elit != __elen; ++__elit )
-                {
-                    uint16_type n_vert = __elit->nVertices();
-
-                    matrix_node_type const& __G = __elit->G();
-                    //std::cout << __G << "\n";
-                    typename matrix_node_type::const_iterator1 i1=__G.begin1();
-                    for ( uint16_type __i = 0;
-                          i1!=__G.end1() && __i < n_vert; ++i1 )
-                    {
-                        std::for_each( i1.begin(),i1.end(),
-                                       out << lambda::_1 << " " );
-                        out << "\n";
-                    }
-                    if ( __G.size1() == 1 )
-                    {
-                        std::for_each( __G.begin1().begin(),
-                                       __G.begin1().begin()+n_vert,
-                                       ( out << 0 * lambda::_1 << " " ) );
-                        out << "\n";
-                        std::for_each( __G.begin1().begin(),
-                                       __G.begin1().begin()+n_vert,
-                                       out << 0 * lambda::_1 << " " );
-                        out << "\n";
-                    }
-                    if ( __G.size1() == 2 )
-                    {
-                        std::for_each( __G.begin1().begin(),
-                                       __G.begin1().begin()+n_vert,
-                                       out << 0 * lambda::_1 << " " );
-                        out << "\n";
-                    }
-
-#warning TOBEFIXED
-#if 0
-                    typename timeset_type::step_type::nodal_scalar_type const& __u = __var->second;
-
-
-                    typedef typename mesh_type::point_type point_type;
-                    typedef typename mesh_type::element_point_const_iterator point_const_iterator;
-
-                    point_const_iterator __pit = __elit->beginPoint();
-                    point_const_iterator __pen = __elit->endPoint();
-                    for (uint16_type __i = 0 ;__pit != __pen && __i < n_vert; ++__pit )
-                    {
-                        out << __u[ ( *__pit )->id() ] << "\n";
-                    }
-#endif
-                }
-                ++__var;
-            }
-
-            typename timeset_type::step_type::nodal_vector_const_iterator __vec = __step->beginNodalVector();
-            typename timeset_type::step_type::nodal_vector_const_iterator __vecen = __step->endNodalVector();
-            while( __vec != __vecen )
-            {
-                ++__vec;
-            }
-            // < vector-triangle-value > ...
-            // < tensor-triangle-value > ...
-            // < scalar-quadrangle-value > ...
-            // < vector-quadrangle-value > ...
-            // < tensor-quadrangle-value > ...
-            // < scalar-tetrahedron-value > ..
-            // < vector-tetrahedron-value > ...
-            // < tensor-tetrahedron-value > ...
-            // < scalar-hexahedron-value > ...
-            // < vector-hexahedron-value > ...
-            // < tensor-hexahedron-value > ...
-            // < scalar-prism-value > ...
-            // < vector-prism-value > ...
-            // < tensor-prism-value > ...
-            // < scalar-pyramid-value > ...
-            // < vector-pyramid-value > ...
-            // < tensor-pyramid-value > ...
-            // < text2d > ... < text2d-chars > ...
-            // < text3d > ... < text3d-chars > ...
-
-            out << "$EndView\n";
-
-            ++__it;
-        }
-        out.close();
-
-        ++__ts_it;
-    }
-}
-} // detail
-
-
-
-template<typename MeshType>
-ExporterGmsh<MeshType>::ExporterGmsh( std::string const& __p, int freq )
+template<typename MeshType, int N>
+ExporterGmsh<MeshType,N>::ExporterGmsh( std::string const& __p, int freq )
     :
     super( "gmsh", __p, freq )
 {
 
 }
-template<typename MeshType>
-ExporterGmsh<MeshType>::ExporterGmsh( po::variables_map const& vm, std::string const& exp_prefix )
+template<typename MeshType, int N>
+ExporterGmsh<MeshType,N>::ExporterGmsh( po::variables_map const& vm, std::string const& exp_prefix )
     :
     super( vm, exp_prefix )
 {
 }
-template<typename MeshType>
-ExporterGmsh<MeshType>::ExporterGmsh( ExporterGmsh const & __ex )
+template<typename MeshType, int N>
+ExporterGmsh<MeshType,N>::ExporterGmsh( ExporterGmsh const & __ex )
     :
     super( __ex )
 {}
-template<typename MeshType>
-ExporterGmsh<MeshType>::~ExporterGmsh()
+template<typename MeshType, int N>
+ExporterGmsh<MeshType,N>::~ExporterGmsh()
 {}
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType>::save() const
+ExporterGmsh<MeshType,N>::save() const
 {
     static int freq = 0;
 
@@ -590,24 +73,20 @@ ExporterGmsh<MeshType>::save() const
 
     Debug( 8007 ) << "[ExporterGmsh] save()...\n";
 
-    if( this->fileType() == ASCII )
-        gmsh_save_ascii();
-    //detail::gmsh_save_ascii( *this );
-    else if( this->fileType() == BINARY )
-        detail::gmsh_save_binary( *this );
+    gmsh_save_ascii();
 
     Debug( 8007 ) << "[ExporterGmsh] saving done\n";
 }
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType>::visit( mesh_type* )
+ExporterGmsh<MeshType,N>::visit( mesh_type* )
 {
 }
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType>::gmsh_save_ascii() const
+ExporterGmsh<MeshType,N>::gmsh_save_ascii() const
 {
     Debug( 8007 ) << "[gmsh_save_ascii] saving in gmsh ascii file format\n";
 
@@ -676,24 +155,24 @@ ExporterGmsh<MeshType>::gmsh_save_ascii() const
     }
 }
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType>::gmsh_save_file( std::ostream& out ) const
+ExporterGmsh<MeshType,N>::gmsh_save_file( std::ostream& out ) const
 {
 }
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType>::gmsh_save_Format( std::ostream& out ) const
+ExporterGmsh<MeshType,N>::gmsh_save_Format( std::ostream& out ) const
 {
     out << "$MeshFormat\n"
         << "2.1 0 " << sizeof(double) << "\n"
         << "$EndMeshFormat\n";
 
 }
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType>::gmsh_save_PhysicalNames( std::ostream& out, step_ptrtype __step ) const
+ExporterGmsh<MeshType,N>::gmsh_save_PhysicalNames( std::ostream& out, step_ptrtype __step ) const
 {
     mesh_ptrtype mesh = __step->mesh();
     // save Physical Names
@@ -710,9 +189,9 @@ ExporterGmsh<MeshType>::gmsh_save_PhysicalNames( std::ostream& out, step_ptrtype
 
 }
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType>::gmsh_save_Nodes( std::ostream& out,
+ExporterGmsh<MeshType,N>::gmsh_save_Nodes( std::ostream& out,
                                          step_ptrtype __step ) const
 {
     out << "$Nodes\n";
@@ -725,7 +204,7 @@ ExporterGmsh<MeshType>::gmsh_save_Nodes( std::ostream& out,
     point_const_iterator pt_en = mesh->endPoint();
     for ( ; pt_it!=pt_en ; ++pt_it )
     {
-        out << pt_it->id()
+        out << pt_it->id()+1
             << " "  << std::setw( 20 ) << std::setprecision(16) << pt_it->node()[0];
         if ( mesh_type::nRealDim >= 2 )
             out << " "  << std::setw( 20 ) << std::setprecision(16) << pt_it->node()[1];
@@ -742,9 +221,9 @@ ExporterGmsh<MeshType>::gmsh_save_Nodes( std::ostream& out,
 
 }
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType>::gmsh_save_Elements( std::ostream& out,
+ExporterGmsh<MeshType,N>::gmsh_save_Elements( std::ostream& out,
                                             step_ptrtype __step ) const
 {
     out << "$Elements\n";
@@ -780,7 +259,10 @@ ExporterGmsh<MeshType>::gmsh_save_Elements( std::ostream& out,
         out << ordering.type();
         out<<" 3 " << elt_it->marker().value() << " 2 " << elt_it->processId();
         for (uint16_type p=0;p<element_type::numPoints;++p)
-            out << " " << elt_it->point( ordering.id( p ) ).id();
+        {
+            std::cout << "index " << p << " -> " << ordering.fromGmshId(p) << " -> " << elt_it->point( ordering.fromGmshId(p) ).id()+1 << " : " << elt_it->point( ordering.fromGmshId(p) ).node() << "\n";
+            out << " " << elt_it->point( ordering.fromGmshId( p ) ).id()+1;
+        }
 
         out<<"\n";
     } // elements
@@ -797,7 +279,7 @@ ExporterGmsh<MeshType>::gmsh_save_Elements( std::ostream& out,
         out<<" 3 " << face_it->marker().value() << " 2 " << face_it->processId();
         // node-number-list
         for (uint16_type p=0;p<face_type::numPoints;++p)
-            out << " " << face_it->point( ordering_face.id( p ) ).id();
+            out << " " << face_it->point( ordering_face.id( p ) ).id()+1;
         out<<"\n";
     } // faces
 
@@ -807,9 +289,9 @@ ExporterGmsh<MeshType>::gmsh_save_Elements( std::ostream& out,
 
 
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType>::gmsh_save_NodeData( std::ostream& out, step_ptrtype __step ) const
+ExporterGmsh<MeshType,N>::gmsh_save_NodeData( std::ostream& out, step_ptrtype __step ) const
 {
 #if 0
     //!!!Not functionnal for curve element!!!
@@ -856,10 +338,10 @@ ExporterGmsh<MeshType>::gmsh_save_NodeData( std::ostream& out, step_ptrtype __st
 }
 
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType>::gmsh_save_ElementNodeData( std::ostream& out,
-                                                   step_ptrtype __step) const
+ExporterGmsh<MeshType,N>::gmsh_save_ElementNodeData( std::ostream& out,
+                                                     step_ptrtype __step) const
 {
 
     typedef typename mesh_type::element_const_iterator element_mesh_const_iterator;
@@ -874,7 +356,8 @@ ExporterGmsh<MeshType>::gmsh_save_ElementNodeData( std::ostream& out,
 
     uint16_type nLocalDof;
     size_type globaldof;
-
+    typedef typename MeshType::element_type element_type;
+    GmshOrdering<element_type> ordering;
     nodal_scalar_const_iterator __varScal = __step->beginNodalScalar();
     nodal_scalar_const_iterator __varScal_end = __step->endNodalScalar();
     for ( ;__varScal!=__varScal_end ; ++__varScal)
@@ -906,14 +389,14 @@ ExporterGmsh<MeshType>::gmsh_save_ElementNodeData( std::ostream& out,
         {
             out << elt_it->id()+1;
             //nLocGeoPt = elt_it->nPoints();
-            nLocalDof = mesh->numLocalVertices();
-            //nodal_scalar_type::functionspace_type::basis_type::nLocalDof;
-
+            //nLocalDof = mesh->numLocalVertices();
+            nLocalDof = nodal_scalar_type::functionspace_type::basis_type::nLocalDof;
             out << " " << nLocalDof;
             for ( uint16_type l = 0; l < nLocalDof; ++l )
             {
                 out << " ";
-                globaldof = boost::get<0>(__u.functionSpace()->dof()->localToGlobal(elt_it->id(), l, 0 ));//l,c
+                uint16_type gmsh_l = ordering.fromGmshId( l );
+                globaldof = boost::get<0>(__u.functionSpace()->dof()->localToGlobal(elt_it->id(), gmsh_l, 0 ));//l,c
                 out << __u( globaldof);
             }
             out << "\n";
@@ -945,17 +428,19 @@ ExporterGmsh<MeshType>::gmsh_save_ElementNodeData( std::ostream& out,
         for ( ; elt_it!=elt_en ; ++elt_it )
         {
             out << elt_it->id()+1;
-            nLocalDof = mesh->numLocalVertices();
+            //nLocalDof = mesh->numLocalVertices();
+            nLocalDof = nodal_vectorial_type::functionspace_type::basis_type::nLocalDof;
             out << " " << nLocalDof;
             for ( uint16_type l = 0; l < nLocalDof; ++l )
             {
+                uint16_type gmsh_l = ordering.fromGmshId( l );
                 for( uint16_type c = 0; c < 3; ++c )
                 {
                     out << " ";
                     if (c < nComponents)
                     {
                         globaldof = boost::get<0>(__uVec.functionSpace()->dof()->localToGlobal(elt_it->id(),
-                                                                                               l,
+                                                                                               gmsh_l,
                                                                                                c ));
                         out << __uVec( globaldof);
                     }
@@ -968,29 +453,25 @@ ExporterGmsh<MeshType>::gmsh_save_ElementNodeData( std::ostream& out,
     }
 }
 
-
+#if 0
 #if defined( LIFE_INSTANTIATION_MODE )
+
+
 //
 // explicit instances
 //
-template class ExporterGmsh<Mesh<Simplex<1,1> > >;
-template class ExporterGmsh<Mesh<Simplex<1,1,2> > >;
-template class ExporterGmsh<Mesh<Simplex<2,1> > >;
-template class ExporterGmsh<Mesh<Simplex<2,2> > >;
-template class ExporterGmsh<Mesh<Simplex<2,1,3> > >;
-template class ExporterGmsh<Mesh<Simplex<3,1> > >;
-template class ExporterGmsh<Mesh<Simplex<3,2> > >;
 
-template class ExporterGmsh<Mesh<SimplexProduct<1,1> > >;
-template class ExporterGmsh<Mesh<SimplexProduct<2,1> > >;
-template class ExporterGmsh<Mesh<SimplexProduct<3,1> > >;
-template class ExporterGmsh<Mesh<SimplexProduct<3,2,3> > >;
+# define DIMS BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
+# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
+# define ORDERS_FUN_GMSH BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
 
-template class ExporterGmsh<Mesh<Simplex<2,3> > >;
-template class ExporterGmsh<Mesh<SimplexProduct<2,2> > >;
-template class ExporterGmsh<Mesh<SimplexProduct<2,3> > >;
+// exporter gmsh
+# define FACTORY(LDIM,LORDER,ORDERFUN) template class ExporterGmsh<Mesh<Simplex<LDIM,LORDER,LDIM> >, ORDERFUN >;
+# define FACTORY_OP(_, GDO) FACTORY GDO
 
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_OP, 3, (DIMS, ORDERS, ORDERS_FUN_GMSH))
 
 #endif // LIFE_INSTANTIATION_MODE
+#endif
 }
 #endif // __EXPORTERGMSH_CPP

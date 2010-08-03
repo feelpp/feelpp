@@ -40,8 +40,8 @@
 
 namespace Life
 {
-template<typename MeshType>
-Exporter<MeshType>::Exporter( std::string const& __type, std::string const& __prefix, int __freq  )
+template<typename MeshType, int N>
+Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& __prefix, int __freq  )
     :
     super1(),
     super2(),
@@ -55,8 +55,8 @@ Exporter<MeshType>::Exporter( std::string const& __type, std::string const& __pr
 
 }
 
-template<typename MeshType>
-Exporter<MeshType>::Exporter( po::variables_map const& vm, std::string const& exp_prefix )
+template<typename MeshType, int N>
+Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const& exp_prefix )
     :
     super1(),
     super2(),
@@ -70,8 +70,8 @@ Exporter<MeshType>::Exporter( po::variables_map const& vm, std::string const& ex
     std::cout << "[exporter::exporter] do export = " << doExport() << std::endl;
 }
 
-template<typename MeshType>
-Exporter<MeshType>::Exporter( Exporter const & __ex )
+template<typename MeshType, int N>
+Exporter<MeshType, N>::Exporter( Exporter const & __ex )
     :
     super1(),
     super2(),
@@ -85,27 +85,35 @@ Exporter<MeshType>::Exporter( Exporter const & __ex )
 
 }
 
-template<typename MeshType>
-Exporter<MeshType>::~Exporter()
+template<typename MeshType, int N>
+Exporter<MeshType, N>::~Exporter()
 {}
 
-template<typename MeshType>
-Exporter<MeshType>*
-Exporter<MeshType>::New( std::string const& exportername, std::string prefix )
+template<typename MeshType, int N>
+Exporter<MeshType, N>*
+Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix )
 {
-    Exporter<MeshType>* exporter =  Factory::type::instance().createObject( exportername  );
+    Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( exportername  );
+    if ( N == 1 && exportername == "ensight" )
+        exporter = new ExporterEnsight<MeshType, N>;
+    if ( N > 1 || exportername == "gmsh" )
+        exporter = new ExporterGmsh<MeshType,N>;
 
     exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
     exporter->setPrefix( prefix );
     return exporter;
 }
 
-template<typename MeshType>
-Exporter<MeshType>*
-Exporter<MeshType>::New( po::variables_map const& vm, std::string prefix )
+template<typename MeshType, int N>
+Exporter<MeshType, N>*
+Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix )
 {
     std::string estr = vm["exporter-format"].template as<std::string>();
-    Exporter<MeshType>* exporter =  Factory::type::instance().createObject( estr  );
+    Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( estr  );
+    if ( N == 1 && estr == "ensight" )
+        exporter = new ExporterEnsight<MeshType, N>;
+    if ( N > 1 || estr == "gmsh" )
+        exporter = new ExporterGmsh<MeshType,N>;
     exporter->setOptions( vm );
     //std::cout << "[exporter::New] do export = " << exporter->doExport() << std::endl;
     exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
@@ -113,9 +121,9 @@ Exporter<MeshType>::New( po::variables_map const& vm, std::string prefix )
     return exporter;
 }
 
-template<typename MeshType>
-Exporter<MeshType>*
-Exporter<MeshType>::setOptions( po::variables_map const& vm, std::string const& exp_prefix )
+template<typename MeshType, int N>
+Exporter<MeshType, N>*
+Exporter<MeshType, N>::setOptions( po::variables_map const& vm, std::string const& exp_prefix )
 {
     std::string _prefix = exp_prefix;
     if ( !_prefix.empty() )
@@ -135,9 +143,9 @@ Exporter<MeshType>::setOptions( po::variables_map const& vm, std::string const& 
     return this;
 }
 
-template<typename MeshType>
-Exporter<MeshType>*
-Exporter<MeshType>::addPath( boost::format fmt )
+template<typename MeshType, int N>
+Exporter<MeshType, N>*
+Exporter<MeshType, N>::addPath( boost::format fmt )
 {
     fs::path rep_path = ".";
     typedef std::vector< std::string > split_vector_type;

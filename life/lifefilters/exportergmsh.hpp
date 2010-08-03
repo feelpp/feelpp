@@ -49,10 +49,10 @@ namespace Life
  * \ingroup Exporter
  * @author Christophe Prud'homme
  */
-template<typename MeshType>
+template<typename MeshType, int N>
 class ExporterGmsh
     :
-        public Exporter<MeshType>
+        public Exporter<MeshType,N>
 {
 public:
 
@@ -65,7 +65,7 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename mesh_type::point_const_iterator point_const_iterator;
 
-    typedef Exporter<MeshType> super;
+    typedef Exporter<MeshType,N> super;
     typedef typename mesh_type::value_type value_type;
     typedef typename super::timeset_type timeset_type;
     typedef typename super::timeset_ptrtype timeset_ptrtype;
@@ -111,7 +111,7 @@ public:
      */
     //@{
 
-    Exporter<MeshType>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" )
+    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" )
     {
         super::setOptions( vm, exp_prefix );
 
@@ -170,9 +170,9 @@ private:
 
 } // Life
 
-#if !defined( LIFE_INSTANTIATION_MODE )
-//# include <life/lifefilters/exportergmsh.cpp>
-#endif // LIFE_INSTANTIATION_MODE
+//#if !defined( LIFE_INSTANTIATION_MODE )
+# include <life/lifefilters/exportergmsh.cpp>
+//#endif // LIFE_INSTANTIATION_MODE
 
 #endif /* __ExporterGmsh_H */
 
