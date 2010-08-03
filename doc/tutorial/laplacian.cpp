@@ -27,7 +27,7 @@
  */
 /** include predefined life command line options */
 #include <life/options.hpp>
- 
+
 /** include linear algebra backend */
 #include <life/lifealg/backend.hpp>
 
@@ -148,7 +148,7 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! function space that holds piecewise constant (\f$P_0\f$) functions (e.g. to store material properties or partitioning
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar> >, Discontinuous > p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar, Discontinuous> > > p0_space_type;
     //! an element type of the \f$P_0\f$ discontinuous function space
     typedef typename p0_space_type::element_type p0_element_type;
 
