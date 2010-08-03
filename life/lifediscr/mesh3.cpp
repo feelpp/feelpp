@@ -42,7 +42,19 @@ template class Mesh<SimplexProduct<3, 1, 3> >;
 #if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
 template class Mesh<Simplex<3, 2, 3> >;
 template class Mesh<SimplexProduct<3, 2, 3> >;
-#endif
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 3 )
+template class Mesh<Simplex<3, 3, 3> >;
+template class Mesh<SimplexProduct<3, 3, 3> >;
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 4 )
+template class Mesh<Simplex<3, 4, 3> >;
+template class Mesh<SimplexProduct<3, 4, 3> >;
+#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 5 )
+template class Mesh<Simplex<3, 5, 3> >;
+template class Mesh<SimplexProduct<3, 5, 3> >;
+#endif // 5
+#endif // 4
+#endif // 3
+#endif // 2
 
 #endif // LIFE_INSTANTIATION_MODE
 
