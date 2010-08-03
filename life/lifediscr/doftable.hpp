@@ -1426,7 +1426,8 @@ private:
 
     void generateFacePermutations ( mesh_type& mesh, mpl::bool_<true> )
     {
-        PointSetMapped<element_type, convex_type, nOrder> pts( mesh.element(0) );
+        element_type _elt = *mesh.beginElement();
+        PointSetMapped<element_type, convex_type, nOrder> pts( _elt );
 
         for (uint16_type i = 2; i < face_permutation_type::N_PERMUTATIONS; i++)
             vector_permutation[face_permutation_type(i)] = pts.getVectorPermutation(face_permutation_type(i));
