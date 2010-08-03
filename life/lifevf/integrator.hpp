@@ -985,6 +985,8 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
 #endif
 
     auto p0 = P0h->element( "p0" );
+    // set to 0 first
+    p0.zero();
     // make sure that we have elements to iterate over (return 0
     // otherwise)
     if ( it == en )
@@ -1080,6 +1082,8 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
         }
 
     auto p0 = P0h->element( "p0" );
+    // set to 0 first
+    p0.zero();
     // make sure that we have elements to iterate over (return 0
     // otherwise)
     if ( it == en )
