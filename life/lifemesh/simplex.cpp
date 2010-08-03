@@ -122,17 +122,26 @@ const uint16_type triangle<Order>::__f2e[3] =
 */
 template<uint16_type Order >
 const uint16_type tetra<Order>::__e2p_order1[12] =
-    {
-        1, 2,    // edge 0
-        2, 0,    // edge 1
-        0, 1,    // edge 2
-        0, 3,    // edge 3
-        1, 3,    // edge 4
-        2, 3     // edge 5
-    };
+{
+    1, 2,    // edge 0
+    2, 0,    // edge 1
+    0, 1,    // edge 2
+    0, 3,    // edge 3
+    1, 3,    // edge 4
+    2, 3     // edge 5
+};
 
 template<uint16_type Order >
 const uint16_type tetra<Order>::__e2p_order2[18] =
+{
+    1, 2, 4,   // edge 0
+    2, 0, 5,   // edge 1
+    0, 1, 6,   // edge 2
+    0, 3, 7,   // edge 3
+    1, 3, 8,   // edge 4
+    2, 3, 9    // edge 5
+};
+#if 0 // GMSH ORDERING
     {
         1, 2, 9,   // edge 0
         2, 0, 8,   // edge 1
@@ -141,9 +150,18 @@ const uint16_type tetra<Order>::__e2p_order2[18] =
         1, 3, 5,   // edge 4
         2, 3, 7    // edge 5
     };
-
+#endif
 template<uint16_type Order >
 const uint16_type tetra<Order>::__e2p_order3[24] =
+{
+    1, 2, 4, 5,   // edge 0
+    2, 0, 6, 7,   // edge 1
+    0, 1, 8, 9,   // edge 2
+    0, 3,10,11,   // edge 3
+    1, 3,12,13,   // edge 4
+    2, 3,14,15    // edge 5
+};
+#if 0 // GMSH ORDERING
     {
         1, 2, 15, 14,   // edge 0
         2, 0, 12, 13,   // edge 1
@@ -152,7 +170,7 @@ const uint16_type tetra<Order>::__e2p_order3[24] =
         1, 3,  7,  6,   // edge 4
         2, 3, 11, 10    // edge 5
     };
-
+#endif
 template<uint16_type Order >
 const uint16_type tetra<Order>::__e2p_order4[30] =
     {

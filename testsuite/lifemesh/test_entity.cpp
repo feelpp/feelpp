@@ -37,7 +37,8 @@ using boost::unit_test::test_suite;
 #include <life/lifemesh/simplex.hpp>
 #include <life/lifemesh/simplexproduct.hpp>
 #include <life/lifemesh/refentity.hpp>
-#include <life/lifemesh/geond.hpp>
+#include <life/lifemesh/geoelement.hpp>
+
 
 template<int Dim, int Order>
 void
@@ -95,6 +96,15 @@ BOOST_AUTO_TEST_CASE( test_entity_isin_ )
 
 }
 
+typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<4>,boost::mpl::int_<5> > test_types;
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_refelem, T, test_types )
+{
+    using namespace Life;
+    BOOST_TEST_MESSAGE( "o- TestRefElem<" << T::value << ">\n");
+    Reference<Simplex<3, T::value, 3>, 3, T::value, 3, double> tetraref;
+    toPython( tetraref );
+}
 BOOST_AUTO_TEST_CASE( test_simplex_ref )
 {
     using namespace Life;

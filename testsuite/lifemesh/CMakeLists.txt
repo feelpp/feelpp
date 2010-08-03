@@ -1,6 +1,6 @@
- 
-foreach(TEST entity mesh regiontree mesh_codim1 kdtree)
-  
+
+foreach(TEST e entity mesh regiontree mesh_codim1 kdtree)
+
   life_add_test( ${TEST} )
 
 endforeach()
