@@ -240,6 +240,7 @@ ExporterGmsh<MeshType,N>::gmsh_save_Elements( std::ostream& out,
     int number_faces_on_boundary= std::distance(face_it,face_end);
     std::cout << "Faces on boundary: " << number_faces_on_boundary << "\n";
     double numberElements=number_faces_on_boundary+mesh->numElements();
+    //double numberElements=mesh->numElements();
     out << numberElements << "\n";//number element
 
     //first : elements and then in a second time we will put faces
@@ -348,9 +349,11 @@ ExporterGmsh<MeshType,N>::gmsh_save_ElementNodeData( std::ostream& out,
 
     typedef typename step_type::nodal_scalar_type nodal_scalar_type;
     typedef typename step_type::nodal_scalar_const_iterator nodal_scalar_const_iterator;
+
     typedef typename step_type::nodal_vector_type nodal_vectorial_type;
     typedef typename step_type::nodal_vector_const_iterator nodal_vectorial_const_iterator;
 
+    typedef typename step_type::element_scalar_type element_scalar_type;
 
     mesh_ptrtype mesh = __step->mesh();
 
@@ -451,6 +454,53 @@ ExporterGmsh<MeshType,N>::gmsh_save_ElementNodeData( std::ostream& out,
         }
         out << "$EndElementNodeData\n";
     }
+
+    auto __ElmScal = __step->beginElementScalar();
+    auto __ElmScal_end = __step->endElementScalar();
+    for ( ;__ElmScal!=__ElmScal_end ; ++__ElmScal)
+    {
+        out << "\n$ElementNodeData\n";
+
+        element_scalar_type const& __u = __ElmScal->second;
+
+        //uint __nbCompFieldGMSH;
+        //    if (nodal_scalar_type::functionspace_type::is_scalar)         { __nbCompFieldGMSH=1; }
+        //else if (nodal_scalar_type::functionspace_type::is_vectorial) { __nbCompFieldGMSH=3; }
+        //else if (nodal_scalar_type::functionspace_type::is_tensor2)   { __nbCompFieldGMSH=9; }
+
+        out << "1\n";//number of string tag
+        out << "\"" << __ElmScal->first <<"\"\n";//a scalar node\n";
+        out << "1\n";//number of real tag
+        out << __step->time() << "\n";//"0.0\n";//the time value (0.0)
+        out << "3\n";//number of integer tags:
+        out << __step->index()-1 << "\n";//"0\n";//the time step (0; time steps always start at 0)
+        out << "1\n";//n-component (1 is scalar) field
+        out << mesh->numElements() << "\n";//number associated nodal values
+
+        element_mesh_const_iterator elt_it = mesh->beginElement();
+        element_mesh_const_iterator elt_en = mesh->endElement();
+        if ( !__u.areGlobalValuesUpdated() )
+            __u.updateGlobalValues();
+
+        for ( ; elt_it!=elt_en ; ++elt_it )
+        {
+            out << elt_it->id()+1;
+            //nLocGeoPt = elt_it->nPoints();
+            //nLocalDof = mesh->numLocalVertices();
+            nLocalDof = element_scalar_type::functionspace_type::basis_type::nLocalDof;
+            out << " " << nLocalDof;
+            for ( uint16_type l = 0; l < nLocalDof; ++l )
+            {
+                out << " ";
+                uint16_type gmsh_l = ordering.fromGmshId( l );
+                globaldof = boost::get<0>(__u.functionSpace()->dof()->localToGlobal(elt_it->id(), gmsh_l, 0 ));//l,c
+                out << __u( globaldof);
+            }
+            out << "\n";
+        }
+        out << "$EndElementNodeData\n";
+    }
+
 }
 
 #if 0
