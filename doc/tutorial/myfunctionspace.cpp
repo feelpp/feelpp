@@ -49,7 +49,9 @@ makeOptions()
     po::options_description myintegralsoptions("MyFunctionSpace options");
     myintegralsoptions.add_options()
         ("hsize", po::value<double>()->default_value( 0.2 ), "mesh size")
-        ("shape", Life::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
+        ("dim", po::value<int>()->default_value( 0 ), "mesh dimension (0: all dimensions, 1,2 or 3)")
+        ("order", po::value<int>()->default_value( 0 ), "approximation order (0: all orders, 1,2,3,4 or 5)")
+        ("shape", Life::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex, hypercube or ellipsoid)")
         ("alpha", Life::po::value<double>()->default_value( 3 ), "Regularity coefficient for function f")
         ;
     return myintegralsoptions.add( Life::life_options() );
@@ -76,20 +78,17 @@ makeAbout()
  * \see the \ref ComputingIntegrals section in the tutorial
  * @author Christophe Prud'homme
  */
-template<int Dim>
+template<int Dim, int Order = 2>
 class MyFunctionSpace
     :
     public Simget
 {
     typedef Simget super;
 public:
-    //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = 2;
-
     typedef double value_type;
 
     //! mesh
-    typedef Simplex<Dim> convex_type;
+    typedef Simplex<Dim, Order> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -113,54 +112,62 @@ public:
     //# endmarker2 #
 
     /* export */
-    typedef Exporter<mesh_type> export_type;
+    typedef Exporter<mesh_type,Order> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
     MyFunctionSpace( po::variables_map const& vm, AboutData const& about )
         :
         super( vm, about ),
+        dim( this->vm()["dim"].template as<int>() ),
+        order( this->vm()["order"].template as<int>() ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>()  ),
         exporter()
     {
     }
 
-    void run();
+    LIFE_DONT_INLINE void run();
 
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
+    LIFE_DONT_INLINE void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
 private:
 
+    int dim;
+    int order;
     double meshSize;
     std::string shape;
     export_ptrtype exporter;
 }; // MyFunctionSpace
 
-template<int Dim> const uint16_type MyFunctionSpace<Dim>::Order;
 
-template<int Dim>
+template<int Dim, int Order>
 void
-MyFunctionSpace<Dim>::run()
+MyFunctionSpace<Dim,Order>::run()
 {
+    if ( dim && dim != Dim ) return;
+    if ( order && order != Order ) return;
     std::cout << "------------------------------------------------------------\n";
     std::cout << "Execute MyFunctionSpace<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
     if ( shape == "hypercube" )
         X[1] = 1;
+    else if ( shape == "ellipsoid" )
+        X[1] = 2;
     else // default is simplex
         X[1] = 0;
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
-template<int Dim>
+template<int Dim, int Order>
 void
-MyFunctionSpace<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
+MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     using namespace Life::vf;
 
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";
+    if ( X[1] == 2 ) shape = "ellipsoid";
 
     if ( !this->vm().count( "nochdir" ) )
         Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/" )
@@ -171,10 +178,12 @@ MyFunctionSpace<Dim>::run( const double* X, unsigned long P, double* Y, unsigned
     //# marker31 #
     //! create the mesh
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name= (boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % shape % Dim % Order).str() ,
                                                       _shape=shape,
                                                       _dim=Dim,
+                                                      _order=Order,
                                                       _h=X[0] ) );
+
     //# endmarker31 #
 
     /**
@@ -195,7 +204,7 @@ MyFunctionSpace<Dim>::run( const double* X, unsigned long P, double* Y, unsigned
     value_type pi = M_PI;
 
     //# marker4 #
-    auto g = sin(pi*Px()/2)*cos(pi*Py()/2)*cos(pi*Pz()/2);
+    auto g = sin(2*pi*Px())*cos(2*pi*Py())*cos(2*pi*Pz());
     auto f = (1-Px()*Px())*(1-Py()*Py())*(1-Pz()*Pz())*pow(trans(vf::P())*vf::P(),(alpha/2.0));
     //# endmarker4 #
 
@@ -214,7 +223,7 @@ MyFunctionSpace<Dim>::run( const double* X, unsigned long P, double* Y, unsigned
     //# endmarker6 #
 
     //# marker7 #
-    exporter = export_ptrtype( Exporter<mesh_type>::New( this->vm(), (boost::format( "%1%-%2%-%3%" ) % this->about().appName() % shape % Dim).str() ) );
+    exporter = export_ptrtype( export_type::New( this->vm(), (boost::format( "%1%-%2%-%3%-%4%" ) % this->about().appName() % shape % Dim % Order).str() ) );
     exporter->step(0)->setMesh( mesh );
     exporter->step(0)->add( "g", u );
     exporter->step(0)->add( "f", v );
@@ -233,10 +242,26 @@ main( int argc, char** argv )
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
+#if 0
+    app.add( new MyFunctionSpace<1,1>( app.vm(), app.about() ) );
+    app.add( new MyFunctionSpace<1,2>( app.vm(), app.about() ) );
+    app.add( new MyFunctionSpace<1,3>( app.vm(), app.about() ) );
+    app.add( new MyFunctionSpace<1,4>( app.vm(), app.about() ) );
+    app.add( new MyFunctionSpace<1,5>( app.vm(), app.about() ) );
 
-    app.add( new MyFunctionSpace<1>( app.vm(), app.about() ) );
-    app.add( new MyFunctionSpace<2>( app.vm(), app.about() ) );
-    app.add( new MyFunctionSpace<3>( app.vm(), app.about() ) );
+
+    app.add( new MyFunctionSpace<2,1>( app.vm(), app.about() ) );
+    app.add( new MyFunctionSpace<2,2>( app.vm(), app.about() ) );
+    app.add( new MyFunctionSpace<2,3>( app.vm(), app.about() ) );
+    app.add( new MyFunctionSpace<2,4>( app.vm(), app.about() ) );
+    app.add( new MyFunctionSpace<2,5>( app.vm(), app.about() ) );
+
+    app.add( new MyFunctionSpace<3,1>( app.vm(), app.about() ) );
+#endif
+    app.add( new MyFunctionSpace<3,2>( app.vm(), app.about() ) );
+    app.add( new MyFunctionSpace<3,3>( app.vm(), app.about() ) );
+    app.add( new MyFunctionSpace<3,4>( app.vm(), app.about() ) );
+    app.add( new MyFunctionSpace<3,5>( app.vm(), app.about() ) );
 
     app.run();
 }

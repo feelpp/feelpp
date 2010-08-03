@@ -82,22 +82,22 @@ macro( add_docex2 target )
  add_executable( life_doc_${target} ${target}.cpp )
  target_link_libraries( life_doc_${target} ${LIFE_LIBRARIES} )
  get_target_property(target_executable life_doc_${target} LOCATION)
- add_custom_command(
-   TARGET life_doc_${target}
-   POST_BUILD
-   COMMAND ${target_executable} ARGS --hsize=0.05 --shape="simplex" --nochdir --exporter-format=gmsh > ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex.out 2>&1
-   COMMAND ${target_executable} ARGS --hsize=0.075 --shape="hypercube" --nochdir --exporter-format=gmsh > ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube.out 2>&1
-   )
- foreach( dim 1 2 3 )
-   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex-${dim}.pos "Merge \"${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex-${dim}-1_0.msh\";\nMerge \"tutorial.pos\";\nExit;\n")
-   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube-${dim}.pos "Merge \"${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube-${dim}-1_0.msh\";\nMerge \"tutorial.pos\";\nExit;\n")
-   add_custom_command(
-     TARGET life_doc_${target}
-     POST_BUILD
-     COMMAND ${GMSH} ARGS  ${target}-simplex-${dim}.pos
-     COMMAND ${GMSH} ARGS  ${target}-hypercube-${dim}.pos
-   )
- endforeach()
+ # add_custom_command(
+ #   TARGET life_doc_${target}
+ #   POST_BUILD
+ #   COMMAND ${target_executable} ARGS --hsize=0.05 --shape="simplex" --nochdir --exporter-format=gmsh > ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex.out 2>&1
+ #   COMMAND ${target_executable} ARGS --hsize=0.075 --shape="hypercube" --nochdir --exporter-format=gmsh > ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube.out 2>&1
+ #   )
+ # foreach( dim 1 2 3 )
+ #   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex-${dim}.pos "Merge \"${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex-${dim}-1_0.msh\";\nMerge \"tutorial.pos\";\nExit;\n")
+ #   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube-${dim}.pos "Merge \"${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube-${dim}-1_0.msh\";\nMerge \"tutorial.pos\";\nExit;\n")
+ #   add_custom_command(
+ #     TARGET life_doc_${target}
+ #     POST_BUILD
+ #     COMMAND ${GMSH} ARGS  ${target}-simplex-${dim}.pos
+ #     COMMAND ${GMSH} ARGS  ${target}-hypercube-${dim}.pos
+ #   )
+ # endforeach()
  # test each backend
  foreach( BACKEND petsc trilinos)
    add_test( life_doc_${target}-${BACKEND} life_doc_${target} --hsize=0.1 --backend=${BACKEND} --no-export)
