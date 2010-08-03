@@ -84,7 +84,7 @@ template<typename A0,typename A1,typename A2,typename A3,typename A4> class Func
  *
  * \author Christophe Prud'homme
  */
-template<typename MeshType>
+template<typename MeshType, int N = 1>
 class TimeSet
 {
 public:
@@ -99,9 +99,9 @@ public:
     typedef FunctionSpace<MeshType, bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
     typedef FunctionSpace<MeshType, bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
     typedef FunctionSpace<MeshType, bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<1,Scalar> > > scalar_p1_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<1,Vectorial> > > vector_p1_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<1,Tensor2> > > tensor2_p1_space_type;
+    typedef FunctionSpace<MeshType, bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
+    typedef FunctionSpace<MeshType, bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
+    typedef FunctionSpace<MeshType, bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
     typedef boost::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
     typedef boost::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
     typedef boost::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
@@ -139,9 +139,9 @@ public:
         typedef FunctionSpace<MeshType, bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
         typedef FunctionSpace<MeshType, bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
         typedef FunctionSpace<MeshType, bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<1,Scalar> > > scalar_p1_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<1,Vectorial> > > vector_p1_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<1,Tensor2> > > tensor2_p1_space_type;
+        typedef FunctionSpace<MeshType, bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
+        typedef FunctionSpace<MeshType, bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
+        typedef FunctionSpace<MeshType, bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
         typedef boost::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
         typedef boost::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
         typedef boost::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
@@ -1174,36 +1174,36 @@ private:
 
 
 };
-template<typename MeshType>
-inline LIFE_EXPORT  bool operator<( TimeSet<MeshType> const& __ts1, TimeSet<MeshType> const& __ts2 )
+template<typename MeshType, int N>
+inline LIFE_EXPORT  bool operator<( TimeSet<MeshType, N> const& __ts1, TimeSet<MeshType, N> const& __ts2 )
 {
     return __ts1.index() < __ts2.index();
 }
 
-template<typename MeshType>
-inline LIFE_EXPORT bool operator<( boost::shared_ptr<TimeSet<MeshType> > const& __ts1,
-                                    boost::shared_ptr<TimeSet<MeshType> > const& __ts2 )
+template<typename MeshType, int N>
+inline LIFE_EXPORT bool operator<( boost::shared_ptr<TimeSet<MeshType, N> > const& __ts1,
+                                    boost::shared_ptr<TimeSet<MeshType, N> > const& __ts2 )
 {
     return __ts1->index() < __ts2->index();
 }
 
-template<typename MeshType>
-LIFE_NO_EXPORT bool operator<( typename TimeSet<MeshType>::step_type const& __s1,
-                                typename TimeSet<MeshType>::step_type const& __s2 )
+template<typename MeshType, int N>
+LIFE_NO_EXPORT bool operator<( typename TimeSet<MeshType, N>::step_type const& __s1,
+                                typename TimeSet<MeshType, N>::step_type const& __s2 )
 {
     //return __s1->index() < __s2->index();
     return __s1->time() < __s2->time();
 }
 
-template<typename MeshType>
-LIFE_NO_EXPORT bool operator<( typename TimeSet<MeshType>::step_ptrtype const& __s1,
-                                typename TimeSet<MeshType>::step_ptrtype const& __s2 )
+template<typename MeshType, int N>
+LIFE_NO_EXPORT bool operator<( typename TimeSet<MeshType, N>::step_ptrtype const& __s1,
+                                typename TimeSet<MeshType, N>::step_ptrtype const& __s2 )
 {
     return __s1->index() < __s2->index();
 }
 
-template<typename MeshType>
-TimeSet<MeshType>::TimeSet( std::string __name, bool init )
+template<typename MeshType, int N>
+TimeSet<MeshType, N>::TimeSet( std::string __name, bool init )
     :
     _M_name( __name ),
     _M_index( _S_current_index++ ),
@@ -1227,8 +1227,8 @@ TimeSet<MeshType>::TimeSet( std::string __name, bool init )
         fs::remove( __str.str() );
 }
 
-template<typename MeshType>
-TimeSet<MeshType>::TimeSet( TimeSet const& __ts )
+template<typename MeshType, int N>
+TimeSet<MeshType, N>::TimeSet( TimeSet const& __ts )
     :
     _M_name( __ts._M_name ),
     _M_index( __ts._M_index ),
@@ -1237,8 +1237,8 @@ TimeSet<MeshType>::TimeSet( TimeSet const& __ts )
 {
 }
 
-template<typename MeshType>
-TimeSet<MeshType>::~TimeSet()
+template<typename MeshType, int N>
+TimeSet<MeshType, N>::~TimeSet()
 {
 #if 0
     step_iterator __it = _M_step_set.begin();
@@ -1259,7 +1259,7 @@ TimeSet<MeshType>::~TimeSet()
         {
             boost::archive::binary_oarchive oa(ofs);
 
-            oa << const_cast<TimeSet<MeshType>const&>(*this);
+            oa << const_cast<TimeSet<MeshType, N>const&>(*this);
 
             ofs.close();
         }
@@ -1270,9 +1270,9 @@ TimeSet<MeshType>::~TimeSet()
 
 }
 
-template<typename MeshType>
-TimeSet<MeshType>&
-TimeSet<MeshType>::operator=( TimeSet const& __ts )
+template<typename MeshType, int N>
+TimeSet<MeshType, N>&
+TimeSet<MeshType, N>::operator=( TimeSet const& __ts )
 {
     if ( this != &__ts )
     {
@@ -1283,9 +1283,9 @@ TimeSet<MeshType>::operator=( TimeSet const& __ts )
     return *this;
 }
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-TimeSet<MeshType>::cleanup()
+TimeSet<MeshType, N>::cleanup()
 {
 
     step_iterator __it = _M_step_set.begin();
@@ -1304,15 +1304,15 @@ TimeSet<MeshType>::cleanup()
         {
             boost::archive::binary_oarchive oa(ofs);
 
-            oa << const_cast<TimeSet<MeshType>const&>(*this);
+            oa << const_cast<TimeSet<MeshType, N>const&>(*this);
 
             ofs.close();
         }
 #endif
 }
-template<typename MeshType>
-typename TimeSet<MeshType>::step_ptrtype
-TimeSet<MeshType>::step( Real __time )
+template<typename MeshType, int N>
+typename TimeSet<MeshType, N>::step_ptrtype
+TimeSet<MeshType, N>::step( Real __time )
 {
     namespace lambda = boost::lambda;
     /*
@@ -1331,14 +1331,14 @@ TimeSet<MeshType>::step( Real __time )
     {
         bool __inserted;
 
-        Debug( 8000 ) << "[TimeSet<MeshType>::step] Inserting new step at time " << __time << " with index "
+        Debug( 8000 ) << "[TimeSet<MeshType, N>::step] Inserting new step at time " << __time << " with index "
                 << _M_step_set.size() << "\n";
 
         boost::tie( __sit, __inserted ) = _M_step_set.insert( step_ptrtype( new Step( this, __time,
                                                                                       _M_step_set.size() + 1 ) ) );
 
-        Debug( 8000 ) << "[TimeSet<MeshType>::step] step was inserted properly? " << ( __inserted?"yes":"no" ) << "\n";
-        Debug( 8000 ) << "[TimeSet<MeshType>::step] step index : " << (*__sit)->index() << " time : " << (*__sit)->time() << "\n";
+        Debug( 8000 ) << "[TimeSet<MeshType, N>::step] step was inserted properly? " << ( __inserted?"yes":"no" ) << "\n";
+        Debug( 8000 ) << "[TimeSet<MeshType, N>::step] step index : " << (*__sit)->index() << " time : " << (*__sit)->time() << "\n";
         namespace lambda = boost::lambda;
         //std::cerr << "time values:";
         //std::for_each( _M_step_set.begin(), _M_step_set.end(),
@@ -1349,7 +1349,7 @@ TimeSet<MeshType>::step( Real __time )
     }
     else
     {
-        Debug( 8000 ) << "[TimeSet<MeshType>::step] found step at time " << __time << " with index "
+        Debug( 8000 ) << "[TimeSet<MeshType, N>::step] found step at time " << __time << " with index "
                 << (*__sit)->index() << "\n";
         (*__sit)->showMe( "TimesSet::step(t)" );
     }
@@ -1357,15 +1357,15 @@ TimeSet<MeshType>::step( Real __time )
     return *__sit;
 }
 
-template<typename MeshType>
-uint32_type TimeSet<MeshType>::_S_current_index = 1;
+template<typename MeshType, int N>
+uint32_type TimeSet<MeshType, N>::_S_current_index = 1;
 
 //
-// TimeSet<MeshType>::Step
+// TimeSet<MeshType, N>::Step
 //
 
-template<typename MeshType>
-TimeSet<MeshType>::Step::Step()
+template<typename MeshType, int N>
+TimeSet<MeshType, N>::Step::Step()
     :
     _M_time( 0 ),
     _M_index( 0 ),
@@ -1373,8 +1373,8 @@ TimeSet<MeshType>::Step::Step()
 {
 }
 
-template<typename MeshType>
-TimeSet<MeshType>::Step::Step( TimeSet* ts, Real __t, size_type __index, size_type __state )
+template<typename MeshType, int N>
+TimeSet<MeshType, N>::Step::Step( TimeSet* ts, Real __t, size_type __index, size_type __state )
     :
     M_ts( ts ),
     _M_time( __t ),
@@ -1384,8 +1384,8 @@ TimeSet<MeshType>::Step::Step( TimeSet* ts, Real __t, size_type __index, size_ty
     showMe( "Step::Step()" );
 }
 
-template<typename MeshType>
-TimeSet<MeshType>::Step::Step( Step const& __step )
+template<typename MeshType, int N>
+TimeSet<MeshType, N>::Step::Step( Step const& __step )
     :
     _M_time( __step._M_time ),
     _M_index( __step._M_index ),
@@ -1393,16 +1393,16 @@ TimeSet<MeshType>::Step::Step( Step const& __step )
 {
 }
 
-template<typename MeshType>
-TimeSet<MeshType>::Step::~Step()
+template<typename MeshType, int N>
+TimeSet<MeshType, N>::Step::~Step()
 {
     this->setState( STEP_ON_DISK );
     showMe( "Step::~Step()" );
 }
 
-template<typename MeshType>
+template<typename MeshType, int N>
 void
-TimeSet<MeshType>::Step::executeState( size_type __st )
+TimeSet<MeshType, N>::Step::executeState( size_type __st )
 {
     Context __state( __st );
     Debug( 8005 ) << "executeState: isOnDisk() :  " << __state.test( STEP_ON_DISK ) << "\n";
@@ -1418,7 +1418,7 @@ TimeSet<MeshType>::Step::executeState( size_type __st )
             std::ofstream ofs( __str.str().c_str() );
             boost::archive::binary_oarchive oa(ofs);
 
-            oa << const_cast<typename TimeSet<MeshType>::Step const&>(*this);
+            oa << const_cast<typename TimeSet<MeshType, N>::Step const&>(*this);
 
             ofs.close();
         }
