@@ -70,10 +70,12 @@ makeOptions()
     po::options_description residualestimatoroptions("ResidualEstimator options");
     residualestimatoroptions.add_options()
         ("hsize", po::value<double>()->default_value( 0.2), "mesh size")
+        ("dim", po::value<int>()->default_value( 0 ), "dimension of the geometry( 0: all three, 1, 2 or 3")
         ("shape", Life::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
         ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
         ("penaldir", Life::po::value<double>()->default_value( 20 ),
          "penalisation parameter for the weak boundary Dirichlet formulation")
+        ("alpha", Life::po::value<double>()->default_value( 3 ), "Regularity coefficient for function f")
         ;
     return residualestimatoroptions.add( Life::life_options() );
 }
@@ -184,6 +186,7 @@ public:
         M_backendP1( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         exporter( Exporter<mesh_type>::New( "gmsh", this->about().appName() ) ),
+        dim( this->vm()["dim"].template as<int>() ),
         shape( this->vm()["shape"].template as<std::string>() )
     {
     }
@@ -213,6 +216,8 @@ private:
     //! mesh characteristic size
     double meshSize;
 
+    int dim;
+
     //! shape of the domain
     std::string shape;
 
@@ -229,6 +234,7 @@ template<int Dim>
 void
 ResidualEstimator<Dim>::run()
 {
+    if ( dim && dim != Dim ) return ;
     std::cout << "------------------------------------------------------------\n";
     std::cout << "Execute ResidualEstimator<" << Dim << ">\n";
     std::vector<double> X( 2 );
@@ -281,8 +287,10 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
      */
     /** \code */
     //# marker1 #
+    value_type alpha = this->vm()["alpha"].template as<double>();
     value_type pi = M_PI;
     //! deduce from expression the type of g (thanks to keyword 'auto')
+    //auto g = (1-Px()*Px())*(1-Py()*Py())*(1-Pz()*Pz())*pow(trans(vf::P())*vf::P(),(alpha/2.0));
     auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
     gproj = vf::project( Xh, elements(mesh), g );
 
@@ -387,7 +395,7 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
 
 
     /*******************residual estimator**********************/
-    
+
     auto estimatorP0 =   integrate(elements(mesh), vf::h()*vf::h()*trace(hessv(u))*trace(hessv(u)) ).broken(P0h);
 
      auto estimatorP0_internalfaces = integrate(internalfaces(mesh),
@@ -395,7 +403,7 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
 
      auto estimatorP0_Neumann = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
                                           vf::hFace()* (gradv(u)*vf::N()-idv(gproj)) * (gradv(u)*vf::N()-idv(gproj)) ).broken( P0h );
-   
+
 
 
 
@@ -434,13 +442,13 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
     std::cout<<"estimated error based on residuals for L2 norm : " << estimator*hsize <<std::endl ;
     std::cout<<"real error in H1 norm : "<<H1error<<std::endl;
     std::cout<<"estimated error based on residuals for H1 norm : " << estimator <<std::endl ;
-   
+
 
 
     std::ofstream file ("FICHIER.txt",std::ios_base::app) ;
     file << "hsize = "<<hsize<<" errorL2 = "<<L2error<<" estimatedL2 = "<<estimator*hsize<<" errorH1 = "<<H1error<<" estimatedH1 = "<<estimator
 	 <<" N = "<<number_elem<<" et DIM = "<<Dim<<"\n";
-   
+
     /*
     //Now we will project the estimatorP0 on a P1 space
     auto P1h = p1_space_type::New( mesh, MESH_CHECK );
