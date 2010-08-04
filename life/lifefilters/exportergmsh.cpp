@@ -399,7 +399,9 @@ ExporterGmsh<MeshType,N>::gmsh_save_ElementNodeData( std::ostream& out,
             {
                 uint16_type gmsh_l = ordering.fromGmshId( l );
                 globaldof = boost::get<0>(__u.functionSpace()->dof()->localToGlobal(elt_it->id(), gmsh_l, 0 ));//l,c
-                //std::cout << "pt[" << globaldof << "]=" << boost::get<0>(__u.functionSpace()->dof()->dofPoint(globaldof) ) << "\n";
+
+                // verify that the dof points and mesh points coincide
+#if !defined(NDEBUG)
                 if ( ublas::norm_2( boost::get<0>(__u.functionSpace()->dof()->dofPoint(globaldof) )-elt_it->point( ordering.fromGmshId(l) ).node() ) > 1e-10 )
                 {
                     std::cout << "------------------------------------------------------------\n";
@@ -409,14 +411,8 @@ ExporterGmsh<MeshType,N>::gmsh_save_ElementNodeData( std::ostream& out,
                     std::cout << "node dof:  " << boost::get<0>(__u.functionSpace()->dof()->dofPoint(globaldof) ) << "\n";
                     std::cout << "node element:  " << elt_it->point( ordering.fromGmshId(l) ).node() << "\n";
                 }
-
+#endif // NDEBUG
                 out << " " << __u( globaldof);
-#if 0
-                out << " " <<
-                    sin(4*M_PI*elt_it->point( ordering.fromGmshId(l) ).node()[0])*
-                    cos(4*M_PI*elt_it->point( ordering.fromGmshId(l) ).node()[1])*
-                    cos(4*M_PI*elt_it->point( ordering.fromGmshId(l) ).node()[2]);
-#endif
             }
             out << "\n";
         }
