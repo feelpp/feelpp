@@ -118,8 +118,8 @@ class ResidualEstimator
     typedef Simget super;
 public:
 
-    //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = 2;
+    //! Polynomial order \f$P_1\f$
+    static const uint16_type Order = 1;
 
     //! numerical type is double
     typedef double value_type;
@@ -387,16 +387,21 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
 
 
     /*******************residual estimator**********************/
-
+    
     auto estimatorP0 =   integrate(elements(mesh), vf::h()*vf::h()*trace(hessv(u))*trace(hessv(u)) ).broken(P0h);
 
-    auto estimatorP0_internalfaces = integrate(internalfaces(mesh),
+     auto estimatorP0_internalfaces = integrate(internalfaces(mesh),
                                               vf::hFace()* (jumpv(gradv(u))) * (jumpv(gradv(u))) ).broken( P0h );
 
-    auto estimatorP0_Neumann = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
+     auto estimatorP0_Neumann = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
                                           vf::hFace()* (gradv(u)*vf::N()-idv(gproj)) * (gradv(u)*vf::N()-idv(gproj)) ).broken( P0h );
-    //    auto estimatorP0_Neumann = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
-    //                                      print(vf::hFace()* (gradv(u)*vf::N()-idv(gproj)) * (gradv(u)*vf::N()-idv(gproj)),"neuman:") ).broken( P0h );
+   
+
+
+
+
+     //     auto estimatorP0_Neumann = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
+     //           print(vf::hFace()* (gradv(u)*vf::N()-idv(gproj)) * (gradv(u)*vf::N()-idv(gproj)),"neuman:") ).broken( P0h );
 
 
 
@@ -417,7 +422,7 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
       }
     }
 
-    estimatorP0+=estimatorP0_internalfaces;
+     estimatorP0+=estimatorP0_internalfaces;
     estimatorP0+=estimatorP0_Neumann;
     estimatorP0.printMatlab("estimator_based_on_residuals.m");
     double estimator =  math::sqrt(estimatorP0.sum()) ;
@@ -429,9 +434,14 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
     std::cout<<"estimated error based on residuals for L2 norm : " << estimator*hsize <<std::endl ;
     std::cout<<"real error in H1 norm : "<<H1error<<std::endl;
     std::cout<<"estimated error based on residuals for H1 norm : " << estimator <<std::endl ;
-    double estimated_L2error = estimator*hsize;
-    double estimated_H1error = estimator;
+   
 
+
+    std::ofstream file ("FICHIER.txt",std::ios_base::app) ;
+    file << "hsize = "<<hsize<<" errorL2 = "<<L2error<<" estimatedL2 = "<<estimator*hsize<<" errorH1 = "<<H1error<<" estimatedH1 = "<<estimator
+	 <<" N = "<<number_elem<<" et DIM = "<<Dim<<"\n";
+   
+    /*
     //Now we will project the estimatorP0 on a P1 space
     auto P1h = p1_space_type::New( mesh, MESH_CHECK );
     auto M1 = M_backendP1->newMatrix( P1h, P1h );
@@ -441,7 +451,7 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
     auto F1 = M_backendP1->newVector( P1h );
     form1( P1h, F1, _init=true ) = integrate( elements(mesh), vf::sqrt(idv(estimatorP0))*id(v1));
     this->solveP1( M1, estimatorP1, F1 );
-
+    */
 
 
 
@@ -484,9 +494,9 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
         exporter->step(0)->setMesh( mesh );
         exporter->step(0)->add( "unknown", u );
         exporter->step(0)->add( "exact solution", exact_solution);
-        exporter->step(0)->add( "estimated error",estimatorP1);
-        exporter->step(0)->add( "u - exact solution", u_minus_exact) ;
-        exporter->step(0)->add( "measure", meas) ;
+        //exporter->step(0)->add( "estimated error",estimatorP1);
+        //exporter->step(0)->add( "u - exact solution", u_minus_exact) ;
+        //exporter->step(0)->add( "measure", meas) ;
 
         exporter->save();
         Log() << "exportResults done\n";
@@ -507,6 +517,7 @@ ResidualEstimator<Dim>::solve( sparse_matrix_ptrtype& D,
     //! call solve, the second D is the matrix which will be used to
     //! create the preconditionner
     M_backend->solve( D, D, U, F );
+    //M_backend->solve( _matrix=D, _solution=U, _rhs=F, _rtolerance=1e-8 );
     //! copy U in u
     u = *U;
 } // ResidualEstimator::solve
@@ -523,7 +534,8 @@ ResidualEstimator<Dim>::solveP1( sparse_matrix_ptrtype& D,
   vector_ptrtype U = M_backendP1->newVector( u.functionSpace() );
   //! call solve, the second D is the matrix which will be used to
   //! create the preconditionner
-  M_backendP1->solve( _matrix=D, _solution=U, _rhs=F, _rtolerance=1e-14 );
+  M_backendP1->solve( D , D, U, F );
+  //M_backendP1->solve( _matrix=D, _solution=U, _rhs=F, _rtolerance=1e-8 );
   //! copy U in u
   u = *U;
 } // ElectroHeat::solve
@@ -551,9 +563,9 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    //app.add( new ResidualEstimator<1>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<1>( app.vm(), app.about() ) );
     app.add( new ResidualEstimator<2>( app.vm(), app.about() ) );
-    //app.add( new ResidualEstimator<3>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<3>( app.vm(), app.about() ) );
     /** \endcode */
 
     /**
