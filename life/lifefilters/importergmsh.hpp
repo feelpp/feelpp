@@ -687,56 +687,11 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, i
          type == GMSH_TRIANGLE_4 ||
          type == GMSH_TRIANGLE_5 )
         {
-#if 0
-            for( uint16_type jj = 0; jj < npoints_per_element; ++jj )
-                {
-                    //std::cout << "jj = " << jj << "\n";
-                    if ( jj < element_type::numVertices*element_type::nbPtsPerVertex )
-                        pf.setPoint( jj, mesh->point( __e[jj] ) );
-                    else if ( (jj >= element_type::numVertices*element_type::nbPtsPerVertex) &&
-                              (jj < (element_type::numVertices*element_type::nbPtsPerVertex + element_type::numEdges*element_type::nbPtsPerEdge ) ))
-                        {
-                            const uint16_type nbPtsPerEdge = (element_type::nbPtsPerEdge==0)?1:element_type::nbPtsPerEdge;
-                            uint16_type edge_id = ( jj - element_type::numVertices*element_type::nbPtsPerVertex ) / nbPtsPerEdge;
-                            //std::cout << "edge_id = " << edge_id << "\n";
-                            if ( edge_id == 0 )
-                                pf.setPoint( jj+(element_type::numEdges-1)*element_type::nbPtsPerEdge, mesh->point( __e[jj] ) );
-                            else if ( edge_id == 1 )
-                                pf.setPoint( jj-element_type::nbPtsPerEdge, mesh->point( __e[jj] ) );
-                            else if ( edge_id == 2 )
-                                pf.setPoint( jj-element_type::nbPtsPerEdge, mesh->point( __e[jj] ) );
-                        }
-                    // face interior pts when order <= 4
-                    else if ( mesh_type::nOrder < 5 )
-                        pf.setPoint( jj, mesh->point( __e[jj] ) );
-                    // face interior pts when order == 5 (needs re-ordering)
-                    else
-                        {
-                            uint16_type pt_id_start = (element_type::numVertices*element_type::nbPtsPerVertex +
-                                                       element_type::numEdges*element_type::nbPtsPerEdge );
-                            uint16_type pt_id = ( jj - pt_id_start );
-                            //uint16_type pt_id_mod_3 = pt_id % 3;
-                            if ( pt_id == 0 )
-                                pf.setPoint( jj, mesh->point( __e[jj] ) );
-                            if ( pt_id == 1 )
-                                pf.setPoint( pt_id_start+2, mesh->point( __e[jj] ) );
-                            if ( pt_id == 2 )
-                                pf.setPoint( pt_id_start+5, mesh->point( __e[jj] ) );
-                            if ( pt_id == 3 )
-                                pf.setPoint( pt_id_start+1, mesh->point( __e[jj] ) );
-                            if ( pt_id == 4 )
-                                pf.setPoint( pt_id_start+4, mesh->point( __e[jj] ) );
-                            if ( pt_id == 5 )
-                                pf.setPoint( pt_id_start+3, mesh->point( __e[jj] ) );
-                        }
-                }
-#else
             for( uint16_type jj = 0; jj < npoints_per_element; ++jj )
             {
-                std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
+                //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
                 pf.setPoint( ordering.fromGmshId(jj), mesh->point( __e[jj] ) );
             }
-#endif
         }
 
     mesh->addElement( pf );
@@ -816,7 +771,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e,
         {
             for( uint16_type jj = 0; jj < npoints_per_element; ++jj )
             {
-                std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
+                //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
                 pv.setPoint( ordering.fromGmshId(jj), mesh->point( __e[jj] ) );
             }
         }
