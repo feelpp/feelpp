@@ -238,7 +238,7 @@ ExporterGmsh<MeshType,N>::gmsh_save_Elements( std::ostream& out,
     //face_it = mesh->beginFace();
     //face_end = mesh->endFace();
     int number_faces_on_boundary= std::distance(face_it,face_end);
-    std::cout << "Faces on boundary: " << number_faces_on_boundary << "\n";
+    //std::cout << "Faces on boundary: " << number_faces_on_boundary << "\n";
     double numberElements=number_faces_on_boundary+mesh->numElements();
     //double numberElements=mesh->numElements();
     out << numberElements << "\n";//number element
@@ -261,7 +261,7 @@ ExporterGmsh<MeshType,N>::gmsh_save_Elements( std::ostream& out,
         out<<" 3 " << elt_it->marker().value() << " 2 " << elt_it->processId();
         for (uint16_type p=0;p<element_type::numPoints;++p)
         {
-            std::cout << "index " << p << " -> " << ordering.fromGmshId(p) << " -> " << elt_it->point( ordering.fromGmshId(p) ).id()+1 << " : " << elt_it->point( ordering.fromGmshId(p) ).node() << "\n";
+            //std::cout << "index " << p << " -> " << ordering.fromGmshId(p) << " -> " << elt_it->point( ordering.fromGmshId(p) ).id()+1 << " : " << elt_it->point( ordering.fromGmshId(p) ).node() << "\n";
             out << " " << elt_it->point( ordering.fromGmshId( p ) ).id()+1;
         }
 

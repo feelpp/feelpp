@@ -266,7 +266,7 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
      * The function space and some associated elements(functions) are then defined
      */
     /** \code */
-    P0h = p0_space_type::New( mesh, MESH_CHECK );
+    P0h = p0_space_type::New( mesh );
     std::cout<<"P0h->nLocalDof() = "<<P0h->nLocalDof()<<std::endl;
 
     space_ptrtype Xh = space_type::New( mesh );
