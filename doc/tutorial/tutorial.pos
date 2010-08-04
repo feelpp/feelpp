@@ -3,7 +3,7 @@ General.LineWidth=2;
 General.Verbosity=0;
 General.GraphicsWidth=600;
 General.GraphicsHeight=600;
-General.DrawBoundingBoxes = 1;
+General.DrawBoundingBoxes = 0;
 General.Orthographic=0;
 //General.Axes=0;
 
