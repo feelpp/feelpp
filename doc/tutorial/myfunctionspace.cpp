@@ -94,14 +94,14 @@ public:
 
     //# marker1 #
     //! function space that holds piecewise constant (\f$P_0\f$) functions (e.g. to store material properties or partitioning
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar> >, Discontinuous > p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar, Discontinuous> > > p0_space_type;
     //! an element type of the \f$P_0\f$ discontinuous function space
     typedef typename p0_space_type::element_type p0_element_type;
     //# endmarker1 #
 
     //# marker2 #
     //! the basis type of our approximation space
-    typedef bases<Lagrange<Order,Scalar> > basis_type;
+    typedef bases<Lagrange<Order,Scalar,Discontinuous> > basis_type;
 
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
@@ -197,6 +197,7 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     auto u = Xh->element( "u" );
     // another element of the function space \f$ X_h \f$
     element_type v( Xh, "v" );
+    auto w = Xh->element( "w" );
     //# endmarker32 #
     /** \endcode */
 
@@ -211,6 +212,7 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     //# marker5 #
     u = vf::project( Xh, elements(mesh), g );
     v = vf::project( Xh, elements(mesh), f );
+    w = vf::project( Xh, elements(mesh), idv(u)-g );
     //# endmarker5 #
 
     //# marker6 #
@@ -226,6 +228,7 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     exporter = export_ptrtype( export_type::New( this->vm(), (boost::format( "%1%-%2%-%3%-%4%" ) % this->about().appName() % shape % Dim % Order).str() ) );
     exporter->step(0)->setMesh( mesh );
     exporter->step(0)->add( "g", u );
+    exporter->step(0)->add( "u-g", w );
     exporter->step(0)->add( "f", v );
     exporter->save();
     //# endmarker7 #
@@ -256,12 +259,16 @@ main( int argc, char** argv )
     app.add( new MyFunctionSpace<2,4>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<2,5>( app.vm(), app.about() ) );
 #endif
+
+#if 1
     app.add( new MyFunctionSpace<3,1>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<3,2>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<3,3>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<3,4>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<3,5>( app.vm(), app.about() ) );
-
+#else
+    app.add( new MyFunctionSpace<3,2>( app.vm(), app.about() ) );
+#endif
     app.run();
 }
 

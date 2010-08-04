@@ -397,10 +397,26 @@ ExporterGmsh<MeshType,N>::gmsh_save_ElementNodeData( std::ostream& out,
             out << " " << nLocalDof;
             for ( uint16_type l = 0; l < nLocalDof; ++l )
             {
-                out << " ";
                 uint16_type gmsh_l = ordering.fromGmshId( l );
                 globaldof = boost::get<0>(__u.functionSpace()->dof()->localToGlobal(elt_it->id(), gmsh_l, 0 ));//l,c
-                out << __u( globaldof);
+                //std::cout << "pt[" << globaldof << "]=" << boost::get<0>(__u.functionSpace()->dof()->dofPoint(globaldof) ) << "\n";
+                if ( ublas::norm_2( boost::get<0>(__u.functionSpace()->dof()->dofPoint(globaldof) )-elt_it->point( ordering.fromGmshId(l) ).node() ) > 1e-10 )
+                {
+                    std::cout << "------------------------------------------------------------\n";
+                    std::cout << "invalid dof/mesh points\n";
+                    std::cout << "dof global id:" << globaldof << " | local id:" << gmsh_l << "\n";
+                    std::cout << "point global id:" <<  elt_it->point( ordering.fromGmshId(l) ).id() << " | local id:" << gmsh_l << "\n";
+                    std::cout << "node dof:  " << boost::get<0>(__u.functionSpace()->dof()->dofPoint(globaldof) ) << "\n";
+                    std::cout << "node element:  " << elt_it->point( ordering.fromGmshId(l) ).node() << "\n";
+                }
+
+                out << " " << __u( globaldof);
+#if 0
+                out << " " <<
+                    sin(4*M_PI*elt_it->point( ordering.fromGmshId(l) ).node()[0])*
+                    cos(4*M_PI*elt_it->point( ordering.fromGmshId(l) ).node()[1])*
+                    cos(4*M_PI*elt_it->point( ordering.fromGmshId(l) ).node()[2]);
+#endif
             }
             out << "\n";
         }
@@ -459,7 +475,7 @@ ExporterGmsh<MeshType,N>::gmsh_save_ElementNodeData( std::ostream& out,
     auto __ElmScal_end = __step->endElementScalar();
     for ( ;__ElmScal!=__ElmScal_end ; ++__ElmScal)
     {
-        out << "\n$ElementNodeData\n";
+        out << "\n$ElementData\n";
 
         element_scalar_type const& __u = __ElmScal->second;
 
@@ -484,21 +500,11 @@ ExporterGmsh<MeshType,N>::gmsh_save_ElementNodeData( std::ostream& out,
 
         for ( ; elt_it!=elt_en ; ++elt_it )
         {
-            out << elt_it->id()+1;
-            //nLocGeoPt = elt_it->nPoints();
-            //nLocalDof = mesh->numLocalVertices();
-            nLocalDof = element_scalar_type::functionspace_type::basis_type::nLocalDof;
-            out << " " << nLocalDof;
-            for ( uint16_type l = 0; l < nLocalDof; ++l )
-            {
-                out << " ";
-                uint16_type gmsh_l = ordering.fromGmshId( l );
-                globaldof = boost::get<0>(__u.functionSpace()->dof()->localToGlobal(elt_it->id(), gmsh_l, 0 ));//l,c
-                out << __u( globaldof);
-            }
-            out << "\n";
+            globaldof = boost::get<0>(__u.functionSpace()->dof()->localToGlobal(elt_it->id(), 0, 0 ));//l,c
+
+            out << elt_it->id()+1 << " " << __u( globaldof) << "\n";
         }
-        out << "$EndElementNodeData\n";
+        out << "$EndElementData\n";
     }
 
 }
