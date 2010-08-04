@@ -202,7 +202,7 @@ GmshOrdering<ConvexType>::GmshOrdering()
                 M_id = list_of<relation>
                     (0,0)(1,1)(2,2)(3,3) // vertices
                     (4,6)(5,7)     // edge 0
-                    (6,8)(7,9)    // edge 1
+                    (6,8)(7,9)     // edge 1
                     (8,4)(9,5)     // edge 2
                     (10,10)(11,11) // edge 3
                     (12,12)(13,13) // edge 4
@@ -260,15 +260,6 @@ GmshOrdering<ConvexType>::GmshOrdering()
             //M_id+=0,1,2,3,4,5,6,7;
         }
 
-    }
-    std::cout << "There are " << M_id.size() << "relations" << std::endl;
-
-    for( auto iter = M_id.begin(), iend = M_id.end(); iter != iend; ++iter )
-    {
-        // iter->left  : data : int
-        // iter->right : data : std::string
-
-        std::cout << iter->left << " <--> " << iter->right << std::endl;
     }
 }
 
