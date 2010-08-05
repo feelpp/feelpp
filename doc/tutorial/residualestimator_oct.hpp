@@ -42,9 +42,8 @@
         {                                                               \
             NDArray A = args(0).array_value ();                         \
             dim_vector dims = A.dims();                                 \
-            dim_vector ydims(2);                                        \
-            ydims(0)=dims(0);                                           \
-            ydims(1)=4;                                                 \
+            dim_vector ydims(1);                                        \
+            ydims(0)=4;                                                 \
                                                                         \
             NDArray Y(ydims);                                           \
             {                                                           \
@@ -56,21 +55,18 @@
                     is_init = true;                                     \
                 }                                                       \
                 boost::shared_ptr<ResidualEstimator<dim,order> > OCTNAME(app_,dim,order)( new ResidualEstimator<dim,order>( makeAbout() ) ); \
-                for( int i = 0; i < dims(0); ++i )                      \
-                {                                                       \
-                    std::vector<double> x( dims(1) );                   \
-                    for( int j = 0; j < dims(1); ++j )                  \
+                std::vector<double> x( dims(0) );                       \
+                for( int j = 0; j < dims(0); ++j )                      \
                     {                                                   \
-                        x[j] = A(i,j);                                  \
+                        x[j] = A(j);                                    \
                         std::cout << "x["<< j << "]=" << x[j] << "\n";  \
                     }                                                   \
-                    std::vector<double> y( 4 );                         \
-                    OCTNAME(app_,dim,order)->run( x.data(), dims(1), y.data(), 4 ); \
-                    Y(i,0)=y[0];                                        \
-                    Y(i,1)=y[1];                                        \
-                    Y(i,2)=y[2];                                        \
-                    Y(i,3)=y[3];                                        \
-                }                                                       \
+                std::vector<double> y( 4 );                             \
+                OCTNAME(app_,dim,order)->run( x.data(), dims(1), y.data(), 4 ); \
+                Y(0)=y[0];                                              \
+                Y(1)=y[1];                                              \
+                Y(2)=y[2];                                              \
+                Y(3)=y[3];                                              \
             }                                                           \
             if (! error_state)                                          \
                 return octave_value (Y);                                \
