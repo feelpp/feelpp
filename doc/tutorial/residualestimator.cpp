@@ -76,6 +76,7 @@ makeOptions()
         ("penaldir", Life::po::value<double>()->default_value( 20 ),
          "penalisation parameter for the weak boundary Dirichlet formulation")
         ("alpha", Life::po::value<double>()->default_value( 3 ), "Regularity coefficient for function f")
+        ("fn", Life::po::value<int>()->default_value( 1 ), "example function to be run")
         ;
     return residualestimatoroptions.add( Life::life_options() );
 }
@@ -287,15 +288,26 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
      */
     /** \code */
     //# marker1 #
+    int fn = this->vm()["fn"].template as<int>();
     value_type alpha = this->vm()["alpha"].template as<double>();
     value_type pi = M_PI;
     //! deduce from expression the type of g (thanks to keyword 'auto')
-    //auto g = (1-Px()*Px())*(1-Py()*Py())*(1-Pz()*Pz())*pow(trans(vf::P())*vf::P(),(alpha/2.0));
-    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
-    gproj = vf::project( Xh, elements(mesh), g );
-
-    //! deduce from expression the type of f (thanks to keyword 'auto')
-    auto f = pi*pi*Dim*g;
+    auto g =
+        chi(fn==1)*(1-Px()*Px())*(1-Py()*Py())*(1-Pz()*Pz())+
+        chi(fn==2)*sin(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz());
+    auto grad_g =
+        trans(chi(fn==1)*(-2*Px()*(1-Py()*Py())*(1-Pz()*Pz())*unitX()+
+                          -2*Py()*(1-Px()*Px())*(1-Pz()*Pz())*unitY()+
+                          -2*Pz()*(1-Px()*Px())*(1-Py()*Py())*unitZ())+
+              chi(fn==2)*(+alpha*pi*cos(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz())*unitX()+
+                          -alpha*pi*sin(alpha*pi*Px())*sin(alpha*pi*Py())*cos(alpha*pi*Pz())*unitY()+
+                          -alpha*pi*sin(alpha*pi*Px())*cos(alpha*pi*Py())*sin(alpha*pi*Pz())*unitZ()));
+    //! deduce from expression the type of laplacian  (thanks to keyword 'auto')
+    auto minus_laplacian_g =
+                    (chi(fn==1)*(2*((1-Py()*Py())*(1-Pz()*Pz())+
+                                    (1-Px()*Px())*(1-Pz()*Pz())*chi(Dim>=2)+
+                                    (1-Px()*Px())*(1-Py()*Py())*chi(Dim==3)))+
+                     chi(fn==2)*(alpha*alpha*pi*pi*Dim*)*sin(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz()));
     //# endmarker1 #
     /** \endcode */
 
@@ -314,8 +326,9 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
     //# marker2 #
     vector_ptrtype F( M_backend->newVector( Xh ) );
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), f*id(v) )+
-        integrate( markedfaces( mesh, mesh->markerName("Neumann") ), gradv(gproj)*vf::N()*id(v) );
+        integrate( elements(mesh), minus_laplacian_g*id(v) )+
+        integrate( markedfaces( mesh, mesh->markerName("Neumann") ),
+                   grad_g*vf::N()*id(v) );
     //# endmarker2 #
     if ( this->comm().size() != 1 || weakdir )
         {
@@ -390,7 +403,7 @@ ResidualEstimator<Dim>::run( const double* X, unsigned long P, double* Y, unsign
     //# marker7 #
     double L2error2 =integrate(elements(mesh),(idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
     double L2error =   math::sqrt( L2error2 );
-    double semiH1error2 = integrate(elements(mesh),(gradv(u)-gradv(gproj))*(gradv(u)-gradv(gproj))).evaluate()(0,0);
+    double semiH1error2 = integrate(elements(mesh),(gradv(u)-grad_g)*(gradv(u)-grad_g)).evaluate()(0,0);
     double H1error = math::sqrt(L2error2+semiH1error2);
 
 
