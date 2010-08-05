@@ -1229,28 +1229,32 @@ public:
         {
         }
         template<typename IndexI, typename IndexJ>
-        value_type const&
+        LIFE_STRONG_INLINE value_type const&
         evalijq( IndexI const& /*i*/, IndexJ const& /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return _M_one[c1];
+            return (gmc_type::nDim>=c1)&&((c1==CType) || (CType==-1));
+            //return _M_one[c1];
         }
         template<typename IndexI, typename IndexJ, int PatternContext>
-        value_type
+        LIFE_STRONG_INLINE value_type
         evalijq( IndexI const& /*i*/, IndexJ const& /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/,
                  mpl::int_<PatternContext> ) const
         {
-            return _M_one[c1];
+            return (gmc_type::nDim>=c1)&&((c1==CType) || (CType==-1));
+            //return _M_one[c1];
         }
         template<typename IndexI>
-        value_type
+        LIFE_STRONG_INLINE value_type
         evaliq( IndexI const& /*i*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return _M_one[c1];
+            return (gmc_type::nDim>=c1)&&((c1==CType) || (CType==-1));
+            //return _M_one[c1];
         }
-        value_type
+        LIFE_STRONG_INLINE value_type
         evalq( uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return _M_one[c1];
+            return (gmc_type::nDim>=c1)&&((c1==CType) || (CType==-1));
+            //return _M_one[c1];
         }
         vector_type _M_one;
     };
@@ -1284,6 +1288,27 @@ oneZ()
 {
     return Expr< One<2> >(  One<2>() );
 }
+inline
+Expr<One<0> >
+unitX()
+{
+    return Expr< One<0> >(  One<0>() );
+}
+
+inline
+Expr<One<1> >
+unitY()
+{
+    return Expr< One<1> >(  One<1>() );
+}
+
+inline
+Expr<One<2> >
+unitZ()
+{
+    return Expr< One<2> >(  One<2>() );
+}
+
 
 
 /**
