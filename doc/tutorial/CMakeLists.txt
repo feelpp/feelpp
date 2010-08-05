@@ -141,8 +141,8 @@ ENDFOREACH(it)
 
 macro(add_octave_module modulename)
 
-  foreach( dim 1 )
-    foreach( order 1 )
+  foreach( dim 1 2 3)
+    foreach( order 1 2 3 4)
       FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${modulename}_${dim}_${order}_oct.cpp "#include<${modulename}_oct.hpp>\n\n RESIDUAL_ESTIMATOR( ${dim}, ${order} )\n" )
 
       add_library( ${modulename}_${dim}_${order}.oct MODULE  ${modulename}_${dim}_${order}_oct.cpp  )
