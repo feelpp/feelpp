@@ -67,7 +67,6 @@ Gmsh::New( std::string const& shape, uint16_type d, uint16_type o, std::string c
 {
     std::ostringstream ostr;
     ostr << shape << "(" << d << "," << o << ")";
-    std::cout << "new " << ostr.str() << "\n";
     boost::shared_ptr<Gmsh> gmsh_ptr( Gmsh::Factory::type::instance().createObject( ostr.str() ) );
     return gmsh_ptr;
 }
