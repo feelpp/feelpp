@@ -276,7 +276,6 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     weakdir = X[4];
     penaldir = X[5];
 
-
     if ( !this->vm().count( "nochdir" ) )
         Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
                                        % this->about().appName()
@@ -433,26 +432,10 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
      auto estimatorP0_Neumann = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
                                            vf::hFace()* (gradv(u)*vf::N()-idv(gproj)) * (gradv(u)*vf::N()-idv(gproj)) ).broken( P0h );
 
-    if(Dim==2){
-      for(int i=0;i<number_elem;i++){
-         if(estimatorP0(i)<0) std::cout<<"estimatorP0("<<i<<") = "<<estimatorP0(i)<<std::endl;
-	 if(estimatorP0_internalfaces(i)<0) std::cout<<"faces("<<i<<") = "<<estimatorP0_internalfaces(i)<<std::endl;
-	 if(estimatorP0_Neumann(i)<0) std::cout<<"Neumann("<<i<<") = "<<estimatorP0_Neumann(i)<<std::endl;
-      }
-    }
-
     estimatorP0+=estimatorP0_internalfaces;
     estimatorP0+=estimatorP0_Neumann;
     estimatorP0.printMatlab("estimator_based_on_residuals.m");
     double estimator =  math::sqrt(estimatorP0.sum()) ;
-
-
-
-    std::cout<<"Number of elements : "<<number_elem<<std::endl;
-    std::cout<<"real error in L2 norm : "<<L2error<<std::endl;
-    std::cout<<"estimated error based on residuals for L2 norm : " << estimator*meshSize <<std::endl ;
-    std::cout<<"real error in H1 norm : "<<H1error<<std::endl;
-    std::cout<<"estimated error based on residuals for H1 norm : " << estimator <<std::endl ;
 
     Y[0] = L2error;
     Y[1] = H1error;
@@ -464,22 +447,9 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     //! project the exact solution
     element_type exact_solution( Xh, "exact_solution" );
     exact_solution = vf::project( Xh, elements(mesh), g );
+    element_type u_minus_exact( Xh, "u-g" );
+    u_minus_exact = vf::project( Xh, elements(mesh), idv(u)-g );
 
-    auto u_minus_exact = u;
-    u_minus_exact -= exact_solution;
-    for(int i=0;i<u_minus_exact.size();i++){
-      u_minus_exact(i)=math::abs(u_minus_exact(i));
-    }
-
-    auto meas = P0h->element();
-    meas = vf::project( P0h, elements(mesh), vf::meas() );
-    meas.printMatlab( "meas.m" );
-    /*
-    export_ptrtype exporter( export_type::New( this->vm(),
-                                               (boost::format( "%1%-%2%-%3%" )
-                                                % this->about().appName()
-                                                % shape
-						% Dim).str() ) );*/
     if ( exporter->doExport() )
     {
         Log() << "exportResults starts\n";
@@ -487,9 +457,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         exporter->step(0)->setMesh( mesh );
         exporter->step(0)->add( "unknown", u );
         exporter->step(0)->add( "exact solution", exact_solution);
-        //exporter->step(0)->add( "estimated error",estimatorP1);
-        //exporter->step(0)->add( "u - exact solution", u_minus_exact) ;
-        //exporter->step(0)->add( "measure", meas) ;
+        exporter->step(0)->add( "u - exact solution", u_minus_exact) ;
 
         exporter->save();
         Log() << "exportResults done\n";

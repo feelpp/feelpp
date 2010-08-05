@@ -60,7 +60,10 @@
                 {                                                       \
                     std::vector<double> x( dims(1) );                   \
                     for( int j = 0; j < dims(1); ++j )                  \
+                    {                                                   \
                         x[j] = A(i,j);                                  \
+                        std::cout << "x["<< j << "]=" << x[j] << "\n";  \
+                    }                                                   \
                     std::vector<double> y( 4 );                         \
                     OCTNAME(app_,dim,order)->run( x.data(), dims(1), y.data(), 4 ); \
                     Y(i,0)=y[0];                                        \
