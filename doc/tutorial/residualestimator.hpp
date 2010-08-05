@@ -299,7 +299,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     space_ptrtype Xh = space_type::New( mesh );
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
-    element_type gproj( Xh, "v" );
+    element_type iproj( Xh, "v" );
     /** \endcode */
 
     /** define \f$g\f$ the expression of the exact solution and
@@ -326,9 +326,14 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
                                      (1-Px()*Px())*(1-Pz()*Pz())*chi(Dim >= 2) +
                                      (1-Px()*Px())*(1-Py()*Py())*chi(Dim == 3) ) )  +
                      chi( fn == 2 )*(alpha*alpha*pi*pi*Dim)*sin(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz()));
+
+    auto i=Px()*0;
+    iproj = vf::project( Xh, elements(mesh), i );
     //# endmarker1 #
     /** \endcode */
 
+
+    
 
     using namespace Life::vf;
 
@@ -430,7 +435,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
                                                 vf::hFace()* (jumpv(gradv(u))) * (jumpv(gradv(u))) ).broken( P0h );
 
      auto estimatorP0_Neumann = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
-                                           vf::hFace()* (gradv(u)*vf::N()-idv(gproj)) * (gradv(u)*vf::N()-idv(gproj)) ).broken( P0h );
+                                           vf::hFace()* (gradv(u)*vf::N()-idv(iproj)) * (gradv(u)*vf::N()-idv(iproj)) ).broken( P0h );
 
     estimatorP0+=estimatorP0_internalfaces;
     estimatorP0+=estimatorP0_Neumann;
@@ -463,6 +468,12 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         Log() << "exportResults done\n";
     }
     /** \endcode */
+
+    Log()<< " real L2 error : "<<Y[0]<<"\n";
+    Log()<< " estimated L2 error "<<Y[2]<<"\n";
+    Log()<< " real H1 error : "<<Y[1]<<"\n";
+    Log()<< " estimated H1 error "<<Y[3]<<"\n";
+
 } // ResidualEstimator::run
 
 //# marker6 #
