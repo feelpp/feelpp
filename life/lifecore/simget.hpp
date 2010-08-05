@@ -76,6 +76,11 @@ public:
     Simget( po::variables_map const& vm ) : M_vm( vm ), M_about( "", "", "" ) {}
 
     /**
+     * constructor with an \c AboutData that describes the simget
+     */
+    Simget( AboutData const& about ) : M_vm(), M_about( about ) {}
+
+    /**
      * constructor with a \c variables_map and an \c AboutData that describes
      * the top application
      */
