@@ -1,7 +1,7 @@
 # -*- mode: octave -*-
 x=[0.1   # hsize
    0     # shape (0:simplex, 1:hypercube, 2:ellipsoid)
-   1     # function (0, 1)
+   1     # function (1, 2)
    3     # parameter
    1     # weakdir (0: weak dirichlet condition, 1 strong)
    50    # penaldir (value for weak dirichlet parameter)

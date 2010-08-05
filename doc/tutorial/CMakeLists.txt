@@ -139,6 +139,8 @@ FOREACH(it ${cmake_include_directories})
   SET(octave_include_dirs ${octave_include_dirs} "-I${it}")
 ENDFOREACH(it)
 
+add_custom_target(octave ALL WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
+
 macro(add_octave_module modulename)
 
   foreach( dim 1 2 3)
@@ -150,6 +152,7 @@ macro(add_octave_module modulename)
         ${CMAKE_CURRENT_SOURCE_DIR}/${modulename}_oct.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/${modulename}.hpp
         )
+      add_dependencies(octave ${modulename}_${dim}_${order}.oct)
       target_link_libraries( ${modulename}_${dim}_${order}.oct ${LIFE_LIBRARIES})
       set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES PREFIX "" )
       set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES SUFFIX "" )
