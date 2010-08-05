@@ -21,6 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 include(UseLATEX)
 
 FILE(GLOB CPPFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
@@ -129,3 +130,35 @@ endforeach()
 #target_link_libraries( life_doc_convection ${LIFE_LIBRARIES} )
 
 endif ( NOT LIFE_MINIMAL_CONFIGURATION )
+
+IF ( OCTAVE_FOUND )
+
+GET_DIRECTORY_PROPERTY(cmake_include_directories INCLUDE_DIRECTORIES)
+SET(octave_include_dirs)
+FOREACH(it ${cmake_include_directories})
+  SET(octave_include_dirs ${octave_include_dirs} "-I${it}")
+ENDFOREACH(it)
+
+macro(add_octave_module modulename)
+
+  foreach( dim 1 )
+    foreach( order 1 )
+      FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${modulename}_${dim}_${order}_oct.cpp "#include<${modulename}_oct.hpp>\n\n RESIDUAL_ESTIMATOR( ${dim}, ${order} )\n" )
+
+      add_library( ${modulename}_${dim}_${order}.oct MODULE  ${modulename}_${dim}_${order}_oct.cpp  )
+      add_dependencies(${modulename}_${dim}_${order}.oct
+        ${CMAKE_CURRENT_SOURCE_DIR}/${modulename}_oct.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/${modulename}.hpp
+        )
+      target_link_libraries( ${modulename}_${dim}_${order}.oct ${LIFE_LIBRARIES})
+      set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES PREFIX "" )
+      set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES SUFFIX "" )
+    endforeach( order )
+  endforeach( dim )
+  configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/${modulename}.m  ${CMAKE_CURRENT_BINARY_DIR}/residualestimator.m)
+endmacro(add_octave_module)
+
+
+add_octave_module( residualestimator )
+
+ENDIF( OCTAVE_FOUND )
