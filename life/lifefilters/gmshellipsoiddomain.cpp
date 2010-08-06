@@ -156,7 +156,8 @@ GmshEllipsoidDomain::getDescription2D() const
     }
     else
     {
-        ostr << "Physical Line(\"border\") = {1, 4, 3, 2};\n"
+        ostr << "Physical Line(\"Neumann\") = {1, 4};\n"
+             << "Physical Line(\"Dirichlet\") = {3, 2};\n"
              << "Physical Surface(\"Mat_1\") = {6};\n";
     }
 
@@ -218,7 +219,8 @@ GmshEllipsoidDomain::getDescription3D() const
     }
     else
     {
-        ostr << "Physical Surface(\"border\") = {28,26,16,14,20,24,22,18};\n"
+        ostr << "Physical Surface(\"Neumann\") = {28,26,16,14};\n"
+             << "Physical Surface(\"Dirichlet\") = {20,24,22,18};\n"
              << "Physical Volume(\"Mat_1\") = {30};\n";
     }
     return ostr.str();
