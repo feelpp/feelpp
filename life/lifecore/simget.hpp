@@ -30,6 +30,8 @@
 #define __Simget_H 1
 
 #include <life/lifecore/life.hpp>
+#include <life/lifecore/factory.hpp>
+#include <life/lifecore/singleton.hpp>
 
 namespace Life
 {
@@ -150,5 +152,72 @@ private:
     po::variables_map M_vm;
     AboutData M_about;
 };
+
+
+/**
+ * Simget factory
+ */
+typedef Singleton< Factory< Simget, std::string > > SimgetFactory;
+
+#if 0
+template<typename SimgetType>
+Simget*
+createSimget( AboutData cponst& about )
+{
+    return new SimgetType( about );
+}
+
+#define REGISTER_SIMGET_IN_FACTORY( simget, simgetname, about )         \
+    SimgetFactory::instance().registerProduct( simgetname, &createSimget<simget>( about )
+
+#if defined( HAVE_OCT_H )
+#define OCTNAME(name,dim, order) BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(name,dim),_),order)
+
+#define REGISTER_SIMGET( dim, order )                                   \
+    DEFUN_DLD (OCTNAME(residualestimator_,dim,order), args, nargout, "Residual Estimator for the Laplacian") \
+    {                                                                   \
+        int nargin = args.length ();                                    \
+        if (nargin != 1)                                                \
+            print_usage ();                                             \
+        else                                                            \
+        {                                                               \
+            NDArray A = args(0).array_value ();                         \
+            dim_vector dims = A.dims();                                 \
+            dim_vector ydims(1);                                        \
+            ydims(0)=4;                                                 \
+                                                                        \
+            NDArray Y(ydims);                                           \
+            {                                                           \
+                static bool is_init = false;                            \
+                if ( !is_init )                                         \
+                {                                                       \
+                    if (!Life::Environment::initialized() )             \
+                        new Life::Environment();                        \
+                    is_init = true;                                     \
+                }                                                       \
+                boost::shared_ptr<ResidualEstimator<dim,order> > OCTNAME(app_,dim,order)( new ResidualEstimator<dim,order>( makeAbout() ) ); \
+                std::vector<double> x( dims(0) );                       \
+                for( int j = 0; j < dims(0); ++j )                      \
+                    {                                                   \
+                        x[j] = A(j);                                    \
+                        std::cout << "x["<< j << "]=" << x[j] << "\n";  \
+                    }                                                   \
+                std::vector<double> y( 4 );                             \
+                OCTNAME(app_,dim,order)->run( x.data(), dims(1), y.data(), 4 ); \
+                Y(0)=y[0];                                              \
+                Y(1)=y[1];                                              \
+                Y(2)=y[2];                                              \
+                Y(3)=y[3];                                              \
+            }                                                           \
+            if (! error_state)                                          \
+                return octave_value (Y);                                \
+        }                                                               \
+        return octave_value_list ();                                    \
+    }
+
+
+
+#endif /* HAVE_OCT_H */
+#endif // 0
 }
 #endif /* __Simget_H */
