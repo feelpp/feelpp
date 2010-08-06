@@ -654,6 +654,32 @@ public:
     }
 
     /**
+     * @compute sqrt on each element of the vector.
+     */
+    void sqrt() 
+    {
+      checkInvariant();
+      for( size_type i = 0; i < this->localSize(); ++i ){ 
+        _M_vec.operator[](i) = math::sqrt(_M_vec.operator[](i));
+       }
+      return;
+    }
+    
+    
+    /**
+     *@compute pow on each element of the vector.
+     */
+    void pow(int n)
+    {
+      checkInvariant();
+      for( size_type i = 0; i < this->localSize(); ++i ){
+        _M_vec.operator[](i) = math::pow( _M_vec.operator[](i), n);
+      }
+      return;
+    }    
+     
+    
+    /**
      * \f$U(0-DIM)+=s\f$.
      * Addition of \p s to all components.
      * \note \p s is a scalar and not a vector.
