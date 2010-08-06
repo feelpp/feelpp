@@ -29,6 +29,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #cmakedefine HAVE_MEMORY_H
 
+/* Define if you have the <oct.h> header file. */
+#cmakedefine HAVE_OCT_H
+
 /* Define if the OPENMP is supported by the compiler. */
 #cmakedefine HAVE_OPENMP
 
