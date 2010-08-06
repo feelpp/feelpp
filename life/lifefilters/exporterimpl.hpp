@@ -40,6 +40,9 @@
 
 namespace Life
 {
+template<typename MeshType, int N> class ExporterEnsight;
+template<typename MeshType, int N> class ExporterGmsh;
+
 template<typename MeshType, int N>
 Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& __prefix, int __freq  )
     :
