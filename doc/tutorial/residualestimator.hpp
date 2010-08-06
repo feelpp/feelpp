@@ -53,10 +53,12 @@
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <life/lifevf/vf.hpp>
 
+
+
 /** use Life namespace */
 using namespace Life;
 using namespace Life::vf;
-
+using namespace boost::numeric::ublas;
 
 /**
  * This routine defines some information about the application like
@@ -429,7 +431,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     /*******************residual estimator**********************/
 
-    auto estimatorP0 =   integrate(elements(mesh), vf::h()*vf::h()*trace(hessv(u))*trace(hessv(u)) ).broken(P0h);
+    /*    auto estimatorP0 =   integrate(elements(mesh), vf::h()*vf::h()*trace(hessv(u))*trace(hessv(u)) ).broken(P0h);
 
     auto estimatorP0_internalfaces = integrate(internalfaces(mesh),
                                                 vf::hFace()* (jumpv(gradv(u))) * (jumpv(gradv(u))) ).broken( P0h );
@@ -437,15 +439,58 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
      auto estimatorP0_Neumann = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
                                            vf::hFace()* (gradv(u)*vf::N()-idv(iproj)) * (gradv(u)*vf::N()-idv(iproj)) ).broken( P0h );
 
-    estimatorP0+=estimatorP0_internalfaces;
-    estimatorP0+=estimatorP0_Neumann;
-    estimatorP0.printMatlab("estimator_based_on_residuals.m");
-    double estimator =  math::sqrt(estimatorP0.sum()) ;
+*/
+
+    //the source terme is given by : minus_laplacian_g  
+    auto term1 = vf::h()*(minus_laplacian_g+trace(hessv(u)));
+    auto term2 = jumpv(gradv(u));
+    auto term3 = gradv(u)*vf::N()-idv(iproj);
+
+    auto estimator1 =   integrate(elements(mesh), pow(term1 , 2) ).broken(P0h);
+
+    auto estimator2 = integrate(internalfaces(mesh),vf::h()* pow(term2,2)).broken( P0h );
+
+    auto estimator3 = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
+				 vf::h()* pow(term3 ,2) 
+                            ).broken( P0h );
+
+    
+
+     auto h=vf::project(P0h, elements(mesh), vf::h() );
+     double estimatorH1=elem_prod(estimator1.sqrt()+estimator2.sqrt()+estimator3.sqrt(),h.pow(Order-1)).pow(2).sum();
+     double estimatorL2=elem_prod(estimator1.sqrt()+estimator2.sqrt()+estimator3.sqrt(),h.pow(Order)).pow(2).sum();
+
+
+/*
+     for(int i=0;i<P0h->nLocalDof();i++){
+       estimatorP0(i)=i+1;
+     }
+     estimatorP0.sqrt();
+     for(int i=0;i<P0h->nLocalDof();i++){
+       std::cout<<"estimatorP0("<<i<<") = "<<estimatorP0(i)<<std::endl;
+     }
+     std::cout<<"et maintenant la puissance2 "<<std::endl;
+     for(int i=0;i<P0h->nLocalDof();i++){
+       estimatorP0(i)=i+1;
+     }
+     estimatorP0.pow(2);
+     for(int i=0;i<P0h->nLocalDof();i++){
+       std::cout<<"estimatorP0("<<i<<")="<<estimatorP0(i);
+     }
+*/
+
+
+       //  estimatorP0+=estimatorP0_internalfaces;
+       //estimatorP0+=estimatorP0_Neumann;
+       //estimatorP0.printMatlab("estimator_based_on_residuals.m");
+       //double estimator =  math::sqrt(estimatorP0.sum()) ;
 
     Y[0] = L2error;
     Y[1] = H1error;
-    Y[2] = estimator*meshSize;
-    Y[3] = estimator;
+    // Y[2] = estimator*math::pow(meshSize,Order);
+    //Y[3] = estimator*math::pow(meshSize,Order-1);
+    Y[2] = estimatorL2;
+    Y[3] = estimatorH1;
 
     //! save the results
     /** \code */
@@ -463,6 +508,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         exporter->step(0)->add( "unknown", u );
         exporter->step(0)->add( "exact solution", exact_solution);
         exporter->step(0)->add( "u - exact solution", u_minus_exact) ;
+	//        exporter->step(0)->add( "estimated error" , estimatorP0);
 
         exporter->save();
         Log() << "exportResults done\n";

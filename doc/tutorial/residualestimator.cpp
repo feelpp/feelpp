@@ -76,11 +76,24 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
+    //first order
     app.add( new ResidualEstimator<1,1>( app.vm(), app.about() ) );
-    //app.add( new ResidualEstimator<1,2>( app.vm(), app.about() ) );
     app.add( new ResidualEstimator<2,1>( app.vm(), app.about() ) );
-    //app.add( new ResidualEstimator<2,2>( app.vm(), app.about() ) );
     app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
+    //second order
+    /*    app.add( new ResidualEstimator<1,2>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<2,2>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<3,2>( app.vm(), app.about() ) );
+    //third order
+    app.add( new ResidualEstimator<1,3>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<2,3>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<3,3>( app.vm(), app.about() ) );
+    //fourth
+    app.add( new ResidualEstimator<1,4>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<2,4>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<3,4>( app.vm(), app.about() ) );
+    */				  
+
     /** \endcode */
 
     /**
