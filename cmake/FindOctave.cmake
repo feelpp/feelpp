@@ -145,3 +145,6 @@ mark_as_advanced (
   Octave_LIBRARIES
   )
 
+if ( OCTAVE_FOUND )
+  SET( HAVE_OCT_H 1 )
+endif()
