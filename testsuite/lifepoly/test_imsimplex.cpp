@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-06-19
  */
-#include <life/lifepoly/imsimplex.hpp>
+#include <life/lifepoly/im.hpp>
 
 
 int main( int argc, char** argv )
