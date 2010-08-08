@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE( gmshgeo )
                            _desc=geo( _filename="feel.geo",
                                       _dim=2,
                                       _order=1,
-                                      _h=0.5 ) );
+                                      _h=0.2 ) );
     auto letters = markedfaces( mesh, "letters" );
     BOOST_CHECK_NE( std::distance( letters.get<1>(), letters.get<2>() ), 0 );
     auto wall = markedfaces( mesh, "wall" );
