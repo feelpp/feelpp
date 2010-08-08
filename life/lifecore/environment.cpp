@@ -26,14 +26,18 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2010-04-14
  */
-#include <life/lifecore/environment.hpp>
+#include <lifeconfig.h>
 
+
+#include <boost/preprocessor/stringize.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/fstream.hpp>
+
+#include <life/lifecore/environment.hpp>
 
 #if defined( HAVE_PETSC_H )
 extern "C"
@@ -136,6 +140,27 @@ Environment::rootRepository()
     }
     return env;
 }
+std::string
+Environment::localGeoRepository()
+{
+    fs::path rep_path;
+
+    rep_path = Environment::rootRepository();
+    rep_path /= "geo";
+    if ( !fs::exists( rep_path ) )
+        fs::create_directory( rep_path );
+    return rep_path.string();
+}
+boost::tuple<std::string,bool>
+Environment::systemGeoRepository()
+{
+    fs::path rep_path;
+
+    rep_path = BOOST_PP_STRINGIZE(INSTALL_PREFIX);
+    rep_path /= "geo";
+    return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
+}
+
 void
 Environment::changeRepository( boost::format fmt )
 {
@@ -161,5 +186,6 @@ Environment::changeRepository( boost::format fmt )
 
     ::chdir( rep_path.string().c_str() );
 }
+
 
 }

@@ -385,6 +385,7 @@ IF(BUILD_TESTING OR LIFE_ENABLE_TESTS )
 endif()
 
 # generate configuration header
+set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 CONFIGURE_FILE(lifeconfig.h.in lifeconfig.h  )
 
 #
