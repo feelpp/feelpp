@@ -104,6 +104,9 @@
 /* The path of installation */
 #cmakedefine INSTALL_PATH
 
+/* the cmake install prefix */
+#cmakedefine INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@
+
 /* buildid */
 #cmakedefine LIFE_BUILDID ${LIFE_BUILDID}
 

@@ -141,6 +141,14 @@ public:
     //! \return the root repository (default: \c $HOME/life)
     static std::string rootRepository();
 
+    //! \return the local geo files repository (default: \c $HOME/life/geo)
+    static std::string localGeoRepository();
+
+    /**
+     * \return a tuple : the system geo files repository (default: \c /usr/share/life/geo or /usr/local/share/life/geo) and true or false whether the directory exists or not
+     */
+    static boost::tuple<std::string,bool> systemGeoRepository();
+
     //! change the directory where the results are stored
     static void changeRepository( boost::format fmt );
 
