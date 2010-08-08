@@ -59,7 +59,6 @@
                 for( int j = 0; j < dims(0); ++j )                      \
                     {                                                   \
                         x[j] = A(j);                                    \
-                        std::cout << "x["<< j << "]=" << x[j] << "\n";  \
                     }                                                   \
                 std::vector<double> y( 4 );                             \
                 OCTNAME(app_,dim,order)->run( x.data(), dims(1), y.data(), 4 ); \
