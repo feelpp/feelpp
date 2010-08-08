@@ -11,3 +11,8 @@ add_library( lifefilters SHARED
   )
 set_target_properties( lifefilters PROPERTIES VERSION ${LIFE_SHARED_VERSION} SOVERSION ${LIFE_SHARED_SOVERSION})
 target_link_libraries (lifefilters lifediscr)
+
+# create $ENV{HOME}/life/geo if it does not exist already: this is the geometry
+# files repository
+file(MAKE_DIRECTORY $ENV{HOME}/life/geo)
+file(COPY feel.geo  life.geo DESTINATION $ENV{HOME}/life/geo )
