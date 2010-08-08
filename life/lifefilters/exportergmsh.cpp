@@ -272,7 +272,7 @@ ExporterGmsh<MeshType,N>::gmsh_save_Elements( std::ostream& out,
         out<< elem_number++ <<" ";
         out << ordering_face.type();
         // number-of-tags < tag >
-        out<<" 3 " << face_it->marker().value() << " " << elt_it->marker2().value() << " " << face_it->processId();
+        out<<" 3 " << face_it->marker().value() << " " << face_it->marker2().value() << " " << face_it->processId();
         // node-number-list
         for (uint16_type p=0;p<face_type::numPoints;++p)
             out << " " << face_it->point( ordering_face.id( p ) ).id()+1;
