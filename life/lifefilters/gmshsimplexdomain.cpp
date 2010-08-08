@@ -81,8 +81,7 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<1> ) const
     ostr << this->preamble() << "\n";
     ostr << "Point(1) = {" << this->M_I[0].first << ",0,0,h};\n"
          << "Point(2) = {" << this->M_I[0].second << ",0,0,h};\n";
-    //if ( this->addMidPoint() )
-    if ( 1 )
+    if ( this->addMidPoint() )
     {
         ostr << "Point(3) = {" << (this->M_I[0].second+this->M_I[0].first)/2 << ",0,0,h};\n"
              << "Line(1) = {1,3};\n"
