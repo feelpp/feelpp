@@ -34,6 +34,7 @@
 #include <sstream>
 #include <iterator>
 
+#include <boost/regex.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
@@ -297,7 +298,11 @@ Gmsh::getDescriptionFromFile( std::string const& file ) const
 bool
 Gmsh::generateGeo( std::string const& __name, std::string const& __geo ) const
 {
+    boost::regex regex( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]+(?:[eE][+-]?[[:digit:]]+)?));" );
+    std::ostringstream hstr;
+    hstr << "(?1$1) = " << M_h << ";";
 
+    std::string _geo = boost::regex_replace( __geo, regex, hstr.str(), boost::match_default | boost::format_all);
     // generate geo
     std::ostringstream __geoname;
     __geoname << __name << ".geo";
@@ -307,17 +312,17 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo ) const
         {
             Debug(10000) << "generating: " << __geoname.str() << "\n";
             std::ofstream __geofile( __geoname.str().c_str() );
-            __geofile << __geo.c_str();
+            __geofile << _geo;
             __geofile.close();
             geochanged = true;
         }
     else
         {
             std::string s = this->getDescriptionFromFile( __geoname.str() );
-            if ( s != __geo )
+            if ( s != _geo )
                 {
                     std::ofstream __geofile( __geoname.str().c_str() );
-                    __geofile << __geo.c_str();
+                    __geofile << _geo;
                     __geofile.close();
                     geochanged = true;
                 }
