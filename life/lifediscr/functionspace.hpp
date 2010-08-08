@@ -868,7 +868,7 @@ public:
     template<typename T = double,  typename Cont = VectorUblas<T> >
     class Element
         :
-        public Cont
+        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >
     {
         template<typename BasisType>
         struct ChangeElement
@@ -1148,7 +1148,18 @@ public:
 #endif
         value_type  operator()( size_t i ) const { return super::operator()( i ); }
         value_type& operator()( size_t i )       { return super::operator()( i ); }
-
+        Element& operator+=( Element const& _e )
+            {
+                for( int i=0; i < _e.nLocalDof(); ++i )
+                    this->operator()(i) += _e(i);
+                return *this;
+            }
+        Element& operator-=( Element const& _e )
+            {
+                for( int i=0; i < _e.nLocalDof(); ++i )
+                    this->operator()(i) -= _e(i);
+                return *this;
+            }
         /**
          * update element when mesh has been changed
          */
@@ -1190,6 +1201,16 @@ public:
          * \return the mesh associated to the function
          */
         mesh_ptrtype mesh() const { return _M_functionspace->mesh(); }
+
+        /**
+         * \return the element-wise square root
+         */
+        Element sqrt() const { Element _e( _M_functionspace ); for( int i=0; i < _e.nLocalDof(); ++i ) _e(i)  = math::sqrt(this->operator()(i)); return _e; }
+
+        /**
+         * \return the element-wise power to n
+         */
+        Element pow( int n ) const { Element _e( _M_functionspace ); for( int i=0; i < _e.nLocalDof(); ++i ) _e(i)  = math::pow(this->operator()(i),n); return _e; }
 
         //! Interpolation at a set of points
         //@{
