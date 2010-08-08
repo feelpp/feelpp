@@ -582,6 +582,20 @@ public:
     {
         ublas::column( M_G, i ) += u;
     }
+    /**
+     * set the tags associated to the points
+     * - tags[0] physical region
+     * - tags[1] elementary region
+     * - tags[2] particular region
+     */
+    void setTags( std::vector<int> const& tags )
+        {
+            M_marker1.assign(tags[0]);
+            if ( tags.size() > 1 )
+                M_marker2.assign(tags[1]);
+            if ( tags.size() > 2 )
+                this->setProcessId( tags[2] );
+        }
     Marker1 const& marker() const { return M_marker1; }
     Marker1& marker() { return M_marker1; }
     void setMarker( flag_type v ) { return M_marker1.assign( v ); }
