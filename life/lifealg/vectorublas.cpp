@@ -536,6 +536,7 @@ VectorUblas<T,Storage>::checkInvariant() const
 
 namespace detail
 {
+#if defined(HAVE_TBB)
 template<typename VectorType>
 struct Sqrt
 {
@@ -553,6 +554,7 @@ struct Sqrt
             }
         }
 };
+#endif // HAVE_TBB
 } //detail
 template <typename T, typename Storage>
 typename VectorUblas<T,Storage>::this_type
