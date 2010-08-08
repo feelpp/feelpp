@@ -1,4 +1,4 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8 -*-
 
   This file is part of the Life library
 
@@ -411,6 +411,55 @@ struct mesh
 };
 }
 /// \endcond
+
+/**
+ *
+ * \brief load a mesh data structure (hold in a shared_ptr<>) using GMSH
+ *
+ * \arg mesh mesh data structure
+ * \arg filename filename string (with extension)
+ * \arg refine optionally refine with \p refine levels the mesh (default: 0)
+ * \arg update update the mesh data structure (build internal faces and edges) (default : true)
+ */
+BOOST_PARAMETER_FUNCTION(
+    (typename detail::mesh<Args>::ptrtype), // return type
+    loadGMSHMesh,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    (required
+     (mesh, *)
+     (filename, *)
+        ) // 4. one required parameter, and
+
+    (optional
+     (refine,          *(boost::is_integral<mpl::_>), 0 )
+     (update,          *(boost::is_integral<mpl::_>), 0 )
+        )
+    )
+{
+    typedef typename detail::mesh<Args>::type _mesh_type;
+    typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+
+    _mesh_ptrtype _mesh( mesh );
+
+    // refinement if option is enabled to a value greater or equal to 1
+    if ( refine )
+    {
+        Gmsh gmsh;
+        gmsh.refine( filename, refine );
+    }
+
+    ImporterGmsh<_mesh_type> import( filename );
+    _mesh->accept( import );
+
+    if ( update )
+    {
+        _mesh->components().set( update );
+        _mesh->updateForUse();
+    }
+    return _mesh;
+}
 
 /**
  *

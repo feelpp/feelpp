@@ -1,11 +1,11 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8 -*-
 
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-08-02
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -86,8 +86,7 @@ GmshEllipsoidDomain::getDescription1D() const
 
     ostr << "Point(1) = {" << this->M_I[0].first << ",0,0,h};\n"
          << "Point(2) = {" << this->M_I[0].second << ",0,0,h};\n";
-    //if ( this->addMidPoint() )
-    if ( 1 )
+    if ( this->addMidPoint() )
     {
         ostr << "Point(3) = {" << (this->M_I[0].second+this->M_I[0].first)/2 << ",0,0,h};\n"
              << "Line(1) = {1,3};\n"
