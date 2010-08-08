@@ -595,6 +595,19 @@ markedelements( MeshType const& mesh, flag_type flag )
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
     return detail::markedelements( mesh, flag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
+/**
+ * \return a pair of iterators to iterate over elements of the
+ * mesh with \p marker string
+ */
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+             typename MeshTraits<MeshType>::marker_element_const_iterator,
+             typename MeshTraits<MeshType>::marker_element_const_iterator>
+markedelements( MeshType const& mesh, std::string const& flag )
+{
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::markedelements( mesh, mesh->markerName(flag), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+}
 
 /**
  * \return a pair of iterators to iterate over elements of the
@@ -612,6 +625,20 @@ marked2elements( MeshType const& mesh, flag_type flag )
 
 /**
  * \return a pair of iterators to iterate over elements of the
+ * mesh with \c Marker2 string
+ */
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+             typename MeshTraits<MeshType>::marker2_element_const_iterator,
+             typename MeshTraits<MeshType>::marker2_element_const_iterator>
+marked2elements( MeshType const& mesh, std::string const& flag )
+{
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::marked2elements( mesh, mesh->markerName(flag), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+}
+
+/**
+ * \return a pair of iterators to iterate over elements of the
  * mesh with \c Marker3 \p flag
  */
 template<typename MeshType>
@@ -622,6 +649,20 @@ marked3elements( MeshType const& mesh, flag_type flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
     return detail::marked3elements( mesh, flag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+}
+
+/**
+ * \return a pair of iterators to iterate over elements of the
+ * mesh with \c Marker3 string
+ */
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+             typename MeshTraits<MeshType>::marker3_element_const_iterator,
+             typename MeshTraits<MeshType>::marker3_element_const_iterator>
+marked3elements( MeshType const& mesh, std::string const& flag )
+{
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::marked3elements( mesh, mesh->markerName(flag), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -689,6 +730,27 @@ markedfaces( MeshType const& mesh,
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
     Debug(4000) << "[markedfaces] marker = " << __marker << "\n";
     return detail::markedfaces( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+}
+/**
+ * \return a pair of iterators to iterate over faces of the
+ * mesh marked with string \c __marker
+ *
+ * @param mesh a mesh data structure
+ * @param __marker a string marker that identifies faces
+ * @param __pid process id
+ *
+ * @return a pair of iterators (begin,end) for the set of marked faces
+ */
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_FACES>,
+             typename MeshTraits<MeshType>::marker_face_const_iterator,
+             typename MeshTraits<MeshType>::marker_face_const_iterator>
+markedfaces( MeshType const& mesh,
+             std::string const& __marker )
+{
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    Debug(4000) << "[markedfaces] marker = " << __marker << " id: "<< mesh->markerName( __marker ) << "\n";
+    return detail::markedfaces( mesh, mesh->markerName(__marker), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
