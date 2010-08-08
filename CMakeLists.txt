@@ -246,7 +246,9 @@ endif()
 # Octave
 #
 FIND_PACKAGE(Octave)
-INCLUDE_DIRECTORIES( ${Octave_INCLUDE_DIR} )
+if ( OCTAVE_FOUND )
+  INCLUDE_DIRECTORIES( ${Octave_INCLUDE_DIR} )
+endif( OCTAVE_FOUND )
 
 #
 #
