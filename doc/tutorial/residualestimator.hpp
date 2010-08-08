@@ -301,7 +301,6 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     space_ptrtype Xh = space_type::New( mesh );
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
-    element_type iproj( Xh, "v" );
     /** \endcode */
 
     /** define \f$g\f$ the expression of the exact solution and
@@ -324,18 +323,16 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
                           -alpha*pi*sin(alpha*pi*Px())*cos(alpha*pi*Py())*sin(alpha*pi*Pz())*unitZ()));
     //! deduce from expression the type of laplacian  (thanks to keyword 'auto')
     auto minus_laplacian_g =
-                    (chi( fn == 1 )*( 2*((1-Py()*Py())*(1-Pz()*Pz()) +
-                                     (1-Px()*Px())*(1-Pz()*Pz())*chi(Dim >= 2) +
-                                     (1-Px()*Px())*(1-Py()*Py())*chi(Dim == 3) ) )  +
-                     chi( fn == 2 )*(alpha*alpha*pi*pi*Dim)*sin(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz()));
+        (chi( fn == 1 )*( 2*((1-Py()*Py())*(1-Pz()*Pz()) +
+                             (1-Px()*Px())*(1-Pz()*Pz())*chi(Dim >= 2) +
+                             (1-Px()*Px())*(1-Py()*Py())*chi(Dim == 3) ) )  +
+         chi( fn == 2 )*(alpha*alpha*pi*pi*Dim)*sin(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz()));
 
-    auto i=Px()*0;
-    iproj = vf::project( Xh, elements(mesh), i );
     //# endmarker1 #
     /** \endcode */
 
 
-    
+
 
     using namespace Life::vf;
 
@@ -353,12 +350,12 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
                    grad_g*vf::N()*id(v) );
     //# endmarker2 #
     if ( this->comm().size() != 1 || weakdir )
-        {
-            //# marker41 #
-            form1( _test=Xh, _vector=F ) +=
-                integrate( markedfaces(mesh,mesh->markerName("Dirichlet")), g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
-            //# endmarker41 #
-        }
+    {
+        //# marker41 #
+        form1( _test=Xh, _vector=F ) +=
+            integrate( markedfaces(mesh,mesh->markerName("Dirichlet")), g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
+        //# endmarker41 #
+    }
     F->close();
 
     /** \endcode */
@@ -380,38 +377,38 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     //# endmarker3 #
 
     if ( this->comm().size() != 1 || weakdir )
-        {
-            /** weak dirichlet conditions treatment for the boundaries marked 1 and 3
-             * -# assemble \f$\int_{\partial \Omega} -\nabla u \cdot \mathbf{n} v\f$
-             * -# assemble \f$\int_{\partial \Omega} -\nabla v \cdot \mathbf{n} u\f$
-             * -# assemble \f$\int_{\partial \Omega} \frac{\gamma}{h} u v\f$
-             */
-            /** \code */
-            //# marker10 #
-            form2( Xh, Xh, D ) +=
-                integrate( markedfaces(mesh,mesh->markerName("Dirichlet")),
-                           -(gradt(u)*vf::N())*id(v)
-                           -(grad(v)*vf::N())*idt(u)
-                           +penaldir*id(v)*idt(u)/hFace());
-            D->close();
-            //# endmarker10 #
-            /** \endcode */
-        }
+    {
+        /** weak dirichlet conditions treatment for the boundaries marked 1 and 3
+         * -# assemble \f$\int_{\partial \Omega} -\nabla u \cdot \mathbf{n} v\f$
+         * -# assemble \f$\int_{\partial \Omega} -\nabla v \cdot \mathbf{n} u\f$
+         * -# assemble \f$\int_{\partial \Omega} \frac{\gamma}{h} u v\f$
+         */
+        /** \code */
+        //# marker10 #
+        form2( Xh, Xh, D ) +=
+            integrate( markedfaces(mesh,mesh->markerName("Dirichlet")),
+                       -(gradt(u)*vf::N())*id(v)
+                       -(grad(v)*vf::N())*idt(u)
+                       +penaldir*id(v)*idt(u)/hFace());
+        D->close();
+        //# endmarker10 #
+        /** \endcode */
+    }
     else
-        {
-            /** strong(algebraic) dirichlet conditions treatment for the boundaries marked 1 and 3
-             * -# first close the matrix (the matrix must be closed first before any manipulation )
-             * -# modify the matrix by cancelling out the rows and columns of D that are associated with the Dirichlet dof
-             */
-            /** \code */
-            //# marker5 #
-            D->close();
-            form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, mesh->markerName("Dirichlet")), u, F, g );
-            //# endmarker5 #
-            /** \endcode */
+    {
+        /** strong(algebraic) dirichlet conditions treatment for the boundaries marked 1 and 3
+         * -# first close the matrix (the matrix must be closed first before any manipulation )
+         * -# modify the matrix by cancelling out the rows and columns of D that are associated with the Dirichlet dof
+         */
+        /** \code */
+        //# marker5 #
+        D->close();
+        form2( Xh, Xh, D ) +=
+            on( markedfaces(mesh, mesh->markerName("Dirichlet")), u, F, g );
+        //# endmarker5 #
+        /** \endcode */
 
-        }
+    }
     /** \endcode */
 
 
@@ -431,64 +428,24 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     /*******************residual estimator**********************/
 
-    /*    auto estimatorP0 =   integrate(elements(mesh), vf::h()*vf::h()*trace(hessv(u))*trace(hessv(u)) ).broken(P0h);
-
-    auto estimatorP0_internalfaces = integrate(internalfaces(mesh),
-                                                vf::hFace()* (jumpv(gradv(u))) * (jumpv(gradv(u))) ).broken( P0h );
-
-     auto estimatorP0_Neumann = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
-                                           vf::hFace()* (gradv(u)*vf::N()-idv(iproj)) * (gradv(u)*vf::N()-idv(iproj)) ).broken( P0h );
-
-*/
-
-    //the source terme is given by : minus_laplacian_g  
+    //the source terme is given by : minus_laplacian_g
     auto term1 = vf::h()*(minus_laplacian_g+trace(hessv(u)));
     auto term2 = jumpv(gradv(u));
-    auto term3 = gradv(u)*vf::N()-idv(iproj);
+    auto term3 = gradv(u)*vf::N()-grad_g*N();
 
-    auto estimator1 =   integrate(elements(mesh), pow(term1 , 2) ).broken(P0h);
+    auto H1estimator = integrate(elements(mesh), term1*term1 ).broken(P0h).sqrt();
 
-    auto estimator2 = integrate(internalfaces(mesh),vf::h()* pow(term2,2)).broken( P0h );
+    H1estimator += integrate(internalfaces(mesh),0.25*vf::h()*term2*term2).broken( P0h ).sqrt();
 
-    auto estimator3 = integrate( markedfaces(mesh,mesh->markerName("Neumann")),
-				 vf::h()* pow(term3 ,2) 
-                            ).broken( P0h );
+    H1estimator += integrate( markedfaces(mesh,mesh->markerName("Neumann")),
+                              vf::h()*term3*term3 ).broken( P0h ).sqrt();
 
-    
-
-     auto h=vf::project(P0h, elements(mesh), vf::h() );
-     double estimatorH1=elem_prod(estimator1.sqrt()+estimator2.sqrt()+estimator3.sqrt(),h.pow(Order-1)).pow(2).sum();
-     double estimatorL2=elem_prod(estimator1.sqrt()+estimator2.sqrt()+estimator3.sqrt(),h.pow(Order)).pow(2).sum();
-
-
-/*
-     for(int i=0;i<P0h->nLocalDof();i++){
-       estimatorP0(i)=i+1;
-     }
-     estimatorP0.sqrt();
-     for(int i=0;i<P0h->nLocalDof();i++){
-       std::cout<<"estimatorP0("<<i<<") = "<<estimatorP0(i)<<std::endl;
-     }
-     std::cout<<"et maintenant la puissance2 "<<std::endl;
-     for(int i=0;i<P0h->nLocalDof();i++){
-       estimatorP0(i)=i+1;
-     }
-     estimatorP0.pow(2);
-     for(int i=0;i<P0h->nLocalDof();i++){
-       std::cout<<"estimatorP0("<<i<<")="<<estimatorP0(i);
-     }
-*/
-
-
-       //  estimatorP0+=estimatorP0_internalfaces;
-       //estimatorP0+=estimatorP0_Neumann;
-       //estimatorP0.printMatlab("estimator_based_on_residuals.m");
-       //double estimator =  math::sqrt(estimatorP0.sum()) ;
+    auto h=vf::project(P0h, elements(mesh), vf::h() );
+    double estimatorH1=math::sqrt(H1estimator.pow(2).sum());
+    double estimatorL2=math::sqrt(element_product(H1estimator,h).pow(2).sum());
 
     Y[0] = L2error;
     Y[1] = H1error;
-    // Y[2] = estimator*math::pow(meshSize,Order);
-    //Y[3] = estimator*math::pow(meshSize,Order-1);
     Y[2] = estimatorL2;
     Y[3] = estimatorH1;
 
@@ -508,7 +465,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         exporter->step(0)->add( "unknown", u );
         exporter->step(0)->add( "exact solution", exact_solution);
         exporter->step(0)->add( "u - exact solution", u_minus_exact) ;
-	//        exporter->step(0)->add( "estimated error" , estimatorP0);
+        exporter->step(0)->add( "H1 error estimator" , H1estimator);
 
         exporter->save();
         Log() << "exportResults done\n";

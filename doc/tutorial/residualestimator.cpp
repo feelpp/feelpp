@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-07
 
-  Copyright (C) 2008-2010 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2010 Université Joseph Fourier (Grenoble I)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -76,23 +76,9 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    //first order
     app.add( new ResidualEstimator<1,1>( app.vm(), app.about() ) );
     app.add( new ResidualEstimator<2,1>( app.vm(), app.about() ) );
     app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
-    //second order
-    /*    app.add( new ResidualEstimator<1,2>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<2,2>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<3,2>( app.vm(), app.about() ) );
-    //third order
-    app.add( new ResidualEstimator<1,3>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<2,3>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<3,3>( app.vm(), app.about() ) );
-    //fourth
-    app.add( new ResidualEstimator<1,4>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<2,4>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<3,4>( app.vm(), app.about() ) );
-    */				  
 
     /** \endcode */
 
