@@ -30,6 +30,11 @@
 
 #include <life/lifealg/vectorublas.hpp>
 
+#if defined( HAVE_TBB )
+#include <parallel_for.h>
+#include <blocked_range.h>
+#endif // HAVE_TBB
+
 namespace Life
 {
 /// \cond detail
@@ -527,6 +532,53 @@ VectorUblas<T,Storage>::checkInvariant() const
         (this->lastLocalIndex())
         (this->firstLocalIndex())
         (this->localSize()).error( "vector invalid size" );
+}
+
+namespace detail
+{
+template<typename VectorType>
+struct Sqrt
+{
+    VectorType M_in;
+    VectorType& M_out;
+    Sqrt( VectorType const& _in, VectorType& _out )
+        :
+        M_in( _in ), M_out( _out )
+        { }
+    void operator() ( const tbb::blocked_range<size_t>& r ) const
+        {
+            for ( size_t i = r.begin(); i != r.end(); ++i )
+            {
+                M_out[i] = math::sqrt( M_in[i] );
+            }
+        }
+};
+} //detail
+template <typename T, typename Storage>
+typename VectorUblas<T,Storage>::this_type
+VectorUblas<T,Storage>::sqrt() const
+{
+    this_type _tmp( this->map() );
+
+#if defined( HAVE_TBB )
+    tbb::parallel_for( tbb::blocked_range<size_t>(0, this->localSize() ),
+                       detail::Sqrt<this_type>( *this, _tmp ) );
+#else
+    for(int i = 0; i < this->localSize(); ++i )
+        _tmp[i] = math::sqrt( this->operator[](i) );
+#endif // HAVE_TBB
+
+    return _tmp;
+}
+
+template <typename T, typename Storage>
+typename VectorUblas<T,Storage>::this_type
+VectorUblas<T,Storage>::pow(int n) const
+{
+    this_type _out( this->map() );
+    for(int i = 0; i < this->localSize(); ++i )
+        _out[i] = math::pow( this->operator[](i), n );
+    return _out;
 }
 
 //

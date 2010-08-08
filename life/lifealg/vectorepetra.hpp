@@ -436,6 +436,10 @@ public:
         this->zero();
     }
 
+    /**
+     * set the entries to the constant \p v
+     */
+    void setConstant( value_type v ) { this->set( v ); }
 
     /**
      * @returns the \p VectorEpetra to a pristine state.

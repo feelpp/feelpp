@@ -359,6 +359,10 @@ public:
         this->zero();
     }
 
+    /**
+     * set the entries to the constant \p v
+     */
+    void setConstant( value_type v ) { this->set( v ); }
 
     /**
      * @returns the \p VectorPetsc<T> to a pristine state.

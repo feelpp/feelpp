@@ -31,7 +31,7 @@
 #define __VectorUblas_H 1
 
 #include <set>
-
+#include <boost/operators.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <gmm_vector.h>
@@ -57,7 +57,11 @@ namespace ublas = boost::numeric::ublas;
  *  @see
  */
 template<typename T, typename Storage = ublas::vector<T> >
-class VectorUblas : public Vector<T>
+class VectorUblas
+    : public Vector<T>
+    , boost::addable<VectorUblas<T,Storage> >
+    , boost::subtractable<VectorUblas<T,Storage> >
+
 {
     typedef Vector<T> super1;
 public:
@@ -349,6 +353,11 @@ public:
      */
     void setGlobalValue( size_type i, value_type v ) const { M_global_values( i ) = v; }
 
+    /**
+     * set the entries to the constant \p v
+     */
+    void setConstant( value_type v ) { _M_vec = ublas::scalar_vector<double>(_M_vec.size(), v ); }
+
     //@}
 
     /** @name  Methods
@@ -567,7 +576,7 @@ public:
      * @return the \f$l_1\f$-norm of the vector, i.e.  the sum of the
      * absolute values.
      */
-    real_type l1Norm() const
+    LIFE_DONT_INLINE real_type l1Norm() const
     {
         checkInvariant();
         double local_l1 = ublas::norm_1( _M_vec );
@@ -591,7 +600,7 @@ public:
      * @return the \f$l_2\f$-norm of the vector, i.e.  the square root
      * of the sum of the squares of the elements.
      */
-    real_type l2Norm() const
+    LIFE_DONT_INLINE real_type l2Norm() const
     {
         checkInvariant();
         real_type local_norm2 = ublas::inner_prod( _M_vec, _M_vec );
@@ -656,29 +665,15 @@ public:
     /**
      * @compute sqrt on each element of the vector.
      */
-    void sqrt() 
-    {
-      checkInvariant();
-      for( size_type i = 0; i < this->localSize(); ++i ){ 
-        _M_vec.operator[](i) = math::sqrt(_M_vec.operator[](i));
-       }
-      return;
-    }
-    
-    
+    LIFE_DONT_INLINE this_type sqrt() const;
+
+
     /**
      *@compute pow on each element of the vector.
      */
-    void pow(int n)
-    {
-      checkInvariant();
-      for( size_type i = 0; i < this->localSize(); ++i ){
-        _M_vec.operator[](i) = math::pow( _M_vec.operator[](i), n);
-      }
-      return;
-    }    
-     
-    
+    this_type pow(int n) const;
+
+
     /**
      * \f$U(0-DIM)+=s\f$.
      * Addition of \p s to all components.
@@ -801,6 +796,49 @@ private:
     mutable bool M_global_values_updated;
     mutable ublas::vector<value_type> M_global_values;
 };
+
+/**
+ * Computes the inner product of two vectors and eventually in parallel
+ * \param v1 vector (eventually distributed)
+ * \param v2 vector (eventually distributed)
+ *
+ * \return the inner product of \p v1 and \p v2
+ */
+template <typename T>
+VectorUblas<T>
+element_product( VectorUblas<T> const& v1, VectorUblas<T> const& v2 )
+{
+    LIFE_ASSERT( v1.localSize() == v2.localSize() &&
+                 v1.size() == v2.size() )
+        ( v1.localSize() )( v2.localSize() )
+        ( v1.size() )( v2.size() ).error( "incompatible vector sizes" );
+
+    typedef typename type_traits<T>::real_type real_type;
+
+    VectorUblas<real_type> _t( v1.map() );
+    size_type s = v1.localSize();
+    size_type start = v1.firstLocalIndex();
+    for( size_type i = 0; i < s; ++i )
+        _t.operator()(start+i) = v1.operator()( start + i )* v2.operator()( start + i );
+    return _t;
+}
+/**
+ * Computes the element wise product of two vectors and eventually in parallel
+ * \param v1 vector (eventually distributed)
+ * \param v2 vector (eventually distributed)
+ *
+ * \return the inner product of \p v1 and \p v2
+ */
+template <typename T>
+VectorUblas<T>
+element_product( boost::shared_ptr<VectorUblas<T> > const& v1,
+                 boost::shared_ptr<VectorUblas<T> > const& v2 )
+{
+    return element_product( *v1, *v2 );
+}
+
+
+
 
 
 } // Life

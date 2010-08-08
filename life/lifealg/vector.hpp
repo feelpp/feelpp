@@ -118,6 +118,21 @@ public:
     virtual void zero ( size_type /*start*/,  size_type /*stop*/ ) = 0;
 
     /**
+     * set the entries to the constant \p v
+     */
+    virtual void setConstant( value_type v ) = 0;
+
+    /**
+     * set the entries to 0
+     */
+    virtual void setZero() { this->zero(); }
+
+    /**
+     * set the entries to 1
+     */
+    virtual void setOnes() { this->setConstant( 1 ); }
+
+    /**
      * Creates a copy of this vector and returns it in an \p shared_ptr<>.
      * This must be overloaded in the derived classes.
      */
@@ -539,8 +554,6 @@ inner_product( boost::shared_ptr<Vector<T> > const& v1,
 {
     return inner_product( *v1, *v2 );
 }
-
-
 
 
 
