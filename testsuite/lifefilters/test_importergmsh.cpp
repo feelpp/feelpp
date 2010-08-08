@@ -102,6 +102,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
     mesh = createGMSHMesh( _mesh=new mesh_type,
                            _desc=domain( _name=(boost::format( "simplex-%1%" )  % T::value).str() ,
                                          _usenames=true,
+                                         _addmidpoint=false,
                                          _shape="simplex",
                                          _dim=T::value,
                                          _h=0.5 ) );
