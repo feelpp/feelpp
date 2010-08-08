@@ -258,7 +258,7 @@ ExporterGmsh<MeshType,N>::gmsh_save_Elements( std::ostream& out,
         //out<< elem_number <<" ";
         elem_number++;
         out << ordering.type();
-        out<<" 3 " << elt_it->marker().value() << " 2 " << elt_it->processId();
+        out<<" 3 " << elt_it->marker().value() << " " << elt_it->marker2().value() << " " << elt_it->processId();
         for (uint16_type p=0;p<element_type::numPoints;++p)
         {
             //std::cout << "index " << p << " -> " << ordering.fromGmshId(p) << " -> " << elt_it->point( ordering.fromGmshId(p) ).id()+1 << " : " << elt_it->point( ordering.fromGmshId(p) ).node() << "\n";
