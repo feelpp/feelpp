@@ -157,7 +157,7 @@ Environment::systemGeoRepository()
     fs::path rep_path;
 
     rep_path = BOOST_PP_STRINGIZE(INSTALL_PREFIX);
-    rep_path /= "geo";
+    rep_path /= "share/life/geo";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
 
