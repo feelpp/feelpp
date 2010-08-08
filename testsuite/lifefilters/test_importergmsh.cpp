@@ -1,11 +1,11 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++: coding: utf-8 -*-
 
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-06-16
 
-  Copyright (C) 2007-2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -28,54 +28,114 @@
  */
 #include <sstream>
 
+#include <boost/timer.hpp>
+// Boost.Test
+// make sure that the init_unit_test function is defined by UTF
+#define BOOST_TEST_MAIN
+// give a name to the testsuite
+#define BOOST_TEST_MODULE mesh filter testsuite
+// disable the main function creation, use our own
+#define BOOST_TEST_NO_MAIN
+#include <boost/test/unit_test.hpp>
+#include <boost/test/test_case_template.hpp>
+#include <boost/mpl/list.hpp>
+
+
+using boost::unit_test::test_suite;
+
+
 #include <life/lifediscr/mesh.hpp>
 #include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
+#include <life/lifefilters/exporter.hpp>
 
 using namespace Life;
 
-template<uint16_type Dim, template<uint16_type,uint16_type,uint16_type> class Entity>
-struct TestImporterGmsh
+template<int Dim>
+void
+checkCreateGmshMesh( std::string const& shape )
 {
-    typedef Entity<Dim, 1,Dim> entity_type;
-    typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptr_type;
-public:
-    TestImporterGmsh()
-        :
-        M_mesh()
-    {}
-    void test( double hsize )
-    {
-        Debug() << "testing ImporterGmsh with file format\n";
-        M_mesh = mesh_ptr_type( new mesh_type );
-        std::string fname;
-        GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
+    typedef Mesh<Simplex<Dim,1> > mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
+    mesh_ptrtype mesh;
+    // simplex
+    mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=domain( _name=(boost::format( "%1%-%2%" )  % shape % Dim).str() ,
+                                         _usenames=true,
+                                         _addmidpoint=false,
+                                         _shape=shape,
+                                         _dim=Dim,
+                                         _h=0.5 ) );
 
-        td.setCharacteristicLength( hsize );
-        fname = td.generate( entity_type::name().c_str() );
-        ImporterGmsh<mesh_type> import( fname );
-        std::ostringstream ostr;
-        M_mesh->accept( import );
-        Debug() << "testing ImporterGmsh with file format done\n";
-    }
-private:
-    mesh_ptr_type M_mesh;
-};
+    auto neumann = markedfaces( mesh, "Neumann" );
+    BOOST_CHECK_NE( std::distance( neumann.get<1>(), neumann.get<2>() ), 0 );
+    auto dirichlet = markedfaces( mesh, "Dirichlet" );
+    BOOST_CHECK_NE( std::distance( dirichlet.get<1>(), dirichlet.get<2>() ), 0 );
+    BOOST_CHECK_EQUAL( std::distance( neumann.get<1>(), neumann.get<2>() )+
+                       std::distance( dirichlet.get<1>(), dirichlet.get<2>() ),
+                       std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ) );
+}
+BOOST_AUTO_TEST_SUITE( gmshsuite )
 
-int main( int argc, char** argv )
+typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( gmshsimplex, T, dim_types )
 {
-    /* assertions handling */
-    Life::Assert::setLog( "test_importergmsh.assert");
+    checkCreateGmshMesh<T::value>( "simplex" );
+}
+BOOST_AUTO_TEST_CASE_TEMPLATE( gmshhypercube, T, dim_types )
+{
+    checkCreateGmshMesh<T::value>( "hypercube" );
+}
+BOOST_AUTO_TEST_CASE_TEMPLATE( gmshellipsoid, T, dim_types )
+{
+    checkCreateGmshMesh<T::value>( "ellipsoid" );
+}
 
-    double h = 1.0;
-    if ( argc == 2 )
-        h = ::atof( argv[1] );
+BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
+{
+    typedef Mesh<Simplex<T::value,1> > mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    //TestImporterGmsh<1,Simplex> test_simplex_1;
-    TestImporterGmsh<2,Simplex> test_simplex_2;
-    test_simplex_2.test( h );
-    test_simplex_2.test( h );
-    //TestImporterGmsh<2,Simplex> test_simplex_2;
+    mesh_ptrtype mesh,meshimp;
+    // simplex
+    mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=domain( _name=(boost::format( "simplex-%1%" )  % T::value).str() ,
+                                         _usenames=true,
+                                         _shape="simplex",
+                                         _dim=T::value,
+                                         _h=0.5 ) );
+
+    typedef Exporter<mesh_type> export_type;
+    typedef boost::shared_ptr<export_type> export_ptrtype;
+    export_ptrtype exporter( Exporter<mesh_type>::New( "gmsh", "gmshexp" ) );
+    exporter->step(0)->setMesh( mesh );
+    exporter->save();
+
+    meshimp = loadGMSHMesh( _mesh=new mesh_type,
+                            _filename="gmshexp-1_0.msh",
+                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+    auto neumann1 = markedfaces( mesh, "Neumann" );
+    auto neumann2 = markedfaces( meshimp, mesh->markerName("Neumann") );
+    BOOST_CHECK_EQUAL( std::distance( neumann1.get<1>(), neumann1.get<2>() ),
+                       std::distance( neumann2.get<1>(), neumann2.get<2>() ) );
+    auto dirichlet1 = markedfaces( mesh, "Dirichlet" );
+    auto dirichlet2 = markedfaces( meshimp, mesh->markerName("Dirichlet") );
+    BOOST_CHECK_EQUAL( std::distance( dirichlet1.get<1>(), dirichlet1.get<2>() ),
+                       std::distance( dirichlet2.get<1>(), dirichlet2.get<2>() ) );
+    BOOST_CHECK_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
+                       std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
+    BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
+                       std::distance( meshimp->beginElement(), meshimp->endElement() ) );
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+int BOOST_TEST_CALL_DECL
+main( int argc, char* argv[] )
+{
+    Life::Environment env( argc, argv );
+    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
+
+    return ret;
 }
