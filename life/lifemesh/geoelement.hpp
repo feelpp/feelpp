@@ -81,32 +81,32 @@ public:
 
     SubFaceOf()
         :
-        _M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value ),
-        _M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value )
+        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value ),
+        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value )
     {}
 
     SubFaceOf( element_connectivity_type const& connect0 )
         :
-        _M_element0( connect0 ),
-        _M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_uint16_type_value )
+        M_element0( connect0 ),
+        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_uint16_type_value )
     {}
     SubFaceOf( element_connectivity_type const& connect0,
                element_connectivity_type const& connect1 )
         :
-        _M_element0( connect0 ),
-        _M_element1( connect1 )
+        M_element0( connect0 ),
+        M_element1( connect1 )
     {}
 
     SubFaceOf( SubFaceOf const& sf )
         :
-        _M_element0( sf._M_element0 ),
-        _M_element1( sf._M_element1 )
+        M_element0( sf.M_element0 ),
+        M_element1( sf.M_element1 )
     {
     }
     SubFaceOf( SubFaceOfNone const& /*sf*/ )
         :
-        _M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value ),
-        _M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value )
+        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value ),
+        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value )
     {
     }
     virtual ~SubFaceOf() {}
@@ -115,8 +115,8 @@ public:
     {
         if ( this != &sf )
         {
-            _M_element0 = sf._M_element0;
-            _M_element1 = sf._M_element1;
+            M_element0 = sf.M_element0;
+            M_element1 = sf.M_element1;
 
         }
         return *this;
@@ -128,69 +128,69 @@ public:
     entity_type const& element( uint16_type e ) const
     {
         if ( e == 0 )
-            return *boost::get<0>( _M_element0 );
+            return *boost::get<0>( M_element0 );
         else
-            return *boost::get<0>( _M_element1 );
+            return *boost::get<0>( M_element1 );
     }
 
-    entity_type const& element0() const { return *boost::get<0>( _M_element0 ); }
-    entity_type const& element1() const { return *boost::get<0>( _M_element1 ); }
+    entity_type const& element0() const { return *boost::get<0>( M_element0 ); }
+    entity_type const& element1() const { return *boost::get<0>( M_element1 ); }
 
-    size_type ad_first() const { return boost::get<1>( _M_element0 ); }
-    uint16_type pos_first() const { return boost::get<2>( _M_element0 ); }
-    size_type proc_first() const { return boost::get<3>( _M_element0 ); }
+    size_type ad_first() const { return boost::get<1>( M_element0 ); }
+    uint16_type pos_first() const { return boost::get<2>( M_element0 ); }
+    size_type proc_first() const { return boost::get<3>( M_element0 ); }
 
-    size_type ad_second() const { return boost::get<1>( _M_element1 ); }
-    uint16_type pos_second() const { return boost::get<2>( _M_element1 ); }
-    size_type proc_second() const { return boost::get<3>( _M_element1 ); }
+    size_type ad_second() const { return boost::get<1>( M_element1 ); }
+    uint16_type pos_second() const { return boost::get<2>( M_element1 ); }
+    size_type proc_second() const { return boost::get<3>( M_element1 ); }
 
-    element_connectivity_type const& connection0() const { return _M_element0; }
-    element_connectivity_type const& connection1() const { return _M_element1; }
+    element_connectivity_type const& connection0() const { return M_element0; }
+    element_connectivity_type const& connection1() const { return M_element1; }
 
     void setConnection( uint16_type f, element_connectivity_type const& connect )
     {
         if ( f == 0 )
-            _M_element0 = connect;
+            M_element0 = connect;
         else
-            _M_element1 = connect;
+            M_element1 = connect;
 
     }
 
     void setConnection0( element_connectivity_type const& connect )
     {
-        _M_element0 = connect;
+        M_element0 = connect;
     }
-    void setConnection1( element_connectivity_type const& connect ) { _M_element1 = connect; }
+    void setConnection1( element_connectivity_type const& connect ) { M_element1 = connect; }
 
-    bool isConnectedTo0() const { return ( boost::get<1>( _M_element0 ) != invalid_size_type_value &&
-                                           boost::get<2>( _M_element0 ) != invalid_uint16_type_value &&
-                                           boost::get<3>( _M_element0 ) != invalid_size_type_value ); }
-    bool isConnectedTo1() const { return ( boost::get<1>( _M_element1 ) != invalid_size_type_value &&
-                                           boost::get<2>( _M_element1 ) != invalid_uint16_type_value &&
-                                           boost::get<3>( _M_element1 ) != invalid_size_type_value ); }
+    bool isConnectedTo0() const { return ( boost::get<1>( M_element0 ) != invalid_size_type_value &&
+                                           boost::get<2>( M_element0 ) != invalid_uint16_type_value &&
+                                           boost::get<3>( M_element0 ) != invalid_size_type_value ); }
+    bool isConnectedTo1() const { return ( boost::get<1>( M_element1 ) != invalid_size_type_value &&
+                                           boost::get<2>( M_element1 ) != invalid_uint16_type_value &&
+                                           boost::get<3>( M_element1 ) != invalid_size_type_value ); }
 
 
     bool
     isInterProcessDomain( size_type p ) const
     {
-        return ( ( boost::get<3>( _M_element1 ) != invalid_size_type_value ) &&
-                 ( boost::get<3>( _M_element0 ) == p ) &&
-                 ( boost::get<3>( _M_element0 ) != boost::get<3>( _M_element1 )) );
+        return ( ( boost::get<3>( M_element1 ) != invalid_size_type_value ) &&
+                 ( boost::get<3>( M_element0 ) == p ) &&
+                 ( boost::get<3>( M_element0 ) != boost::get<3>( M_element1 )) );
     }
     bool
     isIntraProcessDomain( size_type p ) const
     {
-        return ( ( boost::get<3>( _M_element0 ) == p ) &&
-                 ( boost::get<3>( _M_element1 ) == p ) );
+        return ( ( boost::get<3>( M_element0 ) == p ) &&
+                 ( boost::get<3>( M_element1 ) == p ) );
     }
 
     void disconnect()
     {
-        _M_element0 = boost::make_tuple( (ElementType const*)0,
+        M_element0 = boost::make_tuple( (ElementType const*)0,
                                          invalid_size_type_value,
                                          invalid_uint16_type_value,
                                          invalid_size_type_value );
-        _M_element1 = boost::make_tuple( (ElementType const*)0,
+        M_element1 = boost::make_tuple( (ElementType const*)0,
                                          invalid_size_type_value,
                                          invalid_uint16_type_value,
                                          invalid_size_type_value );
@@ -198,8 +198,8 @@ public:
 
 private:
 
-    element_connectivity_type _M_element0;
-    element_connectivity_type _M_element1;
+    element_connectivity_type M_element0;
+    element_connectivity_type M_element1;
 
 };
 
@@ -241,10 +241,7 @@ public:
         :
         super(),
         super2(),
-        _M_marker1(),
-        _M_marker2(),
-        _M_marker3(),
-        _M_pt()
+        M_facept()
     {}
 
 
@@ -253,20 +250,14 @@ public:
         :
         super( id, boundary ),
         super2(),
-        _M_marker1(),
-        _M_marker2(),
-        _M_marker3(),
-        _M_pt()
+        M_facept()
     {}
 
     GeoElement0D( size_type id, node_type const& n,  bool boundary = false )
         :
         super( id, n, boundary ),
         super2(),
-        _M_marker1(),
-        _M_marker2(),
-        _M_marker3(),
-        _M_pt()
+        M_facept()
     {}
 
     //! Declares item id and if it is on boundary, and provides coordinate
@@ -275,10 +266,7 @@ public:
         :
         super( id, x, y, z, boundary ),
         super2(),
-        _M_marker1(),
-        _M_marker2(),
-        _M_marker3(),
-        _M_pt()
+        M_facept()
     {}
 
     template<typename SF>
@@ -286,10 +274,7 @@ public:
         :
         super( g ),
         super2( g ),
-        _M_marker1( g.marker() ),
-        _M_marker2( g.marker2() ),
-        _M_marker3( g.marker3() ),
-        _M_pt( g._M_pt )
+        M_facept( g.M_facept )
     {
     }
 
@@ -301,10 +286,7 @@ public:
     {
         super::operator=( g );
         super2::operator=( g );
-        _M_marker1 = g.marker();
-        _M_marker2 = g.marker2();
-        _M_marker3 = g.marker3();
-        _M_pt = g._M_pt;
+        M_facept = g.M_facept;
         return *this;
     }
 
@@ -333,45 +315,43 @@ public:
     /**
      * \return the point associated to the face
      */
-    geo0d_type const& point( uint16_type /*i*/ ) const { return _M_pt; }
+    geo0d_type const& point( uint16_type /*i*/ ) const { return M_facept; }
 
     /**
      * set the geometrical point associated to the face
      */
-    //void setPoint( uint16_type /*i*/, GeoElement0D<Dim,SubFaceOfNone,T> const& e ) { _M_pt = e; }
-    void setPoint( uint16_type /*i*/, geo0d_type const& e ) { _M_pt = e; }
+    //void setPoint( uint16_type /*i*/, GeoElement0D<Dim,SubFaceOfNone,T> const& e ) { M_facept = e; }
+    void setPoint( uint16_type /*i*/, geo0d_type const& e ) { M_facept = e; }
 
     /**
      * \return marker1() index
      */
-    Marker1 const& marker() const { return _M_marker1; }
+    Marker1 const& marker() const { return super::marker(); }
     /**
      * \return marker1() index
      */
-    Marker1& marker() { return _M_marker1; }
+    Marker1& marker() { return super::marker(); }
     /**
      * \return marker2() index
      */
-    Marker2 const& marker2() const { return _M_marker2; }
+    Marker2 const& marker2() const { return super::marker2(); }
     /**
      * \return marker2() index
      */
-    Marker2& marker2() { return _M_marker2; }
+    Marker2& marker2() { return super::marker2(); }
     /**
      * \return marker3() index
      */
-    Marker3 const& marker3() const { return _M_marker3; }
+    Marker3 const& marker3() const { return super::marker3(); }
     /**
      * \return marker3() index
      */
-    Marker3& marker3() { return _M_marker3; }
+    Marker3& marker3() { return super::marker3(); }
+
+
 
 private:
-    Marker1 _M_marker1;
-    Marker2 _M_marker2;
-    Marker3 _M_marker3;
-
-    geo0d_type _M_pt;
+    geo0d_type M_facept;
 };
 
 
@@ -437,7 +417,7 @@ public:
         :
         super( id ),
         super2(),
-        _M_vertices( numLocalVertices, 0 )
+        M_vertices( numLocalVertices, 0 )
     {
     }
     /**
@@ -447,7 +427,7 @@ public:
         :
         super( g ),
         super2( g ),
-        _M_vertices( g._M_vertices )
+        M_vertices( g.M_vertices )
     {}
 
     /**
@@ -465,7 +445,7 @@ public:
         {
             super::operator=( g );
             super2::operator=( g );
-            _M_vertices = g._M_vertices;
+            M_vertices = g.M_vertices;
         }
         return *this;
     }
@@ -500,12 +480,12 @@ public:
 
     void setMap( uint8_type k_1, uint8_type k_2 )
     {
-        _M_map[k_1] = k_2;
+        M_map[k_1] = k_2;
     }
 
     uint8_type map( uint8_type k_1 ) const
     {
-        return _M_map[ k_1 ];
+        return M_map[ k_1 ];
     }
 
     Marker1 const& marker() const { return super::marker(); }
@@ -519,7 +499,7 @@ public:
     void setFace( uint16_type const i, point_type const & p )
     {
         LIFE_ASSERT( i < numLocalVertices )( i ).error( "invalid local point index" );
-        _M_vertices[i] = const_cast<point_type*>( boost::addressof( p ) );
+        M_vertices[i] = const_cast<point_type*>( boost::addressof( p ) );
     }
 
     edge_permutation_type permutation( uint16_type /*i*/ ) const
@@ -529,17 +509,17 @@ public:
 
     point_type const& face( uint16_type i ) const
     {
-        return *_M_vertices[i];
+        return *M_vertices[i];
     }
     point_type const* facePtr( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalVertices )( this->id() )( i ).error( "invalid local vertex index" );
-        return _M_vertices[i];
+        return M_vertices[i];
     }
     point_type* facePtr( uint16_type i )
     {
         LIFE_ASSERT( i < numLocalVertices )( this->id() )( i ).error( "invalid local vertex index" );
-        return _M_vertices[i];
+        return M_vertices[i];
     }
 
     typedef typename ublas::bounded_array<point_type*, numLocalVertices>::iterator face_iterator;
@@ -551,7 +531,7 @@ public:
     std::pair<face_iterator,face_iterator>
     faces()
     {
-        return std::make_pair( _M_vertices.begin(), _M_vertices.end() );
+        return std::make_pair( M_vertices.begin(), M_vertices.end() );
     }
 
     /**
@@ -560,12 +540,12 @@ public:
     std::pair<face_const_iterator,face_const_iterator>
     faces() const
     {
-        return std::make_pair( _M_vertices.begin(), _M_vertices.end() );
+        return std::make_pair( M_vertices.begin(), M_vertices.end() );
     }
 private:
 
-    std::vector<uint8_type> _M_map;
-    ublas::bounded_array<point_type*, numLocalVertices> _M_vertices;
+    std::vector<uint8_type> M_map;
+    ublas::bounded_array<point_type*, numLocalVertices> M_vertices;
 
 };
 
@@ -632,12 +612,12 @@ public:
         :
         super( id ),
         super2(),
-        _M_edges( numLocalEdges ),
-        _M_edge_permutation( numLocalEdges )
+        M_edges( numLocalEdges ),
+        M_edge_permutation( numLocalEdges )
     {
-        std::fill( _M_edges.begin(), _M_edges.end(), (edge_type*)0 );
-        std::fill( _M_edge_permutation.begin(),
-                   _M_edge_permutation.end(),
+        std::fill( M_edges.begin(), M_edges.end(), (edge_type*)0 );
+        std::fill( M_edge_permutation.begin(),
+                   M_edge_permutation.end(),
                    edge_permutation_type(edge_permutation_type::IDENTITY) );
     }
 
@@ -648,8 +628,8 @@ public:
         :
         super( g ),
         super2( g ),
-        _M_edges( g._M_edges ),
-        _M_edge_permutation( g._M_edge_permutation )
+        M_edges( g.M_edges ),
+        M_edge_permutation( g.M_edge_permutation )
     {}
 
     /**
@@ -667,8 +647,8 @@ public:
         {
             super::operator=( g );
             super2::operator=( g );
-            _M_edges = g._M_edges;
-            _M_edge_permutation = g._M_edge_permutation;
+            M_edges = g.M_edges;
+            M_edge_permutation = g.M_edge_permutation;
         }
         return *this;
     }
@@ -711,8 +691,8 @@ public:
     edge_type const& edge( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        LIFE_ASSERT( _M_edges[i] )( i ).error( "invalid edge (null pointer)" );
-        return boost::cref( *_M_edges[i] );
+        LIFE_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        return boost::cref( *M_edges[i] );
     }
 
     /**
@@ -721,14 +701,14 @@ public:
     edge_type const& face( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        LIFE_ASSERT( _M_edges[i] )( i ).error( "invalid edge (null pointer)" );
-        return boost::cref( *_M_edges[i] );
+        LIFE_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        return boost::cref( *M_edges[i] );
     }
 
     edge_type const* facePtr( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalEdges )( this->id() )( i ).error( "invalid local edge index" );
-        return _M_edges[i];
+        return M_edges[i];
     }
 
     /**
@@ -738,7 +718,7 @@ public:
     void setFace( uint16_type const i, edge_type const & p )
     {
         LIFE_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        _M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
+        M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
     }
 
     /**
@@ -747,7 +727,7 @@ public:
     edge_permutation_type edgePermutation( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        return _M_edge_permutation[i];
+        return M_edge_permutation[i];
     }
     /**
      * \sa edgePermutation(), permutation()
@@ -755,7 +735,7 @@ public:
     edge_permutation_type facePermutation( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        return _M_edge_permutation[i];
+        return M_edge_permutation[i];
     }
 
     /**
@@ -764,7 +744,7 @@ public:
     edge_permutation_type permutation( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        return _M_edge_permutation[i];
+        return M_edge_permutation[i];
     }
 
     /**
@@ -774,13 +754,13 @@ public:
     void setEdge( uint16_type i, edge_type const & p )
     {
         LIFE_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        _M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
+        M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
     }
 
     void setEdgePermutation( uint16_type i, edge_permutation_type o )
     {
         LIFE_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        _M_edge_permutation[i] = o;
+        M_edge_permutation[i] = o;
     }
 
     typedef typename ublas::bounded_array<edge_type*, numLocalEdges>::iterator face_iterator;
@@ -792,7 +772,7 @@ public:
     std::pair<face_iterator,face_iterator>
     faces()
     {
-        return std::make_pair( _M_edges.begin(), _M_edges.end() );
+        return std::make_pair( M_edges.begin(), M_edges.end() );
     }
 
     /**
@@ -801,13 +781,13 @@ public:
     std::pair<face_const_iterator,face_const_iterator>
     faces() const
     {
-        return std::make_pair( _M_edges.begin(), _M_edges.end() );
+        return std::make_pair( M_edges.begin(), M_edges.end() );
     }
 
 private:
 
-    ublas::bounded_array<edge_type*, numLocalEdges> _M_edges;
-    ublas::bounded_array<edge_permutation_type, numLocalEdges> _M_edge_permutation;
+    ublas::bounded_array<edge_type*, numLocalEdges> M_edges;
+    ublas::bounded_array<edge_permutation_type, numLocalEdges> M_edge_permutation;
 };
 
 /*-------------------------------------------------------------------------
@@ -872,13 +852,13 @@ public:
         :
         super( id ),
         super2(),
-        _M_edges( numLocalEdges ),
-        _M_faces( numLocalFaces ),
-        _M_edge_permutation( numLocalEdges ),
-        _M_face_permutation( numLocalFaces )
+        M_edges( numLocalEdges ),
+        M_faces( numLocalFaces ),
+        M_edge_permutation( numLocalEdges ),
+        M_face_permutation( numLocalFaces )
     {
-        std::fill( _M_edge_permutation.begin(), _M_edge_permutation.end(), edge_permutation_type( edge_permutation_type::IDENTITY ) );
-        std::fill( _M_face_permutation.begin(), _M_face_permutation.end(), face_permutation_type( face_permutation_type::IDENTITY ) );
+        std::fill( M_edge_permutation.begin(), M_edge_permutation.end(), edge_permutation_type( edge_permutation_type::IDENTITY ) );
+        std::fill( M_face_permutation.begin(), M_face_permutation.end(), face_permutation_type( face_permutation_type::IDENTITY ) );
     }
 
     /**
@@ -888,10 +868,10 @@ public:
         :
         super( g ),
         super2( g ),
-        _M_edges( numLocalEdges ),
-        _M_faces( numLocalFaces ),
-        _M_edge_permutation( g._M_edge_permutation ),
-        _M_face_permutation( g._M_face_permutation )
+        M_edges( numLocalEdges ),
+        M_faces( numLocalFaces ),
+        M_edge_permutation( g.M_edge_permutation ),
+        M_face_permutation( g.M_face_permutation )
     {}
 
     /**
@@ -908,10 +888,10 @@ public:
         if ( this != &g )
             {
                 super::operator=( g );
-                _M_edges = g._M_edges;
-                _M_faces = g._M_faces;
-                _M_edge_permutation = g._M_edge_permutation;
-                _M_face_permutation = g._M_face_permutation;
+                M_edges = g.M_edges;
+                M_faces = g.M_faces;
+                M_edge_permutation = g.M_edge_permutation;
+                M_face_permutation = g.M_face_permutation;
             }
         return *this;
     }
@@ -954,24 +934,24 @@ public:
     edge_type const& edge( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        LIFE_ASSERT( _M_edges[i] )( i ).error( "invalid edge (null pointer)" );
-        return *_M_edges[i];
+        LIFE_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        return *M_edges[i];
     }
 
     edge_type const* edgePtr( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        LIFE_ASSERT( _M_edges[i] )( i ).error( "invalid edge (null pointer)" );
-        return _M_edges[i];
+        LIFE_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        return M_edges[i];
     }
 
     edge_permutation_type edgePermutation( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
 
-        LIFE_ASSERT( _M_edges[i] )( i ).warn( "invalid edge (null pointer)" );
+        LIFE_ASSERT( M_edges[i] )( i ).warn( "invalid edge (null pointer)" );
 
-        return _M_edge_permutation[i];
+        return M_edge_permutation[i];
     }
 
     /**
@@ -980,53 +960,53 @@ public:
     void setEdge( uint16_type const i, edge_type const & p )
     {
         LIFE_ASSERT( boost::addressof( p ) )( i ).error( "invalid edge (null pointer)" );
-        _M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
-        LIFE_ASSERT( _M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
+        LIFE_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
 
     }
 
     void setEdgePermutation( uint16_type i, edge_permutation_type o )
     {
         LIFE_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        _M_edge_permutation[i] = o;
+        M_edge_permutation[i] = o;
     }
 
     face_type const& face( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
-        LIFE_ASSERT( _M_faces[i] )( this->id() )( i ).error( "invalid edge (null pointer)" );
-        return *_M_faces[i];
+        LIFE_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid edge (null pointer)" );
+        return *M_faces[i];
     }
 
     face_type const* facePtr( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
-        //LIFE_ASSERT( _M_faces[i] )( i ).error( "invalid edge (null pointer)" );
-        return _M_faces[i];
+        //LIFE_ASSERT( M_faces[i] )( i ).error( "invalid edge (null pointer)" );
+        return M_faces[i];
     }
 
     face_permutation_type facePermutation( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
-        LIFE_ASSERT( _M_faces[i] )( this->id() )( i ).error( "invalid face (null pointer)" );
-        return _M_face_permutation[i];
+        LIFE_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid face (null pointer)" );
+        return M_face_permutation[i];
     }
     face_permutation_type permutation( uint16_type i ) const
     {
         LIFE_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
-        LIFE_ASSERT( _M_faces[i] )( this->id() )( i ).error( "invalid face (null pointer)" );
-        return _M_face_permutation[i];
+        LIFE_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid face (null pointer)" );
+        return M_face_permutation[i];
     }
 
     /**
      * Inserts a face.
      */
-    void setFace( uint16_type const i, face_type const & p ) { _M_faces[i] = const_cast<face_type*>( boost::addressof( p ) ); }
+    void setFace( uint16_type const i, face_type const & p ) { M_faces[i] = const_cast<face_type*>( boost::addressof( p ) ); }
 
     void setFacePermutation( uint16_type i, face_permutation_type o )
     {
         LIFE_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
-        _M_face_permutation[i] = o;
+        M_face_permutation[i] = o;
     }
 
     typedef typename ublas::bounded_array<face_type*, numLocalFaces>::iterator face_iterator;
@@ -1038,7 +1018,7 @@ public:
     std::pair<face_iterator,face_iterator>
     faces()
     {
-        return std::make_pair( _M_faces.begin(), _M_faces.end() );
+        return std::make_pair( M_faces.begin(), M_faces.end() );
     }
 
     /**
@@ -1047,15 +1027,15 @@ public:
     std::pair<face_const_iterator,face_const_iterator>
     faces() const
     {
-        return std::make_pair( _M_faces.begin(), _M_faces.end() );
+        return std::make_pair( M_faces.begin(), M_faces.end() );
     }
 private:
 
-    ublas::bounded_array<edge_type*, numLocalEdges> _M_edges;
-    ublas::bounded_array<face_type*, numLocalFaces> _M_faces;
+    ublas::bounded_array<edge_type*, numLocalEdges> M_edges;
+    ublas::bounded_array<face_type*, numLocalFaces> M_faces;
 
-    ublas::bounded_array<edge_permutation_type, numLocalEdges> _M_edge_permutation;
-    ublas::bounded_array<face_permutation_type, numLocalFaces> _M_face_permutation;
+    ublas::bounded_array<edge_permutation_type, numLocalEdges> M_edge_permutation;
+    ublas::bounded_array<face_permutation_type, numLocalFaces> M_face_permutation;
 };
 /*@}*/
 

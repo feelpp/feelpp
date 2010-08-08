@@ -115,13 +115,13 @@ public:
         super( 0, MESH_ENTITY_INTERNAL ),
         super2(Dim),
         M_is_vertex( false )
-    {
-        this->operator[]( 0 ) = x;
-        if (  Dim >= 2 )
-            this->operator[]( 1 ) = y;
-        if ( Dim == 3 )
-            this->operator[]( 2 ) = z;
-    }
+        {
+            this->operator[]( 0 ) = x;
+            if (  Dim >= 2 )
+                this->operator[]( 1 ) = y;
+            if ( Dim == 3 )
+                this->operator[]( 2 ) = z;
+        }
 
 
     /**
@@ -147,8 +147,8 @@ public:
         super( 0, MESH_ENTITY_INTERNAL ),
         super2(__x),
         M_is_vertex( false )
-    {
-    }
+        {
+        }
 
     /**
      * the point coordinate expression
@@ -162,8 +162,8 @@ public:
         super( 0, MESH_ENTITY_INTERNAL ),
         super2(__expr),
         M_is_vertex( false )
-    {
-    }
+        {
+        }
 
     /**
      * copy constructor
@@ -194,14 +194,14 @@ public:
         }
 
     value_type& operator()( int i )
-    {
-        return this->operator[](i);
-    }
+        {
+            return this->operator[](i);
+        }
 
     value_type  operator()( int i ) const
-    {
-        return this->operator[](i);
-    }
+        {
+            return this->operator[](i);
+        }
 
     /**
      * \return \p true if point is a vertex, \p false otherwise
@@ -213,17 +213,17 @@ public:
      * set the point as a vertex or not using \p v
      */
     void  setAsVertex( bool v )
-    {
-        M_is_vertex = v;
-    }
+        {
+            M_is_vertex = v;
+        }
 
     /**
      * set the mesh to which this geometric entity belongs to
      */
     void setMesh( MeshBase const* m )
-    {
-        M_mesh = m;
-    }
+        {
+            M_mesh = m;
+        }
 
     /**
      * \return the mesh to which this geometric entity belongs to
@@ -246,27 +246,27 @@ public:
      * @param __n the node coordinates
      */
     void setNode( node_type const& __n )
-    {
-        *this = __n;
-    }
+        {
+            *this = __n;
+        }
 
     /**
      * \return true if points are equal, false otherwise
      */
     bool operator==( Geo0D const& geo0d ) const
-    {
-        return this->id() == geo0d.id();
-    }
+        {
+            return this->id() == geo0d.id();
+        }
 
     bool operator<( Geo0D const& e ) const
-    {
-        return this->id() < e.id();
-    };
+        {
+            return this->id() < e.id();
+        };
 
     bool operator<( size_type __i ) const
-    {
-        return this->id() < __i;
-    };
+        {
+            return this->id() < __i;
+        };
 
     /**
      * show the information about the Geo0D
@@ -283,18 +283,18 @@ public:
      * creating faces (points) in 1D.
      */
     void setPoint( uint16_type const /*i*/, self_type const & p )
-    {
-        *this = p;
-    }
+        {
+            *this = p;
+        }
 
     /**
      * translate the point by \p trans
      */
     self_type& translate( node_type const& trans )
-    {
-        *this += trans;
-        return *this;
-    }
+        {
+            *this += trans;
+            return *this;
+        }
 
     Marker1 const& marker() const { return M_marker1; }
     Marker1& marker() { return M_marker1; }
@@ -308,6 +308,20 @@ public:
     Marker3& marker3() { return M_marker3; }
     void setMarker3( flag_type v ) { return M_marker3.assign( v ); }
 
+    /**
+     * set the tags associated to the points
+     * - tags[0] physical region
+     * - tags[1] elementary region
+     * - tags[2] particular region
+     */
+    void setTags( std::vector<int> const& tags )
+        {
+            this->setMarker( tags[0] );
+            if ( tags.size() > 1 )
+                this->setMarker2( tags[1] );
+            if ( tags.size() > 2 )
+                this->setProcessId( tags[2] );
+        }
 private:
     bool M_is_vertex;
 
