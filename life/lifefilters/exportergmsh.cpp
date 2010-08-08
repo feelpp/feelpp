@@ -230,17 +230,12 @@ ExporterGmsh<MeshType,N>::gmsh_save_Elements( std::ostream& out,
 
     mesh_ptrtype mesh = __step->mesh();
 
-    //in GMSH format, number of elements is : number_of_faces+number_of_elements
-    typename MeshType::location_face_const_iterator face_it, face_end;
-    //typename MeshType::face_iterator face_it, face_end;
-    face_it = mesh->beginFaceOnBoundary();
-    face_end = mesh->endFaceOnBoundary();
-    //face_it = mesh->beginFace();
-    //face_end = mesh->endFace();
-    int number_faces_on_boundary= std::distance(face_it,face_end);
-    //std::cout << "Faces on boundary: " << number_faces_on_boundary << "\n";
-    double numberElements=number_faces_on_boundary+mesh->numElements();
-    //double numberElements=mesh->numElements();
+    auto allmarkedfaces = markedfaces( mesh );
+    auto face_it = allmarkedfaces.get<1>();
+    auto face_end = allmarkedfaces.get<2>();
+    int number_markedfaces= std::distance(allmarkedfaces.get<1>(),allmarkedfaces.get<2>());
+    double numberElements=number_markedfaces+mesh->numElements();
+
     out << numberElements << "\n";//number element
 
     //first : elements and then in a second time we will put faces
