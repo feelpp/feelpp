@@ -77,6 +77,12 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine HAVE_SYS_TYPES_H
 
+/* Define to 1 if you have tbb. */
+#cmakedefine HAVE_TBB
+
+/* Define to 1 if you have the <tbb.h> header file. */
+#cmakedefine HAVE_TBB_H
+
 /* Define to 1 if you have the <ufsparse/umfpack.h> header file. */
 #cmakedefine HAVE_UFSPARSE_UMFPACK_H
 
