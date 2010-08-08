@@ -131,14 +131,17 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
                                          _dim=T::value,
                                          _h=0.5 ) );
 
+    std::ostringstream estr;
+    estr << "gmshexp-" << T::value;
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    export_ptrtype exporter( Exporter<mesh_type>::New( "gmsh", "gmshexp" ) );
+    export_ptrtype exporter( Exporter<mesh_type>::New( "gmsh", estr.str() ) );
     exporter->step(0)->setMesh( mesh );
     exporter->save();
-
+    std::ostringstream fstr;
+    fstr << "gmshexp-" << T::value << "-1_0.msh";
     meshimp = loadGMSHMesh( _mesh=new mesh_type,
-                            _filename="gmshexp-1_0.msh",
+                            _filename=fstr.str(),
                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
     auto neumann1 = markedfaces( mesh, "Neumann" );
     auto neumann2 = markedfaces( meshimp, mesh->markerName("Neumann") );
