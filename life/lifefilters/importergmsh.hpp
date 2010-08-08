@@ -398,9 +398,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                         __is >> __elementary_region; // elementary region
                     if ( __ntag >= 3 )
                         __is >> __partition_region;
-                    LIFE_ASSERT( __ntag >= 3 )( __ntag )( __physical_region )( __dummy ).warn( "invalid number of tags (should be at least 3)" );
                     for( int nt = 3; nt < __ntag; ++nt )
                         __is >> __dummy;
+                    LIFE_ASSERT( __ntag > 4 )( __ntag )( __physical_region )( __elementary_region )( __partition_region ).warn( "invalid number of tags (should be at least 3)" );
 
                     __np = nptable[__t];
 
