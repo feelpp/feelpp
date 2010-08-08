@@ -1,6 +1,6 @@
- 
-foreach(TEST petsc umfpack matrix ublas )
-  
+
+foreach(TEST petsc umfpack matrix ublas vector )
+
   life_add_test( ${TEST} )
 
 endforeach()

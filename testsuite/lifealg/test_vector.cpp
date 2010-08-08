@@ -1,0 +1,79 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2010-08-07
+
+  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file test_vector.cpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2010-08-07
+ */
+#include <cmath>
+
+#include <boost/timer.hpp>
+// Boost.Test
+// make sure that the init_unit_test function is defined by UTF
+#define BOOST_TEST_MAIN
+// give a name to the testsuite
+#define BOOST_TEST_MODULE 3D integration testsuite
+// disable the main function creation, use our own
+#define BOOST_TEST_NO_MAIN
+#include <boost/test/unit_test.hpp>
+#include <boost/test/test_case_template.hpp>
+#include <boost/mpl/list.hpp>
+
+
+using boost::unit_test::test_suite;
+
+
+#include <life/lifecore/traits.hpp>
+#include <life/lifealg/glas.hpp>
+#include <life/lifealg/vectorublas.hpp>
+
+BOOST_AUTO_TEST_SUITE( vector )
+
+BOOST_AUTO_TEST_CASE( test1 )
+{
+    using namespace Life;
+    VectorUblas<double> v1(100), v2(100), v3(100);
+    v1.setConstant(1);
+    v2.setConstant(2);
+    BOOST_CHECK_CLOSE( v1.sqrt().sum(), v1.size(), 1e-10 );
+    BOOST_CHECK_CLOSE( v2.sqrt().sum(), sqrt(2)*v1.size(), 1e-10 );
+    BOOST_CHECK_CLOSE( v2.pow(2).sqrt().sum(), 2*v1.size(), 1e-10 );
+    v3.setZero();
+    v3 = element_product( v1, v2 );
+    BOOST_CHECK_CLOSE( v3.sqrt().sum(), sqrt(2*1)*v1.size(), 1e-10 );
+    BOOST_CHECK_CLOSE( v3.sum(), 2*1*v1.size(), 1e-10 );
+
+
+
+}
+BOOST_AUTO_TEST_SUITE_END()
+
+int BOOST_TEST_CALL_DECL
+main( int argc, char* argv[] )
+{
+    Life::Environment env( argc, argv );
+    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
+
+    return ret;
+}
