@@ -32,7 +32,14 @@
 
 #include <boost/type_traits.hpp>
 
+#include <boost/tokenizer.hpp>
+#include <boost/token_functions.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/filesystem.hpp>
+
 #include <life/lifecore/life.hpp>
+#include <life/lifecore/environment.hpp>
 #include <life/lifecore/parameter.hpp>
 #include <life/lifecore/factory.hpp>
 #include <life/lifecore/singleton.hpp>
@@ -344,6 +351,10 @@ public:
     //! \return the preamble for gmsh geometries
     std::string preamble() const;
 
+    /**
+     * \return the content of the geo file \p file in a \p std::string
+     */
+    std::string getDescriptionFromFile( std::string const& file ) const;
     //@}
 
 protected:
@@ -537,6 +548,38 @@ BOOST_PARAMETER_FUNCTION(
     if ( dim >= 3 )
         gmsh_ptr->setZ( std::make_pair( zmin, zmax ) );
     return boost::make_tuple( name, gmsh_ptr->description(), gmsh_ptr );
+}
+
+BOOST_PARAMETER_FUNCTION(
+    (boost::tuple<std::string,std::string,gmsh_ptrtype>), // return type
+    geo,    // 2. function name
+    tag,           // 3. namespace of tag types
+    (required
+     (filename,       *(boost::is_convertible<mpl::_,std::string>))
+     (dim,            *(boost::is_integral<mpl::_>)))
+    (optional
+     (order,          *(boost::is_integral<mpl::_>)      , 1)
+     (h,              *(boost::is_floating_point<mpl::_>), double(0.1) )))
+{
+    gmsh_ptrtype gmsh_ptr( new Gmsh( dim, order ) );
+
+    gmsh_ptr->setCharacteristicLength( h );
+
+    std::string basename = fs::path(filename).stem();
+    // first try in the current path
+    if ( fs::exists( fs::current_path() / filename ) )
+        return boost::template make_tuple( basename, gmsh_ptr->getDescriptionFromFile((fs::current_path()/filename).string()), gmsh_ptr );
+    else if ( fs::exists( fs::path(Environment::localGeoRepository()) / filename ) )
+        return boost::make_tuple( basename, gmsh_ptr->getDescriptionFromFile((fs::path(Environment::localGeoRepository()) / filename).string()), gmsh_ptr );
+    else if ( Environment::systemGeoRepository().template get<1>()  &&
+              fs::exists( fs::path(Environment::systemGeoRepository().get<0>()) / filename ) )
+        return boost::make_tuple( basename, gmsh_ptr->getDescriptionFromFile((fs::path(Environment::systemGeoRepository().get<0>()) / filename).string()), gmsh_ptr );
+    else
+    {
+        std::ostringstream ostr;
+        ostr << "File " << filename << " was not found neither in current directory or in " << Environment::localGeoRepository() << " or in " << Environment::systemGeoRepository();
+        throw std::invalid_argument( ostr.str() );
+    }
 }
 
 /**

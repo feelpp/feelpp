@@ -272,6 +272,28 @@ Gmsh::generateCube( std::string const& __name, double __h )
     return __meshname.str();
 }
 
+std::string
+Gmsh::getDescriptionFromFile( std::string const& file ) const
+{
+    if ( !fs::exists( file ) )
+    {
+        std::ostringstream ostr;
+        ostr << "File " << file << " does not exist";
+        throw std::invalid_argument( ostr.str() );
+    }
+
+    std::ifstream __geoin( file.c_str() );
+
+    std::ostringstream __geostream;
+    std::istreambuf_iterator<char> src(__geoin.rdbuf());
+    std::istreambuf_iterator<char> end;
+    std::ostream_iterator<char> dest(__geostream);
+
+    std::copy(src,end,dest);
+
+    __geoin.close();
+    return  __geostream.str();
+}
 bool
 Gmsh::generateGeo( std::string const& __name, std::string const& __geo ) const
 {
@@ -291,18 +313,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo ) const
         }
     else
         {
-            // has the file changed ?
-            std::ifstream __geoin( __geoname.str().c_str() );
-
-            std::ostringstream __geostream;
-            std::istreambuf_iterator<char> src(__geoin.rdbuf());
-            std::istreambuf_iterator<char> end;
-            std::ostream_iterator<char> dest(__geostream);
-
-            std::copy(src,end,dest);
-
-            std::string s = __geostream.str();
-            __geoin.close();
+            std::string s = this->getDescriptionFromFile( __geoname.str() );
             if ( s != __geo )
                 {
                     std::ofstream __geofile( __geoname.str().c_str() );
