@@ -92,6 +92,30 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshellipsoid, T, dim_types )
     checkCreateGmshMesh<T::value>( "ellipsoid" );
 }
 
+BOOST_AUTO_TEST_CASE( gmshgeo )
+{
+    typedef Mesh<Simplex<2,1> > mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    mesh_ptrtype mesh;
+    // simplex
+    mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=geo( _filename="feel.geo",
+                                      _dim=2,
+                                      _order=1,
+                                      _h=0.5 ) );
+    auto letters = markedfaces( mesh, "letters" );
+    BOOST_CHECK_NE( std::distance( letters.get<1>(), letters.get<2>() ), 0 );
+    auto wall = markedfaces( mesh, "wall" );
+    BOOST_CHECK_NE( std::distance( wall.get<1>(), wall.get<2>() ), 0 );
+    auto inlet = markedfaces( mesh, "inlet" );
+    BOOST_CHECK_NE( std::distance( inlet.get<1>(), inlet.get<2>() ), 0 );
+    auto outlet = markedfaces( mesh, "outlet" );
+    BOOST_CHECK_NE( std::distance( outlet.get<1>(), outlet.get<2>() ), 0 );
+    auto markedelts = markedelements( mesh, "feel" );
+    BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
+                       std::distance( markedelts.get<1>(), markedelts.get<2>() ) );
+}
 BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
 {
     typedef Mesh<Simplex<T::value,1> > mesh_type;
