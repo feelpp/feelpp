@@ -4204,5 +4204,29 @@ operator<<( NdebugStream& os, detail::ID<T> const& )
     return os;
 }
 
+/**
+ * Computes the inner product of two vectors and eventually in parallel
+ * \param v1 vector (eventually distributed)
+ * \param v2 vector (eventually distributed)
+ *
+ * \return the inner product of \p v1 and \p v2
+ */
+template <typename ElementType>
+ElementType
+element_product( ElementType const& v1, ElementType const& v2 )
+{
+    LIFE_ASSERT( v1.functionSpace() == v2.functionSpace() ).error( "incompatible function spaces");
+
+    typedef typename type_traits<typename ElementType::value_type>::real_type real_type;
+
+    ElementType _t( v1.functionSpace() );
+    size_type s = v1.localSize();
+    size_type start = v1.firstLocalIndex();
+    for( size_type i = 0; i < s; ++i )
+        _t.operator()(start+i) = v1.operator()( start + i )* v2.operator()( start + i );
+    return _t;
+}
+
+
 }
 #endif /* __FunctionSpace_H */
