@@ -563,7 +563,7 @@ public:
              precompute_ptrtype const& __pc )
         :
         _M_gm( __gm ),
-        _M_element( __e ),
+        _M_element( boost::addressof(__e) ),
         _M_pc( __pc ),
         _M_pc_faces(),
         _M_npoints( _M_pc.get()->nPoints() ),
@@ -625,7 +625,7 @@ public:
              uint16_type __f )
         :
         _M_gm( __gm ),
-        _M_element( __e ),
+        _M_element( boost::addressof(__e) ),
         _M_pc(),
         _M_pc_faces( __pc ),
         _M_npoints( __pc[__f][__e.permutation( __f )]->nPoints() ),
@@ -691,7 +691,7 @@ public:
        //_M_xreal( NDim ),
        //_M_x0( NDim ),
        _M_J( p->_M_J ),
-       _M_G( _M_element.G() ),
+       _M_G( _M_element->G() ),
        _M_n( p->_M_n ),
        _M_n_real( p->_M_n_real ),
        _M_u_n_real( p->_M_u_n_real ),
@@ -733,7 +733,7 @@ public:
                 _M_Jt.resize( nPoints() );
                 _M_Bt.resize( nPoints() );
             }
-         update( _M_element );
+         update( *_M_element );
     }
 
     /**
@@ -759,7 +759,7 @@ public:
     void update( element_type const& __e, uint16_type __f )
     {
         //_M_element_c = boost::shared_ptr<element_type const>(&__e);
-        _M_element_c = __e;
+        _M_element = boost::addressof(__e);
         _M_face_id = __f;
 
         _M_perm = __e.permutation( _M_face_id );
@@ -849,7 +849,7 @@ public:
         _M_G = __e.G();
         _M_g.resize( _M_G.size2(), PDim );
         //_M_element_c = boost::shared_ptr<element_type const>(&__e);
-        _M_element_c = __e;
+        _M_element = boost::addressof(__e);
         _M_id = __e.id();
         _M_e_marker = __e.marker();
         _M_e_marker2 = __e.marker2();
@@ -909,9 +909,9 @@ public:
     /**
      * \return the real element to which this context is associated
      */
-    element_type const& element() const { return _M_element; }
+    element_type const& element() const { return *_M_element; }
 
-    element_type const& element_c() const { return _M_element_c; }
+    element_type const& element_c() const { return *_M_element; }
 
     /**
      *
@@ -1283,6 +1283,12 @@ public:
     value_type meas() const { return _M_meas; }
 
     /*
+     * @return the measure of the set of elements which share a vertex with \p _M_elements including himself
+     */
+    value_type measurePointElementNeighbors() const { return _M_element->measurePointElementNeighbors(); }
+
+
+    /*
      * @return the measure of the (current) face of the element
      */
     value_type measFace() const { return _M_measface; }
@@ -1599,9 +1605,9 @@ private:
 
     gm_ptrtype _M_gm;
 
-    element_type const& _M_element;
+    element_type const* _M_element;
     //boost::shared_ptr<element_type const> _M_element_c;
-    element_type _M_element_c;
+        //element_type _M_element_c;
 
     boost::optional<precompute_ptrtype> _M_pc;
     std::vector<std::map<permutation_type, precompute_ptrtype> > _M_pc_faces;
