@@ -197,17 +197,6 @@ public:
 
 private:
 
-    /**
-     * solve the system \f$D u = F\f$
-     *
-     * \param in D sparse matrix
-     * \param inout u solution of the system
-     * \param in F vector representing the right hand side of the system
-     */
-    void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
-
-private:
-
     //! linear algebra backend
     backend_ptrtype M_backend;
     backend_ptrtype M_backendP1;
@@ -311,22 +300,22 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     //# marker1 #
     value_type pi = M_PI;
     //! deduce from expression the type of g (thanks to keyword 'auto')
-    auto g =
-        chi(fn==1)*(1-Px()*Px())*(1-Py()*Py())*(1-Pz()*Pz())+
-        chi(fn==2)*sin(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz());
+    auto fn1 = (1-Px()*Px())*(1-Py()*Py())*(1-Pz()*Pz())*exp(10*Px());
+    auto fn2 = sin(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz())*exp(10*Px());
+    auto g = chi(fn==1)*fn1 + chi(fn==2)*fn2;
     auto grad_g =
-        trans(chi(fn==1)*(-2*Px()*(1-Py()*Py())*(1-Pz()*Pz())*unitX()+
-                          -2*Py()*(1-Px()*Px())*(1-Pz()*Pz())*unitY()+
-                          -2*Pz()*(1-Px()*Px())*(1-Py()*Py())*unitZ())+
-              chi(fn==2)*(+alpha*pi*cos(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz())*unitX()+
-                          -alpha*pi*sin(alpha*pi*Px())*sin(alpha*pi*Py())*cos(alpha*pi*Pz())*unitY()+
-                          -alpha*pi*sin(alpha*pi*Px())*cos(alpha*pi*Py())*sin(alpha*pi*Pz())*unitZ()));
+        trans(chi(fn==1)*((-2*Px()*(1-Py()*Py())*(1-Pz()*Pz())*exp(10*Px())+10*fn1)*unitX()+
+                          -2*Py()*(1-Px()*Px())*(1-Pz()*Pz())*exp(10*Px())*unitY()+
+                          -2*Pz()*(1-Px()*Px())*(1-Py()*Py())*exp(10*Px())*unitZ())+
+              chi(fn==2)*(+(alpha*pi*cos(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz())*exp(10*Px())+10*fn2)*unitX()+
+                          -alpha*pi*sin(alpha*pi*Px())*sin(alpha*pi*Py())*cos(alpha*pi*Pz())*exp(10*Px())*unitY()+
+                          -alpha*pi*sin(alpha*pi*Px())*cos(alpha*pi*Py())*sin(alpha*pi*Pz())*exp(10*Px())*unitZ()));
     //! deduce from expression the type of laplacian  (thanks to keyword 'auto')
     auto minus_laplacian_g =
-        (chi( fn == 1 )*( 2*((1-Py()*Py())*(1-Pz()*Pz()) +
-                             (1-Px()*Px())*(1-Pz()*Pz())*chi(Dim >= 2) +
-                             (1-Px()*Px())*(1-Py()*Py())*chi(Dim == 3) ) )  +
-         chi( fn == 2 )*(alpha*alpha*pi*pi*Dim)*sin(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz()));
+        (chi( fn == 1 )*( 2*(1-Py()*Py())*(1-Pz()*Pz())*exp(10*Px()) + 40*Px()*(1-Py()*Py())*(1-Pz()*Pz())*exp(10*Px()) - 100 *fn1 +
+                          2*(1-Px()*Px())*(1-Pz()*Pz())*exp(10*Px())*chi(Dim >= 2) +
+                          2*(1-Px()*Px())*(1-Py()*Py())*exp(10*Px())*chi(Dim == 3) )  +
+         chi( fn == 2 )*(alpha*alpha*pi*pi*Dim*fn2));
 
     //# endmarker1 #
     /** \endcode */
@@ -414,16 +403,19 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     //! solve the system
     /** \code */
-    this->solve( D, u, F );
+    //! solve \f$ D u = F \f$
+    backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
     /** \endcode */
 
     //! compute the \f$L_2$ norm of the error
     /** \code */
     //# marker7 #
+    double L2exact = math::sqrt(integrate(elements(mesh),g*g ).evaluate()(0,0));
     double L2error2 =integrate(elements(mesh),(idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
     double L2error =   math::sqrt( L2error2 );
     double semiH1error2 = integrate(elements(mesh),(gradv(u)-grad_g)*(gradv(u)-grad_g)).evaluate()(0,0);
     double H1error = math::sqrt(L2error2+semiH1error2);
+    double H1exact = math::sqrt(integrate(elements(mesh),g*g+grad_g*trans(grad_g) ).evaluate()(0,0));
 
 
     /*******************residual estimator**********************/
@@ -444,10 +436,10 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     double estimatorH1=math::sqrt(H1estimator.pow(2).sum());
     double estimatorL2=math::sqrt(element_product(H1estimator,h).pow(2).sum());
 
-    Y[0] = L2error;
-    Y[1] = H1error;
-    Y[2] = estimatorL2;
-    Y[3] = estimatorH1;
+    Y[0] = L2error/L2exact;
+    Y[1] = H1error/H1exact;
+    Y[2] = estimatorL2/L2exact;
+    Y[3] = estimatorH1/H1exact;
 
     //! save the results
     /** \code */
@@ -479,21 +471,3 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
 } // ResidualEstimator::run
 
-//# marker6 #
-template<int Dim, int Order>
-void
-ResidualEstimator<Dim, Order>::solve( sparse_matrix_ptrtype& D,
-                                      element_type& u,
-                                      vector_ptrtype& F )
-{
-    //! solve the system, first create a vector U of the same size as
-    //! u, then call solve,
-    vector_ptrtype U( backend_type::build()->newVector( u.functionSpace() ) );
-    //! call solve, the second D is the matrix which will be used to
-    //! create the preconditionner
-    backend_type::build()->solve( D, D, U, F );
-    //M_backend->solve( _matrix=D, _solution=U, _rhs=F, _rtolerance=1e-8 );
-    //! copy U in u
-    u = *U;
-} // ResidualEstimator::solve
-//# endmarker6 #
