@@ -669,46 +669,13 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type const i, point_type con
     LIFE_ASSERT( const_cast<point_type *>( &p ) != 0 ).error( "invalid Geo0D<>" );
     ublas::column( M_G, i ) = M_points[i]->node();
     M_has_points = true;
+
+    if ( nDim == nRealDim )
+        M_points[i]->addElement( this->id() );
+
     //Debug() << "[setPoint] üpdate point index " << i << " with "<< M_points[i]->id() << "\n";
 }
 
-#if 0
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
-bool GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPointBD( uint16_type const i, point_type const & p )
-{
-    // if not assert we need anyway to avoid under/overflows
-    if ( i > numLocalVertices )
-        return false;
-
-    M_points[ i ] = const_cast<point_type *>( &p );
-    ublas::column( M_G, i ) = M_points[i]->node();
-    M_has_points = true;
-    return true;
-}
-
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
-inline
-void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type const i, point_type const * p )
-{
-    M_points[ i ] = const_cast<point_type *>( p );
-    ublas::column( M_G, i ) = M_points[i]->node();
-    M_has_points = true;
-}
-
-
-template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
-bool GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPointBD( uint16_type const i, point_type const * p )
-{
-    // if not assert we need anyway to avoid under/overflows
-    if ( i > numLocalVertices )
-        return false;
-
-    M_points[ i ] = const_cast<point_type *>( p );
-    ublas::column( M_G, i ) = M_points[i]->node();
-    M_has_points = true;
-    return true;
-}
-#endif
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 std::ostream &
