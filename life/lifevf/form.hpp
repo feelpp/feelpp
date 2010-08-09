@@ -72,12 +72,6 @@ form( boost::shared_ptr<X1> const& __X1,
 
 namespace detail
 {
-template <class T>
-struct is_shared_ptr : mpl::false_ {};
-
-template <class T>
-struct is_shared_ptr<boost::shared_ptr<T> > : mpl::true_ {};
-
 template <class MatrixType>
 struct is_matrix_ptr : mpl::false_ {};
 
