@@ -425,14 +425,17 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     auto term2 = jumpv(gradv(u));
     auto term3 = gradv(u)*vf::N()-grad_g*N();
 
-    auto H1estimator = integrate(elements(mesh), term1*term1 ).broken(P0h).sqrt();
+    auto rho = integrate(elements(mesh), term1*term1 ).broken(P0h).sqrt();
 
-    H1estimator += integrate(internalfaces(mesh),0.25*vf::h()*term2*term2).broken( P0h ).sqrt();
+    rho += integrate(internalfaces(mesh),0.25*vf::h()*term2*term2).broken( P0h ).sqrt();
 
-    H1estimator += integrate( markedfaces(mesh,mesh->markerName("Neumann")),
-                              vf::h()*term3*term3 ).broken( P0h ).sqrt();
+    rho += integrate( markedfaces(mesh,mesh->markerName("Neumann")),
+                      vf::h()*term3*term3 ).broken( P0h ).sqrt();
 
     auto h=vf::project(P0h, elements(mesh), vf::h() );
+    auto measpen=vf::project(P0h, elements(mesh), vf::nPEN() );
+    auto H1estimator = element_product( rho, measpen.sqrt() );
+
     double estimatorH1=math::sqrt(H1estimator.pow(2).sum());
     double estimatorL2=math::sqrt(element_product(H1estimator,h).pow(2).sum());
 
