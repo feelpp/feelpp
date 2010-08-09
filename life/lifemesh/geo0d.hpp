@@ -322,6 +322,17 @@ public:
             if ( tags.size() > 2 )
                 this->setProcessId( tags[2] );
         }
+
+    /**
+     * add a new element to which the point belongs
+     */
+    self_type addElement( size_type e ) { M_elist.insert( e ); return *this; }
+
+    /**
+     * \return the number of elements whom the point belongs to
+     */
+    size_type numberOfElements() const { return M_elist.size(); }
+
 private:
     bool M_is_vertex;
 
@@ -333,6 +344,8 @@ private:
     Marker2 M_marker2;
     Marker3 M_marker3;
 
+    //! element list to which the point belongs
+    std::set<size_type> M_elist;
 };
 
 // Alias for Geo0D<3>
