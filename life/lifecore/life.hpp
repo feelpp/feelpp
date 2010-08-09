@@ -440,7 +440,15 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 #include <life/lifecore/debug.hpp>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/detail/is_xxx.hpp>
 
+namespace Life
+{
+namespace detail
+{
+BOOST_DETAIL_IS_XXX_DEF(shared_ptr, boost::shared_ptr, 1)
+}
+}
 
 #if defined(HAVE_OPENMP)
 #include <omp.h>
