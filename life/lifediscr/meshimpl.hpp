@@ -179,6 +179,20 @@ Mesh<Shape, T>::updateForUse()
                                                  lambda::bind( &element_type::updateWithPc,
                                                                lambda::_1, pc, boost::ref(pcf) ) );
                     }
+                // now that all elements have been updated, build inter element
+                // data such as the measure of point element neighbors
+                boost::tie( iv, en ) = this->elementsRange();
+                for ( ;iv != en; ++iv )
+                {
+                    value_type meas = 0;
+                    BOOST_FOREACH( auto _elt, iv->pointElementNeighborIds() )
+                    {
+                        meas += this->elements().find( _elt )->measure();
+                    }
+                    this->elements().modify( iv,
+                                             lambda::bind( &element_type::setMeasurePointElementNeighbors,
+                                                           lambda::_1, meas ) );
+                }
                 typedef typename super::face_const_iterator face_const_iterator;
                 face_iterator itf = this->beginFace();
                 face_iterator ite = this->endFace();
