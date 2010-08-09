@@ -97,11 +97,13 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
 /**/
 # define VF_GD2                                                         \
     BOOST_PP_TUPLE_TO_LIST(                                             \
-        6,                                                              \
+        8,                                                              \
         (                                                               \
             ( h       , GDH       , 0, 0 , Scalar   , _M_gmc->h()                   , 0), \
             ( hFace   , GDHFace   , 0, 0 , Scalar   , _M_gmc->hFace()               , 0), \
             ( meas    , GDMeas    , 0, 0 , Scalar   , _M_gmc->meas()                , 0), \
+            ( measPEN , GDMeasPEN , 0, 0 , Scalar   , _M_gmc->measurePointElementNeighbors(), 0), \
+            ( nPEN    , GDNPEN    , 0, 0 , Scalar   , _M_gmc->element().numberOfPointElementNeighbors(), 0), \
             ( measFace, GDHMeasFace,0, 0 , Scalar   , _M_gmc->measFace()            , 0), \
             ( eid     , GDEid     , 0, 0 , Scalar   , _M_gmc->id()                  , 0), \
             ( emarker , GDEmarker , 0, 0 , Scalar   , _M_gmc->marker().value()      , 0) \
