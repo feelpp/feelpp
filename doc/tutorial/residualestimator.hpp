@@ -315,7 +315,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         (chi( fn == 1 )*( 2*(1-Py()*Py())*(1-Pz()*Pz())*exp(10*Px()) + 40*Px()*(1-Py()*Py())*(1-Pz()*Pz())*exp(10*Px()) - 100 *fn1 +
                           2*(1-Px()*Px())*(1-Pz()*Pz())*exp(10*Px())*chi(Dim >= 2) +
                           2*(1-Px()*Px())*(1-Py()*Py())*exp(10*Px())*chi(Dim == 3) )  +
-         chi( fn == 2 )*(alpha*alpha*pi*pi*Dim*fn2));
+         chi( fn == 2 )*( - fn2*(100-3*alpha*alpha*pi*pi) -20*alpha*pi*exp(10*Px())*cos(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz()) );
 
     //# endmarker1 #
     /** \endcode */
@@ -421,6 +421,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     /*******************residual estimator**********************/
 
     //the source terme is given by : minus_laplacian_g
+
     auto term1 = vf::h()*(minus_laplacian_g+trace(hessv(u)));
     auto term2 = jumpv(gradv(u));
     auto term3 = gradv(u)*vf::N()-grad_g*N();
@@ -438,6 +439,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     double estimatorH1=math::sqrt(H1estimator.pow(2).sum());
     double estimatorL2=math::sqrt(element_product(H1estimator,h).pow(2).sum());
+   
 
     Y[0] = L2error/L2exact;
     Y[1] = H1error/H1exact;
