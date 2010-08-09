@@ -326,12 +326,17 @@ public:
     /**
      * add a new element to which the point belongs
      */
-    self_type addElement( size_type e ) { M_elist.insert( e ); return *this; }
+    self_type& addElement( size_type e ) { M_elist.insert( e ); return *this; }
 
     /**
      * \return the number of elements whom the point belongs to
      */
     size_type numberOfElements() const { return M_elist.size(); }
+
+    /**
+     * \return the set of ids of elements whom the point belongs to
+     */
+    std::set<size_type> const& elements() const { return M_elist; }
 
 private:
     bool M_is_vertex;
