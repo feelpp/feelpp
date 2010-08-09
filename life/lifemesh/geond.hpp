@@ -608,6 +608,14 @@ public:
     Marker3& marker3() { return M_marker3; }
     void setMarker3( flag_type v ) { return M_marker3.assign( v ); }
 
+    //! \return the number of point element neighbors
+    size_type numberOfPointElementNeighbors() const { return M_pneighbors.size(); }
+    //! \return the set of ids of point element neighbors
+    std::set<size_type> const& pointElementNeighborIds() const { return M_pneighbors; }
+    //! set the measure of point element neighbors
+    void setMeasurePointElementNeighbors( value_type meas ) { M_meas_pneighbors = meas; }
+    //! \return the measure of point element neighbors
+    value_type measurePointElementNeighbors() const { return M_meas_pneighbors; }
 
     void update();
     void updateWithPc(typename gm_type::precompute_ptrtype const& pc, typename gm_type::faces_precompute_type & pcf );
@@ -642,7 +650,10 @@ private:
      * store neighbor element id
      */
     std::vector<std::pair<size_type,size_type> > M_neighbors;
-
+    //! point element neighbors
+    std::set<size_type> M_pneighbors;
+    //! measure of the set of point element neighbors
+    value_type M_meas_pneighbors;
 
     Marker1 M_marker1;
     Marker2 M_marker2;
@@ -752,6 +763,12 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
     auto M = glas::average( M_G );
     M_barycenter = ublas::column( M, 0 );
 
+    for ( uint16_type __p = 0; __p < numPoints; ++__p )
+    {
+        std::copy( M_points[__p]->elements().begin(),
+                   M_points[__p]->elements().end(),
+                   std::inserter( M_pneighbors, M_pneighbors.begin() ) );
+    }
 
     auto ctx = M_gm->template context<vm::JACOBIAN>( *this, pc );
                                                      //M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() ) );
