@@ -29,10 +29,10 @@
 #ifndef __Backend_H
 #define __Backend_H 1
 
-#include <boost/shared_ptr.hpp>
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 
+#include <life/lifecore/life.hpp>
 #include <life/lifecore/parameter.hpp>
 #include <life/lifealg/enums.hpp>
 #include <life/lifealg/vector.hpp>
@@ -43,7 +43,43 @@
 
 namespace Life
 {
+///! \cond detail
+namespace detail
+{
+template<typename T>
+DataMap datamap( T const& t, mpl::true_ )
+{
+    return t->map();
+}
+template<typename T>
+DataMap datamap( T const& t, mpl::false_ )
+{
+    return t.map();
+}
+template<typename T>
+DataMap datamap( T const& t )
+{
+    return datamap( t, detail::is_shared_ptr<T>() );
+}
 
+template<typename T>
+typename T::reference ref( T t, mpl::true_ )
+{
+    return *t;
+}
+template<typename T>
+T& ref( T& t, mpl::false_ )
+{
+    return t;
+}
+template<typename T>
+auto ref( T& t ) -> decltype( ref( t, detail::is_shared_ptr<T>() ) )
+{
+    return ref( t, detail::is_shared_ptr<T>() );
+}
+
+}
+///! \endcond detail
 /**
  * \class Backend
  * \brief base class for all linear algebra backends
@@ -280,7 +316,8 @@ public:
                                     tag,
                                     (required
                                      (matrix,(sparse_matrix_ptrtype))
-                                     (solution,(vector_ptrtype))
+                                     (in_out(solution),*(mpl::or_<boost::is_convertible<mpl::_,vector_type&>,
+                                                         boost::is_convertible<mpl::_,vector_ptrtype> >))
                                      (rhs,(vector_ptrtype)))
                                     (optional
                                      (prec,(sparse_matrix_ptrtype), matrix )
@@ -297,11 +334,15 @@ public:
                              _rtolerance=rtolerance,
                              _atolerance=atolerance,
                              _maxit=maxit );
+        vector_ptrtype _sol( this->newVector( detail::datamap(solution) ) );
         this->setTranspose( transpose );
+        solve_return_type ret;
         if ( reuse_prec == false )
-            return solve( matrix, prec, solution, rhs );
+            ret = solve( matrix, prec, _sol, rhs );
         else
-            return solve( matrix, prec, solution, rhs, reuse_prec );
+            ret = solve( matrix, prec, _sol, rhs, reuse_prec );
+        detail::ref(solution) = *_sol;
+        return ret;
     }
 
     /**
