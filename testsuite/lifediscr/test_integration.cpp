@@ -283,7 +283,7 @@ struct test_integration_circle
         value_type pi = 4.0*math::atan(1.0);
         const value_type eps = 1000*Life::type_traits<value_type>::epsilon();
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( v0, pi, 1e-2 );
+        BOOST_CHECK_CLOSE( v0, pi, 1e-1 );
         BOOST_CHECK_SMALL( v0-v00, eps  );
 #else
         LIFE_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
@@ -299,7 +299,7 @@ struct test_integration_circle
         u = vf::project( Xh, elements(mesh), constant(1.0) );
         v0 = integrate( elements(mesh), IM<2,3,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( v0, pi, 1e-2);
+        BOOST_CHECK_CLOSE( v0, pi, 1e-1);
 #else
         LIFE_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
