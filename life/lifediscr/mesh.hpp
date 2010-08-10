@@ -272,8 +272,21 @@ public:
      */
     std::map<std::string, boost::tuple<int, int> > markerNames() const { return M_markername; }
 
+    /**
+     * \return a localization tool
+     */
     struct Localization;
     boost::shared_ptr<typename self_type::Localization> tool_localization() { return M_tool_localization;}
+
+    /**
+     * \return the measure of the mesh (sum of the measure of the elements)
+     */
+    value_type measure() const { return M_meas; }
+
+    /**
+     * \return the measure of the mesh (sum of the measure of the elements)
+     */
+    value_type measureBoundary() const { return M_measbdy; }
 
     //@}
 
@@ -613,6 +626,12 @@ private:
     mpi::communicator M_comm;
 
     gm_ptrtype _M_gm;
+
+    //! measure of the mesh
+    value_type M_meas;
+
+    //! measure of the boundary of the mesh
+    value_type M_measbdy;
 
     /**
      * The processors who neighbor the current
