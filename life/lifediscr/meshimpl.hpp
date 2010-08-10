@@ -167,7 +167,11 @@ Mesh<Shape, T>::updateForUse()
             {
                 element_iterator iv,  en;
                 boost::tie( iv, en ) = this->elementsRange();
-
+                for ( ;iv != en; ++iv )
+                {
+                    this->elements().modify( iv, typename super_elements::ElementConnectPointToElement() );
+                }
+                boost::tie( iv, en ) = this->elementsRange();
                 auto pc = _M_gm->preCompute( _M_gm, _M_gm->referenceConvex().vertices() );
                 auto pcf =  _M_gm->preComputeOnFaces( _M_gm, _M_gm->referenceConvex().barycenterFaces() );
                 M_meas = 0;
