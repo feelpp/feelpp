@@ -256,8 +256,11 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                         {
                             int id, topodim;
                             std::string name;
-                            if ( this->version() == "2.1" )
+                            if ( boost::lexical_cast<double>( this->version()) >= 2.1  )
+                            {
                                 __is >> topodim >> id >> name;
+                                Debug( 8011 ) << "[importergmsh] reading topodim: "  << topodim << " id: " << id << " name: " << name << "\n";
+                            }
                             else if ( this->version() == "2.0" )
                                 __is >> id >> name;
                             boost::trim( name );
@@ -265,6 +268,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
                             mesh->addMarkerName( std::make_pair( name, boost::make_tuple( id, topodim ) ) );
                         }
+                    LIFE_ASSERT( mesh->markerNames().size() == nnames )( mesh->markerNames().size() )( nnames ).error( "invalid number of physical names" );
                     __is >> __buf;
                     LIFE_ASSERT( std::string( __buf ) == "$EndPhysicalNames" )
                         ( __buf )
@@ -400,7 +404,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                         __is >> __partition_region;
                     for( int nt = 3; nt < __ntag; ++nt )
                         __is >> __dummy;
-                    LIFE_ASSERT( __ntag > 4 )( __ntag )( __physical_region )( __elementary_region )( __partition_region ).warn( "invalid number of tags (should be at least 3)" );
+                    LIFE_ASSERT( __ntag >= 2 )( __ntag )( __physical_region )( __elementary_region )( __partition_region ).warn( "invalid number of tags (should be at least 2)" );
 
                     __np = nptable[__t];
 
