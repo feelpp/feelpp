@@ -53,6 +53,9 @@
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <life/lifevf/vf.hpp>
 
+#include <MAdLib.h>
+
+
 
 
 /** use Life namespace */
@@ -135,6 +138,7 @@ public:
     //! the basis type of our approximation space
     typedef bases<Lagrange<1,Scalar> > p1_basis_type;
     typedef FunctionSpace<mesh_type, p1_basis_type> p1_space_type;
+    typedef boost::shared_ptr<p1_space_type> p1_space_ptrtype;
     typedef typename p1_space_type::element_type p1_element_type;
 
 
@@ -192,9 +196,10 @@ public:
     }
 
     void run();
+    
+    void run( const double* X, unsigned long P, double* Y, unsigned long N);
 
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
-
+    void adapt_mesh(int tol);
 private:
 
     //! linear algebra backend
@@ -224,7 +229,13 @@ private:
     export_ptrtype exporter;
 
     //! Piecewise constant functions space
-    p0_space_ptrtype P0h;
+    p0_space_ptrtype P0h; 
+    p1_space_ptrtype P1h;
+
+    double estimatorH1, estimatorL2, estimator;
+    p1_element_type  h_new;
+    std::string msh_name;
+    bool first_time;
 
 }; // ResidualEstimator
 
@@ -249,11 +260,18 @@ ResidualEstimator<Dim,Order>::run()
     X.push_back( weakdir );
     X.push_back( penaldir );
     std::vector<double> Y( 4 );
+    first_time=true;
     run( X.data(), X.size(), Y.data(), Y.size() );
+
+    adapt_mesh(0.1);
+    first_time=false;
+    run( X.data(), X.size(), Y.data(), Y.size() );
+
+    
 }
 template<int Dim, int Order>
 void
-ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long n )
+ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long n)
 {
     /*
      * set parameters
@@ -267,7 +285,12 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     weakdir = X[4];
     penaldir = X[5];
 
-    if ( !this->vm().count( "nochdir" ) )
+
+   mesh_ptrtype mesh;
+
+
+    if(first_time){
+      if ( !this->vm().count( "nochdir" ) )
         Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
                                        % this->about().appName()
                                        % shape
@@ -275,18 +298,26 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
                                        % Order
                                        % meshSize );
 
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+        mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
                                                       _usenames=true,
                                                       _shape=shape,
                                                       _dim=Dim,
                                                       _h=X[0] ) );
 
+
+    }//end if(first_time)
+    else{//we need to load an existing mesh
+           mesh = loadGMSHMesh( _mesh=new mesh_type,
+                            _filename=msh_name,
+                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+    }
     /**
      * The function space and some associated elements(functions) are then defined
      */
     /** \code */
     P0h = p0_space_type::New( mesh );
+    P1h = p1_space_type::New( mesh );
     space_ptrtype Xh = space_type::New( mesh );
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
@@ -426,7 +457,6 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
 
     /*******************residual estimator**********************/
-
     //the source terme is given by : minus_laplacian_g
 
     auto term1 = vf::h()*(minus_laplacian_g+trace(hessv(u)));
@@ -444,14 +474,19 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     auto measpen=vf::project(P0h, elements(mesh), vf::nPEN() );
     auto H1estimator = element_product( rho, measpen.sqrt() );
 
-    double estimatorH1=math::sqrt(H1estimator.pow(2).sum());
-    double estimatorL2=math::sqrt(element_product(H1estimator,h).pow(2).sum());
+    estimatorH1=math::sqrt(H1estimator.pow(2).sum());
+    estimatorL2=math::sqrt(element_product(H1estimator,h).pow(2).sum());
    
 
     Y[0] = L2error/L2exact;
     Y[1] = H1error/H1exact;
     Y[2] = estimatorL2/L2exact;
     Y[3] = estimatorH1/H1exact;
+
+    //ici : remplissage de h_new
+    for(int i=0;i<P1h->nLocalDof();i++) h_new(i)=0.05;
+    /**********************end of residual estimaor*************/
+
 
     //! save the results
     /** \code */
@@ -482,4 +517,81 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     Log()<< " estimated H1 error "<<Y[3]<<"\n";
 
 } // ResidualEstimator::run
+
+
+
+
+template<int Dim, int Order>
+void
+ResidualEstimator<Dim,Order>::adapt_mesh(int tol){
+  
+
+    
+    if ( shape == "hypercube" ){
+      if(Dim==1) msh_name="hypercube-1.msh";
+      if(Dim==2) msh_name="hypercube-2.msh";
+      if(Dim==3) msh_name="hypercube-3.msh";     
+      else {std::cout<<"Dim>3, fault"<<std::endl; exit(0);} 
+    }
+    else if ( shape == "ellipsoid" ){
+      if(Dim==1) msh_name="ellipsoid-1.msh";
+      if(Dim==2) msh_name="ellipsoid-2.msh";
+      if(Dim==3) msh_name="ellipsoid-3.msh";        
+    }
+    else {// default is simplex
+      if(Dim==1) msh_name="simplex-1.msh";
+      if(Dim==2) msh_name="simplex-2.msh";
+      if(Dim==3) msh_name="simplex-3.msh"; 
+    }
+
+    MAd::pGModel model = 0;
+    MAd::pMesh amesh = MAd::M_new(model);
+    MAd::M_load(amesh,msh_name.c_str());
+
+    MAd::PWLSField * sizeField = new MAd::PWLSField(amesh);
+    sizeField->setCurrentSize();
+    for( int i = 0; i < P1h->nLocalDof(); ++i )
+        sizeField->setSize( i+1 , h_new(i) );
+
+    MAd::MeshAdapter* ma = new MAd::MeshAdapter(amesh,sizeField);
+
+    std::cout << "Statistics before optimization: \n";
+    ma->printStatistics(std::cout);
+    ma->writePos("meanRatioBefore.pos",MAd::OD_MEANRATIO);
+
+    // Optimize
+    // ---------
+    std::cout << "Optimizing mesh...\n\n";
+    ma->run();
+
+    // Outputs final mesh
+    // -------------------
+    std::cout << "Statistics after optimization: \n";
+    ma->printStatistics(std::cout);
+    ma->writePos("meanRatioAfter.pos",MAd::OD_MEANRATIO);
+
+    if ( shape == "hypercube" ){
+      if(Dim==1) msh_name="NEWhypercube-1.msh";
+      if(Dim==2) msh_name="NEWhypercube-2.msh";
+      if(Dim==3) msh_name="NEWhypercube-3.msh";     
+      else {std::cout<<"Dim>3, fault"<<std::endl; exit(0);} 
+    }
+    else if ( shape == "ellipsoid" ){
+      if(Dim==1) msh_name="NEWellipsoid-1.msh";
+      if(Dim==2) msh_name="NEWellipsoid-2.msh";
+      if(Dim==3) msh_name="NEWellipsoid-3.msh";        
+    }
+    else {// default is simplex
+      if(Dim==1) msh_name="NEWsimplex-1.msh";
+      if(Dim==2) msh_name="NEWsimplex-2.msh";
+      if(Dim==3) msh_name="NEWsimplex-3.msh"; 
+    }
+
+    MAd::M_writeMsh (amesh, msh_name.c_str(), 2, NULL);
+    //# endmarker7 #
+    /** \endcode */
+
+}// ResidualEstimator::adapt_mesh
+
+
 
