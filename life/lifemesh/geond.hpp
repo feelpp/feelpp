@@ -376,26 +376,6 @@ public:
      */
     void setPoint( uint16_type const i, point_type const & p );
 
-#if 0
-    /**
-     * Inserts a point. Uses pointers
-     * put point
-     */
-    void setPoint( uint16_type const i, point_type const * p );
-
-    /**
-     * Inserts a point Uses point references (bounds check)
-     * with forced bound check
-     */
-    bool setPointBD( uint16_type const i, point_type const & p );
-
-
-    /**
-     * Inserts a point. Uses pointers (bounds check)
-     * with forced bound check
-     */
-    bool setPointBD( uint16_type const i, point_type const * p );
-#endif
     /**
      * show information about the geoND
      *
@@ -681,8 +661,6 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type const i, point_type con
     ublas::column( M_G, i ) = M_points[i]->node();
     M_has_points = true;
 
-    if ( nDim == nRealDim )
-        M_points[i]->addElement( this->id() );
 
     //Debug() << "[setPoint] üpdate point index " << i << " with "<< M_points[i]->id() << "\n";
 }
@@ -765,6 +743,9 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
 
     for ( uint16_type __p = 0; __p < numPoints; ++__p )
     {
+        M_points[__p]->addElement( this->id() );
+        std::cout << "point " << M_points[__p]->id() << " is connected to " << M_points[__p]->numberOfElements() << "\n";
+
         std::copy( M_points[__p]->elements().begin(),
                    M_points[__p]->elements().end(),
                    std::inserter( M_pneighbors, M_pneighbors.begin() ) );
