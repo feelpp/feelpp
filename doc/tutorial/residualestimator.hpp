@@ -196,7 +196,7 @@ public:
     }
 
     void run();
-    
+
     void run( const double* X, unsigned long P, double* Y, unsigned long N);
 
     void adapt_mesh(int tol);
@@ -229,7 +229,7 @@ private:
     export_ptrtype exporter;
 
     //! Piecewise constant functions space
-    p0_space_ptrtype P0h; 
+    p0_space_ptrtype P0h;
     p1_space_ptrtype P1h;
 
     double estimatorH1, estimatorL2, estimator;
@@ -267,7 +267,7 @@ ResidualEstimator<Dim,Order>::run()
     first_time=false;
     run( X.data(), X.size(), Y.data(), Y.size() );
 
-    
+
 }
 template<int Dim, int Order>
 void
@@ -352,7 +352,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 					 Dim*alpha*alpha*pi*pi*sin(alpha*pi*Px())-100*sin(alpha*pi*Px())-20*alpha*pi*cos(alpha*pi*Px())
 					 )*( cos(alpha*pi*Py())*chi(Dim>=2) + chi(Dim==1)) * ( cos(alpha*pi*Pz())*chi(Dim==3) + chi(Dim<=2) )
 			   )
-			   
+
 	 );
 
     //# endmarker1 #
@@ -474,9 +474,10 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     auto measpen=vf::project(P0h, elements(mesh), vf::nPEN() );
     auto H1estimator = element_product( rho, measpen.sqrt() );
 
-    estimatorH1=math::sqrt(H1estimator.pow(2).sum());
-    estimatorL2=math::sqrt(element_product(H1estimator,h).pow(2).sum());
-   
+    auto H1estimatorP1 = element_div( vf::sum( P1h, idv(H1estimator)*meas()), vf::sum(P1h, meas()) );
+    double estimatorH1=math::sqrt(H1estimator.pow(2).sum());
+    double estimatorL2=math::sqrt(element_product(H1estimator,h).pow(2).sum());
+
 
     Y[0] = L2error/L2exact;
     Y[1] = H1error/H1exact;
@@ -495,6 +496,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     exact_solution = vf::project( Xh, elements(mesh), g );
     element_type u_minus_exact( Xh, "u-g" );
     u_minus_exact = vf::project( Xh, elements(mesh), idv(u)-g );
+
 
     if ( exporter->doExport() )
     {
@@ -524,24 +526,24 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 template<int Dim, int Order>
 void
 ResidualEstimator<Dim,Order>::adapt_mesh(int tol){
-  
 
-    
+
+
     if ( shape == "hypercube" ){
       if(Dim==1) msh_name="hypercube-1.msh";
       if(Dim==2) msh_name="hypercube-2.msh";
-      if(Dim==3) msh_name="hypercube-3.msh";     
-      else {std::cout<<"Dim>3, fault"<<std::endl; exit(0);} 
+      if(Dim==3) msh_name="hypercube-3.msh";
+      else {std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
     }
     else if ( shape == "ellipsoid" ){
       if(Dim==1) msh_name="ellipsoid-1.msh";
       if(Dim==2) msh_name="ellipsoid-2.msh";
-      if(Dim==3) msh_name="ellipsoid-3.msh";        
+      if(Dim==3) msh_name="ellipsoid-3.msh";
     }
     else {// default is simplex
       if(Dim==1) msh_name="simplex-1.msh";
       if(Dim==2) msh_name="simplex-2.msh";
-      if(Dim==3) msh_name="simplex-3.msh"; 
+      if(Dim==3) msh_name="simplex-3.msh";
     }
 
     MAd::pGModel model = 0;
@@ -573,18 +575,18 @@ ResidualEstimator<Dim,Order>::adapt_mesh(int tol){
     if ( shape == "hypercube" ){
       if(Dim==1) msh_name="NEWhypercube-1.msh";
       if(Dim==2) msh_name="NEWhypercube-2.msh";
-      if(Dim==3) msh_name="NEWhypercube-3.msh";     
-      else {std::cout<<"Dim>3, fault"<<std::endl; exit(0);} 
+      if(Dim==3) msh_name="NEWhypercube-3.msh";
+      else {std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
     }
     else if ( shape == "ellipsoid" ){
       if(Dim==1) msh_name="NEWellipsoid-1.msh";
       if(Dim==2) msh_name="NEWellipsoid-2.msh";
-      if(Dim==3) msh_name="NEWellipsoid-3.msh";        
+      if(Dim==3) msh_name="NEWellipsoid-3.msh";
     }
     else {// default is simplex
       if(Dim==1) msh_name="NEWsimplex-1.msh";
       if(Dim==2) msh_name="NEWsimplex-2.msh";
-      if(Dim==3) msh_name="NEWsimplex-3.msh"; 
+      if(Dim==3) msh_name="NEWsimplex-3.msh";
     }
 
     MAd::M_writeMsh (amesh, msh_name.c_str(), 2, NULL);
