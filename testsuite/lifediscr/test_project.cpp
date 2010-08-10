@@ -53,8 +53,8 @@ using namespace Life;
 
 BOOST_AUTO_TEST_SUITE( projectsuite )
 
-//typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
-typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
+typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( project1, T, dim_types )
 {
@@ -107,6 +107,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project2, T, dim_types )
     for( ; elit != elen; ++elit )
     {
         BOOST_TEST_MESSAGE( "  check element " << elit->id() << "\n" );
+        BOOST_FOREACH( auto elid, elit->pointElementNeighborIds() )
+        {
+            BOOST_TEST_MESSAGE( "  element " << elit->id() << " -> element " << elid << "\n" );
+        }
         switch ( T::value )
         {
         case 1:
