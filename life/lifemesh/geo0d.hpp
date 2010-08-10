@@ -241,6 +241,11 @@ public:
     matrix_node_type G() const { matrix_node_type __G( Dim, 1 ); ublas::column( __G, 0 ) = *this; return __G; }
 
     /**
+     * \return the measure of a point
+     */
+    value_type measure() const { return 0; }
+
+    /**
      * set the node coordinates
      *
      * @param __n the node coordinates
@@ -337,6 +342,7 @@ public:
      * \return the set of ids of elements whom the point belongs to
      */
     std::set<size_type> const& elements() const { return M_elist; }
+
 
 private:
     bool M_is_vertex;
