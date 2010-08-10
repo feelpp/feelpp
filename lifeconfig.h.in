@@ -26,6 +26,9 @@
 /* Define if the superlu library can be used. */
 #cmakedefine HAVE_LIBSUPERLU
 
+/* Define to 1 if you have the <MAdLib.h> header file. */
+#cmakedefine HAVE_MADLIB_H
+
 /* Define to 1 if you have the <memory.h> header file. */
 #cmakedefine HAVE_MEMORY_H
 
