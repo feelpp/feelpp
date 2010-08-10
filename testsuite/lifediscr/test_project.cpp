@@ -1,0 +1,92 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2010-08-09
+
+  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file test_project.cpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2010-08-09
+ */
+#include <sstream>
+
+#include <boost/timer.hpp>
+// Boost.Test
+// make sure that the init_unit_test function is defined by UTF
+#define BOOST_TEST_MAIN
+// give a name to the testsuite
+#define BOOST_TEST_MODULE mesh filter testsuite
+// disable the main function creation, use our own
+#define BOOST_TEST_NO_MAIN
+#include <boost/test/unit_test.hpp>
+#include <boost/test/test_case_template.hpp>
+#include <boost/mpl/list.hpp>
+
+
+using boost::unit_test::test_suite;
+
+
+#include <life/lifediscr/mesh.hpp>
+#include <life/lifefilters/gmsh.hpp>
+#include <life/lifefilters/exporter.hpp>
+#include <life/lifevf/vf.hpp>
+
+using namespace Life;
+
+BOOST_AUTO_TEST_SUITE( projectsuite )
+
+typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( project, T, dim_types )
+{
+    typedef Mesh<Simplex<T::value,1> > mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name=(boost::format( "simplex-%1%" )  % T::value).str() ,
+                                                      _usenames=true,
+                                                      _addmidpoint=false,
+                                                      _shape="simplex",
+                                                      _dim=T::value,
+                                                      _h=2. ) );
+
+    typedef FunctionSpace<mesh_type,bases<Lagrange<1, Scalar> > > space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    space_ptrtype P1h = space_type::New( mesh );
+    auto p1meas = vf::sum( P1h, elements(mesh),  vf::meas() );
+    for(int i = 0; i < P1h->nLocalDof(); ++i )
+    {
+        BOOST_CHECK_CLOSE( p1meas(i), mesh->beginElement()->measure(), 1e-13);
+    }
+    BOOST_CHECK_CLOSE( p1meas.sum(), mesh->numPoints()*mesh->beginElement()->measure(), 1e-13);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+int BOOST_TEST_CALL_DECL
+main( int argc, char* argv[] )
+{
+    Life::Environment env( argc, argv );
+    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
+
+    return ret;
+}
+
