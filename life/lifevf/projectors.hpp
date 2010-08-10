@@ -116,9 +116,9 @@ public:
      */
     //@{
 
-    element_type operator()() const
+    element_type operator()( const bool sum = false ) const
     {
-        return operator()( idim_type() );
+        return operator()( sum, idim_type() );
     }
 
     //@}
@@ -151,8 +151,8 @@ public:
 
 private:
 
-    element_type operator()( mpl::size_t<MESH_ELEMENTS> ) const;
-    element_type operator()( mpl::size_t<MESH_FACES> ) const;
+    element_type operator()( const bool sum, mpl::size_t<MESH_ELEMENTS> ) const;
+    element_type operator()( const bool sum, mpl::size_t<MESH_FACES> ) const;
 
 private:
 
@@ -163,12 +163,12 @@ private:
 
 template<ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
 typename Projector<iDim, FunctionSpaceType, Iterator, ExprT>::element_type
-Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> ) const
+Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum, mpl::size_t<MESH_ELEMENTS> ) const
 {
     boost::timer __timer;
 
     element_type __v( _M_functionspace );
-    __v.clear();
+    __v.setZero();
 
     typedef typename functionspace_type::fe_type fe_type;
     fe_type* __fe = __v.functionSpace()->fe().get();
@@ -235,7 +235,10 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MES
                 for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
                     //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
                     {
-                        __v.assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
+                        if ( sum )
+                            __v.plus_assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
+                        else
+                            __v.assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
                     }
             }
     }
@@ -244,12 +247,12 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MES
 
 template<ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
 typename Projector<iDim, FunctionSpaceType, Iterator, ExprT>::element_type
-Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MESH_FACES> ) const
+Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum, mpl::size_t<MESH_FACES> ) const
 {
     boost::timer __timer;
 
     element_type __v( _M_functionspace );
-    __v.zero();
+    __v.setZero();
 
 #if 0
     if ( !boost::is_same<Elem1, typename Elem::functionspace_type>::value ||
@@ -437,7 +440,10 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MES
 
                                 size_type thedof =  __v.start() +
                                     boost::get<0>(__dof->faceLocalToGlobal( __face_it->id(), l, c1 ));
-                                __v( thedof ) =  __value;
+                                if ( sum )
+                                    __v( thedof ) +=  __value;
+                                else
+                                    __v( thedof ) =  __value;
                             }
                     }
         } // face_it
@@ -465,19 +471,6 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( mpl::size_t<MES
 }
 /// \endcond
 
-/**
- * \brief nodal projection of \p __expr onto the space \p __functionspace
- * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr
- */
-template<typename FunctionSpaceType, typename ExprT>
-typename FunctionSpaceType::element_type
-project( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr )
-{
-    typedef __typeof__( __functionspace->mesh()->elementsRange()) IteratorRange;
-    typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
-    proj_t p( __functionspace, __functionspace->mesh()->elementsRange(), __expr );
-    return p();
-}
 
 /**
  * \brief nodal projection of \p __expr onto the the subspace of \p __functionspace described by the range \p range_it
@@ -493,6 +486,44 @@ project( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
     typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, range_it, __expr );
     return p();
+}
+
+/**
+ * \brief nodal projection of \p __expr onto the space \p __functionspace
+ * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr
+ */
+template<typename FunctionSpaceType, typename ExprT>
+typename FunctionSpaceType::element_type
+project( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr )
+{
+    return project( __functionspace, __functionspace->mesh()->elementsRange(), __expr );
+}
+
+/**
+ * \brief nodal projection of \p __expr onto the the subspace of \p __functionspace described by the range \p range_it
+ *
+ * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr over the range \p __range_it
+ */
+template<typename FunctionSpaceType, typename IteratorRange, typename ExprT>
+typename FunctionSpaceType::element_type
+sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
+     IteratorRange const& range_it,
+     Expr<ExprT> const& __expr )
+{
+    typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
+    proj_t p( __functionspace, range_it, __expr );
+    return p(true);
+}
+
+/**
+ * \brief nodal projection of \p __expr onto the space \p __functionspace
+ * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr
+ */
+template<typename FunctionSpaceType, typename ExprT>
+typename FunctionSpaceType::element_type
+sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr )
+{
+    return sum( __functionspace, __functionspace->mesh()->elementsRange(), __expr );
 }
 
 /**
