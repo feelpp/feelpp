@@ -345,6 +345,11 @@ public:
      */
     bool active() const { return true; }
 
+    /**
+     * \return the measure of the entity
+     */
+    virtual double measure() const = 0;
+
     //@}
 
     /** @name  Mutators
