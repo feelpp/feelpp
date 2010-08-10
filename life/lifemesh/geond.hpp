@@ -660,9 +660,6 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type const i, point_type con
     LIFE_ASSERT( const_cast<point_type *>( &p ) != 0 ).error( "invalid Geo0D<>" );
     ublas::column( M_G, i ) = M_points[i]->node();
     M_has_points = true;
-
-
-    //Debug() << "[setPoint] üpdate point index " << i << " with "<< M_points[i]->id() << "\n";
 }
 
 
@@ -743,9 +740,6 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
 
     for ( uint16_type __p = 0; __p < numPoints; ++__p )
     {
-        M_points[__p]->addElement( this->id() );
-        std::cout << "point " << M_points[__p]->id() << " is connected to " << M_points[__p]->numberOfElements() << "\n";
-
         std::copy( M_points[__p]->elements().begin(),
                    M_points[__p]->elements().end(),
                    std::inserter( M_pneighbors, M_pneighbors.begin() ) );
