@@ -316,10 +316,12 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
                           2*(1-Px()*Px())*(1-Pz()*Pz())*exp(10*Px())*chi(Dim >= 2) +
                           2*(1-Px()*Px())*(1-Py()*Py())*exp(10*Px())*chi(Dim == 3) )  +
          //chi( fn == 2 )*(  fn2*(-100+3*alpha*alpha*pi*pi) -20*alpha*pi*exp(10*Px())*cos(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz()) ) );
-         chi( fn == 2 )*(  (
-                            sin(alpha*pi*Px())*exp(10*Px())*(3*alpha*alpha*pi*pi-100)-20*alpha*pi*exp(10*Px())*cos(alpha*pi*Px())
-			    )*cos(alpha*pi*Py())*cos(alpha*pi*Pz())
+         chi( fn == 2 )*  (
+			   exp(10*Px())*(
+					 Dim*alpha*alpha*pi*pi*sin(alpha*pi*Px())-100*sin(alpha*pi*Px())-20*alpha*pi*cos(alpha*pi*Px())
+					 )*( cos(alpha*pi*Py())*chi(Dim>=2) + chi(Dim==1)) * ( cos(alpha*pi*Pz())*chi(Dim==3) + chi(Dim<=2) )
 			   )
+			   
 	 );
 
     //# endmarker1 #
