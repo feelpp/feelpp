@@ -53,10 +53,12 @@ using namespace Life;
 
 BOOST_AUTO_TEST_SUITE( projectsuite )
 
-typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( project1, T, dim_types )
 {
+    BOOST_TEST_MESSAGE( "check 1 vf::sum and vf::project for dim = " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -66,7 +68,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project1, T, dim_types )
                                                       _addmidpoint=false,
                                                       _shape="simplex",
                                                       _dim=T::value,
-                                                      _h=2. ) );
+                                                      _h=2. ),
+                                        _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<1, Scalar> > > space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
@@ -83,6 +86,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project1, T, dim_types )
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( project2, T, dim_types )
 {
+    BOOST_TEST_MESSAGE( "check 2 vf::sum and vf::project for dim = " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -92,7 +96,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project2, T, dim_types )
                                                       _addmidpoint=false,
                                                       _shape="simplex",
                                                       _dim=T::value,
-                                                      _h=0.5 ) );
+                                                      _h=(T::value==1)?0.49:0.5 ),
+                                        _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<1, Scalar> > > space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
@@ -101,13 +106,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project2, T, dim_types )
     auto elen = mesh->endElement();
     for( ; elit != elen; ++elit )
     {
+        BOOST_TEST_MESSAGE( "  check element " << elit->id() << "\n" );
         switch ( T::value )
         {
         case 1:
             BOOST_CHECK_EQUAL( elit->numberOfPointElementNeighbors(), 2 );
             break;
         case 2:
-            BOOST_CHECK_EQUAL( elit->numberOfPointElementNeighbors(), 4 );
+            BOOST_CHECK_EQUAL( elit->numberOfPointElementNeighbors(), 2 );
             break;
         case 3:
             BOOST_CHECK_EQUAL( elit->numberOfPointElementNeighbors(), 4 );
