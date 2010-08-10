@@ -1178,6 +1178,11 @@ public:
             size_type index=start()+boost::get<0>(_M_functionspace->dof()->localToGlobal( ie, il, c ));
             this->operator[]( index ) = __v;
         }
+        void plus_assign( size_type ie, uint16_type il, uint16_type c, value_type const& __v )
+        {
+            size_type index=start()+boost::get<0>(_M_functionspace->dof()->localToGlobal( ie, il, c ));
+            this->operator[]( index ) += __v;
+        }
 
         //@}
 
@@ -4205,11 +4210,11 @@ operator<<( NdebugStream& os, detail::ID<T> const& )
 }
 
 /**
- * Computes the inner product of two vectors and eventually in parallel
+ * Computes the element wise product of two vectors and eventually in parallel
  * \param v1 vector (eventually distributed)
  * \param v2 vector (eventually distributed)
  *
- * \return the inner product of \p v1 and \p v2
+ * \return the element wise product of \p v1 and \p v2
  */
 template <typename ElementType>
 ElementType
@@ -4227,6 +4232,54 @@ element_product( ElementType const& v1, ElementType const& v2 )
     return _t;
 }
 
+/**
+ * Computes the element wise division of two vectors and eventually in parallel
+ * \param v1 vector (eventually distributed)
+ * \param v2 vector (eventually distributed)
+ *
+ * \return the element wise division product of \p v1 and \p v2
+ */
+template <typename ElementType>
+ElementType
+element_div( ElementType const& v1, ElementType const& v2 )
+{
+    LIFE_ASSERT( v1.functionSpace() == v2.functionSpace() ).error( "incompatible function spaces");
 
+    typedef typename type_traits<typename ElementType::value_type>::real_type real_type;
+
+    ElementType _t( v1.functionSpace() );
+    size_type s = v1.localSize();
+    size_type start = v1.firstLocalIndex();
+    for( size_type i = 0; i < s; ++i )
+        _t.operator()(start+i) = v1.operator()( start + i )/v2.operator()( start + i );
+    return _t;
 }
+
+template<typename MeshType>
+typename FunctionSpace<MeshType,bases<Lagrange<MeshType::nOrder,Scalar> > >::Element
+measurePointElements( boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<MeshType::nOrder,Scalar> > > > _space )
+{
+    auto _fn = _space->element( "measurePointElements" );
+    _fn.setZero();
+    std::vector<bool> ptdone( _space->mesh()->numPoints(), false );
+    auto elit = _space->mesh()->beginElement();
+    auto elen = _space->mesh()->endElement();
+    for( ; elit != elen; ++ elit )
+    {
+        for( int p = 0; p < elit->numPoints; ++p )
+        {
+            if ( ptdone[elit->point(p)->id()] == false )
+            {
+                BOOST_FOREACH( auto pt, elit->point(p)->elements() )
+                {
+                    _fn.plus_assign( elit->id(), p, 0, elit->measure() );
+                }
+                ptdone[elit->point(p)->id()] = true;
+            }
+        }
+    }
+    return _fn;
+}
+
+} // Life
 #endif /* __FunctionSpace_H */
