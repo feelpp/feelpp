@@ -55,7 +55,6 @@ using boost::unit_test::test_suite;
 #include <life/lifemesh/filters.hpp>
 #include <life/lifepoly/im.hpp>
 #include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
 #include <life/lifefilters/exporterquick.hpp>
 #include <life/lifevf/vf.hpp>
 
@@ -74,27 +73,14 @@ template<int Dim, int Order, int RDim>
 typename imesh<Dim, Order, RDim>::ptrtype
 createMesh( double hsize )
 {
-    Gmsh __gmsh;
-    std::string fname;
-    std::ostringstream ostr;
-    std::ostringstream nameStr;
-
-
-    typename imesh<Dim, Order, RDim>::ptrtype mesh( new typename imesh<Dim, Order, RDim>::type );
-
-    GmshTensorizedDomain<Dim,Order,RDim,Simplex> td;
-    td.setCharacteristicLength( hsize );
-    td.setX( std::make_pair( -1, 1 ) );
-    //td.setX( std::make_pair( -1, 1 ) );
-    td.setOrder( Order );
-    fname = td.generate( Simplex<Dim,Order,RDim>::name() );
-
-    ImporterGmsh<typename imesh<Dim,Order,RDim>::type> import( fname );
-    mesh->accept( import );
-
-    mesh->components().set( MESH_RENUMBER | MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
-    mesh->updateForUse();
-    return mesh;
+    return createGMSHMesh( _mesh=new typename imesh<Dim, Order, RDim>::type,
+                           _desc=domain( _name=(boost::format( "%1%-%2%" )  % "hypercube" % Dim).str() ,
+                                         _addmidpoint=false,
+                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
+                                         _shape="hypercube",
+                                         _dim=Dim,
+                                         _order=Order,
+                                         _h=hsize ) );
 }
 
 template<int Dim, int Order, int GeoOrder=1>
