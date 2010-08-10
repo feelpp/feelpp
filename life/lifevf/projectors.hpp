@@ -496,7 +496,7 @@ template<typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
 project( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr )
 {
-    return project( __functionspace, __functionspace->mesh()->elementsRange(), __expr );
+    return project( __functionspace, elements(__functionspace->mesh()), __expr );
 }
 
 /**
@@ -523,7 +523,7 @@ template<typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
 sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr )
 {
-    return sum( __functionspace, __functionspace->mesh()->elementsRange(), __expr );
+    return sum( __functionspace, elements(__functionspace->mesh()), __expr );
 }
 
 /**
