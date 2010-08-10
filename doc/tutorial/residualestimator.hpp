@@ -471,10 +471,13 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
                       vf::h()*term3*term3 ).broken( P0h ).sqrt();
 
     auto h=vf::project(P0h, elements(mesh), vf::h() );
-    auto measpen=vf::project(P0h, elements(mesh), vf::nPEN() );
-    auto H1estimator = element_product( rho, measpen.sqrt() );
+    auto npen=vf::project(P0h, elements(mesh), vf::nPEN() );
+    auto H1estimator = element_product( rho, npen.sqrt() );
 
-    auto H1estimatorP1 = element_div( vf::sum( P1h, idv(H1estimator)*meas()), vf::sum(P1h, meas()) );
+    auto H1estimatorP1 = element_div( vf::sum( P1h, idv(H1estimator)*meas()), vf::sum( P1h, meas()) );
+    //auto new_hsize=vf::project( P1h, elements(mesh), vf::pow(vf::pow(vf::h(),Order)*(1e-4)/idv(H1estimatorP1),1./Order));
+    auto new_hsize=vf::project( P1h, elements(mesh), vf::h()*(1e-2)/idv(H1estimatorP1) );
+
     double estimatorH1=math::sqrt(H1estimator.pow(2).sum());
     double estimatorL2=math::sqrt(element_product(H1estimator,h).pow(2).sum());
 
@@ -506,7 +509,10 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         exporter->step(0)->add( "unknown", u );
         exporter->step(0)->add( "exact solution", exact_solution);
         exporter->step(0)->add( "u - exact solution", u_minus_exact) ;
-        exporter->step(0)->add( "H1 error estimator" , H1estimator);
+        exporter->step(0)->add( "nPEN" , npen );
+        exporter->step(0)->add( "H1 error estimator P0" , H1estimator);
+        exporter->step(0)->add( "H1 error estimator P1" , H1estimatorP1);
+        exporter->step(0)->add( "new hsize" , new_hsize);
 
         exporter->save();
         Log() << "exportResults done\n";
