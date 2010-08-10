@@ -1,11 +1,11 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8 -*-
 
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-08-09
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_SUITE( projectsuite )
 
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 
-BOOST_AUTO_TEST_CASE_TEMPLATE( project, T, dim_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( project1, T, dim_types )
 {
     typedef Mesh<Simplex<T::value,1> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
@@ -77,6 +77,44 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project, T, dim_types )
         BOOST_CHECK_CLOSE( p1meas(i), mesh->beginElement()->measure(), 1e-13);
     }
     BOOST_CHECK_CLOSE( p1meas.sum(), mesh->numPoints()*mesh->beginElement()->measure(), 1e-13);
+    BOOST_CHECK_EQUAL( mesh->beginElement()->numberOfPointElementNeighbors(), 1 );
+    BOOST_CHECK_CLOSE( mesh->beginElement()->measurePointElementNeighbors(), mesh->beginElement()->measure(), 1e-13 );
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( project2, T, dim_types )
+{
+    typedef Mesh<Simplex<T::value,1> > mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name=(boost::format( "simplex-%1%" )  % T::value).str() ,
+                                                      _usenames=true,
+                                                      _addmidpoint=false,
+                                                      _shape="simplex",
+                                                      _dim=T::value,
+                                                      _h=0.5 ) );
+
+    typedef FunctionSpace<mesh_type,bases<Lagrange<1, Scalar> > > space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    space_ptrtype P1h = space_type::New( mesh );
+    auto elit = mesh->beginElement();
+    auto elen = mesh->endElement();
+    for( ; elit != elen; ++elit )
+    {
+        switch ( T::value )
+        {
+        case 1:
+            BOOST_CHECK_EQUAL( elit->numberOfPointElementNeighbors(), 2 );
+            break;
+        case 2:
+            BOOST_CHECK_EQUAL( elit->numberOfPointElementNeighbors(), 4 );
+            break;
+        case 3:
+            BOOST_CHECK_EQUAL( elit->numberOfPointElementNeighbors(), 4 );
+            break;
+        }
+        BOOST_CHECK_CLOSE( elit->measurePointElementNeighbors(), mesh->measure(), 1e-13 );
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
