@@ -44,6 +44,8 @@ Mesh<Shape, T>::Mesh( std::string partitioner )
     :
     super(),
     _M_gm( new gm_type ),
+    M_meas( 0 ),
+    M_measbdy( 0 ),
     M_part(),
     M_tool_localization(new Localization())
 {
@@ -178,6 +180,11 @@ Mesh<Shape, T>::updateForUse()
                         this->elements().modify( iv,
                                                  lambda::bind( &element_type::updateWithPc,
                                                                lambda::_1, pc, boost::ref(pcf) ) );
+                        M_meas += iv->measure();
+                        auto _faces = iv->faces();
+                        for( ; _faces.first != _faces.second; ++_faces.first )
+                            if ( (*_faces.first)->isOnBoundary() )
+                                M_measbdy += (*_faces.first)->measure();
                     }
                 // now that all elements have been updated, build inter element
                 // data such as the measure of point element neighbors
