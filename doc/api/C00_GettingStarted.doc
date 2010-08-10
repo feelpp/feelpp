@@ -96,6 +96,10 @@ Here is the list of optional packages:
   not stricly required to run Life programs but it is somehow
   necessary for visualisation
  - Python (>= 2.5) for the validation tools
+ - Eigen2
+ - TBB: Intel Thread Building Block
+ - Octave headers to create octave bindings (oct files)
+ - MAdLib: the Mesh Adaptation Library
 
 
 Note that all these packages are available under Debian/GNU/Linux and
