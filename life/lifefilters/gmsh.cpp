@@ -477,8 +477,22 @@ const bool meshs11tsxx = Gmsh::Factory::type::instance().registerProduct( "hyper
                                                                           &detail::createTensorizedDomain<1,1,1,Simplex> );
 const bool meshs21tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1)",
                                                                           &detail::createTensorizedDomain<2,1,2,Simplex> );
+const bool meshs22tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,2)",
+                                                                          &detail::createTensorizedDomain<2,2,2,Simplex> );
+const bool meshs23tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,3)",
+                                                                          &detail::createTensorizedDomain<2,3,2,Simplex> );
+const bool meshs24tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,4)",
+                                                                          &detail::createTensorizedDomain<2,4,2,Simplex> );
+const bool meshs25tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,5)",
+                                                                          &detail::createTensorizedDomain<2,5,2,Simplex> );
 const bool meshs31tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(3,1)",
                                                                           &detail::createTensorizedDomain<3,1,3,Simplex> );
+const bool meshs32tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(3,2)",
+                                                                          &detail::createTensorizedDomain<3,2,3,Simplex> );
+const bool meshs33tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(3,3)",
+                                                                          &detail::createTensorizedDomain<3,3,3,Simplex> );
+const bool meshs34tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(3,4)",
+                                                                          &detail::createTensorizedDomain<3,4,3,Simplex> );
 
 const bool meshs21ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,Simplex)",
                                                                         &detail::createTensorizedDomain<2,1,2,Simplex> );
