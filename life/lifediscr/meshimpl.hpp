@@ -170,6 +170,8 @@ Mesh<Shape, T>::updateForUse()
 
                 auto pc = _M_gm->preCompute( _M_gm, _M_gm->referenceConvex().vertices() );
                 auto pcf =  _M_gm->preComputeOnFaces( _M_gm, _M_gm->referenceConvex().barycenterFaces() );
+                M_meas = 0;
+                M_measbdy = 0;
                 for ( ;iv != en; ++iv )
                     {
                         this->elements().modify( iv,
@@ -194,7 +196,7 @@ Mesh<Shape, T>::updateForUse()
                     value_type meas = 0;
                     BOOST_FOREACH( auto _elt, iv->pointElementNeighborIds() )
                     {
-                        meas += this->elements().find( _elt )->measure();
+                        meas += this->element(_elt).measure();
                     }
                     this->elements().modify( iv,
                                              lambda::bind( &element_type::setMeasurePointElementNeighbors,
