@@ -4256,8 +4256,8 @@ element_div( ElementType const& v1, ElementType const& v2 )
 }
 
 template<typename MeshType>
-typename FunctionSpace<MeshType,bases<Lagrange<MeshType::nOrder,Scalar> > >::Element
-measurePointElements( boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<MeshType::nOrder,Scalar> > > > _space )
+auto
+measurePointElements( boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<MeshType::nOrder,Scalar> > > >& _space ) -> decltype( _space->element() )
 {
     auto _fn = _space->element( "measurePointElements" );
     _fn.setZero();
@@ -4268,13 +4268,13 @@ measurePointElements( boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Me
     {
         for( int p = 0; p < elit->numPoints; ++p )
         {
-            if ( ptdone[elit->point(p)->id()] == false )
+            if ( ptdone[elit->point(p).id()] == false )
             {
-                BOOST_FOREACH( auto pt, elit->point(p)->elements() )
+                BOOST_FOREACH( auto pt, elit->point(p).elements() )
                 {
                     _fn.plus_assign( elit->id(), p, 0, elit->measure() );
                 }
-                ptdone[elit->point(p)->id()] = true;
+                ptdone[elit->point(p).id()] = true;
             }
         }
     }
