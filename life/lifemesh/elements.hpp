@@ -217,6 +217,19 @@ public:
         typename element_type::PointType const& _M_pt;
 
     };
+    /**
+     * @class ElementConnectPointToElement
+     * @brief connect point to element
+     *
+     */
+    struct ElementConnectPointToElement
+    {
+        void operator()( element_type& e )
+        {
+            for( int i = 0; i < e.numPoints; ++i )
+                e.point(i).addElement( e.id() );
+        }
+    };
     /// \endcond
 
     //@}
