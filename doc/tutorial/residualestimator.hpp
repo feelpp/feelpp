@@ -53,7 +53,7 @@
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <life/lifevf/vf.hpp>
 
-#if define(HAVE_MADLIB_H)
+#if defined (HAVE_MADLIB_H)
 #include <MAdLib.h>
 #endif // HAVE_MADLIB_H
 
@@ -174,6 +174,7 @@ public:
         fn( 1 ),
         alpha( 3 ),
         weakdir( 1 ),
+        tol( 1e-2 ),
         penaldir( 50 )
 
     {
@@ -191,6 +192,7 @@ public:
         fn( this->vm()["fn"].template as<int>() ),
         alpha( this->vm()["alpha"].template as<double>() ),
         weakdir( this->vm()["weakdir"].template as<int>() ),
+        tol( this->vm()["tol"].template as<double>() ),
         penaldir( this->vm()["penaldir"].template as<double>() )
 
     {
@@ -200,7 +202,7 @@ public:
 
     void run( const double* X, unsigned long P, double* Y, unsigned long N);
 
-    void adapt_mesh(int tol);
+    void adapt_mesh(void);
 private:
 
     //! linear algebra backend
@@ -225,6 +227,7 @@ private:
     double alpha;
     bool weakdir;
     double penaldir;
+    double tol;
 
     //! exporter
     export_ptrtype exporter;
@@ -264,7 +267,7 @@ ResidualEstimator<Dim,Order>::run()
     first_time=true;
     run( X.data(), X.size(), Y.data(), Y.size() );
 
-    adapt_mesh(0.1);
+    adapt_mesh();
     first_time=false;
     run( X.data(), X.size(), Y.data(), Y.size() );
 
@@ -477,7 +480,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     auto H1estimatorP1 = element_div( vf::sum( P1h, idv(H1estimator)*meas()), vf::sum( P1h, meas()) );
     //auto new_hsize=vf::project( P1h, elements(mesh), vf::pow(vf::pow(vf::h(),Order)*(1e-4)/idv(H1estimatorP1),1./Order));
-    auto new_hsize=vf::project( P1h, elements(mesh), vf::h()*(1e-2)/idv(H1estimatorP1) );
+    //auto new_hsize=vf::project( P1h, elements(mesh), vf::h()*(1e-2)/idv(H1estimatorP1) );
 
     double estimatorH1=math::sqrt(H1estimator.pow(2).sum());
     double estimatorL2=math::sqrt(element_product(H1estimator,h).pow(2).sum());
@@ -488,8 +491,12 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     Y[2] = estimatorL2/L2exact;
     Y[3] = estimatorH1/H1exact;
 
-    //ici : remplissage de h_new
-    for(int i=0;i<P1h->nLocalDof();i++) h_new(i)=0.05;
+    h_new = P1h->element();
+    //value_type tol = this->vm()["tol"].as<double>();
+    h_new = vf::project( P1h, elements(mesh), 
+			 vf::pow(
+			   vf::pow( vf::h(),Order)*(tol)/idv(H1estimatorP1),
+			 1./Order) ); 
     /**********************end of residual estimaor*************/
 
 
@@ -513,7 +520,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         exporter->step(0)->add( "nPEN" , npen );
         exporter->step(0)->add( "H1 error estimator P0" , H1estimator);
         exporter->step(0)->add( "H1 error estimator P1" , H1estimatorP1);
-        exporter->step(0)->add( "new hsize" , new_hsize);
+        exporter->step(0)->add( "new hsize" , h_new);
 
         exporter->save();
         Log() << "exportResults done\n";
@@ -532,23 +539,25 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
 template<int Dim, int Order>
 void
-ResidualEstimator<Dim,Order>::adapt_mesh(int tol)
+ResidualEstimator<Dim,Order>::adapt_mesh(void)
 {
     if ( shape == "hypercube" ){
       if(Dim==1) msh_name="hypercube-1.msh";
-      if(Dim==2) msh_name="hypercube-2.msh";
-      if(Dim==3) msh_name="hypercube-3.msh";
-      else {std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
+      else if(Dim==2) msh_name="hypercube-2.msh";
+      else if(Dim==3) msh_name="hypercube-3.msh";
+      else if(Dim>3) {std::cout<<"Dim>3, fault hypercube"<<std::endl; exit(0);}
     }
     else if ( shape == "ellipsoid" ){
       if(Dim==1) msh_name="ellipsoid-1.msh";
-      if(Dim==2) msh_name="ellipsoid-2.msh";
-      if(Dim==3) msh_name="ellipsoid-3.msh";
+      else if(Dim==2) msh_name="ellipsoid-2.msh";
+      else if(Dim==3) msh_name="ellipsoid-3.msh";
+      else if(Dim>3) {std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
     }
     else {// default is simplex
       if(Dim==1) msh_name="simplex-1.msh";
-      if(Dim==2) msh_name="simplex-2.msh";
-      if(Dim==3) msh_name="simplex-3.msh";
+      else if(Dim==2) msh_name="simplex-2.msh";
+      else if(Dim==3) msh_name="simplex-3.msh";
+      else if(Dim>3) {std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
     }
 
     MAd::pGModel model = 0;
@@ -579,19 +588,21 @@ ResidualEstimator<Dim,Order>::adapt_mesh(int tol)
 
     if ( shape == "hypercube" ){
       if(Dim==1) msh_name="NEWhypercube-1.msh";
-      if(Dim==2) msh_name="NEWhypercube-2.msh";
-      if(Dim==3) msh_name="NEWhypercube-3.msh";
-      else {std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
+      else if(Dim==2) msh_name="NEWhypercube-2.msh";
+      else if(Dim==3) msh_name="NEWhypercube-3.msh";
+      else if(Dim>3){std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
     }
     else if ( shape == "ellipsoid" ){
       if(Dim==1) msh_name="NEWellipsoid-1.msh";
-      if(Dim==2) msh_name="NEWellipsoid-2.msh";
-      if(Dim==3) msh_name="NEWellipsoid-3.msh";
+      else if(Dim==2) msh_name="NEWellipsoid-2.msh";
+      else if(Dim==3) msh_name="NEWellipsoid-3.msh";
+      else if(Dim>3){std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
     }
     else {// default is simplex
       if(Dim==1) msh_name="NEWsimplex-1.msh";
-      if(Dim==2) msh_name="NEWsimplex-2.msh";
-      if(Dim==3) msh_name="NEWsimplex-3.msh";
+      else if(Dim==2) msh_name="NEWsimplex-2.msh";
+      else if(Dim==3) msh_name="NEWsimplex-3.msh";
+      else if(Dim>3){std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
     }
 
     MAd::M_writeMsh (amesh, msh_name.c_str(), 2, NULL);

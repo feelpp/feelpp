@@ -49,6 +49,7 @@ makeOptions()
          "penalisation parameter for the weak boundary Dirichlet formulation")
         ("alpha", Life::po::value<double>()->default_value( 3 ), "Regularity coefficient for function f")
         ("fn", Life::po::value<int>()->default_value( 1 ), "example function to be run")
+      ("tol", Life::po::value<double>()->default_value(1e-2),"tolerence parameter on the error for mesh adaptation")
         ;
     return residualestimatoroptions.add( Life::life_options() );
 }
