@@ -248,11 +248,17 @@ template class GmshTensorizedDomain<1,1,2,Simplex>;
 template class GmshTensorizedDomain<1,1,1,SimplexProduct>;
 template class GmshTensorizedDomain<1,2,1,Simplex>;
 template class GmshTensorizedDomain<1,2,1,SimplexProduct>;
+template class GmshTensorizedDomain<1,3,1,Simplex>;
+template class GmshTensorizedDomain<1,4,1,Simplex>;
+template class GmshTensorizedDomain<1,5,1,Simplex>;
 // 2D
 template class GmshTensorizedDomain<2,1,2,Simplex>;
 template class GmshTensorizedDomain<2,1,2,SimplexProduct>;
 template class GmshTensorizedDomain<2,2,2,Simplex>;
 template class GmshTensorizedDomain<2,2,2,SimplexProduct>;
+template class GmshTensorizedDomain<2,3,2,Simplex>;
+template class GmshTensorizedDomain<2,4,2,Simplex>;
+template class GmshTensorizedDomain<2,5,2,Simplex>;
 // 2D3D
 template class GmshTensorizedDomain<2,1,3,Simplex>;
 // 3D
@@ -260,6 +266,8 @@ template class GmshTensorizedDomain<3,1,3,Simplex>;
 template class GmshTensorizedDomain<3,1,3,SimplexProduct>;
 template class GmshTensorizedDomain<3,2,3,Simplex>;
 template class GmshTensorizedDomain<3,2,3,SimplexProduct>;
+template class GmshTensorizedDomain<3,3,3,Simplex>;
+template class GmshTensorizedDomain<3,4,3,Simplex>;
 #endif // LIFE_INSTANTIATION_MODE
 
 }
