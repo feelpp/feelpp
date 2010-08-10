@@ -798,11 +798,11 @@ private:
 };
 
 /**
- * Computes the inner product of two vectors and eventually in parallel
+ * Computes the element wise product of two vectors and eventually in parallel
  * \param v1 vector (eventually distributed)
  * \param v2 vector (eventually distributed)
  *
- * \return the inner product of \p v1 and \p v2
+ * \return the element product of \p v1 and \p v2
  */
 template <typename T>
 VectorUblas<T>
@@ -822,6 +822,7 @@ element_product( VectorUblas<T> const& v1, VectorUblas<T> const& v2 )
         _t.operator()(start+i) = v1.operator()( start + i )* v2.operator()( start + i );
     return _t;
 }
+
 /**
  * Computes the element wise product of two vectors and eventually in parallel
  * \param v1 vector (eventually distributed)
