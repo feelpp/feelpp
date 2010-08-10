@@ -492,6 +492,7 @@ BOOST_PARAMETER_FUNCTION(
      (h,              *(boost::is_floating_point<mpl::_>), 0.1 )
      (order,          *(boost::is_integral<mpl::_>), 1 )
      (refine,          *(boost::is_integral<mpl::_>), 0 )
+     (update,          *(boost::is_integral<mpl::_>), 0 )
         )
     )
 {
@@ -510,6 +511,12 @@ BOOST_PARAMETER_FUNCTION(
 
     ImporterGmsh<_mesh_type> import( fname );
     _mesh->accept( import );
+
+    if ( update )
+    {
+        _mesh->components().set( update );
+        _mesh->updateForUse();
+    }
 
     return _mesh;
 }
