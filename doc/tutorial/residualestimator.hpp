@@ -53,8 +53,9 @@
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <life/lifevf/vf.hpp>
 
+#if define(HAVE_MADLIB_H)
 #include <MAdLib.h>
-
+#endif // HAVE_MADLIB_H
 
 
 
@@ -531,10 +532,8 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
 template<int Dim, int Order>
 void
-ResidualEstimator<Dim,Order>::adapt_mesh(int tol){
-
-
-
+ResidualEstimator<Dim,Order>::adapt_mesh(int tol)
+{
     if ( shape == "hypercube" ){
       if(Dim==1) msh_name="hypercube-1.msh";
       if(Dim==2) msh_name="hypercube-2.msh";
