@@ -489,7 +489,7 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     (optional
-     (h,              *(boost::is_floating_point<mpl::_>), 0.1 )
+     (h,              *(boost::is_arithmetic<mpl::_>), 0.1 )
      (order,          *(boost::is_integral<mpl::_>), 1 )
      (refine,          *(boost::is_integral<mpl::_>), 0 )
      (update,          *(boost::is_integral<mpl::_>), 0 )
@@ -533,16 +533,16 @@ BOOST_PARAMETER_FUNCTION(
     (optional
      (dim,            *(boost::is_integral<mpl::_>)      , 2)
      (order,          *(boost::is_integral<mpl::_>)      , 1)
-     (h,              *(boost::is_floating_point<mpl::_>), double(0.1) )
+     (h,              *(boost::is_arithmetic<mpl::_>), double(0.1) )
      (convex,         *(boost::is_convertible<mpl::_,std::string>), "simplex")
      (addmidpoint,    *(boost::is_integral<mpl::_>), true )
      (usenames,       *(boost::is_integral<mpl::_>), false )
-     (xmin,           *(boost::is_floating_point<mpl::_>), 0. )
-     (xmax,           *(boost::is_floating_point<mpl::_>), 1 )
-     (ymin,           *(boost::is_floating_point<mpl::_>), 0. )
-     (ymax,           *(boost::is_floating_point<mpl::_>), 1 )
-     (zmin,           *(boost::is_floating_point<mpl::_>), 0. )
-     (zmax,           *(boost::is_floating_point<mpl::_>), 1 )))
+     (xmin,           *(boost::is_arithmetic<mpl::_>), 0. )
+     (xmax,           *(boost::is_arithmetic<mpl::_>), 1 )
+     (ymin,           *(boost::is_arithmetic<mpl::_>), 0. )
+     (ymax,           *(boost::is_arithmetic<mpl::_>), 1 )
+     (zmin,           *(boost::is_arithmetic<mpl::_>), 0. )
+     (zmax,           *(boost::is_arithmetic<mpl::_>), 1 )))
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, dim, order, convex );
 
@@ -566,7 +566,7 @@ BOOST_PARAMETER_FUNCTION(
      (dim,            *(boost::is_integral<mpl::_>)))
     (optional
      (order,          *(boost::is_integral<mpl::_>)      , 1)
-     (h,              *(boost::is_floating_point<mpl::_>), double(0.1) )))
+     (h,              *(boost::is_arithmetic<mpl::_>), double(0.1) )))
 {
     gmsh_ptrtype gmsh_ptr( new Gmsh( dim, order ) );
 
