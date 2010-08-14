@@ -107,7 +107,7 @@ struct DebugStream::Private
 //
 // getDescription
 //
-static std::map<uint, std::string>* DebugAreas = 0;
+static std::map<unsigned int, std::string>* DebugAreas = 0;
 static std::string* StringNull = 0;
 static std::list<int>* AREAS;
 static std::string* DEBUG_AREA = 0;
@@ -128,7 +128,7 @@ initDebugAreas ()
             DEBUG_AREA = new std::string ( "" );
             AREAS = new std::list<int>;
             StringNull = new std::string ( "" );
-            DebugAreas = new std::map<uint, std::string>;
+            DebugAreas = new std::map<unsigned int, std::string>;
             alloc = true;
 
             DEBUG_ADD_AREA( 1000, "Life::Application" );
@@ -230,12 +230,12 @@ initDebugAreas ()
         }
 }
 std::string
-getDescription ( uint __area )
+getDescription ( unsigned int __area )
 {
     if ( DebugAreas->empty() )
         return std::string( "Area " ) + boost::lexical_cast<std::string>(__area);
 
-    std::map<uint, std::string>::iterator entry_it = DebugAreas->find ( __area );
+    std::map<unsigned int, std::string>::iterator entry_it = DebugAreas->find ( __area );
 
     if ( entry_it != DebugAreas->end() )
         return entry_it->second;
@@ -388,9 +388,19 @@ DebugStream::operator<<( uint32_type s)
     }
     return *this;
 }
-#if defined (__s390x__) || defined( __s390__ )
+#if defined (__s390x__) || defined( __s390__ ) || defined( __APPLE__ )
 DebugStream&
 DebugStream::operator<<( size_type s)
+{
+    if ( __p->debug )
+    {
+        __p->_M_output  << s;
+        flush();
+    }
+    return *this;
+}
+DebugStream&
+DebugStream::operator<<( ptrdiff_t s)
 {
     if ( __p->debug )
     {
