@@ -42,6 +42,7 @@
 
 namespace Life
 {
+extern const char* LIFE_GMSH_FORMAT_VERSION;
 /**
  * \class ExporterGmsh
  * \brief Exporter to GMSH format
@@ -134,35 +135,26 @@ public:
      */
     void visit( mesh_type* mesh );
 
+    /**
+     * save the \p mesh to the file \p filename
+     */
+    void saveMesh( std::string const& filename, mesh_ptrtype mesh ) const;
+
+    void gmshSaveAscii() const;
+
+    void gmshSaveFormat( std::ostream& out, std::string const& version = LIFE_GMSH_FORMAT_VERSION ) const;
+
+    void gmshSavePhysicalNames( std::ostream& out, mesh_ptrtype mesh ) const;
+
+    void gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh ) const;
+    void gmshSaveElements( std::ostream& out, mesh_ptrtype __mesh ) const;
+
+    void gmshSaveNodeData( std::ostream& out, step_ptrtype __step ) const;
+
+    void gmshSaveElementNodeData( std::ostream& out, step_ptrtype __step ) const;
+
+
     //@}
-
-
-
-protected:
-
-private:
-
-    void gmsh_save_ascii() const;
-
-    void gmsh_save_file( std::ostream& out ) const;
-
-    void gmsh_save_Format( std::ostream& out) const;
-
-    void gmsh_save_PhysicalNames( std::ostream& out,
-                                  step_ptrtype __step ) const;
-
-    void gmsh_save_Nodes( std::ostream& out,
-                          step_ptrtype __step ) const;
-
-    void gmsh_save_Elements( std::ostream& out,
-                             step_ptrtype __step ) const;
-
-    void gmsh_save_NodeData( std::ostream& out,
-                             step_ptrtype __step ) const;
-
-    void gmsh_save_ElementNodeData( std::ostream& out,
-                                    step_ptrtype __step ) const;
-
 
 private:
     mpi::communicator M_comm;

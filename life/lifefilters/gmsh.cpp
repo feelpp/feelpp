@@ -54,6 +54,8 @@ namespace Life
 {
 namespace fs = boost::filesystem;
 
+const char* LIFE_GMSH_FORMAT_VERSION = "2.1";
+
 boost::shared_ptr<Gmsh>
 Gmsh::New( po::variables_map const& vm )
 {

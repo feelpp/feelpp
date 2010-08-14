@@ -46,10 +46,11 @@
 #include <life/lifefilters/gmshenums.hpp>
 namespace Life
 {
-const std::string LIFE_GMSH_FORMAT_VERSION="2.1";
+extern const char* LIFE_GMSH_FORMAT_VERSION;
 }
 
 #include <life/lifefilters/importergmsh.hpp>
+#include <life/lifefilters/exportergmsh.hpp>
 
 namespace Life
 {
@@ -417,7 +418,10 @@ struct mesh
                 typename parameter::binding<Args, tag::mesh>::type
                 >::type
             >::type
-        >::type type;
+        >::type _type;
+    typedef typename mpl::if_<is_shared_ptr<_type>,
+                              mpl::identity<typename _type::value_type>,
+                              mpl::identity<_type> >::type::type type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 }
@@ -470,6 +474,30 @@ BOOST_PARAMETER_FUNCTION(
         _mesh->updateForUse();
     }
     return _mesh;
+}
+
+/**
+ *
+ * \brief save a mesh data structure (hold in a shared_ptr<>) in the GMSH format
+ *
+ * \arg mesh mesh data structure
+ * \arg filename filename string (with extension)
+ */
+BOOST_PARAMETER_FUNCTION(
+    (void),            // return type
+    saveGMSHMesh,    // 2. function name
+    tag,             // 3. namespace of tag types
+    (required
+     (mesh, *)
+     (filename, *))  // 4. one required parameter, and
+    (optional))
+{
+    typedef typename detail::mesh<Args>::type _mesh_type;
+    typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+
+    ExporterGmsh<_mesh_type,1> exporter( fs::path(filename).stem() );
+    exporter.saveMesh( filename, mesh );
+
 }
 
 /**
