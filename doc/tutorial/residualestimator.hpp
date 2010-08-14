@@ -1,11 +1,12 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8 -*-
 
   This file is part of the Life library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+             Stéphane Veys <stephane.veys@gmail.com>
        Date: 2010-08-05
 
-  Copyright (C) 2010 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -24,6 +25,7 @@
 /**
    \file residualestimator.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Stéphane Veys <stephane.veys@gmail.com>
    \date 2010-08-05
  */
 /** include predefined life command line options */
@@ -83,11 +85,10 @@ makeAbout()
                      "Copyright (c) 2010 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("St�phane Veys", "developer", "stephane.veys@gmail.com", "");
+    about.addAuthor("Stéphane Veys", "developer", "stephane.veys@gmail.com", "");
     return about;
 
 }
-
 /**
  * \class ResidualEstimator
  *
@@ -173,6 +174,7 @@ public:
         shape( "hypercube" ),
         fn( 1 ),
         alpha( 3 ),
+        beta( 10 ),
         weakdir( 1 ),
         tol( 1e-2 ),
         penaldir( 50 )
@@ -191,6 +193,7 @@ public:
         shape( this->vm()["shape"].template as<std::string>() ),
         fn( this->vm()["fn"].template as<int>() ),
         alpha( this->vm()["alpha"].template as<double>() ),
+        beta( this->vm()["beta"].template as<double>() ),
         weakdir( this->vm()["weakdir"].template as<int>() ),
         tol( this->vm()["tol"].template as<double>() ),
         penaldir( this->vm()["penaldir"].template as<double>() )
@@ -202,7 +205,7 @@ public:
 
     void run( const double* X, unsigned long P, double* Y, unsigned long N);
 
-    void adapt_mesh(void);
+    mesh_ptrtype adapt_mesh( p1_element_type& sizefield );
 private:
 
     //! linear algebra backend
@@ -225,9 +228,13 @@ private:
     int fn;
     //! parameter
     double alpha;
+    double beta;
     bool weakdir;
     double penaldir;
     double tol;
+
+    //! mesh
+    mesh_ptrtype mesh;
 
     //! exporter
     export_ptrtype exporter;
@@ -241,6 +248,8 @@ private:
     std::string msh_name;
     bool first_time;
 
+    int tag_Neumann;
+    int tag_Dirichlet;
 }; // ResidualEstimator
 
 template<int Dim, int Order>
@@ -261,13 +270,14 @@ ResidualEstimator<Dim,Order>::run()
         X.push_back( 0 );
     X.push_back( fn );
     X.push_back( alpha );
+    X.push_back( beta );
     X.push_back( weakdir );
     X.push_back( penaldir );
     std::vector<double> Y( 4 );
     first_time=true;
     run( X.data(), X.size(), Y.data(), Y.size() );
 
-    adapt_mesh();
+    mesh  = adapt_mesh( h_new );
     first_time=false;
     run( X.data(), X.size(), Y.data(), Y.size() );
 
@@ -286,11 +296,12 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     if ( X[1] == 2 ) shape = "ellipsoid";
     fn = X[2];
     alpha = X[3];
-    weakdir = X[4];
-    penaldir = X[5];
+    beta = X[4];
+    weakdir = X[5];
+    penaldir = X[6];
 
 
-   mesh_ptrtype mesh;
+
 
 
     if(first_time){
@@ -307,15 +318,12 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
                                                       _usenames=true,
                                                       _shape=shape,
                                                       _dim=Dim,
-                                                      _h=X[0] ) );
-
+                                                      _h=X[0] ),
+                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+        tag_Neumann = mesh->markerName("Neumann");
+        tag_Dirichlet = mesh->markerName("Dirichlet");
 
     }//end if(first_time)
-    else{//we need to load an existing mesh
-           mesh = loadGMSHMesh( _mesh=new mesh_type,
-                            _filename=msh_name,
-                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
-    }
     /**
      * The function space and some associated elements(functions) are then defined
      */
@@ -335,27 +343,25 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     //# marker1 #
     value_type pi = M_PI;
     //! deduce from expression the type of g (thanks to keyword 'auto')
-    auto fn1 = (1-Px()*Px())*(1-Py()*Py())*(1-Pz()*Pz())*exp(10*Px());
-    auto fn2 = sin(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz())*exp(10*Px());
+    auto fn1 = (1-Px()*Px())*(1-Py()*Py())*(1-Pz()*Pz())*exp(beta*Px());
+    auto fn2 = sin(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz())*exp(beta*Px());
     auto g = chi(fn==1)*fn1 + chi(fn==2)*fn2;
     auto grad_g =
-        trans(chi(fn==1)*((-2*Px()*(1-Py()*Py())*(1-Pz()*Pz())*exp(10*Px())+10*fn1)*unitX()+
-                          -2*Py()*(1-Px()*Px())*(1-Pz()*Pz())*exp(10*Px())*unitY()+
-                          -2*Pz()*(1-Px()*Px())*(1-Py()*Py())*exp(10*Px())*unitZ())+
-              chi(fn==2)*(+(alpha*pi*cos(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz())*exp(10*Px())+10*fn2)*unitX()+
-                          -alpha*pi*sin(alpha*pi*Px())*sin(alpha*pi*Py())*cos(alpha*pi*Pz())*exp(10*Px())*unitY()+
-                          -alpha*pi*sin(alpha*pi*Px())*cos(alpha*pi*Py())*sin(alpha*pi*Pz())*exp(10*Px())*unitZ()));
+        trans(chi(fn==1)*((-2*Px()*(1-Py()*Py())*(1-Pz()*Pz())*exp(beta*Px())+beta*fn1)*unitX()+
+                          -2*Py()*(1-Px()*Px())*(1-Pz()*Pz())*exp(beta*Px())*unitY()+
+                          -2*Pz()*(1-Px()*Px())*(1-Py()*Py())*exp(beta*Px())*unitZ())+
+              chi(fn==2)*(+(alpha*pi*cos(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz())*exp(beta*Px())+beta*fn2)*unitX()+
+                          -alpha*pi*sin(alpha*pi*Px())*sin(alpha*pi*Py())*cos(alpha*pi*Pz())*exp(beta*Px())*unitY()+
+                          -alpha*pi*sin(alpha*pi*Px())*cos(alpha*pi*Py())*sin(alpha*pi*Pz())*exp(beta*Px())*unitZ()));
     //! deduce from expression the type of laplacian  (thanks to keyword 'auto')
     auto minus_laplacian_g =
-        (chi( fn == 1 )*( 2*(1-Py()*Py())*(1-Pz()*Pz())*exp(10*Px()) + 40*Px()*(1-Py()*Py())*(1-Pz()*Pz())*exp(10*Px()) - 100 *fn1 +
-                          2*(1-Px()*Px())*(1-Pz()*Pz())*exp(10*Px())*chi(Dim >= 2) +
-                          2*(1-Px()*Px())*(1-Py()*Py())*exp(10*Px())*chi(Dim == 3) )  +
-         //chi( fn == 2 )*(  fn2*(-100+3*alpha*alpha*pi*pi) -20*alpha*pi*exp(10*Px())*cos(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz()) ) );
+        (chi( fn == 1 )*( 2*(1-Py()*Py())*(1-Pz()*Pz())*exp(beta*Px()) + 4*beta*Px()*(1-Py()*Py())*(1-Pz()*Pz())*exp(beta*Px()) - beta*beta *fn1 +
+                          2*(1-Px()*Px())*(1-Pz()*Pz())*exp(beta*Px())*chi(Dim >= 2) +
+                          2*(1-Px()*Px())*(1-Py()*Py())*exp(beta*Px())*chi(Dim == 3) )  +
          chi( fn == 2 )*  (
-			   exp(10*Px())*(
-					 Dim*alpha*alpha*pi*pi*sin(alpha*pi*Px())-100*sin(alpha*pi*Px())-20*alpha*pi*cos(alpha*pi*Px())
-					 )*( cos(alpha*pi*Py())*chi(Dim>=2) + chi(Dim==1)) * ( cos(alpha*pi*Pz())*chi(Dim==3) + chi(Dim<=2) )
-			   )
+             exp(beta*Px())*(Dim*alpha*alpha*pi*pi*sin(alpha*pi*Px())-beta*beta*sin(alpha*pi*Px())-2*beta*alpha*pi*cos(alpha*pi*Px()))*
+             ( cos(alpha*pi*Py())*chi(Dim>=2) + chi(Dim==1)) * ( cos(alpha*pi*Pz())*chi(Dim==3) + chi(Dim<=2) )
+             )
 
 	 );
 
@@ -377,14 +383,14 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     vector_ptrtype F( M_backend->newVector( Xh ) );
     form1( _test=Xh, _vector=F, _init=true ) =
         integrate( elements(mesh), minus_laplacian_g*id(v) )+
-        integrate( markedfaces( mesh, mesh->markerName("Neumann") ),
+        integrate( markedfaces( mesh, tag_Neumann ),
                    grad_g*vf::N()*id(v) );
     //# endmarker2 #
     if ( this->comm().size() != 1 || weakdir )
     {
         //# marker41 #
         form1( _test=Xh, _vector=F ) +=
-            integrate( markedfaces(mesh,mesh->markerName("Dirichlet")), g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
+            integrate( markedfaces(mesh,tag_Dirichlet), g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
         //# endmarker41 #
     }
     F->close();
@@ -417,7 +423,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         /** \code */
         //# marker10 #
         form2( Xh, Xh, D ) +=
-            integrate( markedfaces(mesh,mesh->markerName("Dirichlet")),
+            integrate( markedfaces(mesh,tag_Dirichlet),
                        -(gradt(u)*vf::N())*id(v)
                        -(grad(v)*vf::N())*idt(u)
                        +penaldir*id(v)*idt(u)/hFace());
@@ -435,7 +441,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         //# marker5 #
         D->close();
         form2( Xh, Xh, D ) +=
-            on( markedfaces(mesh, mesh->markerName("Dirichlet")), u, F, g );
+            on( markedfaces(mesh, tag_Dirichlet), u, F, g );
         //# endmarker5 #
         /** \endcode */
 
@@ -471,7 +477,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     rho += integrate(internalfaces(mesh),0.25*vf::h()*term2*term2).broken( P0h ).sqrt();
 
-    rho += integrate( markedfaces(mesh,mesh->markerName("Neumann")),
+    rho += integrate( markedfaces(mesh,tag_Neumann),
                       vf::h()*term3*term3 ).broken( P0h ).sqrt();
 
     auto h=vf::project(P0h, elements(mesh), vf::h() );
@@ -494,9 +500,10 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     h_new = P1h->element();
     //value_type tol = this->vm()["tol"].as<double>();
     h_new = vf::project( P1h, elements(mesh),
-			 vf::pow(
-			   vf::pow( vf::h(),Order)*(tol)/idv(H1estimatorP1),
-			 1./Order) );
+                         vf::max(vf::pow(
+                                     vf::pow( vf::h(),Order)*(tol)/idv(H1estimatorP1),
+                                     1./Order),
+                                 this->vm()["hmin"].template as<double>() ) );
     /**********************end of residual estimaor*************/
 
 
@@ -538,37 +545,46 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
 
 template<int Dim, int Order>
-void
-ResidualEstimator<Dim,Order>::adapt_mesh(void)
+typename ResidualEstimator<Dim,Order>::mesh_ptrtype
+ResidualEstimator<Dim,Order>::adapt_mesh( p1_element_type& sizefield )
 {
 #if defined (HAVE_MADLIB_H)
-    if ( shape == "hypercube" ){
-      if(Dim==1) msh_name="hypercube-1.msh";
-      else if(Dim==2) msh_name="hypercube-2.msh";
-      else if(Dim==3) msh_name="hypercube-3.msh";
-      else if(Dim>3) {std::cout<<"Dim>3, fault hypercube"<<std::endl; exit(0);}
-    }
-    else if ( shape == "ellipsoid" ){
-      if(Dim==1) msh_name="ellipsoid-1.msh";
-      else if(Dim==2) msh_name="ellipsoid-2.msh";
-      else if(Dim==3) msh_name="ellipsoid-3.msh";
-      else if(Dim>3) {std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
-    }
-    else {// default is simplex
-      if(Dim==1) msh_name="simplex-1.msh";
-      else if(Dim==2) msh_name="simplex-2.msh";
-      else if(Dim==3) msh_name="simplex-3.msh";
-      else if(Dim>3) {std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
-    }
-
+    saveGMSHMesh( _filename="inputmesh.msh",
+                  _mesh=sizefield.mesh() );
+    std::ostringstream mshstr;
+    mshstr << shape << "-" << Dim << ".msh";
+    //msh_name = mshstr.str();
     MAd::pGModel model = 0;
+    if ( this->vm()["gmshmodel"].template as<bool>() == true )
+    {
+        GM_create(&model,"theModel");
+        if ( this->vm()["gmshgeo"].template as<bool>() == true )
+        {
+            std::ostringstream geostr;
+            geostr << shape << "-" << Dim <<  ".geo";
+            GM_readFromGEO( model, geostr.str().c_str() );
+        }
+        else
+        {
+            GM_readFromMSH(model, mshstr.str().c_str());
+        }
+    }
     MAd::pMesh amesh = MAd::M_new(model);
-    MAd::M_load(amesh,msh_name.c_str());
+    MAd::M_load(amesh,mshstr.str().c_str());
 
     MAd::PWLSField * sizeField = new MAd::PWLSField(amesh);
     sizeField->setCurrentSize();
-    for( int i = 0; i < P1h->nLocalDof(); ++i )
-        sizeField->setSize( i+1 , h_new(i) );
+    auto _elit = P1h->mesh()->beginElement();
+    auto _elen = P1h->mesh()->endElement();
+    for( ; _elit != _elen; ++_elit )
+    {
+        for( int l = 0; l < _elit->numPoints; ++l )
+        {
+            int dof = P1h->dof()->localToGlobal( _elit->id(), l, 0 ).get<0>();
+            int pid = _elit->point( l ).id()+1;
+            sizeField->setSize( pid , sizefield(dof) );
+        }
+    }
 
     MAd::MeshAdapter* ma = new MAd::MeshAdapter(amesh,sizeField);
 
@@ -587,26 +603,11 @@ ResidualEstimator<Dim,Order>::adapt_mesh(void)
     ma->printStatistics(std::cout);
     ma->writePos("meanRatioAfter.pos",MAd::OD_MEANRATIO);
 
-    if ( shape == "hypercube" ){
-      if(Dim==1) msh_name="NEWhypercube-1.msh";
-      else if(Dim==2) msh_name="NEWhypercube-2.msh";
-      else if(Dim==3) msh_name="NEWhypercube-3.msh";
-      else if(Dim>3){std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
-    }
-    else if ( shape == "ellipsoid" ){
-      if(Dim==1) msh_name="NEWellipsoid-1.msh";
-      else if(Dim==2) msh_name="NEWellipsoid-2.msh";
-      else if(Dim==3) msh_name="NEWellipsoid-3.msh";
-      else if(Dim>3){std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
-    }
-    else {// default is simplex
-      if(Dim==1) msh_name="NEWsimplex-1.msh";
-      else if(Dim==2) msh_name="NEWsimplex-2.msh";
-      else if(Dim==3) msh_name="NEWsimplex-3.msh";
-      else if(Dim>3){std::cout<<"Dim>3, fault"<<std::endl; exit(0);}
-    }
+    MAd::M_writeMsh (amesh, "result.msh", 2, NULL);
 
-    MAd::M_writeMsh (amesh, msh_name.c_str(), 2, NULL);
+    return loadGMSHMesh( _mesh=new mesh_type,
+                         _filename="result.msh",
+                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
     //# endmarker7 #
     /** \endcode */
 #endif // HAVE_MADLIB_H
