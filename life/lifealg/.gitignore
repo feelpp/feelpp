@@ -1,6 +1,14 @@
 /CMakeFiles
+/CMakeLists.txt~
 /Makefile
 /Makefile.in
 /TAGS
 /cmake_install.cmake
 /liblifealg.a
+/lu.hpp~
+/matrixgmm.cpp~
+/matrixgmm.hpp~
+/solvernonlinear.hpp~
+/svd.hpp~
+/vectorublas.cpp~
+/vectorublas.hpp~

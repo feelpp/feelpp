@@ -1,7 +1,14 @@
 /CMakeFiles
+/CMakeLists.txt~
 /Makefile
 /Makefile.in
 /TAGS
+/application.cpp~
 /cmake_install.cmake
+/context.hpp~
+/debug.cpp~
+/debug.hpp~
+/flags.hpp~
 /liblifecore.a
+/life.hpp~
 /parameter.hpp~
