@@ -283,6 +283,10 @@ typedef uint16_type dim_type;
 
 //! Indices (starting from 0)
 typedef size_t size_type;
+
+#if defined( __APPLE__ )
+typedef unsigned int uint;
+#endif // __APPLE__
 //BOOST_MPL_ASSERT_MSG( ( boost::is_same<size_type,uint32_type>::value), NOT_SAME, (size_t, long unsigned int, uint32_type, uint64_type));
 /**
  * @name Constants
