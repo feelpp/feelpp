@@ -84,9 +84,7 @@ struct linalg_traits<ublas::vector<T, ublas::unbounded_array<T, std::allocator<T
     static void resize(this_type &v, size_type n) { v.resize(n, true); }
 };
 
-template class linalg_traits<ublas::vector<double> >;
-//template class linalg_traits<ublas::vector<long double> >;
-//template class linalg_traits<ublas::vector<dd_real> >;
+
 
 template <typename T>
 inline

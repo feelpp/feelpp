@@ -236,3 +236,9 @@ MatrixGmm<T, LayoutType>::printMatlab(const std::string filename ) const
 template class MatrixGmm<double,gmm::row_major>;
 //template class MatrixGmm<double,gmm::col_major>;
 }
+namespace gmm
+{
+template class linalg_traits<ublas::vector<double> >;
+//template class linalg_traits<ublas::vector<long double> >;
+//template class linalg_traits<ublas::vector<dd_real> >;
+}
