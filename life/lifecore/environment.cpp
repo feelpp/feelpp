@@ -50,7 +50,9 @@ extern "C"
 #endif /* HAVE_SLEPC */
 
 #endif /* HAVE_PETSC_H */
-
+#if defined( HAVE_MADLIB_H )
+# include <MAdLib.h>
+#endif
 namespace Life
 {
 Environment::Environment()
@@ -96,6 +98,9 @@ Environment::Environment( int& argc, char**& argv )
     }
 #endif // HAVE_PETSC_H
 
+#if defined( HAVE_MADLIB_H )
+    MAdLibInitialize( &argc, &argv );
+#endif // HAVE_MADLIB_H
 }
 
 Environment::~Environment()
@@ -109,6 +114,10 @@ Environment::~Environment()
         PetscFinalize();
 #endif
 #endif
+
+#if defined( HAVE_MADLIB_H )
+        MAdLibFinalize();
+#endif // HAVE_MADLIB_H
     }
 }
 
