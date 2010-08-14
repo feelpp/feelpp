@@ -861,28 +861,25 @@ struct linalg_traits<Life::VectorUblas<T,Storage> >
     typedef typename this_type::const_iterator const_iterator;
     typedef abstract_dense storage_type;
     typedef linalg_true index_sorted;
-    static size_type size(const this_type &v) { return v.size(); }
-    static iterator begin(this_type &v) { return v.begin(); }
-    static const_iterator begin(const this_type &v) { return v.begin(); }
-    static iterator end(this_type &v) { return v.end(); }
-    static const_iterator end(const this_type &v) { return v.end(); }
-    static origin_type* origin(this_type &v) { return &v; }
-    static const origin_type* origin(const this_type &v) { return &v; }
-    static void clear(origin_type*, const iterator &it, const iterator &ite)
+    static LIFE_STRONG_INLINE size_type size(const this_type &v) { return v.size(); }
+    static LIFE_STRONG_INLINE iterator begin(this_type &v) { return v.begin(); }
+    static LIFE_STRONG_INLINE const_iterator begin(const this_type &v) { return v.begin(); }
+    static LIFE_STRONG_INLINE iterator end(this_type &v) { return v.end(); }
+    static LIFE_STRONG_INLINE const_iterator end(const this_type &v) { return v.end(); }
+    static LIFE_STRONG_INLINE origin_type* origin(this_type &v) { return &v; }
+    static LIFE_STRONG_INLINE const origin_type* origin(const this_type &v) { return &v; }
+    static LIFE_STRONG_INLINE void clear(origin_type*, const iterator &it, const iterator &ite)
     { std::fill(it, ite, value_type(0)); }
-    static void do_clear(this_type &v) { v.clear(); }
-    static value_type access(const origin_type *, const const_iterator &it,
-                             const const_iterator &, size_type i)
+    static LIFE_STRONG_INLINE void do_clear(this_type &v) { v.clear(); }
+    static LIFE_STRONG_INLINE value_type access(const origin_type *, const const_iterator &it,
+                                                const const_iterator &, size_type i)
     { return *( it+i ); }
-    static reference access(origin_type *, const iterator &it,
-                            const iterator &, size_type i)
+    static LIFE_STRONG_INLINE reference access(origin_type *, const iterator &it,
+                                               const iterator &, size_type i)
     { return *( it+i ); }
-    static void resize(this_type &v, size_type n) { v.resize(n, true); }
+    static LIFE_STRONG_INLINE void resize(this_type &v, size_type n) { v.resize(n, true); }
 };
 
-template class linalg_traits<Life::VectorUblas<double> >;
-//template class linalg_traits<Life::VectorUblas<long double> >;
-//template class linalg_traits<ublas::vector<dd_real> >;
 
 template <typename T, typename Storage>
 inline
