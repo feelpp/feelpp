@@ -21,5 +21,5 @@ add_library( lifealg SHARED
   ${LIFE_TRILINOS_SRCS}
   )
 set_target_properties( lifealg PROPERTIES VERSION ${LIFE_SHARED_VERSION} SOVERSION ${LIFE_SHARED_SOVERSION})
-target_link_libraries (lifealg lifecore)
+target_link_libraries (lifealg lifecore ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES})
 
