@@ -136,8 +136,9 @@ public:
     DebugStream& operator<<( int32_type );
     DebugStream& operator<<( uint16_type );
     DebugStream& operator<<( uint32_type );
-#if defined (__s390x__) || defined( __s390__ )
+#if defined (__s390x__) || defined( __s390__ ) || defined( __APPLE__ )
     DebugStream& operator<<( size_type );
+    DebugStream& operator<<( ptrdiff_t );
 #endif
 
 #if !defined( BOOST_NO_INT64_T )
@@ -203,8 +204,9 @@ public:
     NdebugStream& operator<<( int32_type ) { return *this; }
     NdebugStream& operator<<( uint16_type ) { return *this; }
     NdebugStream& operator<<( uint32_type ) { return *this; }
-#if defined (__s390x__) || defined( __s390__ )
+#if defined (__s390x__) || defined( __s390__ ) || defined( __APPLE__ )
     NdebugStream& operator<<( size_type ) { return *this; }
+    NdebugStream& operator<<( ptrdiff_t ) { return *this; }
 #endif
 
 #if !defined( BOOST_NO_INT64_T )
