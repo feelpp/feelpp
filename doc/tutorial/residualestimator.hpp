@@ -493,10 +493,10 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     h_new = P1h->element();
     //value_type tol = this->vm()["tol"].as<double>();
-    h_new = vf::project( P1h, elements(mesh), 
+    h_new = vf::project( P1h, elements(mesh),
 			 vf::pow(
 			   vf::pow( vf::h(),Order)*(tol)/idv(H1estimatorP1),
-			 1./Order) ); 
+			 1./Order) );
     /**********************end of residual estimaor*************/
 
 
@@ -541,6 +541,7 @@ template<int Dim, int Order>
 void
 ResidualEstimator<Dim,Order>::adapt_mesh(void)
 {
+#if defined (HAVE_MADLIB_H)
     if ( shape == "hypercube" ){
       if(Dim==1) msh_name="hypercube-1.msh";
       else if(Dim==2) msh_name="hypercube-2.msh";
@@ -608,7 +609,7 @@ ResidualEstimator<Dim,Order>::adapt_mesh(void)
     MAd::M_writeMsh (amesh, msh_name.c_str(), 2, NULL);
     //# endmarker7 #
     /** \endcode */
-
+#endif // HAVE_MADLIB_H
 }// ResidualEstimator::adapt_mesh
 
 
