@@ -593,3 +593,9 @@ template class VectorUblas<double,ublas::vector_range<ublas::vector<double> > >;
 
 
 } // Life
+namespace gmm
+{
+template class linalg_traits<Life::VectorUblas<double> >;
+//template class linalg_traits<Life::VectorUblas<long double> >;
+//template class linalg_traits<ublas::vector<dd_real> >;
+}
