@@ -1,9 +1,9 @@
-###  CMakeLists.txt ---
-
+# -*- mode: cmake; coding: utf-8 -*-
+#
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #       Date: 2009-11-29
 #
-#  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2009-2010 UniversitÃ© Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -82,6 +82,7 @@ endforeach()
 macro( add_docex2 target )
  add_executable( life_doc_${target} ${target}.cpp )
  target_link_libraries( life_doc_${target} ${LIFE_LIBRARIES} )
+
  get_target_property(target_executable life_doc_${target} LOCATION)
  # add_custom_command(
  #   TARGET life_doc_${target}
