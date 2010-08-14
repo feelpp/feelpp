@@ -12,13 +12,18 @@
 ** Programming Environment
  - Added OpenTURNS check (optional)
  - Start support python wrappers using OpenTURNS
+ - added support for TBB (Thread Building Blocks). Now we have to use it. A
+   first example is available in life/lifealg/vectorublas.cpp
+ - added support for octave warppers. An example is available in doc/tutorial.
+ - ported to (intel) APPLE platforms thanks to [[http://www.macports.org][macports.org]]
+ - added support for [[http://www.madlib.be][MAdLib]], a mesh adaptation library
 
 
 ** Libraries
 
 *** lifecore
 
- - Fix build on s390
+ - Fix build on s390 and apple platforms
 
 *** lifepoly
 
@@ -27,10 +32,27 @@
    the basis definition. Either the basis is intrinsiquely Discontinous
    (e.g. Dubiner) or can be either Continuous or Discontinous (e.g. Lagrange)
 
+*** lifemesh
+
+ - added support to the GeoND class for Point Element Neighbors which is for a
+   given element, the set of elements (including himself) that share a point
+   with it. Provide dimension(number of elements) and measure
+
 *** lifediscr
 
  - support for vectorial valued function such as RaviartThomas
  - update the interpolation tool
+
+*** lifefilters
+
+ - much better support for Gmsh.
+   - added loadGMSHMesh() and saveGMSHMesh() free functions to save and load
+     mesh from/to the GMSH msh format with many options
+   - added an _update option to createGMSHMesh() to setup the mesh components
+     after loading
+   - enhanced the ExporterGMSH class and updated the interface so that it
+     supports loading/saving high order elements in all 3 dimensions as well as
+     associated data. Adapted the TimeSet class accordingly.
 
 *** lifevf
 
@@ -48,6 +70,24 @@
    p0 = P0h->element( "mean_f" );
    $p0 = \int_K f/meas(K)$ where K is an element of the mesh
    p0 = integrate( elements(mesh), f/meas() ).broken( P0h );
+ - added nPEN() and measPEN() where PEN stands for Point Element Neighbors which
+   is for a given element, the set of elements (including himself) that share a
+   point with it. nPEN() returns the number of elements and measPEN() the
+   measure of the set.
+
+** Documentation
+
+*** API
+
+ - ported the tutorial to Doxygen
+ - improved the Doxygen output
+
+*** Tutorial
+
+ - update the tutorial, generate automatically the figures for some of the
+   examples
+ - added the residualestimator example which provides a tutorial for residual
+   based error estimator and mesh adaptation using MAdLib.
 
 ** Benchmarks
 
@@ -62,6 +102,11 @@
 
  - moved stokes testcases to navierstokes/kovasznay directory, moved all
    stokes/navier-stokes benchmarks into the navierstokes directory
+
+*** Perf
+
+ - The performance benchmark has been updated and saves now the timings in files
+   to ease the analysis
 
 
 * New in 0.9.24
