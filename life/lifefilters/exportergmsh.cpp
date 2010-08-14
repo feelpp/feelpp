@@ -31,6 +31,7 @@
 
 #include <life/lifecore/life.hpp>
 
+#include <life/lifefilters/gmsh.hpp>
 #include <life/lifefilters/exportergmsh.hpp>
 #include <life/lifefilters/gmshenums.hpp>
 
@@ -73,7 +74,7 @@ ExporterGmsh<MeshType,N>::save() const
 
     Debug( 8007 ) << "[ExporterGmsh] save()...\n";
 
-    gmsh_save_ascii();
+    gmshSaveAscii();
 
     Debug( 8007 ) << "[ExporterGmsh] saving done\n";
 }
@@ -86,9 +87,9 @@ ExporterGmsh<MeshType,N>::visit( mesh_type* )
 
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmsh_save_ascii() const
+ExporterGmsh<MeshType,N>::gmshSaveAscii() const
 {
-    Debug( 8007 ) << "[gmsh_save_ascii] saving in gmsh ascii file format\n";
+    Debug( 8007 ) << "[gmshSaveascii] saving in gmsh ascii file format\n";
 
     timeset_const_iterator __ts_it = this->beginTimeSet();
     timeset_const_iterator __ts_en = this->endTimeSet();
@@ -138,43 +139,53 @@ ExporterGmsh<MeshType,N>::gmsh_save_ascii() const
                               << __fname.str() << "\n";
 
 
-                gmsh_save_Format( out );
+                gmshSaveFormat( out );
 
-                gmsh_save_PhysicalNames( out, __step );
+                gmshSavePhysicalNames( out, __step->mesh() );
 
-                gmsh_save_Nodes( out,__step);
+                gmshSaveNodes( out,__step->mesh());
 
-                gmsh_save_Elements( out, __step);
+                gmshSaveElements( out, __step->mesh());
 
-                //gmsh_save_NodeData( out, __step);
+                //gmshSaveNodeData( out, __step);
 
-                gmsh_save_ElementNodeData( out, __step);
+                gmshSaveElementNodeData( out, __step);
             }
         }
         ++__ts_it;
     }
 }
 
+
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmsh_save_file( std::ostream& out ) const
+ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype mesh ) const
 {
+    std::ofstream out( filename.c_str(), std::ios::out);
+    if (out.fail())
+    {
+        Log() << "[ExporterGmsh::SaveMesh] cannot open " << filename << "\n";
+        exit(0);
+    }
+    gmshSaveFormat( out );
+    gmshSavePhysicalNames( out, mesh );
+    gmshSaveNodes( out, mesh );
+    gmshSaveElements( out, mesh);
 }
 
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmsh_save_Format( std::ostream& out ) const
+ExporterGmsh<MeshType,N>::gmshSaveFormat( std::ostream& out, std::string const& version ) const
 {
     out << "$MeshFormat\n"
-        << "2.1 0 " << sizeof(double) << "\n"
+        << version << " 0 " << sizeof(double) << "\n"
         << "$EndMeshFormat\n";
 
 }
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmsh_save_PhysicalNames( std::ostream& out, step_ptrtype __step ) const
+ExporterGmsh<MeshType,N>::gmshSavePhysicalNames( std::ostream& out, mesh_ptrtype mesh ) const
 {
-    mesh_ptrtype mesh = __step->mesh();
     // save Physical Names
     out << "$PhysicalNames\n";
     out << mesh->markerNames().size() << "\n";
@@ -191,13 +202,9 @@ ExporterGmsh<MeshType,N>::gmsh_save_PhysicalNames( std::ostream& out, step_ptrty
 
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmsh_save_Nodes( std::ostream& out,
-                                         step_ptrtype __step ) const
+ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh ) const
 {
     out << "$Nodes\n";
-
-    mesh_ptrtype mesh = __step->mesh();
-
     out << mesh->numPoints() << "\n";//number points
 
     point_const_iterator pt_it = mesh->beginPoint();
@@ -223,14 +230,12 @@ ExporterGmsh<MeshType,N>::gmsh_save_Nodes( std::ostream& out,
 
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmsh_save_Elements( std::ostream& out,
-                                            step_ptrtype __step ) const
+ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh ) const
 {
     out << "$Elements\n";
 
-    mesh_ptrtype mesh = __step->mesh();
-
-    auto allmarkedfaces = markedfaces( mesh );
+    //auto allmarkedfaces = markedfaces( mesh );
+    auto allmarkedfaces = boundaryfaces( mesh );
     auto face_it = allmarkedfaces.get<1>();
     auto face_end = allmarkedfaces.get<2>();
     int number_markedfaces= std::distance(allmarkedfaces.get<1>(),allmarkedfaces.get<2>());
@@ -287,7 +292,7 @@ ExporterGmsh<MeshType,N>::gmsh_save_Elements( std::ostream& out,
 
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmsh_save_NodeData( std::ostream& out, step_ptrtype __step ) const
+ExporterGmsh<MeshType,N>::gmshSaveNodeData( std::ostream& out, step_ptrtype __step ) const
 {
 #if 0
     //!!!Not functionnal for curve element!!!
@@ -336,7 +341,7 @@ ExporterGmsh<MeshType,N>::gmsh_save_NodeData( std::ostream& out, step_ptrtype __
 
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmsh_save_ElementNodeData( std::ostream& out,
+ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
                                                      step_ptrtype __step) const
 {
 
