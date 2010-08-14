@@ -9,7 +9,7 @@ add_library(lifecore SHARED
   typeinfo.cpp
   smartassert.cpp
   pslogger.cpp )
-target_link_libraries (lifecore   ${Boost_LIBRARIES} ${MPI_LIBRARIES})
+target_link_libraries (lifecore   ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES})
 set_target_properties( lifecore PROPERTIES VERSION ${LIFE_SHARED_VERSION} SOVERSION ${LIFE_SHARED_SOVERSION})
 
 
