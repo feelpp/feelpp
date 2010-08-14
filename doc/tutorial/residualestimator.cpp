@@ -48,8 +48,12 @@ makeOptions()
         ("penaldir", Life::po::value<double>()->default_value( 50 ),
          "penalisation parameter for the weak boundary Dirichlet formulation")
         ("alpha", Life::po::value<double>()->default_value( 3 ), "Regularity coefficient for function f")
+        ("beta", Life::po::value<double>()->default_value( 1 ), "Coefficient for exponential")
         ("fn", Life::po::value<int>()->default_value( 1 ), "example function to be run")
-      ("tol", Life::po::value<double>()->default_value(1e-2),"tolerence parameter on the error for mesh adaptation")
+        ("tol", Life::po::value<double>()->default_value(1e-2),"tolerence parameter on the error for mesh adaptation")
+        ("gmshmodel", Life::po::value<bool>()->default_value(false),"enable gmsh model")
+        ("gmshgeo", Life::po::value<bool>()->default_value(false),"enable gmsh model geo file")
+        ("hmin", Life::po::value<double>()->default_value(1e-2),"minimum acceptable h")
         ;
     return residualestimatoroptions.add( Life::life_options() );
 }
@@ -77,9 +81,9 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    app.add( new ResidualEstimator<1,1>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<2,1>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
+    //app.add( new ResidualEstimator<1,1>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<2,3>( app.vm(), app.about() ) );
+    //app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
 
     /** \endcode */
 
