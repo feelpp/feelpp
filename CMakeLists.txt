@@ -145,7 +145,11 @@ SET(LIFE_LIBRARIES  ${LIBXML2_LIBRARIES} ${LIFE_LIBRARIES})
 #
 # Blas and Lapack
 #
-FIND_PACKAGE(LAPACK REQUIRED)
+if (APPLE)
+        FIND_PACKAGE(LAPACK )
+else (APPLE)
+        FIND_PACKAGE(LAPACK REQUIRED)
+endif (APPLE)
 SET(LIFE_LIBRARIES  ${LAPACK_LIBRARIES} ${LIFE_LIBRARIES})
 
 FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${LIFE_BOOST_MPI} regex  serialization)
