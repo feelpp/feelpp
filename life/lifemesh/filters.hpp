@@ -6,6 +6,7 @@
        Date: 2005-08-27
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2006-2010 Universite de Grenoble 1 (Joseph Fourier)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
