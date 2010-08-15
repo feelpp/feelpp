@@ -245,7 +245,7 @@ main( int argc, char** argv )
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
-#if 0
+
     app.add( new MyFunctionSpace<1,1>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<1,2>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<1,3>( app.vm(), app.about() ) );
@@ -258,17 +258,12 @@ main( int argc, char** argv )
     app.add( new MyFunctionSpace<2,3>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<2,4>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<2,5>( app.vm(), app.about() ) );
-#endif
 
-#if 1
     app.add( new MyFunctionSpace<3,1>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<3,2>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<3,3>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<3,4>( app.vm(), app.about() ) );
-    app.add( new MyFunctionSpace<3,5>( app.vm(), app.about() ) );
-#else
-    app.add( new MyFunctionSpace<3,2>( app.vm(), app.about() ) );
-#endif
+
     app.run();
 }
 
