@@ -79,7 +79,7 @@ macro( add_docex target )
  endforeach()
 endmacro()
 
-foreach( docex myfunctionspace laplacian residualestimator)
+foreach( docex myapp myintegrals mymesh myfunctionspace laplacian residualestimator)
   add_docex( ${docex} )
 endforeach()
 
