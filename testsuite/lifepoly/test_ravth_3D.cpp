@@ -7,7 +7,7 @@ using boost::unit_test::test_suite;
 #include <life/lifepoly/raviartthomas.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
-#include <life/lifepoly/polynomial_set.hpp>
+#include <polynomial_set.hpp>
 
 #include <life/lifemesh/simplex.hpp>
 #include <life/lifemesh/refentity.hpp>

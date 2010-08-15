@@ -39,7 +39,7 @@
 using boost::unit_test::test_suite;
 
 
-#include <life/lifecore/traits.hpp>
+#include <life/lifecore/life.hpp>
 #include <life/lifepoly/jacobi.hpp>
 #include <life/lifepoly/expansions.hpp>
 #include <life/lifepoly/dubiner.hpp>
@@ -47,7 +47,7 @@ using boost::unit_test::test_suite;
 #include <life/lifepoly/geomap.hpp>
 #include <life/lifepoly/lagrange.hpp>
 
-uint fact( uint  n )
+unsigned int fact( unsigned int   n )
 {
     if ( n == 0 )
         return 1;
