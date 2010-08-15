@@ -96,7 +96,7 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY
 if ( NOT LIFE_MINIMAL_CONFIGURATION )
 
 foreach( docex stokes bratu nonlinearpow )
-#  add_docex( ${docex} )
+  add_docex( ${docex} )
 endforeach()
 
 # Natural convection problem
