@@ -49,7 +49,7 @@ add_latex_document(life-manual.tex
   )
 
 # this target allows to create all the required figures for the tutorial
-add_custom_target(figures ALL WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
+add_custom_target(figures WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
 
 macro( add_docex target )
  add_executable( life_doc_${target} ${target}.cpp )
