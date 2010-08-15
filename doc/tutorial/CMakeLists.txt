@@ -75,7 +75,7 @@ macro( add_docex target )
  endforeach()
  # test each backend
  foreach( BACKEND petsc trilinos)
-   add_test( life_doc_${target}-${BACKEND} life_doc_${target} --hsize=0.1 --backend=${BACKEND} --no-export)
+   add_test( life_doc_${target}-${BACKEND} life_doc_${target} --hsize=0.2 --backend=${BACKEND} --no-export)
  endforeach()
 endmacro()
 
