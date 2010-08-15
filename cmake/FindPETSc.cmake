@@ -81,7 +81,14 @@ else (EXISTS ${PETSC_DIR}/bmake/${PETSC_ARCH}/petscconf.h)
   set (petsc_conf_base "NOTFOUND")
 endif (EXISTS ${PETSC_DIR}/${PETSC_ARCH}/include/petscconf.h)
 
-OPTION(PETSC_LIB_BASIC "enable PETSc single library" ON)
+#
+# Single PETSc library is for PETSc greater than 3.1
+#
+if ( APPLE OR PETSC_VERSION STRLESS "3.1" )
+      OPTION(PETSC_LIB_BASIC "enable PETSc single library" OFF )
+else()
+      OPTION(PETSC_LIB_BASIC "enable PETSc single library" ON)
+endif()
 
 if (petsc_conf_base AND NOT petsc_config_current)
   # Put variables into environment since they are needed to get
