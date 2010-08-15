@@ -45,9 +45,9 @@ ENDIF()
 MESSAGE( STATUS "Model: ${MODEL}" )
 
 if ( ${MODEL} MATCHES Continuous )
-  LIFE_ENABLE_ALL_DEFAULT=OFF
+  SET(LIFE_ENABLE_ALL_DEFAULT OFF)
 else()
-  LIFE_ENABLE_ALL_DEFAULT=ON
+  SET(LIFE_ENABLE_ALL_DEFAULT ON)
 endif()
 SET (CTEST_INITIAL_CACHE "
 // Enable tests
@@ -56,9 +56,9 @@ CMAKE_CXX_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
 CMAKE_C_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
 ")
 
-# -----------------------------------------------------------  
+# -----------------------------------------------------------
 # -- build specific
-# -----------------------------------------------------------  
+# -----------------------------------------------------------
 
 ## -- make command
 ## -----------------
@@ -78,15 +78,15 @@ set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
 
 # set(CTEST_BUILD_COMMAND     "make -j2")
 
-# -----------------------------------------------------------  
+# -----------------------------------------------------------
 # -- commands
-# -----------------------------------------------------------  
+# -----------------------------------------------------------
 
 set(CTEST_BUILD_COMMAND                "${MAKE} ${OPTION_BUILD}")
 
-# -----------------------------------------------------------  
+# -----------------------------------------------------------
 # -- Settings
-# -----------------------------------------------------------  
+# -----------------------------------------------------------
 
 set(CTEST_TIMEOUT           "600")
 
