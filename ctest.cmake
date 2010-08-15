@@ -42,6 +42,7 @@ ENDIF()
 IF(${CTEST_SCRIPT_ARG} MATCHES Continuous)
   SET(MODEL Continuous)
 ENDIF()
+MESSAGE( STATUS "Model: ${MODEL}" )
 
 SET (CTEST_INITIAL_CACHE "
 // Enable tests
@@ -59,12 +60,10 @@ CMAKE_C_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
 find_program(MAKE NAMES make)
 
 ## -- Build options
-set(OPTION_BUILD                        "-j2")
-
-
+# set(OPTION_BUILD                        "-j2")
 
 SET (CTEST_SOURCE_DIRECTORY "$ENV{HOME}/sources/life")
-set(CTEST_BINARY_DIRECTORY  "$ENV{HOME}/sources/life-${CTEST_BUILD_NAME}")
+set(CTEST_BINARY_DIRECTORY  "$ENV{HOME}/sources/life-${CTEST_BUILD_NAME}-${MODEL}")
 set (CTEST_COMMAND "ctest -D ${MODEL}" )
 SET (CTEST_CMAKE_COMMAND "cmake" )
 
