@@ -29,15 +29,15 @@ FILE(GLOB STYFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "styles/*.sty")
 
 FILE(WRITE version.tex "\\newcommand{\\lifeversion}{${LIFE_VERSION_STRING}}")
 
-# FIND_PACKAGE(Subversion)
-# IF(Subversion_FOUND)
-#   Subversion_WC_INFO(${PROJECT_SOURCE_DIR} LIFE)
-#   MESSAGE("Current revision is ${LIFE_WC_REVISION}")
-#   MESSAGE("Last changed date is ${LIFE_WC_LAST_CHANGED_DATE}")
+FIND_PACKAGE(Subversion)
+IF(Subversion_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.svn" )
+   Subversion_WC_INFO(${PROJECT_SOURCE_DIR} LIFE)
+   MESSAGE("Current revision is ${LIFE_WC_REVISION}")
+   MESSAGE("Last changed date is ${LIFE_WC_LAST_CHANGED_DATE}")
 
-#   FILE(APPEND version.tex "\\newcommand{\\lifesvnrevision}{${LIFE_WC_REVISION}}")
-#   FILE(APPEND version.tex "\\newcommand{\\lifesvndate}{${LIFE_WC_LAST_CHANGED_DATE}}")
-# ENDIF(Subversion_FOUND)
+   FILE(APPEND version.tex "\\newcommand{\\lifesvnrevision}{${LIFE_WC_REVISION}}")
+   FILE(APPEND version.tex "\\newcommand{\\lifesvndate}{${LIFE_WC_LAST_CHANGED_DATE}}")
+ENDIF()
 
 
 add_latex_document(life-manual.tex
@@ -48,12 +48,16 @@ add_latex_document(life-manual.tex
   DEFAULT_PDF
   )
 
+# this target allows to create all the required figures for the tutorial
+add_custom_target(figures ALL WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
+
 macro( add_docex target )
  add_executable( life_doc_${target} ${target}.cpp )
  target_link_libraries( life_doc_${target} ${LIFE_LIBRARIES} )
  get_target_property(target_executable life_doc_${target} LOCATION)
+ add_dependencies(figures life_doc_${target})
  add_custom_command(
-   TARGET life_doc_${target}
+   TARGET figures
    POST_BUILD
    COMMAND ${target_executable} ARGS --shape="simplex" --nochdir > ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex.out 2>&1
    COMMAND ${target_executable} ARGS --shape="hypercube" --nochdir > ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube.out 2>&1
@@ -63,7 +67,7 @@ macro( add_docex target )
    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex-${dim}.pos "Include \"simplex-${dim}.geo\";\n Mesh ${dim}; Include \"tutorial.pos\";\n Exit;\n")
    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube-${dim}.pos "Include \"hypercube-${dim}.geo\";\n Mesh ${dim}; Include \"tutorial.pos\";\n Exit;\n")
    add_custom_command(
-     TARGET life_doc_${target}
+     TARGET figures
      POST_BUILD
      COMMAND ${GMSH} ARGS -v 0 ${target}-simplex-${dim}.pos
      COMMAND ${GMSH} ARGS -v 0 ${target}-hypercube-${dim}.pos
@@ -75,38 +79,8 @@ macro( add_docex target )
  endforeach()
 endmacro()
 
-foreach( docex myintegrals mymesh )
-  add_docex( ${docex} )
-endforeach()
-
-macro( add_docex2 target )
- add_executable( life_doc_${target} ${target}.cpp )
- target_link_libraries( life_doc_${target} ${LIFE_LIBRARIES} )
-
- get_target_property(target_executable life_doc_${target} LOCATION)
- # add_custom_command(
- #   TARGET life_doc_${target}
- #   POST_BUILD
- #   COMMAND ${target_executable} ARGS --hsize=0.05 --shape="simplex" --nochdir --exporter-format=gmsh > ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex.out 2>&1
- #   COMMAND ${target_executable} ARGS --hsize=0.075 --shape="hypercube" --nochdir --exporter-format=gmsh > ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube.out 2>&1
- #   )
- # foreach( dim 1 2 3 )
- #   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex-${dim}.pos "Merge \"${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex-${dim}-1_0.msh\";\nMerge \"tutorial.pos\";\nExit;\n")
- #   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube-${dim}.pos "Merge \"${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube-${dim}-1_0.msh\";\nMerge \"tutorial.pos\";\nExit;\n")
- #   add_custom_command(
- #     TARGET life_doc_${target}
- #     POST_BUILD
- #     COMMAND ${GMSH} ARGS  ${target}-simplex-${dim}.pos
- #     COMMAND ${GMSH} ARGS  ${target}-hypercube-${dim}.pos
- #   )
- # endforeach()
- # test each backend
- foreach( BACKEND petsc trilinos)
-   add_test( life_doc_${target}-${BACKEND} life_doc_${target} --hsize=0.1 --backend=${BACKEND} --no-export)
- endforeach()
-endmacro()
 foreach( docex myfunctionspace laplacian residualestimator)
-  add_docex2( ${docex} )
+  add_docex( ${docex} )
 endforeach()
 
 add_custom_target(
@@ -140,7 +114,7 @@ FOREACH(it ${cmake_include_directories})
   SET(octave_include_dirs ${octave_include_dirs} "-I${it}")
 ENDFOREACH(it)
 
-add_custom_target(octave ALL WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
+add_custom_target(octave WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
 
 macro(add_octave_module modulename)
 
@@ -148,7 +122,7 @@ macro(add_octave_module modulename)
     foreach( order 1 2 3 4)
       FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${modulename}_${dim}_${order}_oct.cpp "#include<${modulename}_oct.hpp>\n\n RESIDUAL_ESTIMATOR( ${dim}, ${order} )\n" )
 
-      add_library( ${modulename}_${dim}_${order}.oct MODULE  ${modulename}_${dim}_${order}_oct.cpp  )
+      add_library( ${modulename}_${dim}_${order}.oct MODULE  EXCLUDE_FROM_ALL ${modulename}_${dim}_${order}_oct.cpp  )
       add_dependencies(${modulename}_${dim}_${order}.oct
         ${CMAKE_CURRENT_SOURCE_DIR}/${modulename}_oct.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/${modulename}.hpp
