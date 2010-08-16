@@ -35,24 +35,18 @@ namespace Life
 //
 #if defined( LIFE_INSTANTIATION_MODE )
 
+# define DIMS BOOST_PP_TUPLE_TO_LIST(1,(2))
+# define RDIMS BOOST_PP_TUPLE_TO_LIST(1,(2))
+# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
 
-template class Mesh<Simplex<2, 1, 2> >;
+# define FACTORY(LDIM,LORDER,RDIM) template class Mesh<Simplex<LDIM, LORDER, RDIM> >;
+
+# define FACTORY_OP(_, GDO) FACTORY GDO
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_OP, 3, (DIMS, BOOST_PP_LIST_FIRST_N(LIFE_MESH_MAX_ORDER, ORDERS), RDIMS))
+
+
+
 template class Mesh<SimplexProduct<2, 1, 2> >;
-
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
-template class Mesh<Simplex<2, 2, 2> >;
-template class Mesh<SimplexProduct<2, 2, 2> >;
-#endif
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 3 )
-template class Mesh<Simplex<2, 3, 2> >;
-#endif
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 4 )
-template class Mesh<Simplex<2, 4, 2> >;
-#endif
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 5 )
-template class Mesh<Simplex<2, 5, 2> >;
-#endif
-
 template class Mesh<Simplex<2, 1, 3> >;
 
 
