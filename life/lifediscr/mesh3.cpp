@@ -35,27 +35,20 @@ namespace Life
 //
 #if defined( LIFE_INSTANTIATION_MODE )
 
-template class Mesh<Simplex<3, 1, 3> >;
+
 template class Mesh<SimplexProduct<3, 1, 3> >;
 
+# define DIMS BOOST_PP_TUPLE_TO_LIST(1,(3))
+//# define RDIMS BOOST_PP_TUPLE_TO_LIST(2,(1,2))
+# define RDIMS BOOST_PP_TUPLE_TO_LIST(1,(3))
+# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
 
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 2 )
-template class Mesh<Simplex<3, 2, 3> >;
-template class Mesh<SimplexProduct<3, 2, 3> >;
-#endif // 2
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 3 )
-template class Mesh<Simplex<3, 3, 3> >;
-template class Mesh<SimplexProduct<3, 3, 3> >;
-#endif //3
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 4 )
-template class Mesh<Simplex<3, 4, 3> >;
-template class Mesh<SimplexProduct<3, 4, 3> >;
-#endif // 4
-#if BOOST_PP_GREATER_EQUAL( LIFE_MESH_MAX_ORDER, 5 )
-template class Mesh<Simplex<3, 5, 3> >;
-template class Mesh<SimplexProduct<3, 5, 3> >;
-#endif // 5
+# define FACTORY(LDIM,LORDER,RDIM) template class Mesh<Simplex<LDIM, LORDER, RDIM> >;
 
+# define FACTORY_OP(_, GDO) FACTORY GDO
+
+// only up to 4 for mesh data structure nit supported for higher order in Gmsh
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_OP, 3, (DIMS, BOOST_PP_LIST_FIRST_N(BOOST_PP_MIN(4,LIFE_MESH_MAX_ORDER), ORDERS), RDIMS))
 
 
 
