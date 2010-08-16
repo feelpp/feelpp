@@ -63,7 +63,7 @@ macro( add_docex target )
    COMMAND ${target_executable} ARGS --shape="hypercube" --nochdir > ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube.out 2>&1
    )
  foreach( dim 1 2 3 )
-   message( STATUS "Generate scripts for graphical results for dimension ${dim}" )
+#   message( STATUS "Generate scripts for graphical results for dimension ${dim}" )
    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex-${dim}.pos "Include \"simplex-${dim}.geo\";\n Mesh ${dim}; Include \"tutorial.pos\";\n Exit;\n")
    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${target}-hypercube-${dim}.pos "Include \"hypercube-${dim}.geo\";\n Mesh ${dim}; Include \"tutorial.pos\";\n Exit;\n")
    add_custom_command(
