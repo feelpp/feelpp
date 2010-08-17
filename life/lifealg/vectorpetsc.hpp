@@ -384,6 +384,10 @@ public:
      */
     void add ( size_type i, const value_type& value);
 
+    /**
+     * v([i1,i2,...,in]) += [value1,...,valuen]
+     */
+    void addVector ( int* i, int n, value_type* v );
 
     /**
      * \f$ U+=v \f$ where \p v is a std::vector<T>
@@ -753,6 +757,18 @@ VectorPetsc<T>::add (const size_type i, const value_type& value)
     CHKERRABORT(M_comm,ierr);
 }
 
+template <typename T>
+void
+VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
+{
+    LIFE_ASSERT(n<size())( n )( size() ).error( "invalid local index array size" );
+
+    int ierr=0;
+
+    ierr = VecSetValues (_M_vec, n, i, v, ADD_VALUES);
+    CHKERRABORT(M_comm,ierr);
+
+}
 } // Life
 #endif /* HAVE_PETSC */
 #endif /* __VectorPetsc_H */

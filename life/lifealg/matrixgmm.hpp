@@ -483,6 +483,19 @@ public:
      */
     void addMatrix(value_type v, MatrixSparse<value_type>& _m );
 
+    /**
+     * Add the full matrix to the
+     * Sparse matrix.  This is useful
+     * for adding an element matrix
+     * at assembly time
+     */
+    void addMatrix ( int* rows, int nrows,
+                     int* cols, int ncols,
+                     value_type* data )
+        {
+            // NOT IMPLEMENTED YET (gmm support should get dropped in fact)
+        }
+
     void scale( const T a ){}
 
     /**

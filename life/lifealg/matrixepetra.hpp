@@ -465,6 +465,15 @@ public:
     {
     }
 
+    /**
+     * Add the full matrix to the
+     * Petsc matrix.  This is useful
+     * for adding an element matrix
+     * at assembly time
+     */
+    void addMatrix ( int* rows, int nrows,
+                     int* cols, int ncols,
+                     value_type* data );
 
     /**
      * Same, but assumes the row and column maps are the same.

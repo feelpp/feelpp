@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-03-20
 
-  Copyright (C) 2008, 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008, 2009 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -51,7 +51,9 @@ struct fake<ublas::vector<double> >: public ublas::vector<double>
     fake( ublas::vector<double> v, ublas::range  r )
         :
         ublas::vector<double>( v )
-    {}
+    {
+        boost::ignore_unused_variable_warning( r );
+    }
 };
 
 #if 0
@@ -89,13 +91,15 @@ struct fake<ublas::vector_range<ublas::vector<long double> > >: public ublas::ve
 template<typename T>
 void resize( ublas::vector<T>& v, size_type s, bool preserve = true )
 {
+    boost::ignore_unused_variable_warning( preserve );
+
     v.resize( s );
 }
 
 template<typename T>
 void resize( ublas::vector_range<ublas::vector<T> >& /*v*/, size_type /*s*/, bool preserve = true )
 {
-
+    boost::ignore_unused_variable_warning( preserve );
 }
 template<typename T>
 size_type start( ublas::vector<T> const& /*v*/ )

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-03-20
 
-  Copyright (C) 2008, 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008, 2009 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -97,6 +97,7 @@ Vector<T>::init (const size_type n,
                  const size_type nl,
                  const bool fast)
 {
+    boost::ignore_unused_variable_warning( fast );
     M_map=DataMap( n, nl );
 }
 
