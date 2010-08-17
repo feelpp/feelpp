@@ -301,6 +301,11 @@ public:
     virtual void add (const size_type i, const value_type& value) = 0;
 
     /**
+     * v([i1,i2,...,in]) += [value1,...,valuen]
+     */
+    virtual void addVector ( int* i, int n, value_type* v ) = 0;
+
+    /**
      * \f$U(0-DIM)+=s\f$.
      * Addition of \p s to all components. Note
      * that \p s is a scalar and not a vector.

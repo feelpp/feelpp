@@ -471,6 +471,11 @@ public:
      */
     void add ( size_type i, const value_type& value);
 
+    /**
+     * v([i1,i2,...,in]) += [value1,...,valuen]
+     */
+    void addVector ( int* i, int n, value_type* v );
+
 
     void addVector ( VectorEpetra& v )
     {

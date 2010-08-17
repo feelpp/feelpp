@@ -6,7 +6,7 @@
        Date: 2008-01-03
 
   Copyright (C) 2008, 2009 Christophe Prud'homme
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -477,7 +477,24 @@ MatrixPetsc<T>::addMatrix(const ublas::matrix<value_type>& dm,
                         ADD_VALUES);
     CHKERRABORT(this->comm(),ierr);
 }
+template <typename T>
+void
+MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
+                            int* cols, int ncols,
+                            value_type* data )
+{
+    LIFE_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
 
+    int ierr=0;
+
+    // These casts are required for PETSc <= 2.1.5
+    ierr = MatSetValues(_M_mat,
+                        nrows, (int*) rows,
+                        ncols, (int*) cols,
+                        (PetscScalar*) data,
+                        ADD_VALUES);
+    CHKERRABORT(this->comm(),ierr);
+}
 // print
 template <typename T>
 void

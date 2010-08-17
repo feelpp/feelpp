@@ -55,6 +55,8 @@
 
 #include <boost/numeric/ublas/matrix.hpp>
 
+#include <Eigen/Core>
+
 
 
 #include <life/lifecore/life.hpp>
@@ -251,6 +253,16 @@ public:
     virtual void addMatrix (const ublas::matrix<value_type> &dm,
                             const std::vector<size_type> &rows,
                             const std::vector<size_type> &cols) = 0;
+
+    /**
+     * Add the full matrix to the
+     * Sparse matrix.  This is useful
+     * for adding an element matrix
+     * at assembly time
+     */
+    virtual void addMatrix ( int* rows, int nrows,
+                             int* cols, int ncols,
+                             value_type* data ) = 0;
 
     /**
      * Same, but assumes the row and column maps are the same.

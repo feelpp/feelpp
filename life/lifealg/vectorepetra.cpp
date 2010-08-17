@@ -5,7 +5,7 @@
    Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    Date: 2007-08-14
 
-   Copyright (C) 2007, 2009 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2007, 2009 Universitï¿½ Joseph Fourier (Grenoble I)
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -124,6 +124,21 @@ VectorEpetra<T>::add (const size_type i, const value_type& value)
         {
             Debug() << "ERRORCODE SumIntoGlobalValues VECTOR: " << ierr <<  " in V(" << i_val << ") for value "<< epetra_value << "." << "\n";
         }
+}
+template<typename T>
+void
+VectorEpetra<T>::addVector ( int* i, int n, value_type* v )
+{
+    LIFE_ASSERT(n<size())( n )( size() ).error( "invalid index array size" );
+
+    int ierr;
+    //indices are in global index space
+    ierr= _M_vec.SumIntoGlobalValues(n,i,v);
+
+    if (ierr != 0)
+    {
+        Debug() << "ERRORCODE SumIntoGlobalValues VECTOR: " << ierr <<  " in V \n";
+    }
 }
 
 template<typename T>

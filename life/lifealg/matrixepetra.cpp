@@ -381,7 +381,15 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
         }
 }
 
+void
+MatrixEpetra::addMatrix ( int* rows, int nrows,
+                          int* cols, int ncols,
+                          value_type* data )
+{
+    LIFE_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );
 
+    _M_mat->SumIntoGlobalValues(nrows, rows, ncols, cols, data);
+}
 
 
 //
