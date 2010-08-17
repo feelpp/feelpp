@@ -382,8 +382,7 @@ Stokes<_OrderU, _OrderP>::buildRhs()
 
     auto f = vec(f1,f2)+ convection;
 
-    double meas = integrate( elements(mesh), constant(1.) ).evaluate()( 0, 0 );
-    double pmean = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/meas;
+    double pmean = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/mesh->measure();
 
     form1( Xh, F, _init=true ) =integrate( elements(mesh), trans(f)*id(v) );
 #if defined(WITH_LAGRANGE_MULTIPLIERS)
@@ -528,9 +527,7 @@ Stokes<_OrderU, _OrderP>::run()
     }
 
     boost::timer t;
-    vector_ptrtype X( M_backend->newVector( U.functionSpace() ) );
-    M_backend->solve( _matrix=D, _solution=X, _rhs=F, _rtolerance=1e-14 );
-    U = *X;
+    M_backend->solve( _matrix=D, _solution=U, _rhs=F, _rtolerance=1e-14 );
 
     Log() << "system solved in " << t.elapsed() << "s\n"; t.restart();
 
@@ -577,17 +574,16 @@ Stokes<_OrderU, _OrderP>::exportResults( element_type& U, element_type& V )
     std::cout << "||u_error||_1/||uex||_1 = " << u_errorH1 << "\n";
 
 
-    double meas = integrate( elements(mesh), constant(1.) ).evaluate()( 0, 0 );
-    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/meas;
-    double mean_pexact = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/meas;
+    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/mesh->measure();
+    double mean_pexact = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/mesh->measure();
     Log() << "[stokes] mean(p)=" << mean_p << "\n";
     Log() << "[stokes] mean(p_exact)=" << mean_pexact << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p_exact)=" << mean_pexact << "\n";
 
 
-    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 3)\n";
-    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 3)\n";
+    Log() << "[stokes] measure(Omega)=" << mesh->measure() << " (should be equal to 3)\n";
+    std::cout << "[stokes] measure(Omega)=" << mesh->measure() << " (should be equal to 3)\n";
 
     double p_errorL2_2 = integrate( elements(mesh),
                                     ((idv(p)-mean_p)-(p_exact-mean_pexact))*((idv(p)-mean_p)-(p_exact-mean_pexact)) ).evaluate()( 0, 0 );
