@@ -202,6 +202,18 @@ if ( MADLIB_FOUND )
 endif( MADLIB_FOUND )
 
 #
+# Eigen
+#
+add_subdirectory(contrib/eigen)
+INCLUDE_DIRECTORIES( ${LIFE_SOURCE_DIR}/contrib/eigen )
+
+#FIND_PACKAGE(Eigen2 REQUIRED)
+#INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
+#add_subdirectory(contrib/eigen)
+#INCLUDE_DIRECTORIES( ${LIFE_SOURCE_DIR}/contrib/eigen )
+#add_definitions( -DEIGEN_NO_STATIC_ASSERT )
+
+#
 # Scotch
 #
 #CheckIncludeFileCXX( ptscotch.h HAVE_PTSCOTCH_H )
