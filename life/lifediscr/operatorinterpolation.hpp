@@ -198,8 +198,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
     domain_basis_type const* domainbasis = this->domainSpace()->basis().get();
 
     int nComponents = this->dualImageSpace()->dof()->nComponents;
-    ublas::matrix<value_type,ublas::row_major> Mloc( this->dualImageSpace()->dof()->nDofPerElement()*nComponents,
-                                                     this->domainSpace()->dof()->nDofPerElement()*nComponents );
+    ublas::matrix<value_type,ublas::row_major> Mloc( this->dualImageSpace()->dof()->nDofPerElement,
+                                                     this->domainSpace()->dof()->nDofPerElement );
 
     // Local assembly: compute the Mloc matrix by evaluating
     // the domain space basis function at the dual image space
