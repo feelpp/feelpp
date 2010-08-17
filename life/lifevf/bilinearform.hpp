@@ -30,6 +30,9 @@
 #ifndef __BilinearForm_H
 #define __BilinearForm_H 1
 
+#include <Eigen/Eigen>
+
+
 #include <set>
 
 #include <boost/fusion/support/pair.hpp>
@@ -247,11 +250,20 @@ public:
                               mpl::identity<ublas::row_major>,
                               mpl::identity<ublas::column_major> >::type::type layout_type;
 
-    typedef typename space_1_type::basis_0_type::precompute_type test_precompute_type;
-    typedef boost::shared_ptr<test_precompute_type> test_precompute_ptrtype;
-
-    typedef typename space_2_type::basis_0_type::precompute_type trial_precompute_type;
-    typedef boost::shared_ptr<trial_precompute_type> trial_precompute_ptrtype;
+    template<int _N = 0>
+    struct test_precompute
+    {
+        //typedef typename space_1_type::basis_0_type::template precompute<_N>::type type;
+        typedef typename space_1_type::basis_0_type::PreCompute type;
+        typedef boost::shared_ptr<type> ptrtype;
+    };
+    template<int _N = 0>
+    struct trial_precompute
+    {
+        //typedef typename space_2_type::basis_0_type::template precompute<_N>::type type;
+        typedef typename space_2_type::basis_0_type::PreCompute type;
+        typedef boost::shared_ptr<type> ptrtype;
+    };
 
     typedef GraphCSR graph_type;
     typedef boost::shared_ptr<graph_type> graph_ptrtype;
@@ -316,6 +328,10 @@ public:
 
         typedef ExprT expression_type;
 
+        typedef typename test_precompute<>::type test_precompute_type;
+        typedef typename test_precompute<>::ptrtype test_precompute_ptrtype;
+        typedef typename trial_precompute<>::type trial_precompute_type;
+        typedef typename trial_precompute<>::ptrtype trial_precompute_ptrtype;
 
         typedef typename FE2::fe_type trial_fe_type;
         typedef boost::shared_ptr<trial_fe_type> trial_fe_ptrtype;
@@ -331,10 +347,7 @@ public:
 
         typedef fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype> > map_left_trial_fecontext_type;
         typedef fusion::map<fusion::pair<gmc1, trial_fecontext_ptrtype> > map_right_trial_fecontext_type;
-        typedef typename trial_fe_type::template Context< geometric_mapping_context_type::context,
-                                                          trial_fe_type,
-                                                          geometric_mapping_type,
-                                                          mesh_element_type>::template Index<> trial_index_type;
+
         typedef typename FE1::fe_type test_fe_type;
         typedef boost::shared_ptr<test_fe_type> test_fe_ptrtype;
         typedef typename test_fe_type::template Context< geometric_mapping_context_type::context,
@@ -348,11 +361,6 @@ public:
                                                             fusion::pair<gmc<1>, test_fecontext_ptrtype> > > >::type::type map_test_fecontext_type;
         typedef fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > map_left_test_fecontext_type;
         typedef fusion::map<fusion::pair<gmc1, test_fecontext_ptrtype> > map_right_test_fecontext_type;
-
-        typedef typename test_fe_type::template Context< geometric_mapping_context_type::context,
-                                                         test_fe_type,
-                                                         geometric_mapping_type,
-                                                         mesh_element_type>::template Index<> test_index_type;
 
         typedef typename ExprT::template tensor<map_geometric_mapping_context_type,
                                                map_left_test_fecontext_type,
@@ -375,7 +383,19 @@ public:
         typedef boost::shared_ptr<eval11_expr_type> eval11_expr_ptrtype;
 
         static const int rep_shape = 4;//2+(eval_expr_type::shape::M-1>0)+(eval_expr_type::shape::N-1>0);
-        typedef boost::multi_array<value_type, rep_shape> local_matrix_type;
+        //typedef boost::multi_array<value_type, rep_shape> local_matrix_type;
+
+        typedef typename FE1::dof_type test_dof_type;
+        typedef typename FE2::dof_type trial_dof_type;
+        static const int nDofPerElementTest = FE1::dof_type::nDofPerElement;
+        static const int nDofPerElementTrial = FE2::dof_type::nDofPerElement;
+        typedef Eigen::Matrix<value_type, nDofPerElementTest, nDofPerElementTrial> local_matrix_type;
+        typedef Eigen::Matrix<value_type, 2*nDofPerElementTest, 2*nDofPerElementTrial> local2_matrix_type;
+        typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
+        typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
+        typedef Eigen::Matrix<int, nDofPerElementTrial, 1> local_col_type;
+        typedef Eigen::Matrix<int, 2*nDofPerElementTrial, 1> local2_col_type;
+
 
     public:
 
@@ -447,6 +467,105 @@ public:
             }
         void assemble( size_type elt_0, size_type elt_1  );
 
+        /**
+         * precompute the basis function associated with the test and
+         * trial space at a set of points
+         */
+        template<typename Pts>
+        void precomputeBasisAtPoints( Pts const& pts )
+            {
+                _M_test_pc = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
+                _M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( _M_form.trialSpace()->fe(), pts ) );
+            }
+
+        /**
+         * precompute the basis function associated with the test and
+         * trial space at a set of points on the face of
+         * the reference element
+         */
+        template<typename Pts>
+        void precomputeBasisAtPoints( uint16_type __f, permutation_type const& __p, Pts const& pts )
+            {
+                _M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
+                //LIFE_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+
+                _M_trial_pc_face[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( _M_form.trialSpace()->fe(), pts ) );
+                //LIFE_ASSERT( _M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
+            }
+
+        template<typename PtsSet>
+        std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> >
+        precomputeTestBasisAtPoints( PtsSet const& pts )
+            {
+                QuadMapped<PtsSet> qm;
+                typedef typename QuadMapped<PtsSet>::permutation_type permutation_type;
+                typename QuadMapped<PtsSet>::permutation_points_type ppts( qm( pts ) );
+
+                std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > testpc;
+
+                for ( uint16_type __f = 0; __f < pts.nFaces(); ++__f )
+                {
+                    for( permutation_type __p( permutation_type::IDENTITY );
+                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                    {
+                        testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), ppts[__f].find(__p)->second ) );
+                    }
+                }
+                return testpc;
+            }
+        template<typename PtsSet>
+        std::map<uint16_type, std::map<permutation_type,trial_precompute_ptrtype> >
+        precomputeTrialBasisAtPoints( PtsSet const& pts )
+            {
+                QuadMapped<PtsSet> qm;
+                typedef typename QuadMapped<PtsSet>::permutation_type permutation_type;
+                typename QuadMapped<PtsSet>::permutation_points_type ppts( qm( pts ) );
+
+                std::map<uint16_type, std::map<permutation_type,trial_precompute_ptrtype> > trialpc;
+
+                for ( uint16_type __f = 0; __f < pts.nFaces(); ++__f )
+                {
+                    for( permutation_type __p( permutation_type::IDENTITY );
+                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                    {
+                        trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( _M_form.trialSpace()->fe(), ppts[__f].find(__p)->second ) );
+                    }
+                }
+                return trialpc;
+            }
+
+        /**
+         * Return the structure that holds the test basis functions
+         * evaluated at a previously given set of points on the face of
+         * the reference element
+         *
+         * \see precomputeBasisAtPoints()
+         */
+        test_precompute_ptrtype const& testPc( uint16_type __f,
+                                               permutation_type __p = permutation_type( permutation_type::NO_PERMUTATION ) ) const
+            {
+                if ( __f == invalid_uint16_type_value )
+                    return  _M_test_pc;
+                //LIFE_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+                return _M_test_pc_face.find(__f )->second.find( __p )->second;
+            }
+
+        /**
+         * Return the structure that holds the trial basis functions
+         * evaluated at a previously given set of points on the face of
+         * the reference element
+         * \see precomputeBasisAtPoints()
+         */
+        trial_precompute_ptrtype const& trialPc( uint16_type __f,
+                                                 permutation_type __p = permutation_type( permutation_type::NO_PERMUTATION ) ) const
+            {
+                if ( __f == invalid_uint16_type_value )
+                    return  _M_trial_pc;
+                //LIFE_ASSERT( _M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
+                return _M_trial_pc_face.find(__f )->second.find( __p )->second;
+            }
+
+
     private:
         void update( map_geometric_mapping_context_type const& gmc, mpl::bool_<false> );
 
@@ -461,6 +580,13 @@ public:
         const list_block_type& _M_lb;
         dof_1_type* _M_test_dof;
         dof_2_type* _M_trial_dof;
+
+        test_precompute_ptrtype _M_test_pc;
+        std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > _M_test_pc_face;
+        trial_precompute_ptrtype _M_trial_pc;
+        std::map<uint16_type, std::map<permutation_type, trial_precompute_ptrtype> > _M_trial_pc_face;
+
+
         map_geometric_mapping_context_type _M_gmc;
         map_test_fecontext_type _M_test_fec;
         map_left_test_fecontext_type _M_test_fec0;
@@ -471,15 +597,22 @@ public:
 
 
         local_matrix_type _M_rep;
+        local2_matrix_type _M_rep_2;
+        local_row_type M_local_rows;
+        local2_row_type M_local_rows_2;
+        local_col_type M_local_cols;
+        local2_col_type M_local_cols_2;
+        local_row_type M_local_rowsigns;
+        local2_row_type M_local_rowsigns_2;
+        local_col_type M_local_colsigns;
+        local2_col_type M_local_colsigns_2;
+
         eval00_expr_ptrtype _M_eval_expr00;
         eval01_expr_ptrtype _M_eval_expr01;
         eval10_expr_ptrtype _M_eval_expr10;
         eval11_expr_ptrtype _M_eval_expr11;
 
         IM M_integrator;
-
-        test_index_type indi;
-        trial_index_type indj;
 
         }; // Context
 
@@ -515,10 +648,6 @@ public:
         _M_X2( __vf._M_X2 ),
         _M_matrix( __vf._M_matrix ),
         _M_lb( __vf._M_lb ),
-        _M_test_pc( __vf._M_test_pc ),
-        _M_test_pc_face( __vf._M_test_pc_face ),
-        _M_trial_pc( __vf._M_trial_pc ),
-        _M_trial_pc_face( __vf._M_trial_pc_face ),
         _M_do_threshold( __vf._M_do_threshold ),
         _M_threshold( __vf._M_threshold ),
         M_graph( __vf.M_graph )
@@ -618,36 +747,6 @@ public:
      */
     gm_ptrtype const& gm() const { return _M_X1->gm(); }
 
-    /**
-     * Return the structure that holds the test basis functions
-     * evaluated at a previously given set of points on the face of
-     * the reference element
-     *
-     * \see precomputeBasisAtPoints()
-     */
-    test_precompute_ptrtype const& testPc( uint16_type __f,
-                                           permutation_type __p = permutation_type( permutation_type::NO_PERMUTATION ) ) const
-    {
-        if ( __f == invalid_uint16_type_value )
-            return  _M_test_pc;
-        //LIFE_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
-        return _M_test_pc_face.find(__f )->second.find( __p )->second;
-    }
-
-    /**
-     * Return the structure that holds the trial basis functions
-     * evaluated at a previously given set of points on the face of
-     * the reference element
-     * \see precomputeBasisAtPoints()
-     */
-    trial_precompute_ptrtype const& trialPc( uint16_type __f,
-                                             permutation_type __p = permutation_type( permutation_type::NO_PERMUTATION ) ) const
-    {
-        if ( __f == invalid_uint16_type_value )
-            return  _M_trial_pc;
-        //LIFE_ASSERT( _M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
-        return _M_trial_pc_face.find(__f )->second.find( __p )->second;
-    }
 
     /**
      * \return the matrix associated to the bilinear form
@@ -687,31 +786,7 @@ public:
      */
     //@{
 
-    /**
-     * precompute the basis function associated with the test and
-     * trial space at a set of points
-     */
-    template<typename Pts>
-    void precomputeBasisAtPoints( Pts const& pts )
-    {
-        _M_test_pc = test_precompute_ptrtype( new test_precompute_type( testSpace()->fe(), pts ) );
-        _M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( trialSpace()->fe(), pts ) );
-    }
 
-    /**
-     * precompute the basis function associated with the test and
-     * trial space at a set of points on the face of
-     * the reference element
-     */
-    template<typename Pts>
-    void precomputeBasisAtPoints( uint16_type __f, permutation_type const& __p, Pts const& pts )
-    {
-        _M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( testSpace()->fe(), pts ) );
-        //LIFE_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
-
-        _M_trial_pc_face[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( trialSpace()->fe(), pts ) );
-        //LIFE_ASSERT( _M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
-    }
 
 
 
@@ -744,6 +819,16 @@ public:
             _M_matrix.add( i, j, v );
 
     }
+    /**
+     * add value \p v at position (\p i, \p j) of the matrix
+     * associated with the bilinear form
+     */
+    void addMatrix( int* rows, int nrows,
+                    int* cols, int ncols,
+                    value_type* data )
+        {
+            _M_matrix.addMatrix( rows, nrows, cols, ncols, data );
+        }
 
 
 
@@ -790,10 +875,6 @@ private:
 
     list_block_type _M_lb;
 
-    test_precompute_ptrtype _M_test_pc;
-    std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > _M_test_pc_face;
-    trial_precompute_ptrtype _M_trial_pc;
-    std::map<uint16_type, std::map<permutation_type, trial_precompute_ptrtype> > _M_trial_pc_face;
 
     bool _M_do_threshold;
     value_type _M_threshold;

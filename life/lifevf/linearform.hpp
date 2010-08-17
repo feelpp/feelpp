@@ -30,6 +30,8 @@
 #ifndef __LinearForm_H
 #define __LinearForm_H 1
 
+#include <Eigen/Eigen>
+
 #include <boost/fusion/support/pair.hpp>
 #include <boost/fusion/container.hpp>
 #include <boost/fusion/sequence.hpp>
@@ -225,7 +227,13 @@ public:
 
         //typedef ublas::vector<value_type> local_vector_type;
         static const int rep_shape = 2;//1+(eval_expr_type::shape::M-1>0)+(eval_expr_type::shape::N-1>0);
-        typedef boost::multi_array<value_type, rep_shape> local_vector_type;
+        //typedef boost::multi_array<value_type, rep_shape> local_vector_type;
+        typedef typename space_type::dof_type test_dof_type;
+        static const int nDofPerElementTest = space_type::dof_type::nDofPerElement;
+        typedef Eigen::Matrix<value_type, nDofPerElementTest, 1> local_vector_type;
+        typedef Eigen::Matrix<value_type, 2*nDofPerElementTest, 1> local2_vector_type;
+        typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
+        typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
 
     public:
 
@@ -270,6 +278,64 @@ public:
         void assemble( mpl::int_<2> ) { assemble( _M_gmc_left->id(), _M_gmc_right->id() );  }
         void assemble( size_type elt_0, size_type elt_1 );
 
+        /**
+         * precompute the basis function associated with the test and
+         * trial space at a set of points
+         */
+        template<typename Pts>
+        void precomputeBasisAtPoints( Pts const& pts )
+            {
+                _M_test_pc = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
+            }
+
+        /**
+         * precompute the basis function associated with the test and
+         * trial space at a set of points on the face of
+         * the reference element
+         */
+        template<typename Pts>
+        void precomputeBasisAtPoints( uint16_type __f, permutation_type const& __p, Pts const& pts )
+            {
+                _M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
+                //LIFE_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+            }
+        /**
+         * Return the structure that holds the test basis functions
+         * evaluated at a previously given set of points on the face of
+         * the reference element
+         *
+         * \see precomputeBasisAtPoints()
+         */
+        test_precompute_ptrtype const& testPc( uint16_type __f,
+                                               permutation_type __p = permutation_type( permutation_type::NO_PERMUTATION ) ) const
+            {
+                if ( __f == invalid_uint16_type_value )
+                    return  _M_test_pc;
+                //LIFE_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+                return _M_test_pc_face.find(__f )->second.find( __p )->second;
+            }
+
+        template<typename PtsSet>
+        std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> >
+        precomputeTestBasisAtPoints( PtsSet const& pts )
+            {
+                QuadMapped<PtsSet> qm;
+                typedef typename QuadMapped<PtsSet>::permutation_type permutation_type;
+                typename QuadMapped<PtsSet>::permutation_points_type ppts( qm( pts ) );
+
+                std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > testpc;
+
+                for ( uint16_type __f = 0; __f < pts.nFaces(); ++__f )
+                {
+                    for( permutation_type __p( permutation_type::IDENTITY );
+                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                    {
+                        testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), ppts[__f].find(__p)->second ) );
+                    }
+                }
+                return testpc;
+            }
+
     private:
 
 
@@ -281,6 +347,10 @@ public:
         form_type& _M_form;
         dof_type* _M_test_dof;
         const list_block_type& _M_lb;
+
+        test_precompute_ptrtype _M_test_pc;
+        std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > _M_test_pc_face;
+
         map_geometric_mapping_context_type _M_gmc;
         left_gmc_ptrtype _M_gmc_left;
         right_gmc_ptrtype _M_gmc_right;
@@ -291,6 +361,12 @@ public:
         map_right_test_fecontext_type _M_test_fec1;
 
         local_vector_type _M_rep;
+        local2_vector_type _M_rep_2;
+        local_row_type M_local_rows;
+        local2_row_type M_local_rows_2;
+        local_row_type M_local_rowsigns;
+        local2_row_type M_local_rowsigns_2;
+
         eval0_expr_ptrtype _M_eval0_expr;
         eval1_expr_ptrtype _M_eval1_expr;
 
@@ -487,6 +563,15 @@ public:
             }
         else
             _M_F.add( i, v );
+    }
+
+    /**
+     * add data \p v at indices \c i of the vector
+     * associated with the linear form
+     */
+    void addVector( int* i, int n,  value_type* v )
+    {
+        _M_F.addVector( i, n, v );
     }
 
     /**

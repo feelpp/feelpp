@@ -42,68 +42,64 @@ struct FEContextInit
     // 0 : test, 1 : trial
     static const uint16_type type = Type;
 
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >,
-                              mpl::identity<typename FormContextType::test_fe_type>,
-                              mpl::identity<typename FormContextType::trial_fe_type> >::type::type fe_type;
-typedef boost::shared_ptr<fe_type> fe_ptrtype;
-typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >,
-                          mpl::identity<typename FormContextType::test_fecontext_type>,
-                          mpl::identity<typename FormContextType::trial_fecontext_type> >::type::type fecontext_type;
-typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >, mpl::identity<typename FormContextType::test_fe_type>, mpl::identity<typename FormContextType::trial_fe_type> >::type::type fe_type;
+    typedef boost::shared_ptr<fe_type> fe_ptrtype;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >, mpl::identity<typename FormContextType::test_fecontext_type>,mpl::identity<typename FormContextType::trial_fecontext_type> >::type::type fecontext_type; typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
 
-typedef typename FormContextType::geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
-typedef typename FormContextType::form_type form_type;
-typedef boost::shared_ptr<form_type> form_ptrtype;
+    typedef typename FormContextType::geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
+    //typedef typename FormContextType::form_type form_type;
+    typedef FormContextType form_type;
+    typedef boost::shared_ptr<form_type> form_ptrtype;
 
-template<typename Sig>
-struct result;
+    template<typename Sig>
+    struct result;
 
-template<typename T>
-struct result<FEContextInit(T)>
-{
-    typedef fusion::pair<typename boost::remove_reference<T>::type::first_type,fecontext_ptrtype> type;
-};
+    template<typename T>
+    struct result<FEContextInit(T)>
+    {
+        typedef fusion::pair<typename boost::remove_reference<T>::type::first_type,fecontext_ptrtype> type;
+    };
 
-FEContextInit( fe_ptrtype const& fe, form_type const& form )
-    :
-    _M_fe( fe ),
-    _M_form( form )
-{}
-template<typename T>
-fusion::pair<typename boost::remove_reference<T>::type::first_type,fecontext_ptrtype>
-operator()(T const& t) const
-{
-    return operator()( t, mpl::int_<type>() );
-}
+    FEContextInit( fe_ptrtype const& fe, FormContextType const& form )
+        :
+        _M_fe( fe ),
+        _M_form( form )
+        {}
+    template<typename T>
+    fusion::pair<typename boost::remove_reference<T>::type::first_type,fecontext_ptrtype>
+    operator()(T const& t) const
+        {
+            return operator()( t, mpl::int_<type>() );
+        }
 
 private:
 
 // Test FE context
-template<typename T>
-fusion::pair<typename boost::remove_reference<T>::type::first_type,fecontext_ptrtype>
-operator()(T const& t, mpl::int_<0>) const
-{
-    geometric_mapping_context_ptrtype gmcptr( t.second );
-    typedef typename boost::remove_reference<T>::type::first_type first_type;
-    return fusion::make_pair<first_type>(fecontext_ptrtype( new fecontext_type( _M_fe,
-                                                                                gmcptr,
-                                                                                _M_form.testPc( gmcptr->faceId(), gmcptr->permutation() ) ) ) );
-}
+    template<typename T>
+    fusion::pair<typename boost::remove_reference<T>::type::first_type,fecontext_ptrtype>
+    operator()(T const& t, mpl::int_<0>) const
+        {
+            geometric_mapping_context_ptrtype gmcptr( t.second );
+            typedef typename boost::remove_reference<T>::type::first_type first_type;
+            return fusion::make_pair<first_type>(fecontext_ptrtype( new fecontext_type( _M_fe,
+                                                                                        gmcptr,
+                                                                                        _M_form.testPc( gmcptr->faceId(), gmcptr->permutation() ) ) ) );
+        }
 
 // Trial FE context
-template<typename T>
-fusion::pair<typename boost::remove_reference<T>::type::first_type,fecontext_ptrtype>
-operator()(T const& t, mpl::int_<1>) const
-{
-    geometric_mapping_context_ptrtype gmcptr( t.second );
-    typedef typename boost::remove_reference<T>::type::first_type first_type;
-    return fusion::make_pair<first_type>(fecontext_ptrtype( new fecontext_type( _M_fe,
-                                                                                gmcptr,
-                                                                                _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation() ) ) ) );
-}
+    template<typename T>
+    fusion::pair<typename boost::remove_reference<T>::type::first_type,fecontext_ptrtype>
+    operator()(T const& t, mpl::int_<1>) const
+        {
+            geometric_mapping_context_ptrtype gmcptr( t.second );
+            typedef typename boost::remove_reference<T>::type::first_type first_type;
+            return fusion::make_pair<first_type>(fecontext_ptrtype( new fecontext_type( _M_fe,
+                                                                                        gmcptr,
+                                                                                        _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation() ) ) ) );
+        }
 
-fe_ptrtype const& _M_fe;
-form_type const& _M_form;
+    fe_ptrtype const& _M_fe;
+    form_type const& _M_form;
 };
 
 template<uint16_type Type, typename FormContextType>
@@ -114,7 +110,8 @@ struct FEContextUpdate
 
     typedef typename FormContextType::geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
     typedef typename FormContextType::map_geometric_mapping_context_type map_geometric_mapping_context_type;
-    typedef typename FormContextType::form_type form_type;
+    //typedef typename FormContextType::form_type form_type;
+    typedef FormContextType form_type;
     typedef boost::shared_ptr<form_type> form_ptrtype;
 
     FEContextUpdate( map_geometric_mapping_context_type const& mapgmc,
@@ -122,27 +119,27 @@ struct FEContextUpdate
         :
         _M_mapgmc( mapgmc ),
         _M_form( form )
-    {}
+        {}
 
     template<typename T>
     void operator()( T& t) const
-    {
-        return operator()( t, mpl::int_<type>() );
-    }
+        {
+            return operator()( t, mpl::int_<type>() );
+        }
     template<typename T>
     void operator()( T& t, mpl::int_<0> ) const
-    {
-        typedef typename boost::remove_reference<T>::type::first_type first_type;
-        geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
-        t.second->update( gmcptr, _M_form.testPc( gmcptr->faceId(), gmcptr->permutation()  ) );
-    }
+        {
+            typedef typename boost::remove_reference<T>::type::first_type first_type;
+            geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
+            t.second->update( gmcptr, _M_form.testPc( gmcptr->faceId(), gmcptr->permutation()  ) );
+        }
     template<typename T>
     void operator()( T& t, mpl::int_<1> ) const
-    {
-        typedef typename boost::remove_reference<T>::type::first_type first_type;
-        geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
-        t.second->update( gmcptr, _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation()  ) );
-    }
+        {
+            typedef typename boost::remove_reference<T>::type::first_type first_type;
+            geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
+            t.second->update( gmcptr, _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation()  ) );
+        }
 
     map_geometric_mapping_context_type const& _M_mapgmc;
     form_type const& _M_form;
