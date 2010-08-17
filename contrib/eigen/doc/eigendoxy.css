@@ -1,0 +1,535 @@
+body,h1,h2,h3,h4,h5,h6,p,center,td,th,ul,dl,div {
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size: 10pt;
+}
+
+h1 {
+  text-align: center;
+  font-size: 150%;
+}
+
+h2 {
+  font-size: 120%;
+}
+
+h3 {
+  font-size: 100%;
+}
+
+td h2
+{
+  /* we need the margin in order to ensure that in tables
+   * the headings are centered. */
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+caption {
+  font-weight: bold
+}
+
+div.center {
+  text-align: center;
+  margin-top: 0px;
+    margin-bottom: 0px;
+    padding: 0px;
+}
+
+div.center img {
+  border: 0px;
+}
+
+div.qindex {
+  width: 100%;
+  background-color: #e8eef2;
+  border: 1px solid #84b0c7;
+  text-align: center;
+  margin: 2px;
+  padding: 2px;
+  line-height: 140%;
+}
+
+div.navpath {
+  width: 100%;
+  background-color: #e8eef2;
+  border: 1px solid #84b0c7;
+  text-align: center;
+  margin: 2px;
+  padding: 2px;
+  line-height: 140%;
+}
+
+div.navtab {
+  background-color: #e8eef2;
+  border: 1px solid #84b0c7;
+  text-align: center;
+  margin: 2px;
+  margin-right: 15px;
+  padding: 2px;
+}
+
+td.navtab {
+       font-size: 100%;
+}
+
+a.qindex {
+       text-decoration: none;
+       font-weight: bold;
+       color: #1a419d;
+}
+
+a.qindex:visited {
+       text-decoration: none;
+       font-weight: bold;
+       color: #1a419d
+}
+
+a.qindex:hover {
+  text-decoration: none;
+  background-color: #ddddff;
+}
+
+a.qindexhl {
+  text-decoration: none;
+  font-weight: bold;
+  background-color: #6666cc;
+  color: #ffffff;
+  border: 1px double #9295c2;
+}
+
+a.qindexhl:hover {
+  text-decoration: none;
+  background-color: #6666cc;
+  color: #ffffff;
+}
+
+a.qindexhl:visited {
+  text-decoration: none;
+  background-color: #6666cc;
+  color: #ffffff
+}
+
+a.el {
+  text-decoration: none;
+  font-weight: bold
+}
+
+a.elref {
+  font-weight: bold
+}
+
+a.code:link {
+  text-decoration: none;
+  font-weight: normal;
+  color: #0000ff
+}
+
+a.code:visited {
+  text-decoration: none;
+  font-weight: normal;
+  color: #0000ff
+}
+
+a.coderef:link {
+  font-weight: normal;
+  color: #0000ff
+}
+
+a.coderef:visited {
+  font-weight: normal;
+  color: #0000ff
+}
+
+a:hover {
+  text-decoration: none;
+  background-color: #f2f2ff
+}
+
+dl.el {
+  margin-left: -1cm
+}
+
+div.ah {
+  background-color: black;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 3px;
+  margin-top: 3px
+}
+
+div.groupheader {
+       margin-left: 16px;
+       margin-top: 12px;
+       margin-bottom: 6px;
+       font-weight: bold;
+}
+
+div.grouptext {
+  margin-left: 16px;
+  font-style: italic;
+  font-size: 95%
+}
+
+body {
+  background: white;
+  color: black;
+  margin-right: 20px;
+  margin-left: 20px;
+}
+
+td.indexkey {
+  background-color: #e8eef2;
+  font-weight: bold;
+  padding-right  : 10px;
+  padding-top    : 2px;
+  padding-left   : 10px;
+  padding-bottom : 2px;
+  margin-left    : 0px;
+  margin-right   : 0px;
+  margin-top     : 2px;
+  margin-bottom  : 2px;
+  border: 1px solid #cccccc;
+}
+
+td.indexvalue {
+  background-color: #e8eef2;
+  font-style: italic;
+  padding-right  : 10px;
+  padding-top    : 2px;
+  padding-left   : 10px;
+  padding-bottom : 2px;
+  margin-left    : 0px;
+  margin-right   : 0px;
+  margin-top     : 2px;
+  margin-bottom  : 2px;
+  border: 1px solid #cccccc;
+}
+
+tr.memlist {
+  background-color: #f0f0f0;
+}
+
+p.formuladsp {
+  text-align: center;
+}
+
+img.formuladsp {
+}
+
+img.formulainl {
+  vertical-align: middle;
+}
+
+span.keyword       { color: #008000 }
+span.keywordtype   { color: #604020 }
+span.keywordflow   { color: #e08000 }
+span.comment       { color: #800000 }
+span.preprocessor  { color: #806020 }
+span.stringliteral { color: #002080 }
+span.charliteral   { color: #008080 }
+span.vhdldigit     { color: #ff00ff }
+span.vhdlchar      { color: #000000 }
+span.vhdlkeyword   { color: #700070 }
+span.vhdllogic     { color: #ff0000 }
+
+/* @group member descriptions */
+
+.mdescleft, .mdescright,
+.memitemleft, .memitemright,
+.memtemplitemleft, .memtemplitemright, .memtemplparams {
+  background-color: #fafafa;
+  border: none;
+  margin: 4px;
+  padding: 1px 0 0 8px;
+}
+
+.mdescleft, .mdescright {
+  padding: 0px 8px 4px 8px;
+  color: #555;
+}
+
+.memitemleft, .memitemright, .memtemplparams {
+  border-top: 1px solid #ccc;
+}
+
+.memitemleft, .memtemplitemleft {
+        white-space: nowrap;
+}
+
+.memtemplparams {
+  color: #606060;
+        white-space: nowrap;
+}
+
+.search {
+  color: #003399;
+  font-weight: bold;
+}
+
+form.search {
+  margin-bottom: 0px;
+  margin-top: 0px;
+}
+
+input.search {
+  font-size: 90%;
+  color: #000080;
+  font-weight: normal;
+  background-color: #e8eef2;
+}
+
+td.tiny {
+  font-size: 85%;
+}
+
+a {
+  color: #1a41a8;
+}
+
+a:visited {
+  color: #2a3798;
+}
+
+.dirtab {
+  padding: 4px;
+  border-collapse: collapse;
+  border: 1px solid #84b0c7;
+}
+
+th.dirtab {
+  background: #e8eef2;
+  font-weight: bold;
+}
+
+hr {
+  height: 0;
+  border: none;
+  border-top: 1px solid #666;
+}
+
+/* styles for detailed member documentation */
+
+.memtemplate {
+  font-size: 80%;
+  color: #606060;
+  font-weight: normal;
+  margin-left: 3px;
+}
+
+.memnav {
+  background-color: #e8eef2;
+  border: 1px solid #84b0c7;
+  text-align: center;
+  margin: 2px;
+  margin-right: 15px;
+  padding: 2px;
+}
+
+.memitem {
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+.memname {
+  white-space: nowrap;
+  font-weight: bold;
+}
+
+.memproto, .memdoc {
+  border: 1px solid #84b0c7;  
+}
+
+.memproto {
+  padding: 2;
+  background-color: #d5e1e8;
+  font-weight: bold;
+  -webkit-border-top-left-radius: 8px;
+  -webkit-border-top-right-radius: 8px;
+  -webkit-box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
+  -moz-border-radius-topleft: 8px;
+  -moz-border-radius-topright: 8px;
+  -moz-box-shadow: rgba(0, 0, 0, 0.15) 5px 5px 5px;
+}
+
+.memdoc {
+  padding: 2px 5px;
+  background-color: #eef3f5;
+  border-top-width: 0;
+  -webkit-border-bottom-left-radius: 8px;
+  -webkit-border-bottom-right-radius: 8px;
+  -webkit-box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
+  -moz-border-radius-bottomleft: 8px;
+  -moz-border-radius-bottomright: 8px;
+  -moz-box-shadow: rgba(0, 0, 0, 0.15) 5px 5px 5px;
+}
+
+.paramkey {
+  text-align: right;
+}
+
+.paramtype {
+  white-space: nowrap;
+}
+
+.paramname {
+  color: #602020;
+  white-space: nowrap;
+}
+.paramname em {
+  font-style: normal;
+}
+
+/* end styling for detailed member documentation */
+
+/* for the tree view */
+.ftvtree {
+  font-family: sans-serif;
+  margin:0.5em;
+}
+
+.directory {
+  font-size: 9pt;
+  font-weight: bold;
+}
+
+.directory h3 {
+  margin: 0px;
+  margin-top: 1em;
+  font-size: 11pt;
+}
+
+.directory > h3 {
+  margin-top: 0;
+}
+
+.directory p {
+  margin: 0px;
+  white-space: nowrap;
+}
+
+.directory div {
+  display: none;
+  margin: 0px;
+}
+
+.directory img {
+  vertical-align: -30%;
+}
+
+h2 a {
+  font-size: 13pt;margin:10px 0 1em 1em;display:block;
+}
+
+a.top  {
+  font-size: 11pt;
+  display:block;
+  color: #666666;
+  position:absolute;
+  right:20pt;
+  margin:12pt 0 0 0;
+  text-decoration : none;
+}
+
+a.top:hover, a.logo:hover {
+  background-color: transparent;
+  font-weight : bolder;
+}
+
+div.navigation {
+  min-height    : 64px;
+  padding-left  : 80px;
+  padding-top   : 5px;
+}
+
+img {
+    border: 0;
+}
+
+table {
+    border-collapse: collapse;
+    border-style: none;
+    font-size: 1em;
+}
+
+th {
+    text-align: left;
+    padding-right: 1em;
+    /* border: #cccccc dashed; */
+    /* border-style: dashed; */
+    /* border-width: 0 0 3px 0; */
+}
+
+table.noborder {
+  border-collapse: separate;
+  border-bottom-style : none;
+  border-left-style   : none;
+  border-right-style  : none;
+  border-top-style : none ;
+  border-spacing : 0px 0px;
+  margin: 4pt 0 0 0;
+  padding: 0 0 0 0;
+}
+
+table.noborder td {
+  border-bottom-style : none;
+  border-left-style   : none;
+  border-right-style  : none;
+  border-top-style : none;
+  border-spacing : 0px 0px;
+  margin: 0 0 0 0;
+  vertical-align: top;
+}
+
+table.tutorial_code {
+  width: 90%;
+}
+
+table.tutorial_code tr {
+  border: 1px dashed #888888;
+}
+
+table.tutorial_code td {
+  border-color: transparent; /* required for Firefox */
+  padding: 3pt 5pt 3pt 5pt;
+  vertical-align: top;
+}
+
+/* Whenever doxygen meets a '\n' or a '<BR/>', it will put 
+ * the text containing the characted into a <p class="starttd">.
+ * This little hack togehter with table.tutorial_code td.note
+ * aims at fixing this issue. */
+table.tutorial_code td.note p.starttd {
+  margin: 0px;
+  border: none;
+  padding: 0px;
+}
+
+div.fragment {
+  font-family: monospace, fixed;
+  font-size: 95%;
+  
+  margin: 0pt;
+  border: none;
+  padding: 0pt;
+}
+
+pre.fragment {
+  margin: 0pt;
+  border: 1px solid #cccccc;
+  padding: 2px 5px 2px 5px;
+  
+  background-color: #f5f5f5;
+}
+
+div.desired_tutorial_width {
+  width: 90%;
+}
+
+div.eimainmenu {
+  text-align:     center;
+}
+
+/* center version number on main page */
+h3.version { 
+  text-align:     center;
+}
