@@ -962,8 +962,10 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
     typedef the_element_type element_type;
     typedef typename the_element_type::gm_type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef typename eval::gm_type gmc_type;
+    typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::POINT, the_element_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    //typedef typename eval::gm_type gmc_type;
+    //typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
 
     //typedef typename eval_expr_type::value_type value_type;
     //typedef typename Im::value_type value_type;
