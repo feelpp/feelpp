@@ -167,6 +167,11 @@ public:
      */
     Context&       components() { return M_components; }
 
+    /**
+     * \return the measure of the mesh
+     */
+    virtual double measure() const = 0;
+
     //@}
 
     /** @name  Mutators
