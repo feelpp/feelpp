@@ -116,15 +116,28 @@ public:
         typedef typename boost::remove_reference<typename element_iterator::reference>::type const_t;
         typedef typename boost::remove_const<const_t>::type the_face_element_type;
         typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
+
+        typedef typename mpl::if_<mpl::bool_<the_element_type::is_simplex>,
+                                  mpl::identity<typename Im::template apply<the_element_type::nDim, value_type, Simplex>::type >,
+                                  mpl::identity<typename Im::template apply<the_element_type::nDim, value_type, SimplexProduct>::type >
+                                  >::type::type im_type;
+
         typedef the_element_type element_type;
         typedef typename the_element_type::gm_type gm_type;
         typedef boost::shared_ptr<gm_type> gm_ptrtype;
+        //typedef typename gm_type::template Context<expression_type::context, the_element_type, im_type::numPoints> gmc_type;
         typedef typename gm_type::template Context<expression_type::context, the_element_type> gmc_type;
         typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-        typedef typename gm_type::precompute_ptrtype gmcpc_ptrtype;
+#if 0
+        typedef typename gm_type::template precompute<im_type::numPoints>::type gmpc_type;
+        typedef typename gm_type::template precompute<im_type::numPoints>::ptrtype gmpc_ptrtype;
+#else
+        typedef typename gm_type::PreCompute gmpc_type;
+        typedef boost::shared_ptr<gmpc_type> gmpc_ptrtype;
+#endif
         //typedef typename eval_expr_type::value_type value_type;
         //typedef typename strongest_numeric_type<typename Im::value_type, typename expression_type::value_type>::type value_type;
-        typedef typename expression_type::value_type value_type;
+        //typedef typename expression_type::value_type value_type;
 
         //
         // Precompute some data in the reference element for
@@ -141,10 +154,7 @@ public:
         typedef ublas::matrix<value_type> ret_type;
     };
 
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template apply<eval::the_element_type::nDim, value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template apply<eval::the_element_type::nDim, value_type, SimplexProduct>::type >
-                              >::type::type im_type;
+    typedef typename eval::im_type im_type;
     typedef typename im_type::face_quadrature_type im_face_type;
 
     //@}
@@ -153,11 +163,11 @@ public:
      */
     //@{
 
-    Integrator( Elements const& elts, Im const& __im, expression_type const& __expr )
+    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr )
         :
         _M_eltbegin( elts.template get<1>() ),
         _M_eltend( elts.template get<2>() ),
-        _M_im(),
+        _M_im( ),
         _M_expr( __expr )
     {
         Debug( 5065 ) << "Integrator constructor from expression\n";
@@ -361,18 +371,16 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
     // some typedefs
     //
     typedef typename eval::gm_type gm_type;
-    //typedef typename FormType::gm_type gm_type;
-    typedef typename gm_type::template Context<expression_type::context, typename eval::element_type> gmc_type;
+    typedef typename eval::gmc_type gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
 
     //
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
     //
-    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( __form.gm(),
-                                                                                         this->im().points() ) );
+    typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( __form.gm(), this->im().points() ) );
 
-    __form.precomputeBasisAtPoints( this->im().points() );
+
 
     element_iterator it = this->beginElement();
     element_iterator en = this->endElement();
@@ -474,8 +482,8 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
     //
-    typedef typename gm_type::precompute_type pc_type;
-    typedef typename gm_type::precompute_ptrtype pc_ptrtype;
+    typedef typename eval::gmpc_type pc_type;
+    typedef typename eval::gmpc_ptrtype pc_ptrtype;
     //typedef typename mpl::if_<mpl::equal_to<mpl::int_<FormType::nDim>, mpl::int_<2> >, mpl::identity<typename eval::element_type::edge_permutation_type>, mpl::identity<typename eval::element_type::face_permutation_type> >::type::type permutation_type;
 
     QuadMapped<im_type> qm;
@@ -498,7 +506,6 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
             {
                 //LIFE_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                 __geopc[__f][__p] = pc_ptrtype(  new pc_type( __form.gm(), ppts[__f].find(__p)->second ) );
-                __form.precomputeBasisAtPoints( __f, __p, ppts[__f].find(__p)->second );
             }
         }
 
@@ -514,7 +521,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
     // get the geometric mapping associated with element 0
     //Debug( 5065 ) << "element " << it->element(0)  << "face " << __face_id_in_elt_0 << " permutation " << it->element(0).permutation( __face_id_in_elt_0 ) << "\n";
     gm_ptrtype __gm = it->element(0).gm();
-    Debug( 5065 ) << "[integrator] evaluate(faces), gm is cached: " << __gm->isCached() << "\n";
+    //Debug( 5065 ) << "[integrator] evaluate(faces), gm is cached: " << __gm->isCached() << "\n";
     gmc_ptrtype __c0( new gmc_type( __gm, it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
 
 
@@ -527,7 +534,6 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
     form_context_type form( __form, mapgmc, expression(), face_ims[__face_id_in_elt_0], this->im() );
-
     //
     // the case where the face is connected only to two elements
     //
@@ -682,7 +688,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     typedef the_element_type element_type;
     typedef typename the_element_type::gm_type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef typename gm_type::template Context<expression_type::context, the_element_type> gmc_type;
+    typedef typename eval::gmc_type gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
 
     //typedef typename eval_expr_type::value_type value_type;
@@ -696,9 +702,9 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     // geometric mapping and reference finite element
     //
     gm_ptrtype gm = it->gm();
-    Debug(5065) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
-    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm,
-                                                                                         this->im().points() ) );
+    //Debug(5065) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
+    typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
+                                                                       this->im().points() ) );
 
 
     it = this->beginElement();
@@ -782,8 +788,8 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
     //
-    typedef typename gm_type::precompute_type pc_type;
-    typedef typename gm_type::precompute_ptrtype pc_ptrtype;
+    typedef typename eval::gmpc_type pc_type;
+    typedef typename eval::gmpc_ptrtype pc_ptrtype;
     std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( im().nFaces() );
     typedef typename im_type::face_quadrature_type face_im_type;
 
@@ -793,7 +799,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
     element_iterator en = endElement();
 
     gm_ptrtype gm = it->element(0).gm();
-    Debug(5065) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
+    //Debug(5065) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
     for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
         {
             __integrators.push_back( im(__f) );
@@ -956,7 +962,7 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
     typedef the_element_type element_type;
     typedef typename the_element_type::gm_type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef typename gm_type::template Context<expression_type::context, the_element_type> gmc_type;
+    typedef typename eval::gm_type gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
 
     //typedef typename eval_expr_type::value_type value_type;
@@ -970,9 +976,9 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
     // geometric mapping and reference finite element
     //
     gm_ptrtype gm = it->gm();
-    Debug(5065) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
-    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm,
-                                                                                         this->im().points() ) );
+    //Debug(5065) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
+    typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
+                                                                       this->im().points() ) );
 
 
     it = this->beginElement();
@@ -1058,8 +1064,8 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
     //
-    typedef typename gm_type::precompute_type pc_type;
-    typedef typename gm_type::precompute_ptrtype pc_ptrtype;
+    typedef typename eval::gmpc_type pc_type;
+    typedef typename eval::gmpc_ptrtype pc_ptrtype;
     std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( im().nFaces() );
     typedef typename im_type::face_quadrature_type face_im_type;
 
@@ -1069,7 +1075,7 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
     element_iterator en = endElement();
 
     gm_ptrtype gm = it->element(0).gm();
-    Debug(5065) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
+    //Debug(5065) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
     for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
         {
             __integrators.push_back( im(__f) );

@@ -50,13 +50,17 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     _M_form( __form ),
     _M_test_dof( __form.functionSpace()->dof().get() ),
     _M_lb( __form.blockList() ),
+
+    _M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), im.points() ) ),
+    _M_test_pc_face( precomputeTestBasisAtPoints( im ) ),
+
     _M_gmc( _gmc ),
     _M_gmc_left( fusion::at_key<gmc<0> >( _gmc ) ),
     _M_left_map( fusion::make_map<gmc<0> >( _M_gmc_left ) ),
-    _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>(__form.functionSpace()->fe(), _M_form ) ) ),
+    _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>(__form.functionSpace()->fe(), *this ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
-    _M_rep(boost::extents[fusion::size(_gmc)*test_fecontext_type::nDof]
-           [test_fecontext_type::nComponents1]),
+    _M_rep(),
+    _M_rep_2(),
     _M_eval0_expr( new eval0_expr_type( expr, _gmc, _M_test_fec0 ) ),
     _M_eval1_expr(),
     M_integrator( im )
@@ -77,13 +81,17 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     _M_form( __form ),
     _M_test_dof( __form.functionSpace()->dof().get() ),
     _M_lb( __form.blockList() ),
+
+    _M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), im2.points() ) ),
+    _M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
+
     _M_gmc( _gmc ),
     _M_gmc_left( fusion::at_key<gmc<0> >( _gmc ) ),
     _M_left_map( fusion::make_map<gmc<0> >( _M_gmc_left ) ),
-    _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>(__form.functionSpace()->fe(), _M_form ) ) ),
+    _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>(__form.functionSpace()->fe(), *this ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
-    _M_rep(boost::extents[fusion::size(_gmc)*test_fecontext_type::nDof]
-           [test_fecontext_type::nComponents1]),
+    _M_rep(),
+    _M_rep_2(),
     _M_eval0_expr( new eval0_expr_type( expr, _gmc, _M_test_fec0 ) ),
     _M_eval1_expr(),
     M_integrator( im )
@@ -104,16 +112,20 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     _M_form( __form ),
     _M_test_dof( __form.functionSpace()->dof().get() ),
     _M_lb( __form.blockList() ),
+
+    _M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), im2.points() ) ),
+    _M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
+
     _M_gmc( _gmc ),
     _M_gmc_left( fusion::at_key<gmc<0> >( _gmc ) ),
     _M_gmc_right( fusion::at_key<gmc1 >( _gmc ) ),
     _M_left_map( fusion::make_map<gmc<0> >( _M_gmc_left ) ),
     _M_right_map( fusion::make_map<gmc<0> >( _M_gmc_right ) ),
-    _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>(__form.functionSpace()->fe(), _M_form ) ) ),
+    _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>(__form.functionSpace()->fe(), *this ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
     _M_test_fec1( fusion::make_pair<gmc1 >( fusion::at_key<gmc1 >( _M_test_fec ) ) ),
-    _M_rep(boost::extents[fusion::size(_gmc)*test_fecontext_type::nDof]
-           [test_fecontext_type::nComponents1]),
+    _M_rep(),
+    _M_rep_2(),
     _M_eval0_expr( new eval0_expr_type( expr, _gmc, _M_test_fec0 ) ),
     _M_eval1_expr( new eval1_expr_type( expr, _gmc, _M_test_fec1 ) ),
     M_integrator( im )
@@ -130,10 +142,10 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     _M_gmc = _gmc;
     _M_gmc_left = fusion::at_key<gmc<0> >( _gmc );
     _M_left_map = fusion::make_map<gmc<0> >( _M_gmc_left );
-    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, _M_form ) );
+    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_eval0_expr->update( _gmc, _M_test_fec0 );
-    std::fill( _M_rep.data(), _M_rep.data()+_M_rep.num_elements(), value_type(0) );
+
     M_integrator.update( *fusion::at_key<gmc<0> >( _gmc ) );
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -152,12 +164,12 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     _M_left_map = fusion::make_map<gmc<0> >( _M_gmc_left );
     _M_right_map = fusion::make_map<gmc<0> >( _M_gmc_right );
 #endif
-    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, _M_form ) );
+    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_test_fec1 = fusion::make_map<gmc1 >( fusion::at_key<gmc1 >( _M_test_fec ) );
     _M_eval0_expr->update( _gmc, _M_test_fec0 );
     _M_eval1_expr->update( _gmc, _M_test_fec1 );
-    std::fill( _M_rep.data(), _M_rep.data()+_M_rep.num_elements(), value_type(0) );
+
     M_integrator.update( *fusion::at_key<gmc<0> >( _gmc ) );
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -183,43 +195,21 @@ template<typename GeomapContext,typename ExprT,typename IM>
 void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( mpl::int_<1> )
 {
-    //geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_gmc );
-    typedef geometric_mapping_context_type gmc_type;
-
     typedef typename eval0_expr_type::shape shape;
     BOOST_MPL_ASSERT_MSG( (shape::M == 1 && shape::N == 1),
                           INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
                           (mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
-    test_index_type indi;
-    int i, c1;
-    value_type res;
-    //#pragma omp parallel
-    //{
-        //#pragma omp single
-        //Debug() << "[linearform::integrate] num threads: " << OMP_GET_NUM_THREADS << "\n";
-
-    //#pragma omp for private(i,c1,indi, res)
-        for ( i = 0; i < test_fecontext_type::nDof; ++i )
-        {
-            int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
-            for( c1 = 0;c1 < ncomp; ++ c1 )
-                {
-                    indi.setIndex( boost::make_tuple( i, c1, 0 ) );
-                    res = M_integrator( *_M_eval0_expr, indi, 0, 0 );
-                    _M_rep[i][c1] = res;
-                }
-        }
-        //}
+    for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+    {
+        _M_rep(i ) = M_integrator( *_M_eval0_expr, i, 0, 0 );
+    }
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
 void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( mpl::int_<2> )
 {
-    //geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_gmc );
-    typedef geometric_mapping_context_type gmc_type;
-
     typedef mpl::int_<fusion::result_of::template size<map_geometric_mapping_context_type>::type::value> map_size;
     BOOST_MPL_ASSERT_MSG( map_size::value == 2, INVALID_GEOMAP, (map_size,map_geometric_mapping_context_type ));
 
@@ -227,21 +217,16 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>
     BOOST_MPL_ASSERT_MSG( (shape::M == 1 && shape::N == 1),
                           INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
                           (mpl::int_<shape::M>, mpl::int_<shape::N> ) );
-    test_index_type indi;
 
-    for ( uint16_type i = 0; i < test_fecontext_type::nDof; ++i )
+    for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
     {
-        int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
-        for( uint16_type c1 = 0;c1 < ncomp; ++ c1 )
-            {
-                indi.setIndex( boost::make_tuple( i, c1, 0 ) );
+        uint16_type ii = i;
+        // test dof element 0
+        _M_rep_2(ii) = M_integrator( *_M_eval0_expr, i, 0, 0 );
 
-                LIFE_ASSERT( M_integrator.isFaceIm() )
-                    ( M_integrator ).error( "invalid face integrator" );
-                _M_rep[i][c1] = M_integrator( *_M_eval0_expr, indi, 0, 0 );
-                uint16_type ii = i + test_fecontext_type::nDof;
-                _M_rep[ii][c1] = M_integrator( *_M_eval1_expr, indi, 0, 0 );
-            }
+        ii = i + test_dof_type::nDofPerElement;
+        // test dof element 1
+        _M_rep_2(ii) += M_integrator( *_M_eval1_expr, i, 0, 0 );
     }
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -249,48 +234,39 @@ template<typename GeomapContext,typename ExprT,typename IM>
 void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>::assemble( size_type elt_0 )
 {
-    test_index_type indi;
-    size_type ig;
-    int isign;
     size_type row_start = _M_lb.front().globalRowStart();
-    for ( uint16_type k = 0 ; k < test_fecontext_type::nDof; k++ )
+    M_local_rows = _M_test_dof->localToGlobalIndices(elt_0).array() + row_start;
+
+    if ( test_dof_type::is_modal )
     {
-        int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
-        for( uint16_type c1 = 0;c1 < ncomp; ++ c1 )
-            {
-                //uint16_type c = test_fecontext_type::nComponents2*c1+c2;
-                boost::tie( ig, isign, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_0, k, c1 );
-                ig += row_start;
-                _M_form.add( ig, value_type(isign)*_M_rep[k][c1] );
-            }
+        M_local_rowsigns = _M_test_dof->localToGlobalSigns(elt_0);
+        _M_rep.array() *= M_local_rowsigns.array().template cast<value_type>();
     }
+    _M_form.addVector( M_local_rows.data(), M_local_rows.size(),
+                       _M_rep.data() );
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM>
 void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM>::assemble( size_type elt_0, size_type elt_1 )
 {
-    test_index_type indi;
-    size_type ig0,ig1;
-    int isign0,isign1;
     size_type row_start = _M_lb.front().globalRowStart();
-    for ( uint16_type k = 0 ; k < test_fecontext_type::nDof; k++ )
-    {
-        int ncomp= (test_fecontext_type::is_product?test_fecontext_type::nComponents1:1);
-        for( uint16_type c1 = 0;c1 < ncomp; ++ c1 )
-            //for( uint16_type c2 = 0;c2 < test_fecontext_type::nComponents2; ++ c2 )
-            {
-                //uint16_type c = test_fecontext_type::nComponents2*c1+c2;
-                boost::tie( ig0, isign0, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_0, k, c1 );
-                ig0 += row_start;
-                _M_form.add( ig0, value_type(isign0)*_M_rep[k][c1] );
+    auto local_rows_0 = _M_test_dof->localToGlobalIndices(elt_0).array() + row_start;
+    auto local_rows_1 = _M_test_dof->localToGlobalIndices(elt_1).array() + row_start;
+    M_local_rows_2.template head<test_dof_type::nDofPerElement>() = local_rows_0;
+    M_local_rows_2.template tail<test_dof_type::nDofPerElement>() = local_rows_1;
 
-                boost::tie( ig1, isign1, boost::tuples::ignore ) = _M_test_dof->localToGlobal( elt_1, k, c1 );
-                ig1 += row_start;
-                size_type l = test_fecontext_type::nDof + k;
-                _M_form.add( ig1, value_type(isign1)*_M_rep[l][c1] );
-            }
+    if ( test_dof_type::is_modal )
+    {
+        auto local_rowsigns_0 = _M_test_dof->localToGlobalSigns(elt_0);
+        auto local_rowsigns_1 = _M_test_dof->localToGlobalSigns(elt_1);
+        M_local_rowsigns_2.template head<test_dof_type::nDofPerElement>() = local_rowsigns_0;
+        M_local_rowsigns_2.template tail<test_dof_type::nDofPerElement>() = local_rowsigns_1;
+
+        _M_rep_2.array() *= M_local_rowsigns_2.array().template cast<value_type>();
     }
+    _M_form.addVector( M_local_rows_2.data(), M_local_rows_2.size(),
+                       _M_rep_2.data() );
 }
 
 }
