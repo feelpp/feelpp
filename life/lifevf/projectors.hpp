@@ -184,7 +184,8 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
     typedef fusion::map<fusion::pair<detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
     //typedef typename expression_type::template tensor<map_gmc_type,fusion::map<fusion::pair<detail::gmc<0>,boost::shared_ptr<fecontext_type> > > > t_expr_type;
-    typedef decltype( basis_type::isomorphism( _M_expr ) ) the_expression_type;
+    //typedef decltype( basis_type::isomorphism( _M_expr ) ) the_expression_type;
+    typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
     typedef typename iso_expression_type::template tensor<map_gmc_type> t_expr_type;
     typedef typename t_expr_type::value_type value_type;
@@ -287,7 +288,8 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     // expression
     //typedef typename expression_type::template tensor<map_gmc_type,fecontext_type> t_expr_type;
-    typedef decltype( basis_type::isomorphism( _M_expr ) ) the_expression_type;
+    //typedef decltype( basis_type::isomorphism( _M_expr ) ) the_expression_type;
+    typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
     typedef typename iso_expression_type::template tensor<map_gmc_type> t_expr_type;
     typedef typename t_expr_type::shape shape;
