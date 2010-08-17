@@ -10,6 +10,9 @@
 
 * New in 0.9.25
 ** Programming Environment
+
+ - Ported to Gcc 4.5. Very few changes were needed: (i) one 1-liner to fix a
+   segfault with Gcc4.5 and (ii) fixed a warning that was quite annoying
  - Added OpenTURNS check (optional)
  - Start support python wrappers using OpenTURNS
  - added support for TBB (Thread Building Blocks). Now we have to use it. A
