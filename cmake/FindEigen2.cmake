@@ -25,21 +25,21 @@ include (FindPackageHandleStandardArgs)
 INCLUDE(CheckIncludeFileCXX)
 
 FIND_PATH(Eigen2_INCLUDE_DIR
-  Eigen/Core
+  Eigen/Eigen
   PATHS /usr/include/ /usr/include/eigen2
   DOC "Directory where Eigen2 header files are stored" )
 
 
-CHECK_INCLUDE_FILE_CXX(Eigen/Core HAVE_EIGEN_CORE_H)
-
+CHECK_INCLUDE_FILE_CXX(Eigen/Eigen HAVE_EIGEN_EIGEN)
 # handle the QUIETLY and REQUIRED arguments and set Eigen2_FOUND to TRUE if
 # all listed variables are TRUE
 FIND_PACKAGE_HANDLE_STANDARD_ARGS (Eigen2 DEFAULT_MSG
   Eigen2_INCLUDE_DIR
   )
 
-if ( Eigen2_FOUND )
+if ( EIGEN2_FOUND )
   MESSAGE( STATUS "Eigen2 found: ${Eigen2_INCLUDE_DIR}" )
+  set( HAVE_EIGEN_EIGEN 1 )
 endif()
 
 mark_as_advanced( Eigen2_INCLUDE_DIR )
