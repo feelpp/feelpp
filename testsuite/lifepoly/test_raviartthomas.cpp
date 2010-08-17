@@ -44,6 +44,10 @@ BOOST_AUTO_TEST_CASE( ravth_2d_0 )
 
     rt0_type rt0;
 
+    typedef  boost::numeric::ublas::matrix<double> matrix_type ;
+    typedef  boost::numeric::ublas::vector<double> Points_type ;
+    typedef  boost::numeric::ublas::vector<Points_type> vectors_type ;
+
     matrix_type m(6 ,3)   ;
 
     m(0 ,0)=m(0 ,1)=m(1 ,0)=m(1 ,2)=m(2 ,1)=m(3 ,0)=m(3 ,2)=m(4 ,0)=m(4 ,1)=m(5 ,2) = 1./4.;
@@ -103,6 +107,9 @@ BOOST_AUTO_TEST_CASE( ravth_3d_0 )
     using namespace Life;
     typedef RaviartThomas<0>::apply<3>::type rt0_type;
     typedef GeoND<3,Simplex<3, 1, 3> >::point_type point_type;
+    typedef  boost::numeric::ublas::matrix<double> matrix_type ;
+    typedef  boost::numeric::ublas::vector<double> Points_type ;
+    typedef  boost::numeric::ublas::vector<Points_type> vectors_type ;
 
       GeoND<3,Simplex<3, 1, 3> > tetra;
     point_type V1; V1( 0 )=-1;V1( 1 )=-1;V1( 2 )=-1;
@@ -190,6 +197,9 @@ BOOST_AUTO_TEST_CASE( ravth_2d_1 )
     using namespace Life;
     BOOST_TEST_MESSAGE( "start" );
     typedef RaviartThomas<1>::apply<2>::type rt0_type;
+    typedef  boost::numeric::ublas::matrix<double> matrix_type ;
+    typedef  boost::numeric::ublas::vector<double> Points_type ;
+    typedef  boost::numeric::ublas::vector<Points_type> vectors_type ;
 
     rt0_type rt0;
     BOOST_TEST_MESSAGE( "RT_1 instantiated" );
