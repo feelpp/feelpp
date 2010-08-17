@@ -36,6 +36,8 @@
 #include <boost/tuple/tuple_io.hpp>
 #include <boost/fusion/algorithm/iteration/accumulate.hpp>
 
+#include <Eigen/Core>
+
 #include <life/lifecore/life.hpp>
 #include <life/lifealg/glas.hpp>
 #include <life/lifepoly/mapped.hpp>
@@ -106,6 +108,8 @@ public:
 
     static const bool is_p0_continuous = ( (nOrder == 0) && is_continuous );
 
+    static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<FEType::nLocalDof*nComponents1>, mpl::int_<FEType::nLocalDof> >::type::value;
+
     typedef PeriodicityType periodicity_type;
     static const bool is_periodic = periodicity_type::is_periodic;
 
@@ -169,6 +173,9 @@ public:
 
     typedef ublas::vector<bool> face_sign_info_type;
 
+
+    typedef Eigen::Matrix<int, nDofPerElement, 1> localglobal_indices_type;
+
     /**
      * Type for the permutations to be done in the faces
      **/
@@ -204,14 +211,6 @@ public:
      *  @param _fe reference element
      */
     DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity );
-
-    /**
-     * The number of local DofTable (nodes) in the finite element
-     */
-    uint16_type nDofPerElement() const
-    {
-        return _M_fe->nLocalDof;
-    }
 
     /**
      * \return the number of dof for faces on the boundary
@@ -340,6 +339,16 @@ public:
         return M_dof_indices[dof];
 #endif
     }
+
+    /**
+     * \return the local to global indices
+     */
+    localglobal_indices_type const& localToGlobalIndices( size_type ElId ) { return M_locglob_indices[ElId]; }
+
+    /**
+     * \return the signs of the global dof (=1 in nodal case, +-1 in modal case)
+     */
+    localglobal_indices_type const& localToGlobalSigns( size_type ElId ) { return M_locglob_signs[ElId]; }
 
     /**
      * \return the specified entries of the localToGlobal table
@@ -1480,6 +1489,8 @@ private:
     /// a view of the dof container
     dof_container_type M_dof_view;
 
+    std::vector<localglobal_indices_type> M_locglob_indices;
+    std::vector<localglobal_indices_type> M_locglob_signs;
 };
 
 template<typename MeshType, typename FEType, typename PeriodicityType>
@@ -1559,7 +1570,7 @@ DofTable<MeshType, FEType, PeriodicityType>::showMe() const
         for ( size_type i = 0; i < _M_n_el;++i )
             {
 
-                for ( size_type j = 0; j < nDofPerElement();++j )
+                for ( size_type j = 0; j < nDofPerElement;++j )
                     {
 
                         Log()<< "elt id " << i << " : "
@@ -1833,6 +1844,8 @@ DofTable<MeshType, FEType, PeriodicityType>::initDofMap( mesh_type& M )
     const size_type nV = M.numElements();
     int ntldof = is_product?nComponents*nldof:nldof;
     _M_el_l2g.resize( boost::extents[nV][ntldof] );
+    M_locglob_indices.resize( nV );
+    M_locglob_signs.resize( nV );
     typedef Container::index index;
     for ( index i1 = 0; i1 < index(nV); ++i1 )
         for ( index i2 = 0; i2 < index(ntldof); ++i2 )
@@ -2183,6 +2196,27 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
 
     //if ( is_continuous )
     //checkDofContinuity( M, mpl::int_<fe_type::nDim>() );
+
+    for (size_type processor=0; processor<n_proc; processor++)
+    {
+        auto it_elt = M.beginElementWithProcessId( processor );
+        auto en_elt = M.endElementWithProcessId( processor );
+        for( ; it_elt != en_elt; ++it_elt )
+        {
+            size_type elid= it_elt->id();
+            for( int i = 0; i < FEType::nLocalDof; ++i )
+            {
+                int nc1 = (is_product?nComponents1:1);
+                for( int c1 =0; c1 < nc1; ++c1 )
+                {
+                    int ind = FEType::nLocalDof*c1+i;
+                    boost::tie( M_locglob_indices[elid][ind],
+                                M_locglob_signs[elid][ind], boost::tuples::ignore) =
+                        localToGlobal( elid, i, c1 );
+                }
+            }
+        }
+    }
 
     generateDofPoints( M );
 }
