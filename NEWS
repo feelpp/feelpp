@@ -25,6 +25,11 @@
 
  - Fix build on s390 and apple platforms
 
+*** lifealg
+
+ - new local/global interface for vectors and sparse matrices to add the
+   contribution of a local/small vector/matrix into a global/large one
+
 *** lifepoly
 
  - support for RaviartThomas RTk in 2D and 3D
@@ -42,6 +47,9 @@
 
  - support for vectorial valued function such as RaviartThomas
  - update the interpolation tool
+ - added interface to the DofTable class to retrieve all the dof associated to
+   an element in a Eigen vector as well as the dof signs (when modal basis are
+   used)
 
 *** lifefilters
 
@@ -74,6 +82,9 @@
    is for a given element, the set of elements (including himself) that share a
    point with it. nPEN() returns the number of elements and measPEN() the
    measure of the set.
+ - implement the new local/global interface that uses eigen. It simplifies a
+   lots the local/global assembly code and allowed quite a bit of refactoring.
+
 
 ** Documentation
 
