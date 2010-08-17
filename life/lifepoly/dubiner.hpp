@@ -42,7 +42,6 @@
 #include <life/lifemesh/pointset.hpp>
 #include <life/lifepoly/equispaced.hpp>
 #include <life/lifepoly/warpblend.hpp>
-#include <life/lifepoly/basis.hpp>
 #include <life/lifepoly/expansiontypes.hpp>
 
 namespace Life
@@ -161,11 +160,9 @@ template<uint16_type Dim,
          typename NormalizationPolicy = Normalized<true>,
          typename T = double,
          template<class> class StoragePolicy = StorageUBlas>
-class Dubiner : public Basis<DubinerTag<Dim, Degree>, T>
+class Dubiner
 
 {
-
-    typedef Basis<DubinerTag<Dim, Degree>, T > super;
 
 public:
     typedef DubinerTraits<Dim, Degree, NormalizationPolicy, T, StoragePolicy> traits_type;
@@ -218,19 +215,17 @@ public:
 
     Dubiner()
         :
-        super( *this ),
         _M_refconvex(),
         _M_pts( _M_refconvex.makePoints( nDim, 0 ) )
     {
-        //initDerivation();
+        this->initDerivation();
     }
     Dubiner( Dubiner const & d )
         :
-        super( *this ),
         _M_refconvex(),
         _M_pts( d._M_pts )
     {
-        //initDerivation();
+
     }
 
     ~Dubiner()
@@ -247,6 +242,7 @@ public:
         if ( this != &d )
             {
                 _M_pts = d._M_pts;
+                _S_D = d._S_D;
             }
         return *this;
     }
@@ -348,6 +344,28 @@ public:
         return derivate( __pts, mpl::int_<nDim>() );
     }
 
+    /**
+     * \brief derivatives of Dubiner polynomials
+     * the derivatives are computed at the nodes of the lattice
+     *
+     * \arg i index of the derivative (0 : x, 1 : y, 2 : z )
+     */
+    static matrix_type const& d( uint16_type i )
+    {
+        return _S_D[i];
+    }
+
+    /**
+     * \brief derivatives of Dubiner polynomials
+     * the derivatives are computed at the nodes of the lattice
+     *
+     * \arg i index of the derivative (0 : x, 1 : y, 2 : z )
+     */
+    static matrix_type const& derivate( uint16_type i )
+    {
+        return _S_D[i];
+    }
+
     //@}
 
 private:
@@ -415,11 +433,86 @@ private:
     template<typename AE>
     static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> );
 
+    static void initDerivation();
 private:
     reference_convex_type _M_refconvex;
     points_type _M_pts;
 
+    /**
+     * \c true if differentation matrix initialized, \c false
+     * otherwise
+     */
+    static bool _S_has_derivation;
+
+    /**
+     * Derivation matrix
+     * \note construct it only once per dubiner polynomials
+     */
+    static std::vector<matrix_type> _S_D;
+
 }; // class Dubiner
+
+template<uint16_type Dim,
+         uint16_type Degree,
+         typename NormalizationPolicy,
+         typename T,
+         template<class> class StoragePolicy>
+bool Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::_S_has_derivation = false;
+
+template<uint16_type Dim,
+         uint16_type Degree,
+         typename NormalizationPolicy,
+         typename T,
+         template<class> class StoragePolicy>
+std::vector<typename Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type>
+Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::_S_D;
+
+template<uint16_type Dim,
+         uint16_type Degree,
+         typename NormalizationPolicy,
+         typename T,
+         template<class> class StoragePolicy>
+void
+Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::initDerivation()
+{
+#if 0
+    typedef typename traits_type::convex_type convex_type;
+    typedef typename traits_type::reference_convex_type reference_convex_type;
+
+    typedef typename traits_type::diff_pointset_type diff_pointset_type;
+
+    typedef typename traits_type::storage_policy storage_policy;
+    typedef typename traits_type::matrix_type matrix_type;
+    typedef typename traits_type::vector_matrix_type vector_matrix_type;
+    typedef typename traits_type::matrix_node_type matrix_node_type;
+    typedef typename traits_type::points_type points_type;
+    typedef typename traits_type::node_type node_type;
+#endif // 0
+    if ( _S_has_derivation == false )
+        {
+            _S_has_derivation = true;
+
+            reference_convex_type refconvex;
+            // constructor pointset for differentiation only in
+            // the interior(1)
+            diff_pointset_type diff_pts(1);
+            matrix_type A( evaluate( diff_pts.points() ) );
+
+#if 1
+            matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
+            LU<matrix_type> lu(A);
+            matrix_type C = lu.solve( D );
+
+            vector_matrix_type d ( derivate( diff_pts.points() ) );
+            _S_D.resize( d.size() );
+            for ( size_type i = 0; i < d.size(); ++i )
+                {
+                    _S_D[i] = ublas::prod( d[i], C );
+                    glas::clean( _S_D[i] );
+                }
+#endif
+        }
+}
 
 template<uint16_type Dim,
          uint16_type Degree,
