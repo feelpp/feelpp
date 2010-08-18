@@ -178,25 +178,25 @@ public:
             _M_tensor_expr.update( geom, face );
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalij( IndexI const& i, IndexJ const& j ) const
+        evalij( uint16_type i, uint16_type j ) const
         {
             return _M_tensor_expr.evalij( i, j );
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
         {
             value_type res = value_type( 0 );
             for( uint16_type l = 0; l < expr_shape::M; ++l )
                 res += _M_tensor_expr.evalijq( i, j, l, l, q );
             return res;
         }
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q,
+        evalijq( uint16_type i, uint16_type j, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             value_type res = value_type( 0 );
@@ -204,9 +204,9 @@ public:
                 res += _M_tensor_expr.evalijq( i, j, l, l, q, mpl::int_<PatternContext>() );
             return res;
         }
-        template<typename IndexI>
+
         value_type
-        evaliq( IndexI const& i, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
+        evaliq( uint16_type i, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
         {
             value_type res = value_type( 0 );
             for( uint16_type l = 0; l < expr_shape::M; ++l )

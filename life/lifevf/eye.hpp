@@ -184,9 +184,9 @@ public:
         {
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             Life::detail::ignore_unused_variable_warning(i);
             Life::detail::ignore_unused_variable_warning(j);
@@ -194,9 +194,9 @@ public:
             return eval( c1, c2, mpl::bool_<shape::is_scalar>());
         }
 
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q,
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             Life::detail::ignore_unused_variable_warning(i);
@@ -204,9 +204,9 @@ public:
             Life::detail::ignore_unused_variable_warning(q);
             return eval( c1, c2, mpl::bool_<shape::is_scalar>());
         }
-        template<typename IndexI>
+
         value_type
-        evaliq( IndexI const& i, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             Life::detail::ignore_unused_variable_warning(i);
             Life::detail::ignore_unused_variable_warning(q);

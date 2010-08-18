@@ -182,31 +182,31 @@ public:
             M_gmc =  fusion::at_key<key_type>( geom ).get();
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalij( IndexI const& i, IndexJ const& j ) const
+        evalij( uint16_type i, uint16_type j ) const
         {
             return 0;
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& /*i*/, IndexJ const& /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return M_fun( c1, c2, M_gmc->xReal( q ), M_gmc->unitNormal( q ) );
         }
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& /*i*/, IndexJ const& /*j*/, uint16_type c1, uint16_type c2, uint16_type q,
+        evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             return M_fun( c1, c2, M_gmc->xReal( q ), M_gmc->unitNormal( q ) );
         }
 
 
-        template<typename IndexI>
+
         value_type
-        evaliq( IndexI const& i, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return M_fun( c1, c2, M_gmc->xReal( q ), M_gmc->unitNormal( q ) );
         }

@@ -440,28 +440,28 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 {                                                       \
                     Life::detail::ignore_unused_variable_warning(geom); \
                 }                                                       \
-                template<typename IndexI, typename IndexJ>              \
+                              \
                     result_type                                         \
-                    evalijq( IndexI const& i,                           \
-                             IndexJ const& VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), j ), \
+                    evalijq( uint16_type i,                           \
+                             uint16_type VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), j ), \
                              uint16_type c1, uint16_type c2, uint16_type q  ) const \
                 {                                                       \
                     Life::detail::ignore_unused_variable_warning(i);    \
                     return evaliq( VF_OP_SWITCH( BOOST_PP_NOT( VF_OP_TYPE_IS_TRIAL( T ) ),i,j), c1, c2, q ); \
                 }                                                       \
                                                                         \
-                template<typename IndexI, typename IndexJ, int PatternContext> \
+                template<int PatternContext> \
                     result_type                                         \
-                    evalijq( IndexI const& i,                           \
-                             IndexJ const& j,                           \
+                    evalijq( uint16_type i,                           \
+                             uint16_type j,                           \
                              uint16_type c1, uint16_type c2, uint16_type q, \
                              mpl::int_<PatternContext> ) const          \
                 {                                                       \
                     return evalijq( i, j, c1, c2, q );                  \
                 }                                                       \
-                template<typename IndexI>                               \
+                                               \
                     result_type                                         \
-                    evaliq( IndexI const& i, uint16_type c1, uint16_type c2, uint16_type q  ) const \
+                    evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q  ) const \
                 {                                                       \
                     return evaliq_( i, c1, c2, q, mpl::bool_<dim_ok && fe_ok>() ); \
                 }                                                       \
@@ -472,31 +472,31 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     return evalq( c1, c2, q, mpl::int_<shape::rank>() ); \
                 }                                                       \
             private:                                                    \
-                template<typename IndexI>                               \
+                                               \
                     result_type                                         \
-                    evaliq_( IndexI const& /*i*/,                       \
+                    evaliq_( uint16_type /*i*/,                       \
                              uint16_type /*c1*/, uint16_type /*c2*/,    \
                              int /*q*/,                                 \
                              mpl::bool_<false> ) const                  \
                 {                                                       \
                     return 0;                                           \
                 }                                                       \
-                template<typename IndexI>                               \
+                                               \
                     result_type                                         \
-                    evaliq_( IndexI const& i, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true> ) const \
+                    evaliq_( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true> ) const \
                 {                                                       \
                     return evaliq__( i, c1, c2, q, mpl::bool_<true>(), mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
                 }                                                       \
-                template<typename IndexI>                               \
+                                               \
                     result_type                                         \
-                    evaliq__( IndexI const& /*i*/, uint16_type c1, uint16_type c2, uint16_type q, \
+                    evaliq__( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q, \
                               mpl::bool_<true>, mpl::bool_<true> ) const \
                 {                                                       \
                     return evalq( c1, c2, q, mpl::int_<shape::rank>() ); \
                 }                                                       \
-                template<typename IndexI>                               \
+                                               \
                     result_type                                         \
-                    evaliq__( IndexI const& i, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<false> ) const \
+                    evaliq__( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<false> ) const \
                 {                                                       \
                     return  _M_fec->VF_OPERATOR_TERM( O )( i, c1, c2, q ); \
                 }                                                       \

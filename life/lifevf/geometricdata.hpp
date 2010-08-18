@@ -231,21 +231,21 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
                 /*BOOST_STATIC_ASSERT( dim_ok );*/                      \
                 update( geom );                                         \
             }                                                           \
-            template<typename AnyIndexI,typename AnyIndexJ>             \
+                                                                        \
                 value_type                                              \
-                evalijq( AnyIndexI const& /*i*/, AnyIndexJ const& /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const \
+                evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const \
             {                                                           \
                 return evalq_( c1, c2, q, mpl::bool_<(VF_GD_DIM(O) < gmc_type::NDim)>(), mpl::int_<100>() ); \
             }                                                           \
-            template<typename AnyIndexI,typename AnyIndexJ, int PatternContext> \
+                template<int PatternContext>                            \
                 value_type                                              \
-                evalijq( AnyIndexI const& /*i*/, AnyIndexJ const& /*j*/, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext> ) const \
+                evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext> ) const \
             {                                                           \
                 return evalq_( c1, c2, q, mpl::bool_<(VF_GD_DIM(O) < gmc_type::NDim)>(), mpl::int_<100>() ); \
             }                                                           \
-            template<typename AnyIndexI>                                \
+                                                                        \
                 value_type                                              \
-                evaliq( AnyIndexI const& /*i*/, uint16_type c1, uint16_type c2, uint16_type q ) const \
+                evaliq( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q ) const \
             {                                                           \
                 return evalq_( c1, c2, q, mpl::bool_<(VF_GD_DIM(O) < gmc_type::NDim)>(), mpl::int_<100>() ); \
             }                                                           \

@@ -171,23 +171,23 @@ public:
             _M_tensor_expr.update( geom );
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalij( IndexI const& i, IndexJ const& j ) const
+        evalij( uint16_type i, uint16_type j ) const
         {
             return _M_tensor_expr.evalij( i, j );
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return _M_tensor_expr.evalijq( i, j, c1, c2, q );
         }
 
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q,
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             return evalijq( i, j, c1, c2, q, mpl::bool_<PatternContext == pattern>() );
@@ -198,15 +198,15 @@ public:
         /*
          * evalijq
          */
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true> ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true> ) const
         {
             return _M_tensor_expr.evalijq( i, j, c1, c2, q );
         }
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false> ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false> ) const
         {
             return value_type(0.0);
         }
@@ -369,23 +369,23 @@ public:
             _M_tensor_expr.update( geom );
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalij( IndexI const& i, IndexJ const& j ) const
+        evalij( uint16_type i, uint16_type j ) const
         {
             return _M_tensor_expr.evalij( i, j );
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return _M_tensor_expr.evalijq( i, j, c1, c2, q );
         }
 
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q,
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             return evalijq( i, j, c1, c2, q, mpl::bool_<PatternContext == pattern>() );
@@ -396,15 +396,15 @@ public:
         /*
          * evalijq
          */
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true> ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true> ) const
         {
             return _M_tensor_expr.evalijq( i, j, c1, c2, q );
         }
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false> ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false> ) const
         {
             return value_type(0.0);
         }
