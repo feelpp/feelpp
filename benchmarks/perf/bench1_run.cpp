@@ -41,6 +41,8 @@ Bench1::Bench1( int argc,
 {
 }
 
+Bench1::~Bench1()
+{}
 
 void
 Bench1::run()

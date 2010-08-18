@@ -103,13 +103,12 @@ public:
      */
     //@{
 
-    Bench1( int argc,
-            char** argv,
-            AboutData const& ad,
-            po::options_description const& od );
+    LIFE_DONT_INLINE Bench1( int argc,
+                             char** argv,
+                             AboutData const& ad,
+                             po::options_description const& od );
 
-    ~Bench1()
-    {}
+    LIFE_DONT_INLINE ~Bench1();
 
     //@}
 
@@ -148,32 +147,36 @@ protected:
 
 private:
 
-    template<typename FSType> void R( boost::shared_ptr<FSType> const& Xh );
-    template<typename FSType> void D( boost::shared_ptr<FSType> const& Xh );
-    template<typename FSType> void DR( boost::shared_ptr<FSType> const& Xh );
-    template<typename FSType> void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1> );
-    template<typename FSType> void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2> );
-    template<typename FSType> void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3> );
+    template<typename FSType> LIFE_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<1> );
+    template<typename FSType> LIFE_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<2> );
+    template<typename FSType> LIFE_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<3> );
+    template<typename FSType> LIFE_DONT_INLINE void R( boost::shared_ptr<FSType> const& Xh );
+    template<typename FSType> LIFE_DONT_INLINE void D( boost::shared_ptr<FSType> const& Xh );
+    template<typename FSType> LIFE_DONT_INLINE void DR( boost::shared_ptr<FSType> const& Xh );
+
+    template<typename FSType> LIFE_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1> );
+    template<typename FSType> LIFE_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2> );
+    template<typename FSType> LIFE_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3> );
     /**
      * 1D performance test
      */
-    void run1d();
+    LIFE_DONT_INLINE void run1d();
 
     /**
      * 2D performance test
      */
-    void run2d();
+    LIFE_DONT_INLINE void run2d();
 
     /**
      * 3D performance test
      */
-    void run3d();
+    LIFE_DONT_INLINE void run3d();
 
     /**
      * dimension independant code
      */
     template<typename MeshType, int Order>
-    void bench1( boost::shared_ptr<MeshType> & mesh );
+    LIFE_DONT_INLINE void bench1( boost::shared_ptr<MeshType> & mesh );
 
 private:
 
