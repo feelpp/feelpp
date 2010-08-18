@@ -61,6 +61,22 @@ typedef Mesh<Simplex<1,1,1> > meshs11_t;
 const bool meshs11e = Partitioner<meshs11_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs11_t> );
 const bool meshs11g = Partitioner<meshs11_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs11_t> );
 
+typedef Mesh<Simplex<1,2,1> > meshs12_t;
+const bool meshs12e = Partitioner<meshs12_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs12_t> );
+const bool meshs12g = Partitioner<meshs12_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs12_t> );
+
+typedef Mesh<Simplex<1,3,1> > meshs13_t;
+const bool meshs13e = Partitioner<meshs13_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs13_t> );
+const bool meshs13g = Partitioner<meshs13_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs13_t> );
+
+typedef Mesh<Simplex<1,4,1> > meshs14_t;
+const bool meshs14e = Partitioner<meshs14_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs14_t> );
+const bool meshs14g = Partitioner<meshs14_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs14_t> );
+
+typedef Mesh<Simplex<1,5,1> > meshs15_t;
+const bool meshs15e = Partitioner<meshs15_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs15_t> );
+const bool meshs15g = Partitioner<meshs15_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs15_t> );
+
 typedef Mesh<Simplex<1,1,2> > meshs112_t;
 const bool meshs112e = Partitioner<meshs112_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs112_t> );
 const bool meshs112g = Partitioner<meshs112_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs112_t> );
