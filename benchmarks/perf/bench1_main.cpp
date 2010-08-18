@@ -34,13 +34,13 @@ AboutData
 makeAbout()
 {
     AboutData about( "bench1" ,
-                           "bench1" ,
-                           "0.1",
-                           "assembly performance",
-                           AboutData::License_LGPL,
-                           "Copyright (c) 2005,2006 EPFL"
-                           "Copyright (c) 2007,2009,2010 Université Joseph Fourier (Grenoble 1)"
-                           );
+                     "bench1" ,
+                     "0.2",
+                     "assembly performance",
+                     AboutData::License_LGPL,
+                     "Copyright (c) 2005,2006 EPFL"
+                     "Copyright (c) 2006-2010 Université Joseph Fourier (Grenoble 1)"
+        );
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -54,6 +54,7 @@ makeOptions()
     desc.add_options()
         ("dim", po::value<int>()->default_value( 1 ), "dimension (1,2,3)")
         ("hsize", po::value<double>()->default_value( 0.1 ), "element size")
+        ("shape", po::value<std::string>()->default_value( "simplex" ), "type of domain shape: simplex, hypercube ellipsoid")
         ;
     return desc.add( life_options() );
 }

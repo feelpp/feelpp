@@ -33,18 +33,20 @@ namespace Life
 void
 Bench1::run3d()
 {
-#if 1
-    using namespace Life;
+    const int Dim = 3;
+    typedef Mesh<Simplex<Dim> > mesh_type;
+    boost::shared_ptr<mesh_type> aMesh;
 
-    typedef Mesh<Simplex<3> > mesh_type;
-    boost::shared_ptr<mesh_type> aMesh( new mesh_type );
+    std::string shape = vm()["shape"].as<std::string>();
 
-    GmshTensorizedDomain<3,1,3,Simplex> td;
-    td.setCharacteristicLength( meshSize );
-    std::string fname = td.generate( "bench13d" );
 
-    ImporterGmsh<mesh_type> import( fname );
-    aMesh->accept( import );
+    aMesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                         _usenames=true,
+                                         _shape=shape,
+                                         _dim=Dim,
+                                         _h=meshSize ),
+                           _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 
     Log() << "run3d starts" << "\n";
     bench1<mesh_type, 1>( aMesh );
@@ -54,6 +56,6 @@ Bench1::run3d()
     bench1<mesh_type, 5>( aMesh );
     bench1<mesh_type, 6>( aMesh );
     Log() << "run3d ends" << "\n";
-#endif
+
 }
 }

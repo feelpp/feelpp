@@ -33,17 +33,20 @@ namespace Life
 void
 Bench1::run1d()
 {
-    using namespace Life;
+    const int Dim = 1;
+    typedef Mesh<Simplex<Dim> > mesh_type;
+    boost::shared_ptr<mesh_type> aMesh;
 
-    typedef Mesh<Simplex<1> > mesh_type;
-    boost::shared_ptr<mesh_type> aMesh( new mesh_type );
+    std::string shape = vm()["shape"].as<std::string>();
 
-    GmshTensorizedDomain<1,1,1,Simplex> td;
-    td.setCharacteristicLength( meshSize );
-    std::string fname = td.generate( "bench11d" );
 
-    ImporterGmsh<mesh_type> import( fname );
-    aMesh->accept( import );
+    aMesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                         _usenames=true,
+                                         _shape=shape,
+                                         _dim=Dim,
+                                         _h=meshSize ),
+                           _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 
 
     Log() << "run2d starts" << "\n";
