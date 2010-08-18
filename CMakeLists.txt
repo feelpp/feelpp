@@ -23,9 +23,9 @@
 #
 cmake_minimum_required (VERSION 2.6)
 
-SET(CMAKE_CXX_FLAGS "-std=c++0x" CACHE STRING "Default flags" FORCE)
-SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++0x -g" CACHE STRING "Debug flags" FORCE)
-SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -O2 -DNDEBUG" CACHE STRING "Release flags" FORCE)
+# SET(CMAKE_CXX_FLAGS "-std=c++0x" CACHE STRING "Default flags" FORCE)
+#SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++0x -g" CACHE STRING "Debug flags" FORCE)
+#SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -O2 -DNDEBUG" CACHE STRING "Release flags" FORCE)
 
 
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS)
@@ -90,6 +90,11 @@ IF ( ENABLE_INSTANTIATION_MODE )
   SET( LIFE_INSTANTIATION_MODE 1 )
 ENDIF()
 
+OPTION(LIFE_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
+if ( LIFE_BENCHMARK_FLAGS )
+  set(CMAKE_BUILD_TYPE Release )
+  SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -O3 -mssse3 -DNDEBUG --param max-inline-recursive-depth=32 --param max-gcse-passes=3 --param max-gcse-memory=8000 --param max-inline-insns-single=2000" CACHE STRING "Release flags" FORCE)
+endif()
 
 
 #INCLUDE(PackageArchGlobalMacros)
