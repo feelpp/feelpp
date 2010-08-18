@@ -119,35 +119,35 @@ public:
             _M_right.update( geom );
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        operator()( IndexI const& i,
-                    IndexJ const& j,
+        operator()( uint16_type i,
+                    uint16_type j,
                     int q ) const
         {
             return this->operator()( i, j, q, mpl::bool_<do_reduction>() );
         }
 
     private:
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        operator()( IndexI const& i,
-                    IndexJ const& j,
+        operator()( uint16_type i,
+                    uint16_type j,
                     int q,
                     mpl::bool_<true> ) const
         {
             value_type res( 0 );
 #if 0
             std::cout << "[dot] rank = "<< rank << " nc=" << return_value_type::nComponentsLast << "\n"
-                      << "[dot] ranki= "<< IndexI::rank << " rankj = "<< IndexJ::rank << "\n";
+                      << "[dot] ranki= "<< uint16_type::rank << " rankj = "<< uint16_type::rank << "\n";
 #endif
             typename Basis_i_t::template Index<rank> i_up ( i );
             typename Basis_i_t::template Index<rank> j_up ( j );
 
             // fail for g++ 4.2
 #if 0
-            BOOST_MPL_ASSERT_MSG( rank == IndexI::rank+1, INVALID_INDEX_RANK, (mpl::int_<IndexI::rank>, mpl::int_<rank>) );
-            BOOST_MPL_ASSERT_MSG( rank == IndexJ::rank+1, INVALID_INDEX_RANK, (mpl::int_<IndexJ::rank>, mpl::int_<rank>) );
+            BOOST_MPL_ASSERT_MSG( rank == uint16_type::rank+1, INVALID_INDEX_RANK, (mpl::int_<uint16_type::rank>, mpl::int_<rank>) );
+            BOOST_MPL_ASSERT_MSG( rank == uint16_type::rank+1, INVALID_INDEX_RANK, (mpl::int_<uint16_type::rank>, mpl::int_<rank>) );
 #endif
             for( int c = 0; c < return_value_type::nComponentsLast; ++c )
                 {
@@ -157,10 +157,10 @@ public:
                 }
             return res;
         }
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        operator()( IndexI const& i,
-                    IndexJ const& j,
+        operator()( uint16_type i,
+                    uint16_type j,
                     int q,
                     mpl::bool_<false> ) const
         {

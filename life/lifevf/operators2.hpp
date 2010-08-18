@@ -115,16 +115,16 @@ public:
             // no need to update in case of exact integration
 
         }
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        operator()( IndexI const& i, IndexJ const& j ) const
+        operator()( uint16_type i, uint16_type j ) const
         {
             return _M_mat( i, j );
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        operator()( IndexI const& i, IndexJ const& j, int q ) const
+        operator()( uint16_type i, uint16_type j, int q ) const
         {
             return _M_mat( i, j );
             //return 0;//_M_expr.quadratureMass( q, i, j );

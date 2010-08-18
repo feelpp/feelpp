@@ -220,22 +220,22 @@ public:
                             _M_loc[c1][c2][q] = _M_expr.evalq( c1, c2, q );
                         }
         }
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& /*i*/, IndexJ const& /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return evalq( c1, c2, q );
         }
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& /*i*/, IndexJ const& /*j*/, uint16_type c1, uint16_type c2, uint16_type q,
+        evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             return evalq( c1, c2, q );
         }
-        template<typename IndexI>
+
         value_type
-        evaliq( IndexI const& /*i*/, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evaliq( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return evalq( c1, c2, q );
         }

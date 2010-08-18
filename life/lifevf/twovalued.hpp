@@ -222,31 +222,31 @@ public:
 
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalij( IndexI const& i, IndexJ const& j ) const
+        evalij( uint16_type i, uint16_type j ) const
         {
             return _M_tensor_expr_left.evalij( i, j ) + _M_tensor_expr_right.evalij( i, j );
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return _M_tensor_expr_left.evalq( c1, c2, q ) + _M_tensor_expr_right.evalq( c1, c2, q );
         }
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q,
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             return _M_tensor_expr_left.evalq( c1, c2, q, mpl::int_<PatternContext>() ) +
                 _M_tensor_expr_right.evalq( c1, c2, q, mpl::int_<PatternContext>() );
         }
 
-        template<typename IndexI>
+
         value_type
-        evaliq( IndexI const& i, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             //Debug( 5051 ) << "sumv_left= " << _M_tensor_expr_left.evalq( q, c1, c2 ) << "\n"
             //<< "sumv_right= " << _M_tensor_expr_right.evalq( q, c1, c2 ) << "\n";
@@ -465,44 +465,44 @@ public:
 
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalij( IndexI const& i, IndexJ const& j ) const
+        evalij( uint16_type i, uint16_type j ) const
         {
             return _M_tensor_expr.evalij( i, j );
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             Life::detail::ignore_unused_variable_warning(j);
             return evaliq( i, c1, c2, q, fusion::result_of::has_key<Basis_i_t, detail::gmc<Side> >() );
         }
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q,
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             Life::detail::ignore_unused_variable_warning(j);
             return evaliq( i, c1, c2, q, fusion::result_of::has_key<Basis_i_t, detail::gmc<Side> >() );
         }
 
-        template<typename IndexI>
+
         value_type
-        evaliq( IndexI const& i, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return evaliq( i, c1, c2, q, fusion::result_of::has_key<Basis_i_t, detail::gmc<Side> >() );
         }
-        template<typename IndexI>
+
         value_type
-        evaliq( IndexI const& i, uint16_type c1, uint16_type c2, uint16_type q, mpl::true_ ) const
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::true_ ) const
         {
             return _M_tensor_expr.evaliq( i, c1, c2, q );
         }
-        template<typename IndexI>
+
         value_type
-        evaliq( IndexI const& i, uint16_type c1, uint16_type c2, uint16_type q, mpl::false_ ) const
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::false_ ) const
         {
             Life::detail::ignore_unused_variable_warning(i);
             Life::detail::ignore_unused_variable_warning(c1);
@@ -698,36 +698,36 @@ public:
             Life::detail::ignore_unused_variable_warning(feu);
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalij( IndexI const& i, IndexJ const& j ) const
+        evalij( uint16_type i, uint16_type j ) const
         {
             return _M_tensor_expr.evalij( i, j );
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return evalijq( i, j, c1,c2, q, fusion::result_of::has_key<Basis_j_t, detail::gmc<Side> >() );
         }
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q,
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             return evalijq( i, j, c1,c2, q, mpl::int_<PatternContext>(), fusion::result_of::has_key<Basis_j_t, detail::gmc<Side> >() );
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q, mpl::true_ ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::true_ ) const
         {
             return _M_tensor_expr.evalijq( i, j, c1, c2, q );
         }
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q, mpl::false_ ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::false_ ) const
         {
             Life::detail::ignore_unused_variable_warning(i);
             Life::detail::ignore_unused_variable_warning(j);
@@ -736,16 +736,16 @@ public:
             Life::detail::ignore_unused_variable_warning(q);
             return value_type( 0 );
         }
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q,
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext>, mpl::true_ ) const
         {
             return _M_tensor_expr.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() );
         }
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q,
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext>, mpl::false_ ) const
         {
             Life::detail::ignore_unused_variable_warning(i);
@@ -1003,32 +1003,32 @@ public:
 
 
         }
-         template<typename IndexI, typename IndexJ>
+
         value_type
-        evalij( IndexI const& i, IndexJ const& j ) const
+        evalij( uint16_type i, uint16_type j ) const
         {
             return func( _M_tensor_expr_left.evalij( i, j ), _M_tensor_expr_right.evalij( i, j ) );
         }
 
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return func( _M_tensor_expr_left.evalijq( i, j, c1, c2, q ),
                          _M_tensor_expr_right.evalijq( i, j, c1, c2, q ) );
         }
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q,
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             return func( _M_tensor_expr_left.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() ),
                          _M_tensor_expr_right.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() ) );
         }
 
-        template<typename IndexI>
+
         value_type
-        evaliq( IndexI const& i, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return func( _M_tensor_expr_left.evaliq( i, c1, c2, q ),
                          _M_tensor_expr_right.evaliq( i, c1, c2, q ) );

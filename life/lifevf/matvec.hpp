@@ -403,7 +403,7 @@ struct init_expression
     const IM_t& M_im;
 };
 
-template<typename IndexI, typename IndexJ, typename T>
+template<typename T>
 struct evaluate_expression_gij
 {
     template<typename Sig>
@@ -411,14 +411,14 @@ struct evaluate_expression_gij
 
     template<typename ExprT, typename V>
 #if BOOST_VERSION < 104200
-    struct result<evaluate_expression_gij<IndexI,IndexJ,T>(ExprT,V)>
+    struct result<evaluate_expression_gij<T>(ExprT,V)>
 #else
-    struct result<evaluate_expression_gij<IndexI,IndexJ,T>(V,ExprT)>
+    struct result<evaluate_expression_gij<T>(V,ExprT)>
 #endif
         :
         boost::remove_reference<V>
     {};
-    evaluate_expression_gij( IndexI const& indexi , IndexJ const& indexj, uint16_type c1, uint16_type q )
+    evaluate_expression_gij( uint16_type indexi , uint16_type indexj, uint16_type c1, uint16_type q )
         :
         M_indexi( indexi ),
         M_indexj( indexj ),
@@ -429,7 +429,7 @@ struct evaluate_expression_gij
         M_current( 0 )
     {}
 
-    evaluate_expression_gij( int n, IndexI const& indexi, IndexJ const& indexj, uint16_type c1, uint16_type c2, uint16_type q )
+    evaluate_expression_gij( int n, uint16_type indexi, uint16_type indexj, uint16_type c1, uint16_type c2, uint16_type q )
         :
         M_indexi( indexi ),
         M_indexj( indexj ),
@@ -456,8 +456,8 @@ struct evaluate_expression_gij
         ++M_current;
         return ret;
     }
-    const IndexI& M_indexi;
-    const IndexJ& M_indexj;
+    const uint16_type& M_indexi;
+    const uint16_type& M_indexj;
     const uint16_type M_c1;
     const uint16_type M_c2;
     const uint16_type M_q;
@@ -465,7 +465,7 @@ struct evaluate_expression_gij
     mutable int M_current;
 
 };
-template<typename IndexI,typename T=double>
+template<typename T=double>
 struct evaluate_expression_gi
 {
     template<typename Sig>
@@ -473,15 +473,15 @@ struct evaluate_expression_gi
 
     template<typename ExprT,typename V>
 #if BOOST_VERSION < 104200
-    struct result<evaluate_expression_gi<IndexI,T>(ExprT,V)>
+    struct result<evaluate_expression_gi<T>(ExprT,V)>
 #else
-    struct result<evaluate_expression_gi<IndexI,T>(V,ExprT)>
+    struct result<evaluate_expression_gi<T>(V,ExprT)>
 #endif
         :
         boost::remove_reference<V>
     {};
 
-    evaluate_expression_gi( IndexI const& indexi, uint16_type c1, uint16_type q )
+    evaluate_expression_gi( uint16_type indexi, uint16_type c1, uint16_type q )
         :
         M_indexi( indexi ),
         M_c1( c1 ),
@@ -491,7 +491,7 @@ struct evaluate_expression_gi
         M_current( 0 )
     {}
 
-    evaluate_expression_gi( int n, IndexI const& indexi, uint16_type c1, uint16_type c2, uint16_type q )
+    evaluate_expression_gi( int n, uint16_type indexi, uint16_type c1, uint16_type c2, uint16_type q )
         :
         M_indexi( indexi ),
         M_c1( c1 ),
@@ -517,7 +517,7 @@ struct evaluate_expression_gi
         return ret;
 
     }
-    const IndexI& M_indexi;
+    const uint16_type& M_indexi;
     const uint16_type M_c1;
     const uint16_type M_c2;
     const uint16_type M_q;
@@ -742,26 +742,26 @@ public:
         {
             fusion::for_each( M_expr, detail::update_expression_face_g<Geo_t>( geom, face ) );
         }
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type(0), detail::evaluate_expression_gij<IndexI, IndexJ,value_type>( i, j, c1, q  ) );
+            return fusion::accumulate( M_expr, value_type(0), detail::evaluate_expression_gij<value_type>( i, j, c1, q  ) );
         }
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type /*c2*/, uint16_type q,
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type /*c2*/, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             return fusion::accumulate( M_expr, value_type(0),
-                                       detail::evaluate_expression_gij<IndexI, IndexJ,value_type>( i, j, c1, q  ) );
+                                       detail::evaluate_expression_gij<value_type>( i, j, c1, q  ) );
 
         }
-        template<typename IndexI>
+
         value_type
-        evaliq( IndexI const& i, uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
+        evaliq( uint16_type i, uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type(0), detail::evaluate_expression_gi<IndexI,value_type>( i, c1, q ) );
+            return fusion::accumulate( M_expr, value_type(0), detail::evaluate_expression_gi<value_type>( i, c1, q ) );
         }
         value_type
         evalq( uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
@@ -998,29 +998,29 @@ public:
         {
             fusion::for_each( M_expr, detail::update_expression_face_g<Geo_t>( geom, face ) );
         }
-        template<typename IndexI, typename IndexJ>
+
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return fusion::accumulate( M_expr, value_type(0),
-                                       detail::evaluate_expression_gij<IndexI,IndexJ,value_type>( expression_type::matrix_size2,
+                                       detail::evaluate_expression_gij<value_type>( expression_type::matrix_size2,
                                                                                        i, j, c1, c2, q ) );
         }
-        template<typename IndexI, typename IndexJ, int PatternContext>
+        template<int PatternContext>
         value_type
-        evalijq( IndexI const& i, IndexJ const& j, uint16_type c1, uint16_type c2, uint16_type q,
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             return fusion::accumulate( M_expr, value_type(0),
-                                       detail::evaluate_expression_gij<IndexI,IndexJ,value_type>( expression_type::matrix_size2,
+                                       detail::evaluate_expression_gij<value_type>( expression_type::matrix_size2,
                                                                                        i, j, c1, c2, q ) );
         }
-        template<typename IndexI>
+
         value_type
-        evaliq( IndexI const& i, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return fusion::accumulate( M_expr, value_type(0),
-                                       detail::evaluate_expression_gi<IndexI,value_type>( expression_type::matrix_size2, i, c1, c2, q ) );
+                                       detail::evaluate_expression_gi<value_type>( expression_type::matrix_size2, i, c1, c2, q ) );
 
         }
         value_type
