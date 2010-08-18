@@ -35,7 +35,7 @@
     typename _Q<Qorder>::template apply<FSType::fe_type::nDim,double,Simplex>::type quad; \
     timer.restart();                                                    \
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  TheExpr );      \
-    ofs << std::setw(20) << str1 << "_" <<  ::boost::algorithm::replace_all_copy( std::string(str), " ", "_" ) << " " \
+    ofs << std::setw(20) << std::string(str1)+"_"+::boost::algorithm::replace_all_copy( std::string(str), " ", "_" ) << " " \
         << std::setw(8) << std::setprecision( 3 ) << timer.elapsed() << " " \
         << std::setw(5) << Xh->mesh()->numElements() << " "             \
         << std::setw(5) << Xh->nLocalDof() << " "                       \
@@ -50,7 +50,7 @@
     typename _Q<Qorder>::template apply<FSType::fe_type::nDim,double,Simplex>::type quad; \
     timer.restart();                                                \
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()), _Q<Qorder>(),  TheExpr ); \
-    ofs << std::setw(20) << str1 << "_" <<  ::boost::algorithm::replace_all_copy( std::string(str), " ", "_" ) << " " \
+    ofs << std::setw(20) << std::string(str1)+"_"+::boost::algorithm::replace_all_copy( std::string(str), " ", "_" ) << " " \
         << std::setw(8) << std::setprecision( 4 ) << timer.elapsed() << " " \
         << std::setw(5) << Xh->mesh()->numElements() << " "             \
         << std::setw(5) << Xh->nLocalDof() << " "                       \
@@ -82,7 +82,7 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh  )
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
-    std::ofstream ofs( (boost::format( "perf-R-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
+    std::ofstream ofs( (boost::format( "perf-R-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
     ofs.precision( 4 );
     ofs.width( 6 );
     DO_BENCH( idt(u)*id(v), "R", "const" );
@@ -124,7 +124,7 @@ Bench1::D( boost::shared_ptr<FSType> const& Xh  )
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
-    std::ofstream ofs( (boost::format( "perf-D-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
+    std::ofstream ofs( (boost::format( "perf-D-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
     ofs.precision( 4 );
     ofs.width( 6 );
     DO_BENCH( gradt(u)*trans(grad(v)), "D", "const" );
@@ -162,19 +162,19 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
-    std::ofstream ofs( (boost::format( "perf-A-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
+    std::ofstream ofs( (boost::format( "perf-A-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
     ofs.precision( 4 );
     ofs.width( 6 );
 
-    DO_BENCH( (gradt(u)*vec(constant(1.0)))*id(v), "ADR", "const" );
-    DO_BENCH( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "ADR", "(xyz)" );
-    DO_BENCH( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "ADR", "val(xyz)" );
+    DO_BENCH( (gradt(u)*vec(constant(1.0)))*id(v), "A", "const" );
+    DO_BENCH( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "A", "(xyz)" );
+    DO_BENCH( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "A", "val(xyz)" );
     DO_BENCH2( (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz())))*id(v),
                (gradt(u)*vec(constant(1.0)))*id(v),
-               "ADR", "(xyz)(const)" );
+               "A", "(xyz)(const)" );
     DO_BENCH2( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v),
                (gradt(u)*vec(constant(1.0)))*id(v),
-               "ADR", "val(xyz)(const)" );
+               "A", "val(xyz)(const)" );
 
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
@@ -204,19 +204,19 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
-    std::ofstream ofs( (boost::format( "perf-A-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
+    std::ofstream ofs( (boost::format( "perf-A-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
     ofs.precision( 4 );
     ofs.width( 6 );
 
-    DO_BENCH( (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v), "ADR", "const" );
-    DO_BENCH( (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz()),((Px()^(3))+(Py()^(2)))))*id(v), "ADR", "(xyz)" );
-    DO_BENCH( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v), "ADR", "val(xyz)" );
+    DO_BENCH( (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v), "A", "const" );
+    DO_BENCH( (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz()),((Px()^(3))+(Py()^(2)))))*id(v), "A", "(xyz)" );
+    DO_BENCH( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v), "A", "val(xyz)" );
     DO_BENCH2( (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz()),((Px()^(3))+(Py()^(2)))))*id(v),
                (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v),
-               "ADR", "(xyz)(const)" );
+               "A", "(xyz)(const)" );
     DO_BENCH2( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v),
                (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v),
-               "ADR", "val(xyz)(const)" );
+               "A", "val(xyz)(const)" );
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
@@ -245,19 +245,19 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
-    std::ofstream ofs( (boost::format( "perf-A-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
+    std::ofstream ofs( (boost::format( "perf-A-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
     ofs.precision( 4 );
     ofs.width( 6 );
 
-    DO_BENCH( (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v), "ADR", "const" );
-    DO_BENCH( (gradt(u)*vec(((Px()^(3)+(Py()^(2)))*Pz()),((Px()^(3))+(Py()^(2))),(Px()^(3))))*id(v), "ADR", "(xyz)" );
-    DO_BENCH( (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v), "ADR", "val(xyz)" );
+    DO_BENCH( (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v), "A", "const" );
+    DO_BENCH( (gradt(u)*vec(((Px()^(3)+(Py()^(2)))*Pz()),((Px()^(3))+(Py()^(2))),(Px()^(3))))*id(v), "A", "(xyz)" );
+    DO_BENCH( (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v), "A", "val(xyz)" );
     DO_BENCH2( (gradt(u)*vec(((Px()^(3)+(Py()^(2)))*Pz()),((Px()^(3))+(Py()^(2))),(Px()^(3))))*id(v),
                (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v),
-               "ADR", "(xyz)(const)" );
+               "A", "(xyz)(const)" );
     DO_BENCH2( (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v),
                (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v),
-               "ADR", "val(xyz)(const)" );
+               "A", "val(xyz)(const)" );
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
@@ -278,7 +278,7 @@ Bench1::DR( boost::shared_ptr<FSType> const& Xh )
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
-    std::ofstream ofs( (boost::format( "perf-DR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
+    std::ofstream ofs( (boost::format( "perf-DR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
     ofs.precision( 4 );
     ofs.width( 6 );
     DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v ), "DR", "const" );
@@ -309,7 +309,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
-    std::ofstream ofs( (boost::format( "perf-ADR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
+    std::ofstream ofs( (boost::format( "perf-ADR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
     ofs.precision( 4 );
     ofs.width( 6 );
     DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v )+(gradt(u)*vec(constant(1.0)))*id(v), "ADR", "const" );
@@ -344,7 +344,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
-    std::ofstream ofs( (boost::format( "perf-ADR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
+    std::ofstream ofs( (boost::format( "perf-ADR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
     ofs.precision( 4 );
     ofs.width( 6 );
     DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v ) +
@@ -382,7 +382,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
-    std::ofstream ofs( (boost::format( "perf-ADR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
+    std::ofstream ofs( (boost::format( "perf-ADR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
     ofs.precision( 4 );
     ofs.width( 6 );
     DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v ) +
