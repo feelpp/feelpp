@@ -261,7 +261,7 @@ add_subdirectory(doc EXCLUDE_FROM_ALL)
 
 # include(CTest)
 # enable_testing() # must be called from the root CMakeLists, see man page
-# include(EigenTesting)
+include(EigenTesting)
 # ei_init_testing()
 
 # if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
