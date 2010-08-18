@@ -27,30 +27,31 @@
    \date 2010-06-14
  */
 #include <bench1.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
-#define DO_BENCH( TheExpr, str  )                                   \
+#define DO_BENCH( TheExpr, str1, str  )                             \
     {                                                               \
     const int Qorder = ExpressionOrder<decltype(TheExpr)>::value;     \
     typename _Q<Qorder>::template apply<FSType::fe_type::nDim,double,Simplex>::type quad; \
     timer.restart();                                                    \
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  TheExpr );      \
-    ofs << std::setw(20) <<  str << " "                                 \
-        << std::setw(5) << std::setprecision( 3 ) << timer.elapsed() << " " \
+    ofs << std::setw(20) << str1 << "_" <<  ::boost::algorithm::replace_all_copy( std::string(str), " ", "_" ) << " " \
+        << std::setw(8) << std::setprecision( 3 ) << timer.elapsed() << " " \
         << std::setw(5) << Xh->mesh()->numElements() << " "             \
         << std::setw(5) << Xh->nLocalDof() << " "                       \
-        << std::setw(5) << Qorder << " "                                            \
+        << std::setw(5) << Qorder << " "                                \
         << std::setw(5) << quad.nPoints() << std::endl;                 \
     }
 /**/
 
-#define DO_BENCH2( TheExpr, TheExprQ, str  )                        \
+#define DO_BENCH2( TheExpr, TheExprQ, str1, str  )                  \
     {                                                               \
     const int Qorder = ExpressionOrder<decltype(TheExprQ)>::value;     \
     typename _Q<Qorder>::template apply<FSType::fe_type::nDim,double,Simplex>::type quad; \
     timer.restart();                                                \
     form2(Xh,Xh,M) += integrate( elements(Xh->mesh()), _Q<Qorder>(),  TheExpr ); \
-    ofs << std::setw(20) <<  str << " "                                 \
-        << std::setw(5) << std::setprecision( 4 ) << timer.elapsed() << " " \
+    ofs << std::setw(20) << str1 << "_" <<  ::boost::algorithm::replace_all_copy( std::string(str), " ", "_" ) << " " \
+        << std::setw(8) << std::setprecision( 4 ) << timer.elapsed() << " " \
         << std::setw(5) << Xh->mesh()->numElements() << " "             \
         << std::setw(5) << Xh->nLocalDof() << " "                       \
         << std::setw(5) << Qorder << " "                                \
@@ -84,25 +85,25 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh  )
     std::ofstream ofs( (boost::format( "perf-R-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
     ofs.precision( 4 );
     ofs.width( 6 );
-    DO_BENCH( idt(u)*id(v), "const" );
-    DO_BENCH( idv(w)*idt(u)*id(v), "p0" );
-    DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v), "xyz" );
+    DO_BENCH( idt(u)*id(v), "R", "const" );
+    DO_BENCH( idv(w)*idt(u)*id(v), "R", "p0" );
+    DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v), "R", "xyz" );
     DO_BENCH2( ((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v),
                idt(u)*id(v),
-               "xyz(const)" );
-    DO_BENCH( idv(w)*((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v), "p0 xyz" );
+               "R", "xyz(const)" );
+    DO_BENCH( idv(w)*((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v), "R", "p0 xyz" );
     DO_BENCH2( idv(w)*((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v),
                idt(u)*id(v),
-               "p0 xyz(const)" );
-    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v), "val(xyz)" );
+               "R", "p0 xyz(const)" );
+    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v), "R", "val(xyz)" );
     DO_BENCH2( val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v),
                idt(u)*id(v),
-               "val(xyz)(const)" );
+               "R", "val(xyz)(const)" );
     DO_BENCH( idv(w)*val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v),
-              "p0 val(xyz)" );
+              "R", "p0 val(xyz)" );
     DO_BENCH2( idv(w)*val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v),
                idt(u)*id(v),
-              "p0 val(xyz)(const)" );
+               "R", "p0 val(xyz)(const)" );
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
@@ -126,14 +127,14 @@ Bench1::D( boost::shared_ptr<FSType> const& Xh  )
     std::ofstream ofs( (boost::format( "perf-D-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
     ofs.precision( 4 );
     ofs.width( 6 );
-    DO_BENCH( gradt(u)*trans(grad(v)), "const" );
-    DO_BENCH2( gradt(u)*trans(grad(v)), idt(u)*id(v), "const (R)" );
-    DO_BENCH( dxt(u)*dx(v)+dyt(u)*dy(v), "const2" );
-    DO_BENCH( dxt(u)*dx(v)+dyt(u)*dy(v)+dzt(u)*dz(v), "const3" );
-    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*gradt(u)*trans(grad(v)), "val(xyz)" );
+    DO_BENCH( gradt(u)*trans(grad(v)), "D", "const" );
+    DO_BENCH2( gradt(u)*trans(grad(v)), idt(u)*id(v), "D", "const (R)" );
+    DO_BENCH( dxt(u)*dx(v)+dyt(u)*dy(v), "D", "const2" );
+    DO_BENCH( dxt(u)*dx(v)+dyt(u)*dy(v)+dzt(u)*dz(v), "D", "const3" );
+    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*gradt(u)*trans(grad(v)), "D", "val(xyz)" );
     DO_BENCH2( val((Px()^(3))+(Py()^(2))*Pz())*gradt(u)*trans(grad(v)),
                gradt(u)*trans(grad(v)),
-               "val(xyz)(const)" );
+               "D", "val(xyz)(const)" );
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
@@ -164,12 +165,17 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
     std::ofstream ofs( (boost::format( "perf-A-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
     ofs.precision( 4 );
     ofs.width( 6 );
-    DO_BENCH( (gradt(u)*vec(cst(1.))) *id(v), "const" );
-    DO_BENCH2( (gradt(u)*vec(cst(1.))) *id(v), idt(u)*id(v), "const (R)" );
-    DO_BENCH( (gradt(u)*idv(beta0)) *id(v), "p0 const" );
-    DO_BENCH2( (gradt(u)*idv(beta0)) *id(v), idt(u)*id(v), "p0 const (R)" );
-    DO_BENCH( (gradt(u)*idv(betak)) *id(v), "constk" );
-    DO_BENCH2( (gradt(u)*idv(betak)) *id(v), (gradt(u)*idv(beta0)) *id(v), "constk (const)" );
+
+    DO_BENCH( (gradt(u)*vec(constant(1.0)))*id(v), "ADR", "const" );
+    DO_BENCH( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "ADR", "(xyz)" );
+    DO_BENCH( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "ADR", "val(xyz)" );
+    DO_BENCH2( (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz())))*id(v),
+               (gradt(u)*vec(constant(1.0)))*id(v),
+               "ADR", "(xyz)(const)" );
+    DO_BENCH2( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v),
+               (gradt(u)*vec(constant(1.0)))*id(v),
+               "ADR", "val(xyz)(const)" );
+
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
@@ -201,12 +207,16 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
     std::ofstream ofs( (boost::format( "perf-A-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
     ofs.precision( 4 );
     ofs.width( 6 );
-    DO_BENCH( (gradt(u)*vec(cst(1.),cst(1.0))) *id(v), "const" );
-    DO_BENCH2( (gradt(u)*vec(cst(1.),cst(1.))) *id(v), idt(u)*id(v), "const (R)" );
-    DO_BENCH( (gradt(u)*idv(beta0)) *id(v), "p0 const" );
-    DO_BENCH2( (gradt(u)*idv(beta0)) *id(v), idt(u)*id(v), "p0 const (R)" );
-    DO_BENCH( (gradt(u)*idv(betak)) *id(v), "constk" );
-    DO_BENCH2( (gradt(u)*idv(betak)) *id(v), (gradt(u)*idv(beta0)) *id(v), "constk (const)" );
+
+    DO_BENCH( (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v), "ADR", "const" );
+    DO_BENCH( (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz()),((Px()^(3))+(Py()^(2)))))*id(v), "ADR", "(xyz)" );
+    DO_BENCH( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v), "ADR", "val(xyz)" );
+    DO_BENCH2( (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz()),((Px()^(3))+(Py()^(2)))))*id(v),
+               (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v),
+               "ADR", "(xyz)(const)" );
+    DO_BENCH2( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v),
+               (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v),
+               "ADR", "val(xyz)(const)" );
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
@@ -238,12 +248,16 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
     std::ofstream ofs( (boost::format( "perf-A-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
     ofs.precision( 4 );
     ofs.width( 6 );
-    DO_BENCH( (gradt(u)*vec(cst(1.),cst(1.),cst(1.))) *id(v), "const" );
-    DO_BENCH2( (gradt(u)*vec(cst(1.),cst(1.),cst(1.)))*id(v), idt(u)*id(v), "const (R)" );
-    DO_BENCH( (gradt(u)*idv(beta0)) *id(v), "p0 const" );
-    DO_BENCH2( (gradt(u)*idv(beta0)) *id(v), idt(u)*id(v), "p0 const (R)" );
-    DO_BENCH( (gradt(u)*idv(betak)) *id(v), "constk" );
-    DO_BENCH2( (gradt(u)*idv(betak)) *id(v), (gradt(u)*idv(beta0)) *id(v), "constk (const)" );
+
+    DO_BENCH( (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v), "ADR", "const" );
+    DO_BENCH( (gradt(u)*vec(((Px()^(3)+(Py()^(2)))*Pz()),((Px()^(3))+(Py()^(2))),(Px()^(3))))*id(v), "ADR", "(xyz)" );
+    DO_BENCH( (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v), "ADR", "val(xyz)" );
+    DO_BENCH2( (gradt(u)*vec(((Px()^(3)+(Py()^(2)))*Pz()),((Px()^(3))+(Py()^(2))),(Px()^(3))))*id(v),
+               (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v),
+               "ADR", "(xyz)(const)" );
+    DO_BENCH2( (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v),
+               (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v),
+               "ADR", "val(xyz)(const)" );
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
@@ -267,15 +281,15 @@ Bench1::DR( boost::shared_ptr<FSType> const& Xh )
     std::ofstream ofs( (boost::format( "perf-DR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
     ofs.precision( 4 );
     ofs.width( 6 );
-    DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v ), "const" );
-    DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )), "xyz" );
-    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )), "val(xyz)" );
+    DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v ), "DR", "const" );
+    DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )), "DR", "xyz" );
+    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )), "DR", "val(xyz)" );
     DO_BENCH2( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )),
                gradt(u)*trans(grad(v))+idt( u )*id( v ),
-               "(xyz)(const)" );
+               "DR", "(xyz)(const)" );
     DO_BENCH2( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )),
                gradt(u)*trans(grad(v))+idt( u )*id( v ),
-               "val(xyz)(const)" );
+               "DR", "val(xyz)(const)" );
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
@@ -298,19 +312,19 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
     std::ofstream ofs( (boost::format( "perf-ADR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str() );
     ofs.precision( 4 );
     ofs.width( 6 );
-    DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v )+(gradt(u)*vec(constant(1.0)))*id(v), "const" );
+    DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v )+(gradt(u)*vec(constant(1.0)))*id(v), "ADR", "const" );
     DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-              (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "(xyz)" );
+              (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "ADR", "(xyz)" );
     DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-              (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "val(xyz)" );
+              (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "ADR", "val(xyz)" );
     DO_BENCH2( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
                (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz())))*id(v),
                gradt(u)*trans(grad(v))+idt( u )*id( v )+(gradt(u)*vec(constant(1.0)))*id(v),
-               "(xyz)(const)" );
+               "ADR", "(xyz)(const)" );
     DO_BENCH2( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
                (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v),
                gradt(u)*trans(grad(v))+idt( u )*id( v )+(gradt(u)*vec(constant(1.0)))*id(v),
-               "val(xyz)(const)" );
+               "ADR", "val(xyz)(const)" );
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
@@ -334,21 +348,21 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
     ofs.precision( 4 );
     ofs.width( 6 );
     DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v ) +
-              (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v), "const" );
+              (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v), "ADR", "const" );
     DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-              (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz()),((Px()^(3))+(Py()^(2)))))*id(v), "(xyz)" );
+              (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz()),((Px()^(3))+(Py()^(2)))))*id(v), "ADR", "(xyz)" );
     DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-              (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v), "val(xyz)" );
+              (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v), "ADR", "val(xyz)" );
     DO_BENCH2( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
                (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz()),((Px()^(3))+(Py()^(2)))))*id(v),
                gradt(u)*trans(grad(v))+idt( u )*id( v ) +
                (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v),
-               "(xyz)(const)" );
+               "ADR", "(xyz)(const)" );
     DO_BENCH2( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
                (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v),
                gradt(u)*trans(grad(v))+idt( u )*id( v ) +
                (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v),
-               "val(xyz)(const)" );
+               "ADR", "val(xyz)(const)" );
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
@@ -372,21 +386,21 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
     ofs.precision( 4 );
     ofs.width( 6 );
     DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v ) +
-              (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v), "const" );
+              (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v), "ADR", "const" );
     DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-              (gradt(u)*vec(((Px()^(3)+(Py()^(2)))*Pz()),((Px()^(3))+(Py()^(2))),(Px()^(3))))*id(v), "(xyz)" );
+              (gradt(u)*vec(((Px()^(3)+(Py()^(2)))*Pz()),((Px()^(3))+(Py()^(2))),(Px()^(3))))*id(v), "ADR", "(xyz)" );
     DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-              (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v), "val(xyz)" );
+              (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v), "ADR", "val(xyz)" );
     DO_BENCH2( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
                (gradt(u)*vec(((Px()^(3)+(Py()^(2)))*Pz()),((Px()^(3))+(Py()^(2))),(Px()^(3))))*id(v),
                gradt(u)*trans(grad(v))+idt( u )*id( v ) +
                (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v),
-               "(xyz)(const)" );
+               "ADR", "(xyz)(const)" );
     DO_BENCH2( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
                (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v),
                gradt(u)*trans(grad(v))+idt( u )*id( v ) +
                (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v),
-               "val(xyz)(const)" );
+               "ADR", "val(xyz)(const)" );
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
     ProfilerStop();
@@ -431,12 +445,10 @@ Bench1::bench1( boost::shared_ptr<MeshType> & mesh )
     boost::timer timer;
 
     R( Xh );
-#if 0
     D( Xh );
     A( Xh, mpl::int_<nDim>() );
     DR( Xh );
     ADR( Xh, mpl::int_<nDim>() );
-#endif
     Log() << "------------------------------------------------------------" << "\n";
 
 }

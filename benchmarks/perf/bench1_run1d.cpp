@@ -52,8 +52,10 @@ Bench1::run1d()
     Log() << "run2d starts" << "\n";
     bench1<mesh_type, 1>( aMesh );
     bench1<mesh_type, 2>( aMesh );
-    bench1<mesh_type, 5>( aMesh );
-    //bench1<mesh_type, 8>( aMesh );
+    bench1<mesh_type, 4>( aMesh );
+    bench1<mesh_type, 6>( aMesh );
+    bench1<mesh_type, 8>( aMesh );
+    bench1<mesh_type,10>( aMesh );
     Log() << "run2d ends" << "\n";
 }
 }
