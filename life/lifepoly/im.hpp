@@ -130,7 +130,7 @@ struct IM
     :
         public mpl::if_<mpl::and_<mpl::or_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
                                                      mpl::equal_to<mpl::int_<DIM>,mpl::int_<2> > >,
-                                           mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<21> >,
+                                           mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
                                                      mpl::equal_to<mpl::int_<DIM>,mpl::int_<3> > > >,
                                   mpl::bool_<Entity<DIM,1,DIM>::is_simplex> >,
                         mpl::identity<IMSimplex<DIM, IMORDER, T> >,
@@ -143,7 +143,7 @@ struct IM
       {
           typedef typename mpl::if_<mpl::and_<mpl::or_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
                                                                  mpl::equal_to<mpl::int_<DIM1>,mpl::int_<2> > >,
-                                                       mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<21> >,
+                                                       mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
                                                                  mpl::equal_to<mpl::int_<DIM1>,mpl::int_<3> > > >,
                                               mpl::bool_<Entity1<DIM1,1,DIM1>::is_simplex> >,
                                     mpl::identity<IMSimplex<DIM1, IMORDER, T1> >,
@@ -161,7 +161,7 @@ struct _Q
     {
         typedef typename mpl::if_<mpl::and_<mpl::or_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
                                                                mpl::equal_to<mpl::int_<DIM>,mpl::int_<2> > >,
-                                                     mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<21> >,
+                                                     mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
                                                                mpl::equal_to<mpl::int_<DIM>,mpl::int_<3> > > >,
                                             mpl::bool_<Entity<DIM,1,DIM>::is_simplex> >,
                                   mpl::identity<IMSimplex<DIM, IMORDER, T> >,
@@ -175,7 +175,7 @@ struct _Q
         typedef typename ContextType::value_type T;
         typedef typename mpl::if_<mpl::and_<mpl::or_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
                                                                mpl::equal_to<mpl::int_<DIM>,mpl::int_<2> > >,
-                                                     mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<21> >,
+                                                     mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
                                                                mpl::equal_to<mpl::int_<DIM>,mpl::int_<3> > > >,
                                             mpl::bool_<ContextType::element_type::is_simplex> >,
                                   mpl::identity<IMSimplex<DIM, IMORDER, T> >,
