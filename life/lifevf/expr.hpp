@@ -328,12 +328,16 @@ template<typename ExprT>
 struct ExpressionOrder
 {
     static const bool is_polynomial = ExprT::imIsPoly;
+#if 0
     static const int  value = boost::mpl::if_< boost::mpl::bool_< ExprT::imIsPoly > ,
                                                typename boost::mpl::if_< boost::mpl::greater< boost::mpl::int_<ExprT::imorder>,
                                                                                               boost::mpl::int_<19> > ,
                                                                          boost::mpl::int_<19>,
                                                                          boost::mpl::int_<ExprT::imorder> >::type,
                                                boost::mpl::int_<10> >::type::value;
+#else
+    static const int  value = ExprT::imorder;
+#endif
 
 };
 
