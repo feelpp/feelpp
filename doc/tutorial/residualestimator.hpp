@@ -234,22 +234,22 @@ private:
     double tol;
 
     //! mesh
-    mesh_ptrtype mesh;
+    // mesh_ptrtype mesh;
 
     //! exporter
     export_ptrtype exporter;
 
     //! Piecewise constant functions space
-    p0_space_ptrtype P0h;
-    p1_space_ptrtype P1h;
+    //p0_space_ptrtype P0h;
+    //p1_space_ptrtype P1h;
 
-    double estimatorH1, estimatorL2, estimator;
-    p1_element_type  h_new;
+    //double estimatorH1, estimatorL2, estimator;
+    // p1_element_type  h_new;
     std::string msh_name;
     bool first_time;
 
-    int tag_Neumann;
-    int tag_Dirichlet;
+  // int tag_Neumann;
+  //  int tag_Dirichlet;
 }; // ResidualEstimator
 
 template<int Dim, int Order>
@@ -273,13 +273,14 @@ ResidualEstimator<Dim,Order>::run()
     X.push_back( beta );
     X.push_back( weakdir );
     X.push_back( penaldir );
-    std::vector<double> Y( 4 );
     first_time=true;
+    X.push_back( first_time);
+    std::vector<double> Y( 4 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 
-    mesh  = adapt_mesh( h_new );
-    first_time=false;
-    run( X.data(), X.size(), Y.data(), Y.size() );
+    //mesh  = adapt_mesh( h_new );
+    //first_time=false;
+    //run( X.data(), X.size(), Y.data(), Y.size() );
 
 
 }
@@ -299,11 +300,19 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     beta = X[4];
     weakdir = X[5];
     penaldir = X[6];
+    first_time = X[7];
 
 
 
+ mesh_ptrtype mesh;
+ p0_space_ptrtype P0h;
+ p1_space_ptrtype P1h;
+ double estimatorH1, estimatorL2, estimator;
+ p1_element_type  h_new;
+ int tag_Neumann;
+ int tag_Dirichlet;
 
-
+ 
     if(first_time){
       if ( !this->vm().count( "nochdir" ) )
         Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
@@ -324,6 +333,8 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         tag_Dirichlet = mesh->markerName("Dirichlet");
 
     }//end if(first_time)
+
+ 
     /**
      * The function space and some associated elements(functions) are then defined
      */
@@ -334,6 +345,8 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
     /** \endcode */
+
+ 
 
     /** define \f$g\f$ the expression of the exact solution and
      * \f$f\f$ the expression of the right hand side such that \f$g\f$
@@ -367,8 +380,6 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     //# endmarker1 #
     /** \endcode */
-
-
 
 
     using namespace Life::vf;
@@ -460,7 +471,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     //# marker7 #
     double L2exact = math::sqrt(integrate(elements(mesh),g*g ).evaluate()(0,0));
     double L2error2 =integrate(elements(mesh),(idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
-    double L2error =   math::sqrt( L2error2 );
+    double L2error = math::sqrt( L2error2 );
     double semiH1error2 = integrate(elements(mesh),(gradv(u)-grad_g)*(gradv(u)-grad_g)).evaluate()(0,0);
     double H1error = math::sqrt(L2error2+semiH1error2);
     double H1exact = math::sqrt(integrate(elements(mesh),g*g+grad_g*trans(grad_g) ).evaluate()(0,0));
@@ -469,16 +480,20 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     /*******************residual estimator**********************/
     //the source terme is given by : minus_laplacian_g
 
+
     auto term1 = vf::h()*(minus_laplacian_g+trace(hessv(u)));
     auto term2 = jumpv(gradv(u));
     auto term3 = gradv(u)*vf::N()-grad_g*N();
 
+    //Problem with this line when using Octave
     auto rho = integrate(elements(mesh), term1*term1 ).broken(P0h).sqrt();
-
+    
+    
     rho += integrate(internalfaces(mesh),0.25*vf::h()*term2*term2).broken( P0h ).sqrt();
 
     rho += integrate( markedfaces(mesh,tag_Neumann),
                       vf::h()*term3*term3 ).broken( P0h ).sqrt();
+
 
     auto h=vf::project(P0h, elements(mesh), vf::h() );
     auto npen=vf::project(P0h, elements(mesh), vf::nPEN() );
@@ -488,8 +503,8 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     //auto new_hsize=vf::project( P1h, elements(mesh), vf::pow(vf::pow(vf::h(),Order)*(1e-4)/idv(H1estimatorP1),1./Order));
     //auto new_hsize=vf::project( P1h, elements(mesh), vf::h()*(1e-2)/idv(H1estimatorP1) );
 
-    double estimatorH1=math::sqrt(H1estimator.pow(2).sum());
-    double estimatorL2=math::sqrt(element_product(H1estimator,h).pow(2).sum());
+    estimatorH1=math::sqrt(H1estimator.pow(2).sum());
+    estimatorL2=math::sqrt(element_product(H1estimator,h).pow(2).sum());
 
 
     Y[0] = L2error/L2exact;
@@ -548,6 +563,11 @@ template<int Dim, int Order>
 typename ResidualEstimator<Dim,Order>::mesh_ptrtype
 ResidualEstimator<Dim,Order>::adapt_mesh( p1_element_type& sizefield )
 {
+
+p0_space_ptrtype P0h;
+p1_space_ptrtype P1h;
+
+
 #if defined (HAVE_MADLIB_H)
     saveGMSHMesh( _filename="inputmesh.msh",
                   _mesh=sizefield.mesh() );
