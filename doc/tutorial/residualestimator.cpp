@@ -53,7 +53,7 @@ makeOptions()
         ("tol", Life::po::value<double>()->default_value(1e-2),"tolerence parameter on the error for mesh adaptation")
         ("gmshmodel", Life::po::value<bool>()->default_value(false),"enable gmsh model")
         ("gmshgeo", Life::po::value<bool>()->default_value(false),"enable gmsh model geo file")
-        ("hmin", Life::po::value<double>()->default_value(1e-2),"minimum acceptable h")
+        ("hmin", Life::po::value<double>()->default_value(1e-5),"minimum acceptable h")
         ;
     return residualestimatoroptions.add( Life::life_options() );
 }
