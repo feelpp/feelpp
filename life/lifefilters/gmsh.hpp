@@ -470,8 +470,13 @@ BOOST_PARAMETER_FUNCTION(
 
     if ( update )
     {
+        _mesh->components().reset();
         _mesh->components().set( update );
         _mesh->updateForUse();
+    }
+    else
+    {
+        _mesh->components().reset();
     }
     return _mesh;
 }
@@ -542,8 +547,13 @@ BOOST_PARAMETER_FUNCTION(
 
     if ( update )
     {
+        _mesh->components().reset();
         _mesh->components().set( update );
         _mesh->updateForUse();
+    }
+    else
+    {
+        _mesh->components().reset();
     }
 
     return _mesh;
