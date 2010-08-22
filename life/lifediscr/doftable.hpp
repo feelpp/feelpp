@@ -37,6 +37,7 @@
 #include <boost/fusion/algorithm/iteration/accumulate.hpp>
 
 #include <Eigen/Core>
+#include<Eigen/StdVector>
 
 #include <life/lifecore/life.hpp>
 #include <life/lifealg/glas.hpp>
@@ -1491,6 +1492,8 @@ private:
 
     std::vector<localglobal_indices_type> M_locglob_indices;
     std::vector<localglobal_indices_type> M_locglob_signs;
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template<typename MeshType, typename FEType, typename PeriodicityType>
