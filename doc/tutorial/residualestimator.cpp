@@ -41,7 +41,7 @@ makeOptions()
     po::options_description residualestimatoroptions("ResidualEstimator options");
     residualestimatoroptions.add_options()
         ("hsize", po::value<double>()->default_value( 0.1 ), "mesh size")
-        ("dim", po::value<int>()->default_value( 0 ), "dimension of the geometry( 0: all three, 1, 2 or 3")
+        ("dim", po::value<int>()->default_value( 2 ), "dimension of the geometry( 0: all three, 1, 2 or 3")
         ("order", po::value<int>()->default_value( 0 ), "order of finite element approximation, 0: execute all registered orders")
         ("shape", Life::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
         ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
@@ -83,7 +83,7 @@ main( int argc, char** argv )
     /** \code */
     //app.add( new ResidualEstimator<1,1>( app.vm(), app.about() ) );
     app.add( new ResidualEstimator<2,3>( app.vm(), app.about() ) );
-    //app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
 
     /** \endcode */
 
