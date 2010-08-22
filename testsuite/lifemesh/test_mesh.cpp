@@ -228,7 +228,53 @@ BOOST_AUTO_TEST_CASE( test_mesh_filters_ )
     test_mesh_filters tmf;
     tmf();
 }
+BOOST_AUTO_TEST_CASE( test_mesh_comp )
+{
+    using namespace Life;
+    typedef Mesh<Simplex<2,1> >  mesh_type;
+    mesh_type mesh;
 
+    mesh.components().reset();
+    BOOST_CHECK( mesh.components().test( MESH_CHECK ) == false );
+    BOOST_CHECK( mesh.components().test( MESH_RENUMBER ) == false );
+    BOOST_CHECK( mesh.components().test( MESH_UPDATE_FACES ) == false );
+    BOOST_CHECK( mesh.components().test( MESH_UPDATE_EDGES ) == false );
+
+    mesh.components().reset();
+    mesh.components().set( MESH_CHECK );
+    BOOST_TEST_MESSAGE( "check MESH_CHECK comp: " << mesh.components().context()  << "\n" );
+    BOOST_CHECK( mesh.components().test( MESH_CHECK ) == true );
+    BOOST_CHECK( mesh.components().test( MESH_RENUMBER ) == false );
+    BOOST_CHECK( mesh.components().test( MESH_UPDATE_FACES ) == false );
+    BOOST_CHECK( mesh.components().test( MESH_UPDATE_EDGES ) == false );
+
+
+    mesh.components().reset();
+    mesh.components().set( MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+    BOOST_TEST_MESSAGE( "check MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES comp: " << mesh.components().context() << "\n" );
+    BOOST_CHECK( mesh.components().test( MESH_CHECK ) == true );
+    BOOST_CHECK( mesh.components().test( MESH_RENUMBER ) == false );
+    BOOST_CHECK( mesh.components().test( MESH_UPDATE_FACES ) == true );
+    BOOST_CHECK( mesh.components().test( MESH_UPDATE_EDGES ) == true );
+
+
+    mesh.components().reset();
+    mesh.components().set( MESH_RENUMBER|MESH_UPDATE_FACES );
+    BOOST_TEST_MESSAGE( "check MESH_RENUMBER|MESH_UPDATE_FACES comp: " << mesh.components().context() << "\n" );
+    BOOST_CHECK( mesh.components().test( MESH_CHECK ) == false );
+    BOOST_CHECK( mesh.components().test( MESH_RENUMBER ) == true );
+    BOOST_CHECK( mesh.components().test( MESH_UPDATE_FACES ) == true );
+    BOOST_CHECK( mesh.components().test( MESH_UPDATE_EDGES ) == false );
+
+
+    mesh.components().reset();
+    mesh.components().set( MESH_RENUMBER );
+    BOOST_TEST_MESSAGE( "check MESH_RENUMBER comp: " << mesh.components().context() << "\n" );
+    BOOST_CHECK( mesh.components().test( MESH_CHECK ) == false );
+    BOOST_CHECK( mesh.components().test( MESH_RENUMBER ) == true );
+    BOOST_CHECK( mesh.components().test( MESH_UPDATE_FACES ) == false );
+    BOOST_CHECK( mesh.components().test( MESH_UPDATE_EDGES ) == false );
+}
 BOOST_AUTO_TEST_CASE( test_mesh_lmethod )
 {
 
