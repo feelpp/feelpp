@@ -180,8 +180,8 @@ public:
         tol( 1e-2 ),
         penaldir( 50 )
 
-    {
-    }
+        {
+        }
     ResidualEstimator( po::variables_map const& vm, AboutData const& about )
         :
         super( vm, about ),
@@ -200,14 +200,86 @@ public:
         tol( this->vm()["adapt-tolerance"].template as<double>() ),
         penaldir( this->vm()["penaldir"].template as<double>() )
 
-    {
-    }
+        {
+        }
 
     void run();
 
     void run( const double* X, unsigned long P, double* Y, unsigned long N);
 
-    mesh_ptrtype adapt_mesh( p1_element_type& sizefield );
+    // this function will move to the mesh library in the mesh class
+    BOOST_PARAMETER_FUNCTION(
+        (mesh_ptrtype), // return type
+        adapt,    // 2. function name
+
+        tag,           // 3. namespace of tag types
+
+        (required
+         (h, *) // sizefield
+            ) // 4. one required parameter, and
+
+        (optional
+         (model, *)
+         (statistics,      *(boost::is_integral<mpl::_>), 0 )
+         (update,          *(boost::is_integral<mpl::_>), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER )
+            ) // 5. optional
+        )
+        {
+#if defined (HAVE_MADLIB_H)
+            saveGMSHMesh( _filename="inputmesh.msh",
+                          _mesh=h.mesh() );
+            MAd::pGModel model = 0;
+            GM_create(&themodel,"theModel");
+            GM_read( themodel, model );
+
+            MAd::pMesh amesh = MAd::M_new(model);
+            MAd::M_load(amesh,mshstr.str().c_str());
+
+            MAd::PWLSField * sizeField = new MAd::PWLSField(amesh);
+            sizeField->setCurrentSize();
+            auto _elit = h.mesh()->beginElement();
+            auto _elen = h.mesh()->endElement();
+            for( ; _elit != _elen; ++_elit )
+            {
+                for( int l = 0; l < _elit->numPoints; ++l )
+                {
+                    int dof = h.functionSpace()->dof()->localToGlobal( _elit->id(), l, 0 ).get<0>();
+                    int pid = _elit->point( l ).id()+1;
+                    sizeField->setSize( pid , h(dof) );
+                }
+            }
+
+            MAd::MeshAdapter* ma = new MAd::MeshAdapter(amesh,sizeField);
+
+            if ( statistics )
+            {
+                std::cout << "Statistics before optimization: \n";
+                ma->printStatistics(std::cout);
+                ma->writePos("meanRatioBefore.pos",MAd::OD_MEANRATIO);
+            }
+
+            // Optimize
+            // ---------
+            ma->run();
+
+            if ( statistics )
+            {
+                // Outputs final mesh
+                // -------------------
+                std::cout << "Statistics after optimization: \n";
+                ma->printStatistics(std::cout);
+                ma->writePos("meanRatioAfter.pos",MAd::OD_MEANRATIO);
+            }
+            MAd::M_writeMsh (amesh, "result.msh", 2, NULL);
+
+            return loadGMSHMesh( _mesh=new mesh_type,
+                                 _filename="result.msh",
+                                 _update=update );
+
+#endif // HAVE_MADLIB_H
+
+        }
+
 private:
 
     //! linear algebra backend
@@ -547,80 +619,13 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     Log()<< " estimated H1 error "<<Y[3]<<"\n";
 
 
-    mesh  = adapt_mesh( h_new );
+
+    mesh  = adapt( _h=h_new, _model=shape+"-"+Dim+".geo");
 } // ResidualEstimator::run
 
 
 
 
-template<int Dim, int Order>
-typename ResidualEstimator<Dim,Order>::mesh_ptrtype
-ResidualEstimator<Dim,Order>::adapt_mesh( p1_element_type& sizefield )
-{
-#if defined (HAVE_MADLIB_H)
-    saveGMSHMesh( _filename="inputmesh.msh",
-                  _mesh=sizefield.mesh() );
-    std::ostringstream mshstr;
-    mshstr << shape << "-" << Dim << ".msh";
-    //msh_name = mshstr.str();
-    MAd::pGModel model = 0;
-    if ( this->vm()["gmshmodel"].template as<bool>() == true )
-    {
-        GM_create(&model,"theModel");
-        if ( this->vm()["gmshgeo"].template as<bool>() == true )
-        {
-            std::ostringstream geostr;
-            geostr << shape << "-" << Dim <<  ".geo";
-            GM_readFromGEO( model, geostr.str().c_str() );
-        }
-        else
-        {
-            GM_readFromMSH(model, mshstr.str().c_str());
-        }
-    }
-    MAd::pMesh amesh = MAd::M_new(model);
-    MAd::M_load(amesh,mshstr.str().c_str());
-
-    MAd::PWLSField * sizeField = new MAd::PWLSField(amesh);
-    sizeField->setCurrentSize();
-    auto _elit = P1h->mesh()->beginElement();
-    auto _elen = P1h->mesh()->endElement();
-    for( ; _elit != _elen; ++_elit )
-    {
-        for( int l = 0; l < _elit->numPoints; ++l )
-        {
-            int dof = P1h->dof()->localToGlobal( _elit->id(), l, 0 ).get<0>();
-            int pid = _elit->point( l ).id()+1;
-            sizeField->setSize( pid , sizefield(dof) );
-        }
-    }
-
-    MAd::MeshAdapter* ma = new MAd::MeshAdapter(amesh,sizeField);
-
-    std::cout << "Statistics before optimization: \n";
-    ma->printStatistics(std::cout);
-    ma->writePos("meanRatioBefore.pos",MAd::OD_MEANRATIO);
-
-    // Optimize
-    // ---------
-    std::cout << "Optimizing mesh...\n\n";
-    ma->run();
-
-    // Outputs final mesh
-    // -------------------
-    std::cout << "Statistics after optimization: \n";
-    ma->printStatistics(std::cout);
-    ma->writePos("meanRatioAfter.pos",MAd::OD_MEANRATIO);
-
-    MAd::M_writeMsh (amesh, "result.msh", 2, NULL);
-
-    return loadGMSHMesh( _mesh=new mesh_type,
-                         _filename="result.msh",
-                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
-    //# endmarker7 #
-    /** \endcode */
-#endif // HAVE_MADLIB_H
-}// ResidualEstimator::adapt_mesh
 
 
 
