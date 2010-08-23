@@ -176,6 +176,7 @@ public:
         alpha( 3 ),
         beta( 10 ),
         weakdir( 1 ),
+        error_type( 1 ),
         tol( 1e-2 ),
         penaldir( 50 )
 
@@ -195,7 +196,8 @@ public:
         alpha( this->vm()["alpha"].template as<double>() ),
         beta( this->vm()["beta"].template as<double>() ),
         weakdir( this->vm()["weakdir"].template as<int>() ),
-        tol( this->vm()["tol"].template as<double>() ),
+        error_type( this->vm()["adapt-error-type"].template as<int>() ),
+        tol( this->vm()["adapt-tolerance"].template as<double>() ),
         penaldir( this->vm()["penaldir"].template as<double>() )
 
     {
@@ -231,25 +233,26 @@ private:
     double beta;
     bool weakdir;
     double penaldir;
+    int error_type;
     double tol;
 
     //! mesh
-    // mesh_ptrtype mesh;
+    mesh_ptrtype mesh;
 
     //! exporter
     export_ptrtype exporter;
 
     //! Piecewise constant functions space
-    //p0_space_ptrtype P0h;
-    //p1_space_ptrtype P1h;
+    p0_space_ptrtype P0h;
+    p1_space_ptrtype P1h;
 
     //double estimatorH1, estimatorL2, estimator;
-    // p1_element_type  h_new;
+    p1_element_type  h_new;
     std::string msh_name;
     bool first_time;
 
-  // int tag_Neumann;
-  //  int tag_Dirichlet;
+    int tag_Neumann;
+    int tag_Dirichlet;
 }; // ResidualEstimator
 
 template<int Dim, int Order>
@@ -275,13 +278,10 @@ ResidualEstimator<Dim,Order>::run()
     X.push_back( penaldir );
     first_time=true;
     X.push_back( first_time);
+    X.push_back( error_type );
+    X.push_back( tol );
     std::vector<double> Y( 4 );
     run( X.data(), X.size(), Y.data(), Y.size() );
-
-    //mesh  = adapt_mesh( h_new );
-    //first_time=false;
-    //run( X.data(), X.size(), Y.data(), Y.size() );
-
 
 }
 template<int Dim, int Order>
@@ -301,40 +301,33 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     weakdir = X[5];
     penaldir = X[6];
     first_time = X[7];
+    error_type = X[8];
+    tol = X[9];
 
+    double estimatorH1, estimatorL2, estimator;
 
-
- mesh_ptrtype mesh;
- p0_space_ptrtype P0h;
- p1_space_ptrtype P1h;
- double estimatorH1, estimatorL2, estimator;
- p1_element_type  h_new;
- int tag_Neumann;
- int tag_Dirichlet;
-
- 
     if(first_time){
-      if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
-                                       % this->about().appName()
-                                       % shape
-                                       % Dim
-                                       % Order
-                                       % meshSize );
+        if ( !this->vm().count( "nochdir" ) )
+            Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
+                                           % this->about().appName()
+                                           % shape
+                                           % Dim
+                                           % Order
+                                           % meshSize );
 
         mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                                      _usenames=true,
-                                                      _shape=shape,
-                                                      _dim=Dim,
-                                                      _h=X[0] ),
+                               _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                             _usenames=true,
+                                             _shape=shape,
+                                             _dim=Dim,
+                                             _h=X[0] ),
                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
         tag_Neumann = mesh->markerName("Neumann");
         tag_Dirichlet = mesh->markerName("Dirichlet");
 
     }//end if(first_time)
 
- 
+
     /**
      * The function space and some associated elements(functions) are then defined
      */
@@ -346,7 +339,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     element_type v( Xh, "v" );
     /** \endcode */
 
- 
+
 
     /** define \f$g\f$ the expression of the exact solution and
      * \f$f\f$ the expression of the right hand side such that \f$g\f$
@@ -376,7 +369,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
              ( cos(alpha*pi*Py())*chi(Dim>=2) + chi(Dim==1)) * ( cos(alpha*pi*Pz())*chi(Dim==3) + chi(Dim<=2) )
              )
 
-	 );
+            );
 
     //# endmarker1 #
     /** \endcode */
@@ -486,9 +479,9 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     auto term3 = gradv(u)*vf::N()-grad_g*N();
 
     //Problem with this line when using Octave
-    auto rho = integrate(elements(mesh), term1*term1 ).broken(P0h).sqrt();
-    
-    
+    auto rho = integrate(elements(mesh), _Q<10>(), term1*term1 ).broken(P0h).sqrt();
+
+
     rho += integrate(internalfaces(mesh),0.25*vf::h()*term2*term2).broken( P0h ).sqrt();
 
     rho += integrate( markedfaces(mesh,tag_Neumann),
@@ -513,7 +506,6 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     Y[3] = estimatorH1/H1exact;
 
     h_new = P1h->element();
-    //value_type tol = this->vm()["tol"].as<double>();
     h_new = vf::project( P1h, elements(mesh),
                          vf::max(vf::pow(
                                      vf::pow( vf::h(),Order)*(tol)/idv(H1estimatorP1),
@@ -554,6 +546,8 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     Log()<< " real H1 error : "<<Y[1]<<"\n";
     Log()<< " estimated H1 error "<<Y[3]<<"\n";
 
+
+    mesh  = adapt_mesh( h_new );
 } // ResidualEstimator::run
 
 
@@ -563,11 +557,6 @@ template<int Dim, int Order>
 typename ResidualEstimator<Dim,Order>::mesh_ptrtype
 ResidualEstimator<Dim,Order>::adapt_mesh( p1_element_type& sizefield )
 {
-
-p0_space_ptrtype P0h;
-p1_space_ptrtype P1h;
-
-
 #if defined (HAVE_MADLIB_H)
     saveGMSHMesh( _filename="inputmesh.msh",
                   _mesh=sizefield.mesh() );
