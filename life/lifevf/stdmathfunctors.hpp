@@ -98,8 +98,8 @@ sign( T const& x )
          ( exp  , __Exp__ , Life::math::exp     ,"exponential"         , UnboundedDomain<value_type>()      , 1, 0, 2), \
          ( log  , __Log__ , Life::math::log     ,"logarithm"           , PositiveDomain<value_type>()       , 1, 0, 2), \
          ( sqrt , __Sqrt__, Life::math::sqrt    ,"square root"         , PositiveDomain<value_type>()       , 1, 0, 2), \
-         ( sign , __Sign__, details::sign       ,"sign"                , UnboundedDomain<value_type>()      , 1, 0, 2), \
-         ( chi  , __Chi__ ,                     ,"chi"                 , UnboundedDomain<value_type>()      , 0, 1, 2) \
+         ( sign , __Sign__, details::sign       ,"sign"                , UnboundedDomain<value_type>()      , 1, 0, 0), \
+         ( chi  , __Chi__ ,                     ,"chi"                 , UnboundedDomain<value_type>()      , 0, 1, 0) \
       ) \
    ) \
    /**/
