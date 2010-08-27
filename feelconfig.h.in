@@ -114,7 +114,7 @@
 #cmakedefine INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@
 
 /* buildid */
-#cmakedefine FEEL_BUILDID ${FEEL_BUILDID}
+#cmakedefine01 FEEL_BUILDID @FEEL_BUILDID@ //
 
 /* Define if support for c++ class instantiation is enabled) */
 #cmakedefine FEEL_INSTANTIATION_MODE @FEEL_INSTANTIATION_MODE@
@@ -126,7 +126,7 @@
 #cmakedefine FEEL_PREFIX @FEEL_PREFIX@
 
 /* revision */
-#cmakedefine FEEL_REVISION @FEEL_REVISION@
+#cmakedefine01 FEEL_REVISION @FEEL_REVISION@ //
 
 /* sizeof(size_t)==sizeof(uint) */
 #cmakedefine FEEL_SIZET_SAME_AS_UINT
