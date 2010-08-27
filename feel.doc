@@ -1,10 +1,10 @@
 /* -*- mode: c++; coding: utf-8 -*- */
 
-namespace Life
+namespace Feel
 {
 /*! \mainpage Feel++: Finite Element Embedded Library (or Language) in C++
 
-Life is a unified C++ implementation of Galerkin methods (finite and spectral
+Feel is a unified C++ implementation of Galerkin methods (finite and spectral
 element methods) in 1D, 2D And 3D to solve partial differential equations.
 
 \section toc Table of  Contents
@@ -59,7 +59,7 @@ could be express in various ways such as :
 
 
 
-Life was initially developed at École Polytechnique Fédérale de
+Feel was initially developed at École Polytechnique Fédérale de
 Lausanne(Suisse) and is now a joint effort between UniversitÃ© Joseph Fourier
 (Grenoble) and École Polytechnique Fédérale de Lausanne(Suisse). The
 author is

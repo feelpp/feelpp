@@ -1,23 +1,23 @@
 /* -*- mode: c++; coding: utf-8 -*- */
-namespace Life {
+namespace Feel {
 /*! \page ProgEnv Getting started
   \ingroup Tutorial
 
 \li \b Next: \ref CreatingApplications
 
-\section build Building Life
+\section build Building Feel
 
 \subsection GettingSourceViaArchive Getting the source via an archive
 
-Life is distributed as a tarball once in a while. The tarballs are available
-at the <a href="http://ljkforge.imag.fr/life">Life web site</a>.
+Feel is distributed as a tarball once in a while. The tarballs are available
+at the <a href="http://ljkforge.imag.fr/feel">Feel web site</a>.
 
 Download the latest tarball. Then follow the steps and replace
 \texttt{x},\texttt{y},\texttt{z} with the corresponding numbers
 
 \code
-  tar xzf life-x.y.z.tar.gz
-  cd life-x.y.z
+  tar xzf feel-x.y.z.tar.gz
+  cd feel-x.y.z
 \endcode
 
 
@@ -25,7 +25,7 @@ Download the latest tarball. Then follow the steps and replace
 
 \par CreationRSAKey Creating RSA keys
 
-In order to download the sources of Life, you have to go in <a
+In order to download the sources of Feel, you have to go in <a
 href="https://ljkforge.imag.fr">"LJKForge website"</a> and create an
 account. After the administrator approval, you have to demand the rights to see
 the project tree.
@@ -50,24 +50,24 @@ in the <tt> ~/.ssh/config </tt> file.
 
 \subsubsection download-sources Downloading the sources
 
-To be able to download the Life sources, you need subversion and SSH > 1.xxx
-installed on your computer. In a command prompt, go where you want Life to be
+To be able to download the Feel sources, you need subversion and SSH > 1.xxx
+installed on your computer. In a command prompt, go where you want Feel to be
 downloaded and type the following command.
 \verbatim
-svn co svn+ssh://login@ljkforge.imag.fr/svn/life/life/trunk life
+svn co svn+ssh://login@ljkforge.imag.fr/svn/feel/feel/trunk feel
 \endverbatim
 where \c login is your login name in the LJKForge plateform. Then, if
-you want to download the life-test sources type :
+you want to download the feel-test sources type :
 \verbatim
-  cd life/benchmarks
-  svn co svn+ssh://login@ljkforge.imag.fr/svn/life-test/life-test/trunk validation
+  cd feel/benchmarks
+  svn co svn+ssh://login@ljkforge.imag.fr/svn/feel-test/feel-test/trunk validation
 \endverbatim
 
 \subsection AboutDependencies Dealing with software dependencies
 
-In order to install Life, you have to install many dependencies
+In order to install Feel, you have to install many dependencies
 before. Those libraries and programs are necessary for the
-compilation and installation of the Life librairies.
+compilation and installation of the Feel librairies.
 
 This is the list of all the librairies you must have installed on your
 computer, and the \verb|*-dev| packages for some of them.
@@ -93,7 +93,7 @@ Here is the list of optional packages:
  - Google perftools
  - Paraview\footnote{Paraview is a few parallel scientific data
     visualisation plateform, \url{http://www.paraview.org}}, this is
-  not stricly required to run Life programs but it is somehow
+  not stricly required to run Feel programs but it is somehow
   necessary for visualisation
  - Python (>= 2.5) for the validation tools
  - Eigen2
@@ -105,14 +105,14 @@ Here is the list of optional packages:
 Note that all these packages are available under Debian/GNU/Linux and
 Ubuntu. They should be available
 
-\subsection CompilingWithCmake Compiling Life with the CMake
+\subsection CompilingWithCmake Compiling Feel with the CMake
 
-Life build system supports
+Feel build system supports
 CMake\index{cmake}\footnote{\url{http://www.cmake.org}}. This should become the
-preferred way to build Life as it is much simpler and more powerful in many
+preferred way to build Feel as it is much simpler and more powerful in many
 ways than the autotools.
 
-Life, using CMake, can be built either in source and out of source and different
+Feel, using CMake, can be built either in source and out of source and different
 build type:
 
  - minsizerel : minimal size release
@@ -142,11 +142,11 @@ To customize or change some build setting one can use the CMake curse interface
 
 Create a build directory
 \verbatim
-  mkdir life.opt
-  cd life.opt
-  cmake <directory where the life source are>
-  # e.g cmake ../life if life.opt is at the same
-  # directory level as life
+  mkdir feel.opt
+  cd feel.opt
+  cmake <directory where the feel source are>
+  # e.g cmake ../feel if feel.opt is at the same
+  # directory level as feel
   make
 \endverbatim
 
@@ -159,10 +159,10 @@ you can customize the build type:
   ...
 \endverbatim
 
-\subsection CompilingTutorial Compiling the Life tutorial
+\subsection CompilingTutorial Compiling the Feel tutorial
 
 If the command <tt>make check</tt> has been run before the tutorial
-should be already compiled and ready. The steps are as follows  to build the Life tutorial
+should be already compiled and ready. The steps are as follows  to build the Feel tutorial
 \verbatim
   cd opt/doc/tutorial
   make check
@@ -183,23 +183,23 @@ Here is what the directory should look like
 
 Here is the list of namespaces
 
- - <tt>Life</tt>
- - <tt>Life::po</tt>
- - <tt>Life::mpl</tt>
- - <tt>Life::ublas</tt>
- - <tt>Life::math</tt>
- - <tt>Life::fem</tt>
- - <tt>Life::vf</tt>
+ - <tt>Feel</tt>
+ - <tt>Feel::po</tt>
+ - <tt>Feel::mpl</tt>
+ - <tt>Feel::ublas</tt>
+ - <tt>Feel::math</tt>
+ - <tt>Feel::fem</tt>
+ - <tt>Feel::vf</tt>
 
 
 Here is the list of libraries
 
- - <tt>life/lifecore</tt>
- - <tt>life/lifealg</tt>
- - <tt>life/lifepoly</tt>
- - <tt>life/lifediscr</tt>
- - <tt>life/lifefilters</tt>
- - <tt>life/lifevf</tt>
+ - <tt>feel/feelcore</tt>
+ - <tt>feel/feelalg</tt>
+ - <tt>feel/feelpoly</tt>
+ - <tt>feel/feeldiscr</tt>
+ - <tt>feel/feelfilters</tt>
+ - <tt>feel/feelvf</tt>
 
 
 \li \b Next: \ref CreatingApplications

@@ -1,20 +1,20 @@
 -*- coding: utf-8 -*-
 /*! \page publis Publications
 
-\section pub_reference Reference publication about Life
+\section pub_reference Reference publication about Feel
 
-When citing Life, the prefered reference paper is <i>Life: Overview of
+When citing Feel, the prefered reference paper is <i>Feel: Overview of
 a Unified C++ Implementation of the Finite and Spectral Element
 Methods in 1D, 2D and 3D</i>.
 
-\li <b>Life: Overview of a Unified C++ Implementation of the Finite
+\li <b>Feel: Overview of a Unified C++ Implementation of the Finite
 and Spectral Element Methods in 1D, 2D and 3D</b>\n
     by <em>Christophe Prud'homme</em>\n
     Proceedings of the 6-th Workshop On State-Of-The-Art
     In Scientific And Parallel Computing (Para'06)\n
     This article presents an overview of a unified framework for finite
     element and spectral element methods in 1D, 2D and 3D in C++ called
-    HiLife.  The objectives of this framework is quite ambitious;
+    HiFeel.  The objectives of this framework is quite ambitious;
     ambitions which could be express in various ways: <i>(i)</i> the
     creation of a versatile mathematical kernel allowing for solving
     easily problems using different techniques thus allowing testing and
@@ -27,9 +27,9 @@ and Spectral Element Methods in 1D, 2D and 3D</b>\n
     \htmlonly
     Here is the Bibtex entry:
     <pre>
- \@InProceedings{prudhomme06:_life,
+ \@InProceedings{prudhomme06:_feel,
   author =       {Christophe Prud'homme},
-  title =        {Life: Overview of a Unified C++ Implementation of
+  title =        {Feel: Overview of a Unified C++ Implementation of
                   the Finite and Spectral Element Methods in 1D, 2D
                   and 3D},
   booktitle = {Workshop On State-Of-The-Art In Scientific And Parallel Computing},
@@ -42,7 +42,7 @@ and Spectral Element Methods in 1D, 2D and 3D</b>\n
   </pre>
   \endhtmlonly
 
-\section pub_simulation Other publications about life
+\section pub_simulation Other publications about feel
 
 \li <b>A Domain Specific Embedded Language in C++ for Automatic
        Differentiation, Projection, Integration and
@@ -78,7 +78,7 @@ and Spectral Element Methods in 1D, 2D and 3D</b>\n
 
 \section pub_ext Other publications and reports
 
-We list here publications and reports related to life.
+We list here publications and reports related to feel.
 
 \li 2006
 

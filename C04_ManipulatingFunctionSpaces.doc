@@ -1,5 +1,5 @@
 // -*- mode: c++; coding: utf-8 -*-
-namespace Life
+namespace Feel
 {
 /*! \page ManipulatingFunctionSpaces Manipulating Function Spaces
 
@@ -105,7 +105,7 @@ projection
 We execute this example on a simplex domain an export to the Gmsh format:
 
 \verbatim
-life_doc_myfunctionspace --shape="simplex"--nochdir --exporter-format=gmsh
+feel_doc_myfunctionspace --shape="simplex"--nochdir --exporter-format=gmsh
 \endverbatim
 
 the output log of the execution of this example gives
@@ -138,7 +138,7 @@ Here are the graphical outputs on the d-simplex, d=1,2,3:
 We execute this example on a hypercube domain an export to the Gmsh format:
 
 \verbatim
-life_doc_myfunctionspace --shape="hypercube"--nochdir --exporter-format=gmsh
+feel_doc_myfunctionspace --shape="hypercube"--nochdir --exporter-format=gmsh
 \endverbatim
 
 the output log of the execution of this example gives

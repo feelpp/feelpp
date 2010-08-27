@@ -1,5 +1,5 @@
 // -*- mode: c++; coding: utf-8 -*-
-namespace Life
+namespace Feel
 {
 /*! \page ComputingIntegrals Computing integrals
 
@@ -85,12 +85,12 @@ reads then
 
 \subsection ComputingIntegralsNote A note on quadratures
 
-Life computes automatically the quadrature associated the expression under the
+Feel computes automatically the quadrature associated the expression under the
 integral. If the expression is polynomial then the quadrature is exact. If the
 expression is not polynomial, then each non-polynomial term in the expression is
 considered a polynomial of degree 2 by default.
 
-Here is how the 4-th integral can be computed letting Life decide about the
+Here is how the 4-th integral can be computed letting Feel decide about the
 quadrature
 
 \skip marker6
@@ -109,11 +109,11 @@ polynomial order that the quadrature should integrate exactely.
 
 \subsection IntegralsOverSimplex Integrals over a simplex domain
 
-Let's run now the tutrial example <tt>life_doc_myintegrals</tt>: First we
+Let's run now the tutrial example <tt>feel_doc_myintegrals</tt>: First we
 generate the simplex shape domain in all 3 dimensions
 
 \verbatim
-life_doc_myintegrals --shape="simplex"--nochdir
+feel_doc_myintegrals --shape="simplex"--nochdir
 \endverbatim
 
 \htmlonly <table><tr><td> \endhtmlonly
@@ -132,7 +132,7 @@ The output gives
 We do the same now with the hypercube shape domain in all 3 dimensions
 
 \verbatim
-life_doc_myintegrals --shape="hypercube"--nochdir
+feel_doc_myintegrals --shape="hypercube"--nochdir
 \endverbatim
 
 

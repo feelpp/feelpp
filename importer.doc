@@ -1,7 +1,7 @@
 -*- coding: utf-8 -*-
 /*! \defgroup Importer Mesh Importer Module
 
-\section import_mesh Importing meshes into Life
+\section import_mesh Importing meshes into Feel
 
 
 \subsection import_gmsh Importing Gmsh meshes
