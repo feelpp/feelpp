@@ -1,0 +1,44 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Feel library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2009-02-06
+
+  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+/**
+   \file tutorial
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2009-02-06
+   \version 1.0
+*/
+
+namespace Feel
+{
+
+/** \page Tutorial Feel Tutorial
+
+    Here are the examples used in the tutotial
+
+    -# myapp.cpp is a simple example exercising the Application class
+    -# mymesh.cpp is a simple mesh example exercising the mesh data structure
+    -# myintegrals.cpp is a simple mesh example demonstrating how to compute element and faces integrals
+    -# laplacian.cpp is a simple example solving \f$-\Delta u = f\f$
+    -# stokes.cppis a simple example solving the Stokes equation
+ */
+}

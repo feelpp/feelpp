@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2007-05-11
@@ -29,14 +29,14 @@ x  modify it under the terms of the GNU Lesser General Public
 
 #include "kovasznay.hpp"
 
-namespace Life
+namespace Feel
 {
 
 void
 Kovasznay::oseenUpdateInit( Oseen<space_type, imOrder, ENTITY>& oseen,
                             element_U_type& u )
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     value_type pi = 4.0 * math::atan( value_type( 1.0 ) );
     value_type lambda = 1./(2.*M_nu) - std::sqrt( 1./(4.*M_nu*M_nu) + 4.*pi*pi);
@@ -56,4 +56,4 @@ Kovasznay::oseenUpdateInit( Oseen<space_type, imOrder, ENTITY>& oseen,
                   /* updtJ = */ true );
 }
 
-} // Life
+} // Feel

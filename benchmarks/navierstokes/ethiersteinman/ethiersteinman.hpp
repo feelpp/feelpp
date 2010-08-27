@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2007-04-03
@@ -32,72 +32,72 @@
 
 #include <boost/timer.hpp>
 
-#include <life/lifecore/applicationserial.hpp>
-#include <life/lifealg/backendgmm.hpp>
-#include <life/lifealg/backend_adaptive_reuse_pc.hpp>
-#include <life/lifepoly/im.hpp>
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/operatorlinear.hpp>
-#include <life/lifevf/vf.hpp>
-#include <life/lifefilters/exporterensight.hpp>
+#include <feel/feelcore/applicationserial.hpp>
+#include <feel/feelalg/backendgmm.hpp>
+#include <feel/feelalg/backend_adaptive_reuse_pc.hpp>
+#include <feel/feelpoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/exporterensight.hpp>
 
 #include "oseen.hpp"
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description
+    Feel::po::options_description
         ethiersteinmanoptions("EthierSteinman options");
     ethiersteinmanoptions.add_options()
-        ("dt", Life::po::value<double>()->default_value( 0.025 ),
+        ("dt", Feel::po::value<double>()->default_value( 0.025 ),
          "time step value")
-        ("ft", Life::po::value<double>()->default_value( 0.1 ),
+        ("ft", Feel::po::value<double>()->default_value( 0.1 ),
          "Final time value")
-        ("mu", Life::po::value<double>()->default_value( 1.0 ),
+        ("mu", Feel::po::value<double>()->default_value( 1.0 ),
          "viscosity of fluid")
-        ("hsize", Life::po::value<double>()->default_value( 0.1 ),
+        ("hsize", Feel::po::value<double>()->default_value( 0.1 ),
          "first h value to start convergence")
-        ("bccoeffdiff", Life::po::value<double>()->default_value( 100.0 ),
+        ("bccoeffdiff", Feel::po::value<double>()->default_value( 100.0 ),
          "coefficient for diffusive weak Dirichlet boundary terms")
-        ("bccoeffconv", Life::po::value<double>()->default_value( 100.0 ),
+        ("bccoeffconv", Feel::po::value<double>()->default_value( 100.0 ),
          "coefficient for convective weak Dirichlet boundary terms")
-        ("fixpointtol", Life::po::value<double>()->default_value( 0.025 ),
+        ("fixpointtol", Feel::po::value<double>()->default_value( 0.025 ),
          "Convergence tolerance for fixed point sub-iterations")
-        ("maxsubiter", Life::po::value<int>()->default_value( 1 ),
+        ("maxsubiter", Feel::po::value<int>()->default_value( 1 ),
          "maximal number of fixed point sub-iterations")
-        ("divdivcoeff", Life::po::value<double>()->default_value( 0.0 ),
+        ("divdivcoeff", Feel::po::value<double>()->default_value( 0.0 ),
          "coefficient for ( div u , div v ) term in matrix")
-        ("stabcoeff-div", Life::po::value<double>()->default_value( 0.0 ),
+        ("stabcoeff-div", Feel::po::value<double>()->default_value( 0.0 ),
          "interior penalty stabilization coefficient for divergence")
-        ("stabcoeff-p", Life::po::value<double>()->default_value( 0.1 ),
+        ("stabcoeff-p", Feel::po::value<double>()->default_value( 0.1 ),
          "interior penalty stabilization coefficient for pressure")
-        ("stabtheta", Life::po::value<double>()->default_value( -1.0 ),
+        ("stabtheta", Feel::po::value<double>()->default_value( -1.0 ),
          "stabilization decoupling coefficient (no decoupling for values < 0)")
-        ("epscompress", Life::po::value<double>()->default_value( 0.0 ),
+        ("epscompress", Feel::po::value<double>()->default_value( 0.0 ),
          "coefficient of compressibility term")
-        ("export", Life::po::value<int>()->default_value( 0 ),
+        ("export", Feel::po::value<int>()->default_value( 0 ),
          "stride for result export (0=no export)")
         ("bdf1", "use BDF1 time stepping")
         ;
 
-    Life::po::options_description solveroptions("algebraic solver options");
+    Feel::po::options_description solveroptions("algebraic solver options");
     solveroptions.add_options()
-        ("tolerance", Life::po::value<double>()->default_value( 2.e-10 ),
+        ("tolerance", Feel::po::value<double>()->default_value( 2.e-10 ),
          "solver tolerance")
-        ("verbose", Life::po::value<int>()->default_value( 0 ),
+        ("verbose", Feel::po::value<int>()->default_value( 0 ),
          "(=0,1,2) print solver iterations")
-        ("maxiter", Life::po::value<int>()->default_value( 1000 ),
+        ("maxiter", Feel::po::value<int>()->default_value( 1000 ),
          "set maximum number of iterations")
-        ("fillin", Life::po::value<int>()->default_value( 20 ),
+        ("fillin", Feel::po::value<int>()->default_value( 20 ),
          "fill-in for incomplete factorizations")
-        ("threshold", Life::po::value<double>()->default_value( 1.e-4 ),
+        ("threshold", Feel::po::value<double>()->default_value( 1.e-4 ),
          "threshold for incomplete factorizations")
-        ("solver", Life::po::value<std::string>()->default_value( "gmres" ),
+        ("solver", Feel::po::value<std::string>()->default_value( "gmres" ),
          "solver type")
-        ("precond", Life::po::value<std::string>()->default_value( "ilutp" ),
+        ("precond", Feel::po::value<std::string>()->default_value( "ilutp" ),
          "preconditioner type")
-        ("restart", Life::po::value<int>()->default_value( 200 ),
+        ("restart", Feel::po::value<int>()->default_value( 200 ),
          "gmres restart")
         ("direct", "use direct solver")
       ;
@@ -105,14 +105,14 @@ makeOptions()
 }
 
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "ethiersteinman" ,
+    Feel::AboutData about( "ethiersteinman" ,
                             "ethiersteinman" ,
                             "0.1",
                             "Ethier Steinman Benchmark",
-                            Life::AboutData::License_GPL,
+                            Feel::AboutData::License_GPL,
                             "Copyright (c) 2007 EPFL");
 
     about.addAuthor("Christoph Winkelmann", "developer",
@@ -121,7 +121,7 @@ makeAbout()
 
 }
 
-namespace Life
+namespace Feel
 {
 class EthierSteinman
     :
@@ -302,6 +302,6 @@ private:
     double M_divError;
 }; // EthierSteinman
 
-} // Life
+} // Feel
 
 #endif /* _ETHIER_STEINMAN_HPP_ */

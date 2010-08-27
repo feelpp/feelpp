@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2006-07-17
@@ -33,10 +33,10 @@
 boost::unit_test::test_suite*
 init_unit_test_suite( int argc, char* argv[] )
 {
-    using namespace Life;
+    using namespace Feel;
 
     /* get the handle of the library */
-    boost::plugin::dll polydll ( "lifepoly/lifepoly.so" );
+    boost::plugin::dll polydll ( "feelpoly/feelpoly.so" );
     boost::plugin::plugin_factory <ut::test_suite> poly (polydll);
 
     //testsuite_master->add(  );

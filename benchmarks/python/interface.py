@@ -2,7 +2,7 @@
 
 # -*- mode: python -*-
 #
-#  This file is part of the Life library
+#  This file is part of the Feel library
 #
 #  Author(s): Florent Vielfaure <florent.vielfaure@gmail.com>
 #        Date: 2009-04-07
@@ -197,10 +197,10 @@ class app:
 		self.mode=0
 
 	def displayAbout(self):
-		ret = QtGui.QMessageBox.information(self.win, "About","Validation Tool Version 0.1\nThe Life Test Team", QtGui.QMessageBox.Ok)
+		ret = QtGui.QMessageBox.information(self.win, "About","Validation Tool Version 0.1\nThe Feel Test Team", QtGui.QMessageBox.Ok)
 
 	def displayHelp(self):
-		ret = QtGui.QMessageBox.information(self.win, "About","For more information about how to use the interface, see the 2009 report of Life-Test", QtGui.QMessageBox.Ok)
+		ret = QtGui.QMessageBox.information(self.win, "About","For more information about how to use the interface, see the 2009 report of Feel-Test", QtGui.QMessageBox.Ok)
 
 # lancement de l'application
 mapp = app(sys.argv)

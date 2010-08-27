@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-07-02
@@ -30,9 +30,9 @@
 #define __phermite_H 1
 
 #include "basisgen.hpp"
-#include <life/lifepoly/hermite.hpp>
+#include <feel/feelpoly/hermite.hpp>
 
-namespace Life
+namespace Feel
 {
 namespace detail
 {
@@ -59,6 +59,6 @@ createHermite()
         .registerProduct( GEN_HERMITE(LDIM,LORDER,CONVEX), &createHermite<CONVEX< LDIM >,LORDER> );
 
 } // detail
-} // Life
+} // Feel
 #endif /* __hermite_H */
 

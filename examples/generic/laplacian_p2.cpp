@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2006-11-23
@@ -26,55 +26,55 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2006-11-23
  */
-#include <life/options.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
-#include <life/lifepoly/gausslobatto.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
+#include <feel/feelpoly/gausslobatto.hpp>
 
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description laplacianoptions("Laplacian options");
+    Feel::po::options_description laplacianoptions("Laplacian options");
     laplacianoptions.add_options()
-        ("diff", Life::po::value<double>()->default_value( 1 ), "diffusion parameter")
-        ("gamma", Life::po::value<double>()->default_value( 10 ), "jump penalisation parameter")
-        ("delta", Life::po::value<double>()->default_value( 0 ), "lifting operator penalisation parameter")
-        ("theta", Life::po::value<double>()->default_value( 1 ), "theta=1: symmetric, theta=-1: non-symmetric")
-        ("alpha", Life::po::value<double>()->default_value( 3 ), "Regularity coefficient for example 2")
-        ("example", Life::po::value<int>()->default_value( 1 ), "Example number")
-        ("anisomesh", Life::po::value<int>()->default_value( 0 ), "0: using normal mesh generation, 1: using anisotropic mesh containing 2 elements")
-//        ("f", Life::po::value<double>()->default_value( 1 ), "forcing term")
-//        ("g", Life::po::value<double>()->default_value( 0 ), "boundary term")
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("hvisu", Life::po::value<double>()->default_value( 0.05 ), "first h value to start convergence")
+        ("diff", Feel::po::value<double>()->default_value( 1 ), "diffusion parameter")
+        ("gamma", Feel::po::value<double>()->default_value( 10 ), "jump penalisation parameter")
+        ("delta", Feel::po::value<double>()->default_value( 0 ), "lifting operator penalisation parameter")
+        ("theta", Feel::po::value<double>()->default_value( 1 ), "theta=1: symmetric, theta=-1: non-symmetric")
+        ("alpha", Feel::po::value<double>()->default_value( 3 ), "Regularity coefficient for example 2")
+        ("example", Feel::po::value<int>()->default_value( 1 ), "Example number")
+        ("anisomesh", Feel::po::value<int>()->default_value( 0 ), "0: using normal mesh generation, 1: using anisotropic mesh containing 2 elements")
+//        ("f", Feel::po::value<double>()->default_value( 1 ), "forcing term")
+//        ("g", Feel::po::value<double>()->default_value( 0 ), "boundary term")
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("hvisu", Feel::po::value<double>()->default_value( 0.05 ), "first h value to start convergence")
         ("export", "export results(ensight, data file(1D)")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return laplacianoptions.add( Life::life_options() );
+    return laplacianoptions.add( Feel::feel_options() );
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "laplacian_hpOPT" ,
+    Feel::AboutData about( "laplacian_hpOPT" ,
                             "laplacian_hpOPT" ,
                             "0.2",
                             "nD(n=1,2,3) Laplacian on simplices or simplex products",
-                            Life::AboutData::License_GPL,
+                            Feel::AboutData::License_GPL,
                             "Copyright (c) 2006, 2007 Universit� Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -83,7 +83,7 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
 using namespace vf;
 
@@ -309,7 +309,7 @@ Laplacian<Order>::run()
 
 
     //    int maxIter = 10.0/meshSize;
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
 
 
@@ -486,14 +486,14 @@ Laplacian<Order>::run()
                     vectorial_space_ptrtype Wvh = vectorial_space_type::New( localmesh );
                     space_ptrtype Wsh = space_type::New( localmesh );
 
-                    LIFE_ASSERT
+                    FEEL_ASSERT
                         ( ublas::norm_frobenius( localmesh->element( 0 ).G() -
                                                  it->element0().G() ) < 1e-10 )
 
                         ( it->id() )( localmesh->element( 0 ).id() ).error( "invalid local element");
                     if ( !it->isOnBoundary() )
                         {
-                            LIFE_ASSERT
+                            FEEL_ASSERT
                                 ( ublas::norm_frobenius( localmesh->element( 1 ).G() -
                                                          it->element1().G() ) < 1e-10 )
 
@@ -522,7 +522,7 @@ Laplacian<Order>::run()
                     mesh_type::element_iterator itl, enl;
                     //typename std::vector<typename mesh_type::element_type>::iterator itl, enl;
                     boost::tie( itl, enl ) = localmesh->elementsRange();
-                    LIFE_ASSERT( std::distance( itl, enl ) ==  localmesh->numElements() )( localmesh->numElements() )( std::distance( itl, enl ) ).error( "invalid element range");
+                    FEEL_ASSERT( std::distance( itl, enl ) ==  localmesh->numElements() )( localmesh->numElements() )( std::distance( itl, enl ) ).error( "invalid element range");
 
                     // for each basis function in each element
                     // associated to the face, construct the
@@ -544,9 +544,9 @@ Laplacian<Order>::run()
                                     wglobal[lelt[n]][i] = vectorial_element_ptrtype( new vectorial_element_type( Wh, "wglobal" ) );
                                     w.zero();
                                     w( k ) = 1;
-                                    LIFE_ASSERT( w.l2Norm() == 1 )( lelt[n] )( i )( w.l2Norm() )( k ).error( "invalid local basis function" );
+                                    FEEL_ASSERT( w.l2Norm() == 1 )( lelt[n] )( i )( w.l2Norm() )( k ).error( "invalid local basis function" );
 
-                                    LIFE_ASSERT
+                                    FEEL_ASSERT
                                         ( ( ublas::norm_frobenius( itl->face( lface[n] ).G() - it->G() ) < 1e-10 ) &&
                                           ( ublas::norm_frobenius( localmesh->face( itl->face( lface[n] ).id() ).G() - it->G() ) < 1e-10 ) )
                                         ( itl->face( lface[n] ).G() )
@@ -556,13 +556,13 @@ Laplacian<Order>::run()
 
                                     if ( it->isOnBoundary() )
                                         {
-                                            LIFE_ASSERT( localmesh->face( itl->face( lface[n] ).id() ).isOnBoundary() ).error( "invalid local boundary face" );
+                                            FEEL_ASSERT( localmesh->face( itl->face( lface[n] ).id() ).isOnBoundary() ).error( "invalid local boundary face" );
                                             form1( Wvh, Floc, _init=true ) = integrate( idedfaces( localmesh, itl->face( lface[n] ).id() ), im,
                                                                                         trans(idv( w )*N())*id( vv ) );
                                         }
                                     else
                                         {
-                                            LIFE_ASSERT( ( std::distance( localmesh->beginInternalFace(),
+                                            FEEL_ASSERT( ( std::distance( localmesh->beginInternalFace(),
                                                                           localmesh->endInternalFace() ) == 1 ) &&
                                                          ( ublas::norm_frobenius( localmesh->beginInternalFace()->G() -
                                                                                   it->G() ) < 1e-10 ) ).error( "invalid local internal face");
@@ -603,7 +603,7 @@ Laplacian<Order>::run()
                                             }
                                     Log() << "element " << lelt[n] << " global basis_" << i << " norm= " << wglobal[lelt[n]][i]->l2Norm() << "\n";
 #if 0
-                                    LIFE_ASSERT( wlocal[lelt[n]][i]->l2Norm() > 1e-10 &&
+                                    FEEL_ASSERT( wlocal[lelt[n]][i]->l2Norm() > 1e-10 &&
                                                  wglobal[lelt[n]][i]->l2Norm() > 1e-10 )
                                         ( lelt[n] )( i )
                                         ( wlocal[lelt[n]][i]->l2Norm()  )
@@ -811,7 +811,7 @@ Laplacian<Order>::writeResults( value_type e1,
     Log() << "[timer] writeResults(): " << timers["write"].second << "\n";
 } // Laplacian::writeResults
 
-} // Life
+} // Feel
 
 
 
@@ -819,18 +819,18 @@ Laplacian<Order>::writeResults( value_type e1,
 int
 main( int argc, char** argv )
 {
-    using namespace Life;
+    using namespace Feel;
 
     /* change parameters below */
     const int nOrder = 1;
 
     //typedef Continuous MyContinuity;  no continuous version
     typedef Discontinuous MyContinuity;
-    typedef Life::Laplacian<nOrder> laplacian_type;
-    //typedef Life::Laplacian<nDim, nOrder, MyContinuity, Simplex, Scalar> laplacian_type;
+    typedef Feel::Laplacian<nOrder> laplacian_type;
+    //typedef Feel::Laplacian<nDim, nOrder, MyContinuity, Simplex, Scalar> laplacian_type;
 
     /* assertions handling */
-    Life::Assert::setLog( "laplacian.assert");
+    Feel::Assert::setLog( "laplacian.assert");
 
     /* define and run application */
     laplacian_type laplacian( argc, argv, makeAbout(), makeOptions() );

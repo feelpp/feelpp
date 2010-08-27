@@ -30,15 +30,15 @@ add_subdirectory( dG )
 #     nonlinearpow
 #     ale1 ale2 ale3 ale4 ale5 )
 
-#     life_add_bench( ${BENCH} )
+#     feel_add_bench( ${BENCH} )
 
 #     # test each backend
 #     foreach( BACKEND petsc trilinos )
-#       add_test( life_bench_${BENCH}-${BACKEND}
-#         ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
+#       add_test( feel_bench_${BENCH}-${BACKEND}
+#         ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
 #         --program=${targetname}
 #         --mode=0
-#         --path=${LIFE_BUILD_DIR}/benchmarks/convergence/
+#         --path=${FEEL_BUILD_DIR}/benchmarks/convergence/
 #         --cmdargs="--backend=${BACKEND} --export=0 ${${BACKEND}_LU_SOLVER_OPTIONS}" )
 #     endforeach()
 

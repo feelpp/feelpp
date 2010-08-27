@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2006-07-16
@@ -39,14 +39,14 @@
 #include <boost/test/unit_test_suite.hpp>
 #include <boost/test/framework.hpp>
 #include <boost/test/floating_point_comparison.hpp>
-namespace Life
+namespace Feel
 {
 namespace ut = boost::unit_test;
-static ut::test_suite* testsuite_master = BOOST_TEST_SUITE( "Life Master Test Suite" );
-static ut::test_suite* testsuite_core = BOOST_TEST_SUITE( "Life Core Test Suite" );
-static ut::test_suite* testsuite_poly = BOOST_TEST_SUITE( "Life Polynomials Test Suite" );
-static ut::test_suite* testsuite_mesh = BOOST_TEST_SUITE( "Life Mesh Test Suite" );
-static ut::test_suite* testsuite_fem = BOOST_TEST_SUITE( "Life FEM Test Suite" );
+static ut::test_suite* testsuite_master = BOOST_TEST_SUITE( "Feel Master Test Suite" );
+static ut::test_suite* testsuite_core = BOOST_TEST_SUITE( "Feel Core Test Suite" );
+static ut::test_suite* testsuite_poly = BOOST_TEST_SUITE( "Feel Polynomials Test Suite" );
+static ut::test_suite* testsuite_mesh = BOOST_TEST_SUITE( "Feel Mesh Test Suite" );
+static ut::test_suite* testsuite_fem = BOOST_TEST_SUITE( "Feel FEM Test Suite" );
 
 }
 #endif

@@ -24,9 +24,9 @@
  */
 #include <signal.h>
 
-#include <life/lifecore/life.hpp>
-#include <life/lifecore/application.hpp>
-#include <life/options.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/application.hpp>
+#include <feel/options.hpp>
 
 #include <WrapperCommon.h>
 #include <WrapperMacros.h>
@@ -34,7 +34,7 @@
 #include "wrapper.hpp"
 #include "laplacian.hpp"
 
-typedef Life::Laplacian<1,1> Laplacian1dP1;
+typedef Feel::Laplacian<1,1> Laplacian1dP1;
 
 /* WARNING : Please read the following lines
  *
@@ -145,7 +145,7 @@ extern "C" {
                           CHECK_WRAPPER_IN(   WRAPPER_ARGUMENTS  );
                           CHECK_WRAPPER_OUT(  WRAPPER_ARGUMENTS  );
 
-                          *p_p_state = new Laplacian1dP1( Life::makeAbout() );
+                          *p_p_state = new Laplacian1dP1( Feel::makeAbout() );
                       } )
 
     /* The deleteState function is optional */

@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-   This file is part of the Life library
+   This file is part of the Feel library
 
    Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    Date: 2006-06-15
@@ -30,24 +30,24 @@
 #ifndef __stokesStabilized
 #define __stokesStabilized 1
 
-#include <life/options.hpp>
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/region.hpp>
+#include <feel/options.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/region.hpp>
 
-#include <life/lifepoly/im.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelpoly/im.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
-#include <life/lifefilters/importergmsh.hpp>
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/importergmsh.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
 
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/utility.hpp>
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 
 
@@ -56,42 +56,42 @@ const int LID = 1;
 std::string createDomain( double );
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-  Life::po::options_description stokesStabilizedoptions("StokesStabilized options");
+  Feel::po::options_description stokesStabilizedoptions("StokesStabilized options");
   stokesStabilizedoptions.add_options()
-    ("nu", Life::po::value<double>()->default_value( 0.01 ), "viscosity value")
-    ("hsize", Life::po::value<double>()->default_value( 1 ), "first h value to start convergence")
-    ("penalisation", Life::po::value<double>()->default_value( 1.0 ), "penalisation parameter")
+    ("nu", Feel::po::value<double>()->default_value( 0.01 ), "viscosity value")
+    ("hsize", Feel::po::value<double>()->default_value( 1 ), "first h value to start convergence")
+    ("penalisation", Feel::po::value<double>()->default_value( 1.0 ), "penalisation parameter")
     ("export", "export results(ensight, data file(1D)")
-    ("bctype", Life::po::value<int>()->default_value( 0 ), "bc")
-    ("b", Life::po::value<double>()->default_value( 0 ), "b")
-    ("matrix", Life::po::value<bool>()->default_value( 0 ), "print matrix")
-    ("errors", Life::po::value<bool>()->default_value( 1 ), "print errors")
-    ("timings", Life::po::value<bool>()->default_value( 1 ), "print timings")
-    ("graphics", Life::po::value<bool>()->default_value( 0 ), "export graphics")
+    ("bctype", Feel::po::value<int>()->default_value( 0 ), "bc")
+    ("b", Feel::po::value<double>()->default_value( 0 ), "b")
+    ("matrix", Feel::po::value<bool>()->default_value( 0 ), "print matrix")
+    ("errors", Feel::po::value<bool>()->default_value( 1 ), "print errors")
+    ("timings", Feel::po::value<bool>()->default_value( 1 ), "print timings")
+    ("graphics", Feel::po::value<bool>()->default_value( 0 ), "export graphics")
 
     ;
-  Life::po::options_description solveroptions("algebraic solver options");
+  Feel::po::options_description solveroptions("algebraic solver options");
   solveroptions.add_options()
-    ("tolerance", Life::po::value<double>()->default_value( 1.e-15 ), "tolerance of the iterative solvers")
-    ("maxiter", Life::po::value<int>()->default_value( 200 ), "set maximum number of iterations")
-    ("residual", Life::po::value<std::string>()->default_value( "" ), "test of residual for GMRES")
-    ("drop_tolerance", Life::po::value<double>()->default_value( 1.e-5 ), "drop tolerance for the preconditioner")
-    ("fillin", Life::po::value<int>()->default_value( 1 ), "fillin for the preconditioner")
+    ("tolerance", Feel::po::value<double>()->default_value( 1.e-15 ), "tolerance of the iterative solvers")
+    ("maxiter", Feel::po::value<int>()->default_value( 200 ), "set maximum number of iterations")
+    ("residual", Feel::po::value<std::string>()->default_value( "" ), "test of residual for GMRES")
+    ("drop_tolerance", Feel::po::value<double>()->default_value( 1.e-5 ), "drop tolerance for the preconditioner")
+    ("fillin", Feel::po::value<int>()->default_value( 1 ), "fillin for the preconditioner")
     ;
-  return stokesStabilizedoptions.add( solveroptions ).add( Life::life_options() );
+  return stokesStabilizedoptions.add( solveroptions ).add( Feel::feel_options() );
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "stokesStabilized" ,
+    Feel::AboutData about( "stokesStabilized" ,
                            "stokesStabilized" ,
                            "0.1",
                            "Stabilized Stokes (interior penalty) solver",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2007 Universite Joseph Fourier");
 
     about.addAuthor("Goncalo Pena", "developer", "goncalo.pena@epfl.ch", "");
@@ -100,7 +100,7 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
 template< int Order >
 class StokesStabilized
@@ -241,11 +241,11 @@ StokesStabilized<Order>::run( )
                             % this->vm()["hsize"].template as<double>()
                             );
     /*
-     * logs will be in <life repo>/<app name>/<entity>/P<p>/h_<h>
+     * logs will be in <feel repo>/<app name>/<entity>/P<p>/h_<h>
      */
     this->setLogs();
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     mesh_ptrtype mesh = createMesh( meshSize );
 
@@ -511,6 +511,6 @@ template<int Order> const uint16_type StokesStabilized<Order>::Dim;
 
 
 
-} // Life
+} // Feel
 
 #endif // __stokesStabilized

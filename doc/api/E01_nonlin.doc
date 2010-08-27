@@ -1,9 +1,9 @@
-namespace Life
+namespace Feel
 {
 /*! \page SolvingNonlinearEquations Solving nonlinear equations
 \ingroup Examples
 
-\life allows to solve nonlinear equations thanks to its interface to
+\feel allows to solve nonlinear equations thanks to its interface to
 the interface to the PETSc nonlinear solver library. It requires the
 implementation of two extra functions in your application that will
 update the jacobian matrix associated to the tangent problem and the
@@ -12,10 +12,10 @@ residual.
 Consider that you have an application class <tt>MyApp</tt> with a
 backend as data member
 \code
-#include <life/lifecore/life.hpp>
-#include <life/lifecore/application.hpp>
-#include <life/lifealg/backend.hpp>
-namespace Life {
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/application.hpp>
+#include <feel/feelalg/backend.hpp>
+namespace Feel {
 
 class MyApp : public Application
 {
@@ -80,7 +80,7 @@ class MyApp : public Application
 
   backend_ptrtype M_backend;
 };
-} // namespace Life
+} // namespace Feel
 \endcode
 
 The function <tt>updateJacobian! and \lstinline!updateResidual</tt>

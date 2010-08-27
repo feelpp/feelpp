@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2006-06-20
@@ -71,8 +71,8 @@ int
 main( int argc, char** argv )
 {
     /* assertions handling */
-    Life::Assert::setLog( "cavity3d.assert");
-    Life::Cavity<3> cavity( argc, argv, makeAbout(), makeOptions() );
+    Feel::Assert::setLog( "cavity3d.assert");
+    Feel::Cavity<3> cavity( argc, argv, makeAbout(), makeOptions() );
     cavity.run();
 }
 

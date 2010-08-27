@@ -1,6 +1,6 @@
-/* -*- mode: c++; coding: utf-8 -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-07
@@ -25,41 +25,41 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2010-07-15
  */
-/** include predefined life command line options */
-#include <life/options.hpp>
+/** include predefined feel command line options */
+#include <feel/options.hpp>
 
 /** include linear algebra backend */
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
 /** include function space class */
-#include <life/lifediscr/functionspace.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 
 /** include helper function to define \f$P_0\f$ functions associated with regions  */
-#include <life/lifediscr/region.hpp>
+#include <feel/feeldiscr/region.hpp>
 
 /** include integration methods */
-#include <life/lifepoly/im.hpp>
+#include <feel/feelpoly/im.hpp>
 
 /** include gmsh mesh importer */
-#include <life/lifefilters/gmsh.hpp>
+#include <feel/feelfilters/gmsh.hpp>
 
 /** include exporter factory class */
-#include <life/lifefilters/exporter.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
 /** include  polynomialset header */
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
-/** use Life namespace */
-using namespace Life;
-using namespace Life::vf;
+/** use Feel namespace */
+using namespace Feel;
+using namespace Feel::vf;
 
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
- * as an argument of a Life::Application subclass.
+ * as an argument of a Feel::Application subclass.
  *
  * \return the list of options
  */
@@ -70,19 +70,19 @@ makeOptions()
     po::options_description laplacianoptions("Laplacian options");
     laplacianoptions.add_options()
         ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
-        ("shape", Life::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
+        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
         ("nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
         ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ("penaldir", Life::po::value<double>()->default_value( 10 ),
+        ("penaldir", Feel::po::value<double>()->default_value( 10 ),
          "penalisation parameter for the weak boundary Dirichlet formulation")
         ;
-    return laplacianoptions.add( Life::life_options() );
+    return laplacianoptions.add( Feel::feel_options() );
 }
 
 /**
  * This routine defines some information about the application like
  * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Life::Application subclass.
+ * typically used as an argument of a Feel::Application subclass.
  *
  * \return some data about the application.
  */
@@ -94,7 +94,7 @@ makeAbout()
                      "laplacian" ,
                      "0.2",
                      "nD(n=1,2,3) Laplacian on simplices or simplex products",
-                     Life::AboutData::License_GPL,
+                     Feel::AboutData::License_GPL,
                      "Copyright (c) 2008-2009 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -276,7 +276,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     /**
      * Construction of the right hand side. F is the vector that holds

@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-   This file is part of the Life library
+   This file is part of the Feel library
 
    Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    Date: 2005-11-08
@@ -33,50 +33,50 @@
 #ifndef __TestALE
 #define __TestALE 1
 
-#include <life/options.hpp>
+#include <feel/options.hpp>
 
-#include <life/lifepoly/fekete.hpp>
-#include <life/lifealg/backend.hpp>
+#include <feel/feelpoly/fekete.hpp>
+#include <feel/feelalg/backend.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
 
-#include <life/lifecore/applicationxml.hpp>
+#include <feel/feelcore/applicationxml.hpp>
 
-#include <life/lifevf/vf.hpp>
-#include <life/lifefilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
-#include <life/lifediscr/operatorlagrangep1.hpp>
+#include <feel/feeldiscr/operatorlagrangep1.hpp>
 
-#include <life/lifediscr/mesh.hpp>
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/interpolate.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/interpolate.hpp>
 
 
-#include <life/lifediscr/ale.hpp>
+#include <feel/feeldiscr/ale.hpp>
 
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description meshHighOrderoptions("TestALE options");
+    Feel::po::options_description meshHighOrderoptions("TestALE options");
     meshHighOrderoptions.add_options()
-        ("hsize", Life::po::value<double>()->default_value( 2 ), "meshsize")
+        ("hsize", Feel::po::value<double>()->default_value( 2 ), "meshsize")
         ;
 
-    return meshHighOrderoptions.add( Life::life_options() );
+    return meshHighOrderoptions.add( Feel::feel_options() );
 }
 
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "TestALE" ,
+    Feel::AboutData about( "TestALE" ,
                            "TestALE" ,
                            "0.2",
                            "Test High order meshes",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2007 Universite Joseph Fourier");
 
     about.addAuthor("Goncalo Pena", "developer", "gpena@mat.uc.pt", "");
@@ -84,7 +84,7 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
 template< int N >
 class TestALE
@@ -218,7 +218,7 @@ TestALE<N>::run()
     if (this->preProcessing() == RUN_EXIT) return;
 
     boost::timer time;
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
 
     /*
@@ -380,5 +380,5 @@ TestALE<N>::run()
 
 } // end run routine
 
-} // end Life
+} // end Feel
 #endif // __TestALE

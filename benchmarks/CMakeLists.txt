@@ -1,4 +1,4 @@
-project( life-benchmarks )
+project( feel-benchmarks )
 
 # set(petsc_SOLVER_OPTIONS "-ksp_monitor -pc_type asm -pc_asm_blocks 2" )
 #set(petsc_SOLVER_OPTIONS "-pc_type lu -pc_factor_mat_solver_package umfpack" )
@@ -16,13 +16,13 @@ set(petsc_JACOBI_SOLVER_OPTIONS " -pc_type jacobi" )
 # RCMK renumbering):
 set(petsc_ILU_SOLVER_OPTIONS " -pc_type ilu -pc_factor_levels 6 -pc_factor_mat_ordering rcm " )
 
-macro(life_add_bench examplename)
+macro(feel_add_bench examplename)
 
-  set(targetname life_bench_${examplename})
+  set(targetname feel_bench_${examplename})
   set(filename ${examplename}.cpp)
   add_executable(${targetname} ${filename})
-  target_link_libraries(${targetname} ${LIFE_LIBRARIES} )
-endmacro(life_add_bench)
+  target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
+endmacro(feel_add_bench)
 
 foreach( DIR laplacian  navierstokes/kovasznay perf wrapper/python )
   add_subdirectory( ${DIR} )

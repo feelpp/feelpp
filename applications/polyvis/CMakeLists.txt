@@ -23,7 +23,7 @@
 #
 
 INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
-add_executable( life_polyvis
+add_executable( feel_polyvis
   polyvisapp.cpp polyvisbase.cpp
   crouzeixraviart2d.cpp crouzeixraviart3d.cpp
   hermite.cpp
@@ -31,14 +31,14 @@ add_executable( life_polyvis
   lagrange1d.cpp lagrange2d.cpp lagrange3d.cpp
   orthonormalpset1d.cpp orthonormalpset2d.cpp orthonormalpset3d.cpp
 )
-target_link_libraries(life_polyvis ${LIFE_LIBRARIES} )
+target_link_libraries(feel_polyvis ${FEEL_LIBRARIES} )
 
 foreach( poly lagrange orthonormalpset )
   foreach( dim 1 2 3)
     foreach( order 1 2 3 )
 
-      add_test( life_polyvis-${poly}-${dim}d-p${order}
-        life_polyvis
+      add_test( feel_polyvis-${poly}-${dim}d-p${order}
+        feel_polyvis
         --poly=${poly}
         --dim=${dim}
         --order=${order}  )
@@ -51,8 +51,8 @@ foreach( poly crouzeixraviart  )
   foreach( dim 2 3)
     foreach( order 1  )
 
-      add_test( life_polyvis-${poly}-${dim}d-p${order}
-        life_polyvis
+      add_test( feel_polyvis-${poly}-${dim}d-p${order}
+        feel_polyvis
         --poly=${poly}
         --dim=${dim}
         --order=${order}  )
@@ -65,8 +65,8 @@ foreach( poly raviartthomas  )
   foreach( dim 2 3)
     foreach( order 0 1 2 3  )
 
-      add_test( life_polyvis-${poly}-${dim}d-p${order}
-        life_polyvis
+      add_test( feel_polyvis-${poly}-${dim}d-p${order}
+        feel_polyvis
         --poly=${poly}
         --dim=${dim}
         --order=${order}  )

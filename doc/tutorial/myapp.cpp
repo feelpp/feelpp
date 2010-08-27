@@ -1,6 +1,6 @@
-/* -*- mode: c++ coding: utf-8 -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-04
@@ -26,17 +26,17 @@
    \date 2008-02-04
  */
 //# marker1 #
-#include <life/options.hpp>
-#include <life/lifecore/life.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/application.hpp>
 //# endmarker1 #
 
-using namespace Life;
+using namespace Feel;
 
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
- * as an argument of a Life::Application subclass.
+ * as an argument of a Feel::Application subclass.
  *
  * \return the list of options
  */
@@ -50,9 +50,9 @@ makeOptions()
         ("dt", po::value<double>()->default_value( 1 ), "time step value")
         ;
 
-    // return the options myappoptions and the life_options defined
-    // internally by Life
-    return myappoptions.add( life_options() );
+    // return the options myappoptions and the feel_options defined
+    // internally by Feel
+    return myappoptions.add( feel_options() );
 }
 //# endmarker2 #
 
@@ -60,7 +60,7 @@ makeOptions()
 /**
  * This routine defines some information about the application like
  * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Life::Application subclass.
+ * typically used as an argument of a Feel::Application subclass.
  *
  * \return some data about the application.
  */
@@ -72,7 +72,7 @@ makeAbout()
     AboutData about( "myapp" ,
                      "myapp" ,
                      "0.1",
-                     "my first Life application",
+                     "my first Feel application",
                      AboutData::License_GPL,
                      "Copyright (c) 2008 Universite Joseph Fourier");
 
@@ -87,7 +87,7 @@ makeAbout()
  * \class MyApp
  *
  * This is a demo class to illustrate what is done (at the very least)
- * in subclasses of Life::Application
+ * in subclasses of Feel::Application
  *
  */
 //# marker4 #
@@ -143,7 +143,7 @@ void MyApp::run()
     /** \endcode */
 
     /**
-     * store all subsequent data files in a HOME/life/doc/tutorial/myapp/
+     * store all subsequent data files in a HOME/feel/doc/tutorial/myapp/
      */
     /** \code */
     //# marker8 #
@@ -154,7 +154,7 @@ void MyApp::run()
 
     /**
      * print some information that will be written in the log file in
-     * HOME/life/doc/tutorial/myapp/myapp-1.0
+     * HOME/feel/doc/tutorial/myapp/myapp-1.0
      */
     /** \code */
     Log() << "the value of dt is " << this->vm()["dt"].as<double>() << "\n";

@@ -51,14 +51,14 @@ lesh2D = [1./2,1./4,1./8,1./12,1./16]
 lesh3D = [ .25, .125, 0.1, .08, .05]
 backend= '--backend=petsc'
 print "cleanup resulTest.txt"
-os.system('rm ~/life/'+options.prefix+'/TestConv/'+str(options.dim)+'D/P'+str(options.order)+'/nu_1/beta_1/resultTest.txt')
+os.system('rm ~/feel/'+options.prefix+'/TestConv/'+str(options.dim)+'D/P'+str(options.order)+'/nu_1/beta_1/resultTest.txt')
 
 for i in range(1,options.ntests+1) :
     print 'Execute '+str(options.program)+' avec h='+str(i)
     os.system(options.path+'/'+options.program+' --hsize='+str(options.hsize/i)+' '+backend)
 
 print 'Recuperation des resultats'
-os.system('cp ~/life/'+options.prefix+'/TestConv/'+str(options.dim)+'D/P'+str(options.order)+'/nu_1/beta_1/resultTest.txt .')
+os.system('cp ~/feel/'+options.prefix+'/TestConv/'+str(options.dim)+'D/P'+str(options.order)+'/nu_1/beta_1/resultTest.txt .')
 
 data=io.array_import.read_array('resultTest.txt')
 

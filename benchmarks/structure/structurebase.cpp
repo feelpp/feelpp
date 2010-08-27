@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-05-25
@@ -31,20 +31,20 @@
 #include <sstream>
 #include <string>
 
-#include <life/options.hpp>
-#include <life/lifemesh/geoentity.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
+#include <feel/options.hpp>
+#include <feel/feelmesh/geoentity.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
 
 #include <structurebase.hpp>
 #include <stvenant_kirchhoff.hpp>
 
-namespace Life
+namespace Feel
 {
 StructureBase::structure_ptrtype
-StructureBase::New( Life::po::variables_map const& vm )
+StructureBase::New( Feel::po::variables_map const& vm )
 {
     Log() << "Creating new structure model and solver\n";
-    using namespace Life;
+    using namespace Feel;
     if ( vm["d"].as<int>() == 2 )
         {
             if ( vm["sorder"].as<int>() == 3 )
@@ -62,37 +62,37 @@ StructureBase::New( Life::po::variables_map const& vm )
         }
 }
 
-Life::po::options_description
+Feel::po::options_description
 StructureBase::makeOptions()
 {
-    Life::po::options_description structureoptions("Structure benchmark options");
+    Feel::po::options_description structureoptions("Structure benchmark options");
     structureoptions.add_options()
-        ("d", Life::po::value<int>()->default_value( 2 ), "time step value")
-        ("dt", Life::po::value<double>()->default_value( 1 ), "time step value")
-        ("nsubdt", Life::po::value<int>()->default_value( 2 ), "number of sub time steps to save")
-        ("ft", Life::po::value<double>()->default_value( 1 ), "final time value")
+        ("d", Feel::po::value<int>()->default_value( 2 ), "time step value")
+        ("dt", Feel::po::value<double>()->default_value( 1 ), "time step value")
+        ("nsubdt", Feel::po::value<int>()->default_value( 2 ), "number of sub time steps to save")
+        ("ft", Feel::po::value<double>()->default_value( 1 ), "final time value")
 
-        ("sorder", Life::po::value<int>()->default_value( 8 ), "order of space discretisation for the displacement")
-        ("torder", Life::po::value<int>()->default_value( 2 ), "order of time discretisation")
+        ("sorder", Feel::po::value<int>()->default_value( 8 ), "order of space discretisation for the displacement")
+        ("torder", Feel::po::value<int>()->default_value( 2 ), "order of time discretisation")
 
-        ("gammabc", Life::po::value<double>()->default_value( 10 ), "penalisation parameter for weak Dirichlet condition")
+        ("gammabc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for weak Dirichlet condition")
 
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("mesh-type", Life::po::value<int>()->default_value( 1 ), "0 = oplagp1, 1 = Xh mesh")
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("mesh-type", Feel::po::value<int>()->default_value( 1 ), "0 = oplagp1, 1 = Xh mesh")
         ("export", "export results(ensight, data file(1D)")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return structureoptions.add( Life::life_options() );
+    return structureoptions.add( Feel::feel_options() );
 }
 
-Life::AboutData
+Feel::AboutData
 StructureBase::makeAbout()
 {
-    Life::AboutData about( "structure" ,
+    Feel::AboutData about( "structure" ,
                            "structure" ,
                            "0.1",
                            "nD(n=2,3) structure  benchmark",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2008 Université Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -139,7 +139,7 @@ StructureBase::StructureBase( StructureBase const& data )
     M_neumann.push_back( "bottom" );
     print();
 }
-StructureBase::StructureBase( int d, Life::po::variables_map const& vm )
+StructureBase::StructureBase( int d, Feel::po::variables_map const& vm )
     :
     M_vm ( vm ),
     M_dirichlet(),
@@ -167,14 +167,14 @@ StructureBase::~StructureBase()
 void
 StructureBase::print() const
 {
-    Life::Log() << "dt = " << this->dt() << "\n";
-    Life::Log() << " T = " << this->T() << "\n";
-    Life::Log() << "T0 = " << this->T0() << "\n";
+    Feel::Log() << "dt = " << this->dt() << "\n";
+    Feel::Log() << " T = " << this->T() << "\n";
+    Feel::Log() << "T0 = " << this->T0() << "\n";
 
-    Life::Log() << "order in space = " << this->spaceOrder() << "\n";
-    Life::Log() << "order in time = " << this->timeOrder() << "\n";
+    Feel::Log() << "order in space = " << this->spaceOrder() << "\n";
+    Feel::Log() << "order in time = " << this->timeOrder() << "\n";
 
-    Life::Log() << "gammabc = " << this->gammaBc() << "\n";
+    Feel::Log() << "gammabc = " << this->gammaBc() << "\n";
 
 
 
@@ -267,5 +267,5 @@ StructureBase::Inflow::operator()( uint16_type c1, uint16_type c2, node_type con
 }
 #endif
 
-} // Life
+} // Feel
 

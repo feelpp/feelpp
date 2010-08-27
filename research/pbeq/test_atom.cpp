@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-This file is part of the Life library
+This file is part of the Feel library
 
 Author(s): Simone Deparis <simone.deparis@epfl.ch>
 Date: 2007-07-10
@@ -33,7 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 int
 main( int argc, char** argv )
 {
-    Life::Atom a;
+    Feel::Atom a;
     std::ifstream pqrfile;
 
     if (argc == 1)
@@ -46,7 +46,7 @@ main( int argc, char** argv )
     pqrfile.open(argv[1], std::ifstream::in);
     if (pqrfile.fail())
         {
-            Life::Log() << "failed to open " << argv[1] << "\n";
+            Feel::Log() << "failed to open " << argv[1] << "\n";
             return 1;
         }
 
@@ -55,9 +55,9 @@ main( int argc, char** argv )
             a.showMe();
         }
     else
-        Life::Log() << "Problems reading atom" << "\n";
+        Feel::Log() << "Problems reading atom" << "\n";
 
-    Life::Log() << "Finished" << "\n";
+    Feel::Log() << "Finished" << "\n";
 
     return 0;
 

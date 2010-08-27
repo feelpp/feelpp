@@ -21,30 +21,30 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-project( life-research )
+project( feel-research )
 
 
 # a posteriori error estimation project
-if ( EXISTS ${LIFE_SOURCE_DIR}/research/apee )
+if ( EXISTS ${FEEL_SOURCE_DIR}/research/apee )
   add_subdirectory( apee )
 endif()
 
 # fluid-structure interaction project
-if ( EXISTS ${LIFE_SOURCE_DIR}/research/fsi )
+if ( EXISTS ${FEEL_SOURCE_DIR}/research/fsi )
   add_subdirectory( fsi )
 endif()
 
 # integro-differential equations project
-if ( EXISTS ${LIFE_SOURCE_DIR}/research/idf )
+if ( EXISTS ${FEEL_SOURCE_DIR}/research/idf )
   add_subdirectory( idf )
 endif()
 
 # IFP project
-if ( EXISTS ${LIFE_SOURCE_DIR}/research/ifp )
+if ( EXISTS ${FEEL_SOURCE_DIR}/research/ifp )
   add_subdirectory( ifp )
 endif()
 
 # Darcy project
-if ( EXISTS ${LIFE_SOURCE_DIR}/research/darcy )
+if ( EXISTS ${FEEL_SOURCE_DIR}/research/darcy )
   add_subdirectory( darcy )
 endif()

@@ -1,14 +1,14 @@
 function cylinder (Ti,Tf,dt, file,color)
   %%  Copyright (C) 2007 Université Joseph Fourier
   %% 
-  %%  This file is part of life_cylinder.
+  %%  This file is part of feel_cylinder.
   %% 
-  %%  life_cylinder is free software; you can redistribute it and/or modify
+  %%  feel_cylinder is free software; you can redistribute it and/or modify
   %%  it under the terms of the GNU General Public License as published by
   %%  the Free Software Foundation; either version 2, or (at your option)
   %%  any later version.
   %% 
-  %%  life_cylinder is distributed in the hope that it will be useful, but
+  %%  feel_cylinder is distributed in the hope that it will be useful, but
   %%  WITHOUT ANY WARRANTY; without even the implied warranty of
   %%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   %%  General Public License for more details.

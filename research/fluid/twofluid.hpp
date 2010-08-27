@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2006-10-06
@@ -26,49 +26,49 @@
    \author Christoph Winkelmann <christoph.winkelmann@epfl.ch>
    \date 2006-10-06
  */
-#include <life/lifecore/application.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
 
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporterensight.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporterensight.hpp>
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
-#include <life/lifediscr/oseen.hpp>
-#include <life/lifediscr/advreact.hpp>
+#include <feel/feeldiscr/oseen.hpp>
+#include <feel/feeldiscr/advreact.hpp>
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description twofluidoptions("TwoFluid options");
+    Feel::po::options_description twofluidoptions("TwoFluid options");
     twofluidoptions.add_options()
-        ("dt", Life::po::value<double>()->default_value( 0.1 ),
+        ("dt", Feel::po::value<double>()->default_value( 0.1 ),
          "time step value")
-        ("ft", Life::po::value<double>()->default_value( 1.0 ),
+        ("ft", Feel::po::value<double>()->default_value( 1.0 ),
          "Final time value")
-        ("mu+", Life::po::value<double>()->default_value( 1.0 ),
+        ("mu+", Feel::po::value<double>()->default_value( 1.0 ),
          "viscosity of fluid +")
-        ("mu-", Life::po::value<double>()->default_value( 1.0 ),
+        ("mu-", Feel::po::value<double>()->default_value( 1.0 ),
          "viscosity of fluid -")
-        ("rho+", Life::po::value<double>()->default_value( 1.0 ),
+        ("rho+", Feel::po::value<double>()->default_value( 1.0 ),
          "density of fluid +")
-        ("rho-", Life::po::value<double>()->default_value( 2.0 ),
+        ("rho-", Feel::po::value<double>()->default_value( 2.0 ),
          "density of fluid -")
-        ("g", Life::po::value<double>()->default_value( 9.81 ),
+        ("g", Feel::po::value<double>()->default_value( 9.81 ),
          "gravitation")
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ),
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ),
          "first h value to start convergence")
-        ("bccoeff", Life::po::value<double>()->default_value( 100.0 ),
+        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ),
          "coefficient for weak Dirichlet conditions")
-        ("fixpointtol", Life::po::value<double>()->default_value( 1.e6 ),
+        ("fixpointtol", Feel::po::value<double>()->default_value( 1.e6 ),
          "Convergence tolerance for fixed point sub-iterations")
-        ("divcomp", Life::po::value<double>()->default_value( 0.5 ),
+        ("divcomp", Feel::po::value<double>()->default_value( 0.5 ),
          "divergence compensation coefficient in advection (0,0.5,1)")
-        ("stabcoeff", Life::po::value<double>()->default_value( 0.5 ),
+        ("stabcoeff", Feel::po::value<double>()->default_value( 0.5 ),
          "streamline diffusion stabilization coefficient")
         ("export", "export results(ensight, data file(1D)")
         ;
@@ -76,14 +76,14 @@ makeOptions()
     return twofluidoptions;
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "twofluid" ,
+    Feel::AboutData about( "twofluid" ,
                             "twofluid" ,
                             "0.1",
                             "two fluid problem",
-                            Life::AboutData::License_GPL,
+                            Feel::AboutData::License_GPL,
                             "Copyright (c) 2006 EPFL");
 
     about.addAuthor("Christoph Winkelmann", "developer",
@@ -93,7 +93,7 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
 template<int Dim>
 class TwoFluid
@@ -325,7 +325,7 @@ TwoFluid<Dim>::run()
                             % (1./M_muM) );
     this->setLogs();
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     /*
      * First we create the mesh
@@ -520,4 +520,4 @@ TwoFluid<Dim>::exportResults( double time,
     M_timers["export"].second = M_timers["export"].first.elapsed();
     Debug() << "[timer] exportResults(): " << M_timers["export"].second << "\n";
 } // TwoFluid::export
-} // Life
+} // Feel

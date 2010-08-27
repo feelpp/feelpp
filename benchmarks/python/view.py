@@ -2,7 +2,7 @@
 
 # -*- mode: python -*-
 #
-#  This file is part of the Life library
+#  This file is part of the Feel library
 #
 #  Author(s): Florent Vielfaure <florent.vielfaure@gmail.com>
 #        Date: 2009-04-07

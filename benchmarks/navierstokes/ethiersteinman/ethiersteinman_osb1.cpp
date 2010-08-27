@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2007-04-08
@@ -29,7 +29,7 @@ x  modify it under the terms of the GNU Lesser General Public
 
 #include "ethiersteinman.hpp"
 
-namespace Life
+namespace Feel
 {
 
 void
@@ -47,7 +47,7 @@ EthierSteinman::oseenUpdateBdf1( Oseen<space_u_type, space_p_type, imOrder, ENTI
                                  bool updateStabilization,
                                  element_p_type& pn )
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     value_type epsCompress = this->vm()["epscompress"].as<double>();
 
@@ -73,4 +73,4 @@ EthierSteinman::oseenUpdateBdf1( Oseen<space_u_type, space_p_type, imOrder, ENTI
                   /* updtJ = */ updateStabilization );
 }
 
-} // Life
+} // Feel

@@ -1,0 +1,56 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the FeelV library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
+       Date: 2004-11-14
+
+  Copyright (C) 2009 Université de Grenoble 1
+  Copyright (C) 2004 EPFL
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+/**
+   \file feelcore
+   \author Christophe Prud'homme <christophe.prudhomme@epfl.ch>
+   \date 2004-11-14
+   \version 1.0
+*/
+
+/*!\mainpage FeelV Core Functionality Library
+
+All FeelV programs use this library to provide basic functionality
+such as area debugging, macros for pre and post assertions, predefined
+types, design patterns implementation and many other things
+
+All FeelV applications should link to the feelcore library.
+
+-# \ref macros_page
+-# \ref types_page
+-# \ref Debug
+-# \ref patterns
+*/
+
+/*!
+  \page patterns FeelV Design Patterns
+
+  \section intro Introduction
+
+  \section factory Factory Pattern
+
+  \section factory Abstract Factory Pattern
+
+  \section singleton Singleton Pattern
+*/

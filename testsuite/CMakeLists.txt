@@ -22,7 +22,7 @@
 #
 #
 foreach( testdir core alg mesh poly filters material discr )
-  add_subdirectory( life${testdir} )
+  add_subdirectory( feel${testdir} )
 endforeach()
 
 

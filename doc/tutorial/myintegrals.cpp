@@ -1,6 +1,6 @@
-/* -*- mode: c++ coding: utf-8 -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-07
@@ -25,19 +25,19 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-02-07
  */
-#include <life/options.hpp>
-#include <life/lifecore/life.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
-
-
-#include <life/lifevf/vf.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
 
-using namespace Life;
+#include <feel/feelvf/vf.hpp>
+
+
+using namespace Feel;
 
 inline
 po::options_description
@@ -46,9 +46,9 @@ makeOptions()
     po::options_description myintegralsoptions("MyIntegrals options");
     myintegralsoptions.add_options()
         ("hsize", po::value<double>()->default_value( 0.2 ), "mesh size")
-        ("shape", Life::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
+        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
         ;
-    return myintegralsoptions.add( Life::life_options() );
+    return myintegralsoptions.add( Feel::feel_options() );
 }
 inline
 AboutData
@@ -58,7 +58,7 @@ makeAbout()
                      "myintegrals" ,
                      "0.3",
                      "nD(n=1,2,3) MyIntegrals on simplices or simplex products",
-                     Life::AboutData::License_GPL,
+                     Feel::AboutData::License_GPL,
                      "Copyright (c) 2008-2010 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -124,7 +124,7 @@ template<int Dim>
 void
 MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";

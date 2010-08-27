@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-   This file is part of the Life library
+   This file is part of the Feel library
 
    Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    Date: 2008-05-02
@@ -31,16 +31,16 @@
 #include <sstream>
 #include <string>
 
-#include <life/options.hpp>
+#include <feel/options.hpp>
 
 #include <data.hpp>
 #include <turek.hpp>
 
 
 Data::data_ptrtype
-Data::New( Life::po::variables_map const& vm )
+Data::New( Feel::po::variables_map const& vm )
 {
-    using namespace Life;
+    using namespace Feel;
     if ( vm["d"].as<int>() == 2 )
         {
             if ( vm["order-u"].as<int>() == 2 )
@@ -100,56 +100,56 @@ Data::New( Life::po::variables_map const& vm )
 throw std::logic_error("invalid solver specifications" );
 }
 
-Life::po::options_description
+Feel::po::options_description
 Data::makeOptions()
 {
-    Life::po::options_description turekoptions("Turek benchmark options");
+    Feel::po::options_description turekoptions("Turek benchmark options");
     turekoptions.add_options()
-        ("d", Life::po::value<int>()->default_value( 2 ), "time step value")
+        ("d", Feel::po::value<int>()->default_value( 2 ), "time step value")
 
-        ("Re", Life::po::value<double>()->default_value( 20 ), "Reynolds number")
-        ("rho", Life::po::value<double>()->default_value( 1 ), "density (kg/m^3)")
-        ("nu", Life::po::value<double>()->default_value( 1e-3 ), "dynamic viscosity (Pa s)")
-        ("inflow-type", Life::po::value<int>()->default_value( 0 ), "inflow type : 0=steady Poiseuille, 1=unsteady Poiseuille")
-        ("cross-section-type", Life::po::value<int>()->default_value( 0 ), "cross section type : 0=circular, 1=square")
+        ("Re", Feel::po::value<double>()->default_value( 20 ), "Reynolds number")
+        ("rho", Feel::po::value<double>()->default_value( 1 ), "density (kg/m^3)")
+        ("nu", Feel::po::value<double>()->default_value( 1e-3 ), "dynamic viscosity (Pa s)")
+        ("inflow-type", Feel::po::value<int>()->default_value( 0 ), "inflow type : 0=steady Poiseuille, 1=unsteady Poiseuille")
+        ("cross-section-type", Feel::po::value<int>()->default_value( 0 ), "cross section type : 0=circular, 1=square")
 
-        ("order-geo", Life::po::value<int>()->default_value( 2 ), "order of geometry")
-        ("order-u", Life::po::value<int>()->default_value( 2 ), "order of spatial discretisation (velocity)")
-        ("order-p", Life::po::value<int>()->default_value( 1 ), "order of spatial discretisation (pressure)")
+        ("order-geo", Feel::po::value<int>()->default_value( 2 ), "order of geometry")
+        ("order-u", Feel::po::value<int>()->default_value( 2 ), "order of spatial discretisation (velocity)")
+        ("order-p", Feel::po::value<int>()->default_value( 1 ), "order of spatial discretisation (pressure)")
 
-        ("gamma-bc", Life::po::value<double>()->default_value( 100 ), "penalisation parameter")
-        ("gamma-u", Life::po::value<double>()->default_value( 10 ), "stabilisation parameter for velocity")
-        ("gamma-p", Life::po::value<double>()->default_value( 10 ), "stabilisation parameter for velocity")
+        ("gamma-bc", Feel::po::value<double>()->default_value( 100 ), "penalisation parameter")
+        ("gamma-u", Feel::po::value<double>()->default_value( 10 ), "stabilisation parameter for velocity")
+        ("gamma-p", Feel::po::value<double>()->default_value( 10 ), "stabilisation parameter for velocity")
 
-        ("gamma-divdiv", Life::po::value<double>()->default_value( 0.0 ), "stabilisation parameter for divergence jumps")
+        ("gamma-divdiv", Feel::po::value<double>()->default_value( 0.0 ), "stabilisation parameter for divergence jumps")
 
-        ("delta-divdiv", Life::po::value<double>()->default_value( 0.0 ), "divergence penalty term")
+        ("delta-divdiv", Feel::po::value<double>()->default_value( 0.0 ), "divergence penalty term")
 
-        ("eps-pseudo-compress", Life::po::value<double>()->default_value( 0.0 ), "pseudo compressibility term (pressure coefficient)")
-
-
-        ("linalg-same-prec", Life::po::value<int>()->default_value( 1 ), "use same preconditioner")
-        ("init", Life::po::value<int>()->default_value( 1 ), "initialize Navier-Stokes solver (0=zero, 1=Stokes)")
+        ("eps-pseudo-compress", Feel::po::value<double>()->default_value( 0.0 ), "pseudo compressibility term (pressure coefficient)")
 
 
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("h-cyl-scale", Life::po::value<double>()->default_value( 5 ), "scale by which hsize is divided on the cylinder")
+        ("linalg-same-prec", Feel::po::value<int>()->default_value( 1 ), "use same preconditioner")
+        ("init", Feel::po::value<int>()->default_value( 1 ), "initialize Navier-Stokes solver (0=zero, 1=Stokes)")
 
-        ("export", Life::po::value<int>()->default_value( 0 ), "export strategy (0=no export, 1=same mesh, 2=finest mesh)")
+
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("h-cyl-scale", Feel::po::value<double>()->default_value( 5 ), "scale by which hsize is divided on the cylinder")
+
+        ("export", Feel::po::value<int>()->default_value( 0 ), "export strategy (0=no export, 1=same mesh, 2=finest mesh)")
 
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return turekoptions.add( Life::life_options() );
+    return turekoptions.add( Feel::feel_options() );
 }
 
-Life::AboutData
+Feel::AboutData
 Data::makeAbout()
 {
-    Life::AboutData about( "turek" ,
+    Feel::AboutData about( "turek" ,
                            "turek" ,
                            "0.1",
                            "nD(n=2,3) Turek  benchmark",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2008 Université Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -244,7 +244,7 @@ Data::Data( Data const& data )
 
     print();
 }
-Data::Data( int d, Life::po::variables_map const& vm )
+Data::Data( int d, Feel::po::variables_map const& vm )
     :
     M_vm ( vm ),
     M_dirichlet_velocity(),
@@ -294,37 +294,37 @@ void
 Data::print() const
 {
 
-    Life::Log() << "Simulation parameters\n";
-    Life::Log() << "=====================\n";
-    Life::Log() << "D = " << this->D() << "\n";
-    Life::Log() << "H = " << this->H() << "\n";
-    Life::Log() << "h = " << this->h() << "\n";
-    Life::Log() << "h-cyl-scale = " << this->hCylinderScale() << "\n";
-    Life::Log() << "Re = " << this->Re() << "\n";
-    Life::Log() << "rho = " << this->rho() << "\n";
-    Life::Log() << "nu = " << this->nu() << "\n";
-    Life::Log() << "mu = " << this->mu() << "\n";
-    Life::Log() << "inflow type = " << this->inflowType() << " (0: steady Poiseuille, 1: unsteady Poiseuille)\n";
-    Life::Log() << "cross section type = " << this->crossSectionType() << " (0: circilar, 1: square)\n";
+    Feel::Log() << "Simulation parameters\n";
+    Feel::Log() << "=====================\n";
+    Feel::Log() << "D = " << this->D() << "\n";
+    Feel::Log() << "H = " << this->H() << "\n";
+    Feel::Log() << "h = " << this->h() << "\n";
+    Feel::Log() << "h-cyl-scale = " << this->hCylinderScale() << "\n";
+    Feel::Log() << "Re = " << this->Re() << "\n";
+    Feel::Log() << "rho = " << this->rho() << "\n";
+    Feel::Log() << "nu = " << this->nu() << "\n";
+    Feel::Log() << "mu = " << this->mu() << "\n";
+    Feel::Log() << "inflow type = " << this->inflowType() << " (0: steady Poiseuille, 1: unsteady Poiseuille)\n";
+    Feel::Log() << "cross section type = " << this->crossSectionType() << " (0: circilar, 1: square)\n";
 
-    Life::Log() << "Ubar = " << this->Ubar() << "\n";
-    Life::Log() << "Um = " << this->Um() << "\n";
+    Feel::Log() << "Ubar = " << this->Ubar() << "\n";
+    Feel::Log() << "Um = " << this->Um() << "\n";
 
-    Life::Log() << "Stabilisation/Penalisation parameters\n";
-    Life::Log() << "=====================================\n";
-    Life::Log() << "gamma-bc = " << this->gammaBc() << "\n";
-    Life::Log() << "gamma-u = " << this->gammaU() << "\n";
-    Life::Log() << "gamma-p = " << this->gammaP() << "\n";
-    Life::Log() << "gamma-divdiv = " << this->gammaDivDiv() << "\n";
-    Life::Log() << "delta-divdiv = " << this->deltaDivDiv() << "\n";
+    Feel::Log() << "Stabilisation/Penalisation parameters\n";
+    Feel::Log() << "=====================================\n";
+    Feel::Log() << "gamma-bc = " << this->gammaBc() << "\n";
+    Feel::Log() << "gamma-u = " << this->gammaU() << "\n";
+    Feel::Log() << "gamma-p = " << this->gammaP() << "\n";
+    Feel::Log() << "gamma-divdiv = " << this->gammaDivDiv() << "\n";
+    Feel::Log() << "delta-divdiv = " << this->deltaDivDiv() << "\n";
 
-    Life::Log() << "eps-peusdo-compress = " << this->epsPseudoCompressibility() << "\n";
+    Feel::Log() << "eps-peusdo-compress = " << this->epsPseudoCompressibility() << "\n";
 
-    Life::Log() << "linalg-same-prec = " << this->useSamePreconditioner() << "\n";
+    Feel::Log() << "linalg-same-prec = " << this->useSamePreconditioner() << "\n";
 
-    Life::Log() << "init = " << this->init() << "\n";
+    Feel::Log() << "init = " << this->init() << "\n";
 
-    Life::Log() << "export = " << this->doExport() << "\n";
+    Feel::Log() << "export = " << this->doExport() << "\n";
 
 
 
@@ -332,7 +332,7 @@ Data::print() const
 double
 Data::scalingForce() const
 {
-  return  2./(this->rho()*Life::math::pow(this->Ubar(),2)*this->D()*Life::math::pow(this->H(),M_dimension-2));
+  return  2./(this->rho()*Feel::math::pow(this->Ubar(),2)*this->D()*Feel::math::pow(this->H(),M_dimension-2));
 }
 Data::node_type
 Data::xa() const
@@ -740,14 +740,14 @@ void createOctave()
     ostr << "function cylinder (Ti,Tf,dt, file,color)\n"
          << "  %%  Copyright (C) 2007 Université Joseph Fourier\n"
          << "  %% \n"
-         << "  %%  This file is part of life_cylinder.\n"
+         << "  %%  This file is part of feel_cylinder.\n"
          << "  %% \n"
-         << "  %%  life_cylinder is free software; you can redistribute it and/or modify\n"
+         << "  %%  feel_cylinder is free software; you can redistribute it and/or modify\n"
          << "  %%  it under the terms of the GNU General Public License as published by\n"
          << "  %%  the Free Software Foundation; either version 2, or (at your option)\n"
          << "  %%  any later version.\n"
          << "  %% \n"
-         << "  %%  life_cylinder is distributed in the hope that it will be useful, but\n"
+         << "  %%  feel_cylinder is distributed in the hope that it will be useful, but\n"
          << "  %%  WITHOUT ANY WARRANTY; without even the implied warranty of\n"
          << "  %%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\n"
          << "  %%  General Public License for more details.\n"

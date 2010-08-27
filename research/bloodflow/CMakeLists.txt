@@ -24,5 +24,5 @@
 set( EXAMPLES oned )
 
 foreach( EXAMPLE ${EXAMPLES} )
-  life_add_example( ${EXAMPLE} )
+  feel_add_example( ${EXAMPLE} )
 endforeach()

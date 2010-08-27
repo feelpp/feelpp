@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-06-09
@@ -27,18 +27,18 @@
    \date 2010-06-09
  */
 //# marker1 #
-#include <life/options.hpp>
-#include <life/lifecore/life.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/application.hpp>
 //# endmarker1 #
 
-namespace Life
+namespace Feel
 {
 
 /**
  * This routine defines some information about the application like
  * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Life::Application subclass.
+ * typically used as an argument of a Feel::Application subclass.
  *
  * \return some data about the application.
  */
@@ -50,7 +50,7 @@ makeWrapper1About()
     AboutData about( "wrapper1" ,
                      "wrapper1" ,
                      "0.1",
-                     "my Life wrapper",
+                     "my Feel wrapper",
                      AboutData::License_GPL,
                      "Copyright (c) 2010 Universite Joseph Fourier");
 
@@ -68,7 +68,7 @@ makeWrapper1About()
  * \class Wrapper1App
  *
  * This is a demo class to illustrate what is done (at the very least)
- * in subclasses of Life::Application
+ * in subclasses of Feel::Application
  *
  */
 //# marker4 #

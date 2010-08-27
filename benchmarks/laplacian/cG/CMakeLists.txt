@@ -22,7 +22,7 @@
 #
 #
 INCLUDE_DIRECTORIES (
-  ${LIFE_SOURCE_DIR}/benchmarks/laplacian/cG
+  ${FEEL_SOURCE_DIR}/benchmarks/laplacian/cG
   )
 ENABLE_TESTING()
 foreach( BENCH laplacian1dP1 laplacian1dP5
@@ -33,20 +33,20 @@ foreach( BENCH laplacian1dP1 laplacian1dP5
     laplacian3dP1h
     laplacian2dP1v laplacian2dP4v )
 
-    life_add_bench( ${BENCH} )
+    feel_add_bench( ${BENCH} )
 
     # test each backend
     foreach( BACKEND petsc trilinos )
-      add_test( life_bench_${BENCH}-${BACKEND}-strong
-        ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
+      add_test( feel_bench_${BENCH}-${BACKEND}-strong
+        ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
-        --path=${LIFE_BUILD_DIR}/benchmarks/laplacian/cG/
+        --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/cG/
         --cmdargs="--backend=${BACKEND} --export=0 ${${BACKEND}_SOLVER_OPTIONS}" )
-      add_test( life_bench_${BENCH}-${BACKEND}-weak
-        ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
+      add_test( feel_bench_${BENCH}-${BACKEND}-weak
+        ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --mode=0
-        --path=${LIFE_BUILD_DIR}/benchmarks/laplacian/cG/
+        --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/cG/
         --cmdargs="--backend=${BACKEND} --weak --export=0 ${${BACKEND}_SOLVER_OPTIONS}")
 
     endforeach()
@@ -55,20 +55,20 @@ endforeach()
 
 foreach( BENCH     laplacian3dP1 laplacian3dP2 laplacian3dP3 laplacian3dP5)
 
-    life_add_bench( ${BENCH} )
+    feel_add_bench( ${BENCH} )
 
     # test each backend
     foreach( BACKEND petsc trilinos )
-      add_test( life_bench_${BENCH}-${BACKEND}-strong
-        ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
+      add_test( feel_bench_${BENCH}-${BACKEND}-strong
+        ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
-        --path=${LIFE_BUILD_DIR}/benchmarks/laplacian/cG/
+        --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/cG/
         --cmdargs="--backend=${BACKEND} --export=0 ${${BACKEND}_SOLVER_OPTIONS}" )
-      add_test( life_bench_${BENCH}-${BACKEND}-weak
-        ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
+      add_test( feel_bench_${BENCH}-${BACKEND}-weak
+        ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --mode=0
-        --path=${LIFE_BUILD_DIR}/benchmarks/laplacian/cG/
+        --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/cG/
         --cmdargs="--backend=${BACKEND} --weak --export=0 ${${BACKEND}_SOLVER_OPTIONS}")
 
     endforeach()

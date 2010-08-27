@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2006-06-20
@@ -34,17 +34,17 @@ main( int argc, char** argv )
 {
   //MPI_Init(&argc, &argv);
 
-  Life::TestALE<1> mesh1( argc, argv, makeAbout(), makeOptions());
+  Feel::TestALE<1> mesh1( argc, argv, makeAbout(), makeOptions());
   mesh1.run();
     /*
-  Life::TestALE<2> mesh2( argc, argv, makeAbout(), makeOptions());
+  Feel::TestALE<2> mesh2( argc, argv, makeAbout(), makeOptions());
   mesh2.run();
   */
   /*
-  Life::TestALE<3> mesh3( argc, argv, makeAbout(), makeOptions());
+  Feel::TestALE<3> mesh3( argc, argv, makeAbout(), makeOptions());
   mesh3.run();
 
-  Life::TestALE<4> mesh4( argc, argv, makeAbout(), makeOptions());
+  Feel::TestALE<4> mesh4( argc, argv, makeAbout(), makeOptions());
   mesh4.run();
   */
 }

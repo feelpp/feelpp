@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-03-04
@@ -47,8 +47,8 @@ inline po::options_description makeOptions()
         ("length", po::value<double>()->default_value(1.0), "length of the room")
         ;
 
-	// return the options as well as the life options
-	return convectionoptions.add( life_options() );
+	// return the options as well as the feel options
+	return convectionoptions.add( feel_options() );
 };
 
 
@@ -75,14 +75,14 @@ makeAbout()
 int
 main( int argc, char** argv )
 {
-    using namespace Life;
+    using namespace Feel;
 
     const int Order_s(2);
     const int Order_p(1);
     const int Order_t(2);
 
     /* assertions handling */
-    Life::Assert::setLog( "convection.assert");
+    Feel::Assert::setLog( "convection.assert");
 
     /* define and run application */
     Convection<Order_s, Order_p, Order_t> myconvection( argc, argv, makeAbout(), makeOptions() );

@@ -21,8 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-project( life-applications )
+project( feel-applications )
 add_subdirectory( polyvis )
-if ( EXISTS ${LIFE_SOURCE_DIR}/applications/opus )
+if ( EXISTS ${FEEL_SOURCE_DIR}/applications/opus )
 #     add_subdirectory( opus )
 endif()

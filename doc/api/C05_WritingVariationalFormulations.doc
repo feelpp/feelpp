@@ -1,5 +1,5 @@
 // -*- mode: c++; coding: utf-8 -*-
-namespace Life
+namespace Feel
 {
 /*! \page WritingVariationalFormulations Writing Variational Formulations
 
@@ -130,8 +130,8 @@ size of the face. The inconvenient of this formulation is the
 introduction of the parameter \f$\mu\f$, but the advantage is the
 \emph{weak} treatment of the Dirichlet condition.
 
-\subsection LifeFormulation Life formulation
-\label{sec:life-formulation-1}
+\subsection FeelFormulation Feel formulation
+\label{sec:feel-formulation-1}
 
 First we define the \f$f\f$ and \f$g\f$. To do that we use the new C++
 <tt>auto</tt> keyword and associate to <tt>f</tt> and
@@ -359,7 +359,7 @@ block. \f$\mathcal{A}\f$ is a symetric positive definite matrix and thus
 the system \f$\mathcal{A} \mathcal{U} = \mathcal{F}\f$ enjoys a unique
 solution.
 
-\subsection LifeFormulation Life formulation
+\subsection FeelFormulation Feel formulation
 
 
 Regarding the implementation of the Stokes problem~\ref{prob:4}, we
@@ -424,7 +424,7 @@ block \f$C\f$ and finally the boundary conditions.
 
 The figure~\ref{fig:2} displays \f$p\f$ and \f$\mathbf{u}\f$ which are available in
 \verbatim
-  ls ~/life/doc/tutorial/stokes/Simplex_2_1_2/P2/h_0.05
+  ls ~/feel/doc/tutorial/stokes/Simplex_2_1_2/P2/h_0.05
 \endverbatim
 
 \htmlonly <table><tr><td> \endhtmlonly

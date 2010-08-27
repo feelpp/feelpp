@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the LifeV library
+  This file is part of the FeelV library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@epfl.ch>
        Date: 2006-07-04
@@ -37,21 +37,21 @@
 #include <boost/program_options.hpp>
 #include <boost/lambda/bind.hpp>
 
-#include <lifeconfig.h>
+#include <feelconfig.h>
 
 
-#include <life/options.hpp>
-#include <life/lifecore/life.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
 
-#include <life/lifealg/backend.hpp>
-#include <life/lifevf/vf.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #if defined(HAVE_GOOGLE_PROFILER_H)
 #include <google/profiler.h>
@@ -60,9 +60,9 @@
 
 
 
-namespace Life{
+namespace Feel{
 
-using namespace Life::vf;
+using namespace Feel::vf;
 
 
 /*!
@@ -103,12 +103,12 @@ public:
      */
     //@{
 
-    LIFE_DONT_INLINE Bench1( int argc,
+    FEEL_DONT_INLINE Bench1( int argc,
                              char** argv,
                              AboutData const& ad,
                              po::options_description const& od );
 
-    LIFE_DONT_INLINE ~Bench1();
+    FEEL_DONT_INLINE ~Bench1();
 
     //@}
 
@@ -147,36 +147,36 @@ protected:
 
 private:
 
-    template<typename FSType> LIFE_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<1> );
-    template<typename FSType> LIFE_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<2> );
-    template<typename FSType> LIFE_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<3> );
-    template<typename FSType> LIFE_DONT_INLINE void R( boost::shared_ptr<FSType> const& Xh );
-    template<typename FSType> LIFE_DONT_INLINE void D( boost::shared_ptr<FSType> const& Xh );
-    template<typename FSType> LIFE_DONT_INLINE void DR( boost::shared_ptr<FSType> const& Xh );
+    template<typename FSType> FEEL_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<1> );
+    template<typename FSType> FEEL_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<2> );
+    template<typename FSType> FEEL_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<3> );
+    template<typename FSType> FEEL_DONT_INLINE void R( boost::shared_ptr<FSType> const& Xh );
+    template<typename FSType> FEEL_DONT_INLINE void D( boost::shared_ptr<FSType> const& Xh );
+    template<typename FSType> FEEL_DONT_INLINE void DR( boost::shared_ptr<FSType> const& Xh );
 
-    template<typename FSType> LIFE_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1> );
-    template<typename FSType> LIFE_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2> );
-    template<typename FSType> LIFE_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3> );
+    template<typename FSType> FEEL_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1> );
+    template<typename FSType> FEEL_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2> );
+    template<typename FSType> FEEL_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3> );
     /**
      * 1D performance test
      */
-    LIFE_DONT_INLINE void run1d();
+    FEEL_DONT_INLINE void run1d();
 
     /**
      * 2D performance test
      */
-    LIFE_DONT_INLINE void run2d();
+    FEEL_DONT_INLINE void run2d();
 
     /**
      * 3D performance test
      */
-    LIFE_DONT_INLINE void run3d();
+    FEEL_DONT_INLINE void run3d();
 
     /**
      * dimension independant code
      */
     template<typename MeshType, int Order>
-    LIFE_DONT_INLINE void bench1( boost::shared_ptr<MeshType> & mesh );
+    FEEL_DONT_INLINE void bench1( boost::shared_ptr<MeshType> & mesh );
 
 private:
 

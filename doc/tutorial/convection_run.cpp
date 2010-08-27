@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-03-04
@@ -47,7 +47,7 @@ Convection<Order_s, Order_p, Order_t>::run()
     if ( ierr == RUN_EXIT )
         return;
 
-	using namespace Life::vf;
+	using namespace Feel::vf;
 
 	// All together timer
 	timers["all"].first.restart();

@@ -25,13 +25,13 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
-add_executable( life_perf
+add_executable( feel_perf
   bench1_main.cpp
   bench1_run.cpp
   bench1_run1d.cpp
   bench1_run2d.cpp
   bench1_run3d.cpp
   )
-target_link_libraries(life_perf ${LIFE_LIBRARIES} )
-# add_test( perf COMMAND life_perf --hsi
+target_link_libraries(feel_perf ${FEEL_LIBRARIES} )
+# add_test( perf COMMAND feel_perf --hsi
 

@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Simone Deparis <simone.deparis@epfl.ch>
        Date: 2007-07-17
@@ -29,10 +29,10 @@
 #ifndef _MYMESH_HPP
 #define _MYMESH_HPP
 
-#include <life/lifemesh/geoentity.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
+#include <feel/feelmesh/geoentity.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
 
-namespace Life
+namespace Feel
 {
 
 /**
@@ -119,7 +119,7 @@ public:
 
     void setPointCharacteristic( std::vector<double> const&  ptChar )
     {
-        LIFE_ASSERT( this->nDim != ptChar.size() )( this->nDim ).error( "invalid dimension" );
+        FEEL_ASSERT( this->nDim != ptChar.size() )( this->nDim ).error( "invalid dimension" );
         _M_ptChar.push_back(ptChar);
     }
 
@@ -161,6 +161,6 @@ private:
 
 }; // end class myMesh
 
-} // end namespace Life
+} // end namespace Feel
 
 #endif

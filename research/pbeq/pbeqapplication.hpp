@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Simone Deparis <simone.deparis@epfl.ch>
        Date: 2007-08-31
@@ -29,10 +29,10 @@
 #ifndef __PBEQAPPLICATION_H
 #define __PBEQAPPLICATION_H 1
 
-#include <life/lifecore/application.hpp>
-#include <life/lifealg/backend.hpp>
+#include <feel/feelcore/application.hpp>
+#include <feel/feelalg/backend.hpp>
 
-namespace Life
+namespace Feel
 {
 
 typedef double value_type;
@@ -40,7 +40,7 @@ typedef Application  application_type;
 typedef Backend<value_type> backend_type;
 typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
-} // end namespace Life
+} // end namespace Feel
 
 
 #endif // __PBEQAPPLICATION_H

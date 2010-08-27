@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-05-25
@@ -29,13 +29,13 @@
 #ifndef __StructureBase_H
 #define __StructureBase_H 1
 
-#include <life/lifecore/life.hpp>
-#include <life/lifecore/typetraits.hpp>
-#include <life/lifealg/glas.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/typetraits.hpp>
+#include <feel/feelalg/glas.hpp>
+#include <feel/feelcore/application.hpp>
 
 
-namespace Life
+namespace Feel
 {
 /**
  * \class StructureBase
@@ -53,7 +53,7 @@ public:
      */
     //@{
 
-    typedef Life::node<double>::type node_type;
+    typedef Feel::node<double>::type node_type;
 
     typedef StructureBase structure_type;
     typedef boost::shared_ptr<structure_type> structure_ptrtype;
@@ -65,10 +65,10 @@ public:
      */
     //@{
 
-    static structure_ptrtype New( Life::po::variables_map const& vm );
+    static structure_ptrtype New( Feel::po::variables_map const& vm );
 
     StructureBase( int d );
-    StructureBase( int d, Life::po::variables_map const& vm );
+    StructureBase( int d, Feel::po::variables_map const& vm );
     StructureBase( StructureBase const & );
     ~StructureBase();
 
@@ -85,7 +85,7 @@ public:
      */
     //@{
 
-    Life::po::variables_map vm() const { return M_vm; }
+    Feel::po::variables_map vm() const { return M_vm; }
 
     double d() const { return M_dimension; }
     double h() const { return M_h; }
@@ -122,8 +122,8 @@ public:
 
     void print() const;
 
-    static Life::AboutData makeAbout();
-    static Life::po::options_description makeOptions();
+    static Feel::AboutData makeAbout();
+    static Feel::po::options_description makeOptions();
 
     virtual void run() = 0;
 
@@ -135,7 +135,7 @@ public:
 protected:
 
 
-    Life::po::variables_map M_vm;
+    Feel::po::variables_map M_vm;
 
     int M_dimension;
 
@@ -154,5 +154,5 @@ protected:
     std::vector<std::string> M_neumann;
 
 };
-} // Life
+} // Feel
 #endif /* __StructureBase_H */

@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-06-18
@@ -27,7 +27,7 @@
    \date 2010-06-18
  */
 
-namespace Life
+namespace Feel
 {
 template<int Dim, int _OrderU, int _OrderP, template<uint16_type,uint16_type,uint16_type> class Entity>
 Stokes<Dim, _OrderU, _OrderP, Entity>::Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
@@ -154,7 +154,7 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
 
     if (this->preProcessing() == RUN_EXIT) return;
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     boost::timer t;
 
@@ -269,7 +269,7 @@ Stokes<Dim, _OrderU, _OrderP, Entity>::run()
           this->vm()["stab-p"].template as<bool>()) ||
          this->vm()["stab-div"].template as<bool>())
         pattern |= DOF_PATTERN_NEIGHBOR;
-    Life::Context graph( pattern );
+    Feel::Context graph( pattern );
     Log() << "[stokes] test : " << ( graph.test ( DOF_PATTERN_DEFAULT ) || graph.test ( DOF_PATTERN_NEIGHBOR ) ) << "\n";
     Log() << "[stokes]  : graph.test ( DOF_PATTERN_DEFAULT )=" <<  graph.test ( DOF_PATTERN_DEFAULT ) << "\n";
     Log() << "[stokes]  : graph.test ( DOF_PATTERN_COUPLED )=" <<  graph.test ( DOF_PATTERN_COUPLED ) << "\n";

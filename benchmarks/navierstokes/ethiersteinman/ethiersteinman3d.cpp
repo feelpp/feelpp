@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2007-04-03
@@ -31,7 +31,7 @@
 int
 main( int argc, char** argv )
 {
-    Life::EthierSteinman ethierSteinman( argc, argv,
+    Feel::EthierSteinman ethierSteinman( argc, argv,
                                          makeAbout(), makeOptions());
     ethierSteinman.run();
 }

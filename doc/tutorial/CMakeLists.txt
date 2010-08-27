@@ -27,22 +27,22 @@ include(UseLATEX)
 FILE(GLOB CPPFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
 FILE(GLOB STYFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "styles/*.sty")
 
-FILE(WRITE version.tex "\\newcommand{\\lifeversion}{${LIFE_VERSION_STRING}}")
+FILE(WRITE version.tex "\\newcommand{\\feelversion}{${FEEL_VERSION_STRING}}")
 
 FIND_PACKAGE(Subversion)
 IF(Subversion_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.svn" )
-   Subversion_WC_INFO(${PROJECT_SOURCE_DIR} LIFE)
-   MESSAGE("Current revision is ${LIFE_WC_REVISION}")
-   MESSAGE("Last changed date is ${LIFE_WC_LAST_CHANGED_DATE}")
+   Subversion_WC_INFO(${PROJECT_SOURCE_DIR} FEEL)
+   MESSAGE("Current revision is ${FEEL_WC_REVISION}")
+   MESSAGE("Last changed date is ${FEEL_WC_LAST_CHANGED_DATE}")
 
-   FILE(APPEND version.tex "\\newcommand{\\lifesvnrevision}{${LIFE_WC_REVISION}}")
-   FILE(APPEND version.tex "\\newcommand{\\lifesvndate}{${LIFE_WC_LAST_CHANGED_DATE}}")
+   FILE(APPEND version.tex "\\newcommand{\\feelsvnrevision}{${FEEL_WC_REVISION}}")
+   FILE(APPEND version.tex "\\newcommand{\\feelsvndate}{${FEEL_WC_LAST_CHANGED_DATE}}")
 ENDIF()
 
 
-add_latex_document(life-manual.tex
+add_latex_document(feel-manual.tex
   INPUTS feel.tex randomnotes.tex gfdl.tex example-heatns.tex version.tex ${CPPFILES} ${STYFILES}
-  BIBFILES life-manual.bib
+  BIBFILES feel-manual.bib
   IMAGE_DIRS pngs pdfs
   USE_INDEX
   DEFAULT_PDF
@@ -52,10 +52,10 @@ add_latex_document(life-manual.tex
 add_custom_target(figures WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
 
 macro( add_docex target )
- add_executable( life_doc_${target} ${target}.cpp )
- target_link_libraries( life_doc_${target} ${LIFE_LIBRARIES} )
- get_target_property(target_executable life_doc_${target} LOCATION)
- add_dependencies(figures life_doc_${target})
+ add_executable( feel_doc_${target} ${target}.cpp )
+ target_link_libraries( feel_doc_${target} ${FEEL_LIBRARIES} )
+ get_target_property(target_executable feel_doc_${target} LOCATION)
+ add_dependencies(figures feel_doc_${target})
  add_custom_command(
    TARGET figures
    POST_BUILD
@@ -75,7 +75,7 @@ macro( add_docex target )
  endforeach()
  # test each backend
  foreach( BACKEND petsc trilinos)
-   add_test( life_doc_${target}-${BACKEND} life_doc_${target} --hsize=0.2 --backend=${BACKEND} --no-export)
+   add_test( feel_doc_${target}-${BACKEND} feel_doc_${target} --hsize=0.2 --backend=${BACKEND} --no-export)
  endforeach()
 endmacro()
 
@@ -90,10 +90,10 @@ add_custom_target(
                                    ${CMAKE_CURRENT_BINARY_DIR}/
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
-add_dependencies(tut-prerequisites life_doc_mymesh)
+add_dependencies(tut-prerequisites feel_doc_mymesh)
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY_DIR}/tutorial.pos)
 
-if ( NOT LIFE_MINIMAL_CONFIGURATION )
+if ( NOT FEEL_MINIMAL_CONFIGURATION )
 
 foreach( docex stokes bratu nonlinearpow )
   add_docex( ${docex} )
@@ -101,10 +101,10 @@ endforeach()
 
 # Natural convection problem
 #include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-#add_executable( life_doc_convection convection.hpp convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp )
-#target_link_libraries( life_doc_convection ${LIFE_LIBRARIES} )
+#add_executable( feel_doc_convection convection.hpp convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp )
+#target_link_libraries( feel_doc_convection ${FEEL_LIBRARIES} )
 
-endif ( NOT LIFE_MINIMAL_CONFIGURATION )
+endif ( NOT FEEL_MINIMAL_CONFIGURATION )
 
 IF ( OCTAVE_FOUND )
 
@@ -128,7 +128,7 @@ macro(add_octave_module modulename)
         ${CMAKE_CURRENT_SOURCE_DIR}/${modulename}.hpp
         )
       add_dependencies(octave ${modulename}_${dim}_${order}.oct)
-      target_link_libraries( ${modulename}_${dim}_${order}.oct ${LIFE_LIBRARIES})
+      target_link_libraries( ${modulename}_${dim}_${order}.oct ${FEEL_LIBRARIES})
       set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES PREFIX "" )
       set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES SUFFIX "" )
     endforeach( order )

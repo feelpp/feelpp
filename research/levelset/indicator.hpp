@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2006-01-09
@@ -30,14 +30,14 @@
 #ifndef _INDICATOR_HPP_
 #define _INDICATOR_HPP_
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
-#include <life/lifevf/vf.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
+#include <feel/feelvf/vf.hpp>
 
-#include <life/lifediscr/operatorlinear.hpp>
-#include <life/lifediscr/fsfunctionallinear.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/fsfunctionallinear.hpp>
 
-namespace Life
+namespace Feel
 {
 
 // Class collecting
@@ -95,7 +95,7 @@ public:
         M_massIndic( indicatorSpace, indicatorSpace, backend ),
         M_im()
     {
-        using namespace Life::vf;
+        using namespace Feel::vf;
 
         // build P0 mass matrix once only, at construction
         M_massIndic =
@@ -160,7 +160,7 @@ template<class Space,
 void
 Indicator<Space, Entity>::updateKappa( element_type const& phi )
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     // --- sigma: node-wise sign of phi as P1 function
     element_type sigma(  M_spaceLS, "sigma" );
@@ -186,7 +186,7 @@ Indicator<Space, Entity>::update( element_type const& phi )
 {
     updateKappa( phi );
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     // --- indicatorGamma: 1 in elements crossed by interface, 0 elsewhere
     M_indicatorGamma = vf::project( M_spaceIndic,
@@ -204,7 +204,7 @@ Indicator<Space, Entity>::update( element_type const& phiNew,
 {
     updateKappa( phiNew );
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     // --- sigmaDelta: node-wise sign of phiOld*phiNew as P1 function
     element_type sigmaDelta(  M_spaceLS, "sigmaDelta" );
@@ -233,6 +233,6 @@ Indicator<Space, Entity>::update( element_type const& phiNew,
 
 } // Indicator::update(...)
 
-} // Life
+} // Feel
 
 #endif /* _INDICATOR_HPP_ */

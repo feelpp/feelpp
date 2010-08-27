@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2006-10-11
@@ -29,56 +29,56 @@
 #include "levelset.hpp"
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description levelsetoptions("LevelSet options");
+    Feel::po::options_description levelsetoptions("LevelSet options");
     levelsetoptions.add_options()
-        ("dt", Life::po::value<double>()->default_value( 0.02 ),
+        ("dt", Feel::po::value<double>()->default_value( 0.02 ),
          "time step value")
-        ("ft", Life::po::value<double>()->default_value( 1 ),
+        ("ft", Feel::po::value<double>()->default_value( 1 ),
          "Final time value")
-        ("hsize", Life::po::value<double>()->default_value( 0.1 ),
+        ("hsize", Feel::po::value<double>()->default_value( 0.1 ),
          "first h value to start convergence")
-        ("export", Life::po::value<int>()->default_value( 0 ),
+        ("export", Feel::po::value<int>()->default_value( 0 ),
          "stride for result export (0=no export)")
-        ("stabcoeff", Life::po::value<double>()->default_value( 0.1 ),
+        ("stabcoeff", Feel::po::value<double>()->default_value( 0.1 ),
          "interior penalty stabilization coefficient")
-        ("theta", Life::po::value<double>()->default_value( 0.5 ),
+        ("theta", Feel::po::value<double>()->default_value( 0.5 ),
          "coefficient of theta-scheme in time (0=FE, 0.5=CN, 1=BE)")
-        ("reinitevery", Life::po::value<int>()->default_value( 0 ),
+        ("reinitevery", Feel::po::value<int>()->default_value( 0 ),
          "number of timesteps between reinitializations (0=adaptive)")
-        ("mingrad", Life::po::value<double>()->default_value( 0.2 ),
+        ("mingrad", Feel::po::value<double>()->default_value( 0.2 ),
          "minimal gradient for adaptive reinitialization")
         ("bdf2", "use BDF2 time stepping")
         ;
 
-    Life::po::options_description solveroptions("algebraic solver options");
+    Feel::po::options_description solveroptions("algebraic solver options");
     solveroptions.add_options()
-        ("solver", Life::po::value<std::string>()->default_value( "gmres" ),
+        ("solver", Feel::po::value<std::string>()->default_value( "gmres" ),
          "solver type (gmres, bicgstab)")
-        ("tolerance", Life::po::value<double>()->default_value( 2.e-10 ),
+        ("tolerance", Feel::po::value<double>()->default_value( 2.e-10 ),
          "solver tolerance")
-        ("verbose", Life::po::value<int>()->default_value( 0 ),
+        ("verbose", Feel::po::value<int>()->default_value( 0 ),
          "(=0,1,2) print solver iterations")
-        ("maxiter", Life::po::value<int>()->default_value( 1000 ),
+        ("maxiter", Feel::po::value<int>()->default_value( 1000 ),
          "set maximum number of iterations")
-        ("fillin", Life::po::value<int>()->default_value( 2 ),
+        ("fillin", Feel::po::value<int>()->default_value( 2 ),
          "fill-in for incomplete factorizations")
-        ("threshold", Life::po::value<double>()->default_value( 1.e-3 ),
+        ("threshold", Feel::po::value<double>()->default_value( 1.e-3 ),
          "threshold for incomplete factorizations")
         ;
     return levelsetoptions.add( solveroptions );
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "levelset" ,
+    Feel::AboutData about( "levelset" ,
                             "levelset" ,
                             "0.1",
                             "2D and 3D Level Set Test Problem",
-                            Life::AboutData::License_GPL,
+                            Feel::AboutData::License_GPL,
                             "Copyright (c) 2006 EPFL");
 
     about.addAuthor("Christoph Winkelmann", "developer",
@@ -92,6 +92,6 @@ makeAbout()
 int
 main( int argc, char** argv )
 {
-    Life::LevelSet levelset( argc, argv, makeAbout(), makeOptions());
+    Feel::LevelSet levelset( argc, argv, makeAbout(), makeOptions());
     levelset.run();
 }

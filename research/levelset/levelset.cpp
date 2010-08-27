@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2007-06-19
@@ -29,9 +29,9 @@
 
 #include "levelset.hpp"
 
-#include <life/lifecore/pslogger.hpp>
+#include <feel/feelcore/pslogger.hpp>
 
-namespace Life
+namespace Feel
 {
 
 LevelSet::LevelSet( int argc, char** argv, AboutData const& ad )
@@ -143,7 +143,7 @@ LevelSet::run()
     PsLogger psLogger( "ps.log" );
     psLogger.log("t=0, start");
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     /*
      * First we create the mesh
@@ -452,7 +452,7 @@ LevelSet::run()
 double
 LevelSet::mass( const element_p_type& psi )
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
     return integrate( elements( *(psi.functionSpace()->mesh()) ), M_im,
                       chi(idv(psi)<0)
                       ).evaluate()(0,0);
@@ -494,7 +494,7 @@ LevelSet::statsAfterReinit( const element_p_type& psi,
                             double massBefore,
                             double mass0 )
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     double massAfter = mass( phi );
     Debug() << "[LevelSet] mass after  reinit = " << massAfter << "\n";
@@ -527,4 +527,4 @@ LevelSet::statsAfterReinit( const element_p_type& psi,
 
 } // LevelSet::statsAfterReinit
 
-} // Life
+} // Feel

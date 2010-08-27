@@ -1,0 +1,105 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+
+  This file is part of the Feel library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2005-02-19
+
+  Copyright (C) 2008, 2009 Université de Grenoble 1
+  Copyright (C) 2005,2006 EPFL
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 3.0 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file info.cpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2005-02-19
+ */
+#include <sstream>
+#include <feelconfig.h>
+#include <feel/feelcore/info.hpp>
+
+#define stringize2(x) #x
+#define stringize(x) stringize2(x)
+
+namespace Feel
+{
+unsigned long long
+Info::buildId()
+{
+    return FEEL_BUILDID;
+}
+
+unsigned long long
+Info::revision()
+{
+    return FEEL_REVISION;
+}
+
+unsigned long long
+Info::version()
+{
+    return FEEL_VERSION;
+}
+
+unsigned int
+Info::versionMajor()
+{
+    return FEEL_VERSION_MAJOR;
+}
+
+unsigned int
+Info::versionMinor()
+{
+    return FEEL_VERSION_MINOR;
+}
+
+unsigned int
+Info::versionMicro()
+{
+    return FEEL_VERSION_MICRO;
+}
+
+char const*
+Info::versionString()
+{
+    static bool _created = false;
+    static std::ostringstream ostr;
+    if ( !_created )
+        {
+            ostr << FEEL_VERSION_MAJOR << "."
+                 << FEEL_VERSION_MINOR << "."
+                 << FEEL_VERSION_MICRO << "-r"
+                 << FEEL_REVISION << "-"
+                 << FEEL_BUILDID;
+            _created = true;
+        }
+    return ostr.str().c_str();
+}
+
+char const*
+Info::prefix()
+{
+    return stringize(FEEL_PREFIX);
+}
+
+char const*
+Info::datadir()
+{
+    return stringize(FEEL_DATADIR);
+}
+
+}
+

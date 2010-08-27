@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-06-04
@@ -26,50 +26,50 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-06-04
  */
-#include <life/options.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/region.hpp>
-#include <life/lifediscr/operatorlinear.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/region.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 
 
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description laplacian_mloptions("LaplacianML options");
+    Feel::po::options_description laplacian_mloptions("LaplacianML options");
     laplacian_mloptions.add_options()
-        ("h", Life::po::value<double>()->default_value( 0.1 ), "mesh size in domain")
+        ("h", Feel::po::value<double>()->default_value( 0.1 ), "mesh size in domain")
 
-        ("penalbc", Life::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
+        ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
 
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return laplacian_mloptions.add( Life::life_options() );
+    return laplacian_mloptions.add( Feel::feel_options() );
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "laplacian_ml" ,
+    Feel::AboutData about( "laplacian_ml" ,
                            "laplacian_ml" ,
                            "0.1",
                            "nD(n=1,2,3) LaplacianML on simplices or simplex products",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2008 Université Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -80,7 +80,7 @@ makeAbout()
 
 std::pair<std::string,std::string> createRing( int Dim, double h, double rmin, double rmax );
 
-namespace Life
+namespace Feel
 {
 using namespace vf;
 /**
@@ -252,7 +252,7 @@ void
 LaplacianML<Dim, Order>::run()
 {
     //    int maxIter = 10.0/meshSize;
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     timers["init"].first.restart();
 
@@ -362,7 +362,7 @@ LaplacianML<Dim, Order>::exportResults( element_type& U, element_type& V, elemen
     timers["export"].second = timers["export"].first.elapsed();
     Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // LaplacianML::export
-} // Life
+} // Feel
 
 
 
@@ -370,13 +370,13 @@ LaplacianML<Dim, Order>::exportResults( element_type& U, element_type& V, elemen
 int
 main( int argc, char** argv )
 {
-    using namespace Life;
+    using namespace Feel;
 
     /* change parameters below */
     const int nDim = 2;
     const int nOrder = 4;
 
-    typedef Life::LaplacianML<nDim, nOrder> laplacian_ml_type;
+    typedef Feel::LaplacianML<nDim, nOrder> laplacian_ml_type;
 
     /* define and run application */
     laplacian_ml_type laplacian_ml( argc, argv, makeAbout(), makeOptions() );

@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2007-06-19
@@ -29,7 +29,7 @@
 
 #include "levelset.hpp"
 
-namespace Life
+namespace Feel
 {
 
 void
@@ -42,7 +42,7 @@ LevelSet::advReactUpdateCN( AdvReact<space_p_type, imOrder, ENTITY>& advReact,
                             const element_p_type& phi,
                             bool updateStabilization )
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     AUTO( beta, idv(vx)*oneX()+idv(vy)*oneY() );
 
@@ -58,4 +58,4 @@ LevelSet::advReactUpdateCN( AdvReact<space_p_type, imOrder, ENTITY>& advReact,
 }
 
 
-} // Life
+} // Feel

@@ -2,7 +2,7 @@
 
 # -*- mode: python -*-
 #
-#  This file is part of the Life library
+#  This file is part of the Feel library
 #
 #  Author(s): Goncalo Pena <gpena@mat.uc.pt>
 #        Date: 2010-01-09

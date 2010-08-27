@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-05
@@ -26,53 +26,53 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-07-05
  */
-#include <life/options.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifealg/backend.hpp>
-#include <life/lifealg/solvereigen.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelalg/solvereigen.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/region.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/region.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 std::pair<std::string,std::string> createRoom( int Dim, double meshSize );
 
 
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description soundoptions("Sound options");
+    Feel::po::options_description soundoptions("Sound options");
     soundoptions.add_options()
-        ("kc2", Life::po::value<double>()->default_value( 1 ), "k/c parameter")
-        ("sigma", Life::po::value<double>()->default_value( 20 ), "shift parameter for the eigenvalue problem")
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("kc2", Feel::po::value<double>()->default_value( 1 ), "k/c parameter")
+        ("sigma", Feel::po::value<double>()->default_value( 20 ), "shift parameter for the eigenvalue problem")
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
 
         ("export", "export results(ensight, data file(1D)")
         ("export-mesh-only", "export mesh only in ensight format")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return soundoptions.add( Life::life_options() );
+    return soundoptions.add( Feel::feel_options() );
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "sound" ,
+    Feel::AboutData about( "sound" ,
                             "sound" ,
                             "0.2",
                             "nD(n=1,2,3) acoustics in an amphitheater",
-                            Life::AboutData::License_GPL,
+                            Feel::AboutData::License_GPL,
                             "Copyright (c) 2007 Université Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -81,7 +81,7 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
 using namespace vf;
 /**
@@ -225,7 +225,7 @@ Sound<Dim, Order, Entity>::run()
         }
 
     //    int maxIter = 10.0/meshSize;
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
 
     this->changeRepository( boost::format( "%1%/%2%/P%3%/%4%/" )
@@ -382,7 +382,7 @@ Sound<Dim, Order, Entity>::exportResults( element_type& U, element_type& Mode )
     timers["export"].second = timers["export"].first.elapsed();
     Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Sound::export
-} // Life
+} // Feel
 
 
 
@@ -390,16 +390,16 @@ Sound<Dim, Order, Entity>::exportResults( element_type& U, element_type& Mode )
 int
 main( int argc, char** argv )
 {
-    using namespace Life;
+    using namespace Feel;
 
     /* change parameters below */
     const int nDim = 3; // 2 or 3
     const int nOrder = 1;
 
-    typedef Life::Sound<nDim, nOrder, Simplex> sound_type;
+    typedef Feel::Sound<nDim, nOrder, Simplex> sound_type;
 
     /* assertions handling */
-    Life::Assert::setLog( "sound.assert");
+    Feel::Assert::setLog( "sound.assert");
 
     /* define and run application */
     sound_type sound( argc, argv, makeAbout(), makeOptions() );

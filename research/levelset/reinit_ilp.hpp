@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2006-10-23
@@ -30,14 +30,14 @@
 #ifndef _REINIT_ILP_HPP_
 #define _REINIT_ILP_HPP_
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
-#include <life/lifevf/vf.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
+#include <feel/feelvf/vf.hpp>
 
-#include <life/lifediscr/operatorlinear.hpp>
-#include <life/lifediscr/fsfunctionallinear.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/fsfunctionallinear.hpp>
 
-namespace Life
+namespace Feel
 {
 
 // An interface local projection reinitialization solver
@@ -118,7 +118,7 @@ ReinitializerILP<Space, Entity>::operator()
     element_type phiNew;
     phiNew = phi;
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     M_mesh->updateMarker2( indicatorGamma );
 
@@ -151,6 +151,6 @@ ReinitializerILP<Space, Entity>::operator()
 
 } // operator()
 
-} // Life
+} // Feel
 
 #endif /* _REINIT_ILP_HPP_ */
