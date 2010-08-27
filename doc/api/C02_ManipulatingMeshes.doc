@@ -1,6 +1,6 @@
 /* -*- mode: c++; coding: utf-8 -*- */
 
-namespace Life
+namespace Feel
 {
 /*! \page ManipulatingMeshes Manipulating Meshes
 \ingroup Tutorial
@@ -10,12 +10,12 @@ namespace Life
 
 
 In this section, we present some of the mesh definition and
-manipulation tools provided by Life.
+manipulation tools provided by Feel.
 
 \section MeshDefinitions Mesh definition
 
 We look at the definition of a mesh data structure. First, we define
-the type of geometric entities that we shall use to form our mesh. Life supports
+the type of geometric entities that we shall use to form our mesh. Feel supports
 
  - simplices: segment, triangle, tetrahedron
  - tensorized entities: segment, quadrangle, hexahedron
@@ -40,7 +40,7 @@ meshes are not supported.
 \skip marker2
 \until endmarker2
 
-The next step is to read some mesh files. Life supports only
+The next step is to read some mesh files. Feel supports only
 the Gmsh mesh file format. It provides also some classes to manipulate
 Gmsh <tt>.geo</tt> files and generate <tt>.msh</tt> files. To
 begin, we use some helper functions to generate a <tt>.geo</tt> file.
@@ -68,8 +68,8 @@ We get a simplex (line in 1D, triangle in 2D and tetrahedron) geometry and mesh
 when executing
 
 \verbatim
-life_doc_mymesh --shape="simplex" --nochdir
-life_doc_mymesh --shape="hypercube" --nochdir
+feel_doc_mymesh --shape="simplex" --nochdir
+feel_doc_mymesh --shape="hypercube" --nochdir
 \endverbatim
 
 generates the following graphics after post-processing with
@@ -132,7 +132,7 @@ the mesh to the format given to the command line \c --exporter=<format> (by defa
 
 \section MeshIterators Iterating over the entities of a mesh Iterating over the entities of a mesh
 
-Life mesh data structures provides powerful iterators that allows to
+Feel mesh data structures provides powerful iterators that allows to
 walk though the mesh in various ways: iterate over element, faces ,
 points, marked (associated to an integer flag denoting a
   region, material, processor) elements, marked faces, ...

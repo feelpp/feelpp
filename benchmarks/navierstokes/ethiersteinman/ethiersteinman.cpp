@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2007-04-03
@@ -31,13 +31,13 @@
 
 #include "ethiersteinman.hpp"
 
-#include <life/lifecore/pslogger.hpp>
+#include <feel/feelcore/pslogger.hpp>
 
-#include <life/lifefilters/importergmsh.hpp>
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/importergmsh.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
 
-namespace Life
+namespace Feel
 {
 
     const uint16_type EthierSteinman::uOrder;
@@ -221,7 +221,7 @@ EthierSteinman::run()
     PsLogger psLogger( "ps.log" );
     psLogger.log("t=0, start");
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     /*
      * First we create the mesh
@@ -657,7 +657,7 @@ EthierSteinman::exportResults( int iter,
                                element_u_type& uz0,
                                element_p_type& p0 )
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     M_timers["errors"].first.restart();
     mesh_ptr_type mesh = ux.functionSpace()->mesh();
@@ -766,4 +766,4 @@ EthierSteinman::exportResults( int iter,
             << "\n";
 } // EthierSteinman::exportResults
 
-} // Life
+} // Feel

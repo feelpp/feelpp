@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2007-01-25
@@ -31,14 +31,14 @@
 
 #include "kovasznay.hpp"
 
-#include <life/lifefilters/importergmsh.hpp>
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/importergmsh.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
 
-#include <life/lifecore/pslogger.hpp>
-#include <life/lifediscr/operatorlinear.hpp>
+#include <feel/feelcore/pslogger.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
 
-namespace Life
+namespace Feel
 {
 
 Kovasznay::Kovasznay( int argc, char** argv, AboutData const& ad )
@@ -144,7 +144,7 @@ Kovasznay::run()
     PsLogger psLogger( "ps.log" );
     psLogger.log("t=0, start");
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     /*
      * First we create the mesh
@@ -465,7 +465,7 @@ Kovasznay::exportResults( int iter,
                           element_p_type& p )
 {
     // --- error calculations
-    using namespace Life::vf;
+    using namespace Feel::vf;
     value_type pi = 4.0 * math::atan( value_type( 1.0 ) );
     value_type lambda = 1./(2.*M_nu) - std::sqrt( 1./(4.*M_nu*M_nu) + 4.*pi*pi);
     AUTO( uxe, 1. - exp( lambda * Px() ) * cos(2.*pi*Py()) );
@@ -546,4 +546,4 @@ Kovasznay::exportResults( int iter,
             << "\n";
 } // Kovasznay::exportResults
 
-} // Life
+} // Feel

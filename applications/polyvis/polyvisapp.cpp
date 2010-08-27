@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-04-17
@@ -26,21 +26,21 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2009-04-17
  */
-/** include predefined life command line options */
-#include <life/options.hpp>
+/** include predefined feel command line options */
+#include <feel/options.hpp>
 
-#include <life/lifecore/application.hpp>
+#include <feel/feelcore/application.hpp>
 
 #include <polyvisbase.hpp>
 
-/** use Life namespace */
-using namespace Life;
+/** use Feel namespace */
+using namespace Feel;
 
 
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
- * as an argument of a Life::Application subclass.
+ * as an argument of a Feel::Application subclass.
  *
  * \return the list of options
  */
@@ -60,13 +60,13 @@ makeOptions()
         ("ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element")
         ("zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element")
         ;
-    return polyvisoptions.add( Life::life_options() );
+    return polyvisoptions.add( Feel::feel_options() );
 }
 
 /**
  * This routine defines some information about the application like
  * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Life::Application subclass.
+ * typically used as an argument of a Feel::Application subclass.
  *
  * \return some data about the application.
  */
@@ -78,7 +78,7 @@ makeAbout()
                      "polyvis" ,
                      "0.2",
                      "nD(n=1,2,3) Polynomial on simplices or simplex products",
-                     Life::AboutData::License_GPL,
+                     Feel::AboutData::License_GPL,
                      "Copyright (c) 2009 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");

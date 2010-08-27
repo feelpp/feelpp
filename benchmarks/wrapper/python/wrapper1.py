@@ -1,6 +1,6 @@
 # -*- mode: python; coding: utf-8 -*-
 #
-#  This file is part of the Life library
+#  This file is part of the Feel library
 #
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #        Date: 2010-03-15

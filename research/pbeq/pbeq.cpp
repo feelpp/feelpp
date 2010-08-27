@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Simone Deparis <simone.deparis@epfl.ch>
        Date: 2007-08-27
@@ -31,7 +31,7 @@
 
 //#include <boost/numeric/ublas/expression.hpp>
 
-namespace Life
+namespace Feel
 {
 
 void
@@ -46,7 +46,7 @@ Pbeq::loadFE()
     changeToMeshRepository();
 
     /*
-     * logs will be in <life repo>/<app name>/<entity>/P<p>/h_<h>
+     * logs will be in <feel repo>/<app name>/<entity>/P<p>/h_<h>
      */
     this->setLogs();
 
@@ -102,7 +102,7 @@ Pbeq::getPBMatrix(sparse_matrix_ptrtype& PB,
                   Ktype const& kappa2 /*,
                                         vector_ptrtype& F */)
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     im_type im;
 
@@ -192,7 +192,7 @@ Pbeq::setDomain( molecule_type const& _molecule)
     uint16_type const dim(pbeqspace_type::Dim);
     node_type _min(dim),  _max(dim);
     node_type  stretch(dim), translation(dim);
-    LIFE_ASSERT( this->vm()["farBnd"].as<value_type>() > 0 )(dim).error( "invalid farBnd" );
+    FEEL_ASSERT( this->vm()["farBnd"].as<value_type>() > 0 )(dim).error( "invalid farBnd" );
 
     _molecule.domainMinMax(_min,_max);
 
@@ -208,7 +208,7 @@ Pbeq::setDomain( molecule_type const& _molecule)
     for (int i = 1; i < dim; i++)
         M_detJac *= stretch[i];
 
-    LIFE_ASSERT( M_detJac > 0 )(dim).error( "invalid sign of the Jacobian" );
+    FEEL_ASSERT( M_detJac > 0 )(dim).error( "invalid sign of the Jacobian" );
 
     M_jacInvStr2.resize(dim);
     for (int i = 0; i < dim; i++)
@@ -300,7 +300,7 @@ Pbeq::deltaAndHeavisyde( molecule_type const       &myMolecule,
                          vector_ptrtype            &F,
                          heavyside_element_ptrtype &H )
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     /*
      * Construction of the right hand side
@@ -316,7 +316,7 @@ Pbeq::deltaAndHeavisyde( molecule_type const       &myMolecule,
     // Checking consistency of the right hand side
     Log() << myMolecule.name() << " total charge = " << myMolecule.totalCharge() << " == " << F->sum() << " = sum(F)\n";
 
-    LIFE_ASSERT(  std::abs(myMolecule.totalCharge() -  F->sum())
+    FEEL_ASSERT(  std::abs(myMolecule.totalCharge() -  F->sum())
                   < (myMolecule.totalAbsCharge() +  F->l1Norm())  * 1.e-9  ).error( "total charge and sum(F) are different" );
 
 
@@ -409,10 +409,10 @@ Pbeq::buildSystemAndSolve( element_type        & u,
 value_type
 Pbeq::solveReceptor(std::string const& receptorName)
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     setReceptor(receptorName);
-    LIFE_ASSERT(  M_receptor.size() > 0 ).error( "Receptor has zero length" );
+    FEEL_ASSERT(  M_receptor.size() > 0 ).error( "Receptor has zero length" );
 
     element_type u( M_pbeqspace.Xh(), "u" );
     element_type v( M_pbeqspace.Xh(), "v" );
@@ -456,9 +456,9 @@ value_type
 Pbeq::solveLigand()
 {
 
-    LIFE_ASSERT(  M_receptor.size() > 0 ).error( "Receptor has zero length" );
+    FEEL_ASSERT(  M_receptor.size() > 0 ).error( "Receptor has zero length" );
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     vector_ptrtype F;
     heavyside_element_ptrtype H;
@@ -512,7 +512,7 @@ Pbeq::solveLigand()
 value_type
 Pbeq::postProcess(element_type const& u, vector_ptrtype const& F, value_type const& rhsCoeff) const
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     // Computing Energy and norms
 
@@ -609,5 +609,5 @@ Pbeq::changeToSolutionRepository(std::string const& receptorName)
 
 }
 
-} // end namespace Life
+} // end namespace Feel
 

@@ -24,9 +24,9 @@
  */
 #include <signal.h>
 
-#include <life/lifecore/life.hpp>
-#include <life/lifecore/application.hpp>
-#include <life/options.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/application.hpp>
+#include <feel/options.hpp>
 
 #include <WrapperCommon.h>
 #include <WrapperMacros.h>
@@ -143,13 +143,13 @@ extern "C" {
                           CHECK_WRAPPER_IN(   WRAPPER_ARGUMENTS  );
                           CHECK_WRAPPER_OUT(  WRAPPER_ARGUMENTS  );
 
-                          *p_p_state = new Life::Wrapper1App( Life::makeWrapper1About() );
+                          *p_p_state = new Feel::Wrapper1App( Feel::makeWrapper1About() );
                       } )
 
     /* The deleteState function is optional */
     FUNC_DELETESTATE( WRAPPERNAME ,
                       {
-                          delete CAST( Life::Wrapper1App*,p_state);
+                          delete CAST( Feel::Wrapper1App*,p_state);
                       } )
 
 
@@ -200,7 +200,7 @@ extern "C" {
      */
     FUNC_EXEC( WRAPPERNAME,
                {
-                   FUNC_EXEC_BODY_IN_TEMPDIR( Life::Wrapper1App, WRAPPERNAME  )
+                   FUNC_EXEC_BODY_IN_TEMPDIR( Feel::Wrapper1App, WRAPPERNAME  )
                } )
 
     // do not use multithreading it breaks the wrapper

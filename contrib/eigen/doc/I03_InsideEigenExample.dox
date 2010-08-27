@@ -188,7 +188,7 @@ Here of course, \a Derived and \a OtherDerived are VectorXf.
 
 As we said, CwiseBinaryOp is also used for other operations such as substration, so it takes another template parameter determining the operation that will be applied to coefficients. This template parameter is a functor, that is, a class in which we have an operator() so it behaves like a function. Here, the functor used is ei_scalar_sum_op. It is defined in src/Core/Functors.h.
 
-Let us now explain the ei_traits here. The ei_scalar_sum_op class takes one template parameter: the type of the numbers to handle. Here of course we want to pass the scalar type (a.k.a. numeric type) of VectorXf, which is \c float. How do we determine which is the scalar type of \a Derived ? Throughout Eigen, all matrix and expression types define a typedef \a Scalar which gives its scalar type. For example, VectorXf::Scalar is a typedef for \c float. So here, if life was easy, we could find the numeric type of \a Derived as just
+Let us now explain the ei_traits here. The ei_scalar_sum_op class takes one template parameter: the type of the numbers to handle. Here of course we want to pass the scalar type (a.k.a. numeric type) of VectorXf, which is \c float. How do we determine which is the scalar type of \a Derived ? Throughout Eigen, all matrix and expression types define a typedef \a Scalar which gives its scalar type. For example, VectorXf::Scalar is a typedef for \c float. So here, if feel was easy, we could find the numeric type of \a Derived as just
 \code
 typename Derived::Scalar
 \endcode

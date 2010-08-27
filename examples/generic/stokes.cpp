@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-01-04
@@ -27,54 +27,54 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-01-04
  */
-#include <life/options.hpp>
-#include <life/lifecore/application.hpp>
-#include <life/lifecore/application.hpp>
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
+#include <feel/feelcore/application.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
-#include <life/lifemesh/elements.hpp>
+#include <feel/feelmesh/elements.hpp>
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description stokesoptions("Stokes options");
+    Feel::po::options_description stokesoptions("Stokes options");
     stokesoptions.add_options()
-        ("penal", Life::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
-        ("f", Life::po::value<double>()->default_value( 0 ), "forcing term")
-        ("stab", Life::po::value<bool>()->default_value( true ), "true to enable stabilisation, false otherwise")
-        ("bx", Life::po::value<double>()->default_value( 1.0 ), "convection X component")
-        ("by", Life::po::value<double>()->default_value( 0.0 ), "convection Y component")
-        ("bz", Life::po::value<double>()->default_value( 0.0 ), "convection Z component")
-        ("mu", Life::po::value<double>()->default_value( 1.0 ), "reaction coefficient component")
-        ("epsilon", Life::po::value<double>()->default_value( 1.0 ), "diffusion coefficient")
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("bctype", Life::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("bccoeff", Life::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
+        ("penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
+        ("f", Feel::po::value<double>()->default_value( 0 ), "forcing term")
+        ("stab", Feel::po::value<bool>()->default_value( true ), "true to enable stabilisation, false otherwise")
+        ("bx", Feel::po::value<double>()->default_value( 1.0 ), "convection X component")
+        ("by", Feel::po::value<double>()->default_value( 0.0 ), "convection Y component")
+        ("bz", Feel::po::value<double>()->default_value( 0.0 ), "convection Z component")
+        ("mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component")
+        ("epsilon", Feel::po::value<double>()->default_value( 1.0 ), "diffusion coefficient")
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
+        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
         ("export", "export results(ensight, data file(1D)")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return stokesoptions.add( Life::life_options() ) ;
+    return stokesoptions.add( Feel::feel_options() ) ;
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "stokes" ,
+    Feel::AboutData about( "stokes" ,
                            "stokes" ,
                            "0.1",
                            "Stokes equation on simplices or simplex products",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2007 University Joseph Fourier Grenoble 1");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -83,7 +83,7 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
 template<typename A, uint16_type i>
 class mytag : public A
@@ -238,7 +238,7 @@ Stokes<Dim, Order, Entity>::run()
         }
 
     //    int maxIter = 10.0/meshSize;
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
@@ -420,7 +420,7 @@ Stokes<Dim, Order, Entity>::exportResults( element_type& U )
     timers["export"].second = timers["export"].first.elapsed();
     Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Stokes::export
-} // Life
+} // Feel
 
 
 
@@ -428,16 +428,16 @@ Stokes<Dim, Order, Entity>::exportResults( element_type& U )
 int
 main( int argc, char** argv )
 {
-    using namespace Life;
+    using namespace Feel;
 
     /* change parameters below */
     const int nDim = 2;
     const int nOrder = 2;
 
-    typedef Life::Stokes<nDim, nOrder, Simplex> stokes_type;
+    typedef Feel::Stokes<nDim, nOrder, Simplex> stokes_type;
 
     /* assertions handling */
-    Life::Assert::setLog( "stokes.assert");
+    Feel::Assert::setLog( "stokes.assert");
 
     /* define and run application */
     stokes_type stokes( argc, argv, makeAbout(), makeOptions() );

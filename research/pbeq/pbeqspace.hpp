@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Simone Deparis <simone.deparis@epfl.ch>
        Date: 2007-07-11
@@ -32,23 +32,23 @@
 
 #include <boost/numeric/ublas/vector.hpp>
 
-#include <life/lifecore/life.hpp>
-#include <life/lifealg/vector.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelalg/vector.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #include "pbeqapplication.hpp"
 #include "molecule.hpp"
 
 
-namespace Life
+namespace Feel
 {
 
 /**
@@ -229,6 +229,6 @@ private:
 
 
 
-} // end namespace Life
+} // end namespace Feel
 
 #endif

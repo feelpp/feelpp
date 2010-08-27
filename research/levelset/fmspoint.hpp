@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2006-10-23
@@ -31,7 +31,7 @@
 
 #include <boost/numeric/ublas/storage.hpp>
 
-namespace Life
+namespace Feel
 {
 namespace details
 {
@@ -115,7 +115,7 @@ T norm( FmsPoint<T, Dim> const& a )
 
 } // namespace details
 
-} // namespace Life
+} // namespace Feel
 
 
 #endif /* __Fms_Point_H */

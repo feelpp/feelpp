@@ -25,5 +25,5 @@ set( EXAMPLES splitting2d cavity2d rclux )
 #test_nsale test_ale1  test_ale2  test_ale3  test_ale4 # twofluid2d cavity2d cavity3d
 
 foreach( EXAMPLE ${EXAMPLES} )
-  life_add_example( ${EXAMPLE} )
+  feel_add_example( ${EXAMPLE} )
 endforeach()

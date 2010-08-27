@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-04-30
@@ -31,7 +31,7 @@
 
 #include "basisgen.hpp"
 
-namespace Life
+namespace Feel
 {
 namespace detail
 {
@@ -39,7 +39,7 @@ template<typename Convex,int Order>
 PolyvisBase*
 createOrthonormalpset()
 {
-    return new Polyvis<convex_type<Convex>, basis_type<Life::OrthonormalPolynomialSet<Order> > >;
+    return new Polyvis<convex_type<Convex>, basis_type<Feel::OrthonormalPolynomialSet<Order> > >;
 }
 # /* Generates code for all dim and order. */
 # define ORTHONORMALPSET_FACTORY_OP(_, GDO)            \
@@ -57,6 +57,6 @@ createOrthonormalpset()
         .registerProduct( GEN_ORTHONORMALPSET(LDIM,LORDER,CONVEX), &createOrthonormalpset<CONVEX<LDIM>,LORDER> );
 
 } // detail
-} // Life
+} // Feel
 #endif /* __orthonormalpset_H */
 

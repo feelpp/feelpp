@@ -1,7 +1,7 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s):
   Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
@@ -36,29 +36,29 @@
 #include <boost/timer.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include <life/options.hpp>
-#include <life/lifecore/life.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/feel.hpp>
 
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/region.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/region.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <fstream>
 #include <sstream>
 
-#include <life/lifecore/applicationxml.hpp>
-#include <life/lifecore/xmlparser.hpp>
+#include <feel/feelcore/applicationxml.hpp>
+#include <feel/feelcore/xmlparser.hpp>
 
-using namespace Life;
+using namespace Feel;
 
 inline
 po::options_description
@@ -73,7 +73,7 @@ makeOptions()
 
         ("weak", "use weak dirichlet conditions")
         ;
-    return laplacianoptions.add( Life::life_options() );
+    return laplacianoptions.add( Feel::feel_options() );
 }
 inline
 AboutData
@@ -83,7 +83,7 @@ makeAbout()
                      "laplacian" ,
                      "0.2",
                      "nD(n=1,2,3) Laplacian on simplices or simplex products",
-                     Life::AboutData::License_GPL,
+                     Feel::AboutData::License_GPL,
                      "Copyright (c) 2008 Universit� Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -284,7 +284,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 
     if (this->preProcessing() == RUN_EXIT) return;
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     /*
      * First we create the mesh

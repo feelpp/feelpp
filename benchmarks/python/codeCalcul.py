@@ -1,6 +1,6 @@
 # -*- mode: python -*-
 #
-#  This file is part of the Life library
+#  This file is part of the Feel library
 #
 #  Author(s): Florent Vielfaure <florent.vielfaure@gmail.com>
 #        Date: 2009-04-07
@@ -38,7 +38,7 @@ class CodeCalcul:
 		self.exec_path=pdir
 		self.xml_path=pdir
 		self.other_options=""
-		self.base_dir=os.environ["HOME"]+"/life/"
+		self.base_dir=os.environ["HOME"]+"/feel/"
 		self.info()
 
 	def info(self):

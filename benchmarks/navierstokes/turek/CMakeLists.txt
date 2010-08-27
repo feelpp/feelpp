@@ -22,8 +22,8 @@
 #
 #
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-add_executable( life_turek turekapp.cpp data.cpp turek_d2o2g1.cpp )
-target_link_libraries(life_turek ${LIFE_LIBRARIES} )
+add_executable( feel_turek turekapp.cpp data.cpp turek_d2o2g1.cpp )
+target_link_libraries(feel_turek ${FEEL_LIBRARIES} )
 
 #turek_d2o2g2.cpp \
 #              turek_d2o3g1.cpp turek_d2o3g2.cpp \
@@ -32,7 +32,7 @@ target_link_libraries(life_turek ${LIFE_LIBRARIES} )
 #3              turek_d3o3g1.cpp turek_d3o3g2.cpp \
 #3              turek_d3o4g1.cpp turek_d3o4g2.cpp
 
-#turek_LDADD = ../../life/liblife.la -lprofiler
+#turek_LDADD = ../../feel/libfeel.la -lprofiler
 #turek_LDFLAGS = -static -lprofiler
 
 

@@ -1,9 +1,9 @@
 -*- coding: utf-8 -*-
 /*! \page index Main Page
 
-\section Life
+\section Feel
 
-Life is a unified C++ implementation of the finite and spectral element methods in 1D, 2D And 3D
+Feel is a unified C++ implementation of the finite and spectral element methods in 1D, 2D And 3D
 
 \subsection General Objectives
 
@@ -40,7 +40,7 @@ could be express in various ways such as :
 
 \section people People
 
-Life was initially developed at École Polytechnique Fédérale de
+Feel was initially developed at École Polytechnique Fédérale de
 Lausanne(Suisse) and is now a joint effort between Université Joseph Fourier
 (Grenoble) and École Polytechnique Fédérale de Lausanne(Suisse). The
 author is
@@ -68,7 +68,7 @@ author is
 <center>
 <a href="http://creativecommons.org/licenses/LGPL/2.1/"><img alt="CC-GNU LGPL" border="0" src="http://creativecommons.org/images/public/cc-LGPL-a.png" /></a>
 
-<a href="http://life.gforge.inria.fr/"><img src="http://gforge.org/images/pow-gforge.png" alt="Back to the gforge site" border="0" /></a>
+<a href="http://feel.gforge.inria.fr/"><img src="http://gforge.org/images/pow-gforge.png" alt="Back to the gforge site" border="0" /></a>
 </center>
 \endhtmlonly
 

@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2006-02-16
@@ -30,29 +30,29 @@
 #include <string>
 #include <sstream>
 
-#include <life/lifecore/life.hpp>
-#include <life/lifecore/traits.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/traits.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifediscr/bdf.hpp>
+#include <feel/feeldiscr/bdf.hpp>
 
 // petsc may not be available
 #if defined(HAVE_PETSC_H)
 
-#include <life/lifealg/matrixpetsc.hpp>
-#include <life/lifealg/vectorpetsc.hpp>
-#include <life/lifealg/solverlinearpetsc.hpp>
+#include <feel/feelalg/matrixpetsc.hpp>
+#include <feel/feelalg/vectorpetsc.hpp>
+#include <feel/feelalg/solverlinearpetsc.hpp>
 
-#include <life/lifepoly/im.hpp>
-#include <life/lifepoly/lagrange.hpp>
-#include <life/lifepoly/raviartthomas.hpp>
+#include <feel/feelpoly/im.hpp>
+#include <feel/feelpoly/lagrange.hpp>
+#include <feel/feelpoly/raviartthomas.hpp>
 
-#include <life/lifediscr/mesh.hpp>
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/importergambit.hpp>
-#include <life/lifefilters/exporterensight.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/importergambit.hpp>
+#include <feel/feelfilters/exporterensight.hpp>
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/string.hpp>
@@ -64,21 +64,21 @@
 //#define dot_idv_gradt( u, v ) (idv(u)*dxt(v) + idv(u)*dyt(v) + idv(u)*dzt(v))
 #define dot_idv_gradt( u, v ) 0.0
 
-namespace Life
+namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
 
 const uint16_type DIM = 3;
 using namespace vf;
 
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "twodomainsmt" ,
+    Feel::AboutData about( "twodomainsmt" ,
                             "twodomainsmt" ,
                             "0.1",
                             "Two domain mass transport",
-                            Life::AboutData::License_GPL,
+                            Feel::AboutData::License_GPL,
                             "Copyright (c) 2006 EPFL");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -473,17 +473,17 @@ TwoDomainsMTApp::solveSystem()
             lumen.save();
         }
 }
-} // Life
+} // Feel
 
 int main( int argc,  char** argv )
 {
-    using namespace Life;
+    using namespace Feel;
 
-    Life::po::options_description test("twodomainsmt options");
+    Feel::po::options_description test("twodomainsmt options");
     test.add_options()
-        ("dt", Life::po::value<double>()->default_value( 0.1 ), "time step value")
-        ("T", Life::po::value<double>()->default_value( 1.0 ), "final Time")
-        ("nel", Life::po::value<int>()->default_value( 9473 ), "number of elements")
+        ("dt", Feel::po::value<double>()->default_value( 0.1 ), "time step value")
+        ("T", Feel::po::value<double>()->default_value( 1.0 ), "final Time")
+        ("nel", Feel::po::value<int>()->default_value( 9473 ), "number of elements")
         ;
 
     TwoDomainsMTApp app( argc, argv, makeAbout(), test );

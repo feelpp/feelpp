@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2007-01-18
@@ -30,66 +30,66 @@
 #ifndef _LEVELSET_TRILINOS_HPP_
 #define _LEVELSET_TRILINOS_HPP_
 
-#include <life/lifecore/application.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifefilters/exporterensight.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/exporterensight.hpp>
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
-#include <life/lifediscr/advreact.hpp>
-#include <life/lifealg/backendtrilinos.hpp>
-#include <life/lifealg/backend_adaptive_reuse_pc.hpp>
+#include <feel/feeldiscr/advreact.hpp>
+#include <feel/feelalg/backendtrilinos.hpp>
+#include <feel/feelalg/backend_adaptive_reuse_pc.hpp>
 
 #include "reinit_fms.hpp"
 #include "reinit_ilp.hpp"
 #include "indicator.hpp"
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description levelsetoptions("LevelSet options");
+    Feel::po::options_description levelsetoptions("LevelSet options");
     levelsetoptions.add_options()
-        ("dt", Life::po::value<double>()->default_value( 0.1 ),
+        ("dt", Feel::po::value<double>()->default_value( 0.1 ),
          "time step value")
-        ("ft", Life::po::value<double>()->default_value( 1 ),
+        ("ft", Feel::po::value<double>()->default_value( 1 ),
          "Final time value")
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ),
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ),
          "first h value to start convergence")
         ("export", "export results(ensight, data file(1D)")
-        ("stabcoeff", Life::po::value<double>()->default_value( 0.1 ),
+        ("stabcoeff", Feel::po::value<double>()->default_value( 0.1 ),
          "interior penalty stabilization coefficient")
         ;
 
-    Life::po::options_description solveroptions("algebraic solver options");
+    Feel::po::options_description solveroptions("algebraic solver options");
     solveroptions.add_options()
-        ("tolerance", Life::po::value<double>()->default_value( 2.e-10 ),
+        ("tolerance", Feel::po::value<double>()->default_value( 2.e-10 ),
          "solver tolerance")
-        ("verbose", Life::po::value<int>()->default_value( 0 ),
+        ("verbose", Feel::po::value<int>()->default_value( 0 ),
          "(=0,1,2) print solver iterations")
-        ("maxiter", Life::po::value<int>()->default_value( 1000 ),
+        ("maxiter", Feel::po::value<int>()->default_value( 1000 ),
          "set maximum number of iterations")
-        ("fillin", Life::po::value<int>()->default_value( 2 ),
+        ("fillin", Feel::po::value<int>()->default_value( 2 ),
          "fill-in for incomplete factorizations")
-        ("threshold", Life::po::value<double>()->default_value( 1.e-3 ),
+        ("threshold", Feel::po::value<double>()->default_value( 1.e-3 ),
          "threshold for incomplete factorizations")
         ;
     return levelsetoptions.add( solveroptions );
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "levelset" ,
+    Feel::AboutData about( "levelset" ,
                             "levelset" ,
                             "0.1",
                             "2D and 3D Level Set Test Problem",
-                            Life::AboutData::License_GPL,
+                            Feel::AboutData::License_GPL,
                             "Copyright (c) 2006 EPFL");
 
     about.addAuthor("Christoph Winkelmann", "developer",
@@ -99,7 +99,7 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
 template<int Dim>
 class LevelSet
@@ -287,7 +287,7 @@ LevelSet<Dim>::run()
                             % M_meshSize );
     this->setLogs();
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     /*
      * First we create the mesh
@@ -546,6 +546,6 @@ LevelSet<Dim>::exportResults( double time,
             << M_timers["export"].second << "\n";
 } // LevelSet::export
 
-} // Life
+} // Feel
 
 #endif /* _LEVELSET_TRILINOS_HPP_ */

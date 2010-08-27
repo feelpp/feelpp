@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2006-10-04
@@ -26,17 +26,17 @@
    \author Christoph Winkelmann <christoph.winkelmann@epfl.ch>
    \date 2006-10-04
  */
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifealg/vectorublas.hpp>
-#include <life/lifealg/matrixublas.hpp>
-#include <life/lifealg/matrixgmm.hpp>
+#include <feel/feelalg/vectorublas.hpp>
+#include <feel/feelalg/matrixublas.hpp>
+#include <feel/feelalg/matrixgmm.hpp>
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <gmm_iter_solvers.h>
 
-namespace Life
+namespace Feel
 {
 
 // A streamline diffusion stabilized advection-reaction solver.
@@ -168,7 +168,7 @@ void AdvReact<Space, imOrder>::update( Esigma sigma,
 {
     M_updated = true;
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     M_timers["assembly"].first.restart();
 
@@ -260,4 +260,4 @@ AdvReact<Space, imOrder>::solveNonSym( Mat const& D,
     Debug() << "[timer] solveNonSym(): " << M_timers["solver"].second << "\n";
 } // AdvReact::solveNonSym
 
-} // Life
+} // Feel

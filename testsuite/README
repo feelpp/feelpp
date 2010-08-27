@@ -1,10 +1,10 @@
 # Mode: -*- readme-debian -*-
 
-LifeV Testing Framework
+FeelV Testing Framework
 -----------------------
 
-The LifeV testing framework uses AutoTest from autoconf. The latter
-is the configuration system of LifeV.
+The FeelV testing framework uses AutoTest from autoconf. The latter
+is the configuration system of FeelV.
 
 AutoTest uses the same underlying scripting preprocessor m4. It provides
 a few marcos that allows to define tests, test groups, data for the tests
@@ -14,7 +14,7 @@ particular keyword.
 Prerequisites
 -------------
 
-* The lifev libraries have been compiled using the autoconf/automake/libtool
+* The feelv libraries have been compiled using the autoconf/automake/libtool
   framework. It is not explained here how to compile the libraries.
 
 * Read the section regarding AutoTest in the autoconf manual.

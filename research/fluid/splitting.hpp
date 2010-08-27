@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
              Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
@@ -38,55 +38,55 @@
      pp. 1248-1274 (weak bc)
 */
 
-#include <life/options.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporterensight.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporterensight.hpp>
 
-#include <life/lifealg/backend.hpp>
-#include <life/lifevf/vf.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #define VELOCITY_UPDATE 0
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description splittingoptions("Splitting options");
+    Feel::po::options_description splittingoptions("Splitting options");
     splittingoptions.add_options()
-        ("dt", Life::po::value<double>()->default_value( 0.1 ), "time step value")
-        ("ft", Life::po::value<double>()->default_value( 1 ), "Final time value")
-        ("nu", Life::po::value<double>()->default_value( 1 ), "viscosity value")
-        ("ulid", Life::po::value<double>()->default_value( 1 ), "lid velocity")
-        ("peps", Life::po::value<double>()->default_value( 0. ), "epsilon for pressure term")
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("bccoeff", Life::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("bctype", Life::po::value<int>()->default_value( 0 ), "Dirichlet condition type(0=elimination,1=penalisation, 2=weak")
-        ("divtol", Life::po::value<double>()->default_value( 1.e10 ), "divergence tolerance")
+        ("dt", Feel::po::value<double>()->default_value( 0.1 ), "time step value")
+        ("ft", Feel::po::value<double>()->default_value( 1 ), "Final time value")
+        ("nu", Feel::po::value<double>()->default_value( 1 ), "viscosity value")
+        ("ulid", Feel::po::value<double>()->default_value( 1 ), "lid velocity")
+        ("peps", Feel::po::value<double>()->default_value( 0. ), "epsilon for pressure term")
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
+        ("bctype", Feel::po::value<int>()->default_value( 0 ), "Dirichlet condition type(0=elimination,1=penalisation, 2=weak")
+        ("divtol", Feel::po::value<double>()->default_value( 1.e10 ), "divergence tolerance")
 
         ;
-    Life::po::options_description convdomoptions("Convection dominated options");
+    Feel::po::options_description convdomoptions("Convection dominated options");
     convdomoptions.add_options()
         ("supg", "Steamline Upwind Petrov Galerkin formulation")
         ("gals", "Galerkin Least Square formulation")
         ("dwg", "Douglas Wang formulation")
-        ("ls", Life::po::value<double>()->default_value( 0 ), "control symmetric coefficient, SUPG=0, GALS=1, DWG=-1")
+        ("ls", Feel::po::value<double>()->default_value( 0 ), "control symmetric coefficient, SUPG=0, GALS=1, DWG=-1")
         ;
-    return splittingoptions.add( convdomoptions ).add( Life::life_options() );
+    return splittingoptions.add( convdomoptions ).add( Feel::feel_options() );
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "splitting" ,
+    Feel::AboutData about( "splitting" ,
                             "splitting" ,
                             "0.1",
                             "2D and 3D Cavity Problem in Splitting Approach",
-                            Life::AboutData::License_GPL,
+                            Feel::AboutData::License_GPL,
                             "Copyright (c) 2006 EPFL");
 
     about.addAuthor("Christoph Winkelmann", "developer", "christoph.winkelmann@epfl.ch", "");
@@ -96,7 +96,7 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
 template<int Dim>
 class Splitting : public Application
@@ -246,7 +246,7 @@ Splitting<Dim>::run()
                             % this->about().appName()
                             % meshSize
                             % (1./nu) );
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     /*
      * First we create the mesh
@@ -489,4 +489,4 @@ Splitting<Dim>::exportResults( double time, element_U_type& U, element_p_type& p
     timers["export"].second = timers["export"].first.elapsed();
     Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Splitting::export
-} // Life
+} // Feel

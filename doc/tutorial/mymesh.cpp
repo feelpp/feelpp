@@ -1,6 +1,6 @@
-/* -*- mode: c++ coding: utf-8 -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-06
@@ -26,40 +26,40 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-02-06
  */
-#include <life/options.hpp>
-#include <life/lifecore/application.hpp>
-#include <life/lifediscr/mesh.hpp>
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/region.hpp>
-#include <life/lifefilters/gmsh.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/region.hpp>
+#include <feel/feelfilters/gmsh.hpp>
 
-#include <life/lifefilters/exporter.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
-using namespace Life;
+using namespace Feel;
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description mymeshoptions("MyMesh options");
+    Feel::po::options_description mymeshoptions("MyMesh options");
     mymeshoptions.add_options()
-        ("hsize", Life::po::value<double>()->default_value( 0.1 ), "mesh size")
-        ("shape", Life::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
+        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size")
+        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
         ;
 
-    // return the options mymeshoptions and the life_options defined
-    // internally by Life
-    return mymeshoptions.add( Life::life_options() );
+    // return the options mymeshoptions and the feel_options defined
+    // internally by Feel
+    return mymeshoptions.add( Feel::feel_options() );
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "mymesh" ,
+    Feel::AboutData about( "mymesh" ,
                            "mymesh" ,
                            "0.2",
-                           "my first Life application",
-                           Life::AboutData::License_GPL,
+                           "my first Feel application",
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2008-2010 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme",
@@ -69,7 +69,7 @@ makeAbout()
 }
 
 template<int Dim>
-class MyMesh: public Life::Simget
+class MyMesh: public Feel::Simget
 {
 public:
 

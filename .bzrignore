@@ -6,11 +6,11 @@ subdirs
 configure
 aclocal.m4
 package.m4
-lifeconfig.h.in
+feelconfig.h.in
 Makefile.headers
 t.cpp
 examples/generic/sound.eps
-lifev-dev.log
-life-ug.lof
-life-ug.lot
-life-ug.pdf
+feelv-dev.log
+feel-ug.lof
+feel-ug.lot
+feel-ug.pdf

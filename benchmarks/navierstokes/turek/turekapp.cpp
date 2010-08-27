@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-05-10
@@ -26,14 +26,14 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-05-10
  */
-#include <life/lifecore/life.hpp>
-#include <life/lifecore/application.hpp>
-#include <life/options.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/application.hpp>
+#include <feel/options.hpp>
 
 #include <data.hpp>
 
 
-namespace Life
+namespace Feel
 {
 
 /**
@@ -86,7 +86,7 @@ private:
 
 }; // Turek
 
-} // Life
+} // Feel
 
 
 
@@ -97,7 +97,7 @@ main( int argc, char** argv )
 #if 0
     try
         {
-            Life::TurekApp app( argc, argv, Data::makeAbout(), Data::makeOptions() );
+            Feel::TurekApp app( argc, argv, Data::makeAbout(), Data::makeOptions() );
 
             app.run();
         }
@@ -110,7 +110,7 @@ main( int argc, char** argv )
             std::cout << "exception caught: " << std::endl;
         }
 #else
-    Life::TurekApp app( argc, argv, Data::makeAbout(), Data::makeOptions() );
+    Feel::TurekApp app( argc, argv, Data::makeAbout(), Data::makeOptions() );
 
     app.run();
 #endif

@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-This file is part of the Life library
+This file is part of the Feel library
 
 Author(s): Simone Deparis <simone.deparis@epfl.ch>
 Date: 2007-07-10
@@ -33,7 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <fstream>
 #include <string>
 
-#include <life/options.hpp>
+#include <feel/options.hpp>
 
 
 std::vector<std::string> parseList( const std::string& list )
@@ -57,47 +57,47 @@ std::vector<std::string> parseList( const std::string& list )
 
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description moleculeoptions("Molecule options");
+    Feel::po::options_description moleculeoptions("Molecule options");
     moleculeoptions.add_options()
-        ("receptor", Life::po::value<std::string>()->default_value( "receptor" ), "basename for the PQR/CRD file that describe the receptor (without .pqr/-chr.crd extension")
-        ("ligand",   Life::po::value<std::string>()->default_value( "NONE" ),   "basename for the PQR/CRD file that describe the ligand   (without .pqr/-chr.crd extension")
-        ("dock",   Life::po::value<std::string>()->default_value( "NONE" ),   "basename for the pdb.dock4 file that describe the ligands   (without pdb.dock4 extension")
-        ("ligands",   Life::po::value<std::string>()->default_value( "NONE" ),   "basename for the PQR/CRD files that describe the ligands   (without .pqr extension, separated by space, inside \" \")")
-        ("molDir", Life::po::value<std::string>()->default_value( "./" ), "path to PQR/CRD files")
+        ("receptor", Feel::po::value<std::string>()->default_value( "receptor" ), "basename for the PQR/CRD file that describe the receptor (without .pqr/-chr.crd extension")
+        ("ligand",   Feel::po::value<std::string>()->default_value( "NONE" ),   "basename for the PQR/CRD file that describe the ligand   (without .pqr/-chr.crd extension")
+        ("dock",   Feel::po::value<std::string>()->default_value( "NONE" ),   "basename for the pdb.dock4 file that describe the ligands   (without pdb.dock4 extension")
+        ("ligands",   Feel::po::value<std::string>()->default_value( "NONE" ),   "basename for the PQR/CRD files that describe the ligands   (without .pqr extension, separated by space, inside \" \")")
+        ("molDir", Feel::po::value<std::string>()->default_value( "./" ), "path to PQR/CRD files")
         ("crd", "files are in CRD format (default)")
         ("pqr", "files are in PQR format")
         ("geoOnly", "just create the geo file and exit")
         ("meshReuse", "force Reuse of the mesh (unless it doesn't exist), even if geo is different")
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "Mesh size h value near the molecule")
-        ("farfactor", Life::po::value<double>()->default_value( 20 ), "Mesh size at far boundary domain w.r.t hsize")
-        ("farBnd", Life::po::value<double>()->default_value( 5.  ), "factor to set the far boundary of domain")
-        ("Kb", Life::po::value<double>()->default_value( 1.985  ), "Bolzmann constant [cal/(mol K)]")
-        ("IonStr", Life::po::value<double>()->default_value( 0.1  ), "Ionic Strength")
-        ("pdie", Life::po::value<double>()->default_value( 2.  ), "biomolecular dielectric constant")
-        ("sdie", Life::po::value<double>()->default_value( 78.54  ), "solvent dielectric constant")
-        ("temp", Life::po::value<double>()->default_value( 298.15  ), "temperature")
-        ("smooth", Life::po::value<double>()->default_value( 0.3  ), "soothing window")
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "Mesh size h value near the molecule")
+        ("farfactor", Feel::po::value<double>()->default_value( 20 ), "Mesh size at far boundary domain w.r.t hsize")
+        ("farBnd", Feel::po::value<double>()->default_value( 5.  ), "factor to set the far boundary of domain")
+        ("Kb", Feel::po::value<double>()->default_value( 1.985  ), "Bolzmann constant [cal/(mol K)]")
+        ("IonStr", Feel::po::value<double>()->default_value( 0.1  ), "Ionic Strength")
+        ("pdie", Feel::po::value<double>()->default_value( 2.  ), "biomolecular dielectric constant")
+        ("sdie", Feel::po::value<double>()->default_value( 78.54  ), "solvent dielectric constant")
+        ("temp", Feel::po::value<double>()->default_value( 298.15  ), "temperature")
+        ("smooth", Feel::po::value<double>()->default_value( 0.3  ), "soothing window")
 
-        ("penalbc", Life::po::value<double>()->default_value( 50 ), "penalisation parameter for the weak boundary conditions")
+        ("penalbc", Feel::po::value<double>()->default_value( 50 ), "penalisation parameter for the weak boundary conditions")
         ("export", "export results(ensight)")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
 
-    return moleculeoptions.add( Life::life_options() );
+    return moleculeoptions.add( Feel::feel_options() );
 
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "pbeq" ,
+    Feel::AboutData about( "pbeq" ,
                            "pbeq" ,
                            "0.2",
                            "nD(n=3) Molecule on simplices or simplex products",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2006, 2007 Université Joseph Fourier and Unil");
 
     about.addAuthor("Simone Deparis", "developer", "simone.deparis@epfl.ch", "");
@@ -110,7 +110,7 @@ int
 main( int argc, char** argv )
 {
 
-    using namespace Life;
+    using namespace Feel;
 
     /* assertions handling */
     Assert::setLog( "heavyside.assert");

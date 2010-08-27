@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-04-14
@@ -26,58 +26,58 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-04-14
  */
-#include <life/options.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/region.hpp>
-#include <life/lifediscr/operatorlinear.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/region.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 
 
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description bratuoptions("Bratu problem options");
+    Feel::po::options_description bratuoptions("Bratu problem options");
     bratuoptions.add_options()
-        ("dt", Life::po::value<double>()->default_value( 1 ), "time step value")
-        ("ft", Life::po::value<double>()->default_value( 1 ), "final time value")
-        ("lambda", Life::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Bratu problem")
+        ("dt", Feel::po::value<double>()->default_value( 1 ), "time step value")
+        ("ft", Feel::po::value<double>()->default_value( 1 ), "final time value")
+        ("lambda", Feel::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Bratu problem")
 
-        ("order", Life::po::value<int>()->default_value( 2 ), "order of time discretisation")
-        ("diff", Life::po::value<double>()->default_value( 1 ), "diffusion parameter")
-        ("penal", Life::po::value<double>()->default_value( 10 ), "penalisation parameter")
-        ("penalbc", Life::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("bctype", Life::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
+        ("order", Feel::po::value<int>()->default_value( 2 ), "order of time discretisation")
+        ("diff", Feel::po::value<double>()->default_value( 1 ), "diffusion parameter")
+        ("penal", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter")
+        ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
         ("export", "export results(ensight, data file(1D)")
         ("export-mesh-only", "export mesh only in ensight format")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return bratuoptions.add( Life::life_options() );
+    return bratuoptions.add( Feel::feel_options() );
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "bratu" ,
+    Feel::AboutData about( "bratu" ,
                            "bratu" ,
                            "0.1",
                            "nD(n=1,2,3) Bratu problem on simplices or simplex products",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2008 Université Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -86,9 +86,9 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
-using namespace Life::vf;
+using namespace Feel::vf;
 /**
  * Bratu Problem
  *
@@ -334,7 +334,7 @@ template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uin
 void
 Bratu<Dim, Order, Cont, Entity, FType>::run()
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
     mesh_ptrtype mesh = M_Xh->mesh();
 
     element_type u( M_Xh, "u" );
@@ -494,7 +494,7 @@ Bratu<Dim, Order, Cont, Entity,FType>::exportResults( double time,
 
 
 } // Bratu::export
-} // Life
+} // Feel
 
 
 
@@ -502,16 +502,16 @@ Bratu<Dim, Order, Cont, Entity,FType>::exportResults( double time,
 int
 main( int argc, char** argv )
 {
-    using namespace Life;
+    using namespace Feel;
 
     /* change parameters below */
     const int nDim = 2;
     const int nOrder = 2;
     typedef Continuous MyContinuity;
     //typedef Discontinuous MyContinuity;
-    //typedef Life::Bratu<nDim, nOrder, MyContinuity, SimplexProduct, Scalar> bratu_type;
+    //typedef Feel::Bratu<nDim, nOrder, MyContinuity, SimplexProduct, Scalar> bratu_type;
 
-    typedef Life::Bratu<nDim, nOrder, MyContinuity, Simplex, Scalar> bratu_type;
+    typedef Feel::Bratu<nDim, nOrder, MyContinuity, Simplex, Scalar> bratu_type;
 
     /* define and run application */
     bratu_type bratu( argc, argv, makeAbout(), makeOptions() );

@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-02-18
@@ -26,51 +26,51 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-02-18
  */
-#include <life/options.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
-#include <life/lifemesh/meshmover.hpp>
+#include <feel/feelmesh/meshmover.hpp>
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description beamoptions("Beam options");
+    Feel::po::options_description beamoptions("Beam options");
     beamoptions.add_options()
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("beta", Life::po::value<double>()->default_value( 1.0 ), "beta value in -Delta u + beta u = f")
-        ("bccoeff", Life::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("bctype", Life::po::value<int>()->default_value( 1 ), "Dirichlet condition type(0=elimination,1=penalisation, 2=weak")
-        ("scale", Life::po::value<double>()->default_value( 10 ), "scale factor for mesh mover")
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("beta", Feel::po::value<double>()->default_value( 1.0 ), "beta value in -Delta u + beta u = f")
+        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
+        ("bctype", Feel::po::value<int>()->default_value( 1 ), "Dirichlet condition type(0=elimination,1=penalisation, 2=weak")
+        ("scale", Feel::po::value<double>()->default_value( 10 ), "scale factor for mesh mover")
         ("export", "export results(ensight, data file(1D)")
         ("export-matlab", "export matrix and vectors in matlab" )
 
         ;
-    return beamoptions.add( Life::life_options() );
+    return beamoptions.add( Feel::feel_options() );
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "beam" ,
+    Feel::AboutData about( "beam" ,
                            "beam" ,
                            "0.1",
                            "Linear elasticity model for a beam",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2007,2008 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -79,7 +79,7 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
 template<int nDim, int nOrder>
 class Beam
@@ -219,7 +219,7 @@ Beam<nDim,nOrder>::run()
                            );
     this->setLogs();
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     /*
      * First we create the mesh
@@ -361,7 +361,7 @@ Beam<nDim,nOrder>::exportResults( double time, element_type const& u, element_ty
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
 } // Beam::export
-} // Life
+} // Feel
 
 
 int
@@ -370,7 +370,7 @@ main( int argc, char** argv )
     const int nDim = 2;
     const int nOrder = 3;
 
-    Life::Beam<nDim,nOrder> beam( argc, argv, makeAbout(), makeOptions());
+    Feel::Beam<nDim,nOrder> beam( argc, argv, makeAbout(), makeOptions());
     beam.run();
 }
 

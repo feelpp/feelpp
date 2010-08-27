@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-03-17
@@ -26,50 +26,50 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-03-17
  */
-#include <life/options.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/region.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/region.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
-#include <life/lifediscr/advreact.hpp>
+#include <feel/feeldiscr/advreact.hpp>
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 
 
 std::pair<std::string, std::string> createMesh( double hsize );
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description rcluxoptions("Rclux options");
+    Feel::po::options_description rcluxoptions("Rclux options");
     rcluxoptions.add_options()
         // mesh parameters
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
 
-        ("bccoeff", Life::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("peps", Life::po::value<double>()->default_value( 0. ), "epsilon for pressure term")
-        ("divtol", Life::po::value<double>()->default_value( 1.e10 ), "divergence tolerance")
+        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
+        ("peps", Feel::po::value<double>()->default_value( 0. ), "epsilon for pressure term")
+        ("divtol", Feel::po::value<double>()->default_value( 1.e10 ), "divergence tolerance")
 
-        ("dt", Life::po::value<double>()->default_value( 0.05 ), "time step value")
-        ("ft", Life::po::value<double>()->default_value( 1 ), "Final time value")
+        ("dt", Feel::po::value<double>()->default_value( 0.05 ), "time step value")
+        ("ft", Feel::po::value<double>()->default_value( 1 ), "Final time value")
 
-        ("umax", Life::po::value<double>()->default_value( 0.1 ), "amplitude of the poiseuille profile (m/s)")
-        ("c0", Life::po::value<double>()->default_value( 100 ), "concentration at inflow (mol/m^3)")
+        ("umax", Feel::po::value<double>()->default_value( 0.1 ), "amplitude of the poiseuille profile (m/s)")
+        ("c0", Feel::po::value<double>()->default_value( 100 ), "concentration at inflow (mol/m^3)")
 
         // default values: water
-        ("viscosity", Life::po::value<double>()->default_value( 0.001 ), "viscosity value ()")
-        ("density", Life::po::value<double>()->default_value( 1000 ), "density value ()")
+        ("viscosity", Feel::po::value<double>()->default_value( 0.001 ), "viscosity value ()")
+        ("density", Feel::po::value<double>()->default_value( 1000 ), "density value ()")
 
         //
         ("transport", "add transport equation" )
@@ -77,17 +77,17 @@ makeOptions()
         // export in matlab
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return rcluxoptions.add( Life::life_options() );
+    return rcluxoptions.add( Feel::feel_options() );
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "rclux" ,
+    Feel::AboutData about( "rclux" ,
                            "rclux" ,
                            "0.1",
                            "2D",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2008 Université Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -95,7 +95,7 @@ makeAbout()
 
 }
 
-namespace Life
+namespace Feel
 {
 /**
  * \class Rclux
@@ -192,7 +192,7 @@ public:
                                 % entity_type::name()
                                 % this->vm()["hsize"].as<double>()
                                 );
-        using namespace Life::vf;
+        using namespace Feel::vf;
 
 
         /*
@@ -285,7 +285,7 @@ Rclux::run()
             return;
         }
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     concentration_type c( Ch, "c" );
     concentration_type d( Ch, "d" );
@@ -505,13 +505,13 @@ Rclux::exportResults( double time,
     exporter->save();
     Log() << "exporting results done in " << ti.elapsed() << "s.\n";
 } // Rclux::export
-} // Life
+} // Feel
 
 
 int
 main( int argc, char** argv )
 {
-    using namespace Life;
+    using namespace Feel;
 
     /* define and run application */
     Rclux rclux( argc, argv, makeAbout(), makeOptions() );

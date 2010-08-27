@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Samuel Quinodoz
              Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
@@ -32,27 +32,27 @@
    \author Samuel Quinodoz
    \date 2009-02-25
  */
-#include <life/options.hpp>
-#include <life/lifecore/applicationxml.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/applicationxml.hpp>
 
 // (non)linear algebra backend
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
 // quadrature rules
-#include <life/lifepoly/im.hpp>
+#include <feel/feelpoly/im.hpp>
 
 // function space
-#include <life/lifediscr/functionspace.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 
 // linear operators
-#include <life/lifediscr/operatorlinear.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
 
 // exporter
-#include <life/lifefilters/exporter.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
-// use the Life namespace
-using namespace Life;
-using namespace Life::vf;
+// use the Feel namespace
+using namespace Feel;
+using namespace Feel::vf;
 
 
 

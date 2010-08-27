@@ -26,9 +26,9 @@
 /cmake_install.cmake
 /configure
 /ctest.make
-/life-ctest-continuous.cmake
-/life.kdev4
-/lifeconfig.h.in~
+/feel-ctest-continuous.cmake
+/feel.kdev4
+/feelconfig.h.in~
 /octave-core
 /opt
 /package.m4

@@ -24,5 +24,5 @@
 set( EXAMPLES beam stvenant_kirchhoff axi_1D) # stvenant_kirchhoff_ho
 
 foreach( EXAMPLE ${EXAMPLES} )
-  life_add_example( ${EXAMPLE} )
+  feel_add_example( ${EXAMPLE} )
 endforeach()

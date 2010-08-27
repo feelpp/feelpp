@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Simone Deparis <simone.deparis@epfl.ch>
        Date: 2007-07-12
@@ -32,26 +32,26 @@
 #include <set>
 #include <vector>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/fstream.hpp>
 
-#include <life/lifepoly/operations.hpp>
-#include <life/lifepoly/polynomial.hpp>
-#include <life/lifediscr/functionspace.hpp>
+#include <feel/feelpoly/operations.hpp>
+#include <feel/feelpoly/polynomial.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #include "mymesh.hpp"
 #include "pbeqspace.hpp"
 #include "heavysidefunction.hpp"
 
-namespace Life
+namespace Feel
 {
 
 PbeqSpace::PbeqSpace( )
@@ -166,7 +166,7 @@ PbeqSpace::createSpaces()
             return;
         }
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     /*
      * since the mesh is used by a P0 space and P1 space, we update
@@ -278,7 +278,7 @@ PbeqSpace::heavyside( value_type const& radius,
 {
     assert( M_meshSetted );
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     value_type const R2(radius*radius);
 
@@ -302,7 +302,7 @@ PbeqSpace::heavyside( value_type const& radius,
 PbeqSpace::heavyside_element_type
 PbeqSpace::heavyside(molecule_type const& molecule) const
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
     Log() << "heavyside call\n";
     heavyside_element_type H(M_HeavysideSpace, "H" );
 
@@ -337,7 +337,7 @@ PbeqSpace::chargeDensity( value_type const& radius,
 {
     assert( M_meshSetted );
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     value_type R2, qa;
     // radius of the dirac distribution
@@ -485,7 +485,7 @@ PbeqSpace::intvrho(molecule_type const& molecule,
 PbeqSpace::heavyside_element_type
 PbeqSpace::chargeDensity(molecule_type const& molecule) const
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     heavyside_element_type rho(M_HeavysideSpace, "rho" );
 
@@ -547,6 +547,6 @@ PbeqSpace::fastHeavyside(molecule_type const& molecule) const
 
 } // end fastHeavyside
 
-} // end namespace Life
+} // end namespace Feel
 
 #endif

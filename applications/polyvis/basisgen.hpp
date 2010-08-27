@@ -1,11 +1,11 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-04-30
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009-2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -34,13 +34,13 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 
-#include <life/lifecore/life.hpp>
-#include <life/lifecore/factory.hpp>
-#include <life/lifecore/singleton.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/factory.hpp>
+#include <feel/feelcore/singleton.hpp>
 
 #include "polyvis.hpp"
 
-namespace Life
+namespace Feel
 {
 namespace detail
 {
@@ -85,5 +85,5 @@ namespace detail
 # define ORDERS BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
 #endif
 } // detail
-} // Life
+} // Feel
 #endif /* __basisgen_H */

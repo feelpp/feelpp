@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-10-30
@@ -32,7 +32,7 @@
 int
 main( int argc, char** argv )
 {
-    Laplacian<3, 1, 3, Life::SimplexProduct> laplacian( argc, argv, makeAbout(), makeOptions() );
+    Laplacian<3, 1, 3, Feel::SimplexProduct> laplacian( argc, argv, makeAbout(), makeOptions() );
     laplacian.run();
 }
 

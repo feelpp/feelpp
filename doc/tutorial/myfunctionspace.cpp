@@ -1,6 +1,6 @@
-/* -*- mode: c++ coding: utf-8 -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-07-15
@@ -25,22 +25,22 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2010-07-15
  */
-#include <life/options.hpp>
-#include <life/lifecore/life.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifepoly/polynomialset.hpp>
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/region.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmsh.hpp>
-
-
-#include <life/lifevf/vf.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/region.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmsh.hpp>
 
 
-using namespace Life;
+#include <feel/feelvf/vf.hpp>
+
+
+using namespace Feel;
 
 inline
 po::options_description
@@ -51,10 +51,10 @@ makeOptions()
         ("hsize", po::value<double>()->default_value( 0.2 ), "mesh size")
         ("dim", po::value<int>()->default_value( 0 ), "mesh dimension (0: all dimensions, 1,2 or 3)")
         ("order", po::value<int>()->default_value( 0 ), "approximation order (0: all orders, 1,2,3,4 or 5)")
-        ("shape", Life::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex, hypercube or ellipsoid)")
-        ("alpha", Life::po::value<double>()->default_value( 3 ), "Regularity coefficient for function f")
+        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex, hypercube or ellipsoid)")
+        ("alpha", Feel::po::value<double>()->default_value( 3 ), "Regularity coefficient for function f")
         ;
-    return myintegralsoptions.add( Life::life_options() );
+    return myintegralsoptions.add( Feel::feel_options() );
 }
 inline
 AboutData
@@ -64,7 +64,7 @@ makeAbout()
                      "myfunctionspace" ,
                      "0.3",
                      "nD(n=1,2,3) MyFunctionSpace on simplices or simplex products",
-                     Life::AboutData::License_GPL,
+                     Feel::AboutData::License_GPL,
                      "Copyright (c) 2008-2010 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -126,9 +126,9 @@ public:
     {
     }
 
-    LIFE_DONT_INLINE void run();
+    FEEL_DONT_INLINE void run();
 
-    LIFE_DONT_INLINE void run( const double* X, unsigned long P, double* Y, unsigned long N );
+    FEEL_DONT_INLINE void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
 private:
 
@@ -163,7 +163,7 @@ template<int Dim, int Order>
 void
 MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";
@@ -246,6 +246,7 @@ main( int argc, char** argv )
         return 0;
     }
 
+#if 0
     app.add( new MyFunctionSpace<1,1>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<1,2>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<1,3>( app.vm(), app.about() ) );
@@ -258,10 +259,11 @@ main( int argc, char** argv )
     app.add( new MyFunctionSpace<2,3>( app.vm(), app.about() ) );
     //app.add( new MyFunctionSpace<2,4>( app.vm(), app.about() ) );
     //app.add( new MyFunctionSpace<2,5>( app.vm(), app.about() ) );
-
+#else
     app.add( new MyFunctionSpace<3,1>( app.vm(), app.about() ) );
 // need to be debugged
-#if 0
+//#if 0
+
     app.add( new MyFunctionSpace<3,2>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<3,3>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<3,4>( app.vm(), app.about() ) );

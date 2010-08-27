@@ -2,7 +2,7 @@
 
 # -*- mode: python -*-
 #
-#  This file is part of the Life library
+#  This file is part of the Feel library
 #
 #  Author(s): Goncalo Pena <gpena@mat.uc.pt>
 #        Date: 2010-01-09
@@ -149,7 +149,7 @@ if (options.dim == 2):
 
 
 homename = os.path.expanduser("~/")
-dirname = homename + "life/pointsetvis/equidistributed/" + options.element + "/" + str(options.dim) + "D/P"+ str(options.order)
+dirname = homename + "feel/pointsetvis/equidistributed/" + options.element + "/" + str(options.dim) + "D/P"+ str(options.order)
 
 if not os.path.isdir(dirname + "/"):
         os.makedirs(dirname + "/")

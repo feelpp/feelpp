@@ -22,30 +22,30 @@
 #
 #
 INCLUDE_DIRECTORIES (
-  ${LIFE_SOURCE_DIR}/benchmarks/navierstokes/kovasznay/
+  ${FEEL_SOURCE_DIR}/benchmarks/navierstokes/kovasznay/
   )
 ENABLE_TESTING()
 
-macro(life_add_bench_kovasznay examplename)
+macro(feel_add_bench_kovasznay examplename)
 
-  set(targetname life_bench_${examplename})
+  set(targetname feel_bench_${examplename})
   set(filename ${examplename}.cpp)
   add_executable(${targetname} ${filename}  stokes.cpp )
-  target_link_libraries(${targetname} ${LIFE_LIBRARIES} )
-endmacro(life_add_bench_kovasznay)
+  target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
+endmacro(feel_add_bench_kovasznay)
 
 # use ilu for the test cases
 foreach( BENCH stokes11 stokes22 stokes33 stokes21 stokes31 stokes32 )
 
-    life_add_bench_kovasznay( ${BENCH} )
+    feel_add_bench_kovasznay( ${BENCH} )
 
     # test each backend
     foreach( BACKEND petsc trilinos )
-      add_test( life_bench_${BENCH}-${BACKEND}
-        ${LIFE_SOURCE_DIR}/benchmarks/python/batch_validation.py
+      add_test( feel_bench_${BENCH}-${BACKEND}
+        ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --mode=0
-        --path=${LIFE_BUILD_DIR}/benchmarks/navierstokes/kovasznay/
+        --path=${FEEL_BUILD_DIR}/benchmarks/navierstokes/kovasznay/
         --cmdargs="--backend=${BACKEND} --export=0  --penalisation=1 --beta=1 ${${BACKEND}_LU_UMFPACK_SOLVER_OPTIONS}" )
     endforeach()
 

@@ -1,11 +1,11 @@
-namespace Life
+namespace Feel
 {
 /*! \page SolvingLinearAlgebra Solving Linear Algebra Problems
 \ingroup Tutorial
 
 \li \b Previous: \ref WritingVariationalFormulations
 
-Life supports three different linear algebra environments that we
+Feel supports three different linear algebra environments that we
 shall call \emph Backend .
 
  - Petsc (see BackendPetsc)
@@ -18,7 +18,7 @@ To select a backend in order to solve a linear system, we instantiate
 the <tt>Backend</tt> class associated.
 
 \code
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 boost::shared_ptr<Backend<double> > backend =
      Backend<double>::build( BACKEND_PETSC );
 \endcode

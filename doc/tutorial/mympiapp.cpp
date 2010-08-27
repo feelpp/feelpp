@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-11
@@ -26,11 +26,11 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-02-11
  */
-#include <life/options.hpp>
-#include <life/lifecore/life.hpp>
-#include <life/lifecore/applicationmpi.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/applicationmpi.hpp>
 
-using namespace Life;
+using namespace Feel;
 
 inline
 po::options_description
@@ -41,9 +41,9 @@ makeOptions()
         ("dt", po::value<double>()->default_value( 1 ), "time step value")
         ;
 
-    // return the options mympiappoptions and the life_options defined
-    // internally by Life
-    return mympiappoptions.add( life_options() );
+    // return the options mympiappoptions and the feel_options defined
+    // internally by Feel
+    return mympiappoptions.add( feel_options() );
 }
 inline
 AboutData
@@ -52,7 +52,7 @@ makeAbout()
     AboutData about( "mympiapp" ,
                      "mympiapp" ,
                      "0.1",
-                     "my first Life application",
+                     "my first Feel application",
                      AboutData::License_GPL,
                      "Copyright (c) 2008 Université Joseph Fourier");
 

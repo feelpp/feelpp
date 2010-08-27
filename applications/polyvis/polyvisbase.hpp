@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-04-21
@@ -29,10 +29,10 @@
 #ifndef __PolyvisBase_H
 #define __PolyvisBase_H 1
 
-#include <life/lifecore/factory.hpp>
-#include <life/lifecore/singleton.hpp>
+#include <feel/feelcore/factory.hpp>
+#include <feel/feelcore/singleton.hpp>
 
-namespace Life
+namespace Feel
 {
 /**
  * \class PolyvisBase
@@ -58,7 +58,7 @@ public:
     //@{
 
     //! polyvis factory
-    typedef Life::Singleton< Life::Factory< PolyvisBase, std::string > > factory_type;
+    typedef Feel::Singleton< Feel::Factory< PolyvisBase, std::string > > factory_type;
 
     //@}
 
@@ -137,5 +137,5 @@ protected:
 private:
 
 };
-} // Life
+} // Feel
 #endif /* __PolyvisBase_H */

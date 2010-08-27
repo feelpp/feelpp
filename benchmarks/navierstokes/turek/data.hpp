@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-05-02
@@ -30,10 +30,10 @@
 #define __Data_H 1
 
 
-#include <life/lifecore/life.hpp>
-#include <life/lifecore/typetraits.hpp>
-#include <life/lifealg/glas.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/typetraits.hpp>
+#include <feel/feelalg/glas.hpp>
+#include <feel/feelcore/application.hpp>
 
 
 /**
@@ -60,7 +60,7 @@ public:
 
     enum { INFLOW_STEADY = 0, INFLOW_UNSTEADY };
 
-    typedef Life::node<double>::type node_type;
+    typedef Feel::node<double>::type node_type;
 
     typedef Data data_type;
     typedef boost::shared_ptr<data_type> data_ptrtype;
@@ -71,14 +71,14 @@ public:
      */
     //@{
 
-    static data_ptrtype New( Life::po::variables_map const& vm );
+    static data_ptrtype New( Feel::po::variables_map const& vm );
 
 #if 1
     struct Inflow
     {
         typedef double value_type;
-        typedef Life::node<value_type>::type node_type;
-        typedef Life::uint16_type uint16_type;
+        typedef Feel::node<value_type>::type node_type;
+        typedef Feel::uint16_type uint16_type;
         static const uint16_type rank = 1;
 
         Inflow( Data const& data, double time );
@@ -98,8 +98,8 @@ public:
     struct Inflow<2>
     {
         typedef double value_type;
-        typedef Life::node<value_type>::type node_type;
-        typedef Life::uint16_type uint16_type;
+        typedef Feel::node<value_type>::type node_type;
+        typedef Feel::uint16_type uint16_type;
         static const uint16_type rank = 1;
 
         double operator()( uint16_type, uint16_type, node_type const& p, node_type const& n ) const;
@@ -109,8 +109,8 @@ public:
     struct Inflow<3>
     {
         typedef double value_type;
-        typedef Life::node<value_type>::type node_type;
-        typedef Life::uint16_type uint16_type;
+        typedef Feel::node<value_type>::type node_type;
+        typedef Feel::uint16_type uint16_type;
         static const uint16_type rank = 1;
 
         double operator()( uint16_type, uint16_type, node_type const& p, node_type const& n ) const;
@@ -134,7 +134,7 @@ public:
      * \param d dimension (2 or 3)
      * \param vm variables map from the command line options
      */
-    Data( int d, Life::po::variables_map const& vm );
+    Data( int d, Feel::po::variables_map const& vm );
 
     //! copy constructor
     Data( Data const & );
@@ -155,7 +155,7 @@ public:
      */
     //@{
 
-    Life::po::variables_map vm() const { return M_vm; }
+    Feel::po::variables_map vm() const { return M_vm; }
 
     double d() const { return M_dimension; }
     double h() const { return M_h; }
@@ -212,7 +212,7 @@ public:
      *
      * @return the magnitude of the profile velocity
      */
-    double Um() const { return Life::math::pow(3./2., M_dimension-1)*Ubar(); }
+    double Um() const { return Feel::math::pow(3./2., M_dimension-1)*Ubar(); }
 
     /**
      * \return the scalar coefficient for the dimensionalise the
@@ -264,8 +264,8 @@ public:
 
     void print() const;
 
-    static Life::AboutData makeAbout();
-    static Life::po::options_description makeOptions();
+    static Feel::AboutData makeAbout();
+    static Feel::po::options_description makeOptions();
 
     virtual void run() = 0;
     //@}
@@ -276,7 +276,7 @@ public:
 protected:
 
     //! variables map from the command line
-    Life::po::variables_map M_vm;
+    Feel::po::variables_map M_vm;
 
     //! geometric dimension of the problem
     int M_dimension;

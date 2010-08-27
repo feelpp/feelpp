@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2006-11-23
@@ -26,53 +26,53 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2006-11-23
  */
-#include <life/lifecore/application.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifealg/backend.hpp>
-#include <life/options.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/options.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/region.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/region.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 
 
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description laplacianoptions("Laplacian options");
+    Feel::po::options_description laplacianoptions("Laplacian options");
     laplacianoptions.add_options()
-        ("diff", Life::po::value<double>()->default_value( 1 ), "diffusion parameter")
-        ("penal", Life::po::value<double>()->default_value( 10 ), "penalisation parameter")
-        ("penalbc", Life::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
-        ("f", Life::po::value<double>()->default_value( 1 ), "forcing term")
-        ("g", Life::po::value<double>()->default_value( 0 ), "boundary term")
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("bctype", Life::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
+        ("diff", Feel::po::value<double>()->default_value( 1 ), "diffusion parameter")
+        ("penal", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter")
+        ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
+        ("f", Feel::po::value<double>()->default_value( 1 ), "forcing term")
+        ("g", Feel::po::value<double>()->default_value( 0 ), "boundary term")
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
         ("export", "export results(ensight, data file(1D)")
         ("export-mesh-only", "export mesh only in ensight format")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return laplacianoptions.add( Life::life_options() );
+    return laplacianoptions.add( Feel::feel_options() );
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "pmesh" ,
+    Feel::AboutData about( "pmesh" ,
                            "pmesh" ,
                            "0.2",
                            "nD(n=1,2,3) Laplacian on simplices or simplex products",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2006, 2007, 2008 Université Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -81,7 +81,7 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
 using namespace vf;
 template<int Dim>struct ExactSolution{};
@@ -264,7 +264,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
         }
 
     //    int maxIter = 10.0/meshSize;
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
 
     this->changeRepository( boost::format( "%1%/%2%/P%3%/%4%/" )
@@ -293,7 +293,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
             size_type dof0 = boost::get<0>( P0h->dof()->localToGlobal( it->id(), 0 ) );
 
             Log() << "element " << it->id() << " pid = " << it->processId() << " dof = " << dof0 << " value= " << pid( dof0 ) << "\n";
-            //LIFE_ASSERT( pid( dof0
+            //FEEL_ASSERT( pid( dof0
         }
 
     if ( this->vm().count( "export" ) )
@@ -530,7 +530,7 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( f1_type& U,
     timers["export"].second = timers["export"].first.elapsed();
     Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Laplacian::export
-} // Life
+} // Feel
 
 
 
@@ -538,16 +538,16 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( f1_type& U,
 int
 main( int argc, char** argv )
 {
-    using namespace Life;
+    using namespace Feel;
 
     /* change parameters below */
     const int nDim = 2;
     const int nOrder = 1;
     typedef Continuous MyContinuity;
     //typedef Discontinuous MyContinuity;
-    //typedef Life::Laplacian<nDim, nOrder, MyContinuity, SimplexProduct, Scalar> laplacian_type;
+    //typedef Feel::Laplacian<nDim, nOrder, MyContinuity, SimplexProduct, Scalar> laplacian_type;
 
-    typedef Life::Laplacian<nDim, nOrder, MyContinuity, Simplex, Scalar> laplacian_type;
+    typedef Feel::Laplacian<nDim, nOrder, MyContinuity, Simplex, Scalar> laplacian_type;
 
     /* define and run application */
     laplacian_type laplacian( argc, argv, makeAbout(), makeOptions() );

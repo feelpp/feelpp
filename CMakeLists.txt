@@ -35,7 +35,7 @@ LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS_RELEASE)
 #SET( CMAKE_CXX_FLAGS "-pipe -Wall -O2 ")
 #SET( CMAKE_C_FLAGS "-pipe -Wall -O2")
 
-project (Life C CXX Fortran)
+project (Feel C CXX Fortran)
 
 FIND_PACKAGE(Subversion)
 IF(Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn )
@@ -43,32 +43,50 @@ IF(Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn )
   MESSAGE("Current revision is ${Project_WC_REVISION}")
   Subversion_WC_LOG(${PROJECT_SOURCE_DIR} Project)
   MESSAGE("Last changed log is ${Project_LAST_CHANGED_LOG}")
+ELSE()
+  FIND_PACKAGE(Git)
+  if(GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
+
+    execute_process(
+      COMMAND git show --raw
+      COMMAND grep git-svn-id
+      COMMAND sed -re "s/^\\s*git-svn-id: .*@([0-9]+).*$/\\1/"
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      OUTPUT_VARIABLE Project_WC_REVISION
+      ERROR_VARIABLE Project_WC_REVISION_error
+      RESULT_VARIABLE Project_WC_REVISION_result)
+    if ( NOT ${Project_WC_REVISION_result} EQUAL 0 )
+      MESSAGE(SEND_ERROR "Command \"git show --raw\" failed with output:\n${Project_WC_REVISION_error}")
+    endif()
+    MESSAGE("Current SVN(git) revision is ${Project_WC_REVISION}")
+  endif()
 ENDIF()
 
-set(LIFE_VERSION_MAJOR "0")
-set(LIFE_VERSION_MINOR "9")
-set(LIFE_VERSION_MICRO "25")
-if ( Subversion_FOUND  AND EXISTS ${PROJECT_SOURCE_DIR}/.svn  )
-  set(LIFE_VERSION_EXTRA "~svn${Project_WC_REVISION}")
+set(FEEL_VERSION_MAJOR "0")
+set(FEEL_VERSION_MINOR "90")
+set(FEEL_VERSION_MICRO "0")
+if ((Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn) OR
+    (GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git ))
+  set(FEEL_VERSION_EXTRA "~svn${Project_WC_REVISION}")
 else()
-  set(LIFE_VERSION_EXTRA "")
+  set(FEEL_VERSION_EXTRA "")
 endif()
-set(LIFE_REVISION "1")
-set(LIFE_BUILDID "1")
-set(LIFE_VERSION "(((${LIFE_VERSION_MAJOR}) << 16) | ((${LIFE_VERSION_MINOR}) << 9) | (${LIFE_VERSION_MICRO}))" )
-set(LIFE_VERSION_STRING "${LIFE_VERSION_MAJOR}.${LIFE_VERSION_MINOR}.${LIFE_VERSION_MICRO}${LIFE_VERSION_EXTRA}")
-set(LIFE_SHARED_VERSION "1.0.0" )
-set(LIFE_SHARED_SOVERSION "1" )
+set(FEEL_REVISION "1")
+set(FEEL_BUILDID "1")
+set(FEEL_VERSION "(((${FEEL_VERSION_MAJOR}) << 16) | ((${FEEL_VERSION_MINOR}) << 9) | (${FEEL_VERSION_MICRO}))" )
+set(FEEL_VERSION_STRING "${FEEL_VERSION_MAJOR}.${FEEL_VERSION_MINOR}.${FEEL_VERSION_MICRO}${FEEL_VERSION_EXTRA}")
+set(FEEL_SHARED_VERSION "1.0.0" )
+set(FEEL_SHARED_SOVERSION "1" )
 
-SET(LIFE_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
-SET(LIFE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
-SET(LIFE_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
+SET(FEEL_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
+SET(FEEL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
+SET(FEEL_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
 
 SET( CMAKE_MODULE_PATH
-  ${LIFE_HOME_DIR}/cmake
-  #    ${LIFE_HOME_DIR}/cmake/utils
-  #    ${LIFE_HOME_DIR}/cmake/package_arch
-  #    ${LIFE_HOME_DIR}/cmake/config_tests
+  ${FEEL_HOME_DIR}/cmake
+  #    ${FEEL_HOME_DIR}/cmake/utils
+  #    ${FEEL_HOME_DIR}/cmake/package_arch
+  #    ${FEEL_HOME_DIR}/cmake/config_tests
   )
 
 IF(NOT CMAKE_BUILD_TYPE)
@@ -87,18 +105,18 @@ ENDIF( ENABLE_MOVE_SEMANTICS)
 OPTION(ENABLE_INSTANTIATION_MODE "Instantiation mode" ON )
 MARK_AS_ADVANCED(ENABLE_INSTANTIATION_MODE)
 IF ( ENABLE_INSTANTIATION_MODE )
-  SET( LIFE_INSTANTIATION_MODE 1 )
+  SET( FEEL_INSTANTIATION_MODE 1 )
 ENDIF()
 
-OPTION(LIFE_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
-if ( LIFE_BENCHMARK_FLAGS )
+OPTION(FEEL_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
+if ( FEEL_BENCHMARK_FLAGS )
   set(CMAKE_BUILD_TYPE Release )
   SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -O3 -mssse3 -DNDEBUG --param max-inline-recursive-depth=32 --param max-gcse-passes=3 --param max-gcse-memory=8000 --param max-inline-insns-single=2000" CACHE STRING "Release flags" FORCE)
 endif()
 
 
 #INCLUDE(PackageArchGlobalMacros)
-# INCLUDE(LifeGlobalMacros)
+# INCLUDE(FeelGlobalMacros)
 #INCLUDE(AdvancedSet)
 #INCLUDE(AdvancedOption)
 
@@ -138,7 +156,7 @@ MESSAGE(STATUS "SIZE_LONG_DOUBLE=${SIZE_LONG_DOUBLE}")
 FIND_PACKAGE(TBB)
 IF ( TBB_FOUND )
   INCLUDE_DIRECTORIES( ${TBB_INCLUDE_DIR} )
-  SET(LIFE_LIBRARIES ${TBB_LIBRARIES})
+  SET(FEEL_LIBRARIES ${TBB_LIBRARIES})
 ENDIF (TBB_FOUND )
 
 FIND_PACKAGE(OpenMP)
@@ -154,8 +172,8 @@ IF ( MPI_FOUND )
   SET( HAVE_MPI 1 )
   SET( HAVE_MPI_H 1 )
   ADD_DEFINITIONS( -DHAVE_MPI=1 -DHAVE_MPI_H=1 )
-  SET(LIFE_BOOST_MPI mpi)
-  SET(LIFE_LIBRARIES ${MPI_LIBRARIES} ${LIFE_LIBRARIES})
+  SET(FEEL_BOOST_MPI mpi)
+  SET(FEEL_LIBRARIES ${MPI_LIBRARIES} ${FEEL_LIBRARIES})
 ENDIF()
 
 
@@ -169,7 +187,7 @@ IF (HAVE_LIBDL)
   set(DL_LIBRARY dl)
   SET (HAVE_DLOPEN 1)
   add_definitions(-DHAVE_DLOPEN)
-  SET(LIFE_LIBRARIES ${DL_LIBRARY} ${LIFE_LIBRARIES})
+  SET(FEEL_LIBRARIES ${DL_LIBRARY} ${FEEL_LIBRARIES})
 ELSE ()
   CHECK_FUNCTION_EXISTS (dlopen HAVE_DLOPEN)
 ENDIF (HAVE_LIBDL)
@@ -178,7 +196,7 @@ ENDIF (HAVE_LIBDL)
 # Xml2
 #
 FIND_PACKAGE(LibXml2 REQUIRED)
-SET(LIFE_LIBRARIES  ${LIBXML2_LIBRARIES} ${LIFE_LIBRARIES})
+SET(FEEL_LIBRARIES  ${LIBXML2_LIBRARIES} ${FEEL_LIBRARIES})
 #
 # Blas and Lapack
 #
@@ -187,13 +205,13 @@ if (APPLE)
 else (APPLE)
         FIND_PACKAGE(LAPACK REQUIRED)
 endif (APPLE)
-SET(LIFE_LIBRARIES  ${LAPACK_LIBRARIES} ${LIFE_LIBRARIES})
+SET(FEEL_LIBRARIES  ${LAPACK_LIBRARIES} ${FEEL_LIBRARIES})
 
-FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${LIFE_BOOST_MPI} regex  serialization)
+FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${FEEL_BOOST_MPI} regex  serialization)
 set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" )
 set( BOOST_PARAMETER_MAX_ARITY 15 )
 add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOST_TEST_DYN_LINK )
-SET(LIFE_LIBRARIES ${Boost_LIBRARIES} ${LIFE_LIBRARIES})
+SET(FEEL_LIBRARIES ${Boost_LIBRARIES} ${FEEL_LIBRARIES})
 
 #
 # MadLib
@@ -203,19 +221,19 @@ if ( MADLIB_FOUND )
   INCLUDE_DIRECTORIES(${MadLib_INCLUDE_DIR})
   SET (HAVE_MADLIB_H 1)
   LINK_DIRECTORIES(${MadLib_LIBRARIES})
-  SET(LIFE_LIBRARIES ${MadLib_LIBRARY} ${LIFE_LIBRARIES})
+  SET(FEEL_LIBRARIES ${MadLib_LIBRARY} ${FEEL_LIBRARIES})
 endif( MADLIB_FOUND )
 
 #
 # Eigen
 #
 add_subdirectory(contrib/eigen)
-INCLUDE_DIRECTORIES( ${LIFE_SOURCE_DIR}/contrib/eigen )
+INCLUDE_DIRECTORIES( ${FEEL_SOURCE_DIR}/contrib/eigen )
 
 #FIND_PACKAGE(Eigen2 REQUIRED)
 #INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
 #add_subdirectory(contrib/eigen)
-#INCLUDE_DIRECTORIES( ${LIFE_SOURCE_DIR}/contrib/eigen )
+#INCLUDE_DIRECTORIES( ${FEEL_SOURCE_DIR}/contrib/eigen )
 #add_definitions( -DEIGEN_NO_STATIC_ASSERT )
 
 #
@@ -230,7 +248,7 @@ FIND_PACKAGE(Metis)
 if ( METIS_FOUND )
   INCLUDE_DIRECTORIES(${METIS_INCLUDE_DIR})
   LINK_DIRECTORIES(${METIS_LIBRARIES})
-  SET(LIFE_LIBRARIES ${METIS_LIBRARY} ${LIFE_LIBRARIES})
+  SET(FEEL_LIBRARIES ${METIS_LIBRARY} ${FEEL_LIBRARIES})
 endif( METIS_FOUND )
 
 #
@@ -239,7 +257,7 @@ endif( METIS_FOUND )
 FIND_PACKAGE( PETSc )
 if ( PETSC_FOUND )
   SET(CMAKE_REQUIRED_INCLUDES "${PETSC_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
-  SET(LIFE_LIBRARIES ${PETSC_LIBRARIES} ${LIFE_LIBRARIES})
+  SET(FEEL_LIBRARIES ${PETSC_LIBRARIES} ${FEEL_LIBRARIES})
 endif( PETSC_FOUND )
 
 #
@@ -248,7 +266,7 @@ endif( PETSC_FOUND )
 FIND_LIBRARY(PARPACK_LIBRARY NAMES parpack)
 if (PARPACK_LIBRARY)
     SET(PARPACK_LIBRARIES ${PARPACK_LIBRARY})
-    SET(LIFE_LIBRARIES ${PARPACK_LIBRARIES} ${LIFE_LIBRARIES})
+    SET(FEEL_LIBRARIES ${PARPACK_LIBRARIES} ${FEEL_LIBRARIES})
 endif()
 MARK_AS_ADVANCED( PARPACK_LIBRARY )
 
@@ -260,7 +278,7 @@ FIND_PACKAGE( SLEPc )
 if ( SLEPC_FOUND )
   SET(CMAKE_REQUIRED_INCLUDES "${SLEPC_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
   INCLUDE_DIRECTORIES( ${SLEPC_INCLUDE_DIR} )
-  SET(LIFE_LIBRARIES ${SLEPC_LIBRARIES} ${LIFE_LIBRARIES})
+  SET(FEEL_LIBRARIES ${SLEPC_LIBRARIES} ${FEEL_LIBRARIES})
 endif(SLEPC_FOUND)
 
 
@@ -270,7 +288,7 @@ endif(SLEPC_FOUND)
 FIND_PACKAGE(Trilinos)
 if ( TRILINOS_FOUND )
   INCLUDE_DIRECTORIES(${TRILINOS_INCLUDE_DIR})
-  SET(LIFE_LIBRARIES ${TRILINOS_LIBRARIES} ${LIFE_LIBRARIES})
+  SET(FEEL_LIBRARIES ${TRILINOS_LIBRARIES} ${FEEL_LIBRARIES})
 endif( TRILINOS_FOUND )
 
 #
@@ -281,7 +299,7 @@ if ( OPENTURNS_FOUND )
   MESSAGE(STATUS "OpenTURNS Libraries: ${OpenTURNS_LIBRARIES}")
   MESSAGE(STATUS "OpenTURNS Headers: ${OpenTURNS_INCLUDE_DIRS}")
   INCLUDE_DIRECTORIES(${OpenTURNS_INCLUDE_DIRS})
-  SET(LIFE_LIBRARIES ${OpenTURNS_LIBRARIES} ${LIFE_LIBRARIES})
+  SET(FEEL_LIBRARIES ${OpenTURNS_LIBRARIES} ${FEEL_LIBRARIES})
 endif( OPENTURNS_FOUND )
 
 #
@@ -293,7 +311,7 @@ if ( VTK_FOUND )
   SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging -lvtkCommon" )
   INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
   MARK_AS_ADVANCED( VTK_DIR )
-  SET(LIFE_LIBRARIES ${VTK_LIBRARIES} ${LIFE_LIBRARIES})
+  SET(FEEL_LIBRARIES ${VTK_LIBRARIES} ${FEEL_LIBRARIES})
 endif()
 
 #
@@ -308,9 +326,9 @@ endif( OCTAVE_FOUND )
 #
 #
 INCLUDE_DIRECTORIES (
-  ${LIFE_BUILD_DIR}/
-  ${LIFE_SOURCE_DIR}/
-  ${LIFE_SOURCE_DIR}/contrib/gmm/include
+  ${FEEL_BUILD_DIR}/
+  ${FEEL_SOURCE_DIR}/
+  ${FEEL_SOURCE_DIR}/contrib/gmm/include
 
   ${PETSC_INCLUDE_DIR}
   ${PETSCCONF_INCLUDE_DIR}
@@ -335,14 +353,14 @@ if ( GMSH )
 endif()
 mark_as_advanced( GMSH )
 
-# ${LIFE_SOURCE_DIR}/life/lifecore
-# ${LIFE_SOURCE_DIR}/life/lifealg
-# ${LIFE_SOURCE_DIR}/life/lifemesh
-# ${LIFE_SOURCE_DIR}/life/lifepoly
-# ${LIFE_SOURCE_DIR}/life/lifediscr
-# ${LIFE_SOURCE_DIR}/life/lifevf
-# ${LIFE_SOURCE_DIR}/life/lifefilters
-# ${LIFE_SOURCE_DIR}/life/lifesystem
+# ${FEEL_SOURCE_DIR}/feel/feelcore
+# ${FEEL_SOURCE_DIR}/feel/feelalg
+# ${FEEL_SOURCE_DIR}/feel/feelmesh
+# ${FEEL_SOURCE_DIR}/feel/feelpoly
+# ${FEEL_SOURCE_DIR}/feel/feeldiscr
+# ${FEEL_SOURCE_DIR}/feel/feelvf
+# ${FEEL_SOURCE_DIR}/feel/feelfilters
+# ${FEEL_SOURCE_DIR}/feel/feelsystem
 
 #
 # Python
@@ -350,49 +368,49 @@ mark_as_advanced( GMSH )
 FIND_PACKAGE(PythonInterp 2.2 REQUIRED)
 
 #
-# Life
+# Feel
 #
-ADD_SUBDIRECTORY ( life )
+ADD_SUBDIRECTORY ( feel )
 
-SET(LIFE_LIBRARIES
-  life
-  lifematerial
-  lifefilters
-  lifediscr
-  lifealg
-  lifemesh
-  lifecore
-  ${LIFE_LIBRARIES}
+SET(FEEL_LIBRARIES
+  feel
+  feelmaterial
+  feelfilters
+  feeldiscr
+  feelalg
+  feelmesh
+  feelcore
+  ${FEEL_LIBRARIES}
   )
 
 
 
-SET(LIFE_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
+SET(FEEL_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
 
-OPTION(LIFE_ENABLE_DOCUMENTATION "enable life documentation" OFF)
-OPTION(LIFE_ENABLE_BENCHMARKS "enable life benchmarks" OFF)
-OPTION(LIFE_ENABLE_EXAMPLES "enable life examples" OFF)
-OPTION(LIFE_ENABLE_APPLICATIONS "enable life applications" OFF)
-OPTION(LIFE_ENABLE_TESTS "enable life tests" OFF)
-OPTION(LIFE_ENABLE_ALL "enable all life modules" OFF)
+OPTION(FEEL_ENABLE_DOCUMENTATION "enable feel documentation" OFF)
+OPTION(FEEL_ENABLE_BENCHMARKS "enable feel benchmarks" OFF)
+OPTION(FEEL_ENABLE_EXAMPLES "enable feel examples" OFF)
+OPTION(FEEL_ENABLE_APPLICATIONS "enable feel applications" OFF)
+OPTION(FEEL_ENABLE_TESTS "enable feel tests" OFF)
+OPTION(FEEL_ENABLE_ALL "enable all feel modules" OFF)
 
-if ( LIFE_ENABLE_ALL )
-  set( LIFE_ENABLE_DOCUMENTATION ON )
-  set( LIFE_ENABLE_BENCHMARKS ON )
-  set( LIFE_ENABLE_EXAMPLES ON )
-  set( LIFE_ENABLE_APPLICATIONS ON )
-  set( LIFE_ENABLE_TESTS ON )
-endif( LIFE_ENABLE_ALL )
+if ( FEEL_ENABLE_ALL )
+  set( FEEL_ENABLE_DOCUMENTATION ON )
+  set( FEEL_ENABLE_BENCHMARKS ON )
+  set( FEEL_ENABLE_EXAMPLES ON )
+  set( FEEL_ENABLE_APPLICATIONS ON )
+  set( FEEL_ENABLE_TESTS ON )
+endif( FEEL_ENABLE_ALL )
 
-OPTION(LIFE_MINIMAL_CONFIGURATION "enable life minimal configuration" OFF)
-IF( LIFE_MINIMAL_CONFIGURATION )
-  set( LIFE_ENABLE_DOCUMENTATION OFF )
+OPTION(FEEL_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
+IF( FEEL_MINIMAL_CONFIGURATION )
+  set( FEEL_ENABLE_DOCUMENTATION OFF )
   set( BUILD_TESTING OFF )
-  set( LIFE_ENABLE_DOCUMENTATION ON )
+  set( FEEL_ENABLE_DOCUMENTATION ON )
   set( ENABLE_INSTANTIATION_MODE OFF )
-  UNSET( LIFE_INSTANTIATION_MODE CACHE )
-  SET(LIFE_MESH_MAX_ORDER "1" CACHE STRING "maximum geometrical order in templates to instantiate" FORCE )
-ENDIF( LIFE_MINIMAL_CONFIGURATION )
+  UNSET( FEEL_INSTANTIATION_MODE CACHE )
+  SET(FEEL_MESH_MAX_ORDER "1" CACHE STRING "maximum geometrical order in templates to instantiate" FORCE )
+ENDIF( FEEL_MINIMAL_CONFIGURATION )
 
 #
 # Enable testing
@@ -400,36 +418,36 @@ ENDIF( LIFE_MINIMAL_CONFIGURATION )
 INCLUDE(CTest)
 ENABLE_TESTING()
 
-if ( LIFE_ENABLE_DOCUMENTATION )
+if ( FEEL_ENABLE_DOCUMENTATION )
   ADD_SUBDIRECTORY ( doc )
-endif ( LIFE_ENABLE_DOCUMENTATION )
+endif ( FEEL_ENABLE_DOCUMENTATION )
 
-if ( BUILD_TESTING OR LIFE_ENABLE_BENCHMARKS )
+if ( FEEL_ENABLE_BENCHMARKS )
   ADD_SUBDIRECTORY ( benchmarks )
 endif()
 
 
-if ( LIFE_ENABLE_EXAMPLES )
+if ( FEEL_ENABLE_EXAMPLES )
  ADD_SUBDIRECTORY ( examples )
 endif()
 
-if ( LIFE_ENABLE_APPLICATIONS )
+if ( FEEL_ENABLE_APPLICATIONS )
  ADD_SUBDIRECTORY ( applications )
- if ( EXISTS ${LIFE_SOURCE_DIR}/research )
+ if ( EXISTS ${FEEL_SOURCE_DIR}/research )
   ADD_SUBDIRECTORY ( research )
  endif()
-endif( LIFE_ENABLE_APPLICATIONS )
+endif( FEEL_ENABLE_APPLICATIONS )
 
 
 
 
-IF(BUILD_TESTING OR LIFE_ENABLE_TESTS )
+IF(FEEL_ENABLE_TESTS )
 
-  macro(life_add_test testname)
+  macro(feel_add_test testname)
     set(targetname test_${testname})
     set(filename test_${testname}.cpp)
     add_executable(${targetname} ${filename})
-    target_link_libraries(${targetname} ${LIFE_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
+    target_link_libraries(${targetname} ${FEEL_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
 if ( APPLE )
     add_test(
       NAME test_${testname}
@@ -441,7 +459,7 @@ else( APPLE )
       COMMAND ${targetname} --log_level=message
       )
 endif ( APPLE )
-  endmacro(life_add_test)
+  endmacro(feel_add_test)
 
   add_subdirectory( testsuite )
 
@@ -449,7 +467,7 @@ endif()
 
 # generate configuration header
 set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-CONFIGURE_FILE(lifeconfig.h.in lifeconfig.h  )
+CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
 
 #
 # Packaging
@@ -457,52 +475,52 @@ CONFIGURE_FILE(lifeconfig.h.in lifeconfig.h  )
 INCLUDE(InstallRequiredSystemLibraries)
 
 
-foreach(includedir lifecore lifealg lifemesh lifepoly lifefilters lifediscr lifevf lifematerial lifesystem )
-  FILE(GLOB files "life/${includedir}/*.hpp")
+foreach(includedir feelcore feelalg feelmesh feelpoly feelfilters feeldiscr feelvf feelmaterial feelsystem )
+  FILE(GLOB files "feel/${includedir}/*.hpp")
   if ( NOT ENABLE_INSTANTIATION_MODE )
-    FILE(GLOB cppfiles "life/${includedir}/*.cpp")
+    FILE(GLOB cppfiles "feel/${includedir}/*.cpp")
   endif()
-  INSTALL(FILES ${files} ${cppfiles} DESTINATION include/life/${includedir})
+  INSTALL(FILES ${files} ${cppfiles} DESTINATION include/feel/${includedir})
 endforeach()
-FILE(GLOB files "life/*.hpp")
-INSTALL(FILES ${files} DESTINATION include/life)
+FILE(GLOB files "feel/*.hpp")
+INSTALL(FILES ${files} DESTINATION include/feel)
 FILE(GLOB files "contrib/gmm/include/*.h")
-INSTALL(FILES ${files} DESTINATION include/life)
-FILE(GLOB files ${CMAKE_CURRENT_BINARY_DIR}/lifeconfig.h)
+INSTALL(FILES ${files} DESTINATION include/feel)
+FILE(GLOB files ${CMAKE_CURRENT_BINARY_DIR}/feelconfig.h)
 INSTALL(FILES ${files} DESTINATION include/)
-foreach(libdir lifecore lifealg lifemesh lifefilters lifevf
-lifematerial lifediscr)
-  FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/life/${libdir}/*.so*")
+foreach(libdir feelcore feelalg feelmesh feelfilters feelvf
+feelmaterial feeldiscr)
+  FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/feel/${libdir}/*.so*")
   INSTALL(FILES ${files} DESTINATION lib/)
 endforeach()
-FILE(GLOB libso "${CMAKE_CURRENT_BINARY_DIR}/life/*.so*")
+FILE(GLOB libso "${CMAKE_CURRENT_BINARY_DIR}/feel/*.so*")
 INSTALL(FILES ${libso} DESTINATION lib/)
 foreach( programs_dir examples/generic examples/heat examples/solid doc/tutorial applications/polyvis benchmarks/convergence )
-  FILE(GLOB programs "${CMAKE_CURRENT_BINARY_DIR}/${programs_dir}/life_*")
+  FILE(GLOB programs "${CMAKE_CURRENT_BINARY_DIR}/${programs_dir}/feel_*")
   INSTALL(FILES ${programs} DESTINATION bin/)
 endforeach()
 # documentation and examples
-FILE(GLOB pdfs "${CMAKE_CURRENT_BINARY_DIR}/doc/tutorial/life-manual.pdf")
-INSTALL(FILES ${pdfs} DESTINATION share/doc/life/)
+FILE(GLOB pdfs "${CMAKE_CURRENT_BINARY_DIR}/doc/tutorial/feel-manual.pdf")
+INSTALL(FILES ${pdfs} DESTINATION share/doc/feel/)
 FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/tutorial/*.*pp")
-INSTALL(FILES ${examples} DESTINATION share/doc/life/examples/)
+INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/)
 
 
 ##
 ## Archive generation using cpack
 ##
 SET(CPACK_GENERATOR "TGZ")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "life")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "feel")
 SET(CPACK_PACKAGE_VENDOR "Christophe Prud'homme")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README")
 SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
-SET(CPACK_PACKAGE_VERSION_MAJOR "${LIFE_VERSION_MAJOR}")
-SET(CPACK_PACKAGE_VERSION_MINOR "${LIFE_VERSION_MINOR}")
-SET(CPACK_PACKAGE_VERSION_PATCH "${LIFE_VERSION_MICRO}")
-SET(CPACK_PACKAGE_INSTALL_DIRECTORY "life")
+SET(CPACK_PACKAGE_VERSION_MAJOR "${FEEL_VERSION_MAJOR}")
+SET(CPACK_PACKAGE_VERSION_MINOR "${FEEL_VERSION_MINOR}")
+SET(CPACK_PACKAGE_VERSION_PATCH "${FEEL_VERSION_MICRO}")
+SET(CPACK_PACKAGE_INSTALL_DIRECTORY "feel")
 SET(CPACK_SOURCE_GENERATOR "TGZ")
 SET(CPACK_SOURCE_OUTPUT_CONFIG_FILE "CPackSourceConfig.cmake")
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "life-${LIFE_VERSION_MAJOR}.${LIFE_VERSION_MINOR}.${LIFE_VERSION_MICRO}${LIFE_VERSION_EXTRA}")
+SET(CPACK_SOURCE_PACKAGE_FILE_NAME "feel-${FEEL_VERSION_MAJOR}.${FEEL_VERSION_MINOR}.${FEEL_VERSION_MICRO}${FEEL_VERSION_EXTRA}")
 SET(CPACK_SOURCE_STRIP_FILES "")
 # The following components are regex's to match anywhere (unless anchored)
 # in absolute path + filename to find files or directories to be excluded

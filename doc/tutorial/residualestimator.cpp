@@ -1,6 +1,6 @@
-/* -*- mode: c++; coding: utf-8 -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-07
@@ -30,7 +30,7 @@
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
- * as an argument of a Life::Application subclass.
+ * as an argument of a Feel::Application subclass.
  *
  * \return the list of options
  */
@@ -43,20 +43,22 @@ makeOptions()
         ("hsize", po::value<double>()->default_value( 0.1 ), "mesh size")
         ("dim", po::value<int>()->default_value( 2 ), "dimension of the geometry( 0: all three, 1, 2 or 3")
         ("order", po::value<int>()->default_value( 0 ), "order of finite element approximation, 0: execute all registered orders")
-        ("shape", Life::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
+        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
         ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ("penaldir", Life::po::value<double>()->default_value( 50 ),
+        ("penaldir", Feel::po::value<double>()->default_value( 50 ),
          "penalisation parameter for the weak boundary Dirichlet formulation")
-        ("alpha", Life::po::value<double>()->default_value( 3 ), "Regularity coefficient for function f")
-        ("beta", Life::po::value<double>()->default_value( 1 ), "Coefficient for exponential")
-        ("fn", Life::po::value<int>()->default_value( 1 ), "example function to be run")
-        ("adapt-error-type", Life::po::value<int>()->default_value(1),"type of error (=1 error indicator, =2 exact error)")
-        ("adapt-tolerance", Life::po::value<double>()->default_value(1e-2),"tolerence parameter on the error for mesh adaptation")
-        ("gmshmodel", Life::po::value<bool>()->default_value(false),"enable gmsh model")
-        ("gmshgeo", Life::po::value<bool>()->default_value(false),"enable gmsh model geo file")
-        ("hmin", Life::po::value<double>()->default_value(1e-5),"minimum acceptable h")
+        ("alpha", Feel::po::value<double>()->default_value( 3 ), "Regularity coefficient for function f")
+        ("beta", Feel::po::value<double>()->default_value( 1 ), "Coefficient for exponential")
+        ("fn", Feel::po::value<int>()->default_value( 1 ), "example function to be run")
+        ("adapt-error-type", Feel::po::value<int>()->default_value(1),"type of error (=1 error indicator, =2 exact error)")
+        ("adapt-tolerance", Feel::po::value<double>()->default_value(1e-2),"tolerence parameter on the error for mesh adaptation")
+        ("adapt-hmax", Feel::po::value<double>()->default_value(2),"maximum acceptable h")
+        ("adapt-hmin", Feel::po::value<double>()->default_value(1e-5),"minimum acceptable h")
+        ("gmshmodel", Feel::po::value<bool>()->default_value(false),"enable gmsh model")
+        ("gmshgeo", Feel::po::value<bool>()->default_value(false),"enable gmsh model geo file")
+      
         ;
-    return residualestimatoroptions.add( Life::life_options() );
+    return residualestimatoroptions.add( Feel::feel_options() );
 }
 
 
@@ -83,8 +85,8 @@ main( int argc, char** argv )
      */
     /** \code */
     //app.add( new ResidualEstimator<1,1>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<2,3>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<2,1>( app.vm(), app.about() ) );
+    //app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
 
     /** \endcode */
 

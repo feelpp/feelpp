@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
        Date: 2006-10-18
@@ -29,12 +29,12 @@
 #ifndef __Reinit_Fms_H
 #define __Reinit_Fms_H 1
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #include "fmsheap.hpp"
 #include "fmspoint.hpp"
 
-namespace Life
+namespace Feel
 {
 
 template<typename FunctionSpaceType, typename IteratorRange>
@@ -199,7 +199,7 @@ ReinitializerFMS<FunctionSpaceType, Iterator>::operator()
     //BOOST_STATIC_ASSERT(( boost::is_same<return_value_type, typename functionspace_type::return_value_type>::value ));
 
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
-    LIFE_ASSERT( __v.size() == _M_functionspace->dof()->nDof() )( __v.size() )( _M_functionspace->dof()->nDof() ).warn( "invalid size" );
+    FEEL_ASSERT( __v.size() == _M_functionspace->dof()->nDof() )( __v.size() )( _M_functionspace->dof()->nDof() ).warn( "invalid size" );
     // assert functionspace_type::nComponents == 1
     __v.resize( _M_functionspace->dof()->nDof() );
     iterator_type it, en;
@@ -413,6 +413,6 @@ fmsDistN( std::vector<size_type> const & ids,
     return inside ? __v[ids[0]] + dot( grad, dx ) : 0.0;
 } // fmsDistN
 
-} // namespace Life
+} // namespace Feel
 
 #endif /* __Reinit_Fms_H */

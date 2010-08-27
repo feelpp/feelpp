@@ -1,7 +1,7 @@
 
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-04-14
@@ -27,60 +27,60 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-04-14
  */
-#include <life/options.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/region.hpp>
-#include <life/lifediscr/operatorlinear.hpp>
-#include <life/lifediscr/bdf.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/region.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/bdf.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 
 
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description stvenant_kirchhoffoptions("StVenant Kirchhoff solid model options");
+    Feel::po::options_description stvenant_kirchhoffoptions("StVenant Kirchhoff solid model options");
     stvenant_kirchhoffoptions.add_options()
-        ("dt", Life::po::value<double>()->default_value( 1 ), "time step value")
-        ("ft", Life::po::value<double>()->default_value( 1 ), "final time value")
-        ("omega", Life::po::value<double>()->default_value( 2 ), "frequency")
-        ("lambda", Life::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Stvenant_Kirchhoff problem")
+        ("dt", Feel::po::value<double>()->default_value( 1 ), "time step value")
+        ("ft", Feel::po::value<double>()->default_value( 1 ), "final time value")
+        ("omega", Feel::po::value<double>()->default_value( 2 ), "frequency")
+        ("lambda", Feel::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Stvenant_Kirchhoff problem")
 
-        ("order", Life::po::value<int>()->default_value( 2 ), "order of time discretisation")
-        ("diff", Life::po::value<double>()->default_value( 1 ), "diffusion parameter")
-        ("penal", Life::po::value<double>()->default_value( 10 ), "penalisation parameter")
-        ("penalbc", Life::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("bctype", Life::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
+        ("order", Feel::po::value<int>()->default_value( 2 ), "order of time discretisation")
+        ("diff", Feel::po::value<double>()->default_value( 1 ), "diffusion parameter")
+        ("penal", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter")
+        ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
         ("export", "export results(ensight, data file(1D)")
         ("export-mesh-only", "export mesh only in ensight format")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return stvenant_kirchhoffoptions.add( Life::life_options() );
+    return stvenant_kirchhoffoptions.add( Feel::feel_options() );
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "stvenant_kirchhoff" ,
+    Feel::AboutData about( "stvenant_kirchhoff" ,
                            "stvenant_kirchhoff" ,
                            "0.1",
                            "nD(n=1,2,3) Stvenant_Kirchhoff model",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2008 Université Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -89,7 +89,7 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
 template<typename A, uint16_type i>
 class Tagged : public A
@@ -100,7 +100,7 @@ public:
 };
 #define MIXED 0
 
-using namespace Life::vf;
+using namespace Feel::vf;
 /**
  * StVenant_Kirchhoff Model
  *
@@ -434,7 +434,7 @@ template<int Dim, int Order>
 void
 StVenantKirchhoff<Dim, Order>::run()
 {
-    using namespace Life::vf;
+    using namespace Feel::vf;
     mesh_ptrtype mesh = M_Xh->mesh();
 
     element_type U( M_Xh, "U" );
@@ -581,7 +581,7 @@ StVenantKirchhoff<Dim, Order>::exportResults( double time, element_type& U)
     exporter->save();
     exporter->step(time)->setState( STEP_ON_DISK );
 } // StVenantKirchhoff::export
-} // Life
+} // Feel
 
 
 
@@ -589,12 +589,12 @@ StVenantKirchhoff<Dim, Order>::exportResults( double time, element_type& U)
 int
 main( int argc, char** argv )
 {
-    using namespace Life;
+    using namespace Feel;
 
     /* change parameters below */
     const int nDim = 2;
     const int nOrder = 3;
-    typedef Life::StVenantKirchhoff<nDim, nOrder> solid_type;
+    typedef Feel::StVenantKirchhoff<nDim, nOrder> solid_type;
 
     /* define and run application */
     solid_type solid( argc, argv, makeAbout(), makeOptions() );

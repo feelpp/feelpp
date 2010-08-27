@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-06-14
@@ -61,7 +61,7 @@
     }
 /**/
 
-namespace Life
+namespace Feel
 {
 
 template<typename FSType>
@@ -89,21 +89,21 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh  )
     ofs.width( 6 );
     DO_BENCH( idt(u)*id(v), "R", "const" );
     DO_BENCH( idv(w)*idt(u)*id(v), "R", "p0" );
-    DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v), "R", "xyz" );
-    DO_BENCH2( ((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v),
+    DO_BENCH( ((Px()*Px()*Px())+(Py()*Py())*Pz())*idt(u)*id(v), "R", "xyz" );
+    DO_BENCH2( ((Px()*Px()*Px())+(Py()*Py())*Pz())*idt(u)*id(v),
                idt(u)*id(v),
                "R", "xyz(const)" );
-    DO_BENCH( idv(w)*((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v), "R", "p0 xyz" );
-    DO_BENCH2( idv(w)*((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v),
+    DO_BENCH( idv(w)*((Px()*Px()*Px())+(Py()*Py())*Pz())*idt(u)*id(v), "R", "p0 xyz" );
+    DO_BENCH2( idv(w)*((Px()*Px()*Px())+(Py()*Py())*Pz())*idt(u)*id(v),
                idt(u)*id(v),
                "R", "p0 xyz(const)" );
-    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v), "R", "val(xyz)" );
-    DO_BENCH2( val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v),
+    DO_BENCH( val((Px()*Px()*Px())+(Py()*Py())*Pz())*idt(u)*id(v), "R", "val(xyz)" );
+    DO_BENCH2( val((Px()*Px()*Px())+(Py()*Py())*Pz())*idt(u)*id(v),
                idt(u)*id(v),
                "R", "val(xyz)(const)" );
-    DO_BENCH( idv(w)*val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v),
+    DO_BENCH( idv(w)*val((Px()*Px()*Px())+(Py()*Py())*Pz())*idt(u)*id(v),
               "R", "p0 val(xyz)" );
-    DO_BENCH2( idv(w)*val((Px()^(3))+(Py()^(2))*Pz())*idt(u)*id(v),
+    DO_BENCH2( idv(w)*val((Px()*Px()*Px())+(Py()*Py())*Pz())*idt(u)*id(v),
                idt(u)*id(v),
                "R", "p0 val(xyz)(const)" );
 
@@ -133,11 +133,11 @@ Bench1::D( boost::shared_ptr<FSType> const& Xh  )
     DO_BENCH2( gradt(u)*trans(grad(v)), idt(u)*id(v), "D", "const (R)" );
     DO_BENCH( dxt(u)*dx(v)+dyt(u)*dy(v), "D", "const2" );
     DO_BENCH( dxt(u)*dx(v)+dyt(u)*dy(v)+dzt(u)*dz(v), "D", "const3" );
-    DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*gradt(u)*trans(grad(v)), "D", "xyz" );
-    DO_BENCH2( ((Px()^(3))+(Py()^(2))*Pz())*gradt(u)*trans(grad(v)),
+    DO_BENCH( ((Px()*Px()*Px())+(Py()*Py())*Pz())*gradt(u)*trans(grad(v)), "D", "xyz" );
+    DO_BENCH2( ((Px()*Px()*Px())+(Py()*Py())*Pz())*gradt(u)*trans(grad(v)),
                gradt(u)*trans(grad(v)),"D", "xyz(const)" );
-    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*gradt(u)*trans(grad(v)), "D", "val(xyz)" );
-    DO_BENCH2( val((Px()^(3))+(Py()^(2))*Pz())*gradt(u)*trans(grad(v)),
+    DO_BENCH( val((Px()*Px()*Px())+(Py()*Py())*Pz())*gradt(u)*trans(grad(v)), "D", "val(xyz)" );
+    DO_BENCH2( val((Px()*Px()*Px())+(Py()*Py())*Pz())*gradt(u)*trans(grad(v)),
                gradt(u)*trans(grad(v)),
                "D", "val(xyz)(const)" );
 
@@ -173,12 +173,12 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
 
     DO_BENCH( (gradt(u)*vec(constant(1.0)))*id(v), "A", "const" );
     DO_BENCH2( (gradt(u)*vec(constant(1.0)))*id(v),idt(u)*id(v),"A", "const (R)" );
-    DO_BENCH( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "A", "xyz" );
-    DO_BENCH( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "A", "val(xyz)" );
-    DO_BENCH2( (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz())))*id(v),
+    DO_BENCH( (gradt(u)*vec(val((Px()*Px()*Px())+(Py()*Py())*Pz())))*id(v), "A", "xyz" );
+    DO_BENCH( (gradt(u)*vec(val((Px()*Px()*Px())+(Py()*Py())*Pz())))*id(v), "A", "val(xyz)" );
+    DO_BENCH2( (gradt(u)*vec(((Px()*Px()*Px())+(Py()*Py())*Pz())))*id(v),
                (gradt(u)*vec(constant(1.0)))*id(v),
                "A", "xyz(const)" );
-    DO_BENCH2( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v),
+    DO_BENCH2( (gradt(u)*vec(val((Px()*Px()*Px())+(Py()*Py())*Pz())))*id(v),
                (gradt(u)*vec(constant(1.0)))*id(v),
                "A", "val(xyz)(const)" );
 
@@ -216,12 +216,12 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
 
     DO_BENCH( (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v), "A", "const" );
     DO_BENCH2( (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v),idt(u)*id(v),"A", "const (R)" );
-    DO_BENCH( (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz()),((Px()^(3))+(Py()^(2)))))*id(v), "A", "xyz" );
-    DO_BENCH( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v), "A", "val(xyz)" );
-    DO_BENCH2( (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz()),((Px()^(3))+(Py()^(2)))))*id(v),
+    DO_BENCH( (gradt(u)*vec(((Px()*Px()*Px())+(Py()*Py())*Pz()),((Px()*Px()*Px())+(Py()*Py()))))*id(v), "A", "xyz" );
+    DO_BENCH( (gradt(u)*vec(val((Px()*Px()*Px())+(Py()*Py())*Pz()),val((Px()*Px()*Px())+(Py()*Py()))))*id(v), "A", "val(xyz)" );
+    DO_BENCH2( (gradt(u)*vec(((Px()*Px()*Px())+(Py()*Py())*Pz()),((Px()*Px()*Px())+(Py()*Py()))))*id(v),
                (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v),
                "A", "xyz(const)" );
-    DO_BENCH2( (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v),
+    DO_BENCH2( (gradt(u)*vec(val((Px()*Px()*Px())+(Py()*Py())*Pz()),val((Px()*Px()*Px())+(Py()*Py()))))*id(v),
                (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v),
                "A", "val(xyz)(const)" );
 
@@ -258,12 +258,12 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
 
     DO_BENCH( (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v), "A", "const" );
     DO_BENCH2( (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v),idt(u)*id(v),"A", "const (R)" );
-    DO_BENCH( (gradt(u)*vec(((Px()^(3)+(Py()^(2)))*Pz()),((Px()^(3))+(Py()^(2))),(Px()^(3))))*id(v), "A", "xyz" );
-    DO_BENCH( (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v), "A", "val(xyz)" );
-    DO_BENCH2( (gradt(u)*vec(((Px()^(3)+(Py()^(2)))*Pz()),((Px()^(3))+(Py()^(2))),(Px()^(3))))*id(v),
+    DO_BENCH( (gradt(u)*vec((((Px()*Px()*Px())+(Py()*Py()))*Pz()),((Px()*Px()*Px())+(Py()*Py())),(Px()*Px()*Px())))*id(v), "A", "xyz" );
+    DO_BENCH( (gradt(u)*vec(val(((Px()*Px()*Px())+(Py()*Py()))*Pz()),val((Px()*Px()*Px())+(Py()*Py())),val(Px()*Px()*Px())))*id(v), "A", "val(xyz)" );
+    DO_BENCH2( (gradt(u)*vec((((Px()*Px()*Px())+(Py()*Py()))*Pz()),((Px()*Px()*Px())+(Py()*Py())),(Px()*Px()*Px())))*id(v),
                (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v),
                "A", "xyz(const)" );
-    DO_BENCH2( (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v),
+    DO_BENCH2( (gradt(u)*vec(val(((Px()*Px()*Px())+(Py()*Py()))*Pz()),val((Px()*Px()*Px())+(Py()*Py())),val(Px()*Px()*Px())))*id(v),
                (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v),
                "A", "val(xyz)(const)" );
 
@@ -290,12 +290,12 @@ Bench1::DR( boost::shared_ptr<FSType> const& Xh )
     ofs.precision( 4 );
     ofs.width( 6 );
     DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v ), "DR", "const" );
-    DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )), "DR", "xyz" );
-    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )), "DR", "val(xyz)" );
-    DO_BENCH2( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )),
+    DO_BENCH( ((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )), "DR", "xyz" );
+    DO_BENCH( val((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )), "DR", "val(xyz)" );
+    DO_BENCH2( ((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )),
                gradt(u)*trans(grad(v))+idt( u )*id( v ),
                "DR", "xyz(const)" );
-    DO_BENCH2( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )),
+    DO_BENCH2( val((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )),
                gradt(u)*trans(grad(v))+idt( u )*id( v ),
                "DR", "val(xyz)(const)" );
 
@@ -321,16 +321,16 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
     ofs.precision( 4 );
     ofs.width( 6 );
     DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v )+(gradt(u)*vec(constant(1.0)))*id(v), "ADR", "const" );
-    DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-              (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "ADR", "xyz" );
-    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-              (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v), "ADR", "val(xyz)" );
-    DO_BENCH2( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-               (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz())))*id(v),
+    DO_BENCH( ((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+              (gradt(u)*vec(val((Px()*Px()*Px())+(Py()*Py())*Pz())))*id(v), "ADR", "xyz" );
+    DO_BENCH( val((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+              (gradt(u)*vec(val((Px()*Px()*Px())+(Py()*Py())*Pz())))*id(v), "ADR", "val(xyz)" );
+    DO_BENCH2( ((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+               (gradt(u)*vec(((Px()*Px()*Px())+(Py()*Py())*Pz())))*id(v),
                gradt(u)*trans(grad(v))+idt( u )*id( v )+(gradt(u)*vec(constant(1.0)))*id(v),
                "ADR", "xyz(const)" );
-    DO_BENCH2( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-               (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz())))*id(v),
+    DO_BENCH2( val((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+               (gradt(u)*vec(val((Px()*Px()*Px())+(Py()*Py())*Pz())))*id(v),
                gradt(u)*trans(grad(v))+idt( u )*id( v )+(gradt(u)*vec(constant(1.0)))*id(v),
                "ADR", "val(xyz)(const)" );
 #if defined(HAVE_GOOGLE_PROFILER_H)
@@ -357,17 +357,17 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
     ofs.width( 6 );
     DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v ) +
               (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v), "ADR", "const" );
-    DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-              (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz()),((Px()^(3))+(Py()^(2)))))*id(v), "ADR", "xyz" );
-    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-              (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v), "ADR", "val(xyz)" );
-    DO_BENCH2( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-               (gradt(u)*vec(((Px()^(3))+(Py()^(2))*Pz()),((Px()^(3))+(Py()^(2)))))*id(v),
+    DO_BENCH( ((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+              (gradt(u)*vec(((Px()*Px()*Px())+(Py()*Py())*Pz()),((Px()*Px()*Px())+(Py()*Py()))))*id(v), "ADR", "xyz" );
+    DO_BENCH( val((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+              (gradt(u)*vec(val((Px()*Px()*Px())+(Py()*Py())*Pz()),val((Px()*Px()*Px())+(Py()*Py()))))*id(v), "ADR", "val(xyz)" );
+    DO_BENCH2( ((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+               (gradt(u)*vec(((Px()*Px()*Px())+(Py()*Py())*Pz()),((Px()*Px()*Px())+(Py()*Py()))))*id(v),
                gradt(u)*trans(grad(v))+idt( u )*id( v ) +
                (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v),
                "ADR", "xyz(const)" );
-    DO_BENCH2( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-               (gradt(u)*vec(val((Px()^(3))+(Py()^(2))*Pz()),val((Px()^(3))+(Py()^(2)))))*id(v),
+    DO_BENCH2( val((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+               (gradt(u)*vec(val((Px()*Px()*Px())+(Py()*Py())*Pz()),val((Px()*Px()*Px())+(Py()*Py()))))*id(v),
                gradt(u)*trans(grad(v))+idt( u )*id( v ) +
                (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v),
                "ADR", "val(xyz)(const)" );
@@ -395,17 +395,17 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
     ofs.width( 6 );
     DO_BENCH( gradt(u)*trans(grad(v))+idt( u )*id( v ) +
               (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v), "ADR", "const" );
-    DO_BENCH( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-              (gradt(u)*vec(((Px()^(3)+(Py()^(2)))*Pz()),((Px()^(3))+(Py()^(2))),(Px()^(3))))*id(v), "ADR", "xyz" );
-    DO_BENCH( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-              (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v), "ADR", "val(xyz)" );
-    DO_BENCH2( ((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-               (gradt(u)*vec(((Px()^(3)+(Py()^(2)))*Pz()),((Px()^(3))+(Py()^(2))),(Px()^(3))))*id(v),
+    DO_BENCH( ((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+              (gradt(u)*vec((((Px()*Px()*Px())+(Py()*Py()))*Pz()),((Px()*Px()*Px())+(Py()*Py())),(Px()*Px()*Px())))*id(v), "ADR", "xyz" );
+    DO_BENCH( val((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+              (gradt(u)*vec(val(((Px()*Px()*Px())+(Py()*Py()))*Pz()),val((Px()*Px()*Px())+(Py()*Py())),val(Px()*Px()*Px())))*id(v), "ADR", "val(xyz)" );
+    DO_BENCH2( ((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+               (gradt(u)*vec((((Px()*Px()*Px())+(Py()*Py()))*Pz()),((Px()*Px()*Px())+(Py()*Py())),(Px()*Px()*Px())))*id(v),
                gradt(u)*trans(grad(v))+idt( u )*id( v ) +
                (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v),
                "ADR", "xyz(const)" );
-    DO_BENCH2( val((Px()^(3))+(Py()^(2))*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
-               (gradt(u)*vec(val((Px()^(3)+(Py()^(2)))*Pz()),val((Px()^(3))+(Py()^(2))),val(Px()^(3))))*id(v),
+    DO_BENCH2( val((Px()*Px()*Px())+(Py()*Py())*Pz())*(gradt(u)*trans(grad(v))+idt( u )*id( v )) +
+               (gradt(u)*vec(val(((Px()*Px()*Px())+(Py()*Py()))*Pz()),val((Px()*Px()*Px())+(Py()*Py())),val(Px()*Px()*Px())))*id(v),
                gradt(u)*trans(grad(v))+idt( u )*id( v ) +
                (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v),
                "ADR", "val(xyz)(const)" );

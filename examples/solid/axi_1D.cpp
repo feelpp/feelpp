@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-01-04
@@ -27,42 +27,42 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-01-04
  */
-#include <life/options.hpp>
-#include <life/lifecore/application.hpp>
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
-#include <life/lifealg/backend.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
+#include <feel/feelalg/backend.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description elaxioptions("Elaxi options");
+    Feel::po::options_description elaxioptions("Elaxi options");
     elaxioptions.add_options()
-        ("hsize", Life::po::value<double>()->default_value( 0.25 ), "first h value to start convergence")
-        ("bctype", Life::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("bccoeff", Life::po::value<double>()->default_value( 1.0e+5 ), "coeff for weak Dirichlet conditions")
+        ("hsize", Feel::po::value<double>()->default_value( 0.25 ), "first h value to start convergence")
+        ("bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
+        ("bccoeff", Feel::po::value<double>()->default_value( 1.0e+5 ), "coeff for weak Dirichlet conditions")
         ("export", "export results(ensight, data file(1D)")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return elaxioptions.add( Life::life_options() ) ;
+    return elaxioptions.add( Feel::feel_options() ) ;
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "elaxi" ,
+    Feel::AboutData about( "elaxi" ,
                            "elaxi" ,
                            "0.1",
                            "Elasticity axisym  on simplices or simplex products",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2007 University Joseph Fourier Grenoble 1");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -72,7 +72,7 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
 template<typename A, uint16_type i>
 class mytag : public A
@@ -213,7 +213,7 @@ Elaxi<Order, Entity>::run()
         }
 
     //    int maxIter = 10.0/meshSize;
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
@@ -222,7 +222,7 @@ Elaxi<Order, Entity>::run()
                             % this->vm()["hsize"].template as<double>()
                             );
     /*
-     * logs will be in <life repo>/<app name>/<entity>/P<p>/h_<h>
+     * logs will be in <feel repo>/<app name>/<entity>/P<p>/h_<h>
      */
     this->setLogs();
 
@@ -440,7 +440,7 @@ Elaxi<Order, Entity>::exportResults( double time, element_type& U )
 } // Elaxi::export
 
 
-} // Life
+} // Feel
 
 
 
@@ -448,15 +448,15 @@ Elaxi<Order, Entity>::exportResults( double time, element_type& U )
 int
 main( int argc, char** argv )
 {
-    using namespace Life;
+    using namespace Feel;
 
     /* change parameters below */
     const int nOrder = 2;
 
-    typedef Life::Elaxi<nOrder, Simplex> elaxi_type;
+    typedef Feel::Elaxi<nOrder, Simplex> elaxi_type;
 
     /* assertions handling */
-    Life::Assert::setLog( "elaxi.assert");
+    Feel::Assert::setLog( "elaxi.assert");
 
     /* define and run application */
     elaxi_type elaxi( argc, argv, makeAbout(), makeOptions() );

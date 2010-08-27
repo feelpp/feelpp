@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-11-08
@@ -26,52 +26,52 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-11-08
  */
-#include <life/options.hpp>
-#include <life/lifecore/application.hpp>
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/gmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
-#include <life/lifemesh/elements.hpp>
+#include <feel/feelmesh/elements.hpp>
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 inline
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description onedoptions("OneD options");
+    Feel::po::options_description onedoptions("OneD options");
     onedoptions.add_options()
-        ("dt", Life::po::value<double>()->default_value( 1e-5 ), "time step")
-        ("Tf", Life::po::value<double>()->default_value( 1 ), "final time")
-        ("Kr", Life::po::value<double>()->default_value( 1 ), "friction parameter")
-        ("rho", Life::po::value<double>()->default_value( 1 ), "blood density")
-        ("E", Life::po::value<double>()->default_value( 1e6 ), "artery yound modulus")
-        ("h0", Life::po::value<double>()->default_value( 0.05 ), "artery thickness")
-        ("A0", Life::po::value<double>()->default_value( 1.0 ), "artery at reference state (pressure=0)")
-        ("alpha", Life::po::value<double>()->default_value( 1 ), "momentum-flux correction (coriolis coefficient)")
-        ("hsize", Life::po::value<double>()->default_value( 0.1 ), "mesh size")
+        ("dt", Feel::po::value<double>()->default_value( 1e-5 ), "time step")
+        ("Tf", Feel::po::value<double>()->default_value( 1 ), "final time")
+        ("Kr", Feel::po::value<double>()->default_value( 1 ), "friction parameter")
+        ("rho", Feel::po::value<double>()->default_value( 1 ), "blood density")
+        ("E", Feel::po::value<double>()->default_value( 1e6 ), "artery yound modulus")
+        ("h0", Feel::po::value<double>()->default_value( 0.05 ), "artery thickness")
+        ("A0", Feel::po::value<double>()->default_value( 1.0 ), "artery at reference state (pressure=0)")
+        ("alpha", Feel::po::value<double>()->default_value( 1 ), "momentum-flux correction (coriolis coefficient)")
+        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size")
         ("export", "export results(ensight, data file(1D)")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return onedoptions.add( Life::life_options() ) ;
+    return onedoptions.add( Feel::feel_options() ) ;
 }
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "oned" ,
+    Feel::AboutData about( "oned" ,
                            "oned" ,
                            "0.1",
                            "1D euler code for blood flow simulation",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2007 University Joseph Fourier Grenoble 1");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -81,7 +81,7 @@ makeAbout()
 }
 
 
-namespace Life
+namespace Feel
 {
 /**
  * Diffussion Advection Reaction Solver
@@ -231,7 +231,7 @@ OneD::run()
         }
 
     //    int maxIter = 10.0/meshSize;
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
@@ -240,7 +240,7 @@ OneD::run()
                             % this->vm()["hsize"].as<double>()
                             );
     /*
-     * logs will be in <life repo>/<app name>/<entity>/P<p>/h_<h>
+     * logs will be in <feel repo>/<app name>/<entity>/P<p>/h_<h>
      */
     this->setLogs();
 
@@ -604,7 +604,7 @@ OneD::exportResults( double t,
 const uint16_type OneD::Order;
 const uint16_type OneD::Dim;
 const uint16_type OneD::imOrder;
-} // Life
+} // Feel
 
 
 
@@ -612,10 +612,10 @@ const uint16_type OneD::imOrder;
 int
 main( int argc, char** argv )
 {
-    using namespace Life;
+    using namespace Feel;
 
     /* define and run application */
-    Life::OneD oned( argc, argv, makeAbout(), makeOptions() );
+    Feel::OneD oned( argc, argv, makeAbout(), makeOptions() );
     oned.run();
 }
 

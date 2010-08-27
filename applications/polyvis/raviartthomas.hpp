@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-05-09
@@ -30,9 +30,9 @@
 #define __praviartthomas_H 1
 
 #include "basisgen.hpp"
-#include <life/lifepoly/raviartthomas.hpp>
+#include <feel/feelpoly/raviartthomas.hpp>
 
-namespace Life
+namespace Feel
 {
 namespace detail
 {
@@ -59,6 +59,6 @@ createRaviartthomas()
         .registerProduct( GEN_RAVIARTTHOMAS(LDIM,LORDER,CONVEX), &createRaviartthomas<CONVEX< LDIM >,LORDER> );
 
 } // detail
-} // Life
+} // Feel
 #endif /* __raviartthomas_H */
 

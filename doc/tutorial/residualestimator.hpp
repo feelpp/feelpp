@@ -1,6 +1,6 @@
-/* -*- mode: c++; coding: utf-8 -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
              Stéphane Veys <stephane.veys@gmail.com>
@@ -28,32 +28,32 @@
    \author Stéphane Veys <stephane.veys@gmail.com>
    \date 2010-08-05
  */
-/** include predefined life command line options */
-#include <life/options.hpp>
+/** include predefined feel command line options */
+#include <feel/options.hpp>
 
 /** include linear algebra backend */
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
 /** include function space class */
-#include <life/lifediscr/functionspace.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 
 /** include helper function to define \f$P_0\f$ functions associated with regions  */
-#include <life/lifediscr/region.hpp>
+#include <feel/feeldiscr/region.hpp>
 
 /** include integration methods */
-#include <life/lifepoly/im.hpp>
+#include <feel/feelpoly/im.hpp>
 
 /** include gmsh mesh importer */
-#include <life/lifefilters/gmsh.hpp>
+#include <feel/feelfilters/gmsh.hpp>
 
 /** include exporter factory class */
-#include <life/lifefilters/exporter.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
 /** include  polynomialset header */
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #if defined (HAVE_MADLIB_H)
 #include <MAdLib.h>
@@ -61,15 +61,15 @@
 
 
 
-/** use Life namespace */
-using namespace Life;
-using namespace Life::vf;
+/** use Feel namespace */
+using namespace Feel;
+using namespace Feel::vf;
 using namespace boost::numeric::ublas;
 
 /**
  * This routine defines some information about the application like
  * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Life::Application subclass.
+ * typically used as an argument of a Feel::Application subclass.
  *
  * \return some data about the application.
  */
@@ -81,7 +81,7 @@ makeAbout()
                      "residualestimator" ,
                      "0.2",
                      "nD(n=1,2,3) Residual Estimator on Laplacian equation",
-                     Life::AboutData::License_GPL,
+                     Feel::AboutData::License_GPL,
                      "Copyright (c) 2010 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -155,7 +155,7 @@ public:
     typedef typename space_type::element_type element_type;
 
     //! the exporter factory type
-    typedef Exporter<mesh_type> export_type;
+    typedef Exporter<mesh_type,1> export_type;
     //! the exporter factory (shared_ptr<> type)
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
@@ -168,7 +168,7 @@ public:
         M_backend( backend_type::build() ),
         M_backendP1( backend_type::build() ),
         meshSize( 0.1 ),
-        exporter( Exporter<mesh_type>::New( "gmsh", this->about().appName() ) ),
+        exporter( export_type::New( "gmsh", this->about().appName() ) ),
         order( 1 ),
         dim( 1 ),
         shape( "hypercube" ),
@@ -188,7 +188,7 @@ public:
         M_backend( backend_type::build( this->vm() ) ),
         M_backendP1( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( "gmsh", this->about().appName() ) ),
+        exporter( export_type::New( "gmsh", this->about().appName() ) ),
         order( this->vm()["order"].template as<int>() ),
         dim( this->vm()["dim"].template as<int>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
@@ -208,32 +208,39 @@ public:
     void run( const double* X, unsigned long P, double* Y, unsigned long N);
 
     // this function will move to the mesh library in the mesh class
-    BOOST_PARAMETER_FUNCTION(
+    BOOST_PARAMETER_CONST_MEMBER_FUNCTION(
         (mesh_ptrtype), // return type
         adapt,    // 2. function name
 
         tag,           // 3. namespace of tag types
 
         (required
-         (h, *) // sizefield
-            ) // 4. one required parameter, and
+         (h, *) ) // 4. one required parameter, and
 
         (optional
-         (model, *)
+         (maxit,           *(boost::is_integral<mpl::_>), 10 )
+         (hmin,            *(boost::is_arithmetic<mpl::_>), 1e-2 )
+         (hmax,            *(boost::is_arithmetic<mpl::_>), 2 )
+         (model,           *, "")
          (statistics,      *(boost::is_integral<mpl::_>), 0 )
          (update,          *(boost::is_integral<mpl::_>), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER )
-            ) // 5. optional
+         (collapseOnBoundary, *(boost::is_integral<mpl::_>), true )
+         (collapseOnBoundaryTolerance, *(boost::is_arithmetic<mpl::_>), 1e-6 ) ) // 5. optional
         )
         {
 #if defined (HAVE_MADLIB_H)
             saveGMSHMesh( _filename="inputmesh.msh",
+                          _parametricnodes=!model.empty(),
                           _mesh=h.mesh() );
-            MAd::pGModel model = 0;
+            MAd::pGModel themodel = 0;
             GM_create(&themodel,"theModel");
-            GM_read( themodel, model );
+            if ( !model.empty() )
+                GM_read( themodel, model );
+            else
+                GM_read( themodel, "inputmesh.msh" );
 
-            MAd::pMesh amesh = MAd::M_new(model);
-            MAd::M_load(amesh,mshstr.str().c_str());
+            MAd::pMesh amesh = MAd::M_new(themodel);
+            MAd::M_load(amesh, "inputmesh.msh");
 
             MAd::PWLSField * sizeField = new MAd::PWLSField(amesh);
             sizeField->setCurrentSize();
@@ -251,6 +258,14 @@ public:
 
             MAd::MeshAdapter* ma = new MAd::MeshAdapter(amesh,sizeField);
 
+            ma->setMaxIterationsNumber( maxit );
+            ma->setEdgeLenSqBounds( hmin*hmin, hmax*hmax );
+            ma->setGeoTracking( !model.empty(),
+                                true,
+                                0,
+                                1.,
+                                false,
+                                false );
             if ( statistics )
             {
                 std::cout << "Statistics before optimization: \n";
@@ -307,6 +322,7 @@ private:
     double penaldir;
     int error_type;
     double tol;
+
 
     //! mesh
     mesh_ptrtype mesh;
@@ -388,6 +404,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
                                            % meshSize );
 
         mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _parametricnodes=1,
                                _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
                                              _usenames=true,
                                              _shape=shape,
@@ -447,7 +464,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     /** \endcode */
 
 
-    using namespace Life::vf;
+    using namespace Feel::vf;
 
     /**
      * Construction of the right hand side. F is the vector that holds
@@ -542,6 +559,11 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     double H1exact = math::sqrt(integrate(elements(mesh),g*g+grad_g*trans(grad_g) ).evaluate()(0,0));
 
 
+    auto RealL2ErrorP0 = integrate( elements(mesh), _Q<10>(), (idv(u)-g)*(idv(u)-g) ).broken(P0h);
+    auto RealSemiH1ErrorP0 = integrate( elements(mesh), _Q<10>(), (gradv(u)-grad_g)* trans(gradv(u)-grad_g) ).broken(P0h);
+    auto H1RealErrorP0 = RealL2ErrorP0;
+    H1RealErrorP0 += RealSemiH1ErrorP0;
+    H1RealErrorP0 = H1RealErrorP0.sqrt();
     /*******************residual estimator**********************/
     //the source terme is given by : minus_laplacian_g
 
@@ -550,7 +572,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     auto term2 = jumpv(gradv(u));
     auto term3 = gradv(u)*vf::N()-grad_g*N();
 
-    //Problem with this line when using Octave
+
     auto rho = integrate(elements(mesh), _Q<10>(), term1*term1 ).broken(P0h).sqrt();
 
 
@@ -564,7 +586,19 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     auto npen=vf::project(P0h, elements(mesh), vf::nPEN() );
     auto H1estimator = element_product( rho, npen.sqrt() );
 
-    auto H1estimatorP1 = element_div( vf::sum( P1h, idv(H1estimator)*meas()), vf::sum( P1h, meas()) );
+    //if we use real error for adaptation then H1errorP1 will be the projection of H1RealErrorP0 on P1 space
+    //else H1errorP1 will be the projection of H1estimator on P1 space
+    p1_element_type H1errorP1;
+    if(error_type==2){
+      H1errorP1 = element_div( vf::sum( P1h, idv(H1RealErrorP0)*meas()), vf::sum( P1h, meas()) );
+    }
+    else if(error_type==1){
+      H1errorP1 = element_div( vf::sum( P1h, idv(H1estimator)*meas()), vf::sum( P1h, meas()) );
+    }
+    else{
+      std::cout<<"Problem with parameter adapt-error-type, please choice between 1 and 2"<<std::endl;
+      return;
+    }
     //auto new_hsize=vf::project( P1h, elements(mesh), vf::pow(vf::pow(vf::h(),Order)*(1e-4)/idv(H1estimatorP1),1./Order));
     //auto new_hsize=vf::project( P1h, elements(mesh), vf::h()*(1e-2)/idv(H1estimatorP1) );
 
@@ -578,11 +612,12 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     Y[3] = estimatorH1/H1exact;
 
     h_new = P1h->element();
+
     h_new = vf::project( P1h, elements(mesh),
-                         vf::max(vf::pow(
-                                     vf::pow( vf::h(),Order)*(tol)/idv(H1estimatorP1),
-                                     1./Order),
-                                 this->vm()["hmin"].template as<double>() ) );
+                         vf::max( vf::pow(
+                                      vf::pow( vf::h(),Order)*(tol)/idv(H1errorP1),
+                                      1./Order ),
+                                  this->vm()["adapt-hmin"].template as<double>() ) );
     /**********************end of residual estimaor*************/
 
 
@@ -605,7 +640,8 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         exporter->step(0)->add( "u - exact solution", u_minus_exact) ;
         exporter->step(0)->add( "nPEN" , npen );
         exporter->step(0)->add( "H1 error estimator P0" , H1estimator);
-        exporter->step(0)->add( "H1 error estimator P1" , H1estimatorP1);
+        exporter->step(0)->add( "H1 Real error P0" , H1RealErrorP0);
+        exporter->step(0)->add( "H1 error P1 (used for determination of new hsize)" , H1errorP1);
         exporter->step(0)->add( "new hsize" , h_new);
 
         exporter->save();
@@ -619,8 +655,19 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     Log()<< " estimated H1 error "<<Y[3]<<"\n";
 
 
+    std::ostringstream geostr;
+    if ( this->vm()["gmshmodel"].template as<bool>() )
+    {
+        if ( this->vm()["gmshgeo"].template as<bool>() )
+            geostr << shape << "-" << Dim << ".geo";
+        else
+            geostr << shape << "-" << Dim << ".msh";
+    }
 
-    mesh  = adapt( _h=h_new, _model=shape+"-"+Dim+".geo");
+    mesh  = adapt( _h=h_new,
+                   _model=geostr.str(),
+                   _hmin=this->vm()["adapt-hmin"].template as<double>(),
+                   _hmax=this->vm()["adapt-hmax"].template as<double>());
 } // ResidualEstimator::run
 
 

@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-05-25
@@ -26,26 +26,26 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-05-25
  */
-#include <life/lifealg/backend.hpp>
+#include <feel/feelalg/backend.hpp>
 
-#include <life/lifediscr/functionspace.hpp>
-#include <life/lifediscr/region.hpp>
-#include <life/lifediscr/operatorlinear.hpp>
-#include <life/lifediscr/operatorlagrangep1.hpp>
-#include <life/lifediscr/bdf.hpp>
-#include <life/lifepoly/im.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/region.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/operatorlagrangep1.hpp>
+#include <feel/feeldiscr/bdf.hpp>
+#include <feel/feelpoly/im.hpp>
 
-#include <life/lifefilters/importergmsh.hpp>
-#include <life/lifefilters/exporter.hpp>
-#include <life/lifefilters/gmshtensorizeddomain.hpp>
-#include <life/lifepoly/polynomialset.hpp>
+#include <feel/feelfilters/importergmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelpoly/polynomialset.hpp>
 
 
-#include <life/lifevf/vf.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #include <structurebase.hpp>
 
-namespace Life
+namespace Feel
 {
 template<typename A, uint16_type i>
 class Tagged : public A
@@ -55,7 +55,7 @@ public:
 
 };
 
-using namespace Life::vf;
+using namespace Feel::vf;
 /**
  * StVenant_Kirchhoff Model
  *
@@ -211,7 +211,7 @@ private:
     bdf_ptrtype M_bdf;
 }; // StVenantKirchhoff
 
-} // Life
+} // Feel
 
 
 

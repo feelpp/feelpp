@@ -1,6 +1,6 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
-  This file is part of the Life library
+  This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-06-06
@@ -27,59 +27,59 @@
    \date 2007-06-06
  */
 #include <options.hpp>
-#include <life/lifealg/backendgmm.hpp>
-#include <life/lifealg/backend_adaptive_reuse_pc.hpp>
-#include <life/lifealg/backendpetsc.hpp>
-#include <life/lifediscr/oseen.hpp>
+#include <feel/feelalg/backendgmm.hpp>
+#include <feel/feelalg/backend_adaptive_reuse_pc.hpp>
+#include <feel/feelalg/backendpetsc.hpp>
+#include <feel/feeldiscr/oseen.hpp>
 
-Life::po::options_description
+Feel::po::options_description
 makeOptions()
 {
-    Life::po::options_description kovasznayoptions("Kovasznay options");
+    Feel::po::options_description kovasznayoptions("Kovasznay options");
     kovasznayoptions.add_options()
-        ("nu", Life::po::value<double>()->default_value( 1.0 ),
+        ("nu", Feel::po::value<double>()->default_value( 1.0 ),
          "viscosity")
-        ("hsize", Life::po::value<double>()->default_value( 0.5 ),
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ),
          "first h value to start convergence")
-        ("fixpointtol", Life::po::value<double>()->default_value( 0.025 ),
+        ("fixpointtol", Feel::po::value<double>()->default_value( 0.025 ),
          "Convergence tolerance for fixed point sub-iterations")
-        ("maxsubiter", Life::po::value<int>()->default_value( 1 ),
+        ("maxsubiter", Feel::po::value<int>()->default_value( 1 ),
          "maximal number of fixed point sub-iterations")
-        ("stabtheta", Life::po::value<double>()->default_value( 1.5 ),
+        ("stabtheta", Feel::po::value<double>()->default_value( 1.5 ),
          "stabilization decoupling coefficient")
-        ("export", Life::po::value<int>()->default_value( 0 ),
+        ("export", Feel::po::value<int>()->default_value( 0 ),
          "stride for result export (0=no export)")
         ;
 
     // modification of defaults from oseen and backends
     // to defaults more sensible for Kovasznay
-    Life::OseenDefaults oseenDefs;
+    Feel::OseenDefaults oseenDefs;
     oseenDefs.STAB_COEFF_P = 0.01; // P2P2
-    Life::BackendGmmDefaults beGmmOsDefs;
+    Feel::BackendGmmDefaults beGmmOsDefs;
 //     beGmmOsDefs.solver_type = "gmres";
     beGmmOsDefs.fillin = 20;
     beGmmOsDefs.threshold = 1.e-4;
-    Life::BackendGmmDefaults beGmmSyDefs;
+    Feel::BackendGmmDefaults beGmmSyDefs;
 //     beGmmOsDefs.solver_type = "cg";
     beGmmSyDefs.pc_type = "id";
 
     return kovasznayoptions
-        .add( Life::oseen_options( std::string(), oseenDefs ) )
-        .add( Life::backend_adaptive_reuse_pc_options( "oseen" ) )
-        .add( Life::backendgmm_options( "oseen", beGmmOsDefs ) )
-        .add( Life::backend_adaptive_reuse_pc_options( "symm" ) )
-        .add( Life::backendgmm_options( "symm", beGmmSyDefs ) );
+        .add( Feel::oseen_options( std::string(), oseenDefs ) )
+        .add( Feel::backend_adaptive_reuse_pc_options( "oseen" ) )
+        .add( Feel::backendgmm_options( "oseen", beGmmOsDefs ) )
+        .add( Feel::backend_adaptive_reuse_pc_options( "symm" ) )
+        .add( Feel::backendgmm_options( "symm", beGmmSyDefs ) );
 }
 
 inline
-Life::AboutData
+Feel::AboutData
 makeAbout()
 {
-    Life::AboutData about( "kovasznay" ,
+    Feel::AboutData about( "kovasznay" ,
                            "kovasznay" ,
                            "0.1",
                            "two fluid problem",
-                           Life::AboutData::License_GPL,
+                           Feel::AboutData::License_GPL,
                            "Copyright (c) 2006 EPFL");
 
     about.addAuthor("Christoph Winkelmann", "developer",
