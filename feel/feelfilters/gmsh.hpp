@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -117,26 +117,9 @@ public:
      */
     //@{
 
-    Gmsh( int nDim = 1, int nOrder = GMSH_ORDER_ONE )
-        :
-        M_dimension( nDim ),
-        M_order( nOrder ),
-        M_version( FEEL_GMSH_FORMAT_VERSION ),
-        M_I( nDim ),
-        M_h( 0.1 ),
-        M_addmidpoint( true ),
-        M_usePhysicalNames( false )
-        {}
-    Gmsh( Gmsh const & __g )
-        :
-        M_dimension( __g.M_dimension ),
-        M_order( __g.M_order ),
-        M_version( __g.M_version ),
-        M_addmidpoint( __g.M_addmidpoint ),
-        M_usePhysicalNames( __g.M_usePhysicalNames )
-        {}
-    ~Gmsh()
-        {}
+    Gmsh( int nDim = 1, int nOrder = GMSH_ORDER_ONE );
+    Gmsh( Gmsh const & __g );
+    virtual ~Gmsh();
 
     //@}
 

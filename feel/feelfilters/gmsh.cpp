@@ -56,6 +56,31 @@ namespace fs = boost::filesystem;
 
 const char* FEEL_GMSH_FORMAT_VERSION = "2.1";
 
+Gmsh::Gmsh( int nDim, int nOrder )
+    :
+    M_dimension( nDim ),
+    M_order( nOrder ),
+    M_version( FEEL_GMSH_FORMAT_VERSION ),
+    M_I( nDim ),
+    M_h( 0.1 ),
+    M_addmidpoint( true ),
+    M_usePhysicalNames( false )
+{
+    this->setReferenceDomain();
+}
+Gmsh::Gmsh( Gmsh const & __g )
+    :
+    M_dimension( __g.M_dimension ),
+    M_order( __g.M_order ),
+    M_version( __g.M_version ),
+    M_I( __g.M_I ),
+    M_h( __g.M_h ),
+    M_addmidpoint( __g.M_addmidpoint ),
+    M_usePhysicalNames( __g.M_usePhysicalNames )
+{}
+Gmsh::~Gmsh()
+{}
+
 boost::shared_ptr<Gmsh>
 Gmsh::New( po::variables_map const& vm )
 {
