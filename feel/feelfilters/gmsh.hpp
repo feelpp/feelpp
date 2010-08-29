@@ -558,7 +558,7 @@ BOOST_PARAMETER_FUNCTION(
      (dim,            *(boost::is_integral<mpl::_>)      , 2)
      (order,          *(boost::is_integral<mpl::_>)      , 1)
      (h,              *(boost::is_arithmetic<mpl::_>), double(0.1) )
-     (convex,         *(boost::is_convertible<mpl::_,std::string>), "simplex")
+     (convex,         *(boost::is_convertible<mpl::_,std::string>), "Simplex")
      (addmidpoint,    *(boost::is_integral<mpl::_>), true )
      (usenames,       *(boost::is_integral<mpl::_>), false )
      (xmin,           *(boost::is_arithmetic<mpl::_>), 0. )
