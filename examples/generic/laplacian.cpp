@@ -145,7 +145,7 @@ public:
     /*mesh*/
     typedef Entity<Dim, 1,Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptr_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
@@ -272,10 +272,6 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
     if ( this->vm().count( "export-mesh-only" ) )
         this->exportResults( 0., u, u, u );
-    /*
-     * a quadrature rule for numerical integration
-     */
-    im_type im;
 
     value_type penalisation = this->vm()["penal"].template as<value_type>();
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
@@ -674,7 +670,7 @@ main( int argc, char** argv )
     using namespace Feel;
 
     /* change parameters below */
-    const int nDim = 1;
+    const int nDim = 2;
     const int nOrder = 2;
     //typedef Continuous MyContinuity;
     typedef Discontinuous MyContinuity;
