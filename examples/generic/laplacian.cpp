@@ -52,6 +52,7 @@ makeOptions()
 {
     Feel::po::options_description laplacianoptions("Laplacian options");
     laplacianoptions.add_options()
+        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain")
         ("dt", Feel::po::value<double>()->default_value( 1 ), "time step value")
         ("ft", Feel::po::value<double>()->default_value( 1 ), "final time value")
 
@@ -142,7 +143,7 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<Dim, 1,Dim+1> entity_type;
+    typedef Entity<Dim, 1,Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptr_type;
 
@@ -169,11 +170,6 @@ public:
         typedef typename element_type::template sub_element<1>::type element_1_type;
     };
 
-
-    /*quadrature*/
-    //typedef IM_PK<Dim, imOrder, value_type> im_type;
-    typedef IM<Dim, imOrder, value_type, Entity> im_type;
-
     /* export */
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
@@ -182,16 +178,12 @@ public:
         :
         super( argc, argv, ad, od ),
         meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( this->vm()["shape"].template as<std::string>() ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers(),
         stats()
     {
     }
-
-    /**
-     * create the mesh using mesh size \c meshSize
-     */
-    mesh_ptr_type createMesh( double meshSize, double ymin = 0, double ymax = 1 );
 
     /**
      * alias for run()
@@ -227,32 +219,11 @@ private:
 private:
 
     double meshSize;
-
+    std::string shape;
     export_ptrtype exporter;
     std::map<std::string,std::pair<boost::timer,double> > timers;
     std::map<std::string,double> stats;
 }; // Laplacian
-
-template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
-typename Laplacian<Dim,Order,Cont,Entity,FType>::mesh_ptr_type
-Laplacian<Dim,Order,Cont,Entity,FType>::createMesh( double meshSize, double ymin, double ymax )
-{
-    timers["mesh"].first.restart();
-    mesh_ptr_type mesh( new mesh_type );
-    //mesh->setRenumber( false );
-
-    GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
-    td.setCharacteristicLength( meshSize );
-    if ( Dim >=2 )
-        td.setY( std::make_pair( ymin, ymax ) );
-    std::string fname = td.generate( entity_type::name().c_str() );
-
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-    timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
-    return mesh;
-} // Laplacian::createMesh
 
 
 template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
@@ -280,7 +251,12 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     /*
      * First we create the mesh
      */
-    mesh_ptr_type mesh = createMesh( meshSize );
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                                      _usenames=true,
+                                                      _shape=shape,
+                                                      _dim=Dim,
+                                                      _h=meshSize ) );
     stats["nelt"] = mesh->elements().size();
 
     /*
