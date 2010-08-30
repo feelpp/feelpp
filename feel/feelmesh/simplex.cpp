@@ -164,15 +164,16 @@ const uint16_type tetra<Order>::__e2p_order4[30] =
         2, 3, 19, 20, 21   // edge 5
     };
 
+
 template<uint16_type Order >
 const uint16_type tetra<Order>::__e2p_order5[36] =
     {
-        1, 2, 11, 10,  9,  8,  // edge 0
-        2, 0, 20, 21, 22, 23,  // edge 1
-        0, 1, 15, 14, 13, 12,  // edge 2
-        0, 3,  7,  6,  5,  4,  // edge 3
-        1, 3, 11, 10,  9,  8,  // edge 4
-        2, 3, 19, 18, 17, 16   // edge 5
+        1, 2, 4, 5, 6, 7,      // edge 0
+        2, 0, 8, 9, 10, 11,    // edge 1
+        0, 1, 12, 13, 14, 15,  // edge 2
+        0, 3, 16, 17, 18, 19,  // edge 3
+        1, 3, 20, 21, 22, 23,  // edge 4
+        2, 3, 25, 26, 27, 28   // edge 5
     };
 
 
