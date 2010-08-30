@@ -48,21 +48,44 @@ namespace details
               0
 \endcode
 */
-const uint16_type quad::__e2p[8] =
+template<uint16_type Order >
+const uint16_type quad<Order>::__e2p_order1[8] =
     {
         0, 1, // points in edge 0
         1, 2, // points in edge 1
         2, 3, // points in edge 2
         3, 0  // points in edge 3
     };
-const uint16_type quad::__f2p[4] =
+
+template<uint16_type Order >
+const uint16_type quad<Order>::__e2p_order2[12] =
+    {
+        0, 1, 4, // points in edge 0
+        1, 2, 5, // points in edge 1
+        2, 3, 6, // points in edge 2
+        3, 0, 7  // points in edge 3
+    };
+
+template<uint16_type Order >
+const uint16_type quad<Order>::__e2p_order3[16] =
+    {
+        0, 1,  4,  5, // points in edge 0
+        1, 2,  6,  7, // points in edge 1
+        2, 3,  8,  9, // points in edge 2
+        3, 0, 10, 11  // points in edge 3
+    };
+
+
+template<uint16_type Order >
+const uint16_type quad<Order>::__f2p[4] =
     {
         0, // point 0
         1, // point 1
         2, // point 2
         3  // point 3
     };
-const uint16_type quad::__f2e[4] =
+template<uint16_type Order >
+const uint16_type quad<Order>::__f2e[4] =
     {
         0, // edge 0
         1, // edge 1
@@ -89,7 +112,8 @@ const uint16_type quad::__f2e[4] =
 
 
 // edge to point relation
-const uint16_type hexa::__e2p[24] =
+template<uint16_type Order >
+const uint16_type hexa<Order>::__e2p_order1[24] =
     {
         0, 1,    // edge 0
         1, 2,    // edge 1
@@ -104,8 +128,46 @@ const uint16_type hexa::__e2p[24] =
         7, 6,    // edge 10
         4, 7     // edge 11
     };
+
+template<uint16_type Order >
+const uint16_type hexa<Order>::__e2p_order2[36] =
+    {
+        0, 1, 8,    // edge 0
+        1, 2, 9,    // edge 1
+        2, 3, 10,   // edge 2
+        3, 0, 11,   // edge 3
+        1, 5, 12,   // edge 4
+        5, 4, 13,   // edge 5
+        4, 0, 14,   // edge 6
+        2, 6, 15,   // edge 7
+        6, 5, 16,   // edge 8
+        3, 7, 17,   // edge 9
+        7, 6, 18,   // edge 10
+        4, 7, 19    // edge 11
+    };
+
+
+template<uint16_type Order >
+const uint16_type hexa<Order>::__e2p_order3[48] =
+    {
+        0, 1, 8, 9,     // edge 0
+        1, 2, 10, 11,   // edge 1
+        2, 3, 12, 13,   // edge 2
+        3, 0, 14, 15,   // edge 3
+        1, 5, 16, 17,   // edge 4
+        5, 4, 18, 19,   // edge 5
+        4, 0, 20, 21,   // edge 6
+        2, 6, 22, 23,   // edge 7
+        6, 5, 24, 25,   // edge 8
+        3, 7, 26, 27,   // edge 9
+        7, 6, 28, 29,   // edge 10
+        4, 7, 30, 31    // edge 11
+    };
+
+
 // face to point relation
-const uint16_type hexa::__f2p[24] =
+template<uint16_type Order >
+const uint16_type hexa<Order>::__f2p_order1[24] =
     {
         0, 1, 2, 3, // face 0
         0, 1, 5, 4, // face 1
@@ -115,8 +177,32 @@ const uint16_type hexa::__f2p[24] =
         4, 5, 6, 7  // face 5
     };
 
+template<uint16_type Order >
+const uint16_type hexa<Order>::__f2p_order2[54] =
+    {
+        0, 1, 2, 3, 8, 9, 10, 11, 20,   // face 0
+        0, 1, 5, 4, 8, 4, 13, 14, 21,   // face 1
+        1, 2, 6, 5, 9, 15, 16, 4, 22,   // face 2
+        2, 3, 7, 6, 10, 17, 18, 15, 23, // face 3
+        3, 0, 4, 7, 11, 14, 19, 17, 24, // face 4
+        4, 5, 6, 7, 13, 16, 18, 19, 25  // face 5
+    };
+
+
+template<uint16_type Order >
+const uint16_type hexa<Order>::__f2p_order3[96] =
+    {
+        0, 1, 2, 3,  8,  9, 10, 11, 12, 13, 14, 15, 32, 33, 34, 35, // face 0
+        0, 1, 5, 4,  8,  9, 16, 17, 18, 19, 20, 21, 36, 37, 38, 39, // face 1
+        1, 2, 6, 5, 10, 11, 22, 23, 24, 25, 17, 16, 40, 41, 42, 43, // face 2
+        2, 3, 7, 6, 12, 13, 26, 27, 28, 29, 23, 22, 44, 45, 46, 47, // face 3
+        3, 0, 4, 7, 14, 15, 21, 20, 30, 31, 27, 26, 48, 49, 50, 51, // face 4
+        4, 5, 6, 7, 19, 18, 25, 24, 29, 28, 31, 30, 52, 53, 54, 55  // face 5
+    };
+
 // face to edge relation
-const uint16_type hexa::__f2e[24] =
+template<uint16_type Order >
+const uint16_type hexa<Order>::__f2e[24] =
     {
         0,  1,  2,  3, // face 0
         0,  4,  5,  6, // face 1
@@ -127,7 +213,8 @@ const uint16_type hexa::__f2e[24] =
     };
 
 // edge permutation in face
-const int16_type hexa::__f2e_permutation[24] =
+template<uint16_type Order >
+const int16_type hexa<Order>::__f2e_permutation[24] =
     {
         1,  1,  1,  1, // face 0
         1,  1,  1,  1, // face 1
@@ -141,3 +228,15 @@ const int16_type hexa::__f2e_permutation[24] =
 /// \endcond
 
 } // Feel
+
+template class Feel::details::quad<1>;
+template class Feel::details::quad<2>;
+template class Feel::details::quad<3>;
+template class Feel::details::quad<4>;
+template class Feel::details::quad<5>;
+
+template class Feel::details::hexa<1>;
+template class Feel::details::hexa<2>;
+template class Feel::details::hexa<3>;
+template class Feel::details::hexa<4>;
+template class Feel::details::hexa<5>;
