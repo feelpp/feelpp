@@ -1,14 +1,14 @@
 # -*- org -*-
 # This file is better edited using Emacs
 
-#+TITLE: Life News
+#+TITLE: Feel++ News
 #+AUTHOR: Christophe Prud'homme
-#+DATE: <2009-09-18 Fri>
+#+DATE: <2010-08-31 Fri>
 #+EMAIL: christophe.prudhomme@ujf-grenoble.fr
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
-* New in 0.9.25
+* New in 0.90.0
 ** Programming Environment
 
  - Ported to Gcc 4.5. Very few changes were needed: (i) one 1-liner to fix a
@@ -42,6 +42,7 @@
 
 *** lifemesh
 
+ - renamed SimplexProduct to Hypercube class and files
  - added support to the GeoND class for Point Element Neighbors which is for a
    given element, the set of elements (including himself) that share a point
    with it. Provide dimension(number of elements) and measure
@@ -64,6 +65,7 @@
    - enhanced the ExporterGMSH class and updated the interface so that it
      supports loading/saving high order elements in all 3 dimensions as well as
      associated data. Adapted the TimeSet class accordingly.
+ - renamed GmshTensorizedDomain to GmshHypercubeDomain
 
 *** lifevf
 
