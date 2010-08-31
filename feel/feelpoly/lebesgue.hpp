@@ -44,7 +44,7 @@ value_type lebesgueConstant()
 {
     static const uint16_type Dim = Convex::nDim;
 
-    typedef typename mpl::if_< mpl::bool_< Convex::is_simplex >, Simplex<Dim, 1>, SimplexProduct<Dim, 1> >::type convex_type;
+    typedef typename mpl::if_< mpl::bool_< Convex::is_simplex >, Simplex<Dim, 1>, Hypercube<Dim, 1> >::type convex_type;
 
     typedef Lagrange<Order,Scalar,PointSetType>::template apply<Dim, value_type, Convex>::type basis_type;
     basis_type _M_basis;

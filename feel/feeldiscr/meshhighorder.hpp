@@ -41,12 +41,12 @@ class MeshHighOrder
     static const uint16_type Order = Convex::nOrder;
 
 
-    typedef typename mpl::if_< mpl::bool_< is_simplex >, Simplex<Dim, 1>, SimplexProduct<Dim, 1> >::type convex_type;
+    typedef typename mpl::if_< mpl::bool_< is_simplex >, Simplex<Dim, 1>, Hypercube<Dim, 1> >::type convex_type;
     typedef Mesh< convex_type > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
 
-    typedef typename mpl::if_< mpl::bool_< is_simplex >, Simplex<2, Order>, SimplexProduct<2, Order> >::type new_convex_type;
+    typedef typename mpl::if_< mpl::bool_< is_simplex >, Simplex<2, Order>, Hypercube<2, Order> >::type new_convex_type;
     typedef Mesh< new_convex_type > new_mesh_type;
 
     typedef boost::shared_ptr<new_mesh_type> new_mesh_ptrtype;
@@ -63,7 +63,7 @@ class MeshHighOrder
     typedef typename new_mesh_type::element_type new_element_type;
     typedef typename new_mesh_type::element_const_iterator new_element_const_iterator;
 
-    typedef PointSetEquiSpaced<SimplexProduct<1,1>, Order, double> oned_pointset_type;
+    typedef PointSetEquiSpaced<Hypercube<1,1>, Order, double> oned_pointset_type;
     typedef PointSetEquiSpaced<convex_type, Order, double> interior_pointset_type;
 
     typedef typename oned_pointset_type::points_type node_points_type;

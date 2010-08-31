@@ -76,7 +76,7 @@ struct IntegrationDegree
  *
  * // integrate exactly polynomials of order 5in 3D over hexahedrons using
  * // GaussLobatto points and double precision
- * IM<3,5,double,SimplexProduct,GaussLobatto> im;
+ * IM<3,5,double,Hypercube,GaussLobatto> im;
  *
  *
  * \endcode
@@ -181,7 +181,7 @@ struct _Q
                                   mpl::identity<IMSimplex<DIM, IMORDER, T> >,
                                   typename mpl::if_<mpl::bool_<ContextType::element_type::is_simplex>,
                                                     mpl::identity<IMGeneral<DIM, IMORDER, T, Simplex> >,
-                                                    mpl::identity<IMGeneral<DIM, IMORDER, T, SimplexProduct> > >::type>::type::type type;
+                                                    mpl::identity<IMGeneral<DIM, IMORDER, T, Hypercube> > >::type>::type::type type;
     };
 };
 

@@ -75,7 +75,7 @@ public:
 
     //# marker1 #
     typedef Simplex<Dim> convex_type;
-    //typedef SimplexProduct<Dim, 1,Dim> convex_type;
+    //typedef Hypercube<Dim, 1,Dim> convex_type;
     //# endmarker1 #
 
     //# marker2 #

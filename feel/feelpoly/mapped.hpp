@@ -86,7 +86,7 @@ public :
 
     typedef mpl::if_< mpl::bool_< is_simplex >,
                       Simplex<Dim, Order, Dim> ,
-                      SimplexProduct<Dim, Order, Dim> > conv_order_type;
+                      Hypercube<Dim, Order, Dim> > conv_order_type;
 
     static const uint32_type nbPtsPerVertex = conv_order_type::type::nbPtsPerVertex;
     static const uint32_type nbPtsPerEdge = conv_order_type::type::nbPtsPerEdge;

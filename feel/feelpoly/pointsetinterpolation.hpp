@@ -74,7 +74,7 @@ public:
 
     typedef mpl::if_< mpl::bool_< is_simplex >,
                       Simplex<Dim, Order, Dim> ,
-                      SimplexProduct<Dim, Order, Dim> > conv_order_type;
+                      Hypercube<Dim, Order, Dim> > conv_order_type;
 
     typedef Reference<convex_type, Dim, convexOrder, Dim, value_type> RefElem;
 

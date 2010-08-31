@@ -488,7 +488,7 @@ main( int argc, char** argv )
     const int nOrder = 1;
     typedef Continuous MyContinuity;
     //typedef Discontinuous MyContinuity;
-    //typedef Feel::Dar<nDim, nOrder, MyContinuity, SimplexProduct> dar_type;
+    //typedef Feel::Dar<nDim, nOrder, MyContinuity, Hypercube> dar_type;
     typedef Feel::Dar<nDim, nOrder, MyContinuity, Simplex> dar_type;
 
     /* assertions handling */

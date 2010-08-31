@@ -507,7 +507,7 @@ main( int argc, char** argv )
     const int nOrder = 2;
     typedef Continuous MyContinuity;
     //typedef Discontinuous MyContinuity;
-    //typedef Feel::Wave<nDim, nOrder, MyContinuity, SimplexProduct, Scalar> wave_type;
+    //typedef Feel::Wave<nDim, nOrder, MyContinuity, Hypercube, Scalar> wave_type;
 
     typedef Feel::Wave<nDim, nOrder, MyContinuity, Simplex, Scalar> wave_type;
 

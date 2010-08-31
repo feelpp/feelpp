@@ -33,7 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feelmesh/pointset.hpp>
 #include <feel/feelmesh/simplex.hpp>
-#include <feel/feelmesh/simplexproduct.hpp>
+#include <feel/feelmesh/hypercube.hpp>
 
 #include <feel/feelcore/visitor.hpp>
 #include <feel/feelcore/traits.hpp>
@@ -80,7 +80,7 @@ public :
 
     typedef mpl::if_< mpl::bool_< is_simplex >,
                       Simplex<Dim, Order, Dim> ,
-                      SimplexProduct<Dim, Order, Dim> > conv_order_type;
+                      Hypercube<Dim, Order, Dim> > conv_order_type;
 
     typedef Reference<Convex, Dim, convexOrder, Dim, value_type> RefElem;
 

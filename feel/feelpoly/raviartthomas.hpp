@@ -708,7 +708,7 @@ public:
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
                                   mpl::identity<fem::RaviartThomas<N,Order,T,Simplex> >,
-                                  mpl::identity<fem::RaviartThomas<N,Order,T,SimplexProduct> > >::type::type result_type;
+                                  mpl::identity<fem::RaviartThomas<N,Order,T,Hypercube> > >::type::type result_type;
         typedef result_type type;
     };
 

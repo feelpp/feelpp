@@ -104,7 +104,7 @@ class TestALE
     typedef boost::shared_ptr<struct_functionspace_type> struct_functionspace_ptrtype;
     typedef typename struct_functionspace_type::element_type struct_element_type;
 
-    typedef typename PointSetEquiSpaced<SimplexProduct<1,1>, N, double>::points_type node_points_type;
+    typedef typename PointSetEquiSpaced<Hypercube<1,1>, N, double>::points_type node_points_type;
 
     typedef bases<Lagrange<1, Vectorial, Continuous, PointSetFekete> > p1_ale_basis_type;
     typedef FunctionSpace< mesh_type, p1_ale_basis_type, double> p1_functionspace_type;

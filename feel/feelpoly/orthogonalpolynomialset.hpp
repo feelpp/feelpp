@@ -126,7 +126,7 @@ template<uint16_type Dim,
          uint16_type Order,
          template<uint16_type> class PolySetType,
          typename T>
-class OrthogonalPolynomialSet<Dim, Order, PolySetType, T, SimplexProduct>
+class OrthogonalPolynomialSet<Dim, Order, PolySetType, T, Hypercube>
     :
     public PolynomialSet<Legendre<Dim, Order, Normalized<false>, T>, PolySetType >
 {
@@ -137,7 +137,7 @@ public:
     static const uint16_type nOrder = Order;
     static const bool isTransformationEquivalent = true;
 
-    typedef OrthogonalPolynomialSet<Dim, Order, PolySetType, T, SimplexProduct> self_type;
+    typedef OrthogonalPolynomialSet<Dim, Order, PolySetType, T, Hypercube> self_type;
     typedef self_type component_basis_type;
 
     typedef typename super::polyset_type polyset_type;
@@ -153,7 +153,7 @@ public:
 
     typedef T value_type;
     typedef Legendre<Dim, Order, Normalized<false>, T> basis_type;
-    typedef SimplexProduct<Dim, Order, Dim> convex_type;
+    typedef Hypercube<Dim, Order, Dim> convex_type;
     typedef Reference<convex_type, nDim, nOrder, nDim, value_type> reference_convex_type;
 
     typedef typename super::polynomial_type polynomial_type;
@@ -184,9 +184,9 @@ public:
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
-    OrthogonalPolynomialSet<Dim, Order, Scalar,T, SimplexProduct > toScalar() const
+    OrthogonalPolynomialSet<Dim, Order, Scalar,T, Hypercube > toScalar() const
     {
-        return OrthogonalPolynomialSet<Dim, Order, Scalar,T, SimplexProduct >();
+        return OrthogonalPolynomialSet<Dim, Order, Scalar,T, Hypercube >();
     }
 
     std::string familyName() const { return "legendre"; }
@@ -196,6 +196,6 @@ template<uint16_type Dim,
          uint16_type Order,
          template<uint16_type> class PolySetType,
          typename T>
-const uint16_type OrthogonalPolynomialSet<Dim, Order,PolySetType,T, SimplexProduct>::nLocalDof;
+const uint16_type OrthogonalPolynomialSet<Dim, Order,PolySetType,T, Hypercube>::nLocalDof;
 }
 #endif /* __OrthogonalPolynomialSet_H */

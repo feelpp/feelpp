@@ -266,6 +266,6 @@ Mesh1D<GEOSHAPE>::check() const
 
 // Explicit instantiation
 template class Mesh1D<GeoEntity<Simplex<1,1,1> > >;
-template class Mesh1D<GeoEntity<SimplexProduct<1,1,1> > >;
+template class Mesh1D<GeoEntity<Hypercube<1,1,1> > >;
 
 }

@@ -595,8 +595,8 @@ template class ImporterGmsh<Mesh<Simplex<2,1,3> > >;
 template class ImporterGmsh<Mesh<Simplex<3,1> > >;
 template class ImporterGmsh<Mesh<Simplex<2,2> > >;
 template class ImporterGmsh<Mesh<Simplex<3,2> > >;
-template class ImporterGmsh<Mesh<SimplexProduct<1,1> > >;
-template class ImporterGmsh<Mesh<SimplexProduct<2,1> > >;
-template class ImporterGmsh<Mesh<SimplexProduct<3,1> > >;
+template class ImporterGmsh<Mesh<Hypercube<1,1> > >;
+template class ImporterGmsh<Mesh<Hypercube<2,1> > >;
+template class ImporterGmsh<Mesh<Hypercube<3,1> > >;
 }
 #endif // 0

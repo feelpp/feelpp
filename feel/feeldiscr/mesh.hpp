@@ -401,11 +401,11 @@ public:
         :
         public mpl::if_<mpl::bool_<GeoShape::is_simplex>,
                         mpl::identity<GeoMapInverse<nDim,nOrder,T,Simplex> >,
-                        mpl::identity<GeoMapInverse<nDim,nOrder,T,SimplexProduct> > >::type::type
+                        mpl::identity<GeoMapInverse<nDim,nOrder,T,Hypercube> > >::type::type
     {
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
                                   mpl::identity<GeoMapInverse<nDim,nOrder,T,Simplex> >,
-                                  mpl::identity<GeoMapInverse<nDim,nOrder,T,SimplexProduct> > >::type::type super;
+                                  mpl::identity<GeoMapInverse<nDim,nOrder,T,Hypercube> > >::type::type super;
         typedef typename super::gic_type gic_type;
 
         Inverse( boost::shared_ptr<self_type> const& m )

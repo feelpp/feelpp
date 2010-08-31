@@ -22,12 +22,12 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file simplexproduct.hpp
+   \file hypercube.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2006-02-20
  */
-#ifndef __SimplexProduct_H
-#define __SimplexProduct_H 1
+#ifndef __Hypercube_H
+#define __Hypercube_H 1
 
 #include <boost/detail/identifier.hpp>
 #include <feel/feelcore/traits.hpp>
@@ -123,7 +123,7 @@ struct hexa
 
 
 template<uint16_type Dim, uint16_type Order=1, uint16_type RDim = Dim>
-class SimplexProduct  : public Convex<Dim,Order,RDim>
+class Hypercube  : public Convex<Dim,Order,RDim>
 {
     typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_QUAD, SHAPE_HEXA, SHAPE_SP4, SHAPE_SP5> shapes_t;
     typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME, GEOMETRY_4, GEOMETRY_5> geometries_t;
@@ -145,11 +145,11 @@ class SimplexProduct  : public Convex<Dim,Order,RDim>
     struct faces_t
     {
         typedef mpl::vector<boost::none_t,
-                            SimplexProduct<0, Order, rdim>,
-                            SimplexProduct<1, Order, rdim>,
-                            SimplexProduct<2, Order, rdim> > type;
+                            Hypercube<0, Order, rdim>,
+                            Hypercube<1, Order, rdim>,
+                            Hypercube<2, Order, rdim> > type;
     };
-    typedef mpl::vector<SimplexProduct<1, Order>, SimplexProduct<2, Order>, SimplexProduct<3, Order>, SimplexProduct<4, Order>, boost::none_t > elements_t;
+    typedef mpl::vector<Hypercube<1, Order>, Hypercube<2, Order>, Hypercube<3, Order>, Hypercube<4, Order>, boost::none_t > elements_t;
 
     typedef mpl::vector_c<uint16_type, 0, 1, 2, 8> permutations_t;
 
@@ -225,7 +225,7 @@ public:
     template<uint16_type shape_dim, uint16_type O = Order,  uint16_type R=nDim>
     struct shape
     {
-        typedef SimplexProduct<shape_dim, O, R> type;
+        typedef Hypercube<shape_dim, O, R> type;
     };
 
 
@@ -307,7 +307,7 @@ public:
     static std::string name()
     {
         std::ostringstream ostr;
-        ostr << "SimplexProduct"
+        ostr << "Hypercube"
              << "_"
              << nDim
              << "_"
@@ -319,4 +319,4 @@ public:
 };
 
 }
-#endif /* __SimplexProduct_H */
+#endif /* __Hypercube_H */

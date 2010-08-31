@@ -118,14 +118,14 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef SimplexProduct<Dim> entity_type;
+    typedef Hypercube<Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*discontinuous basis*/
     typedef fusion::vector<Lagrange<Order, Scalar, Discontinuous, PointSetGaussLobatto> > basis_type;
-    //    typedef fusion::vector<fem::Dubiner<Dim, Order, Scalar, Discontinuous, value_type, SimplexProduct>,
-    //						   fem::Dubiner<Dim, Order, Vectorial, Discontinuous, value_type, SimplexProduct>
+    //    typedef fusion::vector<fem::Dubiner<Dim, Order, Scalar, Discontinuous, value_type, Hypercube>,
+    //						   fem::Dubiner<Dim, Order, Vectorial, Discontinuous, value_type, Hypercube>
     //						   > basis_type;
 	/*discontinuous space*/
 	typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -157,8 +157,8 @@ public:
 
     /*quadrature*/
     //typedef IM_PK<Dim, imOrder, value_type> im_type;
-    typedef IM<Dim, imOrder, value_type, SimplexProduct> im_type;
-	typedef IM<Dim, imOrder_norm, value_type, SimplexProduct> im_type_norm;
+    typedef IM<Dim, imOrder, value_type, Hypercube> im_type;
+	typedef IM<Dim, imOrder_norm, value_type, Hypercube> im_type_norm;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -280,7 +280,7 @@ Laplacian<Order>::createMesh( double meshSize )
 	int anisomesh = this->vm()["anisomesh"].template as<int>();
 
 	if(anisomesh==0) {
-		GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,SimplexProduct> td;
+		GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Hypercube> td;
 		td.setCharacteristicLength( meshSize );
 		td.setX( std::make_pair( -1, 1 ) );
 		td.setY( std::make_pair( -1, 1 ) );
@@ -288,8 +288,8 @@ Laplacian<Order>::createMesh( double meshSize )
 	} else {
 		// Todo: load anisotropic mesh with two elements
 
-		// Todo: copy "SimplexProduct_2_1_aniso.msh"-file from ../../../../.. (where this file should be copied once) to the actual repository if file is not yet existing
-		mesh_name = "SimplexProduct_2_1_aniso.msh";
+		// Todo: copy "Hypercube_2_1_aniso.msh"-file from ../../../../.. (where this file should be copied once) to the actual repository if file is not yet existing
+		mesh_name = "Hypercube_2_1_aniso.msh";
 	}
 
 	ImporterGmsh<mesh_type> import( mesh_name );

@@ -149,7 +149,7 @@ template<uint16_type Dim,
          uint16_type Order,
          template<uint16_type> class PolySetType,
          typename T>
-class BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType, T, SimplexProduct>
+class BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType, T, Hypercube>
     :
     public PolynomialSet<TensorisedBoundaryAdapted<Dim, Order, T>, PolySetType >
 {
@@ -159,7 +159,7 @@ public:
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
 
-    typedef BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType, T, SimplexProduct> self_type;
+    typedef BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType, T, Hypercube> self_type;
     typedef self_type component_basis_type;
 
     typedef typename super::polyset_type polyset_type;
@@ -173,11 +173,11 @@ public:
 
     typedef T value_type;
     typedef TensorisedBoundaryAdapted<Dim, Order, T> basis_type;
-    typedef SimplexProduct<Dim, Order, Dim> convex_type;
+    typedef Hypercube<Dim, Order, Dim> convex_type;
     template<int O>
     struct convex
     {
-        typedef SimplexProduct<Dim, O, Dim> type;
+        typedef Hypercube<Dim, O, Dim> type;
     };
     typedef Reference<convex_type, nDim, nOrder, nDim, value_type> reference_convex_type;
 
@@ -221,9 +221,9 @@ public:
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
-    BoundaryAdaptedPolynomialSet<Dim, Order, Scalar,T, SimplexProduct > toScalar() const
+    BoundaryAdaptedPolynomialSet<Dim, Order, Scalar,T, Hypercube > toScalar() const
     {
-        return BoundaryAdaptedPolynomialSet<Dim, Order, Scalar,T, SimplexProduct >();
+        return BoundaryAdaptedPolynomialSet<Dim, Order, Scalar,T, Hypercube >();
     }
 
     /**
@@ -250,7 +250,7 @@ public:
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
                                   mpl::identity<detail::BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,Simplex> >,
-                                  mpl::identity<detail::BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,SimplexProduct> > >::type::type result_type;
+                                  mpl::identity<detail::BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,Hypercube> > >::type::type result_type;
         typedef result_type type;
     };
 

@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshhypercube_simplex, T, dim_types )
 }
 BOOST_AUTO_TEST_CASE_TEMPLATE( gmshhypercube_hypercube, T, dim_types )
 {
-    checkCreateGmshMesh<T::value>( "hypercube", "SimplexProduct" );
+    checkCreateGmshMesh<T::value>( "hypercube", "Hypercube" );
 }
 BOOST_AUTO_TEST_CASE_TEMPLATE( gmshellipsoid, T, dim_types )
 {

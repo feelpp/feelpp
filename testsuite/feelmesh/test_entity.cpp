@@ -35,7 +35,7 @@ using boost::unit_test::test_suite;
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelmesh/simplex.hpp>
-#include <feel/feelmesh/simplexproduct.hpp>
+#include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feelmesh/geoelement.hpp>
 

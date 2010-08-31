@@ -56,13 +56,13 @@ namespace detail
     BOOST_PP_TUPLE_TO_LIST(                                 \
                            2,                               \
                            (                                \
-                            Simplex,SimplexProduct              \
+                            Simplex,Hypercube              \
                                                             )   \
                                                             )
 #
 # define SIMPLEX BOOST_PP_TUPLE_TO_LIST(1, (Simplex))
 #
-# define SIMPLEX_PRODUCT BOOST_PP_TUPLE_TO_LIST(1, (SimplexProduct))
+# define SIMPLEX_PRODUCT BOOST_PP_TUPLE_TO_LIST(1, (Hypercube))
 #
 # define DIM1 BOOST_PP_TUPLE_TO_LIST(1, (1))
 # define DIM2 BOOST_PP_TUPLE_TO_LIST(1, (2))
