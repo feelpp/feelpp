@@ -37,6 +37,7 @@ LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS_RELEASE)
 
 project (Feel C CXX Fortran)
 
+SET(FEEL_SCM "svn")
 FIND_PACKAGE(Subversion)
 IF(Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn )
   Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Project)
@@ -48,17 +49,30 @@ ELSE()
   if(GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
 
     execute_process(
-      COMMAND git show --raw
-      COMMAND grep git-svn-id
-      COMMAND sed -re "s/^\\s*git-svn-id: .*@([0-9]+).*$/\\1/"
+      COMMAND git rev-parse --verify -q --short git-svn
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-      OUTPUT_VARIABLE Project_WC_REVISION
+      OUTPUT_VARIABLE GIT_COMMIT
+      ERROR_VARIABLE GIT_COMMIT_error
+      RESULT_VARIABLE GIT_COMMIT_result)
+    if ( NOT ${GIT_COMMIT_result} EQUAL 0 )
+      MESSAGE(SEND_ERROR "Command \"git rev-parse --verify -q --short git-svn\" failed with output:\n${GIT_COMMIT_error}")
+    else()
+      STRING(STRIP "${GIT_COMMIT}" GIT_COMMIT )
+      MESSAGE(STATUS "Git commit: ${GIT_COMMIT}")
+    endif()
+    execute_process(
+      COMMAND git show --raw ${GIT_COMMIT}
+#      COMMAND "grep git-svn-id"
+#      COMMAND sed -re "s/^\\s*git-svn-id: .*@([0-9]+).*$/\\1/"
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      OUTPUT_VARIABLE SVN_COMMIT
       ERROR_VARIABLE Project_WC_REVISION_error
       RESULT_VARIABLE Project_WC_REVISION_result)
     if ( NOT ${Project_WC_REVISION_result} EQUAL 0 )
-      MESSAGE(SEND_ERROR "Command \"git show --raw\" failed with output:\n${Project_WC_REVISION_error}")
+      MESSAGE(SEND_ERROR "Command \"git show --raw ${GIT_COMMIT}\" failed with output:\n${Project_WC_REVISION_error}")
     endif()
-    MESSAGE("Current SVN(git) revision is ${Project_WC_REVISION}")
+    string(REGEX REPLACE ".*git-svn-id: .*trunk@([0-9]+) .*" "\\1"Project_WC_REVISION ${SVN_COMMIT})
+    MESSAGE(STATUS "Current SVN(git) revision is ${Project_WC_REVISION}")
   endif()
 ENDIF()
 
@@ -67,7 +81,7 @@ set(FEEL_VERSION_MINOR "90")
 set(FEEL_VERSION_MICRO "0")
 if ((Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn) OR
     (GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git ))
-  set(FEEL_VERSION_EXTRA "~svn${Project_WC_REVISION}")
+  set(FEEL_VERSION_EXTRA "~${FEEL_SCM}${Project_WC_REVISION}")
 else()
   set(FEEL_VERSION_EXTRA "")
 endif()
