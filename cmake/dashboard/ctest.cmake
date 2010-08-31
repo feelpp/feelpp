@@ -49,12 +49,26 @@ if ( ${MODEL} MATCHES Continuous )
 else()
   SET(FEEL_ENABLE_ALL_DEFAULT ON)
 endif()
-SET (CTEST_INITIAL_CACHE "
+
+if ( APPLE )
+  SET (CTEST_INITIAL_CACHE "
+# set compilers from macports and use ccache
+CMAKE_CXX_COMPILER=/opt/local/libexec/ccache/g++-4.5
+CMAKE_C_COMPILER=/opt/local/libexec/ccache/gcc-4.5
+CMAKE_FORTRAN_COMPILER=/opt/local/libexec/ccache/gfortran-4.5
+# Enable tests
+FEEL_ENABLE_ALL:BOOL=${FEEL_ENABLE_ALL_DEFAULT}
+CMAKE_CXX_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
+CMAKE_C_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
+")
+else( APPLE )
+  SET (CTEST_INITIAL_CACHE "
 // Enable tests
 FEEL_ENABLE_ALL:BOOL=${FEEL_ENABLE_ALL_DEFAULT}
 CMAKE_CXX_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
 CMAKE_C_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
 ")
+endif( APPLE )
 
 # -----------------------------------------------------------
 # -- build specific
