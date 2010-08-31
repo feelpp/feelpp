@@ -23,12 +23,13 @@
 #
 IF ( ENABLE_INSTANTIATION_MODE )
   SET( FEELFILTERS_INST_SRCS
-    gmshhypercubedomain.cpp gmshsimplexdomain.cpp gmshellipsoiddomain.cpp
+    gmshhypercubedomain.cpp gmshsimplexdomain.cpp
    # exporterensight.cpp exportergmsh.cpp # exportergnuplot.cpp
     )
   endif()
 
 add_library( feelfilters SHARED
+  gmshellipsoiddomain.cpp
   #exporterfactorysimplex.cpp exporterfactoryhypercube.cpp
   exporter.cpp gmsh.cpp importergambit.cpp ${FEELFILTERS_INST_SRCS}
   )
