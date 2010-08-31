@@ -383,7 +383,7 @@ template class PartitionerMetis<Mesh<Simplex<3,5> > >;
 #endif
 
 
-template class PartitionerMetis<Mesh<SimplexProduct<1,1> > >;
-template class PartitionerMetis<Mesh<SimplexProduct<2,1> > >;
-template class PartitionerMetis<Mesh<SimplexProduct<3,1> > >;
+template class PartitionerMetis<Mesh<Hypercube<1,1> > >;
+template class PartitionerMetis<Mesh<Hypercube<2,1> > >;
+template class PartitionerMetis<Mesh<Hypercube<3,1> > >;
 }

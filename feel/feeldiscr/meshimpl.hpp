@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -32,7 +32,7 @@
 #include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <feel/feelmesh/geoentity.hpp>
 #include <feel/feelmesh/simplex.hpp>
-#include <feel/feelmesh/simplexproduct.hpp>
+#include <feel/feelmesh/hypercube.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/partitioner.hpp>
@@ -189,7 +189,7 @@ Mesh<Shape, T>::updateForUse()
                         M_meas += iv->measure();
                         auto _faces = iv->faces();
                         for( ; _faces.first != _faces.second; ++_faces.first )
-                            if ( (*_faces.first)->isOnBoundary() )
+                            if ( _faces.first && (*_faces.first)->isOnBoundary() )
                                 M_measbdy += (*_faces.first)->measure();
                     }
                 // now that all elements have been updated, build inter element

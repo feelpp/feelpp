@@ -32,7 +32,7 @@
 int
 main( int argc, char** argv )
 {
-    Laplacian<2, 1, 2, Feel::SimplexProduct> laplacian( argc, argv, makeAbout(), makeOptions() );
+    Laplacian<2, 1, 2, Feel::Hypercube> laplacian( argc, argv, makeAbout(), makeOptions() );
     laplacian.run();
 }
 

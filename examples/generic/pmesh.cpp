@@ -545,7 +545,7 @@ main( int argc, char** argv )
     const int nOrder = 1;
     typedef Continuous MyContinuity;
     //typedef Discontinuous MyContinuity;
-    //typedef Feel::Laplacian<nDim, nOrder, MyContinuity, SimplexProduct, Scalar> laplacian_type;
+    //typedef Feel::Laplacian<nDim, nOrder, MyContinuity, Hypercube, Scalar> laplacian_type;
 
     typedef Feel::Laplacian<nDim, nOrder, MyContinuity, Simplex, Scalar> laplacian_type;
 

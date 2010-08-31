@@ -32,9 +32,9 @@
 namespace Feel
 {
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-class Reference<SimplexProduct<Dim, Order, RDim>, Dim, Order, RDim, T>
+class Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>
     :
-    public SimplexProduct<Dim, Order, RDim>
+    public Hypercube<Dim, Order, RDim>
 {
 public:
 
@@ -43,7 +43,7 @@ public:
      */
     //@{
 
-    typedef SimplexProduct<Dim, Order, RDim> super;
+    typedef Hypercube<Dim, Order, RDim> super;
 
     static const uint16_type nDim = super::nDim;
     static const uint16_type nOrder = super::nOrder;
@@ -56,7 +56,7 @@ public:
     static const size_type Geometry = super::Geometry;
 
     typedef T value_type;
-    typedef Reference<SimplexProduct<Dim, Order, RDim>, Dim, Order, RDim, T> self_type;
+    typedef Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T> self_type;
 
     typedef typename mpl::if_<boost::is_same<typename super::element_type, boost::none_t>,
                               mpl::identity<boost::none_t>,
@@ -520,7 +520,7 @@ public:
                     points_type G;
                     if ( topo_dim == 1 )
                         {
-                            G = Reference<SimplexProduct<1, Order, 1>, 1, Order, 1, T>().makeLattice<SHAPE_LINE>( interior );
+                            G = Reference<Hypercube<1, Order, 1>, 1, Order, 1, T>().makeLattice<SHAPE_LINE>( interior );
                             pt_to_entity<Shape,1> p_to_e( __id );
                             points_type Gret( nRealDim, G.size2() );
                             for ( size_type i = 0; i < G.size2(); ++i )
@@ -530,7 +530,7 @@ public:
                         }
                     else if ( topo_dim == 2 )
                         {
-                            G = Reference<SimplexProduct<2, Order, 2>, 2, Order, 2, T>().makeLattice<SHAPE_QUAD>( interior );
+                            G = Reference<Hypercube<2, Order, 2>, 2, Order, 2, T>().makeLattice<SHAPE_QUAD>( interior );
                             pt_to_entity<Shape,2> p_to_e( __id );
                             points_type Gret( nRealDim, G.size2() );
                             for ( size_type i = 0; i < G.size2(); ++i )
@@ -796,22 +796,22 @@ private:
 };
 
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<SimplexProduct<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerVertex;
+const uint16_type Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerVertex;
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<SimplexProduct<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerEdge;
+const uint16_type Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerEdge;
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<SimplexProduct<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerFace;
+const uint16_type Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerFace;
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<SimplexProduct<Dim, Order, RDim>, Dim, Order, RDim, T>::numGeometricFaces;
+const uint16_type Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::numGeometricFaces;
 
 
 
-template<typename T> class Entity<SHAPE_QUAD, T>: public Reference<SimplexProduct<2, 1, 2>, 2, 1, 2, T> {};
-template<typename T> class Entity<SHAPE_HEXA, T>: public Reference<SimplexProduct<3, 1, 3>, 3, 1, 3, T> {};
+template<typename T> class Entity<SHAPE_QUAD, T>: public Reference<Hypercube<2, 1, 2>, 2, 1, 2, T> {};
+template<typename T> class Entity<SHAPE_HEXA, T>: public Reference<Hypercube<3, 1, 3>, 3, 1, 3, T> {};
 
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
 void
-Reference<SimplexProduct<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
+Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
 {
     M_barycenter = ublas::column( glas::average( M_vertices ), 0 );
     for( int f = 0; f < numTopologicalFaces; ++f )
@@ -823,7 +823,7 @@ Reference<SimplexProduct<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycen
 
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
 void
-Reference<SimplexProduct<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
+Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
 {
     if ( nDim == nRealDim )
     {

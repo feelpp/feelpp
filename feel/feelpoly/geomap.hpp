@@ -2316,7 +2316,7 @@ struct GT_QK
                                                     )   \
     /**/
 #
-# define FEEL_ENTITY BOOST_PP_TUPLE_TO_LIST( 2, ( Simplex,SimplexProduct ) )
+# define FEEL_ENTITY BOOST_PP_TUPLE_TO_LIST( 2, ( Simplex,Hypercube ) )
     /**/
 #
 # define FEEL_GEN_GT(GEOM,LDIM,LORDER)         \

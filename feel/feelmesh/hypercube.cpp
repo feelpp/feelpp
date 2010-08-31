@@ -22,11 +22,11 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file simplexproduct.cpp
+   \file hypercube.cpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2006-02-20
  */
-#include <feel/feelmesh/simplexproduct.hpp>
+#include <feel/feelmesh/hypercube.hpp>
 
 namespace Feel
 {

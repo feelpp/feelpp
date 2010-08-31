@@ -265,7 +265,7 @@ Advection<Dim,Order,Cont,Entity>::createMesh( double meshSize )
 
     std::ostringstream entity_str;
     if (entity_type::is_simplex_product )
-        entity_str << "SimplexProduct";
+        entity_str << "Hypercube";
     else
         entity_str << "Simplex";
     entity_str << "_"
@@ -487,7 +487,7 @@ Advection<Dim, Order, Cont, Entity>::exportResults( f1_type& U,
     const int nOrder = 1;
     //typedef Continuous MyContinuity;
     typedef Discontinuous MyContinuity;
-    typedef Feel::Advection<nDim, nOrder, MyContinuity, SimplexProduct> advection_type;
+    typedef Feel::Advection<nDim, nOrder, MyContinuity, Hypercube> advection_type;
 
     /* assertions handling */
     Feel::Assert::setLog( "advection.assert");

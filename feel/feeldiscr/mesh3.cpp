@@ -36,7 +36,7 @@ namespace Feel
 #if defined( FEEL_INSTANTIATION_MODE )
 
 
-template class Mesh<SimplexProduct<3, 1, 3> >;
+template class Mesh<Hypercube<3, 1, 3> >;
 
 # define DIMS BOOST_PP_TUPLE_TO_LIST(1,(3))
 //# define RDIMS BOOST_PP_TUPLE_TO_LIST(2,(1,2))

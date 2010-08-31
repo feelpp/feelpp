@@ -23,7 +23,7 @@
 #
 add_library( feelmesh SHARED
   marker.cpp bareitems.cpp
-  entities.cpp simplex.cpp simplexproduct.cpp
+  entities.cpp simplex.cpp hypercube.cpp
   regiontree.cpp kdtree.cpp
   functors.cpp
   meshbase.cpp

@@ -135,23 +135,23 @@ const bool meshs35e = Partitioner<meshs35_t>::Factory::type::instance().register
 const bool meshs35g = Partitioner<meshs35_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs35_t> );
 
 //
-// SimplexProduct 1,1
+// Hypercube 1,1
 //
-typedef Mesh<SimplexProduct<1,1,1> > meshsp11_t;
+typedef Mesh<Hypercube<1,1,1> > meshsp11_t;
 const bool meshsp11e = Partitioner<meshsp11_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshsp11_t> );
 const bool meshsp11g = Partitioner<meshsp11_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshsp11_t> );
 
 //
-// SimplexProduct 2,1
+// Hypercube 2,1
 //
-typedef Mesh<SimplexProduct<2,1,2> > meshsp21_t;
+typedef Mesh<Hypercube<2,1,2> > meshsp21_t;
 const bool meshsp21e = Partitioner<meshsp21_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshsp21_t> );
 const bool meshsp21g = Partitioner<meshsp21_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshsp21_t> );
 
 //
-// SimplexProduct 3,1
+// Hypercube 3,1
 //
-typedef Mesh<SimplexProduct<3,1,3> > meshsp31_t;
+typedef Mesh<Hypercube<3,1,3> > meshsp31_t;
 const bool meshsp31e = Partitioner<meshsp31_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshsp31_t> );
 const bool meshsp31g = Partitioner<meshsp31_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshsp31_t> );
 
@@ -208,9 +208,9 @@ template class Partitioner<Mesh<Simplex<3,5> > >;
 template class Partitioner<Mesh<Simplex<2,1,3> > >;
 // 3D
 
-template class Partitioner<Mesh<SimplexProduct<1,1,1> > >;
-template class Partitioner<Mesh<SimplexProduct<2,1,2> > >;
-template class Partitioner<Mesh<SimplexProduct<3,1,3> > >;
+template class Partitioner<Mesh<Hypercube<1,1,1> > >;
+template class Partitioner<Mesh<Hypercube<2,1,2> > >;
+template class Partitioner<Mesh<Hypercube<3,1,3> > >;
 #endif // FEEL_INSTANTIATION_MODE
 }
 

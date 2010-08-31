@@ -70,7 +70,7 @@ class ALE
     template< int i >
     struct MyConvex
     {
-        typedef typename mpl::if_< mpl::bool_< is_simplex >, Simplex<Dim, i>, SimplexProduct<Dim, i> >::type type;
+        typedef typename mpl::if_< mpl::bool_< is_simplex >, Simplex<Dim, i>, Hypercube<Dim, i> >::type type;
     };
 
     typedef typename MyConvex<1>::type convex_type;

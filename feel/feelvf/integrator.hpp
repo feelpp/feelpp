@@ -119,7 +119,7 @@ public:
 
         typedef typename mpl::if_<mpl::bool_<the_element_type::is_simplex>,
                                   mpl::identity<typename Im::template apply<the_element_type::nDim, value_type, Simplex>::type >,
-                                  mpl::identity<typename Im::template apply<the_element_type::nDim, value_type, SimplexProduct>::type >
+                                  mpl::identity<typename Im::template apply<the_element_type::nDim, value_type, Hypercube>::type >
                                   >::type::type im_type;
 
         typedef the_element_type element_type;

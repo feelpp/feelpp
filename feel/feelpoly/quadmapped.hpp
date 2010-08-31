@@ -78,7 +78,7 @@ public :
     typedef ublas::vector<uint16_type> permutation_vector_type;
     typedef ublas::mapped_matrix<uint16_type> permutation_matrix_type;
 
-    //typedef mpl::if_< mpl::bool_< is_simplex >, Simplex<Dim, Order, Dim> , SimplexProduct<Dim, Order, Dim> > conv_order_type;
+    //typedef mpl::if_< mpl::bool_< is_simplex >, Simplex<Dim, Order, Dim> , Hypercube<Dim, Order, Dim> > conv_order_type;
     typedef convex_type conv_order_type;
 
 #if 0

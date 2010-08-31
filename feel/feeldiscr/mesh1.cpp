@@ -45,7 +45,7 @@ namespace Feel
 # define FACTORY_OP(_, GDO) FACTORY GDO
 BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_OP, 3, (DIMS, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS), RDIMS))
 
-template class Mesh<SimplexProduct<1, 1, 1> >;
+template class Mesh<Hypercube<1, 1, 1> >;
 template class Mesh<Simplex<1, 1, 2> >;
 
 #endif // FEEL_INSTANTIATION_MODE

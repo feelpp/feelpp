@@ -38,7 +38,7 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/lu.hpp>
 #include <feel/feelmesh/simplex.hpp>
-#include <feel/feelmesh/simplexproduct.hpp>
+#include <feel/feelmesh/hypercube.hpp>
 
 namespace Feel
 {

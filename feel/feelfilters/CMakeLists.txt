@@ -29,7 +29,7 @@ IF ( ENABLE_INSTANTIATION_MODE )
   endif()
 
 add_library( feelfilters SHARED
-  #exporterfactorysimplex.cpp exporterfactorysimplexproduct.cpp
+  #exporterfactorysimplex.cpp exporterfactoryhypercube.cpp
   exporter.cpp gmsh.cpp importergambit.cpp ${FEELFILTERS_INST_SRCS}
   )
 set_target_properties( feelfilters PROPERTIES VERSION ${FEEL_SHARED_VERSION} SOVERSION ${FEEL_SHARED_SOVERSION})

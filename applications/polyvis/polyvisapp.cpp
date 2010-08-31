@@ -54,7 +54,7 @@ makeOptions()
         ("dim", po::value<uint16_type>()->default_value( 2 ), "dimension")
         ("poly", po::value<std::string>()->default_value( "lagrange" ), "polynomial family")
         ("order", po::value<uint16_type>()->default_value( 2 ), "polynomial order")
-        ("convex", po::value<std::string>()->default_value( "Simplex" ), "Convex type (Simplex, SimplexProduct")
+        ("convex", po::value<std::string>()->default_value( "Simplex" ), "Convex type (Simplex, Hypercube")
 
         ("xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element")
         ("ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element")

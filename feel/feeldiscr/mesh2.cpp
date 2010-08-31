@@ -46,7 +46,7 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_OP, 3, (DIMS, BOOST_PP_LIST_FIRST_N(FEEL_
 
 
 
-template class Mesh<SimplexProduct<2, 1, 2> >;
+template class Mesh<Hypercube<2, 1, 2> >;
 template class Mesh<Simplex<2, 1, 3> >;
 
 

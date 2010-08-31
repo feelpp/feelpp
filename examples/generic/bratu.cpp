@@ -509,7 +509,7 @@ main( int argc, char** argv )
     const int nOrder = 2;
     typedef Continuous MyContinuity;
     //typedef Discontinuous MyContinuity;
-    //typedef Feel::Bratu<nDim, nOrder, MyContinuity, SimplexProduct, Scalar> bratu_type;
+    //typedef Feel::Bratu<nDim, nOrder, MyContinuity, Hypercube, Scalar> bratu_type;
 
     typedef Feel::Bratu<nDim, nOrder, MyContinuity, Simplex, Scalar> bratu_type;
 

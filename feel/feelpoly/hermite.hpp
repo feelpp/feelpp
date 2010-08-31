@@ -500,7 +500,7 @@ public:
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
                                   mpl::identity<fem::Hermite<N,Order,PolySetType,T,Simplex, Pts> >,
-                                  mpl::identity<fem::Hermite<N,Order,PolySetType,T,SimplexProduct, Pts> > >::type::type result_type;
+                                  mpl::identity<fem::Hermite<N,Order,PolySetType,T,Hypercube, Pts> > >::type::type result_type;
         typedef result_type type;
     };
 

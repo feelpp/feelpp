@@ -336,7 +336,7 @@ public:
         {
             using namespace Feel;
 
-            IM<D, N, T, SimplexProduct> im;
+            IM<D, N, T, Hypercube> im;
 
             value_type res = math::abs( im.integrateAtPoints( _M_func ) - _M_res );
             if ( !( res < _M_tol ) )

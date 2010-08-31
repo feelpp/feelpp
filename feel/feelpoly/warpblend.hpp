@@ -84,7 +84,7 @@ public :
 
         if ( Dim == 1 )
             {
-                PointSetGaussLobatto<SimplexProduct<1,1>, Order, value_type> gausslobatto(interior);
+                PointSetGaussLobatto<Hypercube<1,1>, Order, value_type> gausslobatto(interior);
 
                 final_pts = gausslobatto.points();
             }

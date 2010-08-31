@@ -730,8 +730,8 @@ template class Mesh3D<GeoEntity<Simplex<3, 3, 3> > >;
 template class Mesh3D<GeoEntity<Simplex<3, 4, 3> > >;
 template class Mesh3D<GeoEntity<Simplex<3, 5, 3> > >;
 
-template class Mesh3D<GeoEntity<SimplexProduct<3, 1, 3> > >;
-template class Mesh3D<GeoEntity<SimplexProduct<3, 2, 3> > >;
+template class Mesh3D<GeoEntity<Hypercube<3, 1, 3> > >;
+template class Mesh3D<GeoEntity<Hypercube<3, 2, 3> > >;
 
 } // Feel
 

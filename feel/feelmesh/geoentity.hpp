@@ -30,7 +30,7 @@
 #define __GeoEntity_H 1
 
 #include <feel/feelmesh/simplex.hpp>
-#include <feel/feelmesh/simplexproduct.hpp>
+#include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelmesh/refentity.hpp>
 
 namespace Feel
@@ -437,10 +437,10 @@ typedef GeoEntity<Simplex<2, 2> > QuadraticTriangle;
 typedef GeoEntity<Simplex<3, 2> > QuadraticTetra;
 
 // tensor products
-typedef GeoEntity<SimplexProduct<2, 1> > LinearQuad;
-typedef GeoEntity<SimplexProduct<3, 1> > LinearHexa;
-typedef GeoEntity<SimplexProduct<2, 2> > QuadraticQuad;
-typedef GeoEntity<SimplexProduct<3, 2> > QuadraticHexa;
+typedef GeoEntity<Hypercube<2, 1> > LinearQuad;
+typedef GeoEntity<Hypercube<3, 1> > LinearHexa;
+typedef GeoEntity<Hypercube<2, 2> > QuadraticQuad;
+typedef GeoEntity<Hypercube<3, 2> > QuadraticHexa;
 
 } // Feel
 

@@ -400,7 +400,7 @@ public:
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
                                   mpl::identity<fem::Lagrange<N,Order,PolySetType,ContinuityType,T,Simplex, Pts> >,
-                                  mpl::identity<fem::Lagrange<N,Order,PolySetType,ContinuityType,T,SimplexProduct, Pts> > >::type::type result_type;
+                                  mpl::identity<fem::Lagrange<N,Order,PolySetType,ContinuityType,T,Hypercube, Pts> > >::type::type result_type;
         typedef result_type type;
     };
 

@@ -82,8 +82,8 @@ struct LegendreTraits
     template<uint16_type order, typename V = value_type>
     struct Convex
     {
-        typedef SimplexProduct<nDim, order, nDim> type;
-        typedef Reference<SimplexProduct<nDim, order, nDim>, nDim, order, nDim, V>  reference_type;
+        typedef Hypercube<nDim, order, nDim> type;
+        typedef Reference<Hypercube<nDim, order, nDim>, nDim, order, nDim, V>  reference_type;
     };
 
     template<typename NewT>

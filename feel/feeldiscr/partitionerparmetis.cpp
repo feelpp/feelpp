@@ -352,9 +352,9 @@ template class PartitionerParmetis<Mesh<Simplex<2,5> > >;
 template class PartitionerParmetis<Mesh<Simplex<3,5> > >;
 #endif
 
-template class PartitionerParmetis<Mesh<SimplexProduct<1,1> > >;
-template class PartitionerParmetis<Mesh<SimplexProduct<2,1> > >;
-template class PartitionerParmetis<Mesh<SimplexProduct<3,1> > >;
+template class PartitionerParmetis<Mesh<Hypercube<1,1> > >;
+template class PartitionerParmetis<Mesh<Hypercube<2,1> > >;
+template class PartitionerParmetis<Mesh<Hypercube<3,1> > >;
 #endif // FEEL_INSTANTIATION_MODE
 }
 

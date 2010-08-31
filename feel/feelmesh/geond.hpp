@@ -111,7 +111,7 @@ public:
     static const uint16_type nRealDim = super::nRealDim;
 
     typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex_product>,
-                              mpl::identity<GT_Lagrange<nDim, nOrder, SimplexProduct, T> >,
+                              mpl::identity<GT_Lagrange<nDim, nOrder, Hypercube, T> >,
                               mpl::identity<GT_Lagrange<nDim, nOrder, Simplex, T> > >::type::type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
 

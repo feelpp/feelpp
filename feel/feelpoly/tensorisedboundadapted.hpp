@@ -91,7 +91,7 @@ public:
     /*
      * Geometry where the polynomials are defined and constructed
      */
-    typedef SimplexProduct<nDim, nConvexOrder, nDim> convex_type;
+    typedef Hypercube<nDim, nConvexOrder, nDim> convex_type;
     typedef Reference<convex_type, nDim, nConvexOrder, nDim, T> reference_convex_type;
     typedef typename reference_convex_type::points_type points_type;
 
@@ -101,7 +101,7 @@ public:
     template<uint16_type order>
     struct Convex
     {
-        typedef SimplexProduct<nDim, order, nDim> type;
+        typedef Hypercube<nDim, order, nDim> type;
     };
 
     /*

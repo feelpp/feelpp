@@ -45,7 +45,7 @@
 #include <feel/feelpoly/jacobi.hpp>
 #include <feel/feelpoly/quadpoint.hpp>
 #include <feel/feelpoly/pointsetinterpolation.hpp>
-#include <feel/feelmesh/simplexproduct.hpp>
+#include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelalg/glas.hpp>
 
 
@@ -248,19 +248,19 @@ public :
 /** GaussLobatto Quadrature on the quadrangle [-1,1]x[-1,1] **/
 
 template< uint16_type Integration_Degree, typename T>
-class GaussLobatto<SimplexProduct<2,1>, Integration_Degree ,T >
+class GaussLobatto<Hypercube<2,1>, Integration_Degree ,T >
     :
-        public PointSetQuadrature<SimplexProduct<2,1>, Integration_Degree, T>
+        public PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<SimplexProduct<2,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
-    typedef GaussLobatto<SimplexProduct<1,1>,Integration_Degree, T> face_quad_type;
+    typedef GaussLobatto<Hypercube<1,1>,Integration_Degree, T> face_quad_type;
     static const uint16_type Degree = (Integration_Degree+3)/2+1;
     static const uint32_type Npoints = Degree*Degree;
 
@@ -282,10 +282,10 @@ public :
                         this->_M_points( 1, k ) = px( j );
                     }
             }
-        boost::shared_ptr<GT_Lagrange<2, 1, SimplexProduct, T> > gm( new GT_Lagrange<2, 1, SimplexProduct, T> );
+        boost::shared_ptr<GT_Lagrange<2, 1, Hypercube, T> > gm( new GT_Lagrange<2, 1, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
-        this->constructQROnFace( Reference<SimplexProduct<2, 1>,2,1>(), gm, face_qr );
+        this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
     }
 
     ~GaussLobatto() {}
@@ -296,19 +296,19 @@ public :
 /** GaussLobatto Quadrature on the hexahedra [-1,1]x[-1,1]x[-1,1] **/
 
 template< uint16_type Integration_Degree, typename T>
-class GaussLobatto<SimplexProduct<3,1>, Integration_Degree ,T >
+class GaussLobatto<Hypercube<3,1>, Integration_Degree ,T >
     :
-        public PointSetQuadrature<SimplexProduct<3,1>, Integration_Degree, T>
+        public PointSetQuadrature<Hypercube<3,1>, Integration_Degree, T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<SimplexProduct<3,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<3,1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
-    typedef GaussLobatto<SimplexProduct<2,1>,Integration_Degree, T> face_quad_type;
+    typedef GaussLobatto<Hypercube<2,1>,Integration_Degree, T> face_quad_type;
     static const uint16_type Degree = (Integration_Degree+3)/2+1;
     static const uint32_type Npoints = Degree*Degree*Degree;
 
@@ -334,10 +334,10 @@ public :
                             }
                     }
             }
-        boost::shared_ptr<GT_Lagrange<3, 1, SimplexProduct, T> > gm( new GT_Lagrange<3, 1, SimplexProduct, T> );
+        boost::shared_ptr<GT_Lagrange<3, 1, Hypercube, T> > gm( new GT_Lagrange<3, 1, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
-        this->constructQROnFace( Reference<SimplexProduct<3, 1>,3,1>(), gm, face_qr );
+        this->constructQROnFace( Reference<Hypercube<3, 1>,3,1>(), gm, face_qr );
     }
 
     ~GaussLobatto() {}
@@ -357,11 +357,11 @@ public :
 template< class Convex,
           uint16_type Order,
           typename T = double >
-class PointSetGaussLobatto : public PointSetInterpolation<Convex::nDim, Order, T, SimplexProduct>
+class PointSetGaussLobatto : public PointSetInterpolation<Convex::nDim, Order, T, Hypercube>
 {
 public:
 
-    typedef PointSetInterpolation< Convex::nDim, Order, T, SimplexProduct> super;
+    typedef PointSetInterpolation< Convex::nDim, Order, T, Hypercube> super;
 
     typedef typename super::return_type return_type;
 
@@ -390,7 +390,7 @@ public:
     typedef typename Convex::face_to_point_t face_to_point_t;
     typedef typename Convex::face_to_edge_t face_to_edge_t;
 
-    typedef SimplexProduct<Dim, Order, Dim> conv_order_type;
+    typedef Hypercube<Dim, Order, Dim> conv_order_type;
     static const uint32_type numPoints = conv_order_type::numPoints;
 
     reference_convex_type RefConv;
