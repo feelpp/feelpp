@@ -23,7 +23,7 @@
 #
 IF ( ENABLE_INSTANTIATION_MODE )
   SET( FEELFILTERS_INST_SRCS
-    gmshtensorizeddomain.cpp gmshsimplexdomain.cpp gmshellipsoiddomain.cpp
+    gmshhypercubedomain.cpp gmshsimplexdomain.cpp gmshellipsoiddomain.cpp
    # exporterensight.cpp exportergmsh.cpp # exportergnuplot.cpp
     )
   endif()
