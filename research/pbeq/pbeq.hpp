@@ -35,7 +35,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporterensight.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 
 #include <feel/feelvf/vf.hpp>

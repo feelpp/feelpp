@@ -46,7 +46,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 
 
@@ -224,7 +224,7 @@ LaplacianV<Dim,Order, RDim>::createMesh( double meshSize )
 {
     mesh_ptrtype mesh( new mesh_type );
 
-    GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Simplex> td;
+    GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Simplex> td;
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( -1, 1 ) );
     if(Dim>=2)  td.setY( std::make_pair( -1, 1 ) );

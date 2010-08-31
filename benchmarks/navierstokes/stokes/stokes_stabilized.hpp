@@ -40,7 +40,7 @@
 #include <feel/feelfilters/importergmsh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/string.hpp>
@@ -214,7 +214,7 @@ StokesStabilized<Order>::createMesh( double meshSize )
 {
     mesh_ptrtype mesh( new mesh_type );
 
-    GmshTensorizedDomain<2,1,2,Simplex> td;
+    GmshHypercubeDomain<2,1,2,Simplex> td;
     td.setCharacteristicLength( meshSize );
 
     td.setY( std::make_pair( -0.5, 1.0 ) );

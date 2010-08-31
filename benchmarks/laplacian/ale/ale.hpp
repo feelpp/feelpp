@@ -39,7 +39,7 @@
 #include <feel/feelalg/backend.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 
 #include <feel/feelcore/applicationxml.hpp>
 
@@ -225,7 +225,7 @@ TestALE<N>::run()
       Define mesh for the curved boundaries
     */
     boost::shared_ptr<struct_mesh_type> struct_mesh( new struct_mesh_type );
-    GmshTensorizedDomain<1,1,1,Simplex> td;
+    GmshHypercubeDomain<1,1,1,Simplex> td;
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( 0, 5 ) );
     std::string fname = td.generate( "boundary_description" );
@@ -278,7 +278,7 @@ TestALE<N>::run()
     */
     boost::shared_ptr<mesh_type> mesh( new mesh_type );
 
-    GmshTensorizedDomain<2,1,2,Simplex> td2;
+    GmshHypercubeDomain<2,1,2,Simplex> td2;
     td2.setCharacteristicLength( meshSize );
     td2.setX( std::make_pair( 0, 5 ) );
     td2.setY( std::make_pair( -1, 1 ) );

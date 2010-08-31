@@ -47,7 +47,7 @@
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercube.hpp>
 #include <feel/feelfilters/gmshellipsoiddomain.hpp>
 
 namespace Feel
@@ -452,7 +452,7 @@ namespace detail {
 template<int Dim, int Order>
 Gmsh* createSimplexDomain() { return new GmshSimplexDomain<Dim, Order>; }
 template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
-Gmsh* createTensorizedDomain() { return new GmshTensorizedDomain<Dim, Order, RDim, Entity>; }
+Gmsh* createTensorizedDomain() { return new GmshHypercubeDomain<Dim, Order, RDim, Entity>; }
 
 struct EllipsoidDomain
 {

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -22,29 +22,29 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file gmshtensorizeddomain.cpp
+   \file gmshhypercubedomain.cpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2006-12-29
  */
 #ifndef __GMSHTENSORIZEDDOMAIN_HPP
 #define __GMSHTENSORIZEDDOMAIN_HPP 1
 
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelmesh/geoentity.hpp>
 
 namespace Feel
 {
 template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
-const uint16_type GmshTensorizedDomain<Dim, Order, RDim, Entity>::nDim;
+const uint16_type GmshHypercubeDomain<Dim, Order, RDim, Entity>::nDim;
 template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
-const uint16_type GmshTensorizedDomain<Dim, Order, RDim, Entity>::nOrder;
+const uint16_type GmshHypercubeDomain<Dim, Order, RDim, Entity>::nOrder;
 template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
-const uint16_type GmshTensorizedDomain<Dim, Order, RDim, Entity>::nRealDim;
+const uint16_type GmshHypercubeDomain<Dim, Order, RDim, Entity>::nRealDim;
 
 
 template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
 std::string
-GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<1>,  mpl::bool_<false> ) const
+GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<1>,  mpl::bool_<false> ) const
 {
     std::ostringstream ostr;
     ostr << this->preamble();
@@ -109,7 +109,7 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<1>,  m
 // 2D
 template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
 std::string
-GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  mpl::bool_<false> ) const
+GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  mpl::bool_<false> ) const
 {
     std::ostringstream ostr;
     ostr << this->preamble();
@@ -145,7 +145,7 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  m
 }
 template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
 std::string
-GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  mpl::bool_<true> ) const
+GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  mpl::bool_<true> ) const
 {
     std::ostringstream ostr;
     ostr << this->preamble();
@@ -163,7 +163,7 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  m
 // 3D
 template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
 std::string
-GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  mpl::bool_<false>, bool do_recombine ) const
+GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  mpl::bool_<false>, bool do_recombine ) const
 {
     std::ostringstream ostr;
     ostr << this->preamble();
@@ -215,7 +215,7 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  m
 }
 template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
 std::string
-GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  mpl::bool_<true> ) const
+GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  mpl::bool_<true> ) const
 {
     std::ostringstream ostr;
     ostr << this->preamble();
@@ -243,31 +243,31 @@ GmshTensorizedDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  m
 
 // Instantiations
 // 1D
-template class GmshTensorizedDomain<1,1,1,Simplex>;
-template class GmshTensorizedDomain<1,1,2,Simplex>;
-template class GmshTensorizedDomain<1,1,1,Hypercube>;
-template class GmshTensorizedDomain<1,2,1,Simplex>;
-template class GmshTensorizedDomain<1,2,1,Hypercube>;
-template class GmshTensorizedDomain<1,3,1,Simplex>;
-template class GmshTensorizedDomain<1,4,1,Simplex>;
-template class GmshTensorizedDomain<1,5,1,Simplex>;
+template class GmshHypercubeDomain<1,1,1,Simplex>;
+template class GmshHypercubeDomain<1,1,2,Simplex>;
+template class GmshHypercubeDomain<1,1,1,Hypercube>;
+template class GmshHypercubeDomain<1,2,1,Simplex>;
+template class GmshHypercubeDomain<1,2,1,Hypercube>;
+template class GmshHypercubeDomain<1,3,1,Simplex>;
+template class GmshHypercubeDomain<1,4,1,Simplex>;
+template class GmshHypercubeDomain<1,5,1,Simplex>;
 // 2D
-template class GmshTensorizedDomain<2,1,2,Simplex>;
-template class GmshTensorizedDomain<2,1,2,Hypercube>;
-template class GmshTensorizedDomain<2,2,2,Simplex>;
-template class GmshTensorizedDomain<2,2,2,Hypercube>;
-template class GmshTensorizedDomain<2,3,2,Simplex>;
-template class GmshTensorizedDomain<2,4,2,Simplex>;
-template class GmshTensorizedDomain<2,5,2,Simplex>;
+template class GmshHypercubeDomain<2,1,2,Simplex>;
+template class GmshHypercubeDomain<2,1,2,Hypercube>;
+template class GmshHypercubeDomain<2,2,2,Simplex>;
+template class GmshHypercubeDomain<2,2,2,Hypercube>;
+template class GmshHypercubeDomain<2,3,2,Simplex>;
+template class GmshHypercubeDomain<2,4,2,Simplex>;
+template class GmshHypercubeDomain<2,5,2,Simplex>;
 // 2D3D
-template class GmshTensorizedDomain<2,1,3,Simplex>;
+template class GmshHypercubeDomain<2,1,3,Simplex>;
 // 3D
-template class GmshTensorizedDomain<3,1,3,Simplex>;
-template class GmshTensorizedDomain<3,1,3,Hypercube>;
-template class GmshTensorizedDomain<3,2,3,Simplex>;
-template class GmshTensorizedDomain<3,2,3,Hypercube>;
-template class GmshTensorizedDomain<3,3,3,Simplex>;
-template class GmshTensorizedDomain<3,4,3,Simplex>;
+template class GmshHypercubeDomain<3,1,3,Simplex>;
+template class GmshHypercubeDomain<3,1,3,Hypercube>;
+template class GmshHypercubeDomain<3,2,3,Simplex>;
+template class GmshHypercubeDomain<3,2,3,Hypercube>;
+template class GmshHypercubeDomain<3,3,3,Simplex>;
+template class GmshHypercubeDomain<3,4,3,Simplex>;
 #endif // FEEL_INSTANTIATION_MODE
 
 }

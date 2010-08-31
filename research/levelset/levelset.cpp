@@ -103,7 +103,7 @@ LevelSet::createMesh( double meshSize )
     M_timers["mesh"].first.restart();
     mesh_ptr_type mesh( new mesh_type );
 
-    GmshTensorizedDomain<Dim,1,Dim,ENTITY> td;
+    GmshHypercubeDomain<Dim,1,Dim,ENTITY> td;
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( -1.0, 1.0 ) );
     td.setY( std::make_pair( -1.0, 1.0 ) );

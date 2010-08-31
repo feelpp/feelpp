@@ -36,7 +36,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelpoly/gausslobatto.hpp>
 
@@ -280,7 +280,7 @@ Laplacian<Order>::createMesh( double meshSize )
 	int anisomesh = this->vm()["anisomesh"].template as<int>();
 
 	if(anisomesh==0) {
-		GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Hypercube> td;
+		GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Hypercube> td;
 		td.setCharacteristicLength( meshSize );
 		td.setX( std::make_pair( -1, 1 ) );
 		td.setY( std::make_pair( -1, 1 ) );

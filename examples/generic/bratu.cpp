@@ -38,7 +38,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 
 
@@ -255,7 +255,7 @@ Bratu<Dim,Order,Cont,Entity,FType>::createMesh( double meshSize, double ymin, do
     mesh_ptrtype mesh( new mesh_type );
     //mesh->setRenumber( false );
 
-    GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
+    GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
     td.setCharacteristicLength( meshSize );
     if ( Dim >=2 )
         td.setY( std::make_pair( ymin, ymax ) );

@@ -36,7 +36,7 @@
 #include <feel/feelpoly/im.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/exporterensight.hpp>
 
 #include <feel/feelvf/vf.hpp>
@@ -250,7 +250,7 @@ LevelSet<Dim>::createMesh( double meshSize )
     std::string fname;
     if ( Application::processId() == 0 )
     {
-        GmshTensorizedDomain<Dim,1,ENTITY> td;
+        GmshHypercubeDomain<Dim,1,ENTITY> td;
         td.setCharacteristicLength( meshSize );
         fname = td.generate( ENTITY<Dim,1,Dim>::name() );
     }

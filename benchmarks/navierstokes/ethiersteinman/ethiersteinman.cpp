@@ -35,7 +35,7 @@
 
 #include <feel/feelfilters/importergmsh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 
 namespace Feel
 {
@@ -150,7 +150,7 @@ EthierSteinman::createMesh( double meshSize, double R )
     mesh_ptr_type mesh( new mesh_type );
     if ( R == 0 )
     {
-        GmshTensorizedDomain<Dim,1,ENTITY> td;
+        GmshHypercubeDomain<Dim,1,ENTITY> td;
         td.setCharacteristicLength( meshSize );
         td.setX( std::make_pair( -1.0, 1.0 ) );
         td.setY( std::make_pair( -1.0, 1.0 ) );

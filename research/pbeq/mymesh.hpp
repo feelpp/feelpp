@@ -30,7 +30,7 @@
 #define _MYMESH_HPP
 
 #include <feel/feelmesh/geoentity.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 
 namespace Feel
 {
@@ -46,9 +46,9 @@ namespace Feel
  *
  */
 
-class myMesh  : public GmshTensorizedDomain<3,1,3,Simplex>
+class myMesh  : public GmshHypercubeDomain<3,1,3,Simplex>
 {
-    typedef GmshTensorizedDomain< 3, 1, 3, Simplex > super;
+    typedef GmshHypercubeDomain< 3, 1, 3, Simplex > super;
 public:
     /** @name Constants and Typedefs
      */

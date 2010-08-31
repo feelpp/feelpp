@@ -33,7 +33,7 @@
 
 #include <feel/options.hpp>
 #include <feel/feelmesh/geoentity.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 
 #include <structurebase.hpp>
 #include <stvenant_kirchhoff.hpp>

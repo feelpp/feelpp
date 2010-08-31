@@ -32,7 +32,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/im.hpp>
 
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
@@ -192,7 +192,7 @@ Beam<nDim,nOrder>::createMesh( double meshSize )
     timers["mesh"].first.restart();
     mesh_ptrtype mesh( new mesh_type );
 
-    GmshTensorizedDomain<Dim,1,Dim,Simplex> td;
+    GmshHypercubeDomain<Dim,1,Dim,Simplex> td;
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( 0, 20 ) );
     td.setY( std::make_pair( -1, 1 ) );
