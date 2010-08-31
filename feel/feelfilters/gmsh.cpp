@@ -47,7 +47,7 @@
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
-#include <feel/feelfilters/gmshhypercube.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmshellipsoiddomain.hpp>
 
 namespace Feel
