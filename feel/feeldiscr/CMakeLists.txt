@@ -29,5 +29,5 @@ add_library( feeldiscr SHARED
   bdf2.cpp oseendata.cpp ${FEELDISCR_INST_SRCS}
   )
 
-target_link_libraries (feeldiscr feelmesh feelalg)
+target_link_libraries (feeldiscr feelmesh feelalg feelcore)
 set_target_properties( feeldiscr PROPERTIES VERSION ${FEEL_SHARED_VERSION} SOVERSION ${FEEL_SHARED_SOVERSION})
