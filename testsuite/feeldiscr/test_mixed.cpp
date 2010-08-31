@@ -39,7 +39,7 @@
 #include <feel/feelfilters/gmsh.hpp>
 
 /** include gmsh generator for tensorized domains */
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 
 /** include  polynomialset header */
 #include <feel/feelpoly/polynomialset.hpp>
@@ -207,7 +207,7 @@ Laplacian<Dim>::createMesh( double meshSize )
 
     //! generate a tensorized domain (hyper cube of dimension Dim)
     /** \code */
-    GmshTensorizedDomain<convex_type::nDim,
+    GmshHypercubeDomain<convex_type::nDim,
                          convex_type::nOrder,
                          convex_type::nDim,
                          Simplex> td;
