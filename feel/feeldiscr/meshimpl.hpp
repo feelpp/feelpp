@@ -690,6 +690,20 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                 }
 
         }
+
+    face_iterator f_it = this->beginFace();
+    face_iterator f_en = this->endFace();
+    for ( ;f_it!=f_en; ++f_it)
+    {
+        // cleanup the face data structure :
+
+        if ( !f_it->isConnectedTo0() )
+        {
+            // remove all faces that are not connected to any elements
+            this->faces().erase( f_it );
+        }
+
+    }
     boost::tie( iv, en ) = this->elementsRange();
     for ( ;iv != en; ++iv )
         {
