@@ -52,11 +52,11 @@ endif()
 
 if ( APPLE )
   SET (CTEST_INITIAL_CACHE "
-# set compilers from macports and use ccache
-CMAKE_CXX_COMPILER=/opt/local/libexec/ccache/g++-4.5
-CMAKE_C_COMPILER=/opt/local/libexec/ccache/gcc-4.5
-CMAKE_FORTRAN_COMPILER=/opt/local/libexec/ccache/gfortran-4.5
-# Enable tests
+// set compilers from macports and use ccache
+CMAKE_CXX_COMPILER:STRING=/opt/local/libexec/ccache/g++-4.5
+CMAKE_C_COMPILER:STRING=/opt/local/libexec/ccache/gcc-4.5
+CMAKE_FORTRAN_COMPILER:STRING=/opt/local/libexec/ccache/gfortran-4.5
+// Enable tests
 FEEL_ENABLE_ALL:BOOL=${FEEL_ENABLE_ALL_DEFAULT}
 CMAKE_CXX_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
 CMAKE_C_FLAGS:STRING=-std=c++0x -O3 -DOPTIMIZE -DNDEBUG -DNDEBUG_OLD
