@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,7 @@
        Date: 2005-12-22
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2009 Université de Grenoble 1 (Joseph Fourier)
+  Copyright (C) 2009-2010 Université de Grenoble 1 (Joseph Fourier)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file test_qm.cpp
+   \file test_quad_order.cpp
    \author Gilles Steiner <gilles.steiner@epfl.ch>
    \date 2005-12-22
  */
@@ -88,7 +88,7 @@ void QK_find_N_opt()
   using namespace Feel;
   typedef T value_type;
 
-  Gauss<Quad, N ,value_type > im;
+  Gauss<Hypercube<2,1>, N ,value_type > im;
 
   ublas::vector<value_type> x_i(ublas::row(im.points(),0));
   ublas::vector<value_type> y_i(ublas::row(im.points(),1));
@@ -135,7 +135,7 @@ void QK_find_N_opt_3D()
   using namespace Feel;
   typedef T value_type;
 
-  Gauss<Hexa, N ,value_type > im;
+  Gauss<Hypercube<3,1>, N ,value_type > im;
 
   ublas::vector<value_type> x_i(ublas::row(im.points(),0));
   ublas::vector<value_type> y_i(ublas::row(im.points(),1));
