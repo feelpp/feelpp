@@ -34,7 +34,7 @@
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporterensight.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
 #include <feel/feelpoly/geomap.hpp>
 #include <feel/feelmesh/regiontree.hpp>
@@ -74,7 +74,7 @@ public:
         M_mesh = mesh_ptr_type( new mesh_type );
         Debug() << "testing Interp with file format version " << version << "\n";
         std::string fname;
-        //GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,Entity> td;
+        //GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,Entity> td;
         GmshSimplexDomain<entity_type::nDim,entity_type::nOrder> td;
         td.setVersion( version );
         td.setCharacteristicLength( hsize );

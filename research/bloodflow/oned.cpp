@@ -34,7 +34,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 
 #include <feel/feelalg/backend.hpp>
@@ -208,7 +208,7 @@ OneD::createMesh( double meshSize )
     mesh_ptr_type mesh( new mesh_type );
 
 
-    GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Simplex> td;
+    GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Simplex> td;
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( 0.0, 1.0 ) );
     std::string fname = td.generate( entity_type::name().c_str() );

@@ -40,7 +40,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 
 
@@ -290,7 +290,7 @@ StVenantKirchhoff<Dim,Order>::createMesh( double meshSize, double ymin, double y
     mesh_ptrtype mesh( new mesh_type );
     //mesh->setRenumber( false );
 
-    GmshTensorizedDomain<Dim,1,Dim,Entity> td;
+    GmshHypercubeDomain<Dim,1,Dim,Entity> td;
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( 0, 20 ) );
     td.setY( std::make_pair( -1, 1 ) );

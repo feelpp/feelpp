@@ -51,7 +51,7 @@ using boost::unit_test::test_suite;
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelpoly/im.hpp>
 #include <feel/feelalg/matrixgmm.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 
@@ -76,7 +76,7 @@ createMesh( double hsize )
     typedef typename imesh<T,Dim>::type mesh_type;
     typename imesh<T,Dim>::ptrtype mesh( new typename imesh<T,Dim>::type );
 
-    GmshTensorizedDomain<Dim,1,Dim,Simplex> td;
+    GmshHypercubeDomain<Dim,1,Dim,Simplex> td;
     td.setCharacteristicLength( meshSize );
     //td.setX( std::make_pair( -1, 1 ) );
     ImporterGmsh<typename imesh<T,Dim>::type> import( td.generate( ( boost::format( "hypercube-%1%D" ) % Dim ).str() ) );

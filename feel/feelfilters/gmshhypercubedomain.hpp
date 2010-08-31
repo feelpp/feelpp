@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -22,26 +22,26 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 /**
-   \file gmshtensorizeddomain.hpp
+   \file gmshhypercubedomain.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2006-11-26
  */
-#ifndef __GmshTensorizedDomain_H
-#define __GmshTensorizedDomain_H 1
+#ifndef __GmshHypercubeDomain_H
+#define __GmshHypercubeDomain_H 1
 
 #include <feel/feelfilters/gmsh.hpp>
 
 namespace Feel
 {
 /**
- * \class GmshTensorizedDomain
+ * \class GmshHypercubeDomain
  * \brief Tensorized Domain description for gmsh mesh generation
  *
  * \ingroup Importer
  * @author Christophe Prud'homme
  */
 template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
-class GmshTensorizedDomain : public Gmsh
+class GmshHypercubeDomain : public Gmsh
 {
     typedef Gmsh super;
 public:
@@ -62,18 +62,18 @@ public:
      */
     //@{
 
-    GmshTensorizedDomain()
+    GmshHypercubeDomain()
         :
         super(Dim, Order)
     {
     }
 
-    GmshTensorizedDomain( GmshTensorizedDomain const & td )
+    GmshHypercubeDomain( GmshHypercubeDomain const & td )
         :
         super( td )
     {
     }
-    ~GmshTensorizedDomain()
+    ~GmshHypercubeDomain()
     {}
 
     //@}
@@ -129,7 +129,7 @@ private:
 } // Feel
 
 #if !defined( FEEL_INSTANTIATION_MODE )
-# include <feel/feelfilters/gmshtensorizeddomain.cpp>
+# include <feel/feelfilters/gmshhypercubedomain.cpp>
 #endif // FEEL_INSTANTIATION_MODE
 
-#endif /* __GmshTensorizedDomain_H */
+#endif /* __GmshHypercubeDomain_H */

@@ -37,7 +37,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/oseen.hpp>

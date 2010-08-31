@@ -35,7 +35,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 
 #include <feel/feelalg/backend.hpp>
@@ -276,7 +276,7 @@ Advection<Dim,Order,Cont,Entity>::createMesh( double meshSize )
     bool ring = this->vm()["ring"].template as<bool>();
     if (!ring)
 	{
-	    GmshTensorizedDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
+	    GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
 	    td.setCharacteristicLength( meshSize );
 	    ImporterGmsh<mesh_type> import( td.generate( entity_str.str() ) );
 	    mesh->accept( import );

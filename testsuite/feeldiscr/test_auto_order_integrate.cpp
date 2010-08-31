@@ -9,7 +9,7 @@ using boost::unit_test::test_suite;
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/im.hpp>
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
@@ -125,7 +125,7 @@ Test_AOI::createMesh( double meshSize ) {
 
     mesh_ptrtype mesh( new mesh_type );
 
-    GmshTensorizedDomain< convex_type::nDim,convex_type::nOrder,convex_type::nRealDim, Simplex> td;
+    GmshHypercubeDomain< convex_type::nDim,convex_type::nOrder,convex_type::nRealDim, Simplex> td;
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( 0, 1 ) );
     td.setY( std::make_pair( 0, 1 ) );

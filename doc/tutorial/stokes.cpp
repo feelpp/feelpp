@@ -37,7 +37,7 @@
 #include <feel/feelpoly/im.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmshtensorizeddomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpoly/lagrange.hpp>
 #include <feel/feelpoly/crouzeixraviart.hpp>
@@ -213,7 +213,7 @@ Stokes<Dim,BasisU,BasisP,Entity>::createMesh( double meshSize )
     mesh_ptrtype mesh( new mesh_type );
 
 
-    GmshTensorizedDomain<convex_type::nDim,convex_type::nOrder,convex_type::nRealDim,Entity> td;
+    GmshHypercubeDomain<convex_type::nDim,convex_type::nOrder,convex_type::nRealDim,Entity> td;
     td.setCharacteristicLength( meshSize );
     std::string fname = td.generate( convex_type::name().c_str() );
 
