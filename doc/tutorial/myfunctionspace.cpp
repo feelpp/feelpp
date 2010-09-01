@@ -262,6 +262,7 @@ main( int argc, char** argv )
     //app.add( new MyFunctionSpace<2,4>( app.vm(), app.about() ) );
     //app.add( new MyFunctionSpace<2,5>( app.vm(), app.about() ) );
 #else
+    app.add( new MyFunctionSpace<2,3>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<3,3>( app.vm(), app.about() ) );
 // need to be debugged
 #if 0
