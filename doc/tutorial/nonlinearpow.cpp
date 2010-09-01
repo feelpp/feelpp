@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-01-09
 
-  Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2009 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -67,7 +67,7 @@ makeAbout()
                            "0.1",
                            "nD(n=1,2,3) NonLinearUL problem",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2009 Université Joseph Fourier");
+                           "Copyright (c) 2008-2009 UniversitÃ© Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -208,33 +208,17 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
                             % this->vm()["lambda"].template as<int>()
                             );
 
-    mesh_ptrtype mesh = createMesh( meshSize );
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % Order).str() ,
+                                                      _shape="hypercube",
+                                                      _dim=Dim,
+                                                      _order=1,
+                                                      _h=meshSize ) );
     M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
 
     exporter = export_ptrtype( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
 }
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-typename NonLinearPow<Dim,Order,Entity>::mesh_ptrtype
-NonLinearPow<Dim,Order,Entity>::createMesh( double meshSize )
-{
-    mesh_ptrtype mesh( new mesh_type );
-    //mesh->setRenumber( false );
-
-    GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
-    td.setCharacteristicLength( meshSize );
-    td.setX( std::make_pair( -1, 1 ) );
-    if ( Dim >=2 )
-        td.setY( std::make_pair( -1, 1 ) );
-    if ( Dim >=3 )
-        td.setZ( std::make_pair( -1, 1 ) );
-    std::string fname = td.generate( entity_type::name().c_str() );
-
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-
-    return mesh;
-} // NonLinearPow::createMesh
-
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void

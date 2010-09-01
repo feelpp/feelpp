@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,7 @@
        Date: 2009-01-04
 
   Copyright (C) 2009 Christophe Prud'homme
-  Copyright (C) 2009 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -89,7 +89,7 @@ makeAbout()
                            "0.1",
                            "Stokes equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009 Universite de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2009 Université de Grenoble 1 (Joseph Fourier)");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
    return about;
@@ -173,12 +173,6 @@ public:
 
 
     /**
-     * create the mesh using mesh size \c meshSize
-     */
-    mesh_ptrtype createMesh( double meshSize );
-
-
-    /**
      * run the convergence test
      */
     void run();
@@ -206,22 +200,6 @@ private:
     boost::shared_ptr<export_type> exporter;
 }; // Stokes
 
-template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
-typename Stokes<Dim,BasisU,BasisP,Entity>::mesh_ptrtype
-Stokes<Dim,BasisU,BasisP,Entity>::createMesh( double meshSize )
-{
-    mesh_ptrtype mesh( new mesh_type );
-
-
-    GmshHypercubeDomain<convex_type::nDim,convex_type::nOrder,convex_type::nRealDim,Entity> td;
-    td.setCharacteristicLength( meshSize );
-    std::string fname = td.generate( convex_type::name().c_str() );
-
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-    return mesh;
-} // Stokes::createMesh
-
 
 template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
@@ -245,7 +223,13 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     /*
      * First we create the mesh
      */
-    mesh_ptrtype mesh = createMesh( meshSize );
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % Order).str() ,
+                                                      _shape="hypercube",
+                                                      _dim=Dim,
+                                                      _h=meshSize ) );
+
 
     /*
      * The function space and some associate elements are then defined
