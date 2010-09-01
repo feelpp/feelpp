@@ -189,7 +189,7 @@ Mesh<Shape, T>::updateForUse()
                         M_meas += iv->measure();
                         auto _faces = iv->faces();
                         for( ; _faces.first != _faces.second; ++_faces.first )
-                            if ( _faces.first && (*_faces.first)->isOnBoundary() )
+                            if ( (*_faces.first) && (*_faces.first)->isOnBoundary() )
                                 M_measbdy += (*_faces.first)->measure();
                     }
                 // now that all elements have been updated, build inter element
