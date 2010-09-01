@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -36,46 +36,55 @@
 
 namespace Feel
 {
-template<int Dim, int Order>
-const uint16_type GmshSimplexDomain<Dim, Order>::nDim;
-template<int Dim, int Order>
-const uint16_type GmshSimplexDomain<Dim, Order>::nOrder;
 
-template<int Dim, int Order>
-GmshSimplexDomain<Dim, Order>::GmshSimplexDomain( DomainType dt )
+GmshSimplexDomain::GmshSimplexDomain( int dim, int order, DomainType dt )
     :
-    super(Dim,Order),
-    _M_descr()
+    super(dim,order),
+    M_descr()
 {
     switch (dt)
     {
     case GMSH_REAL_DOMAIN:
     {
 
-        if ( nDim >= 1 )
+        if ( this->dimension() >= 1 )
             this->M_I[0] = std::make_pair( 0, 1 );
-        if ( nDim >= 2 )
+        if ( this->dimension() >= 2 )
             this->M_I[1] = std::make_pair( 0, 1 );
-        if ( nDim >= 3 )
+        if ( this->dimension() >= 3 )
             this->M_I[2] = std::make_pair( 0, 1 );
     }
     break;
     case GMSH_REFERENCE_DOMAIN:
     {
-        if ( nDim >= 1 )
+        if ( this->dimension() >= 1 )
             this->M_I[0] = std::make_pair( -1, 1 );
-        if ( nDim >= 2 )
+        if ( this->dimension() >= 2 )
             this->M_I[1] = std::make_pair( -1, 1 );
-        if ( nDim >= 3 )
+        if ( this->dimension() >= 3 )
             this->M_I[2] = std::make_pair( -1, 1 );
     }
     break;
     }
 }
-
-template<int Dim, int Order>
 std::string
-GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<1> ) const
+GmshSimplexDomain::getDescription() const
+{
+    switch( this->dimension() )
+    {
+    case 1:
+        return this->getDescription1D();
+    case 2:
+        return this->getDescription2D();
+    case 3:
+        return this->getDescription3D();
+    default:
+        return std::string();
+    }
+}
+
+std::string
+GmshSimplexDomain::getDescription1D() const
 {
     std::ostringstream ostr;
     ostr << this->preamble() << "\n";
@@ -123,9 +132,8 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<1> ) const
     return ostr.str();
 }
 // 2D
-template<int Dim, int Order>
 std::string
-GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<2> ) const
+GmshSimplexDomain::getDescription2D() const
 {
     std::ostringstream ostr;
     ostr << this->preamble() << "\n";
@@ -154,9 +162,8 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<2> ) const
     return ostr.str();
 }
 // 3D
-template<int Dim, int Order>
 std::string
-GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<3> ) const
+GmshSimplexDomain::getDescription3D() const
 {
     std::ostringstream ostr;
     ostr << this->preamble() << "\n";
@@ -198,14 +205,6 @@ GmshSimplexDomain<Dim, Order>::getDescription( mpl::int_<3> ) const
     return ostr.str();
 }
 
-#if defined( FEEL_INSTANTIATION_MODE )
 
-# define DIMS BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
-# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
-# define FACTORY(LDIM,LORDER) template class GmshSimplexDomain<LDIM,LORDER>;
-# define FACTORY_OP(_, GDO) FACTORY GDO
-BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_OP, 2, (DIMS, ORDERS))
-#endif // FEEL_INSTANTIATION_MODE
-
-}
+} // Feel
 #endif // __GMSHSIMPLEXDOMAIN_CPP

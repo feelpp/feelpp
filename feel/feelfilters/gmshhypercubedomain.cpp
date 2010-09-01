@@ -34,28 +34,57 @@
 
 namespace Feel
 {
-template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
-const uint16_type GmshHypercubeDomain<Dim, Order, RDim, Entity>::nDim;
-template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
-const uint16_type GmshHypercubeDomain<Dim, Order, RDim, Entity>::nOrder;
-template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
-const uint16_type GmshHypercubeDomain<Dim, Order, RDim, Entity>::nRealDim;
+GmshHypercubeDomain::GmshHypercubeDomain( int dim, int order  )
+    :
+    super( dim, order ),
+    M_rdim( dim ),
+    M_use_hypercube( false )
+{}
 
+GmshHypercubeDomain::GmshHypercubeDomain( int dim, int order, int rdim, bool use_hypercube  )
+    :
+    super( dim, order ),
+    M_rdim( rdim ),
+    M_use_hypercube( use_hypercube )
+{}
 
-template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
+GmshHypercubeDomain::GmshHypercubeDomain( GmshHypercubeDomain const& d )
+    :
+    super( d ),
+    M_rdim( d.M_rdim ),
+    M_use_hypercube( d.M_use_hypercube )
+{}
+GmshHypercubeDomain::~GmshHypercubeDomain()
+{}
 std::string
-GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<1>,  mpl::bool_<false> ) const
+GmshHypercubeDomain::getDescription() const
+{
+    switch( this->dimension() )
+    {
+    case 1:
+        return this->getDescription1D();
+    case 2:
+        return this->getDescription2D();
+    case 3:
+        return this->getDescription3D();
+    default:
+        return std::string();
+    }
+}
+
+std::string
+GmshHypercubeDomain::getDescription1D() const
 {
     std::ostringstream ostr;
     ostr << this->preamble();
     ostr << "Point(1) = {" << this->M_I[0].first << ",";
-    if ( nRealDim == nDim + 1 )
+    if ( M_rdim == this->dimension() + 1 )
         ostr << this->M_I[1].first;
     else
         ostr << 0;
     ostr << ",0,h};\n"
          << "Point(2) = {" << this->M_I[0].second << ",";
-    if ( nRealDim == nDim + 1 )
+    if ( M_rdim == this->dimension() + 1 )
         ostr << this->M_I[1].second;
     else
         ostr << 0;
@@ -63,7 +92,7 @@ GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<1>,  mp
     if ( this->addMidPoint() )
     {
         ostr << "Point(3) = {" << (this->M_I[0].second+this->M_I[0].first)/2 << ",";
-        if ( nRealDim == nDim + 1 )
+        if ( M_rdim == this->dimension() + 1 )
             ostr << (this->M_I[1].second+this->M_I[1].first)/2;
         else
             ostr << 0;
@@ -107,12 +136,14 @@ GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<1>,  mp
     return ostr.str();
 }
 // 2D
-template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
+
 std::string
-GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  mpl::bool_<false> ) const
+GmshHypercubeDomain::getDescription2D() const
 {
     std::ostringstream ostr;
     ostr << this->preamble();
+
+
     ostr << "a=" << this->M_I[0].first << ";\n"
          << "b=" << this->M_I[0].second << ";\n"
          << "c=" << this->M_I[1].first << ";\n"
@@ -141,29 +172,24 @@ GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  mp
              << "Physical Line(\"Neumann\") = {2,4};\n"
              << "Physical Surface(\"Mat1\") = {6};\n";
     }
-    return ostr.str();
-}
-template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
-std::string
-GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<2>,  mpl::bool_<true> ) const
-{
-    std::ostringstream ostr;
-    ostr << this->preamble();
-    ostr << getDescription( mpl::int_<2>(), mpl::bool_<false>() )
-         << "nx = 1/h;\n"
-         << "ny = 1/h;\n"
-         << "\n"
-         << "Transfinite Line {1,3} = ny + 1 Using Progression 1.0;\n"
-         << "Transfinite Line {2,4} = nx + 1 Using Progression 1.0;\n"
-         << "\n"
-         << "Transfinite Surface {6} = {1,2,3,4};\n"
-         << "Recombine Surface {6};\n";
+
+    if ( M_use_hypercube )
+    {
+
+        ostr << "nx = 1/h;\n"
+             << "ny = 1/h;\n"
+             << "\n"
+             << "Transfinite Line {1,3} = ny + 1 Using Progression 1.0;\n"
+             << "Transfinite Line {2,4} = nx + 1 Using Progression 1.0;\n"
+             << "\n"
+             << "Transfinite Surface {6} = {1,2,3,4};\n"
+             << "Recombine Surface {6};\n";
+    }
     return ostr.str();
 }
 // 3D
-template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
 std::string
-GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  mpl::bool_<false>, bool do_recombine ) const
+GmshHypercubeDomain::getDescription3D() const
 {
     std::ostringstream ostr;
     ostr << this->preamble();
@@ -187,8 +213,8 @@ GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  mp
          << "\n"
          << "Extrude Surface {6, {0,0,f-e} } {\n"
          << "  Layers { {(f-e)/h}, {1.0} };\n";
-    if ( do_recombine )
-        ostr << "  Recombine;\n";
+    //if ( do_recombine )
+    //ostr << "  Recombine;\n";
 
     ostr << "};\n"
          << "Physical Line(1) = {1};\n"
@@ -211,65 +237,28 @@ GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  mp
              << "Physical Surface(\"Dirichlet\") = {15,23};\n"
              << "Physical Volume(\"Mat1\") = {1};\n";
     }
+    if ( M_use_hypercube )
+    {
+        ostr << "nx = 1/h;\n"
+             << "ny = 1/h;\n"
+             << "nz = 1/h;\n"
+             << "\n"
+             << "Transfinite Line {4,10,2,8} = nx Using Progression 1;\n"
+             << "Transfinite Line {3,9,1,11} = ny Using Progression 1;\n"
+             << "Transfinite Line {14,18,13,22} = nz Using Progression 1;\n"
+             << "\n"
+             << "//Transfinite Surface {23} = {1,10,14,2};\n"
+             << "//Transfinite Surface {19} = {1,10,6,4};\n"
+             << "//Transfinite Surface {15} = {4,6,5,3};\n"
+             << "Transfinite Surface {6} = {2,1,4,3};\n"
+             << "//Transfinite Surface {27} = {14,2,3,5};\n"
+             << "//Transfinite Surface {28} = {6,10,14,5};\n"
+             << "Recombine Surface {27,23,6,19,15,28};\n";
+    }
     return ostr.str();
 }
-template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
-std::string
-GmshHypercubeDomain<Dim, Order, RDim, Entity>::getDescription( mpl::int_<3>,  mpl::bool_<true> ) const
-{
-    std::ostringstream ostr;
-    ostr << this->preamble();
-    ostr << getDescription( mpl::int_<3>(), mpl::bool_<false>(), true )
-         << "nx = 1/h;\n"
-         << "ny = 1/h;\n"
-         << "nz = 1/h;\n"
-         << "\n"
-         << "Transfinite Line {4,10,2,8} = nx Using Progression 1;\n"
-         << "Transfinite Line {3,9,1,11} = ny Using Progression 1;\n"
-         << "Transfinite Line {14,18,13,22} = nz Using Progression 1;\n"
-         << "\n"
-         << "//Transfinite Surface {23} = {1,10,14,2};\n"
-         << "//Transfinite Surface {19} = {1,10,6,4};\n"
-         << "//Transfinite Surface {15} = {4,6,5,3};\n"
-         << "Transfinite Surface {6} = {2,1,4,3};\n"
-         << "//Transfinite Surface {27} = {14,2,3,5};\n"
-         << "//Transfinite Surface {28} = {6,10,14,5};\n"
-         << "Recombine Surface {27,23,6,19,15,28};\n";
-    return ostr.str();
 
-}
 
-#if defined( FEEL_INSTANTIATION_MODE )
-
-// Instantiations
-// 1D
-template class GmshHypercubeDomain<1,1,1,Simplex>;
-template class GmshHypercubeDomain<1,1,2,Simplex>;
-template class GmshHypercubeDomain<1,1,1,Hypercube>;
-template class GmshHypercubeDomain<1,2,1,Simplex>;
-template class GmshHypercubeDomain<1,2,1,Hypercube>;
-template class GmshHypercubeDomain<1,3,1,Simplex>;
-template class GmshHypercubeDomain<1,4,1,Simplex>;
-template class GmshHypercubeDomain<1,5,1,Simplex>;
-// 2D
-template class GmshHypercubeDomain<2,1,2,Simplex>;
-template class GmshHypercubeDomain<2,1,2,Hypercube>;
-template class GmshHypercubeDomain<2,2,2,Simplex>;
-template class GmshHypercubeDomain<2,2,2,Hypercube>;
-template class GmshHypercubeDomain<2,3,2,Simplex>;
-template class GmshHypercubeDomain<2,4,2,Simplex>;
-template class GmshHypercubeDomain<2,5,2,Simplex>;
-// 2D3D
-template class GmshHypercubeDomain<2,1,3,Simplex>;
-// 3D
-template class GmshHypercubeDomain<3,1,3,Simplex>;
-template class GmshHypercubeDomain<3,1,3,Hypercube>;
-template class GmshHypercubeDomain<3,2,3,Simplex>;
-template class GmshHypercubeDomain<3,2,3,Hypercube>;
-template class GmshHypercubeDomain<3,3,3,Simplex>;
-template class GmshHypercubeDomain<3,4,3,Simplex>;
-#endif // FEEL_INSTANTIATION_MODE
-
-}
+} // Feel
 
 #endif // __GMSHTENSORIZEDDOMAIN_HPP
