@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-01-09
 
-  Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2009 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -37,7 +37,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
+
 
 #include <feel/feelvf/vf.hpp>
 
@@ -65,7 +65,7 @@ makeAbout()
                            "0.1",
                            "nD(n=1,2,3) Bratu problem",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2009 Université Joseph Fourier");
+                           "Copyright (c) 2008-2009 UniversitÃ© Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -138,11 +138,6 @@ public:
     Bratu( int argc, char** argv, AboutData const& ad, po::options_description const& od );
 
     /**
-     * create the mesh using mesh size \c meshSize
-     */
-    mesh_ptrtype createMesh( double meshSize, double ymin = 0, double ymax = 1 );
-
-    /**
      * run the convergence test
      */
     void run();
@@ -204,29 +199,19 @@ Bratu<Dim,Order,Entity>::Bratu( int argc, char** argv, AboutData const& ad, po::
                             % this->vm()["lambda"].template as<double>()
                             );
 
-    mesh_ptrtype mesh = createMesh( meshSize );
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % shape % Dim % Order).str() ,
+                                                      _shape=shape,
+                                                      _dim=Dim,
+                                                      _order=Order,
+                                                      _h=X[0] ) );
+
     M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
 
     exporter = export_ptrtype( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
 }
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-typename Bratu<Dim,Order,Entity>::mesh_ptrtype
-Bratu<Dim,Order,Entity>::createMesh( double meshSize, double ymin, double ymax )
-{
-    mesh_ptrtype mesh( new mesh_type );
-    //mesh->setRenumber( false );
 
-    GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
-    td.setCharacteristicLength( meshSize );
-    if ( Dim >=2 )
-        td.setY( std::make_pair( ymin, ymax ) );
-    std::string fname = td.generate( entity_type::name().c_str() );
-
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-
-    return mesh;
-} // Bratu::createMesh
 
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
