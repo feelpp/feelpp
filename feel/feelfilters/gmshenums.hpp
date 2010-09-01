@@ -257,6 +257,30 @@ GmshOrdering<ConvexType>::GmshOrdering()
             M_type = detail::hexa_type[ConvexType::nOrder];
             if ( ConvexType::nOrder == 1 )
                 M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3)(4,4)(5,5)(6,6)(7,7);
+
+            if ( ConvexType::nOrder == 2 )
+                M_id = list_of<relation>
+                    (0,0)(1,1)(2,2)(3,3)(4,4)(5,5)(6,6)(7,7) // vertices
+                    (8,8)   // edge 0
+                    (9,11)  // edge 1
+                    (10,13) // edge 2
+                    (11,9)  // edge 3
+                    (12,12) // edge 4
+                    (13,16) // edge 5
+                    (14,10) // edge 6
+                    (15,14) // edge 7
+                    (16,18) // edge 8
+                    (17,15) // edge 9
+                    (18,19) // edge 10
+                    (19,17) // edge 11
+                    (20,20) // face 0
+                    (21,21) // face 1
+                    (22,23) // face 2
+                    (23,24) // face 3
+                    (24,22) // face 4
+                    (25,25) // face 5
+                    (26,26) // volume 0
+                    ;
             //M_id+=0,1,2,3,4,5,6,7;
         }
 
