@@ -41,6 +41,7 @@
 #include <boost/concept_check.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
@@ -448,11 +449,33 @@ Gmsh::preamble() const
     return ostr.str();
 }
 
+/// \cond detail
 namespace detail {
-template<int Dim, int Order>
-Gmsh* createSimplexDomain() { return new GmshSimplexDomain<Dim, Order>; }
-template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
-Gmsh* createTensorizedDomain() { return new GmshHypercubeDomain<Dim, Order, RDim, Entity>; }
+
+struct HypercubeDomain
+{
+    HypercubeDomain( int _Dim, int _Order )
+        :
+        Dim( _Dim ), Order( _Order ), RDim( _Dim ), Hyp( false )
+        {}
+    HypercubeDomain( int _Dim, int _Order, int _RDim, std::string const& hyp )
+        :
+        Dim( _Dim ), Order( _Order ), RDim( _RDim ), Hyp( hyp == "Hypercube" )
+        {}
+    Gmsh* operator()() { return new GmshHypercubeDomain(Dim, Order, RDim, Hyp); }
+    int Dim, Order,RDim;
+    bool Hyp;
+};
+
+struct SimplexDomain
+{
+    SimplexDomain( int _Dim, int _Order )
+        :
+        Dim( _Dim ), Order( _Order )
+        {}
+    Gmsh* operator()() { return new GmshSimplexDomain(Dim, Order); }
+    int Dim, Order;
+};
 
 struct EllipsoidDomain
 {
@@ -466,105 +489,45 @@ struct EllipsoidDomain
 
 } // detail
 
-//
-// Simplex 1,1
-//
-const bool meshs11s = Gmsh::Factory::type::instance().registerProduct( "simplex(1,1)", &detail::createSimplexDomain<1,1> );
-const bool meshs12s = Gmsh::Factory::type::instance().registerProduct( "simplex(1,2)", &detail::createSimplexDomain<1,2> );
-const bool meshs13s = Gmsh::Factory::type::instance().registerProduct( "simplex(1,3)", &detail::createSimplexDomain<1,3> );
-const bool meshs14s = Gmsh::Factory::type::instance().registerProduct( "simplex(1,4)", &detail::createSimplexDomain<1,4> );
-const bool meshs15s = Gmsh::Factory::type::instance().registerProduct( "simplex(1,5)", &detail::createSimplexDomain<1,5> );
-
-const bool meshs21s = Gmsh::Factory::type::instance().registerProduct( "simplex(2,1)", &detail::createSimplexDomain<2,1> );
-const bool meshs22s = Gmsh::Factory::type::instance().registerProduct( "simplex(2,2)", &detail::createSimplexDomain<2,2> );
-const bool meshs23s = Gmsh::Factory::type::instance().registerProduct( "simplex(2,3)", &detail::createSimplexDomain<2,3> );
-const bool meshs24s = Gmsh::Factory::type::instance().registerProduct( "simplex(2,4)", &detail::createSimplexDomain<2,4> );
-const bool meshs25s = Gmsh::Factory::type::instance().registerProduct( "simplex(2,5)", &detail::createSimplexDomain<2,5> );
-
-const bool meshs31s = Gmsh::Factory::type::instance().registerProduct( "simplex(3,1)", &detail::createSimplexDomain<3,1> );
-const bool meshs32s = Gmsh::Factory::type::instance().registerProduct( "simplex(3,2)", &detail::createSimplexDomain<3,2> );
-const bool meshs33s = Gmsh::Factory::type::instance().registerProduct( "simplex(3,3)", &detail::createSimplexDomain<3,3> );
-const bool meshs34s = Gmsh::Factory::type::instance().registerProduct( "simplex(3,4)", &detail::createSimplexDomain<3,4> );
-const bool meshs35s = Gmsh::Factory::type::instance().registerProduct( "simplex(3,5)", &detail::createSimplexDomain<3,5> );
-
-// ellipsoid
-const bool mesh11e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(1,1)", *new detail::EllipsoidDomain(1,1) );
-const bool mesh12e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(1,2)", *new detail::EllipsoidDomain(1,2) );
-const bool mesh13e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(1,3)", *new detail::EllipsoidDomain(1,3) );
-const bool mesh14e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(1,4)", *new detail::EllipsoidDomain(1,4) );
-const bool mesh15e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(1,5)", *new detail::EllipsoidDomain(1,5) );
-const bool mesh21e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(2,1)", *new detail::EllipsoidDomain(2,1) );
-const bool mesh22e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(2,2)", *new detail::EllipsoidDomain(2,2) );
-const bool mesh23e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(2,3)", *new detail::EllipsoidDomain(2,3) );
-const bool mesh24e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(2,4)", *new detail::EllipsoidDomain(2,4) );
-const bool mesh25e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(2,5)", *new detail::EllipsoidDomain(2,5) );
-const bool mesh31e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(3,1)", *new detail::EllipsoidDomain(3,1) );
-const bool mesh32e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(3,2)", *new detail::EllipsoidDomain(3,2) );
-const bool mesh33e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(3,3)", *new detail::EllipsoidDomain(3,3) );
-const bool mesh34e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(3,4)", *new detail::EllipsoidDomain(3,4) );
-const bool mesh35e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(3,5)", *new detail::EllipsoidDomain(3,5) );
-//const bool mesh12e = Gmsh::Factory::type::instance().registerProduct( "ellipsoid(1,2)", std::mem_fun(&detail::EllipsoidDomain::create), new detail::EllipsoidDomain(1,2) );
-
-// tensorized
-const bool meshs111s = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,Simplex)",
-                                                                         &detail::createTensorizedDomain<1,1,1,Simplex> );
-const bool meshs111ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,Hypercube)",
-                                                                         &detail::createTensorizedDomain<1,1,1,Hypercube> );
-const bool meshs112ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,Simplex)",
-                                                                         &detail::createTensorizedDomain<1,1,2,Simplex> );
-
-const bool meshs11tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1)",
-                                                                          &detail::createTensorizedDomain<1,1,1,Simplex> );
-const bool meshs12tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,2)",
-                                                                          &detail::createTensorizedDomain<1,2,1,Simplex> );
-const bool meshs13tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,3)",
-                                                                          &detail::createTensorizedDomain<1,3,1,Simplex> );
-const bool meshs14tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,4)",
-                                                                          &detail::createTensorizedDomain<1,4,1,Simplex> );
-const bool meshs15tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,5)",
-                                                                          &detail::createTensorizedDomain<1,5,1,Simplex> );
-
-const bool meshs21tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1)",
-                                                                          &detail::createTensorizedDomain<2,1,2,Simplex> );
-const bool meshs22tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,2)",
-                                                                          &detail::createTensorizedDomain<2,2,2,Simplex> );
-const bool meshs23tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,3)",
-                                                                          &detail::createTensorizedDomain<2,3,2,Simplex> );
-const bool meshs24tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,4)",
-                                                                          &detail::createTensorizedDomain<2,4,2,Simplex> );
-const bool meshs25tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,5)",
-                                                                          &detail::createTensorizedDomain<2,5,2,Simplex> );
-const bool meshs31tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(3,1)",
-                                                                          &detail::createTensorizedDomain<3,1,3,Simplex> );
-const bool meshs32tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(3,2)",
-                                                                          &detail::createTensorizedDomain<3,2,3,Simplex> );
-const bool meshs33tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(3,3)",
-                                                                          &detail::createTensorizedDomain<3,3,3,Simplex> );
-const bool meshs34tsxx = Gmsh::Factory::type::instance().registerProduct( "hypercube(3,4)",
-                                                                          &detail::createTensorizedDomain<3,4,3,Simplex> );
-
-const bool meshs21ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,Simplex)",
-                                                                        &detail::createTensorizedDomain<2,1,2,Simplex> );
-const bool meshs213ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,3,Simplex)",
-                                                                         &detail::createTensorizedDomain<2,1,3,Simplex> );
-const bool meshs22ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,2,Simplex)",
-                                                                        &detail::createTensorizedDomain<2,2,2,Simplex> );
-
-const bool meshs21tsp = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,Hypercube)",
-                                                                         &detail::createTensorizedDomain<2,1,2,Hypercube> );
-const bool meshs22tsp = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,2,Hypercube)",
-                                                                         &detail::createTensorizedDomain<2,2,2,Hypercube> );
 
 
-const bool meshs31ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(3,1,Simplex)",
-                                                                        &detail::createTensorizedDomain<3,1,3,Simplex> );
-const bool meshs32ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(3,2,Simplex)",
-                                                                        &detail::createTensorizedDomain<3,2,3,Simplex> );
-
-const bool meshs31tsp = Gmsh::Factory::type::instance().registerProduct( "hypercube(3,1,Hypercube)",
-                                                                         &detail::createTensorizedDomain<3,1,3,Hypercube> );
-const bool meshs32tsp = Gmsh::Factory::type::instance().registerProduct( "hypercube(3,2,Hypercube)",
-                                                                         &detail::createTensorizedDomain<3,2,3,Hypercube> );
+# define DIMS BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
+# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
+# define SHAPES1 BOOST_PP_TUPLE_TO_LIST(3, ((2,(simplex, Simplex)) ,    \
+                                            (2,(ellipsoid, Ellipsoid)) , \
+                                            (2,(hypercube, Hypercube)) ))
+# define SHAPES2 BOOST_PP_TUPLE_TO_LIST(2, ((3,(hypercube, Hypercube, Simplex)), \
+                                            (3,(hypercube, Hypercube, Hypercube)) ) )
 
 
+#define FACTORY1NAME( LDIM, LORDER, LSHAPE )                             \
+    BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_RPAREN())
+
+# define FACTORY1(LDIM,LORDER,LSHAPE )                                   \
+const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE))  = \
+                           Gmsh::Factory::type::instance().registerProduct( boost::algorithm::erase_all_copy( std::string( FACTORY1NAME(LDIM, LORDER, LSHAPE ) ), " " ), \
+                                                                            *new detail::BOOST_PP_CAT(BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)(LDIM,LORDER) );
+
+# define FACTORY1_OP(_, GDO) FACTORY1 GDO
+
+#define FACTORY2NAME( LDIM, LORDER, LSHAPE )                             \
+    BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_COMMA() BOOST_PP_ARRAY_ELEM(2,LSHAPE) BOOST_PP_RPAREN())
+
+# define FACTORY2(LDIM,LORDER,LSHAPE )                                   \
+const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE)), BOOST_PP_ARRAY_ELEM(2,LSHAPE))   = \
+                           Gmsh::Factory::type::instance().registerProduct( boost::algorithm::erase_all_copy( std::string( FACTORY2NAME(LDIM, LORDER, LSHAPE ) ), " " ), \
+                                                                            *new detail::BOOST_PP_CAT(BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)(LDIM,LORDER,LDIM,BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(2,LSHAPE))) );
+
+# define FACTORY2_OP(_, GDO) FACTORY2 GDO
+
+// only up to 4 for mesh data structure nit supported for higher order in Gmsh
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY1_OP, 3, (DIMS, ORDERS, SHAPES1))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY2_OP, 3, (DIMS, ORDERS, SHAPES2))
+
+const bool meshs213s = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,3,Simplex)", *new detail::HypercubeDomain( 2, 1, 3, "Simplex" ) );
+const bool meshs213ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,3,Hypercube)", *new detail::HypercubeDomain( 2, 1, 3, "Hypercube" ) );
+const bool meshs112s = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,Simplex)", *new detail::HypercubeDomain( 1, 1, 2, "Simplex" ) );
+const bool meshs112ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,Hypercube)", *new detail::HypercubeDomain( 1, 1, 2, "Hypercube" ) );
+
+/// \endcond detail
 } // Feel

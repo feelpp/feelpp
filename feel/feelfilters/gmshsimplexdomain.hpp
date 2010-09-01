@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -46,7 +46,6 @@ namespace Feel
  * \ingroup Importer
  * @author Christophe Prud'homme
  */
-template<int Dim, int Order>
 class GmshSimplexDomain : public Gmsh
 {
     typedef Gmsh super;
@@ -57,23 +56,18 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = Dim;
-    static const uint16_type nOrder = Order;
-
-    typedef Simplex<Dim,Order, Dim> entity_type;
-
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
 
-    GmshSimplexDomain( DomainType dt = GMSH_REAL_DOMAIN );
+    GmshSimplexDomain( int dim, int order, DomainType dt = GMSH_REAL_DOMAIN );
 
     GmshSimplexDomain( GmshSimplexDomain const & td )
         :
         super( td ),
-        _M_descr( td._M_descr )
+        M_descr( td.M_descr )
     {
     }
     ~GmshSimplexDomain()
@@ -113,24 +107,20 @@ public:
 
 
 private:
-    std::string getDescription() const
-    {return getDescription( mpl::int_<nDim>() );}
+    std::string getDescription() const;
+
     // 1D
-    std::string getDescription( mpl::int_<1> ) const;
+    std::string getDescription1D() const;
     // 2D
-    std::string getDescription( mpl::int_<2> ) const;
+    std::string getDescription2D() const;
     // 3D
-    std::string getDescription( mpl::int_<3> ) const;
+    std::string getDescription3D() const;
 
 private:
 
-    std::string _M_descr;
+    std::string M_descr;
 };
 
 } // Feel
-
-#if !defined( FEEL_INSTANTIATION_MODE )
-# include <feel/feelfilters/gmshsimplexdomain.cpp>
-#endif // FEEL_INSTANTIATION_MODE
 
 #endif /* __GmshSimplexDomain_H */

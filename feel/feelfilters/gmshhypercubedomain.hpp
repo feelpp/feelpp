@@ -40,7 +40,6 @@ namespace Feel
  * \ingroup Importer
  * @author Christophe Prud'homme
  */
-template<int Dim, int Order, int RDim, template<uint16_type, uint16_type, uint16_type> class Entity >
 class GmshHypercubeDomain : public Gmsh
 {
     typedef Gmsh super;
@@ -50,31 +49,16 @@ public:
     /** @name Constants and Typedefs
      */
     //@{
-    static const uint16_type nDim = Dim;
-    static const uint16_type nOrder = Order;
-    static const uint16_type nRealDim = RDim;
-
-    typedef Entity<Dim,Order, nRealDim> entity_type;
-
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
 
-    GmshHypercubeDomain()
-        :
-        super(Dim, Order)
-    {
-    }
-
-    GmshHypercubeDomain( GmshHypercubeDomain const & td )
-        :
-        super( td )
-    {
-    }
-    ~GmshHypercubeDomain()
-    {}
+    GmshHypercubeDomain( int dim, int order );
+    GmshHypercubeDomain( int dim, int order, int rdim, bool use_hypercube );
+    GmshHypercubeDomain( GmshHypercubeDomain const & td );
+    ~GmshHypercubeDomain();
 
     //@}
 
@@ -108,18 +92,16 @@ public:
 
 
 private:
-    std::string getDescription() const
-    {return getDescription( mpl::int_<nDim>(), mpl::bool_<entity_type::is_simplex_product>() );}
+    int M_rdim;
+    bool M_use_hypercube;
+    //
+    std::string getDescription() const;
     // 1D
-    std::string getDescription( mpl::int_<1>, mpl::bool_<false> ) const;
-    std::string getDescription( mpl::int_<1>, mpl::bool_<true> ) const
-    { return getDescription( mpl::int_<1>(), mpl::bool_<false>() ); }
+    std::string getDescription1D() const;
     // 2D
-    std::string getDescription( mpl::int_<2>, mpl::bool_<false> ) const;
-    std::string getDescription( mpl::int_<2>, mpl::bool_<true> ) const;
+    std::string getDescription2D() const;
     // 3D
-    std::string getDescription( mpl::int_<3>, mpl::bool_<false>, bool do_recombine = false ) const;
-    std::string getDescription( mpl::int_<3>, mpl::bool_<true> ) const;
+    std::string getDescription3D() const;
 
 private:
 
@@ -127,9 +109,5 @@ private:
 };
 
 } // Feel
-
-#if !defined( FEEL_INSTANTIATION_MODE )
-# include <feel/feelfilters/gmshhypercubedomain.cpp>
-#endif // FEEL_INSTANTIATION_MODE
 
 #endif /* __GmshHypercubeDomain_H */
