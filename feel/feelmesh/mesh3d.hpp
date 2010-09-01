@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,7 @@
        Date: 2005-11-14
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -139,6 +139,8 @@ public:
     typedef Edges<typename Shape::template shape<1>::type> super_edges;
     typedef typename super_edges::edges_type edges_type;
     typedef typename super_edges::edge_type edge_type;
+    typedef typename super_edges::edge_iterator edge_iterator;
+    typedef typename super_edges::edge_const_iterator edge_const_iterator;
 
     typedef typename std::pair<size_type, size_type> edge_pair_type;
 
@@ -585,6 +587,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                                     for ( uint16_type k = 0;k < 2 + face_type::nbPtsPerEdge;k++ )
                                         edg.setPoint( k, ifa->point( bele.eToP( j, k ) ) );
                                     inheritWeakerMarker( edg );
+                                    edg.addElement( ifa->ad_first() );
                                     this->addEdge( edg );
                                 }
                         }
@@ -621,6 +624,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                             for ( uint16_type k = 0; k < 2 + element_type::nbPtsPerEdge; k++ )
                                 edg.setPoint( k, elt_it->point( k ) );
                             inheritWeakerMarker( edg );
+                            edg.addElement( vid );
                             this->addEdge( edg );
                         }
 
@@ -672,6 +676,23 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 }
         }
     Debug( 4015 ) << "[Mesh3D::updateEdges] updating edges orientation : " << ti.elapsed() << "\n";
+    ti.restart();
+
+    edge_iterator e_it = this->beginEdge();
+    edge_iterator e_en = this->endEdge();
+    for ( ;e_it!=e_en; ++e_it)
+    {
+        // cleanup the edge data structure :
+
+        if ( e_it->numberOfElements() == 0)
+        {
+            // remove all edges that are not connected to any elements
+            this->edges().erase( e_it );
+        }
+
+    }
+    Debug( 4015 ) << "[Mesh3D::updateEdges] cleaning up edges : " << ti.elapsed() << "\n";
+
     ti.restart();
 }
 
