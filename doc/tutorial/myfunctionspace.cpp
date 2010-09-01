@@ -239,6 +239,7 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
 int
 main( int argc, char** argv )
 {
+    Feel::Assert::setLog( "myfunctionspace.assert");
     Application app( argc, argv, makeAbout(), makeOptions() );
 
     if ( app.vm().count( "help" ) )
@@ -261,7 +262,7 @@ main( int argc, char** argv )
     //app.add( new MyFunctionSpace<2,4>( app.vm(), app.about() ) );
     //app.add( new MyFunctionSpace<2,5>( app.vm(), app.about() ) );
 #else
-    app.add( new MyFunctionSpace<3,1>( app.vm(), app.about() ) );
+    app.add( new MyFunctionSpace<3,3>( app.vm(), app.about() ) );
 // need to be debugged
 #if 0
 
