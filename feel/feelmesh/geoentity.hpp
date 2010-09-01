@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -110,11 +110,12 @@ public:
     GeoEntity()
         :
         super(),
-        _M_id( 0 ),
-        _M_entity( MESH_ENTITY_INTERNAL ),
-        _M_geometry( Geometry ),
-        _M_shape( Shape ),
-        _M_pid( 0 )
+        M_id( 0 ),
+        M_entity( MESH_ENTITY_INTERNAL ),
+        M_geometry( Geometry ),
+        M_shape( Shape ),
+        M_pid( 0 ),
+        M_elist()
         {}
 
     explicit GeoEntity( size_type i,
@@ -123,32 +124,35 @@ public:
                         size_type context = MESH_ENTITY_INTERNAL )
         :
         super(),
-        _M_id( i ),
-        _M_entity( context ),
-        _M_geometry( geometry ),
-        _M_shape( shape ),
-        _M_pid( 0 )
+        M_id( i ),
+        M_entity( context ),
+        M_geometry( geometry ),
+        M_shape( shape ),
+        M_pid( 0 ),
+        M_elist()
         {}
 
     GeoEntity( GeoEntity const& __me )
         :
         super(),
-        _M_id( __me._M_id ),
-        _M_entity( __me._M_entity ),
-        _M_geometry( __me._M_geometry ),
-        _M_shape( __me._M_shape ),
-        _M_pid( __me._M_pid )
+        M_id( __me.M_id ),
+        M_entity( __me.M_entity ),
+        M_geometry( __me.M_geometry ),
+        M_shape( __me.M_shape ),
+        M_pid( __me.M_pid ),
+        M_elist( __me.M_elist )
         {}
 
     GeoEntity& operator=( GeoEntity const& __me )
         {
             if ( this != &__me )
             {
-                _M_id = __me._M_id;
-                _M_entity = __me._M_entity;
-                _M_geometry = __me._M_geometry;
-                _M_shape = __me._M_shape;
-                _M_pid = __me._M_pid;
+                M_id = __me.M_id;
+                M_entity = __me.M_entity;
+                M_geometry = __me.M_geometry;
+                M_shape = __me.M_shape;
+                M_pid = __me.M_pid;
+                M_elist = __me.M_elist;
             }
             return *this;
         }
@@ -163,16 +167,16 @@ public:
     //@{
     bool operator==( GeoEntity const& e ) const
         {
-            return _M_id == e.id();
+            return M_id == e.id();
         };
     bool operator<( GeoEntity const& e ) const
         {
-            return _M_id < e.id();
+            return M_id < e.id();
         };
 
     bool operator<( size_type __i ) const
         {
-            return _M_id < __i;
+            return M_id < __i;
         };
 
     //@}
@@ -183,7 +187,7 @@ public:
 
     size_type id() const
         {
-            return _M_id;
+            return M_id;
         }
 
 
@@ -244,77 +248,77 @@ public:
      *
      * @return true if the entoty has the shape \c __shape, false otherwise
      */
-    bool hasShape( size_type __shape ) const { return _M_shape.test( __shape ); }
+    bool hasShape( size_type __shape ) const { return M_shape.test( __shape ); }
 
     /**
      * @return true of the entity is a volume
      */
-    bool isAVolume() const { return _M_geometry.test( GEOMETRY_VOLUME ); }
+    bool isAVolume() const { return M_geometry.test( GEOMETRY_VOLUME ); }
 
     /**
      * @return true of the entity is a surface
      */
-    bool isASurface() const { return _M_geometry.test( GEOMETRY_SURFACE ); }
+    bool isASurface() const { return M_geometry.test( GEOMETRY_SURFACE ); }
 
     /**
      * @return true of the entity is a line
      */
-    bool isALine() const { return _M_geometry.test( GEOMETRY_LINE ); }
+    bool isALine() const { return M_geometry.test( GEOMETRY_LINE ); }
 
     /**
      * @return true of the entity is a point
      */
-    bool isAPoint() const { return _M_geometry.test( GEOMETRY_POINT ); }
+    bool isAPoint() const { return M_geometry.test( GEOMETRY_POINT ); }
 
     /**
      * @return true of the entity is a shape point
      */
-    bool isAPointShape() const { return _M_shape.test( SHAPE_POINT ); }
+    bool isAPointShape() const { return M_shape.test( SHAPE_POINT ); }
 
     /**
      * @return true of the entity is a shape line
      */
-    bool isALineShape() const { return _M_shape.test( SHAPE_LINE ); }
+    bool isALineShape() const { return M_shape.test( SHAPE_LINE ); }
 
     /**
      * @return true of the entity is a triangle shape
      */
-    bool isATriangleShape() const { return _M_shape.test( SHAPE_TRIANGLE ); }
+    bool isATriangleShape() const { return M_shape.test( SHAPE_TRIANGLE ); }
 
     /**
      * @return true of the entity is a quadrangle
      */
-    bool isAQuadrangleShape() const { return _M_shape.test( SHAPE_QUAD ); }
+    bool isAQuadrangleShape() const { return M_shape.test( SHAPE_QUAD ); }
 
     /**
      * @return true of the entity is a tetrahedra shape
      */
-    bool isATetrahedraShape() const { return _M_shape.test( SHAPE_TETRA ); }
+    bool isATetrahedraShape() const { return M_shape.test( SHAPE_TETRA ); }
 
     /**
      * @return true of the entity is a hexahedra
      */
-    bool isAHexahedraShape() const { return _M_shape.test( SHAPE_HEXA ); }
+    bool isAHexahedraShape() const { return M_shape.test( SHAPE_HEXA ); }
 
     /**
      * @return true if the shape is linear, false otherwise
      */
-    bool isLinear() const { return _M_shape.test( SHAPE_LINEAR ); }
+    bool isLinear() const { return M_shape.test( SHAPE_LINEAR ); }
 
     /**
      * @return true if the shape is bilinear, false otherwise
      */
-    bool isBilinear() const { return _M_shape.test( SHAPE_BILINEAR ); }
+    bool isBilinear() const { return M_shape.test( SHAPE_BILINEAR ); }
 
     /**
      * @return true if the shape is quadratic, false otherwise
      */
-    bool isQuadratic() const { return _M_shape.test( SHAPE_QUADRATIC ); }
+    bool isQuadratic() const { return M_shape.test( SHAPE_QUADRATIC ); }
 
     /**
      * @return true if the entity is internal, false otherwise
      */
-    bool isInternal() const { return _M_entity.test( MESH_ENTITY_INTERNAL ); }
+    bool isInternal() const { return M_entity.test( MESH_ENTITY_INTERNAL ); }
 
 
     /**
@@ -323,19 +327,19 @@ public:
      */
     bool isOnBoundary() const
         {
-            return _M_entity.test( MESH_ENTITY_BOUNDARY );
+            return M_entity.test( MESH_ENTITY_BOUNDARY );
         };
 
     /**
      * \return the processor id of the entity
      */
-    uint16_type processId() const { return _M_pid; }
+    uint16_type processId() const { return M_pid; }
 
     /**
      * set the processor id of the entity
      & \param pid processor id
      */
-    void setProcessId( uint16_type pid )  { _M_pid = pid ; }
+    void setProcessId( uint16_type pid )  { M_pid = pid ; }
 
     /**
      * \return \c true if active, \c false otherwise
@@ -357,7 +361,7 @@ public:
     //@{
     void setId( size_type id )
         {
-            _M_id = id;
+            M_id = id;
         }
 
     /**
@@ -368,13 +372,13 @@ public:
         {
             if ( b )
             {
-                _M_entity.set( MESH_ENTITY_BOUNDARY );
-                _M_entity.clear( MESH_ENTITY_INTERNAL );
+                M_entity.set( MESH_ENTITY_BOUNDARY );
+                M_entity.clear( MESH_ENTITY_INTERNAL );
             }
             else
             {
-                _M_entity.clear( MESH_ENTITY_BOUNDARY );
-                _M_entity.set( MESH_ENTITY_INTERNAL );
+                M_entity.clear( MESH_ENTITY_BOUNDARY );
+                M_entity.set( MESH_ENTITY_INTERNAL );
             }
         }
 
@@ -409,6 +413,21 @@ public:
             return super::f2e( __localFace, __edge );
         }
 
+    /**
+     * add a new element to which the point belongs
+     */
+    self_type& addElement( size_type e ) { M_elist.insert( e ); return *this; }
+
+    /**
+     * \return the number of elements whom the point belongs to
+     */
+    size_type numberOfElements() const { return M_elist.size(); }
+
+    /**
+     * \return the set of ids of elements whom the point belongs to
+     */
+    std::set<size_type> const& elements() const { return M_elist; }
+
     //@}
 
 
@@ -417,13 +436,17 @@ protected:
 
 private:
 
-    size_type _M_id;
+    size_type M_id;
 
-    Context _M_entity;
-    Context _M_geometry;
-    Context _M_shape;
+    Context M_entity;
+    Context M_geometry;
+    Context M_shape;
 
-    uint16_type _M_pid;
+    uint16_type M_pid;
+
+    //! element list to which the point belongs
+    std::set<size_type> M_elist;
+
 };
 
 typedef GeoEntity<Simplex<0, 1> > GeoPoint;

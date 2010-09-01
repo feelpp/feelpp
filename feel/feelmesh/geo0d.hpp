@@ -360,21 +360,6 @@ public:
         }
 
     /**
-     * add a new element to which the point belongs
-     */
-    self_type& addElement( size_type e ) { M_elist.insert( e ); return *this; }
-
-    /**
-     * \return the number of elements whom the point belongs to
-     */
-    size_type numberOfElements() const { return M_elist.size(); }
-
-    /**
-     * \return the set of ids of elements whom the point belongs to
-     */
-    std::set<size_type> const& elements() const { return M_elist; }
-
-    /**
      * set the geometric dimension of the entity the points belongs to
      */
     void setGDim( int gdim ) { M_gdim = gdim; M_is_parametric = true; }
@@ -407,9 +392,6 @@ private:
     Marker1 M_marker1;
     Marker2 M_marker2;
     Marker3 M_marker3;
-
-    //! element list to which the point belongs
-    std::set<size_type> M_elist;
 
     int M_gdim;
     int M_gtag;
