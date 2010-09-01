@@ -101,7 +101,7 @@ public:
 
     //# marker2 #
     //! the basis type of our approximation space
-    typedef bases<Lagrange<Order,Scalar,Discontinuous> > basis_type;
+    typedef bases<Lagrange<Order,Scalar,Continuous> > basis_type;
 
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
@@ -178,6 +178,7 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     //# marker31 #
     //! create the mesh
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                         _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % shape % Dim % Order).str() ,
                                                       _shape=shape,
                                                       _dim=Dim,
@@ -262,11 +263,12 @@ main( int argc, char** argv )
 #else
     app.add( new MyFunctionSpace<3,1>( app.vm(), app.about() ) );
 // need to be debugged
-//#if 0
+#if 0
 
     app.add( new MyFunctionSpace<3,2>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<3,3>( app.vm(), app.about() ) );
     app.add( new MyFunctionSpace<3,4>( app.vm(), app.about() ) );
+#endif
 #endif
     app.run();
 }
