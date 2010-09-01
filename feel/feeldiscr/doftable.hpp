@@ -1291,16 +1291,16 @@ private:
 
 
     template<typename FaceIterator>
-    void addFaceBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type lc )
+    void addFaceBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc )
     {
         addFaceBoundaryDof( __face_it, c, lc, mpl::bool_<face_type::numFaces*fe_type::nDofPerFace>() );
     }
     template<typename FaceIterator>
-    void addFaceBoundaryDof( FaceIterator /*__face_it*/, uint16_type, uint16_type /*lc*/, mpl::bool_<false> )
+    void addFaceBoundaryDof( FaceIterator /*__face_it*/, uint16_type, uint16_type& /*lc*/, mpl::bool_<false> )
     {
     }
     template<typename FaceIterator>
-    void addFaceBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type lc, mpl::bool_<true> )
+    void addFaceBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc, mpl::bool_<true> )
     {
         // id of the element adjacent to the face
         // \warning NEED TO INVESTIGATE THIS
@@ -2235,6 +2235,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
                         face_type::numEdges * fe_type::nDofPerEdge +
                         face_type::numFaces * fe_type::nDofPerFace );
     _M_n_dof_per_face_on_bdy = nDofF;
+    Debug( 5005 ) << "vertex dof : " <<  face_type::numVertices * fe_type::nDofPerVertex << "\n";
+    Debug( 5005 ) << "edge dof : " <<  face_type::numEdges * fe_type::nDofPerEdge << "\n";
+    Debug( 5005 ) << "face dof : " << face_type::numFaces * fe_type::nDofPerFace  << "\n";
     Debug( 5005 ) << "number of Dof on an Element Face : " << nDofF << "\n";
 
     //
@@ -2281,7 +2284,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
                     addEdgeBoundaryDof( __face_it, c, lc );
                     addFaceBoundaryDof( __face_it, c, lc );
 
-                    FEEL_ASSERT( lc == (c+1)*nDofF-1 )( lc )( c )( nDofF )( (c+1)*nDofF-1 ).warn( "invalid face local dof construction");
+                    FEEL_ASSERT( lc == (c+1)*nDofF )( lc )( c )( nDofF )( (c+1)*nDofF ).warn( "invalid face local dof construction");
                 }
         }
 #if !defined(NDEBUG)
