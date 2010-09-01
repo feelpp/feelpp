@@ -2281,7 +2281,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
                     addEdgeBoundaryDof( __face_it, c, lc );
                     addFaceBoundaryDof( __face_it, c, lc );
 
-                    FEEL_ASSERT( lc == (c+1)*nDofF )( lc )( c )( nDofF )( (c+1)*nDofF ).warn( "invalid face local dof construction");
+                    FEEL_ASSERT( lc == (c+1)*nDofF-1 )( lc )( c )( nDofF )( (c+1)*nDofF-1 ).warn( "invalid face local dof construction");
                 }
         }
 #if !defined(NDEBUG)
