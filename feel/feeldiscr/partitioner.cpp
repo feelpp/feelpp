@@ -155,6 +155,12 @@ typedef Mesh<Hypercube<3,1,3> > meshsp31_t;
 const bool meshsp31e = Partitioner<meshsp31_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshsp31_t> );
 const bool meshsp31g = Partitioner<meshsp31_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshsp31_t> );
 
+//
+// SimplexProduct 3,2
+//
+typedef Mesh<Hypercube<3,2,3> > meshsp32_t;
+const bool meshsp32e = Partitioner<meshsp32_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshsp32_t> );
+const bool meshsp32g = Partitioner<meshsp32_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshsp32_t> );
 
 } // detail
 
@@ -211,6 +217,8 @@ template class Partitioner<Mesh<Simplex<2,1,3> > >;
 template class Partitioner<Mesh<Hypercube<1,1,1> > >;
 template class Partitioner<Mesh<Hypercube<2,1,2> > >;
 template class Partitioner<Mesh<Hypercube<3,1,3> > >;
+template class Partitioner<Mesh<Hypercube<3,2,3> > >;
+
 #endif // FEEL_INSTANTIATION_MODE
 }
 
