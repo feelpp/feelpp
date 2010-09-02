@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 
   This file is part of the Feel library
@@ -10,7 +10,7 @@
 
   Date: 2008-02-07
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -83,7 +83,7 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Laplacian Vectorial on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008 Université Joseph Fourier");
+                     "Copyright (c) 2008 UniversitÃ© Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     about.addAuthor("Benoit Perrimond", "developer", "Benoit.Perrimond@bvra.e.ujf-grenoble.fr", "");
@@ -224,7 +224,7 @@ LaplacianV<Dim,Order, RDim>::createMesh( double meshSize )
 {
     mesh_ptrtype mesh( new mesh_type );
 
-    GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Simplex> td;
+    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube);
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( -1, 1 ) );
     if(Dim>=2)  td.setY( std::make_pair( -1, 1 ) );
