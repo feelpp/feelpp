@@ -252,7 +252,7 @@ Laplacian<Dim,Order,RDim,Entity>::createMesh( double meshSize )
 {
     mesh_ptrtype mesh( new mesh_type );
 
-    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim, !entity_type::is_simplex );
+    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim, entity_type::is_hypercube );
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( -1, 1 ) );
     if((Dim==1) && (RDim==2))  td.setY( std::make_pair( 1, 1 ) );

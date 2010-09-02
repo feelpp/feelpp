@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -225,7 +225,7 @@ TestALE<N>::run()
       Define mesh for the curved boundaries
     */
     boost::shared_ptr<struct_mesh_type> struct_mesh( new struct_mesh_type );
-    GmshHypercubeDomain<1,1,1,Simplex> td;
+    GmshHypercubeDomain td(1,1,1,false);
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( 0, 5 ) );
     std::string fname = td.generate( "boundary_description" );
@@ -278,7 +278,7 @@ TestALE<N>::run()
     */
     boost::shared_ptr<mesh_type> mesh( new mesh_type );
 
-    GmshHypercubeDomain<2,1,2,Simplex> td2;
+    GmshHypercubeDomain td2(2,1,2,false);
     td2.setCharacteristicLength( meshSize );
     td2.setX( std::make_pair( 0, 5 ) );
     td2.setY( std::make_pair( -1, 1 ) );
