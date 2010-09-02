@@ -50,11 +50,11 @@ using boost::unit_test::test_suite;
 
 using namespace Feel;
 
-template<int Dim>
+template<int Dim, template <uint16_type,uint16_type,uint16_type> class Entity = Simplex>
 void
 checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simplex" )
 {
-    typedef Mesh<Simplex<Dim,1> > mesh_type;
+    typedef Mesh<Entity<Dim,1,Dim> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh;
@@ -75,6 +75,7 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
     BOOST_CHECK_EQUAL( std::distance( neumann.get<1>(), neumann.get<2>() )+
                        std::distance( dirichlet.get<1>(), dirichlet.get<2>() ),
                        std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ) );
+
 }
 BOOST_AUTO_TEST_SUITE( gmshsuite )
 
@@ -90,7 +91,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshhypercube_simplex, T, dim_types )
 }
 BOOST_AUTO_TEST_CASE_TEMPLATE( gmshhypercube_hypercube, T, dim_types )
 {
-    checkCreateGmshMesh<T::value>( "hypercube", "Hypercube" );
+    checkCreateGmshMesh<T::value, Hypercube>( "hypercube", "Hypercube" );
 }
 BOOST_AUTO_TEST_CASE_TEMPLATE( gmshellipsoid, T, dim_types )
 {
