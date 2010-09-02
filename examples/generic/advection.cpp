@@ -264,7 +264,7 @@ Advection<Dim,Order,Cont,Entity>::createMesh( double meshSize )
     mesh_ptrtype mesh( new mesh_type );
 
     std::ostringstream entity_str;
-    if (entity_type::is_simplex_product )
+    if (entity_type::is_hypercube )
         entity_str << "Hypercube";
     else
         entity_str << "Simplex";
@@ -276,7 +276,7 @@ Advection<Dim,Order,Cont,Entity>::createMesh( double meshSize )
     bool ring = this->vm()["ring"].template as<bool>();
     if (!ring)
 	{
-	    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_simplex_product);
+	    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube);
 	    td.setCharacteristicLength( meshSize );
 	    ImporterGmsh<mesh_type> import( td.generate( entity_str.str() ) );
 	    mesh->accept( import );

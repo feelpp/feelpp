@@ -67,7 +67,7 @@ public:
     typedef typename matrix_node<value_type>::type points_type;
 
     static const bool is_simplex = convex_type::is_simplex;
-    static const bool is_simplex_product = convex_type::is_simplex_product;
+    static const bool is_hypercube = convex_type::is_hypercube;
 
     static const uint32_type convexOrder = convex_type::nOrder;
     static const uint32_type topological_dimension = convex_type::topological_dimension;

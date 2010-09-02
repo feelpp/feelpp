@@ -375,7 +375,7 @@ public:
     static const size_type Shape = Convex::Shape;
 
     static const bool is_simplex = Convex::is_simplex;
-    static const bool is_simplex_product = Convex::is_simplex_product;
+    static const bool is_hypercube = Convex::is_hypercube;
 
     typedef Reference<Convex, Dim, Convex::nOrder, Dim, value_type> reference_convex_type;
 
@@ -400,7 +400,7 @@ public:
 
     PointSetGaussLobatto( int interior = 0 )
     {
-        FEEL_ASSERT( is_simplex_product || (Dim == 1)  ).error("gauss lobatto points are just defined in simplex products");
+        FEEL_ASSERT( is_hypercube || (Dim == 1)  ).error("gauss lobatto points are just defined in simplex products");
 
         nodes_type pts( Dim, numPoints );
 

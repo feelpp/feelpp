@@ -234,7 +234,7 @@ LaplacianML<Dim,Order>::createMesh()
     mesh_ptrtype mesh( new mesh_type );
     //mesh->setRenumber( false );
 
-    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_simplex_product);
+    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube);
     td.setCharacteristicLength( h );
     td.setX( std::make_pair( -1., 1. ) );
     td.setY( std::make_pair( -1., 1. ) );

@@ -217,7 +217,7 @@ private:
 public:
 
     static const bool is_simplex = true;
-    static const bool is_simplex_product = false;
+    static const bool is_hypercube = false;
 
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;

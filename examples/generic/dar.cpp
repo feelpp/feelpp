@@ -210,7 +210,7 @@ Dar<Dim,Order,Cont,Entity>::createMesh( double meshSize )
     timers["mesh"].first.restart();
     mesh_ptr_type mesh( new mesh_type );
 
-    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_simplex_product);
+    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube);
     td.setCharacteristicLength( meshSize );
     std::string fname = td.generate( entity_type::name().c_str() );
 

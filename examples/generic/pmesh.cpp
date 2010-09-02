@@ -239,7 +239,7 @@ Laplacian<Dim,Order,Cont,Entity,FType>::createMesh( double meshSize, double ymin
     mesh_ptr_type mesh( new mesh_type );
     //mesh->setRenumber( false );
 
-    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_simplex_product);
+    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube);
     td.setCharacteristicLength( meshSize );
     td.setY( std::make_pair( ymin, ymax ) );
     std::string fname = td.generate( entity_type::name().c_str() );
