@@ -32,7 +32,7 @@
 #include <feel/feelcore/feel.hpp>
 
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
-#include <feel/feelmesh/geoentity.hpp>
+
 
 namespace Feel
 {
