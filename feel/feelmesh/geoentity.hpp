@@ -91,7 +91,7 @@ public:
     typedef Entity convex_type;
 
     static const bool is_simplex = super::is_simplex;
-    static const bool is_simplex_product = super::is_simplex_product;
+    static const bool is_hypercube = super::is_hypercube;
 
     /**
      * helper class to construct the associated reference convex.

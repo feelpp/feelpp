@@ -1,5 +1,5 @@
 
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -290,7 +290,7 @@ StVenantKirchhoff<Dim,Order>::createMesh( double meshSize, double ymin, double y
     mesh_ptrtype mesh( new mesh_type );
     //mesh->setRenumber( false );
 
-    GmshHypercubeDomain<Dim,1,Dim,Entity> td;
+    GmshHypercubeDomain td(Dim,1,Dim,entity_type::is_hypercube);
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( 0, 20 ) );
     td.setY( std::make_pair( -1, 1 ) );

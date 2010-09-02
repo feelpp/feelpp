@@ -69,7 +69,7 @@ public :
     static const size_type Shape = Convex::Shape;
 
     static const bool is_simplex = Convex::is_simplex;
-    static const bool is_simplex_product = Convex::is_simplex_product;
+    static const bool is_hypercube = Convex::is_hypercube;
 
     typedef typename super::return_type return_type;
 
@@ -1244,14 +1244,14 @@ private :
 template< class Convex,
           uint16_type Order,
           typename T = double >
-class PointSetFekete : public mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_simplex_product>, mpl::bool_<true> >,
+class PointSetFekete : public mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_hypercube>, mpl::bool_<true> >,
                                                 mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<1> > >,
                                        mpl::identity<PointSetGaussLobatto<Convex,Order,T> >,
                                        typename mpl::if_<mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<3> >,
                                                          mpl::identity<PointSetWarpBlend<Convex,Order,T> >,
                                                          mpl::identity<PointSetFeketeSimplex<Convex,Order,T> > >::type >::type::type
 {
-    typedef typename mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_simplex_product>, mpl::bool_<true> >,
+    typedef typename mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_hypercube>, mpl::bool_<true> >,
                                        mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<1> > >,
                               mpl::identity<PointSetGaussLobatto<Convex,Order,T> >,
                               typename mpl::if_<mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<3> >,

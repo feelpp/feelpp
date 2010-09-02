@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-02-18
 
-  Copyright (C) 2007,2008 Université Joseph Fourier (Grenoble)
+  Copyright (C) 2007-2010 UniversitÃ© Joseph Fourier (Grenoble)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -71,7 +71,7 @@ makeAbout()
                            "0.1",
                            "Linear elasticity model for a beam",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2007,2008 Universite Joseph Fourier");
+                           "Copyright (c) 2007-2010 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -192,7 +192,7 @@ Beam<nDim,nOrder>::createMesh( double meshSize )
     timers["mesh"].first.restart();
     mesh_ptrtype mesh( new mesh_type );
 
-    GmshHypercubeDomain<Dim,1,Dim,Simplex> td;
+    GmshHypercubeDomain td(Dim,1,Dim,false);
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( 0, 20 ) );
     td.setY( std::make_pair( -1, 1 ) );

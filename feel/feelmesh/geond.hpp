@@ -110,7 +110,7 @@ public:
     static const uint16_type nOrder = super::nOrder;
     static const uint16_type nRealDim = super::nRealDim;
 
-    typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex_product>,
+    typedef typename mpl::if_<mpl::bool_<GeoShape::is_hypercube>,
                               mpl::identity<GT_Lagrange<nDim, nOrder, Hypercube, T> >,
                               mpl::identity<GT_Lagrange<nDim, nOrder, Simplex, T> > >::type::type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
