@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 
   This file is part of the Feel library
@@ -8,9 +8,7 @@
   Perrimond Benoit <Benoit.Perrimond@bvra.e.ujf-grenoble.fr>
   Vincent Chabannes <vincent.chabannes@gmail.com>
 
-  Date: 2008-02-07
-
-  Copyright (C) 2008 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -84,7 +82,7 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Laplacian on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008 Universit� Joseph Fourier");
+                     "Copyright (c) 2008-2010 Université Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     about.addAuthor("Benoit Perrimond", "developer", "Benoit.Perrimond@bvra.e.ujf-grenoble.fr", "");
@@ -254,7 +252,7 @@ Laplacian<Dim,Order,RDim,Entity>::createMesh( double meshSize )
 {
     mesh_ptrtype mesh( new mesh_type );
 
-    GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
+    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim, !entity_type::is_simplex );
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( -1, 1 ) );
     if((Dim==1) && (RDim==2))  td.setY( std::make_pair( 1, 1 ) );
