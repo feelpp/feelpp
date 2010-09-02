@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -276,7 +276,7 @@ Advection<Dim,Order,Cont,Entity>::createMesh( double meshSize )
     bool ring = this->vm()["ring"].template as<bool>();
     if (!ring)
 	{
-	    GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
+	    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_simplex_product);
 	    td.setCharacteristicLength( meshSize );
 	    ImporterGmsh<mesh_type> import( td.generate( entity_str.str() ) );
 	    mesh->accept( import );

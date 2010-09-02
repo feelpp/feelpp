@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -280,7 +280,7 @@ Laplacian<Order>::createMesh( double meshSize )
 	int anisomesh = this->vm()["anisomesh"].template as<int>();
 
 	if(anisomesh==0) {
-		GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Hypercube> td;
+		GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_simplex_product);
 		td.setCharacteristicLength( meshSize );
 		td.setX( std::make_pair( -1, 1 ) );
 		td.setY( std::make_pair( -1, 1 ) );
