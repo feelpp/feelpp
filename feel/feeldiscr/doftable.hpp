@@ -1858,7 +1858,9 @@ DofTable<MeshType, FEType, PeriodicityType>::initDofMap( mesh_type& M )
             _M_el_l2g[i1][i2] = boost::make_tuple(invalid_size_type_value,0,false); // 0 is the invalid value for the sign !
 
     _M_face_sign = ublas::scalar_vector<bool>(M.numFaces(), false);
-    generateFacePermutations( M, mpl::bool_< ((Shape == SHAPE_TETRA && nOrder > 2 ) || (Shape == SHAPE_HEXA && nOrder > 1 ))>() );
+    const bool doperm = ((Shape == SHAPE_TETRA && nOrder > 2 ) || (Shape == SHAPE_HEXA && nOrder > 1 ));
+    Debug( 5005 ) << "generateFacePermutations: " << doperm << "\n";
+    generateFacePermutations( M, mpl::bool_<doperm>() );
 }
 template<typename MeshType, typename FEType, typename PeriodicityType>
 size_type
@@ -2270,6 +2272,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
                         ( __face_it->marker() )
                         ( __face_it->isConnectedTo0() )
                         ( __face_it->isConnectedTo1() ).warn( "[Dof::buildFaceDofMap] face not connected" );
+
+                    if ( !__face_it->isConnectedTo0() ) continue;
+
 #if !defined(NDEBUG)
                     if (  __face_it->isOnBoundary() )
                         Debug( 5005 ) << "[buildBoundaryDofMap] boundary global face id : " << __face_it->id()
