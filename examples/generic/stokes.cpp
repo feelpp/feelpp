@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,7 @@
        Date: 2008-01-04
 
   Copyright (C) 2008 Christophe Prud'homme
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -215,7 +215,7 @@ Stokes<Dim,Order,Entity>::createMesh( double meshSize )
     mesh_ptrtype mesh( new mesh_type );
 
 
-    GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Entity> td;
+    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_simplex_product);
     td.setCharacteristicLength( meshSize );
     std::string fname = td.generate( entity_type::name().c_str() );
 
