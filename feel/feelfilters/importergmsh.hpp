@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -497,6 +497,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                                 }
                         }
                     break;
+                case GMSH_QUADRANGLE:
+                case GMSH_QUADRANGLE_2:
                 case GMSH_TRIANGLE:
                 case GMSH_TRIANGLE_2:
                 case GMSH_TRIANGLE_3:
@@ -724,6 +726,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
     pf.setTags(  tag  );
 
     if ( type == GMSH_QUADRANGLE ||
+         type == GMSH_QUADRANGLE_2 ||
          type == GMSH_TRIANGLE ||
          type == GMSH_TRIANGLE_2 ||
          type == GMSH_TRIANGLE_3 ||
@@ -742,7 +745,8 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
     _M_n_vertices[ __e[0] ] = 1;
     _M_n_vertices[ __e[1] ] = 1;
     _M_n_vertices[ __e[2] ] = 1;
-    if ( type == GMSH_QUADRANGLE )
+    if ( type == GMSH_QUADRANGLE ||
+         type == GMSH_QUADRANGLE_2 )
         _M_n_vertices[ __e[3] ] = 1;
 }
 template<typename MeshType>
@@ -756,6 +760,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
     pf.setTags(  tag  );
 
     if ( type == GMSH_QUADRANGLE ||
+         type == GMSH_QUADRANGLE_2 ||
          type == GMSH_TRIANGLE ||
          type == GMSH_TRIANGLE_2 ||
          type == GMSH_TRIANGLE_3 ||
@@ -775,7 +780,8 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
     _M_n_vertices[ __e[1] ] = 1;
     _M_n_vertices[ __e[2] ] = 1;
 
-    if ( type == GMSH_QUADRANGLE )
+    if ( type == GMSH_QUADRANGLE ||
+         type == GMSH_QUADRANGLE_2 )
         _M_n_vertices[ __e[3] ] = 1;
 }
 
