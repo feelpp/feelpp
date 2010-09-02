@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-10-11
 
-  Copyright (C) 2007 Université Joseph Fourier Grenoble 1
+  Copyright (C) 2007-2010 Université Joseph Fourier Grenoble 1
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@
 #include <feel/feelcore/parameter.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelmesh/simplex.hpp>
+
 
 namespace Feel
 {

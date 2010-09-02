@@ -30,7 +30,6 @@
 #define __GMSHTENSORIZEDDOMAIN_HPP 1
 
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
-#include <feel/feelmesh/geoentity.hpp>
 
 namespace Feel
 {
@@ -204,17 +203,17 @@ GmshHypercubeDomain::getDescription3D() const
          << "Point(2) = {b,c,e,h};\n"
          << "Point(3) = {b,d,e,h};\n"
          << "Point(4) = {a,d,e,h};\n"
-         << "Line(1) = {1,4};\n"
-         << "Line(2) = {4,3};\n"
-         << "Line(3) = {3,2};\n"
-         << "Line(4) = {2,1};\n"
-         << "Line Loop(5) = {3,4,1,2};\n"
+         << "Line(1) = {2,3};\n"
+         << "Line(2) = {3,4};\n"
+         << "Line(3) = {4,1};\n"
+         << "Line(4) = {1,2};\n"
+         << "Line Loop(5) = {2,3,4,1};\n"
          << "Plane Surface(6) = {5};\n"
          << "\n"
          << "Extrude Surface {6, {0,0,f-e} } {\n"
          << "  Layers { {(f-e)/h}, {1.0} };\n";
-    //if ( do_recombine )
-    //ostr << "  Recombine;\n";
+    if ( M_use_hypercube )
+        ostr << "  Recombine;\n";
 
     ostr << "};\n"
          << "Physical Line(1) = {1};\n"
@@ -243,15 +242,15 @@ GmshHypercubeDomain::getDescription3D() const
              << "ny = 1/h;\n"
              << "nz = 1/h;\n"
              << "\n"
-             << "Transfinite Line {4,10,2,8} = nx Using Progression 1;\n"
-             << "Transfinite Line {3,9,1,11} = ny Using Progression 1;\n"
-             << "Transfinite Line {14,18,13,22} = nz Using Progression 1;\n"
+             << "Transfinite Line {4,10,2,8} = nx + 1  Using Progression 1;\n"
+             << "Transfinite Line {3,9,1,11} = ny + 1 Using Progression 1;\n"
+             << "Transfinite Line {14,18,13,22} = nz + 1 Using Progression 1;\n"
              << "\n"
-             << "//Transfinite Surface {23} = {1,10,14,2};\n"
-             << "//Transfinite Surface {19} = {1,10,6,4};\n"
-             << "//Transfinite Surface {15} = {4,6,5,3};\n"
-             << "Transfinite Surface {6} = {2,1,4,3};\n"
-             << "//Transfinite Surface {27} = {14,2,3,5};\n"
+             << "//Transfinite Surface {23} = {14,2,1,10};\n"
+             << "//Transfinite Surface {19} = {6,10,1,4};\n"
+             << "//Transfinite Surface {15} = {5,3,4,6};\n"
+             << "Transfinite Surface {6} = {3,2,1,4};\n"
+             << "//Transfinite Surface {27} = {5,14,2,3};\n"
              << "//Transfinite Surface {28} = {6,10,14,5};\n"
              << "Recombine Surface {27,23,6,19,15,28};\n";
     }
