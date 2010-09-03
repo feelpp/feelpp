@@ -461,7 +461,8 @@ struct HypercubeDomain
     HypercubeDomain( int _Dim, int _Order, int _RDim, std::string const& hyp )
         :
         Dim( _Dim ), Order( _Order ), RDim( _RDim ), Hyp( hyp == "Hypercube" )
-        {}
+        {
+        }
     Gmsh* operator()() { return new GmshHypercubeDomain(Dim, Order, RDim, Hyp); }
     int Dim, Order,RDim;
     bool Hyp;
@@ -501,7 +502,7 @@ struct EllipsoidDomain
 
 
 #define FACTORY1NAME( LDIM, LORDER, LSHAPE )                             \
-    BOOST_PP_STRINGIZE((BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_RPAREN()))
+    BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_RPAREN())
 
 # define FACTORY1(LDIM,LORDER,LSHAPE )                                   \
 const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE))  = \
@@ -511,7 +512,7 @@ const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOS
 # define FACTORY1_OP(_, GDO) FACTORY1 GDO
 
 #define FACTORY2NAME( LDIM, LORDER, LSHAPE )                             \
-    BOOST_PP_STRINGIZE((BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_COMMA() BOOST_PP_ARRAY_ELEM(2,LSHAPE) BOOST_PP_RPAREN()))
+    BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_COMMA() BOOST_PP_ARRAY_ELEM(2,LSHAPE) BOOST_PP_RPAREN())
 
 # define FACTORY2(LDIM,LORDER,LSHAPE )                                   \
 const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE)), BOOST_PP_ARRAY_ELEM(2,LSHAPE))   = \
