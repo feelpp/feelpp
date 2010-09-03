@@ -9,7 +9,6 @@ using boost::unit_test::test_suite;
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/im.hpp>
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
@@ -104,8 +103,6 @@ public:
         super( argc, argv, ad, od ),
         meshSize( this->vm()["hsize"].as<double>() ) { }
 
-    mesh_ptrtype createMesh( double meshSize );
-
     void run();
 
     //-----------------------------------------------------------------------------------//
@@ -116,28 +113,6 @@ private:
     double meshSize;
 
 };
-
-//_____________________________________________________________________________________________________//
-//_____________________________________________________________________________________________________//
-
-Test_AOI::mesh_ptrtype
-Test_AOI::createMesh( double meshSize ) {
-
-    mesh_ptrtype mesh( new mesh_type );
-
-    GmshHypercubeDomain< convex_type::nDim,convex_type::nOrder,convex_type::nRealDim, Simplex> td;
-    td.setCharacteristicLength( meshSize );
-    td.setX( std::make_pair( 0, 1 ) );
-    td.setY( std::make_pair( 0, 1 ) );
-
-    std::string fname = td.generate( convex_type::name().c_str() );
-
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-
-    return mesh;
-
-}
 
 //_____________________________________________________________________________________________________//
 //_____________________________________________________________________________________________________//
@@ -164,7 +139,13 @@ Test_AOI::run()
 
     //-----------------------------------------------------------------------------------//
 
-    mesh_ptrtype mesh = createMesh( meshSize );
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type::nDim % 1).str() ,
+                                                      _shape="hypercube",
+                                                      _dim=convex_type::nDim,
+                                                      _order=1,
+                                                      _h=meshSize ) );
 
     //-----------------------------------------------------------------------------------//
 
