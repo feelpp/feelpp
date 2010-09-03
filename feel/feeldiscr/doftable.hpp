@@ -1858,7 +1858,7 @@ DofTable<MeshType, FEType, PeriodicityType>::initDofMap( mesh_type& M )
             _M_el_l2g[i1][i2] = boost::make_tuple(invalid_size_type_value,0,false); // 0 is the invalid value for the sign !
 
     _M_face_sign = ublas::scalar_vector<bool>(M.numFaces(), false);
-    const bool doperm = ((Shape == SHAPE_TETRA && nOrder > 2 ) || (Shape == SHAPE_HEXA && nOrder > 1 ));
+    const bool doperm = (((Shape == SHAPE_TETRA) && (nOrder > 2) ) || ((Shape == SHAPE_HEXA) && (nOrder > 1) ));
     Debug( 5005 ) << "generateFacePermutations: " << doperm << "\n";
     generateFacePermutations( M, mpl::bool_<doperm>() );
 }
