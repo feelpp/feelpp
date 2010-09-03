@@ -31,7 +31,6 @@
 
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/gmsh.hpp>
