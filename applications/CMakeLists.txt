@@ -24,5 +24,5 @@
 project( feel-applications )
 add_subdirectory( polyvis )
 if ( EXISTS ${FEEL_SOURCE_DIR}/applications/opus )
-#     add_subdirectory( opus )
+     add_subdirectory( opus )
 endif()
