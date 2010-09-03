@@ -96,46 +96,63 @@ Mesh<Shape, T>::updateForUse()
             std::map<size_type,boost::tuple<size_type, uint16_type, size_type> > f2e;
 
             _M_e2f.resize( boost::extents[this->numElements()][this->numLocalFaces()] );
+            std::map<std::set<int>, size_type > _faces;
+            int next_face = 0;
 
             boost::tie( iv, en ) = this->elementsRange();
             for ( ;iv != en; ++iv )
                 {
                     element_type const& __element = *iv;
 
-                    MakeBareEntity<element_type,nDim> baremaker( __element );
+                    //MakeBareEntity<element_type,nDim> baremaker( __element );
                     for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+                    {
+                        std::set<int> s;
+                        for( int f = 0; f < face_type::numVertices; ++f )
+                        {
+                            s.insert( iv->point( iv->fToP( j, f ) ).id() );
+                        }
+                        bool facefound = false;
+                        auto _faceit = _faces.find( s );
+                        if ( _faceit != _faces.end() )
+                            facefound = true;
+                        else
+                        {
+                            _faces[s] = next_face++;
+                            _faceit = _faces.find(s);
+                        }
+
+#if !defined ( NDEBUG )
+                        Debug( 4015 ) << "------------------------------------------------------------\n";
+                        Debug( 4015 ) << "Element id: " << iv->id() << " local face id: " << j << "\n";
+#endif
+                        //e = _be.addIfNotThere( baremaker( j ) );
+
+
+                        if ( facefound == false )
                         {
 #if !defined ( NDEBUG )
-                            Debug( 4015 ) << "------------------------------------------------------------\n";
-                            Debug( 4015 ) << "Element id: " << iv->id() << " local face id: " << j << "\n";
+                            Debug( 4015 ) << " new face " << _faceit->second << " is now in store with elt " << f2e[_faceit->second].template get<0>()  << " and local face id " <<  f2e[_faceit->second].template get<1>()  << "\n";
 #endif
-                            e = _be.addIfNotThere( baremaker( j ) );
 
-
-                            if ( e.second )
-                                {
+                            f2e[_faceit->second].template get<0>() = iv->id();
+                            f2e[_faceit->second].template get<1>() = j;
+                            _M_e2f[iv->id()][j]=boost::make_tuple( _faceit->second, invalid_size_type_value );
+                        }
+                        else // already stored
+                        {
 #if !defined ( NDEBUG )
-                                    Debug( 4015 ) << " new face " << e.first << " is now in store with elt " << f2e[e.first].template get<0>()  << " and local face id " <<  f2e[e.first].template get<1>()  << "\n";
+                            Debug( 4015 ) << "old face " << _faceit->second << " was already in store with elt " << f2e[_faceit->second].template get<0>() << " and local face id " <<  f2e[_faceit->second].template get<1>() << "\n";
 #endif
 
-                                    f2e[e.first].template get<0>() = iv->id();
-                                    f2e[e.first].template get<1>() = j;
-                                    _M_e2f[iv->id()][j]=boost::make_tuple( e.first, invalid_size_type_value );
-                                }
-                            else // already stored
-                                {
-#if !defined ( NDEBUG )
-                                    Debug( 4015 ) << "old face " << e.first << " was already in store with elt " << f2e[e.first].template get<0>() << " and local face id " <<  f2e[e.first].template get<1>() << "\n";
-#endif
-
-                                    f2e[e.first].template get<2>() = iv->id();
-                                    _M_e2f[iv->id()][j]=boost::make_tuple( e.first, f2e[e.first].template get<0>() );
-                                    _M_e2f[f2e[e.first].template get<0>()] [f2e[e.first].template get<1>()] =
-                                        boost::make_tuple( e.first, iv->id() );
-                                }
+                            f2e[_faceit->second].template get<2>() = iv->id();
+                            _M_e2f[iv->id()][j]=boost::make_tuple( _faceit->second, f2e[_faceit->second].template get<0>() );
+                            _M_e2f[f2e[_faceit->second].template get<0>()] [f2e[_faceit->second].template get<1>()] =
+                                boost::make_tuple( _faceit->second, iv->id() );
+                        }
 
 
-                        } // local face
+                    } // local face
                 } // element loop
             Debug( 4015 ) << "Compute adjacency graph done in " << ti.elapsed() << "\n";
             // partition mesh
@@ -463,7 +480,8 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
         mpl::identity<BarePoint> >::type>::type::type> _be;
     std::pair<size_type, bool> e;
 
-
+    std::map<std::set<int>, size_type > _faces;
+    int next_face = 0;
     element_type ele;
 
     // First We check if we have already Faces stored
@@ -481,26 +499,40 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
             face_iterator __en = this->endFace();
             for ( ;__it!=__en; )
                 {
-                    MakeBareEntity<face_type,nDim> baremaker( *__it );
-                    _check = _be.addIfNotThere( baremaker() );
+                    std::set<int> s;
+                    for( int f = 0; f < face_type::numVertices; ++f )
+                    {
+                        s.insert( __it->point( f ).id() );
+                    }
+                    bool facefound = false;
+                    auto _faceit = _faces.find( s );
+                    if ( _faceit != _faces.end() )
+                        facefound = true;
+                    else
+                    {
+                        _faces[s] = next_face++;
+                        _faceit = _faces.find( s );
+                    }
+                    //MakeBareEntity<face_type,nDim> baremaker( *__it );
+                    //_check = _be.addIfNotThere( baremaker() );
 
 #if !defined( NDEBUG )
-                    if ( _check.second )
+                    if ( facefound )
                         Debug( 4015 ) << "added face with id " << __it->id () << "\n";
                     else
                         Debug( 4015 ) << "not added face with id " << __it->id ()
-                                      << " was already face with id = " << _check.first << "\n";
-                    FEEL_ASSERT( _check.second )
-                        (_check.first )
+                                      << " was already face with id = " << _faceit->second << "\n";
+                    FEEL_ASSERT( facefound == false )
+                        (_faceit->second )
                         ( __it->id() ).warn( "duplicated face" );
 #endif
 
-                    if ( !_check.second )
+                    if ( facefound == true )
                         {
                             // here we get the next face or \c end()
                             size_type theid = __it->id();
                             __it = this->eraseFace( __it );
-                            face_iterator __other = this->faces().find( face_type( _check.first ) );
+                            face_iterator __other = this->faces().find( face_type( _faceit->second ) );
                             FEEL_ASSERT( __other->id() != theid )
                                 ( __other->id() )
                                 ( theid ).error( "faces should have different ids " );
@@ -512,11 +544,11 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                             // ensure that item handler ids are in sync with
                             // faces ids
                             face_type __f = *__it;
-                            __f.setId( _check.first );
+                            __f.setId( _faceit->second );
 #if !defined( NDEBUG )
                             Debug( 4015 ) << "set face id " << __f.id()
                                           << " iterator id = " << __it->id()
-                                          << " check id = " << _check.first << "\n";
+                                          << " check id = " << _faceit->second << "\n";
 #endif
                             this->faces().replace( __it, __f );
                             ++__it;
@@ -534,23 +566,35 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
             element_type const& __element = *iv;
             size_type __element_id = __element.id();
 
-            MakeBareEntity<element_type,nDim> baremaker( __element );
+            //MakeBareEntity<element_type,nDim> baremaker( __element );
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
                 {
+                    std::set<int> s;
+                    for( int f = 0; f < face_type::numVertices; ++f )
+                    {
+                        s.insert( iv->point( iv->fToP( j, f ) ).id() );
+                    }
+                    bool facefound = false;
+                    auto _faceit = _faces.find( s );
+                    if ( _faceit != _faces.end() )
+                        facefound = true;
+                    else
+                    {
+                        _faces[s] = next_face++;
+                        _faceit = _faces.find(s);
+                    }
 #if !defined( NDEBUG )
                     Debug( 4015 ) << "------------------------------------------------------------\n";
                     Debug( 4015 ) << "Element id: " << iv->id() << " local face id: " << j << "\n";
 #endif
 
-                    e = _be.addIfNotThere( baremaker( j ) );
-
-                    if ( e.second )
+                    if ( facefound == false )
                         {
 #if !defined( NDEBUG )
-                            Debug( 4015 ) << "creating the face:" << e.first << "\n";
+                            Debug( 4015 ) << "creating the face:" << _faceit->second << "\n";
 #endif
                             // set face id
-                            face.setId( e.first );
+                            face.setId( _faceit->second );
                             face.disconnect();
 
                             // set the process id from element
@@ -569,7 +613,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                             face_iterator __fit;
                             boost::tie( __fit, inserted)  = this->addFace( face );
                             FEEL_ASSERT( inserted && __fit != this->endFace() )
-                                ( e.first )
+                                ( _faceit->second )
                                 ( iv->id() )
                                 ( __fit->id() )
                                 ( face.id() ).error( "invalid face iterator" );
@@ -592,12 +636,12 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                     else
                         {
 #if !defined( NDEBUG )
-                            Debug( 4015 ) << "found the face:" << e.first << " in element " << __element_id << " and local face: " << j << "\n";
+                            Debug( 4015 ) << "found the face:" << _faceit->second << " in element " << __element_id << " and local face: " << j << "\n";
 #endif
 
                             // look in the face table for the face
-                            face_iterator __fit = this->faces().find( face_type( e.first ) );
-                            FEEL_ASSERT( __fit != this->endFace() )( e.first ).error( "face is not in face container" );
+                            face_iterator __fit = this->faces().find( face_type( _faceit->second ) );
+                            FEEL_ASSERT( __fit != this->endFace() )( _faceit->second ).error( "face is not in face container" );
 
 
                             face_type face = *__fit;
@@ -609,7 +653,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                                 {
 #if !defined( NDEBUG )
                                     Debug( 4015 ) << "[updateFaces][boundary] element: " << __element_id
-                                                  << " face: " << j << " id: " << e.first << "\n";
+                                                  << " face: " << j << " id: " << _faceit->second << "\n";
 #endif
 
                                     // set the connection with the element
