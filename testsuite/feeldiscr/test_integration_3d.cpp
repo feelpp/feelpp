@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -76,7 +76,7 @@ createMesh( double hsize )
     typedef typename imesh<T,Dim>::type mesh_type;
     typename imesh<T,Dim>::ptrtype mesh( new typename imesh<T,Dim>::type );
 
-    GmshHypercubeDomain<Dim,1,Dim,Simplex> td;
+    GmshHypercubeDomain td(Dim,1,Dim,Simplex<Dim,1,Dim>::is_hypercube);
     td.setCharacteristicLength( meshSize );
     //td.setX( std::make_pair( -1, 1 ) );
     ImporterGmsh<typename imesh<T,Dim>::type> import( td.generate( ( boost::format( "hypercube-%1%D" ) % Dim ).str() ) );
