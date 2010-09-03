@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-07-15
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -249,8 +249,13 @@ GmshOrdering<ConvexType>::GmshOrdering()
                 M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3);
             //M_id+=0,1,2,3;
             if ( ConvexType::nOrder == 2 )
-                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3)(4,7)(5,4)(6,5)(7,6);
-            //M_id += 0,1,2,3,7,4,5,6;
+                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3) // vertices
+                    (4,4) // edge 0
+                    (5,5) // edge 1
+                    (6,6) // edge 2
+                    (7,7) // edge 3
+                    (8,8) // face 0
+                    ;
         }
         if ( ConvexType::nDim == 3 )
         {
