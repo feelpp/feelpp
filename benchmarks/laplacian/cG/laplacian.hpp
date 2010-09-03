@@ -65,6 +65,7 @@ makeOptions()
     po::options_description laplacianoptions("Laplacian options");
     laplacianoptions.add_options()
         ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
+        ("shape", po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (hypercube, simplex, ellipsoid)")
         ("nu", po::value<double>()->default_value( 1 ), "coef diffusion")
         ("beta", po::value<double>()->default_value( 1 ), "coef reaction " )
         ("gammabc", po::value<double>()->default_value( 80 ), "weak Dirichlet penalisation parameter " )
@@ -147,6 +148,7 @@ public:
         super( argc, argv, ad, od ),
         backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( this->vm()["shape"].template as<std::string>() ),
 
         M_use_weak_dirichlet( this->vm().count( "weak" ) ),
         M_gammabc( this->vm()["gammabc"].template as<double>() ),
@@ -211,11 +213,6 @@ public:
     }
 
     /**
-     * create the mesh using mesh size \c meshSize
-     */
-    mesh_ptrtype createMesh( double meshSize );
-
-    /**
      * run the convergence test
      */
     void run();
@@ -238,35 +235,13 @@ private:
     backend_ptrtype backend;
 
     double meshSize;
-
+    std::string shape;
     bool M_use_weak_dirichlet;
     double M_gammabc;
 
     export_ptrtype exporter;
 
 }; // Laplacian
-
-template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
-typename Laplacian<Dim,Order,RDim,Entity>::mesh_ptrtype
-Laplacian<Dim,Order,RDim,Entity>::createMesh( double meshSize )
-{
-    mesh_ptrtype mesh( new mesh_type );
-
-    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim, entity_type::is_hypercube );
-    td.setCharacteristicLength( meshSize );
-    td.setX( std::make_pair( -1, 1 ) );
-    if((Dim==1) && (RDim==2))  td.setY( std::make_pair( 1, 1 ) );
-    if(Dim>=2)  td.setY( std::make_pair( -1, 1 ) );
-    if((Dim==2) && (RDim==3))  td.setZ( std::make_pair( 1, 1 ) );
-    if(Dim==3)  td.setZ( std::make_pair( -1, 1 ) );
-    std::string fname = td.generate( entity_type::name().c_str() );
-
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-
-    return mesh;
-} // Laplacian::createMesh
-
 
 template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
@@ -287,7 +262,13 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     /*
      * First we create the mesh
      */
-    mesh_ptrtype mesh = createMesh( meshSize );
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                                      _usenames=true,
+                                                      _convex=(entity_type::is_hypercube)?"Hypercube":"Simplex",
+                                                      _shape=shape,
+                                                      _dim=Dim,
+                                                      _h=meshSize ) );
     Log() << "mesh created in " << t1.elapsed() << "s\n"; t1.restart();
 
     /*
@@ -315,18 +296,6 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     AUTO( f, (pi*pi*Dim*nu+beta)*g );
     AUTO( zf, 0*Px()+0*Py() );
 
-    int tag1,tag2;
-    if ( ( Dim == 1 ) || ( Dim == 2 ) )
-        {
-            tag1 = 1;
-            tag2 = 3;
-        }
-    else if ( Dim == 3 )
-        {
-            tag1 = 15;
-            tag2 = 23;
-        }
-
     fproj = vf::project( Eh, elements(mesh), f );
     gproj = vf::project( Eh, elements(mesh), g );
     v = vf::project( Xh, elements(mesh), g );
@@ -337,16 +306,13 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), idv(fproj)*id(v) );
+        integrate( elements(mesh), idv(fproj)*id(v) )+
+        integrate( markedfaces( mesh, mesh->markerName("Neumann") ), nu*gradv(gproj)*vf::N()*id(v) );
     if ( M_use_weak_dirichlet )
         {
             form1( Xh, F ) +=
-                integrate( markedfaces(mesh,tag1),
-                           zf*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
-            form1( Xh, F ) +=
-                integrate( markedfaces(mesh,tag2),
-                           zf*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
-
+                integrate( markedfaces(mesh,mesh->markerName("Dirichlet")),
+                           g*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
         }
 
     F->close();
@@ -368,11 +334,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     if ( M_use_weak_dirichlet )
         {
 
-            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag1),
-                                             ( - nu*trans(id(v))*(gradt(u)*N())
-                                               - nu*trans(idt(u))*(grad(v)*N())
-                                               + M_gammabc*trans(idt(u))*id(v)/hFace()) );
-            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag2),
+            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,mesh->markerName("Dirichlet")),
                                              ( - nu*trans(id(v))*(gradt(u)*N())
                                                - nu*trans(idt(u))*(grad(v)*N())
                                                + M_gammabc*trans(idt(u))*id(v)/hFace()) );
@@ -389,9 +351,8 @@ Laplacian<Dim, Order, RDim, Entity>::run()
         {
             t1.restart();
             form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, tag1), u, F, g )+
-                on( markedfaces(mesh, tag2), u, F, g );
-            Log() << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << tag1 << " and " << tag2 << " \n";
+                on( markedfaces(mesh, mesh->markerName("Dirichlet")), u, F, g );
+            Log() << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << mesh->markerName("Dirichlet") << " \n";
         }
 
     t1.restart();
