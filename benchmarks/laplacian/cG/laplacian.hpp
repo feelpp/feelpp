@@ -127,7 +127,7 @@ public:
 
     /*basis*/
     typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
-    typedef fusion::vector<Lagrange<Order+1, Scalar> > exact_basis_type;
+    typedef fusion::vector<Lagrange<Order, Scalar> > exact_basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
