@@ -677,7 +677,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
         }
     Debug( 4015 ) << "[Mesh3D::updateEdges] updating edges orientation : " << ti.elapsed() << "\n";
     ti.restart();
-
+#if 0
     edge_iterator e_it = this->beginEdge();
     edge_iterator e_en = this->endEdge();
     for ( ;e_it!=e_en; ++e_it)
@@ -692,7 +692,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
     }
     Debug( 4015 ) << "[Mesh3D::updateEdges] cleaning up edges : " << ti.elapsed() << "\n";
-
+#endif
     ti.restart();
 }
 
