@@ -690,7 +690,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                 }
 
         }
-
+#if 0
     face_iterator f_it = this->beginFace();
     face_iterator f_en = this->endFace();
     for ( ;f_it!=f_en; ++f_it)
@@ -704,6 +704,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
         }
 
     }
+#endif
     boost::tie( iv, en ) = this->elementsRange();
     for ( ;iv != en; ++iv )
         {
