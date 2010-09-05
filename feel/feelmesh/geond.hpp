@@ -30,7 +30,6 @@
 #include <feel/feelmesh/geo0d.hpp>
 #include <feel/feelpoly/geomap.hpp>
 #include <feel/feelmesh/marker.hpp>
-#include <feel/feelmesh/meshutil.hpp>
 #include <feel/feelmesh/meshbase.hpp>
 
 namespace Feel

@@ -56,7 +56,6 @@
 #include <feel/feelmesh/meshbase.hpp>
 
 #include <feel/feelmesh/geoelement.hpp>
-#include <feel/feelmesh/bareitems.hpp>
 
 #include <feel/feelmesh/elements.hpp>
 #include <feel/feelmesh/faces.hpp>
@@ -527,30 +526,36 @@ void
 Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 {
     boost::timer ti;
-    BareItemsHandler<BareEdge> _be;
-    std::pair<size_type, bool> e;
+    std::map<std::set<int>, size_type > _edges;
+    typename std::map<std::set<int>, size_type >::iterator _edgeit;
+    int next_edge = 0;
     _M_e2e.resize( boost::extents[this->numElements()][this->numLocalEdges()] );
 
     size_type vid, i1, i2;
-    std::pair<BareEdge, bool> _edge;
     element_type ele;
     face_type bele;
     // First We check if we have already Edges stored
     if ( ! this->edges().empty() )
         {
             // dump first the existing edges, to maintain the correct numbering
-            // if everything is correct the numbering in the bareedge
-            // structure will reflect the actual edge numbering
-            std::pair<size_type, bool> _check;
+            // if everything is correct, the numbering structure will reflect
+            // the actual edge numbering
+
             for ( size_type j = 0; j < this->edges().size();++j )
                 {
+                    std::set<int> s;
                     i1 = ( this->edge( j ).point( 0 ) ).id();
                     i2 = ( this->edge( j ).point( 1 ) ).id();
-                    _edge = makeBareEdge( i1, i2 );
-                    _check = _be.addIfNotThere( _edge.first );
+                    s.insert( i1 );
+                    s.insert( i2 );
+                    bool edgeinserted = false;
 
-                    FEEL_ASSERT( _check.second )( i1 )( i2 ).error( "Two identical Edges stored in EdgeList" );
-                    FEEL_ASSERT( _check.first == this->edge( j ).id() )( _check.first )( this->edge( j ).id() ).error( "Edges in EdgeList have inconsistent id" );
+                    boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, next_edge ) );
+                    if ( edgeinserted )
+                        ++next_edge;
+
+                    FEEL_ASSERT( edgeinserted == false )( i1 )( i2 ).error( "Two identical Edges stored in EdgeList" );
+                    FEEL_ASSERT( _edgeit->second == this->edge( j ).id() )( _edgeit->second )( this->edge( j ).id() ).error( "Edges in EdgeList have inconsistent id" );
 
                 }
         }
@@ -570,27 +575,32 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             for ( ; ifa!=efa; ++ifa )
                 {
                     for ( uint16_type j = 0; j < face_type::numEdges; j++ )
+                    {
+                        std::set<int> s;
+                        i1 = bele.eToP( j, 0 );
+                        i2 = bele.eToP( j, 1 );
+                        // go to global
+                        i1 = ( ifa->point( i1 ) ).id();
+                        i2 = ( ifa->point( i2 ) ).id();
+                        s.insert( i1 );
+                        s.insert( i2 );
+                        bool edgeinserted = false;
+                        boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, next_edge ) );
+                        if ( edgeinserted )
+                            ++next_edge;
+                        if ( edgeinserted )
                         {
-                            i1 = bele.eToP( j, 0 );
-                            i2 = bele.eToP( j, 1 );
-                            // go to global
-                            i1 = ( ifa->point( i1 ) ).id();
-                            i2 = ( ifa->point( i2 ) ).id();
-                            _edge = makeBareEdge( i1, i2 );
-                            e = _be.addIfNotThere( _edge.first );
-                            if ( e.second )
-                                {
-                                    // set edge id
-                                    edg.setId( e.first );
-                                    edg.setOnBoundary( true );
+                            // set edge id
+                            edg.setId( _edgeit->second );
+                            edg.setOnBoundary( true );
 
-                                    for ( uint16_type k = 0;k < 2 + face_type::nbPtsPerEdge;k++ )
-                                        edg.setPoint( k, ifa->point( bele.eToP( j, k ) ) );
-                                    inheritWeakerMarker( edg );
-                                    edg.addElement( ifa->ad_first() );
-                                    this->addEdge( edg );
-                                }
+                            for ( uint16_type k = 0;k < 2 + face_type::nbPtsPerEdge;k++ )
+                                edg.setPoint( k, ifa->point( bele.eToP( j, k ) ) );
+                            // TODO: should assocate a marker to the edge here ?
+                            edg.addElement( ifa->ad_first() );
+                            this->addEdge( edg );
                         }
+                    }
                 }
         }
     Debug( 4015 ) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
@@ -611,25 +621,30 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                     // go to global
                     i1 = ( elt_it->point( j1 ) ).id();
                     i2 = ( elt_it->point( j2 ) ).id();
-                    _edge = makeBareEdge( i1, i2 );
-                    e = _be.addIfNotThere( _edge.first );
-                    _M_e2e[ vid ][ j] = boost::make_tuple( e.first, 1 );
+                    std::set<int> s;
+                    s.insert( i1 );
+                    s.insert( i2 );
+                    bool edgeinserted = false;
+                    boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, next_edge ) );
+                    if ( edgeinserted )
+                        ++next_edge;
+                    _M_e2e[ vid ][ j] = boost::make_tuple( _edgeit->second, 1 );
 
-                    if ( e.second )
+                    if ( edgeinserted )
                         {
-                            FEEL_ASSERT( e.first == this->numEdges() )( e.first )( this->numEdges() ).error( "invalid edge index" );
+                            FEEL_ASSERT( _edgeit->second >= this->numEdges() )( _edgeit->second )( this->numEdges() ).error( "invalid edge index" );
                             // set edge id
-                            edg.setId( e.first );
+                            edg.setId( _edgeit->second );
                             edg.setOnBoundary( false );
                             for ( uint16_type k = 0; k < 2 + element_type::nbPtsPerEdge; k++ )
                                 edg.setPoint( k, elt_it->point( k ) );
-                            inheritWeakerMarker( edg );
+                            // TODO: should assocate a marker to the edge here ?
                             edg.addElement( vid );
                             this->addEdge( edg );
                         }
 
                     this->elements().modify( elt_it,
-                                             detail::UpdateEdge<edge_type>( j, boost::cref( this->edge(e.first) ) ) );
+                                             detail::UpdateEdge<edge_type>( j, boost::cref( this->edge(_edgeit->second) ) ) );
                 }
         }
     Debug( 4015 ) << "[Mesh3D::updateEdges] updating element/edges : " << ti.elapsed() << "\n";
@@ -645,14 +660,19 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                     // go to global
                     i1 = ( elt_it->point( j1 ) ).id();
                     i2 = ( elt_it->point( j2 ) ).id();
+                    std::set<int> s;
+                    s.insert( i1 );
+                    s.insert( i2 );
+                    bool edgeinserted = false;
+                    boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, next_edge ) );
+                    if ( edgeinserted )
+                        ++next_edge;
 
-                    _edge = makeBareEdge( i1, i2 );
-                    e = _be.addIfNotThere( _edge.first );
                     edge_pair_type _current = std::make_pair( i1, i2 );
 
                     edge_permutation_type permutation( edge_permutation_type::IDENTITY );
 
-                    oe_iterator _edge_it = _oriented_edges.find( e.first );
+                    oe_iterator _edge_it = _oriented_edges.find( _edgeit->second );
                     if (  _edge_it != _oriented_edges.end() )
                         {
                             edge_pair_type _default = _edge_it->second;
@@ -670,7 +690,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                         }
                     else
                         {
-                            _oriented_edges.insert( std::make_pair( e.first, _current ) );
+                            _oriented_edges.insert( std::make_pair( _edgeit->second, _current ) );
                         }
 
                 }

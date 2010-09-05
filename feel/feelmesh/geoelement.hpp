@@ -32,7 +32,6 @@
 #include <feel/feelalg/matrix.hpp>
 #include <feel/feelmesh/marker.hpp>
 #include <feel/feelmesh/geond.hpp>
-#include <feel/feelmesh/bareitems.hpp>
 #include <feel/feelalg/lu.hpp>
 
 namespace Feel
