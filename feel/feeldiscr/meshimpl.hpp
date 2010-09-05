@@ -86,17 +86,12 @@ Mesh<Shape, T>::updateForUse()
             //
             ti.restart();
             Debug( 4015 ) << "Compute adjacency graph\n";
-            BareItemsHandler<typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
-                mpl::identity<BareFace>,
-                typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-                mpl::identity<BareEdge>,
-                mpl::identity<BarePoint> >::type>::type::type> _be;
-            std::pair<size_type, bool> e;
             element_iterator iv,  en;
             std::map<size_type,boost::tuple<size_type, uint16_type, size_type> > f2e;
 
             _M_e2f.resize( boost::extents[this->numElements()][this->numLocalFaces()] );
             std::map<std::set<int>, size_type > _faces;
+            typename std::map<std::set<int>, size_type >::iterator _faceit;
             int next_face = 0;
 
             boost::tie( iv, en ) = this->elementsRange();
@@ -110,17 +105,15 @@ Mesh<Shape, T>::updateForUse()
                         std::set<int> s;
                         for( int f = 0; f < face_type::numVertices; ++f )
                         {
-                            s.insert( iv->point( iv->fToP( j, f ) ).id() );
+                            if ( nDim == 1 )
+                                s.insert( iv->point( j ).id() );
+                            else
+                                s.insert( iv->point( iv->fToP( j, f ) ).id() );
                         }
-                        bool facefound = false;
-                        auto _faceit = _faces.find( s );
-                        if ( _faceit != _faces.end() )
-                            facefound = true;
-                        else
-                        {
-                            _faces[s] = next_face++;
-                            _faceit = _faces.find(s);
-                        }
+                        bool faceinserted = false;
+                        boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( s, next_face ) );
+                        if ( faceinserted )
+                            ++next_face;
 
 #if !defined ( NDEBUG )
                         Debug( 4015 ) << "------------------------------------------------------------\n";
@@ -129,7 +122,7 @@ Mesh<Shape, T>::updateForUse()
                         //e = _be.addIfNotThere( baremaker( j ) );
 
 
-                        if ( facefound == false )
+                        if ( faceinserted )
                         {
 #if !defined ( NDEBUG )
                             Debug( 4015 ) << " new face " << _faceit->second << " is now in store with elt " << f2e[_faceit->second].template get<0>()  << " and local face id " <<  f2e[_faceit->second].template get<1>()  << "\n";
@@ -473,14 +466,8 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
     boost::timer ti;
     face_type face;
 
-    BareItemsHandler<typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
-        mpl::identity<BareFace>,
-        typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-        mpl::identity<BareEdge>,
-        mpl::identity<BarePoint> >::type>::type::type> _be;
-    std::pair<size_type, bool> e;
-
     std::map<std::set<int>, size_type > _faces;
+    typename std::map<std::set<int>, size_type >::iterator _faceit;
     int next_face = 0;
     element_type ele;
 
@@ -494,7 +481,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
             // boundary ones. So I resize the container!
             //if ( cf ) this->faces().resize( _numBFaces );
 
-            std::pair<size_type, bool> _check;
+
             face_iterator __it = this->beginFace();
             face_iterator __en = this->endFace();
             for ( ;__it!=__en; )
@@ -504,30 +491,23 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                     {
                         s.insert( __it->point( f ).id() );
                     }
-                    bool facefound = false;
-                    auto _faceit = _faces.find( s );
-                    if ( _faceit != _faces.end() )
-                        facefound = true;
-                    else
-                    {
-                        _faces[s] = next_face++;
-                        _faceit = _faces.find( s );
-                    }
-                    //MakeBareEntity<face_type,nDim> baremaker( *__it );
-                    //_check = _be.addIfNotThere( baremaker() );
+                    bool faceinserted = false;
+                    boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( s, next_face ) );
+                    if ( faceinserted )
+                        ++next_face;
 
 #if !defined( NDEBUG )
-                    if ( facefound )
+                    if ( faceinserted  )
                         Debug( 4015 ) << "added face with id " << __it->id () << "\n";
                     else
                         Debug( 4015 ) << "not added face with id " << __it->id ()
                                       << " was already face with id = " << _faceit->second << "\n";
-                    FEEL_ASSERT( facefound == false )
+                    FEEL_ASSERT( faceinserted )
                         (_faceit->second )
                         ( __it->id() ).warn( "duplicated face" );
 #endif
 
-                    if ( facefound == true )
+                    if ( faceinserted == false )
                         {
                             // here we get the next face or \c end()
                             size_type theid = __it->id();
@@ -558,7 +538,8 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
     Debug( 4015 ) << "[Mesh::updateFaces] adding faces : " << ti.elapsed() << "\n";
     ti.restart();
 
-
+    Debug( 4015 ) << "[Mesh::updateFaces] numLocalFaces : " << this->numLocalFaces() << "\n";
+    Debug( 4015 ) << "[Mesh::updateFaces] face_type::numVertices : " << face_type::numVertices << "\n";
     element_iterator iv,  en;
     boost::tie( iv, en ) = this->elementsRange();
     for ( ;iv != en; ++iv )
@@ -572,23 +553,24 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                     std::set<int> s;
                     for( int f = 0; f < face_type::numVertices; ++f )
                     {
-                        s.insert( iv->point( iv->fToP( j, f ) ).id() );
+                        if ( nDim == 1 )
+                            s.insert( iv->point( j ).id() );
+                        else
+                            s.insert( iv->point( iv->fToP( j, f ) ).id() );
+                        Debug( 4015 ) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
+                                      << " global id " << iv->point( iv->fToP( j, f ) ).id() << "\n";
                     }
-                    bool facefound = false;
-                    auto _faceit = _faces.find( s );
-                    if ( _faceit != _faces.end() )
-                        facefound = true;
-                    else
-                    {
-                        _faces[s] = next_face++;
-                        _faceit = _faces.find(s);
-                    }
+
+                    bool faceinserted = false;
+                    boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( s, next_face ) );
+                    if ( faceinserted )
+                        ++next_face;
 #if !defined( NDEBUG )
                     Debug( 4015 ) << "------------------------------------------------------------\n";
                     Debug( 4015 ) << "Element id: " << iv->id() << " local face id: " << j << "\n";
 #endif
 
-                    if ( facefound == false )
+                    if ( faceinserted )
                         {
 #if !defined( NDEBUG )
                             Debug( 4015 ) << "creating the face:" << _faceit->second << "\n";
