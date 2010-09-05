@@ -128,7 +128,7 @@ public:
 
     /*basis*/
     typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
-    typedef fusion::vector<Lagrange<Order+1, Scalar> > exact_basis_type;
+    typedef fusion::vector<Lagrange<Order+2, Scalar> > exact_basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -220,12 +220,6 @@ public:
 private:
 
     /**
-     * solve the system D u = F
-     */
-    void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
-
-
-    /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
     void exportResults( element_type& u, element_type& v );
@@ -268,6 +262,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
                                                       _convex=(entity_type::is_hypercube)?"Hypercube":"Simplex",
                                                       _shape=shape,
                                                       _dim=Dim,
+                                                      _xmin=-1.,_ymin=-1.,_zmax=-1.,
                                                       _h=meshSize ) );
     Log() << "mesh created in " << t1.elapsed() << "s\n"; t1.restart();
 
@@ -306,7 +301,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), idv(fproj)*id(v) )+
+        integrate( elements(mesh), f*id(v) )+
         integrate( markedfaces( mesh, mesh->markerName("Neumann") ), nu*gradv(gproj)*vf::N()*id(v) );
     if ( M_use_weak_dirichlet )
         {
@@ -352,12 +347,13 @@ Laplacian<Dim, Order, RDim, Entity>::run()
             t1.restart();
             form2( Xh, Xh, D ) +=
                 on( markedfaces(mesh, mesh->markerName("Dirichlet")), u, F, g );
+
             Log() << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << mesh->markerName("Dirichlet") << " \n";
         }
 
     t1.restart();
 
-    this->solve( D, u, F );
+    backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
 
     Log() << "solve in " << t1.elapsed() << "s\n";
     t1.restart();
@@ -391,20 +387,6 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     this->postProcessing();
 
 } // Laplacian::run
-
-template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
-void
-Laplacian<Dim, Order, RDim, Entity>::solve( sparse_matrix_ptrtype& D,
-                                            element_type& u,
-                                            vector_ptrtype& F )
-{
-
-
-    vector_ptrtype U( backend->newVector( u.functionSpace() ) );
-    backend->solve( D, D, U, F );
-    u = *U;
-} // Laplacian::solve
-
 
 template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
