@@ -2293,9 +2293,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
                 }
         }
 #if !defined(NDEBUG)
-    for ( index i1 = 0; i1 < index(nF); ++i1 )
-        for ( index i2 = 0; i2 < index(ntldof); ++i2 )
-            FEEL_ASSERT( boost::get<0>(_M_face_l2g[i1][i2]) != invalid_size_type_value )( i1 )( i2 ).warn( "invalid dof table: initialized dof entries" );
+    for ( index face_id = 0; face_id < index(nF); ++face_id )
+        for ( index face_dof_id = 0; face_dof_id < index(ntldof); ++face_dof_id )
+            FEEL_ASSERT( boost::get<0>(_M_face_l2g[face_id][face_dof_id]) != invalid_size_type_value )( face_id )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
 #endif
 }    // updateBoundaryDof
 
@@ -2369,7 +2369,7 @@ DofTable<MeshType, FEType, PeriodicityType>::generateDofPoints(  mesh_type& M )
                 ( dof_id )( firstDof() )( lastDof() )( nLocalDof() )
                 ( boost::get<1>(M_dof_points[dof_id]) )
                 ( boost::get<0>(M_dof_points[dof_id]) ).error( "invalid dof point" );
-            FEEL_ASSERT( dof_done[dof_id] == true )( dof_id ).warn( "invalid dof point" );
+            FEEL_ASSERT( dof_done[dof_id] == true )( dof_id )( nLocalDof() )( firstDof() )( lastDof() )( fe_type::nDim )( fe_type::nLocalDof ).warn( "invalid dof point" );
         }
     Debug( 5005 ) << "[Dof::generateDofPoints] generating dof coordinates done\n";
 }
