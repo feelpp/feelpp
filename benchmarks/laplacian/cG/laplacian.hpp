@@ -353,7 +353,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 
     t1.restart();
 
-    backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+    backend_type::build( this->vm() )->solve( _matrix=D, _solution=u, _rhs=F );
 
     Log() << "solve in " << t1.elapsed() << "s\n";
     t1.restart();
