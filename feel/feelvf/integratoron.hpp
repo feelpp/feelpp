@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,7 @@
        Date: 2005-03-15
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006-2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -336,7 +336,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     //t_expr_type expr( _M_expr, mapgmc );
 
 
-
+    Debug(5066)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
+                 << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
+                 << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
 
     size_type nbFaceDof = invalid_size_type_value;
     if ( !fe_type::is_modal )
@@ -391,10 +393,10 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                     {
                         for ( uint16_type l = 0; l < nbFaceDof; ++l )
                             {
-                                typename expression_type::value_type __value = expr.evalq( c1, c2, l );
                                 Debug(5066) << "[integratoronexpr] local dof=" << l
-                                            << " |comp1=" << c1 << " comp 2= " << c2
-                                            << " |value=" << __value << " | pt = " << __c->xReal(l) << "\n";
+                                            << " |comp1=" << c1 << " comp 2= " << c2 << " | pt = " <<  __c->xReal(l) << "\n";
+                                typename expression_type::value_type __value = expr.evalq( c1, c2, l );
+                                Debug(5066) << "[integratoronexpr] value=" << __value << "\n";
 
                                 // global Dof
                                 size_type thedof =  _M_u.start() +
