@@ -88,119 +88,43 @@ public:
      */
     //@{
 
-    VectorEpetra( )
-        :
-        super(),
-#ifdef HAVE_MPI
-        _M_emap( Epetra_BlockMap( -1, 0, 0, Epetra_MpiComm(super::comm())) ),
-        _M_vec( _M_emap ) // false (zerout)?
-#else
-        _M_emap( Epetra_BlockMap( -1, 0, 0, Epetra_SerialComm) ),
-        _M_vec( _M_emap )
-#endif
-    {
-    }
+    VectorEpetra ();
 
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
      */
-    VectorEpetra ( Epetra_BlockMap const& emap )
-        :
-        super(),
-        _M_emap( emap ),
-        _M_vec( _M_emap )
-        //_M_destroy_vec_on_exit( true )
-    {
-        this->init( _M_emap, true);
-    }
+    VectorEpetra ( Epetra_BlockMap const& emap );
 
     /**
      * Constructor.  Creates a VectorEpetra assuming you already have a
      * valid Epetra_FEVector object.
      */
-
-    VectorEpetra ( Epetra_FEVector const * v )
-        :
-        super(),
-        _M_emap( v->Map() ),
-        _M_vec( *v )
-    {
-        this->init( _M_emap, true );
-    }
+    VectorEpetra ( Epetra_FEVector const * v );
 
     /**
-     * @author Vielfaure Florent
-     *
      * Constructor.  Creates a VectorEpetra assuming you already have a
      * valid Epetra_Vector object.
      */
-    VectorEpetra ( Epetra_Vector const * v )
-        :
-        super(),
-        _M_emap( v->Map() ),
-        _M_vec ( _M_emap )
-    {
-        this->init( _M_emap, true );
-        //double** V;
-        //v->ExtractView(&V);
-        //printf("first val : %f\n",V[0][0]);
-
-
-        _M_vec.Update(1.0,*v,1.0);
-
-        //for( size_type i = 0; i < this->localSize(); ++i )
-        //    {
-        //        this->set( i,  V[ 0 ][i] );
-        //    }
-    }
-
+    VectorEpetra ( Epetra_Vector const * v );
 
     /**
      * Constructor.  Creates a VectorEpetra assuming you already have a
-     * valid Epetra Vec object.  In this case, v is NOT destroyed by the
-     * VectorEpetra constructor when this object goes out of scope.
-     * This allows ownership of v to remain with the original creator,
-     * and to simply provide additional functionality with the VectorEpetra.
+     * valid Epetra_Vector object.
      */
-
-
-    VectorEpetra ( VectorEpetra const& v )
-        :
-        super(),
-        _M_emap(v.Map()),
-        _M_vec(v.vec())
-
-    {
-        this->M_is_initialized = true;
-    }
-
-    /*
-    template< typename ublas_vector_type >
-    VectorEpetra ( ublas_vector_type const& u, Epetra_Map const& emap )
-        :
-        super(),
-        _M_emap( emap ),
-        _M_vec( u )
-    {
-        this->M_is_initialized = true;
-    }
-    */
+    VectorEpetra ( VectorEpetra const& v );
 
     /**
      * Destructor, deallocates memory. Made virtual to allow
      * for derived classes to behave properly.
      */
-    ~VectorEpetra ()
-    {
-
-    }
+    ~VectorEpetra ();
 
     /**
      * Returns the Epetra map
      */
     Epetra_BlockMap Map() const
     {
-        return _M_emap;
+        return _M_vec.Map();
     }
 
 
@@ -243,6 +167,7 @@ public:
 
     value_type operator() (const size_type i) const
     {
+        checkInvariants();
         FEEL_ASSERT (this->isInitialized()).error( "vector not initialized" );
         FEEL_ASSERT ( ((i >= this->firstLocalIndex()) &&
                        (i <  this->lastLocalIndex())) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).warn( "invalid vector index" );
@@ -260,6 +185,7 @@ public:
 
     value_type& operator() (const size_type i)
     {
+        checkInvariants();
         FEEL_ASSERT (this->isInitialized()).error( "vector not initialized" );
         FEEL_ASSERT ( ((i >= this->firstLocalIndex()) &&
                        (i <  this->lastLocalIndex())) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).warn( "invalid vector index" );
@@ -273,12 +199,13 @@ public:
     {
         if ( &v != this )
             {
+                super::operator=( v );
                 _M_emap = v.Map();
                 _M_vec = v.vec();
 
                 this->M_is_initialized = true;
             }
-
+        checkInvariants();
         return *this;
     }
 
@@ -344,10 +271,8 @@ public:
 
         int epetra_size=0;
         epetra_size = _M_vec.MyLength();
+        Debug(10010) << "[VectorEpetra::localSize] localSize= " << epetra_size  << "\n";
         return static_cast<size_type>(epetra_size);
-
-
-        return 0;
     }
 
     /**
@@ -383,7 +308,7 @@ public:
     {
         double** V;
         _M_vec.ExtractView(&V);
-        boost::shared_ptr<Epetra_Vector> EV(new Epetra_Vector(View,_M_emap,V[0] ));
+        boost::shared_ptr<Epetra_Vector> EV(new Epetra_Vector(View,_M_vec.Map(),V[0] ));
         return EV;
     }
 
@@ -803,9 +728,12 @@ public:
      */
     size_type firstLocalIndex () const
     {
+
         int epetra_first = 0;
         assert (this->isInitialized());
-        epetra_first = _M_emap.MinMyGID();
+        //epetra_first = _M_vec.Map().MinMyGID();
+        epetra_first = _M_vec.Map().MinLID();
+        Debug(10010) << "[VectorEpetra::firstLocalIndex] firstLocalIndex= " << epetra_first  << "\n";
         return static_cast<size_type>(epetra_first);
     }
 
@@ -821,7 +749,9 @@ public:
     {
         int epetra_last = 0;
         assert (this->isInitialized());
-        epetra_last = _M_emap.MaxMyGID();
+        //epetra_last = _M_vec.Map().MaxMyGID();
+        epetra_last = _M_vec.Map().MaxLID();
+        Debug(10010) << "[VectorEpetra::lastLocalIndex] lastLocalIndex= " << epetra_last+1  << "\n";
         return static_cast<size_type>(epetra_last)+1;
     }
 
@@ -839,7 +769,7 @@ public:
 protected:
 
 private:
-
+    void checkInvariants() const;
 private:
     Epetra_BlockMap _M_emap;
     Epetra_FEVector _M_vec;

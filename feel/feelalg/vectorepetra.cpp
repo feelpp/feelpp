@@ -31,6 +31,83 @@
 namespace Feel
 {
 #if defined(HAVE_TRILINOS_EPETRA)
+
+template<typename T>
+VectorEpetra<T>::VectorEpetra( )
+    :
+    super(),
+#ifdef HAVE_MPI
+    _M_emap( Epetra_BlockMap( -1, 0, 0, Epetra_MpiComm(super::comm())) ),
+    _M_vec( _M_emap ) // false (zerout)?
+#else
+    _M_emap( Epetra_BlockMap( -1, 0, 0, Epetra_SerialComm) ),
+    _M_vec( _M_emap )
+#endif
+{
+}
+
+template<typename T>
+VectorEpetra<T>::VectorEpetra ( Epetra_BlockMap const& emap )
+    :
+    super(emap.NumGlobalElements(), emap.NumMyElements()),
+    _M_emap( emap ),
+    _M_vec( _M_emap )
+    //_M_destroy_vec_on_exit( true )
+{
+    this->init( _M_emap, true);
+    checkInvariants();
+}
+
+template<typename T>
+VectorEpetra<T>::VectorEpetra ( Epetra_FEVector const * v )
+    :
+    super(v->Map().NumGlobalElements(), v->Map().NumMyElements()),
+    _M_emap( v->Map() ),
+    _M_vec( *v )
+{
+    this->init( _M_emap, true );
+    checkInvariants();
+}
+
+template<typename T>
+VectorEpetra<T>::VectorEpetra ( Epetra_Vector const * v )
+    :
+    super(v->Map().NumGlobalElements(), v->Map().NumMyElements()),
+    _M_emap( v->Map() ),
+    _M_vec ( _M_emap )
+{
+    this->init( _M_emap, true );
+    //double** V;
+    //v->ExtractView(&V);
+    //printf("first val : %f\n",V[0][0]);
+
+
+    _M_vec.Update(1.0,*v,1.0);
+
+    //for( size_type i = 0; i < this->localSize(); ++i )
+    //    {
+    //        this->set( i,  V[ 0 ][i] );
+    //    }
+    checkInvariants();
+}
+template<typename T>
+VectorEpetra<T>::VectorEpetra ( VectorEpetra const& v )
+    :
+    super( v ),
+    _M_emap(v.Map()),
+    _M_vec(v.vec())
+
+{
+    this->M_is_initialized = true;
+    checkInvariants();
+}
+
+template<typename T>
+VectorEpetra<T>::~VectorEpetra ()
+{
+
+}
+
 template<typename T>
 void
 VectorEpetra<T>::init ( Epetra_BlockMap const& emap, const bool fast )
@@ -140,7 +217,41 @@ VectorEpetra<T>::addVector ( int* i, int n, value_type* v )
         Debug() << "ERRORCODE SumIntoGlobalValues VECTOR: " << ierr <<  " in V \n";
     }
 }
+template<typename T>
+void
+VectorEpetra<T>::checkInvariants () const
+{
+    FEEL_ASSERT( this->localSize() == _M_emap.NumMyElements() )
+        ( this->localSize() )
+        ( _M_emap.NumMyElements() ).error( "Invalid VectorEpetra (Local size)" );
+    FEEL_ASSERT( this->size() == _M_emap.NumGlobalElements() )
+        ( this->size() )
+        ( _M_emap.NumGlobalElements() ).error( "Invalid VectorEpetra (Global size)" );
 
+    FEEL_ASSERT( this->firstLocalIndex() == _M_emap.MinLID() )
+        ( this->firstLocalIndex() )
+        ( _M_emap.MinLID() ).error( "Invalid VectorEpetra (Min global index)" );
+
+    FEEL_ASSERT( this->lastLocalIndex() == _M_emap.MaxLID()+1 )
+        ( this->lastLocalIndex() )
+        ( _M_emap.MaxLID() ).error( "Invalid VectorEpetra (Min global index)" );
+
+    FEEL_ASSERT( this->localSize() == _M_vec.Map().NumMyElements() )
+        ( this->localSize() )
+        ( _M_vec.Map().NumMyElements() ).error( "Invalid VectorEpetra (Local size)" );
+    FEEL_ASSERT( this->size() == _M_vec.Map().NumGlobalElements() )
+        ( this->size() )
+        ( _M_vec.Map().NumGlobalElements() ).error( "Invalid VectorEpetra (Global size)" );
+
+    FEEL_ASSERT( this->firstLocalIndex() == _M_vec.Map().MinLID() )
+        ( this->firstLocalIndex() )
+        ( _M_vec.Map().MinLID() ).error( "Invalid VectorEpetra (Min global index)" );
+
+    FEEL_ASSERT( this->lastLocalIndex() == _M_vec.Map().MaxLID()+1 )
+        ( this->lastLocalIndex() )
+        ( _M_vec.Map().MaxLID() ).error( "Invalid VectorEpetra (Min global index)" );
+
+}
 template<typename T>
 void
 VectorEpetra<T>::printMatlab (const std::string name) const
