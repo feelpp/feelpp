@@ -287,9 +287,11 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 
 
     value_type pi = M_PI;
-    AUTO( g, sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) );
-    AUTO( f, (pi*pi*Dim*nu+beta)*g );
-    AUTO( zf, 0*Px()+0*Py() );
+    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
+    auto gradg = trans( +pi*cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()+
+                        -pi*sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()+
+                        -pi*sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ() );
+    auto f = (pi*pi*Dim*nu+beta)*g;
 
     fproj = vf::project( Eh, elements(mesh), f );
     gproj = vf::project( Eh, elements(mesh), g );
@@ -302,7 +304,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 
     form1( _test=Xh, _vector=F, _init=true ) =
         integrate( elements(mesh), f*id(v) )+
-        integrate( markedfaces( mesh, mesh->markerName("Neumann") ), nu*gradv(gproj)*vf::N()*id(v) );
+        integrate( markedfaces( mesh, mesh->markerName("Neumann") ), nu*gradg*vf::N()*id(v) );
     if ( M_use_weak_dirichlet )
         {
             form1( Xh, F ) +=
@@ -359,7 +361,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     t1.restart();
 
     double L2error2 =integrate( elements(mesh),
-                                (idv(u)-idv(gproj))*(idv(u)-idv(gproj))).evaluate()( 0, 0 );
+                                (idv(u)-g)*(idv(u)-g)).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
     Log() << "||error||_L2=" << L2error << "\n";
@@ -368,7 +370,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 
 
     double semiH1error2 =integrate( elements(mesh),
-                                    (gradv(u)-gradv(gproj))*trans(gradv(u)-gradv(gproj)) ).evaluate()( 0, 0 ) ;
+                                    (gradv(u)-gradg)*trans(gradv(u)-gradg) ).evaluate()( 0, 0 ) ;
 
     Log() << "semi H1 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
