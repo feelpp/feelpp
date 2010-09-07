@@ -128,8 +128,8 @@ class Hypercube  : public Convex<Dim,Order,RDim>
     typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_QUAD, SHAPE_HEXA, SHAPE_SP4, SHAPE_SP5> shapes_t;
     typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME, GEOMETRY_4, GEOMETRY_5> geometries_t;
 
-    typedef mpl::vector_c<size_type, 2, 2, 4, 8, 16, 32> vertices_t;
-    typedef mpl::vector_c<size_type, 1, 1, 4, 12, 32> edges_t;
+    typedef mpl::vector_c<size_type, 1, 2, 4, 8, 16, 32> vertices_t;
+    typedef mpl::vector_c<size_type, 0, 1, 4, 12, 32> edges_t;
     typedef mpl::vector_c<size_type, 0, 2, 4, 6, 24> faces_index_t;
     typedef mpl::vector_c<uint16_type, 0, 0, 1, 6, 24> geo_faces_index_t;
     typedef mpl::vector_c<uint16_type, 0, 2, 4, 6, 24> normals_t;
