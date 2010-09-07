@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-06-18
 
-  Copyright (C) 2010 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -72,7 +72,7 @@ makeAbout()
                            "0.2",
                            "Kovasznay benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2010 Universite de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2009-2010 Université de Grenoble 1 (Joseph Fourier)");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
