@@ -162,7 +162,7 @@ public:
         Parameter h;
         if (Dim == 1)           //=== 1D ===
             if (Order < 5)
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.09:0.4" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.09:0.1" );
             else
                 h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.08:0.09:0.4" );
         else if (Dim == 2)      //=== 2D ===
