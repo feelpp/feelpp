@@ -553,12 +553,10 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                     std::set<int> s;
                     for( int f = 0; f < face_type::numVertices; ++f )
                     {
-                        if ( nDim == 1 )
-                            s.insert( iv->point( j ).id() );
-                        else
-                            s.insert( iv->point( iv->fToP( j, f ) ).id() );
+                        uint16_type pt_localid = (nDim==1)?j:iv->fToP( j, f );
+                        s.insert( iv->point( pt_localid ).id() );
                         Debug( 4015 ) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
-                                      << " global id " << iv->point( iv->fToP( j, f ) ).id() << "\n";
+                                      << " global id " << iv->point( pt_localid ).id() << "\n";
                     }
 
                     bool faceinserted = false;
@@ -713,9 +711,8 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                         }
 
                     FEEL_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).error( "invalid element face error" );
-                }
-
-        }
+                } // face loop
+        } // element loop
 #if 0
     face_iterator f_it = this->beginFace();
     face_iterator f_en = this->endFace();
