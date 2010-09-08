@@ -58,7 +58,7 @@ using boost::unit_test::test_suite;
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
 #include <feel/feelvf/vf.hpp>
 
-const double DEFAULT_MESH_SIZE=0.1;
+const double DEFAULT_MESH_SIZE=0.05;
 
 namespace Feel
 {
@@ -264,7 +264,7 @@ struct test_integration_circle
         typename imesh<value_type,1>::ptrtype mesh( createCircle<value_type,1>( meshSize ) );
 
         t = 1.0;
-        value_type v0 = integrate( elements(mesh), IM<2,2,value_type,Simplex>(), mycst ).evaluate()( 0, 0 );
+        value_type v0 = integrate( elements(mesh), mycst ).evaluate()( 0, 0 );
         BOOST_TEST_MESSAGE( "v0=" << v0 << "\n" );
         value_type v00 = ( integrate( boundaryelements(mesh), IM<2,2,value_type,Simplex>(), mycst ).evaluate()( 0, 0 )+
                            integrate( internalelements(mesh), IM<2,2,value_type,Simplex>(), mycst ).evaluate()( 0, 0 ) );
@@ -283,7 +283,7 @@ struct test_integration_circle
         value_type pi = 4.0*math::atan(1.0);
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( v0, pi, 1e-1 );
+        BOOST_CHECK_CLOSE( v0, pi, 2e-1 );
         BOOST_CHECK_SMALL( v0-v00, eps  );
 #else
         FEEL_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
@@ -297,9 +297,9 @@ struct test_integration_circle
         typename space_type::element_type u( Xh );
 
         u = vf::project( Xh, elements(mesh), constant(1.0) );
-        v0 = integrate( elements(mesh), IM<2,3,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
+        v0 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( v0, pi, 1e-1);
+        BOOST_CHECK_CLOSE( v0, pi, 2e-1);
 #else
         FEEL_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
