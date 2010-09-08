@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -90,11 +90,15 @@ const uint16_type triangle<Order>::__e2p_order5[18] =
 
 
 template<uint16_type Order>
-const uint16_type triangle<Order>::__f2p[3] =
+const uint16_type triangle<Order>::__f2p[21] =
     {
-        0, // point 0
-        1, // point 1
-        2  // point 2
+        0, // point 0 - vertex
+        1, // point 1 - vertex
+        2, // point 2 - vertex
+        3, 4, 5, 6, 7, 8, 9, // edge
+        10, 11, 12, 13, 14,  // edge
+        15, 16, 17, 18, 19, 20 // interior points
+
     };
 
 template<uint16_type Order>

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -59,7 +59,7 @@ struct line
     //static uint16_type f2p( uint16_type /*f*/, uint16_type /*p*/ ) { throw std::logic_error( "invalid call to line::f2p" ); return uint16_type(-1); }
     static uint16_type f2p( uint16_type f, uint16_type /*p*/ ) { return f; }
     static uint16_type f2e( uint16_type /*f*/, uint16_type /*e*/ ) { throw std::logic_error( "invalid call to line::f2e" ); return uint16_type(-1); }
-    static uint16_type e2p( uint16_type e, uint16_type p ) { return __e2p[2*e+p]; }
+    static uint16_type e2p( uint16_type /*e*/, uint16_type p ) { return __e2p[p]; }
     static const uint16_type __e2p[2];
 
     std::vector<uint16_type> entity( uint16_type /*topo_dim*/, uint16_type /*id*/ ) const
@@ -78,7 +78,7 @@ struct triangle
     static const uint16_type __f2e[3];
 
     static uint16_type f2p( uint16_type /*f*/, uint16_type p ) { return __f2p[p]; }
-    static const uint16_type __f2p[3];
+    static const uint16_type __f2p[21];
 
     static uint16_type e2p( uint16_type e, uint16_type p ) { return e2p(e,p,boost::mpl::int_<Order>()); }
 

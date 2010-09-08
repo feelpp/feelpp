@@ -499,7 +499,7 @@ public:
     static uint16_type fToP( uint16_type const _localFace, uint16_type const _point )
     {
 #if 1
-        typedef typename mpl::if_<mpl::greater<mpl::int_<super::nDim>, mpl::int_<2> >,
+        typedef typename mpl::if_<mpl::not_equal_to<mpl::int_<super::nDim>, mpl::int_<2> >,
             mpl::identity<super>,
             mpl::identity<tt> >::type the_type;
         return the_type::type::fToP( _localFace, _point );
