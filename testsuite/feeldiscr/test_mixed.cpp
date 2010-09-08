@@ -269,12 +269,41 @@ Laplacian<Dim>::run()
     p_element_type p( Yh, "p" );
     /** \endcode */
 
+    u = vf::project( Xh, elements(mesh), P() );
+    p = vf::project( Yh, elements(mesh), cst(1.) );
 
-    sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Yh ) );
-    form2( _trial=Xh, _test=Yh, _matrix=D, _init=true)= integrate( elements(mesh), _Q<2>(), divt(u)*id(p) );
+    vector_ptrtype U = M_backend->newVector( Xh );
+    *U = u;
+    vector_ptrtype V = M_backend->newVector( Xh );
+    vector_ptrtype Q = M_backend->newVector( Yh );
+    vector_ptrtype P = M_backend->newVector( Yh );
+    *P = p;
 
-    D->close();
-    D->printMatlab( "D.m" );
+    {
+        sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Yh ) );
+        form2( _trial=Xh, _test=Yh, _matrix=D, _init=true)= integrate( elements(mesh), divt(u)*id(p) );
+
+        D->close();
+        D->printMatlab( "D.m" );
+        D->multVector( U, Q );
+        std::cout << "[(p,u)] res = " << inner_product( Q, P ) << " (must be equal to measure(domain)=4\n";
+    }
+    {
+        sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
+        form2( _trial=Xh, _test=Xh, _matrix=D, _init=true)= integrate( elements(mesh), divt(u)*div(u) );
+        D->close();
+        D->printMatlab( "divdiv.m" );
+        D->multVector( U, V );
+        std::cout << "[(u,u)] res = " << inner_product( V, U ) << " (must be equal to measure(domain)=4\n";
+    }
+    {
+        sparse_matrix_ptrtype D( M_backend->newMatrix( Yh, Yh ) );
+        form2( _trial=Yh, _test=Yh, _matrix=D, _init=true)= integrate( elements(mesh), idt(p)*id(p) );
+        D->close();
+        D->printMatlab( "idid.m" );
+        D->multVector( P, Q );
+        std::cout << "[(p,p)] res = " << inner_product( Q, P ) << " (must be equal to measure(domain)=4\n";
+    }
 } // Laplacian::run
 
 
