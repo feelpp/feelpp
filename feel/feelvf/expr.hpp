@@ -1045,7 +1045,7 @@ public:
         {
         }
 
-        FEEL_STRONG_INLINE value_type const&
+        FEEL_STRONG_INLINE value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
             return (gmc_type::nDim>=c1)&&((c1==CType) || (CType==-1));
