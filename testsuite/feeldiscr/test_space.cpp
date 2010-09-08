@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,7 @@
        Date: 2005-11-08
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,8 +27,21 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2005-11-08
  */
-//#define USE_BOOST_TEST 1
+#define USE_BOOST_TEST 1
+
+// make sure that the init_unit_test function is defined by UTF
 #define BOOST_TEST_MAIN
+// give a name to the testsuite
+#define BOOST_TEST_MODULE function space testsuite
+// disable the main function creation, use our own
+#define BOOST_TEST_NO_MAIN
+
+#if defined(USE_BOOST_TEST)
+#include <boost/test/unit_test.hpp>
+using boost::unit_test::test_suite;
+#include <boost/test/floating_point_comparison.hpp>
+#endif
+
 #include <boost/timer.hpp>
 
 #include <boost/archive/binary_iarchive.hpp>
@@ -44,8 +57,6 @@
 #include <feel/feeldiscr/functionspace.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
-
-#include <testsuite/testsuite.hpp>
 
 
 namespace Feel
@@ -72,32 +83,13 @@ public:
         BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
         BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
 
-        boost::shared_ptr<mesh_type> mesh( new mesh_type );
-
-        std::string fname;
-
-        if ( Dim == 1 )
-        {
-            Gmsh gen;
-            fname =  gen.generateLine("line", 0.2);
-        }
-
-        if ( Dim == 2 )
-        {
-            Gmsh gen;
-            fname =  gen.generateSquare("square", 0.2);
-        }
-
-        if ( Dim == 3 )
-        {
-            Gmsh gen;
-            fname = gen.generateCube("cube", 0.2);
-        }
-
-        ImporterGmsh<mesh_type> import( fname );
-        mesh->accept( import );
-        mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
-        mesh->updateForUse();
+        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                            _desc=domain( _name=(boost::format( "%1%-%2%" ) % "hypercube" % Dim).str() ,
+                                                          _usenames=true,
+                                                          _shape="hypercube",
+                                                          _dim=Dim,
+                                                          _h=0.2 ) );
 
         boost::shared_ptr<scalar_space_type> Xh( new scalar_space_type( mesh ) );
         auto u = Xh->element( "u" );
@@ -117,7 +109,7 @@ public:
                 BOOST_CHECK( u.nDof() == U.comp((ComponentType)i).nDof() );
                 BOOST_CHECK( u.size() == U.comp((ComponentType)i).size() );
                 u = U.comp((ComponentType)i);
-                BOOST_CHECK_SMALL( ublas::norm_inf( u - ublas::scalar_vector<T>( u.size(), i+1 ) ), eps );
+                BOOST_CHECK_SMALL( ublas::norm_inf( u.vec() - ublas::scalar_vector<T>( u.size(), i+1 ) ), eps );
             }
 #endif
 
@@ -141,23 +133,14 @@ public:
     {
         using namespace Feel;
 
-        boost::shared_ptr<mesh_type> mesh( new mesh_type );
+        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                            _desc=domain( _name=(boost::format( "%1%-%2%" ) % "hypercube" % Dim).str() ,
+                                                          _usenames=true,
+                                                          _shape="hypercube",
+                                                          _dim=Dim,
+                                                          _h=0.2 ) );
 
-        std::string fname;
-        if ( Dim == 2 )
-        {
-            Gmsh gen;
-            fname =  gen.generateSquare("square", 0.2);
-        }
-        if ( Dim == 3 )
-        {
-            Gmsh gen;
-            fname = gen.generateCube("cube", 0.2);
-        }
-        ImporterGmsh<mesh_type> import( fname );
-        mesh->accept( import );
-        mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
-        mesh->updateForUse();
 
         boost::shared_ptr<space_type> Xh( space_type::New( mesh ) );
         auto U = Xh->element( "U" );
@@ -266,23 +249,15 @@ public:
     {
         using namespace Feel;
 
-        boost::shared_ptr<mesh_type> mesh( new mesh_type );
+        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+        mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                            _desc=domain( _name=(boost::format( "%1%-%2%" ) % "hypercube" % Dim).str() ,
+                                                          _usenames=true,
+                                                          _shape="hypercube",
+                                                          _dim=Dim,
+                                                          _h=0.2 ) );
 
-        std::string fname;
-        if ( Dim == 2 )
-        {
-            Gmsh gen;
-            fname =  gen.generateSquare("square", 0.2);
-        }
-        if ( Dim == 3 )
-        {
-            Gmsh gen;
-            fname = gen.generateCube("cube", 0.2);
-        }
-        ImporterGmsh<mesh_type> import( fname );
-        mesh->accept( import );
-        mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
-        mesh->updateForUse();
+
 
         boost::shared_ptr<space_type> Xh( space_type::New( mesh ) );
         typename space_type::element_type U( Xh, "U" );
@@ -325,39 +300,24 @@ public:
 	//	BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
 	//        BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
 
-        boost::shared_ptr<mesh_type> mesh( new mesh_type );
+        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
         std::string fname;
 #if 1
-	std::cout << std::setfill('=') << std::setw(81) << "\n";
-	std::cout << std::setfill(' ') << "Testing " << Dim << " D Boundary adapted construction of order " << N << "\n";
+        std::cout << std::setfill('=') << std::setw(81) << "\n";
+        std::cout << std::setfill(' ') << "Testing " << Dim << " D Boundary adapted construction of order " << N << "\n";
 #endif
-	std::cout << " Generate Meshes !\n";
+        std::cout << " Generate Meshes !\n";
 
-        if ( Dim == 1 )
-        {
-            Gmsh gen;
-            fname =  gen.generateLine("line", 0.3);
-        }
+        mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                            _desc=domain( _name=(boost::format( "%1%-%2%" ) % "hypercube" % Dim).str() ,
+                                                          _usenames=true,
+                                                          _shape="hypercube",
+                                                          _dim=Dim,
+                                                          _h=0.2 ) );
 
-        if ( Dim == 2 )
-        {
-            Gmsh gen;
-            fname =  gen.generateSquare("square", 0.3);
-        }
 
-        if ( Dim == 3 )
-        {
-            Gmsh gen;
-            fname = gen.generateCube("cube", 0.8);
-        }
-
-        ImporterGmsh<mesh_type> import( fname );
-        mesh->accept( import );
-        mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
-        mesh->updateForUse();
-
-	std::cout << "Construct FESpace ...\n";
+        std::cout << "Construct Space ...\n";
 
         boost::shared_ptr<scalar_space_type> Xh( new scalar_space_type( mesh ) );
         auto u = Xh->element( "u" );
@@ -369,63 +329,25 @@ public:
 }
 
 #if USE_BOOST_TEST
-boost::unit_test::test_suite*
-init_unit_test_suite( int argc, char* argv[] )
-// main( int argc, char* argv[] )
+
+BOOST_AUTO_TEST_CASE( test_space1_11 ) { BOOST_TEST_MESSAGE( "test_space1_11" );   Feel::TestSpace1<1, 1, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_11 done" );}
+BOOST_AUTO_TEST_CASE( test_space1_12 ) { BOOST_TEST_MESSAGE( "test_space1_12" );   Feel::TestSpace1<1, 2, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_12 done" );}
+BOOST_AUTO_TEST_CASE( test_space1_21 ) { BOOST_TEST_MESSAGE( "test_space1_21" );   Feel::TestSpace1<2, 1, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_21 done" );}
+BOOST_AUTO_TEST_CASE( test_space1_22 ) { BOOST_TEST_MESSAGE( "test_space1_22" );   Feel::TestSpace1<2, 2, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_22 done" );}
+BOOST_AUTO_TEST_CASE( test_space1_32 ) { BOOST_TEST_MESSAGE( "test_space1_32" );   Feel::TestSpace1<3, 2, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_32 done" );}
+BOOST_AUTO_TEST_CASE( test_space2_2 ) { BOOST_TEST_MESSAGE( "test_space2_2" );   Feel::TestSpace2<2, double> t;t(); BOOST_TEST_MESSAGE( "test_space2_2 done" );}
+BOOST_AUTO_TEST_CASE( test_space2_3 ) { BOOST_TEST_MESSAGE( "test_space2_3" );   Feel::TestSpace2<3, double> t;t(); BOOST_TEST_MESSAGE( "test_space2_3 done" );}
+
+int BOOST_TEST_CALL_DECL
+main( int argc, char* argv[] )
 {
     Feel::Environment env( argc, argv );
+    Feel::Assert::setLog( "test_space.assert");
+    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
 
-    boost::unit_test::test_suite* test = BOOST_TEST_SUITE( "FunctionSpace test suite" );
-
-#if 1 // Finite Element
-
-#if 0
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace1<1, 1, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace1<1, 2, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace1<1, 3, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace1<1, 4, double>() )  ) );
-
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace1<2, 1, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace1<2, 2, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace1<2, 3, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace1<2, 4, double>() )  ) );
-
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace1<3, 1, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace1<3, 2, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace1<3, 3, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace1<3, 4, double>() )  ) );
-#endif
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace2<2, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestSpace2<3, double>() )  ) );
-
-#else // Boundary Adapted
-
-#if 0 // 1D tests
-    test->add( BOOST_TEST_CASE( ( Feel::TestBASpace<1, 1, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestBASpace<1, 2, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestBASpace<1, 3, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestBASpace<1, 6, double>() )  ) );
-#endif
-
-#if 0 // 2D tests
-    test->add( BOOST_TEST_CASE( ( Feel::TestBASpace<2, 1, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestBASpace<2, 2, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestBASpace<2, 3, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestBASpace<2, 6, double>() )  ) );
-#endif
-
-#if 1 // 3D tests
-    test->add( BOOST_TEST_CASE( ( Feel::TestBASpace<3, 1, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestBASpace<3, 2, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestBASpace<3, 3, double>() )  ) );
-    test->add( BOOST_TEST_CASE( ( Feel::TestBASpace<3, 6, double>() )  ) );
-#endif
-
-#endif // Finite Element vs Boundary Adapted
-
-    //boost::unit_test::framework::run( test );
-    return test;
+    return ret;
 }
+
 #else
 int main( int argc, char** argv)
 {
