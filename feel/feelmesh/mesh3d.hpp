@@ -597,7 +597,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                             for ( uint16_type k = 0;k < 2 + face_type::nbPtsPerEdge;k++ )
                                 edg.setPoint( k, ifa->point( bele.eToP( j, k ) ) );
                             // TODO: should assocate a marker to the edge here ?
-                            edg.addElement( ifa->ad_first() );
+                            //edg.addElement( ifa->ad_first() );
                             this->addEdge( edg );
                         }
                     }
@@ -635,13 +635,22 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                             FEEL_ASSERT( _edgeit->second >= this->numEdges() )( _edgeit->second )( this->numEdges() ).error( "invalid edge index" );
                             // set edge id
                             edg.setId( _edgeit->second );
+                            // we have already inserted edges on the boundary so
+                            // this one _is_ not on the boundary
                             edg.setOnBoundary( false );
+                            // number of points on the edge is 2 (number of
+                            // vertices) plus the number of points in the
+                            // interior of the edge
                             for ( uint16_type k = 0; k < 2 + element_type::nbPtsPerEdge; k++ )
-                                edg.setPoint( k, elt_it->point( k ) );
+                                edg.setPoint( k, elt_it->point( elt_it->eToP( j, k ) ) );
                             // TODO: should assocate a marker to the edge here ?
-                            edg.addElement( vid );
+                            //edg.addElement( vid );
                             this->addEdge( edg );
                         }
+                    else
+                    {
+
+                    }
 
                     this->elements().modify( elt_it,
                                              detail::UpdateEdge<edge_type>( j, boost::cref( this->edge(_edgeit->second) ) ) );
