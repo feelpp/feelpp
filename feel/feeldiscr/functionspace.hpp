@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -2370,14 +2370,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
 
 
-    if ( basis_type::nDofPerEdge )
+    if ( basis_type::nDofPerEdge || nDim >= 3 )
         mesh_components |= MESH_UPDATE_EDGES;
     /*
      * update faces info in mesh only if dofs exists on faces or the
      * expansion is continuous between elements. This case handles strong
      * Dirichlet imposition
      */
-    if ( basis_type::nDofPerFace || is_continuous )
+    if ( basis_type::nDofPerFace || is_continuous  || nDim >= 3 )
         mesh_components |= MESH_UPDATE_FACES;
 
     _M_mesh->components().set( mesh_components );
