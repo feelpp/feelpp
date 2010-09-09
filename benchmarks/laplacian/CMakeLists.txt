@@ -24,7 +24,6 @@
 
 add_subdirectory( ale )
 add_subdirectory( cG )
-add_subdirectory( dG )
 
 # foreach( BENCH
 #     nonlinearpow
