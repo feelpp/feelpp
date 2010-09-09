@@ -69,7 +69,7 @@ makeOptions()
         ("nu", po::value<double>()->default_value( 1 ), "coef diffusion")
         ("beta", po::value<double>()->default_value( 1 ), "coef reaction " )
         ("gammabc", po::value<double>()->default_value( 80 ), "weak Dirichlet penalisation parameter " )
-
+        ("penal", Feel::po::value<double>()->default_value( 10 ), "jump penalisation parameter for dG")
         ("weak", "use weak dirichlet conditions")
         ;
     return laplacianoptions.add( Feel::feel_options() );
@@ -98,7 +98,7 @@ makeAbout()
  *
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  */
-template<int Dim, int Order, int RDim = Dim, template<uint16_type,uint16_type,uint16_type> class Entity=Simplex>
+template<int Dim, int Order, int RDim = Dim, typename ContinuityType = Continuous, template<uint16_type,uint16_type,uint16_type> class Entity=Simplex>
 class Laplacian
     :
     public ApplicationXML
@@ -123,12 +123,12 @@ public:
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Discontinuous> > > p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
     /*basis*/
-    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
-    typedef fusion::vector<Lagrange<Order+2, Scalar> > exact_basis_type;
+    typedef bases<Lagrange<Order, Scalar, ContinuityType> > basis_type;
+    typedef bases<Lagrange<Order+2, Scalar> > exact_basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -189,7 +189,8 @@ public:
                 break;
             }
         this->
-            addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
+            addParameter( Parameter(_name="cont",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( ContinuityType::is_continuous ).c_str() ) )
+            .addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
             .addParameter( Parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str() ) )
             .addParameter( Parameter(_name="beta",_type=CONT_ATTR,_latex="\\beta",_values="0.01:1:10") )
             .addParameter( Parameter(_name="nu",_type=CONT_ATTR,_latex="\\nu",_values="0.01:1:10") )
@@ -237,13 +238,14 @@ private:
 
 }; // Laplacian
 
-template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, int RDim, typename ContinuityType, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Laplacian<Dim, Order, RDim, Entity>::run()
+Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
 {
     boost::timer t1;
 
-    this->addParameterValue( Dim )
+    this->addParameterValue( ContinuityType::is_continuous )
+        .addParameterValue( Dim )
         .addParameterValue( Order )
         .addParameterValue( this->vm()["beta"].template as<double>() )
         .addParameterValue( this->vm()["nu"].template as<double>() )
@@ -262,7 +264,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
                                                       _convex=(entity_type::is_hypercube)?"Hypercube":"Simplex",
                                                       _shape=shape,
                                                       _dim=Dim,
-                                                      _xmin=-1.,_ymin=-1.,_zmax=-1.,
+                                                      _xmin=-1.,_ymin=-1.,_zmin=-1.,
                                                       _h=meshSize ) );
     Log() << "mesh created in " << t1.elapsed() << "s\n"; t1.restart();
 
@@ -305,7 +307,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     form1( _test=Xh, _vector=F, _init=true ) =
         integrate( elements(mesh), f*id(v) )+
         integrate( markedfaces( mesh, mesh->markerName("Neumann") ), nu*gradg*vf::N()*id(v) );
-    if ( M_use_weak_dirichlet )
+    if ( M_use_weak_dirichlet || ( ContinuityType::is_continuous == false ) )
         {
             form1( Xh, F ) +=
                 integrate( markedfaces(mesh,mesh->markerName("Dirichlet")),
@@ -320,7 +322,8 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     sparse_matrix_ptrtype D( backend->newMatrix( Xh, Xh ) );
 
 
-    form2( Xh, Xh, D, _init=true );
+    size_type pattern = (ContinuityType::is_continuous?DOF_PATTERN_COUPLED:DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR );
+    form2( Xh, Xh, D, _init=true, _pattern=pattern );
     Log() << "D initialized in " << t1.elapsed() << "s\n";t1.restart();
 
     form2( Xh, Xh, D ) +=
@@ -328,7 +331,21 @@ Laplacian<Dim, Order, RDim, Entity>::run()
                    nu*(gradt(u)*trans(grad(v)))
                    + beta*(idt(u)*id(v)) );
     Log() << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";t1.restart();
-    if ( M_use_weak_dirichlet )
+    if ( ContinuityType::is_continuous == false )
+    {
+        value_type penalisation = this->vm()["penal"].template as<value_type>();
+        form2( Xh, Xh, D ) +=integrate( internalfaces(mesh),
+                                        // - {grad(u)} . [v]
+                                        -averaget(gradt(u))*jump(id(v))
+                                        // - [u] . {grad(v)}
+                                        -average(grad(v))*jumpt(idt(u))
+                                        // penal*[u] . [v]/h_face
+                                        + penalisation* (trans(jumpt(idt(u)))*jump(id(v)) )/hFace()
+            );
+        Log() << "D consistency and stabilization terms assembled in " << t1.elapsed() << "s\n";t1.restart();
+    }
+
+    if ( M_use_weak_dirichlet || ( ContinuityType::is_continuous == false ) )
         {
 
             form2( Xh, Xh, D ) += integrate( markedfaces(mesh,mesh->markerName("Dirichlet")),
@@ -344,7 +361,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     Log() << "D assembled in " << t1.elapsed() << "s\n";
 
 
-    if ( ! M_use_weak_dirichlet )
+    if ( ( M_use_weak_dirichlet == false )  && ContinuityType::is_continuous )
         {
             t1.restart();
             form2( Xh, Xh, D ) +=
@@ -390,9 +407,9 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 
 } // Laplacian::run
 
-template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, int RDim, typename ContinuityType, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Laplacian<Dim, Order, RDim, Entity>::exportResults( element_type& U, element_type& v )
+Laplacian<Dim, Order, RDim, ContinuityType, Entity>::exportResults( element_type& U, element_type& v )
 {
     if ( exporter->doExport() )
         {
