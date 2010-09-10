@@ -187,7 +187,7 @@ public:
                 h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.02:0.4" );
                 break;
             case 5:
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.2:0.1:1" );
+                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.05:0.1:0.6" );
                 break;
             }
         this->
