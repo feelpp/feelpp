@@ -403,17 +403,25 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
         mpi::broadcast( M_comm, fname, 0 );
     return fname;
 }
-void
+std::string
 Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 {
 #if HAVE_GMSH
-    // generate mesh
-    std::ostringstream __str;
-    if ( parametric )
-        __str << "gmsh -parametric -refine " << name;
-    else
-        __str << "gmsh -refine " << name;
-    ::system( __str.str().c_str() );
+    std::cout << "refine uniformely " << name << " " << level << " times\n";
+    std::ostringstream filename;
+    filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
+    fs::copy_file( fs::path( name ), fs::path( filename.str() ) );
+    for( int l = 0; l < level; ++l )
+    {
+        // generate mesh
+        std::ostringstream __str;
+        if ( parametric )
+            __str << "gmsh -parametric -refine " << filename.str();
+        else
+            __str << "gmsh -refine " << filename.str();
+        ::system( __str.str().c_str() );
+    }
+    return filename.str();
 #else
     throw std::invalid_argument("Gmsh is not available on this system");
 #endif

@@ -330,7 +330,7 @@ public:
      * - \param name  name of the gmsh mesh file
      * - \param level the number of refinements
      */
-    void refine( std::string const& name, int level = 1, bool const parametric = false ) const;
+    std::string refine( std::string const& name, int level = 1, bool const parametric = false ) const;
 
     //! \return the preamble for gmsh geometries
     std::string preamble() const;
@@ -524,8 +524,9 @@ BOOST_PARAMETER_FUNCTION(
     // refinement if option is enabled to a value greater or equal to 1
     if ( refine )
     {
+        Debug() << "Refine mesh ( level: " << refine << ")\n";
         Gmsh gmsh;
-        gmsh.refine( fname, refine, parametricnodes );
+        fname = gmsh.refine( fname, refine, parametricnodes );
     }
 
     ImporterGmsh<_mesh_type> import( fname );
