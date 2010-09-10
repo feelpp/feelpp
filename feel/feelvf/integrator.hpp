@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,7 @@
        Date: 2005-01-20
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006-2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -512,11 +512,11 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
     element_iterator it = beginElement();
     element_iterator en = endElement();
 
-    uint16_type __face_id_in_elt_0 = it->pos_first();
-
     // check that we have elements to iterate over
     if ( it == en )
         return;
+
+    uint16_type __face_id_in_elt_0 = it->pos_first();
 
     // get the geometric mapping associated with element 0
     //Debug( 5065 ) << "element " << it->element(0)  << "face " << __face_id_in_elt_0 << " permutation " << it->element(0).permutation( __face_id_in_elt_0 ) << "\n";
@@ -697,6 +697,11 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     element_iterator it = this->beginElement();
     element_iterator en = this->endElement();
 
+    // make sure that we have elements to iterate over (return 0
+    // otherwise)
+    if ( it == en )
+        return typename eval::ret_type( eval::shape::M, eval::shape::N );;
+
     //
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
@@ -716,10 +721,6 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             }
 #endif
 
-    // make sure that we have elements to iterate over (return 0
-    // otherwise)
-    if ( it == en )
-        return typename eval::ret_type( eval::shape::M, eval::shape::N );;
 
     gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
@@ -798,6 +799,11 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
     element_iterator it = beginElement();
     element_iterator en = endElement();
 
+    // make sure that we have elements to iterate over (return 0
+    // otherwise)
+    if ( it == en )
+      return typename eval::ret_type(eval::shape::M, eval::shape::N );
+
     gm_ptrtype gm = it->element(0).gm();
     //Debug(5065) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
     for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
@@ -810,12 +816,6 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
                 __geopc[__f][__p] = pc_ptrtype(  new pc_type( gm, ppts[__f].find(__p)->second ) );
             }
         }
-
-
-    // make sure that we have elements to iterate over (return 0
-    // otherwise)
-    if ( it == en )
-      return typename eval::ret_type(eval::shape::M, eval::shape::N );
 
     uint16_type __face_id_in_elt_0 = it->pos_first();
 
@@ -855,10 +855,6 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
             expr2 = eval2_expr_ptrtype( new eval2_expr_type( expression(), mapgmc ) );
             expr2->init( im() );
         }
-    // make sure that we have elements to iterate over (return 0
-    // otherwise)
-    if ( it == en )
-        return typename eval::ret_type(eval::shape::M, eval::shape::N );
 
     typename eval::ret_type res(eval::shape::M, eval::shape::N );
     res.clear();
@@ -973,6 +969,14 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
     element_iterator it = this->beginElement();
     element_iterator en = this->endElement();
 
+    auto p0 = P0h->element( "p0" );
+    // set to 0 first
+    p0.zero();
+    // make sure that we have elements to iterate over (return 0
+    // otherwise)
+    if ( it == en )
+        return p0;
+
     //
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
@@ -992,13 +996,7 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
             }
 #endif
 
-    auto p0 = P0h->element( "p0" );
-    // set to 0 first
-    p0.zero();
-    // make sure that we have elements to iterate over (return 0
-    // otherwise)
-    if ( it == en )
-        return p0;
+
 
     gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
@@ -1076,6 +1074,14 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
     element_iterator it = beginElement();
     element_iterator en = endElement();
 
+    auto p0 = P0h->element( "p0" );
+    // set to 0 first
+    p0.zero();
+    // make sure that we have elements to iterate over (return 0
+    // otherwise)
+    if ( it == en )
+        return p0;
+
     gm_ptrtype gm = it->element(0).gm();
     //Debug(5065) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
     for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
@@ -1089,13 +1095,6 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
             }
         }
 
-    auto p0 = P0h->element( "p0" );
-    // set to 0 first
-    p0.zero();
-    // make sure that we have elements to iterate over (return 0
-    // otherwise)
-    if ( it == en )
-        return p0;
 
     uint16_type __face_id_in_elt_0 = it->pos_first();
 
@@ -1135,10 +1134,6 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
             expr2 = eval2_expr_ptrtype( new eval2_expr_type( expression(), mapgmc ) );
             expr2->init( im() );
         }
-    // make sure that we have elements to iterate over (return 0
-    // otherwise)
-    if ( it == en )
-        return p0;
 
     //
     // start the real intensive job:
