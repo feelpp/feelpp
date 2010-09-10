@@ -65,6 +65,8 @@
    - enhanced the ExporterGMSH class and updated the interface so that it
      supports loading/saving high order elements in all 3 dimensions as well as
      associated data. Adapted the TimeSet class accordingly.
+   - added a _refine=<level> option in createGMSHMesh() and loadGMSHMesh() if
+     level=0 do nothing, other refine <level> times uniformely
  - renamed GmshTensorizedDomain to GmshHypercubeDomain
 
 *** lifevf
