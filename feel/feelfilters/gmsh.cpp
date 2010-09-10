@@ -407,10 +407,9 @@ std::string
 Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 {
 #if HAVE_GMSH
-    std::cout << "refine uniformely " << name << " " << level << " times\n";
     std::ostringstream filename;
     filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
-    fs::copy_file( fs::path( name ), fs::path( filename.str() ) );
+    fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists );
     for( int l = 0; l < level; ++l )
     {
         // generate mesh
