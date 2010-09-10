@@ -26,7 +26,7 @@ INCLUDE_DIRECTORIES (
   )
 ENABLE_TESTING()
 
-foreach( continuity Continuous Discontinuous )
+foreach( continuity Continuous )
   foreach( dim 1 2 3)
     foreach( order 1 2 3 4 5)
       foreach( convex Simplex Hypercube )
