@@ -139,15 +139,10 @@ void
 Application::initMPI( int argc, char** argv, MPI_Comm comm )
 {
 #if defined( HAVE_MPI_H )
-    M_env = boost::shared_ptr<mpi::environment>( new mpi::environment( argc, argv ) );
     if (!mpi::environment::initialized())
     {
-
-#if 0
-        //int __argc = this->unknownArgc();
-        //char** __argv = this->unknownArgv();
         MPI_Init (&argc, &argv);
-#endif
+        MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
     }
     M_comm = boost::shared_ptr<mpi::communicator>( new mpi::communicator() );
     //MPI_Comm_dup ( comm, &COMM_WORLD);
@@ -347,18 +342,21 @@ Application::Application( Application const& __app )
 }
 Application::~Application()
 {
+#if 0
 #if defined ( HAVE_PETSC_H )
+    PetscTruth is_petsc_initialized;
+    PetscInitialized( &is_petsc_initialized );
+    if ( is_petsc_initialized )
+    {
 #if defined( HAVE_SLEPC )
-    SlepcFinalize();
+        SlepcFinalize();
 #else
-    PetscFinalize();
-#endif
-#endif
+        PetscFinalize();
+#endif // HAVE_SLEPC
+    }
+#endif // HAVE_PETSC_H
 
-#if defined(HAVE_MPI_H)
-    //MPI_Finalize();
-
-#endif
+#endif // 0
 }
 
 void
