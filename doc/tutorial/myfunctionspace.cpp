@@ -238,6 +238,8 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
 int
 main( int argc, char** argv )
 {
+    Feel::Environment env( argc, argv );
+
     Feel::Assert::setLog( "myfunctionspace.assert");
     Application app( argc, argv, makeAbout(), makeOptions() );
 
