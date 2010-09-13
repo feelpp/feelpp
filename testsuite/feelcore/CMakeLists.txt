@@ -1,5 +1,5 @@
 
-foreach(TEST traits singleton factory debug context )
+foreach(TEST traits singleton factory debug context simget)
 
   feel_add_test( ${TEST} )
 
