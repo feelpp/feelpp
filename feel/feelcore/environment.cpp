@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-04-14
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -57,33 +57,30 @@ namespace Feel
 {
 Environment::Environment()
     :
-    M_env(),
-    M_comm()
+    M_env()
 {
+    mpi::communicator world;
 #if defined ( HAVE_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
-
     if ( !is_petsc_initialized )
     {
         i_initialized = true;
         int ierr = PetscInitializeNoArguments();
 
         boost::ignore_unused_variable_warning(ierr);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(world,ierr);
     }
 #endif // HAVE_PETSC_H
 }
 Environment::Environment( int& argc, char**& argv )
     :
-    M_env( argc, argv ),
-    M_comm()
+    M_env( argc, argv )
 {
-
+    mpi::communicator world;
 #if defined ( HAVE_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
-
     if ( !is_petsc_initialized )
     {
         i_initialized = true;
@@ -92,13 +89,13 @@ Environment::Environment( int& argc, char**& argv )
 #else
         int ierr = PetscInitialize( &argc, &argv, PETSC_NULL, PETSC_NULL );
 #endif
-
         boost::ignore_unused_variable_warning(ierr);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(world,ierr);
     }
 #endif // HAVE_PETSC_H
 
 #if defined( HAVE_MADLIB_H )
+    // \warning Madlib initializes MPI too (may generate warnings)
     MAdLibInitialize( &argc, &argv );
 #endif // HAVE_MADLIB_H
 }
@@ -108,30 +105,50 @@ Environment::~Environment()
     if ( i_initialized )
     {
 #if defined ( HAVE_PETSC_H )
+        PetscTruth is_petsc_initialized;
+        PetscInitialized( &is_petsc_initialized );
+        if ( is_petsc_initialized )
+        {
 #if defined( HAVE_SLEPC )
-        SlepcFinalize();
+            SlepcFinalize();
 #else
-        PetscFinalize();
-#endif
-#endif
+            PetscFinalize();
+#endif // HAVE_SLEPC
+        }
+#endif // HAVE_PETSC_H
+    }
 
 #if defined( HAVE_MADLIB_H )
-        MAdLibFinalize();
+    MAdLibFinalize();
 #endif // HAVE_MADLIB_H
-    }
 }
+
+
 
 bool
 Environment::initialized()
 {
-    return mpi::environment::initialized();
+#if defined( HAVE_PETSC_H )
+    PetscTruth is_petsc_initialized;
+    PetscInitialized( &is_petsc_initialized );
+    return mpi::environment::initialized() && is_petsc_initialized ;
+#else
+    return mpi::environment::initialized() ;
+#endif
 }
 
 bool
 Environment::finalized()
 {
+#if defined( HAVE_PETSC_H )
+    PetscTruth is_petsc_initialized;
+    PetscInitialized( &is_petsc_initialized );
+    return mpi::environment::finalized() && !is_petsc_initialized;
+#else
     return mpi::environment::finalized();
+#endif
 }
+
 
 std::string
 Environment::rootRepository()
