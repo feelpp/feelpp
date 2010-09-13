@@ -284,9 +284,29 @@ TestMixed<Dim,Order>::run()
         D->close();
         D->printMatlab( "D.m" );
         D->multVector( U, Q );
-        double res = inner_product( Q, P );
+        res = inner_product( Q, P );
         BOOST_CHECK_CLOSE( res, Dim*meas, 1e-13 );
-        BOOST_TEST_MESSAGE( "[D(p,u)] res = " << res << " (must be equal to " << Dim*meas << "\n" );
+        BOOST_TEST_MESSAGE( "[D(p,u)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
+
+        form2( _trial=Xh, _test=Yh, _matrix=D, _init=true)=
+            integrate( elements(mesh), -grad(p)*idt(u) );
+
+        D->close();
+        D->printMatlab( "Dg.m" );
+        D->multVector( U, Q );
+        res = inner_product( Q, P );
+        BOOST_CHECK_SMALL( res, 1e-13 );
+        BOOST_TEST_MESSAGE( "[Dg(p,u)] res = " << res << " (must be equal to " << 0 << ")\n" );
+
+        form2( _trial=Xh, _test=Yh, _matrix=D, _init=true)=
+            integrate( boundaryfaces(mesh), trans(idt(u))*N()*id(p) );
+
+        D->close();
+        D->printMatlab( "Db.m" );
+        D->multVector( U, Q );
+        res = inner_product( Q, P );
+        BOOST_CHECK_CLOSE( res, Dim*meas, 1e-13 );
+        BOOST_TEST_MESSAGE( "[Db(p,u)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
         vector_ptrtype F( M_backend->newVector( Yh ) );
         BOOST_CHECK_EQUAL( F->size(), Yh->nLocalDof() );
@@ -296,7 +316,7 @@ TestMixed<Dim,Order>::run()
         F->printMatlab( "Fu.m" );
         res = inner_product( F, P );
         BOOST_CHECK_CLOSE( res, Dim*meas, 1e-12 );
-        BOOST_TEST_MESSAGE( "[Fu(p)] res = " << res << " (must be equal to " << Dim*meas << "\n" );
+        BOOST_TEST_MESSAGE( "[Fu(p)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
     }
     {
