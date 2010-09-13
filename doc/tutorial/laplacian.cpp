@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -420,6 +420,7 @@ Laplacian<Dim>::solve( sparse_matrix_ptrtype& D,
 int
 main( int argc, char** argv )
 {
+    Environment env( argc, argv );
     /**
      * create an application
      */
@@ -437,8 +438,8 @@ main( int argc, char** argv )
      */
     /** \code */
     app.add( new Laplacian<1>( app.vm(), app.about() ) );
-    app.add( new Laplacian<2>( app.vm(), app.about() ) );
-    app.add( new Laplacian<3>( app.vm(), app.about() ) );
+    //app.add( new Laplacian<2>( app.vm(), app.about() ) );
+    //app.add( new Laplacian<3>( app.vm(), app.about() ) );
     /** \endcode */
 
     /**
