@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-04-14
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -31,20 +31,36 @@
 
 #include <cstdlib>
 
+#include <boost/noncopyable.hpp>
 #include <boost/format.hpp>
 
 #include <feel/feelcore/feel.hpp>
 
 namespace Feel
 {
-/**
- * \class Environment
- * \brief Runtime Environment
+/** @brief Initialize, finalize, and query the Feel++ environment.
+ *
+ *  The @c Environment class is used to initialize, finalize, and
+ *  query the Feel++ environment. It will typically be used in the @c
+ *  main() function of a program, which will create a single instance
+ *  of @c Environment initialized with the arguments passed to the
+ *  program:
+ *
+ *  @code
+ *  int main(int argc, char* argv[])
+ *  {
+ *    Feel::Environment env(argc, argv);
+ *  }
+ *  @endcode
+ *
+ *  The instance of @c Environment will initialize Feel++ (by calling @c MPI, @c
+ *  PETSc, @c SLEPc and @c MAdLib initialization routines) in its constructor
+ *  and finalize in its destructor.
  *
  * @author Christophe Prud'homme
  * @see Application
  */
-class Environment
+class Environment : boost::noncopyable
 {
 public:
 
@@ -161,9 +177,7 @@ protected:
 private:
     /// Whether this environment object called MPI_Init
     bool i_initialized;
-
     mpi::environment M_env;
-    mpi::communicator M_comm;
 };
 }
 #endif /* __Environment_H */
