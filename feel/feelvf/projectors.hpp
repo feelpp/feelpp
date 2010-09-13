@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,7 @@
        Date: 2005-05-31
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006-2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -168,6 +168,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     boost::timer __timer;
 
     element_type __v( _M_functionspace );
+    FEEL_ASSERT( __v.size() == _M_functionspace->dof()->nDof() )( __v.size() )( _M_functionspace->dof()->nDof() ).warn( "invalid size" );
     __v.setZero();
 
     typedef typename functionspace_type::fe_type fe_type;
@@ -204,10 +205,13 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
 
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
-    FEEL_ASSERT( __v.size() == _M_functionspace->dof()->nDof() )( __v.size() )( _M_functionspace->dof()->nDof() ).warn( "invalid size" );
-    __v.resize( _M_functionspace->dof()->nDof() );
+
     iterator_type it, en;
     boost::tie( boost::tuples::ignore, it, en ) = _M_range;
+
+    // return if no elements
+    if ( it == en )
+        return __v;
 
     gm_context_ptrtype __c( new gm_context_type( __v.functionSpace()->gm(),
                                                  *it,
