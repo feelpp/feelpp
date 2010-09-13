@@ -233,7 +233,6 @@ public:
     }
 };
 
-#if 0
 template<int Dim>
 class TestSpaceRT
 {
@@ -264,16 +263,19 @@ public:
 
 #if !defined( USE_BOOST_TEST )
 #define BOOST_CHECK( e ) FEEL_ASSERT( e ).warn( "BOOST_CHECK assertion failed" );
+#define BOOST_CHECK_EQUAL( a, b ) FEEL_ASSERT( a==b )(a)(b).warn( "BOOST_CHECK assertion failed" );
 #endif
-
         BOOST_CHECK( Xh->is_scalar == false );
         BOOST_CHECK( Xh->is_vectorial == true );
-        BOOST_CHECK( Xh->nDof() == mesh->numEdges());
+        if ( Dim == 2 )
+            BOOST_CHECK_EQUAL( Xh->nDof(), mesh->numEdges() );
+        if ( Dim == 3 )
+            BOOST_CHECK_EQUAL( Xh->nDof(), mesh->numFaces() );
 
 
     }
 };
-#endif
+
 
 template<int Dim, int N, typename T>
 class TestBASpace
@@ -330,6 +332,7 @@ public:
 
 #if USE_BOOST_TEST
 
+
 BOOST_AUTO_TEST_CASE( test_space1_11 ) { BOOST_TEST_MESSAGE( "test_space1_11" );   Feel::TestSpace1<1, 1, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_11 done" );}
 BOOST_AUTO_TEST_CASE( test_space1_12 ) { BOOST_TEST_MESSAGE( "test_space1_12" );   Feel::TestSpace1<1, 2, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_12 done" );}
 BOOST_AUTO_TEST_CASE( test_space1_21 ) { BOOST_TEST_MESSAGE( "test_space1_21" );   Feel::TestSpace1<2, 1, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_21 done" );}
@@ -337,6 +340,9 @@ BOOST_AUTO_TEST_CASE( test_space1_22 ) { BOOST_TEST_MESSAGE( "test_space1_22" );
 BOOST_AUTO_TEST_CASE( test_space1_32 ) { BOOST_TEST_MESSAGE( "test_space1_32" );   Feel::TestSpace1<3, 2, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_32 done" );}
 BOOST_AUTO_TEST_CASE( test_space2_2 ) { BOOST_TEST_MESSAGE( "test_space2_2" );   Feel::TestSpace2<2, double> t;t(); BOOST_TEST_MESSAGE( "test_space2_2 done" );}
 BOOST_AUTO_TEST_CASE( test_space2_3 ) { BOOST_TEST_MESSAGE( "test_space2_3" );   Feel::TestSpace2<3, double> t;t(); BOOST_TEST_MESSAGE( "test_space2_3 done" );}
+
+BOOST_AUTO_TEST_CASE( test_space_rt_1 ) { BOOST_TEST_MESSAGE( "test_space_rt_1" );   Feel::TestSpaceRT<2> t;t(); BOOST_TEST_MESSAGE( "test_space_rt_1 done" );}
+BOOST_AUTO_TEST_CASE( test_space_rt_2 ) { BOOST_TEST_MESSAGE( "test_space_rt_2" );   Feel::TestSpaceRT<3> t;t(); BOOST_TEST_MESSAGE( "test_space_rt_2 done" );}
 
 int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
@@ -354,13 +360,14 @@ int main( int argc, char** argv)
     Feel::Environment env( argc, argv );
 
     Feel::Assert::setLog( "test_space.assert");
+#if 0
     Feel::TestSpace1<1, 2, double> t11;t11();
     Feel::TestSpace1<2, 2, double> t12;t12();
     Feel::TestSpace1<3, 2, double> t13;t13();
     Feel::TestSpace2<2, double> t21;t21();
     Feel::TestSpace2<3, double> t22;t22();
-
-//    Feel::TestSpaceRT<2> trt;trt();
+#endif
+    Feel::TestSpaceRT<3> trt;trt();
 
 }
 #endif
