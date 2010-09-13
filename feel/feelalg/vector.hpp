@@ -25,7 +25,6 @@
 #include <boost/numeric/ublas/vector.hpp>
 
 #include <feel/feelcore/traits.hpp>
-#include <feel/feelcore/application.hpp>
 
 #include <feel/feelalg/datamap.hpp>
 
