@@ -1093,7 +1093,8 @@ private:
 
                         if ( !fe_type::is_modal )
                             {
-                                if ( permutation  == face_permutation_type(1) || nOrder == 1 )
+                                // no need of permutation is identity or only one dof on face
+                                if ( permutation  == face_permutation_type(1) || fe_type::nDofPerFace == 1 )
                                     gDof += l;
                                 else
                                     gDof += vector_permutation[permutation][l];
