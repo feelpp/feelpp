@@ -71,42 +71,39 @@ struct imesh
     typedef boost::shared_ptr<type> ptrtype;
 };
 
-template<typename T, int Dim>
-typename imesh<T, Dim>::ptrtype
-createMesh( double hsize )
-{
-    double meshSize = hsize;
-    typedef typename imesh<T,Dim>::type mesh_type;
-    typename imesh<T,Dim>::ptrtype mesh( new typename imesh<T,Dim>::type );
-
-    GmshHypercubeDomain td(Dim,1,Dim,Simplex<Dim,1,Dim>::is_hypercube);
-    td.setCharacteristicLength( meshSize );
-    //td.setX( std::make_pair( -1, 1 ) );
-    ImporterGmsh<typename imesh<T,Dim>::type> import( td.generate( ( boost::format( "hypercube-%1%D" ) % Dim ).str() ) );
-    mesh->accept( import );
-    mesh->components().set( MESH_RENUMBER | MESH_UPDATE_FACES | MESH_UPDATE_EDGES | MESH_PARTITION );
-    mesh->updateForUse();
-
-    return mesh;
-}
-
 template<typename value_type = double, int Dim=2>
-struct test_integration_internal_faces_v
+struct test_integration_internal_faces_v: public Application
 {
-    test_integration_internal_faces_v( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_), mesh( Feel::createMesh<value_type,Dim>( meshSize ) )
-    {}
+    typedef typename imesh<value_type,Dim>::convex_type convex_type;
+    typedef typename imesh<value_type,Dim>::type mesh_type;
+    typedef typename imesh<value_type,Dim>::ptrtype mesh_ptrtype;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<1, Scalar> >, double> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
 
+    test_integration_internal_faces_v( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        Application( argc, argv, ad, od ),
+        backend( Backend<double>::build( this->vm() ) ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( this->vm()["shape"].template as<std::string>() ),
+        mesh()
+        {
+            mesh = createGMSHMesh( _mesh=new mesh_type,
+                                   _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                                 _usenames=true,
+                                                 _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
+                                                 _shape=shape,
+                                                 _dim=Dim,
+                                                 _h=meshSize ) );
+        }
     void operator()()
     {
-        using namespace Feel;
         using namespace Feel::vf;
 
-
-        typedef typename imesh<value_type,Dim>::type mesh_type;
-        typedef typename imesh<value_type,Dim>::ptrtype mesh_ptrtype;
-        typename imesh<value_type,Dim>::ptrtype mesh( createMesh<value_type,Dim>( meshSize ) );
-
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
+
+        space_ptrtype Xh = space_type::New( mesh );
 
         // int ([-1,1],[-1,x]) 1 dx
         value_type meas = integrate( elements(mesh), cst(1.) ).evaluate()( 0, 0 );
@@ -143,10 +140,6 @@ struct test_integration_internal_faces_v
         FEEL_ASSERT( math::abs( v3-0.0) < eps )( v3 )( math::abs( v3-0.0) )( eps ).warn ( "v3 != 0" );
 #endif /* USE_BOOST_TEST */
 
-        typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<3, Scalar> >, double> space_type;
-        typedef boost::shared_ptr<space_type> space_ptrtype;
-        space_ptrtype Xh = space_type::New( mesh );
-        typedef typename space_type::element_type element_type;
         element_type u( Xh, "u" );
         //auto u_exact = Px()+Py()+Pz();
         //auto u_exact = Px()*Px()+Py()*Py()+Pz()*Pz();
@@ -193,8 +186,11 @@ struct test_integration_internal_faces_v
         BOOST_CHECK_CLOSE( 2*avgv_1, sumv_1, eps );
 
     }
+    boost::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
-    typename Feel::imesh<value_type,Dim>::ptrtype mesh;
+    std::string shape;
+    mesh_ptrtype mesh;
+
 };
 
 template<typename value_type = double, int Dim=2>
@@ -203,7 +199,7 @@ struct test_integration_internal_faces_lf : public Application
     typedef typename imesh<value_type,Dim>::convex_type convex_type;
     typedef typename imesh<value_type,Dim>::type mesh_type;
     typedef typename imesh<value_type,Dim>::ptrtype mesh_ptrtype;
-    typedef FunctionSpace<mesh_type, bases<Lagrange<1, Scalar> >, double> space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<3, Scalar> >, double> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
@@ -234,9 +230,9 @@ struct test_integration_internal_faces_lf : public Application
         space_ptrtype Xh = space_type::New( mesh );
 
         auto u = Xh->element( "u" );
-        auto u_exact = Px()+Py()+Pz();
+        //auto u_exact = Px()+Py()+Pz();
         //auto u_exact = Px()*Px()+Py()*Py()+Pz()*Pz();
-        //auto u_exact = Px()*Px()*Pz()+Py()*Py()*Px()+Pz()*Pz()*Py();
+        auto u_exact = Px()*Px()*Pz()+Py()*Py()*Px()+Pz()*Pz()*Py();
         auto v_exact = u_exact *unitX() + u_exact*unitY()+ u_exact*unitZ();
         u = vf::project( Xh, elements( mesh ), u_exact );
 
@@ -267,7 +263,7 @@ struct test_integration_internal_faces_lf : public Application
         double right_gradu_n = inner_product( u, *F );
         BOOST_TEST_MESSAGE(  "jump(left(grad(u)*N)) u^T F = " << left_gradu_n << "\n" );
         BOOST_TEST_MESSAGE(  "jump(right(grad(u)*N)) u^T F = " << right_gradu_n << "\n" );
-        BOOST_CHECK_CLOSE( left_gradu_n, -right_gradu_n, eps*10 );
+        BOOST_CHECK_CLOSE( left_gradu_n, -right_gradu_n, eps*100 );
 
         u = vf::project( Xh, elements( mesh ), cst(1.));
         form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), leftface(id(u)));
@@ -324,15 +320,17 @@ makeAbout()
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
-
 #if 0
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_v, T, dim_types )
 {
-    BOOST_TEST_MESSAGE( "Test integration on internal faces (" << T::value << "D)" );
-    test_integration_internal_faces_v<double,T::value> t( 1 ); t();
-    BOOST_TEST_MESSAGE( "Test integration on internal faces (" << T::value << "D) done." );
+    BOOST_TEST_MESSAGE( "Test integration on internal faces v (" << T::value << "D)" );
+    Feel::test_integration_internal_faces_v<double,T::value> t( boost::unit_test::framework::master_test_suite().argc,
+                                                                boost::unit_test::framework::master_test_suite().argv,
+                                                                makeAbout(), makeOptions() );
+    t();
+    BOOST_TEST_MESSAGE( "Test integration on internal faces v (" << T::value << "D) done." );
 }
-#endif
+#endif // 0
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_lf, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "Test integration on internal faces in linear forms (" << T::value << "D)" );
