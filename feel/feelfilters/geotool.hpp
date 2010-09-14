@@ -586,7 +586,7 @@ namespace Feel {
 
             GeoGMSHTool opFusion(const GeoGMSHTool & m,int __typeop);
 
-            std::string init(int orderGeo);
+            /*std::string*/void init(int orderGeo);
 
             /*
              *
@@ -674,7 +674,7 @@ namespace Feel {
             /*
              * Generate the gmsh code
              */
-            std::string geoStr();
+            /*std::string*/void geoStr();
 
             /*
              * Clean
@@ -692,12 +692,13 @@ namespace Feel {
             {
                 this->cleanOstr();
                 this->zeroCpt();
+                this->init(mesh_type::nOrder);
+                this->geoStr();
 
                 Gmsh gmsh;
                 gmsh.setOrder(mesh_type::nOrder);
                 std::string fname = gmsh.generate( name,
-                                                   this->init(mesh_type::nOrder) +
-                                                   this->geoStr(),false,false,false );
+                                                   _M_ostr->str(),false,false,false );
 
                 ImporterGmsh<mesh_type> import( fname );
                 import.setVersion( "2.1" );
@@ -1051,7 +1052,7 @@ namespace Feel {
         }
 
 
-        std::string
+        void//std::string
         GeoGMSHTool::init(int orderGeo)
         {
             //fait dans gmsh.cpp
@@ -1063,13 +1064,13 @@ namespace Feel {
                     << "Mesh.SecondOrderIncomplete = 0;\n"
                     << "Mesh.Algorithm = 6;\n";
 
-            return _M_ostr->str();
+            //return _M_ostr->str();
 
         }
 
 
 
-        std::string
+        void//std::string
         GeoGMSHTool::geoStr()
         {
             // clean
@@ -1369,7 +1370,7 @@ namespace Feel {
             //}
 
 
-            return _M_ostr->str();
+            //return _M_ostr->str();
 
         }
 
