@@ -323,7 +323,11 @@ public:
      *        Useful if generateGeo has been called outside or if gmsh lybrary has changed.
      * \return the name of the mesh file generate by \c gmsh (with the \c .msh extension)
      */
-    std::string generate( std::string const& name, std::string const& geo, bool const forceRebuild = false, bool const parametric = false ) const;
+    std::string generate( std::string const& name,
+                          std::string const& geo,
+                          bool const forceRebuild = false,
+                          bool const parametric = false,
+                          bool const modifGeo = true) const;
 
     /**
      * refine the mesh uniformly by splitting
@@ -356,7 +360,7 @@ protected:
      *         Note: if you use it alone, generate will call this routine again, hence generate needs to know
      *         whether to regenerate the mesh or not
      */
-    bool generateGeo( std::string const& name, std::string const& geo ) const;
+    bool generateGeo( std::string const& name, std::string const& geo,bool const modifGeo=true ) const;
 
 private:
 
