@@ -761,10 +761,9 @@ template <typename T>
 void
 VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
 {
-    FEEL_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
+    //FEEL_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
     int ierr=0;
-
     ierr = VecSetValues (_M_vec, n, i, v, ADD_VALUES);
     CHKERRABORT(M_comm,ierr);
 

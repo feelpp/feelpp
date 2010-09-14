@@ -206,7 +206,7 @@ template<typename T>
 void
 VectorEpetra<T>::addVector ( int* i, int n, value_type* v )
 {
-    FEEL_ASSERT(n<=size())( n )( size() ).error( "invalid index array size" );
+    //FEEL_ASSERT(n<=size())( n )( size() ).error( "invalid index array size" );
 
     int ierr;
     //indices are in global index space
