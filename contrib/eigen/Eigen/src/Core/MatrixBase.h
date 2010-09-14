@@ -52,6 +52,8 @@
       cout << x.row(0) << endl;
     }
   * \endcode
+  *
+  * \sa \ref TopicClassHierarchy
   */
 template<typename Derived> class MatrixBase
   : public DenseBase<Derived>
@@ -181,7 +183,7 @@ template<typename Derived> class MatrixBase
     operator*(const MatrixBase<OtherDerived> &other) const;
 
     template<typename OtherDerived>
-    const typename ProductReturnType<Derived,OtherDerived,LazyCoeffBasedProductMode>::Type
+    const typename LazyProductReturnType<Derived,OtherDerived>::Type
     lazyProduct(const MatrixBase<OtherDerived> &other) const;
 
     template<typename OtherDerived>

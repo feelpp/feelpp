@@ -1,9 +1,10 @@
+# -*- mode: cmake; coding: utf-8 -*-
 ###  CMakeLists.txt ---
-
+#
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #       Date: 2009-11-12
 #
-#  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2009-2010 UniversitÃ© Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify

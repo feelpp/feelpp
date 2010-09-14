@@ -42,6 +42,8 @@
 using boost::unit_test::test_suite;
 #include <boost/test/floating_point_comparison.hpp>
 
+#include <feel/feelalg/backend.hpp>
+
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelmesh/geoentity.hpp>
@@ -64,7 +66,8 @@ namespace Feel
 template<typename T, int Dim, int Order = 1>
 struct imesh
 {
-    typedef Mesh<Simplex<Dim, Order>, T > type;
+    typedef Simplex<Dim, Order> convex_type;
+    typedef Mesh<convex_type, T > type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 
@@ -86,7 +89,7 @@ createMesh( double hsize )
 
     return mesh;
 }
-}
+
 template<typename value_type = double, int Dim=2>
 struct test_integration_internal_faces_v
 {
@@ -195,50 +198,65 @@ struct test_integration_internal_faces_v
 };
 
 template<typename value_type = double, int Dim=2>
-struct test_integration_internal_faces_lf
+struct test_integration_internal_faces_lf : public Application
 {
-    test_integration_internal_faces_lf( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_), mesh( Feel::createMesh<value_type,Dim>( meshSize ) )
-    {}
+    typedef typename imesh<value_type,Dim>::convex_type convex_type;
+    typedef typename imesh<value_type,Dim>::type mesh_type;
+    typedef typename imesh<value_type,Dim>::ptrtype mesh_ptrtype;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<1, Scalar> >, double> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+
+    test_integration_internal_faces_lf( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        Application( argc, argv, ad, od ),
+        backend( Backend<double>::build( this->vm() ) ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( this->vm()["shape"].template as<std::string>() ),
+        mesh()
+        {
+            mesh = createGMSHMesh( _mesh=new mesh_type,
+                                   _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                                 _usenames=true,
+                                                 _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
+                                                 _shape=shape,
+                                                 _dim=Dim,
+                                                 _h=meshSize ) );
+        }
 
     void operator()()
     {
-        using namespace Feel;
         using namespace Feel::vf;
-
-
-        typedef typename imesh<value_type,Dim>::type mesh_type;
-        typedef typename imesh<value_type,Dim>::ptrtype mesh_ptrtype;
-        typename imesh<value_type,Dim>::ptrtype mesh( createMesh<value_type,Dim>( meshSize ) );
 
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
 
-        typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<3, Scalar> >, double> space_type;
-        typedef boost::shared_ptr<space_type> space_ptrtype;
         space_ptrtype Xh = space_type::New( mesh );
-        typedef typename space_type::element_type element_type;
-        element_type u( Xh, "u" );
-        //auto u_exact = Px()+Py()+Pz();
+
+        auto u = Xh->element( "u" );
+        auto u_exact = Px()+Py()+Pz();
         //auto u_exact = Px()*Px()+Py()*Py()+Pz()*Pz();
-        auto u_exact = Px()*Px()*Pz()+Py()*Py()*Px()+Pz()*Pz()*Py();
-        auto v_exact = vec(u_exact,u_exact);
-        //auto u_exact = Px();
+        //auto u_exact = Px()*Px()*Pz()+Py()*Py()*Px()+Pz()*Pz()*Py();
+        auto v_exact = u_exact *unitX() + u_exact*unitY()+ u_exact*unitZ();
         u = vf::project( Xh, elements( mesh ), u_exact );
 
 
-        boost::shared_ptr<VectorUblas<double> > F( new VectorUblas<double>( u.size() ) );
-        std::fill( F->begin(), F->end(), (double)0 );
-        form1( Xh, F ) = integrate( internalfaces(mesh),
-                                    trans(leftface(id(u)*N())+(rightface(id(u)*N())))*(leftfacev(N()))
+        auto F = backend->newVector( Xh );
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces(mesh),
+                                                              //print(trans(print(leftface(id(u)*print(N(),"leftN:")),"leftuN=")+print(rightface(id(u)*print(N(),"rightN:")),"rightuN=")),"leftuN+rightuN=" )*print(leftfacev(N()),"leftN=")
+                                                              trans(leftface(id(u)*N())+rightface(id(u)*N()))*leftfacev(N())
             );
+
         F->close();
+        F->printMatlab( "F.m" );
+        u.printMatlab( "u.m" );
         double jumpu_F = inner_product( u, *F );
+        BOOST_TEST_MESSAGE ( "jump(u) = " << jumpu_F << "\n" );
         BOOST_CHECK_SMALL( jumpu_F, eps );
 
-
-        form1( Xh, F, _init=true ) = integrate( internalfaces(mesh),
-                                    (jump(grad(u)))
-                                    );
+#if 1
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces(mesh),
+                                                              (jump(grad(u))) );
         double jump_gradu_F = inner_product( u, *F );
         BOOST_TEST_MESSAGE ( "jump(grad(u) u^T F = " << jump_gradu_F << "\n" );
         BOOST_CHECK_SMALL( jump_gradu_F, eps );
@@ -265,12 +283,15 @@ struct test_integration_internal_faces_lf
 
         form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), jump(grad(u)));
         BOOST_CHECK_SMALL( inner_product( u, *F ), eps );
+#endif
 
     }
+    boost::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
-    typename Feel::imesh<value_type,Dim>::ptrtype mesh;
+    std::string shape;
+    mesh_ptrtype mesh;
 };
-
+} // Feel
 inline
 Feel::po::options_description
 makeOptions()
@@ -278,6 +299,7 @@ makeOptions()
     Feel::po::options_description integrationoptions("Test Integration 2D/3D options");
     integrationoptions.add_options()
         ("hsize", Feel::po::value<double>()->default_value( 3 ), "h value")
+        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (hypercube, simplex, ellipsoid)")
         ;
     return integrationoptions.add( Feel::feel_options() );
 }
@@ -289,7 +311,7 @@ makeAbout()
     Feel::AboutData about( "test_integration_ifaces" ,
                            "test_integration_ifaces" ,
                             "0.2",
-                           "2D/3D internal faces integration tests",
+                           "1D/2D/3D internal faces integration tests",
                            Feel::AboutData::License_GPL,
                            "Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble I)");
 
@@ -298,28 +320,35 @@ makeAbout()
 
 }
 
-BOOST_AUTO_TEST_CASE( test_integration_internal_faces_v_double_2 )
-{
-    BOOST_TEST_MESSAGE( "Test integration on internal faces (2D)" );
-    test_integration_internal_faces_v<double,2> t2( 1 ); t2();
-    BOOST_TEST_MESSAGE( "Test integration on internal faces (2D) done." );
-}
-BOOST_AUTO_TEST_CASE( test_integration_internal_faces_lf_double_2 )
-{
-    BOOST_TEST_MESSAGE( "Test integration on internal faces in linear forms (2D)" );
-    test_integration_internal_faces_lf<double,2> t2( 1 ); t2();
-    BOOST_TEST_MESSAGE( "Test integration on internal faces in linear forms (2D) done" );
-}
+//typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<1> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
+
 #if 0
-BOOST_AUTO_TEST_CASE( test_integration_internal_faces_v_double_3 ) { test_integration_internal_faces_v<double,3> t2( 1 ); t2(); }
-BOOST_AUTO_TEST_CASE( test_integration_internal_faces_lf_double_3 ) { test_integration_internal_faces_lf<double,3> t2( 1 ); t2(); }
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_v, T, dim_types )
+{
+    BOOST_TEST_MESSAGE( "Test integration on internal faces (" << T::value << "D)" );
+    test_integration_internal_faces_v<double,T::value> t( 1 ); t();
+    BOOST_TEST_MESSAGE( "Test integration on internal faces (" << T::value << "D) done." );
+}
 #endif
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_lf, T, dim_types )
+{
+    BOOST_TEST_MESSAGE( "Test integration on internal faces in linear forms (" << T::value << "D)" );
+    Feel::test_integration_internal_faces_lf<double,T::value> t( boost::unit_test::framework::master_test_suite().argc,
+                                                                 boost::unit_test::framework::master_test_suite().argv,
+                                                                 makeAbout(), makeOptions() );
+    t();
+    BOOST_TEST_MESSAGE( "Test integration on internal faces in linear forms (" << T::value << "D) done" );
+}
 
 
 int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
 {
     Feel::Environment env( argc, argv );
+    Feel::Assert::setLog( "test_integration_ifaces.assert");
     int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
 
     return ret;
@@ -345,7 +374,7 @@ int
 main( int argc, char** argv )
 {
     Feel::Application mpi( argc, argv, makeAbout(), makeOptions() );
-    Feel::Assert::setLog( "test_integration_3d.assert");
+    Feel::Assert::setLog( "test_integration_ifaces.assert");
 
     test_integration_internal_faces<double> c ( mpi.vm()["hsize"].as<double>() );
     c();

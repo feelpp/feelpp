@@ -1,4 +1,4 @@
-foreach(TEST project bdf interpolation integration integration_ho integration_3d space geomap mixed auto_order_integrate interp_twomesh)
+foreach(TEST project bdf interpolation integration integration_ho integration_ifaces space geomap mixed auto_order_integrate interp_twomesh)
 
   feel_add_test( ${TEST} )
 
