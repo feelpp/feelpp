@@ -34,6 +34,8 @@
 #include <sstream>
 #include <iterator>
 
+#include  <boost/preprocessor/punctuation/paren.hpp>
+#include  <boost/preprocessor/punctuation/comma.hpp>
 #include <boost/regex.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -508,23 +510,8 @@ struct EllipsoidDomain
                                             (3,(hypercube, Hypercube, Hypercube)) ) )
 
 
-#if (BOOST_VERSION < 104400)
-
 #define FACTORY1NAME( LDIM, LORDER, LSHAPE )                             \
     BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_RPAREN())
-
-#define FACTORY2NAME( LDIM, LORDER, LSHAPE )                             \
-    BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_COMMA() BOOST_PP_ARRAY_ELEM(2,LSHAPE) BOOST_PP_RPAREN())
-
-#else
-
-#define FACTORY1NAME( LDIM, LORDER, LSHAPE )                             \
-    BOOST_PP_STRINGIZE((BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_RPAREN()))
-
-#define FACTORY2NAME( LDIM, LORDER, LSHAPE )                             \
-    BOOST_PP_STRINGIZE((BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_COMMA() BOOST_PP_ARRAY_ELEM(2,LSHAPE) BOOST_PP_RPAREN()))
-
-#endif // 104400
 
 # define FACTORY1(LDIM,LORDER,LSHAPE )                                   \
 const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE))  = \
@@ -533,6 +520,9 @@ const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOS
 
 # define FACTORY1_OP(_, GDO) FACTORY1 GDO
 
+
+#define FACTORY2NAME( LDIM, LORDER, LSHAPE )                             \
+    BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_COMMA() BOOST_PP_ARRAY_ELEM(2,LSHAPE) BOOST_PP_RPAREN())
 
 # define FACTORY2(LDIM,LORDER,LSHAPE )                                   \
 const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE)), BOOST_PP_ARRAY_ELEM(2,LSHAPE))   = \
