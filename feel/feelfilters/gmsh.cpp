@@ -329,13 +329,21 @@ Gmsh::getDescriptionFromFile( std::string const& file ) const
     return  __geostream.str();
 }
 bool
-Gmsh::generateGeo( std::string const& __name, std::string const& __geo ) const
+Gmsh::generateGeo( std::string const& __name, std::string const& __geo,bool const modifGeo ) const
 {
-    boost::regex regex( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]+(?:[eE][+-]?[[:digit:]]+)?));" );
-    std::ostringstream hstr;
-    hstr << "(?1$1) = " << M_h << ";";
+    std::string _geo;
+    if (modifGeo)
+        {
+            boost::regex regex( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]+(?:[eE][+-]?[[:digit:]]+)?));" );
+            std::ostringstream hstr;
+            hstr << "(?1$1) = " << M_h << ";";
+            _geo = boost::regex_replace( __geo, regex, hstr.str(), boost::match_default | boost::format_all);
+        }
+    else
+        {
+            _geo = __geo;
+        }
 
-    std::string _geo = boost::regex_replace( __geo, regex, hstr.str(), boost::match_default | boost::format_all);
     // generate geo
     std::ostringstream __geoname;
     __geoname << __name << ".geo";
@@ -371,12 +379,12 @@ Gmsh::generate( std::string const& name ) const
 }
 
 std::string
-Gmsh::generate( std::string const& __name, std::string const& __geo, bool const __forceRebuild, bool const parametric ) const
+Gmsh::generate( std::string const& __name, std::string const& __geo, bool const __forceRebuild, bool const parametric,bool const modifGeo ) const
 {
     std::string fname;
     if ( !mpi::environment::initialized() || (mpi::environment::initialized()  && M_comm.rank() == 0 ) )
         {
-            bool geochanged (generateGeo(__name,__geo));
+            bool geochanged (generateGeo(__name,__geo,modifGeo));
             std::ostringstream __geoname;
             __geoname << __name << ".geo";
 
