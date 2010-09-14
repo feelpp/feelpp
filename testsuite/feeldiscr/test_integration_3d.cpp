@@ -6,7 +6,7 @@
        Date: 2006-08-25
 
   Copyright (C) 2006 EPFL
-  Copyright (C) 2007,2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -286,10 +286,10 @@ inline
 Feel::AboutData
 makeAbout()
 {
-    Feel::AboutData about( "test_integration" ,
-                           "test_integration" ,
-                            "0.1",
-                           "2D/3D integration tests",
+    Feel::AboutData about( "test_integration_ifaces" ,
+                           "test_integration_ifaces" ,
+                            "0.2",
+                           "2D/3D internal faces integration tests",
                            Feel::AboutData::License_GPL,
                            "Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble I)");
 
@@ -298,10 +298,33 @@ makeAbout()
 
 }
 
-BOOST_AUTO_TEST_CASE( test_integration_internal_faces_v_double_2 ) { test_integration_internal_faces_v<double,2> t2( 1 ); t2(); }
+BOOST_AUTO_TEST_CASE( test_integration_internal_faces_v_double_2 )
+{
+    BOOST_TEST_MESSAGE( "Test integration on internal faces (2D)" );
+    test_integration_internal_faces_v<double,2> t2( 1 ); t2();
+    BOOST_TEST_MESSAGE( "Test integration on internal faces (2D) done." );
+}
+BOOST_AUTO_TEST_CASE( test_integration_internal_faces_lf_double_2 )
+{
+    BOOST_TEST_MESSAGE( "Test integration on internal faces in linear forms (2D)" );
+    test_integration_internal_faces_lf<double,2> t2( 1 ); t2();
+    BOOST_TEST_MESSAGE( "Test integration on internal faces in linear forms (2D) done" );
+}
+#if 0
 BOOST_AUTO_TEST_CASE( test_integration_internal_faces_v_double_3 ) { test_integration_internal_faces_v<double,3> t2( 1 ); t2(); }
-BOOST_AUTO_TEST_CASE( test_integration_internal_faces_lf_double_2 ) { test_integration_internal_faces_lf<double,2> t2( 1 ); t2(); }
 BOOST_AUTO_TEST_CASE( test_integration_internal_faces_lf_double_3 ) { test_integration_internal_faces_lf<double,3> t2( 1 ); t2(); }
+#endif
+
+
+int BOOST_TEST_CALL_DECL
+main( int argc, char* argv[] )
+{
+    Feel::Environment env( argc, argv );
+    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
+
+    return ret;
+}
+
 
 #if 0
 #if defined(USE_BOOST_TEST)
@@ -329,13 +352,3 @@ main( int argc, char** argv )
 }
 #endif /* USE_BOOST_TEST */
 #endif
-
-
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
