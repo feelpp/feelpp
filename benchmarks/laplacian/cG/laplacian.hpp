@@ -267,7 +267,8 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
                                                       _shape=shape,
                                                       _dim=Dim,
                                                       _xmin=-1.,_ymin=-1.,_zmin=-1.,
-                                                      _h=meshSize ) );
+                                                      _h=meshSize ),
+                                        _update=MESH_CHECK| MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_RENUMBER );
     Log() << "mesh created in " << t1.elapsed() << "s\n"; t1.restart();
 
     /*
