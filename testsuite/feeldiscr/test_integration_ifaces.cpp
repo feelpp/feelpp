@@ -77,7 +77,7 @@ struct test_integration_internal_faces_v: public Application
     typedef typename imesh<value_type,Dim>::convex_type convex_type;
     typedef typename imesh<value_type,Dim>::type mesh_type;
     typedef typename imesh<value_type,Dim>::ptrtype mesh_ptrtype;
-    typedef FunctionSpace<mesh_type, bases<Lagrange<1, Scalar> >, double> space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<3, Scalar> >, double> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
@@ -124,7 +124,7 @@ struct test_integration_internal_faces_v: public Application
 #endif /* USE_BOOST_TEST */
 
         auto normp = vf::sqrt(trans(P())*P());
-        auto vnormp = vec(normp,normp);
+        auto vnormp = normp*unitX()+normp*unitY()+normp*unitZ();
         value_type v2 = integrate( internalfaces(mesh), leftfacev(trans(vnormp)*N())+rightfacev(trans(vnormp)*N()) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v2, eps );
@@ -320,7 +320,7 @@ makeAbout()
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
-#if 0
+#if 1
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_v, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "Test integration on internal faces v (" << T::value << "D)" );
