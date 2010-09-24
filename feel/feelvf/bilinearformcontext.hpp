@@ -302,9 +302,22 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::assemble( s
         M_local_colsigns = _M_trial_dof->localToGlobalSigns(elt_0);
         _M_rep.array() *= (M_local_rowsigns*M_local_colsigns.transpose()).array().template cast<value_type>();
     }
+
+#if 0
     _M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
                        M_local_cols.data(), M_local_cols.size(),
                        _M_rep.data() );
+#else
+    for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+        {
+            auto ig = M_local_rows(i);
+            for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+                {
+                    auto jg = M_local_cols(j);
+                    _M_form.add(ig,jg,_M_rep(i, j ) );
+                }
+        }
+#endif
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
