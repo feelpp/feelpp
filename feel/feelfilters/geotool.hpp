@@ -25,18 +25,36 @@
 //Bug si 0 argum√ent(a corriger)
 
 # define GEOTOOL_SHAPE                                                  \
-    ( 9, ( ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE ),  \
-           ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
-           ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE    ),  \
-           ( PartialDisque , 2, 1, 0, "partialdisque", 3, PARTIALDISQUE), \
-           ( Special_1a    , 2, 2, 0, "special_1a"   , 1, SPECIAL_1A ), \
-           ( Special_1b    , 2, 1, 0, "special_1b"   , 1, SPECIAL_1B ), \
-           ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE  ),  \
-           ( Cylindre      , 3, 6, 1, "cylindre"     , 4, CYLINDRE  ),  \
-           ( Sphere        , 3, 8, 1, "sphere"       , 2, SPHERE  )     \
-           )                                                            \
+    ( 10, ( ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE ),  \
+            ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE ), \
+            ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
+            ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE    ), \
+            ( PartialDisque , 2, 1, 0, "partialdisque", 3, PARTIALDISQUE), \
+            ( Special_1a    , 2, 2, 0, "special_1a"   , 1, SPECIAL_1A ), \
+            ( Special_1b    , 2, 1, 0, "special_1b"   , 1, SPECIAL_1B ), \
+            ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE  ), \
+            ( Cylindre      , 3, 6, 1, "cylindre"     , 4, CYLINDRE  ), \
+            ( Sphere        , 3, 8, 1, "sphere"       , 2, SPHERE  )    \
+            )                                                           \
       )                                                                 \
     /**/
+
+
+/*_________________________________________________*/
+
+# define GEOTOOL_MARKER_LINE_TRIANGLE           \
+    ( 3, ( ( 1, 1, ( 1 ) ),                     \
+           ( 2, 1, ( 2 ) ),                     \
+           ( 3, 1, ( 3 ) ) )                    \
+      )                                         \
+    /**/
+# define GEOTOOL_MARKER_SURFACE_TRIANGLE        \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
+
+/*_________________________________________________*/
+
 
 /*_________________________________________________*/
 
@@ -2168,6 +2186,29 @@ namespace Feel {
          * Function user                                   *
          *_________________________________________________*
          *_________________________________________________*/
+
+
+        void
+        runTriangle(data_geo_ptrtype dg)
+        {
+            node_type PtA = param<0>(dg);
+            node_type PtB = param<1>(dg);
+            node_type PtC = param<2>(dg);
+
+            writePoint( 1, dg , PtA(0), PtA(1) );
+            writePoint( 2, dg , PtB(0), PtB(1) );
+            writePoint( 3, dg , PtC(0), PtC(1) );
+
+            writeLine( 1, dg , 1 , 2);
+            writeLine( 2, dg , 2 , 3);
+            writeLine( 3, dg , 3 , 1);
+
+            writeLineLoop( 1, dg, Loop()>>1>>2>>3);
+
+            writePlaneSurface( 1, dg, 1);
+        }
+
+
 
         void
         runRectangle(data_geo_ptrtype dg)
