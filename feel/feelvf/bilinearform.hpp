@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -6,7 +6,7 @@
    Date: 2005-01-18
 
    Copyright (C) 2005,2006 EPFL
-   Copyright (C) 2006,2007,2008 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2006-2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -392,8 +392,8 @@ public:
         typedef typename FE2::dof_type trial_dof_type;
         static const int nDofPerElementTest = FE1::dof_type::nDofPerElement;
         static const int nDofPerElementTrial = FE2::dof_type::nDofPerElement;
-        typedef Eigen::Matrix<value_type, nDofPerElementTest, nDofPerElementTrial> local_matrix_type;
-        typedef Eigen::Matrix<value_type, 2*nDofPerElementTest, 2*nDofPerElementTrial> local2_matrix_type;
+        typedef Eigen::Matrix<value_type, nDofPerElementTest, nDofPerElementTrial,Eigen::RowMajor> local_matrix_type;
+        typedef Eigen::Matrix<value_type, 2*nDofPerElementTest, 2*nDofPerElementTrial,Eigen::RowMajor> local2_matrix_type;
         typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
         typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
         typedef Eigen::Matrix<int, nDofPerElementTrial, 1> local_col_type;
