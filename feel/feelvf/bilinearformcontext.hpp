@@ -303,7 +303,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::assemble( s
         _M_rep.array() *= (M_local_rowsigns*M_local_colsigns.transpose()).array().template cast<value_type>();
     }
 
-#if 0
+#if 1
     _M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
                        M_local_cols.data(), M_local_cols.size(),
                        _M_rep.data() );
