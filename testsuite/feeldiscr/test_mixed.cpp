@@ -285,7 +285,7 @@ TestMixed<Dim,Order>::run()
         D->printMatlab( "D.m" );
         D->multVector( U, Q );
         res = inner_product( Q, P );
-        BOOST_CHECK_CLOSE( res, Dim*meas, 1e-13 );
+        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-13 );
         BOOST_TEST_MESSAGE( "[D(p,u)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
         form2( _trial=Xh, _test=Yh, _matrix=D, _init=true)=
@@ -305,7 +305,7 @@ TestMixed<Dim,Order>::run()
         D->printMatlab( "Db.m" );
         D->multVector( U, Q );
         res = inner_product( Q, P );
-        BOOST_CHECK_CLOSE( res, Dim*meas, 1e-13 );
+        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-13 );
         BOOST_TEST_MESSAGE( "[Db(p,u)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
         vector_ptrtype F( M_backend->newVector( Yh ) );
@@ -383,6 +383,15 @@ BOOST_AUTO_TEST_CASE( test_mixed1_21 )
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 1,) done" );
 }
+BOOST_AUTO_TEST_CASE( test_mixed1_23 )
+{
+    BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 3,)" );
+    Feel::TestMixed<2,3> t( boost::unit_test::framework::master_test_suite().argc,
+                            boost::unit_test::framework::master_test_suite().argv,
+                            Feel::makeAbout(), Feel::makeOptions() );
+    t.run();
+    BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 3,) done" );
+}
 
 BOOST_AUTO_TEST_CASE( test_mixed2_31 )
 {
@@ -392,6 +401,16 @@ BOOST_AUTO_TEST_CASE( test_mixed2_31 )
                             Feel::makeAbout(), Feel::makeOptions() );
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 1,) done" );
+}
+
+BOOST_AUTO_TEST_CASE( test_mixed2_33 )
+{
+    BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 3,)" );
+    Feel::TestMixed<3,3> t( boost::unit_test::framework::master_test_suite().argc,
+                            boost::unit_test::framework::master_test_suite().argv,
+                            Feel::makeAbout(), Feel::makeOptions() );
+    t.run();
+    BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 3,) done" );
 }
 
 int BOOST_TEST_CALL_DECL
