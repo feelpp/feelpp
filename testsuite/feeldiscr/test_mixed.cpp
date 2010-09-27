@@ -100,7 +100,7 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Test_Mixed on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier");
+                     "Copyright (c) 2008-2010 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
