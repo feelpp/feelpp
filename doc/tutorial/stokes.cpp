@@ -6,7 +6,7 @@
        Date: 2009-01-04
 
   Copyright (C) 2009 Christophe Prud'homme
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009-2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -89,7 +89,7 @@ makeAbout()
                            "0.1",
                            "Stokes equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2009-2010 Université de Grenoble 1 (Joseph Fourier)");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
    return about;
@@ -213,12 +213,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     using namespace Feel::vf;
 
-    this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%/h_%4%/" )
-                            % this->about().appName()
-                            % convex_type::name()
-                            % BasisU::nOrder
-                            % this->vm()["hsize"].template as<double>()
-                            );
+    if ( this->vm().count( "nochdir" == false ) )
+        this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%/h_%4%/" )
+                                % this->about().appName()
+                                % convex_type::name()
+                                % BasisU::nOrder
+                                % this->vm()["hsize"].template as<double>() );
 
     /*
      * First we create the mesh
@@ -257,28 +257,28 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     vector_ptrtype F( M_backend->newVector( Xh ) );
 
     //# marker5 #
-    AUTO( deft, gradt(u) );
-    AUTO( def, grad(v) );
+    auto deft = gradt(u);
+    auto def = grad(v);
     //# endmarker5 #
 
     //# marker6 #
     // total stress tensor (trial)
-    AUTO( SigmaNt, (-idt(p)*N()+mu*deft*N()) );
+    auto SigmaNt = -idt(p)*N()+mu*deft*N();
 
     // total stress tensor (test)
-    AUTO( SigmaN, (-id(p)*N()+mu*def*N()) );
+    auto SigmaN = -id(p)*N()+mu*def*N();
     //# endmarker6 #
 
     // u exact solution
-    AUTO( u_exact, vec(cos(Px())*cos(Py()),sin(Px())*sin(Py()) ) );
+    auto u_exact = cos(Px())*cos(Py())*unitX() + sin(Px())*sin(Py())*unitY();
 
     // this is the exact solution which has zero mean : the mean of
     // cos(x)*sin(y) is sin(1)*(1-cos(1))) on [0,1]^2
-    AUTO( p_exact, cos(Px())*sin(Py())-(sin(1.0)*(1.-cos(1.0)) ) );
+    auto p_exact = cos(Px())*sin(Py())-(sin(1.0)*(1.-cos(1.0)));
 
     // f is such that f = \Delta u_exact + \nabla p_exact
-    AUTO( f, vec(2*cos(Px())*cos(Py())-sin(Px())*sin(Py()),
-                 2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) ) );
+    auto f = ( (2*cos(Px())*cos(Py())-sin(Px())*sin(Py()))*unitX() +
+               2*sin(Px())*sin(Py())+cos(Px())*cos(Py())*unitY() );
 
     // right hand side
     form1( Xh, F, _init=true )  =
