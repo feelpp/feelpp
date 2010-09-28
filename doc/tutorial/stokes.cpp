@@ -270,7 +270,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     //# endmarker6 #
 
     // u exact solution
-    auto u_exact = cos(Px())*cos(Py())*unitX() + sin(Px())*sin(Py())*unitY();
+    auto u_exact = vec(cos(Px())*cos(Py()), sin(Px())*sin(Py()));
 
     // this is the exact solution which has zero mean : the mean of
     // cos(x)*sin(y) is sin(1)*(1-cos(1))) on [0,1]^2
