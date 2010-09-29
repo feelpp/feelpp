@@ -213,7 +213,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     using namespace Feel::vf;
 
-    if ( this->vm().count( "nochdir" == false ) )
+    if ( this->vm().count( "nochdir" ) == false )
         this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%/h_%4%/" )
                                 % this->about().appName()
                                 % convex_type::name()
