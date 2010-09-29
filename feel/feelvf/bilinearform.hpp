@@ -392,7 +392,10 @@ public:
         typedef typename FE2::dof_type trial_dof_type;
         static const int nDofPerElementTest = FE1::dof_type::nDofPerElement;
         static const int nDofPerElementTrial = FE2::dof_type::nDofPerElement;
-        typedef Eigen::Matrix<value_type, nDofPerElementTest, nDofPerElementTrial,Eigen::RowMajor> local_matrix_type;
+        static const int local_mat_traits = mpl::if_<mpl::equal_to<mpl::int_<nDofPerElementTrial>,mpl::int_<1> >,
+                                                     mpl::int_<Eigen::ColMajor>,
+                                                     mpl::int_<Eigen::RowMajor> >::type::value;
+        typedef Eigen::Matrix<value_type, nDofPerElementTest, nDofPerElementTrial,local_mat_traits> local_matrix_type;
         typedef Eigen::Matrix<value_type, 2*nDofPerElementTest, 2*nDofPerElementTrial,Eigen::RowMajor> local2_matrix_type;
         typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
         typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
