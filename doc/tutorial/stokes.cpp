@@ -277,8 +277,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto p_exact = cos(Px())*sin(Py())-(sin(1.0)*(1.-cos(1.0)));
 
     // f is such that f = \Delta u_exact + \nabla p_exact
-    auto f = ( (2*cos(Px())*cos(Py())-sin(Px())*sin(Py()))*unitX() +
-               2*sin(Px())*sin(Py())+cos(Px())*cos(Py())*unitY() );
+    auto f = vec( (2*cos(Px())*cos(Py())-sin(Px())*sin(Py())),
+                  2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) );
 
     // right hand side
     form1( Xh, F, _init=true )  =
