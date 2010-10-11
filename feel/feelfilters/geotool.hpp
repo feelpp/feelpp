@@ -25,7 +25,8 @@
 //Bug si 0 argum√ent(a corriger)
 
 # define GEOTOOL_SHAPE                                                  \
-    ( 10, ( ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE ),  \
+    ( 11, ( ( Line          , 1, 0, 0, "line"         , 2, LINE ),      \
+            ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE ),  \
             ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE ), \
             ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
             ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE    ), \
@@ -39,6 +40,13 @@
       )                                                                 \
     /**/
 
+
+/*_________________________________________________*/
+
+# define GEOTOOL_MARKER_LINE_LINE               \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
 
 /*_________________________________________________*/
 
@@ -232,6 +240,12 @@
     /**/
 
 /*_________________________________________________*/
+
+
+# define GEOTOOL_MARKER_SURFACE_DEFAULT         \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
 
 # define GEOTOOL_MARKER_VOLUME_DEFAULT          \
     ( 1, ( ( 1, 1, ( 1 ) ) )                    \
@@ -470,6 +484,13 @@ namespace Feel {
             typedef parameter_shape_type::const_iterator parameter_shape_const_iterator_type;
 
 
+            // gestion des lignes : shape,name,value,meshSize
+            typedef boost::tuple<std::string,std::string,uint,double > ligne_type;
+            typedef std::list< ligne_type > ligne_type_type;
+            typedef std::list< ligne_type_type > ligne_name_type;
+            typedef ligne_type_type::const_iterator ligne_type_const_iterator_type;
+            typedef ligne_name_type::const_iterator ligne_name_const_iterator_type;
+
             // gestion des surfaces : shape,name,value,meshSize
             typedef boost::tuple<std::string,std::string,uint,double > surface_type;
             typedef std::list< surface_type > surface_type_type;
@@ -494,13 +515,12 @@ namespace Feel {
                 _M_cptTableau(1),
                 _M_cptSurfaceLoop(1),
                 _M_cptVolume(1),
+                _M_ligneList(new ligne_name_type()),
                 _M_surfaceList(new surface_name_type()),
                 _M_volumeList(new volume_name_type()),
                 _M_ostrExtrude( new std::ostringstream()),
                 _M_ostrSurfaceLoop( new std::ostringstream()),
-                //_M_map_Shape( new map_shape_names_type()),
                 _M_paramShape( new parameter_shape_type()),
-                //_M_markShape( new marker_shape_type()),
                 _M_markShape( new marker_type_type()),
                 _M_ostr( new std::ostringstream())
             {
@@ -516,6 +536,7 @@ namespace Feel {
                 _M_cptTableau(m._M_cptTableau),
                 _M_cptSurfaceLoop(m._M_cptSurfaceLoop),
                 _M_cptVolume(m._M_cptVolume),
+                _M_ligneList(new ligne_name_type(*(m._M_ligneList))),
                 _M_surfaceList(new surface_name_type(*(m._M_surfaceList))),
                 _M_volumeList(new volume_name_type(*(m._M_volumeList))),
                 _M_ostrExtrude(new std::ostringstream()),
@@ -540,6 +561,20 @@ namespace Feel {
                 _M_cptTableau=1;
                 _M_cptSurfaceLoop=1;
                 _M_cptVolume=1;
+
+
+                ligne_name_type::iterator itLigne = this->_M_ligneList->begin();
+                ligne_name_type::iterator itLigne_end = this->_M_ligneList->end();
+                for ( ; itLigne != itLigne_end; ++itLigne)
+                    {
+                        ligne_type_type::iterator itLigne2 = itLigne->begin();
+                        ligne_type_type::iterator itLigne2_end = itLigne->end();
+                        for ( ; itLigne2 != itLigne2_end; ++itLigne2)
+                            {
+                                boost::get<2>(*itLigne2)=0;
+                            }
+                    }
+
 
                 surface_name_type::iterator itSurf = this->_M_surfaceList->begin();
                 surface_name_type::iterator itSurf_end = this->_M_surfaceList->end();
@@ -583,6 +618,7 @@ namespace Feel {
                 _M_cptSurfaceLoop = m._M_cptSurfaceLoop;
                 _M_cptVolume = m._M_cptVolume;
 
+                _M_ligneList.reset(new ligne_name_type(*(m._M_ligneList)));
                 _M_surfaceList.reset(new surface_name_type(*(m._M_surfaceList)));
                 _M_volumeList.reset(new volume_name_type(*(m._M_volumeList)));
 
@@ -591,9 +627,8 @@ namespace Feel {
                 _M_ostrSurfaceLoop.reset(new std::ostringstream());
                 *_M_ostrSurfaceLoop << (m._M_ostrSurfaceLoop)->str();
 
-                //_M_map_Shape.reset(new map_shape_names_type(*(m._M_map_Shape)));
                 _M_paramShape.reset(new parameter_shape_type(*(m._M_paramShape)));
-                //_M_markShape.reset(new marker_shape_type(*(m._M_markShape)));
+
                 _M_markShape.reset(new marker_type_type(*(m._M_markShape)));
                 _M_ostr.reset(new std::ostringstream());
                 updateOstr((m._M_ostr)->str());
@@ -614,6 +649,7 @@ namespace Feel {
                           double __meshSize,
                           std::vector<GeoTool::Node> & __param,
                           uint dim,
+                          uint __nbligne,
                           uint __nbsurface,
                           uint __nbvolume)
             {
@@ -626,6 +662,21 @@ namespace Feel {
                     {
                         (*(_M_paramShape))[__shape][__name][n] = __param[n].getNode();
                     }
+
+
+
+                if (dim>=1)
+                    {
+                        //Attention 0 par defaut pour dire que ce n'est pas initialiser
+                        for(uint n=0;n<__nbligne;++n)
+                            {
+                                //std::list< boost::tuple<std::string,std::string, uint  >	>__listTemp;
+                                ligne_type_type __listTemp;
+                                __listTemp.push_back( boost::make_tuple(__shape,__name,0,__meshSize));
+                                _M_ligneList->push_back( __listTemp);
+                            }
+                    }
+
 
                 if (dim>=2)
                     {
@@ -667,10 +718,10 @@ namespace Feel {
                 _M_cptSurface = m._M_cptSurface;
                 _M_cptVolume = m._M_cptVolume;
 
-                //_M_map_Shape = m._M_map_Shape;
                 _M_paramShape = m._M_paramShape;
                 _M_markShape = m._M_markShape;
 
+                _M_ligneList.reset(new ligne_name_type(*(m._M_ligneList)));
                 _M_surfaceList.reset(new surface_name_type(*(m._M_surfaceList)));
                 _M_volumeList.reset(new volume_name_type(*(m._M_volumeList)));
 
@@ -872,6 +923,7 @@ namespace Feel {
             // gestion des surface : shape,name,value
             // value is the marker associated to the planeSurface (init to 0 and to use when call geoStr())
             //std::list< std::list< boost::tuple<std::string,std::string, uint > > > _M_surfaceList;
+            boost::shared_ptr<ligne_name_type> _M_ligneList;
             boost::shared_ptr<surface_name_type> _M_surfaceList;
             boost::shared_ptr<volume_name_type> _M_volumeList;
 
@@ -1106,6 +1158,25 @@ namespace Feel {
 
             //construction list ordonne d'objet a construire
             std::list<boost::tuple<std::string,std::string,double> > listPPP;
+
+
+            if (this->dim()==1)
+                {
+                    ligne_name_const_iterator_type itLigne = _M_ligneList->begin();
+                    ligne_name_const_iterator_type itLigne_end = _M_ligneList->end();
+                    for ( ; itLigne != itLigne_end; ++itLigne)
+                        {
+                            ligne_type_const_iterator_type itLigne2 = itLigne->begin();
+                            ligne_type_const_iterator_type itLigne2_end = itLigne->end();
+                            for ( ; itLigne2 != itLigne2_end ; ++itLigne2 )
+                                {
+                                    std::string Qshape = boost::get<0>(*itLigne2);
+                                    std::string Qname = boost::get<1>(*itLigne2);
+                                    double QmeshSize=boost::get<3>(*itLigne2);
+                                    listPPP.push_back(boost::make_tuple(Qshape,Qname,QmeshSize));
+                                }
+                        }
+                }
 
 
             if (this->dim()==2)
@@ -1454,7 +1525,7 @@ namespace Feel {
          *_________________________________________________*/
 
 
-        void writePoint(uint __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2, double __x3=0)
+        void writePoint(uint __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2=0, double __x3=0)
         {
             (*(boost::get<1>(*__dg)))[0][__numLoc] = boost::get<0>(*__dg)->cptPt(); //            __mapPt[0][__numLoc] = boost::get<0>(*__dg)->cptPt();
             std::ostringstream __ostr;
@@ -1899,6 +1970,7 @@ namespace Feel {
         /*_________________________________________________*/
         /*                                                 */
         /**/
+#if 0
 #define GEOTOOL_FOR_MARKER_SURFACE_MACRO2(r, state)                     \
         __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
                                                  GEOTOOL_MARKER_SURFACE_MARKVALUE( BOOST_PP_CAT(GEOTOOL_MARKER_SURFACE_, \
@@ -1911,11 +1983,31 @@ namespace Feel {
         /*_________________________________________________*/
         /*                                                 */
         /**/
+#else
+#define GEOTOOL_FOR_MARKER_SURFACE_MACRO2(r, state)                     \
+        __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
+                                                 GEOTOOL_MARKER_SURFACE_MARKVALUE( BOOST_PP_CAT(GEOTOOL_MARKER_SURFACE_, \
+                                                                                                BOOST_PP_IF(BOOST_PP_GREATER(GEOTOOL_SHAPE_NBSURFACE(BOOST_PP_TUPLE_ELEM(4,3,state)) ,0), \
+                                                                                                GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(4,3,state) ), \
+                                                                                                DEFAULT)), \
+                                                                                   BOOST_PP_TUPLE_ELEM(4, 2, state), \
+                                                                                   BOOST_PP_TUPLE_ELEM(4, 0, state) ) \
+                                                 )                      \
+                               );                                       \
+        /**/
+        /*_________________________________________________*/
+        /*                                                 */
+        /**/
+
+#endif
+
+
+
 #define GEOTOOL_FOR_MARKER_VOLUME_MACRO2(r, state)                      \
         __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
                                                  GEOTOOL_MARKER_VOLUME_MARKVALUE( BOOST_PP_CAT(GEOTOOL_MARKER_VOLUME_, \
                                                                                                BOOST_PP_IF(BOOST_PP_GREATER(GEOTOOL_SHAPE_NBVOLUME(BOOST_PP_TUPLE_ELEM(4,3,state)) ,0), \
-                                                                                                           GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(4,3,state)),\
+                                                                                                           GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(4,3,state)), \
                                                                                                            DEFAULT)), \
                                                                                   BOOST_PP_TUPLE_ELEM(4, 2, state), \
                                                                                   BOOST_PP_TUPLE_ELEM(4, 0, state) ) \
@@ -1944,6 +2036,7 @@ namespace Feel {
         /*_________________________________________________*/
         /*                                                 */
         /**/
+#if 0
 #define GEOTOOL_FOR_MARKER_SURFACE_MACRO(r, state)                      \
         if (BOOST_PP_CAT(marker,                                        \
                          BOOST_PP_ADD(BOOST_PP_TUPLE_ELEM(3, 0, state),	\
@@ -1962,6 +2055,31 @@ namespace Feel {
         /*_________________________________________________*/
         /*                                                 */
         /**/
+#else
+#define GEOTOOL_FOR_MARKER_SURFACE_MACRO(r, state)                      \
+        if (BOOST_PP_CAT(marker,                                        \
+                         BOOST_PP_ADD(BOOST_PP_TUPLE_ELEM(3, 0, state),	\
+                                      1 ) ) )                           \
+            {                                                           \
+                BOOST_PP_FOR( (0,                                       \
+                               BOOST_PP_SUB(GEOTOOL_MARKER_SURFACE_NBMARK(BOOST_PP_CAT(GEOTOOL_MARKER_SURFACE_, \
+                                                                                       BOOST_PP_IF(BOOST_PP_GREATER(GEOTOOL_SHAPE_NBSURFACE(BOOST_PP_TUPLE_ELEM(3,2,state)),0), \
+                                                                                                   GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(3,2,state)), \
+                                                                                                   DEFAULT )), \
+                                                                          BOOST_PP_TUPLE_ELEM(3, 0, state) ),1), \
+                               BOOST_PP_TUPLE_ELEM(3, 0, state),		\
+                               BOOST_PP_TUPLE_ELEM(3, 2, state)			\
+                               ),                                       \
+                              GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_SURFACE_MACRO2) \
+                    }                                                   \
+        /**/
+        /*_________________________________________________*/
+        /*                                                 */
+        /**/
+
+#endif
+
+
 #define GEOTOOL_FOR_MARKER_VOLUME_MACRO(r, state)                       \
         if (BOOST_PP_CAT(marker,                                        \
                          BOOST_PP_ADD(BOOST_PP_TUPLE_ELEM(3, 0, state),	\
@@ -2068,6 +2186,7 @@ namespace Feel {
                              __meshSize,                                \
                              _M_param,                                  \
                              GEOTOOL_SHAPE_DIM(BOOST_PP_TUPLE_ELEM(2,0,state)), \
+                             1,                                         \
                              GEOTOOL_SHAPE_NBSURFACE(BOOST_PP_TUPLE_ELEM(2,0,state)), \
                              GEOTOOL_SHAPE_NBVOLUME(BOOST_PP_TUPLE_ELEM(2,0,state))); \
                 }                                                       \
@@ -2134,17 +2253,22 @@ namespace Feel {
                                 }                                       \
                     else if (type=="surface")                           \
                         {                                               \
-                            BOOST_PP_FOR( (0, BOOST_PP_SUB(BOOST_PP_ARRAY_SIZE( BOOST_PP_CAT(GEOTOOL_MARKER_SURFACE_, \
+                            /*BOOST_PP_FOR( (0, BOOST_PP_SUB(BOOST_PP_ARRAY_SIZE( BOOST_PP_CAT(GEOTOOL_MARKER_SURFACE_, \
                                                                                              GEOTOOL_SHAPE_NAME_MACRO( BOOST_PP_TUPLE_ELEM(2,0,state)))), \
                                                            1), BOOST_PP_TUPLE_ELEM(2,0,state)), \
+                                          GEOTOOL_FOR_COMP1,            \
+                                          GEOTOOL_FOR_INCR1,            \
+                                          GEOTOOL_FOR_MARKER_SURFACE_MACRO)*/ \
+                            BOOST_PP_FOR( (0, BOOST_PP_SUB( GEOTOOL_SHAPE_NBVOLUME(BOOST_PP_TUPLE_ELEM(2,0,state)),1), \
+                                           BOOST_PP_TUPLE_ELEM(2,0,state)), \
                                           GEOTOOL_FOR_COMP1,            \
                                           GEOTOOL_FOR_INCR1,            \
                                           GEOTOOL_FOR_MARKER_SURFACE_MACRO) \
                                 }                                       \
                     else if (type=="volume")                            \
                         {                                               \
-                            BOOST_PP_FOR( (0, BOOST_PP_SUB(  GEOTOOL_SHAPE_NBVOLUME(BOOST_PP_TUPLE_ELEM(2,0,state)), \
-                                                           1), BOOST_PP_TUPLE_ELEM(2,0,state)), \
+                            BOOST_PP_FOR( (0, BOOST_PP_SUB(  GEOTOOL_SHAPE_NBVOLUME(BOOST_PP_TUPLE_ELEM(2,0,state)),1), \
+                                           BOOST_PP_TUPLE_ELEM(2,0,state)), \
                                           GEOTOOL_FOR_COMP1,            \
                                           GEOTOOL_FOR_INCR1,            \
                                           GEOTOOL_FOR_MARKER_VOLUME_MACRO) \
@@ -2186,6 +2310,18 @@ namespace Feel {
          * Function user                                   *
          *_________________________________________________*
          *_________________________________________________*/
+
+
+        void
+        runLine(data_geo_ptrtype dg)
+        {
+            node_type PtA = param<0>(dg);
+            node_type PtB = param<1>(dg);
+
+            writePoint( 1, dg , PtA(0), PtA(1) );
+            writePoint( 2, dg , PtB(0), PtB(1) );
+            writeLine( 1, dg , 1 , 2);
+        }
 
 
         void
