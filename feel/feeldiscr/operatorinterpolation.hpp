@@ -265,8 +265,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
             //init the localization tool
             this->domainSpace()->mesh()->tool_localization()->updateForUse();
 
-            typename matrix_node<value_type>::type __ptsReal( image_mesh_type::nDim, 1);
-            typename matrix_node<value_type>::type ptsRef(image_mesh_type::nDim , 1 );
+            typename matrix_node<value_type>::type __ptsReal( image_mesh_type::nRealDim, 1);
+            typename matrix_node<value_type>::type ptsRef(image_mesh_type::nRealDim , 1 );
             typename matrix_node<value_type>::type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
             analysis_iterator_type itanal,itanal_end;
             analysis_output_iterator_type itL,itL_end;
