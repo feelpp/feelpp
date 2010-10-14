@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-01-22
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -79,7 +79,7 @@ makeAbout()
                            "0.1",
                            "nD(n=1,2,3) Resistance Laplacian on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2009 Université Joseph Fourier");
+                           "Copyright (c) 2008-2010 UniversitÃ© Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -142,7 +142,7 @@ public:
 
     typedef typename functionspace_type::element_type element_type;
 
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> > > p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Discontinuous> > > p0_space_type;
     typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
     typedef typename p0_space_type::element_type p0_element_type;
 
