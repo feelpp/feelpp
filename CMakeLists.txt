@@ -479,6 +479,7 @@ endif()
 # generate configuration header
 set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
+CONFIGURE_FILE(feelversion.h.in feelversion.h  @ONLY)
 
 #
 # Packaging
