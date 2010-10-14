@@ -3,6 +3,12 @@
 export PATH=/usr/bin:/opt/local/bin:$PATH
 export FEEL_DIR=$HOME/sources/feel/
 
+ARCH=` uname`
+if [ "$ARCH" = "Darwin" ]; then
+    export PETSC_DIR=/opt/local/lib/petsc
+    export PETSC_ARCH=darwin
+fi
+
 # go to source directory
 if ! [ -d $HOME/sources/ ]; then mkdir -p $HOME/sources/; fi
 cd $HOME/sources/
