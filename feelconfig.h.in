@@ -1,5 +1,3 @@
-/* feelconfig.h.in.  Generated from configure.ac by autoheader.  */
-
 /* the maximum of parameters for boost.parameter */
 #cmakedefine BOOST_PARAMETER_MAX_ARITY @BOOST_PARAMETER_MAX_ARITY@
 
@@ -130,24 +128,6 @@
 
 /* sizeof(size_t)==sizeof(uint) */
 #cmakedefine FEEL_SIZET_SAME_AS_UINT
-
-/* full blown version */
-#cmakedefine FEEL_VERSION @FEEL_VERSION@
-
-/* extra version information: date, cvs, ... */
-#cmakedefine01 FEEL_VERSION_EXTRA @FEEL_VERSION_EXTRA@ //
-
-/* major version number */
-#cmakedefine01 FEEL_VERSION_MAJOR @FEEL_VERSION_MAJOR@ //
-
-/* micro version number */
-#cmakedefine01 FEEL_VERSION_MICRO @FEEL_VERSION_MICRO@ //
-
-/* minor version number */
-#cmakedefine01 FEEL_VERSION_MINOR @FEEL_VERSION_MINOR@ //
-
-/* Feel version string */
-#cmakedefine FEEL_VERSION_STRING @FEEL_VERSION_STRING@
 
 /* Define to 1 if your C compiler doesn't accept -c and -o together. */
 #cmakedefine NO_MINUS_C_MINUS_O
