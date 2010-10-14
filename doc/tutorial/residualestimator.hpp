@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -259,13 +259,23 @@ public:
             MAd::MeshAdapter* ma = new MAd::MeshAdapter(amesh,sizeField);
 
             ma->setMaxIterationsNumber( maxit );
-            ma->setEdgeLenSqBounds( hmin*hmin, hmax*hmax );
-            ma->setGeoTracking( !model.empty(),
+            ma->setEdgeLenSqBounds( 1.0/3.0, 3.0 );
+            ma->setNoSwapQuality( 0.1 );
+            ma->setSliverQuality( 0.02 );
+            ma->setSliverPermissionInESplit( true, 10. );
+            ma->setSliverPermissionInECollapse( true, 0.1 );
+            ma->snapVertices();
+  //ma->setEdgeLenSqBounds( hmin*hmin, hmax*hmax );
+#if 1
+            ma->setGeoTracking( !model.empty() );
+#if 0
                                 true,
                                 0,
                                 1.,
                                 false,
                                 false );
+#endif
+#endif
             if ( statistics )
             {
                 std::cout << "Statistics before optimization: \n";
