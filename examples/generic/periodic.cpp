@@ -70,7 +70,7 @@ makeAbout()
                            "0.1",
                            "nD(n=1,2,3) Periodic Laplacian on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008 Université Joseph Fourier");
+                           "Copyright (c) 2008-2010 Université Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -123,18 +123,12 @@ public:
 
     typedef typename functionspace_type::element_type element_type;
 
-    /*quadrature*/
-    template<int IMORDER> struct MyIM : public IM<Dim, IMORDER, value_type, Entity> {};
-
     /* export */
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
     /** constructor */
     PeriodicLaplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od );
-
-    /** mesh generation */
-    mesh_ptrtype createMesh();
 
     /**
      * run the convergence test
@@ -143,18 +137,10 @@ public:
 
 private:
 
-
-
-    /**
-     * solve the system
-     */
-    void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
-
-
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( element_type& u, element_type&, element_type& );
+    void exportResults( element_type& u, element_type&, element_type&, element_type& );
 
 private:
 
@@ -208,7 +194,15 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
                             );
 
     Log() << "create mesh\n";
-    mesh = createMesh();
+    const std::string shape = "hypercube";
+    mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                         _usenames=false,
+                                         _shape=shape,
+                                         _dim=Dim,
+                                         _h=h,
+                                         _xmin=-1, _ymin=-1 ) );
+
 
     Log() << "create space\n";
     node_type trans(2);
@@ -221,26 +215,6 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
 
     Log() << "Constructor done\n";
 }
-template<int Dim, int Order>
-typename PeriodicLaplacian<Dim,Order>::mesh_ptrtype
-PeriodicLaplacian<Dim,Order>::createMesh()
-{
-    timers["mesh"].first.restart();
-    mesh_ptrtype mesh( new mesh_type );
-    //mesh->setRenumber( false );
-
-    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube);
-    td.setCharacteristicLength( h );
-    td.setX( std::make_pair( -1., 1. ) );
-    td.setY( std::make_pair( -1., 1. ) );
-    std::string fname = td.generate( "square" );
-
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-    timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
-    return mesh;
-} // PeriodicLaplacian::createMesh
 
 template<int Dim, int Order>
 void
@@ -263,35 +237,32 @@ PeriodicLaplacian<Dim, Order>::run()
           );
     AUTO( f, 0 );
 #else
-    AUTO( g, sin(M_PI*Px())*cos(M_PI*Py()));
-    AUTO( grad_g, vec(
-                      +M_PI*cos(M_PI*Px())*cos(M_PI*Py()),
-                      -M_PI*sin(M_PI*Px())*sin(M_PI*Py())
-                      )
-          );
-    AUTO( f, 2*M_PI*M_PI*g );
+    auto g = sin(M_PI*Px())*cos(M_PI*Py());
+    auto grad_g = vec( +M_PI*cos(M_PI*Px())*cos(M_PI*Py()),
+                       -M_PI*sin(M_PI*Px())*sin(M_PI*Py()) );
+    auto f = 2*M_PI*M_PI*g;
 #endif
 
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh, Xh, M, _init=true ) = integrate( elements( mesh ), MyIM<2*(Order-1)>(), gradt(u)*trans(grad(v)) );
-    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, 1 ), MyIM<2*(Order-1)>(),
+    form2( Xh, Xh, M, _init=true ) = integrate( elements( mesh ), _Q<2*(Order-1)>(), gradt(u)*trans(grad(v)) );
+    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, 1 ), _Q<2*(Order-1)>(),
                                      -gradt(u)*N()*id(v)
                                      -grad(v)*N()*idt(u)
                                      + penalisation_bc*id(u)*idt(v)/hFace() );
-    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, 3 ), MyIM<2*(Order-1)>(),
+    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, 3 ), _Q<2*(Order-1)>(),
                                      -gradt(u)*N()*id(v)
                                      -grad(v)*N()*idt(u)
                                      + penalisation_bc*id(u)*idt(v)/hFace() );
 
     M->close();
 
-    double area = integrate( elements(mesh), MyIM<0>(), constant(1.0) ).evaluate()( 0, 0);
-    double mean = integrate( elements(mesh), MyIM<5>(), g ).evaluate()( 0, 0)/area;
+    double area = integrate( elements(mesh), _Q<0>(), constant(1.0) ).evaluate()( 0, 0);
+    double mean = integrate( elements(mesh), _Q<5>(), g ).evaluate()( 0, 0)/area;
     Log() << "int g  = " << mean << "\n";
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( Xh, F, _init=true ) = ( integrate( elements( mesh ), MyIM<Order+5>(), f*id(v) )
-                                   //+integrate( boundaryfaces( mesh ), MyIM<Order+5>(), (trans(grad_g)*N())*id(v) )
+    form1( Xh, F, _init=true ) = ( integrate( elements( mesh ), _Q<Order+5>(), f*id(v) )
+                                   //+integrate( boundaryfaces( mesh ), _Q<Order+5>(), (trans(grad_g)*N())*id(v) )
 
                                    );
     F->close();
@@ -302,45 +273,33 @@ PeriodicLaplacian<Dim, Order>::run()
             F->printMatlab( "F.m" );
         }
 
-    this->solve( M, u, F );
+    backend_type::build( this->vm() )->solve( _matrix=M, _solution=u, _rhs=F );
 
     Log() << "area   = " << area << "\n";
-    Log() << "int g  = " << integrate( elements(mesh), MyIM<5>(), g ).evaluate()( 0, 0)/area << "\n";
-    Log() << "int u  = " << integrate( elements(mesh), MyIM<Order>(), idv(u) ).evaluate()( 0, 0)/area << "\n";
-    Log() << "error  = " << math::sqrt( integrate( elements(mesh), MyIM<10>(), (idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0) ) << "\n";
+    Log() << "int g  = " << integrate( elements(mesh), _Q<5>(), g ).evaluate()( 0, 0)/area << "\n";
+    Log() << "int u  = " << integrate( elements(mesh), _Q<Order>(), idv(u) ).evaluate()( 0, 0)/area << "\n";
+    Log() << "error  = " << math::sqrt( integrate( elements(mesh), _Q<10>(), (idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0) ) << "\n";
+    double bdy1 = integrate( markedfaces(mesh,2), idv(u) ).evaluate()( 0, 0);
+    double bdy2 = integrate( markedfaces(mesh,4), idv(u) ).evaluate()( 0, 0);
+    Log() << "error mean periodic  boundary 1 - 2  = " << math::abs( bdy1-bdy2 ) << "\n";
 
     v = vf::project( Xh, elements(mesh), g );
 
     element_type e( Xh, "e" );
     e = vf::project( Xh, elements(mesh), idv(u)-g );
 
+    element_type j( Xh, "Py" );
+    j = vf::project( Xh, elements(mesh), Py() );
 
-    exportResults( u, v, e );
+
+    exportResults( u, v, e, j );
 
 
 } // PeriodicLaplacian::run
 
 template<int Dim, int Order>
 void
-PeriodicLaplacian<Dim, Order>::solve( sparse_matrix_ptrtype& D,
-                                element_type& u,
-                                vector_ptrtype& F )
-{
-    timers["solver"].first.restart();
-
-
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    M_backend->solve( D, D, U, F );
-    u = *U;
-
-    timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve: " << timers["solver"].second << "\n";
-} // PeriodicLaplacian::solve
-
-
-template<int Dim, int Order>
-void
-PeriodicLaplacian<Dim, Order>::exportResults( element_type& U, element_type& V, element_type& E )
+PeriodicLaplacian<Dim, Order>::exportResults( element_type& U, element_type& V, element_type& E, element_type& F )
 
 {
     timers["export"].first.restart();
@@ -351,6 +310,7 @@ PeriodicLaplacian<Dim, Order>::exportResults( element_type& U, element_type& V, 
     exporter->step(1.)->add( "u", U );
     exporter->step(1.)->add( "exact", V );
     exporter->step(1.)->add( "error", E );
+    exporter->step(1.)->add( "f", F );
 
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
