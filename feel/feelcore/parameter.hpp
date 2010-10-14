@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -91,6 +91,7 @@ BOOST_PARAMETER_NAME(refine)
 BOOST_PARAMETER_NAME(update)
 BOOST_PARAMETER_NAME(filename)
 BOOST_PARAMETER_NAME(parametricnodes)
+BOOST_PARAMETER_NAME(force_rebuild)
 // parameter for adapt
 BOOST_PARAMETER_NAME(model)
 BOOST_PARAMETER_NAME(geotracking)
