@@ -516,6 +516,7 @@ BOOST_PARAMETER_FUNCTION(
      (parametricnodes,*(boost::is_integral<mpl::_>), 0 )
      (refine,          *(boost::is_integral<mpl::_>), 0 )
      (update,          *(boost::is_integral<mpl::_>), 0 )
+     (force_rebuild,   *(boost::is_integral<mpl::_>), 0 )
         )
     )
 {
@@ -523,7 +524,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
-    std::string fname = boost::get<2>( desc )->generate( boost::get<0>( desc ), boost::get<1>( desc ), false /*forcerebuild*/, parametricnodes );
+    std::string fname = boost::get<2>( desc )->generate( boost::get<0>( desc ), boost::get<1>( desc ), force_rebuild, parametricnodes );
 
     // refinement if option is enabled to a value greater or equal to 1
     if ( refine )
