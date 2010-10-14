@@ -67,6 +67,9 @@
      associated data. Adapted the TimeSet class accordingly.
    - added a _refine=<level> option in createGMSHMesh() and loadGMSHMesh() if
      level=0 do nothing, other refine <level> times uniformely
+   - added _force_rebuild=true|false to force regeneration of geo/msh files
+   - added _update= option to tell the mesh which components of the mesh to
+     build like edges or faces or to renumber the entities
  - renamed GmshTensorizedDomain to GmshHypercubeDomain
 
 *** lifevf
