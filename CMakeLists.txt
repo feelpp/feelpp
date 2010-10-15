@@ -532,7 +532,13 @@ SET(CPACK_PACKAGE_VERSION_PATCH "${FEEL_VERSION_MICRO}")
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "feel")
 SET(CPACK_SOURCE_GENERATOR "TGZ")
 SET(CPACK_SOURCE_OUTPUT_CONFIG_FILE "CPackSourceConfig.cmake")
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "feel-${FEEL_VERSION_MAJOR}.${FEEL_VERSION_MINOR}.${FEEL_VERSION_MICRO}${FEEL_VERSION_EXTRA}")
+if ( EXISTS ${FEEL_SOURCE_DIR}/applications/opus )
+  SET(CPACK_SOURCE_PACKAGE_FILE_NAME "feel+opus-${FEEL_VERSION_MAJOR}.${FEEL_VERSION_MINOR}.${FEEL_VERSION_MICRO}${FEEL_VERSION_EXTRA}")
+else()
+  SET(CPACK_SOURCE_PACKAGE_FILE_NAME "feel-${FEEL_VERSION_MAJOR}.${FEEL_VERSION_MINOR}.${FEEL_VERSION_MICRO}${FEEL_VERSION_EXTRA}")
+endif()
+
+
 SET(CPACK_SOURCE_STRIP_FILES "")
 # The following components are regex's to match anywhere (unless anchored)
 # in absolute path + filename to find files or directories to be excluded
@@ -553,8 +559,11 @@ set(CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/examples/fluid/"
   "${PROJECT_SOURCE_DIR}/examples/levelset/"
   "${PROJECT_SOURCE_DIR}/examples/pbeq/"
-  "${PROJECT_SOURCE_DIR}/applications/opus/"
   "${PROJECT_SOURCE_DIR}/research/"  )
+
+if ( NOT EXISTS ${FEEL_SOURCE_DIR}/applications/opus/ )
+  set(CPACK_SOURCE_IGNORE_FILES "${PROJECT_SOURCE_DIR}/applications/opus/;${CPACK_SOURCE_IGNORE_FILES}" )
+endif()
 
 include( CPack )
 
