@@ -108,17 +108,11 @@
 /* The path of installation */
 #cmakedefine INSTALL_PATH
 
-/* the cmake install prefix */
-#cmakedefine INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@
-
 /* Define if support for c++ class instantiation is enabled) */
 #cmakedefine FEEL_INSTANTIATION_MODE @FEEL_INSTANTIATION_MODE@
 
 /* Define if minimal mesh support is required (order 1 mesh in 1D,2D,3D) */
 #cmakedefine FEEL_MESH_MAX_ORDER @FEEL_MESH_MAX_ORDER@
-
-/* define prefix dir for feel installation */
-#cmakedefine FEEL_PREFIX @FEEL_PREFIX@
 
 /* sizeof(size_t)==sizeof(uint) */
 #cmakedefine FEEL_SIZET_SAME_AS_UINT

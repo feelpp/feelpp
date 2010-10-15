@@ -21,3 +21,13 @@
 
 /* Feel version string */
 #cmakedefine FEEL_VERSION_STRING @FEEL_VERSION_STRING@
+
+/* the cmake install prefix */
+#cmakedefine INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@
+
+/* define prefix dir for feel installation */
+#cmakedefine FEEL_PREFIX @FEEL_PREFIX@
+
+/* define data dir for feel installation */
+#cmakedefine FEEL_DATADIR @FEEL_DATADIR@
+
