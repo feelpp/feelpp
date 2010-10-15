@@ -111,9 +111,6 @@
 /* the cmake install prefix */
 #cmakedefine INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@
 
-/* buildid */
-#cmakedefine01 FEEL_BUILDID @FEEL_BUILDID@ //
-
 /* Define if support for c++ class instantiation is enabled) */
 #cmakedefine FEEL_INSTANTIATION_MODE @FEEL_INSTANTIATION_MODE@
 
@@ -122,9 +119,6 @@
 
 /* define prefix dir for feel installation */
 #cmakedefine FEEL_PREFIX @FEEL_PREFIX@
-
-/* revision */
-#cmakedefine01 FEEL_REVISION @FEEL_REVISION@ //
 
 /* sizeof(size_t)==sizeof(uint) */
 #cmakedefine FEEL_SIZET_SAME_AS_UINT

@@ -1,3 +1,9 @@
+/* buildid */
+#cmakedefine01 FEEL_BUILDID @FEEL_BUILDID@ //
+
+/* revision */
+#cmakedefine01 FEEL_REVISION @FEEL_REVISION@ //
+
 /* full blown version */
 #cmakedefine FEEL_VERSION @FEEL_VERSION@
 
