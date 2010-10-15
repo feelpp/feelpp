@@ -2,5 +2,5 @@ FILE(GLOB Eigen_EIGENVALUES_SRCS "*.h")
 
 INSTALL(FILES
   ${Eigen_EIGENVALUES_SRCS}
-  DESTINATION ${INCLUDE_INSTALL_DIR}/Eigen/src/Eigenvalues COMPONENT Devel
+  DESTINATION include/Eigen/src/Eigenvalues COMPONENT Devel
   )
