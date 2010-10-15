@@ -245,7 +245,7 @@ endmacro(ei_add_target_property)
 
 install(FILES
   signature_of_eigen3_matrix_library
-  DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT Devel
+  DESTINATION include COMPONENT Devel
   )
 
 if(EIGEN_BUILD_PKGCONFIG)
@@ -299,7 +299,7 @@ if(cmake_generator_tolower MATCHES "makefile")
   message("make install  | Install to ${CMAKE_INSTALL_PREFIX}. To change that:")
   message("              |     cmake . -DCMAKE_INSTALL_PREFIX=yourpath")
   message("              |   Eigen headers will then be installed to:")
-  message("              |     ${INCLUDE_INSTALL_DIR}")
+  message("              |     include")
   message("              |   To install Eigen headers to a separate location, do:")
   message("              |     cmake . -DEIGEN_INCLUDE_INSTALL_DIR=yourpath")
   message("make doc      | Generate the API documentation, requires Doxygen & LaTeX")
