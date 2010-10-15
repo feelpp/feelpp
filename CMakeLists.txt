@@ -244,6 +244,7 @@ endif( MADLIB_FOUND )
 #
 # Eigen
 #
+set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
 add_subdirectory(contrib/eigen)
 INCLUDE_DIRECTORIES( ${FEEL_SOURCE_DIR}/contrib/eigen )
 
@@ -486,8 +487,10 @@ endif()
 
 # generate configuration header
 set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+set(FEEL_PREFIX ${CMAKE_INSTALL_PREFIX})
+set(FEEL_DATADIR ${CMAKE_INSTALL_PREFIX}/share/feel )
 CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
-CONFIGURE_FILE(feelversion.h.in feelversion.h  @ONLY)
+CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
 #
 # Packaging
@@ -545,7 +548,6 @@ if ( EXISTS ${FEEL_SOURCE_DIR}/applications/opus )
 else()
   SET(CPACK_SOURCE_PACKAGE_FILE_NAME "feel-${FEEL_VERSION_MAJOR}.${FEEL_VERSION_MINOR}.${FEEL_VERSION_MICRO}${FEEL_VERSION_EXTRA}")
 endif()
-
 
 SET(CPACK_SOURCE_STRIP_FILES "")
 # The following components are regex's to match anywhere (unless anchored)
