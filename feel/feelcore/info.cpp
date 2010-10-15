@@ -31,7 +31,7 @@
 #include <sstream>
 
 #include <feelconfig.h>
-#include <feelversion.h>
+#include <feelinfo.h>
 #include <feel/feelcore/info.hpp>
 
 #define stringize2(x) #x
