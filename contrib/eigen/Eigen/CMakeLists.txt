@@ -1,6 +1,6 @@
 file(GLOB Eigen_directory_files "*")
 foreach(f ${Eigen_directory_files})
-  if(NOT f MATCHES ".txt" AND NOT f MATCHES "${CMAKE_CURRENT_SOURCE_DIR}/src" AND NOT f MATCHES "${CMAKE_CURRENT_SOURCE_DIR}/.svn") 
+  if( NOT f MATCHES ".txt" AND NOT IS_DIRECTORY ${f} )
     list(APPEND Eigen_directory_files_to_install ${f})
   endif()
 endforeach(f ${Eigen_directory_files})
