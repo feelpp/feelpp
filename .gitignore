@@ -16,6 +16,7 @@
 /NEWS.pdf
 /NEWS.tex
 /NEWS.txt
+/SVNREVISION
 /Templates
 /Testing
 /Untitled
@@ -28,7 +29,9 @@
 /ctest.make
 /feel-ctest-continuous.cmake
 /feel.kdev4
+/feel_revision
 /feelconfig.h.in~
+/life.kdev4
 /octave-core
 /opt
 /package.m4
