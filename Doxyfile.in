@@ -25,13 +25,13 @@ DOXYFILE_ENCODING      = UTF-8
 # The PROJECT_NAME tag is a single word (or a sequence of words surrounded
 # by quotes) that should identify the project.
 
-PROJECT_NAME           = Life
+PROJECT_NAME           = Feel++
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number.
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-PROJECT_NUMBER         = "@PROJECT_VERSION@"
+PROJECT_NUMBER         = "@FEEL_VERSION_STRING@"
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
@@ -573,10 +573,10 @@ WARN_LOGFILE           = Doxylog
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 #
-INPUT                  = "@FEEL_HOME_DIR@/life/lifecore" \
-                         "@FEEL_HOME_DIR@/life/lifealg" \
-                         "@FEEL_HOME_DIR@/life/lifefilters" \
-                         "@FEEL_HOME_DIR@/life/lifemesh" \
+INPUT                  = "@FEEL_HOME_DIR@/feel/feelcore" \
+                         "@FEEL_HOME_DIR@/feel/feelalg" \
+                         "@FEEL_HOME_DIR@/feel/feelfilters" \
+                         "@FEEL_HOME_DIR@/feel/feelmesh" \
                          "@FEEL_HOME_DIR@/doc/api"\
                          "@FEEL_HOME_DIR@/doc/tutorial"
 
@@ -804,7 +804,7 @@ HTML_FOOTER            =
 # the style sheet file to the HTML output directory, so don't put your own
 # stylesheet in the HTML output directory as well, or it will be erased!
 
-HTML_STYLESHEET         = "@CMAKE_CURRENT_SOURCE_DIR@/life.css"
+HTML_STYLESHEET         = "@CMAKE_CURRENT_SOURCE_DIR@/feel.css"
 
 # If the HTML_ALIGN_MEMBERS tag is set to YES, the members of classes,
 # files or namespaces will be aligned in HTML using tables. If set to
@@ -1305,7 +1305,7 @@ TAGFILES               =
 # When a file name is specified after GENERATE_TAGFILE, doxygen will create
 # a tag file that is based on the input files it reads.
 
-GENERATE_TAGFILE       = life.tag
+GENERATE_TAGFILE       = feel.tag
 
 # If the ALLEXTERNALS tag is set to YES all external classes will be listed
 # in the class index. If set to NO only the inherited external classes
