@@ -38,7 +38,7 @@ PROJECT_NUMBER         = "@PROJECT_VERSION@"
 # If a relative path is entered, it will be relative to the location
 # where doxygen was started. If left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = "@DOXYFILE_OUTPUT_DIR@"
+#OUTPUT_DIRECTORY       = "@DOXYFILE_OUTPUT_DIR@"
 
 # If the CREATE_SUBDIRS tag is set to YES, then doxygen will create
 # 4096 sub-directories (in 2 levels) under the output directory of each output
@@ -573,12 +573,12 @@ WARN_LOGFILE           = Doxylog
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 #
-INPUT                  = "@LIFE_HOME_DIR@/life/lifecore" \
-                         "@LIFE_HOME_DIR@/life/lifealg" \
-                         "@LIFE_HOME_DIR@/life/lifefilters" \
-                         "@LIFE_HOME_DIR@/life/lifemesh" \
-                         "@LIFE_HOME_DIR@/doc/api"\
-                         "@LIFE_HOME_DIR@/doc/tutorial"
+INPUT                  = "@FEEL_HOME_DIR@/life/lifecore" \
+                         "@FEEL_HOME_DIR@/life/lifealg" \
+                         "@FEEL_HOME_DIR@/life/lifefilters" \
+                         "@FEEL_HOME_DIR@/life/lifemesh" \
+                         "@FEEL_HOME_DIR@/doc/api"\
+                         "@FEEL_HOME_DIR@/doc/tutorial"
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -636,7 +636,7 @@ EXCLUDE_SYMBOLS        =
 # directories that contain example code fragments that are included (see
 # the \include command).
 
-EXAMPLE_PATH           = "@LIFE_HOME_DIR@/doc/tutorial" \
+EXAMPLE_PATH           = "@FEEL_HOME_DIR@/doc/tutorial" \
                          "@CMAKE_CURRENT_BINARY_DIR@/../"
 
 
@@ -658,7 +658,7 @@ EXAMPLE_RECURSIVE      = YES
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             = "@LIFE_HOME_DIR@/doc/tutorial/pngs/"\
+IMAGE_PATH             = "@FEEL_HOME_DIR@/doc/tutorial/pngs/"\
                          "@CMAKE_CURRENT_BINARY_DIR@/../tutorial/"
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
@@ -1032,7 +1032,7 @@ EXTRA_PACKAGES         = amsmath \
 # the first chapter. If it is left blank doxygen will generate a
 # standard header. Notice: only use this tag if you know what you are doing!
 
-LATEX_HEADER           = @LIFE_HOME_DIR@/doc/api/latexheader.tex
+LATEX_HEADER           = @FEEL_HOME_DIR@/doc/api/latexheader.tex
 
 # If the PDF_HYPERLINKS tag is set to YES, the LaTeX that is generated
 # is prepared for conversion to pdf (using ps2pdf). The pdf file will
@@ -1263,8 +1263,8 @@ INCLUDE_FILE_PATTERNS  =
 PREDEFINED             = HAVE_MPI \
                          HAVE_PETSC_H \
                          HAVE_PETSC \
-                         LIFE_HAVE_QD_REAL \
-                         LIFE_HAVE_DD_REAL
+                         FEEL_HAVE_QD_REAL \
+                         FEEL_HAVE_DD_REAL
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then
 # this tag can be used to specify a list of macro names that should be expanded.
