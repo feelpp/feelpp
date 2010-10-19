@@ -107,7 +107,7 @@ public :
 
         points_type Gt = updatePoints<2>( updatePoints<1>( pts.points(), pts, mpl::bool_< (Order > 2) >() ),
                                           pts,
-                                          mpl::bool_< (Dim == 3 && Order > 1+uint16_type(is_simplex)) >() );
+                                          mpl::bool_< (Dim == 3 && Order > 2+uint16_type(is_simplex)) >() );
 
         this->setPoints( Gt );
     }
