@@ -540,7 +540,7 @@ public:
     {
         checkInvariant();
 
-        real_type local_min = *std::min(_M_vec.begin(), _M_vec.end());
+        real_type local_min = *std::min_element(_M_vec.begin(), _M_vec.end());
 
         real_type global_min = local_min;
 
@@ -564,7 +564,7 @@ public:
     {
         checkInvariant();
 
-        real_type local_max = *std::max(_M_vec.begin(), _M_vec.end());
+        real_type local_max = *std::max_element(_M_vec.begin(), _M_vec.end());
 
         real_type global_max = local_max;
 
