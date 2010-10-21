@@ -1305,9 +1305,23 @@ namespace Feel {
             std::ostringstream __surface_str;
             //counter of surface
             uint __surfnumber=1;//referencier une liste des surf dans les writePlaneSurface
+            std::map<std::string,std::map<std::string, std::map<uint,uint> > > __dataSurfacePost;
+            std::map<std::string,std::map<std::string, uint> > __dataSurfacePostCpt;
             for ( ; itSurf != itSurf_end; ++itSurf)
                 {
                     surface_type_const_iterator_type itSurf2 = itSurf->begin();
+                    // utile pour les physical marker
+                    //if ((__dataSurfacePostCpt[boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)]).empty())
+                    if ( __dataSurfacePostCpt.find(boost::get<0>(*itSurf2))==__dataSurfacePostCpt.end())
+                        __dataSurfacePostCpt[boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)]=1;
+                    else if (__dataSurfacePostCpt[boost::get<0>(*itSurf2)].find(boost::get<1>(*itSurf2)) == __dataSurfacePostCpt[boost::get<0>(*itSurf2)].end())
+                        __dataSurfacePostCpt[boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)]=1;
+                    else
+                        ++__dataSurfacePostCpt[boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)];
+
+                    __dataSurfacePost[boost::get<0>(*itSurf2)]
+                        [boost::get<1>(*itSurf2)]
+                        [__dataSurfacePostCpt[boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)]]=__surfnumber;
 
                     // si la surface est issue d'un extrude => stoker dans un tab gmsh
                     if (! __dataMemGlobSurf1[0][boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)][__surfnumber] )
@@ -1325,6 +1339,7 @@ namespace Feel {
                                 {
                                     __surface_str << boost::get<2>(*itSurf2) << ",";
                                 }
+
                             __surface_str << boost::get<2>(*itSurf2);
 
                             __surface_str << "};\n";
@@ -1390,43 +1405,90 @@ namespace Feel {
                         {
                             if (itMarkType->first=="line")
                                 {
+                                    //on cree un nouvelle list dont on enleve les doublons(aux cas où!)
+                                    std::list<marker_base_type> newListMark;
+                                    std::list<marker_base_type>::const_iterator itMark = itMarkName->second.begin();
+                                    std::list<marker_base_type>::const_iterator itMark_end = itMarkName->second.end();
+                                    for ( ; itMark!=itMark_end;++itMark)
+                                        {
+                                            auto value = __dataMemGlob[1][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)];
+                                            std::list<marker_base_type>::const_iterator itnewMark = newListMark.begin();
+                                            std::list<marker_base_type>::const_iterator itnewMark_end = newListMark.end();
+                                            bool find=false;
+                                            while ( itnewMark != itnewMark_end && !find)
+                                                {
+                                                    auto value2 = __dataMemGlob[1][boost::get<0>(*itnewMark)][boost::get<1>(*itnewMark)][boost::get<2>(*itnewMark)];
+                                                    if ( value == value2) find=true;
+                                                    ++itnewMark;
+                                                }
+                                            if (!find) newListMark.push_back(*itMark);
+                                        }
+
+
                                     *_M_ostr << "Physical Line(\"" << itMarkName->first << "\") = {";
 
-                                    std::list<marker_base_type>::const_iterator itMark = itMarkName->second.begin();
-                                    std::list<marker_base_type>::const_iterator itMark_end = --itMarkName->second.end();
-                                    while (itMark!=itMark_end)
+                                    ///*std::list<marker_base_type>::const_iterator*/ itMark = itMarkName->second.begin();
+                                    ///*std::list<marker_base_type>::const_iterator*/ itMark_end = --itMarkName->second.end();
+                                    auto itMarkTTT=newListMark.begin();
+                                    auto itMarkTTT_end=--newListMark.end();
+                                    while (itMarkTTT!=itMarkTTT_end)
                                         {
-                                            *_M_ostr << __dataMemGlob[1][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)]
+                                            *_M_ostr << __dataMemGlob[1][boost::get<0>(*itMarkTTT)][boost::get<1>(*itMarkTTT)][boost::get<2>(*itMarkTTT)]
                                                      <<",";
-                                            ++itMark;
+                                            ++itMarkTTT;
                                         }
-                                    *_M_ostr << __dataMemGlob[1][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)] << "};\n";
+                                    *_M_ostr << __dataMemGlob[1][boost::get<0>(*itMarkTTT)][boost::get<1>(*itMarkTTT)][boost::get<2>(*itMarkTTT)] << "};\n";
                                 }
                             else if (itMarkType->first=="surface")
                                 {
+
+                                    //on cree un nouvelle list dont on enleve les doublons(aux cas où!)
+                                    std::list<marker_base_type> newListMark;
+                                    std::list<marker_base_type>::const_iterator itMark = itMarkName->second.begin();
+                                    std::list<marker_base_type>::const_iterator itMark_end = itMarkName->second.end();
+                                    for ( ; itMark!=itMark_end;++itMark)
+                                        {
+                                            auto value = __dataSurfacePost[boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)];
+                                            std::list<marker_base_type>::const_iterator itnewMark = newListMark.begin();
+                                            std::list<marker_base_type>::const_iterator itnewMark_end = newListMark.end();
+                                            bool find=false;
+                                            while ( itnewMark != itnewMark_end && !find)
+                                                {
+                                                    auto value2 = __dataSurfacePost[boost::get<0>(*itnewMark)][boost::get<1>(*itnewMark)][boost::get<2>(*itnewMark)];
+                                                    if ( value == value2) find=true;
+                                                    ++itnewMark;
+                                                }
+                                            if (!find) newListMark.push_back(*itMark);
+                                        }
+
                                     *_M_ostr << "Physical Surface(\"" << itMarkName->first << "\") = {";
 
-                                    std::list<marker_base_type>::const_iterator itMark = itMarkName->second.begin();
-                                    std::list<marker_base_type>::const_iterator itMark_end = --itMarkName->second.end();
-                                    while (itMark!=itMark_end)
+                                    //std::list<marker_base_type>::const_iterator itMark = itMarkName->second.begin();
+                                    //std::list<marker_base_type>::const_iterator itMark_end = --itMarkName->second.end();
+
+                                    auto itMarkTTT=newListMark.begin();
+                                    auto itMarkTTT_end=--newListMark.end();
+
+                                    while (itMarkTTT!=itMarkTTT_end)
                                         {
-                                            if (! __dataMemGlobSurf1[0][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)] )
-                                                *_M_ostr << __dataMemGlob[3][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)]
+                                            if (! __dataMemGlobSurf1[0][boost::get<0>(*itMarkTTT)][boost::get<1>(*itMarkTTT)][boost::get<2>(*itMarkTTT)] )
+                                                *_M_ostr << /*__dataMemGlob[3]*/__dataSurfacePost[boost::get<0>(*itMarkTTT)][boost::get<1>(*itMarkTTT)][boost::get<2>(*itMarkTTT)]
                                                          <<",";
                                             else
-                                                *_M_ostr << __dataMemGlobSurf2[0][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)]
+                                                *_M_ostr << __dataMemGlobSurf2[0][boost::get<0>(*itMarkTTT)][boost::get<1>(*itMarkTTT)][boost::get<2>(*itMarkTTT)]
                                                          <<"["
-                                                         << __dataMemGlob[3][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)]
+                                                         << /*__dataMemGlob[3]*/__dataSurfacePost[boost::get<0>(*itMarkTTT)][boost::get<1>(*itMarkTTT)][boost::get<2>(*itMarkTTT)]
                                                          <<"],";
-                                            ++itMark;
+                                            ++itMarkTTT;
                                         }
-                                    if (! __dataMemGlobSurf1[0][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)] )
-                                        *_M_ostr << __dataMemGlob[3][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)]
+
+                                    if (! __dataMemGlobSurf1[0][boost::get<0>(*itMarkTTT)][boost::get<1>(*itMarkTTT)][boost::get<2>(*itMarkTTT)] )
+                                        *_M_ostr << /*__dataMemGlob[3]*/__dataSurfacePost[boost::get<0>(*itMarkTTT)][boost::get<1>(*itMarkTTT)][boost::get<2>(*itMarkTTT)]
                                                      << "};\n";
                                     else
-                                        *_M_ostr << __dataMemGlobSurf2[0][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)]
+                                        *_M_ostr << __dataMemGlobSurf2[0][boost::get<0>(*itMarkTTT)][boost::get<1>(*itMarkTTT)][boost::get<2>(*itMarkTTT)]
                                                  <<"["
-                                                 << __dataMemGlob[3][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)]
+                                                 << /*__dataMemGlob[3]*/__dataSurfacePost[boost::get<0>(*itMarkTTT)][boost::get<1>(*itMarkTTT)][boost::get<2>(*itMarkTTT)]
                                                  <<"] };\n";
                                 }
                             else if (itMarkType->first=="volume")
