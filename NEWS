@@ -15,8 +15,9 @@
    segfault with Gcc4.5 and (ii) fixed a warning that was quite annoying
  - Added OpenTURNS check (optional)
  - Start support python wrappers using OpenTURNS
- - added support for TBB (Thread Building Blocks). Now we have to use it. A
-   first example is available in life/lifealg/vectorublas.cpp
+ - added support for TBB (Thread Building Blocks). A first example is available
+   in life/lifealg/vectorublas.cpp.  Some integrate() functions (element wise
+   and evaluate()) are also using it. It is still optional.
  - added support for octave warppers. An example is available in doc/tutorial.
  - ported to (intel) APPLE platforms thanks to [[http://www.macports.org][macports.org]]
  - added support for [[http://www.madlib.be][MAdLib]], a mesh adaptation library
