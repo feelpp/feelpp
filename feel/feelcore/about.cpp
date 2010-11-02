@@ -1,5 +1,5 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
-
+    kate: space-indent on; indent-width 4; mixedindent off; indent-mode cstyle; encoding utf-8;
    This file is part of the Feel library
 
    Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
@@ -38,7 +38,7 @@ namespace Feel
 std::string
 AboutPerson::name() const
 {
-   return _M_Name;
+    return _M_Name;
 }
 
 std::string
