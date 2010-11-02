@@ -383,9 +383,10 @@ Application::doOptions( int argc, char** argv )
         this->parseAndStoreOptions( po::command_line_parser(argc, argv), true );
         std::string config_name = (boost::format( "%1%.cfg" ) % this->about().appName()).str();
         Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
+        std::cout << "[Application] Looking for " << config_name << "\n";
         if ( fs::exists( config_name ) )
         {
-
+            std::cout << "[Application] reading " << config_name << "\n";
             std::ifstream ifs( config_name.c_str() );
             store(parse_config_file(ifs, _M_desc), _M_vm);
         }
@@ -394,9 +395,10 @@ Application::doOptions( int argc, char** argv )
             // try with a prefix feel_
             std::string config_name = (boost::format( "feel_%1%.cfg" ) % this->about().appName()).str();
             Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
-
+            std::cout << "[Application] trying " << config_name << "\n";
             if ( fs::exists( config_name ) )
             {
+                std::cout << "[Application] reading " << config_name << "\n";
                 std::ifstream ifs( config_name.c_str() );
                 store(parse_config_file(ifs, _M_desc), _M_vm);
             }
