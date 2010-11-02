@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -56,7 +56,7 @@ makeOptions()
         ("adapt-hmin", Feel::po::value<double>()->default_value(1e-5),"minimum acceptable h")
         ("gmshmodel", Feel::po::value<bool>()->default_value(false),"enable gmsh model")
         ("gmshgeo", Feel::po::value<bool>()->default_value(false),"enable gmsh model geo file")
-      
+
         ;
     return residualestimatoroptions.add( Feel::feel_options() );
 }
@@ -85,8 +85,8 @@ main( int argc, char** argv )
      */
     /** \code */
     //app.add( new ResidualEstimator<1,1>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<2,1>( app.vm(), app.about() ) );
-    //app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
+    //app.add( new ResidualEstimator<2,1>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
 
     /** \endcode */
 
