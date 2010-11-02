@@ -566,7 +566,7 @@ public:
         _M_element( boost::addressof(__e) ),
         _M_pc( __pc ),
         _M_pc_faces(),
-        _M_npoints( _M_pc.get()->nPoints() ),
+        _M_npoints( _M_pc->nPoints() ),
 
         //_M_xref( PDim ),
         //_M_xreal( NDim ),
@@ -686,7 +686,7 @@ public:
        _M_element( p->_M_element ),
        _M_pc( p->_M_pc ),
        _M_pc_faces( p->_M_pc_faces ),
-       _M_npoints( _M_pc.get()->nPoints() ),
+       _M_npoints( _M_pc->nPoints() ),
        //_M_xref( PDim ),
        //_M_xreal( NDim ),
        //_M_x0( NDim ),
@@ -775,7 +775,7 @@ public:
         _M_h = __e.h();
         _M_meas = __e.measure();
         _M_measface = __e.faceMeasure( __f );
-        _M_xrefq = _M_pc.get()->nodes();
+        _M_xrefq = _M_pc->nodes();
 
         FEEL_ASSERT( __e.G().size2() == _M_gm->nbPoints() )( __e.G().size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
         FEEL_ASSERT( _M_pc ).error( "invalid precompute data structure" );
@@ -787,13 +787,13 @@ public:
                 std::fill( _M_xrealq.data().begin(), _M_xrealq.data().end(), value_type(0));
                 const uint16_type size1 = _M_G.size1();
                 const uint16_type size3 = _M_G.size2();
-                const uint16_type size2 = _M_pc.get()->nPoints();
+                const uint16_type size2 = _M_pc->nPoints();
 
                 for( uint16_type i = 0; i < size1; ++i )
                     for( uint16_type j = 0; j < size2; ++j )
                         {
                             for( uint16_type k = 0; k < size3; ++k )
-                                _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc.get()->phi()[k][0][0][j];
+                                _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc->phi()[k][0][0][j];
                         }
             }
         if ( vm::has_jacobian<context>::value )
@@ -808,7 +808,7 @@ public:
         _M_pc = __pc;
 
 
-        if (_M_npoints != _M_pc.get()->nPoints() )
+        if (_M_npoints != _M_pc->nPoints() )
             {
                 _M_npoints = _M_pc.get()->nPoints();
 
@@ -857,7 +857,7 @@ public:
         _M_face_id = invalid_uint16_type_value;
         _M_h = __e.h();
         _M_meas = __e.measure();
-        _M_xrefq = _M_pc.get()->nodes();
+        _M_xrefq = _M_pc->nodes();
 
         FEEL_ASSERT( __e.G().size2() == _M_gm->nbPoints() )( __e.G().size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
         FEEL_ASSERT( _M_pc ).error( "invalid precompute data structure" );
@@ -867,13 +867,13 @@ public:
                 std::fill( _M_xrealq.data().begin(), _M_xrealq.data().end(), value_type(0));
                 const uint16_type size1 = _M_G.size1();
                 const uint16_type size3 = _M_G.size2();
-                const uint16_type size2 = _M_pc.get()->nPoints();
+                const uint16_type size2 = _M_pc->nPoints();
 
                 for( uint16_type i = 0; i < size1; ++i )
                     for( uint16_type j = 0; j < size2; ++j )
                         {
                             for( uint16_type k = 0; k < size3; ++k )
-                                _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc.get()->phi()[k][0][0][j];
+                                _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc->phi()[k][0][0][j];
                         }
             }
         if ( vm::has_jacobian<context>::value )
@@ -1305,7 +1305,7 @@ public:
     /**
      * \return the precompute type
      */
-    precompute_ptrtype const& pc() const { return *_M_pc; }
+    precompute_ptrtype const& pc() const { return _M_pc; }
 
     /**
      * \return the precompute type for the faces
@@ -1490,7 +1490,7 @@ private:
         for ( int q = 0; q < nPoints(); ++q )
             {
                 //std::cout << "q =" << q << "\n";
-                _M_gm->gradient( q, _M_g, _M_pc.get().get() );
+                _M_gm->gradient( q, _M_g, _M_pc.get() );
                 //Debug() << "[geomap] g[" << q << "] = "<< _M_g << "\n";
 
 #if 0
@@ -1600,7 +1600,7 @@ private:
     }
 
     Context();
-    Context( Context const& );
+
 private:
 
     gm_ptrtype _M_gm;
@@ -1609,7 +1609,7 @@ private:
     //boost::shared_ptr<element_type const> _M_element_c;
         //element_type _M_element_c;
 
-    boost::optional<precompute_ptrtype> _M_pc;
+    precompute_ptrtype _M_pc;
     std::vector<std::map<permutation_type, precompute_ptrtype> > _M_pc_faces;
     uint16_type _M_npoints;
 
