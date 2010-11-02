@@ -393,13 +393,7 @@ FIND_PACKAGE(PythonInterp 2.2 REQUIRED)
 ADD_SUBDIRECTORY ( feel )
 
 SET(FEEL_LIBRARIES
-  feel
-  feelmaterial
-  feelfilters
-  feeldiscr
-  feelalg
-  feelmesh
-  feelcore
+  feel++
   ${FEEL_LIBRARIES}
   )
 
