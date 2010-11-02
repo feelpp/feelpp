@@ -175,8 +175,8 @@ struct test_disc: public Application
                             (emarker()==mesh->markerName("k2"))*(2-Px())*Py()-
                             (emarker()==mesh->markerName("k1"))*Px()*Py() );
             auto int3 = integrate( markedfaces( mesh, "Tdiscontinuity" ), jumpv( idv( u ) ) ).evaluate();
-            BOOST_CHECK_CLOSE( int3(0,0), 0, 1e-12 );
-            BOOST_CHECK_CLOSE( int3(1,0), 0, 1e-12 );
+            BOOST_CHECK_SMALL( int3(0,0), 1e-12 );
+            BOOST_CHECK_SMALL( int3(1,0), 1e-12 );
 
             u = vf::project(Xh, elements(mesh), sin(Px()) );
             auto int4 = integrate( markedfaces( mesh, "Tdiscontinuity" ), jumpv( idv( u ) ) ).evaluate();
