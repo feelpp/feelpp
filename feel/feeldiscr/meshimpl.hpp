@@ -210,7 +210,8 @@ Mesh<Shape, T>::updateForUse()
                     value_type meas = 0;
                     BOOST_FOREACH( auto _elt, iv->pointElementNeighborIds() )
                     {
-                        meas += this->element(_elt).measure();
+                        if ( this->hasElement( _elt ) )
+                            meas += this->element(_elt).measure();
                     }
                     this->elements().modify( iv,
                                              lambda::bind( &element_type::setMeasurePointElementNeighbors,
