@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-08-13
 
-  Copyright (C) 2008,2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008,2009,2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,10 +26,19 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-08-13
  */
+#define USE_BOOST_TEST 1
 // Boost.Test
 #define BOOST_TEST_MAIN
+// give a name to the testsuite
+#define BOOST_TEST_MODULE mesh_codim1 testsuite
+// disable the main function creation, use our own
+#define BOOST_TEST_NO_MAIN
+
+
 #include <boost/test/unit_test.hpp>
+#include <boost/test/floating_point_comparison.hpp>
 using boost::unit_test::test_suite;
+
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelmesh/geoentity.hpp>
@@ -49,6 +58,7 @@ typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 detail::mesh_ptrtype
 createMesh( double hsize )
 {
+    BOOST_TEST_MESSAGE( "create mesh" );
     double meshSize = hsize;
     //std::cout << "hsize = " << meshSize << std::endl;
 
@@ -82,6 +92,7 @@ createMesh( double hsize )
     mesh->accept( import );
     mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
     mesh->updateForUse();
+    BOOST_TEST_MESSAGE( "create mesh done" );
     return mesh;
 }
 }
@@ -92,6 +103,7 @@ struct test_mesh_filters
     }
     void operator()()
     {
+        BOOST_TEST_MESSAGE( "test_mesh_filters starts" );
         Feel::Assert::setLog( "test_mesh_filters.assert" );
 
 
@@ -99,12 +111,14 @@ struct test_mesh_filters
 
         // elements
         {
+
             detail::mesh_type::gm_ptrtype __gm = mesh->gm();
             typedef detail::mesh_type::gm_type gm_type;
             typedef gm_type::precompute_ptrtype geopc_ptrtype;
             typedef gm_type::precompute_type geopc_type;
             typedef gm_type::Context<vm::POINT, detail::mesh_type::element_type> gmc_type;
             typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+            BOOST_TEST_MESSAGE( "test_mesh_filters check elements" );
             //
             // Precompute some data in the reference element for
             // geometric mapping and reference finite element
@@ -114,10 +128,8 @@ struct test_mesh_filters
             Feel::MeshTraits<detail::mesh_type>::element_const_iterator it = mesh->beginElement();
             Feel::MeshTraits<detail::mesh_type>::element_const_iterator en = mesh->endElement();
 
-            std::cout << "Checking " << std::distance( it, en ) << " elements...\n";
-#if defined(USE_BOOST_TEST)
-            //BOOST_CHECK( std::distance( it, en ) == 1 );
-#endif
+            BOOST_TEST_MESSAGE( "Checking " << std::distance( it, en ) << " elements...\n");
+
             for( ; it != en; ++it )
                 {
                     // check that the geometric transformation from
@@ -127,11 +139,10 @@ struct test_mesh_filters
 
                     FEEL_ASSERT( ublas::norm_frobenius( __c->xReal() - it->G() ) < 1e-15 )( it->id() )( __c->xReal() )( it->G() ).error( "invalid element" );
                     FEEL_ASSERT( it->marker().value() == 3 )( it->id() )( it->marker().value() ).error( "invalid element marker" );
-#if defined(USE_BOOST_TEST)
-                    BOOST_CHECK( ublas::norm_frobenius( __c->xReal() - it->G() ) < 1e-15 );
 
-                    BOOST_CHECK( it->marker().value() == 3 );
-#endif
+                    //BOOST_CHECK_SMALL( ublas::norm_frobenius( __c->xReal() - it->G() ), 1e-15 );
+                    BOOST_CHECK_EQUAL( it->marker().value(), 3 );
+
                 }
         }
                 // location faces
@@ -140,10 +151,8 @@ struct test_mesh_filters
             Feel::MeshTraits<detail::mesh_type>::location_face_const_iterator it = mesh->beginFaceOnBoundary();
             Feel::MeshTraits<detail::mesh_type>::location_face_const_iterator en = mesh->endFaceOnBoundary();
 
-            std::cout << "Checking " << std::distance( it, en ) << " boundary faces...\n";
-#if defined(USE_BOOST_TEST)
-            //BOOST_CHECK( std::distance( it, en ) == 4 );
-#endif
+            BOOST_TEST_MESSAGE( "Checking " << std::distance( it, en ) << " boundary faces...\n" );
+
             for( ; it != en; ++it )
                 {
 #if defined(USE_BOOST_TEST)
@@ -192,7 +201,7 @@ struct test_mesh_filters
                                       << "n10= " << n10 << "\n";
                         }
 #if defined(USE_BOOST_TEST)
-                    BOOST_CHECK( ublas::norm_2( n00 - n10 ) < 1e-15 );
+                    BOOST_CHECK_SMALL( ublas::norm_2( n00 - n10 ), 1e-15 );
 #endif
                     //FEEL_ASSERT( it->element(0).nGeometricFaces() == 2 )( it->element(0).nGeometricFaces() ).error( "invalid number of faces" );
                     Feel::node<double>::type n01 = it->element(0).point( it->element(0).fToP( face_0, 0 ) ).node();
@@ -208,9 +217,9 @@ struct test_mesh_filters
                         ( face_1 )
                         ( n01 )( n11 )( ublas::norm_2( n01 - n11 ) ).warn( "check failed" );
 #if defined(USE_BOOST_TEST)
-                    BOOST_CHECK( ublas::norm_2( n01 - n11 ) < 1e-15 );
+                    BOOST_CHECK_SMALL( ublas::norm_2( n01 - n11 ), 1e-15 );
 
-                    BOOST_CHECK( it->marker().value() == 3 );
+                    BOOST_CHECK_EQUAL( it->marker().value(), 3 );
 #endif
                 }
         }
@@ -283,9 +292,20 @@ BOOST_AUTO_TEST_CASE( test_simple_mesh1d )
 BOOST_AUTO_TEST_CASE( test_mesh_filters_ )
 {
     test_mesh_filters tmf1;
+    //test_mesh_filters tmf1; tmf1();
+
     //test_mesh_filters tmf2(0.2);
 
 }
+int BOOST_TEST_CALL_DECL
+main( int argc, char* argv[] )
+{
+    Feel::Environment env( argc, argv );
+    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
+
+    return ret;
+}
+
 #if 0
 #if 1
 test_suite*
