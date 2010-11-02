@@ -736,7 +736,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
 
     auto M = glas::average( M_G );
     M_barycenter = ublas::column( M, 0 );
-
+    M_pneighbors.clear();
     for ( uint16_type __p = 0; __p < numPoints; ++__p )
     {
         std::copy( M_points[__p]->elements().begin(),
