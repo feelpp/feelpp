@@ -31,13 +31,9 @@
 #define __Integrators_H 1
 
 #include <boost/timer.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelvf/block.hpp>
 
-#include <tbb/tick_count.h>
-#include <tbb/blocked_range.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_reduce.h>
-#include <tbb/task_scheduler_init.h>
 
 #include <Eigen/Eigen>
 

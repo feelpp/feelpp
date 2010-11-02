@@ -41,13 +41,11 @@
 using boost::unit_test::test_suite;
 #include <boost/test/floating_point_comparison.hpp>
 
-#include "tbb/tick_count.h"
-#include <tbb/blocked_range.h>
-#include <tbb/parallel_for.h>
-
+#include <feel/feelcore/feel.hpp>
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
 
+#if defined (HAVE_TBB)
 int N=100000000;
 class A
 {
@@ -63,6 +61,7 @@ public:
 
 BOOST_AUTO_TEST_CASE( test_tbb )
 {
+
     BOOST_TEST_MESSAGE( "Test TBB" );
     std::vector<double> vs(N,M_PI),v(N,M_PI);
     tbb::blocked_range<std::vector<double>::iterator> r( v.begin(), v.end() );
@@ -82,5 +81,6 @@ BOOST_AUTO_TEST_CASE( test_tbb )
                         << "Parallel version ran in " <<  (parallel_t1 - parallel_t0).seconds() << " seconds" << "\n"
                         << "Resulting in a speedup of " << (serial_t1 - serial_t0).seconds() / (parallel_t1 - parallel_t0).seconds() << "\n");
     BOOST_TEST_MESSAGE( "Test TBB done" );
-}
 
+}
+#endif // HAVE_TBB

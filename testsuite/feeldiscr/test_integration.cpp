@@ -33,7 +33,7 @@
 // make sure that the init_unit_test function is defined by UTF
 #define BOOST_TEST_MAIN
 // give a name to the testsuite
-#define BOOST_TEST_MODULE 3D integration testsuite
+#define BOOST_TEST_MODULE integration testsuite
 // disable the main function creation, use our own
 #define BOOST_TEST_NO_MAIN
 
@@ -107,15 +107,16 @@ struct f_sinPx
     }
 };
 
-template<typename T, int Order = 1>
+template<typename T, int Dim, int Order = 1>
 struct imesh
 {
-    typedef Mesh<Simplex<2, Order>, T > type;
+    typedef Simplex<Dim, Order> convex_type;
+    typedef Mesh<convex_type, T > type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 
 template<typename T>
-typename imesh<T>::ptrtype
+typename imesh<T,2>::ptrtype
 createMesh( double hsize )
 {
     double meshSize = hsize;
@@ -169,9 +170,9 @@ createMesh( double hsize )
     /* Mesh */
 
 
-    typename imesh<T>::ptrtype mesh( new typename imesh<T>::type );
+    typename imesh<T,2>::ptrtype mesh( new typename imesh<T,2>::type );
 
-    ImporterGmsh<typename imesh<T>::type> import( fname );
+    ImporterGmsh<typename imesh<T,2>::type> import( fname );
     mesh->accept( import );
 
     mesh->components().set( MESH_RENUMBER | MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
@@ -219,9 +220,9 @@ createCircle( double hsize )
         __gmsh.setOrder( GMSH_ORDER_TWO );
     fname = __gmsh.generate( nameStr.str(), ostr.str() );
 
-    typename imesh<T,Order>::ptrtype mesh( new typename imesh<T,Order>::type );
+    typename imesh<T,2,Order>::ptrtype mesh( new typename imesh<T,2,Order>::type );
 
-    ImporterGmsh<typename imesh<T, Order>::type> import( fname );
+    ImporterGmsh<typename imesh<T,2, Order>::type> import( fname );
     mesh->accept( import );
 
     mesh->components().set( MESH_RENUMBER | MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
@@ -229,7 +230,7 @@ createCircle( double hsize )
     return mesh;
 }
 template<typename T, int Order>
-typename imesh<T,Order>::ptrtype
+typename imesh<T,2,Order>::ptrtype
 createSimplex( double hsize )
 {
     double meshSize = hsize;
@@ -240,19 +241,46 @@ createSimplex( double hsize )
     ts.setX( std::make_pair(-1,1) );
     ts.setY( std::make_pair(-1,1) );
     std::string fname = ts.generate( "simplex" );
-    typename imesh<T,Order>::ptrtype mesh( new typename imesh<T>::type );
+    typename imesh<T,2,Order>::ptrtype mesh( new typename imesh<T,2>::type );
 
-    ImporterGmsh<typename imesh<T>::type> import( fname );
+    ImporterGmsh<typename imesh<T,2>::type> import( fname );
     mesh->accept( import );
 
     return mesh;
 }
-}
+
 
 template<typename value_type = double>
-struct test_integration_circle
+struct test_integration_circle: public Application
 {
-    test_integration_circle( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_) {}
+    typedef typename imesh<value_type,2>::convex_type convex_type;
+    typedef typename imesh<value_type,2>::type mesh_type;
+    typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+    typedef fusion::vector<Lagrange<2, Vectorial> > vector_basis_type;
+    typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
+
+    test_integration_circle( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        Application( argc, argv, ad, od ),
+        backend( Backend<double>::build( this->vm() ) ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( "ellipsoid" ),
+        mesh()
+        {
+            mesh = createGMSHMesh( _mesh=new mesh_type,
+                                   _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % 2).str() ,
+                                                 _usenames=true,
+                                                 _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
+                                                 _shape=shape,
+                                                 _dim=2,
+                                                 _xmin=-1.,_ymin=-1.,
+                                                 _h=meshSize ),
+                                   _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+        }
+
     void operator()()
     {
         using namespace Feel;
@@ -261,7 +289,6 @@ struct test_integration_circle
         int Order=2;
         double t = 0.0;
         AUTO( mycst, cst_ref( t ) );
-        typename imesh<value_type,1>::ptrtype mesh( createCircle<value_type,1>( meshSize ) );
 
         t = 1.0;
         value_type v0 = integrate( elements(mesh), mycst ).evaluate()( 0, 0 );
@@ -284,30 +311,40 @@ struct test_integration_circle
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v0, pi, 2e-1 );
-        BOOST_CHECK_SMALL( v0-v00, eps  );
+        BOOST_CHECK_CLOSE( v0, v00, eps  );
 #else
         FEEL_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
         FEEL_ASSERT( math::abs( v0-v00) < eps )( v0 )( v00 )( math::abs( v0-v00) )( eps ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
-        typedef typename imesh<value_type,1>::type mesh_type;
-        typedef fusion::vector<Lagrange<2, Scalar> > basis_type;
-        typedef FunctionSpace<mesh_type, basis_type> space_type;
+        auto v1 = integrate( elements(mesh), Px()*Px()+Py()*Py() ).evaluate()( 0, 0 );
+#if defined(USE_BOOST_TEST)
+        BOOST_CHECK_CLOSE( v1, pi/2, 2e-1 );
+        BOOST_CHECK_CLOSE( v1, v0/2, 2e-1 );
+#endif
+
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
-        typename space_type::element_type u( Xh );
+        auto u = Xh->element();
 
         u = vf::project( Xh, elements(mesh), constant(1.0) );
         v0 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
+        BOOST_TEST_MESSAGE( "[circle] v0(~pi)=" << v0 << " pi=" << pi << " should be equal \n");
         BOOST_CHECK_CLOSE( v0, pi, 2e-1);
 #else
         FEEL_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
-        typedef fusion::vector<Lagrange<2, Vectorial> > vector_basis_type;
-        typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
+        u = vf::project( Xh, elements(mesh), Px()*Px()+Py()*Py() );
+        v0 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
+#if defined(USE_BOOST_TEST)
+        BOOST_TEST_MESSAGE( "[circle] v0(~pi/2)=" << v0 << " pi/2=" << pi/2 << " should be equal \n");
+        BOOST_CHECK_CLOSE( v0, pi/2, 2e-1);
+#endif /* USE_BOOST_TEST */
+
+
         boost::shared_ptr<vector_space_type> Xvh( new vector_space_type(mesh) );
-        typename vector_space_type::element_type U( Xvh );
+        auto U = Xvh->element();
 
         U = vf::project( Xvh, elements(mesh), vec(constant(1.0),constant(1.0)) );
         v0 = integrate( boundaryfaces(mesh), trans(idv( U ))*N() ).evaluate()( 0, 0 );
@@ -315,7 +352,8 @@ struct test_integration_circle
 
         BOOST_TEST_MESSAGE( "[circle] v0=" << v0 << " v00=" << v00 << " should be equal thanks to gauss int 1.N() != int div 1\n");
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v0-v00, eps );
+        BOOST_CHECK_SMALL( v0, eps );
+        BOOST_CHECK_SMALL( v00, eps );
 #else
         FEEL_ASSERT( math::abs( v0-v00) < eps )( v0 )(v00)( math::abs( v0-v00) ).warn ( "int 1.N() != int div 1" );
 #endif /* USE_BOOST_TEST */
@@ -332,7 +370,10 @@ struct test_integration_circle
 #endif /* USE_BOOST_TEST */
 
     }
+    boost::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
+    std::string shape;
+    mesh_ptrtype mesh;
 };
 template<typename value_type = double>
 struct test_integration_simplex
@@ -345,8 +386,8 @@ struct test_integration_simplex
 
 
         const value_type eps = 1e-9;
-        typename imesh<value_type,1>::ptrtype mesh( createSimplex<value_type,1>( meshSize ) );
-        typedef typename imesh<value_type>::type mesh_type;
+        typename imesh<value_type,2,1>::ptrtype mesh( createSimplex<value_type,1>( meshSize ) );
+        typedef typename imesh<value_type,2>::type mesh_type;
 
         typedef fusion::vector<Lagrange<3, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -442,7 +483,7 @@ struct test_integration_domain
         using namespace Feel::vf;
 
 
-        typename imesh<value_type>::ptrtype mesh( createMesh<value_type>( meshSize ) );
+        typename imesh<value_type,2>::ptrtype mesh( createMesh<value_type>( meshSize ) );
 
         const value_type eps = 1e-9;
 
@@ -531,7 +572,7 @@ struct test_integration_boundary
         using namespace Feel::vf;
 
 
-        typename imesh<value_type>::ptrtype mesh( createMesh<value_type>( meshSize ) );
+        typename imesh<value_type,2>::ptrtype mesh( createMesh<value_type>( meshSize ) );
 
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
@@ -592,8 +633,8 @@ struct test_integration_functions
         using namespace Feel::vf;
 
 
-        typedef typename imesh<value_type>::type mesh_type;
-        typename imesh<value_type>::ptrtype mesh( createMesh<value_type>( meshSize ) );
+        typedef typename imesh<value_type,2>::type mesh_type;
+        typename imesh<value_type,2>::ptrtype mesh( createMesh<value_type>( meshSize ) );
 
         const value_type eps = 1e-9;
 
@@ -725,8 +766,8 @@ struct test_integration_vectorial_functions
         using namespace Feel::vf;
 
 
-        typedef typename imesh<value_type>::type mesh_type;
-        typename imesh<value_type>::ptrtype mesh( createMesh<value_type>( meshSize ) );
+        typedef typename imesh<value_type,2>::type mesh_type;
+        typename imesh<value_type,2>::ptrtype mesh( createMesh<value_type>( meshSize ) );
 
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
@@ -741,35 +782,35 @@ struct test_integration_vectorial_functions
         BOOST_TEST_MESSAGE( "int(proj one() = " << integrate( elements(mesh), idv( u ) ).evaluate() << "\n" );
 
         u = vf::project( Xh, elements(mesh), P() );
-        ublas::matrix<value_type> m(  integrate( elements(mesh), gradv( u ) ).evaluate() );
+        auto m=  integrate( elements(mesh), gradv( u ) ).evaluate();
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( m(0,0), 4, std::pow(10.0,-2.0*Order) );
         BOOST_CHECK_SMALL( m(0,1)- 0, std::pow(10.0,-2.0*Order) );
         BOOST_CHECK_SMALL( m(1,0)- 0, std::pow(10.0,-2.0*Order) );
         BOOST_CHECK_CLOSE( m(1,1), 4, std::pow(10.0,-2.0*Order) );
 #endif
-        ublas::matrix<value_type> mx( integrate( elements(mesh), dxv( u ) ).evaluate());
+        auto mx= integrate( elements(mesh), dxv( u ) ).evaluate();
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( mx(0,0), 4, std::pow(10.0,-2.0*Order) );
         BOOST_CHECK_SMALL( mx(1,0)- 0, std::pow(10.0,-2.0*Order) );
 #endif
 
-        ublas::matrix<value_type> my( integrate( elements(mesh), dyv( u ) ).evaluate());
+        auto my = integrate( elements(mesh), dyv( u ) ).evaluate();
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( my(0,0)- 0, std::pow(10.0,-2.0*Order) );
         BOOST_CHECK_CLOSE( my(1,0), 4, std::pow(10.0,-2.0*Order) );
 #endif
 
         u = vf::project( Xh, elements(mesh), Py()*oneX() + Px()*oneY() );
-        ublas::matrix<value_type> int_divu( integrate( elements(mesh), divv( u ) ).evaluate());
+        auto int_divu = integrate( elements(mesh), divv( u ) ).evaluate();
 #if defined(USE_BOOST_TEST)
-        value_type norm_int_divu = ublas::norm_frobenius(int_divu);
+        value_type norm_int_divu = int_divu.norm();
         BOOST_CHECK_SMALL( norm_int_divu, eps );
 #endif
         u = vf::project( Xh, elements(mesh), P() );
         int_divu = integrate( elements(mesh), divv( u ) ).evaluate();
 #if defined(USE_BOOST_TEST)
-        norm_int_divu = ublas::norm_frobenius(int_divu);
+        norm_int_divu = int_divu.norm();
         BOOST_CHECK_CLOSE( norm_int_divu, 8, eps );
 #endif
 
@@ -777,22 +818,22 @@ struct test_integration_vectorial_functions
         u = vf::project( Xh, elements(mesh), P() );
         int_divu = integrate( elements(mesh), divv( u ) ).evaluate();
         BOOST_TEST_MESSAGE( "int_divu = " << int_divu << "\n" );
-        ublas::matrix<value_type> int_un = integrate( boundaryfaces(mesh), trans(idv( u ))*N() ).evaluate();
+        auto int_un = integrate( boundaryfaces(mesh), trans(idv( u ))*N() ).evaluate();
         BOOST_TEST_MESSAGE( "(1, N) = " << integrate( boundaryfaces(mesh), IM<2,Order+1,value_type,Simplex>(), trans(one())*N() ).evaluate() << "\n" );
         BOOST_TEST_MESSAGE( "(P, N) = " << integrate( boundaryfaces(mesh), IM<2,Order+1,value_type,Simplex>(), trans(P())*N() ).evaluate() << "\n" );
         BOOST_TEST_MESSAGE( "int_un = " << int_un << "\n" );
 #if defined(USE_BOOST_TEST)
-        value_type norm_divergence = ublas::norm_frobenius(int_divu-int_un);
+        value_type norm_divergence = (int_divu-int_un).norm();
         BOOST_CHECK_SMALL( norm_divergence, eps );
 #endif
 
         // check the stokes theorem
-        ublas::matrix<value_type> int_curlu = integrate( elements(mesh), curlzv( u ) ).evaluate();
+        auto int_curlu = integrate( elements(mesh), curlzv( u ) ).evaluate();
         BOOST_TEST_MESSAGE( "int_curlu = " << int_curlu << "\n" );
-        ublas::matrix<value_type> int_ut = integrate( boundaryfaces(mesh), trans( idv( u ) )*(Ny()*oneX()-Nx()*oneY() ) ).evaluate();
+        auto int_ut = integrate( boundaryfaces(mesh), trans( idv( u ) )*(Ny()*oneX()-Nx()*oneY() ) ).evaluate();
         BOOST_TEST_MESSAGE( "int_ut = " << int_ut << "\n" );
 #if defined(USE_BOOST_TEST)
-        value_type norm_stokes = ublas::norm_frobenius(int_curlu-int_ut);
+        value_type norm_stokes = (int_curlu-int_ut).norm();
         BOOST_CHECK_SMALL( norm_stokes, eps );
 #endif
     }
@@ -810,8 +851,8 @@ struct test_integration_composite_functions
         using namespace Feel::vf;
 
 
-        typedef typename imesh<value_type>::type mesh_type;
-        typename imesh<value_type>::ptrtype mesh( createMesh<value_type>( meshSize ) );
+        typedef typename imesh<value_type,2>::type mesh_type;
+        typename imesh<value_type,2>::ptrtype mesh( createMesh<value_type>( meshSize ) );
 
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
@@ -826,7 +867,7 @@ struct test_integration_composite_functions
         BOOST_TEST_MESSAGE( "int(proj P() = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u.template element<0>() ) ).evaluate() << "\n" );
         BOOST_TEST_MESSAGE( "int(1 = " << integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), idv( u.template element<1>() ) ).evaluate() << "\n" );
 
-        ublas::matrix<value_type> m(  integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), gradv( u.template element<0>() ) ).evaluate() );
+        auto m(  integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), gradv( u.template element<0>() ) ).evaluate() );
         BOOST_TEST_MESSAGE( "int(grad(P()) = " << m << "\n" );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( m(0,0)-4, std::pow(10.0,-2.0*Order) );
@@ -834,11 +875,11 @@ struct test_integration_composite_functions
         BOOST_CHECK_SMALL( m(1,0), std::pow(10.0,-2.0*Order) );
         BOOST_CHECK_SMALL( m(1,1)-4, std::pow(10.0,-2.0*Order) );
 #endif
-        m = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), trace( gradv( u.template element<0>() )*trans(gradv( u.template element<0>() ) ) ) ).evaluate();
-        BOOST_TEST_MESSAGE( "int(grad(P()*grad^T(P())) = " << m << "\n" );
+        auto m1 = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), trace( gradv( u.template element<0>() )*trans(gradv( u.template element<0>() ) ) ) ).evaluate();
+        BOOST_TEST_MESSAGE( "int(grad(P()*grad^T(P())) = " << m1 << "\n" );
 
-        m = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), trace( trans(gradv( u.template element<0>() ))*(gradv( u.template element<0>() ) ) ) ).evaluate();
-        BOOST_TEST_MESSAGE( "int(grad(P()^T*grad(P())) = " << m << "\n" );
+        auto m2 = integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), trace( trans(gradv( u.template element<0>() ))*(gradv( u.template element<0>() ) ) ) ).evaluate();
+        BOOST_TEST_MESSAGE( "int(grad(P()^T*grad(P())) = " << m2 << "\n" );
 
 #if 0
         AUTO( u_exact,(P()^(2))*(Px()+Py()));
@@ -871,25 +912,25 @@ struct test_integration_composite_functions
         m= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), gradv( u.template element<0>() ) ).evaluate();
         BOOST_TEST_MESSAGE( "int(grad(u)) = " << m << "\n" );
 
-        m= integrate( boundaryfaces(mesh), IM<2,Order,value_type,Simplex>(), gradv( u.template element<0>() )*N() ).evaluate();
-        BOOST_TEST_MESSAGE( "int_bfaces(grad_u*N()) = " << m << "\n" );
+        auto m11= integrate( boundaryfaces(mesh), IM<2,Order,value_type,Simplex>(), gradv( u.template element<0>() )*N() ).evaluate();
+        BOOST_TEST_MESSAGE( "int_bfaces(grad_u*N()) = " << m11 << "\n" );
 
-        m= integrate( boundaryfaces(mesh), IM<2,Order,value_type,Simplex>(), grad_exact*N() ).evaluate();
-        BOOST_TEST_MESSAGE( "int_bfaces(grad_exact*N) = " << m << "\n" );
+        m11= integrate( boundaryfaces(mesh), IM<2,Order,value_type,Simplex>(), grad_exact*N() ).evaluate();
+        BOOST_TEST_MESSAGE( "int_bfaces(grad_exact*N) = " << m11 << "\n" );
 
-        m= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), div_grad_exact ).evaluate();
-        BOOST_TEST_MESSAGE( "int(div_grad_exact) = " << m << "\n" );
+        auto m22= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), div_grad_exact ).evaluate();
+        BOOST_TEST_MESSAGE( "int(div_grad_exact) = " << m22 << "\n" );
 
-        m= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), grad_exact  ).evaluate();
-        BOOST_TEST_MESSAGE( "int(grad_exact) = " << m << "\n" );
-        m= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), gradv( u.template element<0>() ) - grad_exact ).evaluate();
-        BOOST_TEST_MESSAGE( "int( grad(u)-grad_exact) = " << m << "\n" );
+        auto m3= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), grad_exact  ).evaluate();
+        BOOST_TEST_MESSAGE( "int(grad_exact) = " << m3 << "\n" );
+        auto m4= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(), gradv( u.template element<0>() ) - grad_exact ).evaluate();
+        BOOST_TEST_MESSAGE( "int( grad(u)-grad_exact) = " << m4 << "\n" );
 
 
-        m= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(),
-                      trace( (gradv( u.template element<0>())-grad_exact)*trans(gradv( u.template element<0>())-grad_exact) )
-                      ).evaluate();
-        BOOST_TEST_MESSAGE( "|grad(u)-grad_exact|_0^2 = " << m << "\n" );
+        auto m5= integrate( elements(mesh), IM<2,Order,value_type,Simplex>(),
+                            trace( (gradv( u.template element<0>())-grad_exact)*trans(gradv( u.template element<0>())-grad_exact) )
+            ).evaluate();
+        BOOST_TEST_MESSAGE( "|grad(u)-grad_exact|_0^2 = " << m5 << "\n" );
 
 
 
@@ -914,6 +955,7 @@ struct test_integration_composite_functions
     double meshSize;
 };
 
+} // namespace Feel
 
 inline
 Feel::po::options_description
@@ -922,6 +964,7 @@ makeOptions()
     Feel::po::options_description integrationoptions("Test Integration options");
     integrationoptions.add_options()
         ("hsize", Feel::po::value<double>()->default_value( 0.3 ), "h value")
+        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (hypercube, simplex, ellipsoid)")
         ;
     return integrationoptions.add( Feel::feel_options() );
 }
@@ -935,7 +978,7 @@ makeAbout()
                             "0.1",
                            "integration tests",
                            Feel::AboutData::License_GPL,
-                           "Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)");
+                           "Copyright (C) 2006,2007,2008,2009,2010 Université Joseph Fourier (Grenoble I)");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -944,18 +987,45 @@ makeAbout()
 
 #if defined(USE_BOOST_TEST)
 
-BOOST_AUTO_TEST_CASE( test_integration_1 ) { test_integration_circle<double> t( 0.02 ); t(); }
+BOOST_AUTO_TEST_CASE( test_integration_1 )
+{
+    BOOST_TEST_MESSAGE( "Test integration Circle" );
+    Feel::test_integration_circle<double> t( boost::unit_test::framework::master_test_suite().argc,
+                                             boost::unit_test::framework::master_test_suite().argv,
+                                             makeAbout(), makeOptions() );
+
+    int n = tbb::task_scheduler_init::default_num_threads();
+    for( int p=1; p<=n; ++p ) {
+        BOOST_TEST_MESSAGE( "[test_integration_1] start tests with nthreads = " << p );
+        tbb::task_scheduler_init init(p);
+
+        tbb::tick_count t0 = tbb::tick_count::now();
+
+        t();
+        tbb::tick_count t1 = tbb::tick_count::now();
+        double t = (t1-t0).seconds();
+
+        BOOST_TEST_MESSAGE( "[test_integration_1] start tests with " << p << " threads, time=" << t << "seconds\n" );
+    }
+    BOOST_TEST_MESSAGE( "Test integration Circle Done" );
+}
+
+
+
+#if 0
 BOOST_AUTO_TEST_CASE( test_integration_2 ) { test_integration_domain<double> t( 0.1 ); t(); }
 BOOST_AUTO_TEST_CASE( test_integration_3 ){ test_integration_boundary<double> t( 0.1 ); t(); }
 BOOST_AUTO_TEST_CASE( test_integration_4 ) { test_integration_functions<2,double> t( 0.1 ); t();}
 BOOST_AUTO_TEST_CASE( test_integration_5 ) { test_integration_vectorial_functions<2,double> t( 0.1 ); t(); }
 BOOST_AUTO_TEST_CASE( test_integration_6 ) { test_integration_composite_functions<2,double> t(0.1); t(); }
 BOOST_AUTO_TEST_CASE( test_integration_7 ) { test_integration_simplex<double> t( 0.1 ); t(); }
+#endif // 0
 
 int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
 {
     Feel::Environment env( argc, argv );
+    Feel::Assert::setLog( "test_integration.assert");
     int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
 
     return ret;
