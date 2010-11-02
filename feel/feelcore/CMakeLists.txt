@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-add_library(feelcore SHARED
+set(SRC
   info.cpp
   application.cpp
   environment.cpp
@@ -32,7 +32,9 @@ add_library(feelcore SHARED
   typeinfo.cpp
   smartassert.cpp
   pslogger.cpp )
-target_link_libraries (feelcore   ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES})
-set_target_properties( feelcore PROPERTIES VERSION ${FEEL_SHARED_VERSION} SOVERSION ${FEEL_SHARED_SOVERSION})
+
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+feel_append_src(feelcore "${SRC};${HDR}")
+
 
 

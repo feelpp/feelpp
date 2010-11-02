@@ -21,9 +21,11 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-add_library(feelmaterial
-  SHARED
+SET( SRC
   material.cpp
   materiallib.cpp )
-target_link_libraries (feelmaterial feelcore)
-set_target_properties(feelmaterial PROPERTIES VERSION ${FEEL_SHARED_VERSION} SOVERSION ${FEEL_SHARED_SOVERSION})
+
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+feel_append_src(feelmaterial "${SRC};${HDR}")
+
+

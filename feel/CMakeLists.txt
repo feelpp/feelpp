@@ -22,6 +22,14 @@
 #
 #
 
+macro(feel_append_src DIRNAME FILES)
+  foreach(FILE ${FILES})
+    list(APPEND LIST ${DIRNAME}/${FILE})
+  endforeach(FILE)
+  set(FEEL_SRCS ${FEEL_SRCS};${LIST} PARENT_SCOPE)
+  set(FEEL_DIRS ${FEEL_DIRS};${DIRNAME} PARENT_SCOPE)
+endmacro(feel_append_src)
+
 add_subdirectory (feelcore)
 add_subdirectory (feelalg)
 add_subdirectory (feelmesh)
@@ -30,10 +38,11 @@ add_subdirectory (feeldiscr)
 add_subdirectory (feelfilters)
 add_subdirectory (feelmaterial)
 add_subdirectory (feelvf )
-add_subdirectory (feelsystem)
+#add_subdirectory (feelsystem)
 
-add_library(  feel SHARED options.cpp )
-set_target_properties( feel PROPERTIES VERSION ${FEEL_SHARED_VERSION} SOVERSION ${FEEL_SHARED_SOVERSION})
+add_library(feel++ SHARED options.cpp ${FEEL_SRCS})
+set_target_properties( feel++ PROPERTIES VERSION ${FEEL_SHARED_VERSION} SOVERSION ${FEEL_SHARED_SOVERSION})
 
-target_link_libraries (feel feelmaterial feelvf feelfilters feeldiscr feelalg feelmesh feelcore )
-set_target_properties(feel PROPERTIES VERSION ${FEEL_SHARED_VERSION} SOVERSION ${FEEL_SHARED_SOVERSION})
+target_link_libraries (feel++ ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES} ${TBB_LIBRARIES})
+set_target_properties(feel++ PROPERTIES VERSION ${FEEL_SHARED_VERSION} SOVERSION ${FEEL_SHARED_SOVERSION})
+

@@ -28,13 +28,14 @@ IF ( ENABLE_INSTANTIATION_MODE )
     )
   endif()
 
-add_library( feelfilters SHARED
+SET(SRC
   gmshhypercubedomain.cpp gmshsimplexdomain.cpp gmshellipsoiddomain.cpp
   #exporterfactorysimplex.cpp exporterfactoryhypercube.cpp
   exporter.cpp gmsh.cpp importergambit.cpp ${FEELFILTERS_INST_SRCS}
   )
-set_target_properties( feelfilters PROPERTIES VERSION ${FEEL_SHARED_VERSION} SOVERSION ${FEEL_SHARED_SOVERSION})
-target_link_libraries (feelfilters feeldiscr)
+
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+feel_append_src(feelfilters "${SRC};${HDR}")
 
 # create $ENV{HOME}/feel/geo if it does not exist already: this is the geometry
 # files repository
