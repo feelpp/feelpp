@@ -1099,7 +1099,7 @@ struct test_integration_composite_functions: public Application
 
 
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( vf-(vv1+vv2+vv3), eps );
+        BOOST_CHECK_CLOSE( vf,vv1+vv2+vv3, eps );
 #endif
     }
     boost::shared_ptr<Feel::Backend<double> > backend;
