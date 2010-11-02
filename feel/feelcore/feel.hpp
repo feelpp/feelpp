@@ -81,6 +81,7 @@
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>
 #include <tbb/task_scheduler_init.h>
+#include <tbb/mutex.h>
 #endif // HAVE_TBB
 
 
