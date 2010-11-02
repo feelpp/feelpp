@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -72,6 +72,7 @@ struct test_mesh_filters
     Feel::detail::mesh_ptrtype
     createMesh( double hsize )
     {
+        BOOST_TEST_MESSAGE( "create mesh" );
         using namespace Feel;
         double meshSize = hsize;
         //std::cout << "hsize = " << meshSize << std::endl;
@@ -125,6 +126,7 @@ struct test_mesh_filters
         mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
         mesh->updateForUse();
         BOOST_TEST_CHECKPOINT( "mesh ready for use" );
+        BOOST_TEST_MESSAGE( "create mesh done" );
         return mesh;
     }
 
