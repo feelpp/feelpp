@@ -9,14 +9,17 @@
 #+LATEX_class: cparticle
 
 * New in 0.90.0
+
 ** Programming Environment
 
+ - Life has been rename Feel++ (Finite Element Embedded Language and Library in
+   C++)
  - Ported to Gcc 4.5. Very few changes were needed: (i) one 1-liner to fix a
    segfault with Gcc4.5 and (ii) fixed a warning that was quite annoying
  - Added OpenTURNS check (optional)
  - Start support python wrappers using OpenTURNS
  - added support for TBB (Thread Building Blocks). A first example is available
-   in life/lifealg/vectorublas.cpp.  Some integrate() functions (element wise
+   in feel/feelalg/vectorublas.cpp.  Some integrate() functions (element wise
    and evaluate()) are also using it. It is still optional.
  - added support for octave warppers. An example is available in doc/tutorial.
  - ported to (intel) APPLE platforms thanks to [[http://www.macports.org][macports.org]]
@@ -25,30 +28,30 @@
 
 ** Libraries
 
-*** lifecore
+*** feelcore
 
  - Fix build on s390 and apple platforms
 
-*** lifealg
+*** feelalg
 
  - new local/global interface for vectors and sparse matrices to add the
    contribution of a local/small vector/matrix into a global/large one
 
-*** lifepoly
+*** feelpoly
 
  - support for RaviartThomas RTk in 2D and 3D
  - Continuous or Discontinous expansion in multidomains is now taken care of in
    the basis definition. Either the basis is intrinsiquely Discontinous
    (e.g. Dubiner) or can be either Continuous or Discontinous (e.g. Lagrange)
 
-*** lifemesh
+*** feelmesh
 
  - renamed SimplexProduct to Hypercube class and files
  - added support to the GeoND class for Point Element Neighbors which is for a
    given element, the set of elements (including himself) that share a point
    with it. Provide dimension(number of elements) and measure
 
-*** lifediscr
+*** feeldiscr
 
  - support for vectorial valued function such as RaviartThomas
  - update the interpolation tool
@@ -56,7 +59,7 @@
    an element in a Eigen vector as well as the dof signs (when modal basis are
    used)
 
-*** lifefilters
+*** feelfilters
 
  - much better support for Gmsh.
    - added loadGMSHMesh() and saveGMSHMesh() free functions to save and load
@@ -73,7 +76,7 @@
      build like edges or faces or to renumber the entities
  - renamed GmshTensorizedDomain to GmshHypercubeDomain
 
-*** lifevf
+*** feelvf
 
  - update the interpolation tool
  - fixed dG or integration of multi-valued functions breakage
