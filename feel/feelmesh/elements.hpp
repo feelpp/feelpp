@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,7 @@
        Date: 2005-09-03
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007,2008,2009,2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -36,6 +36,7 @@
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/random_access_index.hpp>
 
 #include <feel/feelmesh/geoelement.hpp>
 
@@ -77,7 +78,7 @@ public:
     typedef multi_index::multi_index_container<
         element_type,
         multi_index::indexed_by<
-
+            //multi_index::random_access<>,
             // sort by less<int> on id() + pid()
             multi_index::ordered_unique<
                 multi_index::composite_key<element_type,
@@ -687,6 +688,9 @@ public:
         _M_parts[f.marker().value()]++;
         f.setId( _M_elements.size() );
         return *_M_elements.insert( f ).first;
+        //_M_elements.push_back( f );
+        //return _M_elements.back();
+
     }
 
     /**
