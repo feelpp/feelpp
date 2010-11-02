@@ -139,7 +139,7 @@ void
 Application::initMPI( int argc, char** argv, MPI_Comm comm )
 {
 #if defined( HAVE_TBB )
-    tbb::task_scheduler_init init(1);
+    //tbb::task_scheduler_init init(1);
 #endif
 
 #if defined( HAVE_MPI_H )
