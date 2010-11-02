@@ -363,18 +363,22 @@ public:
         typedef typename std::vector<boost::reference_wrapper<const typename eval::element_type> >::iterator elt_iterator;
         void operator() ( const tbb::blocked_range<elt_iterator>& r ) const
             {
+                tbb::mutex m;
+                tbb::mutex::scoped_lock lock( m  );
+                lock.release();
                 for( auto _elt = r.begin(); _elt != r.end(); ++_elt )
                 {
                     M_c->update( *_elt );
                     M_formc->update( fusion::make_pair<detail::gmc<0> >( M_c ) );
                     M_formc->integrate();
-                    tbb::mutex::scoped_lock lock( tbb::mutex );
+                    lock.acquire( m );
                     M_formc->assemble();
+                    lock.release();
                 }
             }
-        gmpc_ptrtype M_geopc;
-        gmc_ptrtype M_c;
-        fcb_ptrtype M_formc;
+        mutable gmpc_ptrtype M_geopc;
+        mutable gmc_ptrtype M_c;
+        mutable fcb_ptrtype M_formc;
 
     };
 
@@ -536,6 +540,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
     boost::timer __timer;
 
 #if !defined(HAVE_TBB)
+//#if 1
     //
     // some typedefs
     //
