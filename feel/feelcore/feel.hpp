@@ -62,14 +62,6 @@
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
 
-#if defined( HAVE_TBB )
-#include <tbb/tick_count.h>
-#include <tbb/blocked_range.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_reduce.h>
-#include <tbb/task_scheduler_init.h>
-#endif // HAVE_TBB
-
 #include <cmath>
 #include <numeric>
 #include <string>
@@ -82,6 +74,15 @@
 #include <feel/feelcore/feelassert.hpp>
 
 #include <feel/feelcore/flags.hpp>
+
+#if defined( HAVE_TBB )
+#include <tbb/tick_count.h>
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
+#include <tbb/parallel_reduce.h>
+#include <tbb/task_scheduler_init.h>
+#endif // HAVE_TBB
+
 
 
 namespace Feel
