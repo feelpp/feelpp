@@ -133,8 +133,8 @@ GmshEllipsoidDomain::getDescription2D() const
     std::ostringstream ostr;
     ostr << this->preamble() << "\n";
 
-    double xcenter = (this->xmax()-this->xmin())/2;
-    double ycenter = (this->ymax()-this->ymin())/2;
+    double xcenter = (this->xmax()+this->xmin())/2;
+    double ycenter = (this->ymax()+this->ymin())/2;
     double zcenter = 0;
     ostr << "Point(1) = {" << xcenter << "," << ycenter << "," << zcenter << ",h};\n"
          << "Point(2) = {" << this->xmax() << "," << ycenter << "," << zcenter << ",h};\n"
@@ -170,9 +170,9 @@ GmshEllipsoidDomain::getDescription3D() const
     std::ostringstream ostr;
     ostr << this->preamble() << "\n";
 
-    double xcenter = (this->xmax()-this->xmin())/2;
-    double ycenter = (this->ymax()-this->ymin())/2;
-    double zcenter = (this->zmax()-this->zmin())/2;
+    double xcenter = (this->xmax()+this->xmin())/2;
+    double ycenter = (this->ymax()+this->ymin())/2;
+    double zcenter = (this->zmax()+this->zmin())/2;
     ostr << "Point(1) = {" << xcenter << "," << ycenter << "," << zcenter << ",h};\n"
          << "Point(2) = {" << this->xmax() << "," << ycenter << "," << zcenter << ",h};\n"
          << "Point(3) = {" << xcenter << "," << this->ymax() << "," << zcenter << ",h};\n"
