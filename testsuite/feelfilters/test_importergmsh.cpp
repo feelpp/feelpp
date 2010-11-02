@@ -40,6 +40,8 @@
 #include <boost/test/test_case_template.hpp>
 #include <boost/mpl/list.hpp>
 
+#include <feel/feelcore/feel.hpp>
+
 
 using boost::unit_test::test_suite;
 
@@ -47,6 +49,7 @@ using boost::unit_test::test_suite;
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
+
 
 using namespace Feel;
 
@@ -122,6 +125,73 @@ BOOST_AUTO_TEST_CASE( gmshgeo )
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
                        std::distance( markedelts.get<1>(), markedelts.get<2>() ) );
 }
+
+#if defined( HAVE_TBB )
+template<typename elt_iterator>
+class tbb_check_mesh
+{
+public:
+    tbb_check_mesh()
+        :
+        count(0)
+        {}
+    tbb_check_mesh( tbb_check_mesh& o, tbb::split )
+        :
+        count(o.count)
+        {}
+    void operator() ( const tbb::blocked_range<elt_iterator >& r )
+        {
+            for( auto _elt = r.begin(); _elt != r.end(); ++_elt, ++count )
+            {
+
+            }
+
+        }
+    void join( tbb_check_mesh& other ) {
+        count += other.count;
+    }
+    double count;
+};
+BOOST_AUTO_TEST_CASE( gmshgeo_tbb )
+{
+    typedef Mesh<Simplex<2,1> > mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    mesh_ptrtype mesh;
+    // simplex
+    mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=geo( _filename="feel.geo",
+                                      _dim=2,
+                                      _order=1,
+                                      _h=0.2 ) );
+    std::vector<boost::reference_wrapper<const mesh_type::element_type> > v;
+    BOOST_FOREACH(const mesh_type::element_type& i,mesh->elements())
+        v.push_back(boost::cref(i));
+    tbb::blocked_range<decltype(v.begin())> r(v.begin(), v.end());
+    BOOST_TEST_MESSAGE( "range size=" << r.size() << "\n" );
+    tbb_check_mesh<decltype(v.begin())> counter;
+    tbb::tick_count parallel_t0 = tbb::tick_count::now();
+    tbb::parallel_reduce( r, counter );
+    tbb::tick_count parallel_t1 = tbb::tick_count::now();
+
+    BOOST_CHECK_EQUAL( counter.count, mesh->numElements() );
+
+    tbb::tick_count serial_t0 = tbb::tick_count::now();
+    int count = 0;
+    for( auto _elt = mesh->beginElement(); _elt != mesh->endElement(); ++_elt, ++count )
+    {
+
+    }
+    tbb::tick_count serial_t1 = tbb::tick_count::now();
+    BOOST_CHECK_EQUAL( count, mesh->numElements() );
+
+    BOOST_TEST_MESSAGE( "Serial version ran in " << (serial_t1 - serial_t0).seconds() << " seconds" << "\n"
+                        << "Parallel version ran in " <<  (parallel_t1 - parallel_t0).seconds() << " seconds" << "\n"
+                        << "Resulting in a speedup of " << (serial_t1 - serial_t0).seconds() / (parallel_t1 - parallel_t0).seconds() << "\n");
+
+}
+#endif // HAVE_TBB
+
 BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
 {
     typedef Mesh<Simplex<T::value,1> > mesh_type;
