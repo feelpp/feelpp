@@ -539,8 +539,8 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
 
-#if !defined(HAVE_TBB)
-//#if 1
+//#if !defined(HAVE_TBB)
+#if 1
     //
     // some typedefs
     //
