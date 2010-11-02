@@ -95,7 +95,7 @@ set(CTEST_COMMAND "ctest -D ${MODEL}" )
 SET(CTEST_CMAKE_COMMAND "cmake" )
 
 SET (CTEST_SVN_COMMAND    "svn" )
-SET (CTEST_SVN_CHECKOUT   "${CTEST_SVN_COMMAND} co svn://scm.ljkforge.imag.fr/svn/life/life/trunk ${CTEST_SOURCE_DIRECTORY}")
+SET (CTEST_SVN_CHECKOUT   "${CTEST_SVN_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
 set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
 
 # set(CTEST_BUILD_COMMAND     "make -j2")
