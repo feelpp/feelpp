@@ -306,6 +306,15 @@ public:
     element_type const& element( size_type i, size_type p ) const
         { return *_M_elements.template get<0>().find( boost::make_tuple( p, i ) );  };
 
+    /**
+     * \return \c true if element with id \p i is found, \c false otherwise
+     */
+    bool hasElement( size_type i ) const
+        {
+            return _M_elements.template get<0>().find( boost::make_tuple( M_comm.rank(), i ) ) !=
+                _M_elements.template get<0>().end();
+        }
+
     element_iterator beginElement() { return _M_elements.begin(); }
     element_const_iterator beginElement() const { return _M_elements.begin(); }
     element_iterator endElement() { return _M_elements.end(); }
