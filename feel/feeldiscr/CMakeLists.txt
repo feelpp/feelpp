@@ -25,9 +25,11 @@ IF ( ENABLE_INSTANTIATION_MODE )
   SET( FEELDISCR_INST_SRCS mesh1.cpp mesh2.cpp mesh3.cpp partitioner.cpp ale.cpp meshhighorder.cpp )
 endif()
 
-add_library( feeldiscr SHARED
+
+
+SET( SRC
   bdf2.cpp oseendata.cpp ${FEELDISCR_INST_SRCS}
   )
 
-target_link_libraries (feeldiscr feelmesh feelalg feelcore)
-set_target_properties( feeldiscr PROPERTIES VERSION ${FEEL_SHARED_VERSION} SOVERSION ${FEEL_SHARED_SOVERSION})
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+feel_append_src(feeldiscr "${SRC};${HDR}")

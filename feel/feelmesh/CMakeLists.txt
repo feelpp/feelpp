@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-add_library( feelmesh SHARED
+SET( SRC
   marker.cpp bareitems.cpp
   entities.cpp simplex.cpp hypercube.cpp
   regiontree.cpp kdtree.cpp
@@ -29,5 +29,7 @@ add_library( feelmesh SHARED
   meshbase.cpp
     )
 
-target_link_libraries (feelmesh feelcore)
-set_target_properties(feelmesh PROPERTIES VERSION ${FEEL_SHARED_VERSION} SOVERSION ${FEEL_SHARED_SOVERSION})
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+feel_append_src(feelmesh "${SRC};${HDR}")
+
+
