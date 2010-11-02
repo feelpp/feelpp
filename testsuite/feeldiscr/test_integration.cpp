@@ -376,9 +376,36 @@ struct test_integration_circle: public Application
     mesh_ptrtype mesh;
 };
 template<typename value_type = double>
-struct test_integration_simplex
+struct test_integration_simplex: public Application
 {
-    test_integration_simplex( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_) {}
+    typedef typename imesh<value_type,2>::convex_type convex_type;
+    typedef typename imesh<value_type,2>::type mesh_type;
+    typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+    typedef fusion::vector<Lagrange<2, Vectorial> > vector_basis_type;
+    typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
+
+    test_integration_simplex( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        Application( argc, argv, ad, od ),
+        backend( Backend<double>::build( this->vm() ) ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( "simplex" ),
+        mesh()
+        {
+            mesh = createGMSHMesh( _mesh=new mesh_type,
+                                   _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % 2).str() ,
+                                                 _usenames=true,
+                                                 _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
+                                                 _shape=shape,
+                                                 _dim=2,
+                                                 _xmin=-1.,_ymin=-1.,
+                                                 _h=meshSize ),
+                                   _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+        }
+
     void operator()()
     {
         using namespace Feel;
@@ -471,12 +498,42 @@ struct test_integration_simplex
         double unp2 = integrate( boundaryfaces(mesh), trans(idv(v))*N() ).evaluate()( 0, 0 );
         BOOST_CHECK_CLOSE( divp2, unp2, eps );
     }
+    boost::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
+    std::string shape;
+    mesh_ptrtype mesh;
 };
 template<typename value_type = double>
-struct test_integration_domain
+struct test_integration_domain: public Application
 {
-    test_integration_domain( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_) {}
+    typedef typename imesh<value_type,2>::convex_type convex_type;
+    typedef typename imesh<value_type,2>::type mesh_type;
+    typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+    typedef fusion::vector<Lagrange<2, Vectorial> > vector_basis_type;
+    typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
+
+    test_integration_domain( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        Application( argc, argv, ad, od ),
+        backend( Backend<double>::build( this->vm() ) ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( "hypercube" ),
+        mesh()
+        {
+            mesh = createGMSHMesh( _mesh=new mesh_type,
+                                   _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % 2).str() ,
+                                                 _usenames=true,
+                                                 _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
+                                                 _shape=shape,
+                                                 _dim=2,
+                                                 _xmin=-1.,_ymin=-1.,
+                                                 _h=meshSize ),
+                                   _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+        }
+
     void operator()()
     {
         using namespace Feel;
@@ -559,20 +616,47 @@ struct test_integration_domain
 
 
     }
+    boost::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
+    std::string shape;
+    mesh_ptrtype mesh;
 };
 
 template<typename value_type = double>
-struct test_integration_boundary
+struct test_integration_boundary: public Application
 {
-    test_integration_boundary( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_) {}
+    typedef typename imesh<value_type,2>::convex_type convex_type;
+    typedef typename imesh<value_type,2>::type mesh_type;
+    typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+    typedef fusion::vector<Lagrange<2, Vectorial> > vector_basis_type;
+    typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
+
+    test_integration_boundary( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        Application( argc, argv, ad, od ),
+        backend( Backend<double>::build( this->vm() ) ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( "hypercube" ),
+        mesh()
+        {
+            mesh = createGMSHMesh( _mesh=new mesh_type,
+                                   _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % 2).str() ,
+                                                 _usenames=true,
+                                                 _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
+                                                 _shape=shape,
+                                                 _dim=2,
+                                                 _xmin=-1.,_ymin=-1.,
+                                                 _h=meshSize ),
+                                   _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+        }
     void operator()()
     {
         using namespace Feel;
         using namespace Feel::vf;
 
-
-        typename imesh<value_type,2>::ptrtype mesh( createMesh<value_type>( meshSize ) );
 
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
@@ -601,7 +685,7 @@ struct test_integration_boundary
 #endif /* USE_BOOST_TEST */
 
         // int_10 exp(Py) dx
-        value_type v5 = integrate( markedfaces(*mesh,10), exp(Py()) ).evaluate()( 0, 0 );
+        value_type v5 = integrate( markedfaces(mesh,"Neumann"), exp(Py()) ).evaluate()( 0, 0 );
         value_type v5_ex = 2.0*(math::exp(1.0)+math::exp(-1.0));
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v5, v5_ex, eps );
@@ -610,7 +694,7 @@ struct test_integration_boundary
 #endif /* USE_BOOST_TEST */
 
         // int_20 exp(Py) dx
-        value_type v6 = integrate( markedfaces(*mesh,20), _Q<5>(), exp(Py()) ).evaluate()( 0, 0 );
+        value_type v6 = integrate( markedfaces(mesh,"Dirichlet"), _Q<5>(), exp(Py()) ).evaluate()( 0, 0 );
         value_type v6_ex = 2.0*(math::exp(1.0)-math::exp(-1.0));
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v6, v6_ex, eps );
@@ -620,26 +704,49 @@ struct test_integration_boundary
 
 
     }
+    boost::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
+    std::string shape;
+    mesh_ptrtype mesh;
 };
 
 template<int Order, typename value_type = double>
-struct test_integration_functions
+struct test_integration_functions: public Application
 {
-    test_integration_functions( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_) {}
+    typedef typename imesh<value_type,2>::convex_type convex_type;
+    typedef typename imesh<value_type,2>::type mesh_type;
+    typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<Order, Scalar> >, double> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+    typedef fusion::vector<Lagrange<Order, Vectorial> > vector_basis_type;
+    typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
+
+    test_integration_functions( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        Application( argc, argv, ad, od ),
+        backend( Backend<double>::build( this->vm() ) ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( "hypercube" ),
+        mesh()
+        {
+            mesh = createGMSHMesh( _mesh=new mesh_type,
+                                   _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % 2).str() ,
+                                                 _usenames=true,
+                                                 _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
+                                                 _shape=shape,
+                                                 _dim=2,
+                                                 _xmin=-1.,_ymin=-1.,
+                                                 _h=meshSize ),
+                                   _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+        }
     void operator()()
     {
         using namespace Feel;
         using namespace Feel::vf;
 
-
-        typedef typename imesh<value_type,2>::type mesh_type;
-        typename imesh<value_type,2>::ptrtype mesh( createMesh<value_type>( meshSize ) );
-
         const value_type eps = 1e-9;
 
-        typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
-        typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
 
@@ -705,7 +812,7 @@ struct test_integration_functions
             ( math::abs( v4_y-v4_ex ) )( std::pow(10.0,-2.0*Order) ).warn ( "v4_y != v4_ex" );
 #endif /* USE_BOOST_TEST */
 
-        value_type v5 = integrate( markedfaces(*mesh,10), idv(u) ).evaluate()( 0, 0 );
+        value_type v5 = integrate( markedfaces(mesh,"Neumann"), idv(u) ).evaluate()( 0, 0 );
         value_type v5_ex = (math::exp(1.0)-math::exp(-1.0))*(math::exp(1.0)+math::exp(-1.0));
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v5, v5_ex, std::pow(10.0,-2.0*Order) );
@@ -737,11 +844,11 @@ struct test_integration_functions
 
 
 #if 0
-        BOOST_TEST_MESSAGE( "idv(u) = " << integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), idv(u) ).evaluate() << "\n" );
-        BOOST_TEST_MESSAGE( "gradv(u) = " << integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), gradv(u) ).evaluate() << "\n" );
-        BOOST_TEST_MESSAGE( "trans(gradv(u))*N() = " << integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), trans(gradv(u))*N() ).evaluate() << "\n" );
-        BOOST_TEST_MESSAGE( "u*Nx()+u*Ny() = " << integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), idv(u)*Nx() + idv(u)*Ny() ).evaluate() << "\n" );
-        value_type v6 = integrate( markedfaces(*mesh,10), IM<2,Order+1,value_type,Simplex>(), trans(gradv(u))*N() ).evaluate()( 0, 0 );
+        BOOST_TEST_MESSAGE( "idv(u) = " << integrate( markedfaces(mesh,"Neumann"), IM<2,Order+1,value_type,Simplex>(), idv(u) ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "gradv(u) = " << integrate( markedfaces(mesh,"Neumann"), IM<2,Order+1,value_type,Simplex>(), gradv(u) ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "trans(gradv(u))*N() = " << integrate( markedfaces( mesh, "Neumann" ), IM<2,Order+1,value_type,Simplex>(), trans(gradv(u))*N() ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "u*Nx()+u*Ny() = " << integrate( markedfaces( mesh, "Neumann" ), IM<2,Order+1,value_type,Simplex>(), idv(u)*Nx() + idv(u)*Ny() ).evaluate() << "\n" );
+        value_type v6 = integrate( markedfaces( mesh, "Neumann" ), IM<2,Order+1,value_type,Simplex>(), trans(gradv(u))*N() ).evaluate()( 0, 0 );
         value_type v6_ex = (math::exp(1.0)-math::exp(-1.0))*(math::exp(1.0)+math::exp(-1.0));
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v6-v6_ex, std::pow(10.0,-2.0*Order) );
@@ -753,26 +860,47 @@ struct test_integration_functions
 #endif /* USE_BOOST_TEST */
 #endif
     }
+    boost::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
+    std::string shape;
+    mesh_ptrtype mesh;
 };
 
 template<int Order, typename value_type = double>
-struct test_integration_vectorial_functions
+struct test_integration_vectorial_functions: public Application
 {
-    test_integration_vectorial_functions( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_) {}
+    typedef typename imesh<value_type,2>::convex_type convex_type;
+    typedef typename imesh<value_type,2>::type mesh_type;
+    typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<Order, Vectorial> >, double> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+
+    test_integration_vectorial_functions( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        Application( argc, argv, ad, od ),
+        backend( Backend<double>::build( this->vm() ) ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( "hypercube" ),
+        mesh()
+        {
+            mesh = createGMSHMesh( _mesh=new mesh_type,
+                                   _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % 2).str() ,
+                                                 _usenames=true,
+                                                 _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
+                                                 _shape=shape,
+                                                 _dim=2,
+                                                 _xmin=-1.,_ymin=-1.,
+                                                 _h=meshSize ),
+                                   _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+        }
     void operator()()
     {
         using namespace Feel;
         using namespace Feel::vf;
 
-
-        typedef typename imesh<value_type,2>::type mesh_type;
-        typename imesh<value_type,2>::ptrtype mesh( createMesh<value_type>( meshSize ) );
-
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
-        typedef fusion::vector<Lagrange<Order, Vectorial> > basis_type;
-        typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
 
@@ -837,30 +965,52 @@ struct test_integration_vectorial_functions
         BOOST_CHECK_SMALL( norm_stokes, eps );
 #endif
     }
+    boost::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
+    std::string shape;
+    mesh_ptrtype mesh;
 };
 
 
 template<int Order, typename value_type = double>
-struct test_integration_composite_functions
+struct test_integration_composite_functions: public Application
 {
-    test_integration_composite_functions( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_) {}
+    typedef typename imesh<value_type,2>::convex_type convex_type;
+    typedef typename imesh<value_type,2>::type mesh_type;
+    typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
+    typedef fusion::vector<Lagrange<Order, Vectorial>,Lagrange<Order-1, Scalar> > basis_type;
+    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+    typedef typename space_type::element_type element_type;
+    test_integration_composite_functions( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        Application( argc, argv, ad, od ),
+        backend( Backend<double>::build( this->vm() ) ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( "hypercube" ),
+        mesh()
+        {
+            mesh = createGMSHMesh( _mesh=new mesh_type,
+                                   _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % 2).str() ,
+                                                 _usenames=true,
+                                                 _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
+                                                 _shape=shape,
+                                                 _dim=2,
+                                                 _xmin=-1.,_ymin=-1.,
+                                                 _h=meshSize ),
+                                   _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+        }
+
     void operator()()
     {
         using namespace Feel;
         using namespace Feel::vf;
 
 
-        typedef typename imesh<value_type,2>::type mesh_type;
-        typename imesh<value_type,2>::ptrtype mesh( createMesh<value_type>( meshSize ) );
 
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
-        typedef fusion::vector<Lagrange<Order, Vectorial>,
-            Lagrange<Order-1, Scalar> > basis_type;
-        typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
-        typename space_type::element_type u( Xh );
+        element_type u( Xh );
 
         u.template element<0>() = vf::project( Xh->template functionSpace<0>(), elements(mesh), P() );
         u.template element<1>() = vf::project( Xh->template functionSpace<1>(), elements(mesh), constant(1) );
@@ -952,7 +1102,10 @@ struct test_integration_composite_functions
         BOOST_CHECK_SMALL( vf-(vv1+vv2+vv3), eps );
 #endif
     }
+    boost::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
+    std::string shape;
+    mesh_ptrtype mesh;
 };
 
 } // namespace Feel
@@ -963,7 +1116,7 @@ makeOptions()
 {
     Feel::po::options_description integrationoptions("Test Integration options");
     integrationoptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 0.3 ), "h value")
+        ("hsize", Feel::po::value<double>()->default_value( 0.05 ), "h value")
         ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (hypercube, simplex, ellipsoid)")
         ;
     return integrationoptions.add( Feel::feel_options() );
@@ -1010,16 +1163,48 @@ BOOST_AUTO_TEST_CASE( test_integration_1 )
     BOOST_TEST_MESSAGE( "Test integration Circle Done" );
 }
 
-
-
-#if 0
-BOOST_AUTO_TEST_CASE( test_integration_2 ) { test_integration_domain<double> t( 0.1 ); t(); }
-BOOST_AUTO_TEST_CASE( test_integration_3 ){ test_integration_boundary<double> t( 0.1 ); t(); }
-BOOST_AUTO_TEST_CASE( test_integration_4 ) { test_integration_functions<2,double> t( 0.1 ); t();}
-BOOST_AUTO_TEST_CASE( test_integration_5 ) { test_integration_vectorial_functions<2,double> t( 0.1 ); t(); }
-BOOST_AUTO_TEST_CASE( test_integration_6 ) { test_integration_composite_functions<2,double> t(0.1); t(); }
-BOOST_AUTO_TEST_CASE( test_integration_7 ) { test_integration_simplex<double> t( 0.1 ); t(); }
-#endif // 0
+BOOST_AUTO_TEST_CASE( test_integration_2 )
+{
+    Feel::test_integration_domain<double> t( boost::unit_test::framework::master_test_suite().argc,
+                                             boost::unit_test::framework::master_test_suite().argv,
+                                             makeAbout(), makeOptions() );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_integration_3 )
+{
+    Feel::test_integration_boundary<double> t( boost::unit_test::framework::master_test_suite().argc,
+                                               boost::unit_test::framework::master_test_suite().argv,
+                                               makeAbout(), makeOptions() );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_integration_4 )
+{
+    Feel::test_integration_functions<2,double> t( boost::unit_test::framework::master_test_suite().argc,
+                                                  boost::unit_test::framework::master_test_suite().argv,
+                                                  makeAbout(), makeOptions() );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_integration_5 )
+{
+    Feel::test_integration_vectorial_functions<2,double> t( boost::unit_test::framework::master_test_suite().argc,
+                                                            boost::unit_test::framework::master_test_suite().argv,
+                                                            makeAbout(), makeOptions() );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_integration_6 )
+{
+    Feel::test_integration_composite_functions<2,double> t( boost::unit_test::framework::master_test_suite().argc,
+                                                            boost::unit_test::framework::master_test_suite().argv,
+                                                            makeAbout(), makeOptions() );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_integration_7 )
+{
+    Feel::test_integration_simplex<double> t( boost::unit_test::framework::master_test_suite().argc,
+                                                          boost::unit_test::framework::master_test_suite().argv,
+                                                          makeAbout(), makeOptions() );
+    t();
+}
 
 int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
