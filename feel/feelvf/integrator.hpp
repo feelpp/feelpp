@@ -318,6 +318,7 @@ public:
         return glo;
     }
 
+#if defined( HAVE_TBB )
     template<typename FormType, typename ExprType, typename IMType, typename EltType>
     class Context
     {
@@ -367,6 +368,7 @@ public:
                     M_c->update( *_elt );
                     M_formc->update( fusion::make_pair<detail::gmc<0> >( M_c ) );
                     M_formc->integrate();
+                    tbb::mutex::scoped_lock lock( tbb::mutex );
                     M_formc->assemble();
                 }
             }
@@ -463,7 +465,7 @@ public:
         im_type M_im;
         value_type M_ret;
     };
-
+#endif // HAVE_TBB
     //@}
 
 private:
