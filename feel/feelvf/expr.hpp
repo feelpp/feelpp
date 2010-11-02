@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <boost/type_traits/is_same.hpp>
+#include <boost/type_traits/is_class.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/foreach.hpp>
 #include <boost/fusion/sequence.hpp>
@@ -54,6 +55,7 @@ namespace Feel
 {
 namespace vf
 {
+
 /// \cond detail
 typedef node<double>::type node_type;
 
@@ -290,13 +292,15 @@ public:
         return M_expr.broken( P0h );
     }
     //__typeof__( M_expr.evaluate() )
-    ublas::matrix<typename expression_type::value_type>
+    //ublas::matrix<typename expression_type::value_type>
+
+    typename expression_type::value_type
     evaluate() const
     {
         return M_expr.evaluate();
     }
 
-    ublas::matrix<typename expression_type::value_type>
+    typename expression_type::value_type
     evaluateAndSum() const
     {
         return M_expr.evaluateAndSum();
@@ -555,14 +559,14 @@ public:
         M_expr.assemble( __v, __f );
         Debug( 5051 ) << "calling assemble(v) done\n";
     }
-
+#if 0
     //__typeof__( M_expr.evaluate() )
     ublas::matrix<typename expression_type::value_type>
     evaluate() const
     {
         return M_expr.evaluate();
     }
-
+#endif
 
 
     //@}

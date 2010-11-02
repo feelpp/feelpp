@@ -33,6 +33,15 @@
 #include <boost/timer.hpp>
 #include <feel/feelvf/block.hpp>
 
+#include <tbb/tick_count.h>
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
+#include <tbb/parallel_reduce.h>
+#include <tbb/task_scheduler_init.h>
+
+#include <Eigen/Eigen>
+
+
 //#include <boost/numeric/bindings/traits/traits.hpp>
 //#include <boost/numeric/bindings/traits/sparse_traits.hpp>
 //#include <boost/numeric/bindings/traits/ublas_sparse.hpp>
@@ -48,6 +57,7 @@ namespace Feel
 {
 namespace vf
 {
+
 /// \cond detail
 enum IntegratorType
     {
@@ -105,7 +115,7 @@ public:
     typedef typename boost::tuples::template element<1, Elements>::type element_iterator;
 
     typedef Expr expression_type;
-    typedef typename expression_type::value_type value_type;
+    typedef typename expression_type::value_type expression_value_type;
     typedef ublas::vector<int> vector_dof_type;
 
     struct eval
@@ -118,8 +128,8 @@ public:
         typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
 
         typedef typename mpl::if_<mpl::bool_<the_element_type::is_simplex>,
-                                  mpl::identity<typename Im::template apply<the_element_type::nDim, value_type, Simplex>::type >,
-                                  mpl::identity<typename Im::template apply<the_element_type::nDim, value_type, Hypercube>::type >
+                                  mpl::identity<typename Im::template apply<the_element_type::nDim, expression_value_type, Simplex>::type >,
+                                  mpl::identity<typename Im::template apply<the_element_type::nDim, expression_value_type, Hypercube>::type >
                                   >::type::type im_type;
 
         typedef the_element_type element_type;
@@ -151,12 +161,27 @@ public:
           typedef mpl::if_<mpl::bool_<shape_type::is_scalar>,
           mpl::identity<value_type>,
           mpl::identity<ublas::vector<value_type,storage_type> > >::type::type ret_type;*/
-        typedef ublas::matrix<value_type> ret_type;
+        //typedef ublas::matrix<value_type> ret_type;
+#if 0
+        typedef typename mpl::if_<mpl::and_<mpl::equal_to<mpl::int_<shape::M>, mpl::int_<1> >,
+                                            mpl::equal_to<mpl::int_<shape::N>, mpl::int_<1> > >,
+                                  mpl::identity<expression_value_type>,
+                                  mpl::identity<Eigen::Matrix<expression_value_type, shape::M, shape::N> > >::type::type value_type;
+#else
+        typedef Eigen::Matrix<expression_value_type, shape::M, shape::N> value_type;
+#endif
+        typedef Eigen::Matrix<expression_value_type, shape::M, shape::N> matrix_type;
+        static value_type zero( mpl::bool_<false> ) { return value_type::Zero(); }
+        static value_type zero( mpl::bool_<true> ) { return 0; }
+        static value_type zero()  { return zero( boost::is_scalar<value_type>() ); }
+
     };
 
     typedef typename eval::im_type im_type;
     typedef typename im_type::face_quadrature_type im_face_type;
-
+    //typedef typename eval::value_type value_type;
+    typedef typename eval::matrix_type matrix_type;
+    typedef typename eval::matrix_type value_type;
     //@}
 
     /** @name Constructors, destructor
@@ -272,18 +297,17 @@ public:
             return p0;
         }
     //typename expression_type::template tensor<Geo_t>::value_type
-    typename eval::ret_type
+    matrix_type
     evaluate() const
     {
         return evaluate( mpl::int_<iDim>() );
     }
 
-
-    typename eval::ret_type
+    matrix_type
     evaluateAndSum() const
     {
-        typename eval::ret_type loc =  evaluate( mpl::int_<iDim>() );
-        typename eval::ret_type glo( loc );
+        typename eval::matrix_type loc =  evaluate( mpl::int_<iDim>() );
+        typename eval::matrix_type glo( loc );
 #if defined( HAVE_MPI )
         if ( M_comm.size() > 1 )
             {
@@ -297,6 +321,152 @@ public:
 #endif // HAVE_MPI
         return glo;
     }
+
+    template<typename FormType, typename ExprType, typename IMType, typename EltType>
+    class Context
+    {
+    public:
+        //
+        // some typedefs
+        //
+        typedef typename eval::gm_type gm_type;
+        typedef typename eval::gmc_type gmc_type;
+        typedef typename eval::gmpc_type gmpc_type;
+        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef boost::shared_ptr<gmpc_type> gmpc_ptrtype;
+        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
+        //typedef detail::FormContextBase<map_gmc_type,im_type> fcb_type;
+        typedef form_context_type fcb_type;
+        typedef boost::shared_ptr<fcb_type> fcb_ptrtype;
+
+
+        Context( FormType& _form,
+                 ExprType const& _expr,
+                 IMType const& _im,
+                 EltType const& _elt )
+            :
+            M_geopc( new gmpc_type( _form.gm(), _im.points() ) ),
+            M_c( new gmc_type( _form.gm(), _elt, M_geopc ) ),
+            M_formc( new form_context_type( _form,
+                                            fusion::make_pair<detail::gmc<0> >( M_c ),
+                                            _expr,
+                                            _im ) )
+
+            {
+            }
+        Context( Context const& c )
+            :
+            M_geopc( new gmpc_type( *c.M_geopc ) ),
+            M_c( new gmc_type( *c.M_c ) ),
+            M_formc( new form_context_type( *c.M_formc ) )
+            {
+            }
+        //std::vector<boost::reference_wrapper<const typename mesh_type::element_type> > _v;
+        typedef typename std::vector<boost::reference_wrapper<const typename eval::element_type> >::iterator elt_iterator;
+        void operator() ( const tbb::blocked_range<elt_iterator>& r ) const
+            {
+                for( auto _elt = r.begin(); _elt != r.end(); ++_elt )
+                {
+                    M_c->update( *_elt );
+                    M_formc->update( fusion::make_pair<detail::gmc<0> >( M_c ) );
+                    M_formc->integrate();
+                    M_formc->assemble();
+                }
+            }
+        gmpc_ptrtype M_geopc;
+        gmc_ptrtype M_c;
+        fcb_ptrtype M_formc;
+
+    };
+
+    template<typename ExprType, typename IMType, typename EltType>
+    class ContextEvaluate
+    {
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        //
+        // some typedefs
+        //
+        typedef ExprType expression_type;
+        typedef typename eval::gm_type gm_type;
+        typedef boost::shared_ptr<gm_type> gm_ptrtype;
+        typedef typename eval::gmc_type gmc_type;
+        typedef typename eval::gmpc_type gmpc_type;
+        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef boost::shared_ptr<gmpc_type> gmpc_ptrtype;
+        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
+        typedef typename eval_expr_type::shape shape;
+        typedef IMType im_type;
+        typedef typename eval::matrix_type value_type;
+        ContextEvaluate( ExprType const& _expr,
+                         IMType const& _im,
+                         EltType const& _elt )
+            :
+            M_gm( new gm_type( *_elt.gm() ) ),
+            M_geopc( new gmpc_type( M_gm, _im.points() ) ),
+            M_c( new gmc_type( M_gm, _elt, M_geopc ) ),
+            M_expr( _expr, map_gmc_type( fusion::make_pair<detail::gmc<0> >( M_c ) ) ),
+            M_im( _im ),
+            M_ret( eval::matrix_type::Zero() )
+            {
+            }
+        ContextEvaluate( ContextEvaluate& c, tbb::split )
+            :
+            M_gm( new gm_type( *c.M_gm ) ),
+            M_geopc( new gmpc_type( M_gm, c.M_im.points() ) ),
+            M_c( new gmc_type( M_gm, c.M_c->element(), M_geopc ) ),
+            M_expr( c.M_expr ),
+            M_im( c.M_im ),
+            M_ret( eval::matrix_type::Zero() )
+            {}
+
+        ContextEvaluate( ContextEvaluate const& c )
+            :
+            M_gm( new gm_type( *c.M_gm ) ),
+            M_geopc( new gmpc_type( M_gm, c.M_im.points() ) ),
+            M_c( new gmc_type( M_gm, c.M_c->element(), M_geopc ) ),
+            M_expr( c.M_expr ),
+            M_im( c.M_im ),
+            M_ret( c.M_ret )
+            {
+            }
+        //std::vector<boost::reference_wrapper<const typename mesh_type::element_type> > _v;
+        typedef typename std::vector<boost::reference_wrapper<const typename eval::element_type> >::iterator elt_iterator;
+        void operator() ( const tbb::blocked_range<elt_iterator>& r )
+            {
+                for( auto _elt = r.begin(); _elt != r.end(); ++_elt )
+                {
+                    M_c->update( *_elt );
+                    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( M_c ) );
+
+                    M_expr.update( mapgmc );
+                    M_im.update( *M_c );
+
+
+                    for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                        for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                        {
+                            M_ret(c1,c2) += M_im( M_expr, c1, c2 );
+                        }
+
+                }
+            }
+        void join( ContextEvaluate const& other )
+            {
+                M_ret += other.M_ret;
+            }
+
+        value_type result() const { return M_ret; }
+
+        gm_ptrtype M_gm;
+        gmpc_ptrtype M_geopc;
+        gmc_ptrtype M_c;
+        eval_expr_type M_expr;
+        im_type M_im;
+        value_type M_ret;
+    };
 
     //@}
 
@@ -312,8 +482,8 @@ private:
     template<typename P0hType>
     typename P0hType::element_type  broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const;
 
-    typename eval::ret_type evaluate( mpl::int_<MESH_ELEMENTS> ) const;
-    typename eval::ret_type evaluate( mpl::int_<MESH_FACES> ) const;
+    typename eval::matrix_type evaluate( mpl::int_<MESH_ELEMENTS> ) const;
+    typename eval::matrix_type evaluate( mpl::int_<MESH_FACES> ) const;
 
 private:
 
@@ -367,6 +537,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
 
+#if !defined(HAVE_TBB)
     //
     // some typedefs
     //
@@ -397,7 +568,6 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
     typedef form_context_type fcb_type;
 
     typedef boost::shared_ptr<fcb_type> fcb_ptrtype;
-    typedef typename form_context_type::value_type value_type;
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
 
@@ -460,6 +630,23 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
     Debug( 5065 ) << "[elements] Overall local assembly time : " << t2 << "\n";
     Debug( 5065 ) << "[elements] Overall global assembly time : " << t3 << "\n";
     Debug( 5065 ) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+#else
+    element_iterator it = this->beginElement();
+    element_iterator en = this->endElement();
+
+    if ( it == en )
+        return;
+
+    std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
+    for( auto _it = it; _it != en; ++_it )
+        _v.push_back(boost::cref(*_it));
+    tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end() );
+    Context<FormType,expression_type, im_type, typename eval::the_element_type> thecontext (__form,
+                                                                                            this->expression(),
+                                                                                            this->im(),
+                                                                                            *it);
+    tbb::parallel_for( r,  thecontext);
+#endif // HAVE_TBB
 }
 template<typename Elements, typename Im, typename Expr>
 template<typename FormType>
@@ -673,13 +860,14 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
 
 
 template<typename Elements, typename Im, typename Expr>
-typename Integrator<Elements, Im, Expr>::eval::ret_type
+typename Integrator<Elements, Im, Expr>::eval::matrix_type
 Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 {
     Debug( 5065 ) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
 
+#if !defined(HAVE_TBB)
     //
     // some typedefs
     //
@@ -700,7 +888,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     // make sure that we have elements to iterate over (return 0
     // otherwise)
     if ( it == en )
-        return typename eval::ret_type( eval::shape::M, eval::shape::N );;
+        return typename eval::matrix_type(eval::matrix_type::Zero());
 
     //
     // Precompute some data in the reference element for
@@ -730,9 +918,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     eval_expr_type expr( expression(), mapgmc );
     typedef typename eval_expr_type::shape shape;
 
-    typename eval::ret_type res(eval::shape::M, eval::shape::N );
-    res.clear();
-
+    typename eval::matrix_type res( eval::matrix_type::Zero() );
 
     //value_type res1 = 0;
     for ( ; it != en; ++it )
@@ -755,11 +941,27 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     //std::cout << "res=" << res << "\n";
     //std::cout << "res1=" << res1 << "\n";
     Debug( 5065 ) << "integrating over elements done in " << __timer.elapsed() << "s\n";
-
     return res;
+#else
+    element_iterator it = this->beginElement();
+    element_iterator en = this->endElement();
+
+    typedef ContextEvaluate<expression_type, im_type, typename eval::the_element_type> context_type;
+    if ( it == en )
+        return eval::zero();
+
+    std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
+    for( auto _it = it; _it != en; ++_it )
+        _v.push_back(boost::cref(*_it));
+    tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end() );
+    context_type thecontext( this->expression(), this->im(), *it );
+    tbb::parallel_reduce( r,  thecontext);
+    return thecontext.result();
+#endif // HAVE_TBB
+
 }
 template<typename Elements, typename Im, typename Expr>
-typename Integrator<Elements, Im, Expr>::eval::ret_type
+typename Integrator<Elements, Im, Expr>::eval::matrix_type
 Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
 {
     Debug( 5065 ) << "integrating over "
@@ -802,7 +1004,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
     // make sure that we have elements to iterate over (return 0
     // otherwise)
     if ( it == en )
-      return typename eval::ret_type(eval::shape::M, eval::shape::N );
+        return typename eval::matrix_type(eval::matrix_type::Zero());
 
     gm_ptrtype gm = it->element(0).gm();
     //Debug(5065) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
@@ -856,12 +1058,9 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
             expr2->init( im() );
         }
 
-    typename eval::ret_type res(eval::shape::M, eval::shape::N );
-    res.clear();
-    typename eval::ret_type res0(eval::shape::M, eval::shape::N );
-    res0.clear();
-    typename eval::ret_type res1(eval::shape::M, eval::shape::N );
-    res1.clear();
+    typename eval::matrix_type res( eval::matrix_type::Zero() );
+    typename eval::matrix_type res0(eval::matrix_type::Zero() );
+    typename eval::matrix_type res1(eval::matrix_type::Zero() );
 
     //
     // start the real intensive job:
