@@ -228,7 +228,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     std::ifstream __is ( this->filename().c_str() );
 
-    if ( !__is )
+    if ( !__is.is_open() )
     {
         std::ostringstream ostr;
         ostr << "Invalid file name " << this->filename() << " (file not found)\n";
