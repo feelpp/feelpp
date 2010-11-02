@@ -136,7 +136,7 @@ makeOptions()
 {
     Feel::po::options_description integrationoptions("Test Submesh options");
     integrationoptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 3 ), "h value")
+        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "h value")
         ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (hypercube, simplex, ellipsoid)")
         ;
     return integrationoptions.add( Feel::feel_options() );
