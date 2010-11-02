@@ -36,6 +36,7 @@
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/random_access_index.hpp>
 
 #include <feel/feelmesh/geoelement.hpp>
@@ -89,7 +90,7 @@ public:
                                                                       size_type,
                                                                       &element_type::id> > >,
             // sort by less<int> on marker
-            multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
+            multi_index::hashed_non_unique<multi_index::tag<detail::by_marker>,
                                             multi_index::composite_key<element_type,
                                                                        multi_index::const_mem_fun<element_type,
                                                                                                   Marker1 const&,
@@ -98,7 +99,7 @@ public:
                                                                                                   uint16_type,
                                                                                                   &element_type::processId> > >,
             // sort by less<int> on marker
-            multi_index::ordered_non_unique<multi_index::tag<detail::by_marker2>,
+            multi_index::hashed_non_unique<multi_index::tag<detail::by_marker2>,
                                             multi_index::composite_key<element_type,
                                                                        multi_index::const_mem_fun<element_type,
                                                                                                   Marker2 const&,
@@ -108,8 +109,8 @@ public:
                                                                                                   &element_type::processId> > >,
 
             // sort by less<int> on marker
-            multi_index::ordered_non_unique<multi_index::tag<detail::by_marker3>,
-                                            multi_index::composite_key<element_type,
+            multi_index::hashed_non_unique<multi_index::tag<detail::by_marker3>,
+                                           multi_index::composite_key<element_type,
                                                                        multi_index::const_mem_fun<element_type,
                                                                                                   Marker3 const&,
                                                                                                   &element_type::marker3>,
@@ -118,7 +119,7 @@ public:
                                                                                                   &element_type::processId> > >,
 
             // sort by less<int> on boundary
-            multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
+            multi_index::hashed_non_unique<multi_index::tag<detail::by_location>,
                                             multi_index::composite_key<element_type,
                                                                        multi_index::const_mem_fun<element_type,
                                                                                                   bool,
@@ -128,10 +129,10 @@ public:
                                                                                                   &element_type::processId> > >,
 
             // sort by less<int> on processId
-            multi_index::ordered_non_unique<multi_index::tag<detail::by_pid>,
-                                            multi_index::const_mem_fun<element_type,
-                                                                       uint16_type,
-                                                                       &element_type::processId> >
+            multi_index::hashed_non_unique<multi_index::tag<detail::by_pid>,
+                                           multi_index::const_mem_fun<element_type,
+                                                                      uint16_type,
+                                                                      &element_type::processId> >
 
             > > elements_type;
 
@@ -353,37 +354,37 @@ public:
      * \return the iterator \c begin over the elements with \c Marker1 \p m
      */
     marker_element_const_iterator beginElementWithMarker( size_type m ) const
-    { return _M_elements.template get<detail::by_marker>().lower_bound(boost::make_tuple( Marker1(m), M_comm.rank() )); }
+    { return _M_elements.template get<detail::by_marker>().equal_range(boost::make_tuple( Marker1(m), M_comm.rank() )).first; }
 
     /**
      * \return the iterator \c begin over the elements with \c Marker2 \p m
      */
     marker2_element_const_iterator beginElementWithMarker2( size_type m ) const
-    { return _M_elements.template get<detail::by_marker2>().lower_bound(boost::make_tuple( Marker2(m), M_comm.rank() )); }
+    { return _M_elements.template get<detail::by_marker2>().equal_range(boost::make_tuple( Marker2(m), M_comm.rank() )).first; }
 
     /**
      * \return the iterator \c begin over the elements with \c Marker3 \p m
      */
     marker3_element_const_iterator beginElementWithMarker3( size_type m ) const
-    { return _M_elements.template get<detail::by_marker3>().lower_bound(boost::make_tuple( Marker3(m), M_comm.rank() )); }
+    { return _M_elements.template get<detail::by_marker3>().equal_range(boost::make_tuple( Marker3(m), M_comm.rank() )).first; }
 
     /**
      * \return the iterator \c end over the elements with \c Marker1 \p m
      */
     marker_element_const_iterator endElementWithMarker( size_type m ) const
-    { return _M_elements.template get<detail::by_marker>().upper_bound(boost::make_tuple( Marker1(m), M_comm.rank() )); }
+    { return _M_elements.template get<detail::by_marker>().equal_range(boost::make_tuple( Marker1(m), M_comm.rank() )).second; }
 
     /**
      * \return the iterator \c end over the elements with \c Marker2 \p m
      */
     marker2_element_const_iterator endElementWithMarker2( size_type m ) const
-    { return _M_elements.template get<detail::by_marker2>().upper_bound(boost::make_tuple( Marker2(m), M_comm.rank() )); }
+    { return _M_elements.template get<detail::by_marker2>().equal_range(boost::make_tuple( Marker2(m), M_comm.rank() )).second; }
 
     /**
      * \return the iterator \c end over the elements with \c Marker3 \p m
      */
     marker3_element_const_iterator endElementWithMarker3( size_type m ) const
-    { return _M_elements.template get<detail::by_marker3>().upper_bound(boost::make_tuple( Marker3(m), M_comm.rank() )); }
+    { return _M_elements.template get<detail::by_marker3>().equal_range(boost::make_tuple( Marker3(m), M_comm.rank() )).second; }
 
     /**
      * \return the range of iterator \c (begin,end) over the elements
@@ -603,7 +604,7 @@ public:
      */
     location_element_iterator beginInternalElement()
     {
-        return _M_elements.template get<detail::by_location>().lower_bound(INTERNAL);
+        return _M_elements.template get<detail::by_location>().equal_range(INTERNAL,M_comm.rank()).first;
     }
     /**
      * get the end() iterator on all the internal elements
@@ -612,7 +613,7 @@ public:
      */
     location_element_iterator endInternalElement()
     {
-        return _M_elements.template get<detail::by_location>().upper_bound(INTERNAL);
+        return _M_elements.template get<detail::by_location>().equal_range(INTERNAL,M_comm.rank()).second;
     }
 
     /**
@@ -622,7 +623,7 @@ public:
      */
     location_element_const_iterator beginInternalElement() const
     {
-        return _M_elements.template get<detail::by_location>().lower_bound(INTERNAL);
+        return _M_elements.template get<detail::by_location>().equal_range(INTERNAL,M_comm.rank()).first;
     }
 
     /**
@@ -632,7 +633,7 @@ public:
      */
     location_element_const_iterator endInternalElement() const
     {
-        return _M_elements.template get<detail::by_location>().upper_bound(INTERNAL);
+        return _M_elements.template get<detail::by_location>().equal_range(INTERNAL,M_comm.rank()).second;
     }
 
     /**
@@ -642,7 +643,7 @@ public:
      */
     location_element_iterator beginElementOnBoundary()
     {
-        return _M_elements.template get<detail::by_location>().lower_bound(ON_BOUNDARY);
+        return _M_elements.template get<detail::by_location>().equal_range(ON_BOUNDARY,M_comm.rank()).first;
     }
     /**
      * get the end() iterator on all the boundary elements
@@ -651,7 +652,7 @@ public:
      */
     location_element_iterator endElementOnBoundary()
     {
-        return _M_elements.template get<detail::by_location>().upper_bound(ON_BOUNDARY);
+        return _M_elements.template get<detail::by_location>().equal_range(ON_BOUNDARY,M_comm.rank()).second;
     }
 
     /**
@@ -661,7 +662,7 @@ public:
      */
     location_element_const_iterator beginElementOnBoundary() const
     {
-        return _M_elements.template get<detail::by_location>().lower_bound(ON_BOUNDARY);
+        return _M_elements.template get<detail::by_location>().equal_range(ON_BOUNDARY,M_comm.rank()).first;
     }
 
     /**
@@ -671,7 +672,7 @@ public:
      */
     location_element_const_iterator endElementOnBoundary() const
     {
-        return _M_elements.template get<detail::by_location>().upper_bound(ON_BOUNDARY);
+        return _M_elements.template get<detail::by_location>().equal_range(ON_BOUNDARY,M_comm.rank()).second;
     }
 
     //@}
