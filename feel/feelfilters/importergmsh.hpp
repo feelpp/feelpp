@@ -228,6 +228,12 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     std::ifstream __is ( this->filename().c_str() );
 
+    if ( !__is )
+    {
+        std::ostringstream ostr;
+        ostr << "Invalid file name " << this->filename() << " (file not found)\n";
+        throw std::invalid_argument( ostr.str() );
+    }
     char __buf[256];
     __is >> __buf;
 
