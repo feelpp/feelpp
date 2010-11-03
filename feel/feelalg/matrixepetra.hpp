@@ -771,7 +771,8 @@ void MatrixEpetra::close () const
 {
     int ierr=0;
 
-    ierr =  _M_mat->GlobalAssemble( _M_dom_map, _M_range_map, true );
+    if ( !this->closed() )
+        ierr =  _M_mat->GlobalAssemble( _M_dom_map, _M_range_map, true );
 
     if (ierr != 0)
         {
@@ -938,7 +939,7 @@ void
 MatrixEpetra::scale ( double scalar )
 {
     FEEL_ASSERT ( this->isInitialized() ).error( "epetra matrix not initialized" );
-
+    this->close();
     _M_mat->Scale(scalar);
 }
 
@@ -947,7 +948,7 @@ MatrixEpetra::real_type
 MatrixEpetra::l1Norm() const
 {
     FEEL_ASSERT (this->isInitialized()).error( "epetra matrix not initialized" );
-    FEEL_ASSERT (this->closed()).error( "epetra matrix not closed" );
+    this->close();
 
     real_type NormOne = _M_mat->NormOne();
 
@@ -959,8 +960,7 @@ MatrixEpetra::real_type
 MatrixEpetra::linftyNorm() const
 {
     FEEL_ASSERT (this->isInitialized()).error( "epetra matrix not initialized" );
-    FEEL_ASSERT (this->closed()).error( "epetra matrix not closed" );
-
+    this->close();
 
     real_type NormInf = _M_mat->NormInf();
 
