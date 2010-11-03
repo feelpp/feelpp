@@ -42,17 +42,56 @@ namespace Feel
 {
 #if defined ( HAVE_TRILINOS_EPETRA )
 
+namespace detail
+{
+Epetra_Map epetraMap( DataMap const& dmap )
+{
+    std::vector<int> e( dmap.nMyElements() );
+    std::copy( dmap.myGlobalElements().begin(),
+               dmap.myGlobalElements().end(),
+               e.begin() );
+    return Epetra_Map( -1, dmap.nMyElements(), e.data(), 0, Epetra_MpiComm( dmap.comm() ) );
+}
+}
 MatrixEpetra::real_type
 MatrixEpetra::energy ( vector_type const& v1, vector_type const& v2, bool transpose ) const
 {
-    epetra_vector_type const& ev1( dynamic_cast<epetra_vector_type const&>( v1 ) );
-    epetra_vector_type const& ev2( dynamic_cast<epetra_vector_type const&>( v2 ) );
-    epetra_vector_type ev3( this->getRowMap() );
-
-    _M_mat->Multiply( transpose, ev2.vec(), ev3.vec() );
+    std::cerr << "here" << std::endl;
+    this->close();
 
     real_type res;
-    ev3.vec().Dot( ev1.vec(), &res );
+    if ( dynamic_cast<epetra_vector_type const*>( &v1 ) != (epetra_vector_type const*)0 )
+    {
+        epetra_vector_type const& ev1( dynamic_cast<epetra_vector_type const&>( v1 ) );
+        epetra_vector_type const& ev2( dynamic_cast<epetra_vector_type const&>( v2 ) );
+        epetra_vector_type ev3( this->getRowMap() );
+
+        _M_mat->Multiply( transpose, ev2.vec(), ev3.vec() );
+        ev3.vec().Dot( ev1.vec(), &res );
+    }
+    else
+    {
+        Epetra_BlockMap bmap1( detail::epetraMap( v1.map() ) );
+        VectorEpetra<value_type> u( bmap1 );
+        {
+            size_type s = u.localSize();
+            size_type start = u.firstLocalIndex();
+            for( size_type i = 0; i < s; ++i )
+                u.set( start + i, v1( start + i ) );
+        }
+        Epetra_BlockMap bmap2( detail::epetraMap( v2.map() ) );
+        VectorEpetra<value_type> v( bmap2 );
+        {
+            size_type s = v.localSize();
+            size_type start = v.firstLocalIndex();
+            for( size_type i = 0; i < s; ++i )
+                v.set( start + i, v2( start + i ) );
+        }
+        VectorEpetra<value_type> z( bmap1 );
+        _M_mat->Multiply( transpose, v.vec(), z.vec() );
+        z.vec().Dot( u.vec(), &res );
+    }
+
     return res;
 }
 
