@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -610,7 +610,7 @@ MatrixPetsc<T>::l1Norm() const
     double petsc_value;
     real_type value;
 
-    assert (this->closed());
+    this->close();
 
     ierr = MatNorm(_M_mat, NORM_1, &petsc_value);
     CHKERRABORT(this->comm(),ierr);
@@ -631,7 +631,7 @@ MatrixPetsc<T>::linftyNorm() const
     double petsc_value;
     real_type value;
 
-    assert (this->closed());
+    this->close();
 
     ierr = MatNorm(_M_mat, NORM_INFINITY, &petsc_value);
     CHKERRABORT(this->comm(),ierr);
@@ -960,6 +960,8 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
                         Vector<value_type> const& __u,
                         bool transpose ) const
 {
+    this->close();
+
     PetscScalar e;
     if ( dynamic_cast<VectorPetsc<T> const*>( &__v ) != (VectorPetsc<T> const*)0 )
     {
