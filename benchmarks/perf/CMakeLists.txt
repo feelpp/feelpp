@@ -35,3 +35,7 @@ add_executable( feel_perf
 target_link_libraries(feel_perf ${FEEL_LIBRARIES} )
 # add_test( perf COMMAND feel_perf --hsi
 
+add_executable( feel_perf2
+  perf2.cpp
+  )
+target_link_libraries(feel_perf2 ${FEEL_LIBRARIES} )
