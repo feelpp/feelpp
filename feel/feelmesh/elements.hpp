@@ -90,7 +90,7 @@ public:
                                                                       size_type,
                                                                       &element_type::id> > >,
             // sort by less<int> on marker
-            multi_index::hashed_non_unique<multi_index::tag<detail::by_marker>,
+            multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
                                             multi_index::composite_key<element_type,
                                                                        multi_index::const_mem_fun<element_type,
                                                                                                   Marker1 const&,
@@ -99,7 +99,7 @@ public:
                                                                                                   uint16_type,
                                                                                                   &element_type::processId> > >,
             // sort by less<int> on marker
-            multi_index::hashed_non_unique<multi_index::tag<detail::by_marker2>,
+            multi_index::ordered_non_unique<multi_index::tag<detail::by_marker2>,
                                             multi_index::composite_key<element_type,
                                                                        multi_index::const_mem_fun<element_type,
                                                                                                   Marker2 const&,
@@ -109,7 +109,7 @@ public:
                                                                                                   &element_type::processId> > >,
 
             // sort by less<int> on marker
-            multi_index::hashed_non_unique<multi_index::tag<detail::by_marker3>,
+            multi_index::ordered_non_unique<multi_index::tag<detail::by_marker3>,
                                            multi_index::composite_key<element_type,
                                                                        multi_index::const_mem_fun<element_type,
                                                                                                   Marker3 const&,
@@ -119,7 +119,7 @@ public:
                                                                                                   &element_type::processId> > >,
 
             // sort by less<int> on boundary
-            multi_index::hashed_non_unique<multi_index::tag<detail::by_location>,
+            multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
                                             multi_index::composite_key<element_type,
                                                                        multi_index::const_mem_fun<element_type,
                                                                                                   bool,
@@ -129,7 +129,7 @@ public:
                                                                                                   &element_type::processId> > >,
 
             // sort by less<int> on processId
-            multi_index::hashed_non_unique<multi_index::tag<detail::by_pid>,
+            multi_index::ordered_non_unique<multi_index::tag<detail::by_pid>,
                                            multi_index::const_mem_fun<element_type,
                                                                       uint16_type,
                                                                       &element_type::processId> >
