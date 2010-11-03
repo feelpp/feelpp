@@ -56,7 +56,6 @@ Epetra_Map epetraMap( DataMap const& dmap )
 MatrixEpetra::real_type
 MatrixEpetra::energy ( vector_type const& v1, vector_type const& v2, bool transpose ) const
 {
-    std::cerr << "here" << std::endl;
     this->close();
 
     real_type res;
