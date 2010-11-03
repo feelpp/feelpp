@@ -78,6 +78,7 @@ struct test_submesh: public Application
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
+    typedef Backend<value_type> backend_type;
 
     test_submesh( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
@@ -95,6 +96,7 @@ struct test_submesh: public Application
                                                  _dim=Dim,
                                                  _h=meshSize ),
                                    _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+
         }
     void operator()()
         {
@@ -121,8 +123,26 @@ struct test_submesh: public Application
             BOOST_CHECK_CLOSE( intm3, intm4, 1e-12 );
             //saveGMSHMesh( _mesh=meshint, _filename="meshint" );
 
+            auto Xh = space_type::New( mesh );
+            auto u = Xh->element();
+            auto v = Xh->element();
+            auto D = backend->newMatrix( Xh, Xh );
+            form2( Xh, Xh, D, _init=true ) = integrate( internalelements(mesh), idt(u)*id(v) );
+
+            auto Yh = space_type::New( meshint );
+            auto ui = Yh->element();
+            auto vi = Yh->element();
+            auto Di = backend->newMatrix( Yh, Yh );
+            form2( Yh, Yh, Di, _init=true ) = integrate( elements(meshint), idt(ui)*id(vi) );
+
+            u = vf::project( Xh, elements(mesh), cst(1.) );
+            ui = vf::project( Yh, elements(meshint), cst(1.) );
+
+            BOOST_CHECK_CLOSE( Di->energy( ui, ui ), intm3, 1e-12 );
+            BOOST_CHECK_CLOSE( D->energy( u, u ), Di->energy( ui, ui ), 1e-12 );
+
         }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    boost::shared_ptr<backend_type> backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
