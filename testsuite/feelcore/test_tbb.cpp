@@ -73,13 +73,20 @@ BOOST_AUTO_TEST_CASE( test_tbb )
     }
     tbb::tick_count serial_t1 = tbb::tick_count::now();
 
-    tbb::tick_count parallel_t0 = tbb::tick_count::now();
-    tbb::parallel_for( r, A() );
-    tbb::tick_count parallel_t1 = tbb::tick_count::now();
+    int n = tbb::task_scheduler_init::default_num_threads();
+    for( int p=1; p<=n; ++p )
+    {
+        BOOST_TEST_MESSAGE( "[test_tbb] start tests with nthreads = " << p );
+        tbb::task_scheduler_init init(p);
 
-    BOOST_TEST_MESSAGE( "Serial version ran in " << (serial_t1 - serial_t0).seconds() << " seconds" << "\n"
-                        << "Parallel version ran in " <<  (parallel_t1 - parallel_t0).seconds() << " seconds" << "\n"
-                        << "Resulting in a speedup of " << (serial_t1 - serial_t0).seconds() / (parallel_t1 - parallel_t0).seconds() << "\n");
+        tbb::tick_count parallel_t0 = tbb::tick_count::now();
+        tbb::parallel_for( r, A() );
+        tbb::tick_count parallel_t1 = tbb::tick_count::now();
+
+        BOOST_TEST_MESSAGE( "Serial version ran in " << (serial_t1 - serial_t0).seconds() << " seconds" << "\n"
+                            << "Parallel version ran in " <<  (parallel_t1 - parallel_t0).seconds() << " seconds" << "\n"
+                            << "Resulting in a speedup of " << (serial_t1 - serial_t0).seconds() / (parallel_t1 - parallel_t0).seconds() << "\n");
+    }
     BOOST_TEST_MESSAGE( "Test TBB done" );
 
 }
