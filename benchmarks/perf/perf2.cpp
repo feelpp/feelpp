@@ -166,8 +166,9 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     for( int p=1; p<=n; ++p )
     {
         std::cout << p << " threads" << std::endl;
+        tbb::task_scheduler_init init(p);
         tbb::tick_count t0 = tbb::tick_count::now();
-        local_domain_area = integrate( elements(mesh), sin(Px()*Px())+Py()*Pz()+Px()).evaluate()(0,0);
+        local_domain_area = integrate( elements(mesh), trace(vf::P()*trans(vf::P()))+sin(Px())*cos(Py())*cos(Pz())).evaluate()(0,0);
         tbb::tick_count t1 = tbb::tick_count::now();
         double t = (t1-t0).seconds();
         std::cout << "time: " << t << " for " << p << " threads" << std::endl;
