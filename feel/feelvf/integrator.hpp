@@ -417,7 +417,8 @@ public:
         ContextEvaluate( ContextEvaluate& c, tbb::split )
             :
             M_gm( new gm_type( *c.M_gm ) ),
-            M_geopc( new gmpc_type( M_gm, c.M_im.points() ) ),
+            //M_geopc( new gmpc_type( M_gm, c.M_im.points() ) ),
+            M_geopc( c.M_geopc ),
             M_c( new gmc_type( M_gm, c.M_c->element(), M_geopc ) ),
             M_expr( c.M_expr ),
             M_im( c.M_im ),
@@ -427,7 +428,8 @@ public:
         ContextEvaluate( ContextEvaluate const& c )
             :
             M_gm( new gm_type( *c.M_gm ) ),
-            M_geopc( new gmpc_type( M_gm, c.M_im.points() ) ),
+            //M_geopc( new gmpc_type( M_gm, c.M_im.points() ) ),
+            M_geopc( c.M_geopc ),
             M_c( new gmc_type( M_gm, c.M_c->element(), M_geopc ) ),
             M_expr( c.M_expr ),
             M_im( c.M_im ),
@@ -438,6 +440,7 @@ public:
         typedef typename std::vector<boost::reference_wrapper<const typename eval::element_type> >::iterator elt_iterator;
         void operator() ( const tbb::blocked_range<elt_iterator>& r )
             {
+#if 1
                 for( auto _elt = r.begin(); _elt != r.end(); ++_elt )
                 {
                     M_c->update( *_elt );
@@ -446,14 +449,24 @@ public:
                     M_expr.update( mapgmc );
                     M_im.update( *M_c );
 
-
+#if 1
                     for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                         {
                             M_ret(c1,c2) += M_im( M_expr, c1, c2 );
                         }
-
+#endif
                 }
+#else
+#if 0
+                    for(int i = 0; i < 10000; ++i )
+                        for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                            for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                            {
+                                M_ret(c1,c2) += i*i;//M_im( M_expr, c1, c2 );
+                            }
+#endif
+#endif
             }
         void join( ContextEvaluate const& other )
             {
