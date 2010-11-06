@@ -87,6 +87,9 @@ public:
     typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
 
     MyIntegrals( po::variables_map const& vm, AboutData const& about )
         :
@@ -146,34 +149,60 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                                       _shape=shape,
                                                       _dim=Dim,
                                                       _h=X[0] ) );
+
     tbb::tick_count t1 = tbb::tick_count::now();
     double t = (t1-t0).seconds();
     std::cout << "mesh: " << t << "s\n";
     t0 = tbb::tick_count::now();
     mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
+    //mesh->setComponents( 0 );
     //ProfilerStart( "/tmp/updateforuse.prof" );
     mesh->updateForUse();
     //ProfilerStop();
     t1 = tbb::tick_count::now();
     t = (t1-t0).seconds();
     std::cout << "update mesh: " << t << "s\n";
+
+    auto Xh = space_type::New(mesh);
+    auto u = Xh->element();
+
+    u = vf::project( Xh, elements(mesh), Px()*Px()+Py()*Py()+Pz()*Pz() );
+
+    double overhead = 0;//4.5e-2;
     /*
      * Compute domain Area
      */
     //# marker1 #
     double local_domain_area;
+#if 1
     int n = tbb::task_scheduler_init::default_num_threads();
-    for( int p=1; p<=n; ++p )
+    double initt;
+    std::vector<double> speedup(n);
+    {
+        std::cout << 1 << " thread" << std::endl;
+        tbb::task_scheduler_init init(1);
+        t0 = tbb::tick_count::now();
+        local_domain_area = integrate( elements(mesh), trace(vf::P()*trans(vf::P()))*idv(u)).evaluate()(0,0);
+        t1 = tbb::tick_count::now();
+        initt = (t1-t0).seconds();
+        std::cout << "time: " << initt << " for " << "1 thread" << std::endl;
+        speedup[0] = 1;
+    }
+
+    for( int p=2; p<=n; ++p )
     {
         std::cout << p << " threads" << std::endl;
         tbb::task_scheduler_init init(p);
-        tbb::tick_count t0 = tbb::tick_count::now();
+        t0 = tbb::tick_count::now();
         local_domain_area = integrate( elements(mesh), trace(vf::P()*trans(vf::P()))+sin(Px())*cos(Py())*cos(Pz())).evaluate()(0,0);
-        tbb::tick_count t1 = tbb::tick_count::now();
+        t1 = tbb::tick_count::now();
         double t = (t1-t0).seconds();
-        std::cout << "time: " << t << " for " << p << " threads" << std::endl;
+        speedup[p-1] = initt/t;
+
+        std::cout << "time: " << t << " for " << p << " threads speedup=" << speedup[p-1] << std::endl;
         std::cout << "area = " << local_domain_area << std::endl;
     }
+#endif
 
 } // MyIntegrals::run
 
