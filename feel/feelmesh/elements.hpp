@@ -604,7 +604,7 @@ public:
      */
     location_element_iterator beginInternalElement()
     {
-        return _M_elements.template get<detail::by_location>().equal_range(INTERNAL,M_comm.rank()).first;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(INTERNAL,M_comm.rank())).first;
     }
     /**
      * get the end() iterator on all the internal elements
@@ -613,7 +613,7 @@ public:
      */
     location_element_iterator endInternalElement()
     {
-        return _M_elements.template get<detail::by_location>().equal_range(INTERNAL,M_comm.rank()).second;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(INTERNAL,M_comm.rank())).second;
     }
 
     /**
@@ -623,7 +623,7 @@ public:
      */
     location_element_const_iterator beginInternalElement() const
     {
-        return _M_elements.template get<detail::by_location>().equal_range(INTERNAL,M_comm.rank()).first;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(INTERNAL,M_comm.rank())).first;
     }
 
     /**
@@ -633,7 +633,7 @@ public:
      */
     location_element_const_iterator endInternalElement() const
     {
-        return _M_elements.template get<detail::by_location>().equal_range(INTERNAL,M_comm.rank()).second;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(INTERNAL,M_comm.rank())).second;
     }
 
     /**
@@ -643,7 +643,7 @@ public:
      */
     location_element_iterator beginElementOnBoundary()
     {
-        return _M_elements.template get<detail::by_location>().equal_range(ON_BOUNDARY,M_comm.rank()).first;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(ON_BOUNDARY,M_comm.rank())).first;
     }
     /**
      * get the end() iterator on all the boundary elements
@@ -652,7 +652,7 @@ public:
      */
     location_element_iterator endElementOnBoundary()
     {
-        return _M_elements.template get<detail::by_location>().equal_range(ON_BOUNDARY,M_comm.rank()).second;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(ON_BOUNDARY,M_comm.rank())).second;
     }
 
     /**
@@ -662,7 +662,7 @@ public:
      */
     location_element_const_iterator beginElementOnBoundary() const
     {
-        return _M_elements.template get<detail::by_location>().equal_range(ON_BOUNDARY,M_comm.rank()).first;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(ON_BOUNDARY,M_comm.rank())).first;
     }
 
     /**
@@ -672,7 +672,7 @@ public:
      */
     location_element_const_iterator endElementOnBoundary() const
     {
-        return _M_elements.template get<detail::by_location>().equal_range(ON_BOUNDARY,M_comm.rank()).second;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(ON_BOUNDARY,M_comm.rank())).second;
     }
 
     //@}
