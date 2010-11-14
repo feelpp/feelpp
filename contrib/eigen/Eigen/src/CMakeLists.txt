@@ -1,6 +1,6 @@
 file(GLOB Eigen_src_subdirectories "*")
 foreach(f ${Eigen_src_subdirectories})
-  if(NOT f MATCHES ".txt")
+  if(NOT f MATCHES ".txt" AND NOT f MATCHES ".svn" )
     add_subdirectory(${f})
   endif()
 endforeach()
