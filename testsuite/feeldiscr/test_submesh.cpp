@@ -138,8 +138,8 @@ struct test_submesh: public Application
             u = vf::project( Xh, elements(mesh), cst(1.) );
             ui = vf::project( Yh, elements(meshint), cst(1.) );
 
-            BOOST_CHECK_CLOSE( Di->energy( ui, ui ), intm3, 1e-12 );
-            BOOST_CHECK_CLOSE( D->energy( u, u ), Di->energy( ui, ui ), 1e-12 );
+            BOOST_CHECK_CLOSE( Di->energy( ui, ui ), intm3, 5e-12 );
+            BOOST_CHECK_CLOSE( D->energy( u, u ), Di->energy( ui, ui ), 5e-12 );
 
         }
     boost::shared_ptr<backend_type> backend;

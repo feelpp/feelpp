@@ -1,5 +1,7 @@
-
-foreach(TEST traits singleton factory debug context simget tbb)
+IF ( TBB_FOUND )
+  SET( OTESTS tbb )
+ENDIF()
+foreach(TEST traits singleton factory debug context simget ${OTESTS})
 
   feel_add_test( ${TEST} )
 
