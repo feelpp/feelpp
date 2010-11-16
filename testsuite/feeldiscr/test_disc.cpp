@@ -167,7 +167,7 @@ struct test_disc: public Application
             BOOST_CHECK_CLOSE( len2, 2, 1e-12 );
             auto int1 = integrate( markedfaces( mesh, "Tdiscontinuity" ), jumpv( idv( u ) ) ).evaluate();
             BOOST_CHECK_CLOSE( int1(0,0), 4, 1e-12 );
-            BOOST_CHECK_CLOSE( int1(1,0), 0, 1e-12 );
+            BOOST_CHECK_SMALL( int1(1,0), 1e-12 );
             auto int2 = integrate( markedfaces( mesh, "Tdiscontinuity" ), leftfacev( idv( u ) )+rightfacev( idv( u ) ) ).evaluate();
             BOOST_CHECK_CLOSE( int2(0,0), 4, 1e-12 );
 
