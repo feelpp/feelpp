@@ -29,7 +29,7 @@ IF ( NOT TBB_INCLUDE_DIR)
     parallel_for.h
     PATH_SUFFIXES
     tbb
-    PATHS /usr/include/
+    PATHS /usr/include/ $ENV{TBB_INCLUDE_DIR}
     DOC "Directory where tbb header files are stored" )
 ENDIF()
 
@@ -37,7 +37,7 @@ ENDIF()
 CHECK_INCLUDE_FILE_CXX(tbb.h HAVE_TBB_H)
 
 IF (NOT TBB_LIBRARIES)
-  find_library(TBB_LIBRARY tbb)
+  find_library(TBB_LIBRARY tbb PATHS $ENV{TBB_LIB_DIR})
   set (TBB_LIBRARIES ${TBB_LIBRARY})
 ENDIF()
 
