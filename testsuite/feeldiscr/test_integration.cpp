@@ -6,7 +6,7 @@
        Date: 2006-08-25
 
   Copyright (C) 2006 EPFL
-  Copyright (C) 2006-2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006-2009 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -1131,7 +1131,7 @@ makeAbout()
                             "0.1",
                            "integration tests",
                            Feel::AboutData::License_GPL,
-                           "Copyright (C) 2006,2007,2008,2009,2010 Université Joseph Fourier (Grenoble I)");
+                           "Copyright (C) 2006,2007,2008,2009,2010 Universite Joseph Fourier (Grenoble I)");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -1147,18 +1147,26 @@ BOOST_AUTO_TEST_CASE( test_integration_1 )
                                              boost::unit_test::framework::master_test_suite().argv,
                                              makeAbout(), makeOptions() );
 
+#ifdef HAVE_TBB
     int n = tbb::task_scheduler_init::default_num_threads();
+#else
+    int n = 1 ;
+#endif
     for( int p=1; p<=n; ++p ) {
         BOOST_TEST_MESSAGE( "[test_integration_1] start tests with nthreads = " << p );
+#ifdef HAVE_TBB
         tbb::task_scheduler_init init(p);
 
         tbb::tick_count t0 = tbb::tick_count::now();
+#endif
 
         t();
+#ifdef HAVE_TBB
         tbb::tick_count t1 = tbb::tick_count::now();
         double t = (t1-t0).seconds();
 
         BOOST_TEST_MESSAGE( "[test_integration_1] start tests with " << p << " threads, time=" << t << "seconds\n" );
+#endif
     }
     BOOST_TEST_MESSAGE( "Test integration Circle Done" );
 }

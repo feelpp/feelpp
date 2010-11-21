@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-06-14
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@ makeAbout()
                      "assembly performance",
                      AboutData::License_LGPL,
                      "Copyright (c) 2005,2006 EPFL"
-                     "Copyright (c) 2006-2010 Université Joseph Fourier (Grenoble 1)"
+                     "Copyright (c) 2006-2010 UniversitÃÂ© Joseph Fourier (Grenoble 1)"
         );
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -66,7 +66,11 @@ main( int argc, char** argv )
 {
     Feel::Bench1 bench1(argc, argv, Feel::makeAbout(), Feel::makeOptions() );
 
+#ifdef HAVE_TBB
     int n = tbb::task_scheduler_init::default_num_threads();
+#else
+    int n = 1 ;
+#endif
     for( int p=1; p<=n; ++p )
     {
         Feel::fs::path cur = Feel::fs::current_path();
@@ -76,14 +80,18 @@ main( int argc, char** argv )
         Feel::fs::create_directory( pth );
         ::chdir( pth.string().c_str() );
         std::cout << "benchmark starts with nthreads = " << p << "\n";
+#ifdef HAVE_TBB
         tbb::task_scheduler_init init(p);
 
         tbb::tick_count t0 = tbb::tick_count::now();
+#endif
         bench1.run();
+#ifdef HAVE_TBB
         tbb::tick_count t1 = tbb::tick_count::now();
         double t = (t1-t0).seconds();
         ::chdir( cur.string().c_str() );
         std::cout << "benchmark stops with nthreads = " << p << " in " << t << " seconds\n";
+#endif
     }
 }
 

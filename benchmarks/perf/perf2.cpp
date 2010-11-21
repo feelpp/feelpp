@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-07
 
-  Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2009 Universite Joseph Fourier (Grenoble I)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -143,25 +143,31 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     /*
      * First we create the mesh
      */
+#ifdef HAVE_TBB
     tbb::tick_count t0 = tbb::tick_count::now();
+#endif
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name= (boost::format( "%1%-%2%" ) % shape % Dim).str() ,
                                                       _shape=shape,
                                                       _dim=Dim,
                                                       _h=X[0] ) );
 
+#ifdef HAVE_TBB
     tbb::tick_count t1 = tbb::tick_count::now();
     double t = (t1-t0).seconds();
     std::cout << "mesh: " << t << "s\n";
     t0 = tbb::tick_count::now();
+#endif
     mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
     //mesh->setComponents( 0 );
     //ProfilerStart( "/tmp/updateforuse.prof" );
     mesh->updateForUse();
     //ProfilerStop();
+#ifdef HAVE_TBB
     t1 = tbb::tick_count::now();
     t = (t1-t0).seconds();
     std::cout << "update mesh: " << t << "s\n";
+#endif
 
     auto Xh = space_type::New(mesh);
     auto u = Xh->element();
@@ -175,20 +181,29 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     //# marker1 #
     double local_domain_area;
 #if 1
+#ifdef HAVE_TBB
     int n = tbb::task_scheduler_init::default_num_threads();
+#else
+    int n = 1 ;
+#endif
     double initt;
     std::vector<double> speedup(n);
     {
         std::cout << 1 << " thread" << std::endl;
+#ifdef HAVE_TBB
         tbb::task_scheduler_init init(1);
         t0 = tbb::tick_count::now();
+#endif
         local_domain_area = integrate( elements(mesh), trace(vf::P()*trans(vf::P()))*idv(u)).evaluate()(0,0);
+#ifdef HAVE_TBB
         t1 = tbb::tick_count::now();
         initt = (t1-t0).seconds();
         std::cout << "time: " << initt << " for " << "1 thread" << std::endl;
+#endif
         speedup[0] = 1;
     }
 
+#ifdef HAVE_TBB
     for( int p=2; p<=n; ++p )
     {
         std::cout << p << " threads" << std::endl;
@@ -202,6 +217,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
         std::cout << "time: " << t << " for " << p << " threads speedup=" << speedup[p-1] << std::endl;
         std::cout << "area = " << local_domain_area << std::endl;
     }
+#endif
 #endif
 
 } // MyIntegrals::run
