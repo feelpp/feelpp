@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
   Date: 2005-03-17
 
-  Copyright (C) 2007-2010 Université de Grenoble 1
+  Copyright (C) 2007-2010 Universite de Grenoble 1
   Copyright (C) 2005,2006 EPFL
 
 
@@ -140,9 +140,11 @@ Application::initMPI( int argc, char** argv, MPI_Comm comm )
 {
 #if defined( HAVE_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
+#else
+    int n = 1 ;
+#endif
     Log() << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(1);
-#endif
 
 #if defined( HAVE_MPI_H )
     if (!mpi::environment::initialized())
