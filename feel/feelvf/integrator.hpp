@@ -561,6 +561,12 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
     typedef typename eval::gmc_type gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
 
+    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
+    //typedef detail::FormContextBase<map_gmc_type,im_type> fcb_type;
+    typedef form_context_type fcb_type;
+    typedef fcb_type* focb_ptrtype;
+
     //
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
@@ -578,19 +584,13 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
 
     gmc_ptrtype __c( new gmc_type( __form.gm(), *it, __geopc ) );
 
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-    typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
-    //typedef detail::FormContextBase<map_gmc_type,im_type> fcb_type;
-    typedef form_context_type fcb_type;
-
-    typedef boost::shared_ptr<fcb_type> fcb_ptrtype;
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
 
-    fcb_ptrtype formc( new form_context_type( __form,
-                                              mapgmc,
-                                              this->expression(),
-                                              this->im() ) );
+    focb_ptrtype formc( new form_context_type( __form,
+                                               mapgmc,
+                                               this->expression(),
+                                               this->im() ) );
 
     //int nelt = std::distance( this->beginElement(), this->endElement() );
     boost::timer ti0,ti1, ti2, ti3;
@@ -646,6 +646,8 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
     Debug( 5065 ) << "[elements] Overall local assembly time : " << t2 << "\n";
     Debug( 5065 ) << "[elements] Overall global assembly time : " << t3 << "\n";
     Debug( 5065 ) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+
+    delete formc;
 #else
     element_iterator it = this->beginElement();
     element_iterator en = this->endElement();
