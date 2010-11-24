@@ -679,7 +679,15 @@ Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
     Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] start\n";
     // make sure it is all empty
     new_mesh.clear();
+    // inherit all the markers
+    new_mesh.M_markername = this->markerNames();
+    BOOST_FOREACH( auto marker, new_mesh.M_markername )
+    {
+        std::cout << "marker name " << marker.first
+                  << " id: " << marker.second.template get<0>()
+                  << " geoe: " << marker.second.template get<1>() << "\n";
 
+    }
     // How the nodes on this mesh will be renumbered to nodes
     // on the new_mesh.
     std::vector<size_type> new_node_numbers (this->numPoints());
@@ -698,6 +706,7 @@ Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
     // the number of nodes on the new mesh, will be incremented
     unsigned int n_new_nodes = 0;
     unsigned int n_new_elem  = 0;
+    size_type n_new_faces = 0;
 
     for ( Iterator it = begin_elt; it != end_elt; ++it )
         {
@@ -757,31 +766,49 @@ Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
             // Add an equivalent element type to the new_mesh
             new_mesh.addElement( new_elem );
 
-            size_type n_new_faces = 0;
 
             // Maybe add faces for this element
-            if ( 0 )
-            for (unsigned int s=0; s<old_elem.nNeighbors(); s++)
+            for (unsigned int s=0; s<old_elem.numTopologicalFaces; s++)
                 {
+                    if ( !old_elem.facePtr(s) ) continue;
+#if 1
+                    std::cout << "local face id: " << s
+                              << " global face id: " << old_elem.face(s).id() << "\n";
+#endif
                     // only add face on the boundary: they have some data
                     // (boundary ids) which cannot be retrieved otherwise
                     //if ( old_elem.neighbor(s) == invalid_size_type_value )
+                    size_type global_face_id = old_elem.face(s).id();
+                    if ( this->hasFace( global_face_id ) )
                     {
+                        //std::cout << "found face " << global_face_id << "\n";
                         // get the corresponding face
-                        face_type new_face = this->face( boost::get<0>( this->localFaceId( old_elem.id(), s ) ) );
+                        face_type const& old_face = old_elem.face(s);
+                        face_type new_face = old_face;
 
                         // disconnect from elements of old mesh,
                         // the connection will be redone in
                         // \c updateForUse()
                         new_face.disconnect();
-
+                        //std::cout << "disconnect face\n";
                         // update points info
                         for ( uint16_type p = 0;p < new_face.nPoints(); ++p )
                             {
-                                new_face.setPoint( p, new_mesh.point( new_node_numbers[new_face.point(p).id()] ) );
+#if 1
+                                std::cout << "add new point " << new_face.point(p).id() << " to face \n";
+                                std::cout << "add old point " << old_face.point(p).id() << " to face \n";
+                                std::cout << "new point id " << new_node_numbers[old_elem.point(old_elem.fToP(s,p)).id()] << "\n";
+#endif
+                                new_face.setPoint( p, new_mesh.point( new_node_numbers[old_elem.point(old_elem.fToP(s,p)).id()] ) );
+
                             }
                         new_face.setId( n_new_faces++ );
-
+#if 1
+                        std::cout << "face id" << new_face.id()
+                                  << " marker1 : " << new_face.marker()
+                                  << " old marker1 : " << old_face.marker()
+                                  << "\n";
+#endif
                         // add it to the list of faces
                         new_mesh.addFace( new_face );
                     }
