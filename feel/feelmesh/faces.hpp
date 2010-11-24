@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,7 @@
        Date: 2005-09-03
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier
+  Copyright (C) 2007,2010 UniversitÃ© Joseph Fourier
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -164,9 +164,9 @@ public:
          */
         void operator()( face_type& e )
         {
-            //Debug() << "FaceUpdatePoint] üpdate point index " << _M_index << " with "<< _M_pt.id() << "\n";
+            //Debug() << "FaceUpdatePoint] update point index " << _M_index << " with "<< _M_pt.id() << "\n";
             e.setPoint( _M_index, _M_pt );
-            //Debug() << "FaceUpdatePoint] üpdate point "<< e.point(_M_index).id() << "\n";
+            //Debug() << "FaceUpdatePoint] update point "<< e.point(_M_index).id() << "\n";
         }
     private:
         uint16_type _M_index;
@@ -226,6 +226,15 @@ public:
     virtual bool isEmpty() const { return _M_faces.empty(); }
     bool isBoundaryFace( face_type const & e ) const { return _M_faces.find( e )->isOnBoundary(); }
     bool isBoundaryFace( size_type const & id ) const { return _M_faces.find( face_type( id ) )->isOnBoundary(); }
+
+    /**
+     * \return \c true if element with id \p i is found, \c false otherwise
+     */
+    bool hasFace( size_type i ) const
+        {
+            return _M_faces.template get<0>().find( face_type( i ) ) !=
+                _M_faces.template get<0>().end();
+        }
 
     face_type const& face( size_type i ) const { return *_M_faces.find( face_type( i ) ); };
 
