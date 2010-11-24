@@ -138,10 +138,6 @@ public:
     typedef typename element_type::template sub_element<1>::type element_1_type;
     typedef typename element_type::template sub_element<2>::type element_2_type;
 
-    /*quadrature*/
-    //typedef IM_PK<Dim, imOrder, value_type> im_type;
-    typedef IM<Dim, imOrder, value_type, Entity> im_type;
-
     /* export */
     typedef Exporter<mesh_type> export_type;
 
@@ -179,11 +175,6 @@ public:
     void run();
 
 private:
-
-    /**
-     * solve system
-     */
-    void solve( sparse_matrix_ptrtype const& D, element_type& u, vector_ptrtype const& F, bool is_sym );
 
     /**
      * export results to ensight format (enabled by  --export cmd line options)
@@ -257,25 +248,19 @@ Stokes<Dim, Order, Entity>::run()
      * The function space and some associate elements are then defined
      */
     timers["init"].first.restart();
-    space_ptrtype Xh = space_type::New( mesh );
+    auto Xh = space_type::New( mesh );
     //Xh->dof()->showMe();
-    element_type U( Xh, "u" );
-    element_type V( Xh, "v" );
-    element_0_type u = U.template element<0>();
-    element_0_type v = V.template element<0>();
-    element_1_type p = U.template element<1>();
-    element_1_type q = V.template element<1>();
-    element_2_type lambda = U.template element<2>();
-    element_2_type nu = V.template element<2>();
+    auto U = Xh->element();
+    auto V = Xh->element();
+    auto u = U.template element<0>();
+    auto v = V.template element<0>();
+    auto p = U.template element<1>();
+    auto q = V.template element<1>();
+    auto lambda = U.template element<2>();
+    auto nu = V.template element<2>();
 
     timers["init"].second = timers["init"].first.elapsed();
     stats["ndof"] = Xh->nDof();
-
-    /*
-     * a quadrature rule for numerical integration
-     */
-    im_type im;
-
 
     Log() << "Data Summary:\n";
     Log() << "      mu = " << mu << "\n";
@@ -284,18 +269,17 @@ Stokes<Dim, Order, Entity>::run()
     Log() << "    stab = " << stab << "\n";
 
 
-    vector_ptrtype F( M_backend->newVector( Xh ) );
+    auto F= M_backend->newVector( Xh );
     timers["assembly"].first.restart();
-    AUTO( deft, 0.5*( gradt(u)+trans(gradt(u)) ) );
-    AUTO( def, 0.5*( grad(v)+trans(grad(v)) ) );
-    AUTO( Id, (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) )) );
-    AUTO( SigmaNt, (-idt(p)*N()+2*mu*deft*N()) );
-    AUTO( SigmaN, (-id(p)*N()+2*mu*def*N()) );
-    //AUTO( sigmav, (-idv(p)*N()+2*mu*trace(def)*N()) );
-    AUTO( g, oneX() );
+    auto deft = 0.5*( gradt(u)+trans(gradt(u)) );
+    auto def = 0.5*( grad(v)+trans(grad(v)) );
+    auto Id = (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) ));
+    auto SigmaNt = (-idt(p)*N()+2*mu*deft*N());
+    auto SigmaN = (-id(p)*N()+2*mu*def*N());
+    auto g= oneX();
     form1( Xh, F, _init=true )  =
         //integrate( elements(mesh), im, trans(vec(cst(0.),cst(0.)))*id(v) ) +
-        integrate( markedfaces(mesh,4), im,
+        integrate( markedfaces(mesh,4),
                    trans(g)*(-SigmaN+penalbc*id(v)/hFace() ) );
 
     Log() << "[stokes] vector local assembly done\n";
@@ -305,7 +289,7 @@ Stokes<Dim, Order, Entity>::run()
     /*
      * Construction of the left hand side
      */
-    sparse_matrix_ptrtype S( M_backend->newMatrix( Xh, Xh ) );
+    auto S = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, S, _init=true );
     S->close();
 
@@ -313,16 +297,15 @@ Stokes<Dim, Order, Entity>::run()
         {
             S->printMatlab( "S.m" );
         }
-    sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
+    auto D= M_backend->newMatrix( Xh, Xh );
     timers["assembly"].first.restart();
 
-    form2( Xh, Xh, D, _init=true ) = integrate( elements(mesh), im, mu*trace(deft*trans(def)) );
-    form2( Xh, Xh, D ) += integrate( elements(mesh), im, - div(v)*idt(p) + divt(u)*id(q) );
-    form2( Xh, Xh, D ) += integrate( elements(mesh), im, id(q)*idt(lambda) + idt(p)*id(nu) );
-    form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh), im,
-                                     -trans(SigmaNt)*id(v)
-                                     -trans(SigmaN)*idt(u)
-                                     +penalbc*trans(idt(u))*id(v)/hFace() );
+    form2( Xh, Xh, D, _init=true ) = integrate( elements(mesh), mu*trace(deft*trans(def)) );
+    form2( Xh, Xh, D ) += integrate( elements(mesh), - div(v)*idt(p) + divt(u)*id(q) );
+    form2( Xh, Xh, D ) += integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
+    form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh), -trans(SigmaNt)*id(v) );
+    form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh), -trans(SigmaN)*idt(u) );
+    form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh), +penalbc*trans(idt(u))*id(v)/hFace() );
 
     Log() << "[stokes] matrix local assembly done\n";
     D->close();
@@ -357,15 +340,19 @@ Stokes<Dim, Order, Entity>::run()
         }
 
     Log() << "[stokes] starting solve for D\n";
-    this->solve( D, U, F, false );
+
+    timers["solver"].first.restart();
+    backend_type::build()->solve( _matrix=D, _solution=U, _rhs=F );
+    timers["solver"].second = timers["solver"].first.elapsed();
+
     if ( this->vm().count( "export-matlab" ) )
         {
 
             U.printMatlab( "U.m" );
         }
     Log() << "[stokes] solve for D done\n";
-    double meas = integrate( elements(mesh), im, constant(1.0) ).evaluate()( 0, 0);
-    double mean_p = integrate( elements(mesh), im, idv(p) ).evaluate()( 0, 0 )/meas;
+    double meas = integrate( elements(mesh), constant(1.0) ).evaluate()( 0, 0);
+    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/meas;
     Log() << "[stokes] mean(p)=" << mean_p << "\n";
 
     this->exportResults( U );
@@ -388,23 +375,6 @@ Stokes<Dim, Order, Entity>::run()
 
 } // Stokes::run
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-void
-Stokes<Dim, Order, Entity>::solve( sparse_matrix_ptrtype const& D,
-                                   element_type& u,
-                                   vector_ptrtype const& F,
-                                   bool is_sym )
-{
-    timers["solver"].first.restart();
-
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    M_backend->solve( D, D, U, F, false );
-    u = *U;
-
-    //Log() << "u = " << u.container() << "\n";
-    timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve(): " << timers["solver"].second << "\n";
-} // Stokes::solve
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
