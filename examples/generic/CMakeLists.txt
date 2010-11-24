@@ -1,5 +1,5 @@
 set( EXAMPLES pmesh laplacian laplacian_p laplacian_p2 advection dar  wave
-    laplacian_multiplicateur_lagrange periodic)
+    laplacian_multiplicateur_lagrange periodic stokes)
 
 foreach( EXAMPLE ${EXAMPLES} )
   feel_add_example( ${EXAMPLE} )
