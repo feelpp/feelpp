@@ -1146,8 +1146,7 @@ BOOST_AUTO_TEST_CASE( test_integration_1 )
     Feel::test_integration_circle<double> t( boost::unit_test::framework::master_test_suite().argc,
                                              boost::unit_test::framework::master_test_suite().argv,
                                              makeAbout(), makeOptions() );
-
-#ifdef HAVE_TBB
+#if defined( HAVE_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
 #else
     int n = 1 ;
@@ -1168,6 +1167,9 @@ BOOST_AUTO_TEST_CASE( test_integration_1 )
         BOOST_TEST_MESSAGE( "[test_integration_1] start tests with " << p << " threads, time=" << t << "seconds\n" );
 #endif
     }
+#else
+    t();
+#endif // HAVE_TBB
     BOOST_TEST_MESSAGE( "Test integration Circle Done" );
 }
 
