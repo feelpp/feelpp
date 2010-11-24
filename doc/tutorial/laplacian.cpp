@@ -185,18 +185,6 @@ public:
 
 private:
 
-    /**
-     * solve the system \f$D u = F\f$
-     *
-     * \param in D sparse matrix
-     * \param inout u solution of the system
-     * \param in F vector representing the right hand side of the system
-     */
-    void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
-
-
-private:
-
     //! linear algebra backend
     backend_ptrtype M_backend;
 
@@ -355,7 +343,8 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 
     //! solve the system
     /** \code */
-    this->solve( D, u, F );
+    backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+
     /** \endcode */
 
     //! compute the \f$L_2$ norm of the error
@@ -395,24 +384,6 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     }
     /** \endcode */
 } // Laplacian::run
-
-//# marker6 #
-template<int Dim>
-void
-Laplacian<Dim>::solve( sparse_matrix_ptrtype& D,
-                       element_type& u,
-                       vector_ptrtype& F )
-{
-    //! solve the system, first create a vector U of the same size as
-    //! u, then call solve,
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    //! call solve, the second D is the matrix which will be used to
-    //! create the preconditionner
-    M_backend->solve( D, D, U, F );
-    //! copy U in u
-    u = *U;
-} // Laplacian::solve
-//# endmarker6 #
 
 /**
  * main function: entry point of the program
