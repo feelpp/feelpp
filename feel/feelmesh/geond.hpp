@@ -177,6 +177,31 @@ public:
     {
     }
 
+    GeoND( GeoND const& e )
+        :
+        super( e ),
+        M_points( numPoints ),
+        M_face_points( e.M_face_points ),
+        M_G( nRealDim, numPoints ),
+        M_barycenter( e.M_barycenter ),
+        M_barycenterfaces( e.M_barycenterfaces ),
+        M_h( e.M_h ),
+        M_h_face( e.M_h_face ),
+        M_measure( e.M_measure ),
+        M_measurefaces( numTopologicalFaces  ),
+        //M_normals( e.M_normals ),
+        M_has_points( e.M_has_points ),
+        M_neighbors( e.M_neighbors ),
+        M_marker1( e.M_marker1 ),
+        M_marker2( e.M_marker2 ),
+        M_marker3( e.M_marker3 ),
+        M_gm()
+    {
+        M_G = e.M_G;
+        for ( uint16_type i = 0; i < numLocalPoints; ++i )
+            M_points[ i ] = e.M_points[ i ];
+    }
+
     /**
      * destructor, make it virtual for derived classes
      */
