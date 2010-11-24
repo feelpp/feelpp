@@ -110,6 +110,19 @@ struct test_submesh: public Application
             double intm1 = integrate( elements(meshbdy), cst(1.) ).evaluate()(0,0);
             double intm2 = integrate( boundaryelements(mesh), cst(1.) ).evaluate()(0,0);
             BOOST_CHECK_CLOSE( intm1, intm2, 1e-12 );
+            //double intm11 = integrate( boundaryfaces(meshbdy), cst(1.) ).evaluate()(0,0);
+            //double intm21 = integrate( boundaryfaces(mesh), cst(1.) ).evaluate()(0,0);
+            //BOOST_CHECK_CLOSE( intm11, intm21, 1e-12 );
+
+            double intm12 = integrate( markedfaces(meshbdy,"Dirichlet"), cst(1.) ).evaluate()(0,0);
+            double intm22 = integrate( markedfaces(mesh,"Dirichlet"), cst(1.) ).evaluate()(0,0);
+            BOOST_CHECK_CLOSE( intm12, 2, 1e-12 );
+            BOOST_CHECK_CLOSE( intm12, intm22, 1e-12 );
+            double intm13 = integrate( markedfaces(meshbdy,"Neumann"), cst(1.) ).evaluate()(0,0);
+            double intm23 = integrate( markedfaces(mesh,"Neumann"), cst(1.) ).evaluate()(0,0);
+            BOOST_CHECK_CLOSE( intm13, 2, 1e-12 );
+            BOOST_CHECK_CLOSE( intm13, intm23, 1e-12 );
+
 
             mesh_ptrtype meshint( new mesh_type );
             boost::tie(it,en) = mesh->internalElements( 0 );
@@ -178,9 +191,11 @@ makeAbout()
 
 }
 
-typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1> > dim_types;
+typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh, T, dim_types )
