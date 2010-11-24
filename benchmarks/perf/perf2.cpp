@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-07
 
-  Copyright (C) 2008-2009 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelpoly/im.hpp>
+#include <feel/feelalg/backend.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
@@ -47,8 +48,9 @@ makeOptions()
 {
     po::options_description myintegralsoptions("MyIntegrals options");
     myintegralsoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.2 ), "mesh size")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
+     ("hsize", po::value<double>()->default_value( 0.2 ), "mesh size")
+     ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
+       ("nthreads", po::value<int>()->default_value( 2 ), "nthreads")
         ;
     return myintegralsoptions.add( Feel::feel_options() );
 }
@@ -95,7 +97,9 @@ public:
         :
         super( vm, about ),
         meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>()  )
+        shape( this->vm()["shape"].template as<std::string>()  ),
+	nthreads( this->vm()["nthreads"].template as<int>()  ),
+        backend( Backend<double>::build( this->vm()))
     {
     }
 
@@ -107,6 +111,8 @@ private:
 
     double meshSize;
     std::string shape;
+    int nthreads;
+   boost::shared_ptr<Backend<double> > backend;
 }; // MyIntegrals
 
 
@@ -143,81 +149,81 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     /*
      * First we create the mesh
      */
-#ifdef HAVE_TBB
     tbb::tick_count t0 = tbb::tick_count::now();
-#endif
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name= (boost::format( "%1%-%2%" ) % shape % Dim).str() ,
                                                       _shape=shape,
                                                       _dim=Dim,
                                                       _h=X[0] ) );
 
-#ifdef HAVE_TBB
-    tbb::tick_count t1 = tbb::tick_count::now();
+   tbb::tick_count t1 = tbb::tick_count::now();
     double t = (t1-t0).seconds();
     std::cout << "mesh: " << t << "s\n";
-    t0 = tbb::tick_count::now();
-#endif
+   t0 = tbb::tick_count::now();
     mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
     //mesh->setComponents( 0 );
     //ProfilerStart( "/tmp/updateforuse.prof" );
     mesh->updateForUse();
     //ProfilerStop();
-#ifdef HAVE_TBB
     t1 = tbb::tick_count::now();
     t = (t1-t0).seconds();
     std::cout << "update mesh: " << t << "s\n";
-#endif
 
     auto Xh = space_type::New(mesh);
     auto u = Xh->element();
-
+    auto M = backend->newMatrix( Xh, Xh );
     u = vf::project( Xh, elements(mesh), Px()*Px()+Py()*Py()+Pz()*Pz() );
 
     double overhead = 0;//4.5e-2;
+   auto myformexpr = idt(u)*id(u)*Px()*cos(Py());
+   auto myexpr = vf::P()*trans(vf::P())*sin(Px())*cos(Py())*cos(Pz());
+   //auto myexpr = vf::P()*trans(vf::P())*idv(u);
+   std::cout << "nb elts in mesh =" << mesh->numElements() << std::endl;
     /*
      * Compute domain Area
      */
     //# marker1 #
     double local_domain_area;
+   
+   form2(Xh,Xh,M,_init=true);
 #if 1
-#ifdef HAVE_TBB
     int n = tbb::task_scheduler_init::default_num_threads();
-#else
-    int n = 1 ;
-#endif
     double initt;
     std::vector<double> speedup(n);
     {
         std::cout << 1 << " thread" << std::endl;
-#ifdef HAVE_TBB
         tbb::task_scheduler_init init(1);
+	std::cout << "is_active: " << init.is_active() << "\n";
+               tbb::task_scheduler_init init2(2);
+	std::cout << "is_activ2e: " << init2.is_active() << "\n";
         t0 = tbb::tick_count::now();
-#endif
-        local_domain_area = integrate( elements(mesh), trace(vf::P()*trans(vf::P()))*idv(u)).evaluate()(0,0);
-#ifdef HAVE_TBB
+        //local_domain_area = integrate( elements(mesh), trace(vf::P()*trans(vf::P()))*idv(u)).evaluate()(0,0);
+        auto res  = integrate( elements(mesh), _Q<10>(), myexpr).evaluate();
+       local_domain_area = res(0,0);
+       //form2(Xh,Xh,M)=integrate( elements(mesh), myformexpr);
         t1 = tbb::tick_count::now();
         initt = (t1-t0).seconds();
         std::cout << "time: " << initt << " for " << "1 thread" << std::endl;
-#endif
         speedup[0] = 1;
     }
-
-#ifdef HAVE_TBB
-    for( int p=2; p<=n; ++p )
+   std::cout << "------------------------------------------------------------\n";
+    for( int p=this->vm()["nthreads"].template as<int>(); p<=n; ++p )
     {
         std::cout << p << " threads" << std::endl;
         tbb::task_scheduler_init init(p);
+	std::cout << "is_active: " << init.is_active() << "\n";
         t0 = tbb::tick_count::now();
-        local_domain_area = integrate( elements(mesh), trace(vf::P()*trans(vf::P()))+sin(Px())*cos(Py())*cos(Pz())).evaluate()(0,0);
+       //form2(Xh,Xh,M)=integrate( elements(mesh),myformexpr );
+       auto res = integrate( elements(mesh),_Q<10>(), myexpr).evaluate();
+       local_domain_area = res(0,0);
         t1 = tbb::tick_count::now();
         double t = (t1-t0).seconds();
         speedup[p-1] = initt/t;
 
         std::cout << "time: " << t << " for " << p << " threads speedup=" << speedup[p-1] << std::endl;
         std::cout << "area = " << local_domain_area << std::endl;
+       std::cout << "------------------------------------------------------------\n";
     }
-#endif
 #endif
 
 } // MyIntegrals::run
