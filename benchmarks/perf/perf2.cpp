@@ -145,7 +145,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                        % this->about().appName()
                                        % shape
                                        % meshSize );
-
+#if defined(HAVE_TBB)
     /*
      * First we create the mesh
      */
@@ -184,7 +184,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
      */
     //# marker1 #
     double local_domain_area;
-   
+
    form2(Xh,Xh,M,_init=true);
 #if 1
     int n = tbb::task_scheduler_init::default_num_threads();
@@ -225,7 +225,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
        std::cout << "------------------------------------------------------------\n";
     }
 #endif
-
+#endif // HAVE_TBB
 } // MyIntegrals::run
 
 int
