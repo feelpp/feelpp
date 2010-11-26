@@ -1148,24 +1148,20 @@ BOOST_AUTO_TEST_CASE( test_integration_1 )
                                              makeAbout(), makeOptions() );
 #if defined( HAVE_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
-#else
     int n = 1 ;
-#endif
+
     for( int p=1; p<=n; ++p ) {
         BOOST_TEST_MESSAGE( "[test_integration_1] start tests with nthreads = " << p );
-#ifdef HAVE_TBB
-        tbb::task_scheduler_init init(p);
 
+        tbb::task_scheduler_init init(p);
         tbb::tick_count t0 = tbb::tick_count::now();
-#endif
 
         t();
-#ifdef HAVE_TBB
+
         tbb::tick_count t1 = tbb::tick_count::now();
         double t = (t1-t0).seconds();
 
         BOOST_TEST_MESSAGE( "[test_integration_1] start tests with " << p << " threads, time=" << t << "seconds\n" );
-#endif
     }
 #else
     t();
