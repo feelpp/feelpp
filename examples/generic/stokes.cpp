@@ -72,10 +72,10 @@ makeAbout()
 {
     Feel::AboutData about( "stokes" ,
                            "stokes" ,
-                           "0.1",
+                           "0.2",
                            "Stokes equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2007 University Joseph Fourier Grenoble 1");
+                           "Copyright (c) 2007,2010 University Joseph Fourier Grenoble 1");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
    return about;
@@ -85,21 +85,10 @@ makeAbout()
 
 namespace Feel
 {
-template<typename A, uint16_type i>
-class mytag : public A
-{
-public:
-    static const uint16_type TAG = i;
-
-};
 /**
- * Diffussion Advection Reaction Solver
+ * Stokes in a cavity
  *
- * solve \f$-\epsilon \Delta u -\beta\cdot\nabla u + \mu u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma_{in}\f$
  */
-template<int Dim,
-         int Order,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
 class Stokes
     :
         public Application
@@ -108,35 +97,26 @@ class Stokes
 public:
 
     // -- TYPEDEFS --
-    static const uint16_type imOrder = 2*Order;
-
+    static const int Dim = 2;
+    static const int Order = 2;
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
-    /*matrix*/
-    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef typename backend_type::vector_ptrtype vector_ptrtype;
-
     /*mesh*/
-    typedef Entity<Dim,1,Dim> entity_type;
-    typedef Mesh<entity_type> mesh_type;
+    typedef Simplex<2> convex_type;
+    typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
-    //typedef mytag<Lagrange<Order, Vectorial>,0> basis_u_type;
-    typedef mytag<Lagrange<Order, Vectorial>,0> basis_u_type;
-    typedef mytag<Lagrange<Order-1, Scalar>,1> basis_p_type;
-    typedef mytag<Lagrange<0, Scalar>,2> basis_l_type;
-    typedef fusion::vector<basis_u_type, basis_p_type, basis_l_type> basis_type;
+    typedef Lagrange<Order, Vectorial> basis_u_type;
+    typedef Lagrange<Order-1, Scalar> basis_p_type;
+    typedef Lagrange<0, Scalar> basis_l_type;
+    typedef bases<basis_u_type, basis_p_type, basis_l_type> basis_type;
+
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef typename space_type::element_type element_type;
-    typedef typename element_type::template sub_element<0>::type element_0_type;
-    typedef typename element_type::template sub_element<1>::type element_1_type;
-    typedef typename element_type::template sub_element<2>::type element_2_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -145,8 +125,8 @@ public:
         :
         super( argc, argv, ad, od ),
         M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        bcCoeff( this->vm()["bccoeff"].template as<double>() ),
+        meshSize( this->vm()["hsize"].as<double>() ),
+        bcCoeff( this->vm()["bccoeff"].as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers(),
         stats()
@@ -155,10 +135,10 @@ public:
         Log() << "[Stokes] bccoeff = " << bcCoeff << "\n";
         Log() << "[Stokes] export = " << this->vm().count("export") << "\n";
 
-        mu = this->vm()["mu"].template as<value_type>();
-        penalbc = this->vm()["bccoeff"].template as<value_type>();
-        epsilon = this->vm()["epsilon"].template as<value_type>();
-        stab = this->vm()["stab"].template as<bool>();
+        mu = this->vm()["mu"].as<value_type>();
+        penalbc = this->vm()["bccoeff"].as<value_type>();
+        epsilon = this->vm()["epsilon"].as<value_type>();
+        stab = this->vm()["stab"].as<bool>();
 
     }
 
@@ -179,7 +159,7 @@ private:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( element_type& u );
+    void exportResults( space_type::element_type& u );
 
 private:
 
@@ -198,17 +178,16 @@ private:
     std::map<std::string,double> stats;
 }; // Stokes
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-typename Stokes<Dim,Order,Entity>::mesh_ptrtype
-Stokes<Dim,Order,Entity>::createMesh( double meshSize )
+Stokes::mesh_ptrtype
+Stokes::createMesh( double meshSize )
 {
     timers["mesh"].first.restart();
     mesh_ptrtype mesh( new mesh_type );
 
 
-    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube);
+    GmshHypercubeDomain td(convex_type::nDim,convex_type::nOrder,convex_type::nRealDim,convex_type::is_hypercube);
     td.setCharacteristicLength( meshSize );
-    std::string fname = td.generate( entity_type::name().c_str() );
+    std::string fname = td.generate( convex_type::name().c_str() );
 
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
@@ -218,9 +197,8 @@ Stokes<Dim,Order,Entity>::createMesh( double meshSize )
 } // Stokes::createMesh
 
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Stokes<Dim, Order, Entity>::run()
+Stokes::run()
 {
     if ( this->vm().count( "help" ) )
         {
@@ -233,9 +211,9 @@ Stokes<Dim, Order, Entity>::run()
 
     this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
-                            % entity_type::name()
+                            % convex_type::name()
                             % Order
-                            % this->vm()["hsize"].template as<double>()
+                            % this->vm()["hsize"].as<double>()
                             );
 
     /*
@@ -252,12 +230,12 @@ Stokes<Dim, Order, Entity>::run()
     //Xh->dof()->showMe();
     auto U = Xh->element();
     auto V = Xh->element();
-    auto u = U.template element<0>();
-    auto v = V.template element<0>();
-    auto p = U.template element<1>();
-    auto q = V.template element<1>();
-    auto lambda = U.template element<2>();
-    auto nu = V.template element<2>();
+    auto u = U.element<0>();
+    auto v = V.element<0>();
+    auto p = U.element<1>();
+    auto q = V.element<1>();
+    auto lambda = U.element<2>();
+    auto nu = V.element<2>();
 
     timers["init"].second = timers["init"].first.elapsed();
     stats["ndof"] = Xh->nDof();
@@ -291,7 +269,6 @@ Stokes<Dim, Order, Entity>::run()
      */
     auto S = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, S, _init=true );
-    S->close();
 
     if ( this->vm().count( "export-matlab" ) )
         {
@@ -308,8 +285,6 @@ Stokes<Dim, Order, Entity>::run()
     form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh), +penalbc*trans(idt(u))*id(v)/hFace() );
 
     Log() << "[stokes] matrix local assembly done\n";
-    D->close();
-    F->close();
     Log() << "[stokes] vector/matrix global assembly done\n";
     if ( this->vm().count( "export-matlab" ) )
         {
@@ -342,7 +317,7 @@ Stokes<Dim, Order, Entity>::run()
     Log() << "[stokes] starting solve for D\n";
 
     timers["solver"].first.restart();
-    backend_type::build()->solve( _matrix=D, _solution=U, _rhs=F );
+    backend_type::build(this->vm())->solve( _matrix=D, _solution=U, _rhs=F );
     timers["solver"].second = timers["solver"].first.elapsed();
 
     if ( this->vm().count( "export-matlab" ) )
@@ -359,10 +334,10 @@ Stokes<Dim, Order, Entity>::run()
 
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    Log() << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
-    Log() << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
+    Log() << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
+    Log() << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
+    Log() << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
+    Log() << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
     Log() << "[timer] run():         init: " << timers["init"].second << "\n";
     Log() << "[timer] run():     assembly: " << timers["assembly"].second << "\n";
     Log() << "[timer] run():         o D : " << timers["assembly_D"].second << "\n";
@@ -376,15 +351,14 @@ Stokes<Dim, Order, Entity>::run()
 } // Stokes::run
 
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Stokes<Dim, Order, Entity>::exportResults( element_type& U )
+Stokes::exportResults( space_type::element_type& U )
 {
     timers["export"].first.restart();
 
     exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
-    exporter->step(1.)->add( "u", U.template element<0>() );
-    exporter->step(1.)->add( "p", U.template element<1>() );
+    exporter->step(1.)->add( "u", U.element<0>() );
+    exporter->step(1.)->add( "p", U.element<1>() );
     exporter->save();
 
     timers["export"].second = timers["export"].first.elapsed();
@@ -398,19 +372,11 @@ Stokes<Dim, Order, Entity>::exportResults( element_type& U )
 int
 main( int argc, char** argv )
 {
-    using namespace Feel;
-
-    /* change parameters below */
-    const int nDim = 2;
-    const int nOrder = 2;
-
-    typedef Feel::Stokes<nDim, nOrder, Simplex> stokes_type;
-
     /* assertions handling */
     Feel::Assert::setLog( "stokes.assert");
 
     /* define and run application */
-    stokes_type stokes( argc, argv, makeAbout(), makeOptions() );
+    Feel::Stokes stokes( argc, argv, makeAbout(), makeOptions() );
     stokes.run();
 }
 
