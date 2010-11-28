@@ -177,6 +177,8 @@ private:
     std::map<std::string,std::pair<boost::timer,double> > timers;
     std::map<std::string,double> stats;
 }; // Stokes
+const int Stokes::Order;
+const int Stokes::Dim;
 
 Stokes::mesh_ptrtype
 Stokes::createMesh( double meshSize )
@@ -278,6 +280,7 @@ Stokes::run()
     timers["assembly"].first.restart();
 
     form2( Xh, Xh, D, _init=true ) = integrate( elements(mesh), mu*trace(deft*trans(def)) );
+
     form2( Xh, Xh, D ) += integrate( elements(mesh), - div(v)*idt(p) + divt(u)*id(q) );
     form2( Xh, Xh, D ) += integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
     form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh), -trans(SigmaNt)*id(v) );
@@ -304,6 +307,7 @@ Stokes::run()
             on( markedfaces(mesh,3), u, F, cst(0.)*oneX()+cst(0.)*oneY() )+
             on( markedfaces(mesh,4), u, F, cst(0.)*oneX()+cst(0.)*oneY() );
 #endif
+
     Log() << "[stokes] dirichlet condition applied\n";
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_D"].second += timers["assembly"].first.elapsed();
