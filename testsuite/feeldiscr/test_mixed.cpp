@@ -266,15 +266,15 @@ TestMixed<Dim,Order>::run()
     double meas = integrate( elements(mesh), cst(1.) ).evaluate()( 0, 0 );
 
     double res =  integrate( elements(mesh), divv(u)*idv(p) ).evaluate()( 0,0 ) ;
-    BOOST_CHECK_CLOSE( res, Dim*meas, 5e-12 );
+    BOOST_CHECK_CLOSE( res, Dim*meas, 5e-11 );
     BOOST_TEST_MESSAGE( "[(u,p)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
     res =  integrate( elements(mesh), divv(u)*divv(u) ).evaluate()( 0,0 ) ;
-    BOOST_CHECK_CLOSE( res, Dim*Dim*meas, 5e-12 );
+    BOOST_CHECK_CLOSE( res, Dim*Dim*meas, 5e-11 );
     BOOST_TEST_MESSAGE( "[(u,u)] res = " << res << " (must be equal to " << Dim*Dim*meas << ")\n" );
 
     res =  integrate( elements(mesh), idv(p)*idv(p) ).evaluate()( 0,0 ) ;
-    BOOST_CHECK_CLOSE( res, meas, 5e-12 );
+    BOOST_CHECK_CLOSE( res, meas, 5e-11 );
     BOOST_TEST_MESSAGE( "[(p,p)] res = " << res << " (must be equal to " << meas << ")\n" );
 
     {
@@ -317,7 +317,7 @@ TestMixed<Dim,Order>::run()
         F->close();
         //F->printMatlab( "Fu.m" );
         res = inner_product( F, P );
-        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-12 );
+        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-11 );
         BOOST_TEST_MESSAGE( "[Fu(p)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
     }
@@ -331,7 +331,7 @@ TestMixed<Dim,Order>::run()
         //D->printMatlab( "Dt.m" );
         D->multVector( P, V );
         double res = inner_product( V, U );
-        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-12 );
+        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-11 );
         BOOST_TEST_MESSAGE( "[D(u,p)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
 
@@ -342,7 +342,7 @@ TestMixed<Dim,Order>::run()
         F->close();
         //F->printMatlab( "Fp.m" );
         res = inner_product( F, U );
-        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-12 );
+        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-11 );
         BOOST_TEST_MESSAGE( "[Fp(u)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
 
@@ -356,7 +356,7 @@ TestMixed<Dim,Order>::run()
         //D->printMatlab( "divdiv.m" );
         D->multVector( U, V );
         double res = inner_product( V, U );
-        BOOST_CHECK_CLOSE( res, Dim*Dim*meas, 5e-12 );
+        BOOST_CHECK_CLOSE( res, Dim*Dim*meas, 5e-11 );
         BOOST_TEST_MESSAGE( "[(u,u)] res = " << res << " (must be equal to " << Dim*Dim*meas << ")\n" );
 
     }
@@ -369,7 +369,7 @@ TestMixed<Dim,Order>::run()
         //D->printMatlab( "idid.m" );
         D->multVector( P, Q );
         double res = inner_product( Q, P );
-        BOOST_CHECK_CLOSE( res, meas, 5e-12 );
+        BOOST_CHECK_CLOSE( res, meas, 5e-11 );
         BOOST_TEST_MESSAGE( "[(p,p)] res = " <<  res << " (must be equal to " << meas << ")\n" );
     }
 } // TestMixed::run
