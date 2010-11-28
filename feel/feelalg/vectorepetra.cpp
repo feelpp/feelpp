@@ -27,6 +27,7 @@
    \date 2007-08-14
 */
 #include <feel/feelalg/vectorepetra.hpp>
+#include <feel/feelalg/matrixepetra.hpp>
 
 namespace Feel
 {
@@ -265,6 +266,17 @@ VectorEpetra<T>::printMatlab (const std::string name) const
     Debug() << "[printMatlab] print vector in matlab file " << name << "\n";
     EpetraExt::MultiVectorToMatlabFile( name.c_str(), _M_vec);
 }
+template<typename T>
+void
+VectorEpetra<T>::addVector ( const Vector<T>& _v,
+                             const MatrixSparse<T>& _M)
+{
+    epetra_vector_type res( this->Map() );
+
+    dynamic_cast<MatrixEpetra const&>( _M ).multiply( false, _v, res );
+    this->add( 1., res );
+}
+
 //
 // Debug stream
 //

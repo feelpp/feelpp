@@ -6,8 +6,8 @@
    Date: 2007-08-14
 
    Copyright (C) 2008, 2009 Christophe Prud'homme
-   Copyright (C) 2007,2008 Universit� Joseph Fourier (Grenoble I)
-   Copyright (C) 2007 �cole Polytechnique F�d�rale de Lausanne (EPFL)
+   Copyright (C) 2007,2008 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2007 école Polytechnique Fédérale de Lausanne (EPFL)
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -184,7 +184,8 @@ MatrixEpetra::init ( const size_type m,
         //std::cout << "_M_range_map " << _M_range_map << "\n";
 
         //std::cout << "Call GlobalAssemble...\n";
-        int ierr = epetra_graph.GlobalAssemble( _M_dom_map, _M_range_map, true );
+        //int ierr = epetra_graph.GlobalAssemble( _M_dom_map, _M_range_map, true );
+        int ierr = epetra_graph.GlobalAssemble( _M_range_map, _M_dom_map, true );
         //int ierr = epetra_graph.GlobalAssemble( true );
         //int ierr = epetra_graph.GlobalAssemble();
         //std::cout << "Epetra graph: " << epetra_graph << "\n";
@@ -247,6 +248,7 @@ MatrixEpetra::multiplyMatrix( const MatrixEpetra& A, const MatrixEpetra& B )
     EpetraExt::MatrixMatrix::Multiply( A.mat(), false, B.mat(), false, (*this).mat() );
 }
 
+
 void
 MatrixEpetra::transpose( MatrixSparse<value_type>& Mt ) const
 {
@@ -280,7 +282,14 @@ MatrixEpetra::printMatlab (const std::string name) const
         const_cast<MatrixEpetra*>(this)->close();
 
     Debug( 10010 ) << "[printMatlab] print matrix in matlab file " << name << "\n";
-    EpetraExt::RowMatrixToMatlabFile( name.c_str(), *_M_mat);
+    //std::cout << "[printMatlab] print matrix in matlab file " << name << "\n";
+
+    //this->printKonsole();
+    //std::cout << "[printMatlab] print matrix in matlab file done\n";
+    int ret = EpetraExt::RowMatrixToMatlabFile( name.c_str(), *_M_mat);
+    //int ret = EpetraExt::RowMatrixToMatrixMarketFile( name.c_str(), *_M_mat, "toto", "tutu" );
+    if ( ret != 0 )
+        std::cout << "error in printMatlab\n";
 }
 
 

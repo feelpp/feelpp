@@ -82,6 +82,8 @@ public:
     typedef typename super::real_type real_type;
     typedef typename super::clone_ptrtype clone_ptrtype;
 
+    typedef VectorEpetra<value_type> epetra_vector_type;
+    typedef boost::shared_ptr<epetra_vector_type> epetra_vector_ptrtype;
     //@}
 
     /** @name Constructors, destructor
@@ -409,11 +411,8 @@ public:
      * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector (const Vector<T>& _v,
-                    const MatrixSparse<T>& _M)
-    {
-        // to be implemented
-    }
+    void addVector ( const Vector<T>& _v,
+                     const MatrixSparse<T>& _M );
 
     /**
      * \f$ U+=v \f$ where \p v is a std::vector<T>
