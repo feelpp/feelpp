@@ -35,11 +35,12 @@
 // disable the main function creation, use our own
 #define BOOST_TEST_NO_MAIN
 
-#if defined(USE_BOOST_TEST)
+//#if defined(USE_BOOST_TEST)
 #include <boost/test/unit_test.hpp>
+//#endif
 using boost::unit_test::test_suite;
 #include <boost/test/floating_point_comparison.hpp>
-#endif
+
 
 #include <feel/options.hpp>
 
@@ -149,13 +150,13 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! function space that holds piecewise constant (\f$P_0\f$) functions (e.g. to store material properties or partitioning
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar> >, Discontinuous > p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar, Discontinuous> > > p0_space_type;
     //! an element type of the \f$P_0\f$ discontinuous function space
     typedef typename p0_space_type::element_type p0_element_type;
 
     //! the basis type of our approximation space
     typedef bases<Lagrange<Order,Vectorial> > v_basis_type;
-    typedef bases<Lagrange<Order,Scalar> > p_basis_type;
+    typedef bases<Lagrange<Order-1,Scalar> > p_basis_type;
 
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, v_basis_type> v_space_type;
@@ -235,7 +236,8 @@ TestMixed<Dim,Order>::run()
                                                       _shape=shape,
                                                       _dim=Dim,
                                                       _xmin=-1.,_ymin=-1.,_zmin=-1.,
-                                                      _h=meshSize ) );
+                                                      _h=meshSize ),
+                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
     /** \endcode */
 
     /**
@@ -258,32 +260,32 @@ TestMixed<Dim,Order>::run()
     vector_ptrtype P = M_backend->newVector( Yh );
     *P = p;
     U->close();P->close();
-    P->printMatlab( "P.m" );
-    U->printMatlab( "U.m" );
+    //P->printMatlab( "P.m" );
+    //U->printMatlab( "U.m" );
 
     double meas = integrate( elements(mesh), cst(1.) ).evaluate()( 0, 0 );
 
     double res =  integrate( elements(mesh), divv(u)*idv(p) ).evaluate()( 0,0 ) ;
-    BOOST_CHECK_CLOSE( res, Dim*meas, 1e-12 );
-    BOOST_TEST_MESSAGE( "[(u,p)] res = " << res << " (must be equal to " << Dim*meas << "\n" );
+    BOOST_CHECK_CLOSE( res, Dim*meas, 5e-12 );
+    BOOST_TEST_MESSAGE( "[(u,p)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
     res =  integrate( elements(mesh), divv(u)*divv(u) ).evaluate()( 0,0 ) ;
-    BOOST_CHECK_CLOSE( res, Dim*Dim*meas, 1e-12 );
-    BOOST_TEST_MESSAGE( "[(u,u)] res = " << res << " (must be equal to " << Dim*Dim*meas << "\n" );
+    BOOST_CHECK_CLOSE( res, Dim*Dim*meas, 5e-12 );
+    BOOST_TEST_MESSAGE( "[(u,u)] res = " << res << " (must be equal to " << Dim*Dim*meas << ")\n" );
 
     res =  integrate( elements(mesh), idv(p)*idv(p) ).evaluate()( 0,0 ) ;
-    BOOST_CHECK_CLOSE( res, meas, 1e-12 );
-    BOOST_TEST_MESSAGE( "[(p,p)] res = " << res << " (must be equal to " << meas << "\n" );
+    BOOST_CHECK_CLOSE( res, meas, 5e-12 );
+    BOOST_TEST_MESSAGE( "[(p,p)] res = " << res << " (must be equal to " << meas << ")\n" );
 
     {
-        sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Yh ) );
+        auto D = M_backend->newMatrix( Xh, Yh );
         BOOST_CHECK_EQUAL( D->size1(), Yh->nLocalDof() );
         BOOST_CHECK_EQUAL( D->size2(), Xh->nLocalDof() );
         form2( _trial=Xh, _test=Yh, _matrix=D, _init=true)= integrate( elements(mesh), divt(u)*id(p) );
-
         D->close();
-        D->printMatlab( "D.m" );
+        //D->printMatlab( "D.m" );
         D->multVector( U, Q );
+        //Q->printMatlab( "Q.m" );
         res = inner_product( Q, P );
         BOOST_CHECK_CLOSE( res, Dim*meas, 5e-13 );
         BOOST_TEST_MESSAGE( "[D(p,u)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
@@ -292,7 +294,7 @@ TestMixed<Dim,Order>::run()
             integrate( elements(mesh), -grad(p)*idt(u) );
 
         D->close();
-        D->printMatlab( "Dg.m" );
+        //D->printMatlab( "Dg.m" );
         D->multVector( U, Q );
         res = inner_product( Q, P );
         BOOST_CHECK_SMALL( res, 1e-13 );
@@ -302,7 +304,7 @@ TestMixed<Dim,Order>::run()
             integrate( boundaryfaces(mesh), trans(idt(u))*N()*id(p) );
 
         D->close();
-        D->printMatlab( "Db.m" );
+        //D->printMatlab( "Db.m" );
         D->multVector( U, Q );
         res = inner_product( Q, P );
         BOOST_CHECK_CLOSE( res, Dim*meas, 5e-13 );
@@ -313,9 +315,9 @@ TestMixed<Dim,Order>::run()
         form1( _test=Yh, _vector=F, _init=true)= integrate( elements(mesh), divv(u)*id(p) );
 
         F->close();
-        F->printMatlab( "Fu.m" );
+        //F->printMatlab( "Fu.m" );
         res = inner_product( F, P );
-        BOOST_CHECK_CLOSE( res, Dim*meas, 1e-12 );
+        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-12 );
         BOOST_TEST_MESSAGE( "[Fu(p)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
     }
@@ -326,10 +328,10 @@ TestMixed<Dim,Order>::run()
         form2( _test=Xh, _trial=Yh, _matrix=D, _init=true)= integrate( elements(mesh), div(u)*idt(p) );
 
         D->close();
-        D->printMatlab( "Dt.m" );
+        //D->printMatlab( "Dt.m" );
         D->multVector( P, V );
         double res = inner_product( V, U );
-        BOOST_CHECK_CLOSE( res, Dim*meas, 1e-12 );
+        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-12 );
         BOOST_TEST_MESSAGE( "[D(u,p)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
 
@@ -338,9 +340,9 @@ TestMixed<Dim,Order>::run()
         form1( _test=Xh, _vector=F, _init=true)= integrate( elements(mesh), div(u)*idv(p) );
 
         F->close();
-        F->printMatlab( "Fp.m" );
+        //F->printMatlab( "Fp.m" );
         res = inner_product( F, U );
-        BOOST_CHECK_CLOSE( res, Dim*meas, 1e-12 );
+        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-12 );
         BOOST_TEST_MESSAGE( "[Fp(u)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
 
@@ -351,10 +353,10 @@ TestMixed<Dim,Order>::run()
         BOOST_CHECK_EQUAL( D->size2(), Xh->nLocalDof() );
         form2( _trial=Xh, _test=Xh, _matrix=D, _init=true)= integrate( elements(mesh), divt(u)*div(u) );
         D->close();
-        D->printMatlab( "divdiv.m" );
+        //D->printMatlab( "divdiv.m" );
         D->multVector( U, V );
         double res = inner_product( V, U );
-        BOOST_CHECK_CLOSE( res, Dim*Dim*meas, 1e-12 );
+        BOOST_CHECK_CLOSE( res, Dim*Dim*meas, 5e-12 );
         BOOST_TEST_MESSAGE( "[(u,u)] res = " << res << " (must be equal to " << Dim*Dim*meas << ")\n" );
 
     }
@@ -364,10 +366,10 @@ TestMixed<Dim,Order>::run()
         BOOST_CHECK_EQUAL( D->size2(), Yh->nLocalDof() );
         form2( _trial=Yh, _test=Yh, _matrix=D, _init=true)= integrate( elements(mesh), idt(p)*id(p) );
         D->close();
-        D->printMatlab( "idid.m" );
+        //D->printMatlab( "idid.m" );
         D->multVector( P, Q );
         double res = inner_product( Q, P );
-        BOOST_CHECK_CLOSE( res, meas, 1e-12 );
+        BOOST_CHECK_CLOSE( res, meas, 5e-12 );
         BOOST_TEST_MESSAGE( "[(p,p)] res = " <<  res << " (must be equal to " << meas << ")\n" );
     }
 } // TestMixed::run
@@ -377,12 +379,13 @@ TestMixed<Dim,Order>::run()
 BOOST_AUTO_TEST_CASE( test_mixed1_21 )
 {
     BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 1,)" );
-    Feel::TestMixed<2,1> t( boost::unit_test::framework::master_test_suite().argc,
+    Feel::TestMixed<2,2> t( boost::unit_test::framework::master_test_suite().argc,
                             boost::unit_test::framework::master_test_suite().argv,
                             Feel::makeAbout(), Feel::makeOptions() );
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 1,) done" );
 }
+#if 1
 BOOST_AUTO_TEST_CASE( test_mixed1_23 )
 {
     BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 3,)" );
@@ -412,7 +415,7 @@ BOOST_AUTO_TEST_CASE( test_mixed2_33 )
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 3,) done" );
 }
-
+#endif
 int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
 {
@@ -435,7 +438,7 @@ main( int argc, char** argv )
      * intantiate a TestMixed<Dim> class with Dim=2 (e.g. geometric dimension is 2)
      */
     /** \code */
-    TestMixed<2> testMixed( argc, argv, makeAbout(), makeOptions() );
+    Feel::TestMixed<2,1> testMixed( argc, argv, Feel::makeAbout(), Feel::makeOptions() );
     /** \encode */
 
     /**
