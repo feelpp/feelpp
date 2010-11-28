@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -40,6 +40,34 @@ using boost::unit_test::test_suite;
 #include <feel/feelmesh/geoelement.hpp>
 
 
+BOOST_AUTO_TEST_CASE( test_connectivity1 )
+{
+    using namespace Feel;
+    GeoND<2,Simplex<2> > c1;
+    BOOST_CHECK_EQUAL( c1.e2p(0,0), 1 );
+    BOOST_CHECK_EQUAL( c1.e2p(0,1), 2 );
+    BOOST_CHECK_EQUAL( c1.e2p(1,0), 2 );
+    BOOST_CHECK_EQUAL( c1.e2p(1,1), 0 );
+    BOOST_CHECK_EQUAL( c1.e2p(2,0), 0 );
+    BOOST_CHECK_EQUAL( c1.e2p(2,1), 1 );
+}
+BOOST_AUTO_TEST_CASE( test_connectivity2 )
+{
+    using namespace Feel;
+    GeoND<3,Simplex<3> > c1;
+    BOOST_CHECK_EQUAL( c1.e2p(0,0), 1 );
+    BOOST_CHECK_EQUAL( c1.e2p(0,1), 2 );
+    BOOST_CHECK_EQUAL( c1.e2p(1,0), 2 );
+    BOOST_CHECK_EQUAL( c1.e2p(1,1), 0 );
+    BOOST_CHECK_EQUAL( c1.e2p(2,0), 0 );
+    BOOST_CHECK_EQUAL( c1.e2p(2,1), 1 );
+    BOOST_CHECK_EQUAL( c1.e2p(3,0), 0 );
+    BOOST_CHECK_EQUAL( c1.e2p(3,1), 3 );
+    BOOST_CHECK_EQUAL( c1.e2p(4,0), 1 );
+    BOOST_CHECK_EQUAL( c1.e2p(4,1), 3 );
+    BOOST_CHECK_EQUAL( c1.e2p(5,0), 2 );
+    BOOST_CHECK_EQUAL( c1.e2p(5,1), 3 );
+}
 template<int Dim, int Order>
 void
 test_entity_isin()

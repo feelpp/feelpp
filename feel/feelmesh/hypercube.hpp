@@ -31,96 +31,13 @@
 
 #include <boost/detail/identifier.hpp>
 #include <feel/feelcore/traits.hpp>
+#include <feel/feelmesh/entities.hpp>
 #include <feel/feelmesh/convex.hpp>
-#include <feel/feelmesh/simplex.hpp>
+#include <feel/feelmesh/hypercubeordering.hpp>
 
 
 namespace Feel
 {
-/// \cond DETAIL
-namespace details
-{
-
-template<uint16_type Order >
-struct quad
-{
-    static uint16_type f2e( uint16_type /*f*/, uint16_type e ) { return __f2e[e]; }
-    static const uint16_type __f2e[4];
-
-    static uint16_type f2p( uint16_type /*f*/, uint16_type p ) { return __f2p[p]; }
-    static const uint16_type __f2p[4];
-
-    static uint16_type e2p( uint16_type e, uint16_type p ) { return e2p(e,p,boost::mpl::int_<(Order>3)?1:Order>()); }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<1>) { return __e2p_order1[2*e+p]; }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<2>) { return __e2p_order1[3*e+p]; }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<3>) { return __e2p_order1[4*e+p]; }
-    static const uint16_type __e2p_order1[8];
-    static const uint16_type __e2p_order2[12];
-    static const uint16_type __e2p_order3[16];
-
-    std::vector<uint16_type> entity( uint16_type /*topo_dim*/, uint16_type id ) const
-        {
-            std::vector<uint16_type> __entity( 2 );
-            __entity[0] = __e2p_order1[2*id];
-            __entity[1] = __e2p_order1[2*id+1];
-            return __entity;
-        }
-};
-
-template<uint16_type Order >
-struct hexa
-{
-    // face to edge relations
-    static uint16_type f2e( uint16_type f, uint16_type e ) { return __f2e[4*f+e]; }
-    static const uint16_type __f2e[24];
-    static int16_type f2ePermutation( uint16_type f, uint16_type e ) { return __f2e_permutation[4*f+e]; }
-    static const int16_type __f2e_permutation[24];
-
-    // face to point relations
-    static uint16_type f2p( uint16_type e, uint16_type p ) { return f2p(e,p,boost::mpl::int_<(Order>3)?1:Order>()); }
-    static uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<1> ) { return __f2p_order1[4*f+p]; }
-    static uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<2> ) { return __f2p_order2[9*f+p]; }
-    static uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<3> ) { return __f2p_order3[16*f+p]; }
-
-    static const uint16_type __f2p_order1[24];
-    static const uint16_type __f2p_order2[54];
-    static const uint16_type __f2p_order3[96];
-
-    // edge to point relations
-    static uint16_type e2p( uint16_type e, uint16_type p ) { return e2p(e,p,boost::mpl::int_<(Order>3)?1:Order>()); }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<1>) { return __e2p_order1[2*e+p]; }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<2>) { return __e2p_order2[3*e+p]; }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<3>) { return __e2p_order3[4*e+p]; }
-
-    static const uint16_type __e2p_order1[24];
-    static const uint16_type __e2p_order2[36];
-    static const uint16_type __e2p_order3[48];
-
-
-    std::vector<uint16_type> entity( uint16_type topo_dim, uint16_type id ) const
-        {
-            std::vector<uint16_type> __entity( 2*topo_dim );
-
-            if ( topo_dim == 1 )
-            {
-                __entity[0] = __e2p_order1[2*id];
-                __entity[1] = __e2p_order1[2*id+1];
-
-            }
-            else if ( topo_dim == 2 )
-            {
-                __entity[0] = __f2p_order1[4*id];
-                __entity[1] = __f2p_order1[4*id+1];
-                __entity[2] = __f2p_order1[4*id+2];
-                __entity[3] = __f2p_order1[4*id+3];
-            }
-            return __entity;
-        }
-};
-
-} // details
-/// \endcond
-
 
 template<uint16_type Dim, uint16_type Order=1, uint16_type RDim = Dim>
 class Hypercube  : public Convex<Dim,Order,RDim>
@@ -199,7 +116,7 @@ public:
                                                                                     >::type::value;
 
 
-    typedef mpl::vector<boost::none_t, details::line, details::quad<orderSquare>, details::hexa<orderSquare> > map_entity_to_point_t;
+    typedef mpl::vector<boost::none_t, details::line<orderSquare>, details::quad<orderSquare>, details::hexa<orderSquare> > map_entity_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type edge_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type face_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type face_to_edge_t;

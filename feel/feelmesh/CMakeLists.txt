@@ -23,7 +23,7 @@
 #
 SET( SRC
   marker.cpp bareitems.cpp
-  entities.cpp simplex.cpp hypercube.cpp
+  entities.cpp
   regiontree.cpp kdtree.cpp
   functors.cpp
   meshbase.cpp
