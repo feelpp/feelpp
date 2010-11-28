@@ -40,7 +40,7 @@
 #include <feel/feelcore/application.hpp>
 
 #include <feel/feelalg/matrixsparse.hpp>
-#include <feel/feelalg/vector.hpp>
+#include <feel/feelalg/vectorepetra.hpp>
 
 #if defined( HAVE_TRILINOS_EPETRA )
 #undef PACKAGE_BUGREPORT
@@ -435,6 +435,14 @@ public:
      * Multiplies matrix A by B and stores the result
      */
     void multiplyMatrix ( const MatrixEpetra& A, const MatrixEpetra& B );
+
+    template<typename T>
+    void multiply ( bool trans, const Vector<T>& v,  Vector<T>& r ) const
+        {
+            epetra_vector_type const& ev( dynamic_cast<epetra_vector_type const&>( v ) );
+            epetra_vector_type& er( dynamic_cast<epetra_vector_type&>( r ) );
+            _M_mat->Multiply( trans, ev.vec(), er.vec() );
+        }
 
     /**
      * Add \p value to the element
