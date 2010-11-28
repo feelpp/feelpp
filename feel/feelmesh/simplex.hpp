@@ -32,132 +32,12 @@
 #include <boost/detail/identifier.hpp>
 #include <feel/feelmesh/entities.hpp>
 #include <feel/feelmesh/convex.hpp>
+#include <feel/feelmesh/simplexordering.hpp>
 
 
 namespace Feel
 {
 
-/// \cond DETAIL
-namespace details
-{
-struct vertex
-{
-    static uint16_type f2p( uint16_type /*f*/, uint16_type /*p*/ ) { return invalid_uint16_type_value; }
-    static uint16_type f2e( uint16_type /*f*/, uint16_type /*e*/ ) { throw std::logic_error( "invalid call to line::f2e" ); return invalid_uint16_type_value; }
-    static uint16_type e2p( uint16_type /*e*/, uint16_type /*p*/ ) { return invalid_uint16_type_value; }
-
-    std::vector<uint16_type> entity( uint16_type /*topo_dim*/, uint16_type /*id*/ ) const
-        {
-            std::vector<uint16_type> __entity( 1 );
-            __entity[0] = 0;
-            return __entity;
-        }
-};
-
-struct line
-{
-    //static uint16_type f2p( uint16_type /*f*/, uint16_type /*p*/ ) { throw std::logic_error( "invalid call to line::f2p" ); return uint16_type(-1); }
-    static uint16_type f2p( uint16_type f, uint16_type /*p*/ ) { return f; }
-    static uint16_type f2e( uint16_type /*f*/, uint16_type /*e*/ ) { throw std::logic_error( "invalid call to line::f2e" ); return uint16_type(-1); }
-    static uint16_type e2p( uint16_type /*e*/, uint16_type p ) { return __e2p[p]; }
-    static const uint16_type __e2p[2];
-
-    std::vector<uint16_type> entity( uint16_type /*topo_dim*/, uint16_type /*id*/ ) const
-        {
-            std::vector<uint16_type> __entity( 2 );
-            __entity[0] = 0;
-            __entity[1] = 1;
-            return __entity;
-        }
-};
-
-template<uint16_type Order >
-struct triangle
-{
-    static uint16_type f2e( uint16_type /*f*/, uint16_type e ) { return __f2e[e]; }
-    static const uint16_type __f2e[3];
-
-    static uint16_type f2p( uint16_type /*f*/, uint16_type p ) { return __f2p[p]; }
-    static const uint16_type __f2p[21];
-
-    static uint16_type e2p( uint16_type e, uint16_type p ) { return e2p(e,p,boost::mpl::int_<Order>()); }
-
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<1>) { return __e2p_order1[2*e+p]; }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<2>) { return __e2p_order2[3*e+p]; }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<3>) { return __e2p_order3[4*e+p]; }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<4>) { return __e2p_order4[5*e+p]; }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<5>) { return __e2p_order5[6*e+p]; }
-
-    static const uint16_type __e2p_order1[6];
-    static const uint16_type __e2p_order2[9];
-    static const uint16_type __e2p_order3[12];
-    static const uint16_type __e2p_order4[15];
-    static const uint16_type __e2p_order5[18];
-
-
-    std::vector<uint16_type> entity( uint16_type /*topo_dim*/, uint16_type id ) const
-        {
-            std::vector<uint16_type> __entity( 2 );
-            __entity[0] = __e2p_order1[2*id];
-            __entity[1] = __e2p_order1[2*id+1];
-            return __entity;
-        }
-};
-
-template<uint16_type Order >
-struct tetra
-{
-    static uint16_type f2e( uint16_type f, uint16_type e ) { return __f2e[3*f+e]; }
-    static const uint16_type __f2e[12];
-    static int16_type f2eOrientation( uint16_type f, uint16_type e ) { return __f2e_orientation[3*f+e]; }
-    static const int16_type __f2e_orientation[12];
-
-
-    static uint16_type f2p( uint16_type e, uint16_type p ) { return f2p(e,p,boost::mpl::int_<(Order>4)?1:Order>()); }
-    static uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<1> ) { return __f2p_order1[3*f+p]; }
-    static uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<2> ) { return __f2p_order2[6*f+p]; }
-    static uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<3> ) { return __f2p_order3[10*f+p]; }
-    static uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<4> ) { return __f2p_order4[15*f+p]; }
-    static const uint16_type __f2p_order1[12];
-    static const uint16_type __f2p_order2[24];
-    static const uint16_type __f2p_order3[40];
-    static const uint16_type __f2p_order4[60];
-
-    static uint16_type e2p( uint16_type e, uint16_type p ) { return e2p(e,p,boost::mpl::int_<Order>()); }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<1>) { return __e2p_order1[2*e+p]; }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<2>) { return __e2p_order2[3*e+p]; }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<3>) { return __e2p_order3[4*e+p]; }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<4>) { return __e2p_order4[5*e+p]; }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<5>) { return __e2p_order5[6*e+p]; }
-
-    static const uint16_type __e2p_order1[12];
-    static const uint16_type __e2p_order2[18];
-    static const uint16_type __e2p_order3[24];
-    static const uint16_type __e2p_order4[30];
-    static const uint16_type __e2p_order5[36];
-
-    std::vector<uint16_type> entity( uint16_type topo_dim, uint16_type id ) const
-        {
-            std::vector<uint16_type> __entity( topo_dim+1 );
-
-            if ( topo_dim == 1 )
-            {
-                __entity[0] = __e2p_order1[2*id];
-                __entity[1] = __e2p_order1[2*id+1];
-
-            }
-            else if ( topo_dim == 2 )
-            {
-                __entity[0] = __f2p_order1[3*id];
-                __entity[1] = __f2p_order1[3*id+1];
-                __entity[2] = __f2p_order1[3*id+2];
-            }
-            return __entity;
-        }
-};
-
-} // details
-/// \endcond
 
 /**
  * @class Simplex
@@ -200,7 +80,7 @@ private:
                                                                                       >::type
                                                                                       >::type::value;
 
-    typedef mpl::vector<boost::none_t, details::line, details::triangle<orderTriangle>, details::tetra<orderTriangle> > map_entity_to_point_t;
+    typedef mpl::vector<boost::none_t, details::line<orderTriangle>, details::triangle<orderTriangle>, details::tetra<orderTriangle> > map_entity_to_point_t;
 
     typedef mpl::vector_c<uint16_type, 0, 1, 2, 6> permutations_t;
 
