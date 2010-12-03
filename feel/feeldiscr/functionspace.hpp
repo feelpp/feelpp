@@ -1015,7 +1015,8 @@ public:
         component_type
         comp()
         {
-            return comp( typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            //return comp( typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            return this->template comp<THECOMP>( typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
         }
         template<ComponentType THECOMP>
         component_type
