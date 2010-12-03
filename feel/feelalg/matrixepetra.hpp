@@ -444,6 +444,12 @@ public:
             _M_mat->Multiply( trans, ev.vec(), er.vec() );
         }
 
+    void multiply ( bool trans, const Epetra_MultiVector &X, Epetra_MultiVector &Y) const
+        {
+            _M_mat->Multiply( trans, X, Y );
+        }
+
+
     /**
      * Add \p value to the element
      * \p (i,j).  Throws an error if
