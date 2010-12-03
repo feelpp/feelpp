@@ -172,7 +172,7 @@ public:
     {
         Debug(10100) << "Apply Operator " << Label() << "\n";
 
-        M_Matrix->mat().Apply(X,Y);
+        M_Matrix->multiply(false,X,Y);
 
         Debug(10100) << "Apply Operator " << Label() << " successfully\n";
         return !hasApply();
