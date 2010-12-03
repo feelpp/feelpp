@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -409,6 +409,11 @@ public:
     static const uint16_type nOrder =  Order;
 
 };
+template<uint16_type Order,
+         template<uint16_type Dim> class PolySetType,
+         typename ContinuityType,
+         template<class, uint16_type, class> class Pts>
+const uint16_type Lagrange<Order,PolySetType,ContinuityType,Pts>::nOrder;
 
 } // namespace Feel
 #endif /* __lagrange_H */
