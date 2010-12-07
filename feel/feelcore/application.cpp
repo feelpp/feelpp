@@ -580,7 +580,10 @@ Application&
 Application::changeRepository( boost::format fmt )
 {
     if ( _M_vm.count( "nochdir" ) )
+    {
+        this->setLogs();
         return *this;
+    }
     Environment::changeRepository( fmt );
     this->setLogs();
     return *this;
