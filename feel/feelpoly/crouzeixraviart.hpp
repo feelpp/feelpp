@@ -348,7 +348,14 @@ public:
     };
 
     typedef CrouzeixRaviart<Order,Scalar,Pts> component_basis_type;
+    static const uint16_type nOrder =  Order;
 };
+
+template<uint16_type Order,
+         template<uint16_type Dim> class PolySetType,
+         template<class, uint16_type, class> class Pts>
+const uint16_type CrouzeixRaviart<Order,PolySetType,Pts>::nOrder;
+
 
 } // Feel
 #endif /* __CrouzeixRaviart_H */
