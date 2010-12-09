@@ -489,7 +489,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionOnePermutation()
             face_permutation_type permutation( face_permutation_type::IDENTITY );
 
             // if on boundary don't do anything
-            if ( elt_it->isOnBoundary() )
+            if ( elt_it->isOnBoundary() || ( elt_it->pos_second() == invalid_uint16_type_value ) )
                 continue;
 
             for ( uint16_type i = 0; i < face_type::numVertices; ++i )
@@ -497,7 +497,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionOnePermutation()
                     _left[i] = elt_it->element0().point( elt_it->element0().fToP( elt_it->pos_first(), i ) ).id();
 
                     uint16_type right_p = elt_it->element1().fToP( elt_it->pos_second(), i );
-                    FEEL_ASSERT( right_p >= 0 && right_p < elt_it->numLocalPoints )( right_p )( elt_it->numLocalPoints )
+                    FEEL_ASSERT( right_p >= 0 && right_p < elt_it->element1().numLocalPoints )( right_p )( elt_it->element1().numLocalPoints )
                         ( elt_it->pos_second() )( i ).error( "invalid point index" );
                     _right[i] = elt_it->element1().point( right_p ).id();
 

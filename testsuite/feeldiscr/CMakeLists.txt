@@ -9,5 +9,4 @@ add_custom_command(OUTPUT geo  COMMAND ${CMAKE_COMMAND} ARGS -E copy ${CMAKE_CUR
 add_custom_target(data DEPENDS geo)
 add_dependencies(test_integration_ho data)
 
-#add_executable( toto toto.cpp )
-#target_link_libraries(toto ${FEEL_LIBRARIES} )
+
