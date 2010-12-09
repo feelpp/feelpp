@@ -114,13 +114,6 @@ BOOST_AUTO_TEST_CASE( interp_vect_comp )
 
     BOOST_CHECK_SMALL( s1-sx,1e-8);
     BOOST_CHECK_SMALL( s2-sy,1e-8);
-    //std::cout <<"\nOOLLLEEE " << s1 <<"et" << sx << "\n";
-    //std::cout <<"\nOOLLLEEE " << s2 <<"et" << sy << "\n";
-
-    /*
-    for (uint ii=0;ii<Xh->nDof();++ii)
-        std::cout << u(ii) << "\n";
-    */
 }
 
 BOOST_AUTO_TEST_SUITE_END()
