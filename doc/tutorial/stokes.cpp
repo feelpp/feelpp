@@ -374,6 +374,11 @@ Stokes<Dim, BasisU, BasisP, Entity>::exportResults( element_type& U, element_typ
     if ( exporter->doExport() )
     {
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
+        auto v = U.functionSpace()->template functionSpace<0> ()->element();
+        v = U.template element<0>();
+        exporter->step( 0 )->add( "u", U.template element<0>() );
+        exporter->step( 0 )->add( "ux", v.comp(X) );
+        exporter->step( 0 )->add( "uy", v.comp(Y) );
         exporter->step( 0 )->add( "u", U.template element<0>() );
         exporter->step( 0 )->add( "p", U.template element<1>() );
         exporter->step( 0 )->add( "u_exact", V.template element<0>() );
