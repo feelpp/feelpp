@@ -37,9 +37,11 @@ LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS_RELEASE)
 
 project (Feel C CXX Fortran)
 
+OPTION(FEEL_ENABLE_SVN "enable Feel++ looking up for svn information" ON)
 SET(FEEL_SCM "svn")
 FIND_PACKAGE(Subversion)
-IF(Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn )
+#IF(FEEL_ENABLE_SVN AND ( Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn ) )
+IF ( Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn )
   Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Project)
   MESSAGE("Current revision is ${Project_WC_REVISION}")
   Subversion_WC_LOG(${PROJECT_SOURCE_DIR} Project)
