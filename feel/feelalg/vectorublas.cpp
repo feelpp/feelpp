@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-03-20
 
-  Copyright (C) 2008, 2009 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2008, 2009, 2010 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -54,7 +54,14 @@ struct fake<ublas::vector<double> >: public ublas::vector<double>
     {
         boost::ignore_unused_variable_warning( r );
     }
+    fake( ublas::vector<double> v, ublas::slice  r )
+        :
+        ublas::vector<double>( v )
+    {
+        boost::ignore_unused_variable_warning( r );
+    }
 };
+
 
 #if 0
 template<>
@@ -72,7 +79,28 @@ struct fake<ublas::vector_range<ublas::vector<double> > >: public ublas::vector_
     fake( ublas::vector<double>& v, ublas::range const& r )
         :
         ublas::vector_range<ublas::vector<double> >( v, r )
-    {}
+    {
+    }
+    fake( ublas::vector<double>& v, ublas::slice const& r )
+        :
+        ublas::vector_range<ublas::vector<double> >( v, ublas::range(r.start(), r.size() ) )
+    {
+    }
+};
+
+template<>
+struct fake<ublas::vector_slice<ublas::vector<double> > >: public ublas::vector_slice<ublas::vector<double> >
+{
+    fake( ublas::vector<double>& v, ublas::slice const& r )
+        :
+        ublas::vector_slice<ublas::vector<double> >( ublas::project(v, r ) )
+        {
+        }
+    fake( ublas::vector<double>& v, ublas::range const& r )
+        :
+        ublas::vector_slice<ublas::vector<double> >( v, ublas::slice( r.start(),1,r.size() ) )
+        {
+        }
 
 };
 
@@ -102,12 +130,23 @@ void resize( ublas::vector_range<ublas::vector<T> >& /*v*/, size_type /*s*/, boo
     boost::ignore_unused_variable_warning( preserve );
 }
 template<typename T>
+void resize( ublas::vector_slice<ublas::vector<T> >& /*v*/, size_type /*s*/, bool preserve = true )
+{
+    boost::ignore_unused_variable_warning( preserve );
+}
+template<typename T>
 size_type start( ublas::vector<T> const& /*v*/ )
 {
     return 0;
 }
 template<typename T>
 size_type start( ublas::vector_range<ublas::vector<T> > const& v )
+{
+    return v.start();
+}
+
+template<typename T>
+size_type start( ublas::vector_slice<ublas::vector<T> > const& v )
 {
     return v.start();
 }
@@ -185,6 +224,30 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type cons
 
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type const& range )
+    :
+    super1( invalid_size_type_value, range.size() ),
+    _M_vec( detail::fake<Storage>( m, range ) ),
+    M_global_values_updated( false ),
+    M_global_values( range.size() )
+{
+    //this->init( m.size(), m.size(), false );
+}
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type const& range )
+    :
+    super1( invalid_size_type_value, range.size() ),
+    _M_vec( detail::fake<Storage>( m.vec(), range ) ),
+    M_global_values_updated( false ),
+    M_global_values( range.size() )
+{
+    Debug( 5600 ) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
+    Debug( 5600 ) << "[VectorUblas] constructor with range: size:" << _M_vec.size() << "\n";
+    this->init( invalid_size_type_value, _M_vec.size(), true );
+
+}
+
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type const& range )
     :
     super1( invalid_size_type_value, range.size() ),
     _M_vec( detail::fake<Storage>( m, range ) ),
@@ -437,6 +500,12 @@ VectorUblas<T, Storage>::localize ( ublas::vector_range<ublas::vector<value_type
 
 template <typename T, typename Storage>
 void
+VectorUblas<T, Storage>::localize ( ublas::vector_slice<ublas::vector<value_type> >& /*v_local*/) const
+{
+}
+
+template <typename T, typename Storage>
+void
 VectorUblas<T, Storage>::localize ( ublas::vector<value_type>& v_local) const
 {
     checkInvariant();
@@ -592,6 +661,7 @@ VectorUblas<T,Storage>::pow(int n) const
 //
 template class VectorUblas<double,ublas::vector<double> >;
 template class VectorUblas<double,ublas::vector_range<ublas::vector<double> > >;
+template class VectorUblas<double,ublas::vector_slice<ublas::vector<double> > >;
 //template class VectorUblas<long double,ublas::vector<long double> >;
 //template class VectorUblas<long double,ublas::vector_range<ublas::vector<long double> > >;
 
