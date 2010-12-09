@@ -935,7 +935,7 @@ public:
         };
         typedef typename functionspace_type::component_functionspace_type component_functionspace_type;
         typedef typename functionspace_type::component_functionspace_ptrtype component_functionspace_ptrtype;
-        typedef typename component_functionspace_type::template Element<T,typename VectorUblas<value_type>::range::type> component_type;
+        typedef typename component_functionspace_type::template Element<T,typename VectorUblas<value_type>::slice::type> component_type;
 
         /**
          * geometry typedef
@@ -1023,13 +1023,12 @@ public:
         comp( mpl::bool_<true> )
         {
             BOOST_STATIC_ASSERT( THECOMP >= X && THECOMP < ( ComponentType )N_COMPONENTS );
-            ublas::range r( THECOMP*_M_functionspace->nDofPerComponent(),
-                            ( THECOMP+1 )*_M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( THECOMP, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( THECOMP );
             return component_type( compSpace(),
-                                   typename component_type::container_type( this->vec().data().expression(), r ),
+                                   typename component_type::container_type( this->vec().data().expression(), s ),
                                    __name,
-                                   start()+THECOMP*_M_functionspace->nDofPerComponent(),
+                                   start()+THECOMP,
                                    THECOMP );
         }
         template<ComponentType THECOMP>
@@ -1037,13 +1036,12 @@ public:
         comp( mpl::bool_<false> )
         {
             BOOST_STATIC_ASSERT( THECOMP >= X && THECOMP < ( ComponentType )N_COMPONENTS );
-            ublas::range r( THECOMP*_M_functionspace->nDofPerComponent(),
-                            ( THECOMP+1 )*_M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( THECOMP, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( THECOMP );
             return component_type( compSpace(),
-                                   typename component_type::container_type( (VectorUblas<value_type>&)*this, r ),
+                                   typename component_type::container_type( (VectorUblas<value_type>&)*this, s ),
                                    __name,
-                                   start()+THECOMP*_M_functionspace->nDofPerComponent(),
+                                   start()+THECOMP,
                                    THECOMP );
         }
 
@@ -1064,14 +1062,13 @@ public:
         comp( ComponentType i, mpl::bool_<true> ) const
         {
             FEEL_ASSERT( i >= X && i < N_COMPONENTS );
-            ublas::range r( i*_M_functionspace->nDofPerComponent(),
-                            ( i+1 )*_M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( i, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( i );
 
             component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), r ),
+                              typename component_type::container_type( this->vec().data().expression(), s ),
                               __name,
-                              start()+i*_M_functionspace->nDofPerComponent(),
+                              start()+i,
                               i );
             return c;
         }
@@ -1079,15 +1076,14 @@ public:
         comp( ComponentType i, mpl::bool_<false> ) const
         {
             FEEL_ASSERT( i >= X && i < N_COMPONENTS );
-            ublas::range r( i*_M_functionspace->nDofPerComponent(),
-                            ( i+1 )*_M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( i, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( i );
 
             component_type c( compSpace(),
-                              typename component_type::container_type( (VectorUblas<value_type>&)*this, r ),
+                              typename component_type::container_type( (VectorUblas<value_type>&)*this, s ),
                               //typename component_type::container_type( this->data().expression(), r ),
                               __name,
-                              start()+i*_M_functionspace->nDofPerComponent(),
+                              start()+i,
                               i );
             return c;
         }
@@ -1108,14 +1104,13 @@ public:
         comp( ComponentType i, mpl::bool_<true> )
         {
             FEEL_ASSERT( i >= X && i < N_COMPONENTS );
-            ublas::range r( start()+ i*_M_functionspace->nDofPerComponent(),
-                            start()+( i+1 )*_M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( i, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
 
             std::string __name = this->name() + "_" + componentToString( i );
             component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), r ),
+                              typename component_type::container_type( this->vec().data().expression(), s ),
                               __name,
-                              start()+i*_M_functionspace->nDofPerComponent(),
+                              start()+i,
                               i);
             return c;
         }
@@ -1123,14 +1118,13 @@ public:
         comp( ComponentType i, mpl::bool_<false> )
         {
             FEEL_ASSERT( i >= X && i < N_COMPONENTS );
-            ublas::range r( start()+i*_M_functionspace->nDofPerComponent(),
-                            start()+( i+1 )*_M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( i, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
 
             std::string __name = this->name() + "_" + componentToString( i );
             component_type c( compSpace(),
-                              typename component_type::container_type( (VectorUblas<value_type>&)*this, r ),
+                              typename component_type::container_type( (VectorUblas<value_type>&)*this, s ),
                               __name,
-                              start()+i*_M_functionspace->nDofPerComponent(),
+                              start()+i,
                               i);
             return c;
         }
