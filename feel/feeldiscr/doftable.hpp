@@ -486,9 +486,13 @@ public:
             fe_type::nDofPerFace * element_type::numGeometricFaces +
             fe_type::nDofPerEdge * element_type::numEdges +
             fe_type::nDofPerVertex * element_type::numVertices;
-        for( uint16_type l = 0; l < nldof; ++l )
-            if (boost::get<0>(_M_el_l2g[elt][c*nldof+l])==invalid_size_type_value)
-                return false;
+        const int ncdof = is_product?nComponents:1;
+        for( int c = 0; c < ncdof; ++c )
+        {
+            for( uint16_type l = 0; l < nldof; ++l )
+                if (boost::get<0>(_M_el_l2g[elt][c*nldof+l])==invalid_size_type_value)
+                    return false;
+        }
         return true;
     }
     void addDofFromElement( element_type const& __elt,
@@ -503,61 +507,59 @@ public:
             fe_type::nDofPerEdge * element_type::numEdges +
             fe_type::nDofPerVertex * element_type::numVertices;
 
-        const int ncdof = is_product?nComponents:1;
-        for( int c = 0; c < ncdof; ++c )
+        if ( !this->isElementDone( __elt.id() ) )
+        {
+            Debug(11111) << "adding dof from element " << __elt.id() << "\n";
+            size_type gdofcount = shift;
+            Debug( 5005 ) << "next_free_dof " << next_free_dof  << "\n";
+            Debug( 5005 ) << "current dof " << dofIndex( next_free_dof ) << "\n";
+
+
+            /*
+             * Only in the continuous , we need to have the ordering [vertex,edge,face,volume]
+             */
+            if ( is_continuous || is_discontinuous_locally )
             {
-                Debug( 5005 ) << "[buildDofMap] component " << c << "\n";
-                if ( !this->isElementDone( __elt.id(), c ) )
-                    {
-                        Debug(11111) << "adding dof from element " << __elt.id() << "\n";
-                        size_type gdofcount = shift;
-                        Debug( 5005 ) << "next_free_dof " << next_free_dof  << "\n";
-                        Debug( 5005 ) << "current dof " << dofIndex( next_free_dof ) << "\n";
 
+                /* idem as above but for local element
+                   numbering except that it is
+                   reset to 0 after each element */
+                uint16_type ldofcount = 0;
 
-                        /*
-                         * Only in the continuous , we need to have the ordering [vertex,edge,face,volume]
-                         */
-                        if ( is_continuous || is_discontinuous_locally )
-                            {
+                /* pack the shifts into a tuple */
+                boost::tuple<uint16_type&,size_type&> shifts = boost::make_tuple( boost::ref(ldofcount),
+                                                                                  boost::ref(gdofcount) );
 
-                                /* idem as above but for local element
-                                   numbering except that it is
-                                   reset to 0 after each element */
-                                uint16_type ldofcount = c*nldof;
-
-                                /* pack the shifts into a tuple */
-                                boost::tuple<uint16_type&,size_type&> shifts = boost::make_tuple( boost::ref(ldofcount),
-                                                                                                  boost::ref(gdofcount) );
-
-                                /* \warning: the order of function calls is
-                                   crucial here we order the degrees of freedom
-                                   wrt the topological entities of the mesh
-                                   elements from lowest dimension (vertex) to
-                                   highest dimension (element)
-                                */
-                                addVertexDof( __elt, processor, c, next_free_dof, shifts  );
-                                addEdgeDof( __elt, processor, c, next_free_dof, shifts );
-                                addFaceDof( __elt, processor, c, next_free_dof, shifts );
-                                addVolumeDof( __elt, processor, c, next_free_dof, shifts );
-                            }
-                        else
-                            {
-
-                                size_type ie = __elt.id();
-
-                                for ( uint16_type l = 0; l < nldof; ++l, ++next_free_dof )
-                                    {
-                                        _M_el_l2g[ ie][ fe_type::nLocalDof*c + l ] = boost::make_tuple(( dofIndex(next_free_dof)) , 1, false );
-                                    }
-                            }
-
-                    }
-                else
-                    {
-                        Debug(11111) << "element " << __elt.id() << "has already been taken care of\n";
-                    }
+                /* \warning: the order of function calls is
+                   crucial here we order the degrees of freedom
+                   wrt the topological entities of the mesh
+                   elements from lowest dimension (vertex) to
+                   highest dimension (element)
+                */
+                addVertexDof( __elt, processor, next_free_dof, shifts  );
+                addEdgeDof( __elt, processor, next_free_dof, shifts );
+                addFaceDof( __elt, processor, next_free_dof, shifts );
+                addVolumeDof( __elt, processor, next_free_dof, shifts );
             }
+            else
+            {
+
+                size_type ie = __elt.id();
+
+                const int ncdof = is_product?nComponents:1;
+                for ( uint16_type l = 0; l < nldof; ++l )
+                {
+                    for( int c = 0; c < ncdof; ++c, ++next_free_dof )
+                    {
+                        _M_el_l2g[ ie][ fe_type::nLocalDof*c + l ] = boost::make_tuple(( dofIndex(next_free_dof)) , 1, false );
+                    }
+                }
+            }
+        }
+        else
+        {
+            Debug(11111) << "element " << __elt.id() << "has already been taken care of\n";
+        }
     }
     /**
      * \return the local to global map
@@ -761,20 +763,26 @@ public:
      * \return the index of the next free dof in the processor
      */
     bool insertDof( size_type ie,
-                    uint16_type lc_dof,
+                    uint16_type l_dof,
                     uint16_type lc,
-                    dof_type const& gDof,
+                    dof_type gDof,
                     uint16_type processor,
                     size_type& pDof,
                     int32_type sign = 1,
                     bool is_dof_periodic = false,
                     size_type shift = 0 )
     {
-        Feel::detail::ignore_unused_variable_warning(lc);
-        dof_map_iterator itdof = map_gdof.find( gDof );
-        dof_map_iterator endof = map_gdof.end();
-        bool __inserted = false;
-        if ( itdof == endof )
+        bool res = true;
+        const int ncdof = is_product?nComponents:1;
+        for( int c = 0; c < ncdof; ++c )
+        {
+            gDof.template get<1>() = c;
+            uint16_type lc_dof = fe_type::nLocalDof*c+l_dof;
+            Feel::detail::ignore_unused_variable_warning(lc);
+            dof_map_iterator itdof = map_gdof.find( gDof );
+            dof_map_iterator endof = map_gdof.end();
+            bool __inserted = false;
+            if ( itdof == endof )
             {
                 Debug( 5005 ) << "[dof] dof (" << gDof.get<0>() << "," << gDof.get<1>() << "," << gDof.get<2>() << ") not yet inserted in map\n";
                 boost::tie( itdof, __inserted ) = map_gdof.insert( std::make_pair( gDof, dofIndex( pDof ) ) );
@@ -785,7 +793,7 @@ public:
                     (gDof.get<0>())(gDof.get<1>())( gDof.get<2>() )
                     ( processor )( itdof->second ).error( "dof should have been inserted");
             }
-        else
+            else
             {
                 Debug( 5005 ) << "[dof] dof (" << gDof.get<0>() << ","
                               << gDof.get<1>()
@@ -794,15 +802,15 @@ public:
             }
 
 #if !defined( NDEBUG )
-        Debug( 5005 ) << "global dof = " << itdof->second
-                      << " local dof = " << fe_type::nLocalDof*itdof->first.get<1>() + lc_dof
-                      << " element = " << ie
-                      << " entity = " << itdof->first.get<0>()
-                      << " component = " << itdof->first.get<1>()
-                      << " index = " << itdof->first.get<2>() << "\n";
+            Debug( 5005 ) << "global dof = " << itdof->second
+                          << " local dof = " << fe_type::nLocalDof*itdof->first.get<1>() + lc_dof
+                          << " element = " << ie
+                          << " entity = " << itdof->first.get<0>()
+                          << " component = " << itdof->first.get<1>()
+                          << " index = " << itdof->first.get<2>() << "\n";
 #endif
-        // make sure that no already created dof is overwritten here (may be done alsewhere)
-        if ( boost::get<0>( _M_el_l2g[ ie][ lc_dof ] ) == invalid_size_type_value )
+            // make sure that no already created dof is overwritten here (may be done alsewhere)
+            if ( boost::get<0>( _M_el_l2g[ ie][ lc_dof ] ) == invalid_size_type_value )
             {
 
                 FEEL_ASSERT( itdof->first == gDof ).error( "very bad logical error in insertDof" );
@@ -837,20 +845,22 @@ public:
                     Debug() << "dof table( " << ie << ", " << lc  << ")=" << boost::get<0>(_M_el_l2g[ ie][ i2 ]) << "\n";
 #endif
             }
-        return __inserted || ( ( boost::get<0>( _M_el_l2g[ ie][ lc_dof ] ) == invalid_size_type_value ) && shift );
+            res = res && ( __inserted || ( ( boost::get<0>( _M_el_l2g[ ie][ lc_dof ] ) == invalid_size_type_value ) && shift ));
+        }
+        return res;
     }
 
 private:
 
-    void addVertexDof( element_type const& __elt, uint16_type processor, uint16_type c, size_type& next_free_dof,
+    void addVertexDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                        ref_shift_type& shifts  )
     {
-        addVertexDof( __elt, processor, c, next_free_dof, shifts, mpl::bool_<fe_type::nDofPerVertex>() );
+        addVertexDof( __elt, processor, next_free_dof, shifts, mpl::bool_<fe_type::nDofPerVertex>() );
     }
-    void addVertexDof( element_type const& /*M*/, uint16_type /*processor*/,  uint16_type /*c*/, size_type& /*next_free_dof*/,
+    void addVertexDof( element_type const& /*M*/, uint16_type /*processor*/,  size_type& /*next_free_dof*/,
                        ref_shift_type& /*shifts*/, mpl::bool_<false> )
     {}
-    void addVertexDof( element_type const& __elt, uint16_type processor, uint16_type c, size_type& next_free_dof,
+    void addVertexDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                        ref_shift_type& shifts, mpl::bool_<true> )
     {
         uint16_type local_shift;
@@ -867,8 +877,8 @@ private:
                     {
                         //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
                         const size_type gDof = ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
-
-                        this->insertDof( ie, lc, i, boost::make_tuple(0, c, gDof), processor, next_free_dof, 1, false, global_shift );
+                        this->insertDof( ie, lc, i, boost::make_tuple(0, 0, gDof),
+                                         processor, next_free_dof, 1, false, global_shift );
                     }
             }
         // update shifts
@@ -878,22 +888,21 @@ private:
         Debug( 5005 ) << "[Dof::updateVolumeDof(addVertexDof] vertex proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
     }
-    void addEdgeDof( element_type const& __elt, uint16_type processor, uint16_type c, size_type& next_free_dof,
+    void addEdgeDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts )
     {
         return addEdgeDof( __elt,
                            processor,
-                           c,
                            next_free_dof,
                            shifts,
                            mpl::int_<fe_type::nDim>(),
                            mpl::bool_<fe_type::nDofPerEdge>() );
     }
-    void addEdgeDof( element_type const& /*M*/, uint16_type /*processor*/, uint16_type /*c*/, size_type& /*next_free_dof*/,
+    void addEdgeDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<1>, mpl::bool_<false> )
     {}
 
-    void addEdgeDof( element_type const& __elt, uint16_type processor, uint16_type c, size_type& next_free_dof,
+    void addEdgeDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts, mpl::int_<1>, mpl::bool_<true> )
     {
         uint16_type local_shift;
@@ -905,7 +914,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
             {
                 const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerEdge + l;
-                this->insertDof( ie, lc, l, boost::make_tuple(1, c, gDof), processor, next_free_dof, 1, false, global_shift );
+                this->insertDof( ie, lc, l, boost::make_tuple(1, 0, gDof), processor, next_free_dof, 1, false, global_shift );
             }
         // update shifts
         shifts.get<0>() = lc;
@@ -913,10 +922,10 @@ private:
         Debug( 5005 ) << "[Dof::addEdgeDof(1)] element proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
     }
-    void addEdgeDof( element_type const& /*__elt*/, uint16_type /*processor*/, uint16_type /*c*/, size_type& /*next_free_dof*/,
+    void addEdgeDof( element_type const& /*__elt*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<2>, mpl::bool_<false> )
     {}
-    void addEdgeDof( element_type const& __elt, uint16_type processor, uint16_type c, size_type& next_free_dof,
+    void addEdgeDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts, mpl::int_<2>, mpl::bool_<true> )
     {
         uint16_type local_shift;
@@ -954,7 +963,7 @@ private:
                             }
                         else
                             FEEL_ASSERT( 0 ).error ( "invalid edge permutation" );
-                        this->insertDof( ie, lc, i, boost::make_tuple(1, c, gDof), processor, next_free_dof, sign, false, global_shift );
+                        this->insertDof( ie, lc, i, boost::make_tuple(1, 0, gDof), processor, next_free_dof, sign, false, global_shift );
                     }
             }
 
@@ -965,11 +974,11 @@ private:
 #endif
     }
 
-    void addEdgeDof( element_type const& /*__elt*/, uint16_type /*processor*/, uint16_type /*c*/, size_type& /*next_free_dof*/,
+    void addEdgeDof( element_type const& /*__elt*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<3>, mpl::bool_<false> )
     {}
 
-    void addEdgeDof( element_type const& __elt, uint16_type processor, uint16_type c, size_type& next_free_dof,
+    void addEdgeDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts, mpl::int_<3>, mpl::bool_<true> )
     {
         uint16_type local_shift;
@@ -1005,7 +1014,7 @@ private:
                         else
                             FEEL_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                        this->insertDof( ie, lc, i, boost::make_tuple(1, c, gDof), processor, next_free_dof, sign, false, global_shift );
+                        this->insertDof( ie, lc, i, boost::make_tuple(1, 0, gDof), processor, next_free_dof, sign, false, global_shift );
                     }
             }
         // update shifts
@@ -1016,18 +1025,18 @@ private:
     }
 
 
-    void addFaceDof( element_type const& __elt, uint16_type processor, uint16_type c, size_type& next_free_dof,
+    void addFaceDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts )
     {
-        return addFaceDof( __elt, processor, c, next_free_dof, shifts, mpl::int_<fe_type::nDim>(), mpl::bool_<fe_type::nDofPerFace>() );
+        return addFaceDof( __elt, processor, next_free_dof, shifts, mpl::int_<fe_type::nDim>(), mpl::bool_<fe_type::nDofPerFace>() );
     }
-    void addFaceDof( element_type const& /*M*/, uint16_type /*processor*/, uint16_type /*c*/, size_type& /*next_free_dof*/,
+    void addFaceDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<1>, mpl::bool_<false> )
     {}
-    void addFaceDof( element_type const& /*M*/, uint16_type /*processor*/, uint16_type /*c*/, size_type& /*next_free_dof*/,
+    void addFaceDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<2>, mpl::bool_<false> )
     {}
-    void addFaceDof( element_type const& __elt, uint16_type processor, uint16_type c, size_type& next_free_dof,
+    void addFaceDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts, mpl::int_<2>, mpl::bool_<true> )
     {
         uint16_type local_shift;
@@ -1039,7 +1048,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
             {
                 const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerFace + l;
-                this->insertDof( ie, lc, l, boost::make_tuple(2, c, gDof), processor, next_free_dof, 1, false, global_shift );
+                this->insertDof( ie, lc, l, boost::make_tuple(2, 0, gDof), processor, next_free_dof, 1, false, global_shift );
             }
         // update shifts
         shifts.get<0>() = lc;
@@ -1047,10 +1056,10 @@ private:
         Debug( 5005 ) << "[Dof::addFaceDof(2,true)] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
     }
-    void addFaceDof( element_type const& /*M*/, uint16_type /*processor*/, uint16_type /*c*/, size_type& /*next_free_dof*/,
+    void addFaceDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<3>, mpl::bool_<false> )
     {}
-    void addFaceDof( element_type const& __elt, uint16_type processor, uint16_type c, size_type& next_free_dof,
+    void addFaceDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts, mpl::int_<3>, mpl::bool_<true> )
     {
         uint16_type local_shift;
@@ -1112,7 +1121,7 @@ private:
 
                                     }
                             }
-                        this->insertDof( ie, lc, i, boost::make_tuple(2, c, gDof), processor, next_free_dof, sign, false, global_shift );
+                        this->insertDof( ie, lc, i, boost::make_tuple(2, 0, gDof), processor, next_free_dof, sign, false, global_shift );
 
                     }
             }
@@ -1122,15 +1131,15 @@ private:
         Debug( 5005 ) << "[Dof::addFaceDof<3>] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
     }
-    void addVolumeDof( element_type const& __elt, uint16_type processor, uint16_type c, size_type& next_free_dof,
+    void addVolumeDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                        ref_shift_type& shifts )
     {
-        return addVolumeDof( __elt, processor, c, next_free_dof, shifts, mpl::bool_<fe_type::nDofPerVolume>() );
+        return addVolumeDof( __elt, processor, next_free_dof, shifts, mpl::bool_<fe_type::nDofPerVolume>() );
     }
-    void addVolumeDof( element_type const& /*M*/, uint16_type /*processor*/, uint16_type /*c*/, size_type& /*next_free_dof*/,
+    void addVolumeDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
                        ref_shift_type& /*shifts*/, mpl::bool_<false> )
     {}
-    void addVolumeDof( element_type const& __elt, uint16_type processor, uint16_type c, size_type& next_free_dof,
+    void addVolumeDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                        ref_shift_type& shifts, mpl::bool_<true> )
     {
         BOOST_STATIC_ASSERT( element_type::numVolumes );
@@ -1143,7 +1152,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerVolume; ++l, ++lc )
             {
                 const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerVolume + l;
-                this->insertDof( ie, lc, l, boost::make_tuple(3, c, gDof), processor, next_free_dof, 1, false, global_shift );
+                this->insertDof( ie, lc, l, boost::make_tuple(3, 0, gDof), processor, next_free_dof, 1, false, global_shift );
             }
         // update shifts
         shifts.get<0>() = lc;
@@ -1153,15 +1162,15 @@ private:
     }
 
     template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc )
+    void addVertexBoundaryDof( FaceIterator __face_it, uint16_type& lc )
     {
-        addVertexBoundaryDof( __face_it, c, lc, mpl::bool_<fe_type::nDofPerVertex>(), mpl::int_<nDim>() );
+        addVertexBoundaryDof( __face_it, lc, mpl::bool_<fe_type::nDofPerVertex>(), mpl::int_<nDim>() );
     }
-    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*__face_it*/, uint16_type /*c*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
-    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*__face_it*/, uint16_type /*c*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
-    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*__face_it*/, uint16_type /*c*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) {}
+    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*__face_it*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
+    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*__face_it*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
+    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*__face_it*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) {}
     template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc, mpl::bool_<true>, mpl::int_<1>  )
+    void addVertexBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true>, mpl::int_<1>  )
     {
         BOOST_STATIC_ASSERT( face_type::numVertices );
 
@@ -1175,15 +1184,19 @@ private:
         FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
 
         // Loop number of Dof per vertex
-        for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
+        const int ncdof = is_product?nComponents:1;
+        for( int c = 0; c < ncdof; ++c )
         {
-            _M_face_l2g[ __face_it->id()][ lc++ ] = this->localToGlobal( iElAd,
-                                                                         iFaEl * fe_type::nDofPerVertex + l,
-                                                                         c );
+            for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
+            {
+                _M_face_l2g[ __face_it->id()][ lc++ ] = this->localToGlobal( iElAd,
+                                                                             iFaEl * fe_type::nDofPerVertex + l,
+                                                                             c );
+            }
         }
     }
     template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc, mpl::bool_<true>, mpl::int_<2>  )
+    void addVertexBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true>, mpl::int_<2>  )
     {
         BOOST_STATIC_ASSERT( face_type::numVertices );
 
@@ -1198,7 +1211,10 @@ private:
 
         //_M_dof2elt[gDof].push_back( boost::make_tuple( iElAd, lc-1, 48, 0 ) );
         // loop on face vertices
-        for ( uint16_type iVeFa = 0; iVeFa < face_type::numVertices; ++iVeFa )
+        const int ncdof = is_product?nComponents:1;
+        for( int c = 0; c < ncdof; ++c )
+        {
+            for ( uint16_type iVeFa = 0; iVeFa < face_type::numVertices; ++iVeFa )
             {
                 // local vertex number (in element)
                 uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
@@ -1207,31 +1223,32 @@ private:
 
                 // Loop number of Dof per vertex
                 for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
-                    {
-                        _M_face_l2g[ __face_it->id()][ lc++ ] = this->localToGlobal( iElAd,
-                                                                                     iVeEl * fe_type::nDofPerVertex + l,
-                                                                                     c );
-                    }
+                {
+                    _M_face_l2g[ __face_it->id()][ lc++ ] = this->localToGlobal( iElAd,
+                                                                                 iVeEl * fe_type::nDofPerVertex + l,
+                                                                                 c );
+                }
             }
+        }
     }
     template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc, mpl::bool_<true>, mpl::int_<3>  )
+    void addVertexBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true>, mpl::int_<3>  )
     {
-        addVertexBoundaryDof( __face_it, c, lc, mpl::bool_<true>(), mpl::int_<2>() );
+        addVertexBoundaryDof( __face_it, lc, mpl::bool_<true>(), mpl::int_<2>() );
     }
     template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc )
+    void addEdgeBoundaryDof( FaceIterator __face_it, uint16_type& lc )
     {
-        addEdgeBoundaryDof( __face_it, c, lc, mpl::bool_<fe_type::nDofPerEdge*face_type::numEdges>(), mpl::int_<nDim>() );
+        addEdgeBoundaryDof( __face_it, lc, mpl::bool_<fe_type::nDofPerEdge*face_type::numEdges>(), mpl::int_<nDim>() );
     }
     template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator /*__face_it*/, uint16_type, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ){}
+    void addEdgeBoundaryDof( FaceIterator /*__face_it*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ){}
     template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator /*__face_it*/, uint16_type, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ){}
+    void addEdgeBoundaryDof( FaceIterator /*__face_it*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ){}
     template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator /*__face_it*/, uint16_type, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ){}
+    void addEdgeBoundaryDof( FaceIterator /*__face_it*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ){}
     template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc, mpl::bool_<true>, mpl::int_<2> )
+    void addEdgeBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true>, mpl::int_<2> )
     {
         // id of the element adjacent to the face
         // \warning NEED TO INVESTIGATE THIS
@@ -1245,17 +1262,21 @@ private:
 #if !defined(NDEBUG)
         Debug( 5005 ) << " local face id : " << iFaEl << "\n";
 #endif
-        // Loop number of Dof per edge
-        for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
+        const int ncdof = is_product?nComponents:1;
+        for( int c = 0; c < ncdof; ++c )
+        {
+            // Loop number of Dof per edge
+            for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
             {
                 _M_face_l2g[ __face_it->id()][ lc++ ] = this->localToGlobal( iElAd,
                                                                              element_type::numVertices*fe_type::nDofPerVertex +
                                                                              iFaEl * fe_type::nDofPerEdge + l,
                                                                              c );
             }
+        }
     }
     template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc, mpl::bool_<true>, mpl::int_<3> )
+    void addEdgeBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true>, mpl::int_<3> )
     {
         //BOOST_STATIC_ASSERT( face_type::numEdges );
 
@@ -1271,8 +1292,11 @@ private:
         Debug( 5005 ) << " local face id : " << iFaEl << "\n";
 #endif
 
-        // loop on face vertices
-        for ( uint16_type iEdFa = 0; iEdFa < face_type::numEdges; ++iEdFa )
+        const int ncdof = is_product?nComponents:1;
+        for( int c = 0; c < ncdof; ++c )
+        {
+            // loop on face vertices
+            for ( uint16_type iEdFa = 0; iEdFa < face_type::numEdges; ++iEdFa )
             {
                 // local edge number (in element)
                 uint16_type iEdEl = element_type::fToE( iFaEl, iEdFa );
@@ -1281,27 +1305,28 @@ private:
 
                 // Loop number of Dof per edge
                 for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
-                    {
-                        _M_face_l2g[ __face_it->id()][ lc++ ] = this->localToGlobal( iElAd,
-                                                                                     element_type::numVertices*fe_type::nDofPerVertex +
-                                                                                     iEdEl * fe_type::nDofPerEdge + l,
-                                                                                     c );
-                    }
+                {
+                    _M_face_l2g[ __face_it->id()][ lc++ ] = this->localToGlobal( iElAd,
+                                                                                 element_type::numVertices*fe_type::nDofPerVertex +
+                                                                                 iEdEl * fe_type::nDofPerEdge + l,
+                                                                                 c );
+                }
             }
+        }
     }
 
 
     template<typename FaceIterator>
-    void addFaceBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc )
+    void addFaceBoundaryDof( FaceIterator __face_it, uint16_type& lc )
     {
-        addFaceBoundaryDof( __face_it, c, lc, mpl::bool_<face_type::numFaces*fe_type::nDofPerFace>() );
+        addFaceBoundaryDof( __face_it, lc, mpl::bool_<face_type::numFaces*fe_type::nDofPerFace>() );
     }
     template<typename FaceIterator>
-    void addFaceBoundaryDof( FaceIterator /*__face_it*/, uint16_type, uint16_type& /*lc*/, mpl::bool_<false> )
+    void addFaceBoundaryDof( FaceIterator /*__face_it*/, uint16_type& /*lc*/, mpl::bool_<false> )
     {
     }
     template<typename FaceIterator>
-    void addFaceBoundaryDof( FaceIterator __face_it, uint16_type c, uint16_type& lc, mpl::bool_<true> )
+    void addFaceBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true> )
     {
         // id of the element adjacent to the face
         // \warning NEED TO INVESTIGATE THIS
@@ -1314,8 +1339,12 @@ private:
 #if !defined(NDEBUG)
         Debug( 5005 ) << " local face id : " << iFaEl << "\n";
 #endif
-        // Loop on number of Dof per face
-        for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l )
+
+        const int ncdof = is_product?nComponents:1;
+        for( int c = 0; c < ncdof; ++c )
+        {
+            // Loop on number of Dof per face
+            for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l )
             {
                 _M_face_l2g[ __face_it->id()][ lc++ ] = this->localToGlobal( iElAd,
                                                                              element_type::numVertices*fe_type::nDofPerVertex +
@@ -1323,6 +1352,7 @@ private:
                                                                              iFaEl * fe_type::nDofPerFace + l,
                                                                              c );
             }
+        }
     }
 
     /**
@@ -2262,37 +2292,33 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
     Debug( 5005 ) << "[buildBoundaryDofMap] nb faces : " << nF << "\n";
     Debug( 5005 ) << "[buildBoundaryDofMap] nb dof faces : " << nDofF*nComponents << "\n";
 
-    const int ncdof = is_product?nComponents:1;
-    for( int c = 0; c < ncdof; ++c )
-        {
-            __face_it = M.beginFace();
-            for ( size_type nf = 0; __face_it != __face_en; ++__face_it, ++nf )
-                {
-                    FEEL_ASSERT( __face_it->isConnectedTo0() )
-                        ( __face_it->id() )
-                        ( __face_it->marker() )
-                        ( __face_it->isConnectedTo0() )
-                        ( __face_it->isConnectedTo1() ).warn( "[Dof::buildFaceDofMap] face not connected" );
+    __face_it = M.beginFace();
+    for ( size_type nf = 0; __face_it != __face_en; ++__face_it, ++nf )
+    {
+        FEEL_ASSERT( __face_it->isConnectedTo0() )
+            ( __face_it->id() )
+            ( __face_it->marker() )
+            ( __face_it->isConnectedTo0() )
+            ( __face_it->isConnectedTo1() ).warn( "[Dof::buildFaceDofMap] face not connected" );
 
-                    if ( !__face_it->isConnectedTo0() ) continue;
+        if ( !__face_it->isConnectedTo0() ) continue;
 
 #if !defined(NDEBUG)
-                    if (  __face_it->isOnBoundary() )
-                        Debug( 5005 ) << "[buildBoundaryDofMap] boundary global face id : " << __face_it->id()
-                                      << " marker: " << __face_it->marker()<< "\n";
-                    else
-                        Debug( 5005 ) << "[buildBoundaryDofMap] global face id : " << __face_it->id() << "\n";
+        if (  __face_it->isOnBoundary() )
+            Debug( 5005 ) << "[buildBoundaryDofMap] boundary global face id : " << __face_it->id()
+                          << " marker: " << __face_it->marker()<< "\n";
+        else
+            Debug( 5005 ) << "[buildBoundaryDofMap] global face id : " << __face_it->id() << "\n";
 #endif
-                    uint16_type lc = c*nDofF;
+        uint16_type lc = 0;
 
 
-                    addVertexBoundaryDof( __face_it, c, lc );
-                    addEdgeBoundaryDof( __face_it, c, lc );
-                    addFaceBoundaryDof( __face_it, c, lc );
+        addVertexBoundaryDof( __face_it, lc );
+        addEdgeBoundaryDof( __face_it, lc );
+        addFaceBoundaryDof( __face_it, lc );
 
-                    FEEL_ASSERT( lc == (c+1)*nDofF )( lc )( c )( nDofF )( (c+1)*nDofF ).warn( "invalid face local dof construction");
-                }
-        }
+        //FEEL_ASSERT( lc == (c+1)*nDofF )( lc )( nDofF )( (c+1)*nDofF ).warn( "invalid face local dof construction");
+    }
 #if !defined(NDEBUG)
     for ( index face_id = 0; face_id < index(nF); ++face_id )
         for ( index face_dof_id = 0; face_dof_id < index(ntldof); ++face_dof_id )
