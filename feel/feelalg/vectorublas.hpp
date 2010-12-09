@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -77,6 +77,7 @@ public:
     typedef Storage vector_type;
     typedef typename vector_type::difference_type difference_type;
     typedef ublas::basic_range<size_type, difference_type> range_type;
+    typedef ublas::basic_slice<size_type, difference_type> slice_type;
     typedef Vector<value_type> clone_type;
     typedef boost::shared_ptr<clone_type> clone_ptrtype;
     typedef VectorUblas<value_type, Storage> this_type;
@@ -87,6 +88,12 @@ public:
     struct range
     {
         typedef ublas::vector_range<ublas::vector<value_type> > subtype;
+        typedef VectorUblas<value_type,subtype> type;
+    };
+
+    struct slice
+    {
+        typedef ublas::vector_slice<ublas::vector<value_type> > subtype;
         typedef VectorUblas<value_type,subtype> type;
     };
 
@@ -109,6 +116,10 @@ public:
     VectorUblas( VectorUblas<value_type>& m, range_type const& range );
 
     VectorUblas( ublas::vector<value_type>& m, range_type const& range );
+
+    VectorUblas( VectorUblas<value_type>& m, slice_type const& slice );
+
+    VectorUblas( ublas::vector<value_type>& m, slice_type const& slice );
 
 
     ~VectorUblas();
@@ -744,6 +755,12 @@ public:
      * local vector \p v_local.
      */
     void localize ( ublas::vector_range<ublas::vector<value_type> >& v_local) const;
+
+    /**
+     * Creates a copy of the global vector in the
+     * local vector \p v_local.
+     */
+    void localize ( ublas::vector_slice<ublas::vector<value_type> >& v_local) const;
 
     /**
      * Same, but fills a \p NumericVector<T> instead of
