@@ -105,7 +105,7 @@ struct test_submesh: public Application
             mesh_ptrtype meshbdy( new mesh_type );
             mesh->createSubmesh( *meshbdy, it, en );
             BOOST_CHECK_EQUAL( meshbdy->numElements(), std::distance( it, en ) );
-
+            //saveGMSHMesh( _mesh=meshbdy, _filename=shape+"_sub.msh" );
             using namespace Feel::vf;
             double intm1 = integrate( elements(meshbdy), cst(1.) ).evaluate()(0,0);
             double intm2 = integrate( boundaryelements(mesh), cst(1.) ).evaluate()(0,0);
@@ -116,11 +116,9 @@ struct test_submesh: public Application
 
             double intm12 = integrate( markedfaces(meshbdy,"Dirichlet"), cst(1.) ).evaluate()(0,0);
             double intm22 = integrate( markedfaces(mesh,"Dirichlet"), cst(1.) ).evaluate()(0,0);
-            BOOST_CHECK_CLOSE( intm12, 2, 1e-12 );
             BOOST_CHECK_CLOSE( intm12, intm22, 1e-12 );
             double intm13 = integrate( markedfaces(meshbdy,"Neumann"), cst(1.) ).evaluate()(0,0);
             double intm23 = integrate( markedfaces(mesh,"Neumann"), cst(1.) ).evaluate()(0,0);
-            BOOST_CHECK_CLOSE( intm13, 2, 1e-12 );
             BOOST_CHECK_CLOSE( intm13, intm23, 1e-12 );
 
 
@@ -141,13 +139,13 @@ struct test_submesh: public Application
             auto v = Xh->element();
             auto D = backend->newMatrix( Xh, Xh );
             form2( Xh, Xh, D, _init=true ) = integrate( internalelements(mesh), idt(u)*id(v) );
-
+            D->close();
             auto Yh = space_type::New( meshint );
             auto ui = Yh->element();
             auto vi = Yh->element();
             auto Di = backend->newMatrix( Yh, Yh );
             form2( Yh, Yh, Di, _init=true ) = integrate( elements(meshint), idt(ui)*id(vi) );
-
+            Di->close();
             u = vf::project( Xh, elements(mesh), cst(1.) );
             ui = vf::project( Yh, elements(meshint), cst(1.) );
 
@@ -195,8 +193,8 @@ makeAbout()
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1> > dim_types;
-typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
-//typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
+typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh, T, dim_types )
 {
