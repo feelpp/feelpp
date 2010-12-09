@@ -495,7 +495,12 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionOnePermutation()
             for ( uint16_type i = 0; i < face_type::numVertices; ++i )
                 {
                     _left[i] = elt_it->element0().point( elt_it->element0().fToP( elt_it->pos_first(), i ) ).id();
-                    _right[i] = elt_it->element1().point( elt_it->element1().fToP( elt_it->pos_second(), i ) ).id();
+
+                    uint16_type right_p = elt_it->element1().fToP( elt_it->pos_second(), i );
+                    FEEL_ASSERT( right_p >= 0 && right_p < elt_it->numLocalPoints )( right_p )( elt_it->numLocalPoints )
+                        ( elt_it->pos_second() )( i ).error( "invalid point index" );
+                    _right[i] = elt_it->element1().point( right_p ).id();
+
                     _diff[i] = _left[i] - _right[i];
                 }
 

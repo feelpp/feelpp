@@ -8,3 +8,6 @@ endforeach()
 add_custom_command(OUTPUT geo  COMMAND ${CMAKE_COMMAND} ARGS -E copy ${CMAKE_CURRENT_SOURCE_DIR}/test_integration_ho_geometry.geo ${CMAKE_CURRENT_BINARY_DIR} )
 add_custom_target(data DEPENDS geo)
 add_dependencies(test_integration_ho data)
+
+#add_executable( toto toto.cpp )
+#target_link_libraries(toto ${FEEL_LIBRARIES} )
