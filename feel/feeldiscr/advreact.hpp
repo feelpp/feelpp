@@ -107,7 +107,8 @@ public:
                  const Ebeta& beta,
                  const Ef& f,
                  const Eg& g,
-                 bool updateStabilization = true );
+                 bool updateStabilization = true
+                 );
 
     // solve system, call not needed, but possible
     void solve();
@@ -149,27 +150,14 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
                                               const Ebeta& beta,
                                               const Ef& f,
                                               const Eg& g,
-                                              bool updateStabilization)
+                                              bool updateStabilization
+                                              )
 {
     M_updated = true;
 
     using namespace Feel::vf;
 
-    if ( M_stabcoeff != 0.0 )
-    {
-        if ( updateStabilization )
-        {
-            M_operatorStab =
-                integrate( internalfaces(M_mesh), M_im,
-                           val( M_stabcoeff*vf::pow(hFace(),2.0) *
-                                abs(trans(beta)*N()) ) *
-                           (jumpt(gradt(M_phi)) * jump(grad(M_phi)))
-                           );
-        }
-        M_operator = M_operatorStab;
-    }
-
-    M_operator +=
+    M_operator =
         integrate( elements(M_mesh), M_im,
                    ( val(sigma)*idt(M_phi) + gradt(M_phi)*val(beta) ) * id(M_phi)
                    ) +
@@ -177,6 +165,25 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
                    - chi( trans(beta)*N() < 0 ) * /* inflow */
                    val(trans(beta)*N()) * idt(M_phi) * id(M_phi)
                    );
+
+    if ( M_stabcoeff != 0.0 )
+    {
+        if ( updateStabilization )
+        {
+            //CIP method
+            M_operatorStab=
+                integrate( internalfaces(M_mesh), M_im,
+                           val( M_stabcoeff*vf::pow(hFace(),2.0) *
+                                abs(trans(beta)*N()) ) *
+                           (jumpt(gradt(M_phi)) * jump(grad(M_phi)))
+                           );
+        }
+
+        //        M_operator=M_operatorStab+M_operator;
+        M_operator.add(1.0, M_operatorStab);
+    }
+
+
     M_operator.mat().close();
 //     M_operator.mat().printMatlab("M_advReact.m");
 
