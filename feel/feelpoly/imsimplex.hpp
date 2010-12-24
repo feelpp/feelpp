@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -8886,9 +8886,14 @@ public:
                               mpl::identity<detail::IMTetrahedra<Order,T> > >::type::type quad_type;
 
 #if 1
+#if 0
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<Dim>,mpl::int_<2> >,
                               mpl::identity<Gauss<Simplex<Dim-1,1>,Order,T> >,
-                              mpl::identity<IMSimplex<Dim-1,Order,T> > >::type::type face_quad_type;
+                              mpl::identity<Gauss<Simplex<Dim-1,1>,Order,T> > >::type::type face_quad_type;
+                              //mpl::identity<IMSimplex<Dim-1,Order,T> > >::type::type face_quad_type;
+#else
+    typedef Gauss<Simplex<Dim-1,1>,Order,T> face_quad_type;
+#endif
 #else
     typedef IMSimplex<Dim-1,Order,T> face_quad_type;
 #endif
