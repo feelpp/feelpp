@@ -141,24 +141,23 @@ struct test_submesh: public Application
             form2( Xh, Xh, D, _init=true ) = integrate( internalelements(mesh), idt(u)*id(v) );
             D->close();
 
-
-            auto Fi = backend->newMatrix( Yh );
-            form1( Yh, Fi, _init=true ) = integrate( elements(meshint), id(vi) );
-            Fi->close();
-
             auto Yh = space_type::New( meshint );
             auto ui = Yh->element();
             auto vi = Yh->element();
+            auto Fi = backend->newVector( Yh );
+            form1( _test=Yh, _vector=Fi, _init=true ) = integrate( elements(meshint), id(vi) );
+            Fi->close();
+
             auto Di = backend->newMatrix( Yh, Yh );
-            form2( Yh, Yh, Di, _init=true ) = integrate( elements(meshint), gradt(ui)*trans(grad(vi)) );
+            form2( _test=Yh, _trial=Yh, _matrix=Di, _init=true ) = integrate( elements(meshint), gradt(ui)*trans(grad(vi)) );
             Di->close();
-            form2( Yh, Yh, Fi ) += on( boundaryfaces(meshint), ui, Fi, cst(0.) );
+            form2( _test=Yh, _trial=Yh, _matrix=Di ) += on( boundaryfaces(meshint), ui, Fi, cst(0.) );
 
             backend->solve( _matrix=Di, _rhs=Fi, _solution=ui );
 
-            auto exporter = Exporter<mesh_type>::New( "gmsh", test_app->about().appName()
-                                                        + "_"
-                                                        + mesh_type::shape_type::name() );
+            boost::shared_ptr<Exporter<mesh_type> > exporter( Exporter<mesh_type>::New( "gmsh", std::string("submesh")
+                                                                  + "_"
+                                                                                        + mesh_type::shape_type::name() ) );
 
             exporter->step(0)->setMesh( meshint );
             exporter->step(0)->add( "u", ui );
@@ -211,8 +210,8 @@ makeAbout()
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1> > dim_types;
-//typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
-typedef boost::mpl::list<boost::mpl::int_<3> > dim_types;
+typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh, T, dim_types )
