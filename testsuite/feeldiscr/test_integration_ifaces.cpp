@@ -324,8 +324,8 @@ makeAbout()
 }
 
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
-//typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
-typedef boost::mpl::list<boost::mpl::int_<3> > dim_types;
+typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 #if 1
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_v, T, dim_types )
