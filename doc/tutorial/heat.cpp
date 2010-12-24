@@ -143,8 +143,8 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order 1
-    // typedef Simplex<Dim> convex_type;
-    typedef Hypercube<Dim,1,Dim> convex_type; 
+    typedef Simplex<Dim> convex_type;
+    //typedef Hypercube<Dim,1,Dim> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
@@ -270,11 +270,11 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     //# marker1 #
     value_type pi = M_PI;
     //! deduce from expression the type of g (thanks to keyword 'auto')
-    auto g = 0;
+    auto g = cst(0.);
     gproj = vf::project( Xh, elements(mesh), g );
 
     //! deduce from expression the type of f (thanks to keyword 'auto')
-    auto f = 0;
+    auto f = cst(0.);
     //# endmarker1 #
     /** \endcode */
 
@@ -351,8 +351,8 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
             //# marker5 #
             D->close();
             form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, "Poele")), u, F, 45 )
-                +on( markedfaces(mesh, "Fenetre")), u, F, 5 );
+		    on( markedfaces(mesh, "Poele"), u, F, cst(45) )+
+		    on( markedfaces(mesh, "Fenetre"), u, F, cst(5) );
 
             //# endmarker5 #
             /** \endcode */
