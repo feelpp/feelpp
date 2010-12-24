@@ -116,9 +116,15 @@ struct test_integration_internal_faces_v: public Application
 #endif /* USE_BOOST_TEST */
 
         value_type v1 = integrate( internalfaces(mesh), jumpv(trans(2*P())) ).evaluate()( 0, 0 );
+        value_type v1l = integrate( internalfaces(mesh), leftfacev(trans(2*P())*N()) ).evaluate()( 0, 0 );
+        value_type v1r = integrate( internalfaces(mesh), rightfacev(trans(2*P())*N()) ).evaluate()( 0, 0 );
 
 #if defined(USE_BOOST_TEST)
+        BOOST_TEST_MESSAGE( "int jump(2*X^t) =" << v1 << "\n" );
         BOOST_CHECK_SMALL( v1, eps );
+        BOOST_TEST_MESSAGE( "int left(2*X^t) =" << v1l << "\n" );
+        BOOST_TEST_MESSAGE( "int right(2*X^t) =" << v1r << "\n" );
+        BOOST_CHECK_CLOSE( v1l, v1r, eps );
 #else
         FEEL_ASSERT( math::abs( v1-0.0) < eps )( v1 )( math::abs( v1-0.0) )( eps ).warn ( "v1 != 0" );
 #endif /* USE_BOOST_TEST */
@@ -127,6 +133,7 @@ struct test_integration_internal_faces_v: public Application
         auto vnormp = normp*unitX()+normp*unitY()+normp*unitZ();
         value_type v2 = integrate( internalfaces(mesh), leftfacev(trans(vnormp)*N())+rightfacev(trans(vnormp)*N()) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
+        BOOST_TEST_MESSAGE( "int jump(vnormp) =" << v2 << "\n" );
         BOOST_CHECK_SMALL( v2, eps );
 #else
         FEEL_ASSERT( math::abs( v2-0.0) < eps )( v2 )( math::abs( v2-0.0) )( eps ).warn ( "v2 != 0" );
@@ -317,8 +324,8 @@ makeAbout()
 }
 
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
-typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
-//typedef boost::mpl::list<boost::mpl::int_<1> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
+typedef boost::mpl::list<boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 #if 1
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_v, T, dim_types )
