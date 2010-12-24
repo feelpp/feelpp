@@ -140,12 +140,30 @@ struct test_submesh: public Application
             auto D = backend->newMatrix( Xh, Xh );
             form2( Xh, Xh, D, _init=true ) = integrate( internalelements(mesh), idt(u)*id(v) );
             D->close();
+
+
+            auto Fi = backend->newMatrix( Yh );
+            form1( Yh, Fi, _init=true ) = integrate( elements(meshint), id(vi) );
+            Fi->close();
+
             auto Yh = space_type::New( meshint );
             auto ui = Yh->element();
             auto vi = Yh->element();
             auto Di = backend->newMatrix( Yh, Yh );
-            form2( Yh, Yh, Di, _init=true ) = integrate( elements(meshint), idt(ui)*id(vi) );
+            form2( Yh, Yh, Di, _init=true ) = integrate( elements(meshint), gradt(ui)*trans(grad(vi)) );
             Di->close();
+            form2( Yh, Yh, Fi ) += on( boundaryfaces(meshint), ui, Fi, cst(0.) );
+
+            backend->solve( _matrix=Di, _rhs=Fi, _solution=ui );
+
+            auto exporter = Exporter<mesh_type>::New( "gmsh", test_app->about().appName()
+                                                        + "_"
+                                                        + mesh_type::shape_type::name() );
+
+            exporter->step(0)->setMesh( meshint );
+            exporter->step(0)->add( "u", ui );
+            exporter->save();
+
             u = vf::project( Xh, elements(mesh), cst(1.) );
             ui = vf::project( Yh, elements(meshint), cst(1.) );
 
