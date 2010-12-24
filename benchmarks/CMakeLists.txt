@@ -7,7 +7,7 @@ set(petsc_SOLVER_OPTIONS "-pc_type lu" )
 # When PETSc is compiled with external direct solvers (UMFPACK, SuperLU, etc.),
 # they can be selected like this:
 set(petsc_LU_SOLVER_OPTIONS " -pc_type lu " )
-set(petsc_LU_UMFPACK_SOLVER_OPTIONS " -pc_type lu -pc_factor_mat_solver_package umfpack " )
+set(petsc_LU_UMFPACK_SOLVER_OPTIONS " -pc_type lu -pc_factor_mat_solver_package umfpack -ksp_monitor " )
 
 set(petsc_JACOBI_SOLVER_OPTIONS " -pc_type jacobi" )
 
