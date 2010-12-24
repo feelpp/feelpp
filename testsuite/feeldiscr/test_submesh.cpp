@@ -133,7 +133,7 @@ struct test_submesh: public Application
             double intm4 = integrate( internalelements(mesh), cst(1.) ).evaluate()(0,0);
             BOOST_CHECK_CLOSE( intm3, intm4, 1e-12 );
             //saveGMSHMesh( _mesh=meshint, _filename="meshint" );
-
+#if 0
             auto Xh = space_type::New( mesh );
             auto u = Xh->element();
             auto v = Xh->element();
@@ -168,7 +168,7 @@ struct test_submesh: public Application
 
             BOOST_CHECK_CLOSE( Di->energy( ui, ui ), intm3, 5e-12 );
             BOOST_CHECK_CLOSE( D->energy( u, u ), Di->energy( ui, ui ), 5e-12 );
-
+#endif
         }
     boost::shared_ptr<backend_type> backend;
     double meshSize;
