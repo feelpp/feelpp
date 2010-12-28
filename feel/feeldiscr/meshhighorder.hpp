@@ -673,4 +673,9 @@ private:
 
 };
 }
+
+#if !defined(FEEL_INSTANTIATION_MODE)
+# include <feel/feeldiscr/meshhighorderimpl.hpp>
+#endif //
+
 #endif // __MeshHighOrder
