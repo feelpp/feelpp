@@ -107,6 +107,7 @@ SET(FEEL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEEL_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
 
 SET( CMAKE_MODULE_PATH  ${FEEL_HOME_DIR}/cmake/modules )
+add_subdirectory(cmake/modules)
 
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Release CACHE STRING
@@ -252,6 +253,7 @@ endif( MADLIB_FOUND )
 #
 # Eigen
 #
+option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
 set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
 add_subdirectory(contrib/eigen)
 INCLUDE_DIRECTORIES( ${FEEL_SOURCE_DIR}/contrib/eigen )
@@ -510,15 +512,16 @@ endforeach()
 FILE(GLOB files "feel/*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
 FILE(GLOB files "contrib/gmm/include/*.h")
+install(FILES  ${Eigen_directory_files_to_install}  DESTINATION include/eigen3/Eigen COMPONENT Devel  )
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
 FILE(GLOB files ${CMAKE_CURRENT_BINARY_DIR}/feelconfig.h)
 INSTALL(FILES ${files} DESTINATION include/ COMPONENT Devel)
-FILE(GLOB libso "${CMAKE_CURRENT_BINARY_DIR}/feel/libfeel++.so*")
-INSTALL(FILES ${libso} DESTINATION lib/ COMPONENT Libraries)
-foreach( programs_dir examples/generic examples/heat examples/solid doc/tutorial applications/polyvis benchmarks/convergence )
-  FILE(GLOB programs "${CMAKE_CURRENT_BINARY_DIR}/${programs_dir}/feel_*")
-  INSTALL(FILES ${programs} DESTINATION bin/ COMPONENT Applications)
-endforeach()
+
+message(STATUS "libraries: ${FEEL_INSTALL_LIBS}")
+INSTALL(FILES ${FEEL_INSTALL_LIBS} DESTINATION lib/ COMPONENT Libraries)
+message(STATUS "apps: ${FEEL_INSTALL_APPS}")
+INSTALL(FILES ${FEEL_INSTALL_APPS} DESTINATION bin/ COMPONENT Applications)
+
 # documentation and examples
 FILE(GLOB pdfs "${CMAKE_CURRENT_BINARY_DIR}/doc/tutorial/feel-manual.pdf")
 INSTALL(FILES ${pdfs} DESTINATION share/doc/feel/ COMPONENT Documentation)
