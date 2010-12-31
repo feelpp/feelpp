@@ -245,7 +245,7 @@ endmacro(ei_add_target_property)
 
 install(FILES
   signature_of_eigen3_matrix_library
-  DESTINATION include COMPONENT Devel
+  DESTINATION include/feel COMPONENT Devel
   )
 
 if(EIGEN_BUILD_PKGCONFIG)

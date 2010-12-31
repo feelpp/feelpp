@@ -5,7 +5,7 @@ set(Eigen_HEADERS AdolcForward BVH IterativeSolvers MatrixFunctions MoreVectoriz
 
 install(FILES
   ${Eigen_HEADERS}
-  DESTINATION include/unsupported/Eigen COMPONENT Devel
+  DESTINATION include/feel/unsupported/Eigen COMPONENT Devel
   )
 
 add_subdirectory(src)

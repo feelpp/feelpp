@@ -7,7 +7,7 @@ endforeach(f ${Eigen_directory_files})
 
 install(FILES
   ${Eigen_directory_files_to_install}
-  DESTINATION include/Eigen COMPONENT Devel
+  DESTINATION include/feel/Eigen COMPONENT Devel
   )
 
 add_subdirectory(src)
