@@ -55,6 +55,7 @@ macro( add_docex target )
  add_executable( feel_doc_${target} ${target}.cpp )
  target_link_libraries( feel_doc_${target} ${FEEL_LIBRARIES} )
  get_target_property(target_executable feel_doc_${target} LOCATION)
+ list(APPEND LIST_APPS ${target_executable})
  add_dependencies(figures feel_doc_${target})
  add_custom_command(
    TARGET figures
@@ -82,6 +83,10 @@ endmacro()
 foreach( docex myapp myintegrals mymesh myfunctionspace laplacian residualestimator)
   add_docex( ${docex} )
 endforeach()
+
+set(FEEL_INSTALL_APPS ${FEEL_INSTALL_APPS};${LIST_APPS} PARENT_SCOPE)
+message(STATUS "doc tutorial: ${LIST_APPS}")
+
 
 add_custom_target(
   tut-prerequisites
