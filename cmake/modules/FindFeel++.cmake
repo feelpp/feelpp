@@ -1,0 +1,253 @@
+# - Find Feel
+# This module looks for Feel (Library for the Finite Element Method) support
+# it will define the following values
+#  FEEL_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
+#  FEEL_LIBRARY    = the library to link in
+
+INCLUDE(CheckIncludeFile)
+INCLUDE(CheckIncludeFiles)
+INCLUDE(CheckIncludeFileCXX)
+INCLUDE(CheckFunctionExists)
+INCLUDE(CheckSymbolExists)
+INCLUDE(CheckCXXSourceCompiles)
+INCLUDE(CheckLibraryExists)
+
+
+OPTION(FEEL_ENABLE_TBB "enable feel++ TBB support" OFF)
+if ( FEEL_ENABLE_TBB )
+  FIND_PACKAGE(TBB)
+  IF ( TBB_FOUND )
+    INCLUDE_DIRECTORIES( ${TBB_INCLUDE_DIR} )
+    SET(FEEL_LIBRARIES ${TBB_LIBRARIES})
+  ENDIF (TBB_FOUND )
+endif()
+
+FIND_PACKAGE(OpenMP)
+
+# on APPLE enfore the use of macports openmpi version
+if ( APPLE )
+set(MPI_COMPILER /opt/local/bin/mpic++)
+set(MPI_LIBRARY "MPI_LIBRARY-NOTFOUND" )
+endif( APPLE )
+FIND_PACKAGE(MPI)
+IF ( MPI_FOUND )
+  SET(CMAKE_REQUIRED_INCLUDES "${MPI_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
+  SET( HAVE_MPI 1 )
+  SET( HAVE_MPI_H 1 )
+  ADD_DEFINITIONS( -DHAVE_MPI=1 -DHAVE_MPI_H=1 )
+  SET(FEEL_BOOST_MPI mpi)
+  SET(FEEL_LIBRARIES ${MPI_LIBRARIES} ${FEEL_LIBRARIES})
+  INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
+ENDIF()
+
+
+
+Check_Include_File_CXX(dlfcn.h HAVE_DLFCN_H)
+if ( HAVE_DLFCN_H )
+  add_definitions(-DHAVE_DLFCN_H)
+endif()
+CHECK_LIBRARY_EXISTS (dl dlopen "" HAVE_LIBDL)
+IF (HAVE_LIBDL)
+  set(DL_LIBRARY dl)
+  SET (HAVE_DLOPEN 1)
+  add_definitions(-DHAVE_DLOPEN)
+  SET(FEEL_LIBRARIES ${DL_LIBRARY} ${FEEL_LIBRARIES})
+ELSE ()
+  CHECK_FUNCTION_EXISTS (dlopen HAVE_DLOPEN)
+ENDIF (HAVE_LIBDL)
+
+#
+# Xml2
+#
+FIND_PACKAGE(LibXml2 REQUIRED)
+SET(FEEL_LIBRARIES  ${LIBXML2_LIBRARIES} ${FEEL_LIBRARIES})
+INCLUDE_DIRECTORIES(${LIBXML2_INCLUDE_DIR})
+#
+# Blas and Lapack
+#
+if (APPLE)
+        FIND_PACKAGE(LAPACK )
+else (APPLE)
+        FIND_PACKAGE(LAPACK REQUIRED)
+endif (APPLE)
+SET(FEEL_LIBRARIES  ${LAPACK_LIBRARIES} ${FEEL_LIBRARIES})
+
+FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${FEEL_BOOST_MPI} regex  serialization)
+set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" )
+set( BOOST_PARAMETER_MAX_ARITY 15 )
+add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOST_TEST_DYN_LINK )
+INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}   ${BOOST_INCLUDE_PATH})
+
+SET(FEEL_LIBRARIES ${Boost_LIBRARIES} ${FEEL_LIBRARIES})
+
+#
+# MadLib
+#
+FIND_PACKAGE(MadLib)
+if ( MADLIB_FOUND )
+  INCLUDE_DIRECTORIES(${MadLib_INCLUDE_DIR})
+  SET (HAVE_MADLIB_H 1)
+  LINK_DIRECTORIES(${MadLib_LIBRARIES})
+  SET(FEEL_LIBRARIES ${MadLib_LIBRARY} ${FEEL_LIBRARIES})
+endif( MADLIB_FOUND )
+
+#
+# Eigen
+#
+if ( EXISTS feel )
+  option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
+  set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
+  add_subdirectory(contrib/eigen)
+  INCLUDE_DIRECTORIES( ${FEEL_SOURCE_DIR}/contrib/eigen )
+endif()
+
+#FIND_PACKAGE(Eigen2 REQUIRED)
+#INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
+#add_subdirectory(contrib/eigen)
+#INCLUDE_DIRECTORIES( ${FEEL_SOURCE_DIR}/contrib/eigen )
+#add_definitions( -DEIGEN_NO_STATIC_ASSERT )
+
+#
+# Scotch
+#
+#CheckIncludeFileCXX( ptscotch.h HAVE_PTSCOTCH_H )
+#CheckIncludeFileCXX( scotch.h HAVE_SCOTCH_H )
+#
+# Metis
+#
+FIND_PACKAGE(Metis)
+if ( METIS_FOUND )
+  INCLUDE_DIRECTORIES(${METIS_INCLUDE_DIR})
+  LINK_DIRECTORIES(${METIS_LIBRARIES})
+  SET(FEEL_LIBRARIES ${METIS_LIBRARY} ${FEEL_LIBRARIES})
+endif( METIS_FOUND )
+
+#
+# Petsc
+#
+FIND_PACKAGE( PETSc )
+if ( PETSC_FOUND )
+  SET(CMAKE_REQUIRED_INCLUDES "${PETSC_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
+  SET(FEEL_LIBRARIES ${PETSC_LIBRARIES} ${FEEL_LIBRARIES})
+  SET(BACKEND_PETSC petsc)
+  INCLUDE_DIRECTORIES(
+    ${PETSC_INCLUDE_DIR}
+    ${PETSCCONF_INCLUDE_DIR}
+    )
+
+
+endif( PETSC_FOUND )
+
+#
+# parpack
+#
+FIND_LIBRARY(PARPACK_LIBRARY NAMES parpack)
+if (PARPACK_LIBRARY)
+    SET(PARPACK_LIBRARIES ${PARPACK_LIBRARY})
+    SET(FEEL_LIBRARIES ${PARPACK_LIBRARIES} ${FEEL_LIBRARIES})
+endif()
+MARK_AS_ADVANCED( PARPACK_LIBRARY )
+
+
+#
+# SLEPc
+#
+FIND_PACKAGE( SLEPc )
+if ( SLEPC_FOUND )
+  SET(CMAKE_REQUIRED_INCLUDES "${SLEPC_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
+  INCLUDE_DIRECTORIES( ${SLEPC_INCLUDE_DIR} )
+  SET(FEEL_LIBRARIES ${SLEPC_LIBRARIES} ${FEEL_LIBRARIES})
+endif(SLEPC_FOUND)
+
+
+#
+# Trilinos
+#
+FIND_PACKAGE(Trilinos)
+if ( TRILINOS_FOUND )
+  INCLUDE_DIRECTORIES(${TRILINOS_INCLUDE_DIR})
+  SET(FEEL_LIBRARIES ${TRILINOS_LIBRARIES} ${FEEL_LIBRARIES})
+  SET(BACKEND_TRILINOS trilinos)
+endif( TRILINOS_FOUND )
+
+#
+# OpenTURNS
+#
+FIND_PACKAGE( OpenTURNS )
+if ( OPENTURNS_FOUND )
+  MESSAGE(STATUS "OpenTURNS Libraries: ${OpenTURNS_LIBRARIES}")
+  MESSAGE(STATUS "OpenTURNS Headers: ${OpenTURNS_INCLUDE_DIRS}")
+  INCLUDE_DIRECTORIES(${OpenTURNS_INCLUDE_DIRS})
+  SET(FEEL_LIBRARIES ${OpenTURNS_LIBRARIES} ${FEEL_LIBRARIES})
+endif( OPENTURNS_FOUND )
+
+#
+# VTK
+#
+FIND_PACKAGE(VTK)
+if ( VTK_FOUND )
+  set(HAVE_VTK 1)
+  SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging -lvtkCommon" )
+  INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
+  MARK_AS_ADVANCED( VTK_DIR )
+  SET(FEEL_LIBRARIES ${VTK_LIBRARIES} ${FEEL_LIBRARIES})
+endif()
+
+#
+# Octave
+#
+FIND_PACKAGE(Octave)
+if ( OCTAVE_FOUND )
+  INCLUDE_DIRECTORIES( ${Octave_INCLUDE_DIR} )
+endif( OCTAVE_FOUND )
+
+
+#
+# programs
+#
+find_program( GMSH gmsh DOC "Gmsh mesh generator" )
+if ( GMSH )
+  ADD_DEFINITIONS( -DHAVE_GMSH=1 -D_HAVE_GMSH_)
+endif()
+mark_as_advanced( GMSH )
+
+#
+# if Feel++ has been installed on the system
+#
+if ( NOT EXISTS feel )
+  FIND_PATH(FEEL_INCLUDE_DIR feelconfig.h  PATHS /usr/include/feel /usr/lib/feel/include /opt/feel/include /usr/ljk/include/feel /usr/local  )
+
+  FIND_LIBRARY(FEEL_LIBRARY        feel++      PATHS /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+
+  INCLUDE_DIRECTORIES ( ${FEEL_INCLUDE_DIR} )
+else()
+  INCLUDE_DIRECTORIES (
+    ${FEEL_BUILD_DIR}/
+    ${FEEL_SOURCE_DIR}/
+    ${FEEL_SOURCE_DIR}/contrib/gmm/include
+    )
+endif()
+
+SET(FEEL_LIBRARIES feel++  ${FEEL_LIBRARIES})
+
+LINK_DIRECTORIES(
+  ${VTK_LIBRARY_DIRS}
+  ${BOOST_LIBRARY_PATH}
+  ${MPI_LIBRARY_PATH}
+  )
+
+FIND_PACKAGE_HANDLE_STANDARD_ARGS (Feel DEFAULT_MSG
+  FEEL_INCLUDE_DIR  FEEL_LIBRARY
+  )
+
+if ( FEEL_FOUND )
+  message(STATUS "Feel++ includes: ${FEEL_INCLUDE_DIR}")
+  message(STATUS "Feel++ library: ${FEEL_LIBRARY}")
+endif()
+
+MARK_AS_ADVANCED(
+  FEEL_INCLUDE_DIR
+  FEEL_LIBRARY
+  FEEL_LIBRARIES
+  )
+
