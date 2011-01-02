@@ -23,6 +23,7 @@
 #
 
 set(modules 
+  FindFeel++.cmake  
   FindEigen2.cmake  
   FindMetis.cmake   
   FindOpenTURNS.cmake         
