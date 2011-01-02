@@ -302,6 +302,7 @@ INSTALL(FILES ${FEEL_INSTALL_APPS} DESTINATION bin/ COMPONENT Applications)
 
 # documentation and examples
 if ( FEEL_ENABLE_ALL OR FEEL_ENABLE_DOCUMENTATION )
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/tutorial/feel_get_tutorial DESTINATION bin COMPONENT Documentation)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/doc/tutorial/feel-manual.pdf DESTINATION share/doc/feel COMPONENT Documentation)
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/api/html DESTINATION share/doc/feel COMPONENT Documentation
     PATTERN ".svn" EXCLUDE PATTERN ".git" EXCLUDE )
