@@ -4,6 +4,14 @@
 #  FEEL_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEEL_LIBRARY    = the library to link in
 
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x " )
+set( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++0x " )
+set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++0x " )
+
+LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS)
+LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS_DEBUG)
+LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS_RELEASE)
+
 INCLUDE(CheckIncludeFile)
 INCLUDE(CheckIncludeFiles)
 INCLUDE(CheckIncludeFileCXX)
@@ -94,7 +102,7 @@ endif( MADLIB_FOUND )
 #
 # Eigen
 #
-if ( EXISTS feel )
+if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel )
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
   set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
   add_subdirectory(contrib/eigen)
@@ -214,13 +222,27 @@ mark_as_advanced( GMSH )
 #
 # if Feel++ has been installed on the system
 #
-if ( NOT EXISTS feel )
+if ( NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel )
   FIND_PATH(FEEL_INCLUDE_DIR feelconfig.h  PATHS /usr/include/feel /usr/lib/feel/include /opt/feel/include /usr/ljk/include/feel /usr/local  )
 
   FIND_LIBRARY(FEEL_LIBRARY        feel++      PATHS /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
 
   INCLUDE_DIRECTORIES ( ${FEEL_INCLUDE_DIR} )
+  FIND_PACKAGE_HANDLE_STANDARD_ARGS (Feel DEFAULT_MSG
+    FEEL_INCLUDE_DIR  FEEL_LIBRARY
+    )
+  
+  if ( FEEL_FOUND )
+    message(STATUS "Feel++ includes: ${FEEL_INCLUDE_DIR}")
+    message(STATUS "Feel++ library: ${FEEL_LIBRARY}")
+  endif()
+
+  MARK_AS_ADVANCED(
+  FEEL_INCLUDE_DIR
+  FEEL_LIBRARY
+  )
 else()
+  
   INCLUDE_DIRECTORIES (
     ${FEEL_BUILD_DIR}/
     ${FEEL_SOURCE_DIR}/
@@ -236,18 +258,6 @@ LINK_DIRECTORIES(
   ${MPI_LIBRARY_PATH}
   )
 
-FIND_PACKAGE_HANDLE_STANDARD_ARGS (Feel DEFAULT_MSG
-  FEEL_INCLUDE_DIR  FEEL_LIBRARY
-  )
 
-if ( FEEL_FOUND )
-  message(STATUS "Feel++ includes: ${FEEL_INCLUDE_DIR}")
-  message(STATUS "Feel++ library: ${FEEL_LIBRARY}")
-endif()
-
-MARK_AS_ADVANCED(
-  FEEL_INCLUDE_DIR
-  FEEL_LIBRARY
-  FEEL_LIBRARIES
-  )
+MARK_AS_ADVANCED(FEEL_LIBRARIES)
 
