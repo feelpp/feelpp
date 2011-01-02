@@ -512,7 +512,7 @@ endforeach()
 FILE(GLOB files "feel/*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
 FILE(GLOB files "contrib/gmm/include/*.h")
-install(FILES  ${Eigen_directory_files_to_install}  DESTINATION include/eigen3/Eigen COMPONENT Devel  )
+
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
 FILE(GLOB files ${CMAKE_CURRENT_BINARY_DIR}/feelconfig.h)
 INSTALL(FILES ${files} DESTINATION include/ COMPONENT Devel)
