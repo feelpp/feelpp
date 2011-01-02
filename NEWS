@@ -24,6 +24,9 @@
  - added support for octave warppers. An example is available in doc/tutorial.
  - ported to (intel) APPLE platforms thanks to [[http://www.macports.org][macports.org]]
  - added support for [[http://www.madlib.be][MAdLib]], a mesh adaptation library
+ - added a cmake module for Feel++: FindFeel++.cmake. It is used both for
+   building Feel++ and also to build applications or libraries once Feel++ is
+   installed.
 
 
 ** Libraries
