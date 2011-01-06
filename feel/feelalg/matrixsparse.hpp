@@ -570,9 +570,9 @@ void MatrixSparse<T>::print(std::ostream& os) const
 {
     assert (this->isInitialized());
 
-    for (size_type i=0; i<this->m(); i++)
+    for (size_type i=0; i<this->size1(); i++)
     {
-        for (size_type j=0; j<this->n(); j++)
+        for (size_type j=0; j<this->size2(); j++)
             os << std::setw(8) << (*this)(i,j) << " ";
         os << std::endl;
     }
