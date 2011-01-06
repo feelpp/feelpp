@@ -198,8 +198,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
     domain_basis_type const* domainbasis = this->domainSpace()->basis().get();
 
     int nComponents = this->dualImageSpace()->dof()->nComponents;
-    ublas::matrix<value_type,ublas::row_major> Mloc( this->dualImageSpace()->dof()->nDofPerElement,
-                                                     this->domainSpace()->dof()->nDofPerElement );
+    //ublas::matrix<value_type,ublas::row_major> Mloc( this->dualImageSpace()->dof()->nDofPerElement,
+    //                                                 this->domainSpace()->dof()->nDofPerElement );
+
+    typename matrix_node<value_type>::type Mloc(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
 
     // Local assembly: compute the Mloc matrix by evaluating
     // the domain space basis function at the dual image space
@@ -207,7 +209,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
     // in the ref elements and the basis and dof points in ref
     // element are the same, we compute Mloc outside the
     // element loop.
-    Mloc = ublas::trans( domainbasis->evaluate( imagebasis->dual().points() ) );
+    Mloc = /*ublas::trans*/( domainbasis->evaluate( imagebasis->dual().points() ) );
 
     Debug( 5034 ) << "domain ndof = " <<  this->domainSpace()->nDof() << "\n";
     Debug( 5034 ) << "image ndof = " <<  this->dualImageSpace()->nDof() << "\n";
@@ -233,7 +235,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
                 {
 
                     // Global assembly
-                    //std::cout << "interpfunc :  " << interpfunc << "\n";
                     for ( uint16_type iloc = 0; iloc < image_basis_type::nLocalDof; ++iloc )
                         {
                             for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
@@ -242,7 +243,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
                                         {
                                             size_type i =  boost::get<0>(imagedof->localToGlobal( it->id(), iloc, comp ));
                                             size_type j =  boost::get<0>(domaindof->localToGlobal( it->id(), jloc, comp ));
-                                            value_type v = Mloc( image_basis_type::nLocalDof*comp + iloc, domain_basis_type::nLocalDof*comp + jloc );
+                                            //value_type v = Mloc( image_basis_type::nLocalDof*comp + iloc, domain_basis_type::nLocalDof*comp + jloc );
+                                            value_type v = Mloc( domain_basis_type::nComponents1*jloc
+                                                                 + comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof
+                                                                 + comp,
+                                                                 iloc );
+
                                             //std::cout << "value ( " << i << ", " << j << ")=" << v << "\n";
                                             this->mat().set( i, j, v );
                                         }
@@ -280,6 +286,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
                     size_type gdof = boost::get<1>(*it_dofpt);
                     ublas::column(__ptsReal,0 )= boost::get<0>(*it_dofpt);
 
+                    //std::cout << "\nOla comp "<< boost::get<2>(*it_dofpt)<< "\n";
+
                     __loc->run_analysis(__ptsReal);
                     itanal = __loc->result_analysis_begin();
                     itanal_end = __loc->result_analysis_end();
@@ -289,15 +297,21 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
                             itL=itanal->second.begin();
 
                             ublas::column( ptsRef, 0 ) = boost::get<1>(*itL);
-
+                            //std::cout <<"\n ptsRef =" << ptsRef;
                             MlocEval = domainbasis->evaluate( ptsRef );
-
+                            //std::cout << "\n MlocEval =" << MlocEval << "\n";
                             for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                 {
-                                    for ( uint16_type comp = 0;comp < domain_basis_type::nComponents1;++comp )
+                                    //for ( uint16_type comp = 0;comp < domain_basis_type::nComponents1;++comp )
                                         {
+                                            //get component
+                                            uint16_type comp = boost::get<2>(*it_dofpt);
+                                            //get global dof
                                             size_type j =  boost::get<0>(domaindof->localToGlobal( itanal->first,jloc,comp ));
-                                            value_type v = MlocEval( domain_basis_type::nComponents1*jloc + comp ,0 );
+                                            value_type v = MlocEval( domain_basis_type::nComponents1*jloc
+                                                                     + comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof
+                                                                     + comp,
+                                                                     0 );
                                             //value_type v = MlocEval( domain_basis_type::nLocalDof*comp + jloc ,0 );
                                             this->matPtr()->set( gdof, j, v );
                                         }
@@ -475,6 +489,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
 #endif
 
         }
+
+    //std::cout << "\n mat " << this->mat() <<"\n";
+
     Debug( 5034 ) << "[OperatorInterpolation] closing interpolation matrix\n";
     //this->mat().close();
     //this->mat().printMatlab( "Interp.m" );
