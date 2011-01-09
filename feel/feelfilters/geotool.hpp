@@ -24,7 +24,7 @@
 /*_________________________________________________*/
 
 # define GEOTOOL_SHAPE                                                  \
-    ( 11, ( ( Line          , 1, 0, 0, "line"         , 2, LINE ),      \
+    ( 12, ( ( Line          , 1, 0, 0, "line"         , 2, LINE ),      \
             ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE ),  \
             ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE ), \
             ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
@@ -34,7 +34,8 @@
             ( Special_1b    , 2, 1, 0, "special_1b"   , 1, SPECIAL_1B ), \
             ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE  ), \
             ( Cylindre      , 3, 6, 1, "cylindre"     , 4, CYLINDRE  ), \
-            ( Sphere        , 3, 8, 1, "sphere"       , 2, SPHERE  )  \
+            ( Sphere        , 3, 8, 1, "sphere"       , 2, SPHERE  ),   \
+            ( Tube          , 3, 16, 1, "tube"         , 5, TUBE  )    \
             )                                                           \
       )                                                                 \
     /**/
@@ -173,6 +174,37 @@
       )                                         \
     /**/
 # define GEOTOOL_MARKER_VOLUME_CYLINDRE         \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
+/*_________________________________________________*/
+/*_________________________________________________*/
+
+# define GEOTOOL_MARKER_LINE_TUBE               \
+    ( 12, ( (  1, 1, (  1 ) ),                  \
+            (  2, 1, (  2 ) ),                  \
+            (  3, 1, (  3 ) ),                  \
+            (  4, 1, (  4 ) ),                  \
+            (  5, 1, (  5 ) ),                  \
+            (  6, 1, (  6 ) ),                  \
+            (  7, 1, (  7 ) ),                  \
+            (  8, 1, (  8 ) ),                  \
+            (  9, 1, (  9 ) ),                  \
+            ( 10, 1, ( 10 ) ),                  \
+            ( 11, 1, ( 11 ) ),                  \
+            ( 12, 1, ( 12 ) )                   \
+            )                                   \
+      )                                         \
+    /**/
+# define GEOTOOL_MARKER_SURFACE_TUBE            \
+    ( 4, ( ( 1, 4, ( 1,2,3,4 ) ),                \
+           ( 2, 4, ( 5,6,7,8 ) ),                \
+           ( 3, 4, ( 9,10,11,12 ) ),\
+           ( 4, 4, ( 13,14,15,16 ) )             \
+           )                                    \
+      )                                         \
+    /**/
+# define GEOTOOL_MARKER_VOLUME_TUBE         \
     ( 1, ( ( 1, 1, ( 1 ) ) )                    \
       )                                         \
     /**/
@@ -2934,6 +2966,208 @@ namespace Feel {
             writeSurfaceLoop(1, dg, Loop()>>1>>4>>3>>2>>6>>7>>8>>5);
 
             writeVolume(1, dg, 1);
+        }
+
+
+
+        void
+        runTube(data_geo_ptrtype dg)
+        {
+
+            node_type centre = param<0>(dg);
+            node_type direction = param<1>(dg);
+            double rayon = param<2>(dg)(0);
+            double longueur=param<3>(dg)(0);
+            double epaisseur=param<4>(dg)(0);
+
+            auto basis = computeBasisOrthogonal(direction,centre);
+            Node dir(boost::get<0>(basis));
+            Node u(boost::get<1>(basis));
+            Node v(boost::get<2>(basis));
+
+            Node geoX1(centre(0)+u(0)*rayon,
+                       centre(1)+u(1)*rayon,
+                       centre(2)+u(2)*rayon  );
+
+            Node geoX2(centre(0)+v(0)*rayon,
+                       centre(1)+v(1)*rayon,
+                       centre(2)+v(2)*rayon  );
+
+            Node geoX3(centre(0)-u(0)*rayon,
+                       centre(1)-u(1)*rayon,
+                       centre(2)-u(2)*rayon  );
+
+            Node geoX4(centre(0)-v(0)*rayon,
+                       centre(1)-v(1)*rayon,
+                       centre(2)-v(2)*rayon  );
+
+            Node centre2(centre(0)+longueur*dir(0),
+                         centre(1)+longueur*dir(1),
+                         centre(2)+longueur*dir(2) );
+
+            Node geoX5(geoX1(0)+longueur*dir(0),
+                       geoX1(1)+longueur*dir(1),
+                       geoX1(2)+longueur*dir(2));
+
+            Node geoX6(geoX2(0)+longueur*dir(0),
+                       geoX2(1)+longueur*dir(1),
+                       geoX2(2)+longueur*dir(2));
+
+            Node geoX7(geoX3(0)+longueur*dir(0),
+                       geoX3(1)+longueur*dir(1),
+                       geoX3(2)+longueur*dir(2));
+
+            Node geoX8(geoX4(0)+longueur*dir(0),
+                       geoX4(1)+longueur*dir(1),
+                       geoX4(2)+longueur*dir(2));
+
+
+            Node geoX1B(centre(0)+u(0)*(rayon+epaisseur),
+                        centre(1)+u(1)*(rayon+epaisseur),
+                        centre(2)+u(2)*(rayon+epaisseur)  );
+
+            Node geoX2B(centre(0)+v(0)*(rayon+epaisseur),
+                        centre(1)+v(1)*(rayon+epaisseur),
+                        centre(2)+v(2)*(rayon+epaisseur) );
+
+            Node geoX3B(centre(0)-u(0)*(rayon+epaisseur),
+                        centre(1)-u(1)*(rayon+epaisseur),
+                        centre(2)-u(2)*(rayon+epaisseur) );
+
+            Node geoX4B(centre(0)-v(0)*(rayon+epaisseur),
+                        centre(1)-v(1)*(rayon+epaisseur),
+                        centre(2)-v(2)*(rayon+epaisseur) );
+
+            Node geoX5B(geoX1B(0)+longueur*dir(0),
+                        geoX1B(1)+longueur*dir(1),
+                        geoX1B(2)+longueur*dir(2));
+
+            Node geoX6B(geoX2B(0)+longueur*dir(0),
+                        geoX2B(1)+longueur*dir(1),
+                        geoX2B(2)+longueur*dir(2));
+
+            Node geoX7B(geoX3B(0)+longueur*dir(0),
+                        geoX3B(1)+longueur*dir(1),
+                        geoX3B(2)+longueur*dir(2));
+
+            Node geoX8B(geoX4B(0)+longueur*dir(0),
+                        geoX4B(1)+longueur*dir(1),
+                        geoX4B(2)+longueur*dir(2));
+
+            //--------------------------------------------------------------------------//
+
+            writePoint(1, dg, centre(0), centre(1) ,centre(2));
+            writePoint(2, dg, geoX1(0), geoX1(1) ,geoX1(2));
+            writePoint(3, dg, geoX2(0), geoX2(1) ,geoX2(2));
+            writePoint(4, dg, geoX3(0), geoX3(1) ,geoX3(2));
+            writePoint(5, dg, geoX4(0), geoX4(1) ,geoX4(2));
+
+            writeCircle(1, dg, 2,1,3);
+            writeCircle(2, dg, 3,1,4);
+            writeCircle(3, dg, 4,1,5);
+            writeCircle(4, dg, 5,1,2);
+
+            writeLineLoop(1, dg, Loop()>>1>>2>>3>>4);
+
+            writePoint(6, dg, centre2(0), centre2(1) ,centre2(2));
+            writePoint(7, dg, geoX5(0), geoX5(1) ,geoX5(2));
+            writePoint(8, dg, geoX6(0), geoX6(1) ,geoX6(2));
+            writePoint(9, dg, geoX7(0), geoX7(1) ,geoX7(2));
+            writePoint(10, dg, geoX8(0), geoX8(1) ,geoX8(2));
+
+            writeCircle(5, dg, 7,6,8);
+            writeCircle(6, dg,8,6,9);
+            writeCircle(7, dg,9,6,10);
+            writeCircle(8 ,dg,10,6,7);
+
+            writeLineLoop(2, dg,Loop()>>5>>6>>7>>8);
+
+            writeLine(9, dg, 4, 9);
+            writeLine(10, dg, 5, 10);
+            writeLine(11, dg, 2, 7);
+            writeLine(12, dg, 8, 3);
+
+            writeLineLoop(3, dg, Loop()>>9>>-6>>12>>2);
+            writeLineLoop(4, dg, Loop()>>9>>7>>-10>>-3);
+            writeLineLoop(5, dg, Loop()>>10>>8>>-11>>-4);
+            writeLineLoop(6, dg, Loop()>>11>>5>>12>>-1);
+
+            //writePlaneSurface(1, dg, 1);
+            //writePlaneSurface(2, dg, 2);
+
+            writeRuledSurface(3, dg, 3);
+            writeRuledSurface(4, dg, 4);
+            writeRuledSurface(5, dg, 5);
+            writeRuledSurface(6, dg, 6);
+
+
+            writePoint(11, dg, geoX1B(0), geoX1B(1) ,geoX1B(2));
+            writePoint(12, dg, geoX2B(0), geoX2B(1) ,geoX2B(2));
+            writePoint(13, dg, geoX3B(0), geoX3B(1) ,geoX3B(2));
+            writePoint(14, dg, geoX4B(0), geoX4B(1) ,geoX4B(2));
+
+            writeCircle(13, dg, 11,1,12);
+            writeCircle(14, dg, 12,1,13);
+            writeCircle(15, dg, 13,1,14);
+            writeCircle(16, dg, 14,1,11);
+
+            writePoint(15, dg, geoX5B(0), geoX5B(1) ,geoX5B(2));
+            writePoint(16, dg, geoX6B(0), geoX6B(1) ,geoX6B(2));
+            writePoint(17, dg, geoX7B(0), geoX7B(1) ,geoX7B(2));
+            writePoint(18, dg, geoX8B(0), geoX8B(1) ,geoX8B(2));
+
+            writeCircle(17, dg, 15,6,16);
+            writeCircle(18, dg, 16,6,17);
+            writeCircle(19, dg, 17,6,18);
+            writeCircle(20 ,dg, 18,6,15);
+
+            writeLine(21, dg, 13, 17);
+            writeLine(22, dg, 14, 18);
+            writeLine(23, dg, 11, 15);
+            writeLine(24, dg, 16, 12);
+
+            writeLineLoop(7, dg, Loop()>>21>>-18>>24>>14);
+            writeLineLoop(8, dg, Loop()>>21>>19>>-22>>-15);
+            writeLineLoop(9, dg, Loop()>>22>>20>>-23>>-16);
+            writeLineLoop(10, dg, Loop()>>23>>17>>24>>-13);
+
+            writeRuledSurface(7, dg, 7);
+            writeRuledSurface(8, dg, 8);
+            writeRuledSurface(9, dg, 9);
+            writeRuledSurface(10, dg, 10);
+
+            writeLine(25, dg, 2, 11);
+            writeLine(26, dg, 3, 12);
+            writeLine(27, dg, 4, 13);
+            writeLine(28, dg, 5, 14);
+            writeLine(29, dg, 7, 15);
+            writeLine(30, dg, 8, 16);
+            writeLine(31, dg, 9, 17);
+            writeLine(32, dg, 10, 18);
+
+
+            writeLineLoop(11, dg, Loop()>>19>>-32>>-7>>31);
+            writeLineLoop(12, dg, Loop()>>20>>-29>>-8>>32);
+            writeLineLoop(13, dg, Loop()>>6>>31>>-18>>-30);
+            writeLineLoop(14, dg, Loop()>>5>>30>>-17>>-29);
+            writeLineLoop(15, dg, Loop()>>15>>-28>>-3>>27);
+            writeLineLoop(16, dg, Loop()>>27>>-14>>-26>>2);
+            writeLineLoop(17, dg, Loop()>>26>>-13>>-25>>1);
+            writeLineLoop(18, dg, Loop()>>25>>-16>>-28>>4);
+
+            writePlaneSurface(11,dg,11);
+            writePlaneSurface(12,dg,12);
+            writePlaneSurface(13,dg,13);
+            writePlaneSurface(14,dg,14);
+            writePlaneSurface(15,dg,15);
+            writePlaneSurface(16,dg,16);
+            writePlaneSurface(17,dg,17);
+            writePlaneSurface(18,dg,18);
+
+
+            writeSurfaceLoop(1, dg, Loop()>>3>>4>>5>>6>>7>>8>>9>>10>>11>>12>>13>>14>>15>>16>>17>>18);
+            writeVolume(1, dg, 1);
+
         }
 
 
