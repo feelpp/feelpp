@@ -594,7 +594,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     auto h=vf::project(P0h, elements(mesh), vf::h() );
     auto npen=vf::project(P0h, elements(mesh), vf::nPEN() );
-    auto H1estimator = element_product( rho, npen.sqrt() );
+    auto H1estimator = rho;
 
     //if we use real error for adaptation then H1errorP1 will be the projection of H1RealErrorP0 on P1 space
     //else H1errorP1 will be the projection of H1estimator on P1 space

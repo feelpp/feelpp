@@ -85,8 +85,8 @@ main( int argc, char** argv )
      */
     /** \code */
     //app.add( new ResidualEstimator<1,1>( app.vm(), app.about() ) );
-    //app.add( new ResidualEstimator<2,1>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
+    app.add( new ResidualEstimator<2,1>( app.vm(), app.about() ) );
+    //app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
 
     /** \endcode */
 
