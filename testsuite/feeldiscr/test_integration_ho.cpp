@@ -180,7 +180,7 @@ createCircle( double hsize )
 
     //std::cout << "hsize = " << meshSize << std::endl;
 
-    Gmsh __gmsh;
+    Gmsh __gmsh(2,Order);
     std::string fname;
     std::ostringstream ostr;
     std::ostringstream nameStr;
@@ -318,13 +318,15 @@ createSin( double hsize )
 
     //std::cout << "hsize = " << meshSize << std::endl;
 
-    Gmsh __gmsh;
+    Gmsh __gmsh(2,Order);
     std::string fname;
     std::ostringstream ostr;
     std::ostringstream nameStr;
 
     //std::cout <<"Mesh generation ... ";
     ostr << "Mesh.MshFileVersion = 2;\n"
+         << "Mesh.ElementOrder=" << Order << ";\n"
+         << "Mesh.SecondOrderIncomplete = 0;\n"
          << "h=" << meshSize << ";\n"
          << "Include \"test_integration_ho_geometry.geo\";\n";
 
@@ -477,6 +479,8 @@ struct test_integration_sin
         double v0 = integrate( elements(*mesh), IM<2,(Order-1)*(Order-1),value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
         //double v0 = integrate( elements(*mesh), IM<2,2*Order,value_type,Simplex>(), idv( u ) ).evaluate()( 0, 0 );
         std::cout << "int( 1 )=" << v0 << "  (=pi) error= " << math::abs( v0 - M_PI ) << std::endl;
+        double v1 = integrate( boundaryfaces(mesh), IM<2,(Order-1)*(Order-1),value_type,Simplex>(), trans(vec(cst(1.),cst(1.)))*N() ).evaluate()( 0, 0 );
+        std::cout << "int( 1 .N )=" << v1 << "  (=pi) error= " << math::abs( v1 ) << std::endl;
 
         //BOOST_CHECK_SMALL( math::abs( v0 - M_PI ), 3*exp(-4*Order));
     }
