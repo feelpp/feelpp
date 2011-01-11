@@ -136,20 +136,17 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";
 
-    if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/h_%4%/" )
-                                       % this->about().appName()
-                                       % shape
-                                       % Dim
-                                       % meshSize );
+    Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/h_%4%/" )
+                                   % this->about().appName()
+                                   % shape
+                                   % Dim
+                                   % meshSize );
     //# marker4 #
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                                      _shape=shape,
-                                                      _dim=Dim,
-                                                      _h=X[0] ) );
-    mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
-    mesh->updateForUse();
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                              _shape=shape,
+                                              _dim=Dim,
+                                              _h=X[0] ) );
     //#endmarker4#
 
 
