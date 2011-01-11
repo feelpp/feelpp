@@ -62,6 +62,7 @@ namespace vf
 #
 
 const size_type jn = vm::JACOBIAN|vm::NORMAL;
+const size_type jkbn = vm::JACOBIAN|vm::KB|vm::NORMAL;
 const size_type jt = vm::JACOBIAN|vm::NORMAL|vm::TANGENT;
 const size_type jp = vm::JACOBIAN|vm::POINT;
 const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
@@ -72,10 +73,10 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
    BOOST_PP_TUPLE_TO_LIST(                                              \
       20,                                                               \
       (                                                                 \
-       ( N       , GDN       , 0, jn, Vectorial, _M_gmc->unitNormal( q )[ c1 ] , 0), \
-       ( Nx      , GDNx      , 0, jn, Scalar   , _M_gmc->unitNormal( q )[ 0 ]  , 0), \
-       ( Ny      , GDNy      , 1, jn, Scalar   , _M_gmc->unitNormal( q )[ 1 ]  , 0), \
-       ( Nz      , GDNz      , 2, jn, Scalar   , _M_gmc->unitNormal( q )[ 2 ]  , 0), \
+       ( N       , GDN       , 0, jkbn, Vectorial, _M_gmc->unitNormal( q )[ c1 ] , 0), \
+       ( Nx      , GDNx      , 0, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 0 ]  , 0), \
+       ( Ny      , GDNy      , 1, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 1 ]  , 0), \
+       ( Nz      , GDNz      , 2, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 2 ]  , 0), \
        ( Nref    , GDNref    , 0, 0, Vectorial, _M_gmc->refNormal( q )[ c1 ] , 0), \
        ( T       , GDT       , 0, jn, Vectorial, _M_gmc->unitTangent( q )[ c1 ], 0), \
        ( Tx      , GDTx      , 0, jn, Scalar   , _M_gmc->unitTangent( q )[ 0 ] , 0), \
