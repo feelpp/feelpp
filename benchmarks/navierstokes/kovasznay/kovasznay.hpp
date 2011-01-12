@@ -193,7 +193,8 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
     }
     this->
         //addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu", _values=boost::lexical_cast<std::string>( mu ).c_str()))
-        addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
+        addParameter( Parameter(_name="convex",_type=DISC_ATTR,_values= boost::lexical_cast<std::string>( convex_type::is_simplex  ).c_str()) )
+        .addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
         .addParameter( Parameter(_name="orderU",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderU  ).c_str()) )
         .addParameter( Parameter(_name="orderP",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderP  ).c_str()) )
         .addParameter( h );
@@ -209,6 +210,17 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
     else if ( OrderP == OrderU-2 )
         oss << "h**" << boost::lexical_cast<std::string>( OrderP+1  );
     funcs.push_back(oss.str());
+    std::vector<std::string> divfuncs;
+    oss.str("");
+    if ( OrderP == OrderU )
+        oss << "h**" << boost::lexical_cast<std::string>( OrderP-1./2.  );
+    else if ( OrderP == OrderU-1 )
+        oss << "h**" << boost::lexical_cast<std::string>( OrderU-1./2.  );
+    else if ( OrderP == OrderU-2 )
+        oss << "h**" << boost::lexical_cast<std::string>( OrderP+1-1./2.  );
+    divfuncs.push_back(oss.str());
+
+
     oss.str("");
     std::vector<std::string> funcs2;
     oss << "h**" << boost::lexical_cast<std::string>( OrderP+1 ) ;
@@ -224,7 +236,7 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
     this->
         addOutput( Output(_name="norm_L2_u",_latex="\\left\\| u \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs3) )
         .addOutput( Output(_name="norm_H1_u",_latex="\\left\\| u \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs) )
-        .addOutput( Output(_name="norm_L2_divu",_latex="\\left\\| \\nabla \\cdot u \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) )
+        .addOutput( Output(_name="norm_L2_divu",_latex="\\left\\| \\nabla \\cdot u \\right\\|_{L^2}",_dependencies=depend,_funcs=divfuncs) )
         .addOutput( Output(_name="norm_L2_p",_latex="\\left\\| p \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs2) );
 
 
@@ -233,7 +245,8 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
     M_beta = this->vm()["beta"].template as<value_type>();
 
     this->//addParameterValue( mu )
-        addParameterValue( Dim )
+        addParameterValue( convex_type::is_simplex )
+        .addParameterValue( Dim )
         .addParameterValue( OrderU )
         .addParameterValue( OrderP )
         .addParameterValue( this->vm()["hsize"].template as<double>() );
