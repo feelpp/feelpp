@@ -1209,11 +1209,18 @@ private:
         uint16_type iFaEl = __face_it->pos_first();
         FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
 
+        size_type ndofF = ( face_type::numVertices * fe_type::nDofPerVertex +
+                            face_type::numEdges * fe_type::nDofPerEdge +
+                            face_type::numFaces * fe_type::nDofPerFace );
+
+
         //_M_dof2elt[gDof].push_back( boost::make_tuple( iElAd, lc-1, 48, 0 ) );
         // loop on face vertices
         const int ncdof = is_product?nComponents:1;
         for( int c = 0; c < ncdof; ++c )
         {
+            uint16_type lcc=c*ndofF;
+
             for ( uint16_type iVeFa = 0; iVeFa < face_type::numVertices; ++iVeFa )
             {
                 // local vertex number (in element)
@@ -1224,7 +1231,7 @@ private:
                 // Loop number of Dof per vertex
                 for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
                 {
-                    _M_face_l2g[ __face_it->id()][ lc++ ] = this->localToGlobal( iElAd,
+                    _M_face_l2g[ __face_it->id()][ lcc++ ] = this->localToGlobal( iElAd,
                                                                                  iVeEl * fe_type::nDofPerVertex + l,
                                                                                  c );
                 }
@@ -1262,13 +1269,20 @@ private:
 #if !defined(NDEBUG)
         Debug( 5005 ) << " local face id : " << iFaEl << "\n";
 #endif
+        size_type nVerticesF = face_type::numVertices * fe_type::nDofPerVertex;
+        size_type ndofF = ( face_type::numVertices * fe_type::nDofPerVertex +
+                            face_type::numEdges * fe_type::nDofPerEdge +
+                            face_type::numFaces * fe_type::nDofPerFace );
+
+
         const int ncdof = is_product?nComponents:1;
         for( int c = 0; c < ncdof; ++c )
         {
+            uint16_type lcc=nVerticesF+c*ndofF;
             // Loop number of Dof per edge
             for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
             {
-                _M_face_l2g[ __face_it->id()][ lc++ ] = this->localToGlobal( iElAd,
+                _M_face_l2g[ __face_it->id()][ lcc++ ] = this->localToGlobal( iElAd,
                                                                              element_type::numVertices*fe_type::nDofPerVertex +
                                                                              iFaEl * fe_type::nDofPerEdge + l,
                                                                              c );
@@ -1291,10 +1305,15 @@ private:
 #if !defined(NDEBUG)
         Debug( 5005 ) << " local face id : " << iFaEl << "\n";
 #endif
+        size_type nVerticesF = face_type::numVertices * fe_type::nDofPerVertex;
+        size_type ndofF = ( face_type::numVertices * fe_type::nDofPerVertex +
+                            face_type::numEdges * fe_type::nDofPerEdge +
+                            face_type::numFaces * fe_type::nDofPerFace );
 
         const int ncdof = is_product?nComponents:1;
         for( int c = 0; c < ncdof; ++c )
         {
+            uint16_type lcc=nVerticesF+c*ndofF;
             // loop on face vertices
             for ( uint16_type iEdFa = 0; iEdFa < face_type::numEdges; ++iEdFa )
             {
@@ -1306,10 +1325,10 @@ private:
                 // Loop number of Dof per edge
                 for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
                 {
-                    _M_face_l2g[ __face_it->id()][ lc++ ] = this->localToGlobal( iElAd,
-                                                                                 element_type::numVertices*fe_type::nDofPerVertex +
-                                                                                 iEdEl * fe_type::nDofPerEdge + l,
-                                                                                 c );
+                    _M_face_l2g[ __face_it->id()][ lcc++ ] = this->localToGlobal( iElAd,
+                                                                                  element_type::numVertices*fe_type::nDofPerVertex +
+                                                                                  iEdEl * fe_type::nDofPerEdge + l,
+                                                                                  c );
                 }
             }
         }
@@ -1339,14 +1358,20 @@ private:
 #if !defined(NDEBUG)
         Debug( 5005 ) << " local face id : " << iFaEl << "\n";
 #endif
+        size_type nVerticesAndEdgeF = ( face_type::numVertices * fe_type::nDofPerVertex +
+                                        face_type::numEdges * fe_type::nDofPerEdge);
+        size_type ndofF = ( face_type::numVertices * fe_type::nDofPerVertex +
+                            face_type::numEdges * fe_type::nDofPerEdge +
+                            face_type::numFaces * fe_type::nDofPerFace );
 
         const int ncdof = is_product?nComponents:1;
         for( int c = 0; c < ncdof; ++c )
         {
+            uint16_type lcc=nVerticesAndEdgeF+c*ndofF;
             // Loop on number of Dof per face
             for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l )
             {
-                _M_face_l2g[ __face_it->id()][ lc++ ] = this->localToGlobal( iElAd,
+                _M_face_l2g[ __face_it->id()][ lcc++ ] = this->localToGlobal( iElAd,
                                                                              element_type::numVertices*fe_type::nDofPerVertex +
                                                                              element_type::numEdges*fe_type::nDofPerEdge +
                                                                              iFaEl * fe_type::nDofPerFace + l,
@@ -2310,14 +2335,15 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
         else
             Debug( 5005 ) << "[buildBoundaryDofMap] global face id : " << __face_it->id() << "\n";
 #endif
-        uint16_type lc = 0;
+        uint16_type lcVertex = 0;
+        uint16_type lcEdge = 0;
+        uint16_type lcFace = 0;
 
 
-        addVertexBoundaryDof( __face_it, lc );
-        addEdgeBoundaryDof( __face_it, lc );
-        addFaceBoundaryDof( __face_it, lc );
+        addVertexBoundaryDof( __face_it, lcVertex );
+        addEdgeBoundaryDof( __face_it, lcEdge );
+        addFaceBoundaryDof( __face_it, lcFace );
 
-        //FEEL_ASSERT( lc == (c+1)*nDofF )( lc )( nDofF )( (c+1)*nDofF ).warn( "invalid face local dof construction");
     }
 #if !defined(NDEBUG)
     for ( index face_id = 0; face_id < index(nF); ++face_id )
