@@ -101,7 +101,8 @@
    measure of the set.
  - implement the new local/global interface that uses eigen. It simplifies a
    lots the local/global assembly code and allowed quite a bit of refactoring.
-
+ - Fix bug in outward normal computation using high order geometric
+   transformation
 
 ** Documentation
 
