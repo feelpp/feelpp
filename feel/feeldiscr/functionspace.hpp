@@ -1212,6 +1212,49 @@ public:
          */
         Element pow( int n ) const { Element _e( _M_functionspace ); for( int i=0; i < _e.nLocalDof(); ++i ) _e(i)  = math::pow(this->operator()(i),n); return _e; }
 
+        // Only works for scalar fields
+        template < typename p0_space_type >
+        typename p0_space_type::element_type extremeValue( boost::shared_ptr<p0_space_type> const& P0h, std::string extreme )
+        {
+            // check if the mesh coming from P0h and the class elements is the same
+            FEEL_ASSERT( P0h->mesh() == this->mesh() ).error("mesh is not the same");
+            FEEL_ASSERT( is_scalar ).error("only works for scalar fields");
+
+            typename p0_space_type::element_type p0Element( P0h );
+
+            for ( auto elt_it = P0h->mesh()->beginElement(); elt_it != P0h->mesh()->endElement(); ++elt_it )
+                {
+                    size_type eid = elt_it->id();
+
+                    size_type dofp0 = boost::get<0>(P0h->dof()->localToGlobal(eid, 0, 0));
+                    std::vector<value_type> values ( functionspace_type::fe_type::nLocalDof );
+
+                    size_type dofpn = 0;
+                    for ( uint16_type local_id=0; local_id < functionspace_type::fe_type::nLocalDof; ++local_id )
+                        {
+                            dofpn = boost::get<0>(this->functionSpace()->dof()->localToGlobal(eid, local_id, 0));
+                            values[local_id] = this->operator()(dofpn);
+                        }
+
+                    if ( extreme == "max" )
+                        p0Element.assign(eid, 0, 0, *( std::max_element( values.begin(), values.end() ) ));
+                    else
+                        p0Element.assign(eid, 0, 0, *( std::min_element( values.begin(), values.end() ) ));
+                }
+
+            return p0Element;
+        }
+
+        template < typename p0_space_type >
+        typename p0_space_type::element_type max( boost::shared_ptr<p0_space_type> const& P0h ) { return this->extremeValue(P0h, "max" ); }
+
+        value_type max() { return this->container().max(); }
+
+        template < typename p0_space_type >
+        typename p0_space_type::element_type min( boost::shared_ptr<p0_space_type> const& P0h ) { return this->extremeValue(P0h, "min" ); }
+
+        value_type min() { return this->container().min(); }
+
         //! Interpolation at a set of points
         //@{
         /**
