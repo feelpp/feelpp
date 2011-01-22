@@ -24,10 +24,11 @@
 /*_________________________________________________*/
 
 # define GEOTOOL_SHAPE                                                  \
-    ( 12, ( ( Line          , 1, 0, 0, "line"         , 2, LINE ),      \
+    ( 13, ( ( Line          , 1, 0, 0, "line"         , 2, LINE ),      \
             ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE ),  \
             ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE ), \
             ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
+            ( Hexagon       , 2, 1, 0, "hexagon"      , 6, HEXAGON ),   \
             ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE    ), \
             ( PartialDisque , 2, 1, 0, "partialdisque", 3, PARTIALDISQUE), \
             ( Special_1a    , 2, 2, 0, "special_1a"   , 1, SPECIAL_1A ), \
@@ -91,6 +92,21 @@
       )                                         \
     /**/
 
+/*_________________________________________________*/
+
+# define GEOTOOL_MARKER_LINE_HEXAGON            \
+    ( 6, ( ( 1, 1, ( 1 ) ),                     \
+           ( 2, 1, ( 2 ) ),                     \
+           ( 3, 1, ( 3 ) ),                     \
+           ( 4, 1, ( 4 ) ),                     \
+           ( 5, 1, ( 5 ) ),                     \
+           ( 6, 1, ( 6 ) ) )                    \
+      )                                         \
+    /**/
+# define GEOTOOL_MARKER_SURFACE_HEXAGON         \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
 
 /*_________________________________________________*/
 
@@ -1212,7 +1228,7 @@ namespace Feel {
                 {
                     std::string Qshape = boost::get<0>(*itList);
                     std::string Qname = boost::get<1>(*itList);
-                    std::cout << "\n Qshape="<<Qshape <<" Qname="<<Qname<<"\n";
+                    //std::cout << "\n Qshape="<<Qshape <<" Qname="<<Qname<<"\n";
 
                     *_M_ostr << "h=" << boost::get<2>(*itList) << ";\n";
                     //data memory
@@ -2548,6 +2564,37 @@ namespace Feel {
             writeLine( 4, dg , 4 , 1);
 
             writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4);
+
+            writePlaneSurface( 1, dg, 1);
+
+        }
+
+        void
+        runHexagon(data_geo_ptrtype dg)
+        {
+
+            node_type PtA = param<0>(dg);
+            node_type PtB = param<1>(dg);
+            node_type PtC = param<2>(dg);
+            node_type PtD = param<3>(dg);
+            node_type PtE = param<4>(dg);
+            node_type PtF = param<5>(dg);
+
+            writePoint( 1, dg , PtA(0), PtA(1) );
+            writePoint( 2, dg , PtB(0), PtB(1) );
+            writePoint( 3, dg , PtC(0), PtC(1) );
+            writePoint( 4, dg , PtD(0), PtD(1) );
+            writePoint( 5, dg , PtE(0), PtE(1) );
+            writePoint( 6, dg , PtF(0), PtF(1) );
+
+            writeLine( 1, dg , 1 , 2);
+            writeLine( 2, dg , 2 , 3);
+            writeLine( 3, dg , 3 , 4);
+            writeLine( 4, dg , 4 , 5);
+            writeLine( 5, dg , 5 , 6);
+            writeLine( 6, dg , 6 , 1);
+
+            writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4>>5>>6);
 
             writePlaneSurface( 1, dg, 1);
 
