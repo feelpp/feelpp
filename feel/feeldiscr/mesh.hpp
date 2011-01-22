@@ -560,6 +560,15 @@ public:
          */
         void run_analysis(const matrix_node_type & m);
 
+        /*
+         * Reset all data
+         */
+        void reset()
+        {
+            IsInit=false;
+            init();
+        }
+
     private :
 
         /*---------------------------------------------------------------

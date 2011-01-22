@@ -1049,6 +1049,9 @@ Mesh<Shape, T>::Localization::init()
     FEEL_ASSERT( IsInit == false )
         ( IsInit ).warn( "You have already initialized the tool of localization" );
 #endif
+    //clear data
+    M_geoGlob_Elts.clear();
+    M_kd_tree->clear();
 
     typename self_type::element_iterator el_it;
     typename self_type::element_iterator el_en;
@@ -1173,6 +1176,7 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
     else if (itLT == itLT_end && !__extrapolation) return boost::make_tuple( false, 0, __x_ref );
     else
         {
+            std::cout << "\n WARNING EXTRAPOLATION \n";
             itLT=ListTri.begin();
             elt= M_mesh->element(itLT->first );
             typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
