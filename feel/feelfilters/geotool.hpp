@@ -1142,11 +1142,12 @@ namespace Feel {
         {
             //fait dans gmsh.cpp
             *_M_ostr << "Mesh.MshFileVersion = 2;\n"
-                    << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-                    << "Mesh.CharacteristicLengthFromPoints=1;\n"
-                    << "Mesh.ElementOrder="<< orderGeo <<";\n"
-                    << "Mesh.SecondOrderIncomplete = 0;\n"
-                    << "Mesh.Algorithm = 6;\n";
+                     << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
+                     << "Mesh.CharacteristicLengthFromPoints=1;\n"
+                     << "Mesh.ElementOrder="<< orderGeo <<";\n"
+                     << "Mesh.SecondOrderIncomplete = 0;\n"
+                     << "Mesh.Algorithm = 6;\n"
+                     << "Mesh.Optimize=1;\n";
 
         }
 
