@@ -462,7 +462,9 @@ Gmsh::preamble() const
          << "Mesh.ElementOrder=" << M_order << ";\n"
          << "Mesh.SecondOrderIncomplete = 0;\n"
          << "Mesh.Algorithm = 6;\n"
-         << "Mesh.Optimize=1;\n"
+         << "Mesh.OptimizeNetgen=1;\n"
+        //<< "Mesh.Optimize=1;\n"
+         << "Mesh.CharacteristicLengthFromCurvature=1;\n"
          << "h=" << M_h << ";\n";
     return ostr.str();
 }

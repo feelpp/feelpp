@@ -1147,8 +1147,8 @@ namespace Feel {
                      << "Mesh.ElementOrder="<< orderGeo <<";\n"
                      << "Mesh.SecondOrderIncomplete = 0;\n"
                      << "Mesh.Algorithm = 6;\n"
-                     << "Mesh.Optimize=1;\n";
-
+                     << "Mesh.OptimizeNetgen=1;\n"
+                     << "Mesh.CharacteristicLengthFromCurvature=1;\n";
         }
 
 
