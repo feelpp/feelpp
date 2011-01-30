@@ -54,7 +54,8 @@ struct triangle
 {
     static uint16_type f2e( uint16_type /*f*/, uint16_type e ) { return __f2e[e]; }
     static const uint16_type __f2e[3];
-
+    // f2eLoc : (num face,num edge glob)->num edge loc in face
+    static uint16_type f2eLoc( uint16_type /*f*/, uint16_type e ) { return __f2e[e]; }
     static uint16_type f2p( uint16_type /*f*/, uint16_type p ) { return __f2p[p]; }
     static const uint16_type __f2p[21];
 
@@ -158,6 +159,9 @@ struct tetra
 {
     static uint16_type f2e( uint16_type f, uint16_type e ) { return __f2e[3*f+e]; }
     static const uint16_type __f2e[12];
+    // f2eLoc : (num face,num edge glob)->num edge loc in face
+    static uint16_type f2eLoc( uint16_type f, uint16_type e ) { return __f2eLoc[6*f+e]; }
+    static const uint16_type __f2eLoc[24];
     static int16_type f2eOrientation( uint16_type f, uint16_type e ) { return __f2e_orientation[3*f+e]; }
     static const int16_type __f2e_orientation[12];
 
@@ -305,6 +309,16 @@ const uint16_type tetra<Order>::__f2e[12] =
         4, 3, 2, // face 2
         0, 1, 2  // face 3
     };
+
+//99 for bad value
+template<uint16_type Order >
+const uint16_type tetra<Order>:: __f2eLoc[24] =
+            {
+                2 , 99, 99, 99,  1,  0, // face 0
+                99,  2, 99,  1, 99,  0, // face 1
+                99, 99,  2,  1,  0, 99, // face 2
+                0 ,  1,  2, 99, 99, 99  // face 3
+            };
 
 template<uint16_type Order >
 const int16_type tetra<Order>::__f2e_orientation[12] =

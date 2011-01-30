@@ -229,6 +229,13 @@ public:
     static uint16_type f2e( uint16_type f,  uint16_type e ) { return face_to_edge_t::f2e( f, e ); }
 
     /**
+     * Given a face \p f in the element and the global index \p e of an
+     * edge in the face \p f, \return the local index in the element of the
+     * edge.
+     */
+    static uint16_type f2eLoc( uint16_type f,  uint16_type e ) { return face_to_edge_t::f2eLoc( f, e ); }
+
+    /**
      * Given a face \p f in the element and the local index \p p of a
      * point in the face \p f , \return the index in the element of
      * the point.
