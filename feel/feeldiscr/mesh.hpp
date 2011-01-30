@@ -165,6 +165,13 @@ public:
 
     typedef typename super::face_processor_type face_processor_type;
     typedef typename super::face_processor_type element_edge_type;
+
+    typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
+                              mpl::identity< Mesh< Simplex< GeoShape::nDim,1,GeoShape::nRealDim>, value_type > >,
+                              mpl::identity< Mesh< Hypercube<GeoShape::nDim,1,GeoShape::nRealDim>,value_type > > >::type::type P1_mesh_type;
+
+    typedef boost::shared_ptr<P1_mesh_type> P1_mesh_ptrtype;
+
     //@}
 
     /**
@@ -303,6 +310,15 @@ public:
     }
 
     /**
+     * add a new marker name
+     */
+    void addMarkerName( std::string __name, int __id ,int __topoDim )
+    {
+        auto data = boost::make_tuple(__id,__topoDim );
+        M_markername[__name]=data;
+    }
+
+    /**
      * creates a mesh by iterating over the elements between
      * \p begin_elt and and \p end_elt and adding them the the mesh
      * \p mesh
@@ -333,6 +349,11 @@ public:
                              this->beginElementWithProcessId( pid ),
                              this->endElementWithProcessId( pid ) );
     }
+
+    /**
+     * Create a P1 mesh from the HO mesh
+     */
+    P1_mesh_ptrtype createP1mesh() const;
 
     /**
      * Call the default partitioner (currently \p metis_partition()).
@@ -790,6 +811,7 @@ Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
                     size_type global_face_id = old_elem.face(s).id();
                     if ( this->hasFace( global_face_id ) )
                     {
+
                         //std::cout << "found face " << global_face_id << "\n";
                         // get the corresponding face
                         face_type const& old_face = old_elem.face(s);
@@ -831,6 +853,167 @@ Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
     new_mesh.updateForUse();
 
     Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] stop\n";
+}
+
+
+template<typename Shape, typename T>
+typename Mesh<Shape, T>::P1_mesh_ptrtype
+Mesh<Shape, T>::createP1mesh() const
+{
+
+    P1_mesh_ptrtype new_mesh( new P1_mesh_type );
+
+
+    // How the nodes on this mesh will be renumbered to nodes
+    // on the new_mesh.
+    std::vector<size_type> new_node_numbers (this->numPoints());
+    std::vector<size_type> new_vertex (this->numPoints());
+
+    std::fill ( new_node_numbers.begin(),
+                new_node_numbers.end(),
+                invalid_size_type_value );
+
+    std::fill ( new_vertex.begin(),
+                new_vertex.end(),
+                0 );
+
+
+
+    // the number of nodes on the new mesh, will be incremented
+    unsigned int n_new_nodes = 0;
+    unsigned int n_new_elem  = 0;
+    size_type n_new_faces = 0;
+
+    // inherit the table of markersName
+    BOOST_FOREACH( auto itMark, this->markerNames() )
+        {
+            new_mesh->addMarkerName( itMark.first,itMark.second.template get<0>(),itMark.second.template get<1>() );
+        }
+
+    auto it = this->beginElementWithProcessId( this->comm().rank() );
+    auto en = this->endElementWithProcessId( this->comm().rank() );
+    for ( ; it != en; ++it )
+        {
+            element_type const& old_elem = *it;
+
+            // create a new element
+            typename P1_mesh_type::element_type new_elem;
+
+            // get element markers
+            new_elem.setMarker(old_elem.marker().value());
+            new_elem.setMarker2(old_elem.marker2().value());
+            new_elem.setMarker2(old_elem.marker3().value());
+
+            // Loop over the P1 nodes on this element.
+            for (unsigned int n=0; n < element_type::numVertices; n++)
+                {
+                    //!!!!!FEEL_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
+
+                    if ( new_node_numbers[old_elem.point(n).id()] == invalid_size_type_value )
+                        {
+                            new_node_numbers[old_elem.point(n).id()] = n_new_nodes;
+
+                            Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] insert point " << old_elem.point(n) << "\n";
+
+                            typename P1_mesh_type::point_type pt( old_elem.point(n) );
+                            pt.setId( n_new_nodes);
+
+                            // Add this node to the new mesh
+                            new_mesh->addPoint(pt);
+
+                            Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh->numPoints() << "\n";
+
+                            // Increment the new node counter
+                            n_new_nodes++;
+
+                            if ( n < element_type::numVertices ) //???
+                                {
+                                    FEEL_ASSERT( new_vertex[old_elem.point(n).id()] == 0 ).error( "already seen this point?" );
+                                    new_vertex[old_elem.point(n).id()]=1;
+                                }
+                        }
+
+                    // Define this element's connectivity on the new mesh
+                    FEEL_ASSERT (new_node_numbers[old_elem.point(n).id()] < new_mesh->numPoints()).error("invalid connectivity");
+
+                    Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] adding point old(" << old_elem.point(n).id()
+                                  << ") as point new(" << new_node_numbers[old_elem.point(n).id()]
+                                  << ") in element " << new_elem.id() << "\n";
+
+                    new_elem.setPoint(n, new_mesh->point( new_node_numbers[old_elem.point(n).id()] ) );
+
+                } // end for n
+
+            // set id of element
+            new_elem.setId ( n_new_elem );
+
+            // increment the new element counter
+            n_new_elem++;
+
+            // Add an equivalent element type to the new_mesh
+            new_mesh->addElement( new_elem );
+
+
+            /////////////////////
+            // Maybe add faces for this element
+            for (unsigned int s=0; s<old_elem.numTopologicalFaces; s++)
+                {
+                    if ( !old_elem.facePtr(s) ) continue;
+
+                    // only add face on the boundary: they have some data
+                    // (boundary ids) which cannot be retrieved otherwise
+                    //if ( old_elem.neighbor(s) == invalid_size_type_value )
+                    size_type global_face_id = old_elem.face(s).id();
+                    if ( this->hasFace( global_face_id ) )
+                    {
+
+                        // get the corresponding face
+                        face_type const& old_face = old_elem.face(s);
+                        typename P1_mesh_type::face_type new_face;
+
+                        // disconnect from elements of old mesh,
+                        // the connection will be redone in
+                        // \c updateForUse()
+                        new_face.disconnect();
+
+                        if (old_face.isOnBoundary()) new_face.setOnBoundary( true );
+                        else new_face.setOnBoundary( false );
+
+                        new_face.setMarker(old_face.marker().value());
+                        new_face.setMarker2(old_face.marker2().value());
+                        new_face.setMarker2(old_face.marker3().value());
+
+                        // update P1 points info
+                        for ( uint16_type p = 0;p < face_type::numVertices; ++p )
+                            {
+                                new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point(old_elem.fToP(s,p)).id()] ) );
+                            }
+                        new_face.setId( n_new_faces++ );
+
+                        // add it to the list of faces
+                        new_mesh->addFace( new_face );
+                    }
+                }
+
+        } // end for it
+
+    new_mesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
+
+    Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] update face/edge info if necessary\n";
+    // Prepare the new_mesh for use
+    new_mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    new_mesh->updateForUse();
+
+
+
+
+
+
+
+
+
+
+    return new_mesh;
 }
 
 
