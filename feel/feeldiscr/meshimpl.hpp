@@ -1176,7 +1176,7 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
     else if (itLT == itLT_end && !__extrapolation) return boost::make_tuple( false, 0, __x_ref );
     else
         {
-            std::cout << "\n WARNING EXTRAPOLATION \n";
+            //std::cout << "\n WARNING EXTRAPOLATION \n";
             itLT=ListTri.begin();
             elt= M_mesh->element(itLT->first );
             typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
