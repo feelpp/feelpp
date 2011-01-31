@@ -464,7 +464,7 @@ Gmsh::preamble() const
          << "Mesh.Algorithm = 6;\n"
          << "Mesh.OptimizeNetgen=1;\n"
         //<< "Mesh.Optimize=1;\n"
-         << "Mesh.CharacteristicLengthFromCurvature=1;\n"
+        //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
          << "h=" << M_h << ";\n";
     return ostr.str();
 }
