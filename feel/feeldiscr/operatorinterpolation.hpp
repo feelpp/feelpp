@@ -33,6 +33,26 @@
 
 namespace Feel
 {
+
+namespace detailsup {
+
+    template < typename EltType >
+    size_type
+    idElt( EltType & elt,mpl::size_t<MESH_ELEMENTS> )
+    {
+        return elt.id();
+    }
+
+    template < typename EltType >
+    size_type
+    idElt( EltType & elt,mpl::size_t<MESH_FACES> )
+    {
+        return elt.element0().id();
+    }
+
+} //detailsup
+
+
 /**
  * \class OperatorInterpolation
  * \brief Global interpolation operator
@@ -40,8 +60,13 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-template<typename DomainSpaceType, typename ImageSpaceType>
-class OperatorInterpolation : public OperatorLinear<DomainSpaceType, ImageSpaceType>
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+                                               typename MeshTraits<typename ImageSpaceType::mesh_type>::element_const_iterator,
+                                               typename MeshTraits<typename ImageSpaceType::mesh_type>::element_const_iterator> >
+class OperatorInterpolation : public OperatorLinear<DomainSpaceType, ImageSpaceType >
 {
     typedef OperatorLinear<DomainSpaceType, ImageSpaceType> super;
 public:
@@ -88,6 +113,16 @@ public:
     typedef typename dual_image_space_type::basis_type image_basis_type;
     typedef typename domain_space_type::basis_type domain_basis_type;
 
+    typedef typename boost::tuples::template element<0, IteratorRange>::type idim_type;
+    typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_type;
+    typedef IteratorRange range_iterator;
+
+
+    static const uint16_type nLocalDofInDualImageElt = mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> >,
+                                                                 mpl::int_< image_basis_type::nLocalDof > ,
+                                                                 mpl::int_< image_mesh_type::face_type::numVertices*dual_image_space_type::fe_type::nDofPerVertex +
+                                                                            image_mesh_type::face_type::numEdges*dual_image_space_type::fe_type::nDofPerEdge +
+                                                                            image_mesh_type::face_type::numFaces*dual_image_space_type::fe_type::nDofPerFace > >::type::value;
     //@}
 
     /** @name Constructors, destructor
@@ -108,10 +143,20 @@ public:
                            dual_image_space_ptrtype const& imagespace,
                            backend_ptrtype const& backend );
 
+    OperatorInterpolation( domain_space_ptrtype const& domainspace,
+                           dual_image_space_ptrtype const& imagespace,
+                           IteratorRange const& r,
+                           backend_ptrtype const& backend );
+
+
     /**
      * copy constructor
      */
-    OperatorInterpolation( OperatorInterpolation const & oi ) : super( oi ) {}
+    OperatorInterpolation( OperatorInterpolation const & oi )
+        :
+        super( oi ),
+        _M_range(oi._M_range)
+    {}
 
     ~OperatorInterpolation() {}
 
@@ -153,22 +198,37 @@ protected:
 
 private:
 
-
+    range_iterator _M_range;
 
 };
 
-template<typename DomainSpaceType, typename ImageSpaceType>
-OperatorInterpolation<DomainSpaceType, ImageSpaceType>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
-                                                                               dual_image_space_ptrtype const& imagespace,
-                                                                               backend_ptrtype const& backend )
+template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange>
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
+                                                                                             dual_image_space_ptrtype const& imagespace,
+                                                                                             backend_ptrtype const& backend )
     :
-    super( domainspace, imagespace, backend )
+    super( domainspace, imagespace, backend ),
+    _M_range( elements(imagespace->mesh() ) )
 {
     update();
 }
-template<typename DomainSpaceType, typename ImageSpaceType>
+
+
+template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange>
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
+                                                                                             dual_image_space_ptrtype const& imagespace,
+                                                                                             IteratorRange const& r,
+                                                                                             backend_ptrtype const& backend )
+    :
+    super( domainspace, imagespace, backend ),
+    _M_range( r )
+{
+    update();
+}
+
+template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange>
 void
-OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::update()
 {
     if ( this->dualImageSpace()->mesh()->numElements() == 0 )
         return;
@@ -224,33 +284,52 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
 
     FEEL_ASSERT( this->mat().isInitialized() ).warn( "[OperatorInterpolation] matrix not initialized" );
 
+
+    std::vector<bool> dof_done( this->dualImageSpace()->nDof() );
+    std::fill( dof_done.begin(), dof_done.end(), false );
+
+
     // if same mesh but not same function space (e.g. different polynomial order, different basis)
     if ( this->dualImageSpace()->mesh().get() == (image_mesh_type*)this->domainSpace()->mesh().get() )
         {
             Debug( 5034 ) << "[interpolate] Same mesh but not same space\n";
 
-            image_mesh_element_iterator it = this->dualImageSpace()->mesh()->beginElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
-            image_mesh_element_iterator en = this->dualImageSpace()->mesh()->endElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
+            iterator_type it, en;
+            boost::tie( boost::tuples::ignore, it, en ) = _M_range;
             for( ; it != en; ++ it )
                 {
+                    auto idElem = detailsup::idElt(*it,idim_type());
 
                     // Global assembly
-                    for ( uint16_type iloc = 0; iloc < image_basis_type::nLocalDof; ++iloc )
+                    for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt/*image_basis_type::nLocalDof*/; ++iloc )
                         {
-                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                            for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
                                 {
-                                    for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
-                                        {
-                                            size_type i =  boost::get<0>(imagedof->localToGlobal( it->id(), iloc, comp ));
-                                            size_type j =  boost::get<0>(domaindof->localToGlobal( it->id(), jloc, comp ));
-                                            //value_type v = Mloc( image_basis_type::nLocalDof*comp + iloc, domain_basis_type::nLocalDof*comp + jloc );
-                                            value_type v = Mloc( domain_basis_type::nComponents1*jloc
-                                                                 + comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof
-                                                                 + comp,
-                                                                 iloc );
+                                    size_type i =  boost::get<0>(imagedof->localToGlobal( *it/*it->id()*/, iloc, comp ));
 
-                                            //std::cout << "value ( " << i << ", " << j << ")=" << v << "\n";
-                                            this->mat().set( i, j, v );
+                                    if (!dof_done[i])
+                                        {
+                                            uint16_type ilocprime=0;
+                                            if (idim_type::value==MESH_ELEMENTS) ilocprime = iloc;
+                                            else {
+                                                for (uint16_type ilocloc = 0; ilocloc < image_basis_type::nLocalDof; ++ilocloc )
+                                                    {
+                                                        if (i == boost::get<0>(imagedof->localToGlobal( idElem, ilocloc, comp ))) ilocprime=ilocloc;
+                                                    }
+                                            }
+
+                                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                {
+                                                    size_type j =  boost::get<0>(domaindof->localToGlobal( idElem/* it->id()*/, jloc, comp ));
+                                                    //value_type v = Mloc( image_basis_type::nLocalDof*comp + iloc, domain_basis_type::nLocalDof*comp + jloc );
+                                                    value_type v = Mloc( domain_basis_type::nComponents1*jloc
+                                                                         + comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof
+                                                                         + comp,
+                                                                         /*iloc*/ilocprime );
+
+                                                    this->mat().set( i, j, v );
+                                                }
+                                            dof_done[i]=true;
                                         }
                                 }
                         }
@@ -265,8 +344,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
             typedef typename domain_mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
             typedef typename domain_mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
 
-            typename dual_image_space_type::dof_type::dof_points_const_iterator it_dofpt = this->dualImageSpace()->dof()->dofPointBegin();
-            typename dual_image_space_type::dof_type::dof_points_const_iterator en_dofpt = this->dualImageSpace()->dof()->dofPointEnd();
+            //typename dual_image_space_type::dof_type::dof_points_const_iterator it_dofpt = this->dualImageSpace()->dof()->dofPointBegin();
+            //typename dual_image_space_type::dof_type::dof_points_const_iterator en_dofpt = this->dualImageSpace()->dof()->dofPointEnd();
 
             //init the localization tool
             this->domainSpace()->mesh()->tool_localization()->updateForUse();
@@ -281,44 +360,56 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
             localization_ptrtype __loc = this->domainSpace()->mesh()->tool_localization();
             __loc->kdtree()->nbNearNeighbor(3);
 
-            for( ; it_dofpt != en_dofpt; ++ it_dofpt )
+            iterator_type it, en;
+            boost::tie( boost::tuples::ignore, it, en ) = _M_range;
+            for( ; it != en; ++ it )
                 {
-                    size_type gdof = boost::get<1>(*it_dofpt);
-                    ublas::column(__ptsReal,0 )= boost::get<0>(*it_dofpt);
-
-                    //std::cout << "\nOla comp "<< boost::get<2>(*it_dofpt)<< "\n";
-
-                    __loc->run_analysis(__ptsReal);
-                    itanal = __loc->result_analysis_begin();
-                    itanal_end = __loc->result_analysis_end();
-
-                    for ( ;itanal!=itanal_end;++itanal)
+                    for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt/*image_basis_type::nLocalDof*/; ++iloc )
                         {
-                            itL=itanal->second.begin();
-
-                            ublas::column( ptsRef, 0 ) = boost::get<1>(*itL);
-                            //std::cout <<"\n ptsRef =" << ptsRef;
-                            MlocEval = domainbasis->evaluate( ptsRef );
-                            //std::cout << "\n MlocEval =" << MlocEval << "\n";
-                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                            for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
                                 {
-                                    //for ( uint16_type comp = 0;comp < domain_basis_type::nComponents1;++comp )
+                                    size_type gdof =  boost::get<0>(imagedof->localToGlobal( *it /*it->id()*/, iloc, comp ));
+                                    if (!dof_done[gdof])
                                         {
-                                            //get component
-                                            uint16_type comp = boost::get<2>(*it_dofpt);
-                                            //get global dof
-                                            size_type j =  boost::get<0>(domaindof->localToGlobal( itanal->first,jloc,comp ));
-                                            value_type v = MlocEval( domain_basis_type::nComponents1*jloc
-                                                                     + comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof
-                                                                     + comp,
-                                                                     0 );
-                                            //value_type v = MlocEval( domain_basis_type::nLocalDof*comp + jloc ,0 );
-                                            this->matPtr()->set( gdof, j, v );
+                                            ublas::column(__ptsReal,0 ) = boost::get<0>(imagedof->dofPoint(gdof));
+
+                                            //for( ; it_dofpt != en_dofpt; ++ it_dofpt )
+                                            //    {
+                                            //        size_type gdof = boost::get<1>(*it_dofpt);
+                                            //        ublas::column(__ptsReal,0 )= boost::get<0>(*it_dofpt);
+                                            //        std::cout << "\nOla comp "<< boost::get<2>(*it_dofpt)<< "\n";
+
+                                            __loc->run_analysis(__ptsReal);
+                                            itanal = __loc->result_analysis_begin();
+                                            itanal_end = __loc->result_analysis_end();
+
+                                            for ( ;itanal!=itanal_end;++itanal)
+                                                {
+                                                    itL=itanal->second.begin();
+
+                                                    ublas::column( ptsRef, 0 ) = boost::get<1>(*itL);
+
+                                                    MlocEval = domainbasis->evaluate( ptsRef );
+
+                                                    for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                        {
+                                                            //get component
+                                                            //uint16_type comp = boost::get<2>(*it_dofpt);
+                                                            //get global dof
+                                                            size_type j =  boost::get<0>(domaindof->localToGlobal( itanal->first,jloc,comp ));
+                                                            value_type v = MlocEval( domain_basis_type::nComponents1*jloc
+                                                                                     + comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof
+                                                                                     + comp,
+                                                                                     0 );
+                                                            //value_type v = MlocEval( domain_basis_type::nLocalDof*comp + jloc ,0 );
+                                                            this->matPtr()->set( gdof, j, v );
+                                                        }
+                                                }
+                                            dof_done[gdof]=true;
                                         }
                                 }
                         }
                 }
-
 
 
 #elif 0
@@ -496,5 +587,23 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType>::update()
     //this->mat().close();
     //this->mat().printMatlab( "Interp.m" );
 }
+
+
+
+template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange>
+boost::shared_ptr<OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange> >
+opInterpolation( boost::shared_ptr<DomainSpaceType> const& domainspace,
+                 boost::shared_ptr<ImageSpaceType> const& imagespace,
+                 IteratorRange const& r,
+                 typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::backend_ptrtype const& backend )
+{
+    typedef OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange> operatorinterpolation_type;
+
+    boost::shared_ptr<operatorinterpolation_type> opI( new operatorinterpolation_type(domainspace,imagespace,r,backend));
+
+    return opI;
+}
+
+
 } // Feel
 #endif /* __OperatorInterpolation_H */
