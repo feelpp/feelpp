@@ -400,7 +400,11 @@ public:
         {}
         global_dof_type operator()( size_type __id, size_type __loc, uint16_type c = 0 ) const
         {
-            return _M_d._M_face_l2g[ __id][ __loc ];
+            const size_type nDofF = ( face_type::numVertices * fe_type::nDofPerVertex +
+                                      face_type::numEdges * fe_type::nDofPerEdge +
+                                      face_type::numFaces * fe_type::nDofPerFace );
+            return _M_d._M_face_l2g[ __id][nDofF*c+__loc];
+            //return _M_d._M_face_l2g[ __id][ __loc ];
         }
         DofTable const& _M_d;
     };
