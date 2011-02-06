@@ -1010,6 +1010,25 @@ namespace Feel {
 
             GeoGMSHTool __geoTool(this->dim());
 
+            if ( __typeOp==1 && this->dim()==1)
+                {
+                    __geoTool._M_ligneList.reset(new surface_name_type(*(this->_M_ligneList)));
+                    ligne_name_const_iterator_type itLine = m._M_ligneList->begin();
+                    ligne_name_const_iterator_type itLine_end = m._M_ligneList->end();
+                    for ( ; itLine != itLine_end; ++itLine)
+                        {
+                            ligne_type_const_iterator_type itLine2 = itLine->begin();
+                            ligne_type_const_iterator_type itLine2_end = itLine->end();
+                            ligne_type_type __listTemp;
+
+                            for ( ; itLine2 != itLine2_end; ++itLine2)
+                                {
+                                    __listTemp.push_back(*itLine2);
+                                }
+                            __geoTool._M_ligneList->push_back(__listTemp);
+                        }
+                }
+
             //Add Plane Surface for operator + : (((rect,u1,_)))+(((circ,u2,_))) -> (((rect,u1,_)),((circ,u2,_)))
             if ( (__typeOp==1 && this->dim()>=2) || (__typeOp==2 && this->dim()==3) )
                 {
@@ -1088,16 +1107,53 @@ namespace Feel {
             __geoTool._M_paramShape.reset( new parameter_shape_type( *this->_M_paramShape) );
             __geoTool._M_markShape.reset( new marker_type_type (*this->_M_markShape) );
 
-            //get data from (more hard because no duplication)
-            surface_name_const_iterator_type itShape = m._M_surfaceList->begin();
-            surface_name_const_iterator_type itShape_end = m._M_surfaceList->end();
-            for ( ; itShape != itShape_end ; ++itShape )
+
+            if (this->dim()==1)
                 {
-                    auto itName = itShape->begin();
-                    auto itName_end = itShape->end();
-                    for ( ; itName != itName_end ; ++itName )
+                    //get data from (more hard because no duplication)
+                    ligne_name_const_iterator_type itShape = m._M_ligneList->begin();
+                    ligne_name_const_iterator_type itShape_end = m._M_ligneList->end();
+                    for ( ; itShape != itShape_end ; ++itShape )
                         {
-                            (*(__geoTool. _M_paramShape))[boost::get<0>(*itName)][ boost::get<1>(*itName)] = m.getParameter(boost::get<0>(*itName),boost::get<1>(*itName));
+                            auto itName = itShape->begin();
+                            auto itName_end = itShape->end();
+                            for ( ; itName != itName_end ; ++itName )
+                                {
+                                    (*(__geoTool. _M_paramShape))[boost::get<0>(*itName)][ boost::get<1>(*itName)]
+                                        = m.getParameter(boost::get<0>(*itName),boost::get<1>(*itName));
+                                }
+                        }
+                }
+            else if (this->dim()==2)
+                {
+                    //get data from (more hard because no duplication)
+                    surface_name_const_iterator_type itShape = m._M_surfaceList->begin();
+                    surface_name_const_iterator_type itShape_end = m._M_surfaceList->end();
+                    for ( ; itShape != itShape_end ; ++itShape )
+                        {
+                            auto itName = itShape->begin();
+                            auto itName_end = itShape->end();
+                            for ( ; itName != itName_end ; ++itName )
+                                {
+                                    (*(__geoTool. _M_paramShape))[boost::get<0>(*itName)][ boost::get<1>(*itName)]
+                                        = m.getParameter(boost::get<0>(*itName),boost::get<1>(*itName));
+                                }
+                        }
+                }
+            else if (this->dim()==3)
+                {
+                    //get data from (more hard because no duplication)
+                    volume_name_const_iterator_type itShape = m._M_volumeList->begin();
+                    volume_name_const_iterator_type itShape_end = m._M_volumeList->end();
+                    for ( ; itShape != itShape_end ; ++itShape )
+                        {
+                            auto itName = itShape->begin();
+                            auto itName_end = itShape->end();
+                            for ( ; itName != itName_end ; ++itName )
+                                {
+                                    (*(__geoTool. _M_paramShape))[boost::get<0>(*itName)][ boost::get<1>(*itName)]
+                                        = m.getParameter(boost::get<0>(*itName),boost::get<1>(*itName));
+                                }
                         }
                 }
 
@@ -1273,6 +1329,7 @@ namespace Feel {
                     this->updateOstr( boost::get<0>(*__data_geoTool)->_M_ostr->str());
 
                 }
+
 
 
             //Write the planes surfaces
