@@ -93,7 +93,8 @@ public:
         M_stabcoeff( 0.1 * std::pow( polyOrder, -3.5 ) ),
         M_im()
     {
-        M_StabMethod="CIP";
+        M_StabMethod="GLS";
+        DoStabilize=true;
     }
 
     // setting of options
@@ -104,7 +105,7 @@ public:
 
     void set_StabMethod( std::string Method )
     {
-        //possible : CIP, GLS, SGS
+        //possible : CIP, GLS, SGS, SUPG
         M_StabMethod=Method;
     }
 
@@ -127,6 +128,8 @@ public:
         solve();
         return M_phi;
     }
+
+    bool DoStabilize;
 
 private:
 
@@ -176,84 +179,77 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
                    val(trans(beta)*N()) * idt(M_phi) * id(M_phi)
                    );
 
-    if ( M_stabcoeff != 0.0 )
-    {
-        if ( updateStabilization )
+    if (DoStabilize)
         {
-            //good review of stabilization methods in [Chaple 2006]
-            if (M_StabMethod=="CIP")
+            if ( updateStabilization )
                 {
-                    /* don't work properly in 3D (because of internalfaces) */
-                    M_operatorStab=
-                        integrate( internalfaces(M_mesh), M_im,
-                                   val( M_stabcoeff*vf::pow(hFace(),2.0) *
-                                        abs(trans(beta)*N()) ) *
-                                   (jumpt(gradt(M_phi)) * jump(grad(M_phi)))
-                                   );
-                }//Continuous Interior Penalty
+                    //good review of stabilization methods in [Chaple 2006]
+                    if (M_StabMethod=="CIP" && (M_stabcoeff != 0.0) )
+                                {
+                                    /* don't work properly in 3D (because of internalfaces) */
+                                    M_operatorStab=
+                                        integrate( internalfaces(M_mesh), M_im,
+                                                   val( M_stabcoeff*vf::pow(hFace(),2.0) *
+                                                        abs(trans(beta)*N()) ) *
+                                                   (jumpt(gradt(M_phi)) * jump(grad(M_phi)))
+                                                   );
+                                }//Continuous Interior Penalty
 
-            else if (M_StabMethod== "SUPG")
-                {
-                    AUTO(coeff, vf::h()/(2*vf::sqrt(val(trans(beta))*val(beta))));
-                    AUTO(L_op, ( grad(M_phi)*val(beta) ) );
-                    // AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) - val(f) ) );
-                    AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) ) );
+                    else if (M_StabMethod== "SUPG")
+                        {
+                            AUTO(coeff, vf::h()/(2*vf::sqrt(val(trans(beta))*val(beta))));
+                            AUTO(L_op, ( grad(M_phi)*val(beta) ) );
+                            AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) ) );
 
-                    M_operatorStab=
-                        integrate(elements(M_mesh), M_im,
-                                  coeff
-                                  * L_op
-                                  * L_opt );
+                            M_operatorStab=
+                                integrate(elements(M_mesh), M_im,
+                                          coeff
+                                          * L_op
+                                          * L_opt );
 
-                    M_rhsStab=
-                        integrate(elements(M_mesh), M_im,
-                                           coeff*L_op*val(f));
-                }//Streamline Upwind Petrov Galerkin
+                            M_rhsStab=
+                                integrate(elements(M_mesh), M_im,
+                                          coeff*L_op*val(f));
+                        }//Streamline Upwind Petrov Galerkin
 
-            else if (M_StabMethod== "GLS")
-                {
-                    //                    AUTO(coeff, vf::h()/(2*vf::sqrt(trans(beta)*val(beta))));
-                    AUTO(coeff, 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::h())+vf::abs(val(sigma)));
-                    AUTO(L_op, ( grad(M_phi)*val(beta) + val(sigma)*id(M_phi) ) );
-                    AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) ) );
+                    else if (M_StabMethod== "GLS")
+                        {
+                            AUTO(coeff, 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::h()+vf::abs(val(sigma))));
+                            AUTO(L_op, ( grad(M_phi)*val(beta) + val(sigma)*id(M_phi) ) );
+                            AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) ) );
 
-                    //                    AUTO(coeff, 1.0/(2*vf::sqrt(trans(beta)*val(beta))/vf::h() + vf::abs(val(sigma)) ) );
+                            M_operatorStab=
+                                integrate( elements(M_mesh), M_im,
+                                           coeff
+                                           * L_op
+                                           * L_opt );
 
-                    M_operatorStab=
-                        integrate( elements(M_mesh), M_im,
-                                   coeff
-                                   * L_op
-                                   * L_opt );
+                            M_rhsStab=
+                                integrate(elements(M_mesh), M_im,
+                                          coeff*L_op*val(f));
 
-                    M_rhsStab=
-                        integrate(elements(M_mesh), M_im,
-                                           coeff*L_op*val(f));
+                        }//Galerkin Least Square
 
-                }//Galerkin Least Square
+                    else if (M_StabMethod== "SGS")
+                        {
+                            AUTO(coeff, 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::h()+vf::abs(val(sigma))));
+                            AUTO(L_op, (grad(M_phi)* val(beta) - val(sigma) * id(M_phi) ) );
+                            AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) ) );
 
-            else if (M_StabMethod== "SGS")
-                {
-                    //AUTO(coeff, vf::h()/(2*vf::sqrt(trans(beta)*val(beta))));
-                    AUTO(coeff, 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::h())+vf::abs(val(sigma)));
-                    AUTO(L_op, (grad(M_phi)* val(beta) - val(sigma) * id(M_phi) ) );
-                    AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) ) );
-
-                    M_operatorStab=
-                        integrate(elements(M_mesh), M_im,
-                                  coeff
-                                  * L_op
-                                  * L_opt );
-                    M_rhsStab=
-                        integrate(elements(M_mesh), M_im,
-                                           coeff*L_op*val(f));
-                }//Subgrid Scale method
-        }
-        //        M_operator=M_operatorStab+M_operator;
-        M_operator.add(1.0, M_operatorStab);
-    }
-
+                            M_operatorStab=
+                                integrate(elements(M_mesh), M_im,
+                                          coeff
+                                          * L_op
+                                          * L_opt );
+                            M_rhsStab=
+                                integrate(elements(M_mesh), M_im,
+                                          coeff*L_op*val(f));
+                        }//Subgrid Scale method
+                }//update stabilization
+            M_operator.add(1.0, M_operatorStab);
+        }//DoStabilize
     M_operator.mat().close();
-//     M_operator.mat().printMatlab("M_advReact.m");
+    //     M_operator.mat().printMatlab("M_advReact.m");
 
     M_rhs =
         integrate( elements(M_mesh), M_im,
@@ -263,10 +259,8 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
                    - chi( trans(beta)*N() < 0 ) * /* inflow */
                    val( (trans(beta)*N())*(g) ) * id(M_phi)
                    );
-    if ( M_stabcoeff != 0.0 )
-        {
-            M_rhs.add(M_rhsStab);
-        }
+    if (DoStabilize)
+        M_rhs.add(M_rhsStab);
 
 //     M_rhs.container().printMatlab("F_advReact.m");
 
