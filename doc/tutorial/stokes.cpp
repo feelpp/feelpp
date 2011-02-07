@@ -400,9 +400,9 @@ main( int argc, char** argv )
 
     // SOME BAD ELEMENTS
     // P1/P0 : locking
-    typedef Feel::Stokes<nDim, Lagrange<1, Vectorial>,Lagrange<0, Scalar>, Simplex,Discontinuous> stokes_type;
+    //typedef Feel::Stokes<nDim, Lagrange<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex> stokes_type;
     // P1/P1 : spurious modes
-    //typedef Feel::Stokes<nDim, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex> stokes_type;
+    typedef Feel::Stokes<nDim, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex> stokes_type;
 
     // SOME GOOD ELEMENTS
     // P2/P1
