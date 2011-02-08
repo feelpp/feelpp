@@ -93,7 +93,7 @@ public:
         M_stabcoeff( 0.1 * std::pow( polyOrder, -3.5 ) ),
         M_im()
     {
-        M_StabMethod="GLS";
+        M_StabMethod="SGS";
         DoStabilize=true;
     }
 
