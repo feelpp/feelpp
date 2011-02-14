@@ -40,6 +40,8 @@
 namespace Feel
 {
 
+enum StabilizationMethods{NO, CIP, SGS, SUPG, GALS};
+
 /**
  * \class AdvReact
  * \brief Advection-Reaction solver
@@ -93,8 +95,7 @@ public:
         M_stabcoeff( 0.1 * std::pow( polyOrder, -3.5 ) ),
         M_im()
     {
-        M_StabMethod="SGS";
-        DoStabilize=true;
+        M_StabMethod=GALS;
     }
 
     // setting of options
@@ -103,9 +104,8 @@ public:
         M_stabcoeff = stabcoeff * std::pow( polyOrder, -3.5 );
     }
 
-    void set_StabMethod( std::string Method )
+    void setStabMethod(StabilizationMethods Method )
     {
-        //possible : CIP, GLS, SGS, SUPG
         M_StabMethod=Method;
     }
 
@@ -129,8 +129,6 @@ public:
         return M_phi;
     }
 
-    bool DoStabilize;
-
 private:
 
     mesh_ptrtype M_mesh;
@@ -150,7 +148,7 @@ private:
 
     im_type M_im;
 
-    std::string M_StabMethod;
+    StabilizationMethods M_StabMethod;
 
 }; // class AdvReact
 
@@ -179,12 +177,12 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
                    val(trans(beta)*N()) * idt(M_phi) * id(M_phi)
                    );
 
-    if (DoStabilize)
+    if (M_StabMethod != NO)
         {
             if ( updateStabilization )
                 {
                     //good review of stabilization methods in [Chaple 2006]
-                    if (M_StabMethod=="CIP" && (M_stabcoeff != 0.0) )
+                    if (M_StabMethod== CIP && (M_stabcoeff != 0.0) )
                                 {
                                     /* don't work properly in 3D (because of internalfaces) */
                                     M_operatorStab=
@@ -195,7 +193,7 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
                                                    );
                                 }//Continuous Interior Penalty
 
-                    else if (M_StabMethod== "SUPG")
+                    else if (M_StabMethod== SUPG)
                         {
                             AUTO(coeff, vf::h()/(2*vf::sqrt(val(trans(beta))*val(beta))));
                             AUTO(L_op, ( grad(M_phi)*val(beta) ) );
@@ -212,7 +210,7 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
                                           coeff*L_op*val(f));
                         }//Streamline Upwind Petrov Galerkin
 
-                    else if (M_StabMethod== "GLS")
+                    else if (M_StabMethod== GALS)
                         {
                             AUTO(coeff, 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::h()+vf::abs(val(sigma))));
                             AUTO(L_op, ( grad(M_phi)*val(beta) + val(sigma)*id(M_phi) ) );
@@ -230,7 +228,7 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
 
                         }//Galerkin Least Square
 
-                    else if (M_StabMethod== "SGS")
+                    else if (M_StabMethod== SGS)
                         {
                             AUTO(coeff, 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::h()+vf::abs(val(sigma))));
                             AUTO(L_op, (grad(M_phi)* val(beta) - val(sigma) * id(M_phi) ) );
@@ -259,7 +257,7 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
                    - chi( trans(beta)*N() < 0 ) * /* inflow */
                    val( (trans(beta)*N())*(g) ) * id(M_phi)
                    );
-    if (DoStabilize)
+    if (M_StabMethod != NO)
         M_rhs.add(M_rhsStab);
 
 //     M_rhs.container().printMatlab("F_advReact.m");
