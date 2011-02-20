@@ -110,7 +110,11 @@ SolverEigenSlepc<T>::init ()
 #else
             IPOrthogonalizationRefinementType refinement;
             ierr = IPGetOrthogonalization (M_ip, PETSC_NULL, &refinement, &eta);
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 1)
+            ierr = IPSetOrthogonalization (M_ip, IP_ORTH_MGS, refinement, eta);
+#else
             ierr = IPSetOrthogonalization (M_ip, IP_MGS_ORTH, refinement, eta);
+#endif // 
 #endif // 0
             CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
@@ -548,8 +552,13 @@ SolverEigenSlepc<T>:: setSlepcSpectralTransform()
 
     switch( this->spectralTransform() )
             {
+
             case SINVERT:
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 1)
+                ierr = STSetType( st, STSINVERT );
+#else
                 ierr = STSetType( st, STSINV );
+#endif 
                 break;
             case FOLD:
                 ierr = STSetType( st, STFOLD );
