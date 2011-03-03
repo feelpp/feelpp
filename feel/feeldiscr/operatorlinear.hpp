@@ -169,6 +169,26 @@ public:
         ie.container() = *_v2;
     }
 
+
+    void
+    apply( const typename domain_space_type::template Element<typename domain_space_type::value_type,
+                                                              typename VectorUblas<typename domain_space_type::value_type>::range::type > & de,
+           typename dual_image_space_type::element_type & ie)
+    {
+        if ( ! M_matrix->closed() )
+        {
+            M_matrix->close();
+        }
+        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        *_v1 = de;
+        //vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
+        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        M_backend->prod( M_matrix, _v1, _v2 );
+        ie.container() = *_v2;
+    }
+
+
+
     template <typename T1 = typename domain_space_type::element_type,
               typename T2 = typename dual_image_space_type::element_type >
     T2
