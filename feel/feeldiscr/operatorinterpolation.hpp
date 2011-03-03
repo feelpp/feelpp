@@ -592,10 +592,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::update()
 
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange>
 boost::shared_ptr<OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange> >
-opInterpolation( boost::shared_ptr<DomainSpaceType> const& domainspace,
-                 boost::shared_ptr<ImageSpaceType> const& imagespace,
-                 IteratorRange const& r,
-                 typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::backend_ptrtype const& backend )
+opInterp( boost::shared_ptr<DomainSpaceType> const& domainspace,
+          boost::shared_ptr<ImageSpaceType> const& imagespace,
+          IteratorRange const& r,
+          typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::backend_ptrtype const& backend )
 {
     typedef OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange> operatorinterpolation_type;
 
@@ -603,6 +603,47 @@ opInterpolation( boost::shared_ptr<DomainSpaceType> const& domainspace,
 
     return opI;
 }
+
+
+
+template<typename Args>
+struct compute_opInterpolation_return
+{
+    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::domainSpace>::type>::type::element_type domain_space_type;
+    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::imageSpace>::type>::type::element_type image_space_type;
+
+    typedef typename boost::remove_const<
+        typename boost::remove_reference<
+            typename parameter::binding<Args,
+                                        tag::range,
+                                        typename OperatorInterpolation<domain_space_type, image_space_type>::range_iterator
+                                        >::type >::type >::type iterator_range_type;
+
+    typedef boost::shared_ptr<OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type> > type;
+};
+
+BOOST_PARAMETER_FUNCTION(
+                         (typename compute_opInterpolation_return<Args>::type), // 1. return type
+                         opInterpolation,                        // 2. name of the function template
+                         tag,                                        // 3. namespace of tag types
+                         (required
+                          (domainSpace,    *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
+                          (imageSpace,     *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
+                          (backend,        * )
+                          ) // required
+                         (optional
+                          (range,          *, elements(imageSpace->mesh())  )
+                          ) // optionnal
+                         )
+{
+    Feel::detail::ignore_unused_variable_warning(args);
+
+    return opInterp(domainSpace,imageSpace,range,backend);
+
+
+} // opInterpolation
+
+
 
 
 } // Feel
