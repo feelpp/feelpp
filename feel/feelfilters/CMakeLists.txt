@@ -31,7 +31,7 @@ IF ( ENABLE_INSTANTIATION_MODE )
 SET(SRC
   gmshhypercubedomain.cpp gmshsimplexdomain.cpp gmshellipsoiddomain.cpp
   #exporterfactorysimplex.cpp exporterfactoryhypercube.cpp
-  exporter.cpp gmsh.cpp importergambit.cpp ${FEELFILTERS_INST_SRCS}
+  exporter.cpp gmsh.cpp importergambit.cpp ${FEELFILTERS_INST_SRCS} geotool.cpp
   )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
