@@ -111,7 +111,10 @@ test2d( Application_ptrtype test_app)
     auto M_backend = backend_type::build( test_app->vm() );
     //OperatorInterpolation< space_1_type,space_2_type> opI( Xh1,Xh2, M_backend );
     //opI.apply(u1,u2);
-    auto opI=opInterpolation( Xh1,Xh2,elements(mesh), M_backend );
+    auto opI=opInterpolation( _domainSpace=Xh1,
+                              _imageSpace=Xh2,
+                              //_range=elements(mesh),
+                              _backend=M_backend );
     opI->apply(u1,u2);
 
     double s1 = integrate(elements(mesh), trans(idv(u1))*idv(u1)).evaluate()(0,0);
@@ -122,7 +125,10 @@ test2d( Application_ptrtype test_app)
 
     BOOST_CHECK_SMALL( s1-s2,1e-8);
 
-    auto opIa=opInterpolation( Xh1,Xh2,boundaryfaces(mesh), M_backend );
+    auto opIa=opInterpolation( _domainSpace=Xh1,
+                               _imageSpace=Xh2,
+                               _range=boundaryfaces(mesh),
+                               _backend=M_backend );
     opIa->apply(u1,u2a);
 
     //double s1a = integrate(boundaryfaces(mesh), trans(idv(u1))*idv(u1)).evaluate()(0,0);
@@ -153,7 +159,10 @@ test2d( Application_ptrtype test_app)
 
     //OperatorInterpolation< space_1_type,space_2_type> opI2( Xh1,Xh2bis, M_backend );
     //opI2.apply(u1,u2bis);
-    auto opI2=opInterpolation( Xh1,Xh2bis,elements(mesh2), M_backend );
+    auto opI2=opInterpolation( _domainSpace=Xh1,
+                               _imageSpace=Xh2bis,
+                               _range=elements(mesh2),
+                               _backend=M_backend );
     opI2->apply(u1,u2bis);
 
     double s3 = integrate(elements(mesh2), trans(idv(u1))*idv(u1)).evaluate()(0,0);
@@ -162,7 +171,10 @@ test2d( Application_ptrtype test_app)
 
     BOOST_CHECK_SMALL( s3-s4,1e-6);
 
-    auto opI3=opInterpolation( Xh1,Xh2bis,boundaryfaces(mesh2), M_backend );
+    auto opI3=opInterpolation( _domainSpace=Xh1,
+                               _imageSpace=Xh2bis,
+                               _range=boundaryfaces(mesh2),
+                               _backend=M_backend );
     opI3->apply(u1,u2bisbis);
 
     //double s5 = integrate(boundaryfaces(mesh), trans(idv(u1))*idv(u1)).evaluate()(0,0);
