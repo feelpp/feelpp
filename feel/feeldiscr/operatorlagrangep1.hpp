@@ -202,6 +202,13 @@ public:
               uint16_type localptid,
               mpl::bool_<true> ) const;
 
+
+    image_mesh_ptrtype
+    mesh()
+    {
+        return _M_mesh;
+    }
+
     //@}
 
     /** @name  Mutators
@@ -412,11 +419,11 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
         }
 
     Debug(5035) << "[P1 Lagrange] Number of points in mesh: " << _M_mesh->numPoints() << "\n";
+
     _M_mesh->setNumVertices( _M_mesh->numPoints() );
     //_M_mesh->setRenumber( false );
     //_M_mesh->updateForUse( MESH_UPDATE_EDGES );
     _M_mesh->components().clear ( MESH_RENUMBER );
-
 
     for( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
         {
