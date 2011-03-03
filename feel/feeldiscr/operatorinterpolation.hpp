@@ -50,6 +50,7 @@ namespace detailsup {
         return elt.element0().id();
     }
 
+
 } //detailsup
 
 
@@ -309,14 +310,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::update()
 
                                     if (!dof_done[i])
                                         {
-                                            uint16_type ilocprime=0;
-                                            if (idim_type::value==MESH_ELEMENTS) ilocprime = iloc;
-                                            else {
-                                                for (uint16_type ilocloc = 0; ilocloc < image_basis_type::nLocalDof; ++ilocloc )
-                                                    {
-                                                        if (i == boost::get<0>(imagedof->localToGlobal( idElem, ilocloc, comp ))) ilocprime=ilocloc;
-                                                    }
-                                            }
+                                            uint16_type ilocprime=imagedof->localDofInElement(*it, iloc, comp) ;
 
                                             for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                                 {
@@ -629,17 +623,16 @@ BOOST_PARAMETER_FUNCTION(
                          (required
                           (domainSpace,    *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
                           (imageSpace,     *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-                          (backend,        * )
                           ) // required
                          (optional
                           (range,          *, elements(imageSpace->mesh())  )
+                          (backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value>::build())
                           ) // optionnal
                          )
 {
     Feel::detail::ignore_unused_variable_warning(args);
 
     return opInterp(domainSpace,imageSpace,range,backend);
-
 
 } // opInterpolation
 
