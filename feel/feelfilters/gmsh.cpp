@@ -428,7 +428,7 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
             __str << "gmsh -parametric -refine " << filename.str();
         else
             __str << "gmsh -refine " << filename.str();
-        ::system( __str.str().c_str() );
+        auto err = ::system( __str.str().c_str() );
     }
     return filename.str();
 #else
@@ -446,7 +446,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         __str << "gmsh -parametric -" << dim << " " << __geoname;
     else
         __str << "gmsh -" << dim << " " << __geoname;
-    ::system( __str.str().c_str() );
+    auto err = ::system( __str.str().c_str() );
 #else
     throw std::invalid_argument("Gmsh is not available on this system");
 #endif
