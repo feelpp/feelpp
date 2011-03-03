@@ -136,6 +136,10 @@ BOOST_PARAMETER_NAME(marker10)
 BOOST_PARAMETER_NAME(marker11)
 BOOST_PARAMETER_NAME(marker12)
 
+BOOST_PARAMETER_NAME(domainSpace)
+BOOST_PARAMETER_NAME(imageSpace)
+BOOST_PARAMETER_NAME(range)
+
 
 }
 #endif /* __feelcore_parameter_H */
