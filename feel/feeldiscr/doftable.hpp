@@ -1699,14 +1699,14 @@ DofTable<MeshType, FEType, PeriodicityType>::showMe() const
         Log()  << "************************************************************" << "\n";
         Log()  << " Boundary  Local to Global DOF table" << "\n";
         Log()  << "************************************************************" << "\n";
-        typedef typename Container::const_iterator const_iterator;
+        typedef typename Container_fromface::const_iterator const_iterator;
         const_iterator it = _M_face_l2g.begin();
         const_iterator en = _M_face_l2g.end();
         for(size_type f = 0;it!=en;++it,++f)
             {
                 std::ostringstream ostr;
                 ostr  << "face id " << f << " : ";
-                typedef typename Container::template subarray<1>::type::const_iterator const_iterator2;
+                typedef typename Container_fromface::template subarray<1>::type::const_iterator const_iterator2;
                 const_iterator2 it2 = it->begin();
                 const_iterator2 en2 = it->end();
                 for(size_type l = 0;it2!=en2;++it2,++l)
