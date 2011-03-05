@@ -195,7 +195,7 @@ endif( OPENTURNS_FOUND )
 FIND_PACKAGE(VTK)
 if ( VTK_FOUND )
   set(HAVE_VTK 1)
-  SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging -lvtkCommon" )
+  SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon" )
   INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
   MARK_AS_ADVANCED( VTK_DIR )
   SET(FEEL_LIBRARIES ${VTK_LIBRARIES} ${FEEL_LIBRARIES})
@@ -231,7 +231,7 @@ if ( NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel )
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (Feel DEFAULT_MSG
     FEEL_INCLUDE_DIR  FEEL_LIBRARY
     )
-  
+
   if ( FEEL_FOUND )
     message(STATUS "Feel++ includes: ${FEEL_INCLUDE_DIR}")
     message(STATUS "Feel++ library: ${FEEL_LIBRARY}")
@@ -242,7 +242,7 @@ if ( NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel )
   FEEL_LIBRARY
   )
 else()
-  
+
   INCLUDE_DIRECTORIES (
     ${FEEL_BUILD_DIR}/
     ${FEEL_SOURCE_DIR}/
