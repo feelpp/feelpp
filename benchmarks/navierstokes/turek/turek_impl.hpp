@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-05-29
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008,2011 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,7 @@ Turek<Dim, Order, GeoOrder>::Turek( po::variables_map const& vm )
     M_backend_symm_v( backend_type::build( this->vm() ) ),
     M_backend_symm_s( backend_type::build( this->vm() ) ),
     M_Xh(),
-    exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
+    exporter( Exporter<mesh_type>::New( this->vm(), Data::makeAbout().appName() ) ),
     M_data( "data.txt" )
 {
 
@@ -584,9 +584,9 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U)
     boost::timer ti;
     Log() << "exportResults starts\n";
 
-    mesh_ptrtype mesh = M_Xh->mesh();
-    fluid_element_0_type u = U.template element<0>();
-    fluid_element_1_type p = U.template element<1>();
+    auto mesh = M_Xh->mesh();
+    auto u = U.template element<0>();
+    auto p = U.template element<1>();
 
     double DeltaP = p( this->xa() )( 0, 0, 0 ) - p( this->xe() )( 0, 0, 0 );
     Log() << "DeltaP=" << DeltaP << "\n";
@@ -594,10 +594,10 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U)
     Log() << "[exportResults] Dp : " << ti.elapsed() << "\n";
     ti.restart();
 
-    AUTO( defv, 0.5*( gradv(u)+trans(gradv(u)) ) );
-    AUTO( SigmaNv, (-idv(p)*N()+2*this->nu()*defv*N()) );
+    auto defv = 0.5*( gradv(u)+trans(gradv(u)) );
+    auto SigmaNv = (-idv(p)*N()+2*this->nu()*defv*N());
 
-    ublas::matrix<double> Force = integrate( markedfaces(mesh,mesh->markerName( "cylinder" )), _Q<uOrder-1+3*(GeoOrder-1)>(), SigmaNv ).evaluate();
+    auto Force = integrate( markedfaces(mesh,mesh->markerName( "cylinder" )), _Q<uOrder-1+3*(GeoOrder-1)>(), SigmaNv ).evaluate();
     Log() << "Force=" << Force << "\n";
     Log() << "Scaling=" << this->scalingForce() << "\n";
     Force *= this->scalingForce();
