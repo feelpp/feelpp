@@ -3,7 +3,7 @@
 
 #+TITLE: Feel++ News
 #+AUTHOR: Christophe Prud'homme
-#+DATE: <2010-10-29 Fri>
+#+DATE: <2011-02-26 Sat>
 #+EMAIL: christophe.prudhomme@ujf-grenoble.fr
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
@@ -61,6 +61,8 @@
  - added interface to the DofTable class to retrieve all the dof associated to
    an element in a Eigen vector as well as the dof signs (when modal basis are
    used)
+ - advection/reaction operator: added support for other stabilisation methods
+   SGS, GALS, SUPG (CIP was already implemented)
 
 *** feelfilters
 
