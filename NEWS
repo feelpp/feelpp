@@ -63,6 +63,19 @@
    used)
  - advection/reaction operator: added support for other stabilisation methods
    SGS, GALS, SUPG (CIP was already implemented)
+ - added support in opInterpolation for boost.parameter keywords
+   Examples :
+#+BEGIN_SRC c++
+auto opI = opInterpolation( _domainSpace=Xh1,
+                           _imageSpace=Xh2,
+                           _range=boundaryfaces(Xh2->mesh()),
+                           _backend=M_backend );
+
+auto opI = opInterpolation( _domainSpace=Xh1,
+                           _imageSpace=Xh2,
+                           _backend=M_backend );
+#+END_SRC
+with by default : =_range=elements(Xh2->mesh())=
 
 *** feelfilters
 
