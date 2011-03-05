@@ -22,7 +22,7 @@
 #
 #
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-add_executable( feel_turek turekapp.cpp data.cpp turek_d2o2g1.cpp )
+add_executable( feel_turek EXCLUDE_FROM_ALL turekapp.cpp data.cpp turek_d2o2g1.cpp  )
 target_link_libraries(feel_turek ${FEEL_LIBRARIES} )
 
 #turek_d2o2g2.cpp \
