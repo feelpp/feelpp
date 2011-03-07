@@ -1490,6 +1490,40 @@ namespace Feel {
 
 
 
+        template<typename mesh_type>
+        boost::shared_ptr<mesh_type>
+        createMeshFromGeoFile(std::string geofile,std::string name,double meshSize)
+        {
+
+            std::ostringstream ostr;
+            std::string contenu;
+            ifstream ifstr(geofile, ios::in);
+            if(ifstr)
+                {
+                    while(getline(ifstr, contenu))  // on met dans "contenu" la ligne
+                        ostr << contenu<<"\n";
+
+                    ifstr.close();
+                }
+
+
+            Gmsh gmsh;
+            gmsh.setOrder(mesh_type::nOrder);
+            gmsh.setCharacteristicLength(meshSize);
+            std::string fname = gmsh.generate( name,
+                                               ostr.str(),false,false,true );
+
+            ImporterGmsh<mesh_type> import( fname );
+            import.setVersion( "2.1" );
+
+            boost::shared_ptr<mesh_type> mesh( new mesh_type );
+            mesh->accept( import );
+            mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+            mesh->updateForUse();
+
+            return mesh;
+        }
+
 
 
     }//GeoTool
