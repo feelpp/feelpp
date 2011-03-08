@@ -1497,7 +1497,7 @@ namespace Feel {
 
             std::ostringstream ostr;
             std::string contenu;
-            ifstream ifstr(geofile, ios::in);
+            std::ifstream ifstr(geofile, std::ios::in);
             if(ifstr)
                 {
                     while(getline(ifstr, contenu))  // on met dans "contenu" la ligne
