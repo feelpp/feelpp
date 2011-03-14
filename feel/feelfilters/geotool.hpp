@@ -1507,8 +1507,8 @@ namespace Feel {
                 }
 
 
-            Gmsh gmsh;
-            gmsh.setOrder(mesh_type::nOrder);
+            Gmsh gmsh(mesh_type::nDim,mesh_type::nOrder);
+            //gmsh.setOrder(mesh_type::nOrder);
             gmsh.setCharacteristicLength(meshSize);
             std::string fname = gmsh.generate( name,
                                                ostr.str(),false,false,true );
