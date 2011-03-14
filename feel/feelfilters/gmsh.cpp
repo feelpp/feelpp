@@ -401,10 +401,10 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
                         generate( __geoname.str(), 3, parametric );
                     else if ( __geo.find( "Surface" ) != std::string::npos )
                         generate( __geoname.str(), 2, parametric );
-                    else if ( __geo.find( "Line" )  != std::string::npos )
+                    else //if ( __geo.find( "Line" )  != std::string::npos )
                         generate( __geoname.str(), 1, parametric );
-                    else
-                        generate( __geoname.str(), 3, parametric );
+                    //else
+                        //generate( __geoname.str(), 3, parametric );
                 }
             Debug( 10000 ) << "[Gmsh::generate] meshname = " << __meshname.str() << "\n";
             fname=__meshname.str();
