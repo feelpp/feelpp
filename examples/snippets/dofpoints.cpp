@@ -65,8 +65,12 @@ int main(int argc, char** argv)
         auto dofpt_comp = dofpt_it->get<2>();
 
         // do something with the coordinate and store it in the proper vector entry in B
-        auto r = vf::sqrt( (Px()-dofpt_coord[0])*(Px()-dofpt_coord[0]) + (Py()-dofpt_coord[1])*(Py()-dofpt_coord[1]) );
-        B[dofpt_id] = integrate( elements(mesh), r ).evaluate()( dofpt_comp, 0 );
+        auto r = vec( (Px()-dofpt_coord[0])*(Px()-dofpt_coord[0]),
+                      (Py()-dofpt_coord[1])*(Py()-dofpt_coord[1]) );
+        auto I = integrate( elements(mesh), r ).evaluate();
+        std::cout << "I = " << I << "\n";
+        B[dofpt_id] = I( dofpt_comp, 0 );
+        std::cout << "Dof coordinate[" << dofpt_id << "]=" << dofpt_coord << "\n";
         std::cout << "B[" << dofpt_id << "]=" << B[dofpt_id] << "\n";
 
   }
