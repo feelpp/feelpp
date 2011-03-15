@@ -50,7 +50,7 @@ int main(int argc, char** argv)
     auto B = Xh->element();
 
     std::cout << "number of degees of freedom: " << Xh->nDof() << "\n";
-    std::cout << "B.size: : " << B.size() << "\n"
+    std::cout << "B.size: : " << B.size() << "\n";
     auto dofpt_it = Xh->dof()->dofPointBegin();
     auto dofpt_en = Xh->dof()->dofPointEnd();
 
