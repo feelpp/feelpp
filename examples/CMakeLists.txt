@@ -8,6 +8,6 @@ macro(feel_add_example examplename)
   target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
 endmacro(feel_add_example)
 
-foreach( DIR generic heat solid )
+foreach( DIR generic heat solid snippets)
   add_subdirectory( ${DIR} )
 endforeach()
