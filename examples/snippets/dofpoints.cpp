@@ -36,7 +36,7 @@ int main(int argc, char** argv)
 {
     using namespace Feel;
     using namespace Feel::vf;
-    Feel::Environment(argc, argv );
+    Feel::Environment env(argc, argv );
     typedef Mesh<Simplex<2> > mesh_type;
     typedef FunctionSpace<mesh_type,bases<Lagrange<2,Vectorial> > > fs_type;
 
@@ -45,10 +45,12 @@ int main(int argc, char** argv)
                                               _usenames=true,
                                               _shape="hypercube",
                                               _dim=2,
-                                              _h=0.1 ) );
+                                              _h=2 ) );
     auto Xh = fs_type::New( mesh );
     auto B = Xh->element();
 
+    std::cout << "number of degees of freedom: " << Xh->nDof() << "\n";
+    std::cout << "B.size: : " << B.size() << "\n"
     auto dofpt_it = Xh->dof()->dofPointBegin();
     auto dofpt_en = Xh->dof()->dofPointEnd();
 
