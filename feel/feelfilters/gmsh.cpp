@@ -420,12 +420,7 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
     std::ostringstream filename;
     filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
 
-#if BOOST_VERSION < 104600
     fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists );
-#else
-#warning boost bug with 1_46 version
-    //fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists );
-#endif
     for( int l = 0; l < level; ++l )
     {
         // generate mesh
