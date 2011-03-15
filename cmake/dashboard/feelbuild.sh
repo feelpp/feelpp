@@ -13,7 +13,7 @@ fi
 if ! [ -d $HOME/sources/ ]; then mkdir -p $HOME/sources/; fi
 cd $HOME/sources/
 if ! [ -d $HOME/sources/feel ]; then
-    svn checkout svn://scm.ljkforge.imag.fr/svnroot/life/life/trunk feel
+    svn checkout svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk feel
 
     echo "type 'crontab -e' and enter"
     echo " 0  1   *   *   * $HOME/sources/feel/cmake/dashboard/feelbuild.sh Nightly"
