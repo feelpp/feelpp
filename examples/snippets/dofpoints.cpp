@@ -32,14 +32,16 @@
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelvf/vf.hpp>
 
-int main()
+int main(int argc, char** argv)
 {
     using namespace Feel;
+    using namespace Feel::vf;
+    Feel::Environment(argc, argv );
     typedef Mesh<Simplex<2> > mesh_type;
     typedef FunctionSpace<mesh_type,bases<Lagrange<2,Vectorial> > > fs_type;
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                _desc=domain( _name="hypercube-2"
+                                _desc=domain( _name="hypercube-2",
                                               _usenames=true,
                                               _shape="hypercube",
                                               _dim=2,
@@ -61,7 +63,9 @@ int main()
         auto dofpt_comp = dofpt_it->get<2>();
 
         // do something with the coordinate and store it in the proper vector entry in B
-        auto r = sqrt( (Px()-dofpt_coord[0])*(Px()-dofpt_coord[0]) + (Px()-dofpt_coord[1])*(Px()-dofpt_coord[1]) );
-        B[dofpt_id] = integrate( elements(mesh), r ).evaluate( dofpt_comp, 0 );
-    }
+        auto r = vf::sqrt( (Px()-dofpt_coord[0])*(Px()-dofpt_coord[0]) + (Py()-dofpt_coord[1])*(Py()-dofpt_coord[1]) );
+        B[dofpt_id] = integrate( elements(mesh), r ).evaluate()( dofpt_comp, 0 );
+        std::cout << "B[" << dofpt_id << "]=" << B[dofpt_id] << "\n";
+
+  }
 }
