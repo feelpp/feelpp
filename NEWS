@@ -14,6 +14,7 @@
 
  - Life has been rename Feel++ (Finite Element Embedded Language and Library in
    C++)
+ - Feel++ supports Boost up to 1.46
  - Ported to Gcc 4.5. Very few changes were needed: (i) one 1-liner to fix a
    segfault with Gcc4.5 and (ii) fixed a warning that was quite annoying
  - Added OpenTURNS check (optional)
