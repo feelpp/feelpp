@@ -70,7 +70,7 @@ int main(int argc, char** argv)
         auto I = integrate( elements(mesh), r ).evaluate();
         std::cout << "I = " << I << "\n";
         B[dofpt_id] = I( dofpt_comp, 0 );
-        std::cout << "Dof coordinate[" << dofpt_id << "]=" << dofpt_coord << "\n";
+        std::cout << "Dof coordinate[" << dofpt_id << "]=" << dofpt_coord << ", component=" << dofpt_comp << "\n";
         std::cout << "B[" << dofpt_id << "]=" << B[dofpt_id] << "\n";
 
   }
