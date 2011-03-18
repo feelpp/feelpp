@@ -39,5 +39,7 @@ feel_append_src(feelfilters "${SRC};${HDR}")
 
 # create $ENV{HOME}/feel/geo if it does not exist already: this is the geometry
 # files repository
-file(MAKE_DIRECTORY $ENV{HOME}/feel/geo)
-file(COPY feel.geo  feel.geo DESTINATION $ENV{HOME}/feel/geo )
+if (EXISTS $ENV{HOME})
+  file(MAKE_DIRECTORY $ENV{HOME}/feel/geo)
+  file(COPY feel.geo  feel.geo DESTINATION $ENV{HOME}/feel/geo )
+endif(EXISTS $ENV{HOME})
