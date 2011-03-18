@@ -23,10 +23,30 @@
 #
 cmake_minimum_required (VERSION 2.6)
 
-SET(CMAKE_CXX_FLAGS "-std=c++0x  -mssse3" CACHE STRING "Default flags" FORCE)
-SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++0x -g  -mssse3" CACHE STRING "Debug flags" FORCE)
-SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -O2  -mssse3 -DNDEBUG" CACHE STRING "Release flags" FORCE)
+# guard against in-source builds
 
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+  message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
+endif()
+
+# guard against bad build-type strings
+
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_tolower)
+if(    NOT cmake_build_type_tolower STREQUAL "debug"
+   AND NOT cmake_build_type_tolower STREQUAL "release"
+   AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
+  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are Debug, Release, RelWithDebInfo (case-insensitive).")
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX)
+  SET(CMAKE_CXX_FLAGS "-std=c++0x" CACHE STRING "Default flags" FORCE)
+  SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++0x -g" CACHE STRING "Debug flags" FORCE)
+  SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -g0 -O2 -DNDEBUG" CACHE STRING "Release flags" FORCE)
+endif(CMAKE_COMPILER_IS_GNUCXX)
 
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS)
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS_DEBUG)
@@ -131,10 +151,52 @@ ENDIF()
 OPTION(FEEL_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 if ( FEEL_BENCHMARK_FLAGS )
   set(CMAKE_BUILD_TYPE Release )
-  SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -O3 -mssse3 -DNDEBUG --param max-inline-recursive-depth=32 --param max-gcse-passes=3 --param max-gcse-memory=8000 --param max-inline-insns-single=2000" CACHE STRING "Release flags" FORCE)
+  SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -O3 -DNDEBUG --param max-inline-recursive-depth=32 --param max-gcse-passes=3 --param max-gcse-memory=8000 --param max-inline-insns-single=2000" CACHE STRING "Release flags" FORCE)
 endif()
 
+if(CMAKE_COMPILER_IS_GNUCXX)
+  option(FEEL_ENABLE_SSE2 "Enable/Disable SSE2 in tests/examples" OFF)
+  if(FEEL_ENABLE_SSE2)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
+    message(STATUS "Enabling SSE2 in tests/examples")
+  endif()
 
+  option(FEEL_ENABLE_SSE3 "Enable/Disable SSE3 in tests/examples" OFF)
+  if(FEEL_ENABLE_SSE3)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
+    message(STATUS "Enabling SSE3 in tests/examples")
+  endif()
+
+  option(FEEL_ENABLE_SSSE3 "Enable/Disable SSSE3 in tests/examples" OFF)
+  if(FEEL_ENABLE_SSSE3)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
+    message(STATUS "Enabling SSSE3 in tests/examples")
+  endif()
+
+  option(FEEL_ENABLE_SSE4_1 "Enable/Disable SSE4.1 in tests/examples" OFF)
+  if(FEEL_ENABLE_SSE4_1)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
+    message(STATUS "Enabling SSE4.1 in tests/examples")
+  endif()
+
+  option(FEEL_ENABLE_SSE4_2 "Enable/Disable SSE4.2 in tests/examples" OFF)
+  if(FEEL_ENABLE_SSE4_2)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.2")
+    message(STATUS "Enabling SSE4.2 in tests/examples")
+  endif()
+
+  option(FEEL_ENABLE_ALTIVEC "Enable/Disable AltiVec in tests/examples" OFF)
+  if(FEEL_ENABLE_ALTIVEC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -maltivec -mabi=altivec")
+    message(STATUS "Enabling AltiVec in tests/examples")
+  endif()
+
+  option(FEEL_ENABLE_NEON "Enable/Disable Neon in tests/examples" OFF)
+  if(FEEL_ENABLE_NEON)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=softfp -mfpu=neon -mcpu=cortex-a8")
+    message(STATUS "Enabling NEON in tests/examples")
+  endif()
+endif(CMAKE_COMPILER_IS_GNUCXX)
 #INCLUDE(PackageArchGlobalMacros)
 # INCLUDE(FeelGlobalMacros)
 #INCLUDE(AdvancedSet)

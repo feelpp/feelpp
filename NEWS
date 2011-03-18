@@ -8,6 +8,14 @@
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
+* New in 0.91.0
+
+** Programming Environment
+
+ - added sse, altivec and neon optimizations
+ - fix bug in make_directory
+
+ 
 * New in 0.90.0
 
 ** Programming Environment
