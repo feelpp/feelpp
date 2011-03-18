@@ -12,8 +12,12 @@
 
 ** Programming Environment
 
- - added sse, altivec and neon optimizations
- - fix bug in make_directory
+*** Developer changes
+
+ - cmake: in-source builds forbidden
+ - cmake: guards againts invalid CMAKE_BUILD_TYPE
+ - cmake: added sse, altivec and neon optimizations
+ - cmake: fix bug in make_directory
 
  
 * New in 0.90.0
