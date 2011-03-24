@@ -69,8 +69,14 @@ public:
     typedef typename domain_space_type::template Element<typename domain_space_type::value_type,
                                                          typename VectorUblas<typename domain_space_type::value_type>::range::type > domain_element_range_type;
 
+    typedef typename domain_space_type::template Element<typename domain_space_type::value_type,
+                                                         typename VectorUblas<typename domain_space_type::value_type>::slice::type > domain_element_slice_type;
+
     typedef typename dual_image_space_type::template Element<typename dual_image_space_type::value_type,
                                                              typename VectorUblas<typename dual_image_space_type::value_type>::range::type > dual_image_element_range_type;
+
+    typedef typename dual_image_space_type::template Element<typename dual_image_space_type::value_type,
+                                                             typename VectorUblas<typename dual_image_space_type::value_type>::slice::type > dual_image_element_slice_type;
 
     //template<typename T, typename Storage>
     //struct dual_image_element: public super::dual_image_space_type::template Element<T,Storage> {};
@@ -222,6 +228,86 @@ public:
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
+
+
+    void
+    apply( const domain_element_slice_type & de,
+           typename dual_image_space_type::element_type & ie)
+    {
+        if ( ! M_matrix->closed() )
+        {
+            M_matrix->close();
+        }
+        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        *_v1 = de;
+        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        M_backend->prod( M_matrix, _v1, _v2 );
+        ie.container() = *_v2;
+    }
+
+    void
+    apply( const typename domain_space_type::element_type & de,
+           dual_image_element_slice_type & ie)
+    {
+        if ( ! M_matrix->closed() )
+        {
+            M_matrix->close();
+        }
+        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        *_v1 = de;
+        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        M_backend->prod( M_matrix, _v1, _v2 );
+        ie.container() = *_v2;
+    }
+
+
+    void
+    apply( const domain_element_slice_type & de,
+           dual_image_element_slice_type & ie)
+    {
+        if ( ! M_matrix->closed() )
+        {
+            M_matrix->close();
+        }
+        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        *_v1 = de;
+        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        M_backend->prod( M_matrix, _v1, _v2 );
+        ie.container() = *_v2;
+    }
+
+
+    void
+    apply( const domain_element_range_type & de,
+           dual_image_element_slice_type & ie)
+    {
+        if ( ! M_matrix->closed() )
+        {
+            M_matrix->close();
+        }
+        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        *_v1 = de;
+        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        M_backend->prod( M_matrix, _v1, _v2 );
+        ie.container() = *_v2;
+    }
+
+    void
+    apply( const domain_element_slice_type & de,
+           dual_image_element_range_type & ie)
+    {
+        if ( ! M_matrix->closed() )
+        {
+            M_matrix->close();
+        }
+        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        *_v1 = de;
+        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        M_backend->prod( M_matrix, _v1, _v2 );
+        ie.container() = *_v2;
+    }
+
+
 
 
 #if 0
