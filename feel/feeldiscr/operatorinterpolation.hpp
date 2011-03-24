@@ -626,7 +626,7 @@ BOOST_PARAMETER_FUNCTION(
                           ) // required
                          (optional
                           (range,          *, elements(imageSpace->mesh())  )
-                          (backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value>::build())
+                          (backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build())
                           ) // optionnal
                          )
 {
