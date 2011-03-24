@@ -1161,7 +1161,7 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
             typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
 
             //apply the inverse geometric transformation for the point p
-            gic.setXReal( p);
+            gic.setXReal(boost::get<0>(*ptsNN.begin()));//gic.setXReal( p);
             __x_ref=gic.xRef();
 
             // the point is in the reference element ?
