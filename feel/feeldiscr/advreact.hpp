@@ -53,8 +53,7 @@ enum StabilizationMethods{NO, CIP, SGS, SUPG, GALS};
  * the inflow boundary is detected through beta
  *
  */
-template<class Space, uint16_type imOrder,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+template<class Space>
 class AdvReact
 {
 public:
@@ -78,9 +77,6 @@ public:
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
-    /* quadrature */
-    typedef IM<Dim, imOrder, value_type, Entity> im_type;
-
     AdvReact( const space_ptrtype& space,
               const backend_ptrtype& backend )
         :
@@ -92,8 +88,7 @@ public:
         M_rhs( space ),
         M_rhsStab( space ),
         M_updated( false ),
-        M_stabcoeff( 0.1 * std::pow( polyOrder, -3.5 ) ),
-        M_im()
+        M_stabcoeff( 0.1 * std::pow( polyOrder, -3.5 ) )
     {
         M_StabMethod=GALS;
     }
@@ -146,18 +141,15 @@ private:
 
     double M_stabcoeff;
 
-    im_type M_im;
-
     StabilizationMethods M_StabMethod;
 
 }; // class AdvReact
 
 
-template<class Space, uint16_type imOrder,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+template<class Space>
 template<typename Esigma, typename Ebeta,
          typename Ef, typename Eg>
-void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
+void AdvReact<Space>::update(const Esigma& sigma,
                                               const Ebeta& beta,
                                               const Ef& f,
                                               const Eg& g,
@@ -169,10 +161,10 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
     using namespace Feel::vf;
 
     M_operator =
-        integrate( elements(M_mesh), M_im,
+        integrate( elements(M_mesh),
                    ( val(sigma)*idt(M_phi) + gradt(M_phi)*val(beta) ) * id(M_phi)
                    ) +
-        integrate( boundaryfaces(M_mesh), M_im,
+        integrate( boundaryfaces(M_mesh),
                    - chi( trans(beta)*N() < 0 ) * /* inflow */
                    val(trans(beta)*N()) * idt(M_phi) * id(M_phi)
                    );
@@ -186,7 +178,7 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
                                 {
                                     /* don't work properly in 3D (because of internalfaces) */
                                     M_operatorStab=
-                                        integrate( internalfaces(M_mesh), M_im,
+                                        integrate( internalfaces(M_mesh),
                                                    val( M_stabcoeff*vf::pow(hFace(),2.0) *
                                                         abs(trans(beta)*N()) ) *
                                                    (jumpt(gradt(M_phi)) * jump(grad(M_phi)))
@@ -200,13 +192,13 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
                             AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) ) );
 
                             M_operatorStab=
-                                integrate(elements(M_mesh), M_im,
+                                integrate(elements(M_mesh),
                                           coeff
                                           * L_op
                                           * L_opt );
 
                             M_rhsStab=
-                                integrate(elements(M_mesh), M_im,
+                                integrate(elements(M_mesh),
                                           coeff*L_op*val(f));
                         }//Streamline Upwind Petrov Galerkin
 
@@ -217,13 +209,13 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
                             AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) ) );
 
                             M_operatorStab=
-                                integrate( elements(M_mesh), M_im,
+                                integrate( elements(M_mesh),
                                            coeff
                                            * L_op
                                            * L_opt );
 
                             M_rhsStab=
-                                integrate(elements(M_mesh), M_im,
+                                integrate(elements(M_mesh),
                                           coeff*L_op*val(f));
 
                         }//Galerkin Least Square
@@ -235,12 +227,12 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
                             AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) ) );
 
                             M_operatorStab=
-                                integrate(elements(M_mesh), M_im,
+                                integrate(elements(M_mesh),
                                           coeff
                                           * L_op
                                           * L_opt );
                             M_rhsStab=
-                                integrate(elements(M_mesh), M_im,
+                                integrate(elements(M_mesh),
                                           coeff*L_op*val(f));
                         }//Subgrid Scale method
                 }//update stabilization
@@ -250,10 +242,10 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
     //     M_operator.mat().printMatlab("M_advReact.m");
 
     M_rhs =
-        integrate( elements(M_mesh), M_im,
+        integrate( elements(M_mesh),
                    val(f) * id(M_phi)
                    ) +
-        integrate( boundaryfaces(M_mesh), M_im,
+        integrate( boundaryfaces(M_mesh),
                    - chi( trans(beta)*N() < 0 ) * /* inflow */
                    val( (trans(beta)*N())*(g) ) * id(M_phi)
                    );
@@ -264,9 +256,8 @@ void AdvReact<Space, imOrder, Entity>::update(const Esigma& sigma,
 
 } // update
 
-template<class Space, uint16_type imOrder,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
-void AdvReact<Space, imOrder, Entity>::solve()
+template<class Space>
+void AdvReact<Space>::solve()
 {
     // -- make sure solve is needed
     if ( !M_updated )
