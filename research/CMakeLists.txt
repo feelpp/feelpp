@@ -48,3 +48,9 @@ endif()
 if ( EXISTS ${FEEL_SOURCE_DIR}/research/darcy )
   add_subdirectory( darcy )
 endif()
+
+
+# Hamm project
+if ( EXISTS ${FEEL_SOURCE_DIR}/research/hamm )
+  add_subdirectory( hamm )
+endif()
