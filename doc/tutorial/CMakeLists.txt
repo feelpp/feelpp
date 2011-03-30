@@ -80,7 +80,7 @@ macro( add_docex target )
  endforeach()
 endmacro()
 
-foreach( docex myapp myintegrals mymesh myfunctionspace laplacian residualestimator)
+foreach( docex myapp myintegrals mymesh)
   add_docex( ${docex} )
 endforeach()
 
@@ -100,7 +100,7 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY
 
 if ( NOT FEEL_MINIMAL_CONFIGURATION )
 
-foreach( docex stokes bratu nonlinearpow )
+foreach( docex  myfunctionspace laplacian residualestimator stokes bratu nonlinearpow )
   add_docex( ${docex} )
 endforeach()
 
