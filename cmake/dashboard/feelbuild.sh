@@ -21,7 +21,9 @@ if ! [ -d $HOME/sources/feel ]; then
 fi
 
 #this is due to a bug, the process extracts information from the svn output which needs to be in english
-export LC_MESSAGES=en_GB
+unset LC_MESSAGES
+unset LANG
+unset LC_ALL
 
 #do the actual work
 if [ -f $HOME/sources/$1.log ]; then  rm -f $HOME/sources/$1.log; fi
