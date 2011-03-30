@@ -18,6 +18,7 @@
  - cmake: guards againts invalid CMAKE_BUILD_TYPE
  - cmake: added sse, altivec and neon optimizations
  - cmake: fix bug in make_directory
+ - cmake: even more minimal configuration in doc/tutorial
 
  
 * New in 0.90.0
