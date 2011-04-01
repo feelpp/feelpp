@@ -753,7 +753,7 @@ public:
      *  compute \f$ K(x_{\mathrm{ref}}) = G \nabla_{\mathrm{ref}} \phi(x_{\mathrm{ref}}) \f$
      *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
      *
-     *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^{-T} K )^{-1} \f$
+     *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
      *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
      */
     void update( element_type const& __e, uint16_type __f )
@@ -841,7 +841,7 @@ public:
      *  compute \f$ K(x_{\mathrm{ref}}) = G \nabla_{\mathrm{ref}} \phi(x_{\mathrm{ref}}) \f$
      *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
      *
-     *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^{-T} K )^{-1} \f$
+     *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
      *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
      */
     void update( element_type const& __e )
@@ -1956,7 +1956,7 @@ private:
        compute \f$ K(x_{\mathrm{ref}}) = G \nabla_{\mathrm{ref}} \phi(x_{\mathrm{ref}}) \f$
        where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
 
-       compute \f$ B(x_{\mathrm{ref}}) = K ( K^{-T} K )^{-1} \f$
+       compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
        where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
     */
     void update()
