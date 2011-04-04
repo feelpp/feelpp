@@ -80,7 +80,7 @@ macro( add_docex target )
  endforeach()
 endmacro()
 
-foreach( docex myapp myintegrals mymesh)
+foreach( docex myapp myintegrals mymesh geotool)
   add_docex( ${docex} )
 endforeach()
 
