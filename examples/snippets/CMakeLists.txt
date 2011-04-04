@@ -24,5 +24,3 @@
 add_executable(dofpoints dofpoints.cpp)
 target_link_libraries(dofpoints ${FEEL_LIBRARIES})
 
-add_executable(stokes_poiseuille stokes_poiseuille.cpp)
-target_link_libraries(stokes_poiseuille ${FEEL_LIBRARIES})
