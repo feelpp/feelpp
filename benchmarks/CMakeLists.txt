@@ -24,6 +24,6 @@ macro(feel_add_bench examplename)
   target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
 endmacro(feel_add_bench)
 
-foreach( DIR laplacian  navierstokes/kovasznay navierstokes/turek perf wrapper/python python )
+foreach( DIR laplacian  navierstokes perf wrapper/python python )
   add_subdirectory( ${DIR} )
 endforeach()
