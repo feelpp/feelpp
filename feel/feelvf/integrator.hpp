@@ -912,8 +912,6 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 {
     Debug( 5065 ) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
-    std::cout << "integrating over "
-              << std::distance( this->beginElement(), this->endElement() )  << " elements" << std::endl;
     boost::timer __timer;
 
 #if !defined(HAVE_TBB)
@@ -944,24 +942,28 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     if ( it == en )
         return typename eval::matrix_type(eval::matrix_type::Zero());
 
-    std::cout << "0" << std::endl;
+    //std::cout << "0" << std::endl;
 
     //
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
     //
+    // warning this is not efficient here, we want to use the geometric mapping
+    // from the elements in order to take advantage of the cache if possible
+    // this change hsa been made in order to circumvent a bug which is not yet found
+#warning INEFFICIENT CODE HERE : TO DEBUG
     gm_ptrtype gm( new gm_type) ;//it->gm();
-    std::cout << "0.5" << std::endl;
+    //std::cout << "0.5" << std::endl;
     gm1_ptrtype gm1( new gm1_type);//it->gm1();
-    std::cout << "0.6:  " << gm1.use_count() << " " << gm.use_count() << std::endl;
+    //std::cout << "0.6:  " << gm1.use_count() << " " << gm.use_count() << std::endl;
     //Debug(5065) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
     typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
                                                                        this->im().points() ) );
-    std::cout << "1" << std::endl;
+    //std::cout << "1" << std::endl;
     typename eval::gmpc1_ptrtype __geopc1( new typename eval::gmpc1_type( gm1,
                                                                           this->im().points() ) );
 
-    std::cout << "2" << std::endl;
+    //std::cout << "2" << std::endl;
     it = this->beginElement();
     // wait for all the guys
 #ifdef HAVE_MPI
@@ -976,19 +978,19 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-    std::cout << "3" << std::endl;
+    //std::cout << "3" << std::endl;
     typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
     eval_expr_type expr( expression(), mapgmc );
     typedef typename eval_expr_type::shape shape;
-    std::cout << "4" << std::endl;
+    //std::cout << "4" << std::endl;
     // order 1
     gmc1_ptrtype __c1( new gmc1_type( gm1, *it, __geopc1 ) );
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
     map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
-    std::cout << "5" << std::endl;
+    //std::cout << "5" << std::endl;
     typedef typename expression_type::template tensor<map_gmc1_type> eval_expr1_type;
     eval_expr1_type expr1( expression(), mapgmc1 );
-    std::cout << "6" << std::endl;
+    //std::cout << "6" << std::endl;
     typename eval::matrix_type res( eval::matrix_type::Zero() );
 
     //value_type res1 = 0;
@@ -998,7 +1000,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             {
             case  GEOMAP_HO :
             {
-                std::cout << "geomap ho" << std::endl;
+                //std::cout << "geomap ho" << std::endl;
                 __c->update( *it );
                 map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
                 expr.update( mapgmc );
@@ -1012,12 +1014,12 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     {
                         res(c1,c2) += _M_im( expr, c1, c2 );
                     }
-                std::cout << it->id() << " : " << _M_im( expr, 0, 0 ) << "\n";
+                //std::cout << it->id() << " : " << _M_im( expr, 0, 0 ) << "\n";
             }
             break;
             case GEOMAP_O1:
             {
-                std::cout << "geomap o1" << std::endl;
+                //std::cout << "geomap o1" << std::endl;
                 __c1->update( *it );
                 map_gmc1_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c1 ) );
                 expr1.update( mapgmc );
@@ -1031,15 +1033,15 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     {
                         res(c1,c2) += _M_im( expr1, c1, c2 );
                     }
-                std::cout << it->id() << " : " << _M_im( expr1, 0, 0 ) << "\n";
+                //std::cout << it->id() << " : " << _M_im( expr1, 0, 0 ) << "\n";
             }
             break;
             case GEOMAP_OPT:
             {
-                std::cout << "geomap opt" << std::endl;
+                //std::cout << "geomap opt" << std::endl;
                 if ( it->isOnBoundary() )
                 {
-                    std::cout << "boundary element using ho" << std::endl;
+                    //std::cout << "boundary element using ho" << std::endl;
                     __c->update( *it );
                     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
                     expr.update( mapgmc );
@@ -1053,11 +1055,11 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                         {
                             res(c1,c2) += _M_im( expr, c1, c2 );
                         }
-                    std::cout << it->id() << " : " << _M_im( expr, 0, 0 ) << "\n";
+                    //std::cout << it->id() << " : " << _M_im( expr, 0, 0 ) << "\n";
                 }
                 else
                 {
-                    std::cout << "interior element using order 1" << std::endl;
+                    //std::cout << "interior element using order 1" << std::endl;
                     __c1->update( *it );
                     map_gmc1_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c1 ) );
                     expr1.update( mapgmc );
@@ -1071,14 +1073,14 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                         {
                             res(c1,c2) += _M_im( expr1, c1, c2 );
                         }
-                    std::cout << it->id() << " : " << _M_im( expr1, 0, 0 ) << "\n";
+                    //std::cout << it->id() << " : " << _M_im( expr1, 0, 0 ) << "\n";
                 }
             }
             break;
             }
         }
-    //std::cout << "res=" << res << "\n";
-    //std::cout << "res1=" << res1 << "\n";
+    ////std::cout << "res=" << res << "\n";
+    ////std::cout << "res1=" << res1 << "\n";
     Debug( 5065 ) << "integrating over elements done in " << __timer.elapsed() << "s\n";
     return res;
 #else
@@ -1570,7 +1572,7 @@ Expr<Integrator<IntElts, Im, ExprT> >
 integrate( IntElts const& elts,
            Im const& im,
            ExprT const& expr,
-           GeomapIntegratorType gt = GEOMAP_OPT )
+           GeomapIntegratorType gt = GEOMAP_HO )
 {
     typedef Integrator<IntElts, Im, ExprT> expr_t;
     std::cout << "[integrate] calling with gt=" << gt << std::endl;
@@ -1595,7 +1597,7 @@ template<typename IntElts, typename ExprT>
 Expr<Integrator<IntElts, _Q< ExpressionOrder<ExprT>::value >, ExprT> >
 integrate( IntElts const& elts,
            ExprT const& expr,
-           GeomapIntegratorType gt = GEOMAP_OPT )
+           GeomapIntegratorType gt = GEOMAP_HO )
 {
     Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<ExprT>::value << "\n";
     std::cout << "[integrate] order to integrate = " << ExpressionOrder<ExprT>::value << "\n";
