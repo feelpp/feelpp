@@ -35,6 +35,7 @@ template<typename HyperplaneType> void hyperplane(const HyperplaneType& _plane)
   */
   typedef typename HyperplaneType::Index Index;
   const Index dim = _plane.dim();
+  enum { Options = HyperplaneType::Options };
   typedef typename HyperplaneType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, HyperplaneType::AmbientDimAtCompileTime, 1> VectorType;
@@ -51,8 +52,8 @@ template<typename HyperplaneType> void hyperplane(const HyperplaneType& _plane)
   HyperplaneType pl1(n1, p1);
   HyperplaneType pl2 = pl1;
 
-  Scalar s0 = ei_random<Scalar>();
-  Scalar s1 = ei_random<Scalar>();
+  Scalar s0 = internal::random<Scalar>();
+  Scalar s1 = internal::random<Scalar>();
 
   VERIFY_IS_APPROX( n1.dot(n1), Scalar(1) );
 
@@ -85,9 +86,9 @@ template<typename HyperplaneType> void hyperplane(const HyperplaneType& _plane)
   // casting
   const int Dim = HyperplaneType::AmbientDimAtCompileTime;
   typedef typename GetDifferentType<Scalar>::type OtherScalar;
-  Hyperplane<OtherScalar,Dim> hp1f = pl1.template cast<OtherScalar>();
+  Hyperplane<OtherScalar,Dim,Options> hp1f = pl1.template cast<OtherScalar>();
   VERIFY_IS_APPROX(hp1f.template cast<Scalar>(),pl1);
-  Hyperplane<Scalar,Dim> hp1d = pl1.template cast<Scalar>();
+  Hyperplane<Scalar,Dim,Options> hp1d = pl1.template cast<Scalar>();
   VERIFY_IS_APPROX(hp1d.template cast<Scalar>(),pl1);
 }
 
@@ -103,8 +104,8 @@ template<typename Scalar> void lines()
     Vector center = Vector::Random();
     Vector u = Vector::Random();
     Vector v = Vector::Random();
-    Scalar a = ei_random<Scalar>();
-    while (ei_abs(a-1) < 1e-4) a = ei_random<Scalar>();
+    Scalar a = internal::random<Scalar>();
+    while (internal::abs(a-1) < 1e-4) a = internal::random<Scalar>();
     while (u.norm() < 1e-4) u = Vector::Random();
     while (v.norm() < 1e-4) v = Vector::Random();
 
@@ -128,11 +129,40 @@ template<typename Scalar> void lines()
   }
 }
 
+template<typename Scalar> void hyperplane_alignment()
+{
+  typedef Hyperplane<Scalar,3,AutoAlign> Plane3a;
+  typedef Hyperplane<Scalar,3,DontAlign> Plane3u;
+
+  EIGEN_ALIGN16 Scalar array1[4];
+  EIGEN_ALIGN16 Scalar array2[4];
+  EIGEN_ALIGN16 Scalar array3[4+1];
+  Scalar* array3u = array3+1;
+
+  Plane3a *p1 = ::new(reinterpret_cast<void*>(array1)) Plane3a;
+  Plane3u *p2 = ::new(reinterpret_cast<void*>(array2)) Plane3u;
+  Plane3u *p3 = ::new(reinterpret_cast<void*>(array3u)) Plane3u;
+  
+  p1->coeffs().setRandom();
+  *p2 = *p1;
+  *p3 = *p1;
+
+  VERIFY_IS_APPROX(p1->coeffs(), p2->coeffs());
+  VERIFY_IS_APPROX(p1->coeffs(), p3->coeffs());
+  
+  #ifdef EIGEN_VECTORIZE
+  VERIFY_RAISES_ASSERT((::new(reinterpret_cast<void*>(array3u)) Plane3a));
+  #endif
+}
+
+
 void test_geo_hyperplane()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( hyperplane(Hyperplane<float,2>()) );
     CALL_SUBTEST_2( hyperplane(Hyperplane<float,3>()) );
+    CALL_SUBTEST_2( hyperplane(Hyperplane<float,3,DontAlign>()) );
+    CALL_SUBTEST_2( hyperplane_alignment<float>() );
     CALL_SUBTEST_3( hyperplane(Hyperplane<double,4>()) );
     CALL_SUBTEST_4( hyperplane(Hyperplane<std::complex<double>,5>()) );
     CALL_SUBTEST_1( lines<float>() );

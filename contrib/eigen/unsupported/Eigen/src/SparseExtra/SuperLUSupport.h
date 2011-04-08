@@ -25,28 +25,34 @@
 #ifndef EIGEN_SUPERLUSUPPORT_H
 #define EIGEN_SUPERLUSUPPORT_H
 
-// declaration of gssvx taken from GMM++
-#define DECL_GSSVX(NAMESPACE,FNAME,FLOATTYPE,KEYTYPE) \
-    inline float SuperLU_gssvx(superlu_options_t *options, SuperMatrix *A,  \
-         int *perm_c, int *perm_r, int *etree, char *equed,  \
-         FLOATTYPE *R, FLOATTYPE *C, SuperMatrix *L,         \
-         SuperMatrix *U, void *work, int lwork,              \
-         SuperMatrix *B, SuperMatrix *X,                     \
-         FLOATTYPE *recip_pivot_growth,                      \
-         FLOATTYPE *rcond, FLOATTYPE *ferr, FLOATTYPE *berr, \
-         SuperLUStat_t *stats, int *info, KEYTYPE) {         \
-    using namespace NAMESPACE; \
-    mem_usage_t mem_usage;                                    \
-    NAMESPACE::FNAME(options, A, perm_c, perm_r, etree, equed, R, C, L,  \
-         U, work, lwork, B, X, recip_pivot_growth, rcond,    \
-         ferr, berr, &mem_usage, stats, info);               \
-    return mem_usage.for_lu; /* bytes used by the factor storage */     \
+#define DECL_GSSVX(PREFIX,FLOATTYPE,KEYTYPE)                                                              \
+    extern "C" {                                                                                          \
+      typedef struct { FLOATTYPE for_lu; FLOATTYPE total_needed; int expansions; } PREFIX##mem_usage_t;   \
+      extern void PREFIX##gssvx(superlu_options_t *, SuperMatrix *, int *, int *, int *,                  \
+                                char *, FLOATTYPE *, FLOATTYPE *, SuperMatrix *, SuperMatrix *,           \
+                                void *, int, SuperMatrix *, SuperMatrix *,                                \
+                                FLOATTYPE *, FLOATTYPE *, FLOATTYPE *, FLOATTYPE *,                       \
+                                PREFIX##mem_usage_t *, SuperLUStat_t *, int *);                           \
+    }                                                                                                     \
+    inline float SuperLU_gssvx(superlu_options_t *options, SuperMatrix *A,                                \
+         int *perm_c, int *perm_r, int *etree, char *equed,                                               \
+         FLOATTYPE *R, FLOATTYPE *C, SuperMatrix *L,                                                      \
+         SuperMatrix *U, void *work, int lwork,                                                           \
+         SuperMatrix *B, SuperMatrix *X,                                                                  \
+         FLOATTYPE *recip_pivot_growth,                                                                   \
+         FLOATTYPE *rcond, FLOATTYPE *ferr, FLOATTYPE *berr,                                              \
+         SuperLUStat_t *stats, int *info, KEYTYPE) {                                                      \
+    PREFIX##mem_usage_t mem_usage;                                                                        \
+    PREFIX##gssvx(options, A, perm_c, perm_r, etree, equed, R, C, L,                                      \
+         U, work, lwork, B, X, recip_pivot_growth, rcond,                                                 \
+         ferr, berr, &mem_usage, stats, info);                                                            \
+    return mem_usage.for_lu; /* bytes used by the factor storage */                                       \
   }
 
-DECL_GSSVX(SuperLU_S,sgssvx,float,float)
-DECL_GSSVX(SuperLU_C,cgssvx,float,std::complex<float>)
-DECL_GSSVX(SuperLU_D,dgssvx,double,double)
-DECL_GSSVX(SuperLU_Z,zgssvx,double,std::complex<double>)
+DECL_GSSVX(s,float,float)
+DECL_GSSVX(c,float,std::complex<float>)
+DECL_GSSVX(d,double,double)
+DECL_GSSVX(z,double,std::complex<double>)
 
 #ifdef MILU_ALPHA
 #define EIGEN_SUPERLU_HAS_ILU
@@ -55,27 +61,32 @@ DECL_GSSVX(SuperLU_Z,zgssvx,double,std::complex<double>)
 #ifdef EIGEN_SUPERLU_HAS_ILU
 
 // similarly for the incomplete factorization using gsisx
-#define DECL_GSISX(NAMESPACE,FNAME,FLOATTYPE,KEYTYPE) \
-    inline float SuperLU_gsisx(superlu_options_t *options, SuperMatrix *A,  \
-         int *perm_c, int *perm_r, int *etree, char *equed,  \
-         FLOATTYPE *R, FLOATTYPE *C, SuperMatrix *L,         \
-         SuperMatrix *U, void *work, int lwork,              \
-         SuperMatrix *B, SuperMatrix *X,                     \
-         FLOATTYPE *recip_pivot_growth,                      \
-         FLOATTYPE *rcond,                                   \
-         SuperLUStat_t *stats, int *info, KEYTYPE) {         \
-    using namespace NAMESPACE; \
-    mem_usage_t mem_usage;                                    \
-    NAMESPACE::FNAME(options, A, perm_c, perm_r, etree, equed, R, C, L,  \
-         U, work, lwork, B, X, recip_pivot_growth, rcond,    \
-         &mem_usage, stats, info);                           \
-    return mem_usage.for_lu; /* bytes used by the factor storage */     \
+#define DECL_GSISX(PREFIX,FLOATTYPE,KEYTYPE)                                                    \
+    extern "C" {                                                                                \
+      extern void PREFIX##gsisx(superlu_options_t *, SuperMatrix *, int *, int *, int *,        \
+                         char *, FLOATTYPE *, FLOATTYPE *, SuperMatrix *, SuperMatrix *,        \
+                         void *, int, SuperMatrix *, SuperMatrix *, FLOATTYPE *, FLOATTYPE *,   \
+                         PREFIX##mem_usage_t *, SuperLUStat_t *, int *);                        \
+    }                                                                                           \
+    inline float SuperLU_gsisx(superlu_options_t *options, SuperMatrix *A,                      \
+         int *perm_c, int *perm_r, int *etree, char *equed,                                     \
+         FLOATTYPE *R, FLOATTYPE *C, SuperMatrix *L,                                            \
+         SuperMatrix *U, void *work, int lwork,                                                 \
+         SuperMatrix *B, SuperMatrix *X,                                                        \
+         FLOATTYPE *recip_pivot_growth,                                                         \
+         FLOATTYPE *rcond,                                                                      \
+         SuperLUStat_t *stats, int *info, KEYTYPE) {                                            \
+    PREFIX##mem_usage_t mem_usage;                                                              \
+    PREFIX##gsisx(options, A, perm_c, perm_r, etree, equed, R, C, L,                            \
+         U, work, lwork, B, X, recip_pivot_growth, rcond,                                       \
+         &mem_usage, stats, info);                                                              \
+    return mem_usage.for_lu; /* bytes used by the factor storage */                             \
   }
 
-DECL_GSISX(SuperLU_S,sgsisx,float,float)
-DECL_GSISX(SuperLU_C,cgsisx,float,std::complex<float>)
-DECL_GSISX(SuperLU_D,dgsisx,double,double)
-DECL_GSISX(SuperLU_Z,zgsisx,double,std::complex<double>)
+DECL_GSISX(s,float,float)
+DECL_GSISX(c,float,std::complex<float>)
+DECL_GSISX(d,double,double)
+DECL_GSISX(z,double,std::complex<double>)
 
 #endif
 
@@ -126,7 +137,7 @@ struct SluMatrix : SuperMatrix
       Store = &storage;
     else
     {
-      ei_assert(false && "storage type not supported");
+      eigen_assert(false && "storage type not supported");
       Store = 0;
     }
   }
@@ -134,17 +145,17 @@ struct SluMatrix : SuperMatrix
   template<typename Scalar>
   void setScalarType()
   {
-    if (ei_is_same_type<Scalar,float>::ret)
+    if (internal::is_same<Scalar,float>::value)
       Dtype = SLU_S;
-    else if (ei_is_same_type<Scalar,double>::ret)
+    else if (internal::is_same<Scalar,double>::value)
       Dtype = SLU_D;
-    else if (ei_is_same_type<Scalar,std::complex<float> >::ret)
+    else if (internal::is_same<Scalar,std::complex<float> >::value)
       Dtype = SLU_C;
-    else if (ei_is_same_type<Scalar,std::complex<double> >::ret)
+    else if (internal::is_same<Scalar,std::complex<double> >::value)
       Dtype = SLU_Z;
     else
     {
-      ei_assert(false && "Scalar type not supported by SuperLU");
+      eigen_assert(false && "Scalar type not supported by SuperLU");
     }
   }
 
@@ -152,7 +163,7 @@ struct SluMatrix : SuperMatrix
   static SluMatrix Map(Matrix<Scalar,Rows,Cols,Options,MRows,MCols>& mat)
   {
     typedef Matrix<Scalar,Rows,Cols,Options,MRows,MCols> MatrixType;
-    ei_assert( ((Options&RowMajor)!=RowMajor) && "row-major dense matrices is not supported by SuperLU");
+    eigen_assert( ((Options&RowMajor)!=RowMajor) && "row-major dense matrices is not supported by SuperLU");
     SluMatrix res;
     res.setStorageType(SLU_DN);
     res.setScalarType<Scalar>();
@@ -198,7 +209,7 @@ struct SluMatrix : SuperMatrix
     if (MatrixType::Flags & Lower)
       res.Mtype = SLU_TRL;
     if (MatrixType::Flags & SelfAdjoint)
-      ei_assert(false && "SelfAdjoint matrix shape not supported by SuperLU");
+      eigen_assert(false && "SelfAdjoint matrix shape not supported by SuperLU");
     return res;
   }
 };
@@ -209,7 +220,7 @@ struct SluMatrixMapHelper<Matrix<Scalar,Rows,Cols,Options,MRows,MCols> >
   typedef Matrix<Scalar,Rows,Cols,Options,MRows,MCols> MatrixType;
   static void run(MatrixType& mat, SluMatrix& res)
   {
-    ei_assert( ((Options&RowMajor)!=RowMajor) && "row-major dense matrices is not supported by SuperLU");
+    eigen_assert( ((Options&RowMajor)!=RowMajor) && "row-major dense matrices is not supported by SuperLU");
     res.setStorageType(SLU_DN);
     res.setScalarType<Scalar>();
     res.Mtype     = SLU_GE;
@@ -256,21 +267,23 @@ struct SluMatrixMapHelper<SparseMatrixBase<Derived> >
     if (MatrixType::Flags & Lower)
       res.Mtype = SLU_TRL;
     if (MatrixType::Flags & SelfAdjoint)
-      ei_assert(false && "SelfAdjoint matrix shape not supported by SuperLU");
+      eigen_assert(false && "SelfAdjoint matrix shape not supported by SuperLU");
   }
 };
 
+namespace internal {
+
 template<typename MatrixType>
-SluMatrix ei_asSluMatrix(MatrixType& mat)
+SluMatrix asSluMatrix(MatrixType& mat)
 {
   return SluMatrix::Map(mat);
 }
 
 /** View a Super LU matrix as an Eigen expression */
 template<typename Scalar, int Flags, typename Index>
-MappedSparseMatrix<Scalar,Flags,Index> ei_map_superlu(SluMatrix& sluMat)
+MappedSparseMatrix<Scalar,Flags,Index> map_superlu(SluMatrix& sluMat)
 {
-  ei_assert((Flags&RowMajor)==RowMajor && sluMat.Stype == SLU_NR
+  eigen_assert((Flags&RowMajor)==RowMajor && sluMat.Stype == SLU_NR
          || (Flags&ColMajor)==ColMajor && sluMat.Stype == SLU_NC);
 
   Index outerSize = (Flags&RowMajor)==RowMajor ? sluMat.ncol : sluMat.nrow;
@@ -279,6 +292,8 @@ MappedSparseMatrix<Scalar,Flags,Index> ei_map_superlu(SluMatrix& sluMat)
     sluMat.nrow, sluMat.ncol, sluMat.storage.outerInd[outerSize],
     sluMat.storage.outerInd, sluMat.storage.innerInd, reinterpret_cast<Scalar*>(sluMat.storage.values) );
 }
+
+} // end namespace internal
 
 template<typename MatrixType>
 class SparseLU<MatrixType,SuperLU> : public SparseLU<MatrixType>
@@ -393,7 +408,7 @@ void SparseLU<MatrixType,SuperLU>::compute(const MatrixType& a)
         m_sluOptions.ColPerm = NATURAL;
   };
 
-  m_sluA = ei_asSluMatrix(m_matrix);
+  m_sluA = internal::asSluMatrix(m_matrix);
   memset(&m_sluL,0,sizeof m_sluL);
   memset(&m_sluU,0,sizeof m_sluU);
   //m_sluEqued = 'B';
@@ -471,7 +486,7 @@ bool SparseLU<MatrixType,SuperLU>::solve(const MatrixBase<BDerived> &b,
 {
   const int size = m_matrix.rows();
   const int rhsCols = b.cols();
-  ei_assert(size==b.rows());
+  eigen_assert(size==b.rows());
 
   switch (transposed) {
       case SvNoTrans    :  m_sluOptions.Trans = NOTRANS; break;
@@ -626,6 +641,7 @@ void SparseLU<MatrixType,SuperLU>::extractData() const
 template<typename MatrixType>
 typename SparseLU<MatrixType,SuperLU>::Scalar SparseLU<MatrixType,SuperLU>::determinant() const
 {
+  assert((!NumTraits<Scalar>::IsComplex) && "This function is not implemented for complex yet");
   if (m_extractedDataAreDirty)
     extractData();
 
@@ -637,13 +653,13 @@ typename SparseLU<MatrixType,SuperLU>::Scalar SparseLU<MatrixType,SuperLU>::dete
     if (m_u._outerIndexPtr()[j+1]-m_u._outerIndexPtr()[j] > 0)
     {
       int lastId = m_u._outerIndexPtr()[j+1]-1;
-      ei_assert(m_u._innerIndexPtr()[lastId]<=j);
+      eigen_assert(m_u._innerIndexPtr()[lastId]<=j);
       if (m_u._innerIndexPtr()[lastId]==j)
       {
         det *= m_u._valuePtr()[lastId];
       }
     }
-    // std::cout << m_sluRscale[j] << " " << m_sluCscale[j] << "   ";
+//       std::cout << m_sluRscale[j] << " " << m_sluCscale[j] << "   \n";
   }
   return det;
 }

@@ -52,7 +52,7 @@ inline int umfpack_symbolic(int n_row,int n_col,
                             const int Ap[], const int Ai[], const std::complex<double> Ax[], void **Symbolic,
                             const double Control [UMFPACK_CONTROL], double Info [UMFPACK_INFO])
 {
-  return umfpack_zi_symbolic(n_row,n_col,Ap,Ai,&Ax[0].real(),0,Symbolic,Control,Info);
+  return umfpack_zi_symbolic(n_row,n_col,Ap,Ai,&internal::real_ref(Ax[0]),0,Symbolic,Control,Info);
 }
 
 inline int umfpack_numeric( const int Ap[], const int Ai[], const double Ax[],
@@ -66,7 +66,7 @@ inline int umfpack_numeric( const int Ap[], const int Ai[], const std::complex<d
                             void *Symbolic, void **Numeric,
                             const double Control[UMFPACK_CONTROL],double Info [UMFPACK_INFO])
 {
-  return umfpack_zi_numeric(Ap,Ai,&Ax[0].real(),0,Symbolic,Numeric,Control,Info);
+  return umfpack_zi_numeric(Ap,Ai,&internal::real_ref(Ax[0]),0,Symbolic,Numeric,Control,Info);
 }
 
 inline int umfpack_solve( int sys, const int Ap[], const int Ai[], const double Ax[],
@@ -80,7 +80,7 @@ inline int umfpack_solve( int sys, const int Ap[], const int Ai[], const std::co
                           std::complex<double> X[], const std::complex<double> B[], void *Numeric,
                           const double Control[UMFPACK_CONTROL], double Info[UMFPACK_INFO])
 {
-  return umfpack_zi_solve(sys,Ap,Ai,&Ax[0].real(),0,&X[0].real(),0,&B[0].real(),0,Numeric,Control,Info);
+  return umfpack_zi_solve(sys,Ap,Ai,&internal::real_ref(Ax[0]),0,&internal::real_ref(X[0]),0,&internal::real_ref(B[0]),0,Numeric,Control,Info);
 }
 
 inline int umfpack_get_lunz(int *lnz, int *unz, int *n_row, int *n_col, int *nz_udiag, void *Numeric, double)
@@ -102,8 +102,11 @@ inline int umfpack_get_numeric(int Lp[], int Lj[], double Lx[], int Up[], int Ui
 inline int umfpack_get_numeric(int Lp[], int Lj[], std::complex<double> Lx[], int Up[], int Ui[], std::complex<double> Ux[],
                                int P[], int Q[], std::complex<double> Dx[], int *do_recip, double Rs[], void *Numeric)
 {
-  return umfpack_zi_get_numeric(Lp,Lj,Lx?&Lx[0].real():0,0,Up,Ui,Ux?&Ux[0].real():0,0,P,Q,
-                               Dx?&Dx[0].real():0,0,do_recip,Rs,Numeric);
+  double& lx0_real = internal::real_ref(Lx[0]);
+  double& ux0_real = internal::real_ref(Ux[0]);
+  double& dx0_real = internal::real_ref(Dx[0]);
+  return umfpack_zi_get_numeric(Lp,Lj,Lx?&lx0_real:0,0,Up,Ui,Ux?&ux0_real:0,0,P,Q,
+                                Dx?&dx0_real:0,0,do_recip,Rs,Numeric);
 }
 
 inline int umfpack_get_determinant(double *Mx, double *Ex, void *NumericHandle, double User_Info [UMFPACK_INFO])
@@ -113,26 +116,29 @@ inline int umfpack_get_determinant(double *Mx, double *Ex, void *NumericHandle, 
 
 inline int umfpack_get_determinant(std::complex<double> *Mx, double *Ex, void *NumericHandle, double User_Info [UMFPACK_INFO])
 {
-  return umfpack_zi_get_determinant(&Mx->real(),0,Ex,NumericHandle,User_Info);
+  double& mx_real = internal::real_ref(*Mx);
+  return umfpack_zi_get_determinant(&mx_real,0,Ex,NumericHandle,User_Info);
 }
 
 
-template<typename MatrixType>
-class SparseLU<MatrixType,UmfPack> : public SparseLU<MatrixType>
+template<typename _MatrixType>
+class SparseLU<_MatrixType,UmfPack> : public SparseLU<_MatrixType>
 {
   protected:
-    typedef SparseLU<MatrixType> Base;
+    typedef SparseLU<_MatrixType> Base;
     typedef typename Base::Scalar Scalar;
     typedef typename Base::RealScalar RealScalar;
     typedef Matrix<Scalar,Dynamic,1> Vector;
-    typedef Matrix<int, 1, MatrixType::ColsAtCompileTime> IntRowVectorType;
-    typedef Matrix<int, MatrixType::RowsAtCompileTime, 1> IntColVectorType;
+    typedef Matrix<int, 1, _MatrixType::ColsAtCompileTime> IntRowVectorType;
+    typedef Matrix<int, _MatrixType::RowsAtCompileTime, 1> IntColVectorType;
     typedef SparseMatrix<Scalar,Lower|UnitDiag> LMatrixType;
     typedef SparseMatrix<Scalar,Upper> UMatrixType;
     using Base::m_flags;
     using Base::m_status;
 
   public:
+    typedef _MatrixType MatrixType;
+    typedef typename MatrixType::Index Index;
 
     SparseLU(int flags = NaturalOrdering)
       : Base(flags), m_numeric(0)
@@ -180,7 +186,29 @@ class SparseLU<MatrixType,UmfPack> : public SparseLU<MatrixType>
     template<typename BDerived, typename XDerived>
     bool solve(const MatrixBase<BDerived> &b, MatrixBase<XDerived>* x) const;
 
+    template<typename Rhs>
+      inline const internal::solve_retval<SparseLU<MatrixType, UmfPack>, Rhs>
+    solve(const MatrixBase<Rhs>& b) const
+    {
+      eigen_assert(true && "SparseLU is not initialized.");
+      return internal::solve_retval<SparseLU<MatrixType, UmfPack>, Rhs>(*this, b.derived());
+    }
+
     void compute(const MatrixType& matrix);
+
+    inline Index cols() const { return m_matrixRef->cols(); }
+    inline Index rows() const { return m_matrixRef->rows(); }
+
+    inline const MatrixType& matrixLU() const
+    {
+      //eigen_assert(m_isInitialized && "LU is not initialized.");
+      return *m_matrixRef;
+    }
+
+    const void* numeric() const
+    {
+      return m_numeric;
+    }
 
   protected:
 
@@ -197,13 +225,45 @@ class SparseLU<MatrixType,UmfPack> : public SparseLU<MatrixType>
     mutable bool m_extractedDataAreDirty;
 };
 
+namespace internal {
+
+template<typename _MatrixType, typename Rhs>
+  struct solve_retval<SparseLU<_MatrixType, UmfPack>, Rhs>
+  : solve_retval_base<SparseLU<_MatrixType, UmfPack>, Rhs>
+{
+  typedef SparseLU<_MatrixType, UmfPack> SpLUDecType;
+  EIGEN_MAKE_SOLVE_HELPERS(SpLUDecType,Rhs)
+
+  template<typename Dest> void evalTo(Dest& dst) const
+  {
+    const int rhsCols = rhs().cols();
+
+    eigen_assert((Rhs::Flags&RowMajorBit)==0 && "UmfPack backend does not support non col-major rhs yet");
+    eigen_assert((Dest::Flags&RowMajorBit)==0 && "UmfPack backend does not support non col-major result yet");
+
+    void* numeric = const_cast<void*>(dec().numeric());
+
+    EIGEN_UNUSED int errorCode = 0;
+    for (int j=0; j<rhsCols; ++j)
+    {
+      errorCode = umfpack_solve(UMFPACK_A,
+                                dec().matrixLU()._outerIndexPtr(), dec().matrixLU()._innerIndexPtr(), dec().matrixLU()._valuePtr(),
+                                &dst.col(j).coeffRef(0), &rhs().const_cast_derived().col(j).coeffRef(0), numeric, 0, 0);
+      eigen_assert(!errorCode && "UmfPack could not solve the system.");
+    }
+  }
+    
+};
+
+} // end namespace internal
+
 template<typename MatrixType>
 void SparseLU<MatrixType,UmfPack>::compute(const MatrixType& a)
 {
   typedef typename MatrixType::Index Index;
   const Index rows = a.rows();
   const Index cols = a.cols();
-  ei_assert((MatrixType::Flags&RowMajorBit)==0 && "Row major matrices are not supported yet");
+  eigen_assert((MatrixType::Flags&RowMajorBit)==0 && "Row major matrices are not supported yet");
 
   m_matrixRef = &a;
 
@@ -267,9 +327,9 @@ bool SparseLU<MatrixType,UmfPack>::solve(const MatrixBase<BDerived> &b, MatrixBa
 {
   //const int size = m_matrix.rows();
   const int rhsCols = b.cols();
-//   ei_assert(size==b.rows());
-  ei_assert((BDerived::Flags&RowMajorBit)==0 && "UmfPack backend does not support non col-major rhs yet");
-  ei_assert((XDerived::Flags&RowMajorBit)==0 && "UmfPack backend does not support non col-major result yet");
+//   eigen_assert(size==b.rows());
+  eigen_assert((BDerived::Flags&RowMajorBit)==0 && "UmfPack backend does not support non col-major rhs yet");
+  eigen_assert((XDerived::Flags&RowMajorBit)==0 && "UmfPack backend does not support non col-major result yet");
 
   int errorCode;
   for (int j=0; j<rhsCols; ++j)

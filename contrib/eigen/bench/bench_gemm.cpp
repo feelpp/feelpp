@@ -53,6 +53,17 @@ void blas_gemm(const MatrixXf& a, const MatrixXf& b, MatrixXf& c)
          c.data(),&ldc);
 }
 
+EIGEN_DONT_INLINE void blas_gemm(const MatrixXd& a, const MatrixXd& b, MatrixXd& c)
+{
+  int M = c.rows(); int N = c.cols(); int K = a.cols();
+  int lda = a.rows(); int ldb = b.rows(); int ldc = c.rows();
+
+  dgemm_(&notrans,&notrans,&M,&N,&K,&done,
+         const_cast<double*>(a.data()),&lda,
+         const_cast<double*>(b.data()),&ldb,&done,
+         c.data(),&ldc);
+}
+
 void blas_gemm(const MatrixXcf& a, const MatrixXcf& b, MatrixXcf& c)
 {
   int M = c.rows(); int N = c.cols(); int K = a.cols();
@@ -75,16 +86,7 @@ void blas_gemm(const MatrixXcd& a, const MatrixXcd& b, MatrixXcd& c)
          (double*)c.data(),&ldc);
 }
 
-void blas_gemm(const MatrixXd& a, const MatrixXd& b, MatrixXd& c)
-{
-  int M = c.rows(); int N = c.cols(); int K = a.cols();
-  int lda = a.rows(); int ldb = b.rows(); int ldc = c.rows();
 
-  dgemm_(&notrans,&notrans,&M,&N,&K,&done,
-         const_cast<double*>(a.data()),&lda,
-         const_cast<double*>(b.data()),&ldb,&done,
-         c.data(),&ldc);
-}
 
 #endif
 
@@ -116,11 +118,11 @@ EIGEN_DONT_INLINE void gemm(const A& a, const B& b, C& c)
 
 int main(int argc, char ** argv)
 {
-  std::ptrdiff_t l1 = ei_queryL1CacheSize();
-  std::ptrdiff_t l2 = ei_queryTopLevelCacheSize();
+  std::ptrdiff_t l1 = internal::queryL1CacheSize();
+  std::ptrdiff_t l2 = internal::queryTopLevelCacheSize();
   std::cout << "L1 cache size     = " << (l1>0 ? l1/1024 : -1) << " KB\n";
   std::cout << "L2/L3 cache size  = " << (l2>0 ? l2/1024 : -1) << " KB\n";
-  typedef ei_gebp_traits<Scalar,Scalar> Traits;
+  typedef internal::gebp_traits<Scalar,Scalar> Traits;
   std::cout << "Register blocking = " << Traits::mr << " x " << Traits::nr << "\n";
 
   int rep = 1;    // number of repetitions per try

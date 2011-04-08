@@ -1,6 +1,7 @@
+namespace internal {
 
 template <typename Scalar>
-void ei_rwupdt(
+void rwupdt(
         Matrix< Scalar, Dynamic, Dynamic >  &r,
         const Matrix< Scalar, Dynamic, 1>  &w,
         Matrix< Scalar, Dynamic, 1>  &b,
@@ -10,7 +11,7 @@ void ei_rwupdt(
 
     const Index n = r.cols();
     assert(r.rows()>=n);
-    std::vector<PlanarRotation<Scalar> > givens(n);
+    std::vector<JacobiRotation<Scalar> > givens(n);
 
     /* Local variables */
     Scalar temp, rowj;
@@ -27,14 +28,11 @@ void ei_rwupdt(
             r(i,j) = temp;
         }
 
-        if (rowj == 0.)
-        {
-          givens[j] = PlanarRotation<Scalar>(1,0);
-          continue;
-        }
-
         /* determine a givens rotation which eliminates w(j). */
         givens[j].makeGivens(-r(j,j), rowj);
+
+        if (rowj == 0.)
+            continue; // givens[j] is identity
 
         /* apply the current transformation to r(j,j), b(j), and alpha. */
         r(j,j) = givens[j].c() * r(j,j) + givens[j].s() * rowj;
@@ -43,4 +41,6 @@ void ei_rwupdt(
         b[j] = temp;
     }
 }
+
+} // end namespace internal
 

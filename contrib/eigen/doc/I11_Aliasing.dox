@@ -20,11 +20,13 @@ to do about it.
 
 Here is a simple example exhibiting aliasing:
 
-<table class="tutorial_code"><tr><td>
-Example: \include TopicAliasing_block.cpp
+<table class="example">
+<tr><th>Example</th><th>Output</th></tr>
+<tr><td>
+\include TopicAliasing_block.cpp
 </td>
 <td>
-Output: \verbinclude TopicAliasing_block.out
+\verbinclude TopicAliasing_block.out
 </td></tr></table>
 
 The output is not what one would expect. The problem is the assignment
@@ -51,11 +53,13 @@ problem. This means that in general aliasing cannot be detected at compile time.
 some instances of aliasing, albeit at run time.  The following example exhibiting aliasing was mentioned in
 \ref TutorialMatrixArithmetic :
 
-<table class="tutorial_code"><tr><td>
-Example: \include tut_arithmetic_transpose_aliasing.cpp
+<table class="example">
+<tr><th>Example</th><th>Output</th></tr>
+<tr><td>
+\include tut_arithmetic_transpose_aliasing.cpp
 </td>
 <td>
-Output: \verbinclude tut_arithmetic_transpose_aliasing.out
+\verbinclude tut_arithmetic_transpose_aliasing.out
 </td></tr></table>
 
 Again, the output shows the aliasing issue. However, by default Eigen uses a run-time assertion to detect this
@@ -64,12 +68,12 @@ and exits with a message like
 \verbatim
 void Eigen::DenseBase<Derived>::checkTransposeAliasing(const OtherDerived&) const 
 [with OtherDerived = Eigen::Transpose<Eigen::Matrix<int, 2, 2, 0, 2, 2> >, Derived = Eigen::Matrix<int, 2, 2, 0, 2, 2>]: 
-Assertion `(!ei_check_transpose_aliasing_selector<Scalar,ei_blas_traits<Derived>::IsTransposed,OtherDerived>::run(ei_extract_data(derived()), other)) 
+Assertion `(!internal::check_transpose_aliasing_selector<Scalar,internal::blas_traits<Derived>::IsTransposed,OtherDerived>::run(internal::extract_data(derived()), other)) 
 && "aliasing detected during tranposition, use transposeInPlace() or evaluate the rhs into a temporary using .eval()"' failed.
 \endverbatim
 
 The user can turn Eigen's run-time assertions like the one to detect this aliasing problem off by defining the
-#EIGEN_NO_DEBUG macro, and the above program was compiled with this macro turned off in order to illustrate the
+EIGEN_NO_DEBUG macro, and the above program was compiled with this macro turned off in order to illustrate the
 aliasing problem. See \ref TopicAssertions for more information about Eigen's run-time assertions.
 
 
@@ -81,11 +85,13 @@ side. The function \link DenseBase::eval() eval() \endlink does precisely that.
 
 For example, here is the corrected version of the first example above:
 
-<table class="tutorial_code"><tr><td>
-Example: \include TopicAliasing_block_correct.cpp
+<table class="example">
+<tr><th>Example</th><th>Output</th></tr>
+<tr><td>
+\include TopicAliasing_block_correct.cpp
 </td>
 <td>
-Output: \verbinclude TopicAliasing_block_correct.out
+\verbinclude TopicAliasing_block_correct.out
 </td></tr></table>
 
 Now, \c mat(2,2) equals 5 after the assignment, as it should be.
@@ -96,37 +102,100 @@ better solution. Eigen provides the special-purpose function
 \link DenseBase::transposeInPlace() transposeInPlace() \endlink which replaces a matrix by its transpose. 
 This is shown below:
 
-<table class="tutorial_code"><tr><td>
-Example: \include tut_arithmetic_transpose_inplace.cpp
+<table class="example">
+<tr><th>Example</th><th>Output</th></tr>
+<tr><td>
+\include tut_arithmetic_transpose_inplace.cpp
 </td>
 <td>
-Output: \verbinclude tut_arithmetic_transpose_inplace.out
+\verbinclude tut_arithmetic_transpose_inplace.out
 </td></tr></table>
 
-If an xxxInPlace() function is available, then it is best to use it, because it indicate more clearly what you
+If an xxxInPlace() function is available, then it is best to use it, because it indicates more clearly what you
 are doing. This may also allow Eigen to optimize more aggressively. These are some of the xxxInPlace()
 functions provided: 
 
-<table class="tutorial_code" align="center">
-<tr> <td> <b>Original function</b> </td> <td> <b>In-place function</b> </td> </tr>
+<table class="manual">
+<tr><th>Original function</th><th>In-place function</th></tr>
 <tr> <td> MatrixBase::adjoint() </td> <td> MatrixBase::adjointInPlace() </td> </tr>
-<tr> <td> DenseBase::reverse() </td> <td> DenseBase::reverseInPlace() </td> </tr>
+<tr class="alt"> <td> DenseBase::reverse() </td> <td> DenseBase::reverseInPlace() </td> </tr>
 <tr> <td> LDLT::solve() </td> <td> LDLT::solveInPlace() </td> </tr>
-<tr> <td> LLT::solve() </td> <td> LLT::solveInPlace() </td> </tr>
+<tr class="alt"> <td> LLT::solve() </td> <td> LLT::solveInPlace() </td> </tr>
 <tr> <td> TriangularView::solve() </td> <td> TriangularView::solveInPlace() </td> </tr>
-<tr> <td> DenseBase::transpose() </td> <td> DenseBase::transposeInPlace() </td> </tr>
+<tr class="alt"> <td> DenseBase::transpose() </td> <td> DenseBase::transposeInPlace() </td> </tr>
 </table>
 
 
 \section TopicAliasingCwise Aliasing and component-wise operations
 
-Synopsis: Things like mat = 2 * mat, matA = matA + matB and arr = arr.sin() are safe.
+As explained above, it may be dangerous if the same matrix or array occurs on both the left-hand side and the
+right-hand side of an assignment operator, and it is then often necessary to evaluate the right-hand side
+explicitly. However, applying component-wise operations (such as matrix addition, scalar multiplication and
+array multiplication) is safe. 
+
+The following example has only component-wise operations. Thus, there is no need for .eval() even though
+the same matrix appears on both sides of the assignments.
+
+<table class="example">
+<tr><th>Example</th><th>Output</th></tr>
+<tr><td>
+\include TopicAliasing_cwise.cpp
+</td>
+<td>
+\verbinclude TopicAliasing_cwise.out
+</td></tr></table>
+
+In general, an assignment is safe if the (i,j) entry of the expression on the right-hand side depends only on
+the (i,j) entry of the matrix or array on the left-hand side and not on any other entries. In that case it is
+not necessary to evaluate the right-hand side explicitly.
 
 
 \section TopicAliasingMatrixMult Aliasing and matrix multiplication
 
-Synopsis: %Matrix multiplication assumes aliasing by default. Use noalias() to improve performance if there is
-no aliasing.
+Matrix multiplication is the only operation in Eigen that assumes aliasing by default. Thus, if \c matA is a
+matrix, then the statement <tt>matA = matA * matA;</tt> is safe. All other operations in Eigen assume that
+there are no aliasing problems, either because the result is assigned to a different matrix or because it is a
+component-wise operation.
+
+<table class="example">
+<tr><th>Example</th><th>Output</th></tr>
+<tr><td>
+\include TopicAliasing_mult1.cpp
+</td>
+<td>
+\verbinclude TopicAliasing_mult1.out
+</td></tr></table>
+
+However, this comes at a price. When executing the expression <tt>matA = matA * matA</tt>, Eigen evaluates the
+product in a temporary matrix which is assigned to \c matA after the computation. This is fine. But Eigen does
+the same when the product is assigned to a different matrix (e.g., <tt>matB = matA * matA</tt>). In that case,
+it is more efficient to evaluate the product directly into \c matB instead of evaluating it first into a
+temporary matrix and copying that matrix to \c matB.
+
+The user can indicate with the \link MatrixBase::noalias() noalias()\endlink function that there is no
+aliasing, as follows: <tt>matB.noalias() = matA * matA</tt>. This allows Eigen to evaluate the matrix product
+<tt>matA * matA</tt> directly into \c matB.
+
+<table class="example">
+<tr><th>Example</th><th>Output</th></tr>
+<tr><td>
+\include TopicAliasing_mult2.cpp
+</td>
+<td>
+\verbinclude TopicAliasing_mult2.out
+</td></tr></table>
+
+Of course, you should not use \c noalias() when there is in fact aliasing taking place. If you do, then you
+may get wrong results:
+
+<table class="example">
+<tr><th>Example</th><th>Output</th></tr>
+<tr><td>
+\include TopicAliasing_mult3.cpp
+</td>
+<td>
+\verbinclude TopicAliasing_mult3.out
+</td></tr></table>
 
 
 \section TopicAliasingSummary Summary

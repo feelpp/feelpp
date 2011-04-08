@@ -46,15 +46,15 @@ std::string demangle_unrolling(int t)
 template<typename Dst, typename Src>
 bool test_assign(const Dst&, const Src&, int traversal, int unrolling)
 {
-  ei_assign_traits<Dst,Src>::debug();
-  bool res = ei_assign_traits<Dst,Src>::Traversal==traversal
-          && ei_assign_traits<Dst,Src>::Unrolling==unrolling;
+  internal::assign_traits<Dst,Src>::debug();
+  bool res = internal::assign_traits<Dst,Src>::Traversal==traversal
+          && internal::assign_traits<Dst,Src>::Unrolling==unrolling;
   if(!res)
   {
     std::cerr << " Expected Traversal == " << demangle_traversal(traversal)
-              << " got " << demangle_traversal(ei_assign_traits<Dst,Src>::Traversal) << "\n";
+              << " got " << demangle_traversal(internal::assign_traits<Dst,Src>::Traversal) << "\n";
     std::cerr << " Expected Unrolling == " << demangle_unrolling(unrolling)
-              << " got " << demangle_unrolling(ei_assign_traits<Dst,Src>::Unrolling) << "\n";
+              << " got " << demangle_unrolling(internal::assign_traits<Dst,Src>::Unrolling) << "\n";
   }
   return res;
 }
@@ -62,15 +62,15 @@ bool test_assign(const Dst&, const Src&, int traversal, int unrolling)
 template<typename Dst, typename Src>
 bool test_assign(int traversal, int unrolling)
 {
-  ei_assign_traits<Dst,Src>::debug();
-  bool res = ei_assign_traits<Dst,Src>::Traversal==traversal
-          && ei_assign_traits<Dst,Src>::Unrolling==unrolling;
+  internal::assign_traits<Dst,Src>::debug();
+  bool res = internal::assign_traits<Dst,Src>::Traversal==traversal
+          && internal::assign_traits<Dst,Src>::Unrolling==unrolling;
   if(!res)
   {
     std::cerr << " Expected Traversal == " << demangle_traversal(traversal)
-              << " got " << demangle_traversal(ei_assign_traits<Dst,Src>::Traversal) << "\n";
+              << " got " << demangle_traversal(internal::assign_traits<Dst,Src>::Traversal) << "\n";
     std::cerr << " Expected Unrolling == " << demangle_unrolling(unrolling)
-              << " got " << demangle_unrolling(ei_assign_traits<Dst,Src>::Unrolling) << "\n";
+              << " got " << demangle_unrolling(internal::assign_traits<Dst,Src>::Unrolling) << "\n";
   }
   return res;
 }
@@ -78,7 +78,7 @@ bool test_assign(int traversal, int unrolling)
 template<typename Xpr>
 bool test_redux(const Xpr&, int traversal, int unrolling)
 {
-  typedef ei_redux_traits<ei_scalar_sum_op<typename Xpr::Scalar>,Xpr> traits;
+  typedef internal::redux_traits<internal::scalar_sum_op<typename Xpr::Scalar>,Xpr> traits;
   bool res = traits::Traversal==traversal && traits::Unrolling==unrolling;
   if(!res)
   {
@@ -90,10 +90,10 @@ bool test_redux(const Xpr&, int traversal, int unrolling)
   return res;
 }
 
-template<typename Scalar, bool Enable = ei_packet_traits<Scalar>::Vectorizable> struct vectorization_logic
+template<typename Scalar, bool Enable = internal::packet_traits<Scalar>::Vectorizable> struct vectorization_logic
 {
   enum {
-    PacketSize = ei_packet_traits<Scalar>::size
+    PacketSize = internal::packet_traits<Scalar>::size
   };
   static void run()
   {
@@ -103,8 +103,8 @@ template<typename Scalar, bool Enable = ei_packet_traits<Scalar>::Vectorizable> 
     typedef Matrix<Scalar,Dynamic,Dynamic> MatrixXX;
     typedef Matrix<Scalar,PacketSize,PacketSize> Matrix11;
     typedef Matrix<Scalar,2*PacketSize,2*PacketSize> Matrix22;
-    typedef Matrix<Scalar,4*PacketSize,16> Matrix44;
-    typedef Matrix<Scalar,4*PacketSize,16,DontAlign|EIGEN_DEFAULT_MATRIX_STORAGE_ORDER_OPTION> Matrix44u;
+    typedef Matrix<Scalar,(Matrix11::Flags&RowMajorBit)?16:4*PacketSize,(Matrix11::Flags&RowMajorBit)?4*PacketSize:16> Matrix44;
+    typedef Matrix<Scalar,(Matrix11::Flags&RowMajorBit)?16:4*PacketSize,(Matrix11::Flags&RowMajorBit)?4*PacketSize:16,DontAlign|EIGEN_DEFAULT_MATRIX_STORAGE_ORDER_OPTION> Matrix44u;
     typedef Matrix<Scalar,4*PacketSize,16,ColMajor> Matrix44c;
     typedef Matrix<Scalar,4*PacketSize,16,RowMajor> Matrix44r;
 
@@ -118,9 +118,10 @@ template<typename Scalar, bool Enable = ei_packet_traits<Scalar>::Vectorizable> 
         (PacketSize==8 ? 2 : PacketSize==4 ? 2 : PacketSize==2 ? 2 : /*PacketSize==1 ?*/ 1),
       DontAlign|((Matrix1::Flags&RowMajorBit)?RowMajor:ColMajor)> Matrix1u;
 
+    // this type is made such that it can only be vectorized when viewed as a linear 1D vector
     typedef Matrix<Scalar,
-        (PacketSize==8 ? 4 : PacketSize==4 ? 6 : PacketSize==2 ? 3 : /*PacketSize==1 ?*/ 1),
-        (PacketSize==8 ? 6 : PacketSize==4 ? 2 : PacketSize==2 ? 2 : /*PacketSize==1 ?*/ 3)
+        (PacketSize==8 ? 4 : PacketSize==4 ? 6 : PacketSize==2 ? ((Matrix11::Flags&RowMajorBit)?2:3) : /*PacketSize==1 ?*/ 1),
+        (PacketSize==8 ? 6 : PacketSize==4 ? 2 : PacketSize==2 ? ((Matrix11::Flags&RowMajorBit)?3:2) : /*PacketSize==1 ?*/ 3)
       > Matrix3;
       
     VERIFY(test_assign(Vector1(),Vector1(),
@@ -186,6 +187,8 @@ template<typename Scalar, bool Enable = ei_packet_traits<Scalar>::Vectorizable> 
             Matrix22
             >(DefaultTraversal,CompleteUnrolling)));
 
+    VERIFY((test_assign(Matrix11(), Matrix11()*Matrix11(), InnerVectorizedTraversal, CompleteUnrolling)));
+
     VERIFY(test_redux(VectorX(10),
       LinearVectorizedTraversal,NoUnrolling));
 
@@ -195,7 +198,7 @@ template<typename Scalar, bool Enable = ei_packet_traits<Scalar>::Vectorizable> 
     VERIFY(test_redux(Matrix44(),
       LinearVectorizedTraversal,NoUnrolling));
 
-    VERIFY(test_redux(Matrix44().template block<PacketSize,4>(1,2),
+    VERIFY(test_redux(Matrix44().template block<(Matrix1::Flags&RowMajorBit)?4:PacketSize,(Matrix1::Flags&RowMajorBit)?PacketSize:4>(1,2),
       DefaultTraversal,CompleteUnrolling));
 
     VERIFY(test_redux(Matrix44c().template block<2*PacketSize,1>(1,2),
@@ -221,7 +224,7 @@ void test_vectorization_logic()
   vectorization_logic<std::complex<float> >::run();
   vectorization_logic<std::complex<double> >::run();
   
-  if(ei_packet_traits<float>::Vectorizable)
+  if(internal::packet_traits<float>::Vectorizable)
   {
     VERIFY(test_assign(Matrix<float,3,3>(),Matrix<float,3,3>()+Matrix<float,3,3>(),
       LinearTraversal,CompleteUnrolling));
@@ -230,7 +233,7 @@ void test_vectorization_logic()
       DefaultTraversal,CompleteUnrolling));
   }
   
-  if(ei_packet_traits<double>::Vectorizable)
+  if(internal::packet_traits<double>::Vectorizable)
   {
     VERIFY(test_assign(Matrix<double,3,3>(),Matrix<double,3,3>()+Matrix<double,3,3>(),
       LinearTraversal,CompleteUnrolling));

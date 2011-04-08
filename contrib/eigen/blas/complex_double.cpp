@@ -24,9 +24,12 @@
 
 #define SCALAR        std::complex<double>
 #define SCALAR_SUFFIX z
+#define SCALAR_SUFFIX_UP "Z"
 #define REAL_SCALAR_SUFFIX d
 #define ISCOMPLEX     1
 
 #include "level1_impl.h"
+#include "level1_cplx_impl.h"
 #include "level2_impl.h"
+#include "level2_cplx_impl.h"
 #include "level3_impl.h"
