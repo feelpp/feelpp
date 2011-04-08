@@ -426,9 +426,11 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
         // generate mesh
         std::ostringstream __str;
         if ( parametric )
-            __str << "gmsh -parametric -refine " << filename.str();
+            __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
+                  << " -parametric -refine " << filename.str();
         else
-            __str << "gmsh -refine " << filename.str();
+            __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
+                  << " -refine " << filename.str();
         auto err = ::system( __str.str().c_str() );
     }
     return filename.str();
@@ -444,9 +446,11 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     std::ostringstream __str;
     //__str << "gmsh -algo tri -" << dim << " " << "-order " << this->order() << " " << __geoname;
     if ( parametric )
-        __str << "gmsh -parametric -" << dim << " " << __geoname;
+        __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
+              << " -parametric -" << dim << " " << __geoname;
     else
-        __str << "gmsh -" << dim << " " << __geoname;
+        __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
+              << " -" << dim << " " << __geoname;
     auto err = ::system( __str.str().c_str() );
 #else
     throw std::invalid_argument("Gmsh is not available on this system");
