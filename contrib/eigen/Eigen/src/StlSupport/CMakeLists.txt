@@ -2,5 +2,5 @@ FILE(GLOB Eigen_StlSupport_SRCS "*.h")
 
 INSTALL(FILES
   ${Eigen_StlSupport_SRCS}
-  DESTINATION include/feel/Eigen/src/StlSupport COMPONENT Devel
+  DESTINATION ${INCLUDE_INSTALL_DIR}/Eigen/src/StlSupport COMPONENT Devel
   )

@@ -47,9 +47,9 @@ template<typename MatrixType> void product_selfadjoint(const MatrixType& m)
                 r2 = RowVectorType::Random(rows);
   RhsMatrixType m4 = RhsMatrixType::Random(rows,10);
 
-  Scalar s1 = ei_random<Scalar>(),
-         s2 = ei_random<Scalar>(),
-         s3 = ei_random<Scalar>();
+  Scalar s1 = internal::random<Scalar>(),
+         s2 = internal::random<Scalar>(),
+         s3 = internal::random<Scalar>();
 
   m1 = (m1.adjoint() + m1).eval();
 
@@ -60,11 +60,11 @@ template<typename MatrixType> void product_selfadjoint(const MatrixType& m)
 
   m2 = m1.template triangularView<Upper>();
   m2.template selfadjointView<Upper>().rankUpdate(-v1,s2*v2,s3);
-  VERIFY_IS_APPROX(m2, (m1 + (-s2*s3) * (v1 * v2.adjoint()+ v2 * v1.adjoint())).template triangularView<Upper>().toDenseMatrix());
+  VERIFY_IS_APPROX(m2, (m1 + (s3*(-v1)*(s2*v2).adjoint()+internal::conj(s3)*(s2*v2)*(-v1).adjoint())).template triangularView<Upper>().toDenseMatrix());
 
   m2 = m1.template triangularView<Upper>();
-  m2.template selfadjointView<Upper>().rankUpdate(-r1.adjoint(),r2.adjoint()*s3,s1);
-  VERIFY_IS_APPROX(m2, (m1 + (-s3*s1) * (r1.adjoint() * r2 + r2.adjoint() * r1)).template triangularView<Upper>().toDenseMatrix());
+  m2.template selfadjointView<Upper>().rankUpdate(-s2*r1.adjoint(),r2.adjoint()*s3,s1);
+  VERIFY_IS_APPROX(m2, (m1 + s1*(-s2*r1.adjoint())*(r2.adjoint()*s3).adjoint() + internal::conj(s1)*(r2.adjoint()*s3) * (-s2*r1.adjoint()).adjoint()).template triangularView<Upper>().toDenseMatrix());
 
   if (rows>1)
   {
@@ -83,13 +83,13 @@ void test_product_selfadjoint()
     CALL_SUBTEST_1( product_selfadjoint(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( product_selfadjoint(Matrix<float, 2, 2>()) );
     CALL_SUBTEST_3( product_selfadjoint(Matrix3d()) );
-    s = ei_random<int>(1,150);
+    s = internal::random<int>(1,150);
     CALL_SUBTEST_4( product_selfadjoint(MatrixXcf(s, s)) );
-    s = ei_random<int>(1,150);
+    s = internal::random<int>(1,150);
     CALL_SUBTEST_5( product_selfadjoint(MatrixXcd(s,s)) );
-    s = ei_random<int>(1,320);
+    s = internal::random<int>(1,320);
     CALL_SUBTEST_6( product_selfadjoint(MatrixXd(s,s)) );
-    s = ei_random<int>(1,320);
+    s = internal::random<int>(1,320);
     CALL_SUBTEST_7( product_selfadjoint(Matrix<float,Dynamic,Dynamic,RowMajor>(s,s)) );
   }
 }

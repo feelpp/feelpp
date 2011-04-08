@@ -59,10 +59,10 @@ template<int SizeAtCompileType> void mixingtypes(int size = SizeAtCompileType)
   Vec_d vd    = vf.template cast<double>();
   Vec_cf vcf  = Vec_cf::Random(size,1);
   Vec_cd vcd  = vcf.template cast<complex<double> >();
-  float           sf  = ei_random<float>();
-  double          sd  = ei_random<double>();
-  complex<float>  scf = ei_random<complex<float> >();
-  complex<double> scd = ei_random<complex<double> >();
+  float           sf  = internal::random<float>();
+  double          sd  = internal::random<double>();
+  complex<float>  scf = internal::random<complex<float> >();
+  complex<double> scd = internal::random<complex<double> >();
 
 
   mf+mf;
@@ -83,8 +83,7 @@ template<int SizeAtCompileType> void mixingtypes(int size = SizeAtCompileType)
 #if 0 // we get other compilation errors here than just static asserts
   VERIFY_RAISES_ASSERT(vd.dot(vf));
 #endif
-  VERIFY_RAISES_ASSERT(vcf.dot(vf)); // yeah eventually we should allow this but i'm too lazy to make that change now in Dot.h
-                                     // especially as that might be rewritten as cwise product .sum() which would make that automatic.
+  VERIFY_IS_APPROX(vcf.dot(vf), vcf.dot(vf.template cast<complex<float> >()));
 
   // check diagonal product
   VERIFY_IS_APPROX(vf.asDiagonal() * mcf, vf.template cast<complex<float> >().asDiagonal() * mcf);
@@ -144,5 +143,5 @@ void test_mixingtypes()
 {
   CALL_SUBTEST_1(mixingtypes<3>());
   CALL_SUBTEST_2(mixingtypes<4>());
-  CALL_SUBTEST_3(mixingtypes<Dynamic>(ei_random<int>(1,310)));
+  CALL_SUBTEST_3(mixingtypes<Dynamic>(internal::random<int>(1,310)));
 }

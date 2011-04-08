@@ -62,20 +62,58 @@ template<typename MatrixType> void nomalloc(const MatrixType& m)
              v2 = VectorType::Random(rows),
              vzero = VectorType::Zero(rows);
 
-  Scalar s1 = ei_random<Scalar>();
+  Scalar s1 = internal::random<Scalar>();
 
-  Index r = ei_random<Index>(0, rows-1),
-        c = ei_random<Index>(0, cols-1);
+  Index r = internal::random<Index>(0, rows-1),
+        c = internal::random<Index>(0, cols-1);
 
   VERIFY_IS_APPROX((m1+m2)*s1,              s1*m1+s1*m2);
   VERIFY_IS_APPROX((m1+m2)(r,c), (m1(r,c))+(m2(r,c)));
   VERIFY_IS_APPROX(m1.cwiseProduct(m1.block(0,0,rows,cols)), (m1.array()*m1.array()).matrix());
-  if (MatrixType::RowsAtCompileTime<EIGEN_CACHEFRIENDLY_PRODUCT_THRESHOLD) {
-    // If the matrices are too large, we have better to use the optimized GEMM
-    // routines which allocates temporaries. However, on some platforms
-    // these temporaries are allocated on the stack using alloca.
-    VERIFY_IS_APPROX((m1*m1.transpose())*m2,  m1*(m1.transpose()*m2));
-  }
+  VERIFY_IS_APPROX((m1*m1.transpose())*m2,  m1*(m1.transpose()*m2));
+  
+  m2.col(0).noalias() = m1 * m1.col(0);
+  m2.col(0).noalias() -= m1.adjoint() * m1.col(0);
+  m2.col(0).noalias() -= m1 * m1.row(0).adjoint();
+  m2.col(0).noalias() -= m1.adjoint() * m1.row(0).adjoint();
+
+  m2.row(0).noalias() = m1.row(0) * m1;
+  m2.row(0).noalias() -= m1.row(0) * m1.adjoint();
+  m2.row(0).noalias() -= m1.col(0).adjoint() * m1;
+  m2.row(0).noalias() -= m1.col(0).adjoint() * m1.adjoint();
+  VERIFY_IS_APPROX(m2,m2);
+  
+  m2.col(0).noalias() = m1.template triangularView<Upper>() * m1.col(0);
+  m2.col(0).noalias() -= m1.adjoint().template triangularView<Upper>() * m1.col(0);
+  m2.col(0).noalias() -= m1.template triangularView<Upper>() * m1.row(0).adjoint();
+  m2.col(0).noalias() -= m1.adjoint().template triangularView<Upper>() * m1.row(0).adjoint();
+
+  m2.row(0).noalias() = m1.row(0) * m1.template triangularView<Upper>();
+  m2.row(0).noalias() -= m1.row(0) * m1.adjoint().template triangularView<Upper>();
+  m2.row(0).noalias() -= m1.col(0).adjoint() * m1.template triangularView<Upper>();
+  m2.row(0).noalias() -= m1.col(0).adjoint() * m1.adjoint().template triangularView<Upper>();
+  VERIFY_IS_APPROX(m2,m2);
+  
+  m2.col(0).noalias() = m1.template selfadjointView<Upper>() * m1.col(0);
+  m2.col(0).noalias() -= m1.adjoint().template selfadjointView<Upper>() * m1.col(0);
+  m2.col(0).noalias() -= m1.template selfadjointView<Upper>() * m1.row(0).adjoint();
+  m2.col(0).noalias() -= m1.adjoint().template selfadjointView<Upper>() * m1.row(0).adjoint();
+
+  m2.row(0).noalias() = m1.row(0) * m1.template selfadjointView<Upper>();
+  m2.row(0).noalias() -= m1.row(0) * m1.adjoint().template selfadjointView<Upper>();
+  m2.row(0).noalias() -= m1.col(0).adjoint() * m1.template selfadjointView<Upper>();
+  m2.row(0).noalias() -= m1.col(0).adjoint() * m1.adjoint().template selfadjointView<Upper>();
+  VERIFY_IS_APPROX(m2,m2);
+  
+  m2.template selfadjointView<Lower>().rankUpdate(m1.col(0),-1);
+  m2.template selfadjointView<Lower>().rankUpdate(m1.row(0),-1);
+
+  // The following fancy matrix-matrix products are not safe yet regarding static allocation
+//   m1 += m1.template triangularView<Upper>() * m2.col(;
+//   m1.template selfadjointView<Lower>().rankUpdate(m2);
+//   m1 += m1.template triangularView<Upper>() * m2;
+//   m1 += m1.template selfadjointView<Lower>() * m2;
+//   VERIFY_IS_APPROX(m1,m1);
 }
 
 template<typename Scalar>
@@ -110,7 +148,7 @@ void ctms_decompositions()
   // Eigenvalues module
   Eigen::HessenbergDecomposition<ComplexMatrix> hessDecomp;        hessDecomp.compute(complexA);
   Eigen::ComplexSchur<ComplexMatrix>            cSchur(size);      cSchur.compute(complexA);
-  Eigen::ComplexEigenSolver<ComplexMatrix>      cEigSolver;        //cEigSolver.compute(complexA); // NOTE: Commented-out because makes test fail (L135 of ComplexEigenSolver.h has a product that allocates on the stack)
+  Eigen::ComplexEigenSolver<ComplexMatrix>      cEigSolver;        cEigSolver.compute(complexA);
   Eigen::EigenSolver<Matrix>                    eigSolver;         eigSolver.compute(A);
   Eigen::SelfAdjointEigenSolver<Matrix>         saEigSolver(size); saEigSolver.compute(saA);
   Eigen::Tridiagonalization<Matrix>             tridiag;           tridiag.compute(saA);
@@ -125,8 +163,7 @@ void ctms_decompositions()
   Eigen::FullPivHouseholderQR<Matrix> fpQR; fpQR.compute(A);
 
   // SVD module
-  Eigen::JacobiSVD<Matrix> jSVD; jSVD.compute(A);
-  Eigen::SVD<Matrix>       svd;  svd.compute(A);
+  Eigen::JacobiSVD<Matrix> jSVD; jSVD.compute(A, ComputeFullU | ComputeFullV);
 }
 
 void test_nomalloc()

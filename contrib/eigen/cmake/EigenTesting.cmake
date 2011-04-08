@@ -1,6 +1,8 @@
 option(EIGEN_NO_ASSERTION_CHECKING "Disable checking of assertions using exceptions" OFF)
 option(EIGEN_DEBUG_ASSERTS "Enable advanced debuging of assertions" OFF)
 
+include(CheckCXXSourceCompiles)
+
 macro(ei_add_property prop value)
   get_property(previous GLOBAL PROPERTY ${prop})
   set_property(GLOBAL PROPERTY ${prop} "${previous} ${value}")
@@ -12,7 +14,11 @@ macro(ei_add_test_internal testname testname_with_suffix)
 
   set(filename ${testname}.cpp)
   add_executable(${targetname} ${filename})
-  add_dependencies(buildtests ${targetname})
+  if (targetname MATCHES "^eigen2_")
+    add_dependencies(eigen2_buildtests ${targetname})
+  else()
+    add_dependencies(buildtests ${targetname})
+  endif()
 
   if(EIGEN_NO_ASSERTION_CHECKING)
     ei_add_target_property(${targetname} COMPILE_FLAGS "-DEIGEN_NO_ASSERTION_CHECKING=1")
@@ -23,6 +29,10 @@ macro(ei_add_test_internal testname testname_with_suffix)
   endif(EIGEN_NO_ASSERTION_CHECKING)
 
   ei_add_target_property(${targetname} COMPILE_FLAGS "-DEIGEN_TEST_FUNC=${testname}")
+  
+  if(MSVC AND NOT EIGEN_SPLIT_LARGE_TESTS)
+    ei_add_target_property(${targetname} COMPILE_FLAGS "/bigobj")
+  endif()  
 
   # let the user pass flags.
   if(${ARGC} GREATER 2)
@@ -35,13 +45,19 @@ macro(ei_add_test_internal testname testname_with_suffix)
   if(EXTERNAL_LIBS)
     target_link_libraries(${targetname} ${EXTERNAL_LIBS})
   endif()
+
   if(${ARGC} GREATER 3)
-    string(STRIP "${ARGV3}" ARGV3_stripped)
-    string(LENGTH "${ARGV3_stripped}" ARGV3_stripped_length)
-    if(${ARGV3_stripped_length} GREATER 0)
-      target_link_libraries(${targetname} ${ARGV3})
-    endif(${ARGV3_stripped_length} GREATER 0)
-  endif(${ARGC} GREATER 3)
+    set(libs_to_link ${ARGV3})
+    # it could be that some cmake module provides a bad library string " "  (just spaces),
+    # and that severely breaks target_link_libraries ("can't link to -l-lstdc++" errors).
+    # so we check for strings containing only spaces.
+    string(STRIP "${libs_to_link}" libs_to_link_stripped)
+    string(LENGTH "${libs_to_link_stripped}" libs_to_link_stripped_length)
+    if(${libs_to_link_stripped_length} GREATER 0)
+      # notice: no double quotes around ${libs_to_link} here. It may be a list.
+      target_link_libraries(${targetname} ${libs_to_link})
+    endif()
+  endif() 
 
   if(WIN32)
     if(CYGWIN)
@@ -54,7 +70,6 @@ macro(ei_add_test_internal testname testname_with_suffix)
   endif(WIN32)
 
 endmacro(ei_add_test_internal)
-
 
 # Macro to add a test
 #
@@ -126,79 +141,117 @@ macro(ei_add_test testname)
   endif(EIGEN_SPLIT_LARGE_TESTS AND suffixes)
 endmacro(ei_add_test)
 
+
+# adds a failtest, i.e. a test that succeed if the program fails to compile
+# note that the test runner for these is CMake itself, when passed -DEIGEN_FAILTEST=ON
+# so here we're just running CMake commands immediately, we're not adding any targets.
+macro(ei_add_failtest testname)
+  get_property(EIGEN_FAILTEST_FAILURE_COUNT GLOBAL PROPERTY EIGEN_FAILTEST_FAILURE_COUNT)
+  get_property(EIGEN_FAILTEST_COUNT GLOBAL PROPERTY EIGEN_FAILTEST_COUNT)
+
+  message(STATUS "Checking failtest: ${testname}")
+  set(filename "${testname}.cpp")
+  file(READ "${filename}" test_source)
+
+  try_compile(succeeds_when_it_should_fail
+              "${CMAKE_CURRENT_BINARY_DIR}"
+              "${CMAKE_CURRENT_SOURCE_DIR}/${filename}"
+              COMPILE_DEFINITIONS "-DEIGEN_SHOULD_FAIL_TO_BUILD")
+  if (succeeds_when_it_should_fail)
+    message(STATUS "FAILED: ${testname} build succeeded when it should have failed")
+  endif()
+
+  try_compile(succeeds_when_it_should_succeed
+              "${CMAKE_CURRENT_BINARY_DIR}"
+              "${CMAKE_CURRENT_SOURCE_DIR}/${filename}"
+              COMPILE_DEFINITIONS)
+  if (NOT succeeds_when_it_should_succeed)
+    message(STATUS "FAILED: ${testname} build failed when it should have succeeded")
+  endif()
+
+  if (succeeds_when_it_should_fail OR NOT succeeds_when_it_should_succeed)
+    math(EXPR EIGEN_FAILTEST_FAILURE_COUNT ${EIGEN_FAILTEST_FAILURE_COUNT}+1)
+  endif()
+
+  math(EXPR EIGEN_FAILTEST_COUNT ${EIGEN_FAILTEST_COUNT}+1)
+
+  set_property(GLOBAL PROPERTY EIGEN_FAILTEST_FAILURE_COUNT ${EIGEN_FAILTEST_FAILURE_COUNT})
+  set_property(GLOBAL PROPERTY EIGEN_FAILTEST_COUNT ${EIGEN_FAILTEST_COUNT})
+endmacro(ei_add_failtest)
+
 # print a summary of the different options
 macro(ei_testing_print_summary)
 
-  message("************************************************************")
-  message("***    Eigen's unit tests configuration summary          ***")
-  message("************************************************************")
-  message("")
-  message("Build type:        ${CMAKE_BUILD_TYPE}")
+  message(STATUS "************************************************************")
+  message(STATUS "***    Eigen's unit tests configuration summary          ***")
+  message(STATUS "************************************************************")
+  message(STATUS "")
+  message(STATUS "Build type:        ${CMAKE_BUILD_TYPE}")
   get_property(EIGEN_TESTING_SUMMARY GLOBAL PROPERTY EIGEN_TESTING_SUMMARY)
   get_property(EIGEN_TESTED_BACKENDS GLOBAL PROPERTY EIGEN_TESTED_BACKENDS)
   get_property(EIGEN_MISSING_BACKENDS GLOBAL PROPERTY EIGEN_MISSING_BACKENDS)
-  message("Enabled backends:  ${EIGEN_TESTED_BACKENDS}")
-  message("Disabled backends: ${EIGEN_MISSING_BACKENDS}")
+  message(STATUS "Enabled backends:  ${EIGEN_TESTED_BACKENDS}")
+  message(STATUS "Disabled backends: ${EIGEN_MISSING_BACKENDS}")
 
   if(EIGEN_DEFAULT_TO_ROW_MAJOR)
-    message("Default order:     Row-major")
+    message(STATUS "Default order:     Row-major")
   else()
-    message("Default order:     Column-major")
+    message(STATUS "Default order:     Column-major")
   endif()
 
   if(EIGEN_TEST_NO_EXPLICIT_ALIGNMENT)
-    message("Explicit alignment (hence vectorization) disabled")
+    message(STATUS "Explicit alignment (hence vectorization) disabled")
   elseif(EIGEN_TEST_NO_EXPLICIT_VECTORIZATION)
-    message("Explicit vectorization disabled (alignment kept enabled)")
+    message(STATUS "Explicit vectorization disabled (alignment kept enabled)")
   else()
 
     if(EIGEN_TEST_SSE2)
-      message("SSE2:              ON")
+      message(STATUS "SSE2:              ON")
     else()
-      message("SSE2:              Using architecture defaults")
+      message(STATUS "SSE2:              Using architecture defaults")
     endif()
 
     if(EIGEN_TEST_SSE3)
-      message("SSE3:              ON")
+      message(STATUS "SSE3:              ON")
     else()
-      message("SSE3:              Using architecture defaults")
+      message(STATUS "SSE3:              Using architecture defaults")
     endif()
 
     if(EIGEN_TEST_SSSE3)
-      message("SSSE3:             ON")
+      message(STATUS "SSSE3:             ON")
     else()
-      message("SSSE3:             Using architecture defaults")
+      message(STATUS "SSSE3:             Using architecture defaults")
     endif()
 
     if(EIGEN_TEST_SSE4_1)
-      message("SSE4.1:            ON")
+      message(STATUS "SSE4.1:            ON")
     else()
-      message("SSE4.1:            Using architecture defaults")
+      message(STATUS "SSE4.1:            Using architecture defaults")
     endif()
 
     if(EIGEN_TEST_SSE4_2)
-      message("SSE4.2:            ON")
+      message(STATUS "SSE4.2:            ON")
     else()
-      message("SSE4.2:            Using architecture defaults")
+      message(STATUS "SSE4.2:            Using architecture defaults")
     endif()
 
     if(EIGEN_TEST_ALTIVEC)
-      message("Altivec:           ON")
+      message(STATUS "Altivec:           ON")
     else()
-      message("Altivec:           Using architecture defaults")
+      message(STATUS "Altivec:           Using architecture defaults")
     endif()
 
     if(EIGEN_TEST_NEON)
-      message("ARM NEON:          ON")
+      message(STATUS "ARM NEON:          ON")
     else()
-      message("ARM NEON:          Using architecture defaults")
+      message(STATUS "ARM NEON:          Using architecture defaults")
     endif()
 
   endif() # vectorization / alignment options
 
-  message("\n${EIGEN_TESTING_SUMMARY}")
+  message(STATUS "\n${EIGEN_TESTING_SUMMARY}")
 
-  message("************************************************************")
+  message(STATUS "************************************************************")
 
 endmacro(ei_testing_print_summary)
 
@@ -212,6 +265,12 @@ macro(ei_init_testing)
   set_property(GLOBAL PROPERTY EIGEN_MISSING_BACKENDS "")
   set_property(GLOBAL PROPERTY EIGEN_TESTING_SUMMARY "")
   set_property(GLOBAL PROPERTY EIGEN_TESTS_LIST "")
+
+  define_property(GLOBAL PROPERTY EIGEN_FAILTEST_FAILURE_COUNT BRIEF_DOCS " " FULL_DOCS " ")
+  define_property(GLOBAL PROPERTY EIGEN_FAILTEST_COUNT BRIEF_DOCS " " FULL_DOCS " ")
+
+  set_property(GLOBAL PROPERTY EIGEN_FAILTEST_FAILURE_COUNT "0")
+  set_property(GLOBAL PROPERTY EIGEN_FAILTEST_COUNT "0")
 endmacro(ei_init_testing)
 
 if(CMAKE_COMPILER_IS_GNUCXX)

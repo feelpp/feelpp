@@ -24,9 +24,22 @@
 
 #include "main.h"
 
+template<typename T> bool isNotNaN(const T& x)
+{
+  return x==x;
+}
+
+// workaround aggressive optimization in ICC
+template<typename T> EIGEN_DONT_INLINE  T sub(T a, T b) { return a - b; }
+
 template<typename T> bool isFinite(const T& x)
 {
-  return x==x && x>=NumTraits<T>::lowest() && x<=NumTraits<T>::highest();
+  return isNotNaN(sub(x,x));
+}
+
+template<typename T> EIGEN_DONT_INLINE T copy(const T& x)
+{
+  return x;
 }
 
 template<typename MatrixType> void stable_norm(const MatrixType& m)
@@ -55,8 +68,8 @@ template<typename MatrixType> void stable_norm(const MatrixType& m)
   Index rows = m.rows();
   Index cols = m.cols();
 
-  Scalar big = ei_random<Scalar>() * (std::numeric_limits<RealScalar>::max() * RealScalar(1e-4));
-  Scalar small = static_cast<RealScalar>(1)/big;
+  Scalar big = internal::random<Scalar>() * (std::numeric_limits<RealScalar>::max() * RealScalar(1e-4));
+  Scalar small = internal::random<Scalar>() * (std::numeric_limits<RealScalar>::min() * RealScalar(1e4));
 
   MatrixType  vzero = MatrixType::Zero(rows, cols),
               vrand = MatrixType::Random(rows, cols),
@@ -75,33 +88,21 @@ template<typename MatrixType> void stable_norm(const MatrixType& m)
 
   // test isFinite
   VERIFY(!isFinite( std::numeric_limits<RealScalar>::infinity()));
-  VERIFY(!isFinite(ei_sqrt(-ei_abs(big))));
+  VERIFY(!isFinite(internal::sqrt(-internal::abs(big))));
 
   // test overflow
-  VERIFY(isFinite(ei_sqrt(size)*ei_abs(big)));
-  #ifdef EIGEN_VECTORIZE_SSE
-  // since x87 FPU uses 80bits of precision overflow is not detected
-  if(ei_packet_traits<Scalar>::size>1)
-  {
-    VERIFY_IS_NOT_APPROX(static_cast<Scalar>(vbig.norm()),   ei_sqrt(size)*big); // here the default norm must fail
-  }
-  #endif
-  VERIFY_IS_APPROX(vbig.stableNorm(), ei_sqrt(size)*ei_abs(big));
-  VERIFY_IS_APPROX(vbig.blueNorm(),   ei_sqrt(size)*ei_abs(big));
-  VERIFY_IS_APPROX(vbig.hypotNorm(),  ei_sqrt(size)*ei_abs(big));
+  VERIFY(isFinite(internal::sqrt(size)*internal::abs(big)));
+  VERIFY_IS_NOT_APPROX(internal::sqrt(copy(vbig.squaredNorm())),   internal::abs(internal::sqrt(size)*big)); // here the default norm must fail
+  VERIFY_IS_APPROX(vbig.stableNorm(), internal::sqrt(size)*internal::abs(big));
+  VERIFY_IS_APPROX(vbig.blueNorm(),   internal::sqrt(size)*internal::abs(big));
+  VERIFY_IS_APPROX(vbig.hypotNorm(),  internal::sqrt(size)*internal::abs(big));
 
   // test underflow
-  VERIFY(isFinite(ei_sqrt(size)*ei_abs(small)));
-  #ifdef EIGEN_VECTORIZE_SSE
-  // since x87 FPU uses 80bits of precision underflow is not detected
-  if(ei_packet_traits<Scalar>::size>1)
-  {
-    VERIFY_IS_NOT_APPROX(static_cast<Scalar>(vsmall.norm()),   ei_sqrt(size)*small); // here the default norm must fail
-  }
-  #endif
-  VERIFY_IS_APPROX(vsmall.stableNorm(), ei_sqrt(size)*ei_abs(small));
-  VERIFY_IS_APPROX(vsmall.blueNorm(),   ei_sqrt(size)*ei_abs(small));
-  VERIFY_IS_APPROX(vsmall.hypotNorm(),  ei_sqrt(size)*ei_abs(small));
+  VERIFY(isFinite(internal::sqrt(size)*internal::abs(small)));
+  VERIFY_IS_NOT_APPROX(internal::sqrt(copy(vsmall.squaredNorm())),   internal::abs(internal::sqrt(size)*small)); // here the default norm must fail
+  VERIFY_IS_APPROX(vsmall.stableNorm(), internal::sqrt(size)*internal::abs(small));
+  VERIFY_IS_APPROX(vsmall.blueNorm(),   internal::sqrt(size)*internal::abs(small));
+  VERIFY_IS_APPROX(vsmall.hypotNorm(),  internal::sqrt(size)*internal::abs(small));
 
 // Test compilation of cwise() version
   VERIFY_IS_APPROX(vrand.colwise().stableNorm(),      vrand.colwise().norm());
@@ -117,8 +118,8 @@ void test_stable_norm()
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( stable_norm(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( stable_norm(Vector4d()) );
-    CALL_SUBTEST_3( stable_norm(VectorXd(ei_random<int>(10,2000))) );
-    CALL_SUBTEST_4( stable_norm(VectorXf(ei_random<int>(10,2000))) );
-    CALL_SUBTEST_5( stable_norm(VectorXcd(ei_random<int>(10,2000))) );
+    CALL_SUBTEST_3( stable_norm(VectorXd(internal::random<int>(10,2000))) );
+    CALL_SUBTEST_4( stable_norm(VectorXf(internal::random<int>(10,2000))) );
+    CALL_SUBTEST_5( stable_norm(VectorXcd(internal::random<int>(10,2000))) );
   }
 }

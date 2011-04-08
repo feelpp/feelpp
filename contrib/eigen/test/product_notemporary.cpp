@@ -24,7 +24,13 @@
 
 static int nb_temporaries;
 
-#define EIGEN_DEBUG_MATRIX_CTOR { if(size!=0) nb_temporaries++; }
+void on_temporary_creation(int size) {
+  // here's a great place to set a breakpoint when debugging failures in this test!
+  if(size!=0) nb_temporaries++;
+}
+  
+
+#define EIGEN_DENSE_STORAGE_CTOR_PLUGIN { on_temporary_creation(size); }
 
 #include "main.h"
 
@@ -54,17 +60,17 @@ template<typename MatrixType> void product_notemporary(const MatrixType& m)
                      m2 = MatrixType::Random(rows, cols),
                      m3(rows, cols);
   RowVectorType rv1 = RowVectorType::Random(rows), rvres(rows);
-  ColVectorType vc2 = ColVectorType::Random(cols), cvres(cols);
+  ColVectorType cv1 = ColVectorType::Random(cols), cvres(cols);
   RowMajorMatrixType rm3(rows, cols);
 
-  Scalar s1 = ei_random<Scalar>(),
-         s2 = ei_random<Scalar>(),
-         s3 = ei_random<Scalar>();
+  Scalar s1 = internal::random<Scalar>(),
+         s2 = internal::random<Scalar>(),
+         s3 = internal::random<Scalar>();
 
-  Index c0 = ei_random<Index>(4,cols-8),
-        c1 = ei_random<Index>(8,cols-c0),
-        r0 = ei_random<Index>(4,cols-8),
-        r1 = ei_random<Index>(8,rows-r0);
+  Index c0 = internal::random<Index>(4,cols-8),
+        c1 = internal::random<Index>(8,cols-c0),
+        r0 = internal::random<Index>(4,cols-8),
+        r1 = internal::random<Index>(8,rows-r0);
 
   VERIFY_EVALUATION_COUNT( m3 = (m1 * m2.adjoint()), 1);
   VERIFY_EVALUATION_COUNT( m3.noalias() = m1 * m2.adjoint(), 0);
@@ -122,19 +128,26 @@ template<typename MatrixType> void product_notemporary(const MatrixType& m)
   // Zero temporaries for ... CoeffBasedProductMode
   // - does not work with GCC because of the <..>, we'ld need variadic macros ...
   //VERIFY_EVALUATION_COUNT( m3.col(0).head<5>() * m3.col(0).transpose() + m3.col(0).head<5>() * m3.col(0).transpose(), 0 );
+
+  // Check matrix * vectors
+  VERIFY_EVALUATION_COUNT( cvres.noalias() = m1 * cv1, 0 );
+  VERIFY_EVALUATION_COUNT( cvres.noalias() -= m1 * cv1, 0 );
+  VERIFY_EVALUATION_COUNT( cvres.noalias() -= m1 * m2.col(0), 0 );
+  VERIFY_EVALUATION_COUNT( cvres.noalias() -= m1 * rv1.adjoint(), 0 );
+  VERIFY_EVALUATION_COUNT( cvres.noalias() -= m1 * m2.row(0).transpose(), 0 );
 }
 
 void test_product_notemporary()
 {
   int s;
   for(int i = 0; i < g_repeat; i++) {
-    s = ei_random<int>(16,320);
+    s = internal::random<int>(16,320);
     CALL_SUBTEST_1( product_notemporary(MatrixXf(s, s)) );
-    s = ei_random<int>(16,320);
+    s = internal::random<int>(16,320);
     CALL_SUBTEST_2( product_notemporary(MatrixXd(s, s)) );
-    s = ei_random<int>(16,120);
+    s = internal::random<int>(16,120);
     CALL_SUBTEST_3( product_notemporary(MatrixXcf(s,s)) );
-    s = ei_random<int>(16,120);
+    s = internal::random<int>(16,120);
     CALL_SUBTEST_4( product_notemporary(MatrixXcd(s,s)) );
   }
 }

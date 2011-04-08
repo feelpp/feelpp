@@ -27,7 +27,7 @@
 #include <Eigen/LU>
 #include <Eigen/SVD>
 
-template<typename Scalar, int Mode> void non_projective_only(void)
+template<typename Scalar, int Mode, int Options> void non_projective_only()
 {
     /* this test covers the following files:
      Cross.h Quaternion.h, Transform.cpp
@@ -40,26 +40,22 @@ template<typename Scalar, int Mode> void non_projective_only(void)
   typedef Matrix<Scalar,4,1> Vector4;
   typedef Quaternion<Scalar> Quaternionx;
   typedef AngleAxis<Scalar> AngleAxisx;
-  typedef Transform<Scalar,2,Mode> Transform2;
-  typedef Transform<Scalar,3,Mode> Transform3;
-  typedef Transform<Scalar,2,Isometry> Isometry2;
-  typedef Transform<Scalar,3,Isometry> Isometry3;
+  typedef Transform<Scalar,2,Mode,Options> Transform2;
+  typedef Transform<Scalar,3,Mode,Options> Transform3;
+  typedef Transform<Scalar,2,Isometry,Options> Isometry2;
+  typedef Transform<Scalar,3,Isometry,Options> Isometry3;
   typedef typename Transform3::MatrixType MatrixType;
   typedef DiagonalMatrix<Scalar,2> AlignedScaling2;
   typedef DiagonalMatrix<Scalar,3> AlignedScaling3;
   typedef Translation<Scalar,2> Translation2;
   typedef Translation<Scalar,3> Translation3;
 
-  Scalar largeEps = test_precision<Scalar>();
-  if (ei_is_same_type<Scalar,float>::ret)
-    largeEps = 1e-2f;
-
   Vector3 v0 = Vector3::Random(),
           v1 = Vector3::Random();
 
   Transform3 t0, t1, t2;
 
-  Scalar a = ei_random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
+  Scalar a = internal::random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
 
   Quaternionx q1, q2;
 
@@ -102,7 +98,7 @@ template<typename Scalar, int Mode> void non_projective_only(void)
   VERIFY_IS_APPROX((t0 * v1).template head<3>(), AlignedScaling3(v0) * v1);
 }
 
-template<typename Scalar, int Mode> void transformations(void)
+template<typename Scalar, int Mode, int Options> void transformations()
 {
   /* this test covers the following files:
      Cross.h Quaternion.h, Transform.cpp
@@ -115,19 +111,15 @@ template<typename Scalar, int Mode> void transformations(void)
   typedef Matrix<Scalar,4,1> Vector4;
   typedef Quaternion<Scalar> Quaternionx;
   typedef AngleAxis<Scalar> AngleAxisx;
-  typedef Transform<Scalar,2,Mode> Transform2;
-  typedef Transform<Scalar,3,Mode> Transform3;
-  typedef Transform<Scalar,2,Isometry> Isometry2;
-  typedef Transform<Scalar,3,Isometry> Isometry3;
+  typedef Transform<Scalar,2,Mode,Options> Transform2;
+  typedef Transform<Scalar,3,Mode,Options> Transform3;
+  typedef Transform<Scalar,2,Isometry,Options> Isometry2;
+  typedef Transform<Scalar,3,Isometry,Options> Isometry3;
   typedef typename Transform3::MatrixType MatrixType;
   typedef DiagonalMatrix<Scalar,2> AlignedScaling2;
   typedef DiagonalMatrix<Scalar,3> AlignedScaling3;
   typedef Translation<Scalar,2> Translation2;
   typedef Translation<Scalar,3> Translation3;
-
-  Scalar largeEps = test_precision<Scalar>();
-  if (ei_is_same_type<Scalar,float>::ret)
-    largeEps = 1e-2f;
 
   Vector3 v0 = Vector3::Random(),
     v1 = Vector3::Random(),
@@ -135,12 +127,12 @@ template<typename Scalar, int Mode> void transformations(void)
   Vector2 u0 = Vector2::Random();
   Matrix3 matrot1, m;
 
-  Scalar a = ei_random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
-  Scalar s0 = ei_random<Scalar>();
+  Scalar a = internal::random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
+  Scalar s0 = internal::random<Scalar>();
 
   VERIFY_IS_APPROX(v0, AngleAxisx(a, v0.normalized()) * v0);
   VERIFY_IS_APPROX(-v0, AngleAxisx(Scalar(M_PI), v0.unitOrthogonal()) * v0);
-  VERIFY_IS_APPROX(ei_cos(a)*v0.squaredNorm(), v0.dot(AngleAxisx(a, v0.unitOrthogonal()) * v0));
+  VERIFY_IS_APPROX(internal::cos(a)*v0.squaredNorm(), v0.dot(AngleAxisx(a, v0.unitOrthogonal()) * v0));
   m = AngleAxisx(a, v0.normalized()).toRotationMatrix().adjoint();
   VERIFY_IS_APPROX(Matrix3::Identity(), m * AngleAxisx(a, v0.normalized()));
   VERIFY_IS_APPROX(Matrix3::Identity(), AngleAxisx(a, v0.normalized()) * m);
@@ -180,8 +172,8 @@ template<typename Scalar, int Mode> void transformations(void)
   // Transform
   // TODO complete the tests !
   a = 0;
-  while (ei_abs(a)<Scalar(0.1))
-    a = ei_random<Scalar>(-Scalar(0.4)*Scalar(M_PI), Scalar(0.4)*Scalar(M_PI));
+  while (internal::abs(a)<Scalar(0.1))
+    a = internal::random<Scalar>(-Scalar(0.4)*Scalar(M_PI), Scalar(0.4)*Scalar(M_PI));
   q1 = AngleAxisx(a, v0.normalized());
   Transform3 t0, t1, t2;
 
@@ -227,7 +219,7 @@ template<typename Scalar, int Mode> void transformations(void)
     tmat4.matrix()(3,3) = Scalar(1);
   VERIFY_IS_APPROX(tmat3.matrix(), tmat4.matrix());
 
-  Scalar a3 = ei_random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
+  Scalar a3 = internal::random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
   Vector3 v3 = Vector3::Random().normalized();
   AngleAxisx aa3(a3, v3);
   Transform3 t3(aa3);
@@ -274,7 +266,7 @@ template<typename Scalar, int Mode> void transformations(void)
   Vector2 v20 = Vector2::Random();
   Vector2 v21 = Vector2::Random();
   for (int k=0; k<2; ++k)
-    if (ei_abs(v21[k])<Scalar(1e-3)) v21[k] = Scalar(1e-3);
+    if (internal::abs(v21[k])<Scalar(1e-3)) v21[k] = Scalar(1e-3);
   t21.setIdentity();
   t21.linear() = Rotation2D<Scalar>(a).toRotationMatrix();
   VERIFY_IS_APPROX(t20.fromPositionOrientationScale(v20,a,v21).matrix(),
@@ -307,6 +299,14 @@ template<typename Scalar, int Mode> void transformations(void)
   VERIFY_IS_APPROX(t0.matrix(), t1.matrix());
   t0.prescale(s0);
   t1 = Scaling(s0) * t1;
+  VERIFY_IS_APPROX(t0.matrix(), t1.matrix());
+  
+  t0 = t3;
+  t0.scale(s0);
+  t1 = t3 * Scaling(s0,s0,s0);
+  VERIFY_IS_APPROX(t0.matrix(), t1.matrix());
+  t0.prescale(s0);
+  t1 = Scaling(s0,s0,s0) * t1;
   VERIFY_IS_APPROX(t0.matrix(), t1.matrix());
 
 
@@ -411,7 +411,7 @@ template<typename Scalar, int Mode> void transformations(void)
   AngleAxis<double> aa1d = aa1.template cast<double>();
   VERIFY_IS_APPROX(aa1d.template cast<Scalar>(),aa1);
 
-  Rotation2D<Scalar> r2d1(ei_random<Scalar>());
+  Rotation2D<Scalar> r2d1(internal::random<Scalar>());
   Rotation2D<float> r2d1f = r2d1.template cast<float>();
   VERIFY_IS_APPROX(r2d1f.template cast<Scalar>(),r2d1);
   Rotation2D<double> r2d1d = r2d1.template cast<double>();
@@ -419,15 +419,54 @@ template<typename Scalar, int Mode> void transformations(void)
 
 }
 
+template<typename Scalar> void transform_alignment()
+{
+  typedef Transform<Scalar,3,Projective,AutoAlign> Projective3a;
+  typedef Transform<Scalar,3,Projective,DontAlign> Projective3u;
+
+  EIGEN_ALIGN16 Scalar array1[16];
+  EIGEN_ALIGN16 Scalar array2[16];
+  EIGEN_ALIGN16 Scalar array3[16+1];
+  Scalar* array3u = array3+1;
+
+  Projective3a *p1 = ::new(reinterpret_cast<void*>(array1)) Projective3a;
+  Projective3u *p2 = ::new(reinterpret_cast<void*>(array2)) Projective3u;
+  Projective3u *p3 = ::new(reinterpret_cast<void*>(array3u)) Projective3u;
+  
+  p1->matrix().setRandom();
+  *p2 = *p1;
+  *p3 = *p1;
+
+  VERIFY_IS_APPROX(p1->matrix(), p2->matrix());
+  VERIFY_IS_APPROX(p1->matrix(), p3->matrix());
+  
+  VERIFY_IS_APPROX( (*p1) * (*p1), (*p2)*(*p3));
+  
+  #ifdef EIGEN_VECTORIZE
+  VERIFY_RAISES_ASSERT((::new(reinterpret_cast<void*>(array3u)) Projective3a));
+  #endif
+}
+
 void test_geo_transformations()
 {
   for(int i = 0; i < g_repeat; i++) {
-    CALL_SUBTEST_1(( transformations<double,Affine>() ));
-    CALL_SUBTEST_1(( non_projective_only<double,Affine>() ));
+    CALL_SUBTEST_1(( transformations<double,Affine,AutoAlign>() ));
+    CALL_SUBTEST_1(( non_projective_only<double,Affine,AutoAlign>() ));
     
-    CALL_SUBTEST_2(( transformations<float,AffineCompact>() ));
-    CALL_SUBTEST_2(( non_projective_only<float,AffineCompact>() ));
+    CALL_SUBTEST_2(( transformations<float,AffineCompact,AutoAlign>() ));
+    CALL_SUBTEST_2(( non_projective_only<float,AffineCompact,AutoAlign>() ));
 
-    CALL_SUBTEST_3(( transformations<double,Projective>() ));
+    CALL_SUBTEST_3(( transformations<double,Projective,AutoAlign>() ));
+    CALL_SUBTEST_3(( transformations<double,Projective,DontAlign>() ));
+    CALL_SUBTEST_3(( transform_alignment<double>() ));
+    
+    CALL_SUBTEST_4(( transformations<float,Affine,RowMajor|AutoAlign>() ));
+    CALL_SUBTEST_4(( non_projective_only<float,Affine,RowMajor>() ));
+    
+    CALL_SUBTEST_5(( transformations<double,AffineCompact,RowMajor|AutoAlign>() ));
+    CALL_SUBTEST_5(( non_projective_only<double,AffineCompact,RowMajor>() ));
+
+    CALL_SUBTEST_6(( transformations<double,Projective,RowMajor|AutoAlign>() ));
+    CALL_SUBTEST_6(( transformations<double,Projective,RowMajor|DontAlign>() ));
   }
 }

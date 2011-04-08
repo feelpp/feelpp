@@ -2,5 +2,5 @@ FILE(GLOB Eigen_misc_SRCS "*.h")
 
 INSTALL(FILES
   ${Eigen_misc_SRCS}
-  DESTINATION include/feel/Eigen/src/misc COMPONENT Devel
+  DESTINATION ${INCLUDE_INSTALL_DIR}/Eigen/src/misc COMPONENT Devel
   )

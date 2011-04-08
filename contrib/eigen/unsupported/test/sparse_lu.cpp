@@ -44,7 +44,6 @@ template<typename Scalar> void sparse_lu(int rows, int cols)
   std::vector<Vector2i> zeroCoords;
   std::vector<Vector2i> nonzeroCoords;
 
-    static int count = 0;
     SparseMatrix<Scalar> m2(rows, cols);
     DenseMatrix refMat2(rows, cols);
 
@@ -61,6 +60,21 @@ template<typename Scalar> void sparse_lu(int rows, int cols)
     x.setZero();
     // // SparseLU<SparseMatrix<Scalar> > (m2).solve(b,&x);
     // // VERIFY(refX.isApprox(x,test_precision<Scalar>()) && "LU: default");
+    
+    #ifdef EIGEN_UMFPACK_SUPPORT
+    {
+      // check solve
+      x.setZero();
+      SparseLU<SparseMatrix<Scalar>,UmfPack> lu(m2);
+      VERIFY(lu.succeeded() && "umfpack LU decomposition failed");
+      VERIFY(lu.solve(b,&x) && "umfpack LU solving failed");
+      VERIFY(refX.isApprox(x,test_precision<Scalar>()) && "LU: umfpack");
+      VERIFY_IS_APPROX(refDet,lu.determinant());
+        // TODO check the extracted data
+        //std::cerr << slu.matrixL() << "\n";
+    }
+    #endif
+    
     #ifdef EIGEN_SUPERLU_SUPPORT
     {
       x.setZero();
@@ -79,37 +93,20 @@ template<typename Scalar> void sparse_lu(int rows, int cols)
          VERIFY(b.isApprox(m2.adjoint() * x, test_precision<Scalar>()));
         }
 
-        if (count==0) {
+        if (!NumTraits<Scalar>::IsComplex) {
           VERIFY_IS_APPROX(refDet,slu.determinant()); // FIXME det is not very stable for complex
         }
       }
     }
     #endif
-    #ifdef EIGEN_UMFPACK_SUPPORT
-    {
-      // check solve
-      x.setZero();
-      SparseLU<SparseMatrix<Scalar>,UmfPack> slu(m2);
-      if (slu.succeeded()) {
-        if (slu.solve(b,&x)) {
-          if (count==0) {
-            VERIFY(refX.isApprox(x,test_precision<Scalar>()) && "LU: umfpack");  // FIXME solve is not very stable for complex
-          }
-        }
-        VERIFY_IS_APPROX(refDet,slu.determinant());
-        // TODO check the extracted data
-        //std::cerr << slu.matrixL() << "\n";
-      }
-    }
-    #endif
-    count++;
+    
 }
 
 void test_sparse_lu()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1(sparse_lu<double>(8, 8) );
-    int s = ei_random<int>(1,300);
+    int s = internal::random<int>(1,300);
     CALL_SUBTEST_2(sparse_lu<std::complex<double> >(s,s) );
     CALL_SUBTEST_1(sparse_lu<double>(s,s) );
   }

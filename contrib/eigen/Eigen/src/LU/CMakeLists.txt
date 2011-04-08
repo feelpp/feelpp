@@ -2,7 +2,7 @@ FILE(GLOB Eigen_LU_SRCS "*.h")
 
 INSTALL(FILES 
   ${Eigen_LU_SRCS}
-  DESTINATION include/feel/Eigen/src/LU COMPONENT Devel
+  DESTINATION ${INCLUDE_INSTALL_DIR}/Eigen/src/LU COMPONENT Devel
   )
 
 ADD_SUBDIRECTORY(arch)

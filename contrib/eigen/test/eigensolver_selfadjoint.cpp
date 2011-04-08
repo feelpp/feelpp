@@ -63,7 +63,7 @@ template<typename MatrixType> void selfadjointeigensolver(const MatrixType& m)
   GeneralizedSelfAdjointEigenSolver<MatrixType> eiSymmGen(symmA, symmB);
 
   #ifdef HAS_GSL
-  if (ei_is_same_type<RealScalar,double>::ret)
+  if (internal::is_same<RealScalar,double>::value)
   {
     // restore symmA and symmB.
     symmA = MatrixType(symmA.template selfadjointView<Lower>());
@@ -155,6 +155,11 @@ template<typename MatrixType> void selfadjointeigensolver(const MatrixType& m)
   VERIFY_RAISES_ASSERT(eiSymmUninitialized.operatorSqrt());
   VERIFY_RAISES_ASSERT(eiSymmUninitialized.operatorInverseSqrt());
 
+  // test Tridiagonalization's methods
+  Tridiagonalization<MatrixType> tridiag(symmA);
+  // FIXME tridiag.matrixQ().adjoint() does not work
+  VERIFY_IS_APPROX(MatrixType(symmA.template selfadjointView<Lower>()), tridiag.matrixQ() * tridiag.matrixT().eval() * MatrixType(tridiag.matrixQ()).adjoint());
+  
   if (rows > 1)
   {
     // Test matrix with NaN
@@ -173,6 +178,8 @@ void test_eigensolver_selfadjoint()
     CALL_SUBTEST_3( selfadjointeigensolver(MatrixXf(10,10)) );
     CALL_SUBTEST_4( selfadjointeigensolver(MatrixXd(19,19)) );
     CALL_SUBTEST_5( selfadjointeigensolver(MatrixXcd(17,17)) );
+    
+    CALL_SUBTEST_9( selfadjointeigensolver(Matrix<std::complex<double>,Dynamic,Dynamic,RowMajor>(17,17)) );
 
     // some trivial but implementation-wise tricky cases
     CALL_SUBTEST_4( selfadjointeigensolver(MatrixXd(1,1)) );

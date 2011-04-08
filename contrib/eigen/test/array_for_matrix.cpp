@@ -30,7 +30,7 @@ template<typename MatrixType> void array_for_matrix(const MatrixType& m)
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> ColVectorType;
-  typedef Matrix<Scalar, 1, MatrixType::ColsAtCompileTime> RowVectorType;
+  typedef Matrix<Scalar, 1, MatrixType::ColsAtCompileTime> RowVectorType; 
 
   Index rows = m.rows();
   Index cols = m.cols();
@@ -42,8 +42,8 @@ template<typename MatrixType> void array_for_matrix(const MatrixType& m)
   ColVectorType cv1 = ColVectorType::Random(rows);
   RowVectorType rv1 = RowVectorType::Random(cols);
 
-  Scalar  s1 = ei_random<Scalar>(),
-          s2 = ei_random<Scalar>();
+  Scalar  s1 = internal::random<Scalar>(),
+          s2 = internal::random<Scalar>();
 
   // scalar addition
   VERIFY_IS_APPROX(m1.array() + s1, s1 + m1.array());
@@ -57,11 +57,11 @@ template<typename MatrixType> void array_for_matrix(const MatrixType& m)
   VERIFY_IS_APPROX(m3, (m1.array() - s1).matrix());
 
   // reductions
-  VERIFY_IS_APPROX(m1.colwise().sum().sum(), m1.sum());
-  VERIFY_IS_APPROX(m1.rowwise().sum().sum(), m1.sum());
-  if (!ei_isApprox(m1.sum(), (m1+m2).sum()))
-    VERIFY_IS_NOT_APPROX(((m1+m2).rowwise().sum()).sum(), m1.sum());
-  VERIFY_IS_APPROX(m1.colwise().sum(), m1.colwise().redux(ei_scalar_sum_op<Scalar>()));
+  VERIFY_IS_MUCH_SMALLER_THAN(m1.colwise().sum().sum() - m1.sum(), m1.cwiseAbs().maxCoeff());
+  VERIFY_IS_MUCH_SMALLER_THAN(m1.rowwise().sum().sum() - m1.sum(), m1.cwiseAbs().maxCoeff());
+  VERIFY_IS_MUCH_SMALLER_THAN(m1.colwise().sum() + m2.colwise().sum() - (m1+m2).colwise().sum(), (m1+m2).cwiseAbs().maxCoeff());
+  VERIFY_IS_MUCH_SMALLER_THAN(m1.rowwise().sum() - m2.rowwise().sum() - (m1-m2).rowwise().sum(), (m1-m2).cwiseAbs().maxCoeff());
+  VERIFY_IS_APPROX(m1.colwise().sum(), m1.colwise().redux(internal::scalar_sum_op<Scalar>()));
 
   // vector-wise ops
   m3 = m1;
@@ -76,6 +76,14 @@ template<typename MatrixType> void array_for_matrix(const MatrixType& m)
   // empty objects
   VERIFY_IS_APPROX(m1.block(0,0,0,cols).colwise().sum(),  RowVectorType::Zero(cols));
   VERIFY_IS_APPROX(m1.block(0,0,rows,0).rowwise().prod(), ColVectorType::Ones(rows));
+  
+  // verify the const accessors exist
+  const Scalar& ref_m1 = m.matrix().array().coeffRef(0);
+  const Scalar& ref_m2 = m.matrix().array().coeffRef(0,0);
+  const Scalar& ref_a1 = m.array().matrix().coeffRef(0);
+  const Scalar& ref_a2 = m.array().matrix().coeffRef(0,0);
+  VERIFY(&ref_a1 == &ref_m1);
+  VERIFY(&ref_a2 == &ref_m2);
 }
 
 template<typename MatrixType> void comparisons(const MatrixType& m)
@@ -88,8 +96,8 @@ template<typename MatrixType> void comparisons(const MatrixType& m)
   Index rows = m.rows();
   Index cols = m.cols();
 
-  Index r = ei_random<Index>(0, rows-1),
-        c = ei_random<Index>(0, cols-1);
+  Index r = internal::random<Index>(0, rows-1),
+        c = internal::random<Index>(0, cols-1);
 
   MatrixType m1 = MatrixType::Random(rows, cols),
              m2 = MatrixType::Random(rows, cols),
@@ -117,7 +125,7 @@ template<typename MatrixType> void comparisons(const MatrixType& m)
   Scalar mid = (m1.cwiseAbs().minCoeff() + m1.cwiseAbs().maxCoeff())/Scalar(2);
   for (int j=0; j<cols; ++j)
   for (int i=0; i<rows; ++i)
-    m3(i,j) = ei_abs(m1(i,j))<mid ? 0 : m1(i,j);
+    m3(i,j) = internal::abs(m1(i,j))<mid ? 0 : m1(i,j);
   VERIFY_IS_APPROX( (m1.array().abs()<MatrixType::Constant(rows,cols,mid).array())
                         .select(MatrixType::Zero(rows,cols),m1), m3);
   // shorter versions:
@@ -144,33 +152,34 @@ template<typename VectorType> void lpNorm(const VectorType& v)
 
   VERIFY_IS_APPROX(u.template lpNorm<Infinity>(), u.cwiseAbs().maxCoeff());
   VERIFY_IS_APPROX(u.template lpNorm<1>(), u.cwiseAbs().sum());
-  VERIFY_IS_APPROX(u.template lpNorm<2>(), ei_sqrt(u.array().abs().square().sum()));
-  VERIFY_IS_APPROX(ei_pow(u.template lpNorm<5>(), typename VectorType::RealScalar(5)), u.array().abs().pow(5).sum());
+  VERIFY_IS_APPROX(u.template lpNorm<2>(), internal::sqrt(u.array().abs().square().sum()));
+  VERIFY_IS_APPROX(internal::pow(u.template lpNorm<5>(), typename VectorType::RealScalar(5)), u.array().abs().pow(5).sum());
 }
 
 void test_array_for_matrix()
 {
+  int maxsize = 40;
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( array_for_matrix(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( array_for_matrix(Matrix2f()) );
     CALL_SUBTEST_3( array_for_matrix(Matrix4d()) );
-    CALL_SUBTEST_4( array_for_matrix(MatrixXcf(3, 3)) );
-    CALL_SUBTEST_5( array_for_matrix(MatrixXf(8, 12)) );
-    CALL_SUBTEST_6( array_for_matrix(MatrixXi(8, 12)) );
+    CALL_SUBTEST_4( array_for_matrix(MatrixXcf(internal::random<int>(1,maxsize), internal::random<int>(1,maxsize))) );
+    CALL_SUBTEST_5( array_for_matrix(MatrixXf(internal::random<int>(1,maxsize), internal::random<int>(1,maxsize))) );
+    CALL_SUBTEST_6( array_for_matrix(MatrixXi(internal::random<int>(1,maxsize), internal::random<int>(1,maxsize))) );
   }
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( comparisons(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( comparisons(Matrix2f()) );
     CALL_SUBTEST_3( comparisons(Matrix4d()) );
-    CALL_SUBTEST_5( comparisons(MatrixXf(8, 12)) );
-    CALL_SUBTEST_6( comparisons(MatrixXi(8, 12)) );
+    CALL_SUBTEST_5( comparisons(MatrixXf(internal::random<int>(1,maxsize), internal::random<int>(1,maxsize))) );
+    CALL_SUBTEST_6( comparisons(MatrixXi(internal::random<int>(1,maxsize), internal::random<int>(1,maxsize))) );
   }
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( lpNorm(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( lpNorm(Vector2f()) );
     CALL_SUBTEST_7( lpNorm(Vector3d()) );
     CALL_SUBTEST_8( lpNorm(Vector4f()) );
-    CALL_SUBTEST_5( lpNorm(VectorXf(16)) );
-    CALL_SUBTEST_4( lpNorm(VectorXcf(10)) );
+    CALL_SUBTEST_5( lpNorm(VectorXf(internal::random<int>(1,maxsize))) );
+    CALL_SUBTEST_4( lpNorm(VectorXcf(internal::random<int>(1,maxsize))) );
   }
 }

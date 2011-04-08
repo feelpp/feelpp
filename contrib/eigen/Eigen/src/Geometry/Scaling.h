@@ -72,13 +72,13 @@ public:
   inline Transform<Scalar,Dim,Affine> operator* (const Translation<Scalar,Dim>& t) const;
 
   /** Concatenates a uniform scaling and an affine transformation */
-  template<int Dim, int Mode>
-  inline Transform<Scalar,Dim,Mode> operator* (const Transform<Scalar,Dim, Mode>& t) const;
+  template<int Dim, int Mode, int Options>
+  inline Transform<Scalar,Dim,Mode> operator* (const Transform<Scalar,Dim, Mode, Options>& t) const;
 
   /** Concatenates a uniform scaling and a linear transformation matrix */
   // TODO returns an expression
   template<typename Derived>
-  inline typename ei_plain_matrix_type<Derived>::type operator* (const MatrixBase<Derived>& other) const
+  inline typename internal::plain_matrix_type<Derived>::type operator* (const MatrixBase<Derived>& other) const
   { return other * m_factor; }
 
   template<typename Derived,int Dim>
@@ -108,14 +108,14 @@ public:
     *
     * \sa MatrixBase::isApprox() */
   bool isApprox(const UniformScaling& other, typename NumTraits<Scalar>::Real prec = NumTraits<Scalar>::dummy_precision()) const
-  { return ei_isApprox(m_factor, other.factor(), prec); }
+  { return internal::isApprox(m_factor, other.factor(), prec); }
 
 };
 
 /** Concatenates a linear transformation matrix and a uniform scaling */
 // NOTE this operator is defiend in MatrixBase and not as a friend function
 // of UniformScaling to fix an internal crash of Intel's ICC
-template<typename Derived> const typename MatrixBase<Derived>::ScalarMultipleReturnType
+template<typename Derived> typename MatrixBase<Derived>::ScalarMultipleReturnType
 MatrixBase<Derived>::operator*(const UniformScaling<Scalar>& s) const
 { return derived() * s.factor(); }
 
@@ -141,7 +141,7 @@ static inline DiagonalMatrix<Scalar,3> Scaling(Scalar sx, Scalar sy, Scalar sz)
   * This is an alias for coeffs.asDiagonal()
   */
 template<typename Derived>
-static inline const DiagonalWrapper<Derived> Scaling(const MatrixBase<Derived>& coeffs)
+static inline const DiagonalWrapper<const Derived> Scaling(const MatrixBase<Derived>& coeffs)
 { return coeffs.asDiagonal(); }
 
 /** \addtogroup Geometry_Module */
@@ -170,9 +170,9 @@ UniformScaling<Scalar>::operator* (const Translation<Scalar,Dim>& t) const
 }
 
 template<typename Scalar>
-template<int Dim,int Mode>
+template<int Dim,int Mode,int Options>
 inline Transform<Scalar,Dim,Mode>
-UniformScaling<Scalar>::operator* (const Transform<Scalar,Dim, Mode>& t) const
+UniformScaling<Scalar>::operator* (const Transform<Scalar,Dim, Mode, Options>& t) const
 {
   Transform<Scalar,Dim,Mode> res = t;
   res.prescale(factor());

@@ -38,8 +38,8 @@ template<typename MatrixType> void eigen2support(const MatrixType& m)
              m2 = MatrixType::Random(rows, cols),
              m3(rows, cols);
 
-  Scalar  s1 = ei_random<Scalar>(),
-          s2 = ei_random<Scalar>();
+  Scalar  s1 = internal::random<Scalar>(),
+          s2 = internal::random<Scalar>();
 
   // scalar addition
   VERIFY_IS_APPROX(m1.cwise() + s1, s1 + m1.cwise());
@@ -58,6 +58,11 @@ template<typename MatrixType> void eigen2support(const MatrixType& m)
   VERIFY_IS_EQUAL((m1.col(0).template start<1>()), (m1.col(0).segment(0,1)));
   VERIFY_IS_EQUAL((m1.col(0).end(1)), (m1.col(0).segment(rows-1,1)));
   VERIFY_IS_EQUAL((m1.col(0).template end<1>()), (m1.col(0).segment(rows-1,1)));
+  
+  using namespace internal;
+  VERIFY_IS_EQUAL(ei_cos(s1), cos(s1));
+  VERIFY_IS_EQUAL(ei_real(s1), real(s1));
+  VERIFY_IS_EQUAL(ei_abs2(s1), abs2(s1));
 
   m1.minor(0,0);
 }

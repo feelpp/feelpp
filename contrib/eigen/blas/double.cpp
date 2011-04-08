@@ -24,8 +24,11 @@
 
 #define SCALAR        double
 #define SCALAR_SUFFIX d
+#define SCALAR_SUFFIX_UP "D"
 #define ISCOMPLEX     0
 
 #include "level1_impl.h"
+#include "level1_real_impl.h"
 #include "level2_impl.h"
+#include "level2_real_impl.h"
 #include "level3_impl.h"
