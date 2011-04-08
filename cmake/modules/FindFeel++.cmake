@@ -214,11 +214,11 @@ endif( OCTAVE_FOUND )
 #
 # programs
 #
-find_program( GMSH gmsh DOC "Gmsh mesh generator" )
-if ( GMSH )
-  ADD_DEFINITIONS( -DHAVE_GMSH=1 -D_HAVE_GMSH_)
+find_program( GMSH_EXECUTABLE gmsh DOC "Gmsh mesh generator" )
+if ( GMSH_EXECUTABLE )
+  ADD_DEFINITIONS( -DHAVE_GMSH=1 -D_HAVE_GMSH_ -DGMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
 endif()
-mark_as_advanced( GMSH )
+mark_as_advanced( GMSH_EXECUTABLE )
 
 #
 # if Feel++ has been installed on the system
