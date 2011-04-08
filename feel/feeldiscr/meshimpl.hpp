@@ -44,6 +44,7 @@ Mesh<Shape, T>::Mesh( std::string partitioner )
     :
     super(),
     _M_gm( new gm_type ),
+    _M_gm1( new gm1_type ),
     M_meas( 0 ),
     M_measbdy( 0 ),
     M_part(),
@@ -191,7 +192,7 @@ Mesh<Shape, T>::updateForUse()
                         this->elements().modify( iv,
                                                  lambda::bind( &element_type::setMeshAndGm,
                                                                lambda::_1,
-                                                               this, _M_gm ) );
+                                                               this, _M_gm, _M_gm1 ) );
 
                         this->elements().modify( iv,
                                                  lambda::bind( &element_type::updateWithPc,
@@ -234,6 +235,7 @@ Mesh<Shape, T>::updateForUse()
             this->setUpdatedForUse( true );
 
             _M_gm->initCache( this );
+            _M_gm1->initCache( this );
 
             M_tool_localization->setMesh( this->shared_from_this(),false );
 
@@ -737,7 +739,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                 {
                     isOnBoundary |= iv->face( j ).isOnBoundary();
                 }
-
+            std::cout << "element on bdy: " << isOnBoundary << std::endl;
             // an element on the boundary means that is shares a face
             // with the boundary
             this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
