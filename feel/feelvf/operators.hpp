@@ -46,6 +46,8 @@
 # include <boost/preprocessor/punctuation/comma.hpp>
 # include <boost/preprocessor/facilities/identity.hpp>
 # include <boost/preprocessor/stringize.hpp>
+
+
 namespace Feel
 {
 namespace vf
@@ -312,6 +314,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 static const uint16_type rank = return_value_type::rank+1; \
                 static const uint16_type nComponents = return_value_type::nComponents; \
                                                                         \
+                static const bool isSameGeo = boost::is_same<typename gmc_type::element_type,geoelement_type>::value; \
+                                                                        \
                 tensor( tensor const& t )                               \
                     :                                                   \
                     M_expr( t.M_expr ),                                 \
@@ -381,7 +385,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
                     M_pc( new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ), \
                     M_pcf(),                                           \
-                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), ( new ctx_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom ), (pc_ptrtype const&)M_pc ) ) ) ), \
+                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
+                                                    ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_did_init( false ),                                \
                     M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh() ==expr.e().functionSpace()->mesh().get()) \
@@ -433,10 +438,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 void update( Geo_t const& geom, uint16_type face1, mpl::bool_<true> ) \
                 {                                                       \
                     std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), value_type( 0 ) ); \
-                                                                        \
-                    uint16_type face = fusion::at_key<key_type>( geom )->faceId(); \
-                    uint16_type perm = fusion::at_key<key_type>( geom )->permutation().value(); \
-                    M_ctx->update( fusion::at_key<key_type>( geom ), (pc_ptrtype const&) M_pcf[face][perm] ); \
+                    this->updateCtxFaceIfSameGeom(geom,mpl::bool_<isSameGeo>() ); \
                     if (M_same_mesh)                                   \
                         M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
                     else  {                                             \
@@ -447,8 +449,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 void update( Geo_t const& geom, mpl::bool_<true> )      \
                 {                                                       \
                     std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), value_type( 0 ) ); \
-                    M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&)M_pc ); \
-                    if (M_same_mesh) \
+                    this->updateCtxIfSameGeom(geom,mpl::bool_<isSameGeo>() ); \
+                    if (M_same_mesh)                                    \
                         M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
                     else {                                              \
                         matrix_node_type __ptsreal = M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<1>()); \
@@ -550,6 +552,32 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> ) const \
                 {                                                       \
                     return M_loc[c1][c2][q];                           \
+                }                                                      \
+                ctx_ptrtype createCtxIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<true>) \
+                {                                                       \
+                    return ctx_ptrtype( new ctx_type( expr.e().functionSpace()->fe(), \
+                                                      fusion::at_key<key_type>( geom ), \
+                                                      (pc_ptrtype const&)M_pc ) ); \
+                }                                                       \
+                ctx_ptrtype createCtxIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<false>) \
+                {                                                       \
+                    return ctx_ptrtype( new ctx_type( ) );              \
+                }                                                       \
+                void updateCtxIfSameGeom(Geo_t const& geom, mpl::bool_<true> )    \
+                {                                                       \
+                    M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&)M_pc ); \
+                }                                                       \
+                void updateCtxIfSameGeom(Geo_t const& geom, mpl::bool_<false> ) \
+                {                                                       \
+                }                                                       \
+                void updateCtxFaceIfSameGeom(Geo_t const& geom, mpl::bool_<true> )    \
+                {                                                       \
+                    uint16_type face = fusion::at_key<key_type>( geom )->faceId(); \
+                    uint16_type perm = fusion::at_key<key_type>( geom )->permutation().value(); \
+                    M_ctx->update( fusion::at_key<key_type>( geom ), (pc_ptrtype const&) M_pcf[face][perm] ); \
+                }                                                       \
+                void updateCtxFaceIfSameGeom(Geo_t const& geom, mpl::bool_<false> ) \
+                {                                                       \
                 }                                                       \
                 this_type const& M_expr;                               \
                 gmc_ptrtype M_geot;                                    \
