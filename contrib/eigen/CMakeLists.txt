@@ -56,7 +56,7 @@ endif(EIGEN_HG_CHANGESET)
 
 include(CheckCXXCompilerFlag)
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 #############################################################################
 # find how to link to the standard libraries                                #
@@ -321,12 +321,12 @@ endif()
 configure_file(${CMAKE_BINARY_DIR}/DartConfiguration.tcl ${CMAKE_BINARY_DIR}/DartConfiguration.tcl)
 # restore default CMAKE_MAKE_PROGRAM
 set(CMAKE_MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM_SAVE})
-# un-set temporary variables so that it is like they never existed. 
+# un-set temporary variables so that it is like they never existed.
 # CMake 2.6.3 introduces the more logical unset() syntax for this.
-set(CMAKE_MAKE_PROGRAM_SAVE) 
+set(CMAKE_MAKE_PROGRAM_SAVE)
 set(EIGEN_MAKECOMMAND_PLACEHOLDER)
 
-configure_file(${CMAKE_SOURCE_DIR}/CTestCustom.cmake.in ${CMAKE_BINARY_DIR}/CTestCustom.cmake)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CTestCustom.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/CTestCustom.cmake)
 
 
 if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
