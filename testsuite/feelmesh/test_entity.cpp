@@ -193,6 +193,9 @@ BOOST_AUTO_TEST_CASE( test_interval )
     BOOST_CHECK_SMALL( ublas::norm_2( interval.normal(0)-G1 ), 1e-14 );
     G1(0)=1;
     BOOST_CHECK_SMALL( ublas::norm_2( interval.normal(1)-G1 ), 1e-14 );
+
+    BOOST_CHECK_SMALL( (double)ublas::norm_frobenius( interval.G() - interval.vertices() ), 1e-14 );
+
 }
 
 BOOST_AUTO_TEST_CASE( test_triangle )
@@ -225,6 +228,8 @@ BOOST_AUTO_TEST_CASE( test_triangle )
     BOOST_CHECK_CLOSE( tria.faceMeasure(0), math::sqrt(2.), 2e-14 );
     BOOST_CHECK_CLOSE( tria.faceMeasure(1), math::sqrt(2.), 1e-14 );
     BOOST_CHECK_CLOSE( tria.faceMeasure(2), 2, 1e-14 );
+
+    BOOST_CHECK_SMALL( (double)ublas::norm_frobenius( tria.G() - tria.vertices() ), 1e-14 );
 }
 BOOST_AUTO_TEST_CASE( test_tetra )
 {
@@ -247,6 +252,8 @@ BOOST_AUTO_TEST_CASE( test_tetra )
     std::cout << "[tetra] barycenter = " << tetra.barycenter() << "\n";
     BOOST_CHECK_SMALL( ublas::norm_2( tetra.barycenter()-G1 ), 1e-14 );
     BOOST_CHECK_CLOSE( tetra.measure(), 1./3., 1e-13 );
+
+    BOOST_CHECK_SMALL( (double)ublas::norm_frobenius( tetra.G() - tetra.vertices() ), 1e-14 );
 #if 0
     // check normals
     G1 = cross( V3-V2, V4-V2 );
