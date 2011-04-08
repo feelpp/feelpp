@@ -572,7 +572,7 @@ public:
         //_M_xreal( NDim ),
         //_M_x0( NDim ),
         _M_J( 0 ),
-        _M_G( __e.G() ),
+        _M_G( ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G() ),
         _M_n( _M_gm->referenceConvex().normals() ),
         _M_n_real( NDim ),
         _M_u_n_real( NDim ),
@@ -634,7 +634,7 @@ public:
         //_M_xreal( NDim ),
         //_M_x0( NDim ),
         _M_J( 0 ),
-        _M_G( __e.G() ),
+        _M_G( ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G() ),
         _M_n( _M_gm->referenceConvex().normals() ),
         _M_n_real( NDim ),
         _M_u_n_real( NDim ),
@@ -691,7 +691,7 @@ public:
        //_M_xreal( NDim ),
        //_M_x0( NDim ),
        _M_J( p->_M_J ),
-       _M_G( _M_element->G() ),
+       _M_G( ( gm_type::nNodes == element_type::numVertices ) ?_M_element.vertices() : _M_element.G() ),
        _M_n( p->_M_n ),
        _M_n_real( p->_M_n_real ),
        _M_u_n_real( p->_M_u_n_real ),
@@ -767,7 +767,8 @@ public:
         _M_h_face = __e.hFace( _M_face_id );
 
         _M_pc = _M_pc_faces[__f][_M_perm];
-        _M_G = __e.G();
+        //_M_G = __e.G();
+        _M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
         _M_id = __e.id();
         _M_e_marker = __e.marker();
         _M_e_marker2 = __e.marker2();
@@ -846,7 +847,8 @@ public:
      */
     void update( element_type const& __e )
     {
-        _M_G = __e.G();
+        _M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
+        //_M_G = __e.G();
         _M_g.resize( _M_G.size2(), PDim );
         //_M_element_c = boost::shared_ptr<element_type const>(&__e);
         _M_element = boost::addressof(__e);

@@ -67,6 +67,15 @@ enum IntegratorType
 
     };
 /**
+ * \enum parametrization of the integrator depending on the geometric mapping
+ */
+enum GeomapIntegratorType {
+    GEOMAP_OPT = 0,
+    GEOMAP_O1 = 1,
+    GEOMAP_HO = 2
+};
+
+/**
  * \class Integrator
  * \brief base class for integrators
  *
@@ -131,15 +140,21 @@ public:
         typedef the_element_type element_type;
         typedef typename the_element_type::gm_type gm_type;
         typedef boost::shared_ptr<gm_type> gm_ptrtype;
+        typedef typename the_element_type::gm1_type gm1_type;
+        typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
         //typedef typename gm_type::template Context<expression_type::context, the_element_type, im_type::numPoints> gmc_type;
         typedef typename gm_type::template Context<expression_type::context, the_element_type> gmc_type;
         typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef typename gm1_type::template Context<expression_type::context, the_element_type> gmc1_type;
+        typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
 #if 0
         typedef typename gm_type::template precompute<im_type::numPoints>::type gmpc_type;
         typedef typename gm_type::template precompute<im_type::numPoints>::ptrtype gmpc_ptrtype;
 #else
         typedef typename gm_type::PreCompute gmpc_type;
         typedef boost::shared_ptr<gmpc_type> gmpc_ptrtype;
+        typedef typename gm1_type::PreCompute gmpc1_type;
+        typedef boost::shared_ptr<gmpc1_type> gmpc1_ptrtype;
 #endif
         //typedef typename eval_expr_type::value_type value_type;
         //typedef typename strongest_numeric_type<typename Im::value_type, typename expression_type::value_type>::type value_type;
@@ -152,6 +167,10 @@ public:
         typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
         typedef typename eval_expr_type::shape shape;
+
+        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
+        typedef typename expression_type::template tensor<map_gmc1_type> eval_expr1_type;
+        typedef typename eval_expr1_type::shape shape1; // should be the same as shape
         //typedef typename shape_type::storage<value_type> storage_type;
         /*
           typedef mpl::if_<mpl::bool_<shape_type::is_scalar>,
@@ -184,12 +203,13 @@ public:
      */
     //@{
 
-    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr )
+    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr, GeomapIntegratorType gt )
         :
         _M_eltbegin( elts.template get<1>() ),
         _M_eltend( elts.template get<2>() ),
         _M_im( ),
-        _M_expr( __expr )
+        _M_expr( __expr ),
+        _M_gt( gt )
     {
         Debug( 5065 ) << "Integrator constructor from expression\n";
     }
@@ -199,7 +219,8 @@ public:
         _M_eltbegin( __vfi._M_eltbegin ),
         _M_eltend( __vfi._M_eltend ),
         _M_im( __vfi._M_im ),
-        _M_expr( __vfi._M_expr )
+        _M_expr( __vfi._M_expr ),
+        _M_gt( __vfi._M_gt )
     {
         Debug( 5065 ) << "Integrator copy constructor\n";
     }
@@ -243,6 +264,13 @@ public:
      */
     expression_type const& expression() const { return _M_expr; }
 
+
+    /**
+     * get the geometric mapping integrator type
+     *
+     * @return the geometric mapping integrator type
+     */
+    GeomapIntegratorType geomapIntegratorType() const { return _M_gt; }
 
     /**
      * iterator that points at the beginning of the container that
@@ -507,6 +535,7 @@ private:
     element_iterator _M_eltend;
     mutable im_type _M_im;
     expression_type const&  _M_expr;
+    GeomapIntegratorType _M_gt;
 
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > _M_profile_local_assembly;
 
@@ -883,6 +912,8 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 {
     Debug( 5065 ) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
+    std::cout << "integrating over "
+              << std::distance( this->beginElement(), this->endElement() )  << " elements" << std::endl;
     boost::timer __timer;
 
 #if !defined(HAVE_TBB)
@@ -897,6 +928,11 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     typedef typename eval::gmc_type gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
 
+    typedef typename the_element_type::gm1_type gm1_type;
+    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+    typedef typename eval::gmc1_type gmc1_type;
+    typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
+
     //typedef typename eval_expr_type::value_type value_type;
     //typedef typename Im::value_type value_type;
 
@@ -908,53 +944,138 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     if ( it == en )
         return typename eval::matrix_type(eval::matrix_type::Zero());
 
+    std::cout << "0" << std::endl;
+
     //
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
     //
-    gm_ptrtype gm = it->gm();
+    gm_ptrtype gm( new gm_type) ;//it->gm();
+    std::cout << "0.5" << std::endl;
+    gm1_ptrtype gm1( new gm1_type);//it->gm1();
+    std::cout << "0.6:  " << gm1.use_count() << " " << gm.use_count() << std::endl;
     //Debug(5065) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
     typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
                                                                        this->im().points() ) );
+    std::cout << "1" << std::endl;
+    typename eval::gmpc1_ptrtype __geopc1( new typename eval::gmpc1_type( gm1,
+                                                                          this->im().points() ) );
 
-
+    std::cout << "2" << std::endl;
     it = this->beginElement();
     // wait for all the guys
 #ifdef HAVE_MPI
-        if ( M_comm.size() > 1 )
-            {
-                M_comm.barrier();
-            }
+    if ( M_comm.size() > 1 )
+    {
+        M_comm.barrier();
+    }
 #endif
 
 
+    // possibly high order
     gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-
+    std::cout << "3" << std::endl;
     typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
     eval_expr_type expr( expression(), mapgmc );
     typedef typename eval_expr_type::shape shape;
-
+    std::cout << "4" << std::endl;
+    // order 1
+    gmc1_ptrtype __c1( new gmc1_type( gm1, *it, __geopc1 ) );
+    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
+    map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+    std::cout << "5" << std::endl;
+    typedef typename expression_type::template tensor<map_gmc1_type> eval_expr1_type;
+    eval_expr1_type expr1( expression(), mapgmc1 );
+    std::cout << "6" << std::endl;
     typename eval::matrix_type res( eval::matrix_type::Zero() );
 
     //value_type res1 = 0;
     for ( ; it != en; ++it )
         {
-            boost::timer ti;
-            __c->update( *it );
-            map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-            expr.update( mapgmc );
-            const gmc_type& gmc = *__c;
+            switch( _M_gt )
+            {
+            case  GEOMAP_HO :
+            {
+                std::cout << "geomap ho" << std::endl;
+                __c->update( *it );
+                map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+                expr.update( mapgmc );
+                const gmc_type& gmc = *__c;
 
-            _M_im.update( gmc );
+                _M_im.update( gmc );
 
 
-            for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                    for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                     {
                         res(c1,c2) += _M_im( expr, c1, c2 );
                     }
+                std::cout << it->id() << " : " << _M_im( expr, 0, 0 ) << "\n";
+            }
+            break;
+            case GEOMAP_O1:
+            {
+                std::cout << "geomap o1" << std::endl;
+                __c1->update( *it );
+                map_gmc1_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+                expr1.update( mapgmc );
+                const gmc1_type& gmc = *__c1;
+
+                _M_im.update( gmc );
+
+
+                for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                    for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                    {
+                        res(c1,c2) += _M_im( expr1, c1, c2 );
+                    }
+                std::cout << it->id() << " : " << _M_im( expr1, 0, 0 ) << "\n";
+            }
+            break;
+            case GEOMAP_OPT:
+            {
+                std::cout << "geomap opt" << std::endl;
+                if ( it->isOnBoundary() )
+                {
+                    std::cout << "boundary element using ho" << std::endl;
+                    __c->update( *it );
+                    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+                    expr.update( mapgmc );
+                    const gmc_type& gmc = *__c;
+
+                    _M_im.update( gmc );
+
+
+                    for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                        for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                        {
+                            res(c1,c2) += _M_im( expr, c1, c2 );
+                        }
+                    std::cout << it->id() << " : " << _M_im( expr, 0, 0 ) << "\n";
+                }
+                else
+                {
+                    std::cout << "interior element using order 1" << std::endl;
+                    __c1->update( *it );
+                    map_gmc1_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+                    expr1.update( mapgmc );
+                    const gmc1_type& gmc = *__c1;
+
+                    _M_im.update( gmc );
+
+
+                    for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                        for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                        {
+                            res(c1,c2) += _M_im( expr1, c1, c2 );
+                        }
+                    std::cout << it->id() << " : " << _M_im( expr1, 0, 0 ) << "\n";
+                }
+            }
+            break;
+            }
         }
     //std::cout << "res=" << res << "\n";
     //std::cout << "res1=" << res1 << "\n";
@@ -1439,6 +1560,7 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
 }
 /// \endcond
 
+
 /**
  * integrate an expression \c expr over a set of convexes \c elts
  * using the integration rule \c im .
@@ -1447,10 +1569,12 @@ template<typename IntElts, typename Im, typename ExprT>
 Expr<Integrator<IntElts, Im, ExprT> >
 integrate( IntElts const& elts,
            Im const& im,
-           ExprT const& expr )
+           ExprT const& expr,
+           GeomapIntegratorType gt = GEOMAP_OPT )
 {
     typedef Integrator<IntElts, Im, ExprT> expr_t;
-    return Expr<expr_t>( expr_t( elts, im, expr ) );
+    std::cout << "[integrate] calling with gt=" << gt << std::endl;
+    return Expr<expr_t>( expr_t( elts, im, expr, gt ) );
 }
 
 
@@ -1470,11 +1594,12 @@ integrate( IntElts const& elts,
 template<typename IntElts, typename ExprT>
 Expr<Integrator<IntElts, _Q< ExpressionOrder<ExprT>::value >, ExprT> >
 integrate( IntElts const& elts,
-           ExprT const& expr )
+           ExprT const& expr,
+           GeomapIntegratorType gt = GEOMAP_OPT )
 {
-    typedef Integrator<IntElts, _Q< ExpressionOrder<ExprT>::value >, ExprT> expr_t;
     Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<ExprT>::value << "\n";
-    return Expr<expr_t>( expr_t( elts, _Q< ExpressionOrder<ExprT>::value >(), expr ) );
+    std::cout << "[integrate] order to integrate = " << ExpressionOrder<ExprT>::value << "\n";
+    return integrate( elts, _Q< ExpressionOrder<ExprT>::value >(), expr, gt );
 }
 
 

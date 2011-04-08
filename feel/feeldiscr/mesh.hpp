@@ -148,6 +148,9 @@ public:
     typedef typename element_type::gm_type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
 
+    typedef typename element_type::gm1_type gm1_type;
+    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+
     template<size_type ContextID>
     struct gmc
     {
@@ -193,10 +196,20 @@ public:
      */
     gm_ptrtype const& gm() const { return _M_gm; }
 
+/**
+     * \return geometric mapping of order 1
+     */
+    gm1_ptrtype const& gm1() const { return _M_gm1; }
+
     /**
      * \return the geometric mapping
      */
     gm_ptrtype& gm() { return _M_gm; }
+
+ /**
+     * \return the geometric mapping of order 1
+     */
+    gm1_ptrtype& gm1() { return _M_gm1; }
 
     /**
      * \return the reference convex associated with the element of the
@@ -656,6 +669,7 @@ private:
     mpi::communicator M_comm;
 
     gm_ptrtype _M_gm;
+    gm1_ptrtype _M_gm1;
 
     //! measure of the mesh
     value_type M_meas;

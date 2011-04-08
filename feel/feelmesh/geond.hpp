@@ -109,10 +109,19 @@ public:
     static const uint16_type nOrder = super::nOrder;
     static const uint16_type nRealDim = super::nRealDim;
 
-    typedef typename mpl::if_<mpl::bool_<GeoShape::is_hypercube>,
-                              mpl::identity<GT_Lagrange<nDim, nOrder, Hypercube, T> >,
-                              mpl::identity<GT_Lagrange<nDim, nOrder, Simplex, T> > >::type::type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    template<int GmOrder>
+    struct GetGm {
+
+        typedef typename mpl::if_<mpl::bool_<GeoShape::is_hypercube>,
+                                  mpl::identity<GT_Lagrange<nDim, GmOrder, Hypercube, T> >,
+                                  mpl::identity<GT_Lagrange<nDim, GmOrder, Simplex, T> > >::type::type type;
+        typedef boost::shared_ptr<type> ptrtype;
+    };
+    typedef typename GetGm<nOrder>::type gm_type;
+    typedef typename GetGm<nOrder>::ptrtype gm_ptrtype;
+
+    typedef typename GetGm<1>::type gm1_type;
+    typedef typename GetGm<1>::ptrtype gm1_ptrtype;
 
     typedef typename super::vertex_permutation_type vertex_permutation_type;
     typedef typename super::edge_permutation_type edge_permutation_type;
@@ -145,7 +154,8 @@ public:
         M_marker1(),
         M_marker2(),
         M_marker3(),
-        M_gm()
+        M_gm(),
+        M_gm1()
     {
     }
 
@@ -173,7 +183,8 @@ public:
         M_marker1(),
         M_marker2(),
         M_marker3(),
-        M_gm()
+        M_gm(),
+        M_gm1()
     {
     }
 
@@ -195,7 +206,8 @@ public:
         M_marker1( e.M_marker1 ),
         M_marker2( e.M_marker2 ),
         M_marker3( e.M_marker3 ),
-        M_gm()
+        M_gm(),
+        M_gm1()
     {
         M_G = e.M_G;
         for ( uint16_type i = 0; i < numLocalPoints; ++i )
@@ -208,7 +220,7 @@ public:
     virtual ~GeoND()
     {
     }
-
+#if 0
     /**
      * set the mesh to which this geometric entity belongs to
      */
@@ -216,6 +228,16 @@ public:
     {
         M_mesh = m;
         M_gm = gm;
+    }
+#endif
+    /**
+     * set the mesh to which this geometric entity belongs to
+     */
+    void setMeshAndGm( MeshBase const* m, gm_ptrtype const& gm, gm1_ptrtype const& gm1 ) const
+    {
+        M_mesh = m;
+        M_gm = gm;
+        M_gm1 = gm1;
     }
 
     void setMesh( MeshBase const* m ) const
@@ -225,6 +247,9 @@ public:
 
     //! return the geometric mapping if a mesh was set
     gm_ptrtype gm() const { return M_gm; }
+
+    //! return the geometric mapping if a mesh was set
+    gm1_ptrtype gm1() const { return M_gm1; }
 
     /**
      * \return the mesh to which this geometric entity belongs to
@@ -270,6 +295,7 @@ public:
             M_marker3 = G.M_marker3;
 
             M_gm = G.M_gm;
+            M_gm1 = G.M_gm1;
         }
         return *this;
     }
@@ -441,6 +467,17 @@ public:
      * \return the matrix of geometric nodes
      */
     matrix_node_type const& G() const { return M_G; }
+
+    /**
+     * matrix of vertices geometric nodes
+     * retrieve the matrix of geometric nodes (Dim x NumPoints) the
+     * matrix is column oriented, the column i contains the coordinate
+     * of the i-th geometric node of the element
+     *
+     * \return the matrix of vertices geometric nodes
+     */
+    //matrix_node_type  vertices() const { return ublas::subrange( M_G, 0, nRealDim, 0, numVertices ); }
+    matrix_node_type  vertices() const { return ublas::subrange( M_G, 0, nRealDim, 0, numVertices ); }
 
     /**
      * matrix of geometric nodes
@@ -666,6 +703,7 @@ private:
     // mesh to which the geond element belongs to
     mutable MeshBase const* M_mesh;
     mutable gm_ptrtype M_gm;
+    mutable gm1_ptrtype M_gm1;
 };
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
@@ -739,6 +777,8 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
 {
     if ( !M_gm.use_count() )
         M_gm = gm_ptrtype( new gm_type );
+    if ( !M_gm1.use_count() )
+        M_gm1 = gm1_ptrtype( new gm1_type );
     auto pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
     auto pcf =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
 
