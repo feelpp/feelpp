@@ -739,7 +739,6 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                 {
                     isOnBoundary |= iv->face( j ).isOnBoundary();
                 }
-            std::cout << "element on bdy: " << isOnBoundary << std::endl;
             // an element on the boundary means that is shares a face
             // with the boundary
             this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
