@@ -951,8 +951,9 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     // warning this is not efficient here, we want to use the geometric mapping
     // from the elements in order to take advantage of the cache if possible
     // this change hsa been made in order to circumvent a bug which is not yet found
-#warning INEFFICIENT CODE HERE : TO DEBUG
-    gm_ptrtype gm( new gm_type) ;//it->gm();
+//#warning INEFFICIENT CODE HERE : TO DEBUG
+    //gm_ptrtype gm( new gm_type) ;//it->gm();
+    gm_ptrtype gm( it->gm() );
     //std::cout << "0.5" << std::endl;
     gm1_ptrtype gm1( new gm1_type);//it->gm1();
     //std::cout << "0.6:  " << gm1.use_count() << " " << gm.use_count() << std::endl;
@@ -983,6 +984,8 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     eval_expr_type expr( expression(), mapgmc );
     typedef typename eval_expr_type::shape shape;
     //std::cout << "4" << std::endl;
+
+#if 0
     // order 1
     gmc1_ptrtype __c1( new gmc1_type( gm1, *it, __geopc1 ) );
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
@@ -990,16 +993,19 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     //std::cout << "5" << std::endl;
     typedef typename expression_type::template tensor<map_gmc1_type> eval_expr1_type;
     eval_expr1_type expr1( expression(), mapgmc1 );
+#endif
     //std::cout << "6" << std::endl;
     typename eval::matrix_type res( eval::matrix_type::Zero() );
 
     //value_type res1 = 0;
     for ( ; it != en; ++it )
         {
+#if 0
             switch( _M_gt )
             {
             case  GEOMAP_HO :
             {
+#endif
                 //std::cout << "geomap ho" << std::endl;
                 __c->update( *it );
                 map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
@@ -1015,6 +1021,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                         res(c1,c2) += _M_im( expr, c1, c2 );
                     }
                 //std::cout << it->id() << " : " << _M_im( expr, 0, 0 ) << "\n";
+#if 0
             }
             break;
             case GEOMAP_O1:
@@ -1078,6 +1085,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             }
             break;
             }
+#endif // 0
         }
     ////std::cout << "res=" << res << "\n";
     ////std::cout << "res1=" << res1 << "\n";
