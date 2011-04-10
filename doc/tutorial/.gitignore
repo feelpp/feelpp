@@ -1,5 +1,11 @@
 /Makefile.in
 /auto
+/feel-manual.aux
+/feel-manual.idx
+/feel-manual.log
+/feel-manual.out
+/feel-manual.pdf
+/feel-manual.toc
 /feel.aux
 /gfdl.aux
 /laplacian.cpp~
