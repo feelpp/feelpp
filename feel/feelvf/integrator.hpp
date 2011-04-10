@@ -1583,7 +1583,6 @@ integrate( IntElts const& elts,
            GeomapIntegratorType gt = GEOMAP_HO )
 {
     typedef Integrator<IntElts, Im, ExprT> expr_t;
-    std::cout << "[integrate] calling with gt=" << gt << std::endl;
     return Expr<expr_t>( expr_t( elts, im, expr, gt ) );
 }
 
@@ -1608,7 +1607,6 @@ integrate( IntElts const& elts,
            GeomapIntegratorType gt = GEOMAP_HO )
 {
     Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<ExprT>::value << "\n";
-    std::cout << "[integrate] order to integrate = " << ExpressionOrder<ExprT>::value << "\n";
     return integrate( elts, _Q< ExpressionOrder<ExprT>::value >(), expr, gt );
 }
 
