@@ -217,12 +217,16 @@ struct test_interpolation_op
 
         OperatorInterpolation<space_type, imagespace_type> I( Xh, Yh, backend );
 
+
         BOOST_MESSAGE(  "[test_interpolation_op] OI allocated\n");
         FsFunctionalLinear<imagespace_type> fsv( Yh );
         BOOST_MESSAGE(  "[test_interpolation_op] FSV allocated\n");
         I.apply( u, fsv );
         BOOST_MESSAGE(  "[test_interpolation_op] applied OI \n");
 
+        auto y = Yh->element();
+        auto Ih = opInterpolation( _domainSpace=Xh, _imageSpace=Yh, _range=elements(Yh->mesh()) );
+        Ih->apply( u, y );
 
         interpolate( Yh, u, v );
         BOOST_MESSAGE(  "[test_interpolation_op] interpolate\n");
@@ -230,6 +234,11 @@ struct test_interpolation_op
 
         typename imagespace_type::element_type w( Yh, "w" );
         w = fsv.container();
+
+        double err = math::sqrt( integrate( elements( Yh->mesh() ), (idv(w)-idv(y))*(idv(w)-idv(y)) ).evaluate()( 0, 0 ) );
+        BOOST_MESSAGE(  "[err] ||w-y||_2 = " << err << "\n" );
+        BOOST_CHECK_SMALL( err, 1e-12 );
+
         //std::cout << "w=" << w << "\n" );
         value_type xw = math::sqrt( integrate( elements( mesh1 ), (u_exact-idv(w))*(u_exact-idv(w)) ).evaluate()( 0, 0 ) );
         value_type vw = math::sqrt( integrate( elements( mesh1 ), (idv(v)-idv(w))*(idv(v)-idv(w)) ).evaluate()( 0, 0) );
