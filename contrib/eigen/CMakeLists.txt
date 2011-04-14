@@ -318,7 +318,7 @@ else()
   set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} buildtests")
 endif()
 
-configure_file(${CMAKE_BINARY_DIR}/DartConfiguration.tcl ${CMAKE_BINARY_DIR}/DartConfiguration.tcl)
+configure_file(${CMAKE_CURRENT_BINARY_DIR}/DartConfiguration.tcl ${CMAKE_CURRENT_BINARY_DIR}/DartConfiguration.tcl)
 # restore default CMAKE_MAKE_PROGRAM
 set(CMAKE_MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM_SAVE})
 # un-set temporary variables so that it is like they never existed.
