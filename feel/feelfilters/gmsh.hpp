@@ -592,7 +592,7 @@ BOOST_PARAMETER_FUNCTION(
     geo,    // 2. function name
     tag,           // 3. namespace of tag types
     (required
-     (filename,       *(boost::is_convertible<mpl::_,std::string>))
+    (filename,       *(boost::is_convertible<mpl::_,std::string>))
      (dim,            *(boost::is_integral<mpl::_>)))
     (optional
      (order,          *(boost::is_integral<mpl::_>)      , 1)
@@ -602,7 +602,7 @@ BOOST_PARAMETER_FUNCTION(
 
     gmsh_ptr->setCharacteristicLength( h );
 
-    std::string basename = fs::path(filename).stem();
+    std::string basename = filename; //fs::path(filename).stem();
     // first try in the current path
     if ( fs::exists( fs::current_path() / filename ) )
         return boost::template make_tuple( basename, gmsh_ptr->getDescriptionFromFile((fs::current_path()/filename).string()), gmsh_ptr );
