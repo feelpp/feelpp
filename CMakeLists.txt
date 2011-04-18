@@ -253,6 +253,7 @@ OPTION(FEEL_ENABLE_DOCUMENTATION "enable feel documentation" OFF)
 OPTION(FEEL_ENABLE_BENCHMARKS "enable feel benchmarks" OFF)
 OPTION(FEEL_ENABLE_EXAMPLES "enable feel examples" OFF)
 OPTION(FEEL_ENABLE_APPLICATIONS "enable feel applications" OFF)
+OPTION(FEEL_ENABLE_RESEARCH "enable feel research" OFF)
 OPTION(FEEL_ENABLE_TESTS "enable feel tests" OFF)
 OPTION(FEEL_ENABLE_ALL "enable all feel modules" OFF)
 
@@ -261,6 +262,7 @@ if ( FEEL_ENABLE_ALL )
   set( FEEL_ENABLE_BENCHMARKS ON )
   set( FEEL_ENABLE_EXAMPLES ON )
   set( FEEL_ENABLE_APPLICATIONS ON )
+  set( FEEL_ENABLE_RESEARCH ON )
   set( FEEL_ENABLE_TESTS ON )
 endif( FEEL_ENABLE_ALL )
 
@@ -288,18 +290,18 @@ if ( FEEL_ENABLE_BENCHMARKS )
   ADD_SUBDIRECTORY ( benchmarks )
 endif()
 
-
 if ( FEEL_ENABLE_EXAMPLES )
  ADD_SUBDIRECTORY ( examples )
 endif()
 
-if ( FEEL_ENABLE_APPLICATIONS )
+if ( FEEL_ENABLE_APPLICATIONS OR EXISTS ${FEEL_SOURCE_DIR}/applications/opus )
  ADD_SUBDIRECTORY ( applications )
- if ( EXISTS ${FEEL_SOURCE_DIR}/research )
-  ADD_SUBDIRECTORY ( research )
- endif()
-endif( FEEL_ENABLE_APPLICATIONS )
+endif()
 
+if ( FEEL_ENABLE_RESEARCH )
+  ADD_SUBDIRECTORY ( research )
+endif()
+ 
 
 
 
