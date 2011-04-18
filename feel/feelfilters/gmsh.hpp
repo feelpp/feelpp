@@ -602,7 +602,7 @@ BOOST_PARAMETER_FUNCTION(
 
     gmsh_ptr->setCharacteristicLength( h );
 
-    std::string basename = filename; //fs::path(filename).stem();
+    std::string basename = fs::path(filename).stem();
     // first try in the current path
     if ( fs::exists( fs::current_path() / filename ) )
         return boost::template make_tuple( basename, gmsh_ptr->getDescriptionFromFile((fs::current_path()/filename).string()), gmsh_ptr );
