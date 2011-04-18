@@ -294,9 +294,12 @@ if ( FEEL_ENABLE_EXAMPLES )
  ADD_SUBDIRECTORY ( examples )
 endif()
 
-if ( FEEL_ENABLE_APPLICATIONS OR EXISTS ${FEEL_SOURCE_DIR}/applications/opus )
+if ( FEEL_ENABLE_APPLICATIONS )
  ADD_SUBDIRECTORY ( applications )
+elseif (EXISTS ${FEEL_SOURCE_DIR}/applications/opus )
+  ADD_SUBDIRECTORY ( applications/opus )
 endif()
+
 
 if ( FEEL_ENABLE_RESEARCH )
   ADD_SUBDIRECTORY ( research )
@@ -356,18 +359,18 @@ FILE(GLOB files ${CMAKE_CURRENT_BINARY_DIR}/feelconfig.h)
 INSTALL(FILES ${files} DESTINATION include/ COMPONENT Devel)
 
 message(STATUS "libraries: ${FEEL_INSTALL_LIBS}")
-INSTALL(FILES ${FEEL_INSTALL_LIBS} DESTINATION lib/ COMPONENT Libraries)
+INSTALL(FILES ${FEEL_INSTALL_LIBS} DESTINATION lib/ COMPONENT Bin)
 message(STATUS "apps: ${FEEL_INSTALL_APPS}")
-INSTALL(FILES ${FEEL_INSTALL_APPS} DESTINATION bin/ COMPONENT Applications)
+INSTALL(FILES ${FEEL_INSTALL_APPS} DESTINATION bin/ COMPONENT Bin)
 
 # documentation and examples
 if ( FEEL_ENABLE_ALL OR FEEL_ENABLE_DOCUMENTATION )
-  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/tutorial/feel_get_tutorial DESTINATION bin COMPONENT Documentation)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/doc/tutorial/feel-manual.pdf DESTINATION share/doc/feel COMPONENT Documentation)
-  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/api/html DESTINATION share/doc/feel COMPONENT Documentation
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/tutorial/feel_get_tutorial DESTINATION bin COMPONENT Doc)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/doc/tutorial/feel-manual.pdf DESTINATION share/doc/feel COMPONENT Doc)
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/api/html DESTINATION share/doc/feel COMPONENT Doc
     PATTERN ".svn" EXCLUDE PATTERN ".git" EXCLUDE )
   FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/tutorial/*.*pp")
-  INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/ COMPONENT Examples)
+  INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
 endif()
 
 

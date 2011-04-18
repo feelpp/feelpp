@@ -244,19 +244,19 @@ option(EIGEN_TEST_C++0x "Enables all C++0x features." OFF)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 # the user modifiable install path for header files
-set(EIGEN_INCLUDE_INSTALL_DIR ${EIGEN_INCLUDE_INSTALL_DIR} CACHE PATH "The directory where we install the header files (optional)")
+set(EIGEN_INCLUDE_INSTALL_DIR "include/feel" CACHE PATH "The directory where we install the header files (optional)")
 
 # set the internal install path for header files which depends on wether the user modifiable
 # EIGEN_INCLUDE_INSTALL_DIR has been set by the user or not.
 if(EIGEN_INCLUDE_INSTALL_DIR)
   set(INCLUDE_INSTALL_DIR
-    ${EIGEN_INCLUDE_INSTALL_DIR}
+    "include/feel"
     CACHE INTERNAL
     "The directory where we install the header files (internal)"
   )
 else()
   set(INCLUDE_INSTALL_DIR
-    "${CMAKE_INSTALL_PREFIX}/include/eigen3"
+    "${CMAKE_INSTALL_PREFIX}/include/feel"
     CACHE INTERNAL
     "The directory where we install the header files (internal)"
   )
