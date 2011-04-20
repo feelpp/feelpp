@@ -14,7 +14,7 @@ from pyx.graph.axis import painter, tick
 
 from scipy import *
 from scipy.optimize import leastsq
-from scipy.io import array_import
+#from scipy.io import array_import
 
 from numpy import *
 
