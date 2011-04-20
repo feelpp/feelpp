@@ -41,7 +41,7 @@ from pyx.graph.axis import *
 
 import decimal
 from scipy import *
-from scipy.io import array_import
+#from scipy.io import array_import
 from numpy import *
 
 GRAPH_LIN_LIN=0
