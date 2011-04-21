@@ -468,7 +468,7 @@ void SolverEigenSlepc<T>::setSlepcSolverType()
     ierr = EPSGetType(M_eps,&etype);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
     Debug() << "solution method:  " << etype << "\n";
-    ierr = PetscPrintf(PETSC_COMM_WORLD," Solution method: %s\n\n",etype);
+    //ierr = PetscPrintf(PETSC_COMM_WORLD," Solution method: %s\n\n",etype);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
     return;
 }
