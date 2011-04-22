@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-04-14
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010,2011 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -168,6 +168,8 @@ public:
     //! change the directory where the results are stored
     static void changeRepository( boost::format fmt );
 
+    //! get  \c variables_map from \c options_description \p desc
+    static po::variables_map vm( po::options_description const& desc );
     //@}
 
 
