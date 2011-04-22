@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-04-14
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010,2011 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@
  */
 #include <feelconfig.h>
 
-
+#include <boost/program_options.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
@@ -213,5 +213,13 @@ Environment::changeRepository( boost::format fmt )
     ::chdir( rep_path.string().c_str() );
 }
 
+po::variables_map
+Environment::vm( po::options_description const& desc )
+{
+    po::variables_map vm;
+	po::store(po::parse_command_line(0, (char**)0, desc), vm);
+	po::notify(vm);
 
+    return vm;
+}
 }
