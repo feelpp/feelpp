@@ -80,12 +80,10 @@ macro( add_docex target )
  endforeach()
 endmacro()
 
-foreach( docex myapp myintegrals mymesh geotool)
+foreach( docex myapp )
   add_docex( ${docex} )
 endforeach()
 
-set(FEEL_INSTALL_APPS ${FEEL_INSTALL_APPS};${LIST_APPS} PARENT_SCOPE)
-message(STATUS "doc tutorial: ${LIST_APPS}")
 
 
 add_custom_target(
@@ -100,7 +98,7 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY
 
 if ( NOT FEEL_MINIMAL_CONFIGURATION )
 
-foreach( docex  myfunctionspace laplacian residualestimator stokes bratu nonlinearpow )
+foreach( docex  myintegrals mymesh geotool myfunctionspace laplacian residualestimator stokes bratu nonlinearpow )
   add_docex( ${docex} )
 endforeach()
 
@@ -110,6 +108,10 @@ endforeach()
 #target_link_libraries( feel_doc_convection ${FEEL_LIBRARIES} )
 
 endif ( NOT FEEL_MINIMAL_CONFIGURATION )
+
+set(FEEL_INSTALL_APPS ${FEEL_INSTALL_APPS};${LIST_APPS} PARENT_SCOPE)
+message(STATUS "doc tutorial: ${LIST_APPS}")
+
 
 IF ( OCTAVE_FOUND )
 
