@@ -559,6 +559,21 @@ inner_product( boost::shared_ptr<Vector<T> > const& v1,
     return inner_product( *v1, *v2 );
 }
 
+template <typename T>
+typename type_traits<T>::real_type
+dot( boost::shared_ptr<Vector<T> > const& v1,
+     boost::shared_ptr<Vector<T> > const& v2 )
+{
+    return inner_product( *v1, *v2 );
+}
+template <typename T>
+typename type_traits<T>::real_type
+dot( Vector<T> const& v1,
+     Vector<T> const& v2 )
+{
+    return inner_product( v1, v2 );
+}
+
 
 
 
