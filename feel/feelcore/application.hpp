@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -97,6 +97,19 @@ public:
     Application( AboutData const& ad, MPI_Comm Comm = MPI_COMM_WORLD );
 #else
     Application( AboutData const& ad );
+#endif
+
+    /**
+     * Construct an MPI Application
+     *
+     * @param ad \p AboutData structure for this \p Application
+     * @param od \p po::options_description structure for this \p Application
+     * @param Comm MPI communicator
+     */
+#if defined( HAVE_MPI )
+    Application( AboutData const& ad, po::options_description const& od, MPI_Comm Comm = MPI_COMM_WORLD );
+#else
+    Application( AboutData const& ad, po::options_description const& od );
 #endif
 
     /**
