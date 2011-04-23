@@ -364,6 +364,32 @@ public:
 #endif
     }
 
+
+    // "improved version of applyInverse" :
+    // take directly the expression of the rhs
+    // return the result of inversion
+    template<typename RhsExpr>
+    domain_element_type
+    inv( RhsExpr const& rhs_expr )
+    {
+        if ( ! M_matrix->closed() )
+        {
+            M_matrix->close();
+        }
+
+        domain_element_type de = this->domainSpace()->element();
+
+        auto ie = M_backend->newVector(this->dualImageSpace());
+        form1(_test=this->dualImageSpace(), _vector=ie, _init=true) =
+            integrate(elements(this->domainSpace()->mesh()), rhs_expr );
+
+        M_backend->solve(M_matrix, de, ie);
+
+        return de;
+    }
+
+
+
     // fill underlying matrix
     template<class ExprT>
     this_type& operator=( ExprT const& e )
