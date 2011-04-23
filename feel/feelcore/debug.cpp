@@ -399,6 +399,8 @@ DebugStream::operator<<( size_type s)
     }
     return *this;
 }
+#endif
+#if defined( __APPLE__ )
 DebugStream&
 DebugStream::operator<<( ptrdiff_t s)
 {
