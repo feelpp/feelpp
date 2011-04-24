@@ -37,7 +37,7 @@ using boost::unit_test::test_suite;
 #include <map>
 #include <boost/lambda/bind.hpp>
 
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 
 #include <feel/feelcore/application.hpp>
 

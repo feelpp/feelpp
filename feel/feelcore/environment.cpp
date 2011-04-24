@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2010-04-14
  */
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 
 #include <boost/program_options.hpp>
 #include <boost/preprocessor/stringize.hpp>

@@ -30,7 +30,7 @@
 #if !defined( PP_OPERATORS_HPP )
 #define PP_OPERATORS_HPP 1
 
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 #if defined( HAVE_QD_H )
 # include <qd/qd.h>
 #endif

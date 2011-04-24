@@ -30,7 +30,7 @@
 #ifndef __VectorPetsc_H
 #define __VectorPetsc_H 1
 
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/matrixsparse.hpp>

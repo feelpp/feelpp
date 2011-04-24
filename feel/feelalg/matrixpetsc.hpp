@@ -30,7 +30,7 @@
 #ifndef __MatrixPetsc_H
 #define __MatrixPetsc_H 1
 
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 
 #if defined(HAVE_PETSC_H)
 

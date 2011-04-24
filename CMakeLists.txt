@@ -51,7 +51,7 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 #SET( CMAKE_CXX_FLAGS "-pipe -Wall -O2 ")
 #SET( CMAKE_C_FLAGS "-pipe -Wall -O2")
 
-project (Feel C CXX Fortran)
+project (Feel++ C CXX Fortran)
 
 OPTION(FEEL_ENABLE_SVN "enable Feel++ looking up for svn information" ON)
 SET(FEEL_SCM "svn")
@@ -336,8 +336,8 @@ endif()
 set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(FEEL_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(FEEL_DATADIR ${CMAKE_INSTALL_PREFIX}/share/feel )
-CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
-CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
+CONFIGURE_FILE(feelconfig.h.in feel/feelconfig.h  @ONLY)
+CONFIGURE_FILE(feelinfo.h.in feel/feelinfo.h  @ONLY)
 
 #
 # Packaging

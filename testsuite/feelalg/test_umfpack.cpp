@@ -32,7 +32,7 @@
 #include <boost/numeric/ublas/matrix_sparse.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>
 
