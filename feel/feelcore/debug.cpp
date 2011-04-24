@@ -38,7 +38,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 
 #ifdef HAVE_BACKTRACE
 # include <execinfo.h>

@@ -33,7 +33,7 @@
 #include <feel/feelcore/traits.hpp>
 
 
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 
 #if defined(HAVE_BOOST_TEST)
 // Boost.Test

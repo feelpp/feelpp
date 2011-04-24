@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef __preconditionerML_H
 #define __preconditionerML_H 1
 
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 
 #include <feel/feelalg/matrixepetra.hpp>
 

@@ -26,7 +26,7 @@
    \author Goncalo Pena <goncalo.pena@epfl.ch>
    \date 2007-11-20
  */
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 
 #include <stokes_stabilized.hpp>
 

@@ -40,7 +40,7 @@
 #ifndef __metis_partitioner_h__
 #define __metis_partitioner_h__
 
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 
 
 namespace Metis

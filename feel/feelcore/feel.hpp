@@ -68,7 +68,7 @@
 #include <limits>
 #include <iosfwd>
 
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 #include <feel/feelcore/info.hpp>
 #include <feel/feelcore/feelmacros.hpp>
 #include <feel/feelcore/feelassert.hpp>

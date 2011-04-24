@@ -36,7 +36,7 @@
 
 
 #include <boost/program_options/variables_map.hpp>
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 
 #if defined ( HAVE_TRILINOS_EPETRA )
 #undef PACKAGE_BUGREPORT

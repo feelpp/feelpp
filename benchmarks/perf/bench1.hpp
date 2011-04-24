@@ -37,7 +37,7 @@
 #include <boost/program_options.hpp>
 #include <boost/lambda/bind.hpp>
 
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 
 
 #include <feel/options.hpp>

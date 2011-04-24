@@ -34,7 +34,7 @@
 #ifndef __MatrixEpetra_H
 #define __MatrixEpetra_H 1
 
-#include <feelconfig.h>
+#include <feel/feelconfig.h>
 
 
 #include <feel/feelcore/application.hpp>
