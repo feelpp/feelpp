@@ -381,7 +381,8 @@ public:
 
         auto ie = M_backend->newVector(this->dualImageSpace());
         form1(_test=this->dualImageSpace(), _vector=ie, _init=true) =
-            integrate(elements(this->domainSpace()->mesh()), rhs_expr );
+            integrate(elements(this->domainSpace()->mesh()),
+                      rhs_expr * id( this->dualImageSpace()->element() ) );
 
         M_backend->solve(M_matrix, de, ie);
 
