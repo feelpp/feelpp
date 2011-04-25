@@ -22,29 +22,32 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file l2projector.cpp
+   \file projector.cpp
    \author Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
    \date 2011-04-25
  */
-#ifndef _L2PROJECTOR_HPP_
-#define _L2PROJECTOR_HPP_
+#ifndef _PROJECTOR_HPP_
+#define _PROJECTOR_HPP_
 
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feelvf/vf.hpp>
 
 namespace Feel
 {
+
+    enum ProjectorType{L2=0, H1=1};
+
 /**
- * \class L2Projector
- * \brief L2 Projection made easy
+ * \class Projector
+ * \brief Projection made easy
  *
  * @author Vincent Doyeux
  * @see OperatorLinear
  */
 template<class DomainSpace, class DualImageSpace>
-class L2Projector : public OperatorLinear<DomainSpace, DualImageSpace>
+class Projector : public OperatorLinear<DomainSpace, DualImageSpace>
 {
-    typedef L2Projector<DomainSpace,DualImageSpace> super;
+    typedef Projector<DomainSpace,DualImageSpace> super;
 
 public :
 
@@ -76,25 +79,29 @@ public :
      */
     //@{
 
-    L2Projector(domain_space_ptrtype     domainSpace,
+    Projector(domain_space_ptrtype     domainSpace,
                 dual_image_space_ptrtype dualImageSpace,
-                backend_ptrtype          backend)
+                backend_ptrtype          backend,
+                ProjectorType proj_type=L2
+                )
         :
         ol_type(domainSpace, dualImageSpace, backend),
         M_backend(backend),
         M_matrix(M_backend->newMatrix( domainSpace, dualImageSpace ))
-        {  initMatrix();  }
+        {  initMatrix(proj_type);  }
 
     // //used in the case where domainSpace and dualImageSpace are the same
-    L2Projector(domain_space_ptrtype     domainSpace,
-                backend_ptrtype          backend)
+    Projector(domain_space_ptrtype     domainSpace,
+                backend_ptrtype          backend,
+                ProjectorType proj_type=L2
+                )
         :
         ol_type(domainSpace, domainSpace, backend),
         M_backend(backend),
         M_matrix(M_backend->newMatrix( domainSpace, domainSpace ))
-        {  initMatrix();  }
+        {  initMatrix(proj_type);  }
 
-    ~L2Projector() {}
+    ~Projector() {}
     //@}
 
     /** @name  Methods
@@ -166,43 +173,67 @@ public :
 
 private :
 
-    void initMatrix()
+    void initMatrix(ProjectorType proj_type)
         {
-            form2 (_trial=this->domainSpace(),
-                   _test=this->dualImageSpace(),
-                   _matrix=M_matrix) =
-                integrate(elements(this->domainSpace()->mesh()),
-                          trans(idt( this->domainSpace()->element() )) /*trial*/
-                          *id( this->domainSpace()->element() ) /*test*/
-                    );
+            if (proj_type == L2)
+                {
+                    form2 (_trial=this->domainSpace(),
+                           _test=this->dualImageSpace(),
+                           _matrix=M_matrix) =
+                        integrate(elements(this->domainSpace()->mesh()),
+                                  trans(idt( this->domainSpace()->element() )) /*trial*/
+                                  *id( this->domainSpace()->element() ) /*test*/
+                                  );
+                }
+            else if (proj_type == H1)
+                {
+                    form2 (_trial=this->domainSpace(),
+                           _test=this->dualImageSpace(),
+                           _matrix=M_matrix) =
+                        integrate(elements(this->domainSpace()->mesh()),
+                                  trans(idt( this->domainSpace()->element() )) /*trial*/
+                                  *id( this->domainSpace()->element() ) /*test*/
+                                  +
+                                  trace( gradt(this->domainSpace()->element())
+                                         * trans(grad(this->domainSpace()->element())))
+                                  );
+                }
             M_matrix->close();
         }
 
     backend_ptrtype M_backend;
     matrix_ptrtype M_matrix;
 
-};//L2Projector
+};//Projector
 
 #if 0
 /**
- * this function returns a \c L2Projector \c shared_ptr with
+ * this function returns a \c Projector \c shared_ptr with
  *
  * \param domainSpace
  * \param imageSpace
  * \param backend
  */
 
-//a finir
+/*
+operator() doesn't work if Projector declared as :
+auto l2p = Projector(Xh, Xh, backend)
+apply still works properly
+to be fixed...
+*/
+
 template<typename TDomainSpace, typename TDualImageSpace>
-boost::shared_ptr< L2Projector<TDomainSpace, TDualImageSpace> >
-l2Projector( boost::shared_ptr<TDomainSpace> const& domainspace,
+boost::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
+Projector( boost::shared_ptr<TDomainSpace> const& domainspace,
              boost::shared_ptr<TDualImageSpace> const& imagespace,
-             typename L2Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend )
+             typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend,
+             ProjectorType proj_type=L2 )
 {
-    typedef L2Projector<TDomainSpace, TDualImageSpace> L2Proj_type;
-    boost::shared_ptr<L2Proj_type> l2p( new L2Proj_type(domainspace, imagespace, backend) );
-    return l2p;
+    typedef Projector<TDomainSpace, TDualImageSpace> Proj_type;
+    boost::shared_ptr<Proj_type> proj( new Proj_type(domainspace, imagespace, backend, proj_type) );
+    return proj;
 }
+
 #endif
 
 } //namespace Feel
