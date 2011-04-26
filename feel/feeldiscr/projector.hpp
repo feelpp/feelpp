@@ -81,7 +81,7 @@ public :
 
     Projector(domain_space_ptrtype     domainSpace,
                 dual_image_space_ptrtype dualImageSpace,
-                backend_ptrtype          backend,
+                backend_ptrtype backend = Backend<double>::build(BACKEND_PETSC),
                 ProjectorType proj_type=L2
                 )
         :
@@ -91,8 +91,8 @@ public :
         {  initMatrix(proj_type);  }
 
     // //used in the case where domainSpace and dualImageSpace are the same
-    Projector(domain_space_ptrtype     domainSpace,
-                backend_ptrtype          backend,
+    Projector(domain_space_ptrtype domainSpace,
+                backend_ptrtype backend = Backend<double>::build(BACKEND_PETSC),
                 ProjectorType proj_type=L2
                 )
         :
@@ -206,7 +206,7 @@ private :
 
 };//Projector
 
-#if 0
+#if 1
 /**
  * this function returns a \c Projector \c shared_ptr with
  *
@@ -216,17 +216,18 @@ private :
  */
 
 /*
-operator() doesn't work if Projector declared as :
-auto l2p = Projector(Xh, Xh, backend)
-apply still works properly
+   !!!!!
+- operator() doesn't work if Projector declared as :
+  auto l2p = Projector(Xh, Xh, backend)
+- "apply" and "project" still work properly !
 to be fixed...
 */
 
 template<typename TDomainSpace, typename TDualImageSpace>
 boost::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
-Projector( boost::shared_ptr<TDomainSpace> const& domainspace,
+projector( boost::shared_ptr<TDomainSpace> const& domainspace,
              boost::shared_ptr<TDualImageSpace> const& imagespace,
-             typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend,
+             typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend = Backend<double>::build(BACKEND_PETSC),
              ProjectorType proj_type=L2 )
 {
     typedef Projector<TDomainSpace, TDualImageSpace> Proj_type;
