@@ -230,9 +230,9 @@ Aitken<fs_type>::calculateParameter()
 
     scalar = inner_product( previousResidual , aux );
     scalar = -previousParameter*scalar;
-#if 0
+#if 1
     if ( scalar > 1 )
-        scalar = failsafeParameter;
+        scalar = 1;//-failsafeParameter;
 
     if ( scalar < 0 )
         scalar = failsafeParameter;
