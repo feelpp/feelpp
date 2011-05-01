@@ -348,7 +348,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
                     M_pc( new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() )), \
                     M_pcf(),                                            \
-                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), (new ctx_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom ), (pc_ptrtype const&)M_pc ) ) ) ), \
+                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
+                                                ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_did_init( false ),                                \
                     M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh() ==expr.e().functionSpace()->mesh().get()) \
@@ -368,7 +369,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
                     M_pc( new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ), \
                     M_pcf(),                                           \
-                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), (new ctx_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom ), (pc_ptrtype const&)M_pc ) ) ) ), \
+                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
+                                                ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_did_init( false ),                                \
                     M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh() ==expr.e().functionSpace()->mesh().get()) \
@@ -605,6 +607,17 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
             return Expr< expr_t >(  expr_t(expr) );                     \
         }                                                               \
+                                                                        \
+    template <class ELEM                                                \
+              BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_COMMA, BOOST_PP_EMPTY )() \
+        BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )() > \
+    inline Expr< VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> >   \
+    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( boost::shared_ptr<ELEM> expr ) \
+        {                                                               \
+            typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
+            return Expr< expr_t >(  expr_t(*expr) );                     \
+        }                                                               \
+
     /**/
 #
 //
