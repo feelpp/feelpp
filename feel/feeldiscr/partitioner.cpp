@@ -81,6 +81,10 @@ typedef Mesh<Simplex<1,1,2> > meshs112_t;
 const bool meshs112e = Partitioner<meshs112_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs112_t> );
 const bool meshs112g = Partitioner<meshs112_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs112_t> );
 
+typedef Mesh<Simplex<1,2,2> > meshs122_t;
+const bool meshs122e = Partitioner<meshs122_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs122_t> );
+const bool meshs122g = Partitioner<meshs122_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs122_t> );
+
 //
 // Simplex 2,1
 //
@@ -195,6 +199,7 @@ template class Partitioner<Mesh<Simplex<1,1,2> > >;
 template class Partitioner<Mesh<Simplex<2,1,2> > >;
 template class Partitioner<Mesh<Simplex<3,1,3> > >;
 #if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 2 )
+template class Partitioner<Mesh<Simplex<1,2,2> > >;
 template class Partitioner<Mesh<Simplex<2,2> > >;
 template class Partitioner<Mesh<Simplex<3,2> > >;
 #endif
