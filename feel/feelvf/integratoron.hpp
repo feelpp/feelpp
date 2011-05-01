@@ -500,6 +500,25 @@ on( ElementRange const& __r,
 
 }
 
+template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
+Expr<IntegratorOnExpr<ElementRange, Elem,
+                      typename mpl::if_<mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >,
+                                        mpl::identity<typename RhsElem::value_type>,
+                                        mpl::identity<RhsElem> >::type::type,
+                      typename mpl::if_<boost::is_arithmetic<OnExpr>,
+                                        mpl::identity<Expr<Cst<OnExpr> > >,
+                                        mpl::identity<OnExpr> >::type::type> >
+on( ElementRange const& __r,
+    boost::shared_ptr<Elem>  __u,
+    RhsElem&  __rhs,
+    OnExpr const& __e,
+    size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
+{
+    return detail::on( __r, *__u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
+
+}
+
+
 } // vf
 } // feel
 #endif
