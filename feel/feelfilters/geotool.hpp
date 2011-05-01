@@ -71,12 +71,25 @@
 
 /*_________________________________________________*/
 
+# define GEOTOOL_MARKER_POINT_LINE              \
+    ( 2, ( ( 1, 1, ( 1 ) ),                     \
+           ( 2, 1, ( 2 ) ) )                    \
+      )                                         \
+    /**/
+
 # define GEOTOOL_MARKER_LINE_LINE               \
     ( 1, ( ( 1, 1, ( 1 ) ) )                    \
       )                                         \
     /**/
 
 /*_________________________________________________*/
+
+# define GEOTOOL_MARKER_POINT_TRIANGLE          \
+    ( 3, ( ( 1, 1, ( 1 ) ),                     \
+           ( 2, 1, ( 2 ) ),                     \
+           ( 3, 1, ( 3 ) ) )                    \
+      )                                         \
+    /**/
 
 # define GEOTOOL_MARKER_LINE_TRIANGLE           \
     ( 3, ( ( 1, 1, ( 1 ) ),                     \
@@ -91,9 +104,13 @@
 
 /*_________________________________________________*/
 
-
-/*_________________________________________________*/
-
+# define GEOTOOL_MARKER_POINT_RECTANGLE         \
+    ( 4, ( ( 1, 1, ( 1 ) ),                     \
+           ( 2, 1, ( 2 ) ),                     \
+           ( 3, 1, ( 3 ) ),                     \
+           ( 4, 1, ( 4 ) ) )                    \
+      )                                         \
+    /**/
 # define GEOTOOL_MARKER_LINE_RECTANGLE          \
     ( 4, ( ( 1, 1, ( 1 ) ),                     \
            ( 2, 1, ( 2 ) ),                     \
@@ -108,6 +125,13 @@
 
 /*_________________________________________________*/
 
+# define GEOTOOL_MARKER_POINT_QUADRANGLE        \
+    ( 4, ( ( 1, 1, ( 1 ) ),                     \
+           ( 2, 1, ( 2 ) ),                     \
+           ( 3, 1, ( 3 ) ),                     \
+           ( 4, 1, ( 4 ) ) )                    \
+      )                                         \
+    /**/
 # define GEOTOOL_MARKER_LINE_QUADRANGLE         \
     ( 4, ( ( 1, 1, ( 1 ) ),                     \
            ( 2, 1, ( 2 ) ),                     \
@@ -122,6 +146,15 @@
 
 /*_________________________________________________*/
 
+# define GEOTOOL_MARKER_POINT_HEXAGON           \
+    ( 6, ( ( 1, 1, ( 1 ) ),                     \
+           ( 2, 1, ( 2 ) ),                     \
+           ( 3, 1, ( 3 ) ),                     \
+           ( 4, 1, ( 4 ) ),                     \
+           ( 5, 1, ( 5 ) ),                     \
+           ( 6, 1, ( 6 ) ) )                    \
+      )                                         \
+    /**/
 # define GEOTOOL_MARKER_LINE_HEXAGON            \
     ( 6, ( ( 1, 1, ( 1 ) ),                     \
            ( 2, 1, ( 2 ) ),                     \
@@ -138,6 +171,11 @@
 
 /*_________________________________________________*/
 
+# define GEOTOOL_MARKER_POINT_CIRCLE            \
+    ( 2, ( ( 1, 2, ( 1,3 ) ),                   \
+           ( 2, 1, ( 2 ) ) )                    \
+      )                                         \
+/**/
 # define GEOTOOL_MARKER_LINE_CIRCLE             \
     ( 1, ( ( 1, 2, ( 1,2 ) ) )                  \
       )                                         \
@@ -149,7 +187,12 @@
     /**/
 
 /*_________________________________________________*/
-
+//false : must be fix! 
+# define GEOTOOL_MARKER_POINT_PARTIALDISQUE     \
+    ( 2, ( ( 1, 2, ( 1,3 ) ),                   \
+           ( 2, 1, ( 2 ) ) )                    \
+      )                                         \
+    /**/
 # define GEOTOOL_MARKER_LINE_PARTIALDISQUE      \
     ( 2, ( ( 1, 4, ( 1,2,3,4 ) ),               \
            ( 2, 1, (    5    ) ) )              \
@@ -161,9 +204,14 @@
       )                                         \
     /**/
 
-
 /*_________________________________________________*/
 
+# define GEOTOOL_MARKER_POINT_SPECIAL_1A          \
+    ( 1, ( ( 1, 24, ( 1,2,3,4,5,6,                \
+                      7,8,9,10,11,12,             \
+                      13,14,15,16,17,18,          \
+                      19,20,21,22,23,24 ) ) ) )   \
+    /**/
 # define GEOTOOL_MARKER_LINE_SPECIAL_1A            \
     ( 4, ( ( 1, 2, ( 1,5 ) ),                      \
            ( 2, 2, ( 2,6 ) ),                      \
@@ -171,7 +219,6 @@
            ( 4, 2, ( 4,8 ) ) )                     \
       )                                            \
     /**/
-
 # define GEOTOOL_MARKER_SURFACE_SPECIAL_1A      \
     ( 1, ( ( 1, 2, ( 1,2 ) ) )                  \
       )                                         \
@@ -179,14 +226,17 @@
 
 /*_________________________________________________*/
 
-# define GEOTOOL_MARKER_LINE_SPECIAL_1B          \
-    ( 3, ( ( 1, 2, ( 1,2 ) ),                    \
+# define GEOTOOL_MARKER_POINT_SPECIAL_1B          \
+    ( 1, ( ( 1, 12, ( 1,2,3,4,5,6,                \
+                      7,8,9,10,11,12 ) ) ) )      \
+    /**/
+# define GEOTOOL_MARKER_LINE_SPECIAL_1B            \
+    ( 3, ( ( 1, 2, ( 1,2 ) ),                      \
            ( 2, 1, ( 3   ) ),                      \
            ( 3, 1, ( 4   ) )                       \
-           )                                     \
-      )                                          \
+           )                                       \
+      )                                            \
     /**/
-
 # define GEOTOOL_MARKER_SURFACE_SPECIAL_1B      \
     ( 1, ( ( 1, 1, ( 1 ) ) )                    \
       )                                         \
@@ -194,6 +244,10 @@
 
 /*_________________________________________________*/
 
+# define GEOTOOL_MARKER_POINT_CYLINDRE            \
+    ( 1, ( ( 1, 10, ( 1,2,3,4,5,6,                \
+                      7,8,9,10 ) ) ) )            \
+    /**/
 # define GEOTOOL_MARKER_LINE_CYLINDRE           \
     ( 12, ( (  1, 1, (  1 ) ),                  \
             (  2, 1, (  2 ) ),                  \
@@ -222,8 +276,12 @@
       )                                         \
     /**/
 /*_________________________________________________*/
-/*_________________________________________________*/
 
+# define GEOTOOL_MARKER_POINT_TUBE                \
+    ( 1, ( ( 1, 18, ( 1,2,3,4,5,6,                \
+                      7,8,9,10,11,12,             \
+                      13,14,15,16,17,18 ) ) ) )   \
+    /**/
 # define GEOTOOL_MARKER_LINE_TUBE               \
     ( 12, ( (  1, 1, (  1 ) ),                  \
             (  2, 1, (  2 ) ),                  \
@@ -254,6 +312,9 @@
     /**/
 /*_________________________________________________*/
 
+# define GEOTOOL_MARKER_POINT_SPHERE              \
+    ( 1, ( ( 1, 7, ( 1,2,3,4,5,6,7 ) ) ) )        \
+    /**/
 # define GEOTOOL_MARKER_LINE_SPHERE             \
     ( 12, ( (  1, 1, (  1 ) ),                  \
             (  2, 1, (  2 ) ),                  \
@@ -282,6 +343,9 @@
 
 /*_________________________________________________*/
 
+# define GEOTOOL_MARKER_POINT_HEXAEDRE            \
+    ( 1, ( ( 1, 8, ( 1,2,3,4,5,6,7,8 ) ) ) )      \
+    /**/
 # define GEOTOOL_MARKER_LINE_HEXAEDRE           \
     ( 12, ( (  1, 1, (  1 ) ),                  \
             (  2, 1, (  2 ) ),                  \
@@ -341,6 +405,12 @@
 # define GEOTOOL_SHAPE_NAME_STR(i) BOOST_PP_TUPLE_ELEM(7, 4, BOOST_PP_ARRAY_ELEM(i,GEOTOOL_SHAPE))
 # define GEOTOOL_SHAPE_NBPARAM(i) BOOST_PP_TUPLE_ELEM(7, 5, BOOST_PP_ARRAY_ELEM(i,GEOTOOL_SHAPE))
 # define GEOTOOL_SHAPE_NAME_MACRO(i) BOOST_PP_TUPLE_ELEM(7, 6, BOOST_PP_ARRAY_ELEM(i,GEOTOOL_SHAPE))
+
+# define GEOTOOL_MARKER_POINT_INDICE(O) BOOST_PP_TUPLE_ELEM(3, 0, O)
+# define GEOTOOL_MARKER_POINT_NBMARK(F,i) BOOST_PP_TUPLE_ELEM(3, 1, BOOST_PP_ARRAY_ELEM(i,F))
+# define GEOTOOL_MARKER_POINT_ARRAYMARK(O) BOOST_PP_TUPLE_ELEM(3, 2, O)
+# define GEOTOOL_MARKER_POINT_MARKVALUE(F,i,j)                           \
+    BOOST_PP_TUPLE_ELEM( GEOTOOL_MARKER_POINT_NBMARK(F,i),j,GEOTOOL_MARKER_POINT_ARRAYMARK(BOOST_PP_ARRAY_ELEM(i, F)))
 
 # define GEOTOOL_MARKER_LINE_INDICE(O) BOOST_PP_TUPLE_ELEM(3, 0, O)
 # define GEOTOOL_MARKER_LINE_NBMARK(F,i) BOOST_PP_TUPLE_ELEM(3, 1, BOOST_PP_ARRAY_ELEM(i,F))
@@ -1097,6 +1167,18 @@ namespace Feel {
         /*_________________________________________________*/
         /*                                                 */
         /**/
+#define GEOTOOL_FOR_MARKER_POINT_MACRO2(r, state)                       \
+        __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
+                                                 GEOTOOL_MARKER_POINT_MARKVALUE( BOOST_PP_CAT(GEOTOOL_MARKER_POINT_, \
+                                                                                             GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(4,3,state) )), \
+                                                                                BOOST_PP_TUPLE_ELEM(4, 2, state), \
+                                                                                BOOST_PP_TUPLE_ELEM(4, 0, state) ) \
+                                                 )                      \
+                               );                                       \
+        /**/
+        /*_________________________________________________*/
+        /*                                                 */
+        /**/
 #define GEOTOOL_FOR_MARKER_LINE_MACRO2(r, state)                        \
         __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
                                                  GEOTOOL_MARKER_LINE_MARKVALUE( BOOST_PP_CAT(GEOTOOL_MARKER_LINE_, \
@@ -1172,6 +1254,25 @@ namespace Feel {
 #endif
 
 
+#define GEOTOOL_FOR_MARKER_POINT_MACRO(r, state)                         \
+        if (BOOST_PP_CAT(marker,                                        \
+                         BOOST_PP_ADD(BOOST_PP_TUPLE_ELEM(3, 0, state),	\
+                                      1 ) ) )                           \
+            {                                                           \
+                BOOST_PP_FOR( (0,                                       \
+                               BOOST_PP_SUB(GEOTOOL_MARKER_POINT_NBMARK(BOOST_PP_CAT(GEOTOOL_MARKER_POINT_, \
+                                                                                    GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(3,2,state))), \
+                                                                       BOOST_PP_TUPLE_ELEM(3, 0, state) ),1), \
+                               BOOST_PP_TUPLE_ELEM(3, 0, state),		\
+                               BOOST_PP_TUPLE_ELEM(3, 2, state)			\
+                               ),                                       \
+                              GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_POINT_MACRO2) \
+                    }                                                   \
+
+        /**/
+        /*_________________________________________________*/
+        /*                                                 */
+        /**/
 #define GEOTOOL_FOR_MARKER_LINE_MACRO(r, state)                         \
         if (BOOST_PP_CAT(marker,                                        \
                          BOOST_PP_ADD(BOOST_PP_TUPLE_ELEM(3, 0, state),	\
@@ -1419,7 +1520,16 @@ namespace Feel {
                     std::list<marker_base_type > __listMarker = (*(_M_markShape))/*[this->shape()]*/[type][name]; \
                                                                         \
                                                                         \
-                    if (type=="line")                                   \
+                    if (type=="point")                                  \
+                        {                                               \
+                            BOOST_PP_FOR( (0, BOOST_PP_SUB(BOOST_PP_ARRAY_SIZE( BOOST_PP_CAT(GEOTOOL_MARKER_POINT_, \
+                                                                                             GEOTOOL_SHAPE_NAME_MACRO( BOOST_PP_TUPLE_ELEM(2,0,state)))), \
+                                                           1), BOOST_PP_TUPLE_ELEM(2,0,state)), \
+                                          GEOTOOL_FOR_COMP1,            \
+                                          GEOTOOL_FOR_INCR1,            \
+                                          GEOTOOL_FOR_MARKER_POINT_MACRO) \
+                                }                                       \
+                    else if (type=="line")                              \
                         {                                               \
                             BOOST_PP_FOR( (0, BOOST_PP_SUB(BOOST_PP_ARRAY_SIZE( BOOST_PP_CAT(GEOTOOL_MARKER_LINE_, \
                                                                                              GEOTOOL_SHAPE_NAME_MACRO( BOOST_PP_TUPLE_ELEM(2,0,state)))), \
@@ -1461,7 +1571,7 @@ namespace Feel {
                                           GEOTOOL_FOR_MARKER_VOLUME_MACRO)*/ \
                                 }                                       \
                                                                         \
-                    (*(_M_markShape))/*[this->shape()]*/[type][name] = __listMarker; \
+                    (*(_M_markShape))[type][name] = __listMarker; \
                 }                                                       \
                                                                         \
                                                                         \

@@ -210,6 +210,7 @@ namespace GeoTool {
             while (itMarkType!=itMarkType_end)
                 {
                     if ( (__typeOp==1) ||
+                         ( itMarkType->first=="point" ) ||
                          ( itMarkType->first=="line" && this->dim()>=2) ||
                          (__typeOp==2 && itMarkType->first=="surface" && this->dim()==3) )
                         {
@@ -524,7 +525,43 @@ namespace GeoTool {
                     marker_markerName_const_iterator_type itMarkName_end=(*(_M_markShape))/*[itShape->first]*/[itMarkType->first].end();
                     while ( itMarkName!=itMarkName_end)
                         {
-                            if (itMarkType->first=="line")
+                            if (itMarkType->first=="point")
+                                {
+                                    //on cree un nouvelle list dont on enleve les doublons(aux cas où!)
+                                    std::list<marker_base_type> newListMark;
+                                    std::list<marker_base_type>::const_iterator itMark = itMarkName->second.begin();
+                                    std::list<marker_base_type>::const_iterator itMark_end = itMarkName->second.end();
+                                    for ( ; itMark!=itMark_end;++itMark)
+                                        {
+                                            auto value = __dataMemGlob[0][boost::get<0>(*itMark)][boost::get<1>(*itMark)][boost::get<2>(*itMark)];
+                                            std::list<marker_base_type>::const_iterator itnewMark = newListMark.begin();
+                                            std::list<marker_base_type>::const_iterator itnewMark_end = newListMark.end();
+                                            bool find=false;
+                                            while ( itnewMark != itnewMark_end && !find)
+                                                {
+                                                    auto value2 = __dataMemGlob[0][boost::get<0>(*itnewMark)][boost::get<1>(*itnewMark)][boost::get<2>(*itnewMark)];
+                                                    if ( value == value2) find=true;
+                                                    ++itnewMark;
+                                                }
+                                            if (!find) newListMark.push_back(*itMark);
+                                        }
+
+
+                                    *_M_ostr << "Physical Point(\"" << itMarkName->first << "\") = {";
+
+                                    ///*std::list<marker_base_type>::const_iterator*/ itMark = itMarkName->second.begin();
+                                    ///*std::list<marker_base_type>::const_iterator*/ itMark_end = --itMarkName->second.end();
+                                    auto itMarkTTT=newListMark.begin();
+                                    auto itMarkTTT_end=--newListMark.end();
+                                    while (itMarkTTT!=itMarkTTT_end)
+                                        {
+                                            *_M_ostr << __dataMemGlob[0][boost::get<0>(*itMarkTTT)][boost::get<1>(*itMarkTTT)][boost::get<2>(*itMarkTTT)]
+                                                     <<",";
+                                            ++itMarkTTT;
+                                        }
+                                    *_M_ostr << __dataMemGlob[0][boost::get<0>(*itMarkTTT)][boost::get<1>(*itMarkTTT)][boost::get<2>(*itMarkTTT)] << "};\n";
+                                }
+                            else if (itMarkType->first=="line")
                                 {
                                     //on cree un nouvelle list dont on enleve les doublons(aux cas où!)
                                     std::list<marker_base_type> newListMark;
