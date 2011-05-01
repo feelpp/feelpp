@@ -339,6 +339,17 @@ public:
         return elt_image;
     }
 
+    template <typename T1 = typename domain_space_type::element_type,
+              typename T2 = typename dual_image_space_type::element_type >
+    T2
+    operator()(boost::shared_ptr<T1> de)
+    {
+        T2 elt_image(this->dualImageSpace(),"oio");
+        this->apply(*de,elt_image);
+
+        return elt_image;
+    }
+
 
     //! apply the inverse of the operator: \f$de = O^{-1} ie\f$
     virtual void
