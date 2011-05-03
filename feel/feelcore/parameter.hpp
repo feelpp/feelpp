@@ -140,6 +140,14 @@ BOOST_PARAMETER_NAME(domainSpace)
 BOOST_PARAMETER_NAME(imageSpace)
 BOOST_PARAMETER_NAME(range)
 
+BOOST_PARAMETER_NAME(residual)
+BOOST_PARAMETER_NAME(currentElt)
+BOOST_PARAMETER_NAME(newElt)
+BOOST_PARAMETER_NAME(space)
+BOOST_PARAMETER_NAME(initial_theta)
+
+
+
 
 }
 #endif /* __feelcore_parameter_H */

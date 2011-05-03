@@ -207,5 +207,11 @@ enum SolverNonLinearType
         TRUST_REGION
     };
 
+enum AitkenType
+    {
+        AITKEN_STANDARD=0,
+        AITKEN_METHOD_1
+    };
+
 } // Feel
 #endif /* __FeelAlgEnums_H */
