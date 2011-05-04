@@ -187,6 +187,27 @@ Environment::systemGeoRepository()
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
 
+std::string
+Environment::localConfigRepository()
+{
+    fs::path rep_path;
+
+    rep_path = Environment::rootRepository();
+    rep_path /= "config";
+    if ( !fs::exists( rep_path ) )
+        fs::create_directory( rep_path );
+    return rep_path.string();
+}
+boost::tuple<std::string,bool>
+Environment::systemConfigRepository()
+{
+    fs::path rep_path;
+
+    rep_path = BOOST_PP_STRINGIZE(INSTALL_PREFIX);
+    rep_path /= "share/feel/config";
+    return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
+}
+
 void
 Environment::changeRepository( boost::format fmt )
 {

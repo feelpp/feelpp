@@ -161,9 +161,22 @@ public:
     static std::string localGeoRepository();
 
     /**
-     * \return a tuple : the system geo files repository (default: \c /usr/share/feel/geo or /usr/local/share/feel/geo) and true or false whether the directory exists or not
+     * \return a tuple : the system geo files repository (default: \c
+     * /usr/share/feel/geo or /usr/local/share/feel/geo) and true or false
+     * whether the directory exists or not
      */
     static boost::tuple<std::string,bool> systemGeoRepository();
+
+
+    //! \return the local config files repository (default: \c $HOME/feel/config)
+    static std::string localConfigRepository();
+
+    /**
+     * \return a tuple : the system config files repository (default: \c
+     * /usr/share/feel/config or /usr/local/share/feel/config) and true or false
+     * whether the directory exists or not
+     */
+    static boost::tuple<std::string,bool> systemConfigRepository();
 
     //! change the directory where the results are stored
     static void changeRepository( boost::format fmt );
