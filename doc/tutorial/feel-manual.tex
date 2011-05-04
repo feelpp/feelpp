@@ -570,6 +570,8 @@ Here is what the directory should look like
 \item \lstinline!feel/feelvf!
 \end{itemize}
 
+
+
 \chapter{Tutorial}
 \label{sec:tutorial}
 
@@ -671,7 +673,7 @@ myapp: my first Feel application
 Christophe Prud'homme   developer  christophe.prudhomme@ujf-grenoble.fr
 \end{lstlisting}
 
-\subsection{Application, Logging and Archiving}
+\subsection{Application, Logging, Archiving, Configuring}
 \label{sec:appl-logg-arch}
 
 \feel provides some basic logging and archiving support: using the
@@ -703,7 +705,7 @@ myapp-1.0 is opened for debug
 [Area 0] the value of dt is 0.1
 \end{lstlisting}
 
-\subsection{MPI Application}
+\subsubsection{MPI Application}
 
 \marginpar{\lstinline!myapp.cpp!}
 \feel relies on MPI for parallel computations and the class
@@ -734,6 +736,26 @@ mympiapp-2.1 is opened for debug
 [Area 0] we are on processor eta
 [Area 0] this is process number 1 out of 2
 \end{lstlisting}
+
+\subsubsection{Configuration files}
+
+
+Each application can be configured via the command ling but also using a
+\verb|.cfg| file. If they exist they may have been installed on your system
+along with \feel or you may create your own configuration files.  \feel provides
+a way to look for them and parse them.
+
+The \verb|.cfg| file is searched in the following order
+\begin{enumerate}
+\item look in the current directory
+\item look in \verb|$HOME/feel/config|
+\item look in \verb|$INSTALL_PREFIX/share/feel/config|
+\end{enumerate}
+The name of the file can be constructed in two ways \verb|<appname>.cfg| and
+\verb|feel_<appname>.cfg| where \verb|<appname>| is the string given in the
+\verb|AboutData| data structure passed to the construction of the
+\verb|Application| class.
+
 
 \subsection{Initializing PETSc and Trilinos}
 
