@@ -1,10 +1,52 @@
-Main Author:
+# -*- mode: org -*-
 
-Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr> (formerly at EPFL)
+Feel++ is Copyright (C) 2005-2011 by
+ - Université Joseph Fourier (Grenoble, France)
+ - Ećole Polytechnique Fédérale de Lausanne (EPFL, Switzerland)
+ - University of Coimbra (Portugal)
 
-Contributors:
 
-Goncalo Pena <goncalo.pena@epfl.ch>
-Benjamn Stamm <benjamin.stamm@epfl.ch>
-Gilles Steiner <gilles.steiner@epfl.ch>
-Christoph Winkelmann <christoph.winkelmann@epfl.ch>
+* Developers
+
+** Main Author:
+
+Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+
+** Current Developers:
+
+ - Vincent Chabannes <vincent.chabannes@imag.fr>
+ - Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
+ - Stéphane Veys <stephane.veys@imag.fr>
+ - Goncalo Pena <goncalo.pena@epfl.ch>
+
+** Contributors
+
+ - Mourad Ismail <Mourad.Ismail@ujf-grenoble.fr>
+
+** Past Contributors:
+
+ - Benjamn Stamm <benjamin.stamm@epfl.ch>
+ - Gilles Steiner <gilles.steiner@epfl.ch>
+ - Christoph Winkelmann <christoph.winkelmann@epfl.ch>
+
+* Credits
+
+Feel++ is current supported by
+
+ - two ANR[fn:1] projects:
+   - OPUS - http://www.opus-project.fr (TLOG call)
+   - HAMM - http://www.hamm-project.fr (Cosinus call)
+ - one FNRAE porject
+   - RB4FASTSIM -
+ - the region Rhônes-Alpes thanks the cluster ISLE[fn:2] and the project CHPID[fn:3]
+
+
+
+
+* Footnotes
+
+[fn:1] http://www.agence-nationale-recherche.fr/
+
+[fn:2] http://cluster-isle.grenoble-inp.fr/
+
+[fn:3] http://chpid.www.forge.imag.fr/
