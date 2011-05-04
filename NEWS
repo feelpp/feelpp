@@ -10,6 +10,11 @@
 
 * New in 0.91.0
 
+** Contributors for this release
+
+ - Vincent Doyeux
+ - Christophe Prud'homme
+
 ** Programming Environment
 
 *** Developer changes
@@ -19,8 +24,24 @@
  - cmake: added sse, altivec and neon optimizations
  - cmake: fix bug in make_directory
  - cmake: even more minimal configuration in doc/tutorial
+ - fix compilation in APPLE and s390 platforms
 
- 
+** Libraries
+
+*** feelcore
+
+ - added a config file with extension .cfg based on Boost.program_options in
+   Applicaiton classes
+ - provide systemConfigRepository() and localConfigRepository() in Environment
+   class which return respectively the local and system location of the config
+   file
+
+*** feeldiscr
+
+ - added implementation of $L_2$ and $H_1$ projector which renders rather
+   seamless these projection.
+
+
 * New in 0.90.0
 
 ** Programming Environment
