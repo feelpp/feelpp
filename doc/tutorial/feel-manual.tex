@@ -748,8 +748,9 @@ a way to look for them and parse them.
 The \verb|.cfg| file is searched in the following order
 \begin{enumerate}
 \item look in the current directory
-\item look in \verb|$HOME/feel/config|
-\item look in \verb|$INSTALL_PREFIX/share/feel/config|
+\item look in the directory \verb|$HOME/feel/config/|
+\item look in the directory \verb|$INSTALL_PREFIX/share/feel/config/|,
+  \emph{e.g.} in\\ Debian \verb|/usr/share/feel/config/|
 \end{enumerate}
 The name of the file can be constructed in two ways \verb|<appname>.cfg| and
 \verb|feel_<appname>.cfg| where \verb|<appname>| is the string given in the
