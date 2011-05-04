@@ -14,6 +14,8 @@
 
  - Vincent Doyeux
  - Christophe Prud'homme
+ - xxx
+ - yyy
 
 ** Programming Environment
 
@@ -40,6 +42,13 @@
 
  - added implementation of $L_2$ and $H_1$ projector which renders rather
    seamless these projection.
+
+** Documentation
+
+*** Tutorial
+
+ - updated tutorial
+ - updated doxygen documentation
 
 
 * New in 0.90.0
