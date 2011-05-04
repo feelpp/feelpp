@@ -35,6 +35,7 @@
 #include <iomanip>
 #include <sstream>
 
+#include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
@@ -458,26 +459,35 @@ Application::doOptions( int argc, char** argv )
         _M_desc.add( generic ).add( debug );
 
         this->parseAndStoreOptions( po::command_line_parser(argc, argv), true );
-        std::string config_name = (boost::format( "%1%.cfg" ) % this->about().appName()).str();
-        Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
-        std::cout << "[Application] Looking for " << config_name << "\n";
-        if ( fs::exists( config_name ) )
+        std::vector<fs::path> prefixes = boost::assign::list_of( fs::current_path() )
+            ( fs::path (Environment::localConfigRepository() ) )
+            ( fs::path (Environment::systemConfigRepository().get<0>() ) );
+
+        BOOST_FOREACH( auto prefix, prefixes )
         {
-            std::cout << "[Application] reading " << config_name << "\n";
-            std::ifstream ifs( config_name.c_str() );
-            store(parse_config_file(ifs, _M_desc), _M_vm);
-        }
-        else
-        {
-            // try with a prefix feel_
-            std::string config_name = (boost::format( "feel_%1%.cfg" ) % this->about().appName()).str();
+            std::string config_name = (boost::format( "%1%/%2%.cfg" ) % prefix.string() % this->about().appName()).str();
             Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
-            std::cout << "[Application] trying " << config_name << "\n";
+            std::cout << "[Application] Looking for " << config_name << "\n";
             if ( fs::exists( config_name ) )
             {
-                std::cout << "[Application] reading " << config_name << "\n";
+                std::cout << "[Application] parsing " << config_name << "\n";
                 std::ifstream ifs( config_name.c_str() );
                 store(parse_config_file(ifs, _M_desc), _M_vm);
+                break;
+            }
+            else
+            {
+                // try with a prefix feel_
+                std::string config_name = (boost::format( "%1%/feel_%2%.cfg" ) % prefix.string() % this->about().appName()).str();
+                Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
+                std::cout << "[Application] looking for " << config_name << "\n";
+                if ( fs::exists( config_name ) )
+                {
+                    std::cout << "[Application] parsing " << config_name << "\n";
+                    std::ifstream ifs( config_name.c_str() );
+                    store(parse_config_file(ifs, _M_desc), _M_vm);
+                    break;
+                }
             }
         }
         //po::store(po::parse_command_line(argc, argv, _M_desc), _M_vm);
