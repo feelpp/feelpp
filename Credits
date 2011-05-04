@@ -31,14 +31,15 @@ Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 
 * Credits
 
-Feel++ is current supported by
+Feel++ is supported by
 
  - two ANR[fn:1] projects:
-   - OPUS - http://www.opus-project.fr (TLOG call)
-   - HAMM - http://www.hamm-project.fr (Cosinus call)
- - one FNRAE porject
-   - RB4FASTSIM -
- - the region Rhônes-Alpes thanks the cluster ISLE[fn:2] and the project CHPID[fn:3]
+   - OPUS - http://www.opus-project.fr (TLOG call - 2008-2011)
+   - HAMM - http://www.hamm-project.fr (Cosinus call - 2010-2014)
+ - one FNRAE[fn:4] project
+   - RB4FASTSIM - 2010-2014
+ - the region Rhônes-Alpes thanks the cluster ISLE[fn:2] and the project
+   CHPID[fn:3] since 2009
 
 
 
@@ -50,3 +51,5 @@ Feel++ is current supported by
 [fn:2] http://cluster-isle.grenoble-inp.fr/
 
 [fn:3] http://chpid.www.forge.imag.fr/
+
+[fn:4] http://www.fnrae.org
