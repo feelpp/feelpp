@@ -138,7 +138,8 @@ public:
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
-    element_type operator()(element_type const& residual, element_type const& elem)
+    template< typename eltType >
+    element_type operator()(element_type const& residual, /*element_type*/eltType const& elem)
     {
         element_type newElt( Xh );
         applyimpl(newElt,residual,elem);
@@ -218,6 +219,16 @@ private:
     void applyimpl(element_type & new_elem,element_type const& residual, element_type const& elem);
 
     /**
+     * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
+     */
+    void applyimpl(element_range_type new_elem,element_type const& residual, element_range_type const& elem);
+
+    /**
+     * Compute Aitken parameter
+     */
+    void calculateParameter();
+
+    /**
      * Compute Aitken parameter
      */
     void calculateParameter(mpl::int_<AITKEN_STANDARD> /**/);
@@ -230,8 +241,9 @@ private:
     /**
      * Do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
-    void relaxationStep( element_type& new_elem );
-
+    //void relaxationStep( element_type& new_elem );
+    template< typename eltType >
+    void relaxationStep( eltType& new_elem );
 private:
 
     /**
@@ -331,10 +343,7 @@ private:
 
                 if (!M_hasConverged)
                     {
-                        if (M_aitkenType==AITKEN_STANDARD)
-                            calculateParameter(mpl::int_<AITKEN_STANDARD>());
-                        if (M_aitkenType==AITKEN_METHOD_1)
-                            calculateParameter(mpl::int_<AITKEN_METHOD_1>());
+                        calculateParameter();
                     }
             }
 
@@ -347,6 +356,30 @@ private:
 
     template< typename fs_type >
     void
+    Aitken<fs_type>::applyimpl(element_range_type new_elem,element_type const& residual, element_range_type const& elem)
+    {
+
+        setElement(residual,elem);
+
+        if (M_cptIteration>=2)
+            {
+                computeResidualNorm();
+
+                if (!M_hasConverged)
+                    {
+                        calculateParameter();
+                    }
+            }
+
+        if (!M_hasConverged)
+            relaxationStep(new_elem);
+
+    }
+
+    //-----------------------------------------------------------------------------------------//
+#if 0
+    template< typename fs_type >
+    void
     Aitken<fs_type>::relaxationStep( element_type& new_elem )
     {
         new_elem = currentResidual;
@@ -355,6 +388,21 @@ private:
 
         new_elem += currentElement;
     }
+#else
+    template< typename fs_type >
+    template< typename eltType >
+    void
+    Aitken<fs_type>::relaxationStep( eltType& new_elem )
+    {
+        new_elem = currentResidual;
+        //new_elem.scale( -previousParameter );
+        new_elem.scale( -(1-previousParameter) );
+
+        //new_elem += currentElement;
+        new_elem.add(1.,currentElement);
+    }
+
+#endif
 
     //-----------------------------------------------------------------------------------------//
 
@@ -402,6 +450,18 @@ private:
                   <<" theta=" << previousParameter
                   <<" residualNorm : " << M_residualConvergence
                   << "\n";
+    }
+
+    //-----------------------------------------------------------------------------------------//
+
+    template< typename fs_type >
+    void
+    Aitken<fs_type>::calculateParameter()
+    {
+        if (M_aitkenType==AITKEN_STANDARD)
+            calculateParameter(mpl::int_<AITKEN_STANDARD>());
+        if (M_aitkenType==AITKEN_METHOD_1)
+            calculateParameter(mpl::int_<AITKEN_METHOD_1>());
     }
 
     //-----------------------------------------------------------------------------------------//
