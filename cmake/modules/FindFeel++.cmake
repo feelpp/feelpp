@@ -103,7 +103,7 @@ endif( MADLIB_FOUND )
 #
 # Eigen
 #
-if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel )
+if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
   set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
   add_subdirectory(contrib/eigen)
@@ -223,7 +223,7 @@ mark_as_advanced( GMSH_EXECUTABLE )
 #
 # if Feel++ has been installed on the system
 #
-if ( NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel )
+if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib )
   FIND_PATH(FEEL_INCLUDE_DIR feelconfig.h  PATHS /usr/include/feel /usr/lib/feel/include /opt/feel/include /usr/ljk/include/feel /usr/local  )
 
   FIND_LIBRARY(FEEL_LIBRARY        feel++      PATHS /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
@@ -243,7 +243,7 @@ if ( NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel )
   FEEL_LIBRARY
   )
 else()
-
+  message(STATUS "we work within Feel++ sources")
   INCLUDE_DIRECTORIES (
     ${FEEL_BUILD_DIR}/
     ${FEEL_SOURCE_DIR}/
