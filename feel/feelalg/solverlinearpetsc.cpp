@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -286,6 +286,12 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     // Set the RHS vector to use
     ierr = KSPSetRhs (_M_ksp, rhs->vec());
     CHKERRABORT(M_comm,ierr);
+
+    // makes the default convergence test use || B*(b - A*(initial guess))||
+    // instead of || B*b ||. In the case of right preconditioner or if
+    // KSPSetNormType(ksp,KSP_NORM_UNPRECONDIITONED) is used there is no B in
+    // the above formula. UIRNorm is short for Use Initial Residual Norm.
+    KSPDefaultConvergedSetUIRNorm( _M_ksp );
 
     // Solve the linear system
     if ( transpose )
