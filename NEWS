@@ -14,7 +14,7 @@
 
  - Vincent Doyeux
  - Christophe Prud'homme
- - xxx
+ - Vincent Chabannes
  - yyy
 
 ** Programming Environment
@@ -38,10 +38,23 @@
    class which return respectively the local and system location of the config
    file
 
+*** feelalg
+
+ - merge the two implementations of aitken relaxation method and provide a
+   simplified interface
+
 *** feeldiscr
 
  - added implementation of $L_2$ and $H_1$ projector which renders rather
    seamless these projection.
+
+*** feelfilters
+
+ - update geotool to support markers for 1D meshes
+
+*** feelvf
+
+ - support for passing shared_ptr<> to the differential operators and to on()
 
 ** Documentation
 
