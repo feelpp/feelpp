@@ -100,8 +100,8 @@ GmshSimplexDomain::getDescription1D() const
             ostr    << "Physical Point(1) = {1};\n"
                     << "Physical Point(3) = {2};\n"
                     << "Physical Point(2) = {3};\n"
-                    << "Physical Line(1) = {1};\n"
-                    << "Physical Line(2) = {2};\n";
+                    << "Physical Line(\"Mat1\") = {1};\n"
+                    << "Physical Line(\"Mat2\") = {2};\n";
         }
         else
         {
@@ -119,7 +119,7 @@ GmshSimplexDomain::getDescription1D() const
             ostr << "Line(1) = {1,2};\n"
                  << "Physical Point(1) = {1};\n"
                  << "Physical Point(3) = {2};\n"
-                 << "Physical Line(1) = {1};\n";
+                 << "Physical Line(\"Mat1\") = {1};\n";
         }
         else
         {
