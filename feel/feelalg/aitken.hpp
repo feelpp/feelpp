@@ -123,15 +123,20 @@ public:
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
     BOOST_PARAMETER_MEMBER_FUNCTION(
-        (element_type),
-        apply,
-        tag,
-        (required
-         (residual, * )
-         (currentElt,* )) )
+                                    (element_type),
+                                    apply,
+                                    tag,
+                                    (required
+                                     (residual, * )
+                                     (currentElt,* )
+                                     ) //required
+                                    (optional
+                                     (forceRelaxation, (bool), false  )
+                                     )//optional
+                                    )
     {
         element_type newElt( Xh );
-        applyimpl(newElt,residual,currentElt);
+        applyimpl(newElt,residual,currentElt,forceRelaxation);
         return newElt;
     }
 
@@ -139,10 +144,10 @@ public:
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
     template< typename eltType >
-    element_type operator()(element_type const& residual, /*element_type*/eltType const& elem)
+    element_type operator()(element_type const& residual, eltType const& elem,bool _forceRelax=false)
     {
         element_type newElt( Xh );
-        applyimpl(newElt,residual,elem);
+        applyimpl(newElt,residual,elem,_forceRelax);
         return newElt;
     }
 
@@ -150,16 +155,21 @@ public:
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
     BOOST_PARAMETER_MEMBER_FUNCTION(
-        (void),
-        apply2,
-        tag,
-        (required
-         (newElt, * )
-         (residual, * )
-         (currentElt,* ) )  )
-    {
-        applyimpl(newElt,residual,currentElt);
-    }
+                                    (void),
+                                    apply2,
+                                    tag,
+                                    (required
+                                     (newElt, * )
+                                     (residual, * )
+                                     (currentElt,* )
+                                     ) //required
+                                     (optional
+                                      (forceRelaxation, (bool), false  )
+                                      ) //optional
+                                    )
+                                     {
+                                         applyimpl(newElt,residual,currentElt,forceRelaxation);
+                                     }
 
     /**
      * shift current step to previous step. After the call, we are ready for the next step.
@@ -187,7 +197,7 @@ public:
 
     void printInfo();
 
-private:
+    private:
     /**
      * initiliaze the aitken algorithm
      */
@@ -216,12 +226,12 @@ private:
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
-    void applyimpl(element_type & new_elem,element_type const& residual, element_type const& elem);
+    void applyimpl(element_type & new_elem,element_type const& residual, element_type const& elem,bool _forceRelax=false);
 
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
-    void applyimpl(element_range_type new_elem,element_type const& residual, element_range_type const& elem);
+    void applyimpl(element_range_type new_elem,element_type const& residual, element_range_type const& elem,bool _forceRelax=false);
 
     /**
      * Compute Aitken parameter
@@ -332,7 +342,7 @@ private:
 
     template< typename fs_type >
     void
-    Aitken<fs_type>::applyimpl(element_type & new_elem,element_type const& residual, element_type const& elem)
+    Aitken<fs_type>::applyimpl(element_type & new_elem,element_type const& residual, element_type const& elem,bool _forceRelax)
     {
 
         setElement(residual,elem);
@@ -341,13 +351,13 @@ private:
             {
                 computeResidualNorm();
 
-                if (!M_hasConverged)
+                if (!M_hasConverged || _forceRelax)
                     {
                         calculateParameter();
                     }
             }
 
-        if (!M_hasConverged)
+        if (!M_hasConverged || _forceRelax)
             relaxationStep(new_elem);
 
     }
@@ -356,7 +366,7 @@ private:
 
     template< typename fs_type >
     void
-    Aitken<fs_type>::applyimpl(element_range_type new_elem,element_type const& residual, element_range_type const& elem)
+    Aitken<fs_type>::applyimpl(element_range_type new_elem,element_type const& residual, element_range_type const& elem,bool _forceRelax)
     {
 
         setElement(residual,elem);
@@ -365,13 +375,13 @@ private:
             {
                 computeResidualNorm();
 
-                if (!M_hasConverged)
+                if (!M_hasConverged  || _forceRelax)
                     {
                         calculateParameter();
                     }
             }
 
-        if (!M_hasConverged)
+        if (!M_hasConverged  || _forceRelax)
             relaxationStep(new_elem);
 
     }
