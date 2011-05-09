@@ -15,7 +15,7 @@
  - Vincent Doyeux
  - Christophe Prud'homme
  - Vincent Chabannes
- - yyy
+ - Abdoulaye Samake
 
 ** Programming Environment
 
@@ -33,7 +33,7 @@
 *** feelcore
 
  - added a config file with extension .cfg based on Boost.program_options in
-   Applicaiton classes
+   Application classes
  - provide systemConfigRepository() and localConfigRepository() in Environment
    class which return respectively the local and system location of the config
    file
