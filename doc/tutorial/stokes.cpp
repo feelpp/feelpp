@@ -179,10 +179,6 @@ public:
 
 private:
 
-    /**
-     * solve system
-     */
-    void solve( sparse_matrix_ptrtype const& D, element_type& u, vector_ptrtype const& F, bool is_sym );
 
     /**
      * export results to ensight format (enabled by  --export cmd line options)
@@ -237,14 +233,15 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     //# marker4 #
     space_ptrtype Xh = space_type::New( mesh );
 
-    element_type U( Xh, "u" );
-    element_type V( Xh, "v" );
-    element_0_type u = U.template element<0>();
-    element_0_type v = V.template element<0>();
-    element_1_type p = U.template element<1>();
-    element_1_type q = V.template element<1>();
-    element_2_type lambda = U.template element<2>();
-    element_2_type nu = V.template element<2>();
+    auto U = Xh->element();
+    auto V = Xh->element();
+    auto u = U.template element<0>();
+    auto v = V.template element<0>();
+    auto p = U.template element<1>();
+    auto q = V.template element<1>();
+
+    auto lambda = U.template element<2>();
+    auto nu = V.template element<2>();
     //# endmarker4 #
 
     Log() << "Data Summary:\n";
@@ -254,7 +251,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << " bccoeff = " << penalbc << "\n";
 
 
-    vector_ptrtype F( M_backend->newVector( Xh ) );
+    auto F = M_backend->newVector( Xh );
 
     //# marker5 #
     auto deft = gradt(u);
@@ -291,15 +288,15 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
      * Construction of the left hand side
      */
     //# marker7 #
-    sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
+    auto D =  M_backend->newMatrix( Xh, Xh );
 
     form2( Xh, Xh, D, _init=true )=integrate( elements(mesh), mu*trace(deft*trans(def)) );
     form2( Xh, Xh, D )+=integrate( elements(mesh), - div(v)*idt(p) + divt(u)*id(q) );
     form2( Xh, Xh, D )+=integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
-    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh),
-                                   -trans(SigmaNt)*id(v)
-                                   -trans(SigmaN)*idt(u)
-                                   +penalbc*trans(idt(u))*id(v)/hFace() );
+    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaNt)*id(v) );
+    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaN)*idt(u) );
+    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*trans(idt(u))*id(v)/hFace() );
+
     //# endmarker7 #
     Log() << "[stokes] matrix local assembly done\n";
     D->close();
@@ -312,7 +309,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
         F->printMatlab( "F.m" );
     }
 
-    this->solve( D, U, F, false );
+    M_backend->solve( _matrix=D, _solution=U, _rhs=F );
 
     Log() << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
@@ -355,17 +352,6 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
 
-template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
-void
-Stokes<Dim, BasisU, BasisP, Entity>::solve( sparse_matrix_ptrtype const& D,
-                                   element_type& u,
-                                   vector_ptrtype const& F,
-                                   bool is_sym )
-{
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    M_backend->solve( D, D, U, F, false );
-    u = *U;
-} // Stokes::solve
 
 template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
@@ -402,11 +388,11 @@ main( int argc, char** argv )
     // P1/P0 : locking
     //typedef Feel::Stokes<nDim, Lagrange<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex> stokes_type;
     // P1/P1 : spurious modes
-    typedef Feel::Stokes<nDim, Lagrange<1, Vectorial>,Lagrange<1, Scalar>, Simplex> stokes_type;
+    //typedef Feel::Stokes<nDim, Lagrange<1, Vectorial>,Lagrange<1, Scalar>, Simplex> stokes_type;
 
     // SOME GOOD ELEMENTS
     // P2/P1
-    //typedef Feel::Stokes<nDim, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex> stokes_type;
+    typedef Feel::Stokes<nDim, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex> stokes_type;
     // CR0/P0
     //typedef Feel::Stokes<nDim, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex> stokes_type;
 
