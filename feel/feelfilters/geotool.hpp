@@ -31,7 +31,6 @@
 #ifndef __geotool_H
 #define __geotool_H 1
 
-
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -52,10 +51,11 @@
 /*_________________________________________________*/
 
 # define GEOTOOL_SHAPE                                                  \
-    ( 13, ( ( Line          , 1, 0, 0, "line"         , 2, LINE ),      \
+    ( 14, ( ( Line          , 1, 0, 0, "line"         , 2, LINE ),      \
             ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE ),  \
             ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE ), \
             ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
+            ( Pentagon      , 2, 1, 0, "pentagon"      , 5, PENTAGON ), \
             ( Hexagon       , 2, 1, 0, "hexagon"      , 6, HEXAGON ),   \
             ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE    ), \
             ( PartialDisque , 2, 1, 0, "partialdisque", 3, PARTIALDISQUE), \
@@ -145,6 +145,30 @@
     /**/
 
 /*_________________________________________________*/
+
+# define GEOTOOL_MARKER_POINT_PENTAGON          \
+    ( 5, ( ( 1, 1, ( 1 ) ),                     \
+           ( 2, 1, ( 2 ) ),                     \
+           ( 3, 1, ( 3 ) ),                     \
+           ( 4, 1, ( 4 ) ),                     \
+           ( 5, 1, ( 5 ) ) )                    \
+      )                                         \
+    /**/
+# define GEOTOOL_MARKER_LINE_PENTAGON           \
+    ( 5, ( ( 1, 1, ( 1 ) ),                     \
+           ( 2, 1, ( 2 ) ),                     \
+           ( 3, 1, ( 3 ) ),                     \
+           ( 4, 1, ( 4 ) ),                     \
+           ( 5, 1, ( 5 ) ) )                    \
+      )                                         \
+    /**/
+# define GEOTOOL_MARKER_SURFACE_PENTAGON        \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
+
+/*_________________________________________________*/
+
 
 # define GEOTOOL_MARKER_POINT_HEXAGON           \
     ( 6, ( ( 1, 1, ( 1 ) ),                     \
