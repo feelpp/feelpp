@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -35,6 +35,37 @@ namespace Feel
 /**
  * \class Aitken
  * \brief Aitken relaxation method for fixed point iterations
+ *
+ *\code
+ * auto Xh = space_type::New(mesh);
+ * auto residual = Xh->element();
+ * auto u_old->element();
+ * auto u_new->element();
+ * AitkenType relaxmethod = (AitkenType)this->vm()["relaxmethod"].as<int>();
+ * Aitken<space_type> aitken( Xh, relaxmethod,init_theta, tol );
+ * //where init_theta is the initial value of relaxation parameter
+ * // if relaxmethod=0(use the AITKEN_STANDARD method)
+ * // else if relaxmethod=1(use the AITKEN_METHOD_1 method)
+ * // relaxmethod=2(use the NORELAX_METHOD method)
+ * in this last case the relaxation parameter theta remains fixed
+ * during the itérations(theta = init_theta) and the particular case (init_theta=1)
+ * corresponds to the case without relaxation
+ * // initialize aitken
+ * aitken.initialize( residual, u_new );
+ * aitken.restart();
+ * while(!aitken.isFinished())
+ *   {
+ *
+ *     u_old = u_new;
+ *     commpute u_new;
+ *     residual = u_new-u_old;
+ *     u_new = aitken.apply(residual, u_new);
+ *     aitken.printInfo();
+ *     ++aitken;
+ *
+ *   }
+ *
+ *\endcode
  *
  * \author Goncalo Pena
  * \author Christophe Prud'homme
@@ -190,6 +221,12 @@ public:
      * get theta
      */
     double theta() { return previousParameter; }
+
+    /**
+     * get number of iterations
+     */
+
+    uint nIterations() { return  M_cptIteration; }
 
     bool isFinished() { return M_hasConverged; }
 
@@ -472,6 +509,8 @@ private:
             calculateParameter(mpl::int_<AITKEN_STANDARD>());
         if (M_aitkenType==AITKEN_METHOD_1)
             calculateParameter(mpl::int_<AITKEN_METHOD_1>());
+        if (M_aitkenType==NORELAX_METHOD)
+            previousParameter = failsafeParameter;
     }
 
     //-----------------------------------------------------------------------------------------//
