@@ -1283,6 +1283,35 @@ namespace GeoTool {
         }
 
         void
+        runPentagon(data_geo_ptrtype dg)
+        {
+
+            node_type PtA = param<0>(dg);
+            node_type PtB = param<1>(dg);
+            node_type PtC = param<2>(dg);
+            node_type PtD = param<3>(dg);
+            node_type PtE = param<4>(dg);
+
+            writePoint( 1, dg , PtA(0), PtA(1) );
+            writePoint( 2, dg , PtB(0), PtB(1) );
+            writePoint( 3, dg , PtC(0), PtC(1) );
+            writePoint( 4, dg , PtD(0), PtD(1) );
+            writePoint( 5, dg , PtE(0), PtE(1) );
+
+            writeLine( 1, dg , 1 , 2);
+            writeLine( 2, dg , 2 , 3);
+            writeLine( 3, dg , 3 , 4);
+            writeLine( 4, dg , 4 , 5);
+            writeLine( 5, dg , 5 , 1);
+
+            writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4>>5);
+
+            writePlaneSurface( 1, dg, 1);
+
+        }
+
+
+        void
         runHexagon(data_geo_ptrtype dg)
         {
 
