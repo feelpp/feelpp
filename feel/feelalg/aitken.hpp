@@ -483,7 +483,7 @@ void
 Aitken<fs_type>::shiftRight()
 {
     // store convergence history
-    M_convergence.push_back( boost:make_tuple( M_cptIteration, currentResidual.l2Norm(), M_timer.elapsed() ) );
+    M_convergence.push_back( boost::make_tuple( M_cptIteration, currentResidual.l2Norm(), M_timer.elapsed() ) );
     M_timer.restart();
 
     previousResidual = currentResidual;
