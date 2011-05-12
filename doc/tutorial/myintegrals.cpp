@@ -113,7 +113,9 @@ MyIntegrals<Dim>::run()
     std::cout << "Execute MyIntegrals<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
-    if ( shape == "hypercube" )
+    if ( shape == "ellipsoid" )
+        X[1] = 2;
+    else if ( shape == "hypercube" )
         X[1] = 1;
     else // default is simplex
         X[1] = 0;
@@ -128,6 +130,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
 
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";
+    if ( X[1] == 2 ) shape = "ellipsoid";
 
     if ( !this->vm().count( "nochdir" ) )
         Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/" )
@@ -141,6 +144,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name= (boost::format( "%1%-%2%" ) % shape % Dim).str() ,
                                                       _shape=shape,
+                                                      _order=1,
                                                       _dim=Dim,
                                                       _h=X[0] ) );
     mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
