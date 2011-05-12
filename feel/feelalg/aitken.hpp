@@ -26,6 +26,11 @@
 #ifndef __AitkenExtrapolation
 #define __AitkenExtrapolation 1
 
+#include <string>
+#include <vector>
+
+#include <boost/timer.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelalg/vector.hpp>
 
@@ -87,6 +92,14 @@ public:
     typedef typename functionspace_type::template Element<typename functionspace_type::value_type,
                                                           typename VectorUblas<typename functionspace_type::value_type>::range::type > element_range_type;
 
+    /**
+     * convergence_iteration_type:
+     *  - int: iteration number
+     *  - double: residual 2-norm
+     *  - double: computing time for the iteration
+     */
+    typedef boost::tuple<int, double, double> convergence_iteration_type;
+    typedef std::vector<convergence_iteration_type> convergence_type;
 
     /**
      * Constructor
@@ -95,7 +108,7 @@ public:
             AitkenType _aitkenType = AITKEN_STANDARD,
             double _failsafeParameter = 1.0,
             double _tol=1.0e-6 )
-    :
+        :
         Xh( _Xh ),
         failsafeParameter( _failsafeParameter ),
         previousParameter( _failsafeParameter ),
@@ -108,8 +121,8 @@ public:
         M_tolerance(_tol),
         M_residualConvergence(1.),
         M_hasConverged(false)
-    {
-    }
+        {
+        }
 
     /**
      * copy constructor
@@ -128,8 +141,8 @@ public:
         M_tolerance( tc.M_tolerance ),
         M_residualConvergence( tc.M_residualConvergence ),
         M_hasConverged( tc.M_hasConverged )
-    {
-    }
+        {
+        }
 
     /**
      * destructor
@@ -146,61 +159,61 @@ public:
         (required
          (residual, */*(element_type const&)*/)
          (currentElt,*/*(element_type const& )*/)) )
-    {
-        initializeimpl(residual,currentElt);
-    }
+        {
+            initializeimpl(residual,currentElt);
+        }
 
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
     BOOST_PARAMETER_MEMBER_FUNCTION(
-                                    (element_type),
-                                    apply,
-                                    tag,
-                                    (required
-                                     (residual, * )
-                                     (currentElt,* )
-                                     ) //required
-                                    (optional
-                                     (forceRelaxation, (bool), false  )
-                                     )//optional
-                                    )
-    {
-        element_type newElt( Xh );
-        applyimpl(newElt,residual,currentElt,forceRelaxation);
-        return newElt;
-    }
+        (element_type),
+        apply,
+        tag,
+        (required
+         (residual, * )
+         (currentElt,* )
+            ) //required
+        (optional
+         (forceRelaxation, (bool), false  )
+            )//optional
+        )
+        {
+            element_type newElt( Xh );
+            applyimpl(newElt,residual,currentElt,forceRelaxation);
+            return newElt;
+        }
 
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
     template< typename eltType >
     element_type operator()(element_type const& residual, eltType const& elem,bool _forceRelax=false)
-    {
-        element_type newElt( Xh );
-        applyimpl(newElt,residual,elem,_forceRelax);
-        return newElt;
-    }
+        {
+            element_type newElt( Xh );
+            applyimpl(newElt,residual,elem,_forceRelax);
+            return newElt;
+        }
 
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
     BOOST_PARAMETER_MEMBER_FUNCTION(
-                                    (void),
-                                    apply2,
-                                    tag,
-                                    (required
-                                     (newElt, * )
-                                     (residual, * )
-                                     (currentElt,* )
-                                     ) //required
-                                     (optional
-                                      (forceRelaxation, (bool), false  )
-                                      ) //optional
-                                    )
-                                     {
-                                         applyimpl(newElt,residual,currentElt,forceRelaxation);
-                                     }
+        (void),
+        apply2,
+        tag,
+        (required
+         (newElt, * )
+         (residual, * )
+         (currentElt,* )
+            ) //required
+        (optional
+         (forceRelaxation, (bool), false  )
+            ) //optional
+        )
+        {
+            applyimpl(newElt,residual,currentElt,forceRelaxation);
+        }
 
     /**
      * shift current step to previous step. After the call, we are ready for the next step.
@@ -234,7 +247,7 @@ public:
 
     void printInfo();
 
-    private:
+private:
     /**
      * initiliaze the aitken algorithm
      */
@@ -291,6 +304,16 @@ public:
     //void relaxationStep( element_type& new_elem );
     template< typename eltType >
     void relaxationStep( eltType& new_elem );
+
+    //! \return the convergence history
+    convergence_type const& convergenceHistory() const { return M_convergence;}
+
+    /**
+     * save converegence history
+     * \param fname name of the file to save the convergence history
+     */
+    void saveConvergenceHistory( std::string const& fname ) const;
+
 private:
 
     /**
@@ -307,294 +330,329 @@ private:
     double M_tolerance;
     double M_residualConvergence;
     bool M_hasConverged;
+    convergence_type M_convergence;
 
+    mutable boost::timer M_timer;
 };
 
 
-    //-----------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::initializeimpl( element_type const& residual, element_type const& elem )
+template< typename fs_type >
+void
+Aitken<fs_type>::initializeimpl( element_type const& residual, element_type const& elem )
+{
+    previousResidual = residual;
+    previousElement = elem;
+}
+
+//-----------------------------------------------------------------------------------------//
+
+template< typename fs_type >
+void
+Aitken<fs_type>::initializeimpl( element_type const& residual, element_range_type const& elem )
+{
+    previousResidual = residual;
+    previousElement.zero();
+    previousElement.add(1.,elem);
+    /*previousElement = vf::project(previousElement.functionSpace(),
+      elements(previousElement.mesh()),
+      vf::idv(elem) );*/
+}
+
+//-----------------------------------------------------------------------------------------//
+
+template< typename fs_type >
+void
+Aitken<fs_type>::computeResidualNorm()
+{
+    auto oldEltL2Norm = previousElement.l2Norm();
+    if (oldEltL2Norm > 1e-8)
+        M_residualConvergence = currentResidual.l2Norm()/oldEltL2Norm;
+    else
+        M_residualConvergence = currentResidual.l2Norm();
+
+    if (M_residualConvergence <  M_tolerance ) M_hasConverged=true;
+
+}
+
+//-----------------------------------------------------------------------------------------//
+
+template< typename fs_type >
+void
+Aitken<fs_type>::setElement( element_type const& residual, element_type const& elem )
+{
+    currentResidual = residual;
+    currentElement = elem;
+}
+
+//-----------------------------------------------------------------------------------------//
+
+template< typename fs_type >
+void
+Aitken<fs_type>::setElement( element_type const& residual, element_range_type const& elem )
+{
+    currentResidual = residual;
+    currentElement.zero();
+    currentElement.add(1.,elem);
+    /*currentElement = vf::project(currentElement.functionSpace(),
+      elements(currentElement.mesh()),
+      vf::idv(elem) );*/
+}
+
+//-----------------------------------------------------------------------------------------//
+
+template< typename fs_type >
+void
+Aitken<fs_type>::applyimpl(element_type & new_elem,element_type const& residual, element_type const& elem,bool _forceRelax)
+{
+
+    setElement(residual,elem);
+
+    if (M_cptIteration>=2)
     {
-        previousResidual = residual;
-        previousElement = elem;
-    }
-
-    //-----------------------------------------------------------------------------------------//
-
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::initializeimpl( element_type const& residual, element_range_type const& elem )
-    {
-        previousResidual = residual;
-        previousElement.zero();
-        previousElement.add(1.,elem);
-        /*previousElement = vf::project(previousElement.functionSpace(),
-                                      elements(previousElement.mesh()),
-                                      vf::idv(elem) );*/
-    }
-
-    //-----------------------------------------------------------------------------------------//
-
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::computeResidualNorm()
-    {
-        auto oldEltL2Norm = previousElement.l2Norm();
-        if (oldEltL2Norm > 1e-8)
-            M_residualConvergence = currentResidual.l2Norm()/oldEltL2Norm;
-        else
-            M_residualConvergence = currentResidual.l2Norm();
-
-        if (M_residualConvergence <  M_tolerance ) M_hasConverged=true;
-
-    }
-
-    //-----------------------------------------------------------------------------------------//
-
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::setElement( element_type const& residual, element_type const& elem )
-    {
-        currentResidual = residual;
-        currentElement = elem;
-    }
-
-    //-----------------------------------------------------------------------------------------//
-
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::setElement( element_type const& residual, element_range_type const& elem )
-    {
-        currentResidual = residual;
-        currentElement.zero();
-        currentElement.add(1.,elem);
-        /*currentElement = vf::project(currentElement.functionSpace(),
-                                     elements(currentElement.mesh()),
-                                     vf::idv(elem) );*/
-    }
-
-    //-----------------------------------------------------------------------------------------//
-
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::applyimpl(element_type & new_elem,element_type const& residual, element_type const& elem,bool _forceRelax)
-    {
-
-        setElement(residual,elem);
-
-        if (M_cptIteration>=2)
-            {
-                computeResidualNorm();
-
-                if (!M_hasConverged || _forceRelax)
-                    {
-                        calculateParameter();
-                    }
-            }
+        computeResidualNorm();
 
         if (!M_hasConverged || _forceRelax)
-            relaxationStep(new_elem);
-
+        {
+            calculateParameter();
+        }
     }
 
-    //-----------------------------------------------------------------------------------------//
+    if (!M_hasConverged || _forceRelax)
+        relaxationStep(new_elem);
 
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::applyimpl(element_range_type new_elem,element_type const& residual, element_range_type const& elem,bool _forceRelax)
+}
+
+//-----------------------------------------------------------------------------------------//
+
+template< typename fs_type >
+void
+Aitken<fs_type>::applyimpl(element_range_type new_elem,element_type const& residual, element_range_type const& elem,bool _forceRelax)
+{
+
+    setElement(residual,elem);
+
+    if (M_cptIteration>=2)
     {
-
-        setElement(residual,elem);
-
-        if (M_cptIteration>=2)
-            {
-                computeResidualNorm();
-
-                if (!M_hasConverged  || _forceRelax)
-                    {
-                        calculateParameter();
-                    }
-            }
+        computeResidualNorm();
 
         if (!M_hasConverged  || _forceRelax)
-            relaxationStep(new_elem);
-
+        {
+            calculateParameter();
+        }
     }
 
-    //-----------------------------------------------------------------------------------------//
+    if (!M_hasConverged  || _forceRelax)
+        relaxationStep(new_elem);
+
+}
+
+//-----------------------------------------------------------------------------------------//
 #if 0
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::relaxationStep( element_type& new_elem )
-    {
-        new_elem = currentResidual;
-        //new_elem.scale( -previousParameter );
-        new_elem.scale( -(1-previousParameter) );
+template< typename fs_type >
+void
+Aitken<fs_type>::relaxationStep( element_type& new_elem )
+{
+    new_elem = currentResidual;
+    //new_elem.scale( -previousParameter );
+    new_elem.scale( -(1-previousParameter) );
 
-        new_elem += currentElement;
-    }
+    new_elem += currentElement;
+}
 #else
-    template< typename fs_type >
-    template< typename eltType >
-    void
-    Aitken<fs_type>::relaxationStep( eltType& new_elem )
-    {
-        new_elem = currentResidual;
-        //new_elem.scale( -previousParameter );
-        new_elem.scale( -(1-previousParameter) );
+template< typename fs_type >
+template< typename eltType >
+void
+Aitken<fs_type>::relaxationStep( eltType& new_elem )
+{
+    new_elem = currentResidual;
+    //new_elem.scale( -previousParameter );
+    new_elem.scale( -(1-previousParameter) );
 
-        //new_elem += currentElement;
-        new_elem.add(1.,currentElement);
-    }
+    //new_elem += currentElement;
+    new_elem.add(1.,currentElement);
+}
 
 #endif
 
-    //-----------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::shiftRight()
+template< typename fs_type >
+void
+Aitken<fs_type>::shiftRight()
+{
+    // store convergence history
+    M_convergence.push_back( boost:make_tuple( M_cptIteration, currentResidual.l2Norm(), M_timer.elapsed() ) );
+    M_timer.restart();
+
+    previousResidual = currentResidual;
+    previousElement = currentElement;
+
+
+    ++M_cptIteration;
+}
+
+//-----------------------------------------------------------------------------------------//
+
+template< typename fs_type >
+typename Aitken<fs_type>::self_type &
+Aitken<fs_type>::operator++()
+{
+    shiftRight();
+
+    return *this;
+}
+
+//-----------------------------------------------------------------------------------------//
+
+template< typename fs_type >
+void
+Aitken<fs_type>::restart()
+{
+    //previousParameter = failsafeParameter;
+
+    M_cptIteration=1;
+    M_hasConverged=false;
+    M_convergence.clear();
+    M_timer.restart();
+}
+
+//-----------------------------------------------------------------------------------------//
+
+template< typename fs_type >
+void
+Aitken<fs_type>::printInfo()
+{
+    std::cout << "[Aitken] iteration : "<< M_cptIteration
+              <<" theta=" << previousParameter
+              <<" residualNorm : " << M_residualConvergence
+              << "\n";
+}
+
+template< typename fs_type >
+void
+Aitken<fs_type>::saveConvergenceHistory( std::string const& fname ) const
+{
+    std::ofstream ofs( fname.c_str() );
+    if ( ofs )
     {
-        previousResidual = currentResidual;
-        previousElement = currentElement;
-
-        ++M_cptIteration;
+        ofs.setf( std::ios::scientific );
+        BOOST_FOREACH( auto it, M_convergence )
+        {
+            ofs << std::setw( 6 )
+                << it.template get<0>() // iteration
+                << " "
+                << std::setw( 20 ) << std::setprecision(16)
+                << it.template get<1>() // residual norm
+                << " "
+                << std::setw( 6 ) << std::setprecision(2)
+                << it.template get<2>() // time
+                << "\n";
+        }
     }
-
-    //-----------------------------------------------------------------------------------------//
-
-    template< typename fs_type >
-    typename Aitken<fs_type>::self_type &
-    Aitken<fs_type>::operator++()
+    else
     {
-        shiftRight();
-
-        return *this;
+        std::cerr << "[Aitken] convergence history filename " << fname << " could not be opened"
+                  << std::endl;
     }
+}
+//-----------------------------------------------------------------------------------------//
 
-    //-----------------------------------------------------------------------------------------//
+template< typename fs_type >
+void
+Aitken<fs_type>::calculateParameter()
+{
+    if (M_aitkenType==AITKEN_STANDARD)
+        calculateParameter(mpl::int_<AITKEN_STANDARD>());
+    if (M_aitkenType==AITKEN_METHOD_1)
+        calculateParameter(mpl::int_<AITKEN_METHOD_1>());
+    if (M_aitkenType==NORELAX_METHOD)
+        previousParameter = failsafeParameter;
+}
 
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::restart()
-    {
-        //previousParameter = failsafeParameter;
+//-----------------------------------------------------------------------------------------//
 
-        M_cptIteration=1;
-        M_hasConverged=false;
+template< typename fs_type >
+void
+Aitken<fs_type>::calculateParameter(mpl::int_<AITKEN_STANDARD> /**/)
+{
 
-    }
+    element_type aux( Xh, "aux");
 
-    //-----------------------------------------------------------------------------------------//
+    aux = currentResidual;
+    aux -= previousResidual;
 
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::printInfo()
-    {
-        std::cout << "[Aitken] iteration : "<< M_cptIteration
-                  <<" theta=" << previousParameter
-                  <<" residualNorm : " << M_residualConvergence
-                  << "\n";
-    }
+    double scalar = inner_product( aux, aux );
 
-    //-----------------------------------------------------------------------------------------//
+    aux.scale( 1.0/scalar );
 
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::calculateParameter()
-    {
-        if (M_aitkenType==AITKEN_STANDARD)
-            calculateParameter(mpl::int_<AITKEN_STANDARD>());
-        if (M_aitkenType==AITKEN_METHOD_1)
-            calculateParameter(mpl::int_<AITKEN_METHOD_1>());
-        if (M_aitkenType==NORELAX_METHOD)
-            previousParameter = failsafeParameter;
-    }
+    element_type aux2( Xh, "aux2");
 
-    //-----------------------------------------------------------------------------------------//
+    aux2 = currentElement;
+    aux2 -= previousElement;
 
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::calculateParameter(mpl::int_<AITKEN_STANDARD> /**/)
-    {
+    scalar = inner_product( aux2, aux );
 
-        element_type aux( Xh, "aux");
+    if ( scalar > 1 )
+        scalar = previousParameter;
 
-        aux = currentResidual;
-        aux -= previousResidual;
+    if ( scalar < 0 )
+        scalar = previousParameter;
 
-        double scalar = inner_product( aux, aux );
+    previousParameter = 1-scalar;
+}
 
-        aux.scale( 1.0/scalar );
+//-----------------------------------------------------------------------------------------//
 
-        element_type aux2( Xh, "aux2");
+template< typename fs_type >
+void
+Aitken<fs_type>::calculateParameter(mpl::int_<AITKEN_METHOD_1> /**/)
+{
 
-        aux2 = currentElement;
-        aux2 -= previousElement;
+    element_type aux( Xh, "aux");
 
-        scalar = inner_product( aux2, aux );
+    aux = currentResidual;
+    aux -= previousResidual;
 
-        if ( scalar > 1 )
-            scalar = previousParameter;
+    double scalar = inner_product( aux, aux );
 
-        if ( scalar < 0 )
-            scalar = previousParameter;
+    aux.scale( 1.0/scalar );
 
-        previousParameter = 1-scalar;
-    }
+    /*element_type aux2( Xh, "aux2");
 
-    //-----------------------------------------------------------------------------------------//
+      aux2 = currentElement;
+      aux2 -= previousElement;*/
 
-    template< typename fs_type >
-    void
-    Aitken<fs_type>::calculateParameter(mpl::int_<AITKEN_METHOD_1> /**/)
-    {
-
-        element_type aux( Xh, "aux");
-
-        aux = currentResidual;
-        aux -= previousResidual;
-
-        double scalar = inner_product( aux, aux );
-
-        aux.scale( 1.0/scalar );
-
-        /*element_type aux2( Xh, "aux2");
-
-        aux2 = currentElement;
-        aux2 -= previousElement;*/
-
-        scalar = inner_product( previousResidual , aux );
-        scalar = -previousParameter*scalar;
+    scalar = inner_product( previousResidual , aux );
+    scalar = -previousParameter*scalar;
 
 #if 1
-        if ( scalar > 1 )
-            scalar = previousParameter;//1;//-failsafeParameter;
+    if ( scalar > 1 )
+        scalar = previousParameter;//1;//-failsafeParameter;
 
-        if ( scalar < 0 )
-            scalar = previousParameter;//failsafeParameter;
+    if ( scalar < 0 )
+        scalar = previousParameter;//failsafeParameter;
 #endif
-        previousParameter = scalar;
+    previousParameter = scalar;
 
-    }
+}
 
 
-    //-----------------------------------------------------------------------------------------//
-    //-----------------------------------------------------------------------------------------//
-    //-----------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 
-    template <typename fs_type >
-    void
-    operator++(boost::shared_ptr<Aitken<fs_type> > & aitk)
-    {
-        aitk->shiftRight();
-    }
+template <typename fs_type >
+void
+operator++(boost::shared_ptr<Aitken<fs_type> > & aitk)
+{
+    aitk->shiftRight();
+}
 
-    //-----------------------------------------------------------------------------------------//
-    //-----------------------------------------------------------------------------------------//
-    //-----------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 
 template<typename SpaceType>
 boost::shared_ptr<Aitken<SpaceType> >
@@ -622,38 +680,38 @@ struct compute_aitken_return
 
 
 BOOST_PARAMETER_FUNCTION(
-                         (typename compute_aitken_return<Args>::type),
-                         aitken,
-                         tag,
-                         (required
-                          (space,    *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-                          )//required
-                         (optional
-                          (type, (AitkenType), AITKEN_STANDARD  )
-                          (initial_theta, *(boost::is_arithmetic<mpl::_>), 1.0  )
-                          (tolerance, *(boost::is_arithmetic<mpl::_>), 1.0e-6  )
-                          )//optional
-                         )
-    {
-        return *aitkenNew(space,type,initial_theta,tolerance);
-    }
+    (typename compute_aitken_return<Args>::type),
+    aitken,
+    tag,
+    (required
+     (space,    *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
+        )//required
+    (optional
+     (type, (AitkenType), AITKEN_STANDARD  )
+     (initial_theta, *(boost::is_arithmetic<mpl::_>), 1.0  )
+     (tolerance, *(boost::is_arithmetic<mpl::_>), 1.0e-6  )
+        )//optional
+    )
+{
+    return *aitkenNew(space,type,initial_theta,tolerance);
+}
 
 BOOST_PARAMETER_FUNCTION(
-                         (typename compute_aitken_return<Args>::ptrtype),
-                         aitkenPtr,
-                         tag,
-                         (required
-                          (space,    *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-                          )//required
-                         (optional
-                          (type, (AitkenType), AITKEN_STANDARD  )
-                          (initial_theta, *(boost::is_arithmetic<mpl::_>), 1.0  )
-                          (tolerance, *(boost::is_arithmetic<mpl::_>), 1.0e-6  )
-                          )//optional
-                         )
-    {
-        return aitkenNew(space,type,initial_theta,tolerance);
-    }
+    (typename compute_aitken_return<Args>::ptrtype),
+    aitkenPtr,
+    tag,
+    (required
+     (space,    *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
+        )//required
+    (optional
+     (type, (AitkenType), AITKEN_STANDARD  )
+     (initial_theta, *(boost::is_arithmetic<mpl::_>), 1.0  )
+     (tolerance, *(boost::is_arithmetic<mpl::_>), 1.0e-6  )
+        )//optional
+    )
+{
+    return aitkenNew(space,type,initial_theta,tolerance);
+}
 
 
 
