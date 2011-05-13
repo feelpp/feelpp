@@ -245,6 +245,12 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
                              this->maxIterations() );
     CHKERRABORT(M_comm,ierr);
 
+    // makes the default convergence test use || B*(b - A*(initial guess))||
+    // instead of || B*b ||. In the case of right preconditioner or if
+    // KSPSetNormType(ksp,KSP_NORM_UNPRECONDIITONED) is used there is no B in
+    // the above formula. UIRNorm is short for Use Initial Residual Norm.
+    KSPDefaultConvergedSetUIRNorm( _M_ksp );
+
 
     // Solve the linear system
     ierr = SLESSolve (_M_sles, rhs->vec(), solution->vec(), &its);
@@ -324,6 +330,12 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
                              this->dTolerance(),
                              this->maxIterations());
     CHKERRABORT(M_comm,ierr);
+
+    // makes the default convergence test use || B*(b - A*(initial guess))||
+    // instead of || B*b ||. In the case of right preconditioner or if
+    // KSPSetNormType(ksp,KSP_NORM_UNPRECONDIITONED) is used there is no B in
+    // the above formula. UIRNorm is short for Use Initial Residual Norm.
+    KSPDefaultConvergedSetUIRNorm( _M_ksp );
 
     // Solve the linear system
     if ( transpose )
