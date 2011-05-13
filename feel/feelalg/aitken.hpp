@@ -37,304 +37,304 @@
 
 namespace Feel
 {
-    /**
-     * \class Aitken
-     * \brief Aitken relaxation method for fixed point iterations
-     *
-     *\code
-     * auto Xh = space_type::New(mesh);
-     * auto residual = Xh->element();
-     * auto u_old->element();
-     * auto u_new->element();
-     * AitkenType relaxmethod = (AitkenType)this->vm()["relaxmethod"].as<int>();
-     * Aitken<space_type> aitken( Xh, relaxmethod,init_theta, tol );
-     * //where init_theta is the initial value of relaxation parameter
-     * // if relaxmethod=0(use the AITKEN_STANDARD method)
-     * // else if relaxmethod=1(use the AITKEN_METHOD_1 method)
-     * // relaxmethod=2(use the FIXED_RELAXATION_METHOD method)
-     * in this last case the relaxation parameter theta remains fixed
-     * during the itérations(theta = init_theta) and the particular case (init_theta=1)
-     * corresponds to the case without relaxation
-     * // initialize aitken
-     * aitken.initialize( residual, u_new );
-     * aitken.restart();
-     * while(!aitken.isFinished())
-     *   {
-     *
-     *     u_old = u_new;
-     *     commpute u_new;
-     *     residual = u_new-u_old;
-     *     u_new = aitken.apply(residual, u_new);
-     *     aitken.printInfo();
-     *     ++aitken;
-     *
-     *   }
-     *
-     *\endcode
-     *
-     * \author Goncalo Pena
-     * \author Christophe Prud'homme
-     * \author Vincent Chabannes
-     */
-    template< typename fs_type >
-    class Aitken
-    {
+/**
+ * \class Aitken
+ * \brief Aitken relaxation method for fixed point iterations
+ *
+ *\code
+ * auto Xh = space_type::New(mesh);
+ * auto residual = Xh->element();
+ * auto u_old->element();
+ * auto u_new->element();
+ * AitkenType relaxmethod = (AitkenType)this->vm()["relaxmethod"].as<int>();
+ * Aitken<space_type> aitken( Xh, relaxmethod,init_theta, tol );
+ * //where init_theta is the initial value of relaxation parameter
+ * // if relaxmethod=0(use the AITKEN_STANDARD method)
+ * // else if relaxmethod=1(use the AITKEN_METHOD_1 method)
+ * // relaxmethod=2(use the FIXED_RELAXATION_METHOD method)
+ * in this last case the relaxation parameter theta remains fixed
+ * during the itérations(theta = init_theta) and the particular case (init_theta=1)
+ * corresponds to the case without relaxation
+ * // initialize aitken
+ * aitken.initialize( residual, u_new );
+ * aitken.restart();
+ * while(!aitken.isFinished())
+ * {
+ *
+ *     u_old = u_new;
+ *     commpute u_new;
+ *     residual = u_new-u_old;
+ *     u_new = aitken.apply(residual, u_new);
+ *     aitken.printInfo();
+ *     ++aitken;
+ *
+ *   }
+ *
+ *\endcode
+ *
+ * \author Goncalo Pena
+ * \author Christophe Prud'homme
+ * \author Vincent Chabannes
+ */
+template< typename fs_type >
+class Aitken
+{
 
-    public:
+public:
 
-        typedef Aitken<fs_type> self_type;
+    typedef Aitken<fs_type> self_type;
 
-        typedef fs_type functionspace_type;
-        typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef fs_type functionspace_type;
+    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
 
-        typedef typename functionspace_type::element_type element_type;
+    typedef typename functionspace_type::element_type element_type;
 
-        typedef typename functionspace_type::template Element<typename functionspace_type::value_type,
+    typedef typename functionspace_type::template Element<typename functionspace_type::value_type,
                                                               typename VectorUblas<typename functionspace_type::value_type>::range::type > element_range_type;
 
-        /**
-         * convergence_iteration_type:
-         *  - int: iteration number
-         *  - double: residual 2-norm
-         *  - double: computing time for the iteration
-         */
-        typedef boost::tuple<int, double, double> convergence_iteration_type;
-        typedef std::vector<convergence_iteration_type> convergence_type;
+    /**
+     * convergence_iteration_type:
+     *  - int: iteration number
+     *  - double: residual 2-norm
+     *  - double: computing time for the iteration
+     */
+    typedef boost::tuple<int, double, double> convergence_iteration_type;
+    typedef std::vector<convergence_iteration_type> convergence_type;
 
-        /**
-         * Constructor
-         */
-        Aitken( functionspace_ptrtype _Xh,
-                AitkenType _aitkenType = AITKEN_STANDARD,
-                double _failsafeParameter = 1.0,
-                double _tol=1.0e-6 )
-            :
-            Xh( _Xh ),
-            failsafeParameter( _failsafeParameter ),
-            previousParameter( _failsafeParameter ),
-            previousResidual( Xh, "previous residual" ),
-            previousElement( Xh, "previous element" ),
-            currentResidual( Xh, "current residual" ),
-            currentElement( Xh, "current element" ),
-            M_cptIteration(1),
-            M_aitkenType(_aitkenType),
-            M_tolerance(_tol),
-            M_residualConvergence(1.),
-            M_hasConverged(false)
-        {
-        }
+    /**
+     * Constructor
+     */
+    Aitken( functionspace_ptrtype _Xh,
+            AitkenType _aitkenType = AITKEN_STANDARD,
+            double _failsafeParameter = 1.0,
+            double _tol=1.0e-6 )
+    :
+        Xh( _Xh ),
+        failsafeParameter( _failsafeParameter ),
+        previousParameter( _failsafeParameter ),
+        previousResidual( Xh, "previous residual" ),
+        previousElement( Xh, "previous element" ),
+        currentResidual( Xh, "current residual" ),
+        currentElement( Xh, "current element" ),
+        M_cptIteration(1),
+        M_aitkenType(_aitkenType),
+        M_tolerance(_tol),
+        M_residualConvergence(1.),
+        M_hasConverged(false)
+    {
+    }
 
-        /**
-         * copy constructor
-         */
-        Aitken( Aitken const& tc )
-            :
-            Xh( tc.Xh ),
-            failsafeParameter( tc.failsafeParameter ),
-            previousParameter( tc.previousParameter ),
-            previousResidual( tc.previousResidual ),
-            previousElement( tc.previousElement ),
-            currentResidual( tc.currentResidual ),
-            currentElement( tc.currentElement ),
-            M_cptIteration( tc.M_cptIteration),
-            M_aitkenType( tc.M_aitkenType ),
-            M_tolerance( tc.M_tolerance ),
-            M_residualConvergence( tc.M_residualConvergence ),
-            M_hasConverged( tc.M_hasConverged )
-        {
-        }
+    /**
+     * copy constructor
+     */
+    Aitken( Aitken const& tc )
+        :
+        Xh( tc.Xh ),
+        failsafeParameter( tc.failsafeParameter ),
+        previousParameter( tc.previousParameter ),
+        previousResidual( tc.previousResidual ),
+        previousElement( tc.previousElement ),
+        currentResidual( tc.currentResidual ),
+        currentElement( tc.currentElement ),
+        M_cptIteration( tc.M_cptIteration),
+        M_aitkenType( tc.M_aitkenType ),
+        M_tolerance( tc.M_tolerance ),
+        M_residualConvergence( tc.M_residualConvergence ),
+        M_hasConverged( tc.M_hasConverged )
+    {
+    }
 
-        /**
-         * destructor
-         */
-        ~Aitken() {}
+    /**
+     * destructor
+     */
+    ~Aitken() {}
 
-        /**
-         * initiliaze the aitken algorithm
-         */
-        BOOST_PARAMETER_MEMBER_FUNCTION(
-                                        (void),
-                                        initialize,
-                                        tag,
-                                        (required
-                                         (residual, */*(element_type const&)*/)
-                                         (currentElt,*/*(element_type const& )*/)) )
-        {
-            initializeimpl(residual,currentElt);
-        }
+    /**
+     * initiliaze the aitken algorithm
+     */
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+                                    (void),
+                                    initialize,
+                                    tag,
+                                    (required
+                                     (residual, */*(element_type const&)*/)
+                                     (currentElt,*/*(element_type const& )*/)) )
+    {
+        initializeimpl(residual,currentElt);
+    }
 
-        /**
-         * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
-         */
-        BOOST_PARAMETER_MEMBER_FUNCTION(
-                                        (element_type),
-                                        apply,
-                                        tag,
-                                        (required
-                                         (residual, * )
-                                         (currentElt,* )
-                                         ) //required
-                                        (optional
-                                         (forceRelaxation, (bool), false  )
-                                         )//optional
-                                        )
-        {
-            element_type newElt( Xh );
-            applyimpl(newElt,residual,currentElt,forceRelaxation);
-            return newElt;
-        }
+    /**
+     * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
+     */
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+                                    (element_type),
+                                    apply,
+                                    tag,
+                                    (required
+                                     (residual, * )
+                                     (currentElt,* )
+                                     ) //required
+                                    (optional
+                                     (forceRelaxation, (bool), false  )
+                                     )//optional
+                                    )
+    {
+        element_type newElt( Xh );
+        applyimpl(newElt,residual,currentElt,forceRelaxation);
+        return newElt;
+    }
 
-        /**
-         * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
-         */
-        template< typename eltType >
-        element_type operator()(element_type const& residual, eltType const& elem,bool _forceRelax=false)
-        {
-            element_type newElt( Xh );
-            applyimpl(newElt,residual,elem,_forceRelax);
-            return newElt;
-        }
+    /**
+     * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
+     */
+    template< typename eltType >
+    element_type operator()(element_type const& residual, eltType const& elem,bool _forceRelax=false)
+    {
+        element_type newElt( Xh );
+        applyimpl(newElt,residual,elem,_forceRelax);
+        return newElt;
+    }
 
-        /**
-         * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
-         */
-        BOOST_PARAMETER_MEMBER_FUNCTION(
-                                        (void),
-                                        apply2,
-                                        tag,
-                                        (required
-                                         (newElt, * )
-                                         (residual, * )
-                                         (currentElt,* )
-                                         ) //required
-                                        (optional
-                                         (forceRelaxation, (bool), false  )
-                                         ) //optional
-                                        )
-        {
-            applyimpl(newElt,residual,currentElt,forceRelaxation);
-        }
+    /**
+     * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
+     */
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+                                    (void),
+                                    apply2,
+                                    tag,
+                                    (required
+                                     (newElt, * )
+                                     (residual, * )
+                                     (currentElt,* )
+                                     ) //required
+                                    (optional
+                                     (forceRelaxation, (bool), false  )
+                                     ) //optional
+                                    )
+    {
+        applyimpl(newElt,residual,currentElt,forceRelaxation);
+    }
 
-        /**
-         * shift current step to previous step. After the call, we are ready for the next step.
-         */
-        void shiftRight();
+    /**
+     * shift current step to previous step. After the call, we are ready for the next step.
+     */
+    void shiftRight();
 
-        /**
-         * shift current step to previous step. After the call, we are ready for the next step.
-         */
-        self_type & operator++();
+    /**
+     * shift current step to previous step. After the call, we are ready for the next step.
+     */
+    self_type & operator++();
 
-        /**
-         * reset the previous parameter
-         */
-        void restart();
+    /**
+     * reset the previous parameter
+     */
+    void restart();
 
-        /**
-         * get theta
-         */
-        double theta() { return previousParameter; }
+    /**
+     * get theta
+     */
+    double theta() { return previousParameter; }
 
-        /**
-         * get number of iterations
-         */
+    /**
+     * get number of iterations
+     */
 
-        uint nIterations() { return  M_cptIteration; }
+    uint nIterations() { return  M_cptIteration; }
 
-        bool isFinished() { return M_hasConverged; }
+    bool isFinished() { return M_hasConverged; }
 
-        double residualNorm() { return M_residualConvergence; }
+    double residualNorm() { return M_residualConvergence; }
 
-        void printInfo();
+    void printInfo();
 
-        /**
-         * save converegence history
-         * \param fname name of the file to save the convergence history
-         */
-        void saveConvergenceHistory( std::string const& fname ) const;
+    /**
+     * save converegence history
+     * \param fname name of the file to save the convergence history
+     */
+    void saveConvergenceHistory( std::string const& fname ) const;
 
-    private:
-        /**
-         * initiliaze the aitken algorithm
-         */
-        void initializeimpl( element_type const& residual, element_type const& elem );
+private:
+    /**
+     * initiliaze the aitken algorithm
+     */
+    void initializeimpl( element_type const& residual, element_type const& elem );
 
-        /**
-         * initiliaze the aitken algorithm
-         */
-        void initializeimpl( element_type const& residual, element_range_type const& elem );
+    /**
+     * initiliaze the aitken algorithm
+     */
+    void initializeimpl( element_type const& residual, element_range_type const& elem );
 
-        /**
-         * compute a residual norm for convergence
-         */
-        void computeResidualNorm();
+    /**
+     * compute a residual norm for convergence
+     */
+    void computeResidualNorm();
 
-        /**
-         * Set the current element
-         */
-        void setElement( element_type const& residual, element_type const& elem );
+    /**
+     * Set the current element
+     */
+    void setElement( element_type const& residual, element_type const& elem );
 
-        /**
-         * Set the current element
-         */
-        void setElement( element_type const& residual, element_range_type const& elem );
+    /**
+     * Set the current element
+     */
+    void setElement( element_type const& residual, element_range_type const& elem );
 
-        /**
-         * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
-         */
-        void applyimpl(element_type & new_elem,element_type const& residual, element_type const& elem,bool _forceRelax=false);
+    /**
+     * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
+     */
+    void applyimpl(element_type & new_elem,element_type const& residual, element_type const& elem,bool _forceRelax=false);
 
-        /**
-         * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
-         */
-        void applyimpl(element_range_type new_elem,element_type const& residual, element_range_type const& elem,bool _forceRelax=false);
+    /**
+     * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
+     */
+    void applyimpl(element_range_type new_elem,element_type const& residual, element_range_type const& elem,bool _forceRelax=false);
 
-        /**
-         * Compute Aitken parameter
-         */
-        void calculateParameter();
+    /**
+     * Compute Aitken parameter
+     */
+    void calculateParameter();
 
-        /**
-         * Compute Aitken parameter
-         */
-        void calculateParameter(mpl::int_<AITKEN_STANDARD> /**/);
+    /**
+     * Compute Aitken parameter
+     */
+    void calculateParameter(mpl::int_<AITKEN_STANDARD> /**/);
 
-        /**
-         * Compute Aitken parameter
-         */
-        void calculateParameter(mpl::int_<AITKEN_METHOD_1> /**/);
+    /**
+     * Compute Aitken parameter
+     */
+    void calculateParameter(mpl::int_<AITKEN_METHOD_1> /**/);
 
-        /**
-         * Do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
-         */
-        //void relaxationStep( element_type& new_elem );
-        template< typename eltType >
-        void relaxationStep( eltType& new_elem );
+    /**
+     * Do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
+     */
+    //void relaxationStep( element_type& new_elem );
+    template< typename eltType >
+    void relaxationStep( eltType& new_elem );
 
-        //! \return the convergence history
-        convergence_type const& convergenceHistory() const { return M_convergence;}
+    //! \return the convergence history
+    convergence_type const& convergenceHistory() const { return M_convergence;}
 
 
-    private:
+private:
 
-        /**
-         * function space
-         */
-        functionspace_ptrtype Xh;
+    /**
+     * function space
+     */
+    functionspace_ptrtype Xh;
 
-        double failsafeParameter, previousParameter;
+    double failsafeParameter, previousParameter;
 
-        element_type previousResidual, previousElement, currentResidual, currentElement;
+    element_type previousResidual, previousElement, currentResidual, currentElement;
 
-        uint M_cptIteration;
-        AitkenType M_aitkenType;
-        double M_tolerance;
-        double M_residualConvergence;
-        bool M_hasConverged;
-        convergence_type M_convergence;
+    uint M_cptIteration;
+    AitkenType M_aitkenType;
+    double M_tolerance;
+    double M_residualConvergence;
+    bool M_hasConverged;
+    convergence_type M_convergence;
 
-        mutable boost::timer M_timer;
-    };
+    mutable boost::timer M_timer;
+};
 
 
     //-----------------------------------------------------------------------------------------//
@@ -628,7 +628,7 @@ namespace Feel
         scalar = inner_product( previousResidual , aux );
         scalar = -previousParameter*scalar;
 
-#if 1
+#if 16
         if ( scalar > 1 )
             scalar = previousParameter;//1;//-failsafeParameter;
 
