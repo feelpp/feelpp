@@ -214,7 +214,7 @@ enum AitkenType
     {
         AITKEN_STANDARD=0,
         AITKEN_METHOD_1=1,
-        NORELAX_METHOD=2
+        FIXED_RELAXATION_METHOD=2
     };
 
 } // Feel
