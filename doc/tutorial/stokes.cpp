@@ -127,7 +127,7 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    const int Dim = Convex::nDim;
+    static const int Dim = Convex::nDim;
     typedef Convex convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
