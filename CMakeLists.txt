@@ -53,7 +53,7 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 
 project (Feel++ C CXX Fortran)
 
-OPTION(FEEL_ENABLE_SVN "enable Feel++ looking up for svn information" ON)
+OPTION(FEEL_ENABLE_SVN "enable Feel++ looking up for svn information" OFF)
 SET(FEEL_SCM "svn")
 FIND_PACKAGE(Subversion)
 IF(FEEL_ENABLE_SVN AND ( Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn ) )
