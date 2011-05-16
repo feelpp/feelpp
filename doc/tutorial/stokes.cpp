@@ -127,7 +127,6 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    static const int Dim = Convex::nDim;
     typedef Convex convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
@@ -227,9 +226,9 @@ Stokes<Convex, BasisU, BasisP>::run()
      */
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1).str() ,
+                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % Convex().dimension() % 1).str() ,
                                                       _shape="hypercube",
-                                                      _dim=Dim,
+                                                      _dim=Convex().dimension(),
                                                       _h=meshSize ) );
 
 
