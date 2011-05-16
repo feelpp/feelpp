@@ -89,7 +89,7 @@ makeAbout()
                            "0.1",
                            "Stokes equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2010 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2009-2011 Université de Grenoble 1 (Joseph Fourier)");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
    return about;
@@ -99,15 +99,16 @@ makeAbout()
 
 namespace Feel
 {
+using namespace Feel::vf;
+
 /**
  * \class Stokes class
  * \brief solves the stokes equations
  *
  */
-template<int Dim,
+template<typename Convex,
          typename BasisU,
-         typename BasisP,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         typename BasisP>
 class Stokes
     :
         public Application
@@ -126,7 +127,8 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<Dim,1,Dim> convex_type;
+    const int Dim = Convex::nDim;
+    typedef Convex convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -160,6 +162,7 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
 
+    FEEL_DONT_INLINE
     Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
@@ -175,6 +178,7 @@ public:
     /**
      * run the convergence test
      */
+    FEEL_DONT_INLINE
     void run();
 
 private:
@@ -183,7 +187,10 @@ private:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( element_type& u, element_type& v );
+    template<typename ExprUExact, typename ExprPExact>
+    FEEL_DONT_INLINE
+    void exportResults( ExprUExact uexact, ExprPExact pexact,
+                        element_type& u, element_type& v );
 
 private:
 
@@ -197,9 +204,9 @@ private:
 }; // Stokes
 
 
-template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<typename Convex, typename BasisU, typename BasisP>
 void
-Stokes<Dim, BasisU, BasisP, Entity>::run()
+Stokes<Convex, BasisU, BasisP>::run()
 {
     if ( this->vm().count( "help" ) )
         {
@@ -207,7 +214,6 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
             return;
         }
 
-    using namespace Feel::vf;
 
     if ( this->vm().count( "nochdir" ) == false )
         this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%/h_%4%/" )
@@ -278,9 +284,9 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
                   2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) );
 
     // right hand side
-    form1( Xh, F, _init=true )  =
-        integrate( elements(mesh), trans(f)*id(v) )+
-        integrate( boundaryfaces(mesh), trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
+    form1( _test=Xh, _vector=F, _init=true )  = integrate( elements(mesh), trans(f)*id(v) );
+    form1( _test=Xh, _vector=F ) += integrate( boundaryfaces(mesh),
+                                 trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
 
     Log() << "[stokes] vector local assembly done\n";
 
@@ -290,7 +296,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     //# marker7 #
     auto D =  M_backend->newMatrix( Xh, Xh );
 
-    form2( Xh, Xh, D, _init=true )=integrate( elements(mesh), mu*trace(deft*trans(def)) );
+    form2( _test=Xh, _trial=Xh, _matrix=D, _init=true )=integrate( elements(mesh), mu*trace(deft*trans(def)) );
     form2( Xh, Xh, D )+=integrate( elements(mesh), - div(v)*idt(p) + divt(u)*id(q) );
     form2( Xh, Xh, D )+=integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
     form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaNt)*id(v) );
@@ -311,38 +317,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
 
-    Log() << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
-    std::cout << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
 
-    double u_errorL2 = integrate( elements(mesh), trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
-    std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
-
-
-    double p_errorL2 = integrate( elements(mesh), (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
-    std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
-
-    Log() << "[stokes] solve for D done\n";
-
-    double meas = integrate( elements(mesh), constant(1.0) ).evaluate()( 0, 0);
-    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
-    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
-
-    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/meas;
-    Log() << "[stokes] mean(p)=" << mean_p << "\n";
-    std::cout << "[stokes] mean(p)=" << mean_p << "\n";
-
-    double mean_div_u = integrate( elements(mesh), divv(u) ).evaluate()( 0, 0 );
-    Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
-    std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
-
-    double div_u_error_L2 = integrate( elements(mesh), divv(u)*divv(u) ).evaluate()( 0, 0 );
-    Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
-    std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
-
-    v = vf::project( Xh->template functionSpace<0>(), elements( Xh->mesh() ), u_exact );
-    q = vf::project( Xh->template functionSpace<1>(), elements( Xh->mesh() ), p_exact );
-
-    this->exportResults( U, V );
+    this->exportResults( u_exact, p_exact, U, V );
 
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
@@ -353,10 +329,50 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 } // Stokes::run
 
 
-template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<typename Convex, typename BasisU, typename BasisP>
+template<typename ExprUExact, typename ExprPExact>
 void
-Stokes<Dim, BasisU, BasisP, Entity>::exportResults( element_type& U, element_type& V )
+Stokes<Convex, BasisU, BasisP>::exportResults( ExprUExact u_exact, ExprPExact p_exact,
+                                               element_type& U, element_type& V )
 {
+    auto u = U.template element<0>();
+    auto p = U.template element<1>();
+    auto lambda = U.template element<2>();
+    auto v = V.template element<0>();
+    auto q = V.template element<1>();
+    auto nu = V.template element<2>();
+
+    Log() << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
+    std::cout << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
+
+    double u_errorL2 = integrate( elements(u.mesh()), trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
+    std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
+
+
+    double p_errorL2 = integrate( elements(u.mesh()), (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
+    std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
+
+    Log() << "[stokes] solve for D done\n";
+
+    double meas = integrate( elements(u.mesh()), cst(1.0) ).evaluate()( 0, 0);
+    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
+    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
+
+    double mean_p = integrate( elements(u.mesh()), idv(p) ).evaluate()( 0, 0 )/meas;
+    Log() << "[stokes] mean(p)=" << mean_p << "\n";
+    std::cout << "[stokes] mean(p)=" << mean_p << "\n";
+
+    double mean_div_u = integrate( elements(u.mesh()), divv(u) ).evaluate()( 0, 0 );
+    Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+    std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+
+    double div_u_error_L2 = integrate( elements(u.mesh()), divv(u)*divv(u) ).evaluate()( 0, 0 );
+    Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
+    std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
+
+    v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
+    q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
+
     if ( exporter->doExport() )
     {
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
@@ -382,19 +398,17 @@ main( int argc, char** argv )
     /* assertions handling */
     Feel::Assert::setLog( "stokes.assert");
 
-    const int nDim = 2;
-
     // SOME BAD ELEMENTS
     // P1/P0 : locking
-    //typedef Feel::Stokes<nDim, Lagrange<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex> stokes_type;
+    //typedef Feel::Stokes<Simplex<2>, Lagrange<1, Vectorial>,Lagrange<0, Scalar,Discontinuous> > stokes_type;
     // P1/P1 : spurious modes
-    //typedef Feel::Stokes<nDim, Lagrange<1, Vectorial>,Lagrange<1, Scalar>, Simplex> stokes_type;
+    //typedef Feel::Stokes<Simplex<2>, Lagrange<1, Vectorial>,Lagrange<1, Scalar> > stokes_type;
 
     // SOME GOOD ELEMENTS
     // P2/P1
-    typedef Feel::Stokes<nDim, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex> stokes_type;
+    typedef Feel::Stokes<Simplex<2>, Lagrange<2, Vectorial>,Lagrange<1, Scalar> > stokes_type;
     // CR0/P0
-    //typedef Feel::Stokes<nDim, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex> stokes_type;
+    //typedef Feel::Stokes<Simplex<2>, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous> > stokes_type;
 
 
     /* define and run application */
