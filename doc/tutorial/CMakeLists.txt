@@ -47,6 +47,8 @@ add_latex_document(feel-manual.tex
   USE_INDEX
   DEFAULT_PDF
   )
+SET_TARGET_PROPERTIES(pdf PROPERTIES EXCLUDE_FROM_ALL true) 
+
 
 # this target allows to create all the required figures for the tutorial
 add_custom_target(figures WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
