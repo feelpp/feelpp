@@ -5,7 +5,7 @@
    Author(s): Abdoulaye Samake <abdoulaye.samake1@ujf-grenoble.fr>
    Date: 2011-04-14
 
-   Copyright (C) 2008-2010 Universite Joseph Fourier (Grenoble I)
+   Copyright (C) 2011 Universite Joseph Fourier (Grenoble I)
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -77,7 +77,7 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description laplacianoptions("Relax_Aik options");
+    po::options_description laplacianoptions("Aitken testsuite options");
     laplacianoptions.add_options()
         ("hsize", po::value<double>()->default_value( 0.02 ), "mesh size")
         ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
@@ -103,12 +103,12 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_Aiken" ,
-                     "test_Aiken" ,
+    AboutData about( "test_aitken" ,
+                     "test_aitken" ,
                      "0.2",
-                     "nD(n=1,2,3) Relax_Aik on simplices or simplex products",
+                     "nD(n=1,2,3) Aitken relaxation",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier");
+                     "Copyright (c) 2011 Universite Joseph Fourier");
 
     about.addAuthor("Abdoulaye Samake", "developer", "abdoulaye.samake@ujf-grenoble.fr", "");
     return about;
@@ -123,7 +123,7 @@ enum DDMethod{
 };
 
 /**
- * \class Relax_Aik
+ * \class TestAitken
  *
  * Relax_Aik Solver using continuous approximation spaces
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
@@ -131,7 +131,7 @@ enum DDMethod{
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=1, 2 or 3)
  */
 template<int Dim>
-class Test_Aitken
+class TestAitken
     :
     public Simget
 {
@@ -186,7 +186,7 @@ public:
     /**
      * Constructor
      */
-    Test_Aitken( po::variables_map const& vm, AboutData const& about )
+    TestAitken( po::variables_map const& vm, AboutData const& about )
         :
         super( vm, about ),
         M_backend( backend_type::build( this->vm() ) ),
@@ -230,16 +230,16 @@ private:
     std::vector<int> interfaceFlags1;
     std::vector<int> interfaceFlags2;
 
-}; // Test_Aitken
+}; // TestAitken
 
-template<int Dim> const uint16_type Test_Aitken<Dim>::Order;
+template<int Dim> const uint16_type TestAitken<Dim>::Order;
 
 template< int Dim>
 template<typename DirichletExpr,
          typename RhsExpr,
          typename InterfaceExpr>
 void
-Test_Aitken<Dim>::localProblem(element_type& u,
+TestAitken<Dim>::localProblem(element_type& u,
                                std::vector<int> const& dirichletFlags, DirichletExpr gD,
                                RhsExpr f,
                                std::vector<int> const& interfaceFlags, InterfaceExpr w,
@@ -297,10 +297,10 @@ Test_Aitken<Dim>::localProblem(element_type& u,
 
 template<int Dim>
 void
-Test_Aitken<Dim>::run()
+TestAitken<Dim>::run()
 {
     std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute Test_Aitken<" << Dim << ">\n";
+    std::cout << "Execute TestAitken<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
     if ( shape == "hypercube" )
@@ -312,7 +312,7 @@ Test_Aitken<Dim>::run()
 }
 template<int Dim>
 void
-Test_Aitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
+TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";
@@ -537,7 +537,7 @@ Test_Aitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
         Log() << "exportResults done\n";
     }
     /** \endcode */
-} // Test_Aitken::run
+} // TestAitken::run
 
 /**
  * main function: entry point of the program
@@ -563,9 +563,9 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    app.add( new Test_Aitken<1>( app.vm(), app.about() ) );
-    app.add( new Test_Aitken<2>( app.vm(), app.about() ) );
-    // app.add( new Test_Aitken<3>( app.vm(), app.about() ) );
+    app.add( new TestAitken<1>( app.vm(), app.about() ) );
+    app.add( new TestAitken<2>( app.vm(), app.about() ) );
+    // app.add( new TestAitken<3>( app.vm(), app.about() ) );
     /** \endcode */
 
     /**
