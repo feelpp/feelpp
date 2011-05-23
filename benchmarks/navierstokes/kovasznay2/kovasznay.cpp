@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -46,7 +46,7 @@ Kovasznay::Kovasznay( int argc, char** argv, AboutData const& ad )
     super( argc, argv, ad ),
     M_meshSize( this->vm()["hsize"].as<double>() ),
     M_nu( this->vm()["nu"].as<double>() ),
-    exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
+    M_exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
     M_timers(),
     M_im(),
     M_uErrorL2( -1.0 ),
@@ -57,7 +57,7 @@ Kovasznay::Kovasznay( int argc, char** argv, AboutData const& ad )
     Debug() << "[Kovasznay] hsize       = " << M_meshSize << "\n";
     Debug() << "[Kovasznay] nu          = " << M_nu << "\n";
     Debug() << "[Kovasznay] export      = "
-            << this->vm()["export"].as<int>() << "\n";
+            << this->vm()["doexport"].as<int>() << "\n";
 
 }
 
@@ -69,8 +69,7 @@ Kovasznay::Kovasznay( int argc,
     super( argc, argv, ad, od ),
     M_meshSize( this->vm()["hsize"].as<double>() ),
     M_nu( this->vm()["nu"].as<double>() ),
-    M_exporter( new ExporterEnsight<mesh_type>( "kovasznay" ) ),
-    M_timeSet( new timeset_type( "kovasznay" ) ),
+    M_exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
     M_timers(),
     M_im(),
     M_uErrorL2( -1.0 ),
@@ -81,7 +80,7 @@ Kovasznay::Kovasznay( int argc,
     Debug() << "[Kovasznay] hsize   = " << M_meshSize << "\n";
     Debug() << "[Kovasznay] nu      = " << M_nu << "\n";
     Debug() << "[Kovasznay] export  = "
-            << this->vm()["export"].as<int>() << "\n";
+            << this->vm()["doexport"].as<int>() << "\n";
 
 }
 
@@ -90,8 +89,7 @@ Kovasznay::Kovasznay( Kovasznay const& tc )
     super( tc ),
     M_meshSize( tc.M_meshSize ),
     M_nu( tc.M_nu ),
-    M_exporter( new ExporterEnsight<mesh_type>( "kovasznay" ) ),
-    M_timeSet( new timeset_type( "kovasznay" ) ),
+    M_exporter( Exporter<mesh_type>::New( "kovasznay" ) ),
     M_timers( tc.M_timers ),
     M_im(),
     M_uErrorL2( -1.0 ),
@@ -102,7 +100,7 @@ Kovasznay::Kovasznay( Kovasznay const& tc )
     Debug() << "[Kovasznay] hsize   = " << M_meshSize << "\n";
     Debug() << "[Kovasznay] nu      = " << M_nu << "\n";
     Debug() << "[Kovasznay] export  = "
-            << this->vm()["export"].as<int>() << "\n";
+            << this->vm()["doexport"].as<int>() << "\n";
 
 }
 
@@ -110,6 +108,7 @@ Kovasznay::mesh_ptr_type
 Kovasznay::createMesh( double meshSize )
 {
     M_timers["mesh"].first.restart();
+#if 0
     mesh_ptr_type mesh( new mesh_type );
 
     GmshHypercubeDomain<Dim,1,ENTITY> td;
@@ -119,7 +118,17 @@ Kovasznay::createMesh( double meshSize )
     ImporterGmsh<mesh_type>
         import( td.generate( ENTITY<Dim,1,Dim>::name().c_str() ) );
     mesh->accept( import );
+#else
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _desc=domain( _name="square",
+                                              _shape="hypercube",
+                                              _usenames=false,
+                                              _dim=2,
+                                              _h=meshSize,
+                                              _xmin=-0.5,_xmax=1.,
+                                              _ymin=-0.5,_ymax=1.5 ) );
 
+#endif
     M_timers["mesh"].second = M_timers["mesh"].first.elapsed();
     Debug() << "[timer] createMesh(): " << M_timers["mesh"].second << "\n";
     return mesh;
@@ -164,11 +173,11 @@ Kovasznay::run()
     psLogger.log("t=0, spaces");
 
     Debug() << "[Kovasznay] velocity dofs total         "
-            << space_U->nbDof() << "\n";
+            << space_U->nDof() << "\n";
     Debug() << "[Kovasznay] pressure dofs               "
-            << space_p->nbDof() << "\n";
+            << space_p->nDof() << "\n";
     Debug() << "[Kovasznay] total    dofs               "
-            << space_U->nbDof() + space_p->nbDof() << "\n";
+            << space_U->nDof() + space_p->nDof() << "\n";
 #if 0
     element_u_type ux   ( space_u, "ux" );
     element_u_type uy   ( space_u, "uy" );
@@ -330,7 +339,7 @@ Kovasznay::run()
     Debug() << "[Kovasznay] fixpoint error     = " << fixpointErr  << "\n";
 
     this->exportResults( subiter, U, p );
-    psLogger.log( "export" );
+    psLogger.log( "doexport" );
 
     //     pl = p;
     //     oseen.decouplePstab( pl, this->vm()["stabtheta"].as<double>() );
@@ -442,7 +451,7 @@ Kovasznay::run()
 
         p = oseen.pressure();
         this->exportResults( subiter, U, p );
-        psLogger.log( "export" );
+        psLogger.log( "doexport" );
 
     } // nonlinear/subiteration loop
 
@@ -520,11 +529,11 @@ Kovasznay::exportResults( int iter,
     Debug() << "[Kovasznay] ||div u ||_L2 / ||div u_0 ||_L2 = "
             << divError/M_divError << "\n";
 
-    M_timers["export"].first.restart();
+    M_timers["doexport"].first.restart();
 
     // -- EXPORT --
-    if ( this->vm()["export"].as<int>() > 0 &&
-         iter % this->vm()["export"].as<int>() == 0 )
+    if ( this->vm()["doexport"].as<int>() > 0 &&
+         iter % this->vm()["doexport"].as<int>() == 0 )
     {
         element_U_type UErr( U );
         element_p_type pErr ( p  );
@@ -532,17 +541,17 @@ Kovasznay::exportResults( int iter,
         UErr = vf::project( U.functionSpace(), elements(*mesh), idv(U) - uxe*oneX()-uye*oneY() );
         pErr  = vf::project( p.functionSpace(),  elements(*mesh), idv(p)  - pe  - dpm );
 
-        exporter->step(iter)->setMesh( mesh );
-        exporter->step(iter)->add( "U", U );
-        exporter->step(iter)->add( "p", p );
-        exporter->step(iter)->add( "UErr", UErr );
-        exporter->step(iter)->add( "pErr", pErr );
+        M_exporter->step(iter)->setMesh( mesh );
+        M_exporter->step(iter)->add( "U", U );
+        M_exporter->step(iter)->add( "p", p );
+        M_exporter->step(iter)->add( "UErr", UErr );
+        M_exporter->step(iter)->add( "pErr", pErr );
         M_exporter->save();
     } // export
 
-    M_timers["export"].second += M_timers["export"].first.elapsed();
+    M_timers["doexport"].second += M_timers["doexport"].first.elapsed();
     Debug() << "[Kovasznay] exporting time: "
-            << M_timers["export"].first.elapsed()
+            << M_timers["doexport"].first.elapsed()
             << "\n";
 } // Kovasznay::exportResults
 
