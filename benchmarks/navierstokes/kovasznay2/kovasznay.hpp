@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -37,7 +37,7 @@
 
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feelalg/backendgmm.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/backend_adaptive_reuse_pc.hpp>
 #include <feel/feeldiscr/oseen.hpp>
 
@@ -47,9 +47,9 @@ namespace Feel
 {
 class Kovasznay
     :
-        public ApplicationSerial
+        public Application
 {
-    typedef ApplicationSerial super;
+    typedef Application super;
 public:
 
     // -- TYPEDEFS --
@@ -64,21 +64,13 @@ public:
 #define ENTITY Simplex
 
     /* mesh */
-    typedef Mesh<GeoEntity<ENTITY<Dim, 1,Dim> > > mesh_type;
+    typedef Mesh<ENTITY<Dim > > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptr_type;
 
     /* bases */
-    typedef fusion::vector<fem::Lagrange<Dim, uOrder,
-                                         Vectorial, Continuous,
-                                         double, ENTITY>,
-                           fem::Lagrange<Dim, pOrder,
-                                         Scalar, Continuous,
-                                         double, ENTITY> >
-    basis_type;
-    typedef fusion::vector<fem::Lagrange<Dim, 0,
-                                         Scalar, Discontinuous,
-                                         double, ENTITY> >
-                                         basis_i_type;
+    typedef bases<Lagrange<uOrder, Vectorial, Continuous>,
+                  Lagrange<pOrder, Scalar, Continuous> > basis_type;
+    typedef bases<Lagrange<0, Scalar, Discontinuous> > basis_i_type;
 
     /* spaces */
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -105,7 +97,8 @@ public:
     typedef Exporter<mesh_type> export_type;
 
     // linear algebra backends
-    typedef BackendAdaptiveReusePC<BackendGmm<value_type> > backend_type;
+    //typedef BackendAdaptiveReusePC<Backend<value_type> > backend_type;
+    typedef Backend<value_type > backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
     Kovasznay( int argc, char** argv, AboutData const& ad );

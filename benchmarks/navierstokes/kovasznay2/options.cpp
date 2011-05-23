@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-06-06
 
-  Copyright (C) 2007 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -47,7 +47,7 @@ makeOptions()
          "maximal number of fixed point sub-iterations")
         ("stabtheta", Feel::po::value<double>()->default_value( 1.5 ),
          "stabilization decoupling coefficient")
-        ("export", Feel::po::value<int>()->default_value( 0 ),
+        ("doexport", Feel::po::value<int>()->default_value( 0 ),
          "stride for result export (0=no export)")
         ;
 
@@ -71,19 +71,21 @@ makeOptions()
         .add( Feel::backendgmm_options( "symm", beGmmSyDefs ) );
 }
 
-inline
+
 Feel::AboutData
 makeAbout()
 {
     Feel::AboutData about( "kovasznay" ,
                            "kovasznay" ,
                            "0.1",
-                           "two fluid problem",
+                           "Kovasznay benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2006 EPFL");
+                           "Copyright (c) 2011 Université Joseph Fourier");
 
     about.addAuthor("Christoph Winkelmann", "developer",
                     "christoph.winkelmann@epfl.ch", "");
+    about.addAuthor("Christophe Prud'homme", "developer",
+                    "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
 
 }
