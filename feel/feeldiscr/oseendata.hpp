@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-11-20
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2011 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -44,15 +44,15 @@ struct OseenDefaults
     // Default constructor with default default values
     OseenDefaults()
         :
-    BC_COEFF_DIFF( 100.0 ),
-    BC_COEFF_CONV( 100.0 ),
-    STAB_COEFF_DIV( 0.0 ),
-    STAB_COEFF_P( 0.0 ),
-    EPS_COMPRESS( 0.0 ),
-    DIVDIV_COEFF( 0.0 ),
-    WEAK_DIRICHLET( true ),
-    EXPORT_MATLAB( false )
-    {}
+        BC_COEFF_DIFF( 100.0 ),
+        BC_COEFF_CONV( 100.0 ),
+        STAB_COEFF_DIV( 0.0 ),
+        STAB_COEFF_P( 0.0 ),
+        EPS_COMPRESS( 0.0 ),
+        DIVDIV_COEFF( 0.0 ),
+        WEAK_DIRICHLET( true ),
+        EXPORT_MATLAB( false )
+        {}
 
     // coefficient for diffusive terms of weak Dirichlet conditions
     double BC_COEFF_DIFF;
