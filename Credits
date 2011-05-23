@@ -1,4 +1,5 @@
 # -*- mode: org -*-
+#+TITLE: Credits
 
 Feel++ is Copyright (C) 2005-2011 by
  - Université Joseph Fourier (Grenoble, France)
@@ -10,20 +11,18 @@ Feel++ is Copyright (C) 2005-2011 by
 
 ** Main Author:
 
-Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ - Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 
 ** Current Developers:
 
  - Vincent Chabannes <vincent.chabannes@imag.fr>
  - Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
- - Stéphane Veys <stephane.veys@imag.fr>
- - Goncalo Pena <goncalo.pena@epfl.ch>
-
-** Contributors
-
  - Mourad Ismail <Mourad.Ismail@ujf-grenoble.fr>
+ - Goncalo Pena <goncalo.pena@epfl.ch>
+ - Abdoulaye Samake <samakeablo@gmail.com>
+ - Stéphane Veys <stephane.veys@imag.fr>
 
-** Past Contributors:
+** Past Developers and Contributors:
 
  - Benjamn Stamm <benjamin.stamm@epfl.ch>
  - Gilles Steiner <gilles.steiner@epfl.ch>
