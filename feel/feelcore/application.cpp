@@ -451,6 +451,7 @@ Application::doOptions( int argc, char** argv )
             ("feelinfo", "prints feel libraries information")
             ("verbose,V", "verbose mode")
             ("nochdir", "Don't change repository directory even though it is called")
+            ("config-file", po::value<std::string>(), "specify .cfg file")
             ("response-file", po::value<std::string>(), "can be specified with '@name', too")
             ;
         po::options_description debug( "Debugging options" );
@@ -472,7 +473,7 @@ Application::doOptions( int argc, char** argv )
             {
                 std::cout << "[Application] parsing " << config_name << "\n";
                 std::ifstream ifs( config_name.c_str() );
-                store(parse_config_file(ifs, _M_desc), _M_vm);
+                store(parse_config_file(ifs, _M_desc, true), _M_vm);
                 break;
             }
             else
@@ -485,7 +486,7 @@ Application::doOptions( int argc, char** argv )
                 {
                     std::cout << "[Application] parsing " << config_name << "\n";
                     std::ifstream ifs( config_name.c_str() );
-                    store(parse_config_file(ifs, _M_desc), _M_vm);
+                    store(parse_config_file(ifs, _M_desc, true), _M_vm);
                     break;
                 }
             }
@@ -570,6 +571,20 @@ Application::processGenericOptions()
         std::cout << _M_desc << "\n";
 #endif
 
+    /**
+     * parse config file if given to command line
+     */
+    if ( _M_vm.count("config-file") )
+    {
+        std::cout << "[Application] parsing " << _M_vm["config-file"].as<string>() << "\n";
+        if ( fs::exists(  _M_vm["config-file"].as<string>() ) )
+            {
+
+                std::ifstream ifs( _M_vm["config-file"].as<string>().c_str() );
+                po::store(parse_config_file(ifs, _M_desc, true), _M_vm);
+                po::notify(_M_vm);
+            }
+    }
     if ( _M_vm.count("response-file") )
         {
             using namespace std;
