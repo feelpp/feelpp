@@ -170,13 +170,15 @@ public:
      * \param maxit maximum Number of Iterations
      * \param transpose true to solve the transpose system, false otherwise
      */
-    virtual std::pair<unsigned int, real_type> solve (MatrixSparse<T> const& mat,
-                                                      Vector<T>& x,
-                                                      Vector<T> const& b,
-                                                      const double tolerance,
-                                                      const unsigned int maxit,
-                                                      bool transpose
-                                                      ) = 0;
+    virtual /*std::pair<unsigned int, real_type>*/
+    boost::tuple<bool,unsigned int, real_type>
+    solve (MatrixSparse<T> const& mat,
+           Vector<T>& x,
+           Vector<T> const& b,
+           const double tolerance,
+           const unsigned int maxit,
+           bool transpose
+           ) = 0;
 
 
 
@@ -194,14 +196,16 @@ public:
      * \param maxit maximum Number of Iterations
      * \param transpose true to solve the transpose system, false otherwise
      */
-    virtual std::pair<unsigned int, real_type> solve (MatrixSparse<T> const& mat,
-                                                      MatrixSparse<T> const& prec,
-                                                      Vector<T>& x,
-                                                      Vector<T> const& b,
-                                                      const double tolerance,
-                                                      const unsigned int maxit,
-                                                      bool transpose
-                                                      ) = 0;
+    virtual
+    /*std::pair<unsigned int, real_type>*/boost::tuple<bool,unsigned int, real_type>
+    solve (MatrixSparse<T> const& mat,
+           MatrixSparse<T> const& prec,
+           Vector<T>& x,
+           Vector<T> const& b,
+           const double tolerance,
+           const unsigned int maxit,
+           bool transpose
+           ) = 0;
 
 
 protected:

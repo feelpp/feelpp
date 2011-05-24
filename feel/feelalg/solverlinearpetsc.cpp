@@ -186,7 +186,8 @@ void SolverLinearPetsc<T>::init ()
 
 
 template <typename T>
-std::pair<unsigned int, typename SolverLinearPetsc<T>::real_type>
+//std::pair<unsigned int, typename SolverLinearPetsc<T>::real_type>
+boost::tuple<bool,unsigned int, typename SolverLinearPetsc<T>::real_type>
 SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
                              MatrixSparse<T> const&  precond_in,
                              Vector<T> & solution_in,
@@ -316,7 +317,7 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
 
 // 2.2.1 & newer style
 #else
-
+    //std::cout << "sles: " << this->precMatrixStructure() << "\n";
     // Set operators. The input matrix works as the preconditioning matrix
     ierr = KSPSetOperators(_M_ksp, matrix->mat(), precond->mat(),
                            (MatStructure) this->precMatrixStructure() );
@@ -365,9 +366,15 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     {
         Log() <<"[solverlinearpetsc] Other kind of divergence: this should not happen.\n";
     }
+
+    bool hasConverged;
+    if ( reason> 0 ) hasConverged=true;
+    else hasConverged=false;
+
 #endif
  // return the # of its. and the final residual norm.
-    return std::make_pair(its, final_resid);
+    //return std::make_pair(its, final_resid);
+    return boost::make_tuple(hasConverged, its, final_resid);
 
 
 }

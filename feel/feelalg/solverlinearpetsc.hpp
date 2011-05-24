@@ -135,7 +135,8 @@ public:
      * \param maxit maximum Number of Iterations
      * \param transpose true to solve the transpose system, false otherwise
      */
-    std::pair<unsigned int, real_type>
+    //std::pair<unsigned int, real_type>
+    boost::tuple<bool,unsigned int, real_type>
     solve (MatrixSparse<T>  const &mat,
            Vector<T> & x,
            Vector<T> const& b,
@@ -171,7 +172,8 @@ public:
      * \param maxit maximum Number of Iterations
      * \param transpose true to solve the transpose system, false otherwise
      */
-    std::pair<unsigned int, real_type>
+    //std::pair<unsigned int, real_type>
+    boost::tuple<bool,unsigned int, real_type>
     solve (MatrixSparse<T>  const& mat,
            MatrixSparse<T>  const& prec,
            Vector<T> & x,

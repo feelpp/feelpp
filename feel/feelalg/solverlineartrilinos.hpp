@@ -119,7 +119,8 @@ public:
         return M_List;
     }
 
-    std::pair<unsigned int, real_type>
+    //std::pair<unsigned int, real_type>
+    boost::tuple<bool,unsigned int, real_type>
     solve ( MatrixSparse<T>  const& matrix,
             Vector<T> & solution,
             Vector<T> const& rhs,
@@ -136,11 +137,13 @@ public:
         M_Solver.SetParameters( M_List, true );
         M_Solver.Iterate( m_its, tol);
 
-        return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
+        //return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
+#warning todo!
+        return boost::make_tuple(true, M_Solver.NumIters(), M_Solver.TrueResidual() );
     }
 
-
-    std::pair<unsigned int, real_type>
+    //std::pair<unsigned int, real_type>
+    boost::tuple<bool,unsigned int, real_type>
     solve (  MatrixSparse<T> const& matrix,
              MatrixSparse<T> const& preconditioner,
              Vector<T>& solution,
@@ -158,7 +161,10 @@ public:
         M_Solver.SetParameters( M_List, true );
         M_Solver.Iterate( m_its, tol);
 
-        return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
+        //return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
+#warning todo!
+        return boost::make_tuple(true, M_Solver.NumIters(), M_Solver.TrueResidual() );
+
     }
 
     std::pair<unsigned int, real_type>
