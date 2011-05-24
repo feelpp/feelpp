@@ -33,6 +33,14 @@
 
 namespace Feel
 {
+std::string 
+_o(std::string const& prefix, std::string const& opt )
+{
+    std::string o = prefix;
+    if ( !o.empty() )
+        o += "-";
+    return o+opt;
+}
 template <typename T>
 Backend<T>::Backend()
     :
@@ -41,38 +49,47 @@ Backend<T>::Backend()
 #else
     M_backend    (BACKEND_GMM),
 #endif
+    M_prefix(""),
     M_nlsolver(),
     M_rtolerance( 1e-13 ),
     M_dtolerance( 1e5 ),
     M_atolerance( 1e-50 ),
     M_transpose( false ),
-    M_maxit( 1000 )
+    M_maxit( 1000 ),
+    M_ksp( "gmres" ),
+    M_pc( "lu" )
 {
 }
 
 template <typename T>
 Backend<T>::Backend( Backend const& backend )
     :
-    M_backend    ( backend.M_backend ),
+    M_backend( backend.M_backend ),
+    M_prefix( backend.M_prefix ),
     M_nlsolver( backend.M_nlsolver ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
     M_rtolerance( backend.M_rtolerance ),
     M_dtolerance( backend.M_dtolerance ),
     M_atolerance( backend.M_atolerance ),
     M_transpose( backend.M_transpose ),
-    M_maxit( backend.M_maxit )
+    M_maxit( backend.M_maxit ),
+    M_ksp( backend.M_ksp ),
+    M_pc( backend.M_pc )
 {
 }
 template <typename T>
 Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     :
+    M_prefix( prefix ),
     M_nlsolver( solvernonlinear_type::build( vm ) ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
-    M_rtolerance( vm["rtol"].template as<double>() ),
-    M_dtolerance( vm["dtol"].template as<double>() ),
-    M_atolerance( vm["atol"].template as<double>() ),
+    M_rtolerance( vm[_o(prefix,"ksp-rtol")].template as<double>() ),
+    M_dtolerance( vm[_o(prefix,"ksp-dtol")].template as<double>() ),
+    M_atolerance( vm[_o(prefix,"ksp-atol")].template as<double>() ),
     M_transpose( false ),
-    M_maxit( vm["maxit"].template as<size_type>() )
+    M_maxit( vm[_o(prefix,"ksp-maxit")].template as<size_type>() ),
+    M_ksp( vm[_o(prefix,"ksp-type")].template as<std::string>() ),
+    M_pc( vm[_o(prefix,"pc-type")].template as<std::string>() )
 {
 }
 template <typename T>
@@ -191,15 +208,23 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
     start();
 
     this->setPrecMatrixStructure( SAME_PRECONDITIONER );
+    //std::cout << "backend: " << this->precMatrixStructure() << "\n";
     boost::tie( M_converged, M_iteration, M_residual ) = this->solve( A, P, x, b );
-
     stop();
     M_reuseFailed = M_reusedPC && (!M_converged);
+    /*
+    if (M_reuseFailed)
+        std::cout << "\n OK :nb iteration : "<<M_iteration<<"  le residu : "<< M_residual;
+    else
+    std::cout << "\n BAD :nb iteration : "<<M_iteration<<"  le residu : "<< M_residual;
+    */
+
     if ( M_reuseFailed )
         {
             reset();
             start();
             this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
+            std::cout << "reuse fail backend: " << this->precMatrixStructure() << "\n";
             boost::tie( M_converged, M_iteration, M_residual ) = this->solve( A, P, x, b );
             stop();
         }
@@ -302,6 +327,49 @@ Backend<T>::reset()
     //M_backend->set_maxiter( M_maxit );
 
 }
+
+template<typename T>
+SolverType
+Backend<T>::kspEnumType()
+{
+    if (this->kspType()=="cg")              return CG;
+    else if (this->kspType()=="cr")         return CR;
+    else if (this->kspType()=="cgs")        return CGS;
+    else if (this->kspType()=="bicg")       return BICG;
+    else if (this->kspType()=="tcqmr")      return TCQMR;
+    else if (this->kspType()=="tfqmr")      return TFQMR;
+    else if (this->kspType()=="lsqr")       return LSQR;
+    else if (this->kspType()=="bicgstab")   return BICGSTAB;
+    else if (this->kspType()=="minres")     return MINRES;
+    else if (this->kspType()=="gmres")      return GMRES;
+    else if (this->kspType()=="richardson") return RICHARDSON;
+    else if (this->kspType()=="chebyshev")  return CHEBYSHEV;
+    else return GMRES;
+
+} // Backend::kspEnumType
+
+template<typename T>
+PreconditionerType
+Backend<T>::pcEnumType()
+{
+
+    if (this->pcType()=="lu")                return LU_PRECOND;
+    else if (this->pcType()=="ilu")          return ILU_PRECOND;
+    else if (this->pcType()=="id")           return IDENTITY_PRECOND;
+    else if (this->pcType()=="cholesky")     return CHOLESKY_PRECOND;
+    else if (this->pcType()=="icc")          return ICC_PRECOND;
+    else if (this->pcType()=="asm")          return ASM_PRECOND;
+    else if (this->pcType()=="jacobi")       return JACOBI_PRECOND;
+    else if (this->pcType()=="block_jacobi") return BLOCK_JACOBI_PRECOND;
+    else if (this->pcType()=="sor")          return SOR_PRECOND;
+    else if (this->pcType()=="eisenstat")    return EISENSTAT_PRECOND;
+    else if (this->pcType()=="shell")        return SHELL_PRECOND;
+    else return LU_PRECOND;
+
+} // Backend::pcEnumType
+
+
+
 /*
  * Explicit instantiations
  */
@@ -310,20 +378,36 @@ template class Backend<double>;
 /**
  * \return the command lines options of the petsc backend
  */
-po::options_description backend_options()
+    po::options_description backend_options( std::string const& prefix )
 {
-    po::options_description _options( "Linear and NonLinear Solvers Backend options");
+    std::string _prefix = prefix;
+    if ( !_prefix.empty() )
+        _prefix += "-";
+    
+    po::options_description _options( "Linear and NonLinear Solvers Backend " + prefix + " options");
     _options.add_options()
         // solver options
 #if defined( HAVE_PETSC_H )
-        ("backend", Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: PETSc, trilinos, gmm")
+        ((_prefix+"backend").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: PETSc, trilinos, gmm")
 #else
-        ("backend", Feel::po::value<std::string>()->default_value( "gmm" ), "backend type: PETSc, trilinos, gmm")
+        ((_prefix+"backend").c_str(), Feel::po::value<std::string>()->default_value( "gmm" ), "backend type: PETSc, trilinos, gmm")
 #endif
-        ("rtol", Feel::po::value<double>()->default_value( 1e-13 ), "relative tolerance")
-        ("atol", Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance")
-        ("dtol", Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance")
-        ("maxit", Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations")
+        ((_prefix+"ksp-rtol").c_str(), Feel::po::value<double>()->default_value( 1e-13 ), "relative tolerance")
+        ((_prefix+"ksp-atol").c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance")
+        ((_prefix+"ksp-dtol").c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance")
+        ((_prefix+"ksp-maxit").c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations")
+        
+        ((_prefix+"ksp-type").c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres")
+
+        // preconditioner options
+        ((_prefix+"pc-type").c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of preconditioners (lu, ilut, ilutp, diag, id,...)")
+        ((_prefix+"ilu-threshold").c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "threshold value for preconditioners")
+        ((_prefix+"ilu-fillin").c_str(), Feel::po::value<int>()->default_value( 2 ), "fill-in level value for preconditioners")
+
+        // solver control options
+        ((_prefix+"gmres-restart").c_str(), Feel::po::value<int>()->default_value( 20 ), "number of iterations before solver restarts (gmres)")
+        ((_prefix+"ksp-verbose").c_str(), Feel::po::value<int>()->default_value( 0 ), "(=0,1,2) print solver iterations")
+
         ;
     return _options;
 }

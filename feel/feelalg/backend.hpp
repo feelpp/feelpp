@@ -183,6 +183,27 @@ public:
     //@{
 
     /**
+     * \return the type of linear solver
+     */
+    std::string kspType() { return M_ksp; }
+
+    /**
+     * \return the type of preconditioner
+     */
+    std::string pcType() { return M_pc; }
+
+    /**
+     * return enum pc type from options
+     **/
+    PreconditionerType pcEnumType();
+
+    /**
+     * return enum solver type from options
+     **/
+    SolverType kspEnumType();
+
+
+    /**
      * \return the type of preconditioner associated to the matrix
      */
     MatrixStructure precMatrixStructure() const { return M_prec_matrix_structure; }
@@ -244,6 +265,23 @@ public:
             M_dtolerance = dtolerance;
             M_atolerance = atolerance;
             M_maxit = maxit;
+        }
+
+    /**
+     * set solver: krylov subspace method and preconditioners
+     */
+    BOOST_PARAMETER_MEMBER_FUNCTION((void),
+                                    setSolverType,
+                                    tag,
+                                    (required
+                                     (ksp, (std::string))
+                                        )
+                                    (optional
+                                     (pc,      (std::string), "lu" )
+                                        ) )
+        {
+            M_ksp = ksp;
+            M_pc = pc;
         }
 
     /**
@@ -321,12 +359,14 @@ public:
                                      (rhs,(vector_ptrtype)))
                                     (optional
                                      (prec,(sparse_matrix_ptrtype), matrix )
-                                     (maxit,(size_type), 1000 )
-                                     (rtolerance,(double), 1e-13)
-                                     (atolerance,(double), 1e-50)
-                                     (dtolerance,(double), 1e5)
+                                     (maxit,(size_type), M_maxit/*1000*/ )
+                                     (rtolerance,(double), M_rtolerance/*1e-13*/)
+                                     (atolerance,(double), M_atolerance/*1e-50*/)
+                                     (dtolerance,(double), M_dtolerance/*1e5*/)
                                      (reuse_prec,(bool), false )
                                      (transpose,(bool), false )
+                                     (pc,(std::string),M_pc/*"lu"*/)
+                                     (ksp,(std::string),M_ksp/*"gmres"*/)
                                      )
                                     )
     {
@@ -334,6 +374,7 @@ public:
                              _rtolerance=rtolerance,
                              _atolerance=atolerance,
                              _maxit=maxit );
+        this->setSolverType( _pc=pc, _ksp=ksp );
         vector_ptrtype _sol( this->newVector( detail::datamap(solution) ) );
         // initialize
         *_sol = detail::ref(solution);
@@ -425,6 +466,8 @@ private:
 
     BackendType M_backend;
 
+    std::string M_prefix;
+
     solvernonlinear_ptrtype M_nlsolver;
 
     MatrixStructure M_prec_matrix_structure;
@@ -446,11 +489,13 @@ private:
     size_type    M_maxit;
     size_type    M_iteration;
 
+    std::string M_ksp;
+    std::string M_pc;
 };
 
 /**
  * command line options
  */
-po::options_description backend_options();
+po::options_description backend_options(std::string const & prefix = "");
 }
 #endif /* __Backend_H */

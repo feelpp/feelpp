@@ -152,7 +152,7 @@ extern "C"
     //*PC = Jac;
     //PC->printMatlab( "pc.m" );
     //Jac->printMatlab( "jac.m" );
-    *msflag = SAME_NONZERO_PATTERN;
+    //!!!*msflag = SAME_NONZERO_PATTERN;
     //*msflag = DIFFERENT_NONZERO_PATTERN;
 #if 0
     std::cout << "[__ snes_jacobian] mflag = " << *msflag << "\n";
@@ -412,12 +412,18 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     ierr = SNESSetJacobian (M_snes, jac->mat(), jac->mat(), __feel_petsc_snes_jacobian, this);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
+#if 0
+    ierr = SNESSetLagJacobian( M_snes,-2);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSetLagPreconditioner( M_snes,-1);
+    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+#endif
 #if 1
     KSP            ksp;         /* linear solver context */
     PC             pc;           /* preconditioner context */
     SNESGetKSP(M_snes,&ksp);
     KSPSetOperators(ksp, jac->mat(), jac->mat(),
-                    MatStructure(SAME_NONZERO_PATTERN));
+                    MatStructure(/*SAME_PRECONDITIONER*/SAME_NONZERO_PATTERN));
     KSPGetPC(ksp,&pc);
 
     //PCSetType(pc,PCNONE);

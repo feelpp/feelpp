@@ -85,7 +85,6 @@ public:
         std::string _prefix = prefix;
         if ( !_prefix.empty() )
             _prefix += "-";
-
     }
 
     // -- FACTORY METHODS --
@@ -162,7 +161,6 @@ public:
         return result;
     }
 
-
 private:
 
     SolverLinearPetsc<double> M_solver_petsc;
@@ -178,17 +176,20 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
                         vector_ptrtype& x,
                         vector_ptrtype const& b )
 {
+    M_solver_petsc.setPreconditionerType( this->pcEnumType() );
+    M_solver_petsc.setSolverType( this->kspEnumType() );
     M_solver_petsc.setTolerances( _rtolerance=this->rTolerance(),
                                   _atolerance=this->aTolerance(),
                                   _dtolerance=this->dTolerance(),
                                   _maxit = this->maxIterations() );
     M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
-    std::pair<size_type,value_type> res = M_solver_petsc.solve( *A, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
-    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.first << "\n";
-    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.second << "\n";
+    //std::pair<size_type,value_type> res = M_solver_petsc.solve( *A, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
+    auto res = M_solver_petsc.solve( *A, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
+    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.get<1>()/*first*/ << "\n";
+    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.get<2>()/*second*/ << "\n";
 
-    bool converged = (res.first < this->maxIterations()) && (res.second < this->rTolerance());
-    return boost::make_tuple( converged, res.first, res.second );
+    //bool converged = (res.first < this->maxIterations()) && (res.second < this->rTolerance());
+    return res;//boost::make_tuple( converged, res.first, res.second );
 } // BackendPetsc::solve
 
 
@@ -198,6 +199,8 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
                         vector_type& x,
                         vector_type const& b )
 {
+    M_solver_petsc.setPreconditionerType( this->pcEnumType() );
+    M_solver_petsc.setSolverType( this->kspEnumType() );
     M_solver_petsc.setTolerances( _rtolerance=this->rTolerance(),
                                   _atolerance=this->aTolerance(),
                                   _dtolerance=this->dTolerance(),
