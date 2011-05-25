@@ -51,20 +51,20 @@ target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
 
 
     # test each backend
-    foreach( BACKEND petsc trilinos )
+    foreach( BACKEND ${FEEL_BACKENDS} )
       add_test( feel_bench_${BENCH}-${BACKEND}-strong
         ${PYTHON_EXECUTABLE}
         ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/cG/
-        --cmdargs="--backend=${BACKEND} --export=0 ${${BACKEND}_SOLVER_OPTIONS}" )
+        --cmdargs="--backend=${BACKEND} --weak=0 --export=0 ${${BACKEND}_SOLVER_OPTIONS}" )
       add_test( feel_bench_${BENCH}-${BACKEND}-weak
         ${PYTHON_EXECUTABLE}
         ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --mode=0
         --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/cG/
-        --cmdargs="--backend=${BACKEND} --weak --export=0 ${${BACKEND}_SOLVER_OPTIONS}")
+        --cmdargs="--backend=${BACKEND} --weak=1 --export=0 ${${BACKEND}_SOLVER_OPTIONS}")
 
     endforeach() # backend
 
@@ -72,28 +72,3 @@ target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
 endforeach() # order
 endforeach() # dim
 endforeach() # continuity
-
-
-# foreach( BENCH     laplacian3dP1 laplacian3dP2 laplacian3dP3 laplacian3dP5)
-
-#     feel_add_bench( ${BENCH} )
-
-#     # test each backend
-#     foreach( BACKEND petsc trilinos )
-#       add_test( feel_bench_${BENCH}-${BACKEND}-strong
-#         ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
-#         --program=${targetname}
-#         --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/cG/
-#         --cmdargs="--backend=${BACKEND} --export=0 ${${BACKEND}_SOLVER_OPTIONS}" )
-#       add_test( feel_bench_${BENCH}-${BACKEND}-weak
-#         ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
-#         --program=${targetname}
-#         --mode=0
-#         --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/cG/
-#         --cmdargs="--backend=${BACKEND} --weak --export=0 ${${BACKEND}_SOLVER_OPTIONS}")
-
-#     endforeach()
-
-# endforeach()
-
-
