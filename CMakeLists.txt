@@ -352,11 +352,12 @@ foreach(includedir feelcore feelalg feelmesh feelpoly feelfilters feeldiscr feel
 endforeach()
 FILE(GLOB files "feel/*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
+# gmm
 FILE(GLOB files "contrib/gmm/include/*.h")
-
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
-FILE(GLOB files ${CMAKE_CURRENT_BINARY_DIR}/feelconfig.h)
-INSTALL(FILES ${files} DESTINATION include/ COMPONENT Devel)
+# feel++ config headers
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/feel/*.h")
+INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
 
 message(STATUS "libraries: ${FEEL_INSTALL_LIBS}")
 INSTALL(FILES ${FEEL_INSTALL_LIBS} DESTINATION lib/ COMPONENT Bin)
