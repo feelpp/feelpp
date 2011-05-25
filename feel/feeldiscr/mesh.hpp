@@ -434,12 +434,12 @@ public:
     struct Inverse
         :
         public mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                        mpl::identity<GeoMapInverse<nDim,nOrder,T,Simplex> >,
-                        mpl::identity<GeoMapInverse<nDim,nOrder,T,Hypercube> > >::type::type
+                        mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Simplex> >,
+                        mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Hypercube> > >::type::type
     {
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                                  mpl::identity<GeoMapInverse<nDim,nOrder,T,Simplex> >,
-                                  mpl::identity<GeoMapInverse<nDim,nOrder,T,Hypercube> > >::type::type super;
+                                  mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Simplex> >,
+                                  mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Hypercube> > >::type::type super;
         typedef typename super::gic_type gic_type;
 
         Inverse( boost::shared_ptr<self_type> const& m )
@@ -587,6 +587,7 @@ public:
          * Research the element wich contains the node p
          */
         boost::tuple<bool, size_type,node_type> searchElement(const node_type & p);
+        boost::tuple<bool, std::list<boost::tuple<size_type,node_type> > > searchElementBis(const node_type & p);
 
         /*---------------------------------------------------------------
          * Research the element wich contains the node p, forall p in the
@@ -916,7 +917,7 @@ Mesh<Shape, T>::createP1mesh() const
             // get element markers
             new_elem.setMarker(old_elem.marker().value());
             new_elem.setMarker2(old_elem.marker2().value());
-            new_elem.setMarker2(old_elem.marker3().value());
+            new_elem.setMarker3(old_elem.marker3().value());
 
             // Loop over the P1 nodes on this element.
             for (unsigned int n=0; n < element_type::numVertices; n++)
