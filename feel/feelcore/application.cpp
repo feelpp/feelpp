@@ -576,11 +576,11 @@ Application::processGenericOptions()
      */
     if ( _M_vm.count("config-file") )
     {
-        std::cout << "[Application] parsing " << _M_vm["config-file"].as<string>() << "\n";
-        if ( fs::exists(  _M_vm["config-file"].as<string>() ) )
+        std::cout << "[Application] parsing " << _M_vm["config-file"].as<std::string>() << "\n";
+        if ( fs::exists(  _M_vm["config-file"].as<std::string>() ) )
             {
 
-                std::ifstream ifs( _M_vm["config-file"].as<string>().c_str() );
+                std::ifstream ifs( _M_vm["config-file"].as<std::string>().c_str() );
                 po::store(parse_config_file(ifs, _M_desc, true), _M_vm);
                 po::notify(_M_vm);
             }
@@ -589,7 +589,7 @@ Application::processGenericOptions()
         {
             using namespace std;
             // Load the file and tokenize it
-            ifstream ifs( _M_vm["response-file"].as<string>().c_str() );
+            ifstream ifs( _M_vm["response-file"].as<std::string>().c_str() );
             if (!ifs) {
                 cout << "Could not open the response file\n";
                 return ;
