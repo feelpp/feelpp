@@ -70,7 +70,7 @@ makeOptions()
         ("beta", po::value<double>()->default_value( 1 ), "coef reaction " )
         ("gammabc", po::value<double>()->default_value( 80 ), "weak Dirichlet penalisation parameter " )
         ("penal", Feel::po::value<double>()->default_value( 10 ), "jump penalisation parameter for dG")
-        ("weak", "use weak dirichlet conditions")
+        ("weak", Feel::po::value<bool>()->default_value( true ), "use weak dirichlet conditions")
         ;
     return laplacianoptions.add( Feel::feel_options() );
 }
@@ -150,7 +150,7 @@ public:
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
 
-        M_use_weak_dirichlet( this->vm().count( "weak" ) ),
+        M_use_weak_dirichlet( this->vm()["weak"].template as<bool>() ),
         M_gammabc( this->vm()["gammabc"].template as<double>() ),
 
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
