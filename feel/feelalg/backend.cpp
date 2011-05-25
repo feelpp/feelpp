@@ -375,8 +375,6 @@ Backend<T>::pcEnumType()
  */
 template class Backend<double>;
 
-std::string  _o( std::string const& prefix, std::string const& opt  ) { return (prefix + opt); }
-
 /**
  * \return the command lines options of the petsc backend
  */
