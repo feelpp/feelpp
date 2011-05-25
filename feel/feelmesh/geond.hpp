@@ -36,7 +36,7 @@ namespace Feel
 {
 class MeshBase;
 
-template<int Dim, int Order,  template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
+    template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
 
 /// \cond detail
 namespace detail
@@ -113,8 +113,8 @@ public:
     struct GetGm {
 
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_hypercube>,
-                                  mpl::identity<GT_Lagrange<nDim, GmOrder, Hypercube, T> >,
-                                  mpl::identity<GT_Lagrange<nDim, GmOrder, Simplex, T> > >::type::type type;
+                                  mpl::identity<GT_Lagrange<nDim, GmOrder, nRealDim, Hypercube, T> >,
+                                  mpl::identity<GT_Lagrange<nDim, GmOrder, nRealDim, Simplex, T> > >::type::type type;
         typedef boost::shared_ptr<type> ptrtype;
     };
     typedef typename GetGm<nOrder>::type gm_type;
