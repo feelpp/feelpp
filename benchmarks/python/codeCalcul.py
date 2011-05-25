@@ -42,7 +42,7 @@ class CodeCalcul:
 		self.info()
 
 	def info(self):
-		#print self.exec_path+self.name+" --capabilities"
+		print self.exec_path+self.name+" --capabilities"
 		if not os.system(self.exec_path+self.name+" --capabilities")==0:
 			raise IOError, "[CodeCalcul] error : file not found"
 		self.vname, self.params, self.outputs=parse_xml_response(self.base_dir+"xml/xml_response.xml")
