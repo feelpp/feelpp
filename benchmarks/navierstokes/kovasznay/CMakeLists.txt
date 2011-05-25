@@ -60,6 +60,7 @@ int main( int argc, char** argv )
       # test each backend
       foreach( BACKEND petsc trilinos )
         add_test( ${targetname}_${BENCH}-${BACKEND}-weak
+          ${PYTHON_EXECUTABLE}
           ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
           --program=${targetname}
           --mode=0
