@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-14
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2011 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -685,6 +685,7 @@ AD_BIN_REL( NotEqual, != )
 
 //------------------------------- AD operators ------------------------------------------
 
+#if 0
 template<class E1, class E2>
 inline
 SADExpr< @STYPE@< SADExpr<E1>, SADExpr<E2> > >
@@ -757,8 +758,8 @@ SADExpr<@STYPE@<SADExpr<E>,SADCst<C> > >
   typedef @STYPE@<SADExpr<E>,SADCst<C> > expr_t;
   return SADExpr<expr_t>(expr_t (e, SADCst<C> (t)));
 }
-
- }
+#endif // 0
 }
+
 #endif
 
