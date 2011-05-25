@@ -430,7 +430,8 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
                     std::cout << "node element:  " << elt_it->point( ordering.fromGmshId(l) ).node() << "\n";
                 }
 #endif // NDEBUG
-                out << " " << __u( globaldof);
+                //out << " " << __u( globaldof);
+                out << " " <<__u.container()( globaldof);
             }
             out << "\n";
         }
@@ -475,7 +476,8 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
                         globaldof = boost::get<0>(__uVec.functionSpace()->dof()->localToGlobal(elt_it->id(),
                                                                                                gmsh_l,
                                                                                                c ));
-                        out << __uVec( globaldof);
+                        //out << __uVec( globaldof);
+                        out << __uVec.container()( globaldof);
                     }
                     else out << "0.0";
                 }
@@ -516,7 +518,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         {
             globaldof = boost::get<0>(__u.functionSpace()->dof()->localToGlobal(elt_it->id(), 0, 0 ));//l,c
 
-            out << number_markedfaces+elt_it->id()+1 << " " << __u( globaldof) << "\n";
+            out << number_markedfaces+elt_it->id()+1 << " " << /*__u( globaldof)*/__u.container()( globaldof) << "\n";
         }
         out << "$EndElementData\n";
     }
