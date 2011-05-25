@@ -38,13 +38,13 @@ namespace fs = boost::filesystem;
 namespace detail
 {
 po::options_description
-makeOptions( po::options_description const & opt )
+makeOptions()
 {
     po::options_description xml( "XML application options" );
     xml.add_options()
         ("capabilities", "generate xml file describing the capabilities");
 
-    return xml.add( opt );
+    return xml;
 }
 }
 ApplicationXML::ApplicationXML( int argc,
@@ -52,7 +52,7 @@ ApplicationXML::ApplicationXML( int argc,
                                 AboutData const& ad,
                                 po::options_description const& od )
     :
-    super( argc, argv, ad, detail::makeOptions( od ) ),
+    super( argc, argv, ad, detail::makeOptions().add( od ) ),
     M_params(),
     M_outputs(),
     M_parameter_values(),
@@ -95,6 +95,7 @@ ApplicationXML::preProcessing()
     if ( this->vm().count( "capabilities" ) )
 		{
 			Debug( 1000 ) << "Writing capabilities..." << "\n";
+            std::cerr << "Writing capabilities..." << "\n";
             fs::path rep_path;
             std::string fmtstr = (boost::format( "%1%/" ) % "xml").str();
             rep_path = rootRepository();
@@ -102,10 +103,12 @@ ApplicationXML::preProcessing()
             if ( !fs::exists( rep_path ) )
                 fs::create_directory( rep_path );
             rep_path = rep_path / "xml_response.xml";
+            std::cerr << "Writing xml..." << "\n";
 			xmlParser::writeResponse( rep_path.string(),
                                       this->about().appName(),
                                       M_params,
                                       M_outputs);
+            std::cerr << "preparing repository..." << "\n";
             std::string rep="";
             for (unsigned int i=0; i<M_params.size(); i++) {
                 Debug( 1000 ) << "rep = " << rep << "\n";
@@ -114,12 +117,13 @@ ApplicationXML::preProcessing()
                 rep+=M_parameter_values[i];
                 rep+="/";
             }
+            std::cerr << "changing to repository" << rep << "\n";
             this->changeRepository( boost::format( "%1%/%2%" )
                                     % this->about().appName()
                                     % rep
                                     );
             Debug( 1000 ) << "Capabilities written..." << "\n";
-            Debug( 1000 ) << "Capabilities written..." << "\n";
+            std::cerr << "Capabilities written..." << "\n";
 			return RUN_EXIT;
 		}
 
