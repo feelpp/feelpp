@@ -28,9 +28,9 @@ foreach( BENCH ale1 ale2 ale3 ale4 ale5 )
     feel_add_bench( ${BENCH} )
 
     # test each backend
-    foreach( BACKEND petsc trilinos )
+    foreach( BACKEND ${FEEL_BACKENDS} )
       add_test( feel_bench_${BENCH}-${BACKEND}
-        ${CMAKE_BINARY_DIR}/benchmarks/python/batch_validation.py
+        ${PYTHON_EXECUTABLE} ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --mode=0
         --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/ale/
