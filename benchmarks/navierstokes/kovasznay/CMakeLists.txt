@@ -58,10 +58,9 @@ int main( int argc, char** argv )
 
 
       # test each backend
-      foreach( BACKEND petsc trilinos )
+      foreach( BACKEND ${FEEL_BACKENDS} )
         add_test( ${targetname}_${BENCH}-${BACKEND}-weak
-          ${PYTHON_EXECUTABLE}
-          ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
+          ${PYTHON_EXECUTABLE}  ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
           --program=${targetname}
           --mode=0
           --path=${FEEL_BUILD_DIR}/benchmarks/navierstokes/kovasznay/
