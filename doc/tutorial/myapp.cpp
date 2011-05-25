@@ -29,6 +29,7 @@
 #include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
+#include <feel/feelalg/backend.hpp>
 //# endmarker1 #
 
 using namespace Feel;
@@ -52,7 +53,7 @@ makeOptions()
 
     // return the options myappoptions and the feel_options defined
     // internally by Feel
-    return myappoptions.add( feel_options() );
+    return myappoptions.add( feel_options() ).add( backend_options( "myapp" ) );
 }
 //# endmarker2 #
 
@@ -158,6 +159,8 @@ void MyApp::run()
      */
     /** \code */
     Log() << "the value of dt is " << this->vm()["dt"].as<double>() << "\n";
+    Log() << "the value of myapp-solver-type is " << this->vm()["myapp-solver-type"].as<std::string>() << "\n";
+    Log() << "the value of myapp-pc-type is " << this->vm()["myapp-pc-type"].as<std::string>() << "\n";
     /** \endcode */
 }
 //# endmarker6 #
