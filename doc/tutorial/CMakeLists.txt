@@ -47,7 +47,7 @@ add_latex_document(feel-manual.tex
   USE_INDEX
   DEFAULT_PDF
   )
-SET_TARGET_PROPERTIES(pdf PROPERTIES EXCLUDE_FROM_ALL true) 
+SET_TARGET_PROPERTIES(pdf PROPERTIES EXCLUDE_FROM_ALL true)
 
 
 # this target allows to create all the required figures for the tutorial
@@ -59,6 +59,9 @@ macro( add_docex target )
  get_target_property(target_executable feel_doc_${target} LOCATION)
  list(APPEND LIST_APPS ${target_executable})
  add_dependencies(figures feel_doc_${target})
+ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${target}.cfg)
+   configure_file( ${target}.cfg ${target}.cfg)
+ endif()
  add_custom_command(
    TARGET figures
    POST_BUILD
