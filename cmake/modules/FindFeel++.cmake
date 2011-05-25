@@ -34,8 +34,13 @@ FIND_PACKAGE(OpenMP)
 
 # on APPLE enfore the use of macports openmpi version
 if ( APPLE )
-set(MPI_COMPILER /opt/local/bin/mpic++)
-set(MPI_LIBRARY "MPI_LIBRARY-NOTFOUND" )
+  if ( EXISTS /opt/local/lib/openmpi/bin/mpic++ )
+    set(MPI_COMPILER /opt/local/lib/openmpi/bin/mpic++)
+  endif()
+
+#  set(MPI_LIBRARY "MPI_LIBRARY-NOTFOUND" )
+  MESSAGE(STATUS "Use mpi compiler ${MPI_COMPILER}")
+
 endif( APPLE )
 FIND_PACKAGE(MPI)
 IF ( MPI_FOUND )
