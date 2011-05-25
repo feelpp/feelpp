@@ -1,0 +1,85 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+# $Id$
+
+PortSystem  1.0
+PortGroup   cmake 1.0
+
+name                 feel++
+version              0.90.0
+categories           science
+platforms            macosx darwin freebsd
+maintainers          ujf-grenoble.fr:Christophe.Prudhomme
+description          Finite Element Embedded Library and Language in C++
+long_description    \
+ Feel++ (formerly known as Life) is a versatile finite element library\
+ to solve partial differential equations.\
+ \
+ Support 1D, 2D, 3D\
+ \
+ Support the following basic entities: simplices (segment, triangle,\
+ tetrahedron) and product of simplices (quadrangle, hexahedron)\
+ \
+ Support various point sets on these basic entities: equispaced\
+ points, quadrature points, interpolation points (Gauss-Lobatto,\
+ Fekete, WarpBlend?)\
+ \
+ Support continuous and discontinuous Galerkin methods\
+ \
+ Support various polynomial sets:\
+ \
+  * Lagrange(continuous,discontinuous,all dimensions,all interpolation\
+ point sets)\
+ \
+  * Dubiner(discontinuous), boundary adapted(continuous)\
+ \
+  * Legendre(discontinuous), boundary adapted(continuous)\
+ \
+ Provide mathematical concept for higher order abstraction (Function\
+ spaces and associated elements, forms and operators)\
+ \
+ Provide a language embedded in C++ for variational formulations,\
+ projection and numerical integration
+
+homepage            http://www.feelpp.org
+master_sites        http://www.feelpp.org/opus/
+distfiles           feel++-${version}.tar.gz
+
+checksums           md5     dbbeea5444b9954dd9e6df30596da353\
+                    sha1    8e27e4eb1b271202fd2167a4681c3430a01a9847\
+                    rmd160  d91328bf433a6084a9d5d209d795e527464e0331
+
+worksrcdir	feel++-${version}/build
+configure	{ system "mkdir -p ${worksrcpath} && cd ${worksrcpath} && cmake ${configure.args} ../" }
+
+configure.env  PETSC_DIR=/opt/local/lib/petsc
+configure.env-append  PETSC_ARCH=darwin
+configure.env-append  SLEPC_DIR=/opt/local/lib/petsc
+
+configure.args-append \
+    -DMPI_COMPILER=/opt/local/lib/openmpi/bin/mpic++\
+    -DPETSC_LIB_BASIC=ON
+
+
+post-build {
+# is there anythin to build not in the default target ? do it here
+}
+
+depends_lib    \
+    port:cmake\
+    port:gcc45\
+    port:gmsh \
+    port:openmpi\
+    port:boost\
+    port:petsc\
+    port:slepc\
+    port:octave\
+    port:imagemagick\
+    port:py26-scipy\
+    port:py26-numpy\
+    port:doxygen\
+    port:ghostscript\
+    port:texinfo\
+    port:texlive-latex-extra\
+    port:texlive-fonts-extra
+
