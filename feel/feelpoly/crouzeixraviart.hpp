@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -198,16 +198,17 @@ FunctionalSet<primal_space_type> _M_fset;
   @author Christophe Prud'homme
 */
 template<uint16_type N,
+         uint16_type RealDim,
          template<uint16_type Dim> class PolySetType,
          typename T = double,
          template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
 class CrouzeixRaviart
     :
-        public FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, 1, PolySetType, T, Convex>,
-                             detail::CrouzeixRaviartDual,
-                             PointSetEquiSpaced >
+    public FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, Convex>,
+                         detail::CrouzeixRaviartDual,
+                         PointSetEquiSpaced >
 {
-    typedef FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, 1, PolySetType, T, Convex>,
+    typedef FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, Convex>,
                           detail::CrouzeixRaviartDual,
                           PointSetEquiSpaced > super;
 public:
@@ -237,7 +238,7 @@ public:
     static const uint16_type nComponents = polyset_type::nComponents;
     static const bool is_product = true;
 
-    typedef CrouzeixRaviart<N, Scalar, T, Convex> component_basis_type;
+    typedef CrouzeixRaviart<N, RealDim, Scalar, T, Convex> component_basis_type;
 
     typedef typename dual_space_type::convex_type convex_type;
     typedef typename dual_space_type::pointset_type pointset_type;
@@ -337,13 +338,14 @@ class CrouzeixRaviart
 {
 public:
     template<uint16_type N,
+             uint16_type RealDim,
              typename T = double,
              typename Convex = Simplex<N> >
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<fem::CrouzeixRaviart<N,PolySetType,T,Simplex> >,
-                                  mpl::identity<fem::CrouzeixRaviart<N,PolySetType,T,Hypercube> > >::type::type result_type;
+                                  mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Simplex> >,
+                                  mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Hypercube> > >::type::type result_type;
         typedef result_type type;
     };
 
