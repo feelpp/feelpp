@@ -21,5 +21,10 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-#FILE(COPY *.py DESTINATION ${CMAKE_BINARY_DIR})
-
+configure_file(batch_validation.py batch_validation.py)
+configure_file(codeCalcul.py codeCalcul.py)
+configure_file(xmlParser.py xmlParser.py)
+configure_file(validation.py validation.py)
+configure_file(util.py util.py)
+configure_file(error.py error.py)
+configure_file(displayGraphics.py displayGraphics.py)
