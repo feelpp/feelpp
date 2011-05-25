@@ -53,11 +53,13 @@ target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
     # test each backend
     foreach( BACKEND petsc trilinos )
       add_test( feel_bench_${BENCH}-${BACKEND}-strong
+        ${PYTHON_EXECUTABLE}
         ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/cG/
         --cmdargs="--backend=${BACKEND} --export=0 ${${BACKEND}_SOLVER_OPTIONS}" )
       add_test( feel_bench_${BENCH}-${BACKEND}-weak
+        ${PYTHON_EXECUTABLE}
         ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --mode=0
