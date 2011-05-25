@@ -106,9 +106,6 @@ using namespace Feel::vf;
  * \brief solves the stokes equations
  *
  */
-template<typename Convex,
-         typename BasisU,
-         typename BasisP>
 class Stokes
     :
         public Application
@@ -127,14 +124,14 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Convex convex_type;
+    typedef Simplex<2> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
-    //# marker1 #
-    typedef BasisU basis_u_type;
-    typedef BasisP basis_p_type;
+    //# marker1 #,
+    typedef Lagrange<2, Vectorial> basis_u_type;
+    typedef Lagrange<1, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
     //# endmarker1 #
@@ -145,33 +142,16 @@ public:
     typedef boost::shared_ptr<space_type> space_ptrtype;
     //# endmarker2 #
 
-    BOOST_MPL_ASSERT( ( boost::is_same<typename space_type::bases_list, basis_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<0> >::type, basis_u_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<1> >::type, basis_p_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<2> >::type, basis_l_type> ) );
-
     /* functions */
     //# marker3 #
     typedef typename space_type::element_type element_type;
-    typedef typename element_type::template sub_element<0>::type element_0_type;
-    typedef typename element_type::template sub_element<1>::type element_1_type;
-    typedef typename element_type::template sub_element<2>::type element_2_type;
     //# endmarker3 #
 
     /* export */
     typedef Exporter<mesh_type> export_type;
 
     FEEL_DONT_INLINE
-    Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
-        :
-        super( argc, argv, ad, od ),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
-    {
-        mu = this->vm()["mu"].template as<value_type>();
-        penalbc = this->vm()["bccoeff"].template as<value_type>();
-    }
+    Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od );
 
 
     /**
@@ -203,9 +183,21 @@ private:
 }; // Stokes
 
 
-template<typename Convex, typename BasisU, typename BasisP>
 void
-Stokes<Convex, BasisU, BasisP>::run()
+Stokes::Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    :
+    super( argc, argv, ad, od ),
+    M_backend( backend_type::build( this->vm() ) ),
+    meshSize( this->vm()["hsize"].as<double>() ),
+    mu(this->vm()["mu"].as<value_type>()),
+    penalbc(this->vm()["bccoeff"].as<value_type>()),
+    exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
+{
+
+}
+
+void
+Stokes::run()
 {
     if ( this->vm().count( "help" ) )
         {
@@ -219,7 +211,7 @@ Stokes<Convex, BasisU, BasisP>::run()
                                 % this->about().appName()
                                 % convex_type::name()
                                 % BasisU::nOrder
-                                % this->vm()["hsize"].template as<double>() );
+                                % this->vm()["hsize"].as<double>() );
 
     /*
      * First we create the mesh
@@ -240,13 +232,13 @@ Stokes<Convex, BasisU, BasisP>::run()
 
     auto U = Xh->element();
     auto V = Xh->element();
-    auto u = U.template element<0>();
-    auto v = V.template element<0>();
-    auto p = U.template element<1>();
-    auto q = V.template element<1>();
+    auto u = U.element<0>();
+    auto v = V.element<0>();
+    auto p = U.element<1>();
+    auto q = V.element<1>();
 
-    auto lambda = U.template element<2>();
-    auto nu = V.template element<2>();
+    auto lambda = U.element<2>();
+    auto nu = V.element<2>();
     //# endmarker4 #
 
     Log() << "Data Summary:\n";
@@ -283,9 +275,9 @@ Stokes<Convex, BasisU, BasisP>::run()
                   2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) );
 
     // right hand side
-    form1( _test=Xh, _vector=F, _init=true )  = integrate( elements(mesh), trans(f)*id(v) );
-    form1( _test=Xh, _vector=F ) += integrate( boundaryfaces(mesh),
-                                 trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
+    auto stokes_rhs = form1( _test=Xh, _vector=F, _init=true );
+    stokes_rhs = integrate( elements(mesh), trans(f)*id(v) );
+    stokes_rhs += integrate( boundaryfaces(mesh), trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
 
     Log() << "[stokes] vector local assembly done\n";
 
@@ -295,12 +287,13 @@ Stokes<Convex, BasisU, BasisP>::run()
     //# marker7 #
     auto D =  M_backend->newMatrix( Xh, Xh );
 
-    form2( _test=Xh, _trial=Xh, _matrix=D, _init=true )=integrate( elements(mesh), mu*trace(deft*trans(def)) );
-    form2( Xh, Xh, D )+=integrate( elements(mesh), - div(v)*idt(p) + divt(u)*id(q) );
-    form2( Xh, Xh, D )+=integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
-    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaNt)*id(v) );
-    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaN)*idt(u) );
-    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*trans(idt(u))*id(v)/hFace() );
+    auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D, _init=true );
+    stokes = integrate( elements(mesh), mu*trace(deft*trans(def)) );
+    stokes +=integrate( elements(mesh), - div(v)*idt(p) + divt(u)*id(q) );
+    stokes +=integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
+    stokes +=integrate( boundaryfaces(mesh), -trans(SigmaNt)*id(v) );
+    stokes +=integrate( boundaryfaces(mesh), -trans(SigmaN)*idt(u) );
+    stokes +=integrate( boundaryfaces(mesh), +penalbc*trans(idt(u))*id(v)/hFace() );
 
     //# endmarker7 #
     Log() << "[stokes] matrix local assembly done\n";
@@ -321,25 +314,25 @@ Stokes<Convex, BasisU, BasisP>::run()
 
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    Log() << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
-    Log() << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
+    Log() << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
+    Log() << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
+    Log() << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
+    Log() << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
 
 
-template<typename Convex, typename BasisU, typename BasisP>
+
 template<typename ExprUExact, typename ExprPExact>
 void
-Stokes<Convex, BasisU, BasisP>::exportResults( ExprUExact u_exact, ExprPExact p_exact,
-                                               element_type& U, element_type& V )
+Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
+                       element_type& U, element_type& V )
 {
-    auto u = U.template element<0>();
-    auto p = U.template element<1>();
-    auto lambda = U.template element<2>();
-    auto v = V.template element<0>();
-    auto q = V.template element<1>();
-    auto nu = V.template element<2>();
+    auto u = U.element<0>();
+    auto p = U.element<1>();
+    auto lambda = U.element<2>();
+    auto v = V.element<0>();
+    auto q = V.element<1>();
+    auto nu = V.element<2>();
 
     Log() << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
@@ -375,15 +368,15 @@ Stokes<Convex, BasisU, BasisP>::exportResults( ExprUExact u_exact, ExprPExact p_
     if ( exporter->doExport() )
     {
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
-        auto v = U.functionSpace()->template functionSpace<0> ()->element();
-        v = U.template element<0>();
-        exporter->step( 0 )->add( "u", U.template element<0>() );
+        auto v = U.functionSpace()->functionSpace<0> ()->element();
+        v = U.element<0>();
+        exporter->step( 0 )->add( "u", U.element<0>() );
         exporter->step( 0 )->add( "ux", v.comp(X) );
         exporter->step( 0 )->add( "uy", v.comp(Y) );
-        exporter->step( 0 )->add( "u", U.template element<0>() );
-        exporter->step( 0 )->add( "p", U.template element<1>() );
-        exporter->step( 0 )->add( "u_exact", V.template element<0>() );
-        exporter->step( 0 )->add( "p_exact", V.template element<1>() );
+        exporter->step( 0 )->add( "u", U.element<0>() );
+        exporter->step( 0 )->add( "p", U.element<1>() );
+        exporter->step( 0 )->add( "u_exact", V.element<0>() );
+        exporter->step( 0 )->add( "p_exact", V.element<1>() );
         exporter->save();
     }
 } // Stokes::export
@@ -405,7 +398,7 @@ main( int argc, char** argv )
 
     // SOME GOOD ELEMENTS
     // P2/P1
-    typedef Feel::Stokes<Simplex<2>, Lagrange<2, Vectorial>,Lagrange<1, Scalar> > stokes_type;
+    typedef Feel::Stokes<Simplex<2>,  > stokes_type;
     // CR0/P0
     //typedef Feel::Stokes<Simplex<2>, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous> > stokes_type;
 
