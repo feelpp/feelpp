@@ -25,6 +25,7 @@ set(SRC
   info.cpp
   application.cpp
   environment.cpp
+  simget.cpp
   xmlparser.hpp
   applicationxml.cpp
   about.cpp
