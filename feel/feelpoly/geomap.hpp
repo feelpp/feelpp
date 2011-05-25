@@ -82,24 +82,37 @@ template<uint16_type O,
  */
 template<uint16_type Dim,
          uint16_type Order,
+         uint16_type RealDim,
          typename T = double,
          template<uint16_type, uint16_type, uint16_type> class Entity = Simplex,
-         template<uint16_type, template<uint16_type Dim> class PolySetType, typename ContinuityType,
+         template<uint16_type, template<uint16_type RealDim> class PolySetType, typename ContinuityType,
                   template<class, uint16_type, class> class Pts> class PP = Lagrange>
 class GeoMap
     :
-    public PP<Order,Scalar, Continuous,PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type,
-    public boost::enable_shared_from_this<GeoMap<Dim, Order, T, Entity, PP > >
+    public PP<Order,Scalar, Continuous,PointSetEquiSpaced>::template apply<Dim,RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type,
+    public boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
 //public PP<Order,Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
 {
     //typedef typename PP<Order, Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
-    typedef typename PP<Order, Scalar, Continuous, PointSetEquiSpaced>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
+    typedef typename PP<Order, Scalar, Continuous, PointSetEquiSpaced>::template apply<Dim, RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type super;
 
-    typedef mpl::vector<boost::none_t, boost::none_t, GeoMap<1, Order, T, Entity, PP>, GeoMap<2, Order, T, Entity, PP> > geomap_faces_t;
-    typedef mpl::vector<GeoMap<1, Order, T, Entity, PP>, GeoMap<2, Order, T, Entity, PP>, GeoMap<3, Order, T, Entity, PP>, boost::none_t> geomap_elements_t;
+    static const uint16_type nRealDimCheck2d = mpl::if_< mpl::less_equal<mpl::int_<2>,mpl::int_<RealDim> >,
+                                                         mpl::int_<RealDim>,
+                                                         mpl::int_<Dim> >::type::value;
+
+
+    typedef mpl::vector<boost::none_t, boost::none_t,
+                        GeoMap<1, Order, RealDim, T, Entity, PP>,
+                        GeoMap<2, Order, nRealDimCheck2d/*RealDim*/, T, Entity, PP> > geomap_faces_t;
+
+    typedef mpl::vector<GeoMap<1, Order, RealDim,T, Entity, PP>,
+                        GeoMap<2, Order, nRealDimCheck2d/*RealDim*/,T, Entity, PP>,
+                        GeoMap<3, Order, 3,T, Entity, PP>,
+                        boost::none_t> geomap_elements_t;
 public:
 
     static const uint16_type nDim = super::nDim;
+    static const uint16_type nRealDim = super::nRealDim;
     static const uint16_type nDof = super::nDof;
     static const uint16_type nNodes = super::nNodes;
     static const fem::transformation_type trans = super::trans;
@@ -110,9 +123,9 @@ public:
     typedef boost::shared_ptr<precompute_type> precompute_ptrtype;
 
     typedef typename super::convex_type convex_type;
-    typedef Reference<convex_type,nDim,Order,nDim> reference_convex_type;
+    typedef Reference<convex_type,nDim,Order,nDim/*nRealDim*/> reference_convex_type;
 
-    typedef GeoMap<Dim, Order, T, Entity, PP > self_type;
+    typedef GeoMap<Dim, Order, RealDim,T, Entity, PP > self_type;
     typedef self_type geometric_mapping_type;
     typedef boost::shared_ptr<geometric_mapping_type> geometric_mapping_ptrtype;
 
@@ -252,6 +265,8 @@ public:
        \return the dimension of the underlying element
     */
     uint16_type dim() const { return nDim; }
+
+    uint16_type realDim() const { return nRealDim; }
 
     /**
        \return true if the geometric mapping is linear, false otherwise
@@ -532,12 +547,12 @@ public:
         static const bool condition = ((PDim==NDim)||((NDim>=1)&&(PDim==NDim-1)));
         BOOST_MPL_ASSERT_MSG( condition, INVALID_DIM, (mpl::int_<NDim>, mpl::int_<PDim>, ElementType ) );
         typedef typename mpl::if_<mpl::equal_to<mpl::int_<PDim>, mpl::int_<NDim> >,
-                                  mpl::identity<GeoMap<Dim, Order, T, Entity, PP > >,
+                                  mpl::identity<GeoMap<Dim, Order, NDim, T, Entity, PP > >,
                                   typename mpl::if_<mpl::and_<mpl::greater_equal<mpl::int_<NDim>, mpl::int_<1> >,
                                                               mpl::equal_to<mpl::int_<PDim>, mpl::int_<NDim-1> > >,
                                                     //typename mpl::if_<mpl::equal_to<mpl::int_<PDim>, mpl::int_<NDim-1> >,
                                                     // mpl::identity<typename GeoMap<Dim, Order, T, Entity, PP >::template face_gm<NDim>::type>,
-                                                    mpl::identity<typename GeoMap<NDim, Order, T, Entity, PP >::face_gm_type>,
+                                                    mpl::identity<typename GeoMap<NDim, Order, NDim, T, Entity, PP >::face_gm_type>,
                                                     mpl::identity<boost::none_t> >::type>::type::type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
 
@@ -1732,7 +1747,7 @@ public:
     Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge )
         :
         _M_gm( __gm ),
-        _M_xref( __gm->dim() ),
+        _M_xref( __gm->realDim() ),
         _M_xreal( __ge.G().size1() ),
         _M_is_in( false ),
         _M_G( __ge.G() ),
@@ -2282,16 +2297,16 @@ reference_convex_type M_refconvex;
 #include <boost/preprocessor/punctuation/comma.hpp>
 #include <boost/preprocessor/facilities/identity.hpp>
 
-template<int Dim, int Order,  template<uint16_type,uint16_type,uint16_type> class Entity = Simplex, typename T = double>
+template<int Dim, int Order,int RealDim,  template<uint16_type,uint16_type,uint16_type> class Entity = Simplex, typename T = double>
 struct GT_Lagrange
 {};
 
-template<int Dim, int Order,  typename T = double>
+template<int Dim, int Order, int RealDim, typename T = double>
 struct GT_QK
 {};
 
 # /* List of dims. */
-# define FEEL_GEOMAP                                   \
+# define FEEL_GEOMAP                                    \
     BOOST_PP_TUPLE_TO_LIST(                             \
                            1,                           \
                            (                            \
@@ -2300,7 +2315,7 @@ struct GT_QK
                                                     )   \
     /**/
 # /* List of dims. */
-# define FEEL_DIMS                                     \
+# define FEEL_DIMS                                      \
     BOOST_PP_TUPLE_TO_LIST(                             \
                            3,                           \
                            (                            \
@@ -2308,8 +2323,29 @@ struct GT_QK
                                                     )   \
                                                     )   \
     /**/
+# /* List of real dims. */
+# define FEEL_REALDIMS                                  \
+    BOOST_PP_TUPLE_TO_LIST(                             \
+                           3,                           \
+                           (                            \
+                            1,2,3                       \
+                                                    )   \
+                                                    )   \
+
+# /* List of real dims. */
+
+# define FEEL_NEWDIMS                                           \
+    BOOST_PP_TUPLE_TO_LIST(                                     \
+                           6,                                   \
+                           (                                    \
+                            (1,1),(1,2),(1,3),                  \
+                            (2,2),(2,3),                        \
+                            (3,3)                                   \
+                                                                )   \
+                                                            )   \
+    /**/
 # /* List of orders. */
-# define FEEL_ORDERS                                   \
+# define FEEL_ORDERS                                    \
     BOOST_PP_TUPLE_TO_LIST(                             \
                            5,                           \
                            (                            \
@@ -2331,46 +2367,67 @@ struct GT_QK
     /**/
 #
 #
-#define FEEL_GT_FACTORY(GEOM,LDIM,LORDER,ENTITY)                       \
+# define FEEL_GT_DIM(T)  BOOST_PP_TUPLE_ELEM(2, 0, T) \
+/**/
+# define FEEL_GT_REALDIM(T)  BOOST_PP_TUPLE_ELEM(2, 1, T)   \
+/**/
+#
+#
+#define FEEL_GT_FACTORY(GEOM,LDIMS,LORDER,ENTITY)                       \
     template<typename T>                                                \
-    struct BOOST_PP_CAT(GT_, GEOM)<LDIM, LORDER, ENTITY, T>             \
+    struct BOOST_PP_CAT(GT_, GEOM)<FEEL_GT_DIM(LDIMS), LORDER, FEEL_GT_REALDIM(LDIMS), ENTITY, T> \
         :                                                               \
-        public GeoMap<LDIM, LORDER, T, ENTITY, GEOM>                    \
+        public GeoMap<FEEL_GT_DIM(LDIMS), LORDER, FEEL_GT_REALDIM(LDIMS), T, ENTITY, GEOM> \
     {                                                                   \
+        static const uint16_type nDim = FEEL_GT_DIM(LDIMS);             \
+        static const uint16_type order = LORDER;                        \
+        static const uint16_type nRealDim = FEEL_GT_REALDIM(LDIMS);     \
+        static const uint16_type nRealDimCheck2d = mpl::if_< mpl::less_equal<mpl::int_<2>,mpl::int_<nRealDim> >, \
+                                                             mpl::int_<nRealDim>, \
+                                                             mpl::int_<nDim> >::type::value; \
+                                                                        \
         typedef mpl::vector<boost::none_t,                              \
-            boost::none_t,                                              \
-            GeoMap<1, LORDER, T, ENTITY, GEOM>,                    \
-            GeoMap<2, LORDER, T, ENTITY, GEOM> > geomap_faces_t;   \
-    typedef mpl::vector<GeoMap<1, LORDER, T, ENTITY, GEOM>,        \
-            GeoMap<2, LORDER, T, ENTITY, GEOM>,                    \
-            GeoMap<3, LORDER, T, ENTITY, GEOM>,                    \
-            boost::none_t> geomap_elements_t;                           \
-    typedef typename type_traits<T>::value_type value_type;             \
-    typedef GeoMap<LDIM, LORDER, T, ENTITY, GEOM> super;           \
-    typedef BOOST_PP_CAT(GT_,GEOM)<LDIM-1, LORDER, ENTITY, T> face_geo_type; \
+                            boost::none_t,                              \
+                            GeoMap<1, LORDER, nRealDim, T, ENTITY, GEOM>, \
+                            GeoMap<2, LORDER, nRealDimCheck2d, T, ENTITY, GEOM> > geomap_faces_t; \
+        typedef mpl::vector<GeoMap<1, LORDER, nRealDim, T, ENTITY, GEOM>, \
+                            GeoMap<2, LORDER, nRealDimCheck2d, T, ENTITY, GEOM>, \
+                            GeoMap<3, LORDER, 3, T, ENTITY, GEOM>, \
+                            boost::none_t> geomap_elements_t;           \
+        typedef typename type_traits<T>::value_type value_type;         \
+        typedef GeoMap<nDim, LORDER, nRealDim, T, ENTITY, GEOM> super;  \
+        typedef BOOST_PP_CAT(GT_,GEOM)<nDim-1, LORDER, nRealDim,ENTITY, T> face_geo_type; \
                                                                         \
-    static const uint16_type nDim = LDIM;                                   \
-    static const uint16_type order = LORDER;                                \
-    static const uint16_type nDof = super::nDof;                            \
-    static const uint16_type nNodes = super::nNodes;                        \
-    typedef typename mpl::at<geomap_elements_t, mpl::int_<nDim> >::type element_gm_type; \
-    typedef typename mpl::at<geomap_faces_t, mpl::int_<nDim> >::type face_gm_type; \
-    template<int N>                                                     \
-        struct face_gm                                                  \
-    {                                                                   \
-        typedef typename mpl::at<geomap_faces_t, mpl::int_<N> >::type type; \
-    };                                                                  \
+        static const uint16_type nDof = super::nDof;                    \
+        static const uint16_type nNodes = super::nNodes;                \
+        typedef typename mpl::at<geomap_elements_t, mpl::int_<nDim> >::type element_gm_type; \
+        typedef typename mpl::at<geomap_faces_t, mpl::int_<nDim> >::type face_gm_type; \
+        template<int N>                                                 \
+            struct face_gm                                              \
+        {                                                               \
+            typedef typename mpl::at<geomap_faces_t, mpl::int_<N> >::type type; \
+        };                                                              \
                                                                         \
-    BOOST_PP_CAT(GT_,GEOM)()                                            \
-        :                                                               \
-        super( boost::shared_ptr<element_gm_type>(new element_gm_type()), boost::shared_ptr<face_gm_type>(new face_gm_type() )) \
-        {}                                                              \
+        BOOST_PP_CAT(GT_,GEOM)()                                        \
+            :                                                           \
+            super( boost::shared_ptr<element_gm_type>(new element_gm_type()), boost::shared_ptr<face_gm_type>(new face_gm_type() )) \
+            {}                                                          \
     };                                                                  \
     /**/
-BOOST_PP_LIST_FOR_EACH_PRODUCT(FEEL_GT_FACTORY_OP, 4, (FEEL_GEOMAP, FEEL_DIMS, FEEL_ORDERS, FEEL_ENTITY))
+#if 0
+#define FEEL_GT_FACTORY(GEOM,LDIM,LORDER,LREALDIM,ENTITY)               \
+    FEEL_GT_FACTORY_BIS(GEOM,LDIM,LORDER,LREALDIM,ENTITY)),             \
+                 BOOST_PP_EMPTY )                                       \
+    /**/
+#endif
+
+//BOOST_PP_LIST_FOR_EACH_PRODUCT(FEEL_GT_FACTORY_OP, 5, (FEEL_GEOMAP, FEEL_DIMS, FEEL_ORDERS, FEEL_REALDIMS, FEEL_ENTITY))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FEEL_GT_FACTORY_OP, 4, (FEEL_GEOMAP, FEEL_NEWDIMS, FEEL_ORDERS, FEEL_ENTITY))
 
 #undef FEEL_DIMS
 #undef FEEL_ORDERS
+#undef FEEL_REALDIMS
+#undef FEEL_NEWDIMS
 
 
 template<typename Elem, template<uint16_type,uint16_type,uint16_type> class Entity = Simplex, typename T = double>
@@ -2378,11 +2435,13 @@ class RealToReference
 {
 public:
     static const uint16_type nDim = Elem::nDim;
+    static const uint16_type nRealDim = Elem::nRealDim;
+
     typedef T value_type;
     typedef typename matrix_node<T>::type points_type;
-    typedef GT_Lagrange<nDim,1, Entity, value_type> gm_type;
+    typedef GT_Lagrange<nDim,1, nRealDim, Entity, value_type> gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef typename gm_type::Inverse inverge_gm_type;
+    typedef typename gm_type::Inverse inverse_gm_type;
 
     RealToReference( Elem const& elem )
         :
@@ -2400,7 +2459,7 @@ public:
 private:
 
     gm_ptrtype _M_gm;
-    inverge_gm_type _M_igm;
+    inverse_gm_type _M_igm;
 
 };
 

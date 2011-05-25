@@ -56,7 +56,7 @@ namespace ublas = boost::numeric::ublas;
 
 
 template<class Convex, uint16_type Integration_Degree, typename T> class PointSetQuadrature;
-template<int Dim, int Order,  template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
+    template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
 
 /*!
  * \class GaussLobatto
@@ -157,10 +157,11 @@ public :
                         ublas::column( this->_M_points, k ) = to_xi( eta );
                     }
             }
-        boost::shared_ptr<GT_Lagrange<2,1, Simplex, T> > gm( new GT_Lagrange<2, 1, Simplex,T> );
+
+        boost::shared_ptr<GT_Lagrange<2,1, 2 ,Simplex, T> > gm( new GT_Lagrange<2, 1, 2, Simplex,T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
-        this->constructQROnFace( Reference<Simplex<2, 1>,2,1>(), gm, face_qr );
+        this->constructQROnFace( Reference<Simplex<2, 1, 2>,2,1>(), gm, face_qr );
 
     }
 
@@ -229,10 +230,10 @@ public :
                     }
             }
 
-        boost::shared_ptr<GT_Lagrange<3, 1, Simplex, T> > gm( new GT_Lagrange<3, 1, Simplex, T> );
+        boost::shared_ptr<GT_Lagrange<3, 1, 3, Simplex, T> > gm( new GT_Lagrange<3, 1, 3, Simplex, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
-        this->constructQROnFace( Reference<Simplex<3, 1>,3,1>(), gm, face_qr );
+        this->constructQROnFace( Reference<Simplex<3, 1, 3>,3,1>(), gm, face_qr );
     }
 
     ~GaussLobatto() {}
@@ -282,10 +283,11 @@ public :
                         this->_M_points( 1, k ) = px( j );
                     }
             }
-        boost::shared_ptr<GT_Lagrange<2, 1, Hypercube, T> > gm( new GT_Lagrange<2, 1, Hypercube, T> );
+
+        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
-        this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
+        this->constructQROnFace( Reference<Hypercube<2, 1, 2>,2,1>(), gm, face_qr );
     }
 
     ~GaussLobatto() {}
@@ -334,10 +336,11 @@ public :
                             }
                     }
             }
-        boost::shared_ptr<GT_Lagrange<3, 1, Hypercube, T> > gm( new GT_Lagrange<3, 1, Hypercube, T> );
+
+        boost::shared_ptr<GT_Lagrange<3, 1, 3, Hypercube, T> > gm( new GT_Lagrange<3, 1, 3, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
-        this->constructQROnFace( Reference<Hypercube<3, 1>,3,1>(), gm, face_qr );
+        this->constructQROnFace( Reference<Hypercube<3, 1, 3>,3,1>(), gm, face_qr );
     }
 
     ~GaussLobatto() {}
@@ -377,7 +380,7 @@ public:
     static const bool is_simplex = Convex::is_simplex;
     static const bool is_hypercube = Convex::is_hypercube;
 
-    typedef Reference<Convex, Dim, Convex::nOrder, Dim, value_type> reference_convex_type;
+    typedef Reference<Convex, Dim, Convex::nOrder, Convex::nDim/*Convex::nRealDim*/, value_type> reference_convex_type;
 
     typedef ublas::vector<value_type> vector_type;
 

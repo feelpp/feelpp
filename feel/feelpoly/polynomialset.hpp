@@ -80,6 +80,7 @@ public:
     //@{
 
     static const uint16_type nDim = Poly::nDim;
+    static const uint16_type nRealDim = Poly::nRealDim;
     static const uint16_type nOrder = Poly::nOrder;
 
     //@}
@@ -94,7 +95,7 @@ public:
     static const bool is_product = Poly::is_product;
 
 
-    typedef PolySetType<nDim> polyset_type;
+    typedef PolySetType<nRealDim> polyset_type;
     static const bool is_tensor2 = polyset_type::is_tensor2;
     static const bool is_vectorial = polyset_type::is_vectorial;
     static const bool is_scalar = polyset_type::is_scalar;

@@ -79,10 +79,10 @@ public :
     static const bool is_hypercube = Convex::is_hypercube;
 
     typedef mpl::if_< mpl::bool_< is_simplex >,
-                      Simplex<Dim, Order, Dim> ,
-                      Hypercube<Dim, Order, Dim> > conv_order_type;
+                      Simplex<Dim, Order, /*nRealDim*/Dim> ,
+                      Hypercube<Dim, Order, /*nRealDim*/Dim> > conv_order_type;
 
-    typedef Reference<Convex, Dim, convexOrder, Dim, value_type> RefElem;
+    typedef Reference<Convex, Dim, convexOrder, Dim/*nRealDim*/, value_type> RefElem;
 
     static const uint32_type numPoints = conv_order_type::type::numPoints;
     static const uint32_type nbPtsPerVertex = conv_order_type::type::nbPtsPerVertex;

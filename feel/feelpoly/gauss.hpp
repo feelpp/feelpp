@@ -104,7 +104,7 @@ public :
         details::gaussjacobi<Npoints, T, ublas::vector<T>, ublas::vector<T> >(this->_M_w, px);
         ublas::row( this->_M_points, 0) = px;
 
-        boost::shared_ptr<GT_Lagrange<1,1,Simplex,T> > gm( new GT_Lagrange<1, 1, Simplex, T> );
+        boost::shared_ptr<GT_Lagrange<1,1,1,Simplex,T> > gm( new GT_Lagrange<1, 1, 1, Simplex, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Simplex<1, 1>, 1, 1>(), gm, face_qr );
@@ -180,7 +180,7 @@ public :
                         ublas::column( this->_M_points, k ) = to_xi( eta );
                     }
             }
-        boost::shared_ptr<GT_Lagrange<2,1,Simplex,T> > gm( new GT_Lagrange<2, 1, Simplex, T> );
+        boost::shared_ptr<GT_Lagrange<2,1,2,Simplex,T> > gm( new GT_Lagrange<2, 1, 2, Simplex, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Simplex<2, 1>, 2, 1>(), gm, face_qr );
@@ -252,7 +252,7 @@ public :
                     }
             }
 
-        boost::shared_ptr<GT_Lagrange<3, 1, Simplex, T> > gm( new GT_Lagrange<3, 1, Simplex, T> );
+        boost::shared_ptr<GT_Lagrange<3, 1, 3, Simplex, T> > gm( new GT_Lagrange<3, 1, 3, Simplex, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Simplex<3, 1>,3,1>(), gm, face_qr );
@@ -310,7 +310,7 @@ public :
 #endif
 
 
-        boost::shared_ptr<GT_Lagrange<1,1,Hypercube,T> > gm( new GT_Lagrange<1, 1, Hypercube, T> );
+        boost::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<1, 1>, 1, 1>(), gm, face_qr );
@@ -369,7 +369,7 @@ public :
         Debug() << "[gauss<SP<2,1>] p = " << this->_M_points << "\n";
         Debug() << "[gauss<SP<2,1>] w = " << this->_M_w << "\n";
 #endif
-        boost::shared_ptr<GT_Lagrange<2, 1, Hypercube, T> > gm( new GT_Lagrange<2, 1, Hypercube, T> );
+        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
@@ -422,7 +422,7 @@ public :
                             }
                     }
             }
-        boost::shared_ptr<GT_Lagrange<3, 1, Hypercube, T> > gm( new GT_Lagrange<3, 1, Hypercube, T> );
+        boost::shared_ptr<GT_Lagrange<3, 1, 3, Hypercube, T> > gm( new GT_Lagrange<3, 1, 3, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<3, 1>,3,1>(), gm, face_qr );

@@ -48,6 +48,7 @@ namespace Feel
 {
 
 template<uint16_type Dim,
+         uint16_type RealDim,
          uint16_type Degree,
          typename NormalizationPolicy,
          typename T,
@@ -56,6 +57,7 @@ class Dubiner;
 
 
 template<uint16_type Dim,
+         uint16_type RealDim,
          uint16_type Degree,
          typename NormalizationPolicy = Normalized<true>,
          typename T = double,
@@ -63,6 +65,7 @@ template<uint16_type Dim,
 struct DubinerTraits
 {
     static const uint16_type nDim = Dim;
+    static const uint16_type nRealDim = RealDim;
     static const uint16_type nOrder = Degree;
     static const uint16_type nConvexOrderDiff = nDim+nOrder+1;
     static const bool is_normalized = NormalizationPolicy::is_normalized;
@@ -79,22 +82,22 @@ struct DubinerTraits
     template<uint16_type order, typename V = value_type>
     struct Convex
     {
-        typedef Simplex<nDim, order, nDim> type;
-        typedef Reference<Simplex<nDim, order, nDim>, nDim, order, nDim, V>  reference_type;
+        typedef Simplex<nDim, order, nDim/*nRealDim*/> type;
+        typedef Reference<Simplex<nDim, order, nDim/*nRealDim*/>, nDim, order, nDim/*nRealDim*/, V>  reference_type;
     };
 
     template<typename NewT>
     struct ChangeValueType
     {
-        typedef Dubiner<Dim, Degree, NormalizationPolicy, NewT, StoragePolicy> type;
-        typedef DubinerTraits<Dim, Degree, NormalizationPolicy, NewT, StoragePolicy> traits_type;
+        typedef Dubiner<Dim, RealDim, Degree, NormalizationPolicy, NewT, StoragePolicy> type;
+        typedef DubinerTraits<Dim, RealDim, Degree, NormalizationPolicy, NewT, StoragePolicy> traits_type;
     };
 
     template<uint16_type NewOrder>
     struct ChangeOrder
     {
-        typedef Dubiner<Dim, NewOrder, NormalizationPolicy, T, StoragePolicy> type;
-        typedef DubinerTraits<Dim, NewOrder, NormalizationPolicy, T, StoragePolicy> traits_type;
+        typedef Dubiner<Dim, RealDim, NewOrder, NormalizationPolicy, T, StoragePolicy> type;
+        typedef DubinerTraits<Dim, RealDim, NewOrder, NormalizationPolicy, T, StoragePolicy> traits_type;
     };
 
     /*
@@ -156,6 +159,7 @@ struct DubinerTag
  *
  */
 template<uint16_type Dim,
+         uint16_type RealDim,
          uint16_type Degree,
          typename NormalizationPolicy = Normalized<true>,
          typename T = double,
@@ -165,9 +169,10 @@ class Dubiner
 {
 
 public:
-    typedef DubinerTraits<Dim, Degree, NormalizationPolicy, T, StoragePolicy> traits_type;
+    typedef DubinerTraits<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy> traits_type;
 
     static const uint16_type nDim = traits_type::nDim;
+    static const uint16_type nRealDim = traits_type::nRealDim;
     static const uint16_type nOrder = traits_type::nOrder;
     static const uint16_type nConvexOrderDiff = traits_type::nConvexOrderDiff;
     static const bool is_normalized = traits_type::is_normalized;
@@ -179,7 +184,7 @@ public:
      */
     //@{
 
-    typedef Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy> self_type;
+    typedef Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy> self_type;
 
     /*
      * for now can be used only as a basis but we might be interested
@@ -453,27 +458,30 @@ private:
 }; // class Dubiner
 
 template<uint16_type Dim,
+         uint16_type RealDim,
          uint16_type Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
-bool Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::_S_has_derivation = false;
+bool Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::_S_has_derivation = false;
 
 template<uint16_type Dim,
+         uint16_type RealDim,
          uint16_type Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
-std::vector<typename Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type>
-Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::_S_D;
+std::vector<typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type>
+Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::_S_D;
 
 template<uint16_type Dim,
+         uint16_type RealDim,
          uint16_type Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
 void
-Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::initDerivation()
+Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::initDerivation()
 {
 #if 0
     typedef typename traits_type::convex_type convex_type;
@@ -515,12 +523,13 @@ Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::initDerivation()
 }
 
 template<uint16_type Dim,
+         uint16_type RealDim,
          uint16_type Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
-typename Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
-Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<2> )
+typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
+Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<2> )
 {
     matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
 
@@ -567,13 +576,14 @@ Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_ty
 }
 
 template<uint16_type Dim,
+         uint16_type RealDim,
          uint16_type Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
 template<typename AE>
-typename Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
-Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> )
+typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
+Dubiner<Dim, RealDim,  Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> )
 {
     vector_matrix_type res( 2 );
     res[0].resize( convex_type::polyDims( nOrder ), __pts().size2() );
@@ -652,12 +662,13 @@ Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::ma
 }
 
 template<uint16_type Dim,
+         uint16_type RealDim,
          uint16_type Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
-typename Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
-Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<3> )
+typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
+Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<3> )
 {
     matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
 
@@ -726,13 +737,14 @@ Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_ty
 }
 
 template<uint16_type Dim,
+         uint16_type RealDim,
          uint16_type Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
 template<typename AE>
-typename Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
-Dubiner<Dim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> )
+typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
+Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> )
 {
     vector_matrix_type res( 3 );
     res[0].resize( convex_type::polyDims( nOrder ), __pts().size2() );

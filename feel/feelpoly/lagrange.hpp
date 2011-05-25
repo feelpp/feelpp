@@ -236,6 +236,7 @@ private:
  * @see
  */
 template<uint16_type N,
+         uint16_type RealDim,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
          typename ContinuityType = Continuous,
@@ -244,9 +245,9 @@ template<uint16_type N,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced >
 class Lagrange
     :
-    public FiniteElement<detail::OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::LagrangeDual, Pts >
+    public FiniteElement<detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, Convex>, details::LagrangeDual, Pts >
 {
-    typedef FiniteElement<detail::OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::LagrangeDual, Pts > super;
+    typedef FiniteElement<detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, Convex>, details::LagrangeDual, Pts > super;
 public:
 
     BOOST_STATIC_ASSERT( ( boost::is_same<PolySetType<N>, Scalar<N> >::value ||
@@ -258,6 +259,7 @@ public:
     //@{
 
     static const uint16_type nDim = N;
+    static const uint16_type nRealDim = RealDim;
     static const uint16_type nOrder =  O;
     static const bool isTransformationEquivalent = true;
     static const bool isContinuous = ContinuityType::is_continuous;
@@ -276,11 +278,11 @@ public:
     static const uint16_type nComponents = polyset_type::nComponents;
     static const bool is_product = true;
 
-    typedef Lagrange<N, O, Scalar, continuity_type, T, Convex,  Pts> component_basis_type;
+    typedef Lagrange<N, RealDim, O, Scalar, continuity_type, T, Convex,  Pts> component_basis_type;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
                               mpl::identity<boost::none_t>,
-                              mpl::identity< Lagrange<N-1, O, Scalar, continuity_type, T, Convex,  Pts> > >::type::type face_basis_type;
+                              mpl::identity< Lagrange<N-1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts> > >::type::type face_basis_type;
 
     typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
 
@@ -368,22 +370,24 @@ private:
     face_basis_ptrtype _M_bdylag;
 };
 template<uint16_type N,
+         uint16_type RealDim,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
          typename ContinuityType,
          typename T,
          template<uint16_type, uint16_type, uint16_type> class Convex,
          template<class, uint16_type, class> class Pts >
-const uint16_type Lagrange<N,O,PolySetType,ContinuityType,T,Convex,Pts>::nDim;
+const uint16_type Lagrange<N,RealDim,O,PolySetType,ContinuityType,T,Convex,Pts>::nDim;
 
 template<uint16_type N,
+         uint16_type RealDim,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
          typename ContinuityType,
          typename T,
          template<uint16_type, uint16_type, uint16_type> class Convex,
          template<class, uint16_type, class> class Pts >
-const uint16_type Lagrange<N,O,PolySetType,ContinuityType,T,Convex,Pts>::nOrder;
+const uint16_type Lagrange<N,RealDim,O,PolySetType,ContinuityType,T,Convex,Pts>::nOrder;
 
 } // namespace fem
 template<uint16_type Order,
@@ -394,13 +398,14 @@ class Lagrange
 {
 public:
     template<uint16_type N,
+             uint16_type RealDim,
              typename T = double,
              typename Convex = Simplex<N> >
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<fem::Lagrange<N,Order,PolySetType,ContinuityType,T,Simplex, Pts> >,
-                                  mpl::identity<fem::Lagrange<N,Order,PolySetType,ContinuityType,T,Hypercube, Pts> > >::type::type result_type;
+                                  mpl::identity<fem::Lagrange<N,RealDim,Order,PolySetType,ContinuityType,T,Simplex, Pts> >,
+                                  mpl::identity<fem::Lagrange<N,RealDim,Order,PolySetType,ContinuityType,T,Hypercube, Pts> > >::type::type result_type;
         typedef result_type type;
     };
 

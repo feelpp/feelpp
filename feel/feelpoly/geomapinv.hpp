@@ -43,6 +43,7 @@ namespace Feel
  */
 template<int Dim,
          int Order = 1,
+         int RealDim = Dim,
          typename T = double,
          template<uint16_type, uint16_type, uint16_type> class Entity = Simplex>
 class GeoMapInverse
@@ -54,7 +55,7 @@ public:
      */
     //@{
 
-    typedef GeoMap<Dim,Order,T,Entity> gm_type;
+    typedef GeoMap<Dim,Order,RealDim,T,Entity> gm_type;
     typedef typename gm_type::Inverse gic_type;
     typedef T value_type;
     //@}
