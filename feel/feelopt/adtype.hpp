@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-14
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2011 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -79,7 +79,7 @@ struct SListGenerator<0, T>
   ADType<double,3,2, Var> x(1.,0 );
   ADType<double,3,2, Var> y(2.,1 );
   ADType<double,3,2, Var> z(3.,2 );
-  St::Array::ADType<double,3,2, Var> __g = x/(y*z);
+  Feel::ADType<double,3,2, Var> __g = x/(y*z);
   std::cout << "g=" << __g << "\n";
   <pre>
 
