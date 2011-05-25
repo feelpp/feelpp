@@ -744,7 +744,11 @@ private:
     template<typename BasisType>
     struct GetNComponents
     {
-        typedef mpl::int_<BasisType::template apply<mesh_type::nDim,value_type,typename mesh_type::element_type>::type::nComponents> type;
+        //typedef mpl::int_<BasisType::template apply<mesh_type::nDim,value_type,typename mesh_type::element_type>::type::nComponents> type;
+        typedef mpl::int_<BasisType::template apply<mesh_type::nDim,
+                                                    mesh_type::nRealDim,
+                                                    value_type,
+                                                    typename mesh_type::element_type>::type::nComponents> type;
     };
 public:
 
@@ -756,7 +760,11 @@ public:
     static const uint16_type nRealDim = mesh_type::nRealDim;
 
     static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
-    typedef typename mpl::at_c<bases_list,0>::type::template apply<mesh_type::nDim,value_type,typename mesh_type::element_type>::type basis_0_type;
+    //typedef typename mpl::at_c<bases_list,0>::type::template apply<mesh_type::nDim,value_type,typename mesh_type::element_type>::type basis_0_type;
+    typedef typename mpl::at_c<bases_list,0>::type::template apply<mesh_type::nDim,
+                                                                   mesh_type::nRealDim,
+                                                                   value_type,
+                                                                   typename mesh_type::element_type>::type basis_0_type;
 
     static const uint16_type rank = ( is_composite? invalid_uint16_type_value : basis_0_type::rank );
     static const bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
@@ -819,9 +827,18 @@ public:
     typedef boost::shared_ptr<pc_type> pc_ptrtype;
 
     // component basis
+#if 0
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<component_basis_vector_type>,
                               typename mpl::at_c<component_basis_vector_type,0>::type::template apply<nDim,value_type,convex_type> >::type::type component_basis_type;
+#else
+    typedef typename mpl::if_<mpl::bool_<is_composite>,
+                              mpl::identity<component_basis_vector_type>,
+                              typename mpl::at_c<component_basis_vector_type,0>::type::template apply<nDim,
+                                                                                                      nRealDim,
+                                                                                                      value_type,
+                                                                                                      convex_type> >::type::type component_basis_type;
+#endif
     typedef boost::shared_ptr<component_basis_type> component_basis_ptrtype;
 
 
