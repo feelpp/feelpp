@@ -8922,7 +8922,7 @@ public:
                 this->_M_w( i ) = _M_quad.q[(Dim+1)*i+Dim];
             }
 
-        boost::shared_ptr<GT_Lagrange<Dim,1,Simplex,T> > gm( new GT_Lagrange<Dim, 1, Simplex, T> );
+        boost::shared_ptr<GT_Lagrange<Dim,1,Dim,Simplex,T> > gm( new GT_Lagrange<Dim, 1, Dim, Simplex, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Simplex<Dim, 1>, Dim, 1>(), gm, face_qr );

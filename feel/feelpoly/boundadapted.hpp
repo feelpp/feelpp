@@ -42,7 +42,7 @@
 namespace Feel
 {
 template<class Convex,uint16_type O,typename T> class PointSetWarpBlend;
-template<uint16_type Dim,uint16_type Degree,typename NormalizationPolicy,typename T,template<class> class StoragePolicy> struct Dubiner;
+template<uint16_type Dim,uint16_type RealDim,uint16_type Degree,typename NormalizationPolicy,typename T,template<class> class StoragePolicy> struct Dubiner;
 
 template<uint16_type Dim,
          uint16_type Degree,

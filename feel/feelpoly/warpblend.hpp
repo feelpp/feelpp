@@ -66,7 +66,7 @@ public :
     static const uint32_type topological_dimension = Convex::topological_dimension;
     static const uint32_type numPoints = super::numPoints;
 
-    typedef Reference<Convex, Dim, Convex::nOrder, Dim, value_type> reference_convex_type;
+    typedef Reference<Convex, Dim, Convex::nOrder, /*Dim*/Convex::nRealDim, value_type> reference_convex_type;
 
     typedef typename reference_convex_type::points_type points_type;
 

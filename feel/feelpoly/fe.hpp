@@ -38,6 +38,7 @@ template<typename Poly, template<uint16_type> class PolySetType > class Polynomi
     namespace detail {
 template<uint16_type Dim,
          uint16_type Order,
+         uint16_type RealDim,
          template<uint16_type> class PolySetType,
          typename T,
          template<uint16_type,uint16_type,uint16_type> class Convex>
