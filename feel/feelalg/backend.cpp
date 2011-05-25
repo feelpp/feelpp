@@ -33,7 +33,7 @@
 
 namespace Feel
 {
-std::string 
+std::string
 _o(std::string const& prefix, std::string const& opt )
 {
     std::string o = prefix;
@@ -375,19 +375,22 @@ Backend<T>::pcEnumType()
  */
 template class Backend<double>;
 
+std::string  _o( std::string const& prefix, std::string const& opt  ) { return (prefix + opt); }
+
 /**
  * \return the command lines options of the petsc backend
  */
-    po::options_description backend_options( std::string const& prefix )
+po::options_description backend_options( std::string const& prefix )
 {
     std::string _prefix = prefix;
     if ( !_prefix.empty() )
         _prefix += "-";
-    
+
     po::options_description _options( "Linear and NonLinear Solvers Backend " + prefix + " options");
     _options.add_options()
         // solver options
 #if defined( HAVE_PETSC_H )
+
         ((_prefix+"backend").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: PETSc, trilinos, gmm")
 #else
         ((_prefix+"backend").c_str(), Feel::po::value<std::string>()->default_value( "gmm" ), "backend type: PETSc, trilinos, gmm")
@@ -396,7 +399,7 @@ template class Backend<double>;
         ((_prefix+"ksp-atol").c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance")
         ((_prefix+"ksp-dtol").c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance")
         ((_prefix+"ksp-maxit").c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations")
-        
+
         ((_prefix+"ksp-type").c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres")
 
         // preconditioner options
@@ -409,6 +412,7 @@ template class Backend<double>;
         ((_prefix+"ksp-verbose").c_str(), Feel::po::value<int>()->default_value( 0 ), "(=0,1,2) print solver iterations")
 
         ;
+
     return _options;
 }
 

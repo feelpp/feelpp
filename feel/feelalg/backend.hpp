@@ -494,8 +494,10 @@ private:
 };
 
 /**
- * command line options
+ * \param prefix prefix given to the  backend option
+ * \return backend command line options description
  */
-po::options_description backend_options(std::string const & prefix = "");
+po::options_description backend_options( std::string const& prefix = "" );
+
 }
 #endif /* __Backend_H */
