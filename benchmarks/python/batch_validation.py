@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!@PYTHON_EXECUTABLE@
 
 # -*- mode: python -*-
 #
