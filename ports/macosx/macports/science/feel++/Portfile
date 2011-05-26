@@ -77,9 +77,13 @@ depends_lib    \
     port:imagemagick\
     port:py26-scipy\
     port:py26-numpy\
-    port:doxygen\
-    port:ghostscript\
-    port:texinfo\
-    port:texlive-latex-extra\
-    port:texlive-fonts-extra
+    port:doxygen
+
+ #   port:ghostscript\
+
+#    port:texinfo
+
+
+#    port:texlive-latex-extra\
+#    port:texlive-fonts-extra
 
