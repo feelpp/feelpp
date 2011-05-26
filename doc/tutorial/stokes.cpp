@@ -217,9 +217,9 @@ Stokes::run()
      */
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % Convex().dimension() % 1).str() ,
+                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1).str() ,
                                                       _shape="hypercube",
-                                                      _dim=Convex().dimension(),
+                                                      _dim=convex_type().dimension(),
                                                       _h=meshSize ) );
 
 
