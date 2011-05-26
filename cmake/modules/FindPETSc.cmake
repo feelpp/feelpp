@@ -252,7 +252,14 @@ int main(int argc,char *argv[]) {
   mark_as_advanced (PETSC_INCLUDES PETSC_LIBRARIES PETSC_COMPILER PETSC_DEFINITIONS PETSC_MPIEXEC PETSC_EXECUTABLE_RUNS)
 endif ()
 
+
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (PETSc
   "PETSc could not be found.  Be sure to set PETSC_DIR and PETSC_ARCH."
   PETSC_INCLUDES PETSC_LIBRARIES PETSC_EXECUTABLE_RUNS)
+
+if ( PETSC_FOUND )
+  add_definitions( -DHAVE_PETSC -DHAVE_PETSC_H )
+  set(HAVE_PETSC 1)
+  set(HAVE_PETSC_H 1)
+endif( PETSC_FOUND )
