@@ -183,7 +183,6 @@ private:
 }; // Stokes
 
 
-void
 Stokes::Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
     :
     super( argc, argv, ad, od ),
@@ -207,10 +206,10 @@ Stokes::run()
 
 
     if ( this->vm().count( "nochdir" ) == false )
-        this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%/h_%4%/" )
+        this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%P%4%/h_%5%/" )
                                 % this->about().appName()
                                 % convex_type::name()
-                                % BasisU::nOrder
+                                % basis_u_type::nOrder % % basis_p_type::nOrder
                                 % this->vm()["hsize"].as<double>() );
 
     /*
@@ -398,13 +397,12 @@ main( int argc, char** argv )
 
     // SOME GOOD ELEMENTS
     // P2/P1
-    typedef Feel::Stokes<Simplex<2>,  > stokes_type;
     // CR0/P0
     //typedef Feel::Stokes<Simplex<2>, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous> > stokes_type;
 
 
     /* define and run application */
-    stokes_type stokes( argc, argv, makeAbout(), makeOptions() );
+    Feel::Stokes stokes( argc, argv, makeAbout(), makeOptions() );
     stokes.run();
 }
 
