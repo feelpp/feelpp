@@ -209,7 +209,7 @@ Stokes::run()
         this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%P%4%/h_%5%/" )
                                 % this->about().appName()
                                 % convex_type::name()
-                                % basis_u_type::nOrder % % basis_p_type::nOrder
+                                % basis_u_type::nOrder % basis_p_type::nOrder
                                 % this->vm()["hsize"].as<double>() );
 
     /*
