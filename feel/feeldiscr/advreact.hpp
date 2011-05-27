@@ -78,7 +78,7 @@ public:
     typedef typename space_type::element_type element_type;
 
     AdvReact( const space_ptrtype& space,
-              const backend_ptrtype& backend )
+              const backend_ptrtype& backend, bool imposeBC = true )
         :
         M_mesh( space->mesh() ),
         M_space( space ),
@@ -88,6 +88,7 @@ public:
         M_rhs( space ),
         M_rhsStab( space ),
         M_updated( false ),
+        M_imposeBC(imposeBC),
         M_stabcoeff( 0.1 * std::pow( polyOrder, -3.5 ) )
     {
         M_StabMethod=GALS;
@@ -95,14 +96,10 @@ public:
 
     // setting of options
     void set_stabcoeff( double stabcoeff )
-    {
-        M_stabcoeff = stabcoeff * std::pow( polyOrder, -3.5 );
-    }
+    { M_stabcoeff = stabcoeff * std::pow( polyOrder, -3.5 ); }
 
     void setStabMethod(StabilizationMethods Method )
-    {
-        M_StabMethod=Method;
-    }
+    { M_StabMethod=Method; }
 
     // update operator and rhs with given expressions
     template<typename Esigma, typename Ebeta,
@@ -139,6 +136,8 @@ private:
 
     bool M_updated;
 
+    const bool M_imposeBC;
+
     double M_stabcoeff;
 
     StabilizationMethods M_StabMethod;
@@ -163,11 +162,15 @@ void AdvReact<Space>::update(const Esigma& sigma,
     M_operator =
         integrate( elements(M_mesh),
                    ( val(sigma)*idt(M_phi) + gradt(M_phi)*val(beta) ) * id(M_phi)
-                   ) +
-        integrate( boundaryfaces(M_mesh),
-                   - chi( trans(beta)*N() < 0 ) * /* inflow */
-                   val(trans(beta)*N()) * idt(M_phi) * id(M_phi)
-                   );
+                   ) ;
+    if (M_imposeBC == true)
+        {
+            M_operator +=
+                integrate( boundaryfaces(M_mesh),
+                           - chi( trans(beta)*N() < 0 ) * /* inflow */
+                           val(trans(beta)*N()) * idt(M_phi) * id(M_phi)
+                           );
+        }
 
     if (M_StabMethod != NO)
         {
@@ -244,11 +247,17 @@ void AdvReact<Space>::update(const Esigma& sigma,
     M_rhs =
         integrate( elements(M_mesh),
                    val(f) * id(M_phi)
-                   ) +
-        integrate( boundaryfaces(M_mesh),
-                   - chi( trans(beta)*N() < 0 ) * /* inflow */
-                   val( (trans(beta)*N())*(g) ) * id(M_phi)
                    );
+
+    if (M_imposeBC == true)
+        {
+            M_rhs +=
+                integrate( boundaryfaces(M_mesh),
+                           - chi( trans(beta)*N() < 0 ) * /* inflow */
+                           val( (trans(beta)*N())*(g) ) * id(M_phi)
+                           );
+        }
+
     if (M_StabMethod != NO)
         M_rhs.add(M_rhsStab);
 
