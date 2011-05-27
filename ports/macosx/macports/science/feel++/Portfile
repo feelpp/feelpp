@@ -44,7 +44,7 @@ long_description    \
 homepage            http://www.feelpp.org
 fetch.type          svn
 svn.url             svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk
-svn.revision        7077
+svn.revision        7120
 #master_sites        http://www.feelpp.org/opus/
 #distfiles           feel++-${version}.tar.gz
 
@@ -56,8 +56,8 @@ checksums           md5     dbbeea5444b9954dd9e6df30596da353\
 worksrcdir	trunk/build
 configure	{ system "mkdir -p ${worksrcpath} && cd ${worksrcpath} && cmake ${configure.args} ../" }
 
-configure.env  PETSC_DIR=/opt/local/lib/petsc
-configure.env-append  PETSC_ARCH=darwin
+configure.env-append  PETSC_DIR=/opt/local/lib/petsc
+#configure.env-append  PETSC_ARCH=darwin
 configure.env-append  SLEPC_DIR=/opt/local/lib/petsc
 
 configure.args-append \
