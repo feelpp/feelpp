@@ -42,14 +42,18 @@ long_description    \
  projection and numerical integration
 
 homepage            http://www.feelpp.org
-master_sites        http://www.feelpp.org/opus/
-distfiles           feel++-${version}.tar.gz
+fetch.type          svn
+svn.url             svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk
+svn.revision        7077
+#master_sites        http://www.feelpp.org/opus/
+#distfiles           feel++-${version}.tar.gz
 
 checksums           md5     dbbeea5444b9954dd9e6df30596da353\
                     sha1    8e27e4eb1b271202fd2167a4681c3430a01a9847\
                     rmd160  d91328bf433a6084a9d5d209d795e527464e0331
 
-worksrcdir	feel++-${version}/build
+#worksrcdir	feel++-${version}/build
+worksrcdir	trunk/build
 configure	{ system "mkdir -p ${worksrcpath} && cd ${worksrcpath} && cmake ${configure.args} ../" }
 
 configure.env  PETSC_DIR=/opt/local/lib/petsc
