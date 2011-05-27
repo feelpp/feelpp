@@ -44,7 +44,7 @@ long_description    \
 homepage            http://www.feelpp.org
 fetch.type          svn
 svn.url             svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk
-svn.revision        7120
+svn.revision        7122
 #master_sites        http://www.feelpp.org/opus/
 #distfiles           feel++-${version}.tar.gz
 
