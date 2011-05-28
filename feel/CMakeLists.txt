@@ -49,5 +49,5 @@ target_link_libraries (feel++ ${FEEL_LIBRARIES})
 set_target_properties(feel++ PROPERTIES VERSION ${FEEL_SHARED_VERSION} SOVERSION ${FEEL_SHARED_SOVERSION})
 
 # Install feel++
-INSTALL(TARGET feel++ DESTINATION lib/ COMPONENT Bin)
+INSTALL(TARGETS feel++ DESTINATION lib/ COMPONENT Bin)
 
