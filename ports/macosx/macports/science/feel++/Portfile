@@ -93,7 +93,7 @@ configure.args-append \
 
 
 post-build {
-# is there anythin to build not in the default target ? do it here
+   system "cd ${worksrcpath}/doc/api/ && make -k doxygen"
 }
 
 depends_build port:cmake
