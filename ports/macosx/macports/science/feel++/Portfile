@@ -3,7 +3,8 @@
 # $Id$
 
 PortSystem  1.0
-PortGroup   cmake 1.0
+# Portgroup is not an option until we find a way to get rid of the -arch option
+#PortGroup   cmake 1.0
 
 name                 feel++
 version              0.90.0
@@ -60,10 +61,22 @@ configure.env-append  PETSC_DIR=/opt/local/lib/petsc
 #configure.env-append  PETSC_ARCH=darwin
 configure.env-append  SLEPC_DIR=/opt/local/lib/petsc
 
-configure.env-delete CXXFLAGS
-configure.env-delete CFLAGS
-configure.cxxflags -O2
-configure.cflags -O2
+#configure.args-delete -DCMAKE_OSX_ARCHITECTURES=\"${configure.build_arch}\"
+
+# make sure to keep below in sync with cmake Portgroup except 
+# for the configure.args option that mess up feel++
+# standard place to install extra CMake modules
+set cmake_share_module_dir ${prefix}/share/cmake/modules
+configure.cmd       cmake
+configure.pre_args  -DCMAKE_INSTALL_PREFIX=${prefix}
+configure.args      -DCMAKE_VERBOSE_MAKEFILE=ON \
+                    -DCMAKE_COLOR_MAKEFILE=ON \
+                    -DCMAKE_BUILD_TYPE=Release \
+                    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+                    -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
+                    -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
+                    -DCMAKE_MODULE_PATH=${cmake_share_module_dir} \
+                    -Wno-dev
 configure.cxx /opt/local/bin/g++-mp-4.5
 configure.cc  /opt/local/bin/gcc-mp-4.5
 configure.args-append \
@@ -82,6 +95,8 @@ configure.args-append \
 post-build {
 # is there anythin to build not in the default target ? do it here
 }
+
+depends_build port:cmake
 
 depends_lib    \
     port:cmake\
