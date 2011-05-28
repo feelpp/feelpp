@@ -44,7 +44,7 @@ long_description    \
 homepage            http://www.feelpp.org
 fetch.type          svn
 svn.url             svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk
-svn.revision        7122
+svn.revision        HEAD
 #master_sites        http://www.feelpp.org/opus/
 #distfiles           feel++-${version}.tar.gz
 
@@ -60,9 +60,23 @@ configure.env-append  PETSC_DIR=/opt/local/lib/petsc
 #configure.env-append  PETSC_ARCH=darwin
 configure.env-append  SLEPC_DIR=/opt/local/lib/petsc
 
+configure.env-delete CXXFLAGS
+configure.env-delete CFLAGS
+configure.cxxflags -O2
+configure.cflags -O2
+configure.cxx /opt/local/bin/g++-mp-4.5
+configure.cc  /opt/local/bin/gcc-mp-4.5
 configure.args-append \
     -DMPI_COMPILER=/opt/local/lib/openmpi/bin/mpic++\
-    -DPETSC_LIB_BASIC=ON
+    -DCMAKE_BUILD_TYPE=Release\
+    -DCMAKE_CXX_COMPILER=${prefix}/bin/g++\
+    -DCMAKE_CXX_FLAGS=-O2\
+    -DCMAKE_CXX_FLAGS_RELEASE=-O2\
+    -DCMAKE_C_COMPILER=${prefix}/bin/gcc\
+    -DCMAKE_C_FLAGS=-O2\
+    -DCMAKE_C_FLAGS_RELEASE=-O2\
+    -DFEEL_ENABLE_DOCUMENTATION=ON
+
 
 
 post-build {
