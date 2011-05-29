@@ -15,7 +15,7 @@ long_description    \
  control. It allows both sensitivity and reliability analysis studies.
 
 homepage            http://trac.openturns.org/
-master_sites        openturns:sourceforge
+master_sites        sourceforge
 distname            openturns-${version}
 extract.suffix      .tar.gz
 
@@ -24,9 +24,12 @@ checksums           \
   sha1 d3160e2180fc5cd88d1b53e30ca056b57cd55024\
   rmd160  7d1bbb1fac9e7c0cde60e3132b41f4ffea1f0ad1
 
-configure.args-append \
+#configure.cppflags-append -I/Developer//SDKs/MacOSX10.5.sdk/usr/include/sys/
+#configure.ldflags-append -L/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/ 
+configure.args \
+  --prefix=${prefix}\
   --enable-lib\
-  --enable-python\
+  --disable-python\
   --enable-doc\
   --disable-debug
 
