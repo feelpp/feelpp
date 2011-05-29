@@ -255,7 +255,7 @@ ADD_SUBDIRECTORY ( feel )
 
 SET(FEEL_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
 
-OPTION(FEEL_ENABLE_DOCUMENTATION "enable feel documentation" OFF)
+OPTION(FEEL_ENABLE_DOCUMENTATION "enable feel documentation" ON)
 OPTION(FEEL_ENABLE_BENCHMARKS "enable feel benchmarks" OFF)
 OPTION(FEEL_ENABLE_EXAMPLES "enable feel examples" OFF)
 OPTION(FEEL_ENABLE_APPLICATIONS "enable feel applications" OFF)
@@ -274,7 +274,6 @@ endif( FEEL_ENABLE_ALL )
 
 OPTION(FEEL_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
 IF( FEEL_MINIMAL_CONFIGURATION )
-  set( FEEL_ENABLE_DOCUMENTATION OFF )
   set( BUILD_TESTING OFF )
   set( FEEL_ENABLE_DOCUMENTATION ON )
   set( ENABLE_INSTANTIATION_MODE OFF )
