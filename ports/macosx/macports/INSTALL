@@ -63,3 +63,21 @@ To do that uncomment the following line in =/opt/local/etc/macports/macports.con
 buildmakejobs	0 # all the cores
 # buildmakejobs 4 # use 4 cores
 #+END_EXAMPLE
+
+** locale port files
+
+Feel++ provides some Portfiles which are already available in MacPort such as
+gmsh or petsc. They usually provide either some fixes to ensure Feel++ works
+properly or new version not yet available in MacPort.
+
+*** PETSc Portfile
+
+ - fixes port compilation
+
+*** GMSH Portfile
+
+ - provide up-to-date version of the Portfile
+
+*** OpenTURNS Portfile
+
+ - provide OpenTURNS which is required for the framework Feel++-OPUS
