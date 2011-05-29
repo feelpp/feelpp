@@ -274,9 +274,9 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
     /*
      * The function space and some associate elements are then defined
      */
-    space_ptrtype Xh = space_type::New( mesh );
-    element_type u( Xh, "u" );
-    element_type v( Xh, "v" );
+    auto Xh = space_type::New( mesh );
+    auto u = Xh->element();
+    auto v = Xh->element();
     Log() << "[functionspace] Number of dof " << Xh->nLocalDof() << "\n";
     Log() << "function space and elements created in " << t1.elapsed() << "s\n"; t1.restart();
 
@@ -304,16 +304,16 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
 
     // Construction of the right hand side
 
-    vector_ptrtype F( backend->newVector( Xh ) );
+    auto F=  backend->newVector( Xh );
 
 
     form1( _test=Xh, _vector=F, _init=true ) =
         integrate( elements(mesh), f*id(v) )+
-        integrate( markedfaces( mesh, mesh->markerName("Neumann") ), nu*gradg*vf::N()*id(v) );
+        integrate( markedfaces( mesh, "Neumann" ), nu*gradg*vf::N()*id(v) );
     if ( M_use_weak_dirichlet || ( ContinuityType::is_continuous == false ) )
         {
             form1( Xh, F ) +=
-                integrate( markedfaces(mesh,mesh->markerName("Dirichlet")),
+                integrate( markedfaces(mesh,"Dirichlet"),
                            g*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
         }
 
@@ -322,11 +322,11 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
 
     //Construction of the left hand side
 
-    sparse_matrix_ptrtype D( backend->newMatrix( Xh, Xh ) );
+    auto D = backend->newMatrix( Xh, Xh );
 
 
     size_type pattern = (ContinuityType::is_continuous?DOF_PATTERN_COUPLED:DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR );
-    form2( Xh, Xh, D, _init=true, _pattern=pattern );
+    form2( _trial=Xh, _test=Xh, _matrix=D, _init=true, _pattern=pattern );
     Log() << "D initialized in " << t1.elapsed() << "s\n";t1.restart();
 
     form2( Xh, Xh, D ) +=
@@ -368,7 +368,7 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
         {
             t1.restart();
             form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, mesh->markerName("Dirichlet")), u, F, g );
+                on( markedfaces(mesh, "Dirichlet"), u, F, g );
 
             Log() << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << mesh->markerName("Dirichlet") << " \n";
         }
