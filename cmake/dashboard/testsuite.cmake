@@ -139,12 +139,12 @@ endif(NOT FEEL_MODE)
 
 ## mandatory variables (the default should be ok in most cases):
 
-if(NOT FEEL_NO_UPDATE)
-  SET (CTEST_SVN_COMMAND "svn")
-  SET (CTEST_SVN_CHECKOUT   "${CTEST_SVN_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
-  set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
+#if(NOT FEEL_NO_UPDATE)
+SET (CTEST_SVN_COMMAND "svn")
+SET (CTEST_SVN_CHECKOUT   "${CTEST_SVN_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
+set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
   #SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
-endif(NOT FEEL_NO_UPDATE)
+#endif(NOT FEEL_NO_UPDATE)
 
 # which ctest command to use for running the dashboard
 SET (CTEST_COMMAND "${FEEL_CMAKE_DIR}ctest -D ${FEEL_MODE} --no-compress-output")
