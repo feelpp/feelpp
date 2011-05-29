@@ -28,7 +28,7 @@ then type
 
 #+BEGIN_EXAMPLE
 cd <path to feel++ top directory>/ports/macosx/macports
-portindeex
+portindex
 #+END_EXAMPLE
 
 you should have an output like this
@@ -38,9 +38,9 @@ reating port index in /Users/prudhomm/Devel/FEEL/feel/ports/macosx/macports
 Adding port science/feel++
 Adding port science/gmsh
 
-Total number of ports parsed:   2 
-Ports successfully parsed:      2 
-Ports failed:                   0 
+Total number of ports parsed:   2
+Ports successfully parsed:      2
+Ports failed:                   0
 Up-to-date ports skipped:       0
 #+END_EXAMPLE
 
