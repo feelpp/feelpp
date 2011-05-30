@@ -96,7 +96,7 @@ depends_lib    \
     port:gcc45\
     port:gmsh \
     port:openmpi\
-    port:boost +openmpi\
+    port:boost\
     port:petsc\
     port:slepc\
     port:octave\
