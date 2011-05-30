@@ -63,7 +63,7 @@ configure.env-append  SLEPC_DIR=/opt/local/lib/petsc
 
 #configure.args-delete -DCMAKE_OSX_ARCHITECTURES=\"${configure.build_arch}\"
 
-# make sure to keep below in sync with cmake Portgroup except 
+# make sure to keep below in sync with cmake Portgroup except
 # for the configure.args option that mess up feel++
 # standard place to install extra CMake modules
 set cmake_share_module_dir ${prefix}/share/cmake/modules
@@ -96,7 +96,7 @@ depends_lib    \
     port:gcc45\
     port:gmsh \
     port:openmpi\
-    port:boost\
+    port:boost +openmpi\
     port:petsc\
     port:slepc\
     port:octave\
