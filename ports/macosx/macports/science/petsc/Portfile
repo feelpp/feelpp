@@ -31,7 +31,7 @@ depends_lib-append  port:openmpi
 
 configure.args  --with-python --with-debugging=0 \
 		--with-c-support=1 --with-c++-support=1 --with-pic=fPIC \
-		--with-shared=1 --PETSC_ARCH=darwin \
+		--with-shared=0 --PETSC_ARCH=darwin \
 		--prefix=${destroot}${prefix}/lib/petsc \
 		--with-cc=${prefix}/bin/openmpicc \
 		--with-fc=0 --with-x11=0 \
