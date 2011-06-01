@@ -7,3 +7,4 @@ endforeach()
 
 add_executable(feel_sound sound.cpp room.cpp )
 target_link_libraries(feel_sound ${FEEL_LIBRARIES} )
+add_dependencies( examples feel_sound )

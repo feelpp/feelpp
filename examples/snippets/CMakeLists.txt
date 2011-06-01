@@ -23,7 +23,8 @@
 #
 add_executable(dofpoints dofpoints.cpp)
 target_link_libraries(dofpoints ${FEEL_LIBRARIES})
+add_dependencies( examples dofpoints )
 
 add_executable(meshho meshho.cpp)
 target_link_libraries(meshho ${FEEL_LIBRARIES})
-
+add_dependencies( examples meshho )

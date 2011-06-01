@@ -22,8 +22,8 @@
 #
 #
 set( EXAMPLES thermalfin resistance )
-add_library(fin fin.cpp)
+add_library(feel++_fin fin.cpp)
 foreach( EXAMPLE ${EXAMPLES} )
   feel_add_example( ${EXAMPLE} )
 endforeach()
-target_link_libraries( feel_thermalfin fin)
+target_link_libraries( feel_thermalfin feel++_fin)
