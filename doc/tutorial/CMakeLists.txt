@@ -59,6 +59,7 @@ macro( add_docex target )
  get_target_property(target_executable feel_doc_${target} LOCATION)
  list(APPEND LIST_APPS ${target_executable})
  add_dependencies(figures feel_doc_${target})
+ add_dependencies(doc feel_doc_${target})
  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${target}.cfg)
    configure_file( ${target}.cfg ${target}.cfg)
  endif()
@@ -140,7 +141,7 @@ macro(add_octave_module modulename)
         ${CMAKE_CURRENT_SOURCE_DIR}/${modulename}.hpp
         )
       add_dependencies(octave ${modulename}_${dim}_${order}.oct)
-      target_link_libraries( ${modulename}_${dim}_${order}.oct ${FEEL_LIBRARIES})
+      target_link_libraries( ${modulename}_${dim}_${order}.oct ${FEEL_LIBRARIES} ${Octave_LIBRARIES})
       set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES PREFIX "" )
       set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES SUFFIX "" )
     endforeach( order )
@@ -150,5 +151,8 @@ endmacro(add_octave_module)
 
 
 add_octave_module( residualestimator )
+
+add_dependencies(doc octave)
+
 
 ENDIF( OCTAVE_FOUND )
