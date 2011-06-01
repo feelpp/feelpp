@@ -320,6 +320,7 @@ IF(FEEL_ENABLE_TESTS )
     set(filename test_${testname}.cpp)
     add_executable(${targetname} ${filename})
     target_link_libraries(${targetname} ${FEEL_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
+    add_dependencies(testsuite ${targetname})
     if ( APPLE )
       add_test(
         NAME test_${testname}
