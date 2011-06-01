@@ -21,6 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+add_custom_target( testsuite )
+
 foreach( testdir core alg mesh poly filters material discr )
   add_subdirectory( feel${testdir} )
 endforeach()
