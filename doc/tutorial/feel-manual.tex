@@ -512,10 +512,15 @@ and type once again
 
 \subsection{Compiling Feel with the CMake}
 
-Feel build system supports
-\cmake\index{cmake}\footnote{\url{http://www.cmake.org}}. This should become the
-preferred way to build \feel as it is much simpler and more powerful in many
-ways than the autotools. Check that \cmake is using gcc4.5 or 4.4 as C++ compiler (you can use the option \verb|CMAKE_CXX_COMPILER=<path>/g++-4.5| where the \verb|path| depends on your OS, it's probably \verb|/usr/bin| or \verb|/opt/local/bin| but you can also change it with the command \verb|ccmake| and press \verb|t| for advanced options). \newline It's important, as \cmake did not produce any Makefile, a CMakeCache.txt won't be created so you'll have to check each time that gcc 4.5 is the C++ compiler to be sure the build will be correct.\newline
+Feel build system uses \cmake\index{cmake}\footnote{\url{http://www.cmake.org}}
+as its build system. Check that \cmake is using gcc4.5 or 4.4 as C++ compiler
+(you can use the option \verb|CMAKE_CXX_COMPILER=<path>/g++-4.5| where the
+\verb|path| depends on your OS, it's probably \verb|/usr/bin| or
+\verb|/opt/local/bin| but you can also change it with the command \verb|ccmake|
+and press \verb|t| for advanced options). \newline It's important, as \cmake did
+not produce any Makefile, a CMakeCache.txt won't be created so you'll have to
+check each time that gcc 4.5 is the C++ compiler to be sure the build will be
+correct.\newline
 
 \feel, using \cmake, can be built either in source and out of source and different
 build type:
@@ -677,8 +682,32 @@ Here is what the directory should look like
 
 
 \section{Programming environment}
+\label{sec:progr-envir}
 
-\section{Namepaces}
+\subsection{Boost C++ Libraries}
+\label{sec:boost-c++-libraries}
+
+\feel depends on a number of libraries, some are required some are optional.
+Among the required libraries, The Boost C++ libraries play a very important role
+as they drive or shape the  design of \feel. \feel uses in particular the
+following Boost libraries:
+\begin{itemize}
+\item Boost.Parameter\index{Boost!Parameter} : use to provide powerful
+  interfaces to \feel and third party library such as 
+  \begin{itemize}
+  \item PETSc  for the linear, nonlinear solvers
+  \item SLEPc for the eigenvalue solvers
+  \item GMSH for mesh generation
+  \end{itemize}
+\item Boost.MPL - meta programming library : use for type computations
+\item Boost.Fusion - linking meta-runtime programming: use for type computations
+  used at runtime
+\item Boost.Program\_Options - command-line options library : provides the
+  command line options for the \feel applications as well as configuration files
+\item Boost.Test - Unit testing framework ; used by the \feel testsuite
+\end{itemize}
+
+\subsection{\feel Namepaces}
 
 \begin{itemize}
 \item \lstinline!Feel!
@@ -690,19 +719,6 @@ Here is what the directory should look like
 \item \lstinline!Feel::vf!
 
 \end{itemize}
-
-\section{Libraries}
-
-\begin{itemize}
-\item \lstinline!feel/feelcore!
-\item \lstinline!feel/feelalg!
-\item \lstinline!feel/feelpoly!
-\item \lstinline!feel/feeldiscr!
-\item \lstinline!feel/feelfilters!
-\item \lstinline!feel/feelvf!
-\end{itemize}
-
-
 
 \chapter{Tutorial}
 \label{sec:tutorial}
