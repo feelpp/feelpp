@@ -59,7 +59,7 @@ int main(int argc, char**argv)
 
     GeoTool::Rectangle R1( 0.1,"R1",GeoTool::Node(0,0),GeoTool::Node(1,1));
 
-    GeoTool::Circle C1(0.1,"C1",GeoTool::Node(1,0.5),GeoTool::Node(1.5,0.5));
+    GeoTool::Circle C1(0.1,"C1",GeoTool::Node(0.5,0.5),GeoTool::Node(0.75,0.75));
 
     auto R1mesh = R1.createMesh<mesh_type>( "R1" );
     auto C1mesh = C1.createMesh<mesh_type>( "C1" );
