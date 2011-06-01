@@ -320,17 +320,17 @@ IF(FEEL_ENABLE_TESTS )
     set(filename test_${testname}.cpp)
     add_executable(${targetname} ${filename})
     target_link_libraries(${targetname} ${FEEL_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
-if ( APPLE )
-    add_test(
-      NAME test_${testname}
-      COMMAND ${targetname}  # --log_level=message seems to trigger a segfault
-      )
-else( APPLE )
-    add_test(
-      NAME test_${testname}
-      COMMAND ${targetname} --log_level=message
-      )
-endif ( APPLE )
+    if ( APPLE )
+      add_test(
+        NAME test_${testname}
+        COMMAND ${targetname}  # --log_level=message seems to trigger a segfault
+        )
+    else( APPLE )
+      add_test(
+        NAME test_${testname}
+        COMMAND ${targetname} --log_level=message
+        )
+    endif ( APPLE )
   endmacro(feel_add_test)
 
   add_subdirectory( testsuite )
