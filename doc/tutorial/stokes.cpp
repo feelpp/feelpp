@@ -120,8 +120,8 @@ public:
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
-    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef typename backend_type::vector_ptrtype vector_ptrtype;
+    typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    typedef backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
     typedef Simplex<2> convex_type;
@@ -144,7 +144,7 @@ public:
 
     /* functions */
     //# marker3 #
-    typedef typename space_type::element_type element_type;
+    typedef space_type::element_type element_type;
     //# endmarker3 #
 
     /* export */
