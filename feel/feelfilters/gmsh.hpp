@@ -173,6 +173,11 @@ public:
     std::string version() const { return M_version; }
 
     /**
+     * \return the name of the file
+     */
+    std::string prefix() const { return M_name; }
+
+    /**
      * \return bounding box
      */
     std::vector<std::pair<double,double> > const& boundingBox() const {return M_I;}
@@ -191,7 +196,7 @@ public:
     /**
      * \return the geometry description
      */
-    std::string description() const { return this->getDescription(); }
+    std::string description() const { std::string d = this->getDescription(); if ( !d.empty() ) M_desc = d; return M_desc; }
 
     /**
      * add the mid point of the domain
@@ -252,6 +257,20 @@ public:
             M_version = version;
         }
 
+    /**
+     * set the description of the geometry
+     */
+    void setDescription( std::string const& desc )
+        {
+            M_desc = desc;
+        }
+    /**
+     * set the prefix of the Gmsh files
+     */
+    void setPrefix( std::string const& name )
+        {
+            M_name = name;
+        }
     virtual void setX( std::pair<double,double> const& x )
         {
             FEEL_ASSERT( dimension() >= 1 )( dimension() ).error( "invalid dimension" );
@@ -378,6 +397,13 @@ protected:
     int M_order;
     // gmsh
     std::string M_version;
+
+    // name of the file
+    std::string M_name;
+
+    // description of the geometry
+    mutable std::string M_desc;
+
     //! bounding box
     std::vector<std::pair<double,double> > M_I;
     //! characteristic length
@@ -524,7 +550,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
-    std::string fname = boost::get<2>( desc )->generate( boost::get<0>( desc ), boost::get<1>( desc ), force_rebuild, parametricnodes );
+    std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
 
     // refinement if option is enabled to a value greater or equal to 1
     if ( refine )
@@ -554,7 +580,7 @@ BOOST_PARAMETER_FUNCTION(
 
 
 BOOST_PARAMETER_FUNCTION(
-    (boost::tuple<std::string,std::string,gmsh_ptrtype>), // return type
+    (gmsh_ptrtype), // return type
     domain,    // 2. function name
     tag,           // 3. namespace of tag types
     (required
@@ -576,6 +602,7 @@ BOOST_PARAMETER_FUNCTION(
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, dim, order, convex );
 
+    gmsh_ptr->setPrefix( name );
     gmsh_ptr->setCharacteristicLength( h );
     gmsh_ptr->setAddMidPoint( addmidpoint );
     gmsh_ptr->usePhysicalNames( usenames );
@@ -584,7 +611,7 @@ BOOST_PARAMETER_FUNCTION(
         gmsh_ptr->setY( std::make_pair( ymin, ymax ) );
     if ( dim >= 3 )
         gmsh_ptr->setZ( std::make_pair( zmin, zmax ) );
-    return boost::make_tuple( name, gmsh_ptr->description(), gmsh_ptr );
+    return gmsh_ptr;
 }
 
 BOOST_PARAMETER_FUNCTION(
@@ -601,22 +628,23 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptrtype gmsh_ptr( new Gmsh( dim, order ) );
 
     gmsh_ptr->setCharacteristicLength( h );
+    gmsh_ptr->setPrefix( fs::path(filename).stem() );
 
-    std::string basename = fs::path(filename).stem();
     // first try in the current path
     if ( fs::exists( fs::current_path() / filename ) )
-        return boost::template make_tuple( basename, gmsh_ptr->getDescriptionFromFile((fs::current_path()/filename).string()), gmsh_ptr );
+        gmsh_ptr->setDescription(gmsh_ptr->getDescriptionFromFile((fs::current_path()/filename).string()));
     else if ( fs::exists( fs::path(Environment::localGeoRepository()) / filename ) )
-        return boost::make_tuple( basename, gmsh_ptr->getDescriptionFromFile((fs::path(Environment::localGeoRepository()) / filename).string()), gmsh_ptr );
+        return gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::localGeoRepository()) / filename).string()) );
     else if ( Environment::systemGeoRepository().template get<1>()  &&
               fs::exists( fs::path(Environment::systemGeoRepository().get<0>()) / filename ) )
-        return boost::make_tuple( basename, gmsh_ptr->getDescriptionFromFile((fs::path(Environment::systemGeoRepository().get<0>()) / filename).string()), gmsh_ptr );
+        return gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::systemGeoRepository().get<0>()) / filename).string()) );
     else
     {
         std::ostringstream ostr;
         ostr << "File " << filename << " was not found neither in current directory or in " << Environment::localGeoRepository() << " or in " << Environment::systemGeoRepository();
         throw std::invalid_argument( ostr.str() );
     }
+    return gmsh_ptr;
 }
 
 /**

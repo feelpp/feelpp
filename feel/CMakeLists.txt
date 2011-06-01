@@ -43,6 +43,7 @@ add_subdirectory (feelvf )
 
 add_library(feel++ SHARED options.cpp ${FEEL_SRCS})
 set_target_properties( feel++ PROPERTIES VERSION ${FEEL_SHARED_VERSION} SOVERSION ${FEEL_SHARED_SOVERSION})
+set_property(TARGET feel++ PROPERTY LABELS feel++)
 
 #target_link_libraries (feel++ ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES} ${TBB_LIBRARIES})
 target_link_libraries (feel++ ${FEEL_LIBRARIES})
