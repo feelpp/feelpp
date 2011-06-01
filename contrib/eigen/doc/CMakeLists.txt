@@ -64,9 +64,9 @@ add_custom_target(
 
 add_dependencies(doc-eigen-prerequisites all_snippets all_examples)
 add_dependencies(doc-unsupported-prerequisites unsupported_snippets unsupported_examples)
-add_custom_target(doc ALL
+add_custom_target(doc-eigen ALL
   COMMAND doxygen Doxyfile-unsupported
   COMMAND doxygen
   COMMAND doxygen Doxyfile-unsupported # run doxygen twice to get proper eigen <=> unsupported cross references
   WORKING_DIRECTORY ${Eigen_BINARY_DIR}/doc)
-add_dependencies(doc doc-eigen-prerequisites doc-unsupported-prerequisites)
+add_dependencies(doc-eigen doc-eigen-prerequisites doc-unsupported-prerequisites)
