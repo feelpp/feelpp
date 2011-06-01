@@ -94,7 +94,7 @@ struct test_disc: public Application
                                    _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
             Xh = space_type::New( mesh );
         }
-    boost::tuple<std::string,std::string,gmsh_ptrtype> createMesh()
+    gmsh_ptrtype createMesh()
         {
             std::ostringstream ostr;
             ostr << "Mesh.MshFileVersion = " << 2 << ";\n"
@@ -145,7 +145,11 @@ struct test_disc: public Application
                  << "Physical Surface(\"k1\") = {20, 22};\n"
                  << "Physical Surface(\"k2\") = {24, 26};\n";
 
-            return boost::make_tuple( "hypercube-2", ostr.str(), new gmsh_type );
+            gmsh_ptrtype gmshp( new gmsh_type );
+            gmshp->setPrefix( "hypercube-2" );
+            gmshp->setDescription( ostr.str() );
+
+            return gmshp;
         }
 
     void operator()()

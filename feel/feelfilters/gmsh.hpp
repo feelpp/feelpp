@@ -615,7 +615,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    (boost::tuple<std::string,std::string,gmsh_ptrtype>), // return type
+    (gmsh_ptrtype), // return type
     geo,    // 2. function name
     tag,           // 3. namespace of tag types
     (required
@@ -634,10 +634,10 @@ BOOST_PARAMETER_FUNCTION(
     if ( fs::exists( fs::current_path() / filename ) )
         gmsh_ptr->setDescription(gmsh_ptr->getDescriptionFromFile((fs::current_path()/filename).string()));
     else if ( fs::exists( fs::path(Environment::localGeoRepository()) / filename ) )
-        return gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::localGeoRepository()) / filename).string()) );
+        gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::localGeoRepository()) / filename).string()) );
     else if ( Environment::systemGeoRepository().template get<1>()  &&
               fs::exists( fs::path(Environment::systemGeoRepository().get<0>()) / filename ) )
-        return gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::systemGeoRepository().get<0>()) / filename).string()) );
+        gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::systemGeoRepository().get<0>()) / filename).string()) );
     else
     {
         std::ostringstream ostr;
