@@ -114,16 +114,16 @@ template<uint16_type N,
          template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
 class RaviartThomasPolynomialSet
     :
-        public detail::OrthonormalPolynomialSet<N, O+1, Vectorial, T, Convex>
+    public detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex>
 {
-    typedef detail::OrthonormalPolynomialSet<N, O+1, Vectorial, T, Convex> super;
+    typedef detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> super;
 
 public:
-    typedef detail::OrthonormalPolynomialSet<N, O, Vectorial, T, Convex> Pk_v_type;
-    typedef detail::OrthonormalPolynomialSet<N, O+1, Vectorial, T, Convex> Pkp1_v_type;
-    typedef detail::OrthonormalPolynomialSet<N, O-1, Vectorial, T, Convex> Pkm1_v_type;
-    typedef detail::OrthonormalPolynomialSet<N, O, Scalar, T, Convex> Pk_s_type;
-    typedef detail::OrthonormalPolynomialSet<N, O+1, Scalar, T, Convex> Pkp1_s_type;
+    typedef detail::OrthonormalPolynomialSet<N, N, O, Vectorial, T, Convex> Pk_v_type;
+    typedef detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> Pkp1_v_type;
+    typedef detail::OrthonormalPolynomialSet<N, N, O-1, Vectorial, T, Convex> Pkm1_v_type;
+    typedef detail::OrthonormalPolynomialSet<N, N, O, Scalar, T, Convex> Pk_s_type;
+    typedef detail::OrthonormalPolynomialSet<N, N, O+1, Scalar, T, Convex> Pkp1_s_type;
 
     typedef PolynomialSet<typename super::basis_type,Vectorial> vectorial_polynomialset_type;
     typedef typename vectorial_polynomialset_type::polynomial_type vectorial_polynomial_type;
@@ -702,6 +702,7 @@ class RaviartThomas
 {
 public:
     template<uint16_type N,
+             uint16_type R = N,
              typename T = double,
              typename Convex = Simplex<N> >
     struct apply

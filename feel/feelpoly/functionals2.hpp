@@ -268,7 +268,7 @@ public:
         typedef typename reference_convex_type::topological_face_type  element_type;
         element_type ref_convex_face = ref_convex.topologicalFace( face );
 
-        typedef GeoMap<reference_convex_type::nDim,1> gm_type;
+        typedef GeoMap<reference_convex_type::nDim,1,reference_convex_type::nDim> gm_type;
         typedef typename gm_type::face_gm_type::precompute_type face_pc_type;
         typedef typename gm_type::face_gm_type::precompute_ptrtype face_pc_ptrtype;
         gm_type __gm;
