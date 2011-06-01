@@ -16,4 +16,4 @@ configure_file(
   ${CMAKE_CURRENT_BINARY_DIR}/latexheader.tex
 )
 
-
+add_dependencies(doc doxygen)

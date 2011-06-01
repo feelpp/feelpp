@@ -1,3 +1,5 @@
+add_custom_target( doc )
+
 ADD_SUBDIRECTORY( api )
 ADD_SUBDIRECTORY( tutorial )
 
