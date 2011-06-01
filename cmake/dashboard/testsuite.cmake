@@ -207,9 +207,9 @@ if (UNIX)
 endif(UNIX)
 
 #set(CTEST_BUILD_COMMAND "${MAKE} ${OPTION_BUILD}")
-set(CTEST_BUILD_COMMAND "make")
-SET(CTEST_CMAKE_COMMAND "cmake" )
-SET(CTEST_MAKE_COMMAND "${CMAKE_EXECUTABLE_NAME}" )
+set(CTEST_BUILD_COMMAND "make ${FEEL_MAKE_ARGS}")
+#SET(CTEST_CMAKE_COMMAND "cmake" )
+SET(CTEST_MAKE_COMMAND "${CMAKE_EXECUTABLE_NAME} ${FEEL_MAKE_ARGS}" )
 # set any extra environment variables to use during the execution of the script here:
 # setting this variable on windows machines causes trouble ...
 
@@ -251,26 +251,26 @@ endif(DEFINED FEEL_CMAKE_ARGS)
 set(CTEST_USE_LAUNCHERS 1)
 
 # to get CTEST_PROJECT_SUBPROJECTS definition:
-include("${CTEST_SOURCE_DIRECTORY}/../CTestConfig.cmake")
+include("${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake")
 
 ctest_start(${FEEL_MODE})
-#ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}")
-#ctest_submit(PARTS Update Notes)
-ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}" APPEND)
-#ctest_submit(PARTS Configure)
+ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}")
+ctest_submit(PARTS Update Notes)
+ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}")
+ctest_submit(PARTS Configure)
 
 message(WARNING "subprojects: ${CTEST_PROJECT_SUBPROJECTS}" )
- foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
-   message(WARNING "testing subproject ${subproject}")
-   set_property(GLOBAL PROPERTY SubProject ${subproject})
-   set_property (GLOBAL PROPERTY Label ${subproject})
-   set(CTEST_BUILD_TARGET "${subproject}")
-   message(WARNING "build target ${subproject}")
-   ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND )
-   # builds target ${CTEST_BUILD_TARGET}
-# #  ctest_submit(PARTS Build)
-#   ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}" )
-#   # runs only tests that have a LABELS property matching "${subproject}"
-# #  ctest_submit(PARTS Test)
- endforeach()
+foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
+  message(WARNING "testing subproject ${subproject}")
+  set_property(GLOBAL PROPERTY SubProject ${subproject})
+  set_property (GLOBAL PROPERTY Label ${subproject})
+  set(CTEST_BUILD_TARGET "${subproject}")
+  message(WARNING "build target ${subproject}")
+  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND )
+  # builds target ${CTEST_BUILD_TARGET}
+  ctest_submit(PARTS Build)
+  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}" )
+  # runs only tests that have a LABELS property matching "${subproject}"
+  ctest_submit(PARTS Test)
+endforeach()
 
