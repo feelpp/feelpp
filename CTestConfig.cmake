@@ -13,3 +13,8 @@ set(CTEST_DROP_LOCATION "/submit.php?project=Feel%2B%2B")
 set(CTEST_DROP_SITE_CDASH TRUE)
 
 set(CTEST_UPDATE_TYPE "svn")
+
+set(CTEST_PROJECT_SUBPROJECTS
+  feel++
+  Opus
+  )
