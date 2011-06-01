@@ -98,6 +98,10 @@ if(NOT FEEL_CMAKE_DIR)
   SET(FEEL_CMAKE_DIR "")
 endif(NOT FEEL_CMAKE_DIR)
 
+if (NOT FEEL_CXX)
+  set(FEEL_CXX "g++")
+endif(NOT FEEL_CXX)
+
 if(NOT FEEL_BUILD_STRING)
 
   # let's try to find all information we need to make the build string ourself
@@ -147,12 +151,12 @@ set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
 #endif(NOT FEEL_NO_UPDATE)
 
 # which ctest command to use for running the dashboard
-SET (CTEST_COMMAND "${FEEL_CMAKE_DIR}ctest -D ${FEEL_MODE} --no-compress-output")
-if($ENV{FEEL_CTEST_ARGS})
-SET (CTEST_COMMAND "${CTEST_COMMAND} $ENV{FEEL_CTEST_ARGS}")
-endif($ENV{FEEL_CTEST_ARGS})
+#SET (CTEST_COMMAND "${FEEL_CMAKE_DIR}ctest -D ${FEEL_MODE} --no-compress-output")
+#if($ENV{FEEL_CTEST_ARGS})
+#SET (CTEST_COMMAND "${CTEST_COMMAND} $ENV{FEEL_CTEST_ARGS}")
+#endif($ENV{FEEL_CTEST_ARGS})
 # what cmake command to use for configuring this dashboard
-SET (CTEST_CMAKE_COMMAND "${FEEL_CMAKE_DIR}cmake -DFEEL_LEAVE_TEST_IN_ALL_TARGET=ON")
+#SET (CTEST_CMAKE_COMMAND "${FEEL_CMAKE_DIR}cmake -DFEEL_LEAVE_TEST_IN_ALL_TARGET=ON")
 
 ####################################################################
 # The values in this section are optional you can either
@@ -198,6 +202,14 @@ else(WIN32 AND NOT UNIX)
   ")
 endif(WIN32 AND NOT UNIX)
 
+if (UNIX)
+  set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
+endif(UNIX)
+
+#set(CTEST_BUILD_COMMAND "${MAKE} ${OPTION_BUILD}")
+set(CTEST_BUILD_COMMAND "make")
+SET(CTEST_CMAKE_COMMAND "cmake" )
+SET(CTEST_MAKE_COMMAND "${CMAKE_EXECUTABLE_NAME}" )
 # set any extra environment variables to use during the execution of the script here:
 # setting this variable on windows machines causes trouble ...
 
@@ -228,3 +240,37 @@ endif(DEFINED FEEL_EXPLICIT_VECTORIZATION)
 if(DEFINED FEEL_CMAKE_ARGS)
   set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} ${FEEL_CMAKE_ARGS}")
 endif(DEFINED FEEL_CMAKE_ARGS)
+
+#The idea behind ctest launchers is that they wrap each compile or link step so
+#the output can be saved and sent to CDash in the event of a warning or
+#error. Rather than trying to grep through and analyze the full build output
+#after thousands of compile and link calls, with this technique, ctest may
+#simply capture the error output directly and pass it in its entirety to the
+#dashboard. This helps immensely in figuring out some why some errors occur,
+#without necessarily even having access to the client machine.
+set(CTEST_USE_LAUNCHERS 1)
+
+# to get CTEST_PROJECT_SUBPROJECTS definition:
+include("${CTEST_SOURCE_DIRECTORY}/../CTestConfig.cmake")
+
+ctest_start(${FEEL_MODE})
+#ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}")
+#ctest_submit(PARTS Update Notes)
+ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}" APPEND)
+#ctest_submit(PARTS Configure)
+
+message(WARNING "subprojects: ${CTEST_PROJECT_SUBPROJECTS}" )
+ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
+   message(WARNING "testing subproject ${subproject}")
+   set_property(GLOBAL PROPERTY SubProject ${subproject})
+   set_property (GLOBAL PROPERTY Label ${subproject})
+   set(CTEST_BUILD_TARGET "${subproject}")
+   message(WARNING "build target ${subproject}")
+   ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND )
+   # builds target ${CTEST_BUILD_TARGET}
+# #  ctest_submit(PARTS Build)
+#   ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}" )
+#   # runs only tests that have a LABELS property matching "${subproject}"
+# #  ctest_submit(PARTS Test)
+ endforeach()
+
