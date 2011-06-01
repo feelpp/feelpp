@@ -16,5 +16,6 @@ set(CTEST_UPDATE_TYPE "svn")
 
 set(CTEST_PROJECT_SUBPROJECTS
   feel++
-  Opus
+  testsuite
+  doc
   )
