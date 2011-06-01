@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-03-04
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -290,9 +290,9 @@ template<uint16_type N,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced >
 class Hermite
     :
-    public FiniteElement<detail::OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::HermiteDual, Pts >
+    public FiniteElement<detail::OrthonormalPolynomialSet<N, N, O, PolySetType, T, Convex>, details::HermiteDual, Pts >
 {
-    typedef FiniteElement<detail::OrthonormalPolynomialSet<N, O, PolySetType, T, Convex>, details::HermiteDual, Pts > super;
+    typedef FiniteElement<detail::OrthonormalPolynomialSet<N, N, O, PolySetType, T, Convex>, details::HermiteDual, Pts > super;
 public:
 
     BOOST_STATIC_ASSERT( ( boost::is_same<PolySetType<N>, Scalar<N> >::value ||

@@ -158,13 +158,13 @@ class TestDubiner
     void operator()() const
     {
       using namespace Feel;
-      Dubiner<2,N,Normalized<true>,T> dubexp;
+      Dubiner<2,2,N,Normalized<true>,T> dubexp;
       ublas::matrix<T,ublas::column_major> pts( 2,2  );
       ublas::column( pts, 0 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
       ublas::column( pts, 1 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
       std::cout << "[batch] dubexp at pts =  " << dubexp.evaluate( pts ) << "\n";
       std::cout << "[batch] dubexp derivation at pts =  " << dubexp.derivate( pts ) << "\n";
-      Dubiner<2,N> dub;
+      Dubiner<2,2,N> dub;
     }
 };
 
