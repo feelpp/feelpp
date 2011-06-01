@@ -2,10 +2,10 @@
 ARCH=`uname -m`
 SITE=`hostname`
 #OS_VERSION=ubuntu-natty
-OS_VERSION=macosx-leopard
+OS_VERSION=`uname -s`
 #WORK_DIR=/home/prudhomm/sources/
 WORK_DIR=$HOME/Devel/FEEL
-MAKE_ARGS="-j8"
+MAKE_ARGS="-j6"
 #mkdir -p $WORK_DIR
 # get the last version of the script
 #svn export svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk/cmake/dashboard/testsuite.cmake $WORK_DIR/testsuite.cmake
