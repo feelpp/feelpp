@@ -259,6 +259,12 @@ public:
     //! \return the number of simgets
     size_type nSimgets() const { return M_simgets.size(); }
 
+    /**
+     * \return true if the verbose command line/config option is used, false
+     * otherwise
+     */
+    bool verbose() const { return _M_vm.count( "verbose" ); }
+
     //@}
 
     /** @name  Mutators
