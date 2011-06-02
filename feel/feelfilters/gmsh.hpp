@@ -369,7 +369,7 @@ protected:
     /**
      * sublass must provide the geo description
      */
-    virtual std::string getDescription() const {}
+    virtual std::string getDescription() const { return std::string(); }
 
     /**
      * \param name  filename prefix to create the \c geo
