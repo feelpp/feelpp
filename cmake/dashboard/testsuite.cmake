@@ -136,7 +136,7 @@ if(NOT CTEST_SOURCE_DIRECTORY)
 endif(NOT CTEST_SOURCE_DIRECTORY)
 
 if(NOT CTEST_BINARY_DIRECTORY)
-  SET (CTEST_BINARY_DIRECTORY "${FEEL_WORK_DIR}/nightly_${FEEL_CXX}")
+  SET (CTEST_BINARY_DIRECTORY "${FEEL_WORK_DIR}/${FEEL_MODE}_${FEEL_CXX}")
 endif(NOT CTEST_BINARY_DIRECTORY)
 
 if(NOT FEEL_MODE)
@@ -152,14 +152,6 @@ set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
   #SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
 #endif(NOT FEEL_NO_UPDATE)
 
-# which ctest command to use for running the dashboard
-#SET (CTEST_COMMAND "${FEEL_CMAKE_DIR}ctest -D ${FEEL_MODE} --no-compress-output")
-#if($ENV{FEEL_CTEST_ARGS})
-#SET (CTEST_COMMAND "${CTEST_COMMAND} $ENV{FEEL_CTEST_ARGS}")
-#endif($ENV{FEEL_CTEST_ARGS})
-# what cmake command to use for configuring this dashboard
-#SET (CTEST_CMAKE_COMMAND "${FEEL_CMAKE_DIR}cmake -DFEEL_LEAVE_TEST_IN_ALL_TARGET=ON")
-
 ####################################################################
 # The values in this section are optional you can either
 # have them or leave them commented out
@@ -168,53 +160,9 @@ set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
 # this make sure we get consistent outputs
 SET($ENV{LC_MESSAGES} "en_EN")
 
-
-# this is the initial cache to use for the binary tree, be careful to escape
-# any quotes inside of this string if you use it
-if(WIN32 AND NOT UNIX)
-  #message(SEND_ERROR "win32")
-  if(FEEL_GENERATOR_TYPE)
-    set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -G \"${FEEL_GENERATOR_TYPE}\"")
-    SET (CTEST_INITIAL_CACHE "
-      CMAKE_BUILD_TYPE:STRING=Release
-      BUILDNAME:STRING=${FEEL_BUILD_STRING}
-      SITE:STRING=${FEEL_SITE}
-      FEEL_ENABLE_ALL:BOOL=ON
-    ")
-  else(FEEL_GENERATOR_TYPE)
-    set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -G \"NMake Makefiles\" -DCMAKE_MAKE_PROGRAM=nmake")
-    SET (CTEST_INITIAL_CACHE "
-      MAKECOMMAND:STRING=nmake /i
-      CMAKE_MAKE_PROGRAM:FILEPATH=nmake
-      CMAKE_GENERATOR:INTERNAL=NMake Makefiles
-      CMAKE_BUILD_TYPE:STRING=Release
-      BUILDNAME:STRING=${FEEL_BUILD_STRING}
-      SITE:STRING=${FEEL_SITE}
-      FEEL_ENABLE_ALL:BOOL=ON
-    ")
-  endif(FEEL_GENERATOR_TYPE)
-else(WIN32 AND NOT UNIX)
-  SET (CTEST_INITIAL_CACHE "
-    BUILDNAME:STRING=${FEEL_BUILD_STRING}
-    SITE:STRING=${FEEL_SITE}
-    FEEL_ENABLE_ALL:BOOL=ON
-  ")
-endif(WIN32 AND NOT UNIX)
-
 if (UNIX)
   set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 endif(UNIX)
-
-#set(CTEST_BUILD_COMMAND "${MAKE} ${OPTION_BUILD}")
-
-#SET(CTEST_CMAKE_COMMAND "cmake" )
-#SET(CTEST_MAKE_COMMAND "${CMAKE_EXECUTABLE_NAME} ${FEEL_MAKE_ARGS}" )
-# set any extra environment variables to use during the execution of the script here:
-# setting this variable on windows machines causes trouble ...
-
-if(FEEL_CXX AND NOT WIN32)
-  set(CTEST_ENVIRONMENT "CXX=${FEEL_CXX}")
-endif(FEEL_CXX AND NOT WIN32)
 
 # if(DEFINED FEEL_EXPLICIT_VECTORIZATION)
 #   if(FEEL_EXPLICIT_VECTORIZATION MATCHES SSE2)
@@ -249,12 +197,6 @@ endif(DEFINED FEEL_CMAKE_ARGS)
 #without necessarily even having access to the client machine.
 set(CTEST_USE_LAUNCHERS 1)
 
-# site
-set(CTEST_SITE "${FEEL_SITE}")
-# build name
-set(CTEST_BUILD_NAME "${FEEL_BUILD_STRING}")
-# should ctest wipe the binary tree before running
-SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY TRUE)
 
 # raise the warning/error limit
 set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_WARNINGS "33331")
@@ -262,6 +204,23 @@ set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_ERRORS "33331")
 
 # to get CTEST_PROJECT_SUBPROJECTS definition:
 include("${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake")
+# clear the binary directory and create an initial cache
+#CTEST_EMPTY_BINARY_DIRECTORY (${CTEST_BINARY_DIRECTORY})
+set(CTEST_INITIAL_CACHE "
+CMAKE_CXX_COMPILER:STRING=${FEEL_CXX}
+FEEL_ENABLE_ALL:BOOL=ON
+")
+# site
+set(CTEST_SITE "${FEEL_SITE}")
+# build name
+set(CTEST_BUILD_NAME "${FEEL_BUILD_STRING}")
+# should ctest wipe the binary tree before running
+#SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY TRUE)
+
+if(FEEL_CXX AND NOT WIN32)
+ set(CTEST_ENVIRONMENT "CXX=${FEEL_CXX}")
+endif(FEEL_CXX AND NOT WIN32)
+MESSAGE(WARNING "ctest_environment ${CTEST_ENVIRONMENT}")
 
 ctest_start(${FEEL_MODE})
 ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}")
@@ -273,7 +232,8 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
   message(WARNING "testing subproject ${subproject}")
   set_property(GLOBAL PROPERTY SubProject ${subproject})
   set_property (GLOBAL PROPERTY Label ${subproject})
-  ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}" )
+  ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND 
+    OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS};-DCMAKE_CXX_COMPILER:STRING=${FEEL_CXX};-DFEEL_ENABLE_ALL:BOOL=ON" )
   ctest_submit(PARTS Configure)
   message(WARNING "build target ${subproject}")
   #set(CTEST_BUILD_COMMAND "make ${FEEL_MAKE_ARGS} -i ${subproject}")
