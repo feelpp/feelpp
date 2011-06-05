@@ -4,8 +4,8 @@ SITE=`hostname`
 #OS_VERSION=ubuntu-natty
 #OS_VERSION=`uname -s`
 OS_VERSION=debian-sid
-#WORK_DIR=/home/prudhomm/sources/
-WORK_DIR=$HOME/Devel/FEEL
+WORK_DIR=/home/prudhomm/sources/
+#WORK_DIR=$HOME/Devel/FEEL
 MAKE_ARGS="-j6"
 PARALLEL="6"
 #mkdir -p $WORK_DIR
