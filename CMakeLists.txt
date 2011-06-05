@@ -212,7 +212,7 @@ INCLUDE(CheckFunctionExists)
 INCLUDE(CheckSymbolExists)
 INCLUDE(CheckCXXSourceCompiles)
 INCLUDE(CheckLibraryExists)
-# INCLUDE(parse_arguments)
+INCLUDE(ParseArguments)
 
 # MACRO(CAR var)
 #   SET(${var} ${ARGV1})
