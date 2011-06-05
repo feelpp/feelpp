@@ -7,7 +7,6 @@ macro(feel_add_example)
     ""
     ${ARGN}
     )
-  message(STATUS "examples default args: ${EXAMPLE_DEFAULT_ARGS}")
   CAR(EXAMPLE_NAME ${EXAMPLE_DEFAULT_ARGS})
   CDR(EXAMPLE_SOURCES ${EXAMPLE_DEFAULT_ARGS})
 
