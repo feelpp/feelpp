@@ -168,12 +168,6 @@ set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
 # this make sure we get consistent outputs
 SET($ENV{LC_MESSAGES} "en_EN")
 
-# should ctest wipe the binary tree before running
-SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY TRUE)
-
-# raise the warning/error limit
-set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_WARNINGS "33331")
-set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_ERRORS "33331")
 
 # this is the initial cache to use for the binary tree, be careful to escape
 # any quotes inside of this string if you use it
@@ -255,13 +249,21 @@ endif(DEFINED FEEL_CMAKE_ARGS)
 #without necessarily even having access to the client machine.
 set(CTEST_USE_LAUNCHERS 1)
 
+# site
+set(CTEST_SITE "${FEEL_SITE}")
 # build name
 set(CTEST_BUILD_NAME "${FEEL_BUILD_STRING}")
+# should ctest wipe the binary tree before running
+SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY TRUE)
+
+# raise the warning/error limit
+set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_WARNINGS "33331")
+set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_ERRORS "33331")
 
 # to get CTEST_PROJECT_SUBPROJECTS definition:
 include("${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake")
 
-ctest_start(${FEEL_MODE} APPEND)
+ctest_start(${FEEL_MODE})
 ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}")
 ctest_submit(PARTS Update Notes)
 
@@ -271,14 +273,14 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
   message(WARNING "testing subproject ${subproject}")
   set_property(GLOBAL PROPERTY SubProject ${subproject})
   set_property (GLOBAL PROPERTY Label ${subproject})
-  ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}" APPEND)
+  ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}" )
   ctest_submit(PARTS Configure)
   message(WARNING "build target ${subproject}")
   #set(CTEST_BUILD_COMMAND "make ${FEEL_MAKE_ARGS} -i ${subproject}")
-  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" TARGET "${subproject}" APPEND )
+  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND TARGET "${subproject}"  )
   # builds target ${CTEST_BUILD_TARGET}
   ctest_submit(PARTS Build)
-  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}" APPEND )
+  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND INCLUDE_LABEL "${subproject}"  )
   # runs only tests that have a LABELS property matching "${subproject}"
   ctest_submit(PARTS Test)
 endforeach()
