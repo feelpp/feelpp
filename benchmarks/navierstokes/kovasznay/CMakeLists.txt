@@ -34,10 +34,11 @@ macro(feel_add_bench_kovasznay examplename)
   target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
 endmacro(feel_add_bench_kovasznay)
 
-foreach( orderp 1 2 3 4 5)
+foreach( orderp 1 2 )
   math(EXPR orderu1 '${orderp}+1')
   math(EXPR orderu2 '${orderp}+2')
-  foreach( orderu ${orderp} ${orderu1} ${orderu2}  )
+  #foreach( orderu ${orderp} ${orderu1} ${orderu2}  )
+  foreach( orderu ${orderp} ${orderu1} )
     foreach( convex Simplex Hypercube )
       set(modulename "kovasznay")
       set(BENCH "${modulename}_${orderu}${orderp}_${convex}" )
@@ -55,7 +56,8 @@ int main( int argc, char** argv )
 
       add_executable(${targetname} ${BENCH}.cpp kovasznay.cpp)
       target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
-
+      set_property(TARGET ${targetname} PROPERTY LABELS benchmarks)
+      add_dependencies( benchmarks ${targetname} )
 
       # test each backend
       foreach( BACKEND ${FEEL_BACKENDS} )
@@ -65,7 +67,7 @@ int main( int argc, char** argv )
           --mode=0
           --path=${FEEL_BUILD_DIR}/benchmarks/navierstokes/kovasznay/
           --cmdargs="--backend=${BACKEND} --export=0 --weak --penalisation=1 --beta=1 ${${BACKEND}_LU_UMFPACK_SOLVER_OPTIONS}")
-
+        set_property(TEST  ${targetname}_${BENCH}-${BACKEND}-weak PROPERTY LABELS benchmarks)
       endforeach() # backend
 
     endforeach() # convex

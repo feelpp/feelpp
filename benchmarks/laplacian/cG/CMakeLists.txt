@@ -48,9 +48,9 @@ int main( int argc, char** argv )
 
 add_executable(${targetname} ${modulename}_${continuity}_${dim}_${order}_${convex}.cpp)
 target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
-
-
-    # test each backend
+set_property(TARGET ${targetname} PROPERTY LABELS benchmarks)
+add_dependencies( benchmarks ${targetname} )
+# test each backend
     foreach( BACKEND ${FEEL_BACKENDS} )
       add_test( feel_bench_${BENCH}-${BACKEND}-strong
         ${PYTHON_EXECUTABLE}
@@ -58,6 +58,7 @@ target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
         --program=${targetname}
         --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/cG/
         --cmdargs="--backend=${BACKEND} --weak=0 --export=0 ${${BACKEND}_SOLVER_OPTIONS}" )
+      set_property(TEST feel_bench_${BENCH}-${BACKEND}-strong PROPERTY LABELS benchmarks)
       add_test( feel_bench_${BENCH}-${BACKEND}-weak
         ${PYTHON_EXECUTABLE}
         ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
@@ -65,7 +66,7 @@ target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
         --mode=0
         --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/cG/
         --cmdargs="--backend=${BACKEND} --weak=1 --export=0 ${${BACKEND}_SOLVER_OPTIONS}")
-
+      set_property(TEST feel_bench_${BENCH}-${BACKEND}-weak PROPERTY LABELS benchmarks)
     endforeach() # backend
 
   endforeach() # convex
