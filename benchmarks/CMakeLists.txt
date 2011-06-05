@@ -1,5 +1,6 @@
 project( feel-benchmarks )
 
+add_custom_target(benchmarks)
 # set(petsc_SOLVER_OPTIONS "-ksp_monitor -pc_type asm -pc_asm_blocks 2" )
 #set(petsc_SOLVER_OPTIONS "-pc_type lu -pc_factor_mat_solver_package umfpack" )
 set(petsc_SOLVER_OPTIONS "-pc_type lu" )
@@ -22,6 +23,8 @@ macro(feel_add_bench examplename)
   set(filename ${examplename}.cpp)
   add_executable(${targetname} ${filename})
   target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
+  set_property(TARGET ${targetname} PROPERTY LABELS benchmarks)
+  add_dependencies( benchmarks ${targetname} )
 endmacro(feel_add_bench)
 
 foreach( DIR laplacian  navierstokes perf wrapper/python python )

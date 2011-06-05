@@ -35,6 +35,7 @@ foreach( BENCH ale1 ale2 ale3 ale4 ale5 )
         --mode=0
         --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/ale/
         --cmdargs="--exporter-format=gmsh --backend=${BACKEND} --export=0 ${${BACKEND}_LU_SOLVER_OPTIONS}" )
+      set_property(TEST feel_bench_${BENCH}-${BACKEND}  PROPERTY LABELS benchmarks)
     endforeach()
 
 endforeach()
