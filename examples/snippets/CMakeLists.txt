@@ -21,10 +21,5 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-add_executable(dofpoints dofpoints.cpp)
-target_link_libraries(dofpoints ${FEEL_LIBRARIES})
-add_dependencies( examples dofpoints )
-
-add_executable(meshho meshho.cpp)
-target_link_libraries(meshho ${FEEL_LIBRARIES})
-add_dependencies( examples meshho )
+feel_add_example( dofpoints dofpoints.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
+feel_add_example( meshho meshho.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})

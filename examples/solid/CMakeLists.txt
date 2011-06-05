@@ -21,8 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set( EXAMPLES beam stvenant_kirchhoff axi_1D) # stvenant_kirchhoff_ho
 
-foreach( EXAMPLE ${EXAMPLES} )
-  feel_add_example( ${EXAMPLE} )
-endforeach()
+feel_add_example(beam beam.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
+feel_add_example(stvenant_kirchhoff stvenant_kirchhoff.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
+feel_add_example(axi_1D axi_1D.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
+

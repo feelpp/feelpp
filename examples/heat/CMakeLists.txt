@@ -21,9 +21,5 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set( EXAMPLES thermalfin resistance )
-add_library(feel++_fin fin.cpp)
-foreach( EXAMPLE ${EXAMPLES} )
-  feel_add_example( ${EXAMPLE} )
-endforeach()
-target_link_libraries( feel_thermalfin feel++_fin)
+feel_add_example( thermalfin thermalfin.cpp fin.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
+feel_add_example( resistance resistance.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
