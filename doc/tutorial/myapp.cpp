@@ -142,7 +142,7 @@ void MyApp::run()
             return;
         }
     /** \endcode */
-
+//# endmarker6 #
     /**
      * store all subsequent data files in a HOME/feel/doc/tutorial/myapp/
      */
@@ -163,7 +163,7 @@ void MyApp::run()
     Log() << "the value of myapp-pc-type is " << this->vm()["myapp-pc-type"].as<std::string>() << "\n";
     /** \endcode */
 }
-//# endmarker6 #
+
 
 /**
  * main function: entry point of the program
