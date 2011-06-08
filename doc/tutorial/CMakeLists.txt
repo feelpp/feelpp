@@ -41,7 +41,7 @@ ENDIF()
 
 
 add_latex_document(feel-manual.tex
-  INPUTS feel.tex randomnotes.tex gfdl.tex example-heatns.tex version.tex ${CPPFILES} ${STYFILES}
+  INPUTS building.tex tutorial.tex feel.tex randomnotes.tex gfdl.tex examples.tex version.tex ${CPPFILES} ${STYFILES}
   BIBFILES feel-manual.bib
   IMAGE_DIRS pngs pdfs
   USE_INDEX
