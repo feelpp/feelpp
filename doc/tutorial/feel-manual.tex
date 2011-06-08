@@ -9,7 +9,6 @@
 \usepackage{lmodern}
 %%\usepackage{fullpage}
 \usepackage{longtable}
-
 \usepackage{url}
 \usepackage{fancyhdr}
 \pagestyle{fancyplain}
@@ -280,14 +279,13 @@ Free Documentation License".
 
 
 \section{Building Feel}
-
 \subsection{Getting the source via an archive}
 \label{sec:getting-source-via-1}
 
 \feel is distributed as a tarball once in a while. The tarballs are available
 at
 \begin{center}
-  \href{http://ljkforge.imag.fr/feel}{http://ljkforge.imag.fr/feel}
+  \href{http://www.feelpp.org/files}{http://www.feelpp.org/files}
 \end{center}
 Download the latest tarball. Then follow the steps and replace
 \texttt{x},\texttt{y},\texttt{z} with the corresponding numbers
@@ -300,85 +298,68 @@ Download the latest tarball. Then follow the steps and replace
 
 \subsection{Getting the source via Subversion}
 \label{sec:getting-source-via}
-
-\paragraph{Creating RSA keys}
-\label{sec:creation-rsa-keys}
-In order to download the sources of \feel, you have to go in
-LJKForge website (https://ljkforge.imag.fr) and create an account. After the
-administrator approval, you have to demand the rights to see the project tree.
-
-Then, you will have to create RSA keys to be able to connect to the server
-using ssh. To do that you have to type the commands :
-\verb|ssh-keygen -t dsa| and \linebreak[2] \verb|ssh-keygen -t rsa| to create
-the keys. After that, you have to copy the \verb|id_dsa.pub| and
-\verb|id_rsa.pub| files in the My Page > Account Maintenance > Edit SSH Keys
-section of the LJKForge website. Those files are located in the \verb|~/.ssh/|
-folder of your computer. You will be able to connect to the server within an
-hour.
-\\
-{\bfseries Important : } If you don't have the same login on your computer as on
-LJKForge, you must add the commands
-\begin{lstlisting}[language=sh]
-host ljkforge.imag.fr
-  user <your_login_ljkforge>
-\end{lstlisting}
-in the \verb|~/.ssh/config| file.
-
-\subsubsection{Downloading the sources}
-\label{sec:download-sources}
-
-To be able to download the \feel sources, you need subversion and SSH > 1.xxx
-installed on your computer. In a command prompt, go where you want \feel to be
-downloaded and type the following command.
-\\ \verb|svn co svn+ssh://login@ljkforge.imag.fr/svn/feel/feel/trunk feel|
-where \\ \verb|login| is your login name in the LJKForge plateform. Then, if
-you want to download the feel-test sources type :
+In order to download the sources of \feel, you can download it directly from the source depository thanks to Subversion. To make it possible, you can download them anonymously or with an account in LJKForge that you have created. As an open-source project, we strongly suggest you to create an account and take part of the project with sharing your ideas, developments or suggests. If you're interested to participate and become a \feel++ developer, please don't hesitate to see how it works in the appendix ~\ref{feeldevel}. For now, if you want to get the sources without an account, open a command-line and type
 \begin{unixcom}
-  cd feel/benchmarks
-  svn co svn+ssh://login@ljkforge.imag.fr/svn/feel-test/feel-test/trunk validation
+		svn checkout svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk feel
 \end{unixcom}
+then you can go to the \feel top directory with
+\begin{unixcom}
+		cd feel
+\end{unixcom} 
+You should obtain furthers directories such as :
+\begin{lstlisting}[language=sh]
+applications/   # functional applications
+benchmarks/  # applications under test
+cmake/   # do not touch, used for compilation
+contrib/
+doc/   # tutorial and examples of it
+examples/
+feel/   # heart of the library
+ports/   # used for Mac OS X installation
+research/   # current research, not important now 
+testsuite/   
+CMakeListe.txt   # the file for cmake to build, do not modify
+...
+\end{lstlisting} 
 
-\subsection{Dealing with software dependencies}
+\subsection{Unix : dependencies}
 \label{sec:about-dependencies}
 
-In order to install \feel, you have to install many dependencies
+In order to install \feel on Unix systems (other than Mac OS X, in you have a Macintosh, please go to ~\ref{macosx}), you have to install many dependencies
 before. Those libraries and programs are necessary for the
 compilation and installation of the \feel librairies.
-
 This is the list of all the librairies you must have installed on your
-computer, and the \verb|*-dev| packages for some of them.
-
-Here is the list of required packages:
+computer, and the \verb|*-dev| packages for some of them. 
+\newline\newline
+\underline{Required packages}:
 \begin{itemize}
-\item g++ (>=4.4)
+\item g++ ($4.4$ or $4.5$, from now $4.6$ is not yet	completely working  )
 \item MPI : openmpi (preferred) or mpich
-\item Boost (>=1.39)
-\item Petsc (>=2.3.3)
-\item Cmake (>=2.6)
+\item Boost ($\geq$1.39)
+\item Petsc ($\geq$2.3.3)
+\item Cmake ($\geq$2.6)
 \item Gmsh\footnote{Gmsh is a pre/post processing software for scientific
 computing available at \url{http://www.geuz.org/gmsh}}
 \item Libxml2
 \end{itemize}
-
-Here is the list of optional packages:
+\underline{Optional packages}:
 \begin{itemize}
-\item Eigen2
 \item Superlu
 \item Suitesparse(umfpack)
 \item Metis: scoth with the metis interface (preferred), metis (non-free)
-\item Trilinos (>=8.0.8)
+\item Trilinos ($\geq$8.0.8)
 \item Google perftools
 \item Paraview\footnote{Paraview is a few parallel scientific data
     visualisation plateform, \url{http://www.paraview.org}}, this is
   not stricly required to run \feel programs but it is somehow
   necessary for visualisation
-\item Python (>= 2.5) for the validation tools
+\item Python ($\geq$ 2.5) for the validation tools
 \end{itemize}
-
 Note that all these packages are available under Debian/GNU/Linux and
-Ubuntu. They should be available
+Ubuntu. They should be available. Once you have installed those dependencies, you can jump to ~\ref{compilingfeel}.
 
 \subsection{Mac OS X installation}
+\label{macosx}
 \feel is also working on Mac operating systems. The way to make it work is quiet different.
 \subsubsection{Compilers}
 In order to \feel and \cmake work properly, you have to install differents compilers :
@@ -510,8 +491,8 @@ and type once again
 \subsubsection{Missing ports}
 \cmake can build Makefiles even if some packages are missing (latex2html, VTK ...). It's not necessary to install them but you can complete the installation with MacPorts, \cmake will find them by itself once they have been installed.
 
-\subsection{Compiling Feel with the CMake}
-
+\subsection{Compiling Feel}
+\label{compilingfeel}
 Feel build system uses \cmake\index{cmake}\footnote{\url{http://www.cmake.org}}
 as its build system. Check that \cmake is using gcc4.5 or 4.4 as C++ compiler
 (you can use the option \verb|CMAKE_CXX_COMPILER=<path>/g++-4.5| where the
@@ -531,9 +512,37 @@ build type:
 \item none(default)
 \end{itemize}
 
+\paragraph{CMake Out Source Build (preferred)}
+The best way is to have a directory (\verb|FEEL| for example) in which you have : \\
+\begin{lstlisting}
+	feel/
+\end{lstlisting}
+where \verb|feel| is the top directory where the source have been downloaded. Placed in \verb|FEEL|, you can create the build directory (\verb|feel.opt| for example) and lauch cmake with :
+\begin{unixcom}
+  mkdir feel.opt
+  cd feel.opt
+  cmake <directory where the feel source are>
+  # e.g cmake ../feel if feel.opt is at the same
+  # directory level as feel
+\end{unixcom}
+you can customize the build type:
+\begin{unixcom}
+  # Choose g++ release
+  cmake -CMAKE_CXX_COMPILER=/usr/bin/g++-4.5
+  # Debug build type (-g...)
+  cmake -D CMAKE_BUILD_TYPE=Debug
+  # Release build type (-O3...)
+  cmake -D CMAKE_BUILD_TYPE=Release
+  ...
+\end{unixcom}
+Once Cmake has made its work, you are now able to compile the library with
+\begin{unixcom}
+		make
+\end{unixcom}
+
 \paragraph{CMake In Source Build}
 
-This is not advised, you should consider out source builds, see next paragraph.
+Be carefull, this is not advised and if you try this way, \cmake won't let you do. If you really want to, you will have to modifiy the top \verb|CMakeLists.txt|. You should consider out source builds by checking the next paragraph.
 
 Enter the source tree and type
 \begin{unixcom}
@@ -546,27 +555,6 @@ To customize or change some build setting one can use the \cmake curse interface
 \begin{unixcom}
   ccmake . # configure and generate
   make
-\end{unixcom}
-
-\paragraph{CMake Out Source Build}
-
-Create a build directory
-\begin{unixcom}
-  mkdir feel.opt
-  cd feel.opt
-  cmake <directory where the feel source are>
-  # e.g cmake ../feel if feel.opt is at the same
-  # directory level as feel
-  make
-\end{unixcom}
-
-you can customize the build type:
-\begin{unixcom}
-  # Debug build type (-g...)
-  cmake -D CMAKE_BUILD_TYPE=Debug
-  # Release build type (-O3...)
-  cmake -D CMAKE_BUILD_TYPE=Release
-  ...
 \end{unixcom}
 
 
