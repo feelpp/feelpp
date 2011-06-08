@@ -54,3 +54,8 @@ endif()
 if ( EXISTS ${FEEL_SOURCE_DIR}/research/hamm )
   add_subdirectory( hamm )
 endif()
+
+
+if (EXISTS ${FEEL_SOURCE_DIR}/research/maxwell)
+  add_subdirectory(maxwell)
+endif()
