@@ -299,7 +299,7 @@ elseif (EXISTS ${FEEL_SOURCE_DIR}/applications/opus )
 endif()
 
 
-if ( FEEL_ENABLE_RESEARCH )
+if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEEL_ENABLE_RESEARCH )
   ADD_SUBDIRECTORY ( research )
 endif()
 
