@@ -131,7 +131,7 @@ add_custom_target(octave WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
 
 macro(add_octave_module modulename)
 
-  foreach( dim 2 3)
+  foreach( dim 2 )
     foreach( order 1 2 )
       FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${modulename}_${dim}_${order}_oct.cpp "#include<${modulename}_oct.hpp>\n\n RESIDUAL_ESTIMATOR( ${dim}, ${order} )\n" )
 
