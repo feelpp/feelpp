@@ -566,6 +566,12 @@ public:
      */
     void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
 
+
+    /**
+     * update a block matrix
+     */
+    void updateBlockMat(boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j);
+
 protected:
 
 private:
@@ -1057,6 +1063,12 @@ MatrixEpetra::operator () (const size_type i,
     //return _M_mat[i_val][j_val]; //no good: locally indexed!
 }
 
+inline
+void
+MatrixEpetra::updateBlockMat(boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j)
+{
+#warning todo!
+}
 
 
 inline

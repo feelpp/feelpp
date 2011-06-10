@@ -1000,6 +1000,38 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
     }
     return e;
 }
+
+template<typename T>
+void
+MatrixPetsc<T>::updateBlockMat(boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j)
+{
+        auto blockMatrix = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>(&*(m) ) );
+
+        auto nbRowInBlock = blockMatrix->size1();
+
+        int ierr = 0;
+
+        for (size_type ii = 0 ; ii < nbRowInBlock ; ++ii)
+            {
+                PetscInt row = ii;
+                PetscInt ncols;
+                const PetscInt *cols;
+                const PetscScalar *vals;
+
+                ierr = MatGetRow(blockMatrix->mat(), row, &ncols, &cols, &vals);
+                CHKERRABORT(PETSC_COMM_WORLD,ierr);
+
+                for (size_type jj = 0 ; jj < ncols ; ++jj)
+                    this->set(start_i+row,
+                              start_j+cols[jj],
+                              vals[jj]);
+
+                ierr = MatRestoreRow(blockMatrix->mat(),row,&ncols,&cols,&vals);
+                CHKERRABORT(PETSC_COMM_WORLD,ierr);
+
+            }
+}
+
 template class MatrixPetsc<double>;
 } // Feel
 
