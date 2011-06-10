@@ -37,6 +37,7 @@
 #include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
+#include <feel/feelalg/matrixblock.hpp>
 #include <feel/feelalg/datamap.hpp>
 
 #include <feel/feelalg/solvernonlinear.hpp>
@@ -144,6 +145,16 @@ public:
     /**
      * instantiate a new sparse vector
      */
+    virtual sparse_matrix_ptrtype newMatrix(const size_type m,
+                                            const size_type n,
+                                            const size_type m_l,
+                                            const size_type n_l,
+                                            const size_type nnz=30,
+                                            const size_type noz=10) = 0;
+
+    /**
+     * instantiate a new sparse vector
+     */
     virtual sparse_matrix_ptrtype newMatrix( DataMap const& dm1, DataMap const& dm2 ) = 0;
 
     /**
@@ -153,6 +164,18 @@ public:
     sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im  )
     {
         return this->newMatrix( dm->map(), im->map() );
+    }
+
+    /**
+     * instantiate a new block matrix sparse
+     */
+    template <int NR, int NC>
+    sparse_matrix_ptrtype newBlockMatrix( Blocks<NR,NC,T> const & b )
+    {
+        //sparse_matrix_ptrtype mb(new MatrixBlock<NR,NC,T>( b,*this ));
+        //return mb;
+        boost::shared_ptr< MatrixBlock<NR,NC,T> > mb(new MatrixBlock<NR,NC,T>( b,*this ));
+        return mb->getSparseMatrix();
     }
 
     /**

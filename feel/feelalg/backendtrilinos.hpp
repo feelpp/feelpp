@@ -142,6 +142,19 @@ public:
     {
         return newMatrix( Xh->map(), Yh->map() );
     }
+
+    sparse_matrix_ptrtype
+    newMatrix(const size_type m,
+              const size_type n,
+              const size_type m_l,
+              const size_type n_l,
+              const size_type nnz=30,
+              const size_type noz=10)
+    {
+        sparse_matrix_ptrtype  mat( new epetra_sparse_matrix_type(m,n,m_l,n_l,nnz,noz) );
+        return mat;
+    }
+
     sparse_matrix_ptrtype newMatrix( DataMap const& domainmap,
                                      DataMap const& imagemap )
     {

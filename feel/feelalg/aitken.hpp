@@ -529,6 +529,7 @@ Aitken<fs_type>::restart()
     M_hasConverged=false;
     M_convergence.clear();
     M_timer.restart();
+    previousParameter=1;
 }
 
 //-----------------------------------------------------------------------------------------//

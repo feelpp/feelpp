@@ -506,6 +506,10 @@ public:
      */
     virtual void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context ) = 0;
 
+    /**
+     * update a block matrix
+     */
+    virtual void  updateBlockMat(boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j) = 0;
 
 
     /**
