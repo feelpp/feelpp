@@ -142,12 +142,12 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                    % Dim
                                    % meshSize );
     //# marker4 #
-    auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                              _shape=shape,
-                                              _dim=Dim,
-                                              _h=X[0] ) );
-    //#endmarker4#
+auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                         _shape=shape,
+                                         _dim=Dim,
+                                         _h=X[0] ) );
+    //# endmarker4 #
 
 
     //# marker62 #
