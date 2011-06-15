@@ -1,7 +1,7 @@
 add_custom_target( doc )
 
 ADD_SUBDIRECTORY( api )
-ADD_SUBDIRECTORY( tutorial )
+ADD_SUBDIRECTORY( manual )
 
 set(FEEL_INSTALL_APPS ${FEEL_INSTALL_APPS} PARENT_SCOPE)
 
