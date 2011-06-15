@@ -209,10 +209,14 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto Ex = Xh->element();
     auto Ey = Xh->element();
     auto Bz = Xh->element();
+    auto Exe = Xh->element();
+    auto Eye = Xh->element();
+    auto Bze = Xh->element();
     auto u = Xh->element();
     auto v = Xh->element();
 
     using namespace Feel::vf;
+    double dt=0.1*meshSize/Order;
 
     double pi=M_PI;
     double k=2*pi; //=0;
@@ -242,7 +246,7 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     // left hand side
     auto D=M_backend->newMatrix( Xh, Xh );
     auto a = form2( _test=Xh, _trial=Xh, _matrix=D, _init=true );
-    a = integrate( elements(mesh), idt(Ex)*id(u) );
+    a = integrate( elements(mesh), idt(Ex)*id(u)/dt );
     D->printMatlab("mass.m");
     auto backend = backend_type::build( this->vm() );
     auto exporter( export_type::New( this->vm(),
@@ -252,14 +256,20 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     Ex = vf::project( Xh, elements(mesh), Ex_exact );
     Ey = vf::project( Xh, elements(mesh), Ey_exact );
     Bz = vf::project( Xh, elements(mesh), Bz_exact );
+    Exe = Ex; Eye = Ey; Bze = Bz;
     exporter->step(time)->setMesh( mesh );
     exporter->step(time)->add( "Ex", Ex );
     exporter->step(time)->add( "Ey", Ey );
     exporter->step(time)->add( "Bz", Bz );
+    exporter->step(time)->add( "ExExact", Exe );
+    exporter->step(time)->add( "EyExact", Eye );
+    exporter->step(time)->add( "BzExact", Bze );
     exporter->save();
-    double dt=0.1*meshSize/Order;
+    std::cout << "Saved initial/exact solution\n";
     for( time = dt; time <= Tfinal; time += dt )
     {
+        std::cout << "============================================================" << std::endl;
+        std::cout << "time = " << time << "s, dt=" << dt << ", final time=" << Tfinal << std::endl;
         auto w = vec(idv(Ex),idv(Ey),idv(Bz));
         auto wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
         auto wL = vec(leftfacev(idv(Ex)),leftfacev(idv(Ey)),leftfacev(idv(Bz)));
@@ -284,15 +294,21 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
         backend->solve( _matrix=D, _solution=Ey, _rhs=F_Ey  );
         backend->solve( _matrix=D, _solution=Bz, _rhs=F_Bz  );
 
-        std::cout << "||exact-Ex||_2" << integrate(elements(mesh), (idv(Ex)-Ex_exact)*(idv(Ex)-Ex_exact) ).evaluate().norm() ;
-        std::cout << "||exact-Ey||_2" << integrate(elements(mesh), (idv(Ey)-Ey_exact)*(idv(Ey)-Ey_exact) ).evaluate().norm() ;
-        std::cout << "||exact-Bz||_2" << integrate(elements(mesh), (idv(Bz)-Bz_exact)*(idv(Bz)-Bz_exact) ).evaluate().norm() ;
+        std::cout << "||exact-Ex||_2" << integrate(elements(mesh), (idv(Ex)-Ex_exact)*(idv(Ex)-Ex_exact) ).evaluate().norm() << std::endl;
+        std::cout << "||exact-Ey||_2" << integrate(elements(mesh), (idv(Ey)-Ey_exact)*(idv(Ey)-Ey_exact) ).evaluate().norm() << std::endl;
+        std::cout << "||exact-Bz||_2" << integrate(elements(mesh), (idv(Bz)-Bz_exact)*(idv(Bz)-Bz_exact) ).evaluate().norm() << std::endl;
 
         // save
         exporter->step(time)->setMesh( mesh );
         exporter->step(time)->add( "Ex", Ex );
         exporter->step(time)->add( "Ey", Ey );
         exporter->step(time)->add( "Bz", Bz );
+        Exe = vf::project( Xh, elements(mesh), Ex_exact );
+        Eye = vf::project( Xh, elements(mesh), Ey_exact );
+        Bze = vf::project( Xh, elements(mesh), Bz_exact );
+        exporter->step(time)->add( "ExExact", Exe );
+        exporter->step(time)->add( "EyExact", Eye );
+        exporter->step(time)->add( "BzExact", Bze );
         exporter->save();
     }
 
