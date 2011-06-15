@@ -187,6 +187,7 @@ private:
     //! convex of the domain
     std::string convex;
 }; // Diode
+const uint16_type Diode::Order;
 
 void
 Diode::run()
