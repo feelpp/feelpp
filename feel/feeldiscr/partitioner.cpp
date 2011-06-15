@@ -1,4 +1,4 @@
- /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+ /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -151,6 +151,10 @@ const bool meshsp11g = Partitioner<meshsp11_t>::Factory::type::instance().regist
 typedef Mesh<Hypercube<2,1,2> > meshsp21_t;
 const bool meshsp21e = Partitioner<meshsp21_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshsp21_t> );
 const bool meshsp21g = Partitioner<meshsp21_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshsp21_t> );
+
+typedef Mesh<Hypercube<2,2,2> > meshsp22_t;
+const bool meshsp22e = Partitioner<meshsp22_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshsp22_t> );
+const bool meshsp22g = Partitioner<meshsp22_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshsp22_t> );
 
 //
 // Hypercube 3,1
