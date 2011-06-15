@@ -84,7 +84,52 @@ computing available at \url{http://www.geuz.org/gmsh}}
 Note that all these packages are available under Debian/GNU/Linux and
 Ubuntu. They should be available. Once you have installed those dependencies, you can jump to ~\ref{compilingfeel}.
 
-\subsection{Mac OS X installation}
+\subsection{\feel on Debian and Ubuntu}
+\label{sec:feel-debian-ubuntu}
+
+\subsubsection{Debian}
+
+Debian is the platform of choice for \feel, it was developed mainly on it. In
+2011,
+
+The commands to install \feel on Debian are
+\begin{unixcom}
+  sudo apt-get update
+  sudo apt-get install feel++-apps libfeel-dev feel++-doc
+\end{unixcom}
+
+
+The interested user is encourage to follow the \feel PTS page
+\begin{itemize}
+\item \feel \href{http://packages.qa.debian.org/f/feel%2B%2B.html}{Debian Packages Tracking System}
+\end{itemize}
+
+At the moment \feel compiles and is available on the following Debian
+plateforms:
+\begin{itemize}
+\item \feel \href{https://buildd.debian.org/status/package.php?p=feel%2b%2b}{Buildd results}
+\end{itemize}
+
+\subsubsection{Ubuntu}
+
+\feel was uploaded in the distribution Ubuntu-Natty (11.04) for the first
+time.
+
+The commands to install \feel on Ubuntu are
+\begin{unixcom}
+  sudo apt-get update
+  sudo apt-get install feel++-apps libfeel-dev feel++-doc
+\end{unixcom}
+
+The interested user might want to follow the Ubuntu Launchpad \feel page in
+order to know what is going on with \feel on Ubuntu
+\begin{itemize}
+\item \feel \href{https://launchpad.net/ubuntu/+source/feel++}{Ubuntu Source
+  Page for all Ubuntu versions}
+\end{itemize}
+
+
+\subsection{\Feel on Mac OS X}
 \label{macosx}
 \feel is also working on Mac operating systems. The way to make it work is quite different.
 
@@ -443,7 +488,7 @@ following Boost libraries:
 %%% TeX-parse-self: t
 %%% x-symbol-8bits: nil
 %%% TeX-auto-regexp-list: TeX-auto-full-regexp-list
-%%% TeX-master: "feel-manual"
+%%% TeX-master: "../feel-manual"
 %%% ispell-local-dictionary: "american"
 %%% End:
 
