@@ -1,140 +1,12 @@
-\chapter{Examples}
-\label{cha:examples}
-
-\section{Solving nonlinear equations}
-\label{sec:nonlinear-equations}
-
-\feel allows to solve nonlinear equations thanks to its interface to
-the interface to the PETSc nonlinear solver library. It requires the
-implementation of two extra functions in your application that will
-update the jacobian matrix associated to the tangent problem and the
-residual.
-
-Consider that you have an application class \lstinline!MyApp! with a
-backend as data member
-\begin{lstlisting}{gobble=2}
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/application.hpp>
-#include <feel/feelalg/backend.hpp>
-namespace Feel {
-
-class MyApp : public Application
-{
-  public:
-
-  typedef Backend<double> backend_type;
-  typedef boost::shared_ptr<backend_type> backend_ptrtype;
-
-  MyApp( int argc, char** argv,
-  AboutData const& ad, po::options_description const& od )
-  :
-  // init the parent class
-  Application( argc, argv, ad, od ),
-  // init the backend
-  M_backend( backend_type::build( this->vm() ) ),
-  {
-    // define the callback functions (works only for the PETSc backend)
-    M_backend->nlSolver()->residual =
-      boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
-    M_backend->nlSolver()->jacobian =
-      boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
-
-  }
-  void updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
-  {
-    // update the matrix J (Jacobian matrix) associated
-    // with the tangent problem
-  }
-  void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
-  {
-    // update the vector R associated with the residual
-  }
-  void run()
-  {
-
-    //define space
-    Xh...
-    element_type u(Xh);
-    // initial guess is 0
-    u = project( M_Xh, elements(mesh), constant(0.) );
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    *U = u;
-
-    // define R and J
-    vector_ptrtype R( M_backend->newVector( u.functionSpace() ) );
-    sparse_matrix_ptrtype J;
-
-    // update R
-    updateJacobian( U, R );
-    // update J
-    updateResidual( U, J );
-
-    // solve using non linear methods (newton)
-    // tolerance : 1e-10
-    // max number of iterations : 10
-    M_backend->nlSolve( J, U, R, 1e-10, 10 );
-
-    // the soluution was stored in U
-    u = *U;
-  }
-  private:
-
-  backend_ptrtype M_backend;
-};
-} // namespace Feel
-\end{lstlisting}
-
-The function \lstinline!updateJacobian! and \lstinline!updateResidual!
-implement the assmebly of the matrix $J$ (jacobian matrix) and the
-vector $R$ (residual vector) respectively.
-
-\subsection{A first nonlinear problem}
-\label{sec:bratu}
-
-As a simple example, let $\Omega$ be a subset of $\mathbb{R}^d, d=1,2,3$,
-(\emph{i.e.} $\Omega=[-1,1]^d$) with boundary $\partial
-\Omega$. Consider now the following equation and boundary condition
-\begin{equation}
-  \label{eq:29}
-  -\Delta u + u^\lambda = f,\quad u = 0 \text{ on } \partial \Omega.
-\end{equation}
-where $\lambda \in \mathbb{R_+}$ is a given parameter and $f=1$.
-
-
-\begin{nota}
-  To be described in this section. For now see
-  \texttt{doc/tutorial/nonlinearpow.cpp} for an implementation of this
-  problem.
-\end{nota}
-
-\subsection{Simplified combustion problem: Bratu}
-\label{sec:bratu}
-
-As a simple example, let $\Omega$ be a subset of $\mathbb{R}^d, d=1,2,3$,
-(\emph{i.e.} $\Omega=[-1,1]^d$) with boundary $\partial
-\Omega$. Consider now the following equation and boundary condition
-\begin{equation}
-  \label{eq:29}
-  -\Delta u + \lambda e^u = f,\quad u = 0 \text{ on } \partial \Omega
-\end{equation}
-where $\lambda$ is a given parameter. Ceci est généralement appellé le
-problème de Bratu et apparaît lors de la simplification de modèles de
-processus de diffusion non-linéaires par exemple dans le domaine de la
-combustion.
-
-\begin{nota}
-  To be described in this section. For now see
-  \texttt{doc/tutorial/bratu.cpp} for an implementation of this
-  problem.
-\end{nota}
+\feelchapter{Natural convection in a heated tank}
+            {Natural convection in a heated tank}
+            {Christophe Prud'homme}
+            {cha:natural-convection-2d}
 
 \newcommand{\Gr}{\ensuremath{\mathrm{Gr}\xspace}}
 \renewcommand{\Pr}{\ensuremath{\mathrm{Pr}\xspace}}
 
-\section{Natural convection in a heated tank}
-
-
-\subsection{Description}
+\section{Description}
 \label{sec:description}
 
 The goal of this project is to simulate the fluid flow under natural
@@ -236,7 +108,7 @@ The heat equation reads:
 \end{equation}
 where $\Pr$ is the Prandtl number.
 
-% \subsection{Nombre de Grashof}
+% \section{Nombre de Grashof}
 % \label{sec:nombre-de-grashof}
 % Le nombre de Grashof (\Gr) est un nombre sans dimension utilisé en
 % mécanique des fluides pour caractériser la convection libre dans un
@@ -257,7 +129,7 @@ where $\Pr$ is the Prandtl number.
 % \item $\nu$ - viscosité cinématique
 % \end{itemize}
 
-% \subsection{Nombre de Prandtl}
+% \section{Nombre de Prandtl}
 % \label{sec:nombre-de-prandtl}
 
 % Le nombre de Prandtl (\Pr) est un nombre sans dimension. Il représente
@@ -281,7 +153,7 @@ where $\Pr$ is the Prandtl number.
 
 
 
-\subsection{Influence of parameters}
+\section{Influence of parameters}
 \label{sec:infl-des-param}
 
 
@@ -305,7 +177,7 @@ number which shall vary in $[1, 1e7]$.
   \label{fig:heatns:2}
 \end{figure}
 
-\subsection{Quantities of interest}
+\section{Quantities of interest}
 \label{sec:quant-du-benchm}
 
 We would like to compare the results of many simulations with respect
@@ -314,7 +186,7 @@ quantities which will allow us to observe the behavior of the flow and
 heat transfer.
 
 
-\subsubsection{Mean temperature}
+\subsection{Mean temperature}
 \label{sec:mean-temperature}
 
 We consider first the mean temperature on boundary $\Gamma_3$
@@ -338,7 +210,7 @@ figure~\ref{fig:heatns:3}.
   \label{fig:heatns:3}
 \end{figure}
 
-\subsubsection{Flow rate}
+\subsection{Flow rate}
 \label{sec:flow-rate}
 
 Another quantity of interest is the flow rate through the middle of the
@@ -366,10 +238,21 @@ becoming smaller as the Grashof increases.
   \label{fig:4}
 \end{figure}
 
-\subsection{Implementation}
+\section{Implementation}
 \label{sec:implementation}
 
 This application in implemented in
 \texttt{life/doc/tutorial/convection*.cpp}. The implementation solve
 the full nonlinear problem using the nonlinear solver framework.
+
+%%% Local Variables:
+%%% coding: utf-8
+%%% mode: latex
+%%% TeX-PDF-mode: t
+%%% TeX-parse-self: t
+%%% x-symbol-8bits: nil
+%%% TeX-auto-regexp-list: TeX-auto-full-regexp-list
+%%% TeX-master: "../feel-manual"
+%%% ispell-local-dictionary: "american"
+%%% End:
 
