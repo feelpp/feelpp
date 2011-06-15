@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -311,7 +311,7 @@ double
 Bdf<SpaceType>::extrapolateCoefficient( int n, size_type i, double dt ) const
 {
     FEEL_ASSERT( i < n ).error( "Error in specification of the time derivative coefficient for the BDF formula (out of range error)" );
-    return _M_beta[n-1][ i ]/dt;
+    return _M_beta[n-1][ i ];
 }
 
 template <typename SpaceType>
