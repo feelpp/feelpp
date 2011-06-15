@@ -128,9 +128,9 @@ public:
     //! vector type associated with backend (shared_ptr<> type)
     typedef backend_type::vector_ptrtype vector_ptrtype;
 
-    //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order 1
-    //typedef Simplex<2> convex_type;
-    typedef Hypercube<2,Order> convex_type;
+    //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order 2
+    typedef Simplex<2,Order> convex_type;
+    //typedef Hypercube<2,Order> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
@@ -208,7 +208,10 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                        % Order
                                        % X[0] );
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=geo(_filename="diode16x16.geo",_dim=2));
+                                        _desc=geo(_filename=(boost::format("diode-%1%.geo")%convex).str(),
+                                                  _dim=2,
+                                                  _order=Order,
+                                                  _h=X[0] ) );
 
     /**
      * The function space and some associated elements(functions) are then defined
