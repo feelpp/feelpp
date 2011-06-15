@@ -32,7 +32,7 @@
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelpoly/polynomialset.hpp>
+#include <feel/feeldiscr/projector.hpp>
 #include <feel/feelvf/vf.hpp>
 
 /** use Feel namespace */
