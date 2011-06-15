@@ -6,14 +6,22 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{textcomp}
-\usepackage{lmodern}
+%\usepackage{lmodern}
+\usepackage{newcent}
 %%\usepackage{fullpage}
 \usepackage{longtable}
 \usepackage{url}
+\usepackage{sectsty}
+\sectionfont{\sf}
+\subsectionfont{\it}
+\usepackage[Sonny]{fncychap}
 \usepackage{fancyhdr}
 \pagestyle{fancyplain}
-\fancyhead[RE,LO]{\leftmark}
-\fancyhead[LE,RO]{\thepage}
+\lhead{}
+\rhead{}
+
+%\fancyhead[RE,LO]{\leftmark}
+%\fancyhead[LE,RO]{\thepage}
 
 \usepackage{fancybox}
 %\usepackage{fancyvrb}
@@ -38,6 +46,8 @@
 \usepackage{xspace}
 \usepackage{tikz}
 \usetikzlibrary{arrows,patterns,plotmarks,shapes,snakes,er,3d,automata,backgrounds,topaths,trees,petri,mindmap}
+
+\usepackage[colorinlistoftodos]{todonotes}
 
 %
 % les trois parties (front, main et back)
@@ -151,6 +161,11 @@ prod,element_prod, range, subrange, inner_prod,unite,elements,markedelements,mar
 \lstset{includerangemarker=false,rangeprefix=\/\/\#\ ,% curly left brace plus space
   rangesuffix=\ \#}% space plus curly right brace
 
+\newcommand{\feelchapter}[4]{\chapter{#1 \\ \small{\rm By #3}} \vspace{-1cm}
+                              Chapter ref: \textbf{[#4]} \label{chap:#4} \vspace{1cm} \chead[#2]{#3}}
+\newcommand{\feelappendix}[2]{\chapter{#1} \chead{#2}}
+
+
 \newcommand{\acos}{\ensuremath{\mathrm{acos}}\xspace}
 \newcommand{\asin}{\ensuremath{\mathrm{asin}}\xspace}
 \newcommand{\atan}{\ensuremath{\mathrm{atan}}\xspace}
@@ -158,7 +173,9 @@ prod,element_prod, range, subrange, inner_prod,unite,elements,markedelements,mar
 \newcommand{\cc}{{\sl\sffamily C}\xspace}
 \newcommand{\cpp}{C{\hspace{-.3em}\vspace{-.2em}\tiny++}\xspace}
 \newcommand{\polyP}[1]{\ensuremath{\mathbb{P}_{#1}}\xspace}
-\newcommand{\feel}{Feel\xspace}
+\newcommand{\feel}{\textsc{Feel++}\xspace}
+\newcommand{\Feel}{\textsc{Feel++}\xspace}
+\newcommand{\FEEL}{\textsc{Feel++}\xspace}
 \newcommand{\cmake}{\texttt{cmake}\xspace}
 \newcommand{\ccmake}{\texttt{ccmake}\xspace}
 
@@ -237,6 +254,7 @@ A Library for Finite and Spectral Element Methods in 1D, 2D and 3D\\
     1D, 2D AND 3D\\
     \bigskip
     {\small Version \feelversion }}\\[0.6cm]
+    Editor\\
   Christophe \textsc{Prud'homme}\\
   \texttt{christophe.prudhomme@ujf-grenoble.fr}\\
   \par\vspace{2cm}
@@ -275,22 +293,33 @@ Free Documentation License".
 
 \tableofcontents
 
+\part{Tutorial}
+\label{part:tutorial}
 
-\input{building}
+\include{tutorial/building}
+\include{tutorial/getting-started}
 
-\input{tutorial}
 
-\input{examples}
+\part{Learning by Examples}
+\label{part:learning-examples}
+
+\include{examples/nonlinear}
+\include{examples/natural-convection-2d}
+%\include{examples/heat-transfer}
+%\include{examples/solid-mechanics}
+
 
 %_______        ANNEXES / APPENDIX      ________
+\part{Appendix}
 \appendix
-\newpage
 
 \include{randomnotes}
 \include{feel}
 \include{gfdl}
 \include{faq}
 
+
+\include{authors}
 
 \backmatter
 
@@ -304,3 +333,14 @@ Free Documentation License".
 
 
 \end{document}
+%%% Local Variables:
+%%% coding: utf-8
+%%% mode: latex
+%%% TeX-PDF-mode: t
+%%% TeX-parse-self: t
+%%% x-symbol-8bits: nil
+%%% TeX-auto-regexp-list: TeX-auto-full-regexp-list
+%%% TeX-master: t
+%%% ispell-local-dictionary: "american"
+%%% End:
+

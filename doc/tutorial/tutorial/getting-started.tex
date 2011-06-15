@@ -1,5 +1,7 @@
-\chapter{Tutorial}
-\label{sec:tutorial}
+\feelchapter{Getting Started with Feel++}
+            {Getting Started with Feel++}
+            {Christophe Prud'homme, Baptiste Morin}
+            {cha:getting-started}
 
 
 \section{Creating applications}
@@ -43,7 +45,7 @@ if the options is not set by the command line. Then we describe the application 
 
 
 Now we turn to the class \lstinline!MyApp! itself: it derives from
-\lstinline!Feel::Application!. This class provides two constructors : one with only description and one with additionnal parameters which enables to add options 
+\lstinline!Feel::Application!. This class provides two constructors : one with only description and one with additionnal parameters which enables to add options
 \lstinline!argc! and \lstinline!argv!.
 %and the \lstinline!AboutData! as well as possibly the description of the command line options \lstinline!Feel::po::option_description!.
 This class \lstinline!MyApp! has to redefine the \lstinline!run()! method. It is defined as a pure virtual function in \lstinline!Application!.
@@ -134,16 +136,16 @@ The \verb|.cfg| file is searched in the following order
 The name of the file can be constructed in two ways \verb|<appname>.cfg| and
 \verb|feel_<appname>.cfg| where \verb|<appname>| is the string given in the
 \verb|AboutData| data structure passed to the construction of the
-\verb|Application| class. 
+\verb|Application| class.
 Here are two examples of the logfiles in the case that there was not \verb|myapp.cfg| created.
 
 \begin{lstlisting}[language=sh]
 > ./feel_doc_myapp
-> cat ~/feel/doc/tutorial/myapp/myapp-1.0 
+> cat ~/feel/doc/tutorial/myapp/myapp-1.0
 myapp-1.0 is opened for debug
 the value of dt is 1
 the value of myapp-solver-type is gmres
-the value of myapp-pc-type is lu 
+the value of myapp-pc-type is lu
 
 > ./feel_doc_myapp --dt=0.2
 > cat ~/feel/doc/tutorial/myapp/myapp-1.0
@@ -159,7 +161,7 @@ dt=1e-5
 myapp-solver-type=cg
 myapp-pc-type=ilu
 \end{lstlisting}
-This configured file will be parsed automatically before being executed. In that way you won't have to enter each time values you want to fix. 
+This configured file will be parsed automatically before being executed. In that way you won't have to enter each time values you want to fix.
 
 
 \subsubsection{MPI Application}
@@ -218,7 +220,7 @@ manipulation tools provided by \feel.
 \subsection{Mesh definition}
 
 We look at the definition of a mesh data structure. First, we define
-the type of geometric entities that we shall use to form our mesh. \feel supports several geometric entities 
+the type of geometric entities that we shall use to form our mesh. \feel supports several geometric entities
 \begin{itemize}
 \item simplices: segment, triangle, tetrahedron
 \item tensorized entities: segment, quadrangle, hexahedron
@@ -243,7 +245,7 @@ meshes are not supported).
 \lstinputlisting[linerange=marker2-endmarker2]{mymesh.cpp}
 
 \lstinline!boost::shared_ptr! allows to manipulate a pointer on a mesh. It is customary, and usually a very good practice, to define the
-\lstinline!boost::shared_ptr<>!  counterpart which is used actually in practice. 
+\lstinline!boost::shared_ptr<>!  counterpart which is used actually in practice.
 
 %We can now instantiate a new mesh data structure.
 
@@ -257,13 +259,13 @@ The next step is to read some mesh files. \feel supports essentially the Gmsh me
 
 \item \lstinline!createGMSHMesh! is a function which allows to generate a mesh file \verb|.msh| automatically from a description file ( \verb|.geo| for example) by using the \verb|_desc| parameter and store the generated mesh into the \verb|_mesh| parameter allocated when calling the function.
 
-\item \lstinline!GmshSimplexDomain! is a class which will enable you to create simplex domains (e.g segment, triangle or tetrahedron). It allows to modify 
+\item \lstinline!GmshSimplexDomain! is a class which will enable you to create simplex domains (e.g segment, triangle or tetrahedron). It allows to modify
   	\begin{itemize}
 	 \item the characteristic size of the mesh (default $h=0.1$)
   	\item the domain vertices (default is $(-1,-1,-1), (1,-1,-1), (-1,1,-1), (-1,-1,1)$)
-  	\end{itemize}		
+  	\end{itemize}
 
-\item \lstinline!GmshHypercubeDomain! is a class which will enable you to create hypercube domains (e.g cube) in 1,2 or 3D. It allows to modify 
+\item \lstinline!GmshHypercubeDomain! is a class which will enable you to create hypercube domains (e.g cube) in 1,2 or 3D. It allows to modify
   	\begin{itemize}
   	\item the characteristic size of the mesh (default $h=0.1$)
   	\item the domain (default is the cube $[0;1]\times[0;1]\times[0;1]$)
@@ -275,7 +277,7 @@ The next step is to read some mesh files. \feel supports essentially the Gmsh me
 %Next we import the mesh using the \lstinline!ImporterGmsh!\index{mesh!import}\index{Class!ImporterGmsh} class as follows:
 
 %lstinputlisting[linerange=marker5-endmarker5]{mymesh.cpp}
-%At this stage we are ready to use the mesh instance: we can for example export the mesh to a postprocessing format. Two formats are supported at the moment 
+%At this stage we are ready to use the mesh instance: we can for example export the mesh to a postprocessing format. Two formats are supported at the moment
 %\begin{itemize}
 %\item \lstinline!Ensight! (case and sos) which is supported by the
 %  software Ensight\footnote{\url{http://www.ensight.com}} and
@@ -342,23 +344,23 @@ we generate some of the following graphics (which are located in \verb|~/feel/do
 
 %\begin{centering}
 %\begin{tabular}{cc}
-%\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_1.png} %\caption{Line in 1D} 
-%& 
+%\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_1.png} %\caption{Line in 1D}
+%&
 %\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_2.png} %\caption{Cube in 2D}
 % \\
 %\verb|Line in 1D| & \verb|Cube in 2D|
 %\\
 %\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_3.png} %\caption{Unit cube in 3D}
-%& 
+%&
 %\includegraphics[width=4.5cm]{pngs/mymesh/simplex_3.png} %\caption{Tetrahedron}
 %\\
 %\verb|Unit cube in 3D| & \verb|Tetrahedron|
 %\end{tabular}
 %\end{centering}
-To admire the meshes you've generated, you should go to \lstinline!~/feel/doc/tutorial/mymesh/hypercube! (or \lstinline!simplex!) and find out the \verb|.msh| files. Last step is to launch gmsh with 
+To admire the meshes you've generated, you should go to \lstinline!~/feel/doc/tutorial/mymesh/hypercube! (or \lstinline!simplex!) and find out the \verb|.msh| files. Last step is to launch gmsh with
 \begin{unixcom}
 		gmsh yourfile.msh
-\end{unixcom} 
+\end{unixcom}
 
 \subsection{Exporting meshes for post-processing}
 
@@ -1298,4 +1300,15 @@ The figure~\ref{fig:2} displays $p$ and $\mathbf{u}$ which are available in
   \caption{Solution of problem~\ref{prob:4}}
   \label{fig:2}
 \end{figure}
+
+%%% Local Variables:
+%%% coding: utf-8
+%%% mode: latex
+%%% TeX-PDF-mode: t
+%%% TeX-parse-self: t
+%%% x-symbol-8bits: nil
+%%% TeX-auto-regexp-list: TeX-auto-full-regexp-list
+%%% TeX-master: "../feel-manual"
+%%% ispell-local-dictionary: "american"
+%%% End:
 
