@@ -32,15 +32,16 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 
-namespace Feel
-{
+using namespace Feel;
+
 gmsh_ptrtype
 diodegeo( double h, int Order, std::string const& convex )
 {
     std::ostringstream ostr;
     std::ostringstream nameStr;
     gmsh_ptrtype gmshp( new Gmsh(2, Order) );
-    ostr << "h=" << h << ";\n"
+    gmshp->setCharacteristicLength( h );
+    ostr << gmshp->preamble() << "\n"
          << "Point(1) = {0, 0, 0, h};\n"
          << "Point(2) = {0, 1, 0, h};\n"
          << "Point(3) = {0, 2, 0, h};\n"
@@ -75,7 +76,7 @@ diodegeo( double h, int Order, std::string const& convex )
          << "Physical Surface(11) = {-3};\n";
     if ( convex == "hypercube" )
     {
-        ostr << << "Recombine Surface {1};\n"
+        ostr << "Recombine Surface {1};\n"
              << "Transfinite Surface {1};\n"
              << "Recombine Surface {2};\n"
              << "Transfinite Surface {2};\n"
@@ -99,8 +100,6 @@ diodegeo( double h, int Order, std::string const& convex )
     gmshp->setDescription( ostr.str() );
     return gmshp;
 }
-}
 
-}
-}
+
 
