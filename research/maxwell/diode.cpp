@@ -55,6 +55,7 @@ makeOptions()
         ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
         ("convex", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the convex used in the mesh (either simplex or hypercube)")
         ("penaldir", Feel::po::value<double>()->default_value( 20 ), "penalisation parameter for the weak boundary conditions")
+        ("dt", Feel::po::value<double>()->default_value( 0.01 ), "timestep value")
         ("Tfinal", Feel::po::value<double>()->default_value( 1 ), "final time")
         ;
     return diodeoptions.add( Feel::feel_options() );
@@ -129,7 +130,7 @@ public:
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order 1
     //typedef Simplex<2> convex_type;
-    typedef Hypercube<2> convex_type;
+    typedef Hypercube<2,Order> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
@@ -138,12 +139,18 @@ public:
     //! the basis type of our approximation space
     typedef bases<Lagrange<Order,Scalar,Discontinuous> > basis_type;
 
+
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     //! the approximation function space type (shared_ptr<> type)
     typedef boost::shared_ptr<space_type> space_ptrtype;
     //! an element type of the approximation function space
     typedef space_type::element_type element_type;
+
+    typedef bases<Lagrange<Order,Scalar> > c_basis_type;
+    typedef FunctionSpace<mesh_type, c_basis_type> c_space_type;
+    typedef boost::shared_ptr<c_space_type> c_space_ptrtype;
+    typedef c_space_type::element_type c_element_type;
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
@@ -158,6 +165,7 @@ public:
         super( vm, about ),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].as<double>() ),
+        timeStep( this->vm()["dt"].as<double>() ),
         Tfinal( this->vm()["Tfinal"].as<double>() ),
         convex( this->vm()["convex"].as<std::string>() )
     {
@@ -174,6 +182,7 @@ private:
 
     //! mesh characteristic size
     double meshSize;
+    double timeStep;
     double Tfinal;
     //! convex of the domain
     std::string convex;
@@ -206,17 +215,21 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
      */
     /** \code */
     auto Xh = space_type::New( mesh );
+    auto Xhc = c_space_type::New( mesh );
     auto Ex = Xh->element();
     auto Ey = Xh->element();
     auto Bz = Xh->element();
-    auto Exe = Xh->element();
-    auto Eye = Xh->element();
-    auto Bze = Xh->element();
+    auto Exe = Xhc->element();
+    auto Eye = Xhc->element();
+    auto Bze = Xhc->element();
+    auto Exc = Xhc->element();
+    auto Eyc = Xhc->element();
+    auto Bzc = Xhc->element();
     auto u = Xh->element();
     auto v = Xh->element();
 
     using namespace Feel::vf;
-    double dt=0.1*meshSize/Order;
+    double dt=std::min(0.1*meshSize/Order,timeStep);
 
     double pi=M_PI;
     double k=2*pi; //=0;
@@ -256,11 +269,23 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     Ex = vf::project( Xh, elements(mesh), Ex_exact );
     Ey = vf::project( Xh, elements(mesh), Ey_exact );
     Bz = vf::project( Xh, elements(mesh), Bz_exact );
-    Exe = Ex; Eye = Ey; Bze = Bz;
+
+    auto L2Proj = projector( Xh, Xhc );
+    Exc = L2Proj->project( idv(Ex) );
+    Eyc = L2Proj->project( idv(Ey) );
+    Bzc = L2Proj->project( idv(Bz) );
+
+    Exe = vf::project( Xhc, elements(mesh), Ex_exact );
+    Eye = vf::project( Xhc, elements(mesh), Ey_exact );
+    Bze = vf::project( Xhc, elements(mesh), Bz_exact );
+
     exporter->step(time)->setMesh( mesh );
     exporter->step(time)->add( "Ex", Ex );
     exporter->step(time)->add( "Ey", Ey );
     exporter->step(time)->add( "Bz", Bz );
+    exporter->step(time)->add( "Exc", Exc );
+    exporter->step(time)->add( "Eyc", Eyc );
+    exporter->step(time)->add( "Bzc", Bzc );
     exporter->step(time)->add( "ExExact", Exe );
     exporter->step(time)->add( "EyExact", Eye );
     exporter->step(time)->add( "BzExact", Bze );
@@ -303,9 +328,17 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
         exporter->step(time)->add( "Ex", Ex );
         exporter->step(time)->add( "Ey", Ey );
         exporter->step(time)->add( "Bz", Bz );
-        Exe = vf::project( Xh, elements(mesh), Ex_exact );
-        Eye = vf::project( Xh, elements(mesh), Ey_exact );
-        Bze = vf::project( Xh, elements(mesh), Bz_exact );
+
+        Exc = L2Proj->project( idv(Ex) );
+        Eyc = L2Proj->project( idv(Ey) );
+        Bzc = L2Proj->project( idv(Bz) );
+        exporter->step(time)->add( "Exc", Exc );
+        exporter->step(time)->add( "Eyc", Eyc );
+        exporter->step(time)->add( "Bzc", Bzc );
+
+        Exe = vf::project( Xhc, elements(mesh), Ex_exact );
+        Eye = vf::project( Xhc, elements(mesh), Ey_exact );
+        Bze = vf::project( Xhc, elements(mesh), Bz_exact );
         exporter->step(time)->add( "ExExact", Exe );
         exporter->step(time)->add( "EyExact", Eye );
         exporter->step(time)->add( "BzExact", Bze );
