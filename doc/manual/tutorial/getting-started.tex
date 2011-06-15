@@ -78,7 +78,7 @@ well as \lstinline!argc! and \lstinline!argv!. Then we call the
 
 Now, you can check if your first \feel application is working. To compile \lstinline!myapp!, type in a command-line :
 \begin{unixcom}
-		cd feel.opt/doc/tutorial
+		cd feel.opt/doc/manual
 		make feel_doc_myapp
 \end{unixcom}
 
@@ -148,7 +148,7 @@ the value of myapp-solver-type is gmres
 the value of myapp-pc-type is lu
 
 > ./feel_doc_myapp --dt=0.2
-> cat ~/feel/doc/tutorial/myapp/myapp-1.0
+> cat ~feel/doc/tutorial/myapp/myapp-1.0
 myapp-1.0 is opened for debug
 the value of dt is 0.2
 the value of myapp-solver-type is gmres
@@ -406,7 +406,7 @@ or
 \[ \Omega=\{ \mathbf{x} \in \mathbb{R}^d | x_i \geq 0, \sum_{i=1}{d} x_i \leq 1 \} \]
 
 where $ d=1,2$ or $3$ and $\mathbf{x}=(x_1,...,x_d)$.\\
-These domains are plotted in the section ~\ref{sec:mesh-manipulation} (If it's not yet done, compile all examples which are used in this tutorial, go to \lstinline!~/FEEL/feel.opt/doc/tutorial/! and type \verb|make| and execute the application \verb|feel_doc_myapp|). The execution will result in several meshes as it is explained in ~\ref{mesh:examples}.\\
+These domains are plotted in the section ~\ref{sec:mesh-manipulation} (If it's not yet done, compile all examples which are used in this tutorial, go to \lstinline!~/FEEL/feel.opt/doc/manual/! and type \verb|make| and execute the application \verb|feel_doc_myapp|). The execution will result in several meshes as it is explained in ~\ref{mesh:examples}.\\
 Here are the integrals we want to compute :
 \begin{itemize}
 \item $\displaystyle{ \int_\Omega 1 }$ : the measure of the domain

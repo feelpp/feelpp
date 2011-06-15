@@ -56,7 +56,6 @@ before. Those libraries and programs are necessary for the
 compilation and installation of the \feel librairies.
 This is the list of all the librairies you must have installed on your
 computer, and the \verb|*-dev| packages for some of them.
-
 \underline{Required packages}:
 \begin{itemize}
 \item g++ ($4.4$ or $4.5$, from now $4.6$ is not yet	completely working  )
@@ -89,10 +88,7 @@ Ubuntu. They should be available. Once you have installed those dependencies, yo
 
 \subsubsection{Debian}
 
-Debian is the platform of choice for \feel, it was developed mainly on it. In
-2011,
-
-The commands to install \feel on Debian are
+Debian is the platform of choice for \feel, it was developed mainly on it. The commands to install \feel on Debian are
 \begin{unixcom}
   sudo apt-get update
   sudo apt-get install feel++-apps libfeel-dev feel++-doc
@@ -113,14 +109,11 @@ plateforms:
 \subsubsection{Ubuntu}
 
 \feel was uploaded in the distribution Ubuntu-Natty (11.04) for the first
-time.
-
-The commands to install \feel on Ubuntu are
+time. The commands to install \feel on Ubuntu are
 \begin{unixcom}
   sudo apt-get update
   sudo apt-get install feel++-apps libfeel-dev feel++-doc
 \end{unixcom}
-
 The interested user might want to follow the Ubuntu Launchpad \feel page in
 order to know what is going on with \feel on Ubuntu
 \begin{itemize}
@@ -140,7 +133,7 @@ In order to \feel and \cmake work properly, you have to install differents compi
 \item Gcc
 The first step is to install the latest version of Xcode. If your computer is recent, you can install it with your DVD that came with your machine (not the OS DVD, but the applications one). You don't have to install the complete Xcode (you can uncheck iOS SDK for example, it's not necessary here and requiers a lot of memory). Xcode will provide your computer all basic tools to compile such as gcc 4.2. It's the first step, you'll see later how to easily install gcc 4.5 using MacPorts.
 \item Fortran
-To build the Makefiles, \cmake will need a Fortran compiler. To make it works, please go to \href{http://hpc.sourceforge.net/}{SourceForge.net} and download \verb|gfortran-snwleo-intel-bin.tar.gz| which is the fortran compiler only (from now, don't download the complete install with gcc 4.6 because Feel needs gcc 4.5). To install it, go to the directory where you have downloaded the file and type in a command-line :
+To build the Makefiles, \cmake will need a Fortran compiler. To make it works, please go to \href{http://hpc.sourceforge.net/}{SourceForge.net} and download \verb|gfortran-snwleo-intel-bin.tar.gz| which is the fortran compiler only (from now, don't download the complete install with gcc 4.6 because Feel needs gcc 4.5). To install it, go to the directory where you have downloaded the file and type in a command-line
 \begin{unixcom}
 		sudo tar -xvf gfortran-snwleo-intel-bin.tar -C /
 \end{unixcom}
@@ -425,10 +418,10 @@ To customize or change some build setting one can use the \cmake curse interface
 
 \subsubsection{Compiling the Feel tutorial}
 \label{sec:comp-feel-tutor}
-If the command \verb|make check| in \verb|feel.opt/| has been run before the tutorial
-should be already compiled and ready. The steps are as follows  to build the Feel tutorial
+The manual (which includes the tutorial) is edited with \LaTeX  so you need to have installed the \LaTeX  distribution on your computer. \LaTeX  is a high-quality typesetting system, it includes features designed for the production of technical and scientific documentation. There are several ways to make it work, for example you can go on \href{http://www.tug.org/mactex/}{MacTeX website} and follow the instructions to install the distribution. If the command \verb|make check| in \verb|feel.opt/| has been run before, the tutorial
+should be already compiled and ready. The steps are as follows to build the Feel tutorial
 \begin{unixcom}
-  cd feel.opt/doc/tutorial
+  cd feel.opt/doc/manual
   make pdf
 \end{unixcom}
 %Here is what the directory should look like
@@ -441,11 +434,11 @@ should be already compiled and ready. The steps are as follows  to build the Fee
 %  myintegrals.o mymesh.o      stokes.assert tutorial.aux pdfs/ styles/
 %  stokes        stokes.o      tutorial.bbl  tutorial.log tutorial.pdf
 %\end{unixcom}
-The directory \verb|doc/tutorial| contains all examples used in the tutorial. You will see how it works in the following parts.
+The directory \verb|doc/manual| contains all examples used in the tutorial. You will see how it works in the following parts.
 
 \section{Programming environment}
 \label{sec:progr-envir}
-We present here a quick list of all namespaces and librairies proposed by \feel, you'll see in the tutorial which starts at section ~\ref{sec:tutorial} how you can use them.
+We present here a quick list of all namespaces and librairies proposed by \feel, you'll see in the tutorial which starts at section ~\ref{cha:getting-started} how you can use them.
 \subsection{Boost C++ Libraries}
 \label{sec:boost-c++-libraries}
 
