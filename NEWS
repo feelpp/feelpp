@@ -47,6 +47,7 @@
 
  - added implementation of $L_2$ and $H_1$ projector which renders rather
    seamless these projection.
+ - fix copy/paste bug in bdf extrapolation, the coefficient were divided by dt
 
 *** feelfilters
 
@@ -58,9 +59,9 @@
 
 ** Documentation
 
-*** Tutorial
+*** Manual
 
- - updated tutorial
+ - reorganized the manual
  - updated doxygen documentation
 
 
