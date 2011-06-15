@@ -2,7 +2,9 @@
             {2D Maxwell simulation in a diode}
             {Thomas Strub, Philippe Helluy, Christophe Prud'homme}
             {cha:maxwell-2d}
-
+\newcommand{\E}{\ensuremath{{\bm E}}\xspace}
+\newcommand{\B}{\ensuremath{{\bm B}}\xspace}
+\newcommand{\J}{\ensuremath{{\bm J}}\xspace}
 \section{Description}
 \label{sec:description}
 
@@ -10,73 +12,81 @@ The Maxwell equations read:
 
 
 \begin{eqnarray*}
-\frac{-1}{c^{2}}\frac{\delta}{\delta t}E+\nabla\times B & = & \mu_{0}J\\
-B_{t}+\nabla\times E & = & 0\\
-\nabla.B & = & 0\\
-\nabla.E & = & \frac{\rho}{\epsilon_{o}}
+\frac{-1}{c^{2}}\frac{\partial \E}{\partial t}+\nabla\times \B & = & \mu_{0} \J\\
+\B_{t}+\nabla\times \E & = & 0\\
+\nabla \cdot \B & = & 0\\
+\nabla \cdot \E & = & \frac{\rho}{\epsilon_{o}}
 \end{eqnarray*}
 
+where \E is the electric field, \B the magnetic field,
+\J the current density, $ c $ the speed of light, $ \ rho $
+density of electric charge, $ \ mu_ {0} $ the vacuum permeability
+and $ \ epsilon_ {0} $ the vacuum permittivity.
 
-where $E$ représente le champ electrique, $B$ le champ magnétique,
-$J$ la densité de courant, $c$ la célérité de la lumière, $\rho$
-la densité de charge électrique, $\mu_{0}$ la perméabilité du vide
-et $\epsilon_{0}$ la permittivité du vide.
+In the midst industrial notament in aeronautics, systems
+Products must verify certain standards such as the receipt
+an electromagnetic wave emitted by a radar does not cause
+the inefficassité of part or all of the hardware in the
+system.
 
-Dans le milieu industrielle, notament en aéronautique, les systèmes
-produits doivent vérifier certaines normes par exemple la réception
-d'une onde electromagnétique émise par un radar ne doit pas entrainer
-l'inefficassité d'une partie ou de tout le matériel présent dans le
-système.
+Thus, the simulation of such situations can develop when
+or during the certification of a new product to test its reaction
+to such attacks.
 
-Ainsi, la simulation de tels situations permet lors du développement
-ou lors de la certification d'un nouveau produit de tester sa réaction
-à de tels agressions.
+Also note that the last two equations are actually
+initial conditions, since if we assume they are true at the moment
+$ t = 0$ then it can be deduced from the first two.
 
-Remarquons également que les deux dernières équations sont en fait
-des conditions initiales, en effet si on les suppose vraies à l'instant
-$t=0$ alors elle peuvent êtres deduite des deux premières.
+At $t=0s$, we suppose that
+\begin{eqnarray}
+\nabla \cdot \B & = & 0\\
+\nabla \cdot \E & = & \frac{\rho}{\epsilon_{o}}
+\end{eqnarray}
 
-Supposons qu'à $t=0$, on a
-\begin{eqnarray*}
-\nabla.B & = & 0\\
-\nabla.E & = & \frac{\rho}{\epsilon_{o}}
-\end{eqnarray*}
-
-
-i.e.\begin{eqnarray*}
-\frac{\delta B_{x}}{\delta x}(t=0)+\frac{\delta B_{y}}{\delta y}(t=0)+\frac{\delta B_{z}}{\delta z} & (t=0)= & 0\\
-\frac{\delta E_{x}}{\delta x}(t=0)+\frac{\delta E_{y}}{\delta y}(t=0)+\frac{\delta E_{z}}{\delta z} & (t=0)= & \frac{\rho}{\epsilon_{o}}\end{eqnarray*}
-
-
-En dérivant la première de ces deux équations par rapport au temps,
-on obtient :
-
-\begin{eqnarray*}
-\frac{\delta}{\delta t}\frac{\delta}{\delta x}B_{x}+\frac{\delta}{\delta t}\frac{\delta}{\delta y}B_{y}+\frac{\delta}{\delta t}\frac{\delta}{\delta z}B_{z} & = & \frac{\delta}{\delta x}\left(\frac{\delta}{\delta y}E_{z}-\frac{\delta}{\delta z}E_{y}\right)+\frac{\delta}{\delta y}\left(\frac{\delta}{\delta z}E_{x}-\frac{\delta}{\delta x}E_{z}\right)+\frac{\delta}{\delta z}\left(\frac{\delta}{\delta x}E_{y}-\frac{\delta}{\delta y}E_{x}\right)\\
- & = & 0\end{eqnarray*}
+Suppose that $\B = (B_x, B_y, B_z )^T$ and $\E=(E_x,E_y,E_z)^T$
+i.e.\begin{eqnarray}
+\frac{\partial B_{x}}{\partial x}(t=0)+\frac{\partial B_{y}}{\partial y}(t=0)+\frac{\partial B_{z}}{\partial z} & (t=0)= & 0\\
+\frac{\partial E_{x}}{\partial x}(t=0)+\frac{\partial E_{y}}{\partial
+y}(t=0)+\frac{\partial E_{z}}{\partial z} & (t=0)= & \frac{\rho}{\epsilon_{o}}
+\end{eqnarray}
 
 
-puisque
+Differentiating the first of these two equations with respect to time,
+we get:
+
+
+\begin{multline}
+  \label{eq:6}
+\frac{\partial}{\partial t}\frac{\partial}{\partial
+x}B_{x}+\frac{\partial}{\partial t}\frac{\partial}{\partial y}B_{y}+\frac{\partial}{\partial t}\frac{\partial}{\partial z}B_{z} = \\
+\frac{\partial}{\partial x}\left(\frac{\partial}{\partial y}E_{z}-\frac{\partial}{\partial z}E_{y}\right)+\frac{\partial}{\partial y}\left(\frac{\partial}{\partial z}E_{x}-\frac{\partial}{\partial x}E_{z}\right)+\frac{\partial}{\partial z}\left(\frac{\partial}{\partial x}E_{y}-\frac{\partial}{\partial y}E_{x}\right)\\
+ =  0
+\end{multline}
+
+
+
+thanks to
 
 \begin{equation}
   \label{eq:3}
-  B_{t}+\nabla\times E=0
+  \B_{t}+\nabla\times \E=0
 \end{equation}
 
 
 
-Donc, pour tout $t\geq0$,
+So, for all $t\geq0$,
 \begin{equation}
   \label{eq:4}
-  \nabla.B(t)=\nabla.B(0)=0
+  \nabla \cdot \B(t)=\nabla\cdot\B(0)=0
 \end{equation}
 
-On déduit de la meme manière la deuxième équation, en utilisant l'équation de
-conservation de la charge :
+We deduce the same way the second equation, using the charge
+conservation equation :
+
 
 \begin{equation}
   \label{eq:2}
-  \frac{\delta}{\delta t}\rho+\Delta.\; J=0
+  \frac{\partial \rho}{\partial t} + \nabla \cdot  (\rho \J) = 0
 \end{equation}
 
 
