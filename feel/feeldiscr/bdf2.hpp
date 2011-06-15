@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -165,7 +165,7 @@ public:
     double polyCoefficient( int i ) const
     {
         FEEL_ASSERT( i >=0 && i < BDF_MAX_ORDER-1 ).error( "[BDF] invalid index" );
-        return M_beta[this->timeOrder()-1][i]/this->timeStep();
+        return M_beta[this->timeOrder()-1][i];
     }
     double polyDerivCoefficient( int i ) const
     {
