@@ -92,6 +92,12 @@ public:
     static const uint16_type TAG = i;
 
 };
+
+/**
+ * diode geometry description
+ */
+gmsh_ptrtype diodegeo( double h, int Order, std::string const& convex );
+
 /**
  * \class Diode
  *
@@ -209,10 +215,7 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                        % Order
                                        % X[0] );
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=geo(_filename=(boost::format("diode-%1%.geo")%convex).str(),
-                                                  _dim=2,
-                                                  _order=Order,
-                                                  _h=X[0] ) );
+                                        _desc=diodegeo(X[0],Order,convex) );
 
     /**
      * The function space and some associated elements(functions) are then defined
