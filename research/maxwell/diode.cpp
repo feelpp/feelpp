@@ -218,14 +218,14 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     double k=2*pi; //=0;
     double theta=pi/4;
     //theta=0;
-    double u=cos(theta);
-    double v=sin(theta);
+    double vu=cos(theta);
+    double vv=sin(theta);
     double time = 0;
-    auto c=cos(k * (u * Px() + v * Py() - cst_ref(time)));
-    auto Ex_exact = -v*c;
-    auto Ey_exact = u*c;
+    auto c=cos(k * (vu * Px() + vv * Py() - cst_ref(time)));
+    auto Ex_exact = -vv*c;
+    auto Ey_exact = vu*c;
     auto Bz_exact = c;
-    auto w_exact = vec(idv(Ex_exact), idv(Ey_exact), idv(Bz_exact) );
+    auto w_exact = vec(Ex_exact, Ey_exact, Bz_exact );
     auto Anp_1 = vec( +Ny() * Ny() / 0.2e1, -Nx() * Ny() / 0.2e1, -Ny() / 0.2e1 );
     auto Anp_2 = vec(-Nx() * Ny() / 0.2e1, Nx() * Nx() / 0.2e1, Nx() / 0.2e1 );
     auto Anp_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, 0.1e1 / 0.2e1 );
@@ -264,21 +264,22 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
         auto wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
         auto wL = vec(leftfacev(idv(Ex)),leftfacev(idv(Ey)),leftfacev(idv(Bz)));
         // update right hand side
-        lEx = integrate( elements( mesh ), -dyv(Bz)*id(u));
+        lEx = integrate( elements( mesh ), idv(Ex)*id(u)/dt  -dyv(Bz)*id(u));
         lEx += integrate( internalfaces(mesh),
-                          Anm_1*(wR-wL)*leftfacev(idv(u)) +
-                          Anp_1*(wR-wL)*rightfacev(idv(u)) );
-        lEx += integrate( boundaryfaces(mesh), Anm_1*(w_exact-w)*idv(u) );
-        lEy = integrate( elements( mesh ), dxv(Bz)*id(u));
+                          trans(Anm_1)*(wR-wL)*leftface(id(u)) +
+                          trans(Anp_1)*(wR-wL)*rightface(id(u)) );
+        lEx += integrate( boundaryfaces(mesh), trans(Anm_1)*(w_exact-w)*idv(u) );
+        lEy = integrate( elements( mesh ), idv(Ey)*id(u)/dt + dxv(Bz)*id(u));
         lEy += integrate( internalfaces(mesh),
-                          Anm_2*(wR-wL)*leftfacev(idv(u)) +
-                          Anp_2*(wR-wL)*rightfacev(idv(u)) );
-        lEy += integrate( boundaryfaces(mesh), Anm_2*(w_exact-w)*idv(u) );
-        lBz = integrate( elements( mesh ), (dxv(Ey)-dyv(Ex))*id(u));
+                          trans(Anm_2)*(wR-wL)*leftfacev(idv(u)) +
+                          trans(Anp_2)*(wR-wL)*rightfacev(idv(u)) );
+        lEy += integrate( boundaryfaces(mesh), trans(Anm_2)*(w_exact-w)*idv(u) );
+        lBz = integrate( elements( mesh ), idv(Bz)*id(u)/dt+(dxv(Ey)-dyv(Ex))*id(u));
         lBz += integrate( internalfaces(mesh),
-                          Anm_3*(wR-wL)*leftfacev(idv(u)) +
-                          Anp_3*(wR-wL)*rightfacev(idv(u)) );
-        lBz += integrate( boundaryfaces(mesh), Anm_3*(w_exact-w)*idv(u) );
+                          trans(Anm_3)*(wR-wL)*leftfacev(idv(u)) +
+                          trans(Anp_3)*(wR-wL)*rightfacev(idv(u)) );
+
+        lBz += integrate( boundaryfaces(mesh), trans(Anm_3)*(w_exact-w)*idv(u) );
 
         backend->solve( _matrix=D, _solution=Ex, _rhs=F_Ex  );
         backend->solve( _matrix=D, _solution=Ey, _rhs=F_Ey  );
