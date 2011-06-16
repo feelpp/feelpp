@@ -49,7 +49,7 @@ add_latex_document(feel-manual.tex
   examples/natural-convection-2d.tex
   randomnotes.tex gfdl.tex faq.tex version.tex ${CPPFILES} ${STYFILES}
   BIBFILES feel-manual.bib
-  IMAGE_DIRS pngs pdfs
+  IMAGE_DIRS pngs pdfs pngs/mymesh
   USE_INDEX
   DEFAULT_PDF
   )
