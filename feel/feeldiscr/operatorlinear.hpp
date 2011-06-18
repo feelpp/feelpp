@@ -262,8 +262,8 @@ public:
 
 
     void
-    apply( const domain_element_slice_type & de,
-           dual_image_element_slice_type & ie)
+    apply( /*const*/ domain_element_slice_type /*&*/ de,
+           dual_image_element_slice_type /*&*/ ie)
     {
         if ( ! M_matrix->closed() )
         {
@@ -275,6 +275,24 @@ public:
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
+#if 0
+    void
+    apply(const typename domain_space_type::element_type::component_type & de,
+           typename dual_image_space_type::element_type & ie)
+    {
+        if ( ! M_matrix->closed() )
+        {
+            M_matrix->close();
+        }
+        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        *_v1 = de;
+        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        M_backend->prod( M_matrix, _v1, _v2 );
+        ie.container() = *_v2;
+    }
+#endif
+
+
 
 
     void
