@@ -28,11 +28,11 @@
  */
 #define USE_BOOST_TEST 1
 // Boost.Test
-#define BOOST_TEST_MAIN
+//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh_codim1 testsuite
 // disable the main function creation, use our own
-#define BOOST_TEST_NO_MAIN
+//#define BOOST_TEST_NO_MAIN
 
 
 #include <boost/test/unit_test.hpp>
@@ -231,9 +231,14 @@ struct test_mesh_filters
     Feel::detail::mesh_ptrtype mesh;
 };
 
+BOOST_AUTO_TEST_SUITE( mesh_codim1 )
+Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv );
+
 BOOST_AUTO_TEST_CASE( test_simple_mesh1d )
 {
     using namespace Feel;
+
 
     typedef Mesh<Simplex<2,1> >  mesh_type;
     mesh_type mesh;
@@ -289,49 +294,16 @@ BOOST_AUTO_TEST_CASE( test_simple_mesh1d )
 
 }
 
+
+
 BOOST_AUTO_TEST_CASE( test_mesh_filters_ )
 {
+
     test_mesh_filters tmf1;
     //test_mesh_filters tmf1; tmf1();
 
     //test_mesh_filters tmf2(0.2);
 
 }
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
 
-    return ret;
-}
-
-#if 0
-#if 1
-test_suite*
-init_unit_test_suite( int argc, char** argv )
-{
-    boost::mpi::environment env(argc, argv);
-    Feel::Assert::setLog( "assertions.log");
-    test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
-
-    //test->add( BOOST_TEST_CASE( ( test_simple_mesh2d ) ) );
-    if ( argc == 2 )
-        test->add( BOOST_TEST_CASE( ( test_mesh_filters( std::atof(argv[1])) ) ) );
-    else
-        test->add( BOOST_TEST_CASE( ( test_mesh_filters() ) ) );
-
-    return test;
-}
-#else
-int main( int argc, char** argv )
-{
-    Feel::Assert::setLog( "assertions.log");
-
-    if ( argc == 2 )
-        {test_mesh_filters a(  std::atof(argv[1] ) ); a(); }
-    else
-        { test_mesh_filters a; a();}
-}
-#endif
-#endif
+BOOST_AUTO_TEST_SUITE_END()

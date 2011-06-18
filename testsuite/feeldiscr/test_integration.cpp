@@ -31,11 +31,11 @@
 #define USE_BOOST_TEST 1
 
 // make sure that the init_unit_test function is defined by UTF
-#define BOOST_TEST_MAIN
+//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE integration testsuite
 // disable the main function creation, use our own
-#define BOOST_TEST_NO_MAIN
+//#define BOOST_TEST_NO_MAIN
 
 #if defined(USE_BOOST_TEST)
 #include <boost/test/unit_test.hpp>
@@ -1139,6 +1139,9 @@ makeAbout()
 }
 
 #if defined(USE_BOOST_TEST)
+BOOST_AUTO_TEST_SUITE( integration )
+Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( test_integration_1 )
 {
@@ -1211,7 +1214,8 @@ BOOST_AUTO_TEST_CASE( test_integration_7 )
                                                           makeAbout(), makeOptions() );
     t();
 }
-
+BOOST_AUTO_TEST_SUITE_END()
+#if 0
 int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
 {
@@ -1221,6 +1225,7 @@ main( int argc, char* argv[] )
 
     return ret;
 }
+#endif
 
 #else
 int

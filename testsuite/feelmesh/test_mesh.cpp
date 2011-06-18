@@ -30,11 +30,11 @@
 
 // Boost.Test
 // make sure that the init_unit_test function is defined by UTF
-#define BOOST_TEST_MAIN
+//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh testsuite
 // disable the main function creation, use our own
-#define BOOST_TEST_NO_MAIN
+//#define BOOST_TEST_NO_MAIN
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/parameterized_test.hpp>
@@ -225,6 +225,11 @@ struct test_mesh_filters
     double meshSize;
     Feel::detail::mesh_ptrtype mesh;
 };
+BOOST_AUTO_TEST_SUITE( mesh )
+
+Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv );
+
 BOOST_AUTO_TEST_CASE( test_mesh_filters_ )
 {
     test_mesh_filters tmf;
@@ -311,7 +316,6 @@ BOOST_AUTO_TEST_CASE( test_mesh_lmethod )
 
 
 }
-
 BOOST_AUTO_TEST_CASE( test_simple_mesh2d )
 {
     using namespace Feel;
@@ -370,13 +374,5 @@ BOOST_AUTO_TEST_CASE( test_simple_mesh2d )
 
 }
 
+BOOST_AUTO_TEST_SUITE_END()
 
-
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}

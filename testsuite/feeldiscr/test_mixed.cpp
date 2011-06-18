@@ -29,11 +29,11 @@
 #define USE_BOOST_TEST 1
 
 // make sure that the init_unit_test function is defined by UTF
-#define BOOST_TEST_MAIN
+//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE function space testsuite
 // disable the main function creation, use our own
-#define BOOST_TEST_NO_MAIN
+//#define BOOST_TEST_NO_MAIN
 
 //#if defined(USE_BOOST_TEST)
 #include <boost/test/unit_test.hpp>
@@ -375,6 +375,9 @@ TestMixed<Dim,Order>::run()
 } // TestMixed::run
 }
 #if USE_BOOST_TEST
+BOOST_AUTO_TEST_SUITE( mixed )
+Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( test_mixed1_21 )
 {
@@ -415,7 +418,10 @@ BOOST_AUTO_TEST_CASE( test_mixed2_33 )
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 3,) done" );
 }
+BOOST_AUTO_TEST_SUITE_END()
 #endif
+
+#if 0
 int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
 {
@@ -425,7 +431,7 @@ main( int argc, char* argv[] )
 
     return ret;
 }
-
+#endif
 #else
 
 /**
