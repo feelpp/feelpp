@@ -36,6 +36,7 @@
 
 #include <set>
 
+#include <boost/parameter.hpp>
 #include <boost/fusion/support/pair.hpp>
 #include <boost/fusion/container.hpp>
 #include <boost/fusion/sequence.hpp>
@@ -289,17 +290,18 @@ public:
      */
     template<typename GeomapContext,
              typename ExprT,
-             typename IM
+             typename IM,
+             typename GeomapExprContext = GeomapContext
              >
-    class Context : public FormContextBase<GeomapContext,IM>
+    class Context : public FormContextBase<GeomapContext,IM,GeomapExprContext>
     {
-        typedef FormContextBase<GeomapContext,IM> super;
+        typedef FormContextBase<GeomapContext,IM,GeomapExprContext> super;
 
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 
-        typedef Context<GeomapContext,ExprT,IM> form_context_type;
+        typedef Context<GeomapContext,ExprT,IM,GeomapExprContext> form_context_type;
         typedef BilinearForm<FE1, FE2, ElemContType> form_type;
         typedef typename FE1::dof_type dof_1_type;
         typedef typename FE2::dof_type dof_2_type;
@@ -365,25 +367,30 @@ public:
         typedef fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > map_left_test_fecontext_type;
         typedef fusion::map<fusion::pair<gmc1, test_fecontext_ptrtype> > map_right_test_fecontext_type;
 
-        typedef typename ExprT::template tensor<map_geometric_mapping_context_type,
+        //--------------------------------------------------------------------------------------//
+
+        typedef typename super::map_geometric_mapping_expr_context_type map_geometric_mapping_expr_context_type;
+
+        typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type,
                                                map_left_test_fecontext_type,
                                                map_left_trial_fecontext_type> eval00_expr_type;
         typedef boost::shared_ptr<eval00_expr_type> eval00_expr_ptrtype;
 
-        typedef typename ExprT::template tensor<map_geometric_mapping_context_type,
+        typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type,
                                                map_left_test_fecontext_type,
                                                map_right_trial_fecontext_type> eval01_expr_type;
         typedef boost::shared_ptr<eval01_expr_type> eval01_expr_ptrtype;
 
-        typedef typename ExprT::template tensor<map_geometric_mapping_context_type,
+        typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type,
                                                map_right_test_fecontext_type,
                                                map_left_trial_fecontext_type> eval10_expr_type;
         typedef boost::shared_ptr<eval10_expr_type> eval10_expr_ptrtype;
 
-        typedef typename ExprT::template tensor<map_geometric_mapping_context_type,
+        typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type,
                                                map_right_test_fecontext_type,
                                                map_right_trial_fecontext_type> eval11_expr_type;
         typedef boost::shared_ptr<eval11_expr_type> eval11_expr_ptrtype;
+
 
         static const int rep_shape = 4;//2+(eval_expr_type::shape::M-1>0)+(eval_expr_type::shape::N-1>0);
         //typedef boost::multi_array<value_type, rep_shape> local_matrix_type;
@@ -423,12 +430,14 @@ public:
 
         Context( form_type& __form,
                  map_geometric_mapping_context_type const& gmc,
+                 map_geometric_mapping_expr_context_type const & gmcExpr,
                  ExprT const& expr,
                  IM const& im );
 
         template<typename IM2>
         Context( form_type& __form,
                  map_geometric_mapping_context_type const& gmc,
+                 map_geometric_mapping_expr_context_type const & gmcExpr,
                  ExprT const& expr,
                  IM const& im,
                  IM2 const& im2 );
@@ -436,30 +445,46 @@ public:
         template<typename IM2>
         Context( form_type& __form,
                  map_geometric_mapping_context_type const& gmc,
+                 map_geometric_mapping_expr_context_type const & gmcExpr,
                  ExprT const& expr,
                  IM const& im,
                  IM2 const& im2,
                  mpl::int_<2> );
 
-        void update( map_geometric_mapping_context_type const& gmc );
+        void update( map_geometric_mapping_context_type const& gmc,
+                     map_geometric_mapping_expr_context_type const& gmcExpr );
 
-        void update( map_geometric_mapping_context_type const& gmc, mpl::int_<2> );
+        void updateInCaseOfInterpolate( map_geometric_mapping_context_type const& gmc,
+                                        map_geometric_mapping_expr_context_type const& gmcExpr );
 
-        void update( map_geometric_mapping_context_type const& gmc, IM const& im )
+        void update( map_geometric_mapping_context_type const& gmc,
+                     map_geometric_mapping_expr_context_type const& gmcExpr,
+                     mpl::int_<2> );
+
+        void update( map_geometric_mapping_context_type const& gmc,
+                     map_geometric_mapping_expr_context_type const& gmcExpr,
+                     IM const& im )
         {
             M_integrator = im;
-            update( gmc );
+            update( gmc,gmcExpr );
         }
 
-        void update( map_geometric_mapping_context_type const& gmc, IM const& im, mpl::int_<2> )
+        void update( map_geometric_mapping_context_type const& gmc,
+                     map_geometric_mapping_expr_context_type const& gmcExpr,
+                     IM const& im, mpl::int_<2> )
         {
             M_integrator = im;
-            update( gmc, mpl::int_<2>() );
+            update( gmc, gmcExpr, mpl::int_<2>() );
         }
 
         void integrate()
         {
             integrate( mpl::int_<fusion::result_of::size<GeomapContext>::type::value>() );
+        }
+        void integrateInCaseOfInterpolate(std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad)
+        {
+            integrateInCaseOfInterpolate( mpl::int_<fusion::result_of::size<GeomapContext>::type::value>(),
+                                      indexLocalToQuad );
         }
 
 
@@ -573,13 +598,29 @@ public:
 
 
     private:
-        void update( map_geometric_mapping_context_type const& gmc, mpl::bool_<false> );
 
-        void update( map_geometric_mapping_context_type const& gmc, mpl::bool_<true> );
+        void update( map_geometric_mapping_context_type const& gmc,
+                     map_geometric_mapping_expr_context_type const& gmcExpr,
+                     mpl::bool_<false> );
+
+        void update( map_geometric_mapping_context_type const& gmc,
+                     map_geometric_mapping_expr_context_type const& gmcExpr,
+                     mpl::bool_<true> );
+
+        void updateInCaseOfInterpolate( map_geometric_mapping_context_type const& gmc,
+                                        map_geometric_mapping_expr_context_type const& gmcExpr,
+                                        mpl::bool_<false> );
+
+        void updateInCaseOfInterpolate( map_geometric_mapping_context_type const& gmc,
+                                        map_geometric_mapping_expr_context_type const& gmcExpr,
+                                        mpl::bool_<true> );
+
 
         void integrate( mpl::int_<1> );
 
         void integrate( mpl::int_<2> );
+
+        void integrateInCaseOfInterpolate( mpl::int_<1>,std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad );
     private:
 
         form_type& _M_form;

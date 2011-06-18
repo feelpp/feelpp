@@ -327,12 +327,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), (new ctx_type( M_expr.e().functionSpace()->fe(), M_geot, (pc_ptrtype const&)M_pc ) ) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), M_expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*M_geot) ) ), \
                     M_did_init( t.M_did_init ),                         \
-                    M_same_mesh( M_geot->element().mesh() ==M_expr.e().functionSpace()->mesh().get()) \
-                    {                                                   \
-                        if(!M_same_mesh)                                \
-                            M_expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
-                        /*update( geom );*/                             \
-                    }                                                   \
+                    M_same_mesh( t.M_same_mesh )                        \
+                        {                                               \
+                        }                                               \
                                                                         \
                 tensor( this_type const& expr,                          \
                         Geo_t const& geom,                              \
@@ -352,11 +349,12 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                 ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_did_init( false ),                                \
-                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh() ==expr.e().functionSpace()->mesh().get()) \
-                    {                                                   \
-                        if(!M_same_mesh)                                \
-                            expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
-                        /*update( geom );*/                             \
+                    M_same_mesh( dynamic_cast<void*>(const_cast<MeshBase*>( fusion::at_key<key_type>( geom )->element().mesh())) \
+                                 == dynamic_cast<void*>(expr.e().functionSpace()->mesh().get()) ) \
+                        {                                               \
+                            if(!M_same_mesh)                            \
+                                expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
+                            /*update( geom );*/                         \
                     }                                                   \
                 tensor( this_type const& expr,                          \
                         Geo_t const& geom,                              \
@@ -373,16 +371,17 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                 ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_did_init( false ),                                \
-                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh() ==expr.e().functionSpace()->mesh().get()) \
+                    M_same_mesh( dynamic_cast<void*>(const_cast<MeshBase*>( fusion::at_key<key_type>( geom )->element().mesh())) \
+                                 == dynamic_cast<void*>(expr.e().functionSpace()->mesh().get()) ) \
                         {                                               \
-                            if(!M_same_mesh)                           \
+                            if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
                             /*update( geom );*/                         \
                         }                                               \
                 tensor( this_type const& expr,                          \
                         Geo_t const& geom )                             \
                     :                                                   \
-                    M_expr( expr ),                                    \
+                    M_expr( expr ),                                     \
                     M_geot( fusion::at_key<key_type>( geom ) ),         \
                     M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
                     M_pc( new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ), \
@@ -391,9 +390,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                     ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_did_init( false ),                                \
-                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh() ==expr.e().functionSpace()->mesh().get()) \
+                    M_same_mesh( dynamic_cast<void*>(const_cast<MeshBase*>( fusion::at_key<key_type>( geom )->element().mesh())) \
+                                 == dynamic_cast<void*>(expr.e().functionSpace()->mesh().get()) ) \
                         {                                               \
-                            if(!M_same_mesh)                           \
+                            if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
                             /*update( geom ); */                        \
                             BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_CONSTRUCTOR, ()); \
@@ -419,9 +419,31 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     /* expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), */ \
                 }                                                       \
                                                                         \
-                void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
+                void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) \
                 {                                                       \
-                    update( geom, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
+                    update( geom, fev, feu, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
+                }                                                       \
+                void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu , mpl::bool_<true> ) \
+                {                                                       \
+                    update( geom, mpl::bool_<true>() );                 \
+                }                                                       \
+                void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu , mpl::bool_<false> ) \
+                {    /* HERE!!!!*/                                      \
+                    if (M_same_mesh)                                    \
+                        updateInCaseOfInterpolate( geom, fev, feu, mpl::bool_<false>() ); \
+                    else                                                \
+                        updateInCaseOfInterpolate( geom, fev, feu, mpl::bool_<true>() ); \
+                }                                                       \
+                void updateInCaseOfInterpolate( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu , mpl::bool_<false> ) \
+                {                                                       \
+                    /*no interp*/                                       \
+                }                                                       \
+                void updateInCaseOfInterpolate( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu , mpl::bool_<true> ) \
+                {   /*with interp*/                                     \
+                    VF_OP_SWITCH( VF_OP_TYPE_IS_TEST( T ),              \
+                                  M_fec =fusion::at_key<basis_context_key_type>( fev ).get() , \
+                                  VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), \
+                                                           M_fec = fusion::at_key<basis_context_key_type>( feu ).get() ) ) ; \
                 }                                                       \
                 void update( Geo_t const& geom, Basis_i_t const& fev ) \
                 {                                                       \
@@ -452,15 +474,19 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 {                                                       \
                     std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), value_type( 0 ) ); \
                     this->updateCtxIfSameGeom(geom,mpl::bool_<isSameGeo>() ); \
-                    if (M_same_mesh)                                    \
+                    if (M_same_mesh) {                                  \
+                        /*std::cout << "\n idv no interp \n";*/         \
                         M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
+                    }                                                   \
                     else {                                              \
+                        /*std::cout << "\n idv with interp \n";*/       \
                         matrix_node_type __ptsreal = M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<1>()); \
                         M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( *M_ctx, __ptsreal, M_loc ); \
                     }                                                   \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<false> )     \
                 {                                                       \
+                    /*std::cout << "\n idv no interp \n";*/             \
                     Feel::detail::ignore_unused_variable_warning(geom); \
                 }                                                       \
                               \
@@ -521,7 +547,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     result_type                                         \
                     evaliq__( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<false> ) const \
                 {                                                       \
-                    return  M_fec->VF_OPERATOR_TERM( O )( i, c1, c2, q ); \
+                    return M_fec->VF_OPERATOR_TERM( O )( i, c1, c2, q ); \
                 }                                                       \
                                                                         \
                 result_type                                             \
