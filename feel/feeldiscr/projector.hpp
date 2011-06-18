@@ -35,7 +35,7 @@
 namespace Feel
 {
 
-    enum ProjectorType{L2=0, H1=1};
+    enum ProjectorType{L2=0, H1=1, DIFF=2};
 
 /**
  * \class Projector
@@ -80,26 +80,20 @@ public :
     //@{
 
     Projector(domain_space_ptrtype     domainSpace,
-                dual_image_space_ptrtype dualImageSpace,
-                backend_ptrtype backend = Backend<double>::build(BACKEND_PETSC),
-                ProjectorType proj_type=L2
+              dual_image_space_ptrtype dualImageSpace,
+              backend_ptrtype backend = Backend<double>::build(BACKEND_PETSC),
+              ProjectorType proj_type=L2,
+              double epsilon = 0.01,
+              double gamma = 0.5
                 )
         :
         ol_type(domainSpace, dualImageSpace, backend),
         M_backend(backend),
+        M_epsilon(epsilon),
+        M_gamma(gamma),
+        M_proj_type(proj_type),
         M_matrix(M_backend->newMatrix( domainSpace, dualImageSpace ))
-        {  initMatrix(proj_type);  }
-
-    // //used in the case where domainSpace and dualImageSpace are the same
-    Projector(domain_space_ptrtype domainSpace,
-                backend_ptrtype backend = Backend<double>::build(BACKEND_PETSC),
-                ProjectorType proj_type=L2
-                )
-        :
-        ol_type(domainSpace, domainSpace, backend),
-        M_backend(backend),
-        M_matrix(M_backend->newMatrix( domainSpace, domainSpace ))
-        {  initMatrix(proj_type);  }
+        {  initMatrix();  }
 
     ~Projector() {}
     //@}
@@ -117,6 +111,21 @@ public :
             form1(_test=this->dualImageSpace(), _vector=ie, _init=true) =
                 integrate(elements(this->domainSpace()->mesh()),
                           rhs_expr * id( this->dualImageSpace()->element() ) );
+
+            //weak boundary conditions
+            if (M_proj_type == DIFF)
+                {
+                    form1(_test=this->dualImageSpace(), _vector=ie) +=
+                        integrate(boundaryfaces(this->domainSpace()->mesh()),
+                                  M_gamma / vf::hFace() *
+                                  rhs_expr * id( this->dualImageSpace()->element() ) );
+                        -
+                        integrate( boundaryfaces(this->domainSpace()->mesh()),
+                                   M_epsilon
+                                   * rhs_expr
+                                   * grad(this->domainSpace()->element() )*vf::N()
+                                    ) ;
+                }
 
             M_backend->solve(M_matrix, de, ie);
 
@@ -170,26 +179,27 @@ public :
     //@}
 
 
-
 private :
 
-    void initMatrix(ProjectorType proj_type)
+    void initMatrix()
         {
-            if (proj_type == L2)
+            if (M_proj_type == L2)
                 {
                     form2 (_trial=this->domainSpace(),
                            _test=this->dualImageSpace(),
-                           _matrix=M_matrix) =
+                           _matrix=M_matrix,
+                           _init=true) =
                         integrate(elements(this->domainSpace()->mesh()),
                                   trans(idt( this->domainSpace()->element() )) /*trial*/
                                   *id( this->domainSpace()->element() ) /*test*/
                                   );
                 }
-            else if (proj_type == H1)
+            else if (M_proj_type == H1)
                 {
                     form2 (_trial=this->domainSpace(),
                            _test=this->dualImageSpace(),
-                           _matrix=M_matrix) =
+                           _matrix=M_matrix,
+                           _init=true) =
                         integrate(elements(this->domainSpace()->mesh()),
                                   trans(idt( this->domainSpace()->element() )) /*trial*/
                                   *id( this->domainSpace()->element() ) /*test*/
@@ -198,11 +208,50 @@ private :
                                          * trans(grad(this->domainSpace()->element())))
                                   );
                 }
+            else if (M_proj_type == DIFF)
+                {
+                    form2 (_trial=this->domainSpace(),
+                           _test=this->dualImageSpace(),
+                           _matrix=M_matrix,
+                           _init=true) =
+                        integrate(elements(this->domainSpace()->mesh()),
+                                  trans(idt( this->domainSpace()->element() )) /*trial*/
+                                  *id( this->domainSpace()->element() ) /*test*/
+                                  +
+                                  M_epsilon *
+                                  trace( gradt(this->domainSpace()->element())
+                                         * trans(grad(this->domainSpace()->element())))
+                                  );
+                    //weak boundary conditions
+                    form2 (_trial=this->domainSpace(),
+                           _test=this->dualImageSpace(),
+                           _matrix=M_matrix) +=
+                        integrate( boundaryfaces(this->domainSpace()->mesh()),
+                                  M_gamma / vf::hFace()
+                                  * trans(idt( this->domainSpace()->element() )) /*trial*/
+                                  *id( this->domainSpace()->element() ) /*test*/
+                                   );
+                        -
+                        integrate( boundaryfaces(this->domainSpace()->mesh()),
+                                   M_epsilon
+                                   * trans(id(this->domainSpace()->element() ))
+                                   * gradt(this->domainSpace()->element())*vf::N())
+                        -
+                        integrate( boundaryfaces(this->domainSpace()->mesh()),
+                                   M_epsilon
+                                   * trans(idt(this->domainSpace()->element() ))
+                                   * grad(this->domainSpace()->element())*vf::N());
+                }
+
             M_matrix->close();
+            std::cout<<"sort initmatriw"<<std::endl;
         }
 
     backend_ptrtype M_backend;
     matrix_ptrtype M_matrix;
+    const double M_epsilon;
+    const double M_gamma;
+    ProjectorType M_proj_type;
 
 };//Projector
 
@@ -215,27 +264,21 @@ private :
  * \param backend
  */
 
-/*
-   !!!!!
-- operator() doesn't work if Projector declared as :
-  auto l2p = Projector(Xh, Xh, backend)
-- "apply" and "project" still work properly !
-to be fixed...
-*/
-
 template<typename TDomainSpace, typename TDualImageSpace>
 boost::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
 projector( boost::shared_ptr<TDomainSpace> const& domainspace,
              boost::shared_ptr<TDualImageSpace> const& imagespace,
              typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend = Backend<double>::build(BACKEND_PETSC),
-             ProjectorType proj_type=L2 )
+           ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 0.5)
 {
     typedef Projector<TDomainSpace, TDualImageSpace> Proj_type;
-    boost::shared_ptr<Proj_type> proj( new Proj_type(domainspace, imagespace, backend, proj_type) );
+    boost::shared_ptr<Proj_type> proj( new Proj_type(domainspace, imagespace, backend, proj_type, epsilon, gamma) );
     return proj;
 }
 
 #endif
+
+
 
 } //namespace Feel
 
