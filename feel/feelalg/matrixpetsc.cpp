@@ -152,6 +152,7 @@ void MatrixPetsc<T>::init (const size_type m,
 #endif // 0
 
     this->zero ();
+    //this->zeroEntriesDiagonal();
 }
 
 template <typename T>
@@ -275,6 +276,7 @@ void MatrixPetsc<T>::init (const size_type m,
     //printMatlab( "shift.m" );
 
     //this->zero();
+    //this->zeroEntriesDiagonal();
 }
 
 
@@ -287,6 +289,8 @@ void MatrixPetsc<T>::zero ()
 
     ierr = MatZeroEntries(_M_mat);
     CHKERRABORT(this->comm(),ierr);
+
+    this->zeroEntriesDiagonal();
 }
 
 template <typename T>
@@ -298,6 +302,9 @@ void MatrixPetsc<T>::zero ( size_type /*start1*/, size_type /*stop1*/, size_type
 
     ierr = MatZeroEntries(_M_mat);
     CHKERRABORT(this->comm(),ierr);
+
+    //this->zeroEntriesDiagonal();
+
 }
 
 
@@ -314,10 +321,43 @@ void MatrixPetsc<T>::clear ()
         this->setInitialized( false );
     }
 }
+#if 0
+template <typename T>
+inline
+void MatrixPetsc<T>::zeroEntriesDiagonalIfMissing()
+{
+#if 0
+    int ierr=0;
+
+    PetscTruth missing;// = PETSC_TRUE;
+    PetscInt indic;
+    //while ( missing == PETSC_TRUE)
+        {
+            std::cout << "\n HOLA";
+            ierr = MatMissingDiagonal(_M_mat,&missing,&indic);
+            //CHKERRABORT(this->comm(),ierr);
+            //            if (missing == PETSC_FALSE)
+                {
+                    std::cout << "\n HOLE";
+                    //this->set(indic,indic,0.);
+                }
+        }
+#endif
+    int start=0, stop=0, ierr=0;
+
+    ierr = MatGetOwnershipRange(_M_mat, &start, &stop);
+    CHKERRABORT(this->comm(),ierr);
+
+    VectorPetsc<value_type> diag( this->size1(), stop-start );
 
 
+        //MatGetDiagonal( _M_mat, diag.vec() );
+        std:: cout << diag.size();
+        //MatZeroRows( _M_mat, rows.size(), rows.data(), 1.0);
+        MatDiagonalSet( _M_mat, diag.vec(), INSERT_VALUES );
 
-
+}
+#endif
 template <typename T>
 inline
 void MatrixPetsc<T>::close () const
@@ -1031,6 +1071,37 @@ MatrixPetsc<T>::updateBlockMat(boost::shared_ptr<MatrixSparse<T> > m, size_type 
 
             }
 }
+
+template <typename T>
+inline
+void MatrixPetsc<T>::zeroEntriesDiagonal()
+{
+#if 1
+#if 0 //trop lent!
+    int start=0, stop=0, ierr=0;
+
+    ierr = MatGetOwnershipRange(_M_mat, &start, &stop);
+    CHKERRABORT(this->comm(),ierr);
+
+    //VectorPetsc<value_type> diag( std::min(this->size1(),this->size2()), stop-start );
+    //VectorPetsc<value_type> diag( std::max(this->size1(),this->size2()), stop-start );
+    VectorPetsc<value_type> diag( this->size1(), stop-start );
+    //VectorPetsc<value_type> diag( this->size1(), this->size1() );
+
+    //MatGetDiagonal( _M_mat, diag.vec() );
+    //diag.zero();
+
+    //std:: cout << diag.size();
+    //MatZeroRows( _M_mat, rows.size(), rows.data(), 1.0);
+    ierr = MatDiagonalSet( _M_mat, diag.vec(), INSERT_VALUES );
+    CHKERRABORT(this->comm(),ierr);
+#else
+    for (uint i = 0;i <std::min(this->size1(),this->size2());++i)
+        this->set(i,i,0.);
+#endif
+#endif
+}
+
 
 template class MatrixPetsc<double>;
 } // Feel

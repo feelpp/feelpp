@@ -191,6 +191,12 @@ public:
         return vector_ptrtype( new epetra_vector_type( emap ) );
     }
 
+    vector_ptrtype newVector( const size_type n, const size_type n_local )
+    {
+        return vector_ptrtype( new epetra_vector_type( /*n, n_local*/ ) );
+#warning to fix!
+    }
+
 
     static operator_ptrtype IfpackPrec( sparse_matrix_ptrtype const& M, list_type options, std::string precType = "Amesos" )
     {

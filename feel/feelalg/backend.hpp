@@ -184,6 +184,11 @@ public:
     virtual vector_ptrtype newVector( DataMap const& dm ) = 0;
 
     /**
+     * instantiate a new vector
+     */
+    virtual vector_ptrtype newVector( const size_type n, const size_type n_local ) = 0;
+
+    /**
      * helper function
      */
     template<typename DomainSpace>

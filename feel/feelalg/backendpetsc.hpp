@@ -132,6 +132,12 @@ public:
         return vector_ptrtype( new petsc_vector_type( dm.nGlobalElements(), dm.nMyElements() ) );
     }
 
+    vector_ptrtype newVector( const size_type n, const size_type n_local )
+    {
+        return vector_ptrtype( new petsc_vector_type( n, n_local ) );
+    }
+
+
     void set_symmetric( bool /*is_sym*/ ) {}
 
     // -- LINEAR ALGEBRA INTERFACE --
