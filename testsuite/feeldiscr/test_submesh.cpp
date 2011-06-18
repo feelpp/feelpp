@@ -30,11 +30,11 @@
 // Boost.Test
 
 // make sure that the init_unit_test function is defined by UTF
-#define BOOST_TEST_MAIN
+//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE submesh testsuite
 // disable the main function creation, use our own
-#define BOOST_TEST_NO_MAIN
+//#define BOOST_TEST_NO_MAIN
 
 
 #include <boost/test/unit_test.hpp>
@@ -206,6 +206,10 @@ makeAbout()
 
 }
 
+
+BOOST_AUTO_TEST_SUITE( submesh )
+Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv );
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
@@ -224,7 +228,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh, T, dim_types )
     BOOST_TEST_MESSAGE( "Test submesh (" << T::value << "D) done." );
 }
 
+BOOST_AUTO_TEST_SUITE_END()
 
+#if 0
 int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
 {
@@ -234,5 +240,5 @@ main( int argc, char* argv[] )
 
     return ret;
 }
-
+#endif
 

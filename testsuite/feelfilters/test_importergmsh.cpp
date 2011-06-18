@@ -31,11 +31,11 @@
 #include <boost/timer.hpp>
 // Boost.Test
 // make sure that the init_unit_test function is defined by UTF
-#define BOOST_TEST_MAIN
+//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh filter testsuite
 // disable the main function creation, use our own
-#define BOOST_TEST_NO_MAIN
+//#define BOOST_TEST_NO_MAIN
 #include <boost/test/unit_test.hpp>
 #include <boost/test/test_case_template.hpp>
 #include <boost/mpl/list.hpp>
@@ -52,6 +52,7 @@ using boost::unit_test::test_suite;
 
 
 using namespace Feel;
+
 
 template<int Dim, template <uint16_type,uint16_type,uint16_type> class Entity = Simplex>
 void
@@ -81,6 +82,8 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
 
 }
 BOOST_AUTO_TEST_SUITE( gmshsuite )
+Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv );
 
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 
@@ -235,6 +238,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
 
 BOOST_AUTO_TEST_SUITE_END()
 
+/*
 int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
 {
@@ -243,3 +247,4 @@ main( int argc, char* argv[] )
 
     return ret;
 }
+*/

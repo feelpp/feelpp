@@ -1,3 +1,4 @@
+
 #define BOOST_TEST_MODULE test_operatorinterpolation
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
@@ -59,6 +60,119 @@ makeAbout()
 }
 
 
+template <uint OrderGeo>
+void
+test2dTo1d( Application_ptrtype test_app)
+{
+
+
+    typedef Backend<double> backend_type;
+    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+
+    typedef Mesh<Simplex<1,OrderGeo,2> > mesh_1d_type;
+    typedef Mesh<Simplex<2,OrderGeo,2> > mesh_2d_type;
+    typedef boost::shared_ptr< mesh_2d_type > mesh_ptrtype;
+
+    //typedef bases<Lagrange<2,Scalar,Continuous,PointSetFekete> > basis_2d_type;
+    typedef bases<Lagrange<2,Vectorial,Continuous,PointSetFekete> > basis_2d_type;
+    typedef FunctionSpace<mesh_2d_type, basis_2d_type> space_2d_type;
+    typedef boost::shared_ptr<space_2d_type> space_2d_ptrtype;
+    typedef typename space_2d_type::element_type element_2d_type;
+
+    //typedef bases<Lagrange<3,Scalar,Continuous,PointSetFekete> > basis_1d_type;
+    typedef bases<Lagrange<1,Vectorial,Continuous,PointSetFekete> > basis_1d_type;
+    typedef FunctionSpace<mesh_1d_type, basis_1d_type> space_1d_type;
+    typedef boost::shared_ptr<space_1d_type> space_1d_ptrtype;
+    typedef typename space_1d_type::element_type element_1d_type;
+
+    //-----------------------------------------------------------//
+
+    double meshSize = test_app->vm()["hsize"].as<double>();
+#if 0
+    GeoTool::Node x1(0,0);
+    GeoTool::Node x2(0.5,0);
+    GeoTool::Circle C( meshSize,"OMEGA",x1,x2);
+
+    GeoTool::Node x3(-0.5,0);
+    GeoTool::Node x4(0.5,0);
+    GeoTool::Line L( meshSize, "Line",x3,x4);
+#else
+    GeoTool::Node x1(0,0);
+    GeoTool::Node x2(2,1);
+    GeoTool::Rectangle C( meshSize,"OMEGA",x1,x2);
+
+    GeoTool::Node x3(0,0);
+    GeoTool::Node x4(2,1);
+    GeoTool::Line L( meshSize, "Line",x3,x4);
+#endif
+    GeoTool::Node x5(0.2,0.2);
+    GeoTool::Node x6(0.8,0.8);
+    GeoTool::Rectangle Rbis( meshSize,"koko",x5,x6);
+    auto mesh2dBis = Rbis.createMesh<mesh_2d_type>("domainBis");
+    auto Xh2dBis = space_2d_type::New(mesh2dBis);
+
+    auto mesh2d = C.createMesh<mesh_2d_type>("domain");
+    auto mesh1d = L.createMesh<mesh_1d_type>("domain1d");
+
+    auto Xh1d = space_1d_type::New(mesh1d);
+    auto Xh2d = space_2d_type::New(mesh2d);
+
+    //auto u1d = Xh1d->element();
+    //auto u1d = vf::project(Xh1d,elements(mesh1d),vec( cos(M_PI*Px()),sin(M_PI*Py()) ) );
+
+    //auto u1d = vf::project(Xh1d,elements(mesh1d), cst(0.) );
+    //auto u2d = vf::project(Xh2d,elements(mesh2d), cos(M_PI*Px()) );
+    auto u1d = vf::project(Xh1d,elements(mesh1d),vec( cst(0.),cst(0.) ) );
+    auto u2d = vf::project(Xh2d,elements(mesh2d),vec( cos(M_PI*Px()),sin(M_PI*Py()) ) );
+
+
+
+
+    auto M_backend = backend_type::build( test_app->vm() );
+
+
+    auto opI=opInterpolation( _domainSpace=Xh2d,
+                              //_imageSpace=Xh2dBis,
+                              _imageSpace=Xh1d,
+                              //_range=elements(mesh),
+                              _backend=M_backend );
+    //size check
+    std::cout << "\n size1 "<< opI->matPtr()->size1();
+    std::cout << "\n size2 "<< opI->matPtr()->size2();
+    std::cout << "\n size u2d "<< u2d.size();
+    std::cout << "\n size u1d "<< u1d.size();
+#if 1
+    opI->apply(u2d,u1d);
+
+    for (uint i=0;i<u1d.size();++i)
+        std::cout << "\n i = "<< i << " val : " << u1d(i);
+
+#endif
+
+    double s = integrate(elements(mesh1d), trans(idv(u2d)-idv(u1d))*(idv(u2d)-idv(u1d))).evaluate()(0,0);
+
+    std::cout << "\ns = " << s ;
+#if 1
+
+    //BOOST_CHECK_SMALL( s1-s2,1e-8);
+#if 0
+    auto UNexporter2d = Exporter<mesh_2d_type>::New( test_app->vm(), "Export2d" );
+    UNexporter2d->step( 0 )->setMesh( mesh2d );
+    UNexporter2d->step( 0 )->add( "u2d", u2d );
+    UNexporter2d->save();
+#endif
+    u1d = vf::project(Xh1d,elements(mesh1d),vec( cos(M_PI*Px()),sin(M_PI*Py()) ) );
+    auto UNexporter1d = Exporter<mesh_1d_type>::New( test_app->vm(), "Export1d" );
+    UNexporter1d->step( 0 )->setMesh( mesh1d );
+    UNexporter1d->step( 0 )->add( "u1d", u1d );
+    //    UNexporter1d->step( 0 )->add( "u2dbis", u2d );
+    UNexporter1d->save();
+#endif
+
+
+}
+
+//---------------------------------------------------------------------------------------------//
 
 
 
@@ -214,10 +328,13 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation )
     test_app->changeRepository( boost::format( "/testsuite/feeldiscr/%1%/" )
                                 % test_app->about().appName()
         );
-
+#if 1
     test_operatorinterpolation::test2d<1>(test_app);
     test_operatorinterpolation::test2d<2>(test_app);
     test_operatorinterpolation::test2d<3>(test_app);
+#else
+    test_operatorinterpolation::test2dTo1d<1>(test_app);
+#endif
 }
 
 BOOST_AUTO_TEST_SUITE_END()
