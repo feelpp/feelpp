@@ -156,6 +156,11 @@ public:
         return vector_ptrtype( new gmm_vector_type( d.nGlobalElements() ) );
     }
 
+    vector_ptrtype newVector( const size_type n, const size_type n_local )
+    {
+        return vector_ptrtype( new gmm_vector_type( n ) );
+    }
+
 
     // -- SETTING OF OPTIONS --
     void set_noisy    ( int noisy )        { M_iter.set_noisy( noisy );     }

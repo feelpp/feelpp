@@ -264,7 +264,6 @@ public:
      */
     void close () const;
 
-
     /**
      * see if Petsc matrix has been closed
      * and fully assembled yet
@@ -420,6 +419,11 @@ private:
 
     // disable
     MatrixPetsc( MatrixPetsc const & );
+
+    /*
+     * Set zero entries diagonal if missing : only for PETSC!
+     */
+    void zeroEntriesDiagonal();
 
 private:
 
