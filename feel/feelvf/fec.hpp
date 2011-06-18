@@ -102,6 +102,7 @@ private:
     form_type const& _M_form;
 };
 
+
 template<uint16_type Type, typename FormContextType>
 struct FEContextUpdate
 {
@@ -144,6 +145,52 @@ struct FEContextUpdate
     map_geometric_mapping_context_type const& _M_mapgmc;
     form_type const& _M_form;
 };
+
+template<uint16_type Type, typename FormContextType>
+struct FEContextUpdateInCaseOfInterpolate
+{
+    // 0 : test, 1 : trial
+    static const uint16_type type = Type;
+
+    typedef typename FormContextType::geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
+    typedef typename FormContextType::map_geometric_mapping_context_type map_geometric_mapping_context_type;
+    //typedef typename FormContextType::form_type form_type;
+    typedef FormContextType form_type;
+    typedef boost::shared_ptr<form_type> form_ptrtype;
+
+    FEContextUpdateInCaseOfInterpolate( map_geometric_mapping_context_type const& mapgmc,
+                                form_type const& form )
+        :
+        _M_mapgmc( mapgmc ),
+        _M_form( form )
+        {}
+
+    template<typename T>
+    void operator()( T& t) const
+        {
+            return operator()( t, mpl::int_<type>() );
+        }
+    template<typename T>
+    void operator()( T& t, mpl::int_<0> ) const
+        {
+            typedef typename boost::remove_reference<T>::type::first_type first_type;
+            geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
+            //_M_form.precomputeBasisAtPoints(gmcptr->xRefs());
+            t.second->update( gmcptr, _M_form.testPc( gmcptr->faceId(), gmcptr->permutation()  ) );
+        }
+    template<typename T>
+    void operator()( T& t, mpl::int_<1> ) const
+        {
+            typedef typename boost::remove_reference<T>::type::first_type first_type;
+            geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
+            //_M_form.precomputeBasisAtPoints(gmcptr->xRefs());
+            t.second->update( gmcptr, _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation()  ) );
+        }
+
+    map_geometric_mapping_context_type const& _M_mapgmc;
+    form_type const& _M_form;
+};
+
 
 
 

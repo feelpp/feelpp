@@ -43,7 +43,7 @@ namespace detail
  * \class FormContextBase
  * \brief base class for bi/linear form contexts
  */
-template<typename GeomapContext, typename IM>
+template<typename GeomapContext, typename IM, typename GeomapExprContext>
 class FormContextBase
 {
 public:
@@ -69,18 +69,27 @@ public:
     typedef fusion::map<fusion::pair<gmc<0>, right_gmc_ptrtype> > map_right_gmc_type;
 
 
+    typedef GeomapExprContext map_geometric_mapping_expr_context_type;
+
     //@}
 
     virtual ~FormContextBase() {}
 
-    virtual void update( map_geometric_mapping_context_type const& _gmc ) = 0;
+    virtual void update( map_geometric_mapping_context_type const& _gmc,
+                         map_geometric_mapping_expr_context_type const& _gmcExpr ) = 0;
 
-    virtual void update( map_geometric_mapping_context_type const& _gmc, mpl::int_<2> ) = 0;
+    virtual void update( map_geometric_mapping_context_type const& _gmc,
+                         map_geometric_mapping_expr_context_type const& _gmcExpr,
+                         mpl::int_<2> ) = 0;
 
 
-    virtual void update( map_geometric_mapping_context_type const& _gmc, IM const& im ) = 0;
+    virtual void update( map_geometric_mapping_context_type const& _gmc,
+                         map_geometric_mapping_expr_context_type const& _gmcExpr,
+                         IM const& im ) = 0;
 
-    virtual void update( map_geometric_mapping_context_type const& _gmc, IM const& im, mpl::int_<2> ) = 0;
+    virtual void update( map_geometric_mapping_context_type const& _gmc,
+                         map_geometric_mapping_expr_context_type const& _gmcExpr,
+                         IM const& im, mpl::int_<2> ) = 0;
 
 
     virtual void integrate() = 0;

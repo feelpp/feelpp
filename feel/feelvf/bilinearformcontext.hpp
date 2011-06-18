@@ -39,11 +39,12 @@ namespace detail
 // Context
 //
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapContext,typename ExprT,typename IM>
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
-                                                                              map_geometric_mapping_context_type const& _gmc,
-                                                                              ExprT const& expr,
-                                                                              IM const& im )
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::Context( form_type& __form,
+                                                                                                map_geometric_mapping_context_type const& _gmc,
+                                                                                                map_geometric_mapping_expr_context_type const & gmcExpr,
+                                                                                                ExprT const& expr,
+                                                                                                IM const& im )
     :
     _M_form( __form ),
     _M_lb( __form.blockList() ),
@@ -66,7 +67,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( fo
     _M_trial_fec0( getMapL( _M_test_fec0, fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) ) ) ),
     _M_rep(),
     _M_rep_2(),
-    _M_eval_expr00( new eval00_expr_type( expr, _gmc, _M_test_fec0, _M_trial_fec0 ) ),
+    _M_eval_expr00( new eval00_expr_type( expr, gmcExpr/*_gmc*/, _M_test_fec0, _M_trial_fec0 ) ),
     _M_eval_expr01(),
     _M_eval_expr10(),
     _M_eval_expr11(),
@@ -75,13 +76,14 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( fo
     _M_eval_expr00->init( im );
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapContext,typename ExprT,typename IM>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 template<typename IM2>
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
-                                                                              map_geometric_mapping_context_type const& _gmc,
-                                                                              ExprT const& expr,
-                                                                              IM const& im,
-                                                                              IM2 const& im2 )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::Context( form_type& __form,
+                                                                                                map_geometric_mapping_context_type const& _gmc,
+                                                                                                map_geometric_mapping_expr_context_type const & _gmcExpr,
+                                                                                                ExprT const& expr,
+                                                                                                IM const& im,
+                                                                                                IM2 const& im2 )
     :
     _M_form( __form ),
     _M_lb( __form.blockList() ),
@@ -100,7 +102,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( fo
     _M_trial_fec0( getMapL( _M_test_fec0, fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) ) ) ),
     _M_rep(),
     _M_rep_2(),
-    _M_eval_expr00( new eval00_expr_type( expr, _gmc, _M_test_fec0, _M_trial_fec0 ) ),
+    _M_eval_expr00( new eval00_expr_type( expr, _gmcExpr, _M_test_fec0, _M_trial_fec0 ) ),
     _M_eval_expr01(),
     _M_eval_expr10(),
     _M_eval_expr11(),
@@ -110,14 +112,15 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( fo
     _M_eval_expr00->init( im2 );
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapContext,typename ExprT,typename IM>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 template<typename IM2>
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( form_type& __form,
-                                                                              map_geometric_mapping_context_type const& _gmc,
-                                                                              ExprT const& expr,
-                                                                              IM const& im,
-                                                                              IM2 const& im2,
-                                                                              mpl::int_<2> )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::Context( form_type& __form,
+                                                                                                map_geometric_mapping_context_type const& _gmc,
+                                                                                                map_geometric_mapping_expr_context_type const & _gmcExpr,
+                                                                                                ExprT const& expr,
+                                                                                                IM const& im,
+                                                                                                IM2 const& im2,
+                                                                                                mpl::int_<2> )
     :
     _M_form( __form ),
     _M_lb( __form.blockList() ),
@@ -138,10 +141,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( fo
     _M_trial_fec1( fusion::make_map<gmc1 >( fusion::at_key<gmc1 >( _M_trial_fec ) ) ),
     _M_rep(),
     _M_rep_2(),
-    _M_eval_expr00( new eval00_expr_type( expr, _gmc, _M_test_fec0, _M_trial_fec0 ) ),
-    _M_eval_expr01( new eval01_expr_type( expr, _gmc, _M_test_fec0, _M_trial_fec1 ) ),
-    _M_eval_expr10( new eval10_expr_type( expr, _gmc, _M_test_fec1, _M_trial_fec0 ) ),
-    _M_eval_expr11( new eval11_expr_type( expr, _gmc, _M_test_fec1, _M_trial_fec1 ) ),
+    _M_eval_expr00( new eval00_expr_type( expr, _gmcExpr, _M_test_fec0, _M_trial_fec0 ) ),
+    _M_eval_expr01( new eval01_expr_type( expr, _gmcExpr, _M_test_fec0, _M_trial_fec1 ) ),
+    _M_eval_expr10( new eval10_expr_type( expr, _gmcExpr, _M_test_fec1, _M_trial_fec0 ) ),
+    _M_eval_expr11( new eval11_expr_type( expr, _gmcExpr, _M_test_fec1, _M_trial_fec1 ) ),
     M_integrator( im )
 {
     FEEL_ASSERT( fusion::at_key<gmc<0> >( _M_test_fec0 ).get() != 0 ).error( "invalid test_fec");
@@ -156,37 +159,44 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::Context( fo
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapContext,typename ExprT,typename IM>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::update( map_geometric_mapping_context_type const& _gmc,
+                                                                                               map_geometric_mapping_expr_context_type const& _gmcExpr)
 {
-    update( _gmc,  boost::is_same<map_test_fecontext_type, map_trial_fecontext_type>() );
-    M_integrator.update( *fusion::at_key<gmc<0> >( _gmc ) );
+    update( _gmc, _gmcExpr, boost::is_same<map_test_fecontext_type, map_trial_fecontext_type>() );
+    M_integrator.update( *fusion::at_key<gmc<0> >( _gmcExpr ) );
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapContext,typename ExprT,typename IM>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::bool_<false> )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::update( map_geometric_mapping_context_type const& _gmc,
+                                                                                               map_geometric_mapping_expr_context_type const& _gmcExpr,
+                                                                                               mpl::bool_<false> )
 {
     fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     fusion::for_each( _M_trial_fec, detail::FEContextUpdate<1,form_context_type>( _gmc, *this ) );
     _M_trial_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) );
-    _M_eval_expr00->update( _gmc, _M_test_fec0, _M_trial_fec0 );
+    _M_eval_expr00->update( _gmcExpr, _M_test_fec0, _M_trial_fec0 );
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapContext,typename ExprT,typename IM>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::bool_<true> )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::update( map_geometric_mapping_context_type const& _gmc,
+                                                                                               map_geometric_mapping_expr_context_type const& _gmcExpr,
+                                                                                               mpl::bool_<true> )
 {
     fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
-    _M_eval_expr00->update( _gmc, _M_test_fec0, _M_test_fec0 );
+    _M_eval_expr00->update( _gmcExpr, _M_test_fec0, _M_test_fec0 );
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapContext,typename ExprT,typename IM>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map_geometric_mapping_context_type const& _gmc, mpl::int_<2> )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::update( map_geometric_mapping_context_type const& _gmc,
+                                                                                               map_geometric_mapping_expr_context_type const& _gmcExpr,
+                                                                                               mpl::int_<2> )
 {
     fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
@@ -204,20 +214,56 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::update( map
     FEEL_ASSERT( fusion::at_key<gmc1 >( _M_trial_fec1 ).get() != 0 )
         ( 0 ).error( "invalid trial_fec1" );
 
-    _M_eval_expr00->update( _gmc, _M_test_fec0, _M_trial_fec0 );
-    _M_eval_expr01->update( _gmc, _M_test_fec0, _M_trial_fec1 );
-    _M_eval_expr10->update( _gmc, _M_test_fec1, _M_trial_fec0 );
-    _M_eval_expr11->update( _gmc, _M_test_fec1, _M_trial_fec1 );
+    _M_eval_expr00->update( _gmcExpr, _M_test_fec0, _M_trial_fec0 );
+    _M_eval_expr01->update( _gmcExpr, _M_test_fec0, _M_trial_fec1 );
+    _M_eval_expr10->update( _gmcExpr, _M_test_fec1, _M_trial_fec0 );
+    _M_eval_expr11->update( _gmcExpr, _M_test_fec1, _M_trial_fec1 );
 
     M_integrator.update( *fusion::at_key<gmc<0> >( _gmc ) );
+}
+
+template<typename FE1,  typename FE2, typename ElemContType>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
+//template <typename gmc_eltrange_type>
+void
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::updateInCaseOfInterpolate( map_geometric_mapping_context_type const& _gmc,
+                                                                                                                  map_geometric_mapping_expr_context_type const& _gmcExpr )
+{
+    precomputeBasisAtPoints( fusion::at_key<gmc<0> >( _gmc )->xRefs());
+    updateInCaseOfInterpolate( _gmc, _gmcExpr, boost::is_same<map_test_fecontext_type, map_trial_fecontext_type>() );
+    M_integrator.update(*fusion::at_key<gmc<0> >( _gmcExpr ));
+}
+template<typename FE1,  typename FE2, typename ElemContType>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
+void
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::updateInCaseOfInterpolate( map_geometric_mapping_context_type const& _gmc,
+                                                                                                                  map_geometric_mapping_expr_context_type const& _gmcExpr,
+                                                                                                                  mpl::bool_<false> )
+{
+    fusion::for_each( _M_test_fec, detail::FEContextUpdateInCaseOfInterpolate<0,form_context_type>( _gmc, *this ) );
+    _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
+    fusion::for_each( _M_trial_fec, detail::FEContextUpdateInCaseOfInterpolate<1,form_context_type>( _gmc, *this ) );
+    _M_trial_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) );
+    _M_eval_expr00->update( _gmcExpr, _M_test_fec0, _M_trial_fec0 );
+}
+template<typename FE1,  typename FE2, typename ElemContType>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
+void
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::updateInCaseOfInterpolate( map_geometric_mapping_context_type const& _gmc,
+                                                                                                                  map_geometric_mapping_expr_context_type const& _gmcExpr,
+                                                                                                                  mpl::bool_<true> )
+{
+    fusion::for_each( _M_test_fec, detail::FEContextUpdateInCaseOfInterpolate<0,form_context_type>( _gmc, *this ) );
+    _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
+    _M_eval_expr00->update( _gmcExpr, _M_test_fec0, _M_test_fec0 );
 }
 
 
 
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapContext,typename ExprT,typename IM>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( mpl::int_<1> )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::integrate( mpl::int_<1> )
 {
 
     typedef geometric_mapping_context_type gmc_type;
@@ -239,9 +285,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
         }
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapContext,typename ExprT,typename IM>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( mpl::int_<2> )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::integrate( mpl::int_<2> )
 {
     //geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_gmc );
     typedef geometric_mapping_context_type gmc_type;
@@ -277,9 +323,34 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::integrate( 
         }
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapContext,typename ExprT,typename IM>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::assemble( size_type elt_0 )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::integrateInCaseOfInterpolate( mpl::int_<1>,
+                                                                                                                     std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
+{
+
+    typedef geometric_mapping_context_type gmc_type;
+    typedef typename eval00_expr_type::shape shape;
+    static const bool cond = (shape::M == 1 && shape::N == 1);
+    BOOST_MPL_ASSERT_MSG( cond,
+                          INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
+                          (mpl::int_<shape::M>, mpl::int_<shape::N> ) );
+
+#if !defined(NDEBUG)
+    geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_gmc );
+    Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
+#endif /* NDEBUG */
+
+    for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+        for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+        {
+            _M_rep(i, j ) = M_integrator( *_M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+        }
+}
+template<typename FE1,  typename FE2, typename ElemContType>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
+void
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::assemble( size_type elt_0 )
 {
     size_type row_start = _M_lb.front().globalRowStart();
     size_type col_start = _M_lb.front().globalColumnStart();
@@ -309,9 +380,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::assemble( s
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapContext,typename ExprT,typename IM>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM>::assemble( size_type elt_0, size_type elt_1  )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::assemble( size_type elt_0, size_type elt_1  )
 {
     size_type row_start = _M_lb.front().globalRowStart();
     size_type col_start = _M_lb.front().globalColumnStart();

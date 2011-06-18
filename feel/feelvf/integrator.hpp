@@ -45,6 +45,9 @@
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelpoly/quadmapped.hpp>
 #include <feel/feelvf/formcontextbase.hpp>
+#include <feel/feelvf/bilinearform.hpp>
+#include <feel/feelvf/linearform.hpp>
+#include <feel/feeldiscr/quadptlocalization.hpp>
 #if defined( HAVE_GOOGLE_PROFILER_H )
 #include <google/profiler.h>
 #endif
@@ -515,10 +518,23 @@ public:
 
 private:
     template<typename FormType>
-    void assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> ) const;
-
+    void assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/ ) const;
     template<typename FormType>
-    void assemble( FormType& __form, mpl::int_<MESH_FACES> ) const;
+    void assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<false> /**/ ) const;
+    template<typename FormType>
+    void assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<true> /**/ ) const;
+    template<typename FormType>
+    void assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<false> /**/ ) const;
+
+    template<typename FE1,typename FE2,typename ElemContType>
+    void assembleInCaseOfInterpolate( detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const;
+    template<typename FE1,typename FE2,typename ElemContType>
+    void assembleInCaseOfInterpolate( detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const;
+    template<typename FE,typename VectorType,typename ElemContType>
+    void assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const;
+    template<typename FE,typename VectorType,typename ElemContType>
+    void assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const;
+
 
     template<typename P0hType>
     typename P0hType::element_type  broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_ELEMENTS> ) const;
@@ -545,8 +561,8 @@ private:
 template<typename Elements, typename Im, typename Expr>
 template<typename Elem1, typename Elem2, typename FormType>
 void
-Integrator<Elements, Im, Expr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-                                          boost::shared_ptr<Elem2> const& /*__v*/,
+Integrator<Elements, Im, Expr>::assemble( boost::shared_ptr<Elem1> const& __u,
+                                          boost::shared_ptr<Elem2> const& __v,
                                           FormType& __form ) const
 {
 #if 0
@@ -555,13 +571,30 @@ Integrator<Elements, Im, Expr>::assemble( boost::shared_ptr<Elem1> const& /*__u*
                                                                              __v,
                                                                              __form );
 #endif
-    assemble( __form, mpl::int_<iDim>() );
+
+    typedef typename boost::is_same<typename eval::gmc_type::element_type,typename Elem1::mesh_type::element_type>::type same1_mesh_type;
+    typedef typename boost::is_same<typename eval::gmc_type::element_type,typename Elem2::mesh_type::element_type>::type same2_mesh_type;
+    typedef typename boost::mpl::and_< same1_mesh_type,same2_mesh_type>::type same_mesh_type;
+
+    element_iterator it = this->beginElement();
+    element_iterator en = this->endElement();
+
+    if ( it == en )
+        return;
+
+    if ( dynamic_cast<void*>(const_cast<MeshBase*>(it->mesh())) == dynamic_cast<void*>(__u->mesh().get()) &&
+         dynamic_cast<void*>(const_cast<MeshBase*>(it->mesh())) == dynamic_cast<void*>(__v->mesh().get()) )
+        assemble( __form, mpl::int_<iDim>(), mpl::bool_<same_mesh_type::value>() );
+    else
+        assemble( __form, mpl::int_<iDim>(), mpl::bool_<false>() );
 
 }
+
+
 template<typename Elements, typename Im, typename Expr>
 template<typename Elem1, typename FormType>
 void
-Integrator<Elements, Im, Expr>::assemble( boost::shared_ptr<Elem1> const& /*__v*/,
+Integrator<Elements, Im, Expr>::assemble( boost::shared_ptr<Elem1> const& __v,
                                           FormType& __form ) const
 {
 #if 0
@@ -570,12 +603,25 @@ Integrator<Elements, Im, Expr>::assemble( boost::shared_ptr<Elem1> const& /*__v*
                                                                       __form );
 #endif
 
-    assemble( __form, mpl::int_<iDim>() );
+    typedef typename boost::is_same<typename eval::gmc_type::element_type,typename Elem1::mesh_type::element_type>::type same_mesh_type;
+
+    element_iterator it = this->beginElement();
+    element_iterator en = this->endElement();
+
+    if ( it == en )
+        return;
+
+    if ( dynamic_cast<void*>(const_cast<MeshBase*>(it->mesh())) == dynamic_cast<void*>(__v->mesh().get()) )
+        assemble( __form, mpl::int_<iDim>(), mpl::bool_<same_mesh_type::value>() );
+    else
+        assemble( __form, mpl::int_<iDim>(), mpl::bool_<false>() );
+
+    //assemble( __form, mpl::int_<iDim>(), mpl::bool_<true>() );
 }
 template<typename Elements, typename Im, typename Expr>
 template<typename FormType>
 void
-Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> ) const
+Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/ ) const
 {
     Debug( 5065 ) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
@@ -618,6 +664,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
 
     focb_ptrtype formc( new form_context_type( __form,
                                                mapgmc,
+                                               mapgmc,
                                                this->expression(),
                                                this->im() ) );
 
@@ -648,7 +695,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
 #endif
             ti1.restart();
             map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-            formc->update( mapgmc );
+            formc->update( mapgmc,mapgmc );
             //Debug( 5065 )  << "update gmc : " << ti1.elapsed() << "\n";
             t1+=ti1.elapsed();
 
@@ -695,10 +742,136 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
     tbb::parallel_for( r,  thecontext);
 #endif // HAVE_TBB
 }
+
 template<typename Elements, typename Im, typename Expr>
 template<typename FormType>
 void
-Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES> ) const
+Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<false> /**/ ) const
+{
+    assembleInCaseOfInterpolate(__form,mpl::int_<MESH_ELEMENTS>());
+}
+
+template<typename Elements, typename Im, typename Expr>
+template<typename FE1,typename FE2,typename ElemContType>
+void
+Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::BilinearForm<FE1,FE2,ElemContType>& __form,
+                                                             mpl::int_<MESH_ELEMENTS> /**/ ) const
+{
+    // typedef on integral mesh (expr) :
+    typedef typename eval::gm_type gm_expr_type;
+    typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT, typename eval::element_type> gmc_expr_type;
+    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef typename gm_expr_type::precompute_type pc_expr_type;
+    typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
+    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
+
+    //typedef on form (trial and test):
+    typedef detail::BilinearForm<FE1,FE2,ElemContType> FormType;
+    typedef typename FormType::gm_type gm_form_type;
+    typedef typename FormType::mesh_element_type geoelement_form_type;
+    typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
+    typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
+    typedef typename gm_form_type::precompute_type pc_form_type;
+    typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
+    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;
+
+    // typedef on formcontext
+    typedef typename FormType::template Context<map_gmc_form_type, expression_type, im_type,map_gmc_expr_type> form_context_type;
+    typedef form_context_type fcb_type;
+    typedef fcb_type* focb_ptrtype;
+
+    //-----------------------------------------------//
+
+    auto elt_it = this->beginElement();
+    auto elt_en = this->endElement();
+
+    // check that we have elements to iterate over
+    if ( elt_it == elt_en )
+        return;
+
+   //-----------------------------------------------//
+
+    pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), this->im().points() ) );
+    gmc_expr_ptrtype gmcExpr( new gmc_expr_type(elt_it->gm(),*elt_it, geopcExpr ) );
+    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr ) );
+
+    //-----------------------------------------------//
+
+    pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), this->im().points() ) );
+    gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), __form.testSpace()->mesh()->element(0), geopcForm ) );
+    map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
+
+   //-----------------------------------------------//
+
+    focb_ptrtype formc( new form_context_type( __form,
+                                               mapgmcForm,
+                                               mapgmcExpr,
+                                               this->expression(),
+                                               this->im() ) );
+
+   //-----------------------------------------------//
+
+    QuadPtLocalization<Elements, Im, Expr > QPL(this->beginElement(),this->endElement(), this->im() );
+
+    auto meshTrial = __form.trialSpace()->mesh();
+    auto meshTest = __form.testSpace()->mesh();
+
+    QPL.update( meshTest,meshTrial );
+
+   //-----------------------------------------------//
+
+    auto res_it = QPL.result().begin();
+    auto res_en = QPL.result().end();
+    for ( ; res_it != res_en ; ++res_it)
+        {
+            auto idEltTest = res_it->get<0>();
+            auto map = res_it->get<1>();
+            auto map_it = map.begin();
+            auto map_en = map.end();
+            for ( ; map_it != map_en ; ++map_it)
+                {
+                    auto idEltTrial = map_it->first;
+                    auto eltTrial = meshTrial->element( idEltTrial );
+                    auto eltTest = meshTest->element( idEltTest );
+
+                    auto ptRefTest = map_it->second.get<1>();
+                    auto ptRefTrial = map_it->second.get<2>();
+                    auto themapQuad = map_it->second.get<0>();
+
+                    geopcForm->update(ptRefTest);
+                    gmcForm->update(eltTest,geopcForm);
+
+                    map_gmc_form_type mapgmc( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
+
+                    auto gmcEltRange = QPL.gmcForThisElt(QPL.eltForThisQuadPt(themapQuad[0].get<1>()));
+
+                    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcEltRange ) );
+                    formc->updateInCaseOfInterpolate( mapgmc, mapgmcExpr );
+
+                    formc->integrateInCaseOfInterpolate(themapQuad);
+
+                    formc->assemble();
+
+                }
+
+        }
+
+} // assembleInCaseOfInterpolate
+
+template<typename Elements, typename Im, typename Expr>
+template<typename FE,typename VectorType,typename ElemContType>
+void
+Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
+{
+#warning todo!
+}
+
+
+
+template<typename Elements, typename Im, typename Expr>
+template<typename FormType>
+void
+Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<true> /**/ ) const
 {
     Debug( 5065 ) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " faces\n";
@@ -767,7 +940,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
     typedef typename FormType::template Context<map_gmc_type, expression_type, face_im_type> form_context_type;
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
-    form_context_type form( __form, mapgmc, expression(), face_ims[__face_id_in_elt_0], this->im() );
+    form_context_type form( __form, mapgmc, mapgmc, expression(), face_ims[__face_id_in_elt_0], this->im() );
     //
     // the case where the face is connected only to two elements
     //
@@ -787,7 +960,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
             map2_gmc_type mapgmc2( fusion::make_pair<detail::gmc<0> >( __c0 ),
                                    fusion::make_pair<detail::gmc<1> >( __c1 ) );
 
-            form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmc2, expression(), face_ims[__face_id_in_elt_0], this->im(), mpl::int_<2>() ) );
+            form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmc2, mapgmc2, expression(), face_ims[__face_id_in_elt_0], this->im(), mpl::int_<2>() ) );
         }
 
     boost::timer ti0,ti1, ti2, ti3;
@@ -818,7 +991,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
                     ti1.restart();
                     map2_gmc_type mapgmc2 = map2_gmc_type( fusion::make_pair<detail::gmc<0> >( __c0 ),
                                                            fusion::make_pair<detail::gmc<1> >( __c1 ) );
-                    form2->update( mapgmc2, face_ims[__face_id_in_elt_0], mpl::int_<2>() );
+                    form2->update( mapgmc2, mapgmc2, face_ims[__face_id_in_elt_0], mpl::int_<2>() );
                     t1 += ti1.elapsed();
 
                     ti2.restart();
@@ -826,24 +999,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
                     t2 += ti2.elapsed();
 
                     ti3.restart();
-                    if (__c0->element().mesh() == __form.testSpace()->mesh().get())
-                        {
-                            //std::cout<<"\nIS SAME MESH\n";
-                            form2->assemble( it->element(0).id(), it->element(1).id() );
-                        }
-                    else
-                        {
-                            //std::cout<<"\nIS DIFF MESH\n";
-                            auto toolLoc = __form.testSpace()->mesh()->tool_localization();
-                            auto __ptsReal = __form.testSpace()->ptsInContext( *__c0 , mpl::int_<2>());
-                            toolLoc->run_analysis(__ptsReal);
-                            auto itloc = toolLoc->result_analysis_begin();
-                            auto itloc_end = toolLoc->result_analysis_end();
-                            for( ;itloc != itloc_end; ++itloc )
-                                {
-                                    form2->assemble( itloc->first );
-                                }
-                        }
+                    form2->assemble( it->element(0).id(), it->element(1).id() );
                     t3 += ti3.elapsed();
                 }
             else
@@ -860,7 +1016,7 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
 
                     ti1.restart();
                     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
-                    form.update( mapgmc, face_ims[__face_id_in_elt_0] );
+                    form.update( mapgmc, mapgmc, face_ims[__face_id_in_elt_0] );
                     t1 += ti1.elapsed();
 
                     ti2.restart();
@@ -868,25 +1024,8 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
                     t2 += ti2.elapsed();
 
                     ti3.restart();
-                    if (__c0->element().mesh() == __form.testSpace()->mesh().get())
-                        {
-                            //std::cout<<"\nIS SAME MESH\n";
-                            form.assemble( it->element(0).id() );
-                        }
-                    else
-                        {
-                            //std::cout<<"\nIS DIFF MESH\n";
-                            auto toolLoc = __form.testSpace()->mesh()->tool_localization();
-                            auto __ptsReal = __form.testSpace()->ptsInContext( *__c0 , mpl::int_<2>());
-                            toolLoc->run_analysis(__ptsReal);
-                            auto itloc = toolLoc->result_analysis_begin();
-                            auto itloc_end = toolLoc->result_analysis_end();
-                            for( ;itloc != itloc_end; ++itloc )
-                                {
-                                    form.assemble( itloc->first );
-                                }
-                        }
-                   t3 += ti3.elapsed();
+                    form.assemble( it->element(0).id() );
+                    t3 += ti3.elapsed();
 #else
                     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
                     form.update( mapgmc, face_ims[__face_id_in_elt_0] );
@@ -904,6 +1043,33 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
 
     Debug( 5065 ) << "integrating over faces done in " << __timer.elapsed() << "s\n";
 }
+
+template<typename Elements, typename Im, typename Expr>
+template<typename FormType>
+void
+Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<false> /**/ ) const
+{
+    assembleInCaseOfInterpolate(__form,mpl::int_<MESH_FACES>());
+}
+
+template<typename Elements, typename Im, typename Expr>
+template<typename FE1,typename FE2,typename ElemContType>
+void
+Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::BilinearForm<FE1,FE2,ElemContType>& __form,
+                                                             mpl::int_<MESH_FACES> /**/ ) const
+{
+#warning todo!
+}
+
+template<typename Elements, typename Im, typename Expr>
+template<typename FE,typename VectorType,typename ElemContType>
+void
+Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
+{
+#warning todo!
+}
+
+
 
 
 template<typename Elements, typename Im, typename Expr>

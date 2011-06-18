@@ -125,11 +125,12 @@ public:
      */
     template<typename GeomapContext,
              typename ExprT,
-             typename IM
+             typename IM,
+             typename GeomapExprContext = GeomapContext
              >
     class Context //: public FormContextBase<GeomapContext, IM>
     {
-        typedef FormContextBase<GeomapContext, IM> super;
+        typedef FormContextBase<GeomapContext, IM, GeomapExprContext> super;
 
 public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -210,10 +211,12 @@ public:
         typedef fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > map_left_test_fecontext_type;
         typedef fusion::map<fusion::pair<gmc<1>, test_fecontext_ptrtype> > map_right_test_fecontext_type;
 
-        typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map_left_test_fecontext_type> eval0_expr_type;
+        typedef typename super::map_geometric_mapping_expr_context_type map_geometric_mapping_expr_context_type;
+
+        typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type, map_left_test_fecontext_type> eval0_expr_type;
         typedef boost::shared_ptr<eval0_expr_type> eval0_expr_ptrtype;
 
-        typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map_right_test_fecontext_type> eval1_expr_type;
+        typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type, map_right_test_fecontext_type> eval1_expr_type;
         typedef boost::shared_ptr<eval1_expr_type> eval1_expr_ptrtype;
         //typedef typename ExprT::template tensor<map_right_gmc_type, map_test_fecontext_type> eval1_expr_type;
 
@@ -241,12 +244,14 @@ public:
 
         Context( form_type& __form,
                  map_geometric_mapping_context_type const& _gmc,
+                 map_geometric_mapping_expr_context_type const& _gmcExpr,
                  ExprT const& expr,
                  IM const& im );
 
         template<typename IM2>
         Context( form_type& __form,
                  map_geometric_mapping_context_type const& _gmc,
+                 map_geometric_mapping_expr_context_type const& _gmcExpr,
                  ExprT const& expr,
                  IM const& im,
                  IM2 const& im2 );
@@ -254,19 +259,27 @@ public:
         template<typename IM2>
         Context( form_type& __form,
                  map_geometric_mapping_context_type const& _gmc,
+                 map_geometric_mapping_expr_context_type const& _gmcExpr,
                  ExprT const& expr,
                  IM const& im,
                  IM2 const& im2,
                  mpl::int_<2> );
 
-        void update( map_geometric_mapping_context_type const& _gmc );
+        void update( map_geometric_mapping_context_type const& _gmc,
+                     map_geometric_mapping_expr_context_type const& _gmcExpr );
 
-        void update( map_geometric_mapping_context_type const& _gmc, mpl::int_<2> );
+        void update( map_geometric_mapping_context_type const& _gmc,
+                     map_geometric_mapping_expr_context_type const& _gmcExpr,
+                     mpl::int_<2> );
 
 
-        void update( map_geometric_mapping_context_type const& _gmc, IM const& im );
+        void update( map_geometric_mapping_context_type const& _gmc,
+                     map_geometric_mapping_expr_context_type const& _gmcExpr,
+                     IM const& im );
 
-        void update( map_geometric_mapping_context_type const& _gmc, IM const& im, mpl::int_<2> );
+        void update( map_geometric_mapping_context_type const& _gmc,
+                     map_geometric_mapping_expr_context_type const& _gmcExpr,
+                     IM const& im, mpl::int_<2> );
 
 
         void integrate()
@@ -799,6 +812,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::operator+=( Expr<ExprT> const& 
 
 
 
+template<typename Elements, typename Im, typename Expr> class Integrator;
 
 
 template<typename X1, typename IntElts, typename Im, typename ExprT>
