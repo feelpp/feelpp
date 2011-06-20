@@ -38,7 +38,7 @@
 
 
 using namespace Feel;
-
+//# marker8 #
 inline
 po::options_description
 makeOptions()
@@ -50,6 +50,9 @@ makeOptions()
         ;
     return myintegralsoptions.add( Feel::feel_options() );
 }
+//# endmarker8 #
+
+//# marker9 #
 inline
 AboutData
 makeAbout()
@@ -63,8 +66,8 @@ makeAbout()
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
-
 }
+//# endmarker9 #
 
 
 /**
@@ -91,13 +94,14 @@ public:
         super( vm, about ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>()  )
-    {
-    }
+    {}
 
+	//# marker10 #
     void run();
 
     void run( const double* X, unsigned long P, double* Y, unsigned long N );
-
+	//# endmarker10 #
+	
 private:
 
     double meshSize;
@@ -141,6 +145,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     /*
      * First we create the mesh
      */
+	//# marker11 #
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name= (boost::format( "%1%-%2%" ) % shape % Dim).str() ,
                                                       _shape=shape,
@@ -149,6 +154,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                                       _h=X[0] ) );
     mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
     mesh->updateForUse();
+	//# endmarker11 #
 
     /*
      * Compute domain Area
