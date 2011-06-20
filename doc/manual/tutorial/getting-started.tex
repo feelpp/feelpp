@@ -403,10 +403,10 @@ If you have followed this tutorial in the order, you are now able to create a si
 
 or
 
-\[ \Omega=\{ \mathbf{x} \in \mathbb{R}^d | x_i \geq 0, \sum_{i=1}{d} x_i \leq 1 \} \]
+\[ \Omega=\{ \mathbf{x} \in \mathbb{R}^d | x_i \geq 0, \sum_{i=1}^{d} x_i \leq 1 \} \]
 
-where $ d=1,2$ or $3$ and $\mathbf{x}=(x_1,...,x_d)$.\\
-These domains are plotted in the section ~\ref{sec:mesh-manipulation} (If it's not yet done, compile all examples which are used in this tutorial, go to \lstinline!~/FEEL/feel.opt/doc/manual/! and type \verb|make| and execute the application \verb|feel_doc_myapp|). The execution will result in several meshes as it is explained in ~\ref{mesh:examples}.\\
+where $ d=1,2$ or $3$ and $\mathbf{x}=(x_1,...,x_d)$.\\ \newline
+These domains are plotted in the section ~\ref{sec:mesh-manipulation} (If it's not yet done, compile all examples which are used in this tutorial, go to \lstinline!~/FEEL/feel.opt/doc/manual/! and type \verb|make| and execute the application \verb|feel_doc_mymesh|). The execution will result in several meshes as it is explained in ~\ref{mesh:examples}.\\
 Here are the integrals we want to compute :
 \begin{itemize}
 \item $\displaystyle{ \int_\Omega 1 }$ : the measure of the domain
@@ -417,14 +417,14 @@ Here are the integrals we want to compute :
 
 \subsection{Implementation}
 
-To compute an integral, we use the function integrate :
+To compute an integral, we use the following function
 \begin{lstlisting}
 integrate( <domain>,<expression under the integral> ).evaluate(<location>)
 \end{lstlisting}
 
 \subsubsection{Domain}
 
-We have to indicate the domain on which we want to integrate. It consists in a pair of iterators over the elements owned by the current processor (The mesh is shared between the processors).
+You have to indicate the domain on which we want to integrate. It consists in a pair of iterators over the elements owned by the current processor (the mesh is shared between the processors).
 \begin{itemize}
 \item To compute the integral over the region of $\Omega$ current processor, use
 \begin{lstlisting}
@@ -438,149 +438,80 @@ boundaryfaces(mesh)
 
 \subsubsection{Expression under the integrals}
 
-The Finite Element Embedded Language (FEEL++) language provides the keyword Px(), Py() and Pz() to denote the $x$, $y$ and $z$ coordinates. \\
-The expression $x^2 + y^2 + z^2$ under the third integral is :
+The language provided by \feel (called the Finite Element Embedded Language) brings the keyword $Px()$, $Py()$ and $Pz()$ to denote the $x$, $y$ and $z$ coordinates. \\
+The expression $x^2 + y^2 + z^2$ under the third integral should be written such as :
 \begin{lstlisting}
 Px()*Px() + Py()*Py() + Pz()*Pz()
 \end{lstlisting}
 \vspace{0.2cm}
-The constants are indicated by the function constant() (for example, we have to indicate constant(1.0) for the first integral). \\
+The constants are indicated by the function constant() (for example, we have to indicate \lstinline!constant(1.0)! for the first integral). \\
 
 \subsubsection{Examples}
 
 \paragraph{First integral : domain area \\}
 To compute the first integral (the domain area), the code reads :
-%%%\lstinputlisting[linerange=marker1-endmarker1]{myintegrals.cpp}
-\begin{lstlisting}
-double local_domain_area = integrate( elements(mesh),
-                          constant(1.0)).evaluate()(0,0);
-\end{lstlisting}
+\lstinputlisting[linerange=marker1-endmarker1]{myintegrals.cpp}
 
-This compute the integral only on the region of the domain owned by the current processor (local\_domain\_area). \\
 
-To obtain the total area, we collect the integrals on all processors using a reduce MPI operation and sum all contributions. We have used here the Boost.MPI library that provides an extremely powerful wrapper around the MPI library. \\
-%%%\lstinputlisting[linerange=marker2-endmarker2]{myintegrals.cpp}
-\begin{lstlisting}
-  double global_domain_area=local_domain_area;
-  if ( this->comm().size()  > 1 )
-      mpi::all_reduce( this->comm(),
-                   local_domain_area,
-                   global_domain_area,
-                   std::plus<double>() );
-\end{lstlisting}
+This compute the integral only on the region of the domain owned by the current processor \lstinline!(local_domain_area)!. \\
+
+To obtain the total area, we collect the integrals on all processors using a reduce MPI operation and sum all contributions. We have used here the \lstinline!Boost.MPI! library that provides an extremely powerful wrapper around the MPI library. \\
+\lstinputlisting[linerange=marker2-endmarker2]{myintegrals.cpp}
 
 \vspace{0.2cm}
 Finally, we print to the log file the result of the local and global integral calculation.
-%%%\lstinputlisting[linerange=marker3-endmarker3]{myintegrals.cpp}
-\begin{lstlisting}
-Log() << "int_Omega 1 = " << global_domain_area
-      << "[ " << local_domain_area << " ]\n";
-\end{lstlisting}
-
+\lstinputlisting[linerange=marker3-endmarker3]{myintegrals.cpp}
 
 \paragraph{Second integral : domain perimeter \\}
 
-The difference with the domain area computation resides in the elements with are iterating on: here we are iterating on the boundary faces of the domain to compute the integral using boundaryfaces(mesh) to provide the pairs of iterators. But the stages are the same as previously \\
-\begin{lstlisting}
-double local_boundary_length = integrate( boundaryfaces(mesh),
-                                        constant(1.0)).evaluate()(0,0);
+The difference with the domain area computation resides in the elements with are iterating on: here we are iterating on the boundary faces of the domain to compute the integral using \lstinline!boundaryfaces(mesh)! to provide the pairs of iterators. But the stages are the same as previously \\
 
-double global_boundary_length = local_boundary_length;
-if ( this->comm().size() > 1 )
-       mpi::all_reduce( this->comm(),
-              local_boundary_length,
-              global_boundary_length,
-              std::plus<double>() );
-
-Log() << "int_BoundaryOmega (1)= " << global_boundary_length
-       << "[ " << local_boundary_length << " ]\n";
-\end{lstlisting}
+\lstinputlisting[linerange=marker4-endmarker4]{myintegrals.cpp}
 
 We can apply the same method to compute the third, and the last integral. \\
 
 \subsection{Quadrature}
 
-Feel computes automatically the quadrature associated the expression under the integral. If the expression is polynomial then the quadrature is exact. If the expression is not polynomial, then each non-polynomial term in the expression is considered a polynomial of degree 2 by default.
+Feel computes automatically the quadrature associated to the expression under the integral. If the expression is polynomial then the quadrature is exact. If the expression is not polynomial, then each non-polynomial term in the expression is considered as a polynomial of degree 2 by default.
 
 Here is how the 4-th integral can be computed letting Feel decide about the quadrature \\
-\begin{lstlisting}
-double local_intsin = integrate( elements(mesh),
-                  sin( Px()*Px() + Py()*Py() + Pz()*Pz() )).evaluate()(0,0);
-\end{lstlisting}
-\vspace{0.2cm}
+\lstinputlisting[linerange=marker6-endmarker6]{myintegrals.cpp}
 
 An alternative is to set yourself the quadrature by passing a new argument to the integrate function: \_Q<Order>() where Order is the maximum polynomial order that the quadrature should integrate exactely.
-\begin{lstlisting}
-    double local_intsin2 = integrate( elements(mesh), _Q<2>(),
-                  sin( Px()*Px() + Py()*Py() + Pz()*Pz() )).evaluate()(0,0);
-\end{lstlisting}
+\lstinputlisting[linerange=marker7-endmarker7]{myintegrals.cpp}
 
 \subsection{Complete example : application, mesh and integrals}
 
 Here, we'll see how to build an application which create a mesh, and compute some integrals on it.
 
 \subsubsection{Application building}
-As we can see in the creating applications section, we can add a description and some options to our new application.
-Here, we have created two functions MakeAbout() and MakeOptions which create respectively the descritpion and the list of options.
-\\
-
-makeOptions() creates a list of options (myintegralsoptions), and adds two options :
+As we can see in the creating applications section (~\ref{sec:creat-appl}), we can add a description and some options to our new application.
+Here, we have created two functions \lstinline!makeAbout()! and \lstinline!makeOptions()! which create respectively the descritpion and the list of options.
+\lstinline!makeOptions()! creates a list of options (myintegralsoptions), and adds two options :
 \begin{itemize}
-\item hsize, which corresponds to the mesh size (default value = 0.2)
-\item shape, which corresponds to the shape of the domain (default value = hypercube)
+\item \lstinline!hsize! which corresponds to the mesh size (default = $0.2$)
+\item \lstinline!shape! which corresponds to the shape of the domain (default = $hypercube$)
 \end{itemize}
-\begin{lstlisting}
-inline
-po::options_description
-makeOptions()
-{
-  po::options_description myintegralsoptions("MyIntegrals options");
-  myintegralsoptions.add_options()
-    ("hsize", po::value<double>()->default_value( 0.2 ), "mesh size")
-    ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ),
-                       "shape of the domain (either simplex or hypercube)")
-      ;
-  return myintegralsoptions.add( Feel::feel_options() );
-}
-\end{lstlisting}
-\vspace{0.2cm}
+
+\lstinputlisting[linerange=marker8-endmarker8]{myintegrals.cpp}
+
 makeAbout() gives the description of the application :\\
-\begin{lstlisting}
-inline
-AboutData
-makeAbout()
-{
- AboutData about("myintegrals" ,
-                 "myintegrals" ,
-                 "0.3",
-                 "nD(n=1,2,3) MyIntegrals on simplices or simplex products",
-                 Feel::AboutData::License_GPL,
-                 "Copyright (c) 2008-2010 Universite Joseph Fourier");
 
- about.addAuthor("Christophe Prud'homme", "developer",
-        "christophe.prudhomme@ujf-grenoble.fr", "");
- return about;
-}
-\end{lstlisting}
-\vspace{0.2cm}
+\lstinputlisting[linerange=marker9-endmarker9]{myintegrals.cpp}
 
-To get further information about the application, see creating applications section.
+To get further information about the application, see creating applications section ~\ref{sec:creat-appl}.
 
 \subsubsection{Class definition}
 
-We now defined a new class Myintegrals, with the constructor \\
+Once the description and options have been defined, we create the class Myintegrals, with the constructor \\
 \begin{lstlisting}
 MyIntegrals( po::variables_map const& vm, AboutData const& about )
 \end{lstlisting}
-which takes vm (a map which associates the available options with their default value), and about (containing the description of our application). \\
+which takes \lstinline!vm! (a map which associates the available options with their default value), and \lstinline!about! (containing our application's description). \\
 
-The run() member function is redifined twice in this class :
-\begin{lstlisting}
-void run();
-void run( const double* X, unsigned long P, double* Y, unsigned long N );
-\end{lstlisting}
-
-These two versions are linked, because the first uses the second. Indeed, run() stores the parameters we have chosen with the options (mesh size, shape, $\dots$), and uses them in the second version (X corresponds to these parameters : X[0]=mesh\_size and X[1]=mesh\_shape). \\
+The \lstinline!run()! member function is redifined twice in this class :
+\lstinputlisting[linerange=marker10-endmarker10]{myintegrals.cpp}
+These two versions are linked, because the first uses the second. Indeed, \lstinline!run()! stores the parameters we have chosen with the options \lstinline!(mesh size, shape, $\dots$)!, and uses them in the second version (X corresponds to these parameters : \lstinline!X[0]=mesh_size! and \lstinline!X[1]=mesh_shape!). \\
 
 \subsubsection{The run() member function}
 In this function, we create a subdirectory of feel in which there will be the results of our application, and logfiles containing :
@@ -598,72 +529,58 @@ Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/")
                                   meshSize );
 
 \end{lstlisting}
-\vspace{0.2cm}
+
 It is also in run() that we create the mesh before to compute the integrals :
-\begin{lstlisting}
-mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-      _desc=domain( _name= (boost::format( "%1%-%2%" ) % shape % Dim).str(),
-         _shape=shape,_dim=Dim, _h=X[0] ) );
-
-mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
-mesh->updateForUse();
-
-\end{lstlisting}
-\vspace{0.2cm}
+\lstinputlisting[linerange=marker11-endmarker11]{myintegrals.cpp}
 Now that we have a computational mesh, we can compute the integrals as we have seen before :
 
 \begin{lstlisting}
- //# marker1 #
     double local_domain_area = integrate( elements(mesh),
                                         constant(1.0)).evaluate()(0,0);
-    //# endmarker1 #
 
-    //# marker2 #
     double global_domain_area=local_domain_area;
     if ( this->comm().size()  > 1 )
         mpi::all_reduce( this->comm(),
                          local_domain_area,
                          global_domain_area,
                          std::plus<double>() );
-    //# endmarker2 #
-    //# marker3 #
+
     Log() << "int_Omega 1 = " << global_domain_area
           << "[ " << local_domain_area << " ]\n";
-    //# endmarker3 #
-
 \end{lstlisting}
 
 \subsection{Results}
 
-After compiling feel\_doc\_myintegrals with the defaults options
+After compiling \lstinline!feel_doc_myintegrals! with the defaults options
 \begin{lstlisting}
   --hsize arg (=0.20000000000000001)    mesh size
   --shape arg (=hypercube)              shape of the domain
 \end{lstlisting}
-\vspace{0.2cm}
-we obtain the values of each integrals, in each dimension (1,2 et 3) : \\
+
+we obtain the values of each integrals, in each dimension ($1,2$ and $3$) : \\
 \begin{lstlisting}
 ------------------------------------------------------------
 Execute MyIntegrals<1>
 int_Omega 1 = 1[ 1 ]
 int_Omega (x^2+y^2+z^2) = 0.333333[ 0.333333 ]
-int_Omega (sin(x^2+y^2+z^2)) [with order 4 ]= 0.310268[ 0.310268 ]
-int_Omega (sin(x^2+y^2+z^2)) [with order 2 ] = 0.310281[ 0.310281 ]
+int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= 0.310268[ 0.310268 ]
+int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = 0.310281[ 0.310281 ]
 ------------------------------------------------------------
 Execute MyIntegrals<2>
 int_Omega 1 = 1[ 1 ]
 int_BoundaryOmega (1)= 4[ 4 ]
 int_Omega (x^2+y^2+z^2) = 0.666667[ 0.666667 ]
-int_Omega (sin(x^2+y^2+z^2)) [with order 4 ]= 0.56129[ 0.56129 ]
-int_Omega (sin(x^2+y^2+z^2)) [with order 2 ] = 0.561299[ 0.561299 ]
+int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= 0.56129[ 0.56129 ]
+int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = 0.561299[ 0.561299 ]
 ------------------------------------------------------------
 Execute MyIntegrals<3>
 int_Omega 1 = 1[ 1 ]
 int_BoundaryOmega (1)= 6[ 6 ]
 int_Omega (x^2+y^2+z^2) = 1[ 1 ]
-int_Omega (sin(x^2+y^2+z^2)) [with order 4 ]= 0.731683[ 0.731683 ]
-int_Omega (sin(x^2+y^2+z^2)) [with order 2 ] = 0.731693[ 0.731693 ]
+int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= 0.731683[ 0.731683 ]
+int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = 0.731693[ 0.731693 ]
 \end{lstlisting}
+
 
 
 \section{Function Spaces}
