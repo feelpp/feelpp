@@ -584,8 +584,9 @@ int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = 0.731693[ 0.
 
 
 \section{Function Spaces}
-\marginpar{\lstinline!myfunctionspace.cpp!}
+
 \label{sec:func-spaces}
+\marginpar{\lstinline!myfunctionspace.cpp!}
 
 \subsection{Functions spaces definition}
 
@@ -607,7 +608,7 @@ to manage the memory (If we have built an object and that there are no more any 
 \label{sec:base-funct}
 To define the base of functions we want to use, we have to indicate :
 \begin{itemize}
- \item The type of the polynoms ($\mathbb{P}$) we want to use
+ \item The type of the polynomials ($\mathbb{P}$) we want to use
  \begin{itemize}
    \item Lagrange (more used than the others because more customizable)
    \item Legendre (only for hypercube)
@@ -616,16 +617,16 @@ To define the base of functions we want to use, we have to indicate :
    \item Raviart-Thomas
  \end{itemize}
 
- \item The order of these polynoms (an integer in $\mathbb{N}^*$)
+ \item The order of these polynomials (an integer in $\mathbb{N}^*$)
  \item The dimension of Im(P) (\lstinline!Scalar! if Im($\mathbb{P})=\mathbb{R}$, \lstinline!Vectorial! if the dimension is up to $1$)
- \item The continuity of polynoms at the interface ( \lstinline!Continuous! or \lstinline!Discontinuous!)
+ \item The continuity of polynomials at the interface ( \lstinline!Continuous! or \lstinline!Discontinuous!)
 \end{itemize}
 After we have chosen this parameters, we can create the new function base (new type \lstinline!basis_type!) :
 \begin{lstlisting}
  typedef bases<Lagrange<0,Scalar,Discontinuous> > basis_type;
 \end{lstlisting}
 
-Here, we build a base with Lagrange polynoms, with order 0. The result of these polynoms is a scalar, and we authorized them
+Here, we build a base with Lagrange polynomials, with order 0. The result of these polynomials is a scalar, and we authorized them
 to be discontinue at the interface between two elements. In our example, \lstinline!p0_space_type! is the function space that holds piecwise constant $\mathbb{P}_0$ functions :  \\
 \lstinputlisting[linerange=marker1-endmarker1]{myfunctionspace.cpp}
 
@@ -645,7 +646,6 @@ We are now able to instanciate elements on $X_h$. There are two ways to proceed,
 \subsubsection{Projection}
 
 First, we define some mathematical expression/functions
-
 \begin{eqnarray*}
 g(x,y,z) &=& \sin(\pi x/2)\ \cos(\pi y/2)\ \cos(\pi*z/2) \\
 f(x,y,z) &=& (1-x^2)\ (1-y^2)\ (1-z^2)\ (x^2+y^2+z^2)^{\alpha/2.0},\quad \alpha=3
@@ -706,8 +706,8 @@ zero (the results we obtain here don't seems to be coherent).
 shall call \emph{backends}.
 \begin{itemize}
 \item Gmm\footnote{}
-\item Petsc\footnote{}
-\item Trilinos\footnote{}
+\item Petsc\footnote{Petsc is a suite of data structures and routines for the scalable solution of scientific applications modeled by PDE available at \url{http://www.mcs.anl.gov/petsc/petsc-as/}}
+\item Trilinos\footnote{The Trilinos Project is an effort to develop algorithms and enabling technologies within an object-oriented software framework for scientific problems. \url{http://trilinos.sandia.gov/}}
 \end{itemize}
 
 
@@ -716,38 +716,31 @@ shall call \emph{backends}.
 
 \index{Class!Backend}\index{boost!shared\_ptr}
 To select a backend in order to solve a linear system, we instantiate
-the \lstinline!Backend! class associated.
-
+the \lstinline!Backend! class associated :
 \begin{lstlisting}
 #include <feel/feelalg/backend.hpp>
 boost::shared_ptr<Backend<double> > backend =
      Backend<double>::build( BACKEND_PETSC );
 \end{lstlisting}
-
 The backend provides an interface to solve
 \begin{equation}
   \label{eq:8}
   A x = b
 \end{equation}
-\noindent
-where $A$ is a $n \times n $ sparse matrix and $x,b$ vectors of size $n$.
-The backend defines the \cpp types for  each of these, e.g.
+where $A$ is a $n \times n $ sparse matrix and $x,b$ vectors of size $n$. The backend defines the \cpp types for  each of these, e.g :
 \begin{lstlisting}
 Backend<double>::sparse_matrix_type A;
 Backend<double>::vector_type x,b;
 \end{lstlisting}
-\noindent
 In practice, we use the \lstinline!boost::shared_ptr<>! shared pointer
 to ensure that we won't get memory leaks. The backends provide a
-corresponding \lstinline!typedef!
-
+corresponding \lstinline!typedef! 
 
 \begin{lstlisting}
 Backend<double>::sparse_matrix_ptrtype A( backend->newMatrix( Xh, Yh ) );
 Backend<double>::vector_ptrtype x( backend->newVector( Yh ) );
 Backend<double>::vector_ptrtype b( backend->newVector( Xh ) );
 \end{lstlisting}
-\noindent
 where $X_h$ and $Y_h$ are function spaces providing the number of
 degrees of freedom that will define the size of the matrix and vectors
 thanks to the helpers functions \lstinline!Backend::newMatrix()! and
@@ -755,124 +748,202 @@ thanks to the helpers functions \lstinline!Backend::newMatrix()! and
 local/global processor mapping would be passed down by the function
 spaces.
 
-\subsection{Defining and using matrices and vectors}
-\label{sec:defin-using-matr}
+%\subsection{Defining and using matrices and vectors}
+%\label{sec:defin-using-matr}
 
 \subsection{Solving}
 \label{sec:solving}
 
+To solve the linear problem $Ax=b$, the backend provides a function \lstinline!solve! with three required parameters :
+\begin{lstlisting}
+ solve(_matrix=A, _solution=x, _rhs=b)
+\end{lstlisting}
+where :
+\begin{itemize}
+\item the matrix $A$ as a type \lstinline!sparse_matrix_ptrtype! 
+\item the solution $x$ has a type \lstinline!vector_type! or \lstinline!vector_ptrtype!
+\item the second member vector $b$ has a type \lstinline!vector_ptrtype!
+\end{itemize}
+You can also add optional parameters like :
+\begin{itemize}
+
+\item a preconditioner : instead of solving $Ax=b$, we solve $P^{-1}Ax= P^{-1}b$. This method can be applied in iterative methods and permits to decrease the number of iterations in the resolution system
+
+\item a maximum number of iterations : this option is used with an iterative solving method
+
+\item a residual tolerance : the fraction $\displaystyle{\frac{\mid\mid r^{(k)} \mid\mid }{\mid\mid r^{(0)} \mid\mid}}$ is inferior to the residual tolerance with
+$r^{(k)}=b-Ax^{(k)}$ and $x^{(k)}$ the solution at the $k^{th}$ iteration
+
+\item a absolute tolerance : $\mid\mid r^{(k)} \mid\mid $ is inferior to the absolute tolerance
+
+\item a different tolerance : sometimes, the residue doesn’t decrease continuously during the iterations. The difference between two plots doesn’t have to exceed the parameter choosen for the difference tolerance.
+
+\item a boolean to use transpose matrix : instead of solving $Ax=b$, we solve $A^{t}x=b$. If $A$ is defined and positive, $A^{t}=A$.
+
+\end{itemize}
+
+To have a view of the values of the optional parameters, see the following code :
+
+\begin{lstlisting}
+BOOST_PARAMETER_MEMBER_FUNCTION(
+	(solve_return_type),
+         solve,
+         tag,
+         (required
+	(matrix,(sparse_matrix_ptrtype))
+	(in_out(solution),*(mpl::or_<boost::is_convertible<mpl::_,vector_type&>,
+                                         boost::is_convertible<mpl::_,vector_ptrtype> >))
+	(rhs,(vector_ptrtype)))
+	(optional
+	  (prec,(sparse_matrix_ptrtype), matrix )
+	  (maxit,(size_type), 1000 )
+	  (rtolerance,(double), 1e-13)
+	  (atolerance,(double), 1e-50)
+	  (dtolerance,(double), 1e5)
+	  (reuse_prec,(bool), false )
+	  (transpose,(bool), false )
+	  )
+	)
+    {
+\end{lstlisting}
+
+The library \lstinline!Boost::Parameters! allows you to enter parameters in the order you want. It supports deduced parameters,  that is to say parameters whose identity can be deduced from their types.
 
 \section{Variational Formulation}
 \label{sec:vari-form}
-
 \index{formulation!variational}
-\begin{itemize}
-\item keywords
-\item principles
-\end{itemize}
 
-\subsection{Computing integrals}
-\label{sec:computing-integrals}
-
-\index{integrals}
-\marginpar{\lstinline!myintegrals.cpp!}
-We would like to compute some integrals on a domain of $\Omega=[0,1]^d\ \subset\ \mathbb{R}^d$
-and parts of the domain, i.e. subregions and (parts of) boundary.
-
-Once we have defined the computational mesh, we would like to compute
-the area of the domain. We form the integral $\int_\Omega 1$, the code
-reads as follows
-
-\lstinputlisting[linerange=marker1-endmarker1]{myintegrals.cpp}
-
-\lstinline!elements(mesh)! returns a pair of iterators over the
-elements owned by the current processor, \lstinline!im! is an instance
-of the \lstinline!im_type! which provides a quadrature method to
-integrate exactly polynomials up to degree 2. In our case integrating
-constant(degree 0) would have sufficed, but we will reuse
-\lstinline!im! later. Now that we have computed the integral of 1 over
-the region of $\Omega$ current processor (ie the area of the domain
-owned by the processor), we want to compute the area of $\Omega$. To
-do that we collect the integrals on all processors using a
-\lstinline!reduce! MPI operation and sum all contributions. We have
-used here the Boost.MPI library that provides an extremely powerful
-\cpp wrapper around the MPI library. The code reads
-
-\lstinputlisting[linerange=marker2-endmarker2]{myintegrals.cpp}
-
-\noindent
-Finally, we print to the log file the result of the local and global
-integral calculation. Another calculation is for example to compute
-the perimeter of the domain
-
-\lstinputlisting[linerange=marker3-endmarker3]{myintegrals.cpp}
-
-\noindent
-the main difference with the domain area computation resides in the
-elements with are iterating on: here we are iterating on the boundary
-faces of the domain to compute the integral using
-\lstinline!boundaryfaces(mesh)! to provide the pairs of iterators.
-
-
-Now say that we want to compute
+\subsection{Principle}
+\label{sec:vari-form-princip}
+A vartiational formulation of a problem is also called weak formulation. The key item is to bring a new function (called test function) and to integrate by parts. In that way we decrease the condition on our functions.
+%The finite elements method, on which is based $Feel++$ library, is used to numerically solve partial differential equation. The resolution of such equations makes the representation of complex system's dynamic behavior possible.  
+\newline
+\newline
+Let's considerate the equation to solve with boundary conditions where $u  \in \varOmega$ is the unknown
 \begin{equation}
-  \label{eq:5}
-  \int_\Omega x^2 + y^2 dx dy.
+\begin{array}{l l l}
+	-\Delta u = f  \\
+	u = u_D \quad on \quad \Gamma_D \\
+	\nabla u.n = g \quad on \quad \Gamma_N
+\end{array}
 \end{equation}
-The Finite Element Embedded Language (FEEL++) language provides the
-keyword \lstinline!Px()! and \lstinline!Py()! to denote the $x$ and
-$y$ coordinates like in equation~(\ref{eq:5}).  The code reads then
+$\Gamma = \Gamma_D \cup \Gamma_N$ is the border of $\varOmega$. By integrating by parts with a function $v$ (called test function) supposed picewise regular, we obtain :
+
+\begin{equation*}
+\int_\Omega \nabla u\cdot \nabla v - \int_\Gamma (\nabla u \cdot n)v = \int_\Omega f v
+\end{equation*}
+We have $u=u_D $ on $\Gamma_D$, we consequently take $v=0$ on $\Gamma_D$ and we got:
+
+\begin{equation*}
+\int_\Omega \nabla u\cdot\nabla v - \int_{\Gamma_N} gv = \int_\Omega f v \quad u\in\varOmega,  \forall v \in V
+\end{equation*}
+where $V=\{ v\in\varOmega, v = 0$ on $ \Gamma_D\}$ with $f$ and $g$ which are known functions belonging to $C^0(\varOmega)$. The test function $v$ also has to be in $\mathbb{H}^1$. The condition $v=0$ on $\Gamma_D$ is often used but we obviously can impose more binding boundaries conditions on the test function. 
+More generally, $V_h$ represents the function test's space.
 
 
-\lstinputlisting[linerange=marker4-endmarker4]{myintegrals.cpp}
 
-Note that in this case, we really require the use of a quadrature that
-integrates exactly order 2 polynomials.
-
-Let's run now the tutrial example \lstinline!myintegrals!. The results are stored
-in the log file under \lstinline!~/feel/myintegrals/!.
-
-\begin{lstlisting}{language=sh}
-> cat ~/feel/myintegrals/Simplex_2_1/h_0.5/myintegrals-1.0
-myintegrals-1.0 is opened for debug
-[Area 0] int_Omega = 1[ 1 ]
-[Area 0] int_Omega = 4[ 4 ]
-[Area 0] int_Omega = 0.666667[ 0.666667 ]
-\end{lstlisting}
-
-We remark that the results are exact. Integrating higher order
-polynomials ($\geq 3$) or non-polynomial function would typically
-require higher order quadrature to get accurate results. To do that
-increase \lstinline!imOrder! in the example and try integrating
-$f(x,y)=x^3 + x y^2$.
-
-
-In order to see what happens in parallel, use \lstinline!mpirun! to
-launch \lstinline!myintegrals! on several processors, for example
-
-\begin{lstlisting}{language=sh}
-> mpirun -np 4 myintegrals --hsize=0.1
-> cat ~/feel/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.0
-myintegrals-4.0 is opened for debug
-[Area 0] int_Omega = 1[ 0.253348 ]
-[Area 0] int_Omega = 4[ 1.44444 ]
-[Area 0] int_Omega = 0.666667[ 0.0701812 ]
-> cat ~/feel/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.1
-myintegrals-4.1 is opened for debug
-[Area 0] int_Omega = 1[ 0.288919 ]
-[Area 0] int_Omega = 4[ 0.444444 ]
-[Area 0] int_Omega = 0.666667[ 0.186251 ]
-> cat ~/feel/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.2
-myintegrals-4.2 is opened for debug
-[Area 0] int_Omega = 1[ 0.183219 ]
-[Area 0] int_Omega = 4[ 1.11111 ]
-[Area 0] int_Omega = 0.666667[ 0.105008 ]
-> cat ~/feel/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.3
-myintegrals-4.3 is opened for debug
-[Area 0] int_Omega = 1[ 0.274514 ]
-[Area 0] int_Omega = 4[ 1 ]
-[Area 0] int_Omega = 0.666667[ 0.305227 ]
-\end{lstlisting}
+%\subsection{Computing integrals}
+%\label{sec:computing-integrals}
+%
+%\index{integrals}
+%\marginpar{\lstinline!myintegrals.cpp!}
+%We would like to compute some integrals on a domain of $\Omega=[0,1]^d\ \subset\ \mathbb{R}^d$
+%and parts of the domain, i.e. subregions and (parts of) boundary.
+%
+%Once we have defined the computational mesh, we would like to compute
+%the area of the domain. We form the integral $\int_\Omega 1$, the code
+%reads as follows
+%
+%\lstinputlisting[linerange=marker1-endmarker1]{myintegrals.cpp}
+%
+%\lstinline!elements(mesh)! returns a pair of iterators over the
+%elements owned by the current processor, \lstinline!im! is an instance
+%of the \lstinline!im_type! which provides a quadrature method to
+%integrate exactly polynomials up to degree 2. In our case integrating
+%constant(degree 0) would have sufficed, but we will reuse
+%\lstinline!im! later. Now that we have computed the integral of 1 over
+%the region of $\Omega$ current processor (ie the area of the domain
+%owned by the processor), we want to compute the area of $\Omega$. To
+%do that we collect the integrals on all processors using a
+%\lstinline!reduce! MPI operation and sum all contributions. We have
+%used here the Boost.MPI library that provides an extremely powerful
+%\cpp wrapper around the MPI library. The code reads
+%
+%\lstinputlisting[linerange=marker2-endmarker2]{myintegrals.cpp}
+%
+%\noindent
+%Finally, we print to the log file the result of the local and global
+%integral calculation. Another calculation is for example to compute
+%the perimeter of the domain
+%
+%\lstinputlisting[linerange=marker3-endmarker3]{myintegrals.cpp}
+%
+%\noindent
+%the main difference with the domain area computation resides in the
+%elements with are iterating on: here we are iterating on the boundary
+%faces of the domain to compute the integral using
+%\lstinline!boundaryfaces(mesh)! to provide the pairs of iterators.
+%
+%
+%Now say that we want to compute
+%\begin{equation}
+%  \label{eq:5}
+%  \int_\Omega x^2 + y^2 dx dy.
+%\end{equation}
+%The Finite Element Embedded Language (FEEL++) language provides the
+%keyword \lstinline!Px()! and \lstinline!Py()! to denote the $x$ and
+%$y$ coordinates like in equation~(\ref{eq:5}).  The code reads then
+%
+%
+%\lstinputlisting[linerange=marker4-endmarker4]{myintegrals.cpp}
+%
+%Note that in this case, we really require the use of a quadrature that
+%integrates exactly order 2 polynomials.
+%
+%Let's run now the tutrial example \lstinline!myintegrals!. The results are stored
+%in the log file under \lstinline!~/feel/myintegrals/!.
+%
+%\begin{lstlisting}{language=sh}
+%> cat ~/feel/myintegrals/Simplex_2_1/h_0.5/myintegrals-1.0
+%myintegrals-1.0 is opened for debug
+%[Area 0] int_Omega = 1[ 1 ]
+%[Area 0] int_Omega = 4[ 4 ]
+%[Area 0] int_Omega = 0.666667[ 0.666667 ]
+%\end{lstlisting}
+%
+%We remark that the results are exact. Integrating higher order
+%polynomials ($\geq 3$) or non-polynomial function would typically
+%require higher order quadrature to get accurate results. To do that
+%increase \lstinline!imOrder! in the example and try integrating
+%$f(x,y)=x^3 + x y^2$.
+%
+%
+%In order to see what happens in parallel, use \lstinline!mpirun! to
+%launch \lstinline!myintegrals! on several processors, for example
+%
+%\begin{lstlisting}{language=sh}
+%> mpirun -np 4 myintegrals --hsize=0.1
+%> cat ~/feel/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.0
+%myintegrals-4.0 is opened for debug
+%[Area 0] int_Omega = 1[ 0.253348 ]
+%[Area 0] int_Omega = 4[ 1.44444 ]
+%[Area 0] int_Omega = 0.666667[ 0.0701812 ]
+%> cat ~/feel/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.1
+%myintegrals-4.1 is opened for debug
+%[Area 0] int_Omega = 1[ 0.288919 ]
+%[Area 0] int_Omega = 4[ 0.444444 ]
+%[Area 0] int_Omega = 0.666667[ 0.186251 ]
+%> cat ~/feel/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.2
+%myintegrals-4.2 is opened for debug
+%[Area 0] int_Omega = 1[ 0.183219 ]
+%[Area 0] int_Omega = 4[ 1.11111 ]
+%[Area 0] int_Omega = 0.666667[ 0.105008 ]
+%> cat ~/feel/myintegrals/Simplex_2_1/h_0.1/myintegrals-4.3
+%myintegrals-4.3 is opened for debug
+%[Area 0] int_Omega = 1[ 0.274514 ]
+%[Area 0] int_Omega = 4[ 1 ]
+%[Area 0] int_Omega = 0.666667[ 0.305227 ]
+%\end{lstlisting}
 
 \subsection{Standard formulation: the Laplacian case}
 \label{sec:defin-bilin-forms}
