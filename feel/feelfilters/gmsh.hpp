@@ -542,7 +542,7 @@ BOOST_PARAMETER_FUNCTION(
  * \arg refine (boolean, optional, default = 0)
  * \arg update (boolean, optional, default = 0)
  * \arg force_rebuild boolean (boolean, optional, default = 0)
- *
+ * \arg physical_are_elementary_regions change file format (optional, default = false)
  */
 BOOST_PARAMETER_FUNCTION(
     (typename detail::mesh<Args>::ptrtype), // return type
@@ -562,6 +562,7 @@ BOOST_PARAMETER_FUNCTION(
      (refine,          *(boost::is_integral<mpl::_>), 0 )
      (update,          *(boost::is_integral<mpl::_>), 0 )
      (force_rebuild,   *(boost::is_integral<mpl::_>), 0 )
+     (physical_are_elementary_regions,           *,false)
         )
     )
 {
@@ -580,6 +581,13 @@ BOOST_PARAMETER_FUNCTION(
     }
 
     ImporterGmsh<_mesh_type> import( fname );
+
+    // need to replace physical_regions by elementary_regions for specific meshes
+    if (physical_are_elementary_regions)
+      {
+	import.setElementRegionAsPhysicalRegion(physical_are_elementary_regions);
+      }
+
     _mesh->accept( import );
 
     if ( update )
@@ -597,7 +605,29 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 
-
+/**
+ * \brief generate a simple geometrical domain from required and optional parameters
+ *
+ * List of required parameters:
+ *  - \param _name name of the file that will ge generated without extension
+ *  - \param _shape shape of the domain to be generated (simplex or hypercube)
+ * List of optional parameters:
+ *  - \param _dim dimension of the domain (default: 2)
+ *  - \param _order order of the geometry (default: 1)
+ *  - \param _h characteristic size of the mesh (default: 0.1)
+ *  - \param _convex type of convex used to mesh the domain (default: simplex) (simplex or hypercube)
+ *  - \param _addmidpoint add middle point (default: true )
+ *  - \param _xmin minimum x coordinate (default: 0)
+ *  - \param _xmax maximum x coordinate (default: 1)
+ *  - \param _ymin minimum y coordinate (default: 0)
+ *  - \param _ymax maximum y coordinate (default: 1)
+ *  - \param _zmin minimum z coordinate (default: 0)
+ *  - \param _zmax maximum z coordinate (default: 1)
+ *
+ * \attention this function uses the Boost.Parameter library that allows to
+ * enter the parameter in any order.
+ *
+ */
 BOOST_PARAMETER_FUNCTION(
     (gmsh_ptrtype), // return type
     domain,    // 2. function name
@@ -634,6 +664,14 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 
+/**
+ * \brief geo return a gmsh_ptrtype of a .geo mesh
+ *
+ * \arg filename
+ * \arg dimension
+ * \arg order (optional, default = 1)
+ * \arg h (optional, default = 0.1 )
+ */
 BOOST_PARAMETER_FUNCTION(
     (gmsh_ptrtype), // return type
     geo,    // 2. function name
@@ -668,31 +706,15 @@ BOOST_PARAMETER_FUNCTION(
 
 }
 
-/**
- * \fn boost::tuple<std::string,std::string,gmsh_ptrtype> domain( std::string _name, std::string _shape, int _dim, int _order, double _h, std::string _convex)
- * \brief generate a simple geometrical domain from required and optional parameters
- *
- * List of required parameters:
- *  - \param _name name of the file that will ge generated without extension
- *  - \param _shape shape of the domain to be generated (simplex or hypercube)
- * List of optional parameters:
- *  - \param _dim dimension of the domain (default: 2)
- *  - \param _order order of the geometry (default: 1)
- *  - \param _h characteristic size of the mesh (default: 0.1)
- *  - \param _convex type of convex used to mesh the domain (default: simplex) (simplex or hypercube)
- *  - \param _addmidpoint add middle point (default: true )
- *  - \param _xmin minimum x coordinate (default: 0)
- *  - \param _xmax maximum x coordinate (default: 1)
- *  - \param _ymin minimum y coordinate (default: 0)
- *  - \param _ymax maximum y coordinate (default: 1)
- *  - \param _zmin minimum z coordinate (default: 0)
- *  - \param _zmax maximum z coordinate (default: 1)
- *
- * \attention this function uses the Boost.Parameter library that allows to
- * enter the parameter in any order.
- *
- */
 
+
+/**
+ * \brief convert to gmsh format
+ *
+ * \arg filename
+ * \arg dim (optional, default = 3)
+ * \arg order (optional, default = 1)
+ */
 BOOST_PARAMETER_FUNCTION(
     (gmsh_ptrtype), // return type
     mshconvert,    // 2. function name
