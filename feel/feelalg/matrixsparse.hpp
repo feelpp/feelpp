@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,7 @@
        Date: 2005-11-27
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -170,6 +170,58 @@ public:
      */
     void setGraph( graph_ptrtype const& graph ) { _M_graph = graph; }
 
+    /**
+     * set matrix properties, @see MatrixProperties
+     */
+    void setMatrixProperties( size_type p )
+        {
+            M_mprop = (size_type)p;
+            checkProperties();
+        }
+    /**
+     * \return true if matrix is hermitian, false otherwise
+     */
+    bool isHermitian() const { checkProperties(); return M_mprop.test( HERMITIAN ); }
+
+    /**
+     * \return true if matrix is non hermitian, false otherwise
+     */
+    bool isNonHermitian() const { checkProperties(); return M_mprop.test( NON_HERMITIAN ); }
+
+    /**
+     * \return true if matrix is positive definite, false otherwise
+     */
+    bool isHermitianPositiveDefinite() const { checkProperties(); return M_mprop.test( HERMITIAN | POSITIVE_DEFINITE ); }
+
+    /**
+     * \return true if matrix is singular, false otherwise
+     */
+    bool isSingular() const { checkProperties(); return M_mprop.test( SINGULAR ); }
+
+    /**
+     * \return true if matrix is singular, false otherwise
+     */
+    bool isPositiveDefinite() const { checkProperties(); return M_mprop.test( POSITIVE_DEFINITE ); }
+
+    bool haveConsistentProperties() const
+        {
+            bool p1 = M_mprop.test( SINGULAR ) && M_mprop.test( POSITIVE_DEFINITE );
+            bool p2 = M_mprop.test( HERMITIAN ) && M_mprop.test( NON_HERMITIAN );
+            return (p1 == false) && (p2 == false);
+        }
+    void checkProperties() const
+        {
+            if ( !haveConsistentProperties() )
+            {
+                std::ostringstream ostr;
+                ostr << "Invalid matrix properties:\n"
+                     << "           HERMITIAN: " << isHermitian() << "\n"
+                     << "       NON_HERMITIAN: " << isNonHermitian() << "\n"
+                     << "            SINGULAR: " << isSingular() << "\n"
+                     << "   POSITIVE_DEFINITE: " << isPositiveDefinite() << "\n";
+                throw std::logic_error( ostr.str() );
+            }
+        }
     /**
      * \return the communicator
      */
@@ -545,6 +597,8 @@ protected:
     bool _M_is_initialized;
 
     graph_ptrtype _M_graph;
+
+    Context M_mprop;
 };
 
 typedef MatrixSparse<double> d_sparse_matrix_type;
@@ -556,7 +610,8 @@ typedef boost::shared_ptr<d_sparse_matrix_type> d_sparse_matrix_ptrtype;
 template <typename T>
 inline
 MatrixSparse<T>::MatrixSparse () :
-    _M_is_initialized(false)
+    _M_is_initialized(false),
+    M_mprop( NON_HERMITIAN )
 {}
 
 

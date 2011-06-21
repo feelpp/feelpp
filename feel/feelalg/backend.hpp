@@ -150,20 +150,21 @@ public:
                                             const size_type m_l,
                                             const size_type n_l,
                                             const size_type nnz=30,
-                                            const size_type noz=10) = 0;
+                                            const size_type noz=10,
+                                            size_type prop = NON_HERMITIAN ) = 0;
 
     /**
      * instantiate a new sparse vector
      */
-    virtual sparse_matrix_ptrtype newMatrix( DataMap const& dm1, DataMap const& dm2 ) = 0;
+    virtual sparse_matrix_ptrtype newMatrix( DataMap const& dm1, DataMap const& dm2, size_type prop = NON_HERMITIAN  ) = 0;
 
     /**
      * helper function
      */
     template<typename DomainSpace, typename ImageSpace>
-    sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im  )
+    sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im, size_type prop = NON_HERMITIAN  )
     {
-        return this->newMatrix( dm->map(), im->map() );
+        return this->newMatrix( dm->map(), im->map(), prop );
     }
 
     /**

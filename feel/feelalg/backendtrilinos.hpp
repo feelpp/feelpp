@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -7,7 +7,7 @@
    Date: 2007-01-18
 
    Copyright (C) 2007 EPFL
-   Copyright (C) 2008 Université Joseph Fourier (Grenoble 1)
+   Copyright (C) 2008-2011 Université Joseph Fourier (Grenoble 1)
 
 
    This library is free software; you can redistribute it and/or
@@ -108,10 +108,10 @@ public:
         M_options(),
         M_prec_type( "" ),
         M_Prec()
-    {
-        set_maxiter( 1000 );
-        set_tol( 1e-10 );
-    }
+        {
+            set_maxiter( 1000 );
+            set_tol( 1e-10 );
+        }
 
 
     BackendTrilinos( po::variables_map const& vm, std::string const& prefix = "" );
@@ -121,27 +121,28 @@ public:
 
     // -- FACTORY METHODS --
     static Epetra_Map epetraMap( DataMap const& dmap )
-    {
-        std::vector<int> e( dmap.nMyElements() );
-        std::copy( dmap.myGlobalElements().begin(),
-                   dmap.myGlobalElements().end(),
-                   e.begin() );
-        return Epetra_Map( -1, dmap.nMyElements(), e.data(), 0, Epetra_MpiComm( dmap.comm() ) );
-    }
+        {
+            std::vector<int> e( dmap.nMyElements() );
+            std::copy( dmap.myGlobalElements().begin(),
+                       dmap.myGlobalElements().end(),
+                       e.begin() );
+            return Epetra_Map( -1, dmap.nMyElements(), e.data(), 0, Epetra_MpiComm( dmap.comm() ) );
+        }
 
 
     static Epetra_Map epetraMapStatic( DataMap const& dmap )
-    {
-        return Epetra_Map( dmap.nGlobalElements(), dmap.nMyElements(), 0, Epetra_MpiComm( dmap.comm() ) );
-    }
+        {
+            return Epetra_Map( dmap.nGlobalElements(), dmap.nMyElements(), 0, Epetra_MpiComm( dmap.comm() ) );
+        }
 
 
     template<typename DomainSpace, typename DualImageSpace>
     sparse_matrix_ptrtype newMatrix( DomainSpace const& Xh,
-                                     DualImageSpace const& Yh )
-    {
-        return newMatrix( Xh->map(), Yh->map() );
-    }
+                                     DualImageSpace const& Yh,
+                                     size_type matrix_properties = NON_HERMITIAN )
+        {
+            return newMatrix( Xh->map(), Yh->map(), matrix_properties );
+        }
 
     sparse_matrix_ptrtype
     newMatrix(const size_type m,
@@ -149,88 +150,96 @@ public:
               const size_type m_l,
               const size_type n_l,
               const size_type nnz=30,
-              const size_type noz=10)
-    {
-        sparse_matrix_ptrtype  mat( new epetra_sparse_matrix_type(m,n,m_l,n_l,nnz,noz) );
-        return mat;
-    }
+              const size_type noz=10,
+              size_type matrix_properties = NON_HERMITIAN)
+        {
+            sparse_matrix_ptrtype  mat( new epetra_sparse_matrix_type(m,n,m_l,n_l,nnz,noz) );
+            mat->setMatrixProperties( matrix_properties );
+            return mat;
+        }
 
     sparse_matrix_ptrtype newMatrix( DataMap const& domainmap,
-                                     DataMap const& imagemap )
-    {
-        Epetra_Map erowmap = BackendTrilinos::epetraMap( imagemap );
-        Epetra_Map ecolmap = BackendTrilinos::epetraMapStatic( domainmap );
-        Epetra_Map edomainmap = BackendTrilinos::epetraMap( imagemap );
+                                     DataMap const& imagemap,
+                                     size_type matrix_properties = NON_HERMITIAN )
+        {
+            Epetra_Map erowmap = BackendTrilinos::epetraMap( imagemap );
+            Epetra_Map ecolmap = BackendTrilinos::epetraMapStatic( domainmap );
+            Epetra_Map edomainmap = BackendTrilinos::epetraMap( imagemap );
 
-        //std::cout << "Rowmap: " << erowmap << "\n";
-        //std::cout << "Colmap: " << ecolmap << "\n";
-        //std::cout << "Domainmap: " << edomainmap << "\n";
+            //std::cout << "Rowmap: " << erowmap << "\n";
+            //std::cout << "Colmap: " << ecolmap << "\n";
+            //std::cout << "Domainmap: " << edomainmap << "\n";
 
-        //std::cout << "Is matrix rectangular? " << !erowmap.SameAs( ecolmap ) << "\n";
+            //std::cout << "Is matrix rectangular? " << !erowmap.SameAs( ecolmap ) << "\n";
 
-	if ( !erowmap.SameAs( ecolmap ) )
-		{
-			Epetra_Map eimagemap = BackendTrilinos::epetraMap( domainmap );
-			//std::cout << "Imagemap: " << eimagemap << "\n";
-            return sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap, edomainmap, eimagemap ) );
-		}
-	else
-		return sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap ) );
-    }
-
+            if ( !erowmap.SameAs( ecolmap ) )
+            {
+                Epetra_Map eimagemap = BackendTrilinos::epetraMap( domainmap );
+                //std::cout << "Imagemap: " << eimagemap << "\n";
+                auto A= sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap, edomainmap, eimagemap ) );
+                A->setMatrixProperties( matrix_properties );
+                return A;
+            }
+            else
+            {
+                auto A= sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap ) );
+                A->setMatrixProperties( matrix_properties );
+                return A;
+            }
+        }
 
     template<typename SpaceT>
     vector_ptrtype newVector( SpaceT const& space )
-    {
-        return newVector( space->map() );
-    }
+        {
+            return newVector( space->map() );
+        }
     vector_ptrtype newVector( DataMap const& domainmap )
-    {
-        Epetra_Map emap = BackendTrilinos::epetraMap( domainmap );
+        {
+            Epetra_Map emap = BackendTrilinos::epetraMap( domainmap );
 
-        return vector_ptrtype( new epetra_vector_type( emap ) );
-    }
+            return vector_ptrtype( new epetra_vector_type( emap ) );
+        }
 
     vector_ptrtype newVector( const size_type n, const size_type n_local )
-    {
-        return vector_ptrtype( new epetra_vector_type( /*n, n_local*/ ) );
+        {
+            return vector_ptrtype( new epetra_vector_type( /*n, n_local*/ ) );
 #warning to fix!
-    }
+        }
 
 
     static operator_ptrtype IfpackPrec( sparse_matrix_ptrtype const& M, list_type options, std::string precType = "Amesos" )
-    {
-        PreconditionerIfpack P( options, precType );
+        {
+            PreconditionerIfpack P( options, precType );
 
-        P.buildPreconditioner( M );
+            P.buildPreconditioner( M );
 
-        return P.getPrec();
-    }
+            return P.getPrec();
+        }
 
 
     static operator_ptrtype MLPrec( sparse_matrix_ptrtype& M, list_type options )
-    {
-        PreconditionerML P( options );
+        {
+            PreconditionerML P( options );
 
-        P.buildPreconditioner( M );
+            P.buildPreconditioner( M );
 
-        return P.getPrec();
-    }
+            return P.getPrec();
+        }
 
 #if 0
     template< typename element_type >
     static void Epetra2Ublas( vector_ptrtype const& u, element_type& x )
-    {
-        epetra_vector_ptrtype const& _v( dynamic_cast<epetra_vector_ptrtype const&>( u ) );
-        Epetra_Map v_map( _v->Map() );
+        {
+            epetra_vector_ptrtype const& _v( dynamic_cast<epetra_vector_ptrtype const&>( u ) );
+            Epetra_Map v_map( _v->Map() );
 
-        vector_type v = *u;
+            vector_type v = *u;
 
-        //Debug(10003) << "Initial EpetraVector " << v << "\n";
+            //Debug(10003) << "Initial EpetraVector " << v << "\n";
 
-        const size_type L = v.localSize();
+            const size_type L = v.localSize();
 
-        for ( size_type i=0; i<L; i++)
+            for ( size_type i=0; i<L; i++)
             {
                 Debug(10003) << "x(" << x.firstLocalIndex() + i  << ")="
                              << "v[" << v_map.GID(i) << "] = "
@@ -239,22 +248,22 @@ public:
                 x( x.firstLocalIndex() + i ) = v(i);
             }
 
-        Debug(10003) << "Epetra2Ublas:" << x << "\n";
-    }
+            Debug(10003) << "Epetra2Ublas:" << x << "\n";
+        }
 
 
     template< typename element_type >
     static void Ublas2Epetra( element_type const& x, vector_ptrtype& v )
-    {
-        epetra_vector_type& _v( dynamic_cast<epetra_vector_type&>( *v ) );
-        Epetra_Map v_map( _v.Map() );
+        {
+            epetra_vector_type& _v( dynamic_cast<epetra_vector_type&>( *v ) );
+            Epetra_Map v_map( _v.Map() );
 
-        Debug(10002) << "Local size of ublas vector" << x.localSize() << "\n";
-        Debug(10002) << "Local size of epetra vector" << v->localSize() << "\n";
+            Debug(10002) << "Local size of ublas vector" << x.localSize() << "\n";
+            Debug(10002) << "Local size of epetra vector" << v->localSize() << "\n";
 
-        const size_type L = v->localSize();
+            const size_type L = v->localSize();
 
-        for ( size_type i=0; i<L; i++ )
+            for ( size_type i=0; i<L; i++ )
             {
                 Debug(10002) << "v[" << v_map.GID(i) << "] = "
                              << "x(" << x.firstLocalIndex() + i  << ")="
@@ -262,78 +271,78 @@ public:
 
                 v->set(v_map.GID(i), x( x.firstLocalIndex() + i ) );
             }
-    }
+        }
 #endif
 
     template< int index, typename spaceT >
     static Epetra_MultiVector getComponent( spaceT const& Xh, Epetra_MultiVector const& sol )
-    {
-        Epetra_Map componentMap ( epetraMap( Xh->template functionSpace<index>()->map() ) );
-        Epetra_Map globalMap ( epetraMap( Xh->map() ) );
+        {
+            Epetra_Map componentMap ( epetraMap( Xh->template functionSpace<index>()->map() ) );
+            Epetra_Map globalMap ( epetraMap( Xh->map() ) );
 
-        //Debug(10006) << "Component map: " << componentMap << "\n";
+            //Debug(10006) << "Component map: " << componentMap << "\n";
 
-        Epetra_MultiVector component( componentMap, 1 );
+            Epetra_MultiVector component( componentMap, 1 );
 
-        int Length = component.MyLength();
+            int Length = component.MyLength();
 
-        int shift = Xh->nDofStart(index);
+            int shift = Xh->nDofStart(index);
 
-        for ( int i=0; i < Length; i++)
+            for ( int i=0; i < Length; i++)
             {
                 int compGlobalID = componentMap.GID(i);
 
                 if ( compGlobalID >= 0 )
-                    {
-                        int compLocalID = componentMap.LID(compGlobalID);
+                {
+                    int compLocalID = componentMap.LID(compGlobalID);
 
-                        int localID = globalMap.LID(compGlobalID+shift);
+                    int localID = globalMap.LID(compGlobalID+shift);
 //                         int globalID = globalMap.GID(localID);
 
-                        Debug(10006) << "[MyBackend] Copy entry sol[" << localID << "]=" <<  sol[0][localID]
-                                     << " to component[" << compLocalID << "]\n";
+                    Debug(10006) << "[MyBackend] Copy entry sol[" << localID << "]=" <<  sol[0][localID]
+                                 << " to component[" << compLocalID << "]\n";
 
-                        component[0][compLocalID] = sol[0][localID];
+                    component[0][compLocalID] = sol[0][localID];
 
-                        Debug(10006) << component[0][compLocalID] << "\n";
-                    }
+                    Debug(10006) << component[0][compLocalID] << "\n";
+                }
             }
 
-        return component;
-    }
+            return component;
+        }
 
 
     template< int index, typename spaceT >
     static void UpdateComponent( spaceT const& Xh, Epetra_MultiVector& sol, Epetra_MultiVector& comp )
-    {
-        Epetra_Map componentMap ( epetraMap( Xh->template functionSpace<index>()->map() ) );
-        Epetra_Map globalMap ( epetraMap( Xh->map() ) );
+        {
+            Epetra_Map componentMap ( epetraMap( Xh->template functionSpace<index>()->map() ) );
+            Epetra_Map globalMap ( epetraMap( Xh->map() ) );
 
-        int shift = Xh->nDofStart(index);
+            int shift = Xh->nDofStart(index);
 
-        int Length = comp.MyLength();
+            int Length = comp.MyLength();
 
-        for ( int i=0; i < Length; i++)
+            for ( int i=0; i < Length; i++)
             {
                 int compGlobalID = componentMap.GID(i);
 
                 if ( compGlobalID >= 0 )
-                    {
-                        int compLocalID = componentMap.LID(compGlobalID);
+                {
+                    int compLocalID = componentMap.LID(compGlobalID);
 
-                        int localID = globalMap.LID(compGlobalID+shift);
+                    int localID = globalMap.LID(compGlobalID+shift);
 //                         int globalID = globalMap.GID(localID);
 
-                        Debug(10006) << "Copy entry component[" << compLocalID << "] to sol[" << localID << "]="
-                                     <<  sol[0][localID]
-                                     << "]\n";
+                    Debug(10006) << "Copy entry component[" << compLocalID << "] to sol[" << localID << "]="
+                                 <<  sol[0][localID]
+                                 << "]\n";
 
-                        sol[0][localID] = comp[0][compLocalID] ;
+                    sol[0][localID] = comp[0][compLocalID] ;
 
-                        Debug(10006) << comp[0][compLocalID] << "\n";
-                    }
+                    Debug(10006) << comp[0][compLocalID] << "\n";
+                }
             }
-    }
+        }
 
 
 
@@ -386,12 +395,12 @@ public:
     void prod( sparse_matrix_type const& A,
                vector_type const& x,
                vector_type& b ) const
-    {
-        epetra_sparse_matrix_type const& _A = dynamic_cast<epetra_sparse_matrix_type const&>( A );
-        epetra_vector_type const& _x = dynamic_cast<epetra_vector_type const&>( x );
-        epetra_vector_type& _b = dynamic_cast<epetra_vector_type&>( b );
-        _A.mat().Apply( _x.vec(), _b.vec() );
-    }
+        {
+            epetra_sparse_matrix_type const& _A = dynamic_cast<epetra_sparse_matrix_type const&>( A );
+            epetra_vector_type const& _x = dynamic_cast<epetra_vector_type const&>( x );
+            epetra_vector_type& _b = dynamic_cast<epetra_vector_type&>( b );
+            _A.mat().Apply( _x.vec(), _b.vec() );
+        }
 
     solve_return_type solve( base_sparse_matrix_ptrtype const& A,
                              base_sparse_matrix_ptrtype const& B,
