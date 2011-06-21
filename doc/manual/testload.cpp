@@ -1,30 +1,69 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
- 
- This file is part of the Feel library
- 
- Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
- Date: 2008-02-04
- 
- Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- 
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+
+   This file is part of the Feel library
+
+   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Date: 2011-06-21
+
+   Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 /**
  \file testload.cpp
  \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
  \date 16-06-2011
  */
+#include <feel/feelcore/feel.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelvf/vf.hpp>
+
+int main(int argc, char** argv)
+{
+    double hsize = 2;
+    // Declare the supported options.
+    namespace po = boost::program_options;
+    po::options_description desc("Allowed options");
+    desc.add_options()
+        ("help", "produce help message")
+        ("filename", po::value<std::string>()->default_value( "Cylref.mesh" ), "h size")
+        ;
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+
+    using namespace Feel;
+    using namespace Feel::vf;
+    Feel::Environment env(argc, argv );
+    typedef Mesh<Simplex<3> > mesh_type;
+    std::string mesh_name=vm["filename"].as<std::string>();
+    auto mesh = loadGMSHMesh( _mesh=new mesh_type,
+                              _filename=mesh_name,
+                              _physical_are_elementary_regions=true,
+                              _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+    std::cout << "mesh " << mesh_name << " loaded\n" << std::endl;
+
+    std::cout << "volume =" << std::endl
+              << integrate( elements(mesh), cst(1.) ).evaluate() << "\n";
+    std::cout << "surface =" << std::endl
+              << integrate( boundaryfaces(mesh), cst(1.) ).evaluate() << "\n";
+
+
+}
+#if 0
 #include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
@@ -32,6 +71,7 @@
 #include <feel/feelfilters/gmsh.hpp>
 
 using namespace Feel;
+
 
 /**
  * This routine returns the list of options using the
@@ -66,7 +106,7 @@ makeAbout()
 					"test to load medit meshes",
 					AboutData::License_GPL,
 					"Copyright (c) 2011 Universite Joseph Fourier");
-	
+
     about.addAuthor("Christophe Prud'homme",
                     "developer",
                     "christophe.prudhomme@ujf-grenoble.fr", "");
@@ -142,8 +182,8 @@ void TestLoad<Dim>::run()
 	 * The mesh to be loaded must be placed in ~/feel/doc/tutorial/testload/
 	 */
 	mesh_ptrtype mesh = loadGMSHMesh( _mesh=new mesh_type,
-							 _filename="Cylref.mesh",
-							 _physical_are_elementary_regions=true);
+                                      _filename="Cylref.mesh",
+                                      _physical_are_elementary_regions=true);
 
 	/**
 	 * Test for loading a classical GMSH since the changes
@@ -172,3 +212,4 @@ int main( int argc, char** argv )
      */
     app.run();
 }
+#endif
