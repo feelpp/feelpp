@@ -13,6 +13,7 @@
 ** Contributors for this release
 
  - Vincent Doyeux
+ - Baptiste Morin
  - Christophe Prud'homme
  - Vincent Chabannes
  - Abdoulaye Samake
@@ -48,20 +49,26 @@
  - added implementation of $L_2$ and $H_1$ projector which renders rather
    seamless these projection.
  - fix copy/paste bug in bdf extrapolation, the coefficient were divided by dt
+ - support for interpolating functions living on meshes of different
+   topoligical dimension
 
 *** feelfilters
 
  - update geotool to support markers for 1D meshes
+ - added mshconvert() which allows to generate a gmsh mesh out of mesh formats
+   supported by gmsh
 
 *** feelvf
 
  - support for passing shared_ptr<> to the differential operators and to on()
+ - support in the language for test and trial functions not being defined on the
+   same mesh
 
 ** Documentation
 
 *** Manual
 
- - reorganized the manual
+ - reorganized completely and updated/corrected the manual
  - updated doxygen documentation
 
 
