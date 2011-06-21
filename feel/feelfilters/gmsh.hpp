@@ -708,13 +708,13 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setPrefix( fs::path(filename).stem() );
 
     // first try in the current path
-    if ( fs::exists( fs::current_path() / filename ) )
-        gmsh_ptr->setDescription((boost::format( "Merge \"%1%\"" ) % (fs::current_path() / filename).string() ).str());
+    if ( fs::exists( filename ) )
+        gmsh_ptr->setDescription((boost::format( "Merge \"%1%\";" ) % filename ).str());
     else if ( fs::exists( fs::path(Environment::localGeoRepository()) / filename ) )
-        gmsh_ptr->setDescription((boost::format( "Merge \"%1%\"" ) % (fs::path(Environment::localGeoRepository()) / filename).string()).str() );
+        gmsh_ptr->setDescription((boost::format( "Merge \"%1%\";" ) % (fs::path(Environment::localGeoRepository()) / filename).string()).str() );
     else if ( Environment::systemGeoRepository().template get<1>()  &&
               fs::exists( fs::path(Environment::systemGeoRepository().get<0>()) / filename ) )
-        gmsh_ptr->setDescription( (boost::format( "Merge \"%1%\"" ) % (fs::path(Environment::systemGeoRepository().get<0>()) / filename).string()).str() );
+        gmsh_ptr->setDescription( (boost::format( "Merge \"%1%\";" ) % (fs::path(Environment::systemGeoRepository().get<0>()) / filename).string()).str() );
     else
     {
         std::ostringstream ostr;
