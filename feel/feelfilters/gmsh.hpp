@@ -694,7 +694,7 @@ BOOST_PARAMETER_FUNCTION(
  */
 
 BOOST_PARAMETER_FUNCTION(
-    (std::string), // return type
+    (gmsh_ptrtype), // return type
     mshconvert,    // 2. function name
     tag,           // 3. namespace of tag types
     (required
