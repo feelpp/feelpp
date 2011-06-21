@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-05-25
 
-  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -90,9 +90,11 @@ public:
     // -- FACTORY METHODS --
     template<typename DomainSpace, typename DualImageSpace>
     static sparse_matrix_ptrtype newMatrix( DomainSpace const& Xh,
-                                            DualImageSpace const& Yh )
+                                            DualImageSpace const& Yh,
+                                            size_type matrix_properties = NON_HERMITIAN )
     {
         sparse_matrix_ptrtype  m ( new sparse_matrix_type );
+        m->setMatrixProperties( matrix_properties );
         m->init( Yh->nDof(), Xh->nDof(),
                  Yh->nLocalDof(), Xh->nLocalDof() );
         return m;
@@ -104,18 +106,22 @@ public:
               const size_type m_l,
               const size_type n_l,
               const size_type nnz=30,
-              const size_type noz=10)
+              const size_type noz=10,
+              size_type matrix_properties = NON_HERMITIAN)
     {
         sparse_matrix_ptrtype mat( new petsc_sparse_matrix_type );
+        mat->setMatrixProperties( matrix_properties );
         mat->init(m,n,m_l,n_l,nnz,noz);
         return mat;
     }
 
     sparse_matrix_ptrtype
     newMatrix( DataMap const& domainmap,
-               DataMap const& imagemap )
+               DataMap const& imagemap,
+               size_type matrix_properties = NON_HERMITIAN)
     {
         sparse_matrix_ptrtype  m ( new petsc_sparse_matrix_type );
+        m->setMatrixProperties( matrix_properties );
         m->init( imagemap.nGlobalElements(), domainmap.nGlobalElements(),
                  imagemap.nMyElements(), domainmap.nMyElements() );
         return m;

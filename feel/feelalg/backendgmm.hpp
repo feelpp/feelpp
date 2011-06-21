@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -7,7 +7,7 @@
        Date: 2006-11-16
 
   Copyright (C) 2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -115,9 +115,12 @@ public:
     // -- FACTORY METHODS --
     template<typename DomainSpace, typename DualImageSpace>
     static sparse_matrix_ptrtype newMatrix( boost::shared_ptr<DomainSpace> const& space1,
-                                            boost::shared_ptr<DualImageSpace> const& space2 )
+                                            boost::shared_ptr<DualImageSpace> const& space2,
+                                            size_type matrix_properties = NON_HERMITIAN )
     {
-        return sparse_matrix_ptrtype( new gmm_sparse_matrix_type( space1->nDof(), space2->nDof() ) );
+        auto A= sparse_matrix_ptrtype( new gmm_sparse_matrix_type( space1->nDof(), space2->nDof() ) );
+        A->setMatrixProperties( matrix_properties );
+        return A;
     }
 
     sparse_matrix_ptrtype
@@ -126,16 +129,20 @@ public:
               const size_type m_l,
               const size_type n_l,
               const size_type nnz=30,
-              const size_type noz=10)
+              const size_type noz=10,
+              size_type matrix_properties = NON_HERMITIAN )
     {
         sparse_matrix_ptrtype mat( new gmm_sparse_matrix_type(m,n) );
+        mat->setMatrixProperties( matrix_properties );
         return mat;
     }
 
     sparse_matrix_ptrtype
-    newMatrix( DataMap const& d1, DataMap const& d2 )
+    newMatrix( DataMap const& d1, DataMap const& d2, size_type matrix_properties = NON_HERMITIAN )
     {
-        return sparse_matrix_ptrtype( new gmm_sparse_matrix_type( d1.nGlobalElements(), d2.nGlobalElements() ) );
+        auto A = sparse_matrix_ptrtype( new gmm_sparse_matrix_type( d1.nGlobalElements(), d2.nGlobalElements() ) );
+        A->setMatrixProperties( matrix_properties );
+        return A;
     }
 
     template<typename SpaceT>
