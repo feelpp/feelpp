@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     typedef Mesh<Simplex<3> > mesh_type;
     std::string mesh_name=vm["filename"].as<std::string>();
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                _desc=mshconvert( _filename=mesh_name, _dim=3 ),
+                                _desc=mshconvert( _filename=mesh_name ),
                                 _physical_are_elementary_regions=true,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
     std::cout << "mesh " << mesh_name << " loaded\n" << std::endl;
