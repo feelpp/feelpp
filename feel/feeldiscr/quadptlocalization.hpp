@@ -42,30 +42,61 @@ class QuadPtLocalization
 {
 public :
 
-    //static const size_type context = vm::DIV|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE|vm::POINT; //Expr::context;
-    static const size_type context = Expr::context|vm::POINT;
+    static const size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
+
+    //static const size_type context = Expr::context|vm::POINT;
+    static const size_type context = mpl::if_< boost::is_same< mpl::int_<iDim>, mpl::int_<MESH_FACES> >,
+                                               mpl::int_<Expr::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT>,
+                                               mpl::int_<Expr::context|vm::POINT> >::type::value;
+
+
+    //expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT
+
 
 
     typedef typename boost::tuples::template element<1, IteratorRange>::type element_iterator_type;
     typedef typename element_iterator_type::value_type::GeoShape GeoShape;
-    typedef Mesh<GeoShape> mesh_type;
+    //typedef Mesh<GeoShape> mesh_type;
+#if 0
     typedef typename mesh_type::gm_type gm_type;
     typedef typename mesh_type::element_type geoelement_type;
+#else
+
+    //typedef typename element_iterator_type::value_type geoelement_type;
+    //typedef typename geoelement_type::gm_type gm_type;
+
+    typedef typename boost::remove_reference<typename element_iterator_type::reference>::type const_t;
+    typedef typename boost::remove_const<const_t>::type the_face_element_type;
+    typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
+    typedef the_element_type geoelement_type;
+    typedef typename geoelement_type::gm_type gm_type;
+
+
+
+#endif
+
+
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename gm_type::precompute_type pc_type;
     typedef typename gm_type::precompute_ptrtype pc_ptrtype;
-
+#if 0
     typedef typename mesh_type::value_type value_type;
     typedef typename mesh_type::node_type node_type;
     typedef typename matrix_node<value_type>::type matrix_node_type;
-
+#else
+    typedef typename geoelement_type::value_type value_type;
+    typedef typename geoelement_type::node_type node_type;
+    typedef typename geoelement_type::matrix_node_type matrix_node_type;
+#endif
     //--------------------------------------------------------------------------------------//
 
     typedef typename mpl::if_<mpl::bool_<geoelement_type::is_simplex>,
                               mpl::identity<typename Im::template apply<geoelement_type::nDim, value_type, Simplex>::type >,
                               mpl::identity<typename Im::template apply<geoelement_type::nDim, value_type, Hypercube>::type >
                               >::type::type im_type;
+
+    typedef typename im_type::face_quadrature_type im_face_type;
 
     //--------------------------------------------------------------------------------------//
 
@@ -75,6 +106,9 @@ public :
     typedef std::map< size_type,boost::tuple< std::vector< boost::tuple<size_type,size_type > >,matrix_node_type,matrix_node_type> > result_temp2_type;//idTrial->( mapFor<q,idq>, ptRefsTest, ptsRefTrial)
     // result container
     typedef std::list< boost::tuple< size_type, result_temp2_type> > result_container_type;// list(idTest, idTrial->( mapForQ, ptRefsTest, ptsRefTrial) )
+
+    // result container for linearform
+    typedef std::list< boost::tuple<size_type,std::vector< boost::tuple<size_type,size_type > >,matrix_node_type > > result_container_linear_type;// list(idTest, mapForQ, ptRefsTest)
 
     //--------------------------------------------------------------------------------------//
 
@@ -95,42 +129,373 @@ public :
         _M_im( )
     {}
 
+    QuadPtLocalization(element_iterator_type  elts_it,
+                       element_iterator_type  elts_en
+                        )
+        :
+        _M_eltbegin( elts_it ),
+        _M_eltend( elts_en ),
+        _M_im( )
+    {}
 
+    /**
+     * get the integration method
+     */
     im_type const& im() const { return _M_im; }
 
+    /**
+     * get the integration method on face f
+     */
+    im_face_type  im( uint16_type f ) const { return _M_im.face( f ); }
+
+    /**
+     * begin itrange
+     */
     element_iterator_type beginElement() const { return _M_eltbegin; }
 
+    /**
+     * end itrange
+     */
     element_iterator_type endElement() const { return _M_eltend; }
 
-    result_container_type const & result() const { return _M_res; }
+    /**
+     * container for linear form
+     */
+    result_container_linear_type const & resultLinear() const { return _M_resLinear; }
 
-    //std::vector<double> const & exprValue() const { return M_exprValue; }
+    /**
+     * container for bilinear form
+     */
+    result_container_type const & result() const { return _M_resBilinear; }
 
-    size_type eltForThisQuadPt(size_type theIdq) { return theIdq/this->im().nPoints(); }
 
-    size_type qIndexForThisGlobalQuadPt(size_type theIdq) { return theIdq%this->im().nPoints(); }
 
-    gmc_ptrtype gmcForThisElt(size_type theIdElt)
+    size_type eltForThisQuadPt(size_type theIdq, mpl::int_<MESH_ELEMENTS>) { return theIdq/this->im().nPoints(); }
+    size_type eltForThisQuadPt(size_type theIdq, mpl::int_<MESH_FACES>) { return theIdq/this->im().nPointsOnFace(); }
+
+    size_type qIndexForThisGlobalQuadPt(size_type theIdq,mpl::int_<MESH_ELEMENTS>) { return theIdq%this->im().nPoints(); }
+    size_type qIndexForThisGlobalQuadPt(size_type theIdq,mpl::int_<MESH_FACES>) { return theIdq%this->im().nPointsOnFace(); }
+
+    //--------------------------------------------------------------------------------------//
+
+    gmc_ptrtype gmcForThisElt(size_type theIdElt,
+                              std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                              mpl::int_<MESH_ELEMENTS> )
     {
+        //search element
         auto elt_it = this->beginElement();
         for (uint i=0;i<theIdElt;++i) ++elt_it;
 
-        pc_ptrtype geopc( new pc_type( elt_it->gm(), this->im().points() ) );
+        // get only usefull quad point and reoder
+        uint nContextPt = indexLocalToQuad.size();
+        matrix_node_type quadPtsRef = this->im().points();
+        matrix_node_type newquadPtsRef(quadPtsRef.size1() , nContextPt);
+        for (uint i=0;i<nContextPt; ++i)
+            {
+                ublas::column( newquadPtsRef, i ) = ublas::column( quadPtsRef, indexLocalToQuad[i].get<0>() );
+            }
+
+        // create context
+        pc_ptrtype geopc( new pc_type( elt_it->gm(), newquadPtsRef ) );
         gmc_ptrtype gmc( new gmc_type(elt_it->gm(),*elt_it, geopc ) );
 
         return gmc;
     }
 
+    //--------------------------------------------------------------------------------------//
+
+    gmc_ptrtype gmcForThisElt(size_type theIdElt,
+                              std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                              mpl::int_<MESH_FACES> )
+    {
+        //search element
+        auto elt_it = this->beginElement();
+        for (uint i=0;i<theIdElt;++i) ++elt_it;
+
+        // get only usefull quad point and reoder
+        uint nContextPt = indexLocalToQuad.size();
+        uint16_type __face_id_in_elt_0 = elt_it->pos_first();
+
+        QuadMapped<im_type> qm;
+        typedef typename QuadMapped<im_type>::permutation_type permutation_type;
+        typename QuadMapped<im_type>::permutation_points_type ppts( qm( this->im() ) );
+        auto __perm = elt_it->element(0).permutation( __face_id_in_elt_0 );
+        matrix_node_type quadPtsRef =  ppts[ __face_id_in_elt_0].find(__perm)->second;
+        //matrix_node_type quadPtsRef = this->im().points();
+        matrix_node_type newquadPtsRef(quadPtsRef.size1() , nContextPt);
+        for (uint i=0;i<nContextPt; ++i)
+            {
+                ublas::column( newquadPtsRef, i ) = ublas::column( quadPtsRef, indexLocalToQuad[i].get<0>() );
+            }
+
+        // create context
+        std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( this->im().nFaces() );
+
+        for ( uint16_type __f = 0; __f < this->im().nFaces(); ++__f )
+            {
+                for( permutation_type __p( permutation_type::IDENTITY );
+                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                    {
+                        __geopc[__f][__p] = pc_ptrtype(  new pc_type( elt_it->element(0).gm(),
+                                                                      newquadPtsRef ) );
+                    }
+            }
+
+
+        gmc_ptrtype gmc( new gmc_type(elt_it->element(0).gm(),
+                                      elt_it->element(0),
+                                      __geopc,
+                                      __face_id_in_elt_0  ) );
+
+        return gmc;
+    }
+
+    //--------------------------------------------------------------------------------------//
+
+    std::vector< boost::tuple< std::vector<boost::tuple<size_type,size_type> >,gmc_ptrtype,matrix_node_type > >
+    getUsableDataInFormContext( std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                matrix_node_type const & ptsRefTest )
+    {
+        // compute the number of several elements
+        uint nContextPt = indexLocalToQuad.size();
+        std::map<size_type,std::list<size_type> > mapEltId;
+        for (uint i=0;i<nContextPt; ++i)
+            {
+                size_type eltId = this->eltForThisQuadPt(indexLocalToQuad[i].get<1>(),mpl::int_<iDim>());
+                mapEltId[eltId].push_back(i);
+            }
+
+        // number of elements
+        auto nEltInContext = mapEltId.size();
+
+        // the vector result
+        std::vector< boost::tuple< std::vector<boost::tuple<size_type,size_type> >, gmc_ptrtype, matrix_node_type > > vec_res(nEltInContext);
+
+        auto map_it = mapEltId.begin();
+        auto map_en = mapEltId.end();
+        size_type cptId = 0;
+        for ( ; map_it!= map_en ; ++map_it, ++cptId )
+            {
+                // subdivide into elements the map indexLocalToQuad
+                std::vector<boost::tuple<size_type,size_type> > newindexLocalToQuad(map_it->second.size());
+                // subdivide into elements the ptsRef
+                matrix_node_type newptsRefTest(ptsRefTest.size1(), map_it->second.size() );
+                auto sublist_it = map_it->second.begin();
+                auto sublist_en = map_it->second.end();
+                size_type index = 0;
+                for ( ; sublist_it != sublist_en ; ++sublist_it,++index )
+                    {
+                        newindexLocalToQuad[index] = indexLocalToQuad[*sublist_it];
+                        ublas::column( newptsRefTest, index ) = ublas::column( ptsRefTest,*sublist_it);
+                    }
+                // get the corresponding gmc
+                auto thegmc = gmcForThisElt(map_it->first,newindexLocalToQuad,mpl::int_<iDim>() );
+                // add to result
+                vec_res[cptId] = boost::make_tuple(newindexLocalToQuad, thegmc, newptsRefTest);
+            }
+
+        return vec_res;
+    }
+
+
+    //--------------------------------------------------------------------------------------//
+
+    template <typename Mesh1Type>
+    void
+    localization(mpl::int_<MESH_FACES> /**/,
+                 boost::shared_ptr<Mesh1Type> meshTest,
+                 std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & testEltToPtsQuad )
+    {
+
+        auto elt_it = this->beginElement();
+        auto elt_en = this->endElement();
+
+
+        QuadMapped<im_type> qm;
+        typedef typename QuadMapped<im_type>::permutation_type permutation_type;
+        typename QuadMapped<im_type>::permutation_points_type ppts( qm( this->im() ) );
+
+
+        std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( this->im().nFaces() );
+        //typedef typename im_type::face_quadrature_type face_im_type;
+
+        //std::vector<face_im_type> face_ims( this->im().nFaces() );
+
+        for ( uint16_type __f = 0; __f < this->im().nFaces(); ++__f )
+            {
+                //face_ims[__f] = this->im( __f );
+
+                for( permutation_type __p( permutation_type::IDENTITY );
+                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                    {
+                        //FEEL_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                        __geopc[__f][__p] = pc_ptrtype(  new pc_type( elt_it->element(0).gm(), ppts[__f].find(__p)->second ) );
+                    }
+            }
+
+
+        uint16_type __face_id_in_elt_0 = elt_it->pos_first();
+
+        gmc_ptrtype gmc( new gmc_type( elt_it->element(0).gm(),
+                                       elt_it->element( 0 ),
+                                       __geopc,
+                                       __face_id_in_elt_0 ) );
+
+        auto meshTestLocalization = meshTest->tool_localization();
+        meshTestLocalization->updateForUse();
+
+        for( size_type ide = 0; elt_it != elt_en; ++elt_it, ++ide )
+            {
+                __face_id_in_elt_0 = elt_it->pos_first();
+                //if ( elt_it->isConnectedTo1()) std::cout << "\n AIEEEEEE!!!!!!!!!!!\n";
+
+                gmc->update( elt_it->element(0), __face_id_in_elt_0 );
+                //std::cout << "\n quad gmc "<< gmc->xReal();
+                for( int q = 0; q <  gmc->nPoints(); ++ q )
+                    {
+                        size_type idq = gmc->nPoints()*ide+q;
+                        auto testAnalysis = meshTestLocalization->searchElement(gmc->xReal( q ));
+                        auto testIdElt = testAnalysis.get<1>();
+                        auto testNodeRef = testAnalysis.get<2>();
+                        testEltToPtsQuad[testIdElt].push_back( boost::make_tuple(idq,q,testNodeRef) );
+                    }
+            }
+
+    }
+
+    //--------------------------------------------------------------------------------------//
+
+    template <typename Mesh1Type>
+    void
+    localization(mpl::int_<MESH_ELEMENTS> /**/,
+                 boost::shared_ptr<Mesh1Type> meshTest,
+                 std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & testEltToPtsQuad )
+    {
+
+        auto elt_it = this->beginElement();
+        auto elt_en = this->endElement();
+
+        pc_ptrtype geopc( new pc_type( elt_it->gm(), this->im().points() ) );
+        gmc_ptrtype gmc( new gmc_type(elt_it->gm(),*elt_it, geopc ) );
+
+        auto meshTestLocalization = meshTest->tool_localization();
+        meshTestLocalization->updateForUse();
+
+        auto nQuadPtsInElt = this->im().nPoints();
+        auto nElts = std::distance(elt_it,elt_en);
+        auto nQuadPts = nElts*nQuadPtsInElt;
+
+        auto nEltTest= meshTest->numElements();
+
+        //for ( size_type theIdEltTest = 0; theIdEltTest < nEltTest ; ++theIdEltTest ) {testEltToPtsQuad[theIdEltTest].clear();}
+
+        for( size_type ide = 0; elt_it != elt_en; ++elt_it, ++ide )
+            {
+                gmc->update( *elt_it );
+
+                for( int q = 0; q <  gmc->nPoints(); ++ q )
+                    {
+                        // cpt of quad pt
+                        size_type idq = gmc->nPoints()*ide+q;
+                        // search in test mesh
+                        auto testAnalysis = meshTestLocalization->searchElement(gmc->xReal( q ));
+                        auto testIdElt = testAnalysis.get<1>();
+                        auto testNodeRef = testAnalysis.get<2>();
+                        testEltToPtsQuad[testIdElt].push_back( boost::make_tuple(idq,q,testNodeRef) );
+
+                    }
+            }
+
+
+    }
+
+    //--------------------------------------------------------------------------------------//
+
     template <typename Mesh1Type,typename Mesh2Type>
     void
-    update(boost::shared_ptr<Mesh1Type> meshTest, boost::shared_ptr<Mesh2Type> meshTrial )
+    localization(mpl::int_<MESH_FACES> /**/,
+                 boost::shared_ptr<Mesh1Type> meshTest,
+                 boost::shared_ptr<Mesh2Type> meshTrial,
+                 std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & testEltToPtsQuad,
+                 std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & trialEltToPtsQuad,
+                 std::vector<std::list<size_type> > & EltCoupled)
     {
-        typedef Mesh1Type mesh_test_type;
-        typedef Mesh2Type mesh_trial_type;
+        auto elt_it = this->beginElement();
+        auto elt_en = this->endElement();
 
-        //clean result
-        _M_res.clear();
+        QuadMapped<im_type> qm;
+        typedef typename QuadMapped<im_type>::permutation_type permutation_type;
+        typename QuadMapped<im_type>::permutation_points_type ppts( qm( this->im() ) );
 
+        std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( this->im().nFaces() );
+
+        for ( uint16_type __f = 0; __f < this->im().nFaces(); ++__f )
+            {
+                for( permutation_type __p( permutation_type::IDENTITY );
+                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                    {
+                        //FEEL_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                        __geopc[__f][__p] = pc_ptrtype(  new pc_type( elt_it->element(0).gm(), ppts[__f].find(__p)->second ) );
+                    }
+            }
+
+        uint16_type __face_id_in_elt_0 = elt_it->pos_first();
+
+        gmc_ptrtype gmc( new gmc_type( elt_it->element(0).gm(),
+                                       elt_it->element( 0 ),
+                                       __geopc,
+                                       __face_id_in_elt_0 ) );
+
+
+        auto meshTrialLocalization = meshTrial->tool_localization();
+        meshTrialLocalization->updateForUse();
+
+        auto meshTestLocalization = meshTest->tool_localization();
+        meshTestLocalization->updateForUse();
+
+
+        for( size_type ide = 0; elt_it != elt_en; ++elt_it, ++ide )
+            {
+                __face_id_in_elt_0 = elt_it->pos_first();
+                //if ( elt_it->isConnectedTo1()) std::cout << "\n AIEEEEEE!!!!!!!!!!!\n";
+
+                gmc->update( elt_it->element(0), __face_id_in_elt_0 );
+
+                for( int q = 0; q <  gmc->nPoints(); ++ q )
+                    {
+                        // cpt of quad pt
+                        size_type idq = gmc->nPoints()*ide+q;
+
+                        // search in trial mesh
+                        auto trialAnalysis= meshTrialLocalization->searchElement(gmc->xReal( q ));
+                        auto trialIdElt = trialAnalysis.get<1>();
+                        auto trialNodeRef = trialAnalysis.get<2>();
+                        trialEltToPtsQuad[trialIdElt].push_back( boost::make_tuple(idq,q,trialNodeRef) );
+                        // search in test mesh
+                        auto testAnalysis = meshTestLocalization->searchElement(gmc->xReal( q ));
+                        auto testIdElt = testAnalysis.get<1>();
+                        auto testNodeRef = testAnalysis.get<2>();
+                        testEltToPtsQuad[testIdElt].push_back( boost::make_tuple(idq,q,testNodeRef) );
+
+                        // relation between test and trial
+                        if (std::find( EltCoupled[testIdElt].begin(),EltCoupled[testIdElt].end(),trialIdElt )==EltCoupled[testIdElt].end())
+                            EltCoupled[testIdElt].push_back(trialIdElt);
+                    }
+            } // end for( size_type ide ... )
+
+    } // localization
+
+    //--------------------------------------------------------------------------------------//
+
+    template <typename Mesh1Type,typename Mesh2Type>
+    void
+    localization(mpl::int_<MESH_ELEMENTS> /**/,
+                 boost::shared_ptr<Mesh1Type> meshTest,
+                 boost::shared_ptr<Mesh2Type> meshTrial,
+                 std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & testEltToPtsQuad,
+                 std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & trialEltToPtsQuad,
+                 std::vector<std::list<size_type> > & EltCoupled)
+    {
         auto elt_it = this->beginElement();
         auto elt_en = this->endElement();
 
@@ -143,21 +508,12 @@ public :
         auto meshTestLocalization = meshTest->tool_localization();
         meshTestLocalization->updateForUse();
 
-        auto nQuadPtsInElt = this->im().nPoints();
-        auto nElts = std::distance(elt_it,elt_en);
-        auto nQuadPts = nElts*nQuadPtsInElt;
-        auto nEltTrial= meshTrial->numElements();
-        auto nEltTest= meshTest->numElements();
+        //auto nQuadPtsInElt = this->im().nPoints();
+        //auto nElts = std::distance(elt_it,elt_en);
+        //auto nQuadPts = nElts*nQuadPtsInElt;
+        // auto nEltTrial= meshTrial->numElements();
+        //auto nEltTest= meshTest->numElements();
 
-        std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > trialPtQuadToElt( nEltTrial) ;
-        std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > testPtQuadToElt( nEltTest );
-        //std::vector<double> exprValue( nQuadPts );
-        //M_vecGmc.resize( nElts );
-        //M_exprValue.resize( nQuadPts );
-        std::vector<bool> quadPtDone( nQuadPts );
-        std::fill( quadPtDone.begin(), quadPtDone.end(), false );
-
-        std::vector<std::list<size_type> > EltCoupled(nEltTest);
         for( size_type ide = 0; elt_it != elt_en; ++elt_it, ++ide )
             {
                 gmc->update( *elt_it );
@@ -166,18 +522,17 @@ public :
                     {
                         // cpt of quad pt
                         size_type idq = gmc->nPoints()*ide+q;
-                        //M_exprValue[idq] = this->im().weight(q)*gmc->J(q);//inutile
 
                         // search in trial mesh
                         auto trialAnalysis= meshTrialLocalization->searchElement(gmc->xReal( q ));
                         auto trialIdElt = trialAnalysis.get<1>();
                         auto trialNodeRef = trialAnalysis.get<2>();
-                        trialPtQuadToElt[trialIdElt].push_back( boost::make_tuple(idq,q,trialNodeRef) );
+                        trialEltToPtsQuad[trialIdElt].push_back( boost::make_tuple(idq,q,trialNodeRef) );
                         // search in test mesh
                         auto testAnalysis = meshTestLocalization->searchElement(gmc->xReal( q ));
                         auto testIdElt = testAnalysis.get<1>();
                         auto testNodeRef = testAnalysis.get<2>();
-                        testPtQuadToElt[testIdElt].push_back( boost::make_tuple(idq,q,testNodeRef) );
+                        testEltToPtsQuad[testIdElt].push_back( boost::make_tuple(idq,q,testNodeRef) );
 
                         // relation between test and trial
                         if (std::find( EltCoupled[testIdElt].begin(),EltCoupled[testIdElt].end(),trialIdElt )==EltCoupled[testIdElt].end())
@@ -185,7 +540,77 @@ public :
                     }
             } // end for( size_type ide ... )
 
+    }
 
+    //--------------------------------------------------------------------------------------//
+
+    template <typename Mesh1Type>
+    void
+    update(boost::shared_ptr<Mesh1Type> meshTest)
+    {
+        typedef Mesh1Type mesh_test_type;
+
+        //clean result
+        _M_resLinear.clear();
+
+        // localize quad pts on meshTest -> storage in testEltToPtsQuad
+        auto nEltTest= meshTest->numElements();
+        std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > testEltToPtsQuad( nEltTest );
+        this->localization(mpl::int_<iDim>(),meshTest,testEltToPtsQuad);
+
+        //build a efficent container : _M_resLinear
+        size_type theIdEltTest = 0;
+        auto eltTest_it = testEltToPtsQuad.begin();
+        auto eltTest_en = testEltToPtsQuad.end();
+        for ( ; eltTest_it != eltTest_en ; ++eltTest_it, ++theIdEltTest)
+            {
+                if (eltTest_it->size()>0)
+                    {
+                        auto nPtsRef = eltTest_it->size();
+                        matrix_node_type ptsRefTest(mesh_test_type::nDim,nPtsRef);
+                        std::vector<boost::tuple<size_type,size_type> > indexLocalToQuad(nPtsRef);
+                        // build
+                        auto idq_it = eltTest_it->begin();
+                        auto idq_en = eltTest_it->end();
+                        uint cptIdq = 0;
+                        for ( ; idq_it != idq_en ; ++idq_it, ++cptIdq )
+                            {
+                                indexLocalToQuad[cptIdq] = boost::make_tuple(idq_it->get<1>(),idq_it->get<0>());
+                                ublas::column( ptsRefTest, cptIdq ) = idq_it->get<2>();
+                            }
+                        _M_resLinear.push_back(boost::make_tuple( theIdEltTest, indexLocalToQuad, ptsRefTest ));
+                    }
+            }
+
+    }
+
+    //--------------------------------------------------------------------------------------//
+
+    template <typename Mesh1Type,typename Mesh2Type>
+    void
+    update(boost::shared_ptr<Mesh1Type> meshTest, boost::shared_ptr<Mesh2Type> meshTrial )
+    {
+        typedef Mesh1Type mesh_test_type;
+        typedef Mesh2Type mesh_trial_type;
+
+        //clean result
+        _M_resBilinear.clear();
+
+        auto nEltTrial= meshTrial->numElements();
+        auto nEltTest= meshTest->numElements();
+        std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > trialEltToPtsQuad( nEltTrial) ;
+        std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > testEltToPtsQuad( nEltTest );
+        std::vector<std::list<size_type> > EltCoupled(nEltTest);
+
+        // localize quad pts on meshTest and meshTrial  -> storage in testEltToPtsQuad, trialEltToPtsQuad and EltCoupled
+        this->localization(mpl::int_<iDim>(),
+                           meshTest,
+                           meshTrial,
+                           testEltToPtsQuad,
+                           trialEltToPtsQuad,
+                           EltCoupled);
+
+        //build a efficent container : _M_resBilinear
         auto eltCoupled_it = EltCoupled.begin();
         auto eltCoupled_en = EltCoupled.end();
         size_type theIdEltTest = 0;
@@ -198,8 +623,8 @@ public :
                 //for ( ; eltTrial_it != eltTrial_en ; ++eltTrial_it ) mapTrial2idq[*eltTrial_it].clear();
 
                 // search
-                auto quadPtTest_it = testPtQuadToElt[theIdEltTest].begin();
-                auto quadPtTest_en = testPtQuadToElt[theIdEltTest].end();
+                auto quadPtTest_it = testEltToPtsQuad[theIdEltTest].begin();
+                auto quadPtTest_en = testEltToPtsQuad[theIdEltTest].end();
                 for ( ; quadPtTest_it != quadPtTest_en ; ++quadPtTest_it )
                     {
                         // get test data
@@ -208,7 +633,7 @@ public :
                         //std::cout << "\nidq modulo : " << theIdq%nQuadPtsInElt << " q " << theq << " elt " << theIdq/nQuadPtsInElt;
                         auto theNodeRefTest = quadPtTest_it->get<2>();
                         // search in trial data
-                        auto theRes = this->findQuadPt(*eltCoupled_it,trialPtQuadToElt,theIdq );
+                        auto theRes = this->findQuadPt(*eltCoupled_it,trialEltToPtsQuad,theIdq );
                         // get trial data
                         auto theIdEltTrial = theRes.get<0>();
                         auto theNodeRefTrial = theRes.get<1>();
@@ -243,10 +668,8 @@ public :
                     }
 
                 // add to result container
-                _M_res.push_back(boost::make_tuple(theIdEltTest,mapiIdTrial2qAndPtRef));
+                _M_resBilinear.push_back(boost::make_tuple(theIdEltTest,mapiIdTrial2qAndPtRef));
             }
-
-
 
 
     } // update
@@ -287,11 +710,9 @@ private :
     element_iterator_type _M_eltend;
     mutable im_type _M_im;
 
-    result_container_type _M_res;
+    result_container_type _M_resBilinear;
 
-    //std::vector<gmc_ptrtype> M_vecGmc;
-
-    //std::vector<double> M_exprValue;//temporaire!!!
+    result_container_linear_type _M_resLinear;
 
 }; // QuadPtLocalization
 
