@@ -428,7 +428,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     update( geom, mpl::bool_<true>() );                 \
                 }                                                       \
                 void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu , mpl::bool_<false> ) \
-                {    /* HERE!!!!*/                                      \
+                {                                                       \
                     if (M_same_mesh)                                    \
                         updateInCaseOfInterpolate( geom, fev, feu, mpl::bool_<false>() ); \
                     else                                                \
@@ -436,7 +436,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
                 void updateInCaseOfInterpolate( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu , mpl::bool_<false> ) \
                 {                                                       \
-                    /*no interp*/                                       \
+                    /*nothing : always same context*/                   \
                 }                                                       \
                 void updateInCaseOfInterpolate( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu , mpl::bool_<true> ) \
                 {   /*with interp*/                                     \
@@ -445,9 +445,29 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                   VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), \
                                                            M_fec = fusion::at_key<basis_context_key_type>( feu ).get() ) ) ; \
                 }                                                       \
-                void update( Geo_t const& geom, Basis_i_t const& fev ) \
+                void update( Geo_t const& geom, Basis_i_t const& fev )  \
                 {                                                       \
-                    update( geom, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
+                    update( geom, fev, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
+                }                                                       \
+                void update( Geo_t const& geom, Basis_i_t const& fev, mpl::bool_<true> ) \
+                {                                                       \
+                    update( geom, mpl::bool_<true>() );                 \
+                }                                                       \
+                void update( Geo_t const& geom, Basis_i_t const& fev , mpl::bool_<false>) \
+                {                                                       \
+                    if (M_same_mesh)                                    \
+                        updateInCaseOfInterpolate( geom, fev, mpl::bool_<false>() ); \
+                    else                                                \
+                        updateInCaseOfInterpolate( geom, fev, mpl::bool_<true>() ); \
+                }                                                       \
+                void updateInCaseOfInterpolate( Geo_t const& geom, Basis_i_t const& fev, mpl::bool_<false> ) \
+                {                                                       \
+                    /*no interp*/                                       \
+                }                                                       \
+                void updateInCaseOfInterpolate( Geo_t const& geom, Basis_i_t const& fev,  mpl::bool_<true> ) \
+                {   /*with interp*/                                     \
+                    VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TEST( T ),   \
+                                             M_fec = fusion::at_key<basis_context_key_type>( fev ).get() ) ; \
                 }                                                       \
                 void update( Geo_t const& geom )                        \
                 {                                                       \
@@ -536,7 +556,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 {                                                       \
                     return evaliq__( i, c1, c2, q, mpl::bool_<true>(), mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
                 }                                                       \
-                                               \
+                                                                        \
                     result_type                                         \
                     evaliq__( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q, \
                               mpl::bool_<true>, mpl::bool_<true> ) const \
@@ -546,9 +566,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                \
                     result_type                                         \
                     evaliq__( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<false> ) const \
-                {                                                       \
-                    return M_fec->VF_OPERATOR_TERM( O )( i, c1, c2, q ); \
-                }                                                       \
+                    {                                                   \
+                        return M_fec->VF_OPERATOR_TERM( O )( i, c1, c2, q ); \
+                    }                                                   \
                                                                         \
                 result_type                                             \
                     evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> ) const \

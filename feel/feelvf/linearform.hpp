@@ -96,6 +96,7 @@ public:
     typedef typename space_type::element_type::component_type component_type;
 #endif
     typedef typename space_type::mesh_type mesh_type;
+    typedef typename mesh_type::element_type mesh_test_element_type;
     typedef typename mesh_type::element_type::permutation_type permutation_type;
     typedef typename space_type::gm_type gm_type;
     typedef typename space_type::gm_ptrtype gm_ptrtype;
@@ -135,7 +136,7 @@ public:
 public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        typedef Context<GeomapContext,ExprT,IM> form_context_type;
+        typedef Context<GeomapContext,ExprT,IM,GeomapExprContext> form_context_type;
         typedef LinearForm<SpaceType,VectorType, ElemContType> form_type;
         typedef typename SpaceType::dof_type dof_type;
         typedef typename form_type::value_type value_type;
@@ -268,6 +269,11 @@ public:
         void update( map_geometric_mapping_context_type const& _gmc,
                      map_geometric_mapping_expr_context_type const& _gmcExpr );
 
+
+        void updateInCaseOfInterpolate( map_geometric_mapping_context_type const& gmc,
+                                        map_geometric_mapping_expr_context_type const& gmcExpr,
+                                        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad );
+
         void update( map_geometric_mapping_context_type const& _gmc,
                      map_geometric_mapping_expr_context_type const& _gmcExpr,
                      mpl::int_<2> );
@@ -276,6 +282,16 @@ public:
         void update( map_geometric_mapping_context_type const& _gmc,
                      map_geometric_mapping_expr_context_type const& _gmcExpr,
                      IM const& im );
+
+        void updateInCaseOfInterpolate( map_geometric_mapping_context_type const& gmc,
+                                        map_geometric_mapping_expr_context_type const& gmcExpr,
+                                        IM const& im,
+                                        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
+        {
+            M_integrator = im;
+            this->updateInCaseOfInterpolate( gmc, gmcExpr, indexLocalToQuad);
+        }
+
 
         void update( map_geometric_mapping_context_type const& _gmc,
                      map_geometric_mapping_expr_context_type const& _gmcExpr,
@@ -286,6 +302,14 @@ public:
         {
             integrate(mpl::int_<fusion::result_of::size<GeomapContext>::type::value>() );
         }
+
+        void integrateInCaseOfInterpolate(std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                          bool isFirstExperience)
+        {
+            integrateInCaseOfInterpolate( mpl::int_<fusion::result_of::size<GeomapContext>::type::value>(),
+                                          indexLocalToQuad, isFirstExperience );
+        }
+
 
         void assemble() { assemble( _M_gmc_left->id());  }
         void assemble( size_type elt_0 );
@@ -357,6 +381,11 @@ public:
         void integrate( mpl::int_<1> );
 
         void integrate( mpl::int_<2> );
+
+        void integrateInCaseOfInterpolate( mpl::int_<1>,
+                                           std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                           bool isFirstExperience);
+
     private:
 
         form_type& _M_form;
