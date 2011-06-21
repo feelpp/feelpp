@@ -533,9 +533,9 @@ BOOST_PARAMETER_FUNCTION(
 /**
  *
  * \brief create a mesh data structure (hold in a shared_ptr<>) using GMSH
- * 
+ *
  * \arg mesh mesh data structure
- * \arg descprition 
+ * \arg descprition
  * \arg h (float, optional, default = 0.1)
  * \arg order (integer, optional, default = 1)
  * \arg parametricnodes (boolean, optional, default = 0)
@@ -633,6 +633,7 @@ BOOST_PARAMETER_FUNCTION(
     return gmsh_ptr;
 }
 
+
 BOOST_PARAMETER_FUNCTION(
     (gmsh_ptrtype), // return type
     geo,    // 2. function name
@@ -664,6 +665,7 @@ BOOST_PARAMETER_FUNCTION(
         throw std::invalid_argument( ostr.str() );
     }
     return gmsh_ptr;
+
 }
 
 /**
@@ -690,6 +692,39 @@ BOOST_PARAMETER_FUNCTION(
  * enter the parameter in any order.
  *
  */
+
+BOOST_PARAMETER_FUNCTION(
+    (std::string), // return type
+    mshconvert,    // 2. function name
+    tag,           // 3. namespace of tag types
+    (required
+     (filename,       *(boost::is_convertible<mpl::_,std::string>)))
+    (optional
+     (dim,            *(boost::is_integral<mpl::_>), 3)
+     (order,          *(boost::is_integral<mpl::_>), 1)))
+{
+    gmsh_ptrtype gmsh_ptr( new Gmsh( dim, order ) );
+
+    gmsh_ptr->setPrefix( fs::path(filename).stem() );
+
+    // first try in the current path
+    if ( fs::exists( fs::current_path() / filename ) )
+        gmsh_ptr->setDescription((boost::format( "Merge \"%1%\"" ) % (fs::current_path() / filename).string() ).str());
+    else if ( fs::exists( fs::path(Environment::localGeoRepository()) / filename ) )
+        gmsh_ptr->setDescription((boost::format( "Merge \"%1%\"" ) % (fs::path(Environment::localGeoRepository()) / filename).string()).str() );
+    else if ( Environment::systemGeoRepository().template get<1>()  &&
+              fs::exists( fs::path(Environment::systemGeoRepository().get<0>()) / filename ) )
+        gmsh_ptr->setDescription( (boost::format( "Merge \"%1%\"" ) % (fs::path(Environment::systemGeoRepository().get<0>()) / filename).string()).str() );
+    else
+    {
+        std::ostringstream ostr;
+        ostr << "File " << filename << " was not found neither in current directory or in " << Environment::localGeoRepository() << " or in " << Environment::systemGeoRepository();
+        throw std::invalid_argument( ostr.str() );
+    }
+    return gmsh_ptr;
+}
+
+
 } // Feel
 
 #endif /* __Gmsh_H */
