@@ -517,7 +517,8 @@ public:
         Localization() :
             M_mesh (),
             M_kd_tree(new kdtree_type()),
-            IsInit(false)
+            IsInit(false),
+            M_doExtrapolation(true)
 
         {
             M_kd_tree->nbNearNeighbor(15);
@@ -526,7 +527,8 @@ public:
 
         Localization(boost::shared_ptr<self_type> m, bool init_b = true ) :
             M_mesh ( m ),
-            IsInit(init_b)
+            IsInit(init_b),
+            M_doExtrapolation(true)
         {
             if (IsInit)
                 init();
@@ -541,7 +543,8 @@ public:
             M_kd_tree(new kdtree_type(*(L.M_kd_tree))),
             M_geoGlob_Elts(L.M_geoGlob_Elts),
             IsInit(L.IsInit),
-            M_resultAnalysis(L.M_resultAnalysis)
+            M_resultAnalysis(L.M_resultAnalysis),
+            M_doExtrapolation(L.M_doExtrapolation)
         {}
 
         /*--------------------------------------------------------------
@@ -556,6 +559,12 @@ public:
             else IsInit=b;
             M_resultAnalysis.clear();
         }
+
+        /*--------------------------------------------------------------
+         * Define if necessary to use extrapolation
+         */
+        void
+        setExtrapolation(bool b) { M_doExtrapolation = b; }
 
         /*--------------------------------------------------------------
          * Run the init function if necessary
@@ -620,6 +629,7 @@ public:
         std::map<size_type, node_elem_type > M_geoGlob_Elts;
         bool IsInit;
         container_search_type M_resultAnalysis;
+        bool M_doExtrapolation;
     };
 
 

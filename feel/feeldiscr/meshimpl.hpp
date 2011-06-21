@@ -1172,12 +1172,12 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
             if (!isin) ++itLT;
         }
 
-    bool __extrapolation=true;
+    //bool __extrapolation=true;
     if (itLT != itLT_end) return boost::make_tuple( true, itLT->first, __x_ref);
-    else if (itLT == itLT_end && !__extrapolation) return boost::make_tuple( false, 0, __x_ref );
+    else if (itLT == itLT_end && !M_doExtrapolation) return boost::make_tuple( false, 0, __x_ref );
     else
         {
-            //std::cout << "\n WARNING EXTRAPOLATION \n";
+            //std::cout << "\n WARNING EXTRAPOLATION for the point" << p << "\n";
             itLT=ListTri.begin();
             elt= M_mesh->element(itLT->first );
             typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
@@ -1334,15 +1334,15 @@ Mesh<Shape, T>::Localization::searchElementBis(const node_type & p)
 
     auto newsol = boost::make_tuple(find,newlistelts);
 
-    bool __extrapolation=true;
+    //bool __extrapolation=true;
     if (find/*itLT != itLT_end*/) {
         //std::cout << "\nOK listsize "<< newlistelts.size()<<"\n";
         return boost::make_tuple(true,newlistelts);
     }
-    else if (!find && !__extrapolation) return boost::make_tuple(false,newlistelts);
+    else if (!find && !M_doExtrapolation) return boost::make_tuple(false,newlistelts);
     else
         {
-            std::cout << "\n WARNING EXTRAPOLATION \n";
+            //std::cout << "\n WARNING EXTRAPOLATION \n";
             itLT=ListTri.begin();
             elt= M_mesh->element(itLT->first );
             typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
