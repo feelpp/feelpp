@@ -339,7 +339,7 @@ public :
                            IndexTrial  const& indj,
                            uint16_type c1,
                            uint16_type c2,
-                           std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad) const
+                           std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad ) const
     {
         value_type res = value_type(0);
 
@@ -347,6 +347,23 @@ public :
             {
                 auto qReal = indexLocalToQuad[q].get<0>();
                 const value_type val_expr = expr.evalijq( indi, indj, c1, c2, q );
+                res += _M_prod[qReal]*val_expr;
+            }
+        return res;
+    }
+    template<typename IndexTest, typename ExprType>
+    value_type operator()( ExprType const& expr,
+                           IndexTest  const& indi,
+                           uint16_type c1,
+                           uint16_type c2,
+                           std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad ) const
+    {
+        value_type res = value_type(0);
+
+        for( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
+            {
+                auto qReal = indexLocalToQuad[q].get<0>();
+                const value_type val_expr = expr.evaliq( indi, c1, c2, q );
                 res += _M_prod[qReal]*val_expr;
             }
         return res;
@@ -364,6 +381,25 @@ public :
             for( uint16_type q = 0; q < this->nPoints(); ++q )
                 {
                     _M_prod[q] = _M_w( q )*gmc.J(q);
+                }
+    }
+
+    template<typename GMC>
+    void update( GMC const& gmc,
+                 std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
+    {
+
+        if ( this->isFaceIm() )
+            for( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
+                {
+                    auto qReal = indexLocalToQuad[q].get<0>();
+                    _M_prod[qReal] = _M_w( qReal )*gmc.J(q)*gmc.normalNorm(q);
+                }
+        else
+            for( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
+                {
+                    auto qReal = indexLocalToQuad[q].get<0>();
+                    _M_prod[qReal] = _M_w( qReal )*gmc.J(q);
                 }
     }
 
