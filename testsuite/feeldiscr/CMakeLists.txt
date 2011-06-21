@@ -1,4 +1,5 @@
-foreach(TEST elementminmax project bdf interpolation integration integration_ho integration_ifaces space geomap mixed auto_order_integrate interp_twomesh submesh disc vect_comp operatorinterpolation normal3d aitken)
+foreach(TEST elementminmax project bdf interpolation integration integration_ho integration_ifaces space geomap mixed 
+             auto_order_integrate interp_twomesh submesh disc vect_comp operatorinterpolation normal3d aitken form_interpolation)
 
   feel_add_test( ${TEST} )
 
