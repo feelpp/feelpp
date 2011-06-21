@@ -242,7 +242,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     Debug( 8011 ) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit( "  << mesh_type::nDim << "D )] filename = " << this->filename() << "\n";
 
     std::ifstream __is ( this->filename().c_str() );
-	
+
 	if ( !__is.is_open() )
     {
         std::ostringstream ostr;
@@ -454,11 +454,13 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
             ++__gt[ __t ];
             __etype[__i] = GMSH_ENTITY(__t);
-			if (M_use_elementary_region_as_physical_region) {
+			if (M_use_elementary_region_as_physical_region)
+            {
 				__et[__i].push_back(__elementary_region);
 				__et[__i].push_back(__elementary_region);
 			}
-			else {
+			else
+            {
 				__et[__i].push_back(__physical_region);
 				__et[__i].push_back(__elementary_region);
 			}
