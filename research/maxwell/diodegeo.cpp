@@ -93,7 +93,7 @@ diodegeo( double h, int Order, std::string const& convex )
     }
 
 
-    nameStr << "diode-" << convex;
+    nameStr << "diode-" << convex << "-" << Order;
 
 
     gmshp->setPrefix( nameStr.str() );

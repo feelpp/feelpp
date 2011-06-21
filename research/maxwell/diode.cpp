@@ -136,6 +136,7 @@ public:
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order 2
     typedef Simplex<2,Order> convex_type;
+    typedef Simplex<2,1> convex1_type;
     //typedef Hypercube<2,Order> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
@@ -159,7 +160,7 @@ public:
     typedef c_space_type::element_type c_element_type;
 
     //! the exporter factory type
-    typedef Exporter<mesh_type> export_type;
+    typedef Exporter<mesh_type,Order> export_type;
     //! the exporter factory (shared_ptr<> type)
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
@@ -215,6 +216,7 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                        % Order
                                        % X[0] );
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                         _desc=diodegeo(X[0],Order,convex) );
 
     /**
@@ -277,7 +279,7 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     Ey = vf::project( Xh, elements(mesh), Ey_exact );
     Bz = vf::project( Xh, elements(mesh), Bz_exact );
 
-    auto L2Proj = projector( Xh, Xhc );
+    auto L2Proj = projector( Xhc, Xhc );
     Exc = L2Proj->project( idv(Ex) );
     Eyc = L2Proj->project( idv(Ey) );
     Bzc = L2Proj->project( idv(Bz) );
@@ -287,15 +289,18 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     Bze = vf::project( Xhc, elements(mesh), Bz_exact );
 
     exporter->step(time)->setMesh( mesh );
+#if 0
     exporter->step(time)->add( "Ex", Ex );
     exporter->step(time)->add( "Ey", Ey );
     exporter->step(time)->add( "Bz", Bz );
+#endif
     exporter->step(time)->add( "Exc", Exc );
     exporter->step(time)->add( "Eyc", Eyc );
     exporter->step(time)->add( "Bzc", Bzc );
     exporter->step(time)->add( "ExExact", Exe );
     exporter->step(time)->add( "EyExact", Eye );
     exporter->step(time)->add( "BzExact", Bze );
+
     exporter->save();
     std::cout << "Saved initial/exact solution\n";
     for( time = dt; time <= Tfinal; time += dt )
@@ -332,10 +337,11 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
         // save
         exporter->step(time)->setMesh( mesh );
+#if 0
         exporter->step(time)->add( "Ex", Ex );
         exporter->step(time)->add( "Ey", Ey );
         exporter->step(time)->add( "Bz", Bz );
-
+#endif
         Exc = L2Proj->project( idv(Ex) );
         Eyc = L2Proj->project( idv(Ey) );
         Bzc = L2Proj->project( idv(Bz) );
@@ -349,6 +355,7 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
         exporter->step(time)->add( "ExExact", Exe );
         exporter->step(time)->add( "EyExact", Eye );
         exporter->step(time)->add( "BzExact", Bze );
+
         exporter->save();
     }
 
