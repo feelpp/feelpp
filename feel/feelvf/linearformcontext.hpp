@@ -148,10 +148,28 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     _M_left_map = fusion::make_map<gmc<0> >( _M_gmc_left );
     fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
-    _M_eval0_expr->update( _gmc, _M_test_fec0 );
+    _M_eval0_expr->update( _gmcExpr, _M_test_fec0 );
 
     M_integrator.update( *fusion::at_key<gmc<0> >( _gmc ) );
 }
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
+void
+LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::updateInCaseOfInterpolate( map_geometric_mapping_context_type const& _gmc,
+                                                                                                                               map_geometric_mapping_expr_context_type const& _gmcExpr,
+                                                                                                                               std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
+{
+    _M_gmc = _gmc;
+    _M_gmc_left = fusion::at_key<gmc<0> >( _gmc );
+    _M_left_map = fusion::make_map<gmc<0> >( _M_gmc_left );
+    precomputeBasisAtPoints( fusion::at_key<gmc<0> >( _gmc )->xRefs());
+    fusion::for_each( _M_test_fec, detail::FEContextUpdateInCaseOfInterpolate<0,form_context_type>( _gmc, *this ) );
+    _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
+    _M_eval0_expr->update( _gmcExpr, _M_test_fec0 );
+
+    M_integrator.update( *fusion::at_key<gmc<0> >( _gmcExpr ),indexLocalToQuad );
+}
+
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
@@ -173,8 +191,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_test_fec1 = fusion::make_map<gmc1 >( fusion::at_key<gmc1 >( _M_test_fec ) );
-    _M_eval0_expr->update( _gmc, _M_test_fec0 );
-    _M_eval1_expr->update( _gmc, _M_test_fec1 );
+    _M_eval0_expr->update( _gmcExpr, _M_test_fec0 );
+    _M_eval1_expr->update( _gmcExpr, _M_test_fec1 );
 
     M_integrator.update( *fusion::at_key<gmc<0> >( _gmc ) );
 }
@@ -238,6 +256,31 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
         // test dof element 1
         _M_rep_2(ii) = M_integrator( *_M_eval1_expr, i, 0, 0 );
     }
+}
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
+void
+LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::integrateInCaseOfInterpolate( mpl::int_<1>,
+                                                                                                                                  std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                                                                                                                  bool isFirstExperience )
+{
+    typedef typename eval0_expr_type::shape shape;
+    BOOST_MPL_ASSERT_MSG( (shape::M == 1 && shape::N == 1),
+                          INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
+                          (mpl::int_<shape::M>, mpl::int_<shape::N> ) );
+
+    if (isFirstExperience)
+        for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+            {
+                _M_rep(i ) = M_integrator( *_M_eval0_expr, i, 0, 0, indexLocalToQuad );
+            }
+    else
+        for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+            {
+                _M_rep(i ) += M_integrator( *_M_eval0_expr, i, 0, 0, indexLocalToQuad );
+            }
+
+
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>

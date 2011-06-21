@@ -838,17 +838,21 @@ Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::BilinearFor
                     auto ptRefTrial = map_it->second.get<2>();
                     auto themapQuad = map_it->second.get<0>();
 
-                    geopcForm->update(ptRefTest);
-                    gmcForm->update(eltTest,geopcForm);
+                    auto vec_gmcExpr = QPL.getUsableDataInFormContext(themapQuad,ptRefTest/*,ptRefTrial*/);
+                    auto gmcExpr_it = vec_gmcExpr.begin();
+                    auto gmcExpr_en = vec_gmcExpr.end();
+                    bool isFirstExperience = true;
+                    for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it)
+                        {
+                            geopcForm->update(gmcExpr_it->get<2>());
+                            gmcForm->update(eltTest,geopcForm);
+                            map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
+                            map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->get<1>() ) );
+                            formc->updateInCaseOfInterpolate( mapgmcForm, mapgmcExpr, gmcExpr_it->get<0>() );
 
-                    map_gmc_form_type mapgmc( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
-
-                    auto gmcEltRange = QPL.gmcForThisElt(QPL.eltForThisQuadPt(themapQuad[0].get<1>()));
-
-                    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcEltRange ) );
-                    formc->updateInCaseOfInterpolate( mapgmc, mapgmcExpr );
-
-                    formc->integrateInCaseOfInterpolate(themapQuad);
+                            formc->integrateInCaseOfInterpolate( gmcExpr_it->get<0>(),isFirstExperience );
+                            isFirstExperience = false;
+                        }
 
                     formc->assemble();
 
@@ -863,7 +867,99 @@ template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
 {
-#warning todo!
+
+    // typedef on integral mesh (expr) :
+    typedef typename eval::gm_type gm_expr_type;
+    typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT, typename eval::element_type> gmc_expr_type;
+    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef typename gm_expr_type::precompute_type pc_expr_type;
+    typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
+    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
+
+    //typedef on form (trial and test):
+    typedef detail::LinearForm<FE,VectorType,ElemContType> FormType;
+    typedef typename FormType::gm_type gm_form_type;
+    typedef typename FormType::mesh_test_element_type geoelement_form_type;
+    typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
+    typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
+    typedef typename gm_form_type::precompute_type pc_form_type;
+    typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
+    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;
+
+    // typedef on formcontext
+    typedef typename FormType::template Context<map_gmc_form_type, expression_type, im_type,map_gmc_expr_type> form_context_type;
+    typedef form_context_type fcb_type;
+    typedef fcb_type* focb_ptrtype;
+
+    //-----------------------------------------------//
+
+    auto elt_it = this->beginElement();
+    auto elt_en = this->endElement();
+
+    // check that we have elements to iterate over
+    if ( elt_it == elt_en )
+        return;
+
+   //-----------------------------------------------//
+
+    pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), this->im().points() ) );
+    gmc_expr_ptrtype gmcExpr( new gmc_expr_type(elt_it->gm(),*elt_it, geopcExpr ) );
+    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr ) );
+
+    //-----------------------------------------------//
+
+    pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), this->im().points() ) );
+    gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), __form.testSpace()->mesh()->element(0), geopcForm ) );
+    map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
+
+   //-----------------------------------------------//
+
+    focb_ptrtype formc( new form_context_type( __form,
+                                               mapgmcForm,
+                                               mapgmcExpr,
+                                               this->expression(),
+                                               this->im() ) );
+
+   //-----------------------------------------------//
+
+    QuadPtLocalization<Elements, Im, Expr > QPL(this->beginElement(),this->endElement(), this->im() );
+
+    auto meshTest = __form.testSpace()->mesh();
+
+    QPL.update( meshTest );
+
+   //-----------------------------------------------//
+
+    auto res_it = QPL.resultLinear().begin();
+    auto res_en = QPL.resultLinear().end();
+    for ( ; res_it != res_en ; ++res_it)
+        {
+
+            auto idEltTest = res_it->get<0>();
+            auto eltTest = meshTest->element( idEltTest );
+
+            auto ptRefTest = res_it->get<2>();
+            auto themapQuad = res_it->get<1>();
+
+            auto vec_gmcExpr = QPL.getUsableDataInFormContext(themapQuad,ptRefTest);
+            auto gmcExpr_it = vec_gmcExpr.begin();
+            auto gmcExpr_en = vec_gmcExpr.end();
+            bool isFirstExperience = true;
+            for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it)
+                {
+                    geopcForm->update(gmcExpr_it->get<2>());
+                    gmcForm->update(eltTest,geopcForm);
+                    map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
+                    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->get<1>() ) );
+                    formc->updateInCaseOfInterpolate( mapgmcForm, mapgmcExpr,gmcExpr_it->get<0>() );
+
+                    formc->integrateInCaseOfInterpolate( gmcExpr_it->get<0>(),isFirstExperience );
+                    isFirstExperience = false;
+                }
+
+            formc->assemble();
+        }
+
 }
 
 
@@ -1058,7 +1154,141 @@ void
 Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::BilinearForm<FE1,FE2,ElemContType>& __form,
                                                              mpl::int_<MESH_FACES> /**/ ) const
 {
-#warning todo!
+
+   // typedef on integral mesh (expr) :
+    typedef typename eval::gm_type gm_expr_type;
+    typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
+    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef typename gm_expr_type::precompute_type pc_expr_type;
+    typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
+    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
+
+    //typedef on form (trial and test):
+    typedef detail::BilinearForm<FE1,FE2,ElemContType> FormType;
+    typedef typename FormType::gm_type gm_form_type;
+    typedef typename FormType::mesh_element_type geoelement_form_type;
+    typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
+    typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
+    typedef typename gm_form_type::precompute_type pc_form_type;
+    typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
+    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;
+
+    // typedef on formcontext
+    typedef typename im_type::face_quadrature_type face_im_type;
+
+    typedef typename FormType::template Context<map_gmc_form_type, expression_type, face_im_type,map_gmc_expr_type> form_context_type;
+    typedef form_context_type fcb_type;
+    typedef fcb_type* focb_ptrtype;
+
+    //-----------------------------------------------//
+
+    auto elt_it = this->beginElement();
+    auto elt_en = this->endElement();
+
+    // check that we have elements to iterate over
+    if ( elt_it == elt_en )
+        return;
+
+   //-----------------------------------------------//
+
+    QuadMapped<im_type> qm;
+    typedef typename QuadMapped<im_type>::permutation_type permutation_type;
+    typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
+
+    std::vector<std::map<permutation_type, pc_expr_ptrtype> > __geopcExpr( im().nFaces() );
+    std::vector<face_im_type> face_ims( im().nFaces() );
+
+    for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
+        {
+            face_ims[__f] = this->im( __f );
+
+            for( permutation_type __p( permutation_type::IDENTITY );
+                 __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+            {
+                //FEEL_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element(0).gm(), ppts[__f].find(__p)->second ) );
+            }
+        }
+
+
+    uint16_type __face_id_in_elt_0 = elt_it->pos_first();
+
+    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->element(0).gm(),
+                                                 elt_it->element( 0 ),
+                                                 __geopcExpr,
+                                                 __face_id_in_elt_0 ) );
+
+
+    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr ) );
+
+    //-----------------------------------------------//
+
+    pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), this->im().points() ) );
+    gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), __form.testSpace()->mesh()->element(0), geopcForm ) );
+    map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
+
+   //-----------------------------------------------//
+
+    focb_ptrtype formc( new form_context_type( __form,
+                                               mapgmcForm,
+                                               mapgmcExpr,
+                                               this->expression(),
+                                               face_ims[__face_id_in_elt_0],
+                                               this->im() ) );
+
+   //-----------------------------------------------//
+
+    QuadPtLocalization<Elements, Im, Expr > QPL(this->beginElement(),this->endElement()/*, this->im()*/ );
+
+    auto meshTrial = __form.trialSpace()->mesh();
+    auto meshTest = __form.testSpace()->mesh();
+
+    QPL.update( meshTest,meshTrial );
+
+   //-----------------------------------------------//
+
+    auto res_it = QPL.result().begin();
+    auto res_en = QPL.result().end();
+    for ( ; res_it != res_en ; ++res_it)
+        {
+            auto idEltTest = res_it->get<0>();
+            auto map = res_it->get<1>();
+            auto map_it = map.begin();
+            auto map_en = map.end();
+            for ( ; map_it != map_en ; ++map_it)
+                {
+                    auto idEltTrial = map_it->first;
+                    auto eltTrial = meshTrial->element( idEltTrial );
+                    auto eltTest = meshTest->element( idEltTest );
+
+                    auto ptRefTest = map_it->second.get<1>();
+                    auto ptRefTrial = map_it->second.get<2>();
+                    auto themapQuad = map_it->second.get<0>();
+
+                    auto vec_gmcExpr = QPL.getUsableDataInFormContext(themapQuad,ptRefTest/*,ptRefTrial*/);
+                    auto gmcExpr_it = vec_gmcExpr.begin();
+                    auto gmcExpr_en = vec_gmcExpr.end();
+                    bool isFirstExperience = true;
+                    for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it)
+                        {
+                            geopcForm->update(gmcExpr_it->get<2>());
+                            gmcForm->update(eltTest,geopcForm);
+                            map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
+                            map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->get<1>() ) );
+                            __face_id_in_elt_0 = gmcExpr_it->get<1>()->faceId();
+                            formc->updateInCaseOfInterpolate( mapgmcForm, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->get<0>() );
+
+                            formc->integrateInCaseOfInterpolate( gmcExpr_it->get<0>(),isFirstExperience );
+                            isFirstExperience = false;
+                        }
+
+                    formc->assemble();
+
+                }
+
+        }
+
+
 }
 
 template<typename Elements, typename Im, typename Expr>
@@ -1066,7 +1296,140 @@ template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
 {
-#warning todo!
+    // typedef on integral mesh (expr) :
+    typedef typename eval::gm_type gm_expr_type;
+    typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
+    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef typename gm_expr_type::precompute_type pc_expr_type;
+    typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
+    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
+
+    //typedef on form (test):
+    typedef detail::LinearForm<FE,VectorType,ElemContType> FormType;
+    typedef typename FormType::gm_type gm_form_type;
+    typedef typename FormType::mesh_test_element_type geoelement_form_type;
+    typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
+    typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
+    typedef typename gm_form_type::precompute_type pc_form_type;
+    typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
+    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;
+
+    // typedef on formcontext
+    typedef typename im_type::face_quadrature_type face_im_type;
+
+    typedef typename FormType::template Context<map_gmc_form_type, expression_type, face_im_type,map_gmc_expr_type> form_context_type;
+    typedef form_context_type fcb_type;
+    typedef fcb_type* focb_ptrtype;
+
+    //-----------------------------------------------//
+
+    auto elt_it = this->beginElement();
+    auto elt_en = this->endElement();
+
+    // check that we have elements to iterate over
+    if ( elt_it == elt_en )
+        return;
+
+   //-----------------------------------------------//
+
+    QuadMapped<im_type> qm;
+    typedef typename QuadMapped<im_type>::permutation_type permutation_type;
+    typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
+
+    std::vector<std::map<permutation_type, pc_expr_ptrtype> > __geopcExpr( im().nFaces() );
+    std::vector<face_im_type> face_ims( im().nFaces() );
+
+    for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
+        {
+            face_ims[__f] = this->im( __f );
+
+            for( permutation_type __p( permutation_type::IDENTITY );
+                 __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+            {
+                //FEEL_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element(0).gm(), ppts[__f].find(__p)->second ) );
+            }
+        }
+
+
+    uint16_type __face_id_in_elt_0 = elt_it->pos_first();
+
+    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->element(0).gm(),
+                                                 elt_it->element( 0 ),
+                                                 __geopcExpr,
+                                                 __face_id_in_elt_0 ) );
+
+
+    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr ) );
+
+    //-----------------------------------------------//
+
+    pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), this->im().points() ) );
+    gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), __form.testSpace()->mesh()->element(0), geopcForm ) );
+    map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
+
+   //-----------------------------------------------//
+
+    focb_ptrtype formc( new form_context_type( __form,
+                                               mapgmcForm,
+                                               mapgmcExpr,
+                                               this->expression(),
+                                               face_ims[__face_id_in_elt_0],
+                                               this->im() ) );
+
+   //-----------------------------------------------//
+
+    QuadPtLocalization<Elements, Im, Expr > QPL(this->beginElement(),this->endElement() /*, this->im()*/ );
+
+    auto meshTest = __form.testSpace()->mesh();
+
+    QPL.update( meshTest );
+
+   //-----------------------------------------------//
+
+    auto res_it = QPL.resultLinear().begin();
+    auto res_en = QPL.resultLinear().end();
+    for ( ; res_it != res_en ; ++res_it)
+        {
+
+            auto idEltTest = res_it->get<0>();
+            auto eltTest = meshTest->element( idEltTest );
+
+            auto ptRefTest = res_it->get<2>();
+            auto themapQuad = res_it->get<1>();
+            //geopcForm->update(ptRefTest);
+            //gmcForm->update(eltTest,geopcForm);
+            //std::cout <<  "\ngmcbeginForm " << gmcForm->xReal();
+
+
+
+            auto vec_gmcExpr = QPL.getUsableDataInFormContext(themapQuad,ptRefTest);
+            auto gmcExpr_it = vec_gmcExpr.begin();
+            auto gmcExpr_en = vec_gmcExpr.end();
+            bool isFirstExperience = true;
+            //std::cout << "\n start \n";
+            for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it)
+                {
+                    geopcForm->update(gmcExpr_it->get<2>());
+                    gmcForm->update(eltTest,geopcForm);
+
+                    //std::cout << "\ngmcExpr " << gmcExpr_it->get<1>()->xReal()
+                    //          << "\ngmcForm " << gmcForm->xReal();
+
+                    map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
+                    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->get<1>() ) );
+
+                    __face_id_in_elt_0 = gmcExpr_it->get<1>()->faceId();
+                    formc->updateInCaseOfInterpolate( mapgmcForm, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->get<0>() );
+
+                    formc->integrateInCaseOfInterpolate( gmcExpr_it->get<0>(),isFirstExperience );
+                    isFirstExperience = false;
+                }
+
+            formc->assemble();
+        }
+
+
 }
 
 

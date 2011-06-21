@@ -227,11 +227,12 @@ template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprCo
 //template <typename gmc_eltrange_type>
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::updateInCaseOfInterpolate( map_geometric_mapping_context_type const& _gmc,
-                                                                                                                  map_geometric_mapping_expr_context_type const& _gmcExpr )
+                                                                                                                  map_geometric_mapping_expr_context_type const& _gmcExpr,
+                                                                                                                  std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
 {
     precomputeBasisAtPoints( fusion::at_key<gmc<0> >( _gmc )->xRefs());
     updateInCaseOfInterpolate( _gmc, _gmcExpr, boost::is_same<map_test_fecontext_type, map_trial_fecontext_type>() );
-    M_integrator.update(*fusion::at_key<gmc<0> >( _gmcExpr ));
+    M_integrator.update(*fusion::at_key<gmc<0> >( _gmcExpr ), indexLocalToQuad );
 }
 template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
@@ -326,7 +327,8 @@ template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::integrateInCaseOfInterpolate( mpl::int_<1>,
-                                                                                                                     std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
+                                                                                                                     std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                                                                                                     bool isFirstExperience )
 {
 
     typedef geometric_mapping_context_type gmc_type;
@@ -340,12 +342,19 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprCon
     geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_gmc );
     Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
+    if (isFirstExperience)
+        for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+            for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+                {
+                    _M_rep(i, j ) = M_integrator( *_M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                }
+    else
+        for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+            for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+                {
+                    _M_rep(i, j ) += M_integrator( *_M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                }
 
-    for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
-        for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-        {
-            _M_rep(i, j ) = M_integrator( *_M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
-        }
 }
 template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>

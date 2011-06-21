@@ -455,7 +455,8 @@ public:
                      map_geometric_mapping_expr_context_type const& gmcExpr );
 
         void updateInCaseOfInterpolate( map_geometric_mapping_context_type const& gmc,
-                                        map_geometric_mapping_expr_context_type const& gmcExpr );
+                                        map_geometric_mapping_expr_context_type const& gmcExpr,
+                                        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad );
 
         void update( map_geometric_mapping_context_type const& gmc,
                      map_geometric_mapping_expr_context_type const& gmcExpr,
@@ -467,6 +468,15 @@ public:
         {
             M_integrator = im;
             update( gmc,gmcExpr );
+        }
+
+        void updateInCaseOfInterpolate( map_geometric_mapping_context_type const& gmc,
+                                        map_geometric_mapping_expr_context_type const& gmcExpr,
+                                        IM const& im,
+                                        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
+        {
+            M_integrator = im;
+            updateInCaseOfInterpolate( gmc,gmcExpr, indexLocalToQuad);
         }
 
         void update( map_geometric_mapping_context_type const& gmc,
@@ -481,10 +491,12 @@ public:
         {
             integrate( mpl::int_<fusion::result_of::size<GeomapContext>::type::value>() );
         }
-        void integrateInCaseOfInterpolate(std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad)
+        void integrateInCaseOfInterpolate(std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                          bool isFirstExperience )
         {
             integrateInCaseOfInterpolate( mpl::int_<fusion::result_of::size<GeomapContext>::type::value>(),
-                                      indexLocalToQuad );
+                                          indexLocalToQuad,
+                                          isFirstExperience );
         }
 
 
@@ -620,7 +632,9 @@ public:
 
         void integrate( mpl::int_<2> );
 
-        void integrateInCaseOfInterpolate( mpl::int_<1>,std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad );
+        void integrateInCaseOfInterpolate( mpl::int_<1>,
+                                           std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                           bool isFirstExperience );
     private:
 
         form_type& _M_form;
