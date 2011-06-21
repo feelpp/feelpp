@@ -59,6 +59,7 @@ namespace Feel
  * \ingroup Importer
  * @author Christophe Prud'homme
  */
+
 template<typename MeshType>
 class ImporterGmsh
     :
@@ -69,6 +70,17 @@ class ImporterGmsh
     typedef Importer<MeshType> super;
 public:
 
+    /**
+     * setElementRegionAsPhysicalRegion(bool parameter)
+     *
+     * change reading for importing specific meshes for which the gmsh reader
+     * consider the Physical flag as null
+     */
+	void setElementRegionAsPhysicalRegion(const bool param) {
+		M_use_elementary_region_as_physical_region=param;
+	}
+
+    bool M_use_elementary_region_as_physical_region;
 
     /** @name Typedefs
      */
@@ -105,7 +117,8 @@ public:
     ImporterGmsh()
         :
         super( GMSH ),
-        _M_version( FEEL_GMSH_FORMAT_VERSION )
+        _M_version( FEEL_GMSH_FORMAT_VERSION ),
+        M_use_elementary_region_as_physical_region( false )
     {
         //showMe();
     }
@@ -113,14 +126,16 @@ public:
     explicit ImporterGmsh( std::string const& fname, std::string version = FEEL_GMSH_FORMAT_VERSION )
         :
         super( fname, GMSH ),
-        _M_version( version )
+        _M_version( version ),
+        M_use_elementary_region_as_physical_region( false )
     {
         //showMe();
     }
     ImporterGmsh( ImporterGmsh const & i )
         :
         super( i ),
-        _M_version( i._M_version )
+        _M_version( i._M_version ),
+        M_use_elementary_region_as_physical_region( false )
     {
         //showMe();
     }
@@ -227,8 +242,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     Debug( 8011 ) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit( "  << mesh_type::nDim << "D )] filename = " << this->filename() << "\n";
 
     std::ifstream __is ( this->filename().c_str() );
-
-    if ( !__is.is_open() )
+	
+	if ( !__is.is_open() )
     {
         std::ostringstream ostr;
         ostr << "Invalid file name " << this->filename() << " (file not found)\n";
@@ -439,8 +454,15 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
             ++__gt[ __t ];
             __etype[__i] = GMSH_ENTITY(__t);
-            __et[__i].push_back(__physical_region);
-            __et[__i].push_back(__elementary_region);
+			if (M_use_elementary_region_as_physical_region) {
+				__et[__i].push_back(__elementary_region);
+				__et[__i].push_back(__elementary_region);
+			}
+			else {
+				__et[__i].push_back(__physical_region);
+				__et[__i].push_back(__elementary_region);
+			}
+
             __et[__i].push_back(__partition_region);
             __e[__i].resize( __np );
             int __p = 0;
@@ -846,8 +868,8 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e,
 
 }
 
-
 } // Feel
+
 
 
 #endif /* __ImporterGmsh_H */

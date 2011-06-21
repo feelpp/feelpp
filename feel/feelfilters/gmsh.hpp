@@ -1,3 +1,4 @@
+
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
@@ -448,6 +449,7 @@ struct mesh
  * \arg filename filename string (with extension)
  * \arg refine optionally refine with \p refine levels the mesh (default: 0)
  * \arg update update the mesh data structure (build internal faces and edges) (default : true)
+ * \arg physical_are_elementary_regions boolean to load specific meshes formats (default : false)
  */
 BOOST_PARAMETER_FUNCTION(
     (typename detail::mesh<Args>::ptrtype), // return type
@@ -463,6 +465,7 @@ BOOST_PARAMETER_FUNCTION(
     (optional
      (refine,          *(boost::is_integral<mpl::_>), 0 )
      (update,          *(boost::is_integral<mpl::_>), 0 )
+	 (physical_are_elementary_regions,		   *,false)
         )
     )
 {
@@ -479,7 +482,14 @@ BOOST_PARAMETER_FUNCTION(
     }
 
     ImporterGmsh<_mesh_type> import( filename );
-    _mesh->accept( import );
+
+    // need to replace physical_region by elementary_region while reading
+    if (physical_are_elementary_regions)
+    {
+        import.setElementRegionAsPhysicalRegion(physical_are_elementary_regions);
+    }
+
+    _mesh->accept(import);
 
     if ( update )
     {
@@ -523,6 +533,15 @@ BOOST_PARAMETER_FUNCTION(
 /**
  *
  * \brief create a mesh data structure (hold in a shared_ptr<>) using GMSH
+ * 
+ * \arg mesh mesh data structure
+ * \arg descprition 
+ * \arg h (float, optional, default = 0.1)
+ * \arg order (integer, optional, default = 1)
+ * \arg parametricnodes (boolean, optional, default = 0)
+ * \arg refine (boolean, optional, default = 0)
+ * \arg update (boolean, optional, default = 0)
+ * \arg force_rebuild boolean (boolean, optional, default = 0)
  *
  */
 BOOST_PARAMETER_FUNCTION(
