@@ -72,15 +72,15 @@ struct SListGenerator<0, T>
   * Nvar is the number of variables
   * Order the order of derivation
 
-  So far only Order = 2 has been implemented
+  So  only up to Order == 2 has been implemented
   here is an example
   <pre>
   #include <ADType.hpp>
 
-  ADType<double,3,2, Var> x(1.,0 );
-  ADType<double,3,2, Var> y(2.,1 );
-  ADType<double,3,2, Var> z(3.,2 );
-  Feel::ADType<double,3,2, Var> __g = x/(y*z);
+  ADType<double,3,2, 0> x(1. );
+  ADType<double,3,2, 1> y(2. );
+  ADType<double,3,2, 2> z(3. );
+  Feel::ADType<double,3,2> __g = x/(y*z);
   std::cout << "g=" << __g << "\n";
   <pre>
 
