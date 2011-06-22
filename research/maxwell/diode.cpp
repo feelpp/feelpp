@@ -183,6 +183,12 @@ public:
 
     void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
+    template<typename BdyExpr>
+    void
+    solve( double dt,
+           BdyExpr wbdy,
+           element_type const& Ex, element_type const& Ey,element_type const& Bz,
+           element_type& Exstar, element_type& Eystar, element_type& Bzstar );
 private:
 
     //! linear algebra backend
@@ -194,6 +200,9 @@ private:
     double Tfinal;
     //! convex of the domain
     std::string convex;
+
+    sparse_matrix_ptrtype D;
+    vector_ptrtype F_Ex, F_Ey, F_Bz;
 }; // Diode
 const uint16_type Diode::Order;
 const uint16_type Diode::OrderGeo;
@@ -207,6 +216,41 @@ Diode::run()
     X[0] = meshSize;
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
+}
+template<typename BdyExpr>
+void
+Diode::solve( double dt,
+              BdyExpr wbdy,
+              element_type const& Ex, element_type const& Ey,element_type const& Bz,
+              element_type& Exstar, element_type& Eystar, element_type& Bzstar )
+
+{
+    w = vec(idv(Ex),idv(Ey),idv(Bz));
+    wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
+    wL = vec(leftfacev(idv(Ex)),leftfacev(idv(Ey)),leftfacev(idv(Bz)));
+    // update right hand side
+    lEx = integrate( elements( mesh ), -idv(Ex)*id(u)  -dt*dyv(Bz)*id(u));
+    lEx += integrate( internalfaces(mesh),
+                      dt*trans(Anm_1)*(wR-wL)*leftface(id(u)) +
+                      dt*trans(Anp_1)*(wR-wL)*rightface(id(u)) );
+    lEx += integrate( boundaryfaces(mesh), dt*trans(Anm_1)*(wbdy-w)*id(u) );
+    lEy = integrate( elements( mesh ), -idv(Ey)*id(u) + dt*dxv(Bz)*id(u));
+    lEy += integrate( internalfaces(mesh),
+                      dt*trans(Anm_2)*(wR-wL)*leftface(id(u)) +
+                      dt*trans(Anp_2)*(wR-wL)*rightface(id(u)) );
+    lEy += integrate( boundaryfaces(mesh), dt*trans(Anm_2)*(wbdy-w)*id(u) );
+    lBz = integrate( elements( mesh ), -idv(Bz)*id(u)+dt*(dxv(Ey)-dyv(Ex))*id(u));
+    lBz += integrate( internalfaces(mesh),
+                      dt*trans(Anm_3)*(wR-wL)*leftface(id(u)) +
+                      dt*trans(Anp_3)*(wR-wL)*rightface(id(u)) );
+    lBz += integrate( boundaryfaces(mesh), dt*trans(Anm_3)*(wbdy-w)*id(u) );
+
+
+    //Euler modifie
+    backend->solve( _matrix=D, _solution=Exstar, _rhs=F_Ex  );
+    backend->solve( _matrix=D, _solution=Eystar, _rhs=F_Ey  );
+    backend->solve( _matrix=D, _solution=Bzstar, _rhs=F_Bz  );
+
 }
 void
 Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
@@ -263,17 +307,17 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto Anm_1 = vec(  -Ny() * Ny() / 0.2e1, Nx() * Ny() / 0.2e1, -Ny() / 0.2e1 );
     auto Anm_2 = vec( Nx() * Ny() / 0.2e1, -Nx() * Nx() / 0.2e1, Nx() / 0.2e1);
     auto Anm_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst(-0.1e1 / 0.2e1) );
-    auto F_Ex = M_backend->newVector( Xh );
+    F_Ex = M_backend->newVector( Xh );
     auto lEx=form1( _test=Xh, _vector=F_Ex, _init=true );
-    auto F_Ey = M_backend->newVector( Xh );
+    F_Ey = M_backend->newVector( Xh );
     auto lEy=form1( _test=Xh, _vector=F_Ey, _init=true );
-    auto F_Bz = M_backend->newVector( Xh );
+    F_Bz = M_backend->newVector( Xh );
     auto lBz=form1( _test=Xh, _vector=F_Bz, _init=true );
 
     // left hand side
-    auto D=M_backend->newMatrix( Xh, Xh );
+    D=M_backend->newMatrix( Xh, Xh );
     auto a = form2( _test=Xh, _trial=Xh, _matrix=D, _init=true );
-    a = integrate( elements(mesh), idt(Ex)*id(u)/dt );
+    a = integrate( elements(mesh), idt(Ex)*id(u) );
     D->printMatlab("mass.m");
     auto backend = backend_type::build( this->vm() );
     auto exporter( export_type::New( this->vm(),
@@ -313,59 +357,16 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     exporter->save();
     std::cout << "Saved initial/exact solution\n";
-    for( time = dt; time <= Tfinal; time += dt )
+    for( time = 0; time <= Tfinal; )
     {
         std::cout << "============================================================" << std::endl;
         std::cout << "time = " << time << "s, dt=" << dt << ", final time=" << Tfinal << std::endl;
-        w = vec(idv(Ex),idv(Ey),idv(Bz));
-        wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
-        wL = vec(leftfacev(idv(Ex)),leftfacev(idv(Ey)),leftfacev(idv(Bz)));
-        // update right hand side
-        lEx = integrate( elements( mesh ), -idv(Ex)*id(u)*2/dt  -dyv(Bz)*id(u));
-        lEx += integrate( internalfaces(mesh),
-                          trans(Anm_1)*(wR-wL)*leftface(id(u)) +
-                          trans(Anp_1)*(wR-wL)*rightface(id(u)) );
-        lEx += integrate( boundaryfaces(mesh), trans(Anm_1)*(w_exact-w)*id(u) );
-        lEy = integrate( elements( mesh ), -idv(Ey)*id(u)*2/dt + dxv(Bz)*id(u));
-        lEy += integrate( internalfaces(mesh),
-                          trans(Anm_2)*(wR-wL)*leftface(id(u)) +
-                          trans(Anp_2)*(wR-wL)*rightface(id(u)) );
-        lEy += integrate( boundaryfaces(mesh), trans(Anm_2)*(w_exact-w)*id(u) );
-        lBz = integrate( elements( mesh ), -idv(Bz)*id(u)*2/dt+(dxv(Ey)-dyv(Ex))*id(u));
-        lBz += integrate( internalfaces(mesh),
-                          trans(Anm_3)*(wR-wL)*leftface(id(u)) +
-                          trans(Anp_3)*(wR-wL)*rightface(id(u)) );
-        lBz += integrate( boundaryfaces(mesh), trans(Anm_3)*(w_exact-w)*id(u) );
 
 
-        //Euler modifie
-        backend->solve( _matrix=D, _solution=Exstar, _rhs=F_Ex  );
-        backend->solve( _matrix=D, _solution=Eystar, _rhs=F_Ey  );
-        backend->solve( _matrix=D, _solution=Bzstar, _rhs=F_Bz  );
-        w = vec(idv(Exstar),idv(Eystar),idv(Bzstar));
-        wR = vec(rightfacev(idv(Exstar)),rightfacev(idv(Eystar)),rightfacev(idv(Bzstar)));
-        wL = vec(leftfacev(idv(Exstar)),leftfacev(idv(Eystar)),leftfacev(idv(Bzstar)));
-        // update right hand side
-        lEx = integrate( elements( mesh ), -idv(Exstar)*id(u)/dt  -dyv(Bzstar)*id(u));
-        lEx += integrate( internalfaces(mesh),
-                          trans(Anm_1)*(wR-wL)*leftface(id(u)) +
-                          trans(Anp_1)*(wR-wL)*rightface(id(u)) );
-        lEx += integrate( boundaryfaces(mesh), trans(Anm_1)*(w_exact-w)*id(u) );
-        lEy = integrate( elements( mesh ), -idv(Eystar)*id(u)/dt + dxv(Bzstar)*id(u));
-        lEy += integrate( internalfaces(mesh),
-                          trans(Anm_2)*(wR-wL)*leftface(id(u)) +
-                          trans(Anp_2)*(wR-wL)*rightface(id(u)) );
-        lEy += integrate( boundaryfaces(mesh), trans(Anm_2)*(w_exact-w)*id(u) );
-        lBz = integrate( elements( mesh ), -idv(Bzstar)*id(u)/dt+(dxv(Eystar)-dyv(Exstar))*id(u));
-        lBz += integrate( internalfaces(mesh),
-                          trans(Anm_3)*(wR-wL)*leftface(id(u)) +
-                          trans(Anp_3)*(wR-wL)*rightface(id(u)) );
-        lBz += integrate( boundaryfaces(mesh), trans(Anm_3)*(w_exact-w)*id(u) );
-
-
-        backend->solve( _matrix=D, _solution=Ex, _rhs=F_Ex  );
-        backend->solve( _matrix=D, _solution=Ey, _rhs=F_Ey  );
-        backend->solve( _matrix=D, _solution=Bz, _rhs=F_Bz  );
+        solve( dt/2, w_exact, Ex, Ey, Bz, Exstar, Eystar, Bzstar );
+        time += dt/2;
+        solve( dt, w_exact, Exstar, Eystar, Bzstar, Ex, Ey, Bz );
+        time += dt/2;
 
         std::cout << "||exact-Ex||_2" << integrate(elements(mesh), (idv(Ex)-Ex_exact)*(idv(Ex)-Ex_exact) ).evaluate().norm() << std::endl;
         std::cout << "||exact-Ey||_2" << integrate(elements(mesh), (idv(Ey)-Ey_exact)*(idv(Ey)-Ey_exact) ).evaluate().norm() << std::endl;
