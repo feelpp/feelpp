@@ -1,2 +1,0 @@
-Merge "skull.stl";
-CreateTopology;
