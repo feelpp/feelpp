@@ -22,17 +22,20 @@
 #
 #
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-add_executable(adgenerate adgenerate.cpp)
-target_link_libraries(adgenerate qt-mt)
 
-add_custom_target(hppfiles WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
-add_dependencies(hppfiles adgenerate)
-add_custom_command(
-  TARGET hppfiles
-  POST_BUILD
-  COMMAND adgenerate ${CMAKE_CURRENT_SOURCE_DIR})
+
+# add_executable(adgenerate adgenerate.cpp)
+# target_link_libraries(adgenerate qt-mt)
+
+
+# add_custom_target(hppfiles WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ )
+# add_dependencies(hppfiles adgenerate)
+# add_custom_command(
+#   TARGET hppfiles
+#   POST_BUILD
+#   COMMAND ${CMAKE_CURRENT_BINARY_DIR}/adgenerate .)
 
 
 add_executable(test_ad test_ad.cpp )
 target_link_libraries(test_ad ${FEEL_LIBRARIES})
-add_dependencies(test_ad hppfiles )
+

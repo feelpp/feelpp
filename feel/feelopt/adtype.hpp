@@ -31,6 +31,7 @@
 
 #include <set>
 #include <boost/type_traits.hpp>
+#include <boost/type_traits/is_fundamental.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelopt/adexpr.hpp>
 #include <feel/feelopt/adtraits.hpp>
