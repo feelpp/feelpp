@@ -83,11 +83,8 @@ public:
             }
 	    }
 	typedef typename Data::value_type numerical_type;
-	//typedef typename St::Array::STinyVector<numerical_type,_E_n>::type numerical_gradient_type;
-	//typedef typename St::Array::STinyVector<numerical_type,_E_nA>::type numerical_hessian_type;
 	typedef ublas::vector<double> numerical_gradient_type;
 	//! matrix type
-	//typedef typename St::Array::SArray<value_type,2>::type matrix_type;
 	typedef ublas::symmetric_matrix<double, ublas::upper> numerical_hessian_type;
 
 
@@ -387,18 +384,18 @@ public:
                 // call data::f() : it is supposed to be static
                 __pt->f( __x, __adt );
                 // FIXME
-                to ( __adt, __fx, St::SInt2Type<Order>() );
+                to ( __adt, __fx, mpl::int_<Order>() );
             }
-	    void to ( ad_type const& __adt, f_type& __fx, St::SInt2Type<0> )
+	    void to ( ad_type const& __adt, f_type& __fx, mpl::int_<0> )
             {
                 __fx.value(0) = __adt.value();
             }
-	    void to ( ad_type const& __adt, f_type& __fx, St::SInt2Type<1> )
+	    void to ( ad_type const& __adt, f_type& __fx, mpl::int_<1> )
             {
                 __fx.value(0) = __adt.value();
                 __fx.gradient(0) = __adt.grad();
             }
-	    void to ( ad_type const& __adt, f_type& __fx, St::SInt2Type<2> )
+	    void to ( ad_type const& __adt, f_type& __fx, mpl::int_<2> )
             {
                 __fx.value(0) = __adt.value();
                 __fx.gradient(0) = __adt.grad();
@@ -413,7 +410,7 @@ public:
                 inequalities_array_type __adt;
                 // call data::f() : it is supporsed to be static
                 __pt->g( __x, __adt );
-                to ( __adt, __gx, St::SInt2Type<Order>() );
+                to ( __adt, __gx, mpl::int_<Order>() );
 
                 // in all cases add distances wrt the bounds
                 for( int __i = 0; __i < _E_n; ++__i )
@@ -422,7 +419,7 @@ public:
                     __gx.value( _E_g + _E_n + __i ) = __x(  __i  ) - __pt->x_u( __i );
                 }
             }
-	    void to ( inequalities_array_type const& __adt, g_type& __gx, St::SInt2Type<0> )
+	    void to ( inequalities_array_type const& __adt, g_type& __gx, mpl::int_<0> )
             {
                 for( int __i = 0; __i < _E_g; ++__i )
                 {
@@ -431,7 +428,7 @@ public:
 
                 }
             }
-	    void to ( inequalities_array_type const& __adt, g_type& __gx, St::SInt2Type<1> )
+	    void to ( inequalities_array_type const& __adt, g_type& __gx, mpl::int_<1> )
             {
                 for( int __i = 0; __i < _E_g; ++__i )
                 {
@@ -444,7 +441,7 @@ public:
                     }
                 }
             }
-	    void to ( inequalities_array_type const& __adt, g_type& __gx, St::SInt2Type<2> )
+	    void to ( inequalities_array_type const& __adt, g_type& __gx, mpl::int_<2> )
             {
                 for( int __i = 0; __i < _E_g; ++__i )
                 {
