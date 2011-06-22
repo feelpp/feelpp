@@ -114,7 +114,7 @@ class Diode
 public:
 
     //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = 0;
+    static const uint16_type Order = 2;
     static const uint16_type OrderGeo = 1;
 
     //! numerical type is double
@@ -187,6 +187,7 @@ public:
     void
     solve( double dt,
            BdyExpr wbdy,
+           element_type const& Exn, element_type const& Eyn,element_type const& Bzn,
            element_type const& Ex, element_type const& Ey,element_type const& Bz,
            element_type& Exstar, element_type& Eystar, element_type& Bzstar );
 private:
@@ -224,6 +225,7 @@ template<typename BdyExpr>
 void
 Diode::solve( double dt,
               BdyExpr wbdy,
+              element_type const& Exn, element_type const& Eyn,element_type const& Bzn,
               element_type const& Ex, element_type const& Ey,element_type const& Bz,
               element_type& Exstar, element_type& Eystar, element_type& Bzstar )
 
@@ -245,17 +247,17 @@ Diode::solve( double dt,
     auto u = Xh->element();
 
     // update right hand side
-    lEx = integrate( elements( mesh ), -idv(Ex)*id(u)  -dt*dyv(Bz)*id(u));
+    lEx = integrate( elements( mesh ), -idv(Exn)*id(u)  -dt*dyv(Bz)*id(u));
     lEx += integrate( internalfaces(mesh),
                       dt*trans(Anm_1)*(wR-wL)*leftface(id(u)) +
                       dt*trans(Anp_1)*(wR-wL)*rightface(id(u)) );
     lEx += integrate( boundaryfaces(mesh), dt*trans(Anm_1)*(wbdy-w)*id(u) );
-    lEy = integrate( elements( mesh ), -idv(Ey)*id(u) + dt*dxv(Bz)*id(u));
+    lEy = integrate( elements( mesh ), -idv(Eyn)*id(u) + dt*dxv(Bz)*id(u));
     lEy += integrate( internalfaces(mesh),
                       dt*trans(Anm_2)*(wR-wL)*leftface(id(u)) +
                       dt*trans(Anp_2)*(wR-wL)*rightface(id(u)) );
     lEy += integrate( boundaryfaces(mesh), dt*trans(Anm_2)*(wbdy-w)*id(u) );
-    lBz = integrate( elements( mesh ), -idv(Bz)*id(u)+dt*(dxv(Ey)-dyv(Ex))*id(u));
+    lBz = integrate( elements( mesh ), -idv(Bzn)*id(u)+dt*(dxv(Ey)-dyv(Ex))*id(u));
     lBz += integrate( internalfaces(mesh),
                       dt*trans(Anm_3)*(wR-wL)*leftface(id(u)) +
                       dt*trans(Anp_3)*(wR-wL)*rightface(id(u)) );
@@ -357,11 +359,6 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     exporter->step(time)->add( "EyExact", Eye );
     exporter->step(time)->add( "BzExact", Bze );
 
-    auto w = vec(idv(Ex),idv(Ey),idv(Bz));
-    auto wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
-    auto wL = vec(leftfacev(idv(Ex)),leftfacev(idv(Ey)),leftfacev(idv(Bz)));
-
-
     exporter->save();
     std::cout << "Saved initial/exact solution\n";
     for( time = 0; time <= Tfinal; )
@@ -370,9 +367,17 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
         std::cout << "time = " << time << "s, dt=" << dt << ", final time=" << Tfinal << std::endl;
 
 
-        solve( dt/2, w_exact, Ex, Ey, Bz, Exstar, Eystar, Bzstar );
+        solve( dt/2, w_exact,
+               Ex, Ey, Bz, // w_n
+               Ex, Ey, Bz, // w_*
+               Exstar, Eystar, Bzstar // w_n+1/2
+            );
         time += dt/2;
-        solve( dt, w_exact, Exstar, Eystar, Bzstar, Ex, Ey, Bz );
+        solve( dt, w_exact,
+               Ex, Ey, Bz, // w_n
+               Exstar, Eystar, Bzstar, // w_*
+               Ex, Ey, Bz //
+            );
         time += dt/2;
 
         std::cout << "||exact-Ex||_2" << integrate(elements(mesh), (idv(Ex)-Ex_exact)*(idv(Ex)-Ex_exact) ).evaluate().norm() << std::endl;
