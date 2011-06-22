@@ -45,10 +45,10 @@
 
 using boost::unit_test::test_suite;
 
-
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
 
 
 using namespace Feel;
@@ -236,8 +236,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
                        std::distance( meshimp->beginElement(), meshimp->endElement() ) );
 }
 
-BOOST_AUTO_TEST_SUITE_END()
-
 /*
 int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
@@ -248,3 +246,49 @@ main( int argc, char* argv[] )
     return ret;
 }
 */
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( meditimport, T, dim_types )
+{
+    using namespace Feel::vf;
+    typedef Mesh<Simplex<3> > mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    mesh_ptrtype mesh,meshimp;
+    mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=mshconvert( "Cylref.mesh" ),
+                           _physical_are_elementary_regions=true,
+                           _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+
+    std::ostringstream estr;
+    estr << "gmshexp-" << T::value;
+    typedef Exporter<mesh_type> export_type;
+    typedef boost::shared_ptr<export_type> export_ptrtype;
+    export_ptrtype exporter( Exporter<mesh_type>::New( "gmsh", estr.str() ) );
+    exporter->step(0)->setMesh( mesh );
+    exporter->save();
+    std::ostringstream fstr;
+    fstr << "gmshexp-" << T::value << "-1_0.msh";
+    meshimp = loadGMSHMesh( _mesh=new mesh_type,
+                            _filename=fstr.str(),
+                            _physical_are_elementary_regions=true,
+                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+
+    auto neumann1 = markedfaces( mesh, "Neumann" );
+    auto neumann2 = markedfaces( meshimp, mesh->markerName("Neumann") );
+    BOOST_CHECK_EQUAL( std::distance( neumann1.get<1>(), neumann1.get<2>() ),
+					  std::distance( neumann2.get<1>(), neumann2.get<2>() ) );
+    auto dirichlet1 = markedfaces( mesh, "Dirichlet" );
+    auto dirichlet2 = markedfaces( meshimp, mesh->markerName("Dirichlet") );
+    BOOST_CHECK_EQUAL( std::distance( dirichlet1.get<1>(), dirichlet1.get<2>() ),
+					  std::distance( dirichlet2.get<1>(), dirichlet2.get<2>() ) );
+    BOOST_CHECK_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
+					  std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
+    BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
+					  std::distance( meshimp->beginElement(), meshimp->endElement() ) );
+    BOOST_CHECK_EQUAL(integrate( elements(mesh), cst(1.) ).evaluate(),
+                      integrate( elements(meshimp), cst(1.) ).evaluate() );
+    BOOST_CHECK_EQUAL(integrate( boundaryfaces(mesh), cst(1.) ).evaluate() ,
+                     integrate( boundaryfaces(meshimp), cst(1.) ).evaluate() );
+}
+
+BOOST_AUTO_TEST_SUITE_END()
