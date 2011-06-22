@@ -114,7 +114,8 @@ class Diode
 public:
 
     //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = 2;
+    static const uint16_type Order = 0;
+    static const uint16_type OrderGeo = 1;
 
     //! numerical type is double
     typedef double value_type;
@@ -135,7 +136,7 @@ public:
     typedef backend_type::vector_ptrtype vector_ptrtype;
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order 2
-    typedef Simplex<2,Order> convex_type;
+    typedef Simplex<2,OrderGeo> convex_type;
     typedef Simplex<2,1> convex1_type;
     //typedef Hypercube<2,Order> convex_type;
     //! mesh type
@@ -160,7 +161,7 @@ public:
     typedef c_space_type::element_type c_element_type;
 
     //! the exporter factory type
-    typedef Exporter<mesh_type,Order> export_type;
+    typedef Exporter<mesh_type,OrderGeo> export_type;
     //! the exporter factory (shared_ptr<> type)
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
@@ -195,6 +196,7 @@ private:
     std::string convex;
 }; // Diode
 const uint16_type Diode::Order;
+const uint16_type Diode::OrderGeo;
 
 void
 Diode::run()
@@ -213,11 +215,11 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
         Environment::changeRepository( boost::format( "examples/maxwell/%1%/%2%/P%3%/h_%4%/" )
                                        % this->about().appName()
                                        % convex
-                                       % Order
+                                       % OrderGeo
                                        % X[0] );
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                        _desc=diodegeo(X[0],Order,convex) );
+                                        _desc=diodegeo(X[0],OrderGeo,convex) );
 
     /**
      * The function space and some associated elements(functions) are then defined
@@ -228,6 +230,9 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto Ex = Xh->element();
     auto Ey = Xh->element();
     auto Bz = Xh->element();
+    auto Exstar = Xh->element();
+    auto Eystar = Xh->element();
+    auto Bzstar = Xh->element();
     auto Exe = Xhc->element();
     auto Eye = Xhc->element();
     auto Bze = Xhc->element();
@@ -238,7 +243,7 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto v = Xh->element();
 
     using namespace Feel::vf;
-    double dt=std::min(0.1*meshSize/Order,timeStep);
+    double dt=std::min(0.1*meshSize/(Order+1),timeStep);
 
     double pi=M_PI;
     double k=2*pi; //=0;
@@ -301,31 +306,62 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     exporter->step(time)->add( "EyExact", Eye );
     exporter->step(time)->add( "BzExact", Bze );
 
+    auto w = vec(idv(Ex),idv(Ey),idv(Bz));
+    auto wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
+    auto wL = vec(leftfacev(idv(Ex)),leftfacev(idv(Ey)),leftfacev(idv(Bz)));
+
+
     exporter->save();
     std::cout << "Saved initial/exact solution\n";
     for( time = dt; time <= Tfinal; time += dt )
     {
         std::cout << "============================================================" << std::endl;
         std::cout << "time = " << time << "s, dt=" << dt << ", final time=" << Tfinal << std::endl;
-        auto w = vec(idv(Ex),idv(Ey),idv(Bz));
-        auto wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
-        auto wL = vec(leftfacev(idv(Ex)),leftfacev(idv(Ey)),leftfacev(idv(Bz)));
+        w = vec(idv(Ex),idv(Ey),idv(Bz));
+        wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
+        wL = vec(leftfacev(idv(Ex)),leftfacev(idv(Ey)),leftfacev(idv(Bz)));
         // update right hand side
-        lEx = integrate( elements( mesh ), idv(Ex)*id(u)/dt  -dyv(Bz)*id(u));
+        lEx = integrate( elements( mesh ), -idv(Ex)*id(u)*2/dt  -dyv(Bz)*id(u));
         lEx += integrate( internalfaces(mesh),
                           trans(Anm_1)*(wR-wL)*leftface(id(u)) +
                           trans(Anp_1)*(wR-wL)*rightface(id(u)) );
         lEx += integrate( boundaryfaces(mesh), trans(Anm_1)*(w_exact-w)*id(u) );
-        lEy = integrate( elements( mesh ), idv(Ey)*id(u)/dt + dxv(Bz)*id(u));
+        lEy = integrate( elements( mesh ), -idv(Ey)*id(u)*2/dt + dxv(Bz)*id(u));
         lEy += integrate( internalfaces(mesh),
                           trans(Anm_2)*(wR-wL)*leftface(id(u)) +
                           trans(Anp_2)*(wR-wL)*rightface(id(u)) );
         lEy += integrate( boundaryfaces(mesh), trans(Anm_2)*(w_exact-w)*id(u) );
-        lBz = integrate( elements( mesh ), idv(Bz)*id(u)/dt+(dxv(Ey)-dyv(Ex))*id(u));
+        lBz = integrate( elements( mesh ), -idv(Bz)*id(u)*2/dt+(dxv(Ey)-dyv(Ex))*id(u));
         lBz += integrate( internalfaces(mesh),
                           trans(Anm_3)*(wR-wL)*leftface(id(u)) +
                           trans(Anp_3)*(wR-wL)*rightface(id(u)) );
         lBz += integrate( boundaryfaces(mesh), trans(Anm_3)*(w_exact-w)*id(u) );
+
+
+        //Euler modifie
+        backend->solve( _matrix=D, _solution=Exstar, _rhs=F_Ex  );
+        backend->solve( _matrix=D, _solution=Eystar, _rhs=F_Ey  );
+        backend->solve( _matrix=D, _solution=Bzstar, _rhs=F_Bz  );
+        w = vec(idv(Exstar),idv(Eystar),idv(Bzstar));
+        wR = vec(rightfacev(idv(Exstar)),rightfacev(idv(Eystar)),rightfacev(idv(Bzstar)));
+        wL = vec(leftfacev(idv(Exstar)),leftfacev(idv(Eystar)),leftfacev(idv(Bzstar)));
+        // update right hand side
+        lEx = integrate( elements( mesh ), -idv(Exstar)*id(u)/dt  -dyv(Bzstar)*id(u));
+        lEx += integrate( internalfaces(mesh),
+                          trans(Anm_1)*(wR-wL)*leftface(id(u)) +
+                          trans(Anp_1)*(wR-wL)*rightface(id(u)) );
+        lEx += integrate( boundaryfaces(mesh), trans(Anm_1)*(w_exact-w)*id(u) );
+        lEy = integrate( elements( mesh ), -idv(Eystar)*id(u)/dt + dxv(Bzstar)*id(u));
+        lEy += integrate( internalfaces(mesh),
+                          trans(Anm_2)*(wR-wL)*leftface(id(u)) +
+                          trans(Anp_2)*(wR-wL)*rightface(id(u)) );
+        lEy += integrate( boundaryfaces(mesh), trans(Anm_2)*(w_exact-w)*id(u) );
+        lBz = integrate( elements( mesh ), -idv(Bzstar)*id(u)/dt+(dxv(Eystar)-dyv(Exstar))*id(u));
+        lBz += integrate( internalfaces(mesh),
+                          trans(Anm_3)*(wR-wL)*leftface(id(u)) +
+                          trans(Anp_3)*(wR-wL)*rightface(id(u)) );
+        lBz += integrate( boundaryfaces(mesh), trans(Anm_3)*(w_exact-w)*id(u) );
+
 
         backend->solve( _matrix=D, _solution=Ex, _rhs=F_Ex  );
         backend->solve( _matrix=D, _solution=Ey, _rhs=F_Ey  );
