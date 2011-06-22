@@ -683,7 +683,7 @@ AD_BIN_REL( NotEqual, != )
 #undef AD_BIN_REL
 #undef AD_BIN_REL_CST
 
-#include <adbinaryoperators.hpp>
+#include <feel/feelopt/adbinaryoperators.hpp>
 }
 
 #endif
