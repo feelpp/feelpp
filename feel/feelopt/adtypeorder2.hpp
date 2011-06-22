@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-14
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -76,12 +76,13 @@ public:
     enum { depvar = Var };
 
     typedef ADVariable<Var> variable_type;
-    typedef typename Feel::STL::SFlatten<typename SListGenerator<Nvar,ADVariable>::list_type>::Result variable_list_type;
+    //typedef typename Feel::STL::SFlatten<typename SListGenerator<Nvar,ADVariable>::list_type>::Result variable_list_type;
 
     typedef T value_type;
     typedef boost::numeric::ublas::vector<value_type> gradient_type;
     //typedef typename STinyVector<value_type, Nvar>::type gradient_type;
-    typedef typename STinyVector<bool, Nvar>::type deps_type;
+    //typedef typename STinyVector<bool, Nvar>::type deps_type;
+    typedef std::vector<bool> deps_type;
 
     //typedef typename STinyVector<typename STinyVector<value_type,Nvar>::type, Nvar>::type hessian_type;
     typedef boost::numeric::ublas::symmetric_matrix<value_type, boost::numeric::ublas::upper> hessian_type;
@@ -151,14 +152,14 @@ public:
     //! tells if the gradient or the hessian depends on the ith variable
     bool deps( int __i ) const
 		{
-		    ENSURE( __i >= 0 && __i < nvar );
+		    //ENSURE( __i >= 0 && __i < nvar );
 		    return __dep[ __i ];
 		}
 
     //! get the ith corrdinate of the gradient
     value_type grad( int __i ) const
 		{
-		    ENSURE( __i >= 0 && __i < nvar );
+		    //ENSURE( __i >= 0 && __i < nvar );
 		    return _M_grad( __i );
 		}
 
@@ -175,7 +176,7 @@ public:
     //! returns the hessian value at position (i,j)
     value_type hessian( int __i, int __j ) const
 		{
-		    ENSURE( __i >= 0 && __i < nvar && __j >= 0 && __j < nvar );
+		    //ENSURE( __i >= 0 && __i < nvar && __j >= 0 && __j < nvar );
 		    return _M_hessian( __i, __j );
 		}
     //@}
@@ -190,13 +191,13 @@ public:
     //! tells if the gradient or the hessian depends on the ith variable
     bool& deps( int __i )
 		{
-		    ENSURE( __i >= 0 && __i < nvar );
+		    //ENSURE( __i >= 0 && __i < nvar );
 		    return __dep[ __i ];
 		}
     //! get the ith corrdinate of the gradient
     value_type& grad( int __i )
 		{
-		    ENSURE( __i >= 0 && __i < nvar );
+		    //ENSURE( __i >= 0 && __i < nvar );
 		    return _M_grad( __i );
 		}
 
@@ -213,7 +214,7 @@ public:
     //! returns the hessian value at position (i,j)
     value_type& hessian( int __i, int __j )
 		{
-		    ENSURE( __i >= 0 && __i < nvar && __j >= 0 && __j < nvar );
+		    //ENSURE( __i >= 0 && __i < nvar && __j >= 0 && __j < nvar );
 		    return _M_hessian( __i, __j );
 		}
     //@}
@@ -348,6 +349,7 @@ template <class ExprT>
 ADType<T,Nvar, 2, Var> &
 ADType<T,Nvar, 2, Var>::operator=(const ADExpr<ExprT>& expr)
 {
+
 #if 0
     _M_val = expr.value();
 
@@ -363,8 +365,9 @@ ADType<T,Nvar, 2, Var>::operator=(const ADExpr<ExprT>& expr)
 
     //FOR_EACH<FOR_EACH<Expr> >( _M_grad, expr );
     return *this;
-#else
+#endif
     _M_val = expr.value();
+#if 0
     _M_deps.clear();
     for (int __i = 0; __i < nvar; ++__i )
     {
@@ -404,6 +407,7 @@ ADType<T,Nvar, 2, Var>::operator=(const ADExpr<ExprT>& expr)
     }
     else
     {
+#endif
 		for( int __i = 0; __i < nvar; ++__i )
 		{
 		    _M_grad( __i )= expr.grad( __i );
@@ -414,12 +418,14 @@ ADType<T,Nvar, 2, Var>::operator=(const ADExpr<ExprT>& expr)
                 //_M_hessian( __j, __i ) = _M_hessian[ __i ][ __j ];
 		    }
 		}
+#if 0
     }
-    return *this;
 #endif
+    return *this;
+
 }
 
-
+} // Feel
 
 
 template <
@@ -427,8 +433,8 @@ template <
     int Nvar,
     int Var
     >
-Feel::SDebugFeelream&
-operator << ( Feel::SDebugFeelream& __os, const Feel:::ADType<T, Nvar, 2, Var>& a )
+Feel::DebugStream&
+operator << ( Feel::DebugStream& __os, const Feel::ADType<T, Nvar, 2, Var>& a )
 {
     std::ostringstream __o;
     __o.setf(std::ios::fixed,std::ios::floatfield);
@@ -449,13 +455,14 @@ operator << ( Feel::SDebugFeelream& __os, const Feel:::ADType<T, Nvar, 2, Var>& 
     return __os;
 }
 
-}
+
 
 
 //------------------------------- AD ostream operator ------------------------------------------
+
 template <class T, int Nvar, int Var>
 std::ostream&
-operator << ( std::ostream& os, const Feel:::ADType<T, Nvar, 2, Var>& a)
+operator << ( std::ostream& os, const Feel::ADType<T, Nvar, 2, Var>& a)
 {
     os.setf(std::ios::fixed,std::ios::floatfield);
     //os.width(12);

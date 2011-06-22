@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2008-02-14
+       Date: 2011-02-14
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -52,7 +52,7 @@ public:
             "   " << filename << "\t" << description << std::endl <<
             "   This file is part of gstlibs.\n"
             "\n"
-            "   Copyright (C) 2003 Christophe Prud'homme (prudhomm@mit.edu)\n"
+            "   Copyright (C) 2011 Christophe Prud'homme\n"
             "\n"
             "   gstlibs is free software; you can redistribute it and/or modify\n"
             "   it under the terms of the GNU Lesser General Public License as published by\n"
@@ -99,5 +99,5 @@ public:
 
 };
 
-} Feel
+}
 

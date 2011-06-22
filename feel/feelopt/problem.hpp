@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-14
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -55,7 +55,7 @@ struct diff_order
 /*!
   \class core_data
 
-  \author Christophe Prud'homme <prudhomm@mit.edu>
+  \author Christophe Prud'homme
 */
 template<typename Data,
 	     int Id = FUNCTIONAL >
@@ -152,7 +152,7 @@ protected:
    \class functional
    \brief defines the functional type
 
-   \author Christophe Prud'homme <prudhomm@mit.edu>
+   \author Christophe Prud'homme
 */
 template<typename Data>
 class functional
@@ -175,7 +175,7 @@ public:
    \class inequalities type
    \brief define the inequalities type
 
-   \author Christophe Prud'homme <prudhomm@mit.edu>
+   \author Christophe Prud'homme
 */
 template<typename Data>
 class inequalities
@@ -199,7 +199,7 @@ public:
    \class equalities type
    \brief define the equalities type
 
-   \author Christophe Prud'homme <prudhomm@mit.edu>
+   \author Christophe Prud'homme
 */
 template<typename Data>
 class equalities
@@ -219,7 +219,7 @@ class equalities
   \brief dummy data type
 
 
-  \author Christophe Prud'homme <prudhomm@mit.edu>
+  \author Christophe Prud'homme
 */
 template<int N>
 struct dummy_data
@@ -349,7 +349,7 @@ public:
       \class value
       \brief compute the value of the functionals, equalities and inequalities associated with the problem
 
-      \author Christophe Prud'homme <prudhomm@mit.edu>
+      \author Christophe Prud'homme
 
 	  \c Order is the maximum automatic differentiation order to perform while evaluating the
 	  functional or the constraints(inequalities and equalities).

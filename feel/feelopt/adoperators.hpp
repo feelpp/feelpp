@@ -519,67 +519,67 @@ template <class L>
 class ADBinaryPow< L , ADCst<int> >
 {
 public:
-   enum { nvar = L::nvar };
+    enum { nvar = L::nvar };
 
-   typedef typename L::value_type value_type;
-   typedef ADCst<int> R;
+    typedef typename L::value_type value_type;
+    typedef ADCst<int> R;
 
 protected:
-   ADBinaryPow() {}
+    ADBinaryPow() {}
 
-   const L& __left; const R __right;
+    const L& __left; const R __right;
 
 public:
-   ADBinaryPow(const L& left, const R& rigth) : __left(left), __right(rigth) {;}
-   ~ADBinaryPow() {;}
+    ADBinaryPow(const L& left, const R& rigth) : __left(left), __right(rigth) {;}
+    ~ADBinaryPow() {;}
 
-   template<int isFundamental, typename L_, typename R_>
-   struct Value
-   {
-      typedef typename L_::value_type value_type;
-      static value_type value( L_ const& __left, R_ const& __right )
-         {
-            return pow(__left.value(),__right.value());
-         }
-      static value_type grad( L_ const& __left, R_ const& __right, int __i )
-         {
-            return value_type(__right.value())*pow( __left.value(), __right.value()-1);
-         }
-      static value_type hessian( L_ const& __left, R_ const& __right, int i, int j )
-         {
-            return pow(__left.value(),__right.value()-2.0)*__right.value()*__right.value()*__left.grad(i)*__left.grad(j) +
-               pow(__left.value(),__right.value()-1.0)*__right.value()*__left.hessian(i,j) -
-               pow(__left.value(),__right.value()-2.0)*__right.value()*__left.grad(i)*__left.grad(j);
-         }
-   };
-   template<typename L_, typename R_>
-   struct Value<1, L_, R_>
-   {
-      typedef typename L_::value_type value_type;
-      static value_type value( L_ const& __left, R_ const& __right )
-         {
-            return std::pow(__left.value(),__right.value());
-         }
-      static value_type grad( L_ const& __left, R_ const& __right, int __i )
-         {
-            return __right.value()*std::pow( __left.value(), __right.value()-1);
-         }
-      static value_type hessian( L_ const& __left, R_ const& __right, int i, int j )
-         {
-            return std::pow(__left.value(),__right.value()-2.0)*__right.value()*__right.value()*__left.grad(i)*__left.grad(j) +
-               std::pow(__left.value(),__right.value()-1.0)*__right.value()*__left.hessian(i,j) -
-               std::pow(__left.value(),__right.value()-2.0)*__right.value()*__left.grad(i)*__left.grad(j);
-         }
-   };
-   value_type value() const {return Value<St::STypeTraits<value_type>::isFundamental,L,R>::value(__left, __right);}
-   value_type grad(int i) const
-      {
-         return Value<St::STypeTraits<value_type>::isFundamental,L,R>::grad(__left, __right, i);
-      }
-   value_type hessian(int i, int j) const
-      { return Value<St::STypeTraits<value_type>::isFundamental,L,R>::hessian(__left, __right, i, j);;
-      }
-   bool deps( int i ) const { return __left.deps( i ); }
+    template<int isFundamental, typename L_, typename R_>
+    struct Value
+    {
+        typedef typename L_::value_type value_type;
+        static value_type value( L_ const& __left, R_ const& __right )
+            {
+                return pow(__left.value(),__right.value());
+            }
+        static value_type grad( L_ const& __left, R_ const& __right, int __i )
+            {
+                return value_type(__right.value())*pow( __left.value(), __right.value()-1);
+            }
+        static value_type hessian( L_ const& __left, R_ const& __right, int i, int j )
+            {
+                return pow(__left.value(),__right.value()-2.0)*__right.value()*__right.value()*__left.grad(i)*__left.grad(j) +
+                    pow(__left.value(),__right.value()-1.0)*__right.value()*__left.hessian(i,j) -
+                    pow(__left.value(),__right.value()-2.0)*__right.value()*__left.grad(i)*__left.grad(j);
+            }
+    };
+    template<typename L_, typename R_>
+    struct Value<1, L_, R_>
+    {
+        typedef typename L_::value_type value_type;
+        static value_type value( L_ const& __left, R_ const& __right )
+            {
+                return std::pow(__left.value(),__right.value());
+            }
+        static value_type grad( L_ const& __left, R_ const& __right, int __i )
+            {
+                return __right.value()*std::pow( __left.value(), __right.value()-1);
+            }
+        static value_type hessian( L_ const& __left, R_ const& __right, int i, int j )
+            {
+                return std::pow(__left.value(),__right.value()-2.0)*__right.value()*__right.value()*__left.grad(i)*__left.grad(j) +
+                    std::pow(__left.value(),__right.value()-1.0)*__right.value()*__left.hessian(i,j) -
+                    std::pow(__left.value(),__right.value()-2.0)*__right.value()*__left.grad(i)*__left.grad(j);
+            }
+    };
+    value_type value() const {return Value<true/**/,L,R>::value(__left, __right);}
+    value_type grad(int i) const
+        {
+            return Value<true/**/,L,R>::grad(__left, __right, i);
+        }
+    value_type hessian(int i, int j) const
+        { return Value<true/**/,L,R>::hessian(__left, __right, i, j);;
+        }
+    bool deps( int i ) const { return __left.deps( i ); }
 };
 
 
@@ -683,82 +683,7 @@ AD_BIN_REL( NotEqual, != )
 #undef AD_BIN_REL
 #undef AD_BIN_REL_CST
 
-//------------------------------- AD operators ------------------------------------------
-
-#if 0
-template<class E1, class E2>
-inline
-SADExpr< @STYPE@< SADExpr<E1>, SADExpr<E2> > >
-@OP@  (const SADExpr<E1> &v, const SADExpr<E2> &w)
-{
-  typedef @STYPE@<SADExpr<E1>, SADExpr<E2> > expr_t;
-  return SADExpr<expr_t> (expr_t (v , w ));
-}
-template<class E, int Nvar, int order, int Var>
-inline
-SADExpr<@STYPE@<SADExpr<E>,SADType<typename E::value_type, Nvar, order, Var> > >
-@OP@ (const SADExpr<E> &e,const SADType<typename E::value_type, Nvar, order, Var>& v)
-{
-  typedef typename E::value_type A;
-  typedef @STYPE@<SADExpr<E>,SADType<typename E::value_type, Nvar, order, Var> > expr_t;
-  return SADExpr<expr_t>(expr_t (e, v ));
-}
-
-template<typename A, int Nvar, int order, int Var1, int Var2>
-inline
-SADExpr<@STYPE@<SADType<A, Nvar, order, Var1>,SADType<A, Nvar, order, Var2> > >
-@OP@ (const SADType<A, Nvar, order, Var1> &e1,const SADType<A, Nvar, order, Var2>& e2)
-{
-  typedef @STYPE@<SADType<A, Nvar, order, Var1>,SADType<A, Nvar, order, Var2> > expr_t;
-  return SADExpr<expr_t>(expr_t (e1 , e2 ));
-}
-
-template<class E, int Nvar, int order, int Var>
-inline
-SADExpr<@STYPE@<SADType<typename E::value_type, Nvar, order, Var>,SADExpr<E> > >
-@OP@ (const SADType<typename E::value_type, Nvar, order, Var> &v, const SADExpr<E> &e)
-{
-  typedef typename E::value_type A;
-  typedef @STYPE@<SADType<typename E::value_type, Nvar, order, Var>,SADExpr<E> > expr_t;
-  return SADExpr<expr_t> (expr_t (v , e ));
-}
-
-template<typename A, typename C, int Nvar, int order, int Var>
-inline
-SADExpr<@STYPE@<SADCst<C>,SADType<A, Nvar, order, Var> > >
-@OP@ (C a, const SADType<A, Nvar, order, Var> &e)
-{
-  typedef @STYPE@<SADCst<C>,SADType<A, Nvar, order, Var> > expr_t;
-  return SADExpr<expr_t> (expr_t (SADCst<C>(a), e  ));
-}
-
-template<typename A, typename C, int Nvar, int order, int Var>
-inline
-SADExpr<@STYPE@<SADType<A, Nvar, order, Var>,SADCst<C> > >
-@OP@ (const SADType<A, Nvar, order, Var> &e, C a)
-{
-    typedef @STYPE@<SADType<A, Nvar, order, Var>,SADCst<C> > expr_t;
-    return SADExpr<expr_t>(expr_t (e ,SADCst<C>(a)));
-}
-
-template<class E, class C>
-inline
-SADExpr<@STYPE@<SADCst<C>,SADExpr<E> > >
-@OP@ ( C t, const SADExpr<E> &e)
-{
-  typedef @STYPE@<SADCst<C>,SADExpr<E> > expr_t;
-  return SADExpr<expr_t> (expr_t (SADCst<C> (t),e ));
-}
-
-template<class E, class C>
-inline
-SADExpr<@STYPE@<SADExpr<E>,SADCst<C> > >
-@OP@ (const SADExpr<E> &e, C t)
-{
-  typedef @STYPE@<SADExpr<E>,SADCst<C> > expr_t;
-  return SADExpr<expr_t>(expr_t (e, SADCst<C> (t)));
-}
-#endif // 0
+#include <adbinaryoperators.hpp>
 }
 
 #endif
