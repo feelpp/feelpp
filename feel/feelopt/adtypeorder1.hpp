@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-14
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -66,7 +66,8 @@ public:
 
     typedef boost::numeric::ublas::vector<value_type> gradient_type;
     //typedef typename STinyVector<value_type, Nvar>::type gradient_type;
-    typedef typename STinyVector<bool, Nvar>::type deps_type;
+    //typedef typename STinyVector<bool, Nvar>::type deps_type;
+    typedef std::vector<int> deps_type;
     typedef ADType<T,Nvar, 1, Var> This;
     typedef std::set<int> dependency_type;
 
@@ -79,7 +80,7 @@ public:
 		:
 		_M_val(0.),
 		_M_grad(nvar),
-		__dep( false ),
+		__dep( nvar, false ),
 		__deps()
 		{}
 
@@ -87,7 +88,7 @@ public:
 		:
 		_M_val( val ),
 		_M_grad(nvar),
-		__dep( false ),
+		__dep( nvar, false ),
 		__deps()
 		{
             _M_grad = boost::numeric::ublas::zero_vector<value_type>( nvar );
@@ -113,7 +114,7 @@ public:
         :
         _M_val( 0 ),
 		_M_grad( nvar ),
-		__dep( false ),
+		__dep( nvar, false ),
 		__deps()
         {
             *this = expr;
@@ -300,9 +301,11 @@ ADType<T,Nvar, 1, Var> &
 ADType<T,Nvar, 1, Var>::operator=(const ADExpr<ExprT>& expr)
 {
     _M_val = expr.value();
+#if 0
     __deps.clear();
     for (int __i = 0; __i < nvar; ++__i )
     {
+
 		__dep( __i ) = expr.deps( __i );
 
 		if ( __dep( __i ) )
@@ -310,6 +313,7 @@ ADType<T,Nvar, 1, Var>::operator=(const ADExpr<ExprT>& expr)
 		    //std::cerr << "depends on " << __i << "\n";
 		    __deps.insert( __i );
 		}
+
     }
 
     if ( ! __deps.empty() && __deps.size() < nvar )
@@ -329,12 +333,14 @@ ADType<T,Nvar, 1, Var>::operator=(const ADExpr<ExprT>& expr)
     }
     else
     {
+#endif
 		for( int __i = 0; __i < nvar; ++__i )
 		{
 		    _M_grad( __i )= expr.grad( __i );
 		}
+#if 0
     }
-
+#endif
     return *this;
 }
 

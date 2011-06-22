@@ -30,7 +30,8 @@
 #define __ADType_H 1
 
 #include <set>
-
+#include <boost/type_traits.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelopt/adexpr.hpp>
 #include <feel/feelopt/adtraits.hpp>
 
@@ -45,7 +46,7 @@ struct ADVariable
 
 
 };
-
+#if 0
 template<int N, template<int> class T>
 struct SListGenerator
 {
@@ -57,7 +58,7 @@ struct SListGenerator<0, T>
 {
     typedef T<0> list_type;
 };
-
+#endif
 /**
   \class ADType
   \brief Automatically Diffentiated Numerical Type
@@ -97,7 +98,6 @@ private:
 
 };
 
-}
 } // Feel
 #include <feel/feelopt/adtypeorder0.hpp>
 #include <feel/feelopt/adtypeorder1.hpp>
