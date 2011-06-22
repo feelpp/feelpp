@@ -203,6 +203,9 @@ private:
 
     sparse_matrix_ptrtype D;
     vector_ptrtype F_Ex, F_Ey, F_Bz;
+
+    mesh_ptrtype mesh;
+    space_ptrtype Xh;
 }; // Diode
 const uint16_type Diode::Order;
 const uint16_type Diode::OrderGeo;
@@ -225,9 +228,22 @@ Diode::solve( double dt,
               element_type& Exstar, element_type& Eystar, element_type& Bzstar )
 
 {
-    w = vec(idv(Ex),idv(Ey),idv(Bz));
-    wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
-    wL = vec(leftfacev(idv(Ex)),leftfacev(idv(Ey)),leftfacev(idv(Bz)));
+    auto w = vec(idv(Ex),idv(Ey),idv(Bz));
+    auto wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
+    auto wL = vec(leftfacev(idv(Ex)),leftfacev(idv(Ey)),leftfacev(idv(Bz)));
+    auto lEx=form1( _test=Xh, _vector=F_Ex, _init=true );
+    auto lEy=form1( _test=Xh, _vector=F_Ey, _init=true );
+    auto lBz=form1( _test=Xh, _vector=F_Bz, _init=true );
+
+    auto Anp_1 = vec( +Ny() * Ny() / 0.2e1, -Nx() * Ny() / 0.2e1, -Ny() / 0.2e1 );
+    auto Anp_2 = vec(-Nx() * Ny() / 0.2e1, Nx() * Nx() / 0.2e1, Nx() / 0.2e1 );
+    auto Anp_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst(0.1e1 / 0.2e1) );
+    auto Anm_1 = vec(  -Ny() * Ny() / 0.2e1, Nx() * Ny() / 0.2e1, -Ny() / 0.2e1 );
+    auto Anm_2 = vec( Nx() * Ny() / 0.2e1, -Nx() * Nx() / 0.2e1, Nx() / 0.2e1);
+    auto Anm_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst(-0.1e1 / 0.2e1) );
+
+    auto u = Xh->element();
+
     // update right hand side
     lEx = integrate( elements( mesh ), -idv(Ex)*id(u)  -dt*dyv(Bz)*id(u));
     lEx += integrate( internalfaces(mesh),
@@ -247,9 +263,9 @@ Diode::solve( double dt,
 
 
     //Euler modifie
-    backend->solve( _matrix=D, _solution=Exstar, _rhs=F_Ex  );
-    backend->solve( _matrix=D, _solution=Eystar, _rhs=F_Ey  );
-    backend->solve( _matrix=D, _solution=Bzstar, _rhs=F_Bz  );
+    M_backend->solve( _matrix=D, _solution=Exstar, _rhs=F_Ex  );
+    M_backend->solve( _matrix=D, _solution=Eystar, _rhs=F_Ey  );
+    M_backend->solve( _matrix=D, _solution=Bzstar, _rhs=F_Bz  );
 
 }
 void
@@ -261,15 +277,15 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                        % convex
                                        % OrderGeo
                                        % X[0] );
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                        _desc=diodegeo(X[0],OrderGeo,convex) );
+    mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                           _desc=diodegeo(X[0],OrderGeo,convex) );
 
     /**
      * The function space and some associated elements(functions) are then defined
      */
     /** \code */
-    auto Xh = space_type::New( mesh );
+    Xh = space_type::New( mesh );
     auto Xhc = c_space_type::New( mesh );
     auto Ex = Xh->element();
     auto Ey = Xh->element();
@@ -301,18 +317,9 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto Ey_exact = vu*c;
     auto Bz_exact = c;
     auto w_exact = vec(Ex_exact, Ey_exact, Bz_exact );
-    auto Anp_1 = vec( +Ny() * Ny() / 0.2e1, -Nx() * Ny() / 0.2e1, -Ny() / 0.2e1 );
-    auto Anp_2 = vec(-Nx() * Ny() / 0.2e1, Nx() * Nx() / 0.2e1, Nx() / 0.2e1 );
-    auto Anp_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst(0.1e1 / 0.2e1) );
-    auto Anm_1 = vec(  -Ny() * Ny() / 0.2e1, Nx() * Ny() / 0.2e1, -Ny() / 0.2e1 );
-    auto Anm_2 = vec( Nx() * Ny() / 0.2e1, -Nx() * Nx() / 0.2e1, Nx() / 0.2e1);
-    auto Anm_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst(-0.1e1 / 0.2e1) );
     F_Ex = M_backend->newVector( Xh );
-    auto lEx=form1( _test=Xh, _vector=F_Ex, _init=true );
     F_Ey = M_backend->newVector( Xh );
-    auto lEy=form1( _test=Xh, _vector=F_Ey, _init=true );
     F_Bz = M_backend->newVector( Xh );
-    auto lBz=form1( _test=Xh, _vector=F_Bz, _init=true );
 
     // left hand side
     D=M_backend->newMatrix( Xh, Xh );
