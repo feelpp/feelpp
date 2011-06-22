@@ -88,9 +88,9 @@ public:
 	    }
     };
 
-    inline value_type value() const  { return Value<boost::type_traits::is_fundamental<value_type>::value,Expr>::value(expr_);}
-    inline value_type grad(int __i) const {return  Value<boost::type_traits::is_fundamental<value_type>::value,Expr>::grad(expr_, __i); }
-    inline value_type hessian(int __i, int __j) const {return  Value<boost::type_traits::is_fundamental<value_type>::value,Expr>::hessian(expr_, __i, __j); }
+    inline value_type value() const  { return Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr>::value(expr_);}
+    inline value_type grad(int __i) const {return  Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr>::grad(expr_, __i); }
+    inline value_type hessian(int __i, int __j) const {return  Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr>::hessian(expr_, __i, __j); }
     inline bool deps(int __i) const {return expr_.deps( __i ) ; }
 };
 
