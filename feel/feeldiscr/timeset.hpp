@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -422,10 +422,15 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func)
         {
-            add( __n, func, mpl::bool_<FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally>() );
+            add( __n, __n, func, mpl::bool_<FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally>() );
         }
         template<typename FunctionType>
-        void add( std::string const& __n, FunctionType const& func, mpl::bool_<true> )
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func )
+        {
+            add( __n, __fname, func, mpl::bool_<FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally>() );
+        }
+        template<typename FunctionType>
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<true> )
         {
             if ( FunctionType::is_scalar )
                 {
@@ -445,11 +450,11 @@ public:
                             _M_scalar_p1 = scalar_p1_space_ptrtype( new scalar_p1_space_type ( _M_mesh.get() ) );
                             Debug( 8000 ) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                         }
-                    _M_nodal_scalar[__n].setName( __n );
-                    _M_nodal_scalar[__n].setFunctionSpace( _M_scalar_p1 );
+                    _M_nodal_scalar[__fname].setName( __n );
+                    _M_nodal_scalar[__fname].setFunctionSpace( _M_scalar_p1 );
 
 
-                    interpolate( _M_scalar_p1, func, _M_nodal_scalar[__n] );
+                    interpolate( _M_scalar_p1, func, _M_nodal_scalar[__fname] );
                     Debug( 8000 ) << "[timset::add] scalar time : " << t.elapsed() << "\n";
                 }
             else if ( FunctionType::is_vectorial )
@@ -472,11 +477,11 @@ public:
                             Debug( 8000 ) << "[TimeSet::setMesh] setMesh space vector p1 created\n";
                         }
                     t.restart();
-                    _M_nodal_vector[__n].setName( __n );
-                    _M_nodal_vector[__n].setFunctionSpace( _M_vector_p1 );
+                    _M_nodal_vector[__fname].setName( __n );
+                    _M_nodal_vector[__fname].setFunctionSpace( _M_vector_p1 );
                     Debug( 8000 ) << "[timeset::add] setmesh :  " << t.elapsed() << "\n";
                     t.restart();
-                    interpolate( _M_vector_p1, func, _M_nodal_vector[__n] );
+                    interpolate( _M_vector_p1, func, _M_nodal_vector[__fname] );
                     Debug( 8000 ) << "[timset::add] scalar time : " << t.elapsed() << "\n";
                 }
 
@@ -487,7 +492,7 @@ public:
         }
 
         template<typename FunctionType>
-        void add( std::string const& __n, FunctionType const& func, mpl::bool_<false> )
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false> )
         {
             if ( FunctionType::is_scalar )
                 {
@@ -507,12 +512,12 @@ public:
                             Debug( 8000 ) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
                         }
 
-                    _M_element_scalar[__n].setName( __n );
-                    _M_element_scalar[__n].setFunctionSpace( _M_scalar_p0 );
+                    _M_element_scalar[__fname].setName( __n );
+                    _M_element_scalar[__fname].setFunctionSpace( _M_scalar_p0 );
 
-                    interpolate( _M_scalar_p0, func, _M_element_scalar[__n] );
-                    //std::copy( func.begin(), func.end(), _M_element_scalar[__n].begin() );
-                    Debug( 8000 ) << "[TimeSet::add] scalar p0 function " << __n << " added to exporter\n";
+                    interpolate( _M_scalar_p0, func, _M_element_scalar[__fname] );
+                    //std::copy( func.begin(), func.end(), _M_element_scalar[__fname].begin() );
+                    Debug( 8000 ) << "[TimeSet::add] scalar p0 function " << __n << " added to exporter with filename " << __fname <<  "\n";
                 }
             else if ( FunctionType::is_vectorial )
                 {
@@ -533,17 +538,17 @@ public:
                             //_M_tensor2_p0 = tensor2_p0_space_ptrtype( new tensor2_p0_space_type ( _M_mesh.get() ) );
                         }
 
-                    _M_element_vector[__n].setName( __n );
-                    _M_element_vector[__n].setFunctionSpace( _M_vector_p0 );
-                    interpolate( _M_vector_p0, func, _M_element_vector[__n] );
-                    //std::copy( func.begin(), func.end(), _M_element_vector[__n].begin() );
+                    _M_element_vector[__fname].setName( __n );
+                    _M_element_vector[__fname].setFunctionSpace( _M_vector_p0 );
+                    interpolate( _M_vector_p0, func, _M_element_vector[__fname] );
+                    //std::copy( func.begin(), func.end(), _M_element_vector[__fname].begin() );
                 }
             else if ( FunctionType::is_tensor2 )
                 {
-                    _M_element_tensor2[__n].setName( __n );
-                    _M_element_tensor2[__n].setFunctionSpace( _M_tensor2_p0 );
-                    interpolate( _M_tensor2_p0, func, _M_element_tensor2[__n] );
-                    //std::copy( func.begin(), func.end(), _M_element_tensor2[__n].begin() );
+                    _M_element_tensor2[__fname].setName( __n );
+                    _M_element_tensor2[__fname].setFunctionSpace( _M_tensor2_p0 );
+                    interpolate( _M_tensor2_p0, func, _M_element_tensor2[__fname] );
+                    //std::copy( func.begin(), func.end(), _M_element_tensor2[__fname].begin() );
                 }
             _M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
             _M_state.clear( STEP_ON_DISK );
