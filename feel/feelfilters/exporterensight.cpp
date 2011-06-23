@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-21
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -188,7 +188,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
                 {
                     __out << "scalar per node: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __it->first << " " << __it->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
+                          << __it->second.name() << " " << __it->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
                     ++__it;
                 }
             typename timeset_type::step_type::nodal_vector_const_iterator __itv = ( *__ts->rbeginStep() )->beginNodalVector();
@@ -197,7 +197,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
                 {
                     __out << "vector per node: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __itv->first << " " << __itv->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
+                          << __itv->second.name() << " " << __itv->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
                     ++__itv;
                 }
 
@@ -207,7 +207,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
                 {
                     __out << "tensor per node: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __itt->first << " " << __itt->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
+                          << __itt->second.name() << " " << __itt->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
                     ++__itt;
                 }
 
@@ -217,7 +217,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
                 {
                     __out << "scalar per element: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __it_el->first << " " << __it_el->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
+                          << __it_el->second.name() << " " << __it_el->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
                     ++__it_el;
                 }
             typename timeset_type::step_type::element_vector_const_iterator __itv_el = ( *__ts->rbeginStep() )->beginElementVector();
@@ -226,7 +226,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
                 {
                     __out << "vector per element: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __itv_el->first << " " << __itv_el->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
+                          << __itv_el->second.name() << " " << __itv_el->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
                     ++__itv_el;
                 }
             typename timeset_type::step_type::element_tensor2_const_iterator __itt_el = ( *__ts->rbeginStep() )->beginElementTensor2();
@@ -235,7 +235,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
                 {
                     __out << "tensor per element: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __itt_el->first << " " << __itt_el->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
+                          << __itt_el->second.name() << " " << __itt_el->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
                     ++__itt_el;
                 }
             ++__ts_it;
@@ -373,7 +373,7 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
             std::fstream __out( __varfname.str().c_str(), std::ios::out | std::ios::binary );
 
             char buffer[ 80 ];
-            strcpy( buffer, __var->first.c_str() );
+            strcpy( buffer, __var->second.name().c_str() );
             __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
             uint16_type nComponents = __var->second.nComponents;
@@ -438,7 +438,7 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
             std::fstream __out( __evarfname.str().c_str(), std::ios::out | std::ios::binary );
 
             char buffer[ 80 ];
-            strcpy( buffer, __evar->first.c_str() );
+            strcpy( buffer, __evar->second.name().c_str() );
             __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
             typename mesh_type::parts_const_iterator_type p_it = __step->mesh()->beginParts();
