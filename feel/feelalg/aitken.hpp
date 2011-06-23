@@ -218,6 +218,12 @@ public:
             applyimpl(newElt,residual,currentElt,forceRelaxation);
         }
 
+    //! set Aitken method type
+    void setType( AitkenType t ) { M_aitkenType = t; }
+
+    //! \return Aitken method type
+    AitkenType type( ) const {  return M_aitkenType; }
+
     /**
      * shift current step to previous step. After the call, we are ready for the next step.
      */
