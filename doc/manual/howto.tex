@@ -70,9 +70,11 @@ Take a look at the example which is in \lstinline!feel/examples/snippets/dofpoin
 %\lstinputlisting[linerange=marker1-endmarker1]{../../..examples/snippets/dofpoints.cpp}
 
 \subsection{How to work with specific meshes ?}
+\label{howto:spec-meshes}
 \marginpar{\lstinline!loadmesh.cpp!}
 \feel supports several meshes file formats. It supports essentially Gmsh mesh file format but other are acceptable,  with some modifications :
 \begin{itemize}
+
 \item medit (\lstinline!.mesh!) \\
 There is a small difference between medit meshes and gmsh ones. The medit reader of Gmsh is able to read medit meshes, the issue comes from markers for areas of the edges were we want to apply different boundary conditions. Gmsh is currently using the Physical Entities (physical line, area, volume). Unfortunetly, the medit reader of Gmsh considers the physical flag as null (to go deeper, you can check this part on \href{http://geuz.org/gmsh/doc/texinfo/gmsh.html#Elementary-vs-physical-entities}{Gmsh web site}). This option is took into account in \feel, the only modification is to put the optional parameter \lstinline!physical_are_elementary_regions! as \lstinline!true! in both functions \lstinline!createGMSHMesh! and/or \lstinline!loadGMSHMesh!. We have prepared a simple example which imports a \lstinline!medit! mesh with a surface and volume calculation on it. You can find it in \lstinline!feel/doc/manual/loadmesh.cpp!.
 
@@ -86,6 +88,22 @@ To use \feel with \lstinline!stl! files, you have to create a \lstinline!geo! sc
 		gmsh stl_file_name.geo -3
 \end{unixcom} 
 with \lstinline!stl_file_name.stl! in the same directory. That command will produce you the correct \lstinline!.msh! mesh that you could now use as usual without any modification in your \feel application.
+
+ Take a look above how the remesh has produced a complete mesh with the file \lstinline!pelvis.stl! and \lstinline!pelvis.geo!:
+
+\begin{figure}[!h]
+\begin{minipage}[b]{.50\linewidth}
+\centering
+\includegraphics[width=4.5cm]{pngs/mymesh/pelvis_stl.png}
+\caption{Pelvis before remesh (stl)}
+\end{minipage}
+\begin{minipage}[b]{.50\linewidth}
+\centering
+\includegraphics[width=4.5cm]{pngs/mymesh/pelvis_msh.png}
+\caption{Pelvis after remesh (msh)}
+\end{minipage}
+\end{figure}
+
 \end{itemize}
 
 
