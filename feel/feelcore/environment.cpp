@@ -98,6 +98,13 @@ Environment::Environment( int& argc, char**& argv )
     // \warning Madlib initializes MPI too (may generate warnings)
     MAdLibInitialize( &argc, &argv );
 #endif // HAVE_MADLIB_H
+
+    if ( argc >= 1 )
+    {
+        std::ostringstream ostr;
+        ostr << argv[0] << ".assertions";
+        Assert::setLog( ostr.str().c_str() );
+    }
 }
 
 Environment::~Environment()
