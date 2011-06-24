@@ -342,21 +342,6 @@ we generate some of the following graphics (which are located in \verb|~/feel/do
 \end{minipage}
 \end{figure}
 
-%\begin{centering}
-%\begin{tabular}{cc}
-%\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_1.png} %\caption{Line in 1D}
-%&
-%\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_2.png} %\caption{Cube in 2D}
-% \\
-%\verb|Line in 1D| & \verb|Cube in 2D|
-%\\
-%\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_3.png} %\caption{Unit cube in 3D}
-%&
-%\includegraphics[width=4.5cm]{pngs/mymesh/simplex_3.png} %\caption{Tetrahedron}
-%\\
-%\verb|Unit cube in 3D| & \verb|Tetrahedron|
-%\end{tabular}
-%\end{centering}
 To admire the meshes you've generated, you should go to \lstinline!~/feel/doc/tutorial/mymesh/hypercube! (or \lstinline!simplex!) and find out the \verb|.msh| files. Last step is to launch gmsh with
 \begin{unixcom}
 		gmsh yourfile.msh
@@ -390,6 +375,11 @@ To take into account the exporting format, you have to type thoses syntaxes
 walk though the mesh in various ways: iterate over element, faces ,
 points, marked\footnote{associated to an integer flag denoting a
   region, material, processor} elements, marked faces, ...
+
+\subsection{Load meshes}
+\marginpar{\lstinline!loadmesh.cpp!}
+
+\feel supports gmsh meshes but not only, you can also wortk with medit (\lstinline!.mesh!) or STL (\lstinline!.stl!) files format. The full explaination is avaible in the HOW TO section you can find at \ref{howto:spec-meshes}. This is implemented in \lstinline!loadmesh.cpp! which is a simple application which loads a mesh and calculate its surface and volume.
 
 \section{Computing integrals}
 \label{sec:computing-integrals}
@@ -602,7 +592,7 @@ To define this function space, we have to define :
 \end{itemize}
 
 \underline{Remark} : We can use the librairie Boost.smartptr of Boost, which has a reference counter (in the shared\_ptr class). It permits
-to manage the memory (If we have built an object and that there are no more any pointers on it, it is automatically destructed.)
+to manage the memory (if we have built an object and that there are no more any pointers on it, it is automatically destructed).
 
 \subsubsection{Base of the function space}
 \label{sec:base-funct}
@@ -610,11 +600,11 @@ To define the base of functions we want to use, we have to indicate :
 \begin{itemize}
  \item The type of the polynomials ($\mathbb{P}$) we want to use
  \begin{itemize}
-   \item Lagrange (more used than the others because more customizable)
-   \item Legendre (only for hypercube)
-   \item Dubiner (only for simplex)
-   \item Crouzeix-Raviart
-   \item Raviart-Thomas
+   \item \lstinline!Lagrange! (more used than the others because more customizable)
+   \item \lstinline!Legendre! (only for hypercube)
+   \item \lstinline!Dubiner! (only for simplex)
+   \item \lstinline!Crouzeix-Raviart!
+   \item \lstinline!Raviart-Thomas!
  \end{itemize}
 
  \item The order of these polynomials (an integer in $\mathbb{N}^*$)
@@ -652,7 +642,7 @@ f(x,y,z) &=& (1-x^2)\ (1-y^2)\ (1-z^2)\ (x^2+y^2+z^2)^{\alpha/2.0},\quad \alpha=
 \end{eqnarray*}
 In our example, these functions correspond to 
 \lstinputlisting[linerange=marker4-endmarker4]{myfunctionspace.cpp}
-(they are implemented using the new auto C++ keyword to infer the type of expression automatically). \\ \\
+(they are implemented using the new \lstinline!auto! C++ keyword to infer the type of expression automatically). \\ \\
 Then we build the interpolant (Lagrange interpolant in this case since we chose Lagrange basis function), by calling the \lstinline!vf::project()! function which can be applied on all or parts of the mesh thanks to the mesh iterators such as \lstinline!elements(mesh)! or \lstinline!markedelements(mesh,marker)!.
 The return object is the interpolant of the function in the space $ X_h $ given as an argument to \lstinline!vf::project()!.
 \lstinputlisting[linerange=marker5-endmarker5]{myfunctionspace.cpp}
@@ -701,11 +691,10 @@ zero (the results we obtain here don't seems to be coherent).
 \section{Linear Algebra}
 \label{sec:linear-algebra}
 
-
 \feel supports three different linear algebra environments that we
 shall call \emph{backends}.
 \begin{itemize}
-\item Gmm\footnote{}
+\item Gmm%\footnote{}
 \item Petsc\footnote{Petsc is a suite of data structures and routines for the scalable solution of scientific applications modeled by PDE available at \url{http://www.mcs.anl.gov/petsc/petsc-as/}}
 \item Trilinos\footnote{The Trilinos Project is an effort to develop algorithms and enabling technologies within an object-oriented software framework for scientific problems. \url{http://trilinos.sandia.gov/}}
 \end{itemize}
@@ -754,13 +743,13 @@ spaces.
 \subsection{Solving}
 \label{sec:solving}
 
-To solve the linear problem $Ax=b$, the backend provides a function \lstinline!solve! with three required parameters :
+To solve the linear problem $Ax=b$, the backend provides a function \lstinline!solve! with three required parameters 
 \begin{lstlisting}
  solve(_matrix=A, _solution=x, _rhs=b)
 \end{lstlisting}
 where :
 \begin{itemize}
-\item the matrix $A$ as a type \lstinline!sparse_matrix_ptrtype! 
+\item the matrix $A$ has a \lstinline!sparse_matrix_ptrtype! type
 \item the solution $x$ has a type \lstinline!vector_type! or \lstinline!vector_ptrtype!
 \item the second member vector $b$ has a type \lstinline!vector_ptrtype!
 \end{itemize}
@@ -807,7 +796,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION(
     {
 \end{lstlisting}
 
-The library \lstinline!Boost::Parameters! allows you to enter parameters in the order you want. It supports deduced parameters,  that is to say parameters whose identity can be deduced from their types.
+\noindent The library \lstinline!Boost::Parameters! allows you to enter parameters in the order you want. It supports deduced parameters,  that is to say parameters whose identity can be deduced from their types.
 
 \section{Variational Formulation}
 \label{sec:vari-form}
@@ -977,7 +966,7 @@ The following boundary conditions apply
 \end{equation}
 \end{problem}
 
-We propose here two possible variational formulations. The first one,
+\noindent We propose here two possible variational formulations. The first one,
 handles the Dirichlet boundary conditions strongly, that is to say the
 condition is \emph{incorporated} into the function space definitions.
 The second one handles the Dirichlet condition \emph{weakly} and hence
@@ -985,7 +974,7 @@ we have a uniform treatment for all types of boundary conditions.
 
 
 
-\paragraph{Strong Dirichlet conditions}
+\paragraph{First one : strong Dirichlet conditions}
 \label{sec:strong-dirichl-cond}
 
 \noindent
@@ -1007,10 +996,10 @@ We multiply (\ref{eq:1}) by $v \in \mathcal{V}$ then integrate over $\Omega$ and
 We integrate by parts and reformulate the problem as follows:
 \begin{problem}
 we look
-for $u \in \mathcal{X}$ such that for all $v \in \mathcal{V}$
+for $u \in \mathcal{X}$ such as% for all $v \in \mathcal{V}$
 \begin{equation}
   \label{eq:14}
-  \int_\Omega \nabla u \cdot \nabla v  = \int_\Omega f v
+  \int_\Omega \nabla u \cdot \nabla v  = \int_\Omega f v \quad \forall v \in \mathcal{V}
 \end{equation}
 
 \end{problem}
@@ -1030,7 +1019,7 @@ where $n$ is the outward normal to $\partial \Omega$ by convention.We
 now discretize the problem, we create a mesh out of $\Omega$, we have
 \begin{equation}
   \label{eq:10}
-  \Omega = \cup_{e=1}^\nel \Omega^e
+  \displaystyle{\Omega = \cup_{e=1}^\nel \Omega^e}
 \end{equation}
 where $\Omega^e$ can be segments, triangles or tetrahedra depending on
 $d$ and we have $\nel$ of them. We introduce the finite dimensional
@@ -1057,7 +1046,7 @@ Galerkin framework
   \end{equation}
 \end{problem}
 
-\paragraph{Weak Dirichlet conditions}
+\paragraph{Second one: weak Dirichlet conditions}
 \label{sec:weak-dirichl-cond}
 
 There is an alternative formulation which allows to treat weakly
@@ -1102,9 +1091,9 @@ First we define the $f$ and $g$. To do that we use the
 \lstinline!f!  and \lstinline!g! --- which are moderately complex
 object --- without having to know the actual type. \lstinline!AUTO!
 determines automatically the type of the expression using the
-\lstinline!__typeof__! keyword internally.
+\lstinline!__typeof__! keyword internally.\\
 
-Then we form the right hand side by defining a linear form whose
+\noindent Then we form the right hand side by defining a linear form whose
 algebraic representation will be stored in a
 \lstinline!vector_ptrtype! which is provided by the chosen linear
 algebra backend. The linear form is equated with an integral
@@ -1119,17 +1108,17 @@ object $\ell$ such that
   \label{eq:9}
   \begin{array}{rccl}
     \ell: & X_h & \mapsto & \mathbb{R}\\
-    & v_h & \rightarrow &\ell(v_h)=\int_\Omega f v
+    & v_h & \rightarrow & \displaystyle{\ell(v_h)=\int_\Omega f v}
   \end{array}
 \end{equation}
 which is represented algebraically in the code by the vector
 \lstinline!F! using the argument \lstinline!_vector!. The last
 argument \lstinline!_init!, if set to \lstinline!true!\footnote{It is
   set to \lstinline!false! by default.}, will zero-out the entries of
-the vector \lstinline!F!.
+the vector \lstinline!F!. \\
 
 
-We now turn to the left hand side and define the bilinear form using
+\noindent We now turn to the left hand side and define the bilinear form using
 the \lstinline!form2! helper function which is passed \textit{(i)} the
 trial function space using the \lstinline!_trial! option,
 \textit{(ii)} the test function space using the \lstinline!_test!
@@ -1144,22 +1133,22 @@ associated matrix should initialized using
 
 
 Finally, we deal with the boundary condition, we implement both
-formulation described in appendix~\ref{sec:vari-form-1}. For a
+formulation described in appendix~\ref{sec:vari-form}. For a
 \emph{strong} treatment of the Dirichlet condition, we use the
-\lstinline!on()! keyword of FEEL++ as follows
+\lstinline!on()! keyword of \feel as follows
 
 \lstinputlisting[linerange=marker5-endmarker5]{laplacian.cpp}
 
 Notice that we add, using \lstinline!+=!, the Dirichlet contribution
 for the bilinear form. The first argument is the set of boundary faces
 to apply the condition: in gmsh the points satisfying $x=\pm 1$ are
-marked using the flags $1$ and $3$ ($x=-1$ and $x=1$ respectively.)
+marked using the flags $1$ and $3$ ($x=-1$ and $x=1$ respectively).
 
 To implement the weak Dirichlet boundary condition, we add the
 following contributions to the left and right hand side:
 
 \lstinputlisting[linerange=marker41-endmarker41]{laplacian.cpp}
-\lstinputlisting[linerange=marker4-endmarker4]{laplacian.cpp}
+\lstinputlisting[linerange=marker10-endmarker10]{laplacian.cpp}
 
 Note that we use the command line option \lstinline!--weakdir! set to
 1 by default to decide between weak/strong Dirichlet handling.  Apart
@@ -1195,13 +1184,15 @@ where $h$ is the mesh size and $N$ the polynomial order. The $H_1$
 error norm would be checked similarly in $h^{-N}$. The
 figure~\ref{fig:2} displays the results using Paraview.
 
-\begin{figure}[htbp]
+\begin{figure}[!h]%[htbp]
   \centering
   \subfigure[Colored with $u$]{\includegraphics[width=.43\linewidth]{laplacian.png}}
   \subfigure[Elevation]{\includegraphics[width=.43\linewidth]{laplacian_warp.png}}
   \caption{Solution of problem~\ref{prob:3}}
   \label{fig:2}
 \end{figure}
+
+\newpage 
 
 \subsection{Mixed formulation: the Stokes case}
 \label{sec:mixed-form-stok}
@@ -1261,7 +1252,7 @@ where $\mu$ being the viscosity. The following boundary conditions apply
 \end{equation}
 \end{problem}
 
-The functional framework is as follows, we look for $\mathbf{u}$ is
+The functional framework is as follows, we look for $\mathbf{u}$ in
 $H^1_0(\Omega)$ and $p$ in $L^2_0(\Omega)$. We shall not seek $p$ in
 $L^2_0(\Omega)$ but rather in $L^2(\Omega)$ and use Lagrange
 multipliers which live are the constants whose space we denote

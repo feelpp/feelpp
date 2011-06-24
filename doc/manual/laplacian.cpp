@@ -276,13 +276,15 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     vector_ptrtype F( M_backend->newVector( Xh ) );
     form1( _test=Xh, _vector=F, _init=true ) =
         integrate( elements(mesh), f*id(v) )+
-        integrate( markedfaces( mesh, mesh->markerName("Neumann") ), nu*gradv(gproj)*vf::N()*id(v) );
+        integrate( markedfaces( mesh, mesh->markerName("Neumann") ), 
+				  nu*gradv(gproj)*vf::N()*id(v) );
     //# endmarker2 #
     if ( this->comm().size() != 1 || weakdir )
         {
             //# marker41 #
             form1( _test=Xh, _vector=F ) +=
-                integrate( markedfaces(mesh,mesh->markerName("Dirichlet")), g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
+                integrate( markedfaces(mesh,mesh->markerName("Dirichlet")), 
+						  g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
             //# endmarker41 #
         }
     F->close();
@@ -343,8 +345,9 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 
     //! solve the system
     /** \code */
+	//# marker6 #
     backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
-
+	//# endmarker6 #
     /** \endcode */
 
     //! compute the \f$L_2$ norm of the error
