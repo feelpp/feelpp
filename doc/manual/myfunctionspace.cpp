@@ -179,13 +179,13 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     //# marker31 #
     //! create the mesh
     mesh_ptrtype mesh = 
-		createGMSHMesh( _mesh=new mesh_type,
-						_update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % shape % Dim % Order).str() ,
-                        _shape=shape,
-                        _dim=Dim,
-                        _order=Order,
-                        _h=X[0] ) );
+	createGMSHMesh( _mesh=new mesh_type,
+	_update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+	_desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % shape % Dim % Order).str() ,
+			 _shape=shape,
+			 _dim=Dim,
+			 _order=Order,
+			 _h=X[0] ) );
 
     //# endmarker31 #
 
