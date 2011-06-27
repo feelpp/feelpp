@@ -251,6 +251,10 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
                      vector_ptrtype& b,
                      const double tol, const int its )
 {
+
+    M_nlsolver->setPreconditionerType( this->pcEnumType() );
+    M_nlsolver->setKspSolverType( this->kspEnumType() );
+
     M_nlsolver->setPrecMatrixStructure( this->precMatrixStructure() );
     M_nlsolver->solve( A, x, b, tol, its );
     return boost::make_tuple( true, its, tol );

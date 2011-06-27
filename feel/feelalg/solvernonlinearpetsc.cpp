@@ -370,6 +370,7 @@ void SolverNonLinearPetsc<T>::init ()
     ierr = SNESSetTolerances(M_snes,__absResTol,__relResTol,__absSolTol,__nbItMax,__nbEvalFuncMax);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
+
 }
 
 
@@ -419,15 +420,20 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
 #endif
 #if 1
-    KSP            ksp;         /* linear solver context */
-    PC             pc;           /* preconditioner context */
-    SNESGetKSP(M_snes,&ksp);
-    KSPSetOperators(ksp, jac->mat(), jac->mat(),
+    //KSP            ksp;         /* linear solver context */
+    //PC             pc;           /* preconditioner context */
+    SNESGetKSP(M_snes,&M_ksp);
+    KSPSetOperators(M_ksp, jac->mat(), jac->mat(),
                     MatStructure(/*SAME_PRECONDITIONER*/SAME_NONZERO_PATTERN));
-    KSPGetPC(ksp,&pc);
+    KSPGetPC(M_ksp,&M_pc);
+
+    this->setPetscKspSolverType();
+    this->setPetscPreconditionerType();
 
     //PCSetType(pc,PCNONE);
-    PCSetType(pc,PCLU);
+    //PCSetType(M_pc,PCILU);
+    //ierr = PCSetType (M_pc, (char*) PCILU);       CHKERRABORT(M_comm,ierr);
+
     ierr = SNESSetFromOptions(M_snes);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
 #endif
@@ -600,6 +606,133 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     return std::make_pair(n_iterations, 0.);
 }
 
+
+template <typename T>
+void
+SolverNonLinearPetsc<T>::setPetscNlSolverType()
+{
+}
+
+template <typename T>
+void
+SolverNonLinearPetsc<T>::setPetscKspSolverType()
+{
+  int ierr = 0;
+  Debug(7010) << "[SolverNonLinearPetsc] ksp solver type:  " << this->kspSolverType() << "\n";
+  switch (this->kspSolverType())
+    {
+
+    case CG:
+      ierr = KSPSetType (M_ksp, (char*) KSPCG);         CHKERRABORT(M_comm,ierr); return;
+
+    case CR:
+      ierr = KSPSetType (M_ksp, (char*) KSPCR);         CHKERRABORT(M_comm,ierr); return;
+
+    case CGS:
+      ierr = KSPSetType (M_ksp, (char*) KSPCGS);        CHKERRABORT(M_comm,ierr); return;
+
+    case BICG:
+      ierr = KSPSetType (M_ksp, (char*) KSPBICG);       CHKERRABORT(M_comm,ierr); return;
+
+    case TCQMR:
+      ierr = KSPSetType (M_ksp, (char*) KSPTCQMR);      CHKERRABORT(M_comm,ierr); return;
+
+    case TFQMR:
+      ierr = KSPSetType (M_ksp, (char*) KSPTFQMR);      CHKERRABORT(M_comm,ierr); return;
+
+    case LSQR:
+      ierr = KSPSetType (M_ksp, (char*) KSPLSQR);       CHKERRABORT(M_comm,ierr); return;
+
+    case BICGSTAB:
+      ierr = KSPSetType (M_ksp, (char*) KSPBCGS);       CHKERRABORT(M_comm,ierr); return;
+
+    case MINRES:
+      ierr = KSPSetType (M_ksp, (char*) KSPMINRES);     CHKERRABORT(M_comm,ierr); return;
+
+    case GMRES:
+      ierr = KSPSetType (M_ksp, (char*) KSPGMRES);      CHKERRABORT(M_comm,ierr); return;
+
+    case RICHARDSON:
+      ierr = KSPSetType (M_ksp, (char*) KSPRICHARDSON); CHKERRABORT(M_comm,ierr); return;
+
+    case CHEBYSHEV:
+      ierr = KSPSetType (M_ksp, (char*) KSPCHEBYCHEV);  CHKERRABORT(M_comm,ierr); return;
+
+    default:
+      std::cerr << "ERROR:  Unsupported PETSC Solver: "
+		<< this->kspSolverType()               << std::endl
+		<< "Continuing with PETSC defaults" << std::endl;
+    }
+
+}
+
+template <typename T>
+void
+SolverNonLinearPetsc<T>::setPetscPreconditionerType()
+{
+
+  int ierr = 0;
+#if 0
+#if (PETSC_VERSION_MAJOR >= 3)
+  ierr = PCFactorSetMatSolverPackage(M_pc,MAT_SOLVER_UMFPACK);
+  if ( ierr )
+  {
+      ierr = PCFactorSetMatSolverPackage(M_pc,MAT_SOLVER_SUPERLU );
+      if ( ierr )
+      {
+          ierr = PCFactorSetMatSolverPackage(M_pc,MAT_SOLVER_PETSC );
+      }
+  }
+#endif
+#endif
+
+  switch (this->preconditionerType())
+    {
+    case IDENTITY_PRECOND:
+      ierr = PCSetType (M_pc, (char*) PCNONE);      CHKERRABORT(M_comm,ierr); return;
+
+    case CHOLESKY_PRECOND:
+      ierr = PCSetType (M_pc, (char*) PCCHOLESKY);  CHKERRABORT(M_comm,ierr); return;
+
+    case ICC_PRECOND:
+      ierr = PCSetType (M_pc, (char*) PCICC);       CHKERRABORT(M_comm,ierr); return;
+
+    case ILU_PRECOND:
+      ierr = PCSetType (M_pc, (char*) PCILU);       CHKERRABORT(M_comm,ierr); return;
+
+    case LU_PRECOND:
+      ierr = PCSetType (M_pc, (char*) PCLU);        CHKERRABORT(M_comm,ierr); return;
+
+    case ASM_PRECOND:
+      ierr = PCSetType (M_pc, (char*) PCASM);       CHKERRABORT(M_comm,ierr); return;
+
+    case JACOBI_PRECOND:
+      ierr = PCSetType (M_pc, (char*) PCJACOBI);    CHKERRABORT(M_comm,ierr); return;
+
+    case BLOCK_JACOBI_PRECOND:
+      ierr = PCSetType (M_pc, (char*) PCBJACOBI);   CHKERRABORT(M_comm,ierr); return;
+
+    case SOR_PRECOND:
+      ierr = PCSetType (M_pc, (char*) PCSOR);       CHKERRABORT(M_comm,ierr); return;
+
+    case EISENSTAT_PRECOND:
+      ierr = PCSetType (M_pc, (char*) PCEISENSTAT); CHKERRABORT(M_comm,ierr); return;
+
+#if !((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1) && (PETSC_VERSION_SUBMINOR <= 1))
+    case USER_PRECOND:
+      ierr = PCSetType (M_pc, (char*) PCMAT);       CHKERRABORT(M_comm,ierr); return;
+#endif
+
+    case SHELL_PRECOND:
+      ierr = PCSetType (M_pc, (char*) PCSHELL);     CHKERRABORT(M_comm,ierr); return;
+
+    default:
+      std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
+		<< this->preconditionerType()       << std::endl
+		<< "Continuing with PETSC defaults" << std::endl;
+    }
+
+}
 
 
 

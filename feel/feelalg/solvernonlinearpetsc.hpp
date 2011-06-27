@@ -165,11 +165,43 @@ public:
 
 private:
     /**
+     * Tells PETSC to use the user-specified solver stored in
+     * \p _solver_type
+     */
+    void setPetscNlSolverType ();
+
+    /**
+     * Tells PETSC to use the user-specified solver stored in
+     * \p _solver_type
+     */
+    void setPetscKspSolverType ();
+
+    /**
+     * Tells PETSC to use the user-specified preconditioner stored in
+     * \p _preconditioner_type
+     */
+    void setPetscPreconditionerType ();
+
+
+    mpi::communicator M_comm;
+
+    /**
      * Nonlinear solver context
      */
     SNES M_snes;
 
     uint16_type M_prec_mat_structure;
+
+    /**
+     * Preconditioner context
+     */
+    PC M_pc;
+
+    /**
+     * Krylov subspace context
+     */
+    KSP M_ksp;
+
 };
 
 template <typename T>
