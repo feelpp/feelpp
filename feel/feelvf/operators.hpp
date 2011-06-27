@@ -612,17 +612,20 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     return ctx_ptrtype( new ctx_type( ) );              \
                 }                                                       \
                 void updateCtxIfSameGeom(Geo_t const& geom, mpl::bool_<true> )    \
-                {                                                       \
-                    M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&)M_pc ); \
+                {   if (fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value ) /*face case*/ \
+                        M_pc->update(fusion::at_key<key_type>( geom )->pc()->nodes() ); \
+                    M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&) M_pc ); \
                 }                                                       \
                 void updateCtxIfSameGeom(Geo_t const& geom, mpl::bool_<false> ) \
                 {                                                       \
                 }                                                       \
                 void updateCtxFaceIfSameGeom(Geo_t const& geom, mpl::bool_<true> )    \
                 {                                                       \
-                    uint16_type face = fusion::at_key<key_type>( geom )->faceId(); \
+                    /*uint16_type face = fusion::at_key<key_type>( geom )->faceId(); \
                     uint16_type perm = fusion::at_key<key_type>( geom )->permutation().value(); \
-                    M_ctx->update( fusion::at_key<key_type>( geom ), (pc_ptrtype const&) M_pcf[face][perm] ); \
+                    M_ctx->update( fusion::at_key<key_type>( geom ), (pc_ptrtype const&) M_pcf[face][perm] );*/ \
+                    M_pc->update(fusion::at_key<key_type>( geom )->pc()->nodes() ); \
+                    M_ctx->update( fusion::at_key<key_type>( geom ), (pc_ptrtype const&) M_pc ); \
                 }                                                       \
                 void updateCtxFaceIfSameGeom(Geo_t const& geom, mpl::bool_<false> ) \
                 {                                                       \
