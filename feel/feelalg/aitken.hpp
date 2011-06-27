@@ -136,6 +136,7 @@ public:
         Xh( tc.Xh ),
         failsafeParameter( tc.failsafeParameter ),
         previousParameter( tc.previousParameter ),
+        maxParameter( tc.maxParameter ),
         previousResidual( tc.previousResidual ),
         previousElement( tc.previousElement ),
         currentResidual( tc.currentResidual ),
@@ -531,16 +532,20 @@ template< typename fs_type >
 void
 Aitken<fs_type>::restart()
 {
-    if ( M_convergence.empty() )
+    if ( !M_convergence.empty() )
     {
         std::string entry = "relaxation_parameter";
-        auto it = std::find_if( M_convergence.begin(), M_convergence.end(),
-                                [maxParameter, entry] ( std::pair<int, convergence_iteration_type> const& iter )
-                                {
-                                    return maxParameter < iter.second.find(entry)->second;
-                                });
+        auto it = std::max_element( M_convergence.begin(), M_convergence.end(),
+                                    [entry] ( std::pair<int, convergence_iteration_type> const& x,
+                                              std::pair<int, convergence_iteration_type> const& y )
+                                    {
+                                        std::cout <<"\n x : "<< x.second.find(entry)->second
+                                        <<" y: " << y.second.find(entry)->second;
+
+                                        return x.second.find(entry)->second < y.second.find(entry)->second;
+                                    });
         if ( it != M_convergence.end() )
-            maxParameter = it->second.find(entry)->second;
+            maxParameter = std::max(maxParameter,it->second.find(entry)->second);
         previousParameter = maxParameter;
     }
     M_cptIteration=1;
