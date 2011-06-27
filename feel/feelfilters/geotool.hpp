@@ -1629,7 +1629,20 @@ namespace Feel {
         createMeshFromGeoFile(std::string geofile,std::string name,double meshSize)
         {
 
+            Gmsh gmsh(mesh_type::nDim,mesh_type::nOrder);
+            gmsh.setCharacteristicLength(meshSize);
+
             std::ostringstream ostr;
+
+            // preambule :
+            ostr << "Mesh.MshFileVersion = " << gmsh.version() << ";\n"
+                 << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
+                 << "Mesh.CharacteristicLengthFromPoints=1;\n"
+                 << "Mesh.ElementOrder=" << gmsh.order() << ";\n"
+                 << "Mesh.SecondOrderIncomplete = 0;\n"
+                 << "Mesh.Algorithm = 6;\n"
+                 << "Mesh.OptimizeNetgen=1;\n";
+
             std::string contenu;
             std::ifstream ifstr(geofile, std::ios::in);
             if(ifstr)
@@ -1641,9 +1654,6 @@ namespace Feel {
                 }
 
 
-            Gmsh gmsh(mesh_type::nDim,mesh_type::nOrder);
-            //gmsh.setOrder(mesh_type::nOrder);
-            gmsh.setCharacteristicLength(meshSize);
             std::string fname = gmsh.generate( name,
                                                ostr.str(),false,false,true );
 
