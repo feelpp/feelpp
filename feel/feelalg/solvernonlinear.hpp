@@ -188,6 +188,29 @@ public:
      * Select type of non linear solver : LINEAR_SEARCH, TRUST_REGION, ...
      */
     void setType(SolverNonLinearType snl_type) { M_snl_type=snl_type; }
+    /**
+     * Returns the type of solver to use.
+     */
+    SolverNonLinearType nlSolverType () const { return M_snl_type; }
+
+    /**
+     * Sets the type of solver to use.
+     */
+    void setKspSolverType (const SolverType st) { M_kspSolver_type = st; }
+
+    /**
+     * Returns the type of solver to use.
+     */
+    SolverType kspSolverType () const { return M_kspSolver_type; }
+
+    /**
+     * Sets the type of preconditioner to use.
+     */
+    void setPreconditionerType (const PreconditionerType pct) { M_preconditioner_type = pct; }
+    /**
+     * Returns the type of preconditioner to use.
+     */
+    PreconditionerType preconditionerType () const { return M_preconditioner_type; }
 
     /**
      * Define values of tolerance for the non linear solver
@@ -281,6 +304,16 @@ protected:
      * Define the type of non linear solver
      */
     SolverNonLinearType M_snl_type;
+
+    /**
+     * Enum stating which type of iterative linear solver to use.
+     */
+    SolverType M_kspSolver_type;
+
+    /**
+     * Enum statitng with type of preconditioner to use.
+     */
+    PreconditionerType M_preconditioner_type;
 
     /**
      * Two differents tolerances on the residual for the resolution of non linear system
