@@ -115,6 +115,7 @@ public:
         Xh( _Xh ),
         failsafeParameter( _failsafeParameter ),
         previousParameter( _failsafeParameter ),
+        maxParameter( _failsafeParameter ),
         previousResidual( Xh, "previous residual" ),
         previousElement( Xh, "previous element" ),
         currentResidual( Xh, "current residual" ),
@@ -331,7 +332,7 @@ private:
      */
     functionspace_ptrtype Xh;
 
-    double failsafeParameter, previousParameter;
+    double failsafeParameter, previousParameter, maxParameter;
 
     element_type previousResidual, previousElement, currentResidual, currentElement;
 
@@ -341,6 +342,7 @@ private:
     double M_residualConvergence;
     bool M_hasConverged;
     convergence_type M_convergence;
+
 
     mutable boost::timer M_timer;
 };
@@ -529,13 +531,22 @@ template< typename fs_type >
 void
 Aitken<fs_type>::restart()
 {
-    //previousParameter = failsafeParameter;
-
+    if ( M_convergence.empty() )
+    {
+        std::string entry = "relaxation_parameter";
+        auto it = std::find_if( M_convergence.begin(), M_convergence.end(),
+                                [maxParameter, entry] ( std::pair<int, convergence_iteration_type> const& iter )
+                                {
+                                    return maxParameter < iter.second.find(entry)->second;
+                                });
+        if ( it != M_convergence.end() )
+            maxParameter = it->second.find(entry)->second;
+        previousParameter = maxParameter;
+    }
     M_cptIteration=1;
     M_hasConverged=false;
     M_convergence.clear();
     M_timer.restart();
-    previousParameter=1;
 }
 
 //-----------------------------------------------------------------------------------------//
