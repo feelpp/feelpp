@@ -409,8 +409,11 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
     auto residual = Xh2->element();
 
     AitkenType relaxmethod = (AitkenType)this->vm()["relaxmethod"].template as<int>();
-    Aitken<space_type> aitken(  Xh2, relaxmethod, theta, tol );
-    aitken.initialize( residual, lambda );
+    auto aitkenRelax =  aitken( _space= Xh2,
+                                _type=relaxmethod,
+                                _initial_theta=theta,
+                                _tolerance=tol );
+    aitkenRelax.initialize( residual, lambda );
 
     value_type pi = M_PI;
 
@@ -433,14 +436,14 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
     auto Ih12 = opInterpolation( _domainSpace=Xh1, _imageSpace=Xh2, _range=elements(Xh2->mesh()) );
     auto Ih21 = opInterpolation( _domainSpace=Xh2, _imageSpace=Xh1, _range=elements(Xh1->mesh()) );
 
-    aitken.restart();
+    aitkenRelax.restart();
 
-    while(!aitken.isFinished() &&  aitken.nIterations() <= imax)
+    while(!aitkenRelax.isFinished() &&  aitkenRelax.nIterations() <= imax)
     {
 
 
         Log() << "============================================================\n";
-        Log() << "iteration  : " << aitken.nIterations() << "\n";
+        Log() << "iteration  : " << aitkenRelax.nIterations() << "\n";
         Log() << "L2erroru1  : " << err1  << "\n";
         Log() << "L2erroru2  : " << err2  << "\n";
         Log() << "H1erroru1  : " << error1  << "\n";
@@ -453,11 +456,11 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
         if( additive )
         {
 
-            if(aitken.nIterations()==1) Log() << "test_aitken additive method" << "\n";
+            if(aitkenRelax.nIterations()==1) Log() << "test_aitken additive method" << "\n";
         }
         else
         {
-            if(aitken.nIterations()==1) Log() << "test_aiken multiplicative method" << "\n";
+            if(aitkenRelax.nIterations()==1) Log() << "test_aiken multiplicative method" << "\n";
         }
 
 
@@ -483,13 +486,13 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
 
         residual = u2-lambda;
 
-        u2 = aitken.apply( residual, u2  );
+        u2 = aitkenRelax.apply( residual, u2  );
 
-        aitken.printInfo();
+        aitkenRelax.printInfo();
 
-        aitken.saveConvergenceHistory(std::string("history.dat"));
+        aitkenRelax.saveConvergenceHistory(std::string("history.dat"));
 
-        ++aitken;
+        ++aitkenRelax;
 
         double L2error1 =integrate(elements(mesh1), (idv(u1)-g)*(idv(u1)-g) ).evaluate()(0,0);
         err1 = math::sqrt( L2error1 );
