@@ -869,16 +869,18 @@ public:
             std::cout << "is_product = " << reference_element_type::is_product << std::endl;
             std::cout << "nbDof = " << _M_ref_ele->nbDof() << std::endl;
 #endif
-            const index I = (reference_element_type::is_product?_M_ref_ele->nbDof()/nDim/nDim:_M_ref_ele->nbDof()/nDim);
+            const index I = (reference_element_type::is_product?_M_ref_ele->nbDof()/nRealDim/nRealDim:_M_ref_ele->nbDof()/nRealDim);
             //std::cout << "I = " << I << std::endl;
+            //std::cout << "nbDof = " << _M_ref_ele->nbDof() << std::endl;
+
             const index Q = __pts.size2();
             //std::cout << "Q = " << I << std::endl;
 
-            const int ncdof= (reference_element_type::is_product?nDim:1);
-            int nldof= (reference_element_type::is_product?I*nDim:I);
+            const int ncdof= (reference_element_type::is_product?nRealDim:1);
+            int nldof= (reference_element_type::is_product?I*nRealDim:I);
             //std::cout << "ncdof = " << ncdof << ", nldof = " << nldof << "\n";
-            _M_phi.resize( boost::extents[nldof][nDim][1][__pts.size2()] );
-            _M_grad.resize( boost::extents[nldof][nDim][nDim][__pts.size2()] );
+            _M_phi.resize( boost::extents[nldof][nRealDim][1][__pts.size2()] );
+            _M_grad.resize( boost::extents[nldof][nRealDim][nRealDim][__pts.size2()] );
 
             matrix_type phiv = _M_ref_ele->evaluate( __pts );
             ublas::vector<matrix_type> __grad( _M_ref_ele->derivate( __pts ) );
@@ -888,17 +890,18 @@ public:
 
                 for(index c1 = 0; c1 < ncdof; ++c1)
                     {
-                        for(index j = 0; j < nDim; ++j)
+                        for(index j = 0; j < nRealDim; ++j)
                             for(index q = 0; q < Q; ++q)
-                                _M_phi[I*c1+i][j][0][q] = phiv( nldof*c1+nDim*i+j, q );
+                                _M_phi[I*c1+i][j][0][q] = phiv( nldof*c1+nRealDim*i+j, q );
                         //_M_phi[I*c1+i][j][0][q] = phiv( nDim*I*c1+nDim*i+j, q );
 
-                        for(index j = 0; j < nDim; ++j)
+                        for(index j = 0; j < nRealDim; ++j)
                             for(index l = 0; l < nDim; ++l)
                                 for(index q = 0; q < Q; ++q)
                                     {
                                         //_M_grad[I*c1+i][j][l][q] = __grad[l]( nDim*I*c1+nDim*i+j, q );
-                                        _M_grad[I*c1+i][j][l][q] = __grad[l]( nldof*c1+nDim*i+j, q );
+                                        _M_grad[I*c1+i][j][l][q] = __grad[l]( nldof*c1+nRealDim*i+j, q );
+                                        //_M_grad[I*c1+i][j][nRealDim-1][q] = __grad[l]( nldof*c1+nRealDim*i+j, q );
                                         //std::cout << "grad(" << i << "," << c1 << "," << j << "," << l << "," << q << ")=" <<  _M_grad[I*c1+i][j][l][q] << "\n";
                                     }
                     }
