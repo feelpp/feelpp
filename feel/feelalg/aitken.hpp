@@ -539,9 +539,6 @@ Aitken<fs_type>::restart()
                                     [entry] ( std::pair<int, convergence_iteration_type> const& x,
                                               std::pair<int, convergence_iteration_type> const& y )
                                     {
-                                        std::cout <<"\n x : "<< x.second.find(entry)->second
-                                        <<" y: " << y.second.find(entry)->second;
-
                                         return x.second.find(entry)->second < y.second.find(entry)->second;
                                     });
         if ( it != M_convergence.end() )

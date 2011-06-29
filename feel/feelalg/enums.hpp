@@ -119,8 +119,16 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          LU_PRECOND,
                          USER_PRECOND,
                          SHELL_PRECOND,
-
+                         FIELDSPLIT_PRECOND,
                          INVALID_PRECONDITIONER};
+
+
+/**
+ * Defines an \p enum for field split types
+ */
+enum FieldSplitType {ADDITIVE=0,
+                     MULTIPLICATIVE,
+                     SCHUR};
 
 /**
  * indicates the structure of the matrix versus preconditioner

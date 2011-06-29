@@ -38,9 +38,15 @@
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
 #include <feel/feelalg/backend.hpp>
 
+
+
 namespace Feel
 {
 namespace po = boost::program_options;
+
+
+
+
 
 #if defined( HAVE_PETSC_H )
 /**
@@ -97,6 +103,23 @@ public:
         m->setMatrixProperties( matrix_properties );
         m->init( Yh->nDof(), Xh->nDof(),
                  Yh->nLocalDof(), Xh->nLocalDof() );
+#if 0
+        auto nSpace = DomainSpace::nSpaces;
+
+        std::vector < std::vector<int> > is(nSpace);
+        uint cptSpaces=0;
+
+        //boost::tuple< typename DomainSpace::functionspace_vector_type, uint, std::vector < std::vector<int> > > hola;
+        //        auto result = boost::make_tuple(Xh->functionSpaces(),cptSpaces,is);
+        auto result = boost::make_tuple(cptSpaces,is);
+        boost::fusion::fold( Xh->functionSpaces(), result, computeNDofForEachSpace() );
+
+        for (uint i = 0; i<nSpace;i++ )
+            {
+                //is[i].resize()
+            }
+#endif
+
         return m;
     }
 
@@ -203,6 +226,7 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
 {
     M_solver_petsc.setPreconditionerType( this->pcEnumType() );
     M_solver_petsc.setSolverType( this->kspEnumType() );
+    M_solver_petsc.setFieldSplitType( this->fieldSplitEnumType() );
     M_solver_petsc.setTolerances( _rtolerance=this->rTolerance(),
                                   _atolerance=this->aTolerance(),
                                   _dtolerance=this->dTolerance(),
@@ -226,6 +250,7 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
 {
     M_solver_petsc.setPreconditionerType( this->pcEnumType() );
     M_solver_petsc.setSolverType( this->kspEnumType() );
+    M_solver_petsc.setFieldSplitType( this->fieldSplitEnumType() );
     M_solver_petsc.setTolerances( _rtolerance=this->rTolerance(),
                                   _atolerance=this->aTolerance(),
                                   _dtolerance=this->dTolerance(),
