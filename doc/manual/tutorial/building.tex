@@ -130,9 +130,9 @@ order to know what is going on with \feel on Ubuntu
 
 In order to \feel and \cmake work properly, you have to install differents compilers :
 \begin{itemize}
-\item Gcc
+\item Gcc \\
 The first step is to install the latest version of Xcode. If your computer is recent, you can install it with your DVD that came with your machine (not the OS DVD, but the applications one). You don't have to install the complete Xcode (you can uncheck iOS SDK for example, it's not necessary here and requiers a lot of memory). Xcode will provide your computer all basic tools to compile such as gcc 4.2. It's the first step, you'll see later how to easily install gcc 4.5 using MacPorts.
-\item Fortran
+\item Fortran \\
 To build the Makefiles, \cmake will need a Fortran compiler. To make it works, please go to \href{http://hpc.sourceforge.net/}{SourceForge.net} and download \verb|gfortran-snwleo-intel-bin.tar.gz| which is the fortran compiler only (from now, don't download the complete install with gcc 4.6 because Feel needs gcc 4.5). To install it, go to the directory where you have downloaded the file and type in a command-line
 \begin{unixcom}
 		sudo tar -xvf gfortran-snwleo-intel-bin.tar -C /
@@ -149,7 +149,7 @@ MacPorts provides a single software tree which includes the latest stable releas
 \paragraph{Installation}
 To install the latest version of MacPorts, please go to \href{http://www.macports.org/install.php}{Installing MacPorts} page and follow the instructions. The simplest way is to download the $dmg$ disk image corresponding to your version of Mac OS X. It is recommended that you install X11 (X Window System) which is normally used to display X11 applications.%, and also the Xcode Tools (only the developer tools, iOS SDK is not required).
 
-If you have installed with the package installer (\verb|MacPorts-1.x.x.dmg|) that means MacPorts will be installed in \verb|/opt/local|. From now on we will suppose that macports has been installed in \verb|/opt/local| which is the default MacPorts location. %At the end of the installation, you can check if your PATH has been upgraded by the command \verb|echo $PATH| which should return a line containing \verb|/opt/local/bin:/opt/local/sbin|.
+If you have installed with the package installer (\verb|MacPorts-1.x.x.dmg|) that means MacPorts will be installed in \verb|/opt/local|. From now on we will suppose that macports has been installed in \verb|/opt/local| which is the default MacPorts location. Note that from now on, all tools installed by MacPorts will be installed in \lstinline!/opt/local/bin! or \lstinline!/opt/local/sbin! for example (that's here you'll find gcc4.5 once being installed).%At the end of the installation, you can check if your PATH has been upgraded by the command \verb|echo $PATH| which should return a line containing \verb|/opt/local/bin:/opt/local/sbin|.
 
 \paragraph{Key commands}
 In your command-line, the software MacPorts is called by the command \verb|port|.
@@ -181,7 +181,7 @@ These Portfiles are installed in \verb|ports/macosx/macports|.
 To be able to install \feel, add the following line in \verb|/opt/local/etc/macports/source.conf|
 at the top of the file before any other sources :
 \begin{lstlisting}[language=sh]
-file:///<path to \feel top directory>/ports/macosx/macports
+file:///<path to feel top directory>/ports/macosx/macports
 \end{lstlisting}
 
 Once it's done, go to \verb|<path to \feel top directory>/ports/macosx/macports| and type in a command-line :
@@ -235,8 +235,8 @@ Enter your password, then to complete the installation
 \end{unixcom}
 After the install is complete, you can delete the sources in your download directory because make install has built it in an appropriate directory. To make it work properly, always check that \cmake is using gcc 4.5. If \cmake doesn't recognize openMP, enter the configuration mode using \ccmake and enter \verb|-fopenmp| in the box \verb|OpenMP_CXX_FLAGS|
 
-\subsubsection{Issues with slepc or petsc}
-We have heard about issues with petsc and slepc with some new MacBook Pro while they are being installed with the \verb|sudo port install feel++|. If it's the case, you should do
+\subsubsection{Snow Leopard \& slepc/petsc}
+We have heard about issues with petsc and slepc with some new MacBook Pro with Snow Leopard while they are being installed with the \verb|sudo port install feel++|. If it's the case, that probably means there is an issue with atlas. If atlas is already installed, you have to unsinstall it (be carefull with dependencies, they also have to be uninstalled). Once it's done, you should do
 \begin{unixcom}
 		cd <path to feel top directory>/ports/macosx/macports
 		portindex -f
@@ -253,6 +253,8 @@ and type once again
 \begin{unixcom}
 		sudo port install feel++
 \end{unixcom}
+
+In that order, slepc and petsc will be installed before atlas, and feel will be properly installed.
 %%%% A voir avec Stéphane si ça a bien réussi
 
 \subsubsection{Missing ports}
