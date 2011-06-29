@@ -50,7 +50,7 @@ add_latex_document(feel-manual.tex
   examples/thermalfin.tex
   randomnotes.tex gfdl.tex howto.tex version.tex ${CPPFILES} ${STYFILES}
   BIBFILES feel-manual.bib
-  IMAGE_DIRS pngs pdfs pngs/mymesh
+  IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink
   USE_INDEX
   DEFAULT_PDF
   )
