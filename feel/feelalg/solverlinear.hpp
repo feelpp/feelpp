@@ -135,14 +135,18 @@ public:
     /**
      * Returns the type of preconditioner to use.
      */
-    PreconditionerType preconditionerType () const
-    { return _M_preconditioner_type; }
+    PreconditionerType preconditionerType () const { return _M_preconditioner_type; }
 
     /**
      * Sets the type of preconditioner to use.
      */
     void setPreconditionerType (const PreconditionerType pct)
     { _M_preconditioner_type = pct; }
+
+    void setFieldSplitType( const FieldSplitType fst )
+    { _M_fieldSplit_type = fst; }
+
+    FieldSplitType fieldSplitType() const { return _M_fieldSplit_type; }
 
     /**
      * \return the preconditioner matrix structure
@@ -241,6 +245,8 @@ protected:
      * Enum statitng with type of preconditioner to use.
      */
     PreconditionerType _M_preconditioner_type;
+
+    FieldSplitType _M_fieldSplit_type;
 
     /**
      * Flag indicating if the data structures have been initialized.

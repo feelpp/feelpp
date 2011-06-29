@@ -52,6 +52,25 @@ extern "C"
 #include <petscmat.h>
 }
 
+#ifndef USE_COMPLEX_NUMBERS
+extern "C" {
+# include <petscversion.h>
+# if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
+#   include <petscsles.h>
+# else
+#   include <petscksp.h>
+# endif
+}
+#else
+# include <petscversion.h>
+# if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
+#   include <petscsles.h>
+# else
+#   include <petscksp.h>
+# endif
+#endif
+
+
 
 namespace Feel
 {
@@ -224,6 +243,11 @@ public:
                 const size_type m_l,
                 const size_type n_l,
                 graph_ptrtype const& graph );
+
+    /**
+     *
+     */
+    void setIndexSplit(std::vector< std::vector<int> > const &indexSplit );
 
     /**
      * reinitialize the matrix
@@ -413,6 +437,8 @@ public:
     void updateBlockMat(boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j);
 
 
+    void updatePCFieldSplit(PC pc);
+
     //@}
 
 private:
@@ -431,6 +457,10 @@ private:
      * Petsc matrix datatype to store values
      */
     Mat _M_mat;
+
+    std::vector<IS> _M_petscIS;
+
+    std::map<PC,bool > _M_mapPC;
 
     /**
      * This boolean value should only be set to false

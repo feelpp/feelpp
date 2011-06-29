@@ -281,6 +281,53 @@ void MatrixPetsc<T>::init (const size_type m,
 
 
 template <typename T>
+void MatrixPetsc<T>::setIndexSplit(std::vector< std::vector<int> > const &indexSplit )
+{
+
+    this->M_IndexSplit=indexSplit;
+
+    _M_petscIS.resize(indexSplit.size());
+
+    int ierr=0;
+
+    for (uint i = 0 ; i < indexSplit.size(); ++i)
+        {
+            PetscInt nDofForThisField = indexSplit[i].size();
+            ierr = ISCreateGeneral(this->comm(),nDofForThisField,indexSplit[i].data(),&_M_petscIS[i] );
+            CHKERRABORT(this->comm(),ierr);
+        }
+}
+
+template <typename T>
+void MatrixPetsc<T>::updatePCFieldSplit(PC pc)
+{
+    int ierr=0;
+    if (_M_mapPC.find(pc)==_M_mapPC.end() )
+        {
+            _M_mapPC[pc]=false;
+        }
+
+    if (_M_mapPC[pc]==false)
+        {
+            const PCType pcName;
+            ierr = PCGetType(pc,&pcName);
+            CHKERRABORT(this->comm(),ierr);
+
+            if ( std::string( PCFIELDSPLIT ) == std::string(pcName) )
+                {
+                    _M_mapPC[pc]=true;
+                    for (uint i = 0 ; i < _M_petscIS.size(); ++i)
+                        {
+                            ierr=PCFieldSplitSetIS(pc,_M_petscIS[i]);
+                            CHKERRABORT(this->comm(),ierr);
+                        }
+                }
+        }
+
+}
+
+
+template <typename T>
 void MatrixPetsc<T>::zero ()
 {
     FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" ) ;

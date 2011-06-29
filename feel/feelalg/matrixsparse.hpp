@@ -113,6 +113,8 @@ public:
      */
     MatrixSparse ();
 
+    //MatrixSparse ( MatrixSparse const& m) { std::cout << "\n HOLA COPIE MATSPARSE\n"; }
+
     /**
      * Destructor. Free all memory, but do not release the memory of
      * the sparsity structure.
@@ -154,6 +156,16 @@ public:
                         const size_type m_l,
                         const size_type n_l,
                         graph_ptrtype const& graph ) = 0;
+
+    /**
+     *
+     */
+    virtual void setIndexSplit(std::vector< std::vector<int> > const &indexSplit ) { M_IndexSplit=indexSplit;}
+
+    /**
+     *
+     */
+    std::vector< std::vector<int> > indexSplit() const { return M_IndexSplit;}
 
     /**
      * \return true if matrix has a graph, false otherwise
@@ -599,6 +611,9 @@ protected:
     graph_ptrtype _M_graph;
 
     Context M_mprop;
+
+    std::vector < std::vector<int> > M_IndexSplit;
+
 };
 
 typedef MatrixSparse<double> d_sparse_matrix_type;

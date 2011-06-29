@@ -31,6 +31,7 @@
 
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/fusion/include/fold.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
@@ -44,6 +45,7 @@
 
 namespace Feel
 {
+
 ///! \cond detail
 namespace detail
 {
@@ -78,6 +80,36 @@ auto ref( T& t ) -> decltype( ref( t, detail::is_shared_ptr<T>() ) )
 {
     return ref( t, detail::is_shared_ptr<T>() );
 }
+
+struct computeNDofForEachSpace
+{
+
+    computeNDofForEachSpace(uint16_type nSpace) : M_is(nSpace) {}
+
+
+    std::vector < std::vector<int> >
+    getIS() const { return M_is;}
+
+    std::vector < std::vector<int> > M_is;
+
+    typedef boost::tuple< uint, uint > result_type;
+
+    template<typename T>
+    result_type operator()(result_type const & previousRes, T const& t) //const
+    {
+        auto nDof = t->nDof();
+
+        auto cptSpaces = previousRes.get<0>();
+        auto start = previousRes.get<1>();
+        //std::cout << "\n Space " << cptSpaces << " with nDof : "<< nDof << "\n";
+
+        M_is[cptSpaces].resize(nDof);
+        for (uint i=0;i<nDof;++i) { M_is[cptSpaces][i] = start+i; }
+
+        return boost::make_tuple( ++cptSpaces, (start+nDof) );
+    }
+};
+
 
 }
 ///! \endcond detail
@@ -164,7 +196,29 @@ public:
     template<typename DomainSpace, typename ImageSpace>
     sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im, size_type prop = NON_HERMITIAN  )
     {
+#if 1
+        auto mat = this->newMatrix( dm->map(), im->map(), prop );
+
+        auto nSpace = DomainSpace::element_type::nSpaces;
+        if (nSpace>1)
+            {
+                //std::cout << "\n Debug : nSpace " << nSpace << "\n";
+                std::vector < std::vector<int> > is(nSpace);
+                uint cptSpaces=0;
+                uint start=0;
+                auto result = boost::make_tuple(cptSpaces,start);
+
+                detail::computeNDofForEachSpace cndof(nSpace);
+
+                boost::fusion::fold( dm->functionSpaces(), result, cndof );
+
+                mat->setIndexSplit(cndof.getIS());
+            }
+
+        return mat;
+#else
         return this->newMatrix( dm->map(), im->map(), prop );
+#endif
     }
 
     /**
@@ -214,22 +268,32 @@ public:
     /**
      * \return the type of linear solver
      */
-    std::string kspType() { return M_ksp; }
+    std::string kspType() const { return M_ksp; }
 
     /**
      * \return the type of preconditioner
      */
-    std::string pcType() { return M_pc; }
+    std::string pcType() const { return M_pc; }
+
+    /**
+     * \return the type of fieldsplitType
+     */
+    std::string fieldsplitType() const { return M_fieldSplit; }
 
     /**
      * return enum pc type from options
      **/
-    PreconditionerType pcEnumType();
+    PreconditionerType pcEnumType() const;
 
     /**
      * return enum solver type from options
      **/
-    SolverType kspEnumType();
+    SolverType kspEnumType() const;
+
+    /**
+     * return enum fieldsplit type from options
+     **/
+    FieldSplitType fieldSplitEnumType() const;
 
 
     /**
@@ -520,6 +584,9 @@ private:
 
     std::string M_ksp;
     std::string M_pc;
+    std::string M_fieldSplit;
+    //std::map<std::string,boost::tuple<std::string,std::string> > M_sub;
+
 };
 
 /**

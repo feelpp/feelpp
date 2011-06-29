@@ -220,6 +220,30 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     solution->close ();
     rhs->close ();
 
+
+    matrix->updatePCFieldSplit(_M_pc);
+#if 0
+    PCType ThePc;
+    ierr = PCGetType(_M_pc,&ThePc);
+    CHKERRABORT(M_comm,ierr);
+
+    auto indexSplit = matrix->getIndexSplit();
+    std::vector<IS> petscIS(indexSplit.size());
+
+    if ( std::string( PCFIELDSPLIT ) == std::string(ThePc) )
+        {
+            for (uint i = 0 ; i < indexSplit.size(); ++i)
+                {
+
+                    PetscInt nDofForThisField = indexSplit[i].size();
+                    ierr = ISCreateGeneral(M_comm,nDofForThisField,indexSplit[i].data(),&petscIS[i] );
+                    CHKERRABORT(M_comm,ierr);
+
+                    ierr=PCFieldSplitSetIS(_M_pc,petscIS[i]);
+                    CHKERRABORT(M_comm,ierr);
+                }
+        }
+#endif
 //   // If matrix != precond, then this means we have specified a
 //   // special preconditioner, so reset preconditioner type to PCMAT.
 //   if (matrix != precond)
@@ -562,6 +586,9 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
 
     case SHELL_PRECOND:
       ierr = PCSetType (_M_pc, (char*) PCSHELL);     CHKERRABORT(M_comm,ierr); return;
+
+    case FIELDSPLIT_PRECOND:
+        ierr = PCSetType(_M_pc,(char*) PCFIELDSPLIT);         CHKERRABORT(M_comm,ierr); return;
 
     default:
       std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "

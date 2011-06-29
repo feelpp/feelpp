@@ -57,7 +57,8 @@ Backend<T>::Backend()
     M_transpose( false ),
     M_maxit( 1000 ),
     M_ksp( "gmres" ),
-    M_pc( "lu" )
+    M_pc( "lu" ),
+    M_fieldSplit("additive")
 {
 }
 
@@ -74,7 +75,8 @@ Backend<T>::Backend( Backend const& backend )
     M_transpose( backend.M_transpose ),
     M_maxit( backend.M_maxit ),
     M_ksp( backend.M_ksp ),
-    M_pc( backend.M_pc )
+    M_pc( backend.M_pc ),
+    M_fieldSplit( backend.M_fieldSplit)
 {
 }
 template <typename T>
@@ -89,7 +91,8 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     M_transpose( false ),
     M_maxit( vm[_o(prefix,"ksp-maxit")].template as<size_type>() ),
     M_ksp( vm[_o(prefix,"ksp-type")].template as<std::string>() ),
-    M_pc( vm[_o(prefix,"pc-type")].template as<std::string>() )
+    M_pc( vm[_o(prefix,"pc-type")].template as<std::string>() ),
+    M_fieldSplit( vm[_o(prefix,"fieldsplit-type")].template as<std::string>() )
 {
 }
 template <typename T>
@@ -334,7 +337,7 @@ Backend<T>::reset()
 
 template<typename T>
 SolverType
-Backend<T>::kspEnumType()
+Backend<T>::kspEnumType() const
 {
     if (this->kspType()=="cg")              return CG;
     else if (this->kspType()=="cr")         return CR;
@@ -354,7 +357,7 @@ Backend<T>::kspEnumType()
 
 template<typename T>
 PreconditionerType
-Backend<T>::pcEnumType()
+Backend<T>::pcEnumType() const
 {
 
     if (this->pcType()=="lu")                return LU_PRECOND;
@@ -368,11 +371,21 @@ Backend<T>::pcEnumType()
     else if (this->pcType()=="sor")          return SOR_PRECOND;
     else if (this->pcType()=="eisenstat")    return EISENSTAT_PRECOND;
     else if (this->pcType()=="shell")        return SHELL_PRECOND;
+    else if (this->pcType()=="fieldsplit")   return FIELDSPLIT_PRECOND;
     else return LU_PRECOND;
 
 } // Backend::pcEnumType
 
+template<typename T>
+FieldSplitType
+Backend<T>::fieldSplitEnumType() const
+{
+    if (this->fieldsplitType()=="additive")  return ADDITIVE;
+    else if (this->fieldsplitType()=="multiplicative")  return MULTIPLICATIVE;
+    else if (this->fieldsplitType()=="schur")  return SCHUR;
+    else return ADDITIVE;
 
+} //Backend fieldSplitEnumType
 
 /*
  * Explicit instantiations
@@ -412,8 +425,17 @@ po::options_description backend_options( std::string const& prefix )
         // solver control options
         ((_prefix+"gmres-restart").c_str(), Feel::po::value<int>()->default_value( 20 ), "number of iterations before solver restarts (gmres)")
         ((_prefix+"ksp-verbose").c_str(), Feel::po::value<int>()->default_value( 0 ), "(=0,1,2) print solver iterations")
-
+        ((_prefix+"fieldsplit-type").c_str(), Feel::po::value<std::string>()->default_value( "additive" ), "type of fieldsplit (additive, multiplicative, schur)")
         ;
+
+    for ( uint16_type i=0;i<5;++i)
+        {
+            _options.add_options()
+                ((boost::format("%1%fieldsplit-%2%-pc-type") %_prefix%i).str().c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of fieldsplit preconditioners")
+                ((boost::format("%1%fieldsplit-%2%-ksp-type") %_prefix%i).str().c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "type of fieldsplit solver")
+                ;
+
+        }
 
     return _options;
 }
