@@ -45,7 +45,7 @@
 #include <feel/feelvf/vf.hpp>
 
 
-std::pair<std::string, std::string> makefin( double hsize );
+std::pair<std::string, std::string> makefin( double hsize, double deep );
 
 inline
 Feel::po::options_description
@@ -235,7 +235,7 @@ Radiator::createMesh( double meshSize )
 
     Gmsh gmsh;
     std::string mesh_name, mesh_desc;
-    boost::tie( mesh_name, mesh_desc ) = ::makefin(meshSize);
+    boost::tie( mesh_name, mesh_desc ) = ::makefin(meshSize, 0);
     std::string fname = gmsh.generate( mesh_name, mesh_desc );
 
     ImporterGmsh<mesh_type> import( "Mesh.0.1.msh" );
