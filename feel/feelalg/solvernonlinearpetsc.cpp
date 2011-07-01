@@ -416,6 +416,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 #if 0
     ierr = SNESSetLagJacobian( M_snes,-2);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
+
     ierr = SNESSetLagPreconditioner( M_snes,-1);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
 #endif
@@ -423,6 +424,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     //KSP            ksp;         /* linear solver context */
     //PC             pc;           /* preconditioner context */
     SNESGetKSP(M_snes,&M_ksp);
+
     KSPSetOperators(M_ksp, jac->mat(), jac->mat(),
                     MatStructure(/*SAME_PRECONDITIONER*/SAME_NONZERO_PATTERN));
     KSPGetPC(M_ksp,&M_pc);
@@ -433,9 +435,16 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     //PCSetType(pc,PCNONE);
     //PCSetType(M_pc,PCILU);
     //ierr = PCSetType (M_pc, (char*) PCILU);       CHKERRABORT(M_comm,ierr);
+    jac->updatePCFieldSplit(M_pc);
+
 
     ierr = SNESSetFromOptions(M_snes);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
+
+
+
+
+
 #endif
 
     /*
@@ -725,6 +734,9 @@ SolverNonLinearPetsc<T>::setPetscPreconditionerType()
 
     case SHELL_PRECOND:
       ierr = PCSetType (M_pc, (char*) PCSHELL);     CHKERRABORT(M_comm,ierr); return;
+
+    case FIELDSPLIT_PRECOND:
+        ierr = PCSetType(M_pc,(char*) PCFIELDSPLIT); CHKERRABORT(M_comm,ierr); return;
 
     default:
       std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
