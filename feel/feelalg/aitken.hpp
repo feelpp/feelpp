@@ -264,6 +264,8 @@ public:
      */
     void saveConvergenceHistory( std::string const& fname ) const;
 
+    void forceConvergence(bool b) {M_hasConverged=b;}
+
 private:
     /**
      * initiliaze the aitken algorithm
