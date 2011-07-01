@@ -244,7 +244,6 @@ private :
                 }
 
             M_matrix->close();
-            std::cout<<"sort initmatriw"<<std::endl;
         }
 
     backend_ptrtype M_backend;
