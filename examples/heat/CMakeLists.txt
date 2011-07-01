@@ -23,4 +23,4 @@
 #
 feel_add_example( thermalfin thermalfin.cpp fin.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
 feel_add_example( resistance resistance.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
-feel_add_example( radiator radiator.cpp fin_cooler.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
+feel_add_example( heatsink heatsink.cpp fin_sink.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})

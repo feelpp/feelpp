@@ -22,7 +22,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file radiator.cpp
+   \file heatsink.cpp
    \author Baptiste Morin <baptistemorin@gmail.com>
    \date 2011-06-28
  */
@@ -51,12 +51,15 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description radiatoroptions("Radiator options");
-    radiatoroptions.add_options()
+    Feel::po::options_description heatsinkoptions("heatsink options");
+    heatsinkoptions.add_options()
         // mesh parameters
         ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
 
-        // physical coeff
+		// 3D parameters
+		("deep", Feel::po::value<double>()->default_value( 0 ), "depth of the fin, only in 3D simulation")
+        
+		// physical coeff
         ("k0", Feel::po::value<double>()->default_value( 1 ), "k0 diffusion parameter")
         ("k1", Feel::po::value<double>()->default_value( 1 ), "k1 diffusion parameter")
         ("k2", Feel::po::value<double>()->default_value( 1 ), "k2 diffusion parameter")
@@ -70,17 +73,17 @@ makeOptions()
         ("export", "export results(ensight, data file(1D)")
         ("export-matlab", "export matrix and vectors in matlab" )
         ;
-    return radiatoroptions.add( Feel::feel_options() );
+    return heatsinkoptions.add( Feel::feel_options() );
 }
 
 inline
 Feel::AboutData
 makeAbout()
 {
-    Feel::AboutData about( "radiator" ,
-                            "radiator" ,
+    Feel::AboutData about( "heatsink" ,
+                            "heatsink" ,
                             "0.1",
-                            "nD(n=1,2,3) Radiator thermal fin on simplices or simplex products",
+                            "nD(n=1,2,3) Heat sink thermal fin on simplices or simplex products",
                             Feel::AboutData::License_GPL,
                             "Copyright (c) 2006-2011 Université Joseph Fourier");
 
@@ -93,9 +96,9 @@ makeAbout()
 namespace Feel
 {
 /**
- * Radiator application
+ * Heat sink application
  */
-class Radiator
+class HeatSink
     :
     public Application
 {
@@ -140,11 +143,12 @@ public:
     typedef Exporter<mesh_type> export_type;
 
     /* Constructor */
-    Radiator( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    HeatSink( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].as<double>() ),
+        depth( this->vm()["deep"].as<double>() ),
         exporter( export_type::New( this->vm(), this->about().appName() ) )
     {
         this->changeRepository( boost::format( "%1%/%2%/%3%/" )
@@ -217,6 +221,7 @@ private:
     backend_ptrtype M_backend;
 
     double meshSize;
+    double depth; 
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
@@ -226,26 +231,26 @@ private:
 
     boost::shared_ptr<export_type> exporter;
 
-}; // Radiator class
+}; // HeatSink class
 
-Radiator::mesh_ptrtype
-Radiator::createMesh( double meshSize )
+HeatSink::mesh_ptrtype
+HeatSink::createMesh( double meshSize )
 {
     mesh_ptrtype mesh( new mesh_type );
 
     Gmsh gmsh;
     std::string mesh_name, mesh_desc;
-    boost::tie( mesh_name, mesh_desc ) = ::makefin(meshSize, 0);
+    boost::tie( mesh_name, mesh_desc ) = ::makefin(meshSize, depth);
     std::string fname = gmsh.generate( mesh_name, mesh_desc );
 
-    ImporterGmsh<mesh_type> import( "Mesh.0.1.msh" );
+    ImporterGmsh<mesh_type> import( "fin_sink.msh" );
     mesh->accept( import );
     return mesh;
-} // Radiator::createMesh
+} // HeatSink::createMesh
 
 
 void
-Radiator::run()
+HeatSink::run()
 {
     if ( this->vm().count( "help" ) )
         {
@@ -316,19 +321,19 @@ Radiator::run()
 
 
         }
-} // Radiator::run
+} // HeatSink::run
 
 void
-Radiator::solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F  )
+HeatSink::solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F  )
 {
     vector_ptrtype U( M_backend->newVector( u.functionSpace()->map() ) );
     M_backend->solve( D, D, U, F );
     u = *U;
-} // Radiator::solve
+} // HeatSink::solve
 
 
 void
-Radiator::exportResults( element_type& U )
+HeatSink::exportResults( element_type& U )
 {
     if ( this->vm().count( "export" ) )
         {
@@ -339,7 +344,7 @@ Radiator::exportResults( element_type& U )
             exporter->save();
 
         }
-} // Radiator::export
+} // HeatSink::export
 } // Feel
 
 
@@ -351,7 +356,7 @@ main( int argc, char** argv )
     using namespace Feel;
 
     /* define and run application */
-    Radiator thermalfin( argc, argv, makeAbout(), makeOptions() );
+    HeatSink thermalfin( argc, argv, makeAbout(), makeOptions() );
 
     thermalfin.run();
 }
