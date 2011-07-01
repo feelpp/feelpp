@@ -236,15 +236,18 @@ private:
 HeatSink::mesh_ptrtype
 HeatSink::createMesh( double meshSize )
 {
-    mesh_ptrtype mesh( new mesh_type );
+    //mesh_ptrtype mesh( new mesh_type );
 
-    Gmsh gmsh;
-    std::string mesh_name, mesh_desc;
-    boost::tie( mesh_name, mesh_desc ) = ::makefin(meshSize, depth);
-    std::string fname = gmsh.generate( mesh_name, mesh_desc );
+    //Gmsh gmsh;
+    //std::string mesh_name, mesh_desc;
+    //boost::tie( mesh_name, mesh_desc ) = ::makefin(meshSize, depth);
+    //std::string fname = gmsh.generate( mesh_name, mesh_desc );
 
-    ImporterGmsh<mesh_type> import( "fin_sink.msh" );
-    mesh->accept( import );
+	auto mesh = createGMSHMesh ( _mesh = new mesh_type,
+								 _desc = makefin(meshSize, depth),
+                                 _h = meshSize);
+    //ImporterGmsh<mesh_type> import( "fin_sink.msh" );
+    //mesh->accept( import );
     return mesh;
 } // HeatSink::createMesh
 

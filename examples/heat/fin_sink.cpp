@@ -31,13 +31,16 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feeldiscr/mesh.hpp>
 
-std::pair<std::string, std::string>
+//std::pair<std::string, std::string>
+mesh_ptrtype
 makefin( double hsize , double deep)
 {
     std::ostringstream ostr;
     if (!deep) { // 2D Mesh
-	
+		//typedef Simplex<2> convex_type;
 		ostr << "Mesh.MshFileVersion = 1;\n"
 			<< "h=" << hsize << ";\n"
 			<< "Point (1) = {0, 0, 0, h};\n"
@@ -66,6 +69,7 @@ makefin( double hsize , double deep)
 	}
 	
 	else { //3D Mesh
+			//typedef Simplex<3> convex_type;
 			ostr << "Mesh.MshFileVersion = 1;\n"
 			<< "h=" << hsize << ";\n"
 			<< "d=" << deep << ";\n"
@@ -145,6 +149,22 @@ makefin( double hsize , double deep)
     nameStr.precision( 3 );
     nameStr << "fin_sink";
 
-    return std::make_pair( nameStr.str(), ostr.str() );
+    std::string mesh_name, mesh_desc;
+	(mesh_name, mesh_desc) = std::make_pair( nameStr.str(), ostr.str() );
+	//return std::make_pair( nameStr.str(); ostr.str() );
+	
+	
+	// generate gmsh mesh
+	//std::string fname = gmsh.generate( mesh_name, mesh_desc );
+	
+	// mesh_ptrtype return type
+    //typedef Mesh<convex_type > mesh_type;
+    //typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+	mesh_ptrtype mesh;
+	mesh = (mesh_name, mesh_desc);
+	
+	return mesh;
+	
+	
 }
 
