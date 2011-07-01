@@ -143,7 +143,7 @@ makefin( double hsize , double deep)
 
     std::ostringstream nameStr;
     nameStr.precision( 3 );
-    nameStr << "fin_cooler";
+    nameStr << "fin_sink";
 
     return std::make_pair( nameStr.str(), ostr.str() );
 }
