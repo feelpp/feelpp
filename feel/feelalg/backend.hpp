@@ -83,19 +83,16 @@ auto ref( T& t ) -> decltype( ref( t, detail::is_shared_ptr<T>() ) )
 
 struct computeNDofForEachSpace
 {
-
-    computeNDofForEachSpace(uint16_type nSpace) : M_is(nSpace) {}
-
-
-    std::vector < std::vector<int> >
-    getIS() const { return M_is;}
-
-    std::vector < std::vector<int> > M_is;
-
     typedef boost::tuple< uint, uint > result_type;
 
+    computeNDofForEachSpace(std::vector < std::vector<int> > & vec) : M_is(vec) {}
+
+    //std::vector < std::vector<int> > getIS() const { return M_is;}
+
+    mutable std::vector < std::vector<int> > & M_is;
+
     template<typename T>
-    result_type operator()(result_type const & previousRes, T const& t) //const
+    result_type operator()(result_type const & previousRes, T const& t) const
     {
         auto nDof = t->nDof();
 
@@ -208,11 +205,12 @@ public:
                 uint start=0;
                 auto result = boost::make_tuple(cptSpaces,start);
 
-                detail::computeNDofForEachSpace cndof(nSpace);
+                std::vector < std::vector<int> > indexSplit(nSpace);
+                //detail::computeNDofForEachSpace cndof(nSpace);
+                detail::computeNDofForEachSpace cndof(indexSplit);
+                boost::fusion::fold( dm->functionSpaces(), result,  cndof );
 
-                boost::fusion::fold( dm->functionSpaces(), result, cndof );
-
-                mat->setIndexSplit(cndof.getIS());
+                mat->setIndexSplit(indexSplit);
             }
 
         return mat;

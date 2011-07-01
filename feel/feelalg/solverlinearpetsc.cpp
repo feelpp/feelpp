@@ -221,7 +221,21 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     rhs->close ();
 
 
+
     matrix->updatePCFieldSplit(_M_pc);
+
+
+#if 0
+    std::cout << "\n HOLA \n";
+    auto indexSplit = matrix->indexSplit();
+    for (uint i = 0 ; i < indexSplit.size(); ++i)
+        {
+            std::cout << "\nSIZE : "<< indexSplit[i].size() << "\n";
+            for (uint j = 0 ; j < indexSplit[i].size(); ++j)
+                std::cout << " "<< indexSplit[i][j];
+        }
+    std::cout << "\n HOLE \n";
+#endif
 #if 0
     PCType ThePc;
     ierr = PCGetType(_M_pc,&ThePc);
