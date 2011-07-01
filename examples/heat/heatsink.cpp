@@ -45,7 +45,7 @@
 #include <feel/feelvf/vf.hpp>
 
 
-std::pair<std::string, std::string> makefin( double hsize, double deep );
+Feel::gmsh_ptrtype makefin( double hsize, double deep );
 
 inline
 Feel::po::options_description
@@ -58,7 +58,7 @@ makeOptions()
 
 		// 3D parameters
 		("deep", Feel::po::value<double>()->default_value( 0 ), "depth of the fin, only in 3D simulation")
-        
+
 		// physical coeff
         ("k0", Feel::po::value<double>()->default_value( 1 ), "k0 diffusion parameter")
         ("k1", Feel::po::value<double>()->default_value( 1 ), "k1 diffusion parameter")
@@ -162,8 +162,10 @@ public:
         /*
          * First we create the mesh
          */
-        mesh = createMesh( meshSize );
+        std::cout<<"creation du maillage avec meshSize = "<<meshSize<< " et depth = "<<depth<<std::endl;
+        mesh = createMesh( );
 
+        std::cout<<"mesh ok"<<std::endl;
         /*
          * The function space and some associate elements are then defined
          */
@@ -196,7 +198,7 @@ public:
     /**
      * create the mesh using mesh size \c meshSize
      */
-    mesh_ptrtype createMesh( double meshSize );
+    mesh_ptrtype createMesh( void );
 
     /**
      * run the convergence test
@@ -221,7 +223,7 @@ private:
     backend_ptrtype M_backend;
 
     double meshSize;
-    double depth; 
+    double depth;
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
@@ -234,20 +236,11 @@ private:
 }; // HeatSink class
 
 HeatSink::mesh_ptrtype
-HeatSink::createMesh( double meshSize )
+HeatSink::createMesh( void )
 {
-    //mesh_ptrtype mesh( new mesh_type );
-
-    //Gmsh gmsh;
-    //std::string mesh_name, mesh_desc;
-    //boost::tie( mesh_name, mesh_desc ) = ::makefin(meshSize, depth);
-    //std::string fname = gmsh.generate( mesh_name, mesh_desc );
-
 	auto mesh = createGMSHMesh ( _mesh = new mesh_type,
 								 _desc = makefin(meshSize, depth),
-                                 _h = meshSize);
-    //ImporterGmsh<mesh_type> import( "fin_sink.msh" );
-    //mesh->accept( import );
+                                 _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
     return mesh;
 } // HeatSink::createMesh
 
@@ -269,6 +262,7 @@ HeatSink::run()
     double Bimin = this->vm()["Bimin"].as<double>();
     double Bimax = this->vm()["Bimax"].as<double>();
     int N = this->vm()["N"].as<int>();
+
 
     for( int i = 0; i < N; ++i )
         {
