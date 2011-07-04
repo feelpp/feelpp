@@ -1326,10 +1326,8 @@ public:
         }
 
 
-
-        template<typename Context_t>
         void
-        idInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
+        idInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
 
         /*
          * Get the reals points matrix in a context
@@ -1460,9 +1458,8 @@ public:
             grad_( context, v );
         }
 
-        template<typename Context_t>
         void
-        gradInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
+        gradInterpolate(matrix_node_type __ptsReal, array_type& v ) const;
 
         /**
          * interpolate the gradient of the function at node (real coordinate) x
@@ -1539,17 +1536,14 @@ public:
             d_( 2, context, v );
         }
 
-        template<typename Context_t>
         void
-        dxInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
+        dxInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
 
-        template<typename Context_t>
         void
-        dyInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
+        dyInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
 
-        template<typename Context_t>
         void
-        dzInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
+        dzInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
 
 
         //@}
@@ -1585,9 +1579,8 @@ public:
         template<typename ContextType>
         void div_( ContextType const & context, array_type& v ) const;
 
-        template<typename Context_t>
         void
-        divInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
+        divInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
 
         typedef detail::Curl<value_type,-1> curl_type;
         typedef detail::Curl<value_type,0> curlx_type;
@@ -1643,9 +1636,8 @@ public:
             curl_( context, v );
         }
 
-        template<typename Context_t>
         void
-        curlInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
+        curlInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
 
         template<typename ContextType>
         void curl_( ContextType const & context, array_type& v ) const;
@@ -1696,17 +1688,14 @@ public:
             curl_( context, v );
         }
 
-        template<typename Context_t>
         void
-        curlxInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
+        curlxInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
 
-        template<typename Context_t>
         void
-        curlyInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
+        curlyInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
 
-        template<typename Context_t>
         void
-        curlzInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
+        curlzInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
 
         template<typename ContextType>
         boost::array<typename array_type::index, 3>
@@ -1741,9 +1730,8 @@ public:
         void
         hess_( ContextType const & context, array_type& v, mpl::int_<0> ) const;
 
-        template<typename Context_t>
         void
-        hessInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const;
+        hessInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
 
         typedef detail::H<value_type> hess_type;
 
@@ -2933,9 +2921,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3194,9 +3181,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_node_type __ptsReal, array_type& v ) const
 {
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
     typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
@@ -3345,9 +3331,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3471,9 +3456,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3561,9 +3545,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( Context_t c
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate(matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3650,9 +3633,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( Context_t 
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3738,9 +3720,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( Context_t 
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3864,10 +3845,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( Context_t const & context,
-                                                                   matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3942,9 +3921,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( Context_t con
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -4019,9 +3997,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( Context_t con
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -4148,9 +4125,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( Context_t const & context, matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node_type __ptsReal, array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
