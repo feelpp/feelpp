@@ -384,7 +384,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_expr( expr ),                                     \
                     M_geot( fusion::at_key<key_type>( geom ) ),         \
                     M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
-                    M_pc( new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ), \
+                    M_pc( this->createPcIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() ) ) /* new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) )*/, \
                     M_pcf(),                                           \
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
                                                     ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
@@ -487,7 +487,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                         M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
                     else  {                                             \
                         matrix_node_type __ptsreal = M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<2>()); \
-                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( *M_ctx, __ptsreal, M_loc ); \
+                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc ); \
                     }                                                   \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<true> )      \
@@ -501,7 +501,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     else {                                              \
                         /*std::cout << "\n idv with interp \n";*/       \
                         matrix_node_type __ptsreal = M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<1>()); \
-                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( *M_ctx, __ptsreal, M_loc ); \
+                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc ); \
                     }                                                   \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<false> )     \
@@ -601,6 +601,14 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 {                                                       \
                     return M_loc[c1][c2][q];                           \
                 }                                                      \
+                pc_ptrtype createPcIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<true>) \
+                {                                                       \
+                    return pc_ptrtype (new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ); \
+                }                                                       \
+                pc_ptrtype createPcIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<false>) \
+                {                                                       \
+                    return pc_ptrtype();                                \
+                }                                                       \
                 ctx_ptrtype createCtxIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<true>) \
                 {                                                       \
                     return ctx_ptrtype( new ctx_type( expr.e().functionSpace()->fe(), \
@@ -609,7 +617,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
                 ctx_ptrtype createCtxIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<false>) \
                 {                                                       \
-                    return ctx_ptrtype( new ctx_type( ) );              \
+                    return ctx_ptrtype( /*new ctx_type( )*/ );          \
                 }                                                       \
                 void updateCtxIfSameGeom(Geo_t const& geom, mpl::bool_<true> )    \
                 {   if (fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value ) /*face case*/ \
