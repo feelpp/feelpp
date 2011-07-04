@@ -42,8 +42,7 @@ makefin( double hsize , double deep)
 {
     std::ostringstream ostr;
     if (!deep) { // 2D Mesh
-        //typedef Simplex<2> convex_type;
-        ostr << "Mesh.MshFileVersion = 1;\n"
+        ostr << "Mesh.MshFileVersion = 2.1;\n"
              << "h=" << hsize << ";\n"
              << "Point (1) = {0, 0, 0, h};\n"
              << "Point (2) = {3.5, 0, 0, h};\n"
@@ -70,8 +69,7 @@ makefin( double hsize , double deep)
     }
 
     else { //3D Mesh
-        //typedef Simplex<3> convex_type;
-        ostr << "Mesh.MshFileVersion = 1;\n"
+        ostr << "Mesh.MshFileVersion = 2.1;\n"
              << "h=" << hsize << ";\n"
              << "d=" << deep << ";\n"
              << "Point (1) = {0, 0, 0, h};\n"
@@ -145,7 +143,6 @@ makefin( double hsize , double deep)
              << "Volume (2) = {2};\n";
     }
 
-    std::cout<<"start "<<std::endl;
     std::ostringstream nameStr;
     nameStr.precision( 3 );
     nameStr << "fin_sink";
@@ -153,6 +150,5 @@ makefin( double hsize , double deep)
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( ostr.str() );
     return gmshp;
-
 }
 
