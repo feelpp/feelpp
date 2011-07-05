@@ -54,6 +54,7 @@ Backend<T>::Backend()
     M_rtolerance( 1e-13 ),
     M_dtolerance( 1e5 ),
     M_atolerance( 1e-50 ),
+    M_reuse_prec( false ),
     M_transpose( false ),
     M_maxit( 1000 ),
     M_ksp( "gmres" ),
@@ -72,6 +73,7 @@ Backend<T>::Backend( Backend const& backend )
     M_rtolerance( backend.M_rtolerance ),
     M_dtolerance( backend.M_dtolerance ),
     M_atolerance( backend.M_atolerance ),
+    M_reuse_prec( backend.M_reuse_prec ),
     M_transpose( backend.M_transpose ),
     M_maxit( backend.M_maxit ),
     M_ksp( backend.M_ksp ),
@@ -88,6 +90,7 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     M_rtolerance( vm[_o(prefix,"ksp-rtol")].template as<double>() ),
     M_dtolerance( vm[_o(prefix,"ksp-dtol")].template as<double>() ),
     M_atolerance( vm[_o(prefix,"ksp-atol")].template as<double>() ),
+    M_reuse_prec( vm[_o(prefix,"reuse-prec")].template as<bool>() ),
     M_transpose( false ),
     M_maxit( vm[_o(prefix,"ksp-maxit")].template as<size_type>() ),
     M_ksp( vm[_o(prefix,"ksp-type")].template as<std::string>() ),
@@ -414,7 +417,7 @@ po::options_description backend_options( std::string const& prefix )
         ((_prefix+"ksp-atol").c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance")
         ((_prefix+"ksp-dtol").c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance")
         ((_prefix+"ksp-maxit").c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations")
-
+        ((_prefix+"reuse-prec").c_str(), Feel::po::value<bool>()->default_value( false ), "reuse preconditioner")
         ((_prefix+"ksp-type").c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres")
 
         // preconditioner options
