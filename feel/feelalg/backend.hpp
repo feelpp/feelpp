@@ -454,7 +454,7 @@ public:
                                      (rtolerance,(double), M_rtolerance/*1e-13*/)
                                      (atolerance,(double), M_atolerance/*1e-50*/)
                                      (dtolerance,(double), M_dtolerance/*1e5*/)
-                                     (reuse_prec,(bool), false )
+                                     (reuse_prec,(bool), M_reuse_prec )
                                      (transpose,(bool), false )
                                      (pc,(std::string),M_pc/*"lu"*/)
                                      (ksp,(std::string),M_ksp/*"gmres"*/)
@@ -569,6 +569,7 @@ private:
     double M_residual;
     double M_rtolerance;
     double M_dtolerance;
+    bool M_reuse_prec;
     double M_atolerance;
     size_t M_nUsePC;
     bool   M_converged;
