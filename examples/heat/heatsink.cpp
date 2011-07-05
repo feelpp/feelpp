@@ -1,3 +1,4 @@
+
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
   This file is part of the Feel library
@@ -41,12 +42,12 @@
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 
-
 #include <feel/feelvf/vf.hpp>
 
 
 Feel::gmsh_ptrtype makefin( double hsize, double deep );
 
+//# marker1 #
 inline
 Feel::po::options_description
 makeOptions()
@@ -54,10 +55,18 @@ makeOptions()
     Feel::po::options_description heatsinkoptions("heatsink options");
     heatsinkoptions.add_options()
         // mesh parameters
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("hsize", Feel::po::value<double>()->default_value( 0.5 ),
+         "first h value to start convergence")
 
-		// 3D parameters
-		("deep", Feel::po::value<double>()->default_value( 0 ), "depth of the fin, only in 3D simulation")
+		// 3D parameter
+		("deep", Feel::po::value<double>()->default_value( 0 ),
+        "depth of the fin, only in 3D simulation")
+
+        // thermal conductivities parameters
+        ("spreader", Feel::po::value<double>()->default_value( 3 ),
+         "thermal conductivity of the base spreader")
+        ("fin", Feel::po::value<double>()->default_value( 3 ),
+         "thermal conductivity of the fin")
 
 		// physical coeff
         ("k0", Feel::po::value<double>()->default_value( 1 ), "k0 diffusion parameter")
@@ -98,6 +107,7 @@ namespace Feel
 /**
  * Heat sink application
  */
+template<int Dim, int Order>
 class HeatSink
     :
     public Application
@@ -108,9 +118,9 @@ public:
 #define Entity Simplex
 
     // -- TYPEDEFS --
-    static const uint16_type Dim = 2;
-    static const uint16_type Order = 1;
-    static const uint16_type imOrder = 2*Order;
+    //static const uint16_type Dim = 2;
+    //static const uint16_type Order = 1;
+    static const uint16_type imOrder = Dim*Order;
 
     typedef double value_type;
 
@@ -124,12 +134,12 @@ public:
     typedef backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<2> entity_type;
+    typedef Entity<Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
-    typedef p0_space_type::element_type p0_element_type;
+    typedef typename p0_space_type::element_type p0_element_type;
 
     /*basis*/
     typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
@@ -137,69 +147,19 @@ public:
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef space_type::element_type element_type;
+    typedef typename space_type::element_type element_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
 
-    /* Constructor */
-    HeatSink( int argc, char** argv, AboutData const& ad, po::options_description const& od )
-        :
-        super( argc, argv, ad, od ),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].as<double>() ),
-        depth( this->vm()["deep"].as<double>() ),
-        exporter( export_type::New( this->vm(), this->about().appName() ) )
-    {
-        this->changeRepository( boost::format( "%1%/%2%/%3%/" )
-                                % this->about().appName()
-                                % entity_type::name()
-                                % this->vm()["hsize"].as<double>()
-                                );
-        using namespace Feel::vf;
-
-
-        /*
-         * First we create the mesh
-         */
-        std::cout<<"creation du maillage avec meshSize = "<<meshSize<< " et depth = "<<depth<<std::endl;
-        mesh = createMesh( );
-
-        std::cout<<"mesh ok"<<std::endl;
-        /*
-         * The function space and some associate elements are then defined
-         */
-        Xh = space_type::New( mesh );
-        element_type u( Xh, "u" );
-        element_type v( Xh, "v" );
-
-        Fcst = M_backend->newVector( Xh );
-
-
-        form1( Xh, Fcst, _init=true )  = integrate( markedfaces(mesh,1), _Q<imOrder>(), id(v) );
-
-        if ( this->vm().count( "export-matlab" ) )
-            Fcst->printMatlab( "F.m" );
-
-
-        /*
-         * Construction of the left hand side
-         */
-        Dcst = M_backend->newMatrix( Xh, Xh );
-
-        form2( Xh, Xh, Dcst, _init=true ) = integrate( markedelements(mesh,1), _Q<imOrder>(), ( gradt(u)*trans(grad(v))) );
-
-        Dcst->close();
-        if ( this->vm().count( "export-matlab" ) )
-            Dcst->printMatlab( "Dcst" );
-
-    }
-
     /**
-     * create the mesh using mesh size \c meshSize
+     * create the mesh using meshSize and depth (if 3D)
      */
-    mesh_ptrtype createMesh( void );
+    mesh_ptrtype createMesh( double meshSize, double depth );
 
+	/* constructor */
+	HeatSink( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+	
     /**
      * run the convergence test
      */
@@ -235,18 +195,68 @@ private:
 
 }; // HeatSink class
 
-HeatSink::mesh_ptrtype
-HeatSink::createMesh( void )
+/* Constructor */
+template<int Dim, int Order>
+HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+	:
+	super( argc, argv, ad, od ),
+	M_backend( backend_type::build( this->vm() ) ),
+	meshSize( this->vm()["hsize"].template as<double>() ),
+	depth( this->vm()["deep"].template as<double>() ),
+	exporter( export_type::New( this->vm(), this->about().appName() ) )
+   {
+    this->changeRepository( boost::format( "%1%/%2%/%3%/" )
+						   % this->about().appName()
+						   % entity_type::name()
+						   % this->vm()["hsize"].template as<double>()
+						   );
+    using namespace Feel::vf;
+	
+    /*
+     * First we create the mesh
+    */
+        mesh = createMesh( meshSize, depth );
+		
+        /*
+         * The function space and some associate elements are then defined
+         */
+        Xh = space_type::New( mesh );
+        element_type u( Xh, "u" );
+        element_type v( Xh, "v" );
+		
+        Fcst = M_backend->newVector( Xh );
+		
+        form1( Xh, Fcst, _init=true )  = integrate( markedfaces(mesh,1), _Q<imOrder>(), id(v) );
+		
+        if ( this->vm().count( "export-matlab" ) )
+            Fcst->printMatlab( "F.m" );
+		
+        /*
+         * Construction of the left hand side
+         */
+        Dcst = M_backend->newMatrix( Xh, Xh );
+		
+        form2( Xh, Xh, Dcst, _init=true ) = integrate( markedelements(mesh,1), _Q<imOrder>(), ( gradt(u)*trans(grad(v))) );
+		
+        Dcst->close();
+        if ( this->vm().count( "export-matlab" ) )
+            Dcst->printMatlab( "Dcst" );
+    }
+	
+template<int Dim, int Order>	
+typename HeatSink<Dim,Order>::mesh_ptrtype
+HeatSink<Dim,Order>::createMesh( double meshSize, double depth )
 {
-	auto mesh = createGMSHMesh ( _mesh = new mesh_type,
-								 _desc = makefin(meshSize, depth),
-                                 _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
+	mesh_ptrtype mesh = createGMSHMesh ( _mesh = new mesh_type,
+								         _desc = makefin( meshSize, depth ),
+                                         _h = meshSize,
+                                         _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
     return mesh;
 } // HeatSink::createMesh
 
-
+template<int Dim, int Order>
 void
-HeatSink::run()
+HeatSink<Dim, Order>::run()
 {
     if ( this->vm().count( "help" ) )
         {
@@ -259,9 +269,9 @@ HeatSink::run()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    double Bimin = this->vm()["Bimin"].as<double>();
-    double Bimax = this->vm()["Bimax"].as<double>();
-    int N = this->vm()["N"].as<int>();
+    double Bimin = this->vm()["Bimin"].template as<double>();
+    double Bimax = this->vm()["Bimax"].template as<double>();
+    int N = this->vm()["N"].template as<int>();
 
 
     for( int i = 0; i < N; ++i )
@@ -276,10 +286,10 @@ HeatSink::run()
 
             int Nb = 2;
             ublas::matrix<double> k( Nb, Nb );
-            k( 0 , 0 ) = this->vm()["k0"].as<double>();
-            k( 1 , 0 ) = this->vm()["k1"].as<double>();
-            k( 0 , 1 ) = this->vm()["k2"].as<double>();
-            k( 1 , 1 ) = this->vm()["k3"].as<double>();
+            k( 0 , 0 ) = this->vm()["k0"].template as<double>();
+            k( 1 , 0 ) = this->vm()["k1"].template as<double>();
+            k( 0 , 1 ) = this->vm()["k2"].template as<double>();
+            k( 1 , 1 ) = this->vm()["k3"].template as<double>();
             for( int r = 0; r < Nb; ++r )
                 for( int c = 0; c < Nb; ++c )
                     {
@@ -319,9 +329,10 @@ HeatSink::run()
 
         }
 } // HeatSink::run
-
+	
+template<int Dim, int Order>
 void
-HeatSink::solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F  )
+HeatSink<Dim, Order>::solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F  )
 {
     vector_ptrtype U( M_backend->newVector( u.functionSpace()->map() ) );
     M_backend->solve( D, D, U, F );
@@ -329,8 +340,9 @@ HeatSink::solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F  )
 } // HeatSink::solve
 
 
+template<int Dim, int Order>
 void
-HeatSink::exportResults( element_type& U )
+HeatSink<Dim, Order>::exportResults( element_type& U )
 {
     if ( this->vm().count( "export" ) )
         {
@@ -341,7 +353,7 @@ HeatSink::exportResults( element_type& U )
             exporter->save();
 
         }
-} // HeatSink::export
+} // HeatSink::exportResults
 } // Feel
 
 
@@ -351,11 +363,17 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
+	/* Parameters to be changed */
+	const int nDim = 2;
+	const int nOrder = 1;
+	
+	/* define application */
+	typedef Feel::HeatSink<nDim, nOrder> heat_sink_type;
+	
+	/* run application */
+	heat_sink_type heatsink( argc, argv, makeAbout(), makeOptions() );
 
-    /* define and run application */
-    HeatSink thermalfin( argc, argv, makeAbout(), makeOptions() );
-
-    thermalfin.run();
+    heatsink.run();
 }
 
 
