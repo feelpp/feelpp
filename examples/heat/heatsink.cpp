@@ -63,11 +63,15 @@ makeOptions()
         "depth of the fin, only in 3D simulation")
 
         // thermal conductivities parameters
-        ("spreader", Feel::po::value<double>()->default_value( 3 ),
+        ("spreader", Feel::po::value<double>()->default_value( 386 ),
          "thermal conductivity of the base spreader")
-        ("fin", Feel::po::value<double>()->default_value( 3 ),
+        ("fin", Feel::po::value<double>()->default_value( 386 ),
          "thermal conductivity of the fin")
-
+	
+		// density parameter
+		("rho", Feel::po::value<int>()->default_value( 8940 ),
+		 "density of the material in SI unit kg.m^{-3}")
+		 
 		// physical coeff
         ("k0", Feel::po::value<double>()->default_value( 1 ), "k0 diffusion parameter")
         ("k1", Feel::po::value<double>()->default_value( 1 ), "k1 diffusion parameter")
@@ -84,6 +88,7 @@ makeOptions()
         ;
     return heatsinkoptions.add( Feel::feel_options() );
 }
+//# endmarker1 #
 
 inline
 Feel::AboutData
@@ -94,7 +99,7 @@ makeAbout()
                             "0.1",
                             "nD(n=1,2,3) Heat sink thermal fin on simplices or simplex products",
                             Feel::AboutData::License_GPL,
-                            "Copyright (c) 2006-2011 Université Joseph Fourier");
+                            "Copyright (c) 2006-2011 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     about.addAuthor("Baptiste Morin", "junior developer", "baptistemorin@gmail.com","");
@@ -118,8 +123,6 @@ public:
 #define Entity Simplex
 
     // -- TYPEDEFS --
-    //static const uint16_type Dim = 2;
-    //static const uint16_type Order = 1;
     static const uint16_type imOrder = Dim*Order;
 
     typedef double value_type;
@@ -155,14 +158,12 @@ public:
     /**
      * create the mesh using meshSize and depth (if 3D)
      */
-    mesh_ptrtype createMesh( double meshSize, double depth );
+    mesh_ptrtype createMesh();
 
 	/* constructor */
 	HeatSink( int argc, char** argv, AboutData const& ad, po::options_description const& od );
 	
-    /**
-     * run the convergence test
-     */
+    /* run the simulation */
     void run();
 
 private:
@@ -182,9 +183,18 @@ private:
 
     backend_ptrtype M_backend;
 
+	/* mesh parameters */
     double meshSize;
     double depth;
 
+	/* thermal conductivities */
+	double lambda_spreader;
+	double lambda_fin;
+	double ratio;
+	
+	/* density of the material */
+	int density;
+	
     mesh_ptrtype mesh;
     space_ptrtype Xh;
 
@@ -198,25 +208,33 @@ private:
 /* Constructor */
 template<int Dim, int Order>
 HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::options_description const& od )
-	:
-	super( argc, argv, ad, od ),
-	M_backend( backend_type::build( this->vm() ) ),
-	meshSize( this->vm()["hsize"].template as<double>() ),
-	depth( this->vm()["deep"].template as<double>() ),
-	exporter( export_type::New( this->vm(), this->about().appName() ) )
-   {
-    this->changeRepository( boost::format( "%1%/%2%/%3%/" )
-						   % this->about().appName()
-						   % entity_type::name()
-						   % this->vm()["hsize"].template as<double>()
-						   );
-    using namespace Feel::vf;
+		:
+		super( argc, argv, ad, od ),
+		M_backend( backend_type::build( this->vm() ) ),
+		meshSize( this->vm()["hsize"].template as<double>() ),
+		depth( this->vm()["deep"].template as<double>() ),
+		lambda_spreader( this-> vm()["spreader"].template as<double>() ),
+		lambda_fin( this-> vm()["fin"].template as<double>() ),
+		density( this-> vm()["rho"].template as<int>() ),
+		exporter( export_type::New( this->vm(), this->about().appName() ) )
+		{
+			this->changeRepository( boost::format( "%1%/%2%/%3%/" )
+								   % this->about().appName()
+								   % entity_type::name()
+								   % this->vm()["hsize"].template as<double>()
+								  );
+		using namespace Feel::vf;
 	
-    /*
-     * First we create the mesh
-    */
-        mesh = createMesh( meshSize, depth );
+	    /*
+		 * First we create the mesh
+		 */
+        mesh = createMesh();
 		
+		/*
+		 * calculate the ratio for the equation
+		 */
+		ratio = lambda_spreader/lambda_fin;
+			
         /*
          * The function space and some associate elements are then defined
          */
@@ -245,7 +263,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 	
 template<int Dim, int Order>	
 typename HeatSink<Dim,Order>::mesh_ptrtype
-HeatSink<Dim,Order>::createMesh( double meshSize, double depth )
+HeatSink<Dim,Order>::createMesh( )
 {
 	mesh_ptrtype mesh = createGMSHMesh ( _mesh = new mesh_type,
 								         _desc = makefin( meshSize, depth ),
@@ -284,17 +302,16 @@ HeatSink<Dim, Order>::run()
 
             //D->addMatrix( 1.0, *Dcst );
 
-            int Nb = 2;
-            ublas::matrix<double> k( Nb, Nb );
+            ublas::matrix<double> k( Dim, Dim );
             k( 0 , 0 ) = this->vm()["k0"].template as<double>();
             k( 1 , 0 ) = this->vm()["k1"].template as<double>();
             k( 0 , 1 ) = this->vm()["k2"].template as<double>();
             k( 1 , 1 ) = this->vm()["k3"].template as<double>();
-            for( int r = 0; r < Nb; ++r )
-                for( int c = 0; c < Nb; ++c )
+            for( int r = 0; r < Dim; ++r )
+                for( int c = 0; c < Dim; ++c )
                     {
 
-                        form2( Xh, Xh, D ) += integrate( markedelements(mesh,Nb*c+r+1), _Q<imOrder>(),
+                        form2( Xh, Xh, D ) += integrate( markedelements(mesh,Dim*c+r+1), _Q<imOrder>(),
                                                          k(r,c)*gradt(u)*trans(grad(v)) );
                     }
 
