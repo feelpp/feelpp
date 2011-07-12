@@ -47,6 +47,7 @@
 #include <feel/feelfilters/gmshenums.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelmesh/meshmover.hpp>
+#include <feel/feelfilters/exporterquick.hpp>
 
 namespace Feel
 {
@@ -459,7 +460,9 @@ BOOST_PARAMETER_FUNCTION(
     (required
      (mesh, *)
         )
-    )
+    (optional
+     (refine,          *(boost::is_integral<mpl::_>), 0 )
+        ))
 {
     typedef typename detail::mesh<Args>::type _mesh_type;
     typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
@@ -467,24 +470,15 @@ BOOST_PARAMETER_FUNCTION(
     _mesh_ptrtype _mesh( mesh );
 
     using namespace vf;
-    std::cout << "mesh loaded" << std::endl;
     typedef FunctionSpace<_mesh_type,bases<Lagrange<_mesh_type::nOrder,Vectorial> > > space_t;
     auto Xh = space_t::New( _mesh );
-    std::cout << "space created" << std::endl;
     auto xHo = vf::project( _space=Xh, _range=elements(mesh), _expr=vf::P() );
-    std::cout << "xHo created" << std::endl;
     auto xLo = vf::project( _space=Xh, _range=elements(mesh), _expr=vf::P(), _geomap=(int)GEOMAP_O1 );
-    std::cout << "xLo created" << std::endl;
     auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces(mesh), _expr=vf::P() );
-    std::cout << "xHoBdy created" << std::endl;
     auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces(mesh), _expr=vf::P(), _geomap=(int)GEOMAP_O1 );
-    std::cout << "xLoBdy created" << std::endl;
     auto straightener = vf::project( _space=Xh, _range=elements(mesh), _expr=(idv(xLo)-idv(xHo))-(idv(xLoBdy)-idv(xHoBdy)) );
-    std::cout << "straightener created" << std::endl;
-
     MeshMover<_mesh_type> meshmove;
     meshmove.apply( _mesh, straightener );
-    std::cout << "straightener created" << std::endl;
 
     return _mesh;
 }
@@ -511,6 +505,7 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     (optional
+     (straighten,          *(boost::is_integral<mpl::_>), 1 )
      (refine,          *(boost::is_integral<mpl::_>), 0 )
      (update,          *(boost::is_integral<mpl::_>), 0 )
 	 (physical_are_elementary_regions,		   *,false)
@@ -549,7 +544,8 @@ BOOST_PARAMETER_FUNCTION(
     {
         _mesh->components().reset();
     }
-
+    if ( straighten && _mesh_type::nOrder > 1 )
+        return straightenMesh( _mesh );
     return _mesh;
 }
 
@@ -608,6 +604,7 @@ BOOST_PARAMETER_FUNCTION(
      (h,              *(boost::is_arithmetic<mpl::_>), 0.1 )
      (order,          *(boost::is_integral<mpl::_>), 1 )
      (parametricnodes,*(boost::is_integral<mpl::_>), 0 )
+     (straighten,     *(boost::is_integral<mpl::_>), 1 )
      (refine,          *(boost::is_integral<mpl::_>), 0 )
      (update,          *(boost::is_integral<mpl::_>), 0 )
      (force_rebuild,   *(boost::is_integral<mpl::_>), 0 )
@@ -649,7 +646,8 @@ BOOST_PARAMETER_FUNCTION(
     {
         _mesh->components().reset();
     }
-
+    if ( straighten && _mesh_type::nOrder > 1 )
+        return straightenMesh( _mesh );
     return _mesh;
 }
 
