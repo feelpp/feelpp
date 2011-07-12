@@ -1559,7 +1559,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 //Log() << it->id() << " : " << _M_im( expr, 0, 0 ) << "\n";
 #if defined(USE_OPT_HO)
             }
-            //break;
+            break;
             case GEOMAP_O1:
             {
                 //Log() << "geomap o1" << "\n";
@@ -1574,11 +1574,11 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                     for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                     {
-                        reso1(c1,c2) += _M_im( expr1, c1, c2 );
+                        res(c1,c2) += _M_im( expr1, c1, c2 );
                     }
                 //Log() << it->id() << " : " << _M_im( expr1, 0, 0 ) << "\n";
             }
-            //break;
+            break;
             case GEOMAP_OPT:
             {
                 //Log() << "geomap opt" << "\n";
@@ -1595,9 +1595,9 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
                     for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                        {
-                            resopt(c1,c2) += _M_im( expr, c1, c2 );
-                        }
+                            {
+                            res(c1,c2) += _M_im( expr, c1, c2 );
+                            }
                     //Log() << it->id() << " : " << _M_im( expr, 0, 0 ) << "\n";
                 }
                 else
@@ -1614,7 +1614,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                         {
-                            resopt(c1,c2) += _M_im( expr1, c1, c2 );
+                            res(c1,c2) += _M_im( expr1, c1, c2 );
                         }
                     //Log() << it->id() << " : " << _M_im( expr1, 0, 0 ) << "\n";
                 }
@@ -1623,7 +1623,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             }
 #endif // 0
         }
-#if defined(USE_OPT_HO)
+#if 0 // defined(USE_OPT_HO)
     std::cout << "resho=" << res << "\n";
     std::cout << "res1=" << reso1 << "\n";
     std::cout << "resopt=" << resopt << "\n";
@@ -2145,8 +2145,15 @@ integrate( IntElts const& elts,
            ExprT const& expr,
            GeomapIntegratorType gt = GEOMAP_HO )
 {
-    Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<ExprT>::value << "\n";
-    return integrate( elts, _Q< ExpressionOrder<ExprT>::value >(), expr, gt );
+    typedef typename boost::tuples::template element<1, IntElts>::type element_iterator_type;
+    typedef typename boost::remove_reference<typename element_iterator_type::reference>::type const_t;
+    typedef typename boost::remove_const<const_t>::type the_face_element_type;
+    typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
+
+    const uint16_type nOrderGeo = the_element_type::nOrder;
+
+    Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<ExprT>::value*nOrderGeo << "\n";
+    return integrate( elts, _Q< ExpressionOrder<ExprT>::value*nOrderGeo >(), expr, gt );
 }
 
 
