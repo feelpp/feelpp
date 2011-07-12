@@ -105,6 +105,7 @@ public :
     domain_element_type
     project( RhsExpr const& rhs_expr )
         {
+            using namespace vf;
             domain_element_type de = this->domainSpace()->element();
 
             auto ie = M_backend->newVector(this->dualImageSpace());
@@ -183,6 +184,7 @@ private :
 
     void initMatrix()
         {
+            using namespace vf;
             if (M_proj_type == L2)
                 {
                     form2 (_trial=this->domainSpace(),
