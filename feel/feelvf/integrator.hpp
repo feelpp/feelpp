@@ -32,6 +32,7 @@
 
 #include <boost/timer.hpp>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/parameter.hpp>
 #include <feel/feelvf/block.hpp>
 
 
@@ -2128,14 +2129,14 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
  * using the integration rule \c im .
  */
 template<typename IntElts, typename Im, typename ExprT>
-Expr<Integrator<IntElts, Im, ExprT> >
+Expr<Integrator<IntElts, Im, ExprT, Im> >
 integrate( IntElts const& elts,
            Im const& im,
            ExprT const& expr,
            GeomapStrategyType gt = GEOMAP_HO )
 {
-    typedef Integrator<IntElts, Im, ExprT> expr_t;
-    return Expr<expr_t>( expr_t( elts, im, expr, gt ) );
+    typedef Integrator<IntElts, Im, ExprT, Im> expr_t;
+    return Expr<expr_t>( expr_t( elts, im, expr, gt, im ) );
 }
 
 
@@ -2200,7 +2201,7 @@ struct integrate_type
 {
     typedef typename clean_type<Args,tag::expr>::type _expr_type;
     typedef typename clean_type<Args,tag::range>::type _range_type;
-    typedef _Q< ExpressionOrder<_expr_type>::value > quad_type;
+    typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > quad_type;
     typedef Expr<Integrator<_range_type, quad_type, _expr_type, quad_type> > expr_type;
 
 };
