@@ -6,7 +6,7 @@
        Date: 2005-05-31
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006-2011 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,7 @@
 
 #include <boost/timer.hpp>
 #include <boost/signal.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel
 {
@@ -89,11 +90,13 @@ public:
 
     Projector( functionspace_ptrtype const& __functionspace,
                IteratorRange const& r,
-               expression_type const& __expr )
+               expression_type const& __expr,
+               GeomapStrategyType geomap_strategy )
         :
-        _M_functionspace( __functionspace ),
-        _M_range( r ),
-        _M_expr( __expr )
+        M_functionspace( __functionspace ),
+        M_range( r ),
+        M_expr( __expr ),
+        M_geomap_strategy( geomap_strategy )
         {
             Debug( 5065 ) << "Projector constructor from expression\n";
         }
@@ -101,9 +104,10 @@ public:
 
     Projector( Projector const& __vfi )
         :
-        _M_functionspace( __vfi._M_functionspace ),
-        _M_range( __vfi._M_range ),
-        _M_expr( __vfi._M_expr )
+        M_functionspace( __vfi.M_functionspace ),
+        M_range( __vfi.M_range ),
+        M_expr( __vfi.M_expr ),
+        M_geomap_strategy( __vfi.M_geomap_strategy )
         {
             Debug( 5065 ) << "Projector copy constructor\n";
         }
@@ -117,9 +121,9 @@ public:
     //@{
 
     element_type operator()( const bool sum = false ) const
-    {
-        return operator()( sum, idim_type() );
-    }
+        {
+            return operator()( sum, idim_type() );
+        }
 
     //@}
 
@@ -133,7 +137,7 @@ public:
      *
      * @return the variational expression
      */
-    expression_type const& expression() const { return _M_expr; }
+    expression_type const& expression() const { return M_expr; }
 
     //@}
 
@@ -156,9 +160,10 @@ private:
 
 private:
 
-    functionspace_ptrtype const& _M_functionspace;
-    range_iterator _M_range;
-    expression_type const&  _M_expr;
+    functionspace_ptrtype const& M_functionspace;
+    range_iterator M_range;
+    expression_type const&  M_expr;
+    GeomapStrategyType M_geomap_strategy;
 };
 
 template<ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
@@ -167,8 +172,8 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 {
     boost::timer __timer;
 
-    element_type __v( _M_functionspace );
-    FEEL_ASSERT( __v.size() == _M_functionspace->dof()->nDof() )( __v.size() )( _M_functionspace->dof()->nDof() ).warn( "invalid size" );
+    element_type __v( M_functionspace );
+    FEEL_ASSERT( __v.size() == M_functionspace->dof()->nDof() )( __v.size() )( M_functionspace->dof()->nDof() ).warn( "invalid size" );
     __v.setZero();
 
     typedef typename functionspace_type::fe_type fe_type;
@@ -177,18 +182,25 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     typedef typename functionspace_type::mesh_type mesh_type;
     typedef typename mesh_type::element_type element_type;
 
-    typedef typename functionspace_type::gm_type gm_type;
+    typedef typename element_type::gm_type gm_type;
     typedef typename gm_type::template Context<context, element_type> gm_context_type;
+    typedef typename element_type::gm1_type gm1_type;
+    typedef typename gm1_type::template Context<context, element_type> gm1_context_type;
+
 
     typedef typename fe_type::template Context<context, fe_type, gm_type, element_type> fecontext_type;
+    typedef typename fe_type::template Context<context, fe_type, gm1_type, element_type> fecontext1_type;
 
     typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
+    typedef boost::shared_ptr<gm1_context_type> gm1_context_ptrtype;
     typedef fusion::map<fusion::pair<detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
+    typedef fusion::map<fusion::pair<detail::gmc<0>, gm1_context_ptrtype> > map_gmc1_type;
     //typedef typename expression_type::template tensor<map_gmc_type,fusion::map<fusion::pair<detail::gmc<0>,boost::shared_ptr<fecontext_type> > > > t_expr_type;
-    //typedef decltype( basis_type::isomorphism( _M_expr ) ) the_expression_type;
+    //typedef decltype( basis_type::isomorphism( M_expr ) ) the_expression_type;
     typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
     typedef typename iso_expression_type::template tensor<map_gmc_type> t_expr_type;
+    typedef typename iso_expression_type::template tensor<map_gmc1_type> t_expr1_type;
     typedef typename t_expr_type::value_type value_type;
 
     // we should manipulate the same type of functions on the left and
@@ -201,21 +213,23 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     //
     typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( __v.functionSpace()->gm(),
                                                                                          __fe->points() ) );
+    typename gm1_type::precompute_ptrtype __geopc1( new typename gm1_type::precompute_type( __v.mesh()->gm1(),
+                                                                                            __fe->points() ) );
 
 
 
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
 
     iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = _M_range;
+    boost::tie( boost::tuples::ignore, it, en ) = M_range;
 
     // return if no elements
     if ( it == en )
         return __v;
 
-    gm_context_ptrtype __c( new gm_context_type( __v.functionSpace()->gm(),
-                                                 *it,
-                                                 __geopc ) );
+    gm_context_ptrtype __c( new gm_context_type( __v.functionSpace()->gm(),*it,__geopc ) );
+    gm1_context_ptrtype __c1( new gm1_context_type( __v.mesh()->gm1(),*it,__geopc1 ) );
+
     typedef typename t_expr_type::shape shape;
     static const bool is_rank_ok = ( shape::M == FunctionSpaceType::nComponents1 &&
                                      shape::N == FunctionSpaceType::nComponents2 );
@@ -225,27 +239,96 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
                           (mpl::int_<shape::M>, mpl::int_<FunctionSpaceType::nComponents>, shape ) );
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-    t_expr_type tensor_expr( basis_type::isomorphism( _M_expr ), mapgmc );
+    t_expr_type tensor_expr( basis_type::isomorphism( M_expr ), mapgmc );
+    map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+    t_expr1_type tensor_expr1( basis_type::isomorphism( M_expr ), mapgmc1 );
 
     std::vector<bool> points_done( __v.functionSpace()->dof()->nLocalDof()/__v.nComponents );
     std::fill( points_done.begin(), points_done.end(),false );
     for ( ; it!=en ; ++it )
     {
-        __c->update( *it );
-        map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-        tensor_expr.update( mapgmc );
+        switch( M_geomap_strategy )
+        {
+        case GEOMAP_HO:
+        {
+            __c->update( *it );
+            map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+            tensor_expr.update( mapgmc );
 
-        for ( uint16_type __j = 0; __j < ndofv;++__j )
+            for ( uint16_type __j = 0; __j < ndofv;++__j )
             {
                 for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
                     //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
+                {
+                    if ( sum )
+                        __v.plus_assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
+                    else
+                        __v.assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
+                }
+            }
+        }
+        break;
+        case GEOMAP_O1:
+        {
+            __c1->update( *it );
+            map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+            tensor_expr1.update( mapgmc1 );
+
+            for ( uint16_type __j = 0; __j < ndofv;++__j )
+            {
+                for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
+                    //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
+                {
+                    if ( sum )
+                        __v.plus_assign( it->id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
+                    else
+                        __v.assign( it->id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
+                }
+            }
+        }
+        break;
+        case GEOMAP_OPT:
+        {
+            if ( it->isOnBoundary() )
+            {
+                // HO if on boundary
+                __c->update( *it );
+                map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+                tensor_expr.update( mapgmc );
+
+                for ( uint16_type __j = 0; __j < ndofv;++__j )
+                {
+                    for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
+                        //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
                     {
                         if ( sum )
                             __v.plus_assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
                         else
                             __v.assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
                     }
+                }
             }
+            else
+            {
+                __c1->update( *it );
+                map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+                tensor_expr1.update( mapgmc1 );
+
+                for ( uint16_type __j = 0; __j < ndofv;++__j )
+                {
+                    for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
+                        //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
+                    {
+                        if ( sum )
+                            __v.plus_assign( it->id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
+                        else
+                            __v.assign( it->id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
+                    }
+                }
+            }
+        }
+        break;
+        }
     }
     return __v;
 }
@@ -256,15 +339,10 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 {
     boost::timer __timer;
 
-    element_type __v( _M_functionspace );
+    element_type __v( M_functionspace );
     __v.setZero();
 
-#if 0
-    if ( !boost::is_same<Elem1, typename Elem::functionspace_type>::value ||
-         !boost::is_same<Elem2, typename Elem::functionspace_type>::value )
-        return;
-#endif
-    Debug( 5066 ) << "call project() " << "\n";
+    Debug( 5066 ) << "call project(MESH_FACES) " << "\n";
     //
     // a few typedefs
     //
@@ -274,11 +352,17 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     typedef typename geoelement_type::face_type face_type;
 
     // geometric mapping context
-    typedef typename element_type::functionspace_type::mesh_type::gm_type gm_type;
+    typedef typename geoelement_type::gm_type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef typename geoelement_type::gm1_type gm1_type;
+    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    typedef typename gm1_type::template Context<context, geoelement_type> gmc1_type;
+    typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
+    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
 
 
     // dof
@@ -288,14 +372,17 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     typedef typename element_type::functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
     typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
+    typedef typename fe_type::template Context< context, fe_type, gm1_type, geoelement_type> fecontext1_type;
+    typedef boost::shared_ptr<fecontext1_type> fecontext1_ptrtype;
     //typedef fusion::map<fusion::pair<detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
 
     // expression
     //typedef typename expression_type::template tensor<map_gmc_type,fecontext_type> t_expr_type;
-    //typedef decltype( basis_type::isomorphism( _M_expr ) ) the_expression_type;
+    //typedef decltype( basis_type::isomorphism( M_expr ) ) the_expression_type;
     typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
     typedef typename iso_expression_type::template tensor<map_gmc_type> t_expr_type;
+    typedef typename iso_expression_type::template tensor<map_gmc1_type> t_expr1_type;
     typedef typename t_expr_type::shape shape;
 
     //
@@ -308,11 +395,12 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     fe_type const* __fe = __v.functionSpace()->fe().get();
 
     iterator_type __face_it, __face_en;
-    boost::tie( boost::tuples::ignore, __face_it, __face_en ) = _M_range;
+    boost::tie( boost::tuples::ignore, __face_it, __face_en ) = M_range;
     if ( __face_it == __face_en )
         return __v;
 
     gm_ptrtype __gm( new gm_type );
+    gm1_ptrtype __gm1( new gm1_type );
 
 
 
@@ -323,21 +411,30 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     typedef typename geoelement_type::permutation_type permutation_type;
     typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
     typedef typename gm_type::precompute_type geopc_type;
+    typedef typename gm1_type::precompute_ptrtype geopc1_ptrtype;
+    typedef typename gm1_type::precompute_type geopc1_type;
+
     Debug(5066)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
     std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
+    std::vector<std::map<permutation_type, geopc1_ptrtype> > __geopc1( geoelement_type::numTopologicalFaces );
     for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
-        {
-            permutation_type __p( permutation_type::IDENTITY );
-            __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
-            //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-            FEEL_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
-        }
+    {
+        permutation_type __p( permutation_type::IDENTITY );
+        __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
+        __geopc1[__f][__p] = geopc1_ptrtype(  new geopc1_type( __gm1, __fe->points( __f ) ) );
+        //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
+        FEEL_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points for geopc" );
+        FEEL_ASSERT( __geopc1[__f][__p]->nPoints() ).error( "invalid number of points for geopc1" );
+    }
 
     uint16_type __face_id = __face_it->pos_first();
     gmc_ptrtype __c( new gmc_type( __gm, __face_it->element(0), __geopc, __face_id ) );
+    gmc1_ptrtype __c1( new gmc1_type( __gm1, __face_it->element(0), __geopc1, __face_id ) );
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-    t_expr_type expr( basis_type::isomorphism( _M_expr ), mapgmc );
+    t_expr_type expr( basis_type::isomorphism( M_expr ), mapgmc );
+    map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+    t_expr1_type expr1( basis_type::isomorphism( M_expr ), mapgmc1 );
 
 
 
@@ -350,81 +447,41 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     else
         nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
-    Debug(5066)  << "nbFaceDof = " << nbFaceDof << "\n";
-    //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
+    Debug(5066)  << "[projector::operator(MESH_FACES)] nbFaceDof = " << nbFaceDof << "\n";
 
     std::vector<int> dofs;
     std::vector<value_type> values;
 
-#if 0
-    typedef typename functionspace_type::fe_type fe_type;
-    fe_type* __fe = __v.functionSpace()->fe().get();
+    for ( ;__face_it != __face_en; ++__face_it )
+    {
+        FEEL_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
+            ( __face_it->marker() )
+            ( __face_it->isOnBoundary() )
+            ( __face_it->ad_first() )
+            ( __face_it->pos_first() )
+            ( __face_it->ad_second() )
+            ( __face_it->pos_second() )
+            ( __face_it->id() ).warn( "inconsistent data face" );
+        Debug(5066) << "[projector] FACE_ID = " << __face_it->id()
+                    << " element id= " << __face_it->ad_first()
+                    << " pos in elt= " << __face_it->pos_first()
+                    << " marker: " << __face_it->marker() << "\n";
+        Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __face_it->G() << "\n";
 
-    typedef typename functionspace_type::mesh_type mesh_type;
-    typedef typename mesh_type::element_type element_type;
+        uint16_type __face_id = __face_it->pos_first();
 
-    typedef typename functionspace_type::gm_type gm_type;
-    typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
+        std::pair<size_type,size_type> range_dof( std::make_pair( __v.start(),
+                                                                  __v.functionSpace()->nDof()) );
+        Debug(5066)  << "[projector] dof start = " << range_dof.first << "\n";
+        Debug(5066)  << "[projector] dof range = " << range_dof.second << "\n";
 
-    typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
-
-    typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
-    typedef typename expression_type::template tensor<map_gmc_type,fusion::map<fusion::pair<detail::gmc<0>,boost::shared_ptr<fecontext_type> > > > t_expr_type;
-    typedef typename t_expr_type::value_type value_type;
-
-    // we should manipulate the same type of functions on the left and
-    // on the right
-    //BOOST_STATIC_ASSERT(( boost::is_same<return_value_type, typename functionspace_type::return_value_type>::value ));
-
-    //
-    // Precompute some data in the reference element for
-    // geometric mapping and reference finite element
-    //
-    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( __v.functionSpace()->gm(),
-                                                                                         __fe->points() ) );
-
-
-
-    const uint16_type ndofv = functionspace_type::fe_type::nDof;
-    FEEL_ASSERT( __v.size() == _M_functionspace->dof()->nDof() )( __v.size() )( _M_functionspace->dof()->nDof() ).warn( "invalid size" );
-    __v.resize( _M_functionspace->dof()->nDof() );
-    iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = _M_range;
-
-    gm_context_ptrtype __c( new gm_context_type( __v.functionSpace()->gm(),
-                                                 *it,
-                                                 __geopc ) );
-    typedef typename t_expr_type::shape shape;
-    static const bool is_rank_ok = ( shape::M == FunctionSpaceType::nComponents1 &&
-                                     shape::N == FunctionSpaceType::nComponents2 );
-
-    BOOST_MPL_ASSERT_MSG( mpl::bool_<is_rank_ok>::value,
-                          INVALID_TENSOR_RANK,
-                          (mpl::int_<shape::M>, mpl::int_<FunctionSpaceType::nComponents>, shape ) );
-#endif
-    //element_iterator __face_it = this->beginElement();
-    for ( ;
-          __face_it != __face_en;
-          ++__face_it )
+        switch( M_geomap_strategy )
         {
-            FEEL_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
-                ( __face_it->marker() )
-                ( __face_it->isOnBoundary() )
-                ( __face_it->ad_first() )
-                ( __face_it->pos_first() )
-                ( __face_it->ad_second() )
-                ( __face_it->pos_second() )
-                ( __face_it->id() ).warn( "inconsistent data face" );
-            Debug(5066) << "[projector] FACE_ID = " << __face_it->id()
-                       << " element id= " << __face_it->ad_first()
-                       << " pos in elt= " << __face_it->pos_first()
-                       << " marker: " << __face_it->marker() << "\n";
-            Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __face_it->G() << "\n";
-
-            uint16_type __face_id = __face_it->pos_first();
+        default:
+        case GEOMAP_OPT:
+        case GEOMAP_HO:
+        {
             __c->update( __face_it->element(0), __face_id );
-
             Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
             Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
 
@@ -432,48 +489,56 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
             expr.update( mapgmc );
 
-            std::pair<size_type,size_type> range_dof( std::make_pair( __v.start(),
-                                                                      __v.functionSpace()->nDof()) );
-            Debug(5066)  << "[projector] dof start = " << range_dof.first << "\n";
-            Debug(5066)  << "[projector] dof range = " << range_dof.second << "\n";
+            for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
+                for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
+                {
+                    for ( uint16_type l = 0; l < nbFaceDof; ++l )
+                    {
+                        typename expression_type::value_type __value = expr.evalq( c1, c2, l );
+
+                        size_type thedof =  __v.start() +
+                            boost::get<0>(__dof->faceLocalToGlobal( __face_it->id(), l, c1 ));
+                        if ( sum )
+                            __v( thedof ) +=  __value;
+                        else
+                            __v( thedof ) =  __value;
+                    }
+                }
+        }
+        break;
+        case GEOMAP_O1:
+        {
+            __c1->update( __face_it->element(0), __face_id );
+            Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c1->xRefs() << "\n";
+            Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c1->xReal() << "\n";
+
+            map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+
+            expr1.update( mapgmc1 );
+
 
             for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
                 for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
+                {
+                    for ( uint16_type l = 0; l < nbFaceDof; ++l )
                     {
-                        for ( uint16_type l = 0; l < nbFaceDof; ++l )
-                            {
-                                typename expression_type::value_type __value = expr.evalq( c1, c2, l );
+                        typename expression_type::value_type __value = expr1.evalq( c1, c2, l );
 
-                                size_type thedof =  __v.start() +
-                                    boost::get<0>(__dof->faceLocalToGlobal( __face_it->id(), l, c1 ));
-                                if ( sum )
-                                    __v( thedof ) +=  __value;
-                                else
-                                    __v( thedof ) =  __value;
-                            }
+                        size_type thedof =  __v.start() +
+                            boost::get<0>(__dof->faceLocalToGlobal( __face_it->id(), l, c1 ));
+                        if ( sum )
+                            __v( thedof ) +=  __value;
+                        else
+                            __v( thedof ) =  __value;
                     }
-        } // face_it
-#if 0
-    for ( ; it!=en ; ++it )
-    {
-        __c->update( *it );
+                }
+        }
+        break;
+        }
 
-        map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-        t_expr_type tensor_expr( _M_expr, mapgmc );
-
-        for ( uint16_type __j = 0; __j < ndofv;++__j )
-            {
-                for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
-                    //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
-                        {
-                            __v.assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
-                        }
-            }
-    }
-#endif
+    } // face_it
     return __v;
 }
-
 }
 /// \endcond
 
@@ -487,10 +552,23 @@ template<typename FunctionSpaceType, typename IteratorRange, typename ExprT>
 typename FunctionSpaceType::element_type
 project( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
          IteratorRange const& range_it,
-         Expr<ExprT> const& __expr )
+         Expr<ExprT> const& __expr,
+         GeomapStrategyType geomap = GEOMAP_HO )
 {
     typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
-    proj_t p( __functionspace, range_it, __expr );
+    proj_t p( __functionspace, range_it, __expr, geomap );
+    return p();
+}
+
+template<typename FunctionSpaceType, typename IteratorRange, typename ExprT>
+typename FunctionSpaceType::element_type
+project_impl( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
+              IteratorRange const& range_it,
+              Expr<ExprT> const& __expr,
+              GeomapStrategyType geomap = GEOMAP_HO )
+{
+    typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
+    proj_t p( __functionspace, range_it, __expr, geomap );
     return p();
 }
 
@@ -500,9 +578,10 @@ project( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
  */
 template<typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
-project( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr )
+project( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr,
+         GeomapStrategyType geomap = GEOMAP_HO )
 {
-    return project( __functionspace, elements(__functionspace->mesh()), __expr );
+    return project( __functionspace, elements(__functionspace->mesh()), __expr, geomap );
 }
 
 /**
@@ -514,10 +593,11 @@ template<typename FunctionSpaceType, typename IteratorRange, typename ExprT>
 typename FunctionSpaceType::element_type
 sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
      IteratorRange const& range_it,
-     Expr<ExprT> const& __expr )
+     Expr<ExprT> const& __expr,
+     GeomapStrategyType geomap = GEOMAP_HO )
 {
     typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
-    proj_t p( __functionspace, range_it, __expr );
+    proj_t p( __functionspace, range_it, __expr, geomap );
     return p(true);
 }
 
@@ -539,11 +619,12 @@ sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> co
  */
 template<typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
-project( FunctionSpaceType const& __functionspace, Expr<ExprT> const& __expr )
+project( FunctionSpaceType const& __functionspace, Expr<ExprT> const& __expr,
+         GeomapStrategyType geomap = GEOMAP_HO )
 {
     typedef __typeof__( __functionspace->mesh()->elementsRange()) IteratorRange;
     typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
-    proj_t p( __functionspace, __functionspace->mesh()->elementsRange(), __expr );
+    proj_t p( __functionspace, __functionspace->mesh()->elementsRange(), __expr, geomap );
     return p();
 }
 
@@ -556,11 +637,84 @@ template<typename FunctionSpaceType, typename IteratorRange, typename ExprT>
 typename FunctionSpaceType::element_type
 project( FunctionSpaceType const& __functionspace,
          IteratorRange const& range_it,
-         Expr<ExprT> const& __expr )
+         Expr<ExprT> const& __expr,
+         GeomapStrategyType geomap = GEOMAP_HO )
 {
     typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
-    proj_t p( __functionspace, range_it, __expr );
+    proj_t p( __functionspace, range_it, __expr, geomap );
     return p();
+}
+
+/// \cond DETAIL
+namespace detail
+{
+template<typename TheArgs, typename Tag>
+struct clean_type
+{
+    typedef typename boost::remove_pointer<
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<TheArgs, Tag>::type
+                >::type
+            >::type
+            >::type type;
+};
+template<typename Args>
+struct project
+{
+    typedef typename clean_type<Args,tag::space>::type the_space_type;
+    typedef typename mpl::if_<is_shared_ptr<the_space_type>,
+                              mpl::identity<typename the_space_type::value_type>,
+                              mpl::identity<the_space_type> >::type::type _space_type;
+    typedef boost::shared_ptr<_space_type> _space_ptrtype;
+    typedef typename _space_type::element_type element_type;
+    //typedef typename clean_type<Args,tag::expr>::type _expr_type;
+    typedef typename clean_type<Args,tag::range>::type _range_type;
+};
+}
+/// \endcond
+
+/**
+ *
+ * \brief projection/interpolation of an expresion onto a noal functionspace
+ *
+ * \arg space the function space to project onto
+ * \arg range the range of mesh elements to apply the projection (the remaining parts are set to 0)
+ * \arg expr the expression to project
+ * \arg geomap the type of geomap to use (make sense only using high order meshes)
+ * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
+ */
+BOOST_PARAMETER_FUNCTION(
+    (typename detail::project<Args>::element_type), // return type
+    project,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    (required
+     (space, *(boost::is_convertible<mpl::_,boost::shared_ptr<Feel::FunctionSpaceBase> >))
+     (expr, *)
+        ) // 4. one required parameter, and
+
+    (optional
+     (range,          *, elements(space->mesh())  )
+     (geomap,         *(boost::is_integral<mpl::_>), (int)GEOMAP_HO )
+     (accumulate,     *(boost::is_integral<mpl::_>), false )
+        )
+    )
+{
+#if 0
+    typedef typename detail::project<Args>::_space_type _space_type;
+    typedef typename detail::project<Args>::_range_type _range_type;
+    typedef typename detail::project<Args>::_expr_type _expr_type;
+
+    typedef details::Projector<PROJ_NODAL, _space_type, _range_type, Expr<_expr_type> > proj_t;
+    proj_t p( space, range, expr,geomap );
+    return p(sum);
+#else
+//    if ( accumulate  )
+//return sum( space, range, expr, geomap );
+    return project_impl( space, range, expr, (GeomapStrategyType)geomap );
+#endif
 }
 
 } // vf
