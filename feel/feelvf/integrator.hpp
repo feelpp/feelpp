@@ -69,14 +69,6 @@ enum IntegratorType
         INT_INTERNAL_FACES = 6      /**< integration over internal faces */
 
     };
-/**
- * \enum parametrization of the integrator depending on the geometric mapping
- */
-enum GeomapIntegratorType {
-    GEOMAP_OPT = 0,
-    GEOMAP_O1 = 1,
-    GEOMAP_HO = 2
-};
 
 /**
  * \class Integrator
@@ -206,7 +198,7 @@ public:
      */
     //@{
 
-    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr, GeomapIntegratorType gt )
+    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr, GeomapStrategyType gt )
         :
         _M_eltbegin( elts.template get<1>() ),
         _M_eltend( elts.template get<2>() ),
@@ -273,7 +265,7 @@ public:
      *
      * @return the geometric mapping integrator type
      */
-    GeomapIntegratorType geomapIntegratorType() const { return _M_gt; }
+    GeomapStrategyType geomapIntegratorType() const { return _M_gt; }
 
     /**
      * iterator that points at the beginning of the container that
@@ -551,7 +543,7 @@ private:
     element_iterator _M_eltend;
     mutable im_type _M_im;
     expression_type const&  _M_expr;
-    GeomapIntegratorType _M_gt;
+    GeomapStrategyType _M_gt;
 
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > _M_profile_local_assembly;
 
@@ -2114,7 +2106,7 @@ Expr<Integrator<IntElts, Im, ExprT> >
 integrate( IntElts const& elts,
            Im const& im,
            ExprT const& expr,
-           GeomapIntegratorType gt = GEOMAP_HO )
+           GeomapStrategyType gt = GEOMAP_HO )
 {
     typedef Integrator<IntElts, Im, ExprT> expr_t;
     return Expr<expr_t>( expr_t( elts, im, expr, gt ) );
@@ -2138,7 +2130,7 @@ template<typename IntElts, typename ExprT>
 Expr<Integrator<IntElts, _Q< ExpressionOrder<IntElts,ExprT>::value >, ExprT> >
 integrate( IntElts const& elts,
            ExprT const& expr,
-           GeomapIntegratorType gt = GEOMAP_HO )
+           GeomapStrategyType gt = GEOMAP_HO )
 {
 
     Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<IntElts,ExprT>::value << "\n";
