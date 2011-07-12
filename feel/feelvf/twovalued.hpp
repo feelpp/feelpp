@@ -987,6 +987,9 @@ public:
             _M_tensor_expr_left.update(  _M_left_map );
             _M_tensor_expr_right.update( _M_right_map );
         }
+        void update( Geo_t const& geom )
+        {
+        }
         void update( Geo_t const& geom, uint16_type face )
         {
             typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
