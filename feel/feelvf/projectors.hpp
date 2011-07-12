@@ -32,6 +32,7 @@
 
 #include <boost/timer.hpp>
 #include <boost/signal.hpp>
+#include <feel/feelcore/parameter.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel
@@ -240,7 +241,9 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
     t_expr_type tensor_expr( basis_type::isomorphism( M_expr ), mapgmc );
+
     map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+
     t_expr1_type tensor_expr1( basis_type::isomorphism( M_expr ), mapgmc1 );
 
     std::vector<bool> points_done( __v.functionSpace()->dof()->nLocalDof()/__v.nComponents );
@@ -330,6 +333,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
         break;
         }
     }
+
     return __v;
 }
 
@@ -648,17 +652,6 @@ project( FunctionSpaceType const& __functionspace,
 /// \cond DETAIL
 namespace detail
 {
-template<typename TheArgs, typename Tag>
-struct clean_type
-{
-    typedef typename boost::remove_pointer<
-        typename boost::remove_const<
-            typename boost::remove_reference<
-                typename parameter::binding<TheArgs, Tag>::type
-                >::type
-            >::type
-            >::type type;
-};
 template<typename Args>
 struct project
 {
@@ -669,7 +662,7 @@ struct project
     typedef boost::shared_ptr<_space_type> _space_ptrtype;
     typedef typename _space_type::element_type element_type;
     //typedef typename clean_type<Args,tag::expr>::type _expr_type;
-    typedef typename clean_type<Args,tag::range>::type _range_type;
+    //typedef typename clean_type<Args,tag::range>::type _range_type;
 };
 }
 /// \endcond
