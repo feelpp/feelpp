@@ -57,6 +57,15 @@
 
 namespace Feel
 {
+/**
+ * \enum type of geomap strategy
+ */
+enum GeomapStrategyType {
+    GEOMAP_OPT = 0,
+    GEOMAP_O1 = 1,
+    GEOMAP_HO = 2
+};
+
 //namespace blas = boost::numeric::bindings::blas;
 //namespace traits = boost::numeric::bindings::traits;
 
