@@ -114,7 +114,7 @@ class Diode
 public:
 
     //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = 2;
+    static const uint16_type Order = 1;
     static const uint16_type OrderGeo = 1;
 
     //! numerical type is double
@@ -179,6 +179,8 @@ public:
     {
     }
 
+    template<typename ExExpr> void checkDG( ExExpr& expr );
+
     void run();
 
     void run( const double* X, unsigned long P, double* Y, unsigned long N );
@@ -220,6 +222,27 @@ Diode::run()
     X[0] = meshSize;
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
+}
+template<typename ExExpr>
+void
+Diode::checkDG( ExExpr& expr )
+{
+    // check continuity
+    auto ijump  = integrate( internalfaces(mesh), trans(jumpv(expr))*jumpv(expr)  ).evaluate()( 0, 0 );
+    std::cout << "continuity 1:" <<  math::sqrt( ijump ) << "\n";
+#if 1
+    auto v = vec(expr,expr,expr);
+    auto vL = vec(leftfacev(expr),leftfacev(expr),leftfacev(expr));
+    auto vR = vec(rightfacev(expr),rightfacev(expr),rightfacev(expr));
+    auto A1 = trans(vec( cst(1.), cst(1.), cst(1.0) ));
+    auto A2 = trans(vec( cst(1.), cst(1.), cst(1.0) ));
+    auto myjump1 = (A1*(vL-vR))*leftfacev(N());
+    auto myjump2 = (A2*(vL-vR))*leftfacev(N());
+    auto ijump1 = integrate( internalfaces(mesh), trans(myjump1)*myjump1  ).evaluate()( 0, 0 );
+    auto ijump2 = integrate( internalfaces(mesh), trans(myjump2)*myjump2  ).evaluate()( 0, 0 );
+    std::cout << "continuity 1:" << math::sqrt(ijump1) << "\n";;
+    std::cout << "continuity 2:" << math::sqrt(ijump2) << "\n";
+#endif
 }
 template<typename BdyExpr>
 void
@@ -319,6 +342,13 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto Ey_exact = vu*c;
     auto Bz_exact = c;
     auto w_exact = vec(Ex_exact, Ey_exact, Bz_exact );
+    auto wL_exact = vec(leftfacev(Ex_exact), leftfacev(Ey_exact), leftfacev(Bz_exact) );
+    auto wR_exact = vec(rightfacev(Ex_exact), rightfacev(Ey_exact), rightfacev(Bz_exact) );
+
+    checkDG( Ex_exact );
+    checkDG( Ey_exact );
+    checkDG( Bz_exact );
+
     F_Ex = M_backend->newVector( Xh );
     F_Ey = M_backend->newVector( Xh );
     F_Bz = M_backend->newVector( Xh );
@@ -380,9 +410,9 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
             );
         time += dt/2;
 
-        std::cout << "||exact-Ex||_2" << integrate(elements(mesh), (idv(Ex)-Ex_exact)*(idv(Ex)-Ex_exact) ).evaluate().norm() << std::endl;
-        std::cout << "||exact-Ey||_2" << integrate(elements(mesh), (idv(Ey)-Ey_exact)*(idv(Ey)-Ey_exact) ).evaluate().norm() << std::endl;
-        std::cout << "||exact-Bz||_2" << integrate(elements(mesh), (idv(Bz)-Bz_exact)*(idv(Bz)-Bz_exact) ).evaluate().norm() << std::endl;
+        std::cout << "||exact-Ex||_2 = " << integrate(elements(mesh), (idv(Ex)-Ex_exact)*(idv(Ex)-Ex_exact) ).evaluate().norm() << std::endl;
+        std::cout << "||exact-Ey||_2 = " << integrate(elements(mesh), (idv(Ey)-Ey_exact)*(idv(Ey)-Ey_exact) ).evaluate().norm() << std::endl;
+        std::cout << "||exact-Bz||_2 = " << integrate(elements(mesh), (idv(Bz)-Bz_exact)*(idv(Bz)-Bz_exact) ).evaluate().norm() << std::endl;
 
         // save
         exporter->step(time)->setMesh( mesh );
