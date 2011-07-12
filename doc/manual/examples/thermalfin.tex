@@ -51,25 +51,7 @@ The Biot number $Bi$ is a dimensionless number used in non-steady or transient s
 \begin{equation}
 Bi = \frac{hL_c}{k_b}
 \end{equation} 
-where $h$ is the heat transfert coefficient, $L_c$ is the characteristic length (commonly defined as the volume of the body divided by the surface area) and $k_b$ is the thermal conductivity of the body (here the body is the thermal fin) and is expressed in $Wm^{-1}K^{-1}$. This number has to be between $0$ and $1$, this condition is included in the parameters described in ~\ref{heat:param}. This conductivity is typically one of the parameters we are insterested in to modify. This parameter corresponds to the material choosen for the heat sink. Here is a small array for the well-known metals :
-\begin{center}
-\begin{tabular}{|c|c|}
-  \hline
-  Material & Thermal conductivity (293 K)\\
-  \hline
-  \hline
-  Aluminium & 0.1 \\
-  \hline
-  Bronze & 26 \\
-  \hline
-  Copper & 386 \\
-  \hline
-  Gold & 314 \\
-  \hline
-  Silver & 406 \\
-  \hline
-\end{tabular}
-\end{center}
+where $h$ is the heat transfert coefficient, $L_c$ is the characteristic length (commonly defined as the volume of the body divided by the surface area) and $k_b$ is the thermal conductivity of the body (here the body is the thermal fin) and is expressed in $Wm^{-1}K^{-1}$. This number has to be between $0$ and $1$, this condition is included in the parameters described in ~\ref{heat:param}. This conductivity is typically one of the parameters we are insterested in to modify. This parameter corresponds to the material choosen for the heat sink. 
 
 \subsubsection{Material}
 
@@ -77,7 +59,25 @@ Here the material parameter can be described with the spreader-to-fin conductivi
 \begin{equation*}
 \displaystyle{\kappa = \frac{\tilde{\kappa}_{sp}}{\tilde{\kappa}_{fin}}}
 \end{equation*}
-where $\tilde{\kappa}_{sp}$ and $\tilde{\kappa}_{fin}$ are the thermal conductivities of the spreader and the fin. In that way, we make possible the construction of a heat sink with $2$ different materials. As a consequence, if you choose the same material, the ratio will be equal to $1$.
+where $\tilde{\kappa}_{sp}$ and $\tilde{\kappa}_{fin}$ are the thermal conductivities of the spreader and the fin. In that way, we make possible the construction of a heat sink with $2$ different materials. As a consequence, if you choose the same material, the ratio will be equal to $1$. \\
+
+\noindent The material is also caracterized with its density (factor $\rho$ in the heat equation \ref{heat:eq}), here is a list of the well-known ones :
+\begin{center}
+\begin{tabular}{|c|c|c|}
+  \hline
+  Material & Thermal conductivity ($\tilde{\kappa} at 293 K$) & Density ($\rho in kg.m^{-3}$) \\
+  \hline
+  \hline
+  Aluminium & 0.1 & 2700 \\
+  \hline
+  Copper & 386 & 8940 \\
+  \hline
+  Gold & 314 & 19320 \\
+  \hline
+  Silver & 406 & 10500 \\
+  \hline
+\end{tabular}
+\end{center}
 
 \subsubsection{Spacing}
 This parameter represents the length between two plates fin. This parameter finds its place in the periodicity condition, we denote $\lambda$ this length.
@@ -94,20 +94,25 @@ This parameter is to take into account only if you are considering the 3D issue.
 \label{therm:equations}
 
 \subsection{Figure}
-The following figure describes the parameters and the geometry we are using in the equations to solve our issue :
+The following figure describes the parameters and the geometry we are using in the equations to solve our 2D issue :
 \begin{figure}[!h]
 \centering
-\includegraphics[width=.45\linewidth]{heatsink/figure.png}
-\caption{Geometry details}
+\includegraphics[width=.80\linewidth]{heatsink/figure_2d.png}
+\caption{2D geometry details}
 \end{figure}
 
-The global domain is $\varOmega = \varOmega_1 \cup \varOmega_2 $ where $\varOmega_1$ is the fin's domain and $\varOmega_2$ the spreader's domain. We note $\partial\varOmega$ the border of the domain $\varOmega$. The phyical lines we are using will be noted as $\Gamma_i$ such as described above.
-
+The global domain is $\varOmega = \varOmega_1 \cup \varOmega_2 $ where $\varOmega_1$ is the fin's domain and $\varOmega_2$ the spreader's domain. We note $\partial\varOmega$ the border of the domain $\varOmega$. The phyical lines we are using will be noted as $\Gamma_i$ such as described above. The following figure describes the parameters and the geometry we are using in the equations to solve our 3D issue :
+\begin{figure}[!h]
+\centering
+\includegraphics[width=.60\linewidth]{heatsink/figure_3d.png}
+\caption{3D geometry details}
+\end{figure}
 
 \subsection{Equations}
 
 Our concern satisfies the heat equation which reads 
 \begin{equation}
+\label{heat:eq}
    \begin{split}
       \displaystyle{\rho \frac{ \partial T}{\partial t}}  -  \kappa \Delta T & = 0
   \end{split}
@@ -152,6 +157,41 @@ The problem requieres that the temperature and heat flux are continute on $\Gamm
 
 Theses conditions have been coded as explained in the section \ref{heat:bc_impl}.
 
+\subsection{Finite Element Method}
+Let's apply the method to our concern, we introduce the test function $v$ and we integrate the main equation, which reads now as :
+\begin{equation}
+   \begin{split}
+      \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}} & =  \displaystyle{\kappa \int_\varOmega v\Delta T}
+  \end{split}
+\end{equation}
+We integrate by parts, which leads to :
+\begin{equation}
+   \begin{split}
+      \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}} & =  \displaystyle{\kappa \int_\Gamma {(\nabla T \cdot n) v} - \kappa \int_\varOmega {\nabla v \cdot \nabla T} }
+  \end{split}
+\end{equation}
+Now, we impose the condition $v=0$ on $\Gamma_3$ and $v=1$ anywhere else, which brings us to :
+\begin{equation}
+   \begin{split}
+      \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}} & =  \displaystyle{\kappa \int_{\Gamma_{1,2,4,5,6,7}} {\nabla T \cdot n} - 
+		\kappa \int_\varOmega {\nabla v \cdot \nabla T} }
+  \end{split}
+\end{equation}
+We are now able to apply the boundary conditions, which leads to :
+\begin{equation}
+   \begin{split}
+      \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}} & =  \displaystyle{\kappa \int_{\Gamma_1}{\nabla T \cdot n} + \kappa \int_{\Gamma_4} {\nabla T \cdot n}
+           - \kappa \int_\varOmega {\nabla v \cdot \nabla T} }
+  \end{split}
+\end{equation}
+then :
+\begin{equation}
+   \begin{split}
+      \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}} & =  \displaystyle{- B_i \int_{\Gamma_1}{T} + \int_{\Gamma_4}{1}
+           - \kappa \int_\varOmega {\nabla v \cdot \nabla T} }
+  \end{split}
+\end{equation}
+
 \section{Implementation}
 \label{heat:impl}
 
@@ -166,5 +206,16 @@ The parameters of the application are described such as
 
 \subsection{Equations}
 \label{heat:eq_impl}
+
+\section{Use cases}
+\subsection{How to use it ?}
+To make easier the use of this application, we recommand you to use the configurations files. This is the fastest way : to do it, you juste have to create the file \lstinline!heatsink.cfg! and place it in the same directory that your application's executable. This file can be, for example, like this :
+\begin{lstlisting}
+hsize=4;
+deep=0;
+spreader=386;
+fin=386;
+\end{lstlisting}
+This file is the only modification you will have to bring to the application, in that way you won't have to compile each time the files.
 
 \subsection{Results}
