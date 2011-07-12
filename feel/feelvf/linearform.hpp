@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,7 @@
        Date: 2005-01-18
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006-2011 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -839,22 +839,6 @@ LinearForm<SpaceType, VectorType, ElemContType>::operator+=( Expr<ExprT> const& 
     return *this;
 }
 
-
-
-template<typename Elements, typename Im, typename Expr> class Integrator;
-
-
-template<typename X1, typename IntElts, typename Im, typename ExprT>
-typename Expr<Integrator<IntElts, Im, ExprT> >::value_type
-integrate( boost::shared_ptr<X1> const& __X1,
-           IntElts const& elts,
-           Im const& __im,
-           ExprT const& __expr )
-{
-    VectorValue<typename Expr<Integrator<IntElts, Im, ExprT> >::value_type> M;
-    form( __X1, M ) = integrate( elts, __im, __expr );
-    return M.vec();
-}
 
 } // detail
 /// \endcond
