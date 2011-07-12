@@ -46,7 +46,7 @@ endif()
 
 # Darcy project
 if ( EXISTS ${FEEL_SOURCE_DIR}/research/darcy )
-  add_subdirectory( darcy )
+#  add_subdirectory( darcy )
 endif()
 
 
