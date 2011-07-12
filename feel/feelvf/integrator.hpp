@@ -1446,7 +1446,7 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     Debug( 5065 ) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
-//#define USE_OPT_HO
+#define USE_OPT_HO
 #if !defined(HAVE_TBB)
     //
     // some typedefs
@@ -1595,9 +1595,9 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
                     for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                            {
+                        {
                             res(c1,c2) += _M_im( expr, c1, c2 );
-                            }
+                        }
                     //Log() << it->id() << " : " << _M_im( expr, 0, 0 ) << "\n";
                 }
                 else
@@ -1623,11 +1623,6 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             }
 #endif // 0
         }
-#if 0 // defined(USE_OPT_HO)
-    std::cout << "resho=" << res << "\n";
-    std::cout << "res1=" << reso1 << "\n";
-    std::cout << "resopt=" << resopt << "\n";
-#endif
     Debug( 5065 ) << "integrating over elements done in " << __timer.elapsed() << "s\n";
     return res;
 #else
