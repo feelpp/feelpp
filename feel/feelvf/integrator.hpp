@@ -2140,20 +2140,15 @@ integrate( IntElts const& elts,
  * using an automatic integration rule .
  */
 template<typename IntElts, typename ExprT>
-Expr<Integrator<IntElts, _Q< ExpressionOrder<ExprT>::value >, ExprT> >
+Expr<Integrator<IntElts, _Q< ExpressionOrder<IntElts,ExprT>::value >, ExprT> >
 integrate( IntElts const& elts,
            ExprT const& expr,
            GeomapIntegratorType gt = GEOMAP_HO )
 {
-    typedef typename boost::tuples::template element<1, IntElts>::type element_iterator_type;
-    typedef typename boost::remove_reference<typename element_iterator_type::reference>::type const_t;
-    typedef typename boost::remove_const<const_t>::type the_face_element_type;
-    typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
 
-    const uint16_type nOrderGeo = the_element_type::nOrder;
+    Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<IntElts,ExprT>::value << "\n";
+    return integrate( elts, _Q< ExpressionOrder<IntElts,ExprT>::value >(), expr, gt );
 
-    Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<ExprT>::value*nOrderGeo << "\n";
-    return integrate( elts, _Q< ExpressionOrder<ExprT>::value*nOrderGeo >(), expr, gt );
 }
 
 
