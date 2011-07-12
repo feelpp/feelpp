@@ -328,20 +328,29 @@ private:
  * analytic functions such as exp, cos, sin ... then the order is only an
  * approximation.
  */
-template<typename ExprT>
+template<typename IntElts,typename ExprT>
 struct ExpressionOrder
 {
+
+    typedef typename boost::tuples::template element<1, IntElts>::type element_iterator_type;
+    typedef typename boost::remove_reference<typename element_iterator_type::reference>::type const_t;
+    typedef typename boost::remove_const<const_t>::type the_face_element_type;
+    typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
+
+    static const uint16_type nOrderGeo = the_element_type::nOrder;
+
     static const bool is_polynomial = ExprT::imIsPoly;
 #if 0
-    static const int  value = boost::mpl::if_< boost::mpl::bool_< ExprT::imIsPoly > ,
+    static const int value = boost::mpl::if_< boost::mpl::bool_< ExprT::imIsPoly > ,
                                                typename boost::mpl::if_< boost::mpl::greater< boost::mpl::int_<ExprT::imorder>,
                                                                                               boost::mpl::int_<19> > ,
                                                                          boost::mpl::int_<19>,
                                                                          boost::mpl::int_<ExprT::imorder> >::type,
                                                boost::mpl::int_<10> >::type::value;
 #else
-    static const int  value = ExprT::imorder;
+    static const int value = ExprT::imorder*nOrderGeo;
 #endif
+
 
 };
 
