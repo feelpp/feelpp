@@ -229,7 +229,7 @@ Bratu<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vector_ptrty
     AUTO( g, constant(0.0) );
 
     *M_residual = integrate( elements( mesh ), gradv(u)*trans(grad(v)) );
-    *M_residual +=  integrate( elements( mesh ), _Q<4*Order>(), -M_lambda*exp(idv(u))*id(v) );
+    *M_residual +=  integrate( elements( mesh ), _Q<4*Order>(), M_lambda*exp(idv(u))*id(v) );
     *M_residual +=  integrate( boundaryfaces(mesh),
                                ( - trans(id(v))*(gradv(u)*N())
                                  - trans(idv(u))*(grad(v)*N())
@@ -253,13 +253,13 @@ Bratu<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matri
     u = *X;
     if ( is_init == false )
         {
-            *M_jac = integrate( elements( mesh ), _Q<4*Order>(), -M_lambda*(exp(idv(u)))*idt(u)*id(v) );
+            *M_jac = integrate( elements( mesh ), _Q<4*Order>(), M_lambda*(exp(idv(u)))*idt(u)*id(v) );
             is_init = true;
         }
     else
         {
             M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ), _Q<4*Order>(), -M_lambda*(exp(idv(u)))*idt(u)*id(v) );
+            *M_jac += integrate( elements( mesh ), _Q<4*Order>(), M_lambda*(exp(idv(u)))*idt(u)*id(v) );
         }
     M_jac->close();
     M_jac->add( 1.0, M_oplin );
