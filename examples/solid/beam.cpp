@@ -194,8 +194,13 @@ Beam<nDim,nOrder>::createMesh( double meshSize )
 
     GmshHypercubeDomain td(Dim,1,Dim,false);
     td.setCharacteristicLength( meshSize );
+#if 0
     td.setX( std::make_pair( 0, 20 ) );
     td.setY( std::make_pair( -1, 1 ) );
+#else
+    td.setX( std::make_pair( 0, 0.351 ) );
+    td.setY( std::make_pair( 0, 0.02 ) );
+#endif
     ImporterGmsh<mesh_type> import( td.generate( entity_type::name().c_str() ) );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
@@ -240,12 +245,17 @@ Beam<nDim,nOrder>::run()
     /*
      * Data associated with the simulation
      */
+#if 0
     const double E = 21*1e5;
     const double sigma = 0.28;
+#else
+    const double E = 1.4e6;
+    const double sigma = 0.4;
+#endif
     const double mu = E/(2*(1+sigma));
     const double lambda = E*sigma/((1+sigma)*(1-2*sigma));
-    const double density = 1;
-    const double gravity = -density*0.05;
+    const double density = 1e3;
+    const double gravity = -2;//-density*0.05;
     Log() << "lambda = " << lambda << "\n"
               << "mu     = " << mu << "\n"
               << "gravity= " << gravity << "\n";
@@ -303,11 +313,12 @@ Beam<nDim,nOrder>::run()
 
     this->solve( D, u, F );
 
-
+    auto i1 = integrate( markedfaces(mesh,3), idv(u) ).evaluate();
+    std::cout << "deflection: " << i1/0.02 << "\n";
     v = vf::project( Xh, elements(Xh->mesh()), P() );
 
     this->exportResults( 0, u, v );
-
+#if 0
     MeshMover<mesh_type> meshmove;
     u.vec() *= this->vm()["scale"].template as<double>();
     meshmove.apply( Xh->mesh(), u );
@@ -334,6 +345,7 @@ Beam<nDim,nOrder>::run()
 
     w.add( -1.0, u );
     std::cout << "||(w-v)-u||_2 = " << w.l2Norm() << " (should be 0, ie u=w-v)\n";
+#endif
 } // Beam::run
 
 template<int nDim, int nOrder>
