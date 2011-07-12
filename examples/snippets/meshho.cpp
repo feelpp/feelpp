@@ -53,26 +53,24 @@ int main(int argc, char** argv)
     using namespace Feel;
     using namespace Feel::vf;
     Feel::Environment env(argc, argv );
-    typedef Mesh<Simplex<2,2> > mesh_type;
+    typedef Mesh<Simplex<2,4> > mesh_type;
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _desc=domain( _name="ellipsoid-2",
                                               _usenames=true,
                                               _shape="ellipsoid",
                                               _dim=2,
-                                              _order=2,
+                                              _order=4,
                                               _h=hsize ),
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
-    straightenMesh( _mesh=mesh );
+    //straightenMesh( _mesh=mesh );
 
-    std::cout << "read mesh\n" << std::endl;
+    //std::cout << "read mesh\n" << std::endl;
 
-    std::cout << "ho =" << std::endl
-              << integrate( elements(mesh), _Q<5>(), cst(1.), GEOMAP_HO ).evaluate() << "\n";
-    std::cout << "p1 =" << std::endl
-              << integrate( elements(mesh), _Q<5>(), cst(1.), GEOMAP_O1 ).evaluate() << "\n";
-    std::cout << "opt=" << std::endl
-              << integrate( elements(mesh), _Q<5>(), cst(1.), GEOMAP_OPT ).evaluate() << "\n";
+    std::cout << "ho  p1  opt " << std::endl
+              << std::setprecision( 16 ) << std::scientific << integrate( elements(mesh), _Q<5>(), cst(1.), GEOMAP_HO ).evaluate() << " "
+              << std::setprecision( 16 ) << std::scientific << integrate( elements(mesh), _Q<5>(), cst(1.), GEOMAP_O1 ).evaluate() << " "
+              << std::setprecision( 16 ) << std::scientific << integrate( elements(mesh), _Q<5>(), cst(1.), GEOMAP_OPT ).evaluate() << std::endl;
 
 
 }
