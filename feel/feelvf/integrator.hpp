@@ -77,7 +77,7 @@ enum IntegratorType
  * @author Christophe Prud'homme
  * @see IntegratorOn
  */
-template<typename Elements, typename Im, typename Expr>
+template<typename Elements, typename Im, typename Expr, typename Im2=Im>
 class Integrator
 {
 public:
@@ -110,7 +110,7 @@ public:
      */
     //@{
 
-    typedef Integrator<Elements, Im, Expr> self_type;
+    typedef Integrator<Elements, Im, Expr, Im2> self_type;
 
     typedef typename boost::tuples::template element<1, Elements>::type element_iterator;
 
@@ -131,6 +131,11 @@ public:
                                   mpl::identity<typename Im::template apply<the_element_type::nDim, expression_value_type, Simplex>::type >,
                                   mpl::identity<typename Im::template apply<the_element_type::nDim, expression_value_type, Hypercube>::type >
                                   >::type::type im_type;
+
+        typedef typename mpl::if_<mpl::bool_<the_element_type::is_simplex>,
+                                  mpl::identity<typename Im2::template apply<the_element_type::nDim, expression_value_type, Simplex>::type >,
+                                  mpl::identity<typename Im2::template apply<the_element_type::nDim, expression_value_type, Hypercube>::type >
+                                  >::type::type im2_type;
 
         typedef the_element_type element_type;
         typedef typename the_element_type::gm_type gm_type;
@@ -188,7 +193,9 @@ public:
     };
 
     typedef typename eval::im_type im_type;
+    typedef typename eval::im2_type im2_type;
     typedef typename im_type::face_quadrature_type im_face_type;
+    typedef typename im2_type::face_quadrature_type im2_face_type;
     //typedef typename eval::value_type value_type;
     typedef typename eval::matrix_type matrix_type;
     typedef typename eval::matrix_type value_type;
@@ -198,11 +205,12 @@ public:
      */
     //@{
 
-    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr, GeomapStrategyType gt )
+    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr, GeomapStrategyType gt, Im2 const& /*__im2*/ )
         :
         _M_eltbegin( elts.template get<1>() ),
         _M_eltend( elts.template get<2>() ),
         _M_im( ),
+        _M_im2( ),
         _M_expr( __expr ),
         _M_gt( gt )
     {
@@ -214,6 +222,7 @@ public:
         _M_eltbegin( __vfi._M_eltbegin ),
         _M_eltend( __vfi._M_eltend ),
         _M_im( __vfi._M_im ),
+        _M_im2( __vfi._M_im2 ),
         _M_expr( __vfi._M_expr ),
         _M_gt( __vfi._M_gt )
     {
@@ -244,12 +253,28 @@ public:
     im_type const& im() const { return _M_im; }
 
     /**
+     * get the integration method
+     *
+     *
+     * @return the integration method
+     */
+    im2_type const& im2() const { return _M_im2; }
+
+    /**
      * get the integration method on face f
      *
      *
      * @return the integration method on face f
      */
     im_face_type  im( uint16_type f ) const { return _M_im.face( f ); }
+
+    /**
+     * get the integration method on face f
+     *
+     *
+     * @return the integration method on face f
+     */
+    im2_face_type  im2( uint16_type f ) const { return _M_im2.face( f ); }
 
     /**
      * get the variational expression
@@ -542,6 +567,7 @@ private:
     element_iterator _M_eltbegin;
     element_iterator _M_eltend;
     mutable im_type _M_im;
+    mutable im2_type _M_im2;
     expression_type const&  _M_expr;
     GeomapStrategyType _M_gt;
 
@@ -550,10 +576,10 @@ private:
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > _M_profile_global_assembly;
 };
 
-template<typename Elements, typename Im, typename Expr>
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename Elem1, typename Elem2, typename FormType>
 void
-Integrator<Elements, Im, Expr>::assemble( boost::shared_ptr<Elem1> const& __u,
+Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& __u,
                                           boost::shared_ptr<Elem2> const& __v,
                                           FormType& __form ) const
 {
@@ -583,10 +609,10 @@ Integrator<Elements, Im, Expr>::assemble( boost::shared_ptr<Elem1> const& __u,
 }
 
 
-template<typename Elements, typename Im, typename Expr>
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename Elem1, typename FormType>
 void
-Integrator<Elements, Im, Expr>::assemble( boost::shared_ptr<Elem1> const& __v,
+Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& __v,
                                           FormType& __form ) const
 {
 #if 0
@@ -610,10 +636,10 @@ Integrator<Elements, Im, Expr>::assemble( boost::shared_ptr<Elem1> const& __v,
 
     //assemble( __form, mpl::int_<iDim>(), mpl::bool_<true>() );
 }
-template<typename Elements, typename Im, typename Expr>
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FormType>
 void
-Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/ ) const
+Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/ ) const
 {
     Debug( 5065 ) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
@@ -735,18 +761,18 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEME
 #endif // HAVE_TBB
 }
 
-template<typename Elements, typename Im, typename Expr>
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FormType>
 void
-Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<false> /**/ ) const
+Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<false> /**/ ) const
 {
     assembleInCaseOfInterpolate(__form,mpl::int_<MESH_ELEMENTS>());
 }
 
-template<typename Elements, typename Im, typename Expr>
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
-Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::BilinearForm<FE1,FE2,ElemContType>& __form,
+Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::BilinearForm<FE1,FE2,ElemContType>& __form,
                                                              mpl::int_<MESH_ELEMENTS> /**/ ) const
 {
     // typedef on integral mesh (expr) :
@@ -854,10 +880,10 @@ Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::BilinearFor
 
 } // assembleInCaseOfInterpolate
 
-template<typename Elements, typename Im, typename Expr>
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
-Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
+Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
 {
 
     // typedef on integral mesh (expr) :
@@ -956,10 +982,10 @@ Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::LinearForm<
 
 
 
-template<typename Elements, typename Im, typename Expr>
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FormType>
 void
-Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<true> /**/ ) const
+Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<true> /**/ ) const
 {
     Debug( 5065 ) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " faces\n";
@@ -1136,18 +1162,18 @@ Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES
     Debug( 5065 ) << "integrating over faces done in " << __timer.elapsed() << "s\n";
 }
 
-template<typename Elements, typename Im, typename Expr>
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FormType>
 void
-Integrator<Elements, Im, Expr>::assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<false> /**/ ) const
+Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<false> /**/ ) const
 {
     assembleInCaseOfInterpolate(__form,mpl::int_<MESH_FACES>());
 }
 
-template<typename Elements, typename Im, typename Expr>
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
-Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::BilinearForm<FE1,FE2,ElemContType>& __form,
+Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::BilinearForm<FE1,FE2,ElemContType>& __form,
                                                              mpl::int_<MESH_FACES> /**/ ) const
 {
 
@@ -1287,10 +1313,10 @@ Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::BilinearFor
 
 }
 
-template<typename Elements, typename Im, typename Expr>
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
-Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
+Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
 {
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
@@ -1431,9 +1457,9 @@ Integrator<Elements, Im, Expr>::assembleInCaseOfInterpolate( detail::LinearForm<
 
 
 
-template<typename Elements, typename Im, typename Expr>
-typename Integrator<Elements, Im, Expr>::eval::matrix_type
-Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
+template<typename Elements, typename Im, typename Expr, typename Im2>
+typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
+Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 {
     Debug( 5065 ) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
@@ -1635,9 +1661,9 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 #endif // HAVE_TBB
 
 }
-template<typename Elements, typename Im, typename Expr>
-typename Integrator<Elements, Im, Expr>::eval::matrix_type
-Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
+template<typename Elements, typename Im, typename Expr, typename Im2>
+typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
+Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
 {
     Debug( 5065 ) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
@@ -1815,10 +1841,10 @@ Integrator<Elements, Im, Expr>::evaluate( mpl::int_<MESH_FACES> ) const
     Debug( 5065 ) << "integrating over faces done in " << __timer.elapsed() << "s\n";
     return res;
 }
-template<typename Elements, typename Im, typename Expr>
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename P0hType>
 typename P0hType::element_type
-Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_ELEMENTS> ) const
+Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_ELEMENTS> ) const
 {
     Debug( 5065 ) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
@@ -1906,10 +1932,10 @@ Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::in
 
     return p0;
 }
-template<typename Elements, typename Im, typename Expr>
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename P0hType>
 typename P0hType::element_type
-Integrator<Elements, Im, Expr>::broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const
+Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const
 {
         Debug( 5065 ) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
@@ -2136,6 +2162,82 @@ integrate( IntElts const& elts,
     Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<IntElts,ExprT>::value << "\n";
     return integrate( elts, _Q< ExpressionOrder<IntElts,ExprT>::value >(), expr, gt );
 
+}
+
+/**
+ * integrate an expression \c expr over a set of convexes \c elts
+ * using the integration rule \c im .
+ */
+template<typename IntElts, typename Im, typename ExprT, typename Im2 = Im>
+Expr<Integrator<IntElts, Im, ExprT, Im2> >
+integrate_impl( IntElts const& elts,
+                Im const& im,
+                ExprT const& expr,
+                GeomapStrategyType gt,
+                Im2 const& im2 )
+{
+    typedef Integrator<IntElts, Im, ExprT, Im2> expr_t;
+    return Expr<expr_t>( expr_t( elts, im, expr, gt, im2 ) );
+}
+
+
+/// \cond DETAIL
+namespace detail
+{
+template<typename TheArgs, typename Tag>
+struct clean_type
+{
+    typedef typename boost::remove_pointer<
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<TheArgs, Tag>::type
+                >::type
+            >::type
+            >::type type;
+};
+template<typename Args>
+struct integrate_type
+{
+    typedef typename clean_type<Args,tag::expr>::type _expr_type;
+    typedef typename clean_type<Args,tag::range>::type _range_type;
+    typedef _Q< ExpressionOrder<_expr_type>::value > quad_type;
+    typedef Expr<Integrator<_range_type, quad_type, _expr_type, quad_type> > expr_type;
+
+};
+}
+/// \endcond
+
+/**
+ *
+ * \brief projection/interpolation of an expresion onto a noal functionspace
+ *
+ * \arg space the function space to project onto
+ * \arg range the range of mesh elements to apply the projection (the remaining parts are set to 0)
+ * \arg expr the expression to project
+ * \arg geomap the type of geomap to use (make sense only using high order meshes)
+ * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
+ */
+BOOST_PARAMETER_FUNCTION(
+    (typename detail::integrate_type<Args>::expr_type), // return type
+    integrate2,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    (required
+     (range, *  )
+     (expr,   *)
+     //(quad,   *)
+        ) // 4. one required parameter, and
+
+    (optional
+     (geomap, *(boost::is_integral<mpl::_>), (int)GEOMAP_HO )
+     (quad,   *, typename detail::integrate_type<Args>::quad_type() )
+     (quad1,  *, typename detail::integrate_type<Args>::quad_type() )
+        )
+    )
+{
+    return integrate_impl( range, quad, expr, geomap, quad1 );
+    return 1;
 }
 
 
