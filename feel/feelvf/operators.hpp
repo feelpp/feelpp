@@ -268,6 +268,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     mpl::identity<detail::gmc<1> > >::type::type basis_context_key_type;  \
                 typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type; \
                 typedef boost::shared_ptr<gmc_type> gmc_ptrtype;        \
+                typedef typename gmc_type::gm_type gm_type;             \
                 BOOST_MPL_ASSERT_MSG( ( fusion::result_of::has_key<map_basis_context_type, basis_context_key_type >::value ), INVALID_BASISMAP_OP, (map_basis_context_type, key_type, basis_context_key_type, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>, mpl::bool_<VF_OP_TYPE_IS_TRIAL( T )> )); \
                 typedef typename mpl::if_<mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>, \
                     mpl::identity<mpl::int_<0> >,                       \
@@ -611,9 +612,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
                 ctx_ptrtype createCtxIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<true>) \
                 {                                                       \
-                    return ctx_ptrtype( new ctx_type( expr.e().functionSpace()->fe(), \
-                                                      fusion::at_key<key_type>( geom ), \
-                                                      (pc_ptrtype const&)M_pc ) ); \
+                    return ctx_ptrtype( new ctx_type( expr.e().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_ptrtype const&)M_pc ) ); \
                 }                                                       \
                 ctx_ptrtype createCtxIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<false>) \
                 {                                                       \
