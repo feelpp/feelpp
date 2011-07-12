@@ -31,6 +31,10 @@
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelvf/vf.hpp>
 
+namespace Feel
+{
+
+}
 int main(int argc, char** argv)
 {
     double hsize = 2;
@@ -59,6 +63,8 @@ int main(int argc, char** argv)
                                               _order=2,
                                               _h=hsize ),
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+    straightenMesh( _mesh=mesh );
+
     std::cout << "read mesh\n" << std::endl;
 
     std::cout << "ho =" << std::endl
