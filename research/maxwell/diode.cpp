@@ -123,7 +123,7 @@ class Diode
 public:
 
     //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = 1;
+    static const uint16_type Order = 0;
     static const uint16_type OrderGeo = 1;
 
     //! numerical type is double
@@ -189,7 +189,7 @@ public:
     {
     }
 
-    template<typename ExExpr> void checkDG( ExExpr& expr );
+    template<typename ExExpr> void checkDG( ExExpr expr );
 
     void run();
 
@@ -250,7 +250,7 @@ Diode::run()
 }
 template<typename ExExpr>
 void
-Diode::checkDG( ExExpr& expr )
+Diode::checkDG( ExExpr expr )
 {
     // check continuity
     auto ijump  = integrate( internalfaces(mesh), trans(jumpv(expr))*jumpv(expr)  ).evaluate()( 0, 0 );
@@ -306,27 +306,38 @@ Diode::FSolve( BdyExpr wbdy,
     auto u = Xh->element();
 
     // update right hand side
-    F_Ex = integrate( elements( mesh ), -idv(Ex)*dy(u));
-    F_Ex += integrate( internalfaces(mesh),
+    lEx = integrate( elements( mesh ), -idv(Ex)*dy(u));
+    std::cout<< "jump term Ex : "<<integrate(internalfaces(mesh),
+                                                 trans(Anm_1)*(wR-wL)*rightfacev(idv(Ex)) +
+                                                 trans(Anp_1)*(wR-wL)*leftfacev(idv(Ex))).evaluate()(0,0)<< std::endl;
+    lEx += integrate( internalfaces(mesh),
                       trans(Anm_1)*(wR-wL)*rightface(id(u)) +
                       trans(Anp_1)*(wR-wL)*leftface(id(u)) );
-    F_Ex += integrate( boundaryfaces(mesh), trans(Anm_1)*(wbdy-w)*id(u) );
+    lEx += integrate( boundaryfaces(mesh), trans(Anm_1)*(wbdy-w)*id(u) );
+    std::cout << "boundary term Ex : " <<integrate( boundaryfaces(mesh), trans(Anm_1)*(wbdy-w)*idv(Ex) ).evaluate() << endl;
 
-    F_Ey = integrate( elements( mesh ), idv(Ey)*dx(u));
-    F_Ey += integrate( internalfaces(mesh),
+    lEy = integrate( elements( mesh ), idv(Ey)*dx(u));
+
+    std::cout<< "jump term Ey : "<<integrate(internalfaces(mesh),
+                                                 trans(Anm_2)*(wR-wL)*rightfacev(idv(Ey)) +
+                                                 trans(Anp_2)*(wR-wL)*leftfacev(idv(Ey))).evaluate()(0,0)<< std::endl;
+    lEy += integrate( internalfaces(mesh),
                       trans(Anm_2)*(wR-wL)*rightface(id(u)) +
                       trans(Anp_2)*(wR-wL)*leftface(id(u)) );
-    F_Ey += integrate( boundaryfaces(mesh), trans(Anm_2)*(wbdy-w)*id(u) );
+    lEy += integrate( boundaryfaces(mesh), trans(Anm_2)*(wbdy-w)*id(u) );
+    std::cout << "boundary term Ey : " <<integrate( boundaryfaces(mesh), trans(Anm_2)*(wbdy-w)*idv(Ey) ).evaluate() << endl;
 
-    F_Bz = integrate( elements( mesh ), idv(Bz)*dx(u) - idv(Bz)*dy(u));
-    F_Bz += integrate( internalfaces(mesh),
+    lBz = integrate( elements( mesh ), idv(Bz)*dx(u) - idv(Bz)*dy(u));
+
+
+    std::cout<< "jump term Bz : "<<integrate(internalfaces(mesh),
+                                                 trans(Anm_3)*(wR-wL)*rightfacev(idv(Bz)) +
+                                                 trans(Anp_3)*(wR-wL)*leftfacev(idv(Bz))).evaluate()(0,0)<< std::endl;
+    lBz += integrate( internalfaces(mesh),
                       trans(Anm_3)*(wR-wL)*rightface(id(u)) +
                       trans(Anp_3)*(wR-wL)*leftface(id(u)) );
-    F_Bz += integrate( boundaryfaces(mesh), trans(Anm_3)*(wbdy-w)*id(u) );
-
-    lEx = integrate(elemets( mesh), idv(dtEx)*id(u));
-    lEy = integrate(elemets( mesh), idv(dtEy)*id(u));
-    lBz = integrate(elemets( mesh), idv(dtBz)*id(u));
+    lBz += integrate( boundaryfaces(mesh), trans(Anm_3)*(wbdy-w)*id(u) );
+    std::cout << "boundary term Bz : " <<integrate( boundaryfaces(mesh), trans(Anm_3)*(wbdy-w)*idv(Bz) ).evaluate() << endl;
 
     M_backend->solve( _matrix=D, _solution=dtEx, _rhs=F_Ex  );
     M_backend->solve( _matrix=D, _solution=dtEy, _rhs=F_Ey  );
@@ -597,7 +608,10 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
         Ex = vf::project( Xh, elements(mesh), Ex_exact );
         Ey = vf::project( Xh, elements(mesh), Ey_exact );
         Bz = vf::project( Xh, elements(mesh), Bz_exact );
-        FSolve(w_exact, Ex, Ey, Bz, dtEx, dtEy, dtBz);
+        checkDG( idv(Ex) );
+        checkDG( idv(Ey) );
+        checkDG( idv(Bz) );
+        FSolve(w, Ex, Ey, Bz, dtEx, dtEy, dtBz);
         time += dt;
         std::cout << "||exact-Ex||_2" << integrate(elements(mesh), (idv(dtEx)+(idv(Ex)-Ex_exact)/dt)*(idv(dtEx)+(idv(Ex)-Ex_exact)/dt) ).evaluate().norm() << std::endl;
         std::cout << "||exact-Ey||_2" << integrate(elements(mesh), (idv(dtEy)+(idv(Ey)-Ey_exact)/dt)*(idv(dtEy)+(idv(Ey)-Ey_exact)/dt) ).evaluate().norm() << std::endl;
@@ -623,7 +637,7 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
         std::cout << "||exact-Ex||_2 = " << integrate(elements(mesh), (idv(Ex)-Ex_exact)*(idv(Ex)-Ex_exact) ).evaluate().norm() << std::endl;
         std::cout << "||exact-Ey||_2 = " << integrate(elements(mesh), (idv(Ey)-Ey_exact)*(idv(Ey)-Ey_exact) ).evaluate().norm() << std::endl;
-        std::cout << "||exact-Bz||_2 = " << integrate(elements(mesh), (idv(Bz)-Bz_exact)*(idv(Bz)-Bz_exact) ).evaluate().norm() << std::endl;
+        std::cout << "||exact-Bz||_2 = " << integrate(elements(mesh), (idv(Bz)-Bz_exact)*(idv(Bz)-Bz_exact) ).evaluate().norm() << std::endl;*/
 
         // save
         exporter->step(time)->setMesh( mesh );
