@@ -31,14 +31,16 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feeldiscr/mesh.hpp>
 
+using namespace Feel;
 
-
-std::pair<std::string, std::string>
+gmsh_ptrtype
 makefin( double hsize )
 {
     std::ostringstream ostr;
-    ostr << "Mesh.MshFileVersion = 1;\n"
+    ostr << "Mesh.MshFileVersion = 2.1;\n"
          << "h=" << hsize << ";\n"
          << "Point (1) = {0, 0, 0, h};\n"
          << "Point (2) = {1, 0, 0, h};\n"
@@ -83,6 +85,9 @@ makefin( double hsize )
     nameStr.precision( 3 );
     nameStr << "fin";
 
-    return std::make_pair( nameStr.str(), ostr.str() );
+    gmsh_ptrtype gmshp( new Gmsh);
+    gmshp->setPrefix( nameStr.str() );
+    gmshp->setDescription( ostr.str() );
+    return gmshp;
 }
 
