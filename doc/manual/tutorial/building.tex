@@ -55,7 +55,7 @@ In order to install \feel on Unix systems (other than Mac OS X, in you have a Ma
 before. Those libraries and programs are necessary for the
 compilation and installation of the \feel librairies.
 This is the list of all the librairies you must have installed on your
-computer, and the \verb|*-dev| packages for some of them.
+computer, and the \lstinline|*-dev| packages for some of them. \\
 \underline{Required packages}:
 \begin{itemize}
 \item g++ ($4.4$ or $4.5$, from now $4.6$ is not yet	completely working  )
@@ -133,7 +133,7 @@ In order to \feel and \cmake work properly, you have to install differents compi
 \item Gcc \\
 The first step is to install the latest version of Xcode. If your computer is recent, you can install it with your DVD that came with your machine (not the OS DVD, but the applications one). You don't have to install the complete Xcode (you can uncheck iOS SDK for example, it's not necessary here and requiers a lot of memory). Xcode will provide your computer all basic tools to compile such as gcc 4.2. It's the first step, you'll see later how to easily install gcc 4.5 using MacPorts.
 \item Fortran \\
-To build the Makefiles, \cmake will need a Fortran compiler. To make it works, please go to \href{http://hpc.sourceforge.net/}{SourceForge.net} and download \verb|gfortran-snwleo-intel-bin.tar.gz| which is the fortran compiler only (from now, don't download the complete install with gcc 4.6 because Feel needs gcc 4.5). To install it, go to the directory where you have downloaded the file and type in a command-line
+To build the Makefiles, \cmake will need a Fortran compiler. To make it works, please go to \href{http://hpc.sourceforge.net/}{SourceForge.net} and download \lstinline|gfortran-snwleo-intel-bin.tar.gz| which is the fortran compiler only (from now, don't download the complete install with gcc 4.6 because Feel needs gcc 4.5). To install it, go to the directory where you have downloaded the file and type in a command-line
 \begin{unixcom}
 		sudo tar -xvf gfortran-snwleo-intel-bin.tar -C /
 \end{unixcom}
@@ -149,45 +149,45 @@ MacPorts provides a single software tree which includes the latest stable releas
 \paragraph{Installation}
 To install the latest version of MacPorts, please go to \href{http://www.macports.org/install.php}{Installing MacPorts} page and follow the instructions. The simplest way is to download the $dmg$ disk image corresponding to your version of Mac OS X. It is recommended that you install X11 (X Window System) which is normally used to display X11 applications.%, and also the Xcode Tools (only the developer tools, iOS SDK is not required).
 
-If you have installed with the package installer (\verb|MacPorts-1.x.x.dmg|) that means MacPorts will be installed in \verb|/opt/local|. From now on we will suppose that macports has been installed in \verb|/opt/local| which is the default MacPorts location. Note that from now on, all tools installed by MacPorts will be installed in \lstinline!/opt/local/bin! or \lstinline!/opt/local/sbin! for example (that's here you'll find gcc4.5 once being installed).%At the end of the installation, you can check if your PATH has been upgraded by the command \verb|echo $PATH| which should return a line containing \verb|/opt/local/bin:/opt/local/sbin|.
+If you have installed with the package installer (\lstinline|MacPorts-1.x.x.dmg|) that means MacPorts will be installed in \lstinline|/opt/local|. From now on we will suppose that macports has been installed in \lstinline|/opt/local| which is the default MacPorts location. Note that from now on, all tools installed by MacPorts will be installed in \lstinline!/opt/local/bin! or \lstinline!/opt/local/sbin! for example (that's here you'll find gcc4.5 once being installed).%At the end of the installation, you can check if your PATH has been upgraded by the command \lstinline|echo $PATH| which should return a line containing \lstinline|/opt/local/bin:/opt/local/sbin|.
 
 \paragraph{Key commands}
-In your command-line, the software MacPorts is called by the command \verb|port|.
+In your command-line, the software MacPorts is called by the command \lstinline|port|.
 Here is a list of key commands for using MacPorts, if you want more informations please go to \href{http://guide.macports.org/#using.port}{MacPorts Commands}.
 \begin{itemize}
-\item \verb|sudo port -v selfupdate|
-	This action should be used regularly to update the local tree with the global MacPorts ports. The option \verb|-v| enables verbose which generates verbose messages.
-\item \verb|port info flowd|
+\item \lstinline|sudo port -v selfupdate|
+	This action should be used regularly to update the local tree with the global MacPorts ports. The option \lstinline|-v| enables verbose which generates verbose messages.
+\item \lstinline|port info flowd|
 	This action is used to get information about a port (description, license, maintainer, etc.)
-\item \verb|sudo port install mypackage|
+\item \lstinline|sudo port install mypackage|
 	This action install the port mypackage
-\item \verb|sudo port uninstall mypackage|
+\item \lstinline|sudo port uninstall mypackage|
 	This action uninstall the port mypackage
-\item \verb|port installed|
-	This action displays all ports installed and their versions, variants and activation status. You can also use the \verb|-v| option to also display the platform and CPU architecture(s) for which the ports were built, and any variants which were explicitly negated.
-\item \verb|sudo port upgrade mypackage|
-	This action updgrades installed ports and their dependencies when a \verb|Portfile| in the repository has been updated. To avoid the upgrade of a port's dependencies, use the option \verb|-n|.
+\item \lstinline|port installed|
+	This action displays all ports installed and their versions, variants and activation status. You can also use the \lstinline|-v| option to also display the platform and CPU architecture(s) for which the ports were built, and any variants which were explicitly negated.
+\item \lstinline|sudo port upgrade mypackage|
+	This action updgrades installed ports and their dependencies when a \lstinline|Portfile| in the repository has been updated. To avoid the upgrade of a port's dependencies, use the option \lstinline|-n|.
 \end{itemize}
 
 \paragraph{Portfile}
 A Portfile is a TCL script which usually contains simple keyword values and TCL expressions. Each package/port has a corresponding Portfile but it's only a part of a port description.
 \feel provides some mandatory Portfiles for its compilation which are either not available in MacPorts or are buggy but \feel also provides some Portfiles which are already available in MacPorts such as gmsh or petsc. They usually provide either some fixes to ensure \feel works properly or new version not yet available in MacPorts.
-These Portfiles are installed in \verb|ports/macosx/macports|.
+These Portfiles are installed in \lstinline|ports/macosx/macports|.
 
 
 \subsubsection{MacPorts and \Feel}
 
 
-To be able to install \feel, add the following line in \verb|/opt/local/etc/macports/source.conf|
+To be able to install \feel, add the following line in \lstinline|/opt/local/etc/macports/source.conf|
 at the top of the file before any other sources :
 \begin{lstlisting}[language=sh]
 file:///<path to feel top directory>/ports/macosx/macports
 \end{lstlisting}
 
-Once it's done, go to \verb|<path to \feel top directory>/ports/macosx/macports| and type in a command-line :
+Once it's done, type in a command-line :
 \begin{unixcom}
 		cd <your path to feel top directory>/ports/macosx/macports
-		portindex
+		portindex -f
 \end{unixcom}
 
 You should have an output like this :
@@ -212,13 +212,13 @@ Your are now able to type
 It might take some time (possibly an entire day) to compile all the requirements for \feel
 to compile properly. If you have several cores on your MacBook Pro, iMac or MacBook
 we suggest that you configure macports to use all or some of them.
-To do that uncomment the following line in the file  \verb|/opt/local/etc/macports/macports.conf|
+To do that uncomment the following line in the file  \lstinline|/opt/local/etc/macports/macports.conf|
 \begin{flushleft}
 \begin{lstlisting}[language=sh]
 buildmakejobs	0 $\#$ all the cores
 \end{lstlisting}
 \end{flushleft}
-At the end of the \verb|sudo port install feel++|, you have all dependencies installed which is a good point. To build all the Makefile, \cmake is automatically launched but can have furthers libraries not found. Some are important, some are not. OpenMP is one of the necessary compiler to have and is not automatically installed on 64bits systems. We can install it now thanks to gcc4.5 that has been installed because it taks part of the feel dependencies. To install it, please go to \href{http://www.hpcs.cs.tsukuba.ac.jp/omni-openmp/download/download-omni.html}{Omni download} and download the latest stable release. Then type
+At the end of the \lstinline|sudo port install feel++|, you have all dependencies installed which is a good point. To build all the Makefile, \cmake is automatically launched but can have furthers libraries not found. Some are important, some are not. OpenMP is one of the necessary compiler to have and is not automatically installed on 64bits systems. We can install it now thanks to gcc4.5 that has been installed because it taks part of the feel dependencies. To install it, please go to \href{http://www.hpcs.cs.tsukuba.ac.jp/omni-openmp/download/download-omni.html}{Omni download} and download the latest stable release. Then type
 \begin{unixcom}
 		tar -xvf Omni-x.yz.tar.gz
 		cd  Omni-x.yz
@@ -233,10 +233,10 @@ Enter your password, then to complete the installation
 \begin{unixcom}
 		make install
 \end{unixcom}
-After the install is complete, you can delete the sources in your download directory because make install has built it in an appropriate directory. To make it work properly, always check that \cmake is using gcc 4.5. If \cmake doesn't recognize openMP, enter the configuration mode using \ccmake and enter \verb|-fopenmp| in the box \verb|OpenMP_CXX_FLAGS|
+After the install is complete, you can delete the sources in your download directory because make install has built it in an appropriate directory. To make it work properly, always check that \cmake is using gcc 4.5. If \cmake doesn't recognize openMP, enter the configuration mode using \ccmake and enter \lstinline|-fopenmp| in the box \lstinline|OpenMP_CXX_FLAGS|
 
 \subsubsection{Snow Leopard \& slepc/petsc}
-We have heard about issues with petsc and slepc with some new MacBook Pro with Snow Leopard while they are being installed with the \verb|sudo port install feel++|. If it's the case, that probably means there is an issue with atlas. If atlas is already installed, you have to unsinstall it (be carefull with dependencies, they also have to be uninstalled). Once it's done, you should do
+We have heard about issues with petsc and slepc with some new MacBook Pro with Snow Leopard while they are being installed with the \lstinline|sudo port install feel++|. If it's the case, that probably means there is an issue with atlas. If atlas is already installed, you have to unsinstall it (be carefull with dependencies, they also have to be uninstalled). Once it's done, you should do
 \begin{unixcom}
 		cd <path to feel top directory>/ports/macosx/macports
 		portindex -f
@@ -254,7 +254,7 @@ and type once again
 		sudo port install feel++
 \end{unixcom}
 
-In that order, slepc and petsc will be installed before atlas, and feel will be properly installed.
+\noindent In that order, slepc and petsc will be installed before atlas, and feel will be properly installed.
 %%%% A voir avec Stéphane si ça a bien réussi
 
 \subsubsection{Missing ports}
@@ -264,10 +264,10 @@ In that order, slepc and petsc will be installed before atlas, and feel will be 
 \label{compilingfeel}
 Feel build system uses \cmake\index{cmake}\footnote{\url{http://www.cmake.org}}
 as its build system. Check that \cmake is using gcc4.5 or 4.4 as C++ compiler
-(you can use the option \verb|CMAKE_CXX_COMPILER=<path>/g++-4.5| where the
-\verb|path| depends on your OS, it's probably \verb|/usr/bin| or
-\verb|/opt/local/bin| but you can also change it with the command \verb|ccmake|
-and press \verb|t| for advanced options).  It's important, as \cmake did
+(you can use the option \lstinline|CMAKE_CXX_COMPILER=<path>/g++-4.5| where the
+\lstinline|path| depends on your OS, it's probably \lstinline|/usr/bin| or
+\lstinline|/opt/local/bin| but you can also change it with the command \lstinline|ccmake|
+and press \lstinline|t| for advanced options).  It's important, as \cmake did
 not produce any Makefile, a CMakeCache.txt won't be created so you'll have to
 check each time that gcc 4.5 is the C++ compiler to be sure the build will be
 correct.
@@ -282,11 +282,11 @@ build type:
 \end{itemize}
 
 \paragraph{CMake Out Source Build (preferred)}
-The best way is to have a directory (\verb|FEEL| for example) in which you have : \\
+The best way is to have a directory (\lstinline|FEEL| for example) in which you have : \\
 \begin{lstlisting}
 	feel/
 \end{lstlisting}
-where \verb|feel| is the top directory where the source have been downloaded. Placed in \verb|FEEL|, you can create the build directory (\verb|feel.opt| for example) and lauch cmake with :
+where \lstinline|feel| is the top directory where the source have been downloaded. Placed in \lstinline|FEEL|, you can create the build directory (\lstinline|feel.opt| for example) and lauch cmake with :
 \begin{unixcom}
   mkdir feel.opt
   cd feel.opt
@@ -308,10 +308,10 @@ Once Cmake has made its work, you are now able to compile the library with
 \begin{unixcom}
 		make
 \end{unixcom}
-\textbf{Important :} from now, all commands should be type in \verb|feel.opt| or its subdirectories.
+\textbf{Important :} from now, all commands should be type in \lstinline|feel.opt| or its subdirectories.
 \paragraph{CMake In Source Build}
 
-Be carefull, this is not advised and if you try this way, \cmake won't let you do. If you really want to, you will have to modifiy the top \verb|CMakeLists.txt|. You should consider out source builds by checking the next paragraph.
+Be carefull, this is not advised and if you try this way, \cmake won't let you do. If you really want to, you will have to modifiy the top \lstinline|CMakeLists.txt|. You should consider out source builds by checking the next paragraph.
 
 Enter the source tree and type
 \begin{unixcom}
@@ -420,7 +420,7 @@ To customize or change some build setting one can use the \cmake curse interface
 
 \subsubsection{Compiling the Feel tutorial}
 \label{sec:comp-feel-tutor}
-The manual (which includes the tutorial) is edited with \LaTeX  so you need to have installed the \LaTeX  distribution on your computer. \LaTeX  is a high-quality typesetting system, it includes features designed for the production of technical and scientific documentation. There are several ways to make it work, for example you can go on \href{http://www.tug.org/mactex/}{MacTeX website} and follow the instructions to install the distribution. If the command \verb|make check| in \verb|feel.opt/| has been run before, the tutorial
+The manual (which includes the tutorial) is edited with \LaTeX  so you need to have installed the \LaTeX  distribution on your computer. \LaTeX  is a high-quality typesetting system, it includes features designed for the production of technical and scientific documentation. There are several ways to make it work, for example you can go on \href{http://www.tug.org/mactex/}{MacTeX website} and follow the instructions to install the distribution. If the command \lstinline|make check| in \lstinline|feel.opt/| has been run before, the tutorial
 should be already compiled and ready. The steps are as follows to build the Feel tutorial
 \begin{unixcom}
   cd feel.opt/doc/manual
@@ -436,7 +436,7 @@ should be already compiled and ready. The steps are as follows to build the Feel
 %  myintegrals.o mymesh.o      stokes.assert tutorial.aux pdfs/ styles/
 %  stokes        stokes.o      tutorial.bbl  tutorial.log tutorial.pdf
 %\end{unixcom}
-The directory \verb|doc/manual| contains all examples used in the tutorial. You will see how it works in the following parts.
+The directory \lstinline|doc/manual| contains all examples used in the tutorial. You will see how it works in the following parts.
 
 \section{Programming environment}
 \label{sec:progr-envir}
