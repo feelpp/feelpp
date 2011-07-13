@@ -39,6 +39,14 @@
 using namespace Feel;
 using namespace Feel::vf;
 
+enum RKMethod
+    {
+        EULER_EXPLICIT = 0,
+        EULER_MODIFIED,
+        HEUN,
+        RK4
+    };
+
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
@@ -57,6 +65,7 @@ makeOptions()
         ("penaldir", Feel::po::value<double>()->default_value( 20 ), "penalisation parameter for the weak boundary conditions")
         ("dt", Feel::po::value<double>()->default_value( 0.01 ), "timestep value")
         ("Tfinal", Feel::po::value<double>()->default_value( 1 ), "final time")
+        ("rkmethod", Feel::po::value<int>()->default_value( 2 ), "rk method, 0=euler, 1=modified euler, 2=heun, 3=rk4")
         ;
     return diodeoptions.add( Feel::feel_options() );
 }
@@ -175,6 +184,7 @@ public:
         meshSize( this->vm()["hsize"].as<double>() ),
         timeStep( this->vm()["dt"].as<double>() ),
         Tfinal( this->vm()["Tfinal"].as<double>() ),
+        rkmethod( (RKMethod)this->vm()["rkmethod"].as<int>() ),
         convex( this->vm()["convex"].as<std::string>() )
     {
     }
@@ -187,11 +197,25 @@ public:
 
     template<typename BdyExpr>
     void
-    solve( double dt,
-           BdyExpr wbdy,
-           element_type const& Exn, element_type const& Eyn,element_type const& Bzn,
+    FSolve( BdyExpr wbdy,
            element_type const& Ex, element_type const& Ey,element_type const& Bz,
            element_type& Exstar, element_type& Eystar, element_type& Bzstar );
+    template<typename BdyExpr>
+    void
+    EulerStep(double& time, double dt, BdyExpr& wbdy,
+                  element_type& Ex, element_type& Ey,element_type& Bz);
+    template<typename BdyExpr>
+    void
+    EulerModifiedStep(double& time, double dt, BdyExpr& wbdy,
+                  element_type& Ex, element_type& Ey,element_type& Bz);
+    template<typename BdyExpr>
+    void
+    HeunStep(double& time, double dt, BdyExpr& wbdy,
+                  element_type& Ex, element_type& Ey,element_type& Bz);
+    template<typename BdyExpr>
+    void
+    RK4Step(double& time, double dt, BdyExpr& wbdy,
+                  element_type& Ex, element_type& Ey,element_type& Bz);
 private:
 
     //! linear algebra backend
@@ -201,6 +225,7 @@ private:
     double meshSize;
     double timeStep;
     double Tfinal;
+    RKMethod rkmethod;
     //! convex of the domain
     std::string convex;
 
@@ -246,13 +271,13 @@ Diode::checkDG( ExExpr& expr )
 }
 template<typename BdyExpr>
 void
-Diode::solve( double dt,
-              BdyExpr wbdy,
-              element_type const& Exn, element_type const& Eyn,element_type const& Bzn,
+Diode::FSolve( BdyExpr wbdy,
               element_type const& Ex, element_type const& Ey,element_type const& Bz,
-              element_type& Exstar, element_type& Eystar, element_type& Bzstar )
+              element_type& dtEx, element_type& dtEy, element_type& dtBz )
 
 {
+    //Solve dtw*M = l(W)
+    //l(W) = int (Ai di phi.w + bord)
     auto w = vec(idv(Ex),idv(Ey),idv(Bz));
     auto wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
     auto wL = vec(leftfacev(idv(Ex)),leftfacev(idv(Ey)),leftfacev(idv(Bz)));
@@ -260,39 +285,192 @@ Diode::solve( double dt,
     auto lEy=form1( _test=Xh, _vector=F_Ey, _init=true );
     auto lBz=form1( _test=Xh, _vector=F_Bz, _init=true );
 
-    auto Anp_1 = vec( +Ny() * Ny() / 0.2e1, -Nx() * Ny() / 0.2e1, -Ny() / 0.2e1 );
-    auto Anp_2 = vec(-Nx() * Ny() / 0.2e1, Nx() * Nx() / 0.2e1, Nx() / 0.2e1 );
-    auto Anp_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst(0.1e1 / 0.2e1) );
-    auto Anm_1 = vec(  -Ny() * Ny() / 0.2e1, Nx() * Ny() / 0.2e1, -Ny() / 0.2e1 );
-    auto Anm_2 = vec( Nx() * Ny() / 0.2e1, -Nx() * Nx() / 0.2e1, Nx() / 0.2e1);
-    auto Anm_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst(-0.1e1 / 0.2e1) );
+    // auto Anp_1 = vec( +Ny() * Ny() / 0.2e1, -Nx() * Ny() / 0.2e1, -Ny() / 0.2e1 );
+    // auto Anp_2 = vec(-Nx() * Ny() / 0.2e1, Nx() * Nx() / 0.2e1, Nx() / 0.2e1 );
+    // auto Anp_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst(0.1e1 / 0.2e1) );
+
+    // auto Anm_1 = vec(  -Ny() * Ny() / 0.2e1, Nx() * Ny() / 0.2e1, -Ny() / 0.2e1 );
+    // auto Anm_2 = vec( Nx() * Ny() / 0.2e1, -Nx() * Nx() / 0.2e1, Nx() / 0.2e1);
+    // auto Anm_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst(-0.1e1 / 0.2e1) );
+
+    //Aini+
+    auto Anp_1 = vec(Ny() * Ny() /2.0, -Nx() * Ny() / 2.0, -Ny() / 2.0 );
+    auto Anp_2 = vec(-Nx() * Ny() / 2.0, Nx() * Nx() / 2.0, Nx() / 2.0 );
+    auto Anp_3 = vec( -Ny() / 2.0, Nx() / 2.0, cst(0.5) );
+
+    //Aini-
+    auto Anm_1 = vec(  -Ny() * Ny() / 2.0, Nx() * Ny() /2.0, -Ny() / 2.0 );
+    auto Anm_2 = vec( Nx() * Ny() / 2.0, -Nx() * Nx() / 2.0, Nx() / 2.0);
+    auto Anm_3 = vec( -Ny() / 2.0, Nx() /2.0, cst(0.5) );
 
     auto u = Xh->element();
 
     // update right hand side
-    lEx = integrate( elements( mesh ), -idv(Exn)*id(u)  -dt*dyv(Bz)*id(u));
-    lEx += integrate( internalfaces(mesh),
-                      dt*trans(Anm_1)*(wR-wL)*leftface(id(u)) +
-                      dt*trans(Anp_1)*(wR-wL)*rightface(id(u)) );
-    lEx += integrate( boundaryfaces(mesh), dt*trans(Anm_1)*(wbdy-w)*id(u) );
-    lEy = integrate( elements( mesh ), -idv(Eyn)*id(u) + dt*dxv(Bz)*id(u));
-    lEy += integrate( internalfaces(mesh),
-                      dt*trans(Anm_2)*(wR-wL)*leftface(id(u)) +
-                      dt*trans(Anp_2)*(wR-wL)*rightface(id(u)) );
-    lEy += integrate( boundaryfaces(mesh), dt*trans(Anm_2)*(wbdy-w)*id(u) );
-    lBz = integrate( elements( mesh ), -idv(Bzn)*id(u)+dt*(dxv(Ey)-dyv(Ex))*id(u));
-    lBz += integrate( internalfaces(mesh),
-                      dt*trans(Anm_3)*(wR-wL)*leftface(id(u)) +
-                      dt*trans(Anp_3)*(wR-wL)*rightface(id(u)) );
-    lBz += integrate( boundaryfaces(mesh), dt*trans(Anm_3)*(wbdy-w)*id(u) );
+    F_Ex = integrate( elements( mesh ), -idv(Ex)*dy(u));
+    F_Ex += integrate( internalfaces(mesh),
+                      trans(Anm_1)*(wR-wL)*rightface(id(u)) +
+                      trans(Anp_1)*(wR-wL)*leftface(id(u)) );
+    F_Ex += integrate( boundaryfaces(mesh), trans(Anm_1)*(wbdy-w)*id(u) );
 
+    F_Ey = integrate( elements( mesh ), idv(Ey)*dx(u));
+    F_Ey += integrate( internalfaces(mesh),
+                      trans(Anm_2)*(wR-wL)*rightface(id(u)) +
+                      trans(Anp_2)*(wR-wL)*leftface(id(u)) );
+    F_Ey += integrate( boundaryfaces(mesh), trans(Anm_2)*(wbdy-w)*id(u) );
 
-    //Euler modifie
-    M_backend->solve( _matrix=D, _solution=Exstar, _rhs=F_Ex  );
-    M_backend->solve( _matrix=D, _solution=Eystar, _rhs=F_Ey  );
-    M_backend->solve( _matrix=D, _solution=Bzstar, _rhs=F_Bz  );
+    F_Bz = integrate( elements( mesh ), idv(Bz)*dx(u) - idv(Bz)*dy(u));
+    F_Bz += integrate( internalfaces(mesh),
+                      trans(Anm_3)*(wR-wL)*rightface(id(u)) +
+                      trans(Anp_3)*(wR-wL)*leftface(id(u)) );
+    F_Bz += integrate( boundaryfaces(mesh), trans(Anm_3)*(wbdy-w)*id(u) );
+
+    lEx = integrate(elemets( mesh), idv(dtEx)*id(u));
+    lEy = integrate(elemets( mesh), idv(dtEy)*id(u));
+    lBz = integrate(elemets( mesh), idv(dtBz)*id(u));
+
+    M_backend->solve( _matrix=D, _solution=dtEx, _rhs=F_Ex  );
+    M_backend->solve( _matrix=D, _solution=dtEy, _rhs=F_Ey  );
+    M_backend->solve( _matrix=D, _solution=dtBz, _rhs=F_Bz  );
 
 }
+template<typename BdyExpr>
+void
+Diode::EulerStep(double& time,double dt,
+                 BdyExpr& wbdy,
+                 element_type& Ex, element_type& Ey,element_type& Bz )
+{
+    element_type Exstar = Xh->element();
+    element_type Eystar = Xh->element();
+    element_type Bzstar = Xh->element();
+    FSolve(wbdy, Ex, Ey, Bz, Exstar, Eystar, Bzstar);
+
+    Ex.add(dt, Exstar);
+    Ey.add(dt, Eystar);
+    Bz.add(dt, Bzstar);
+    time += dt;
+}
+template<typename BdyExpr>
+void
+Diode::EulerModifiedStep(double& time,double dt,
+                         BdyExpr& wbdy,
+                         element_type& Ex, element_type& Ey,element_type& Bz )
+{
+    element_type Exstar = Xh->element();
+    element_type Eystar = Xh->element();
+    element_type Bzstar = Xh->element();
+    element_type Exn = Ex;
+    element_type Eyn = Ey;
+    element_type Bzn = Bz;
+    FSolve(wbdy, Ex, Ey, Bz, Exstar, Eystar, Bzstar);
+
+    Exn.add(dt/2.0, Exstar);
+    Eyn.add(dt/2.0, Eystar);
+    Bzn.add(dt/2.0, Bzstar);
+    time += dt/2.0;
+
+    FSolve(wbdy, Exn, Eyn, Bzn, Exstar, Eystar, Bzstar);
+
+    Ex.add(dt, Exstar);
+    Ey.add(dt, Eystar);
+    Bz.add(dt, Bzstar);
+    time += dt/2.0;
+
+}
+template<typename BdyExpr>
+void
+Diode::HeunStep(double& time,double dt,
+                         BdyExpr& wbdy,
+                         element_type& Ex, element_type& Ey,element_type& Bz )
+{
+    element_type Exstar = Xh->element();
+    element_type Eystar = Xh->element();
+    element_type Bzstar = Xh->element();
+    element_type Exn = Ex;
+    element_type Eyn = Ey;
+    element_type Bzn = Bz;
+    FSolve(wbdy, Ex, Ey, Bz, Exstar, Eystar, Bzstar);
+
+    Ex.add(dt/2.0, Exstar);
+    Ey.add(dt/2.0, Eystar);
+    Bz.add(dt/2.0, Bzstar);
+    Exn.add(dt, Exstar);
+    Eyn.add(dt, Eystar);
+    Bzn.add(dt, Bzstar);
+    time += dt;
+
+    FSolve(wbdy, Exn, Eyn, Bzn, Exstar, Eystar, Bzstar);
+
+    Ex.add(dt/2.0, Exstar);
+    Ey.add(dt/2.0, Eystar);
+    Bz.add(dt/2.0, Bzstar);
+
+}
+template<typename BdyExpr>
+void
+Diode::RK4Step(double& time,double dt,
+                         BdyExpr& wbdy,
+                         element_type& Ex, element_type& Ey,element_type& Bz )
+{
+    element_type Exstar = Xh->element();
+    element_type Eystar = Xh->element();
+    element_type Bzstar = Xh->element();
+    element_type Exn = Ex;
+    element_type Eyn = Ey;
+    element_type Bzn = Bz;
+    element_type Exk = Ex;
+    element_type Eyk = Ey;
+    element_type Bzk = Bz;
+
+    //k1
+    FSolve(wbdy, Ex, Ey, Bz, Exk, Eyk, Bzk);
+
+    Ex.add(dt/6.0, Exk);
+    Ey.add(dt/6.0, Eyk);
+    Bz.add(dt/6.0, Bzk);
+    Exstar=Exn;
+    Eystar=Eyn;
+    Bzstar=Bzn;
+    Exstar.add(dt/2.0, Exk);
+    Eystar.add(dt/2.0, Eyk);
+    Bzstar.add(dt/2.0, Bzk);
+
+    //k2
+    time += dt/2.0;
+    FSolve(wbdy, Exstar, Eystar, Bzstar, Exk, Eyk, Bzk);
+
+    Ex.add(dt/3.0, Exk);
+    Ey.add(dt/3.0, Eyk);
+    Bz.add(dt/3.0, Bzk);
+    Exstar=Exn;
+    Eystar=Eyn;
+    Bzstar=Bzn;
+    Exstar.add(dt/2.0, Exk);
+    Eystar.add(dt/2.0, Eyk);
+    Bzstar.add(dt/2.0, Bzk);
+
+    //k3
+    FSolve(wbdy, Exstar, Eystar, Bzstar, Exk, Eyk, Bzk);
+
+    Ex.add(dt/3.0, Exk);
+    Ey.add(dt/3.0, Eyk);
+    Bz.add(dt/3.0, Bzk);
+    Exstar=Exn;
+    Eystar=Eyn;
+    Bzstar=Bzn;
+    Exstar.add(dt, Exk);
+    Eystar.add(dt, Eyk);
+    Bzstar.add(dt, Bzk);
+
+    //k4
+    time += dt/2.0;
+    FSolve(wbdy, Exstar, Eystar, Bzstar, Exk, Eyk, Bzk);
+
+    Ex.add(dt/6.0, Exk);
+    Ey.add(dt/6.0, Eyk);
+    Bz.add(dt/6.0, Bzk);
+
+}
+
 void
 Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
@@ -315,9 +493,9 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto Ex = Xh->element();
     auto Ey = Xh->element();
     auto Bz = Xh->element();
-    auto Exstar = Xh->element();
-    auto Eystar = Xh->element();
-    auto Bzstar = Xh->element();
+    auto dtEx = Xh->element();
+    auto dtEy = Xh->element();
+    auto dtBz = Xh->element();
     auto Exe = Xhc->element();
     auto Eye = Xhc->element();
     auto Bze = Xhc->element();
@@ -389,6 +567,26 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     exporter->step(time)->add( "EyExact", Eye );
     exporter->step(time)->add( "BzExact", Bze );
 
+    auto w = vec(idv(Ex),idv(Ey),idv(Bz));
+    auto wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
+    auto wL = vec(leftfacev(idv(Ex)),leftfacev(idv(Ey)),leftfacev(idv(Bz)));
+
+    std::cout<<rkmethod<<endl;
+    switch( rkmethod )
+        {
+        case EULER_EXPLICIT:
+            std::cout << "Euler explicit" << endl;
+            break;
+        case EULER_MODIFIED:
+            std::cout << "Euler modified" << endl;
+            break;
+        case HEUN:
+            std::cout << "Heun" << endl;
+            break;
+        case RK4:
+            std::cout << "RK4" << endl;
+            break;
+        }
     exporter->save();
     std::cout << "Saved initial/exact solution\n";
     for( time = 0; time <= Tfinal; )
@@ -396,19 +594,32 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
         std::cout << "============================================================" << std::endl;
         std::cout << "time = " << time << "s, dt=" << dt << ", final time=" << Tfinal << std::endl;
 
+        Ex = vf::project( Xh, elements(mesh), Ex_exact );
+        Ey = vf::project( Xh, elements(mesh), Ey_exact );
+        Bz = vf::project( Xh, elements(mesh), Bz_exact );
+        FSolve(w_exact, Ex, Ey, Bz, dtEx, dtEy, dtBz);
+        time += dt;
+        std::cout << "||exact-Ex||_2" << integrate(elements(mesh), (idv(dtEx)+(idv(Ex)-Ex_exact)/dt)*(idv(dtEx)+(idv(Ex)-Ex_exact)/dt) ).evaluate().norm() << std::endl;
+        std::cout << "||exact-Ey||_2" << integrate(elements(mesh), (idv(dtEy)+(idv(Ey)-Ey_exact)/dt)*(idv(dtEy)+(idv(Ey)-Ey_exact)/dt) ).evaluate().norm() << std::endl;
+        std::cout << "||exact-Bz||_2" << integrate(elements(mesh), (idv(dtBz)+(idv(Bz)-Bz_exact)/dt)*(idv(dtBz)+(idv(Bz)-Bz_exact)/dt) ).evaluate().norm() << std::endl;
 
-        solve( dt/2, w_exact,
-               Ex, Ey, Bz, // w_n
-               Ex, Ey, Bz, // w_*
-               Exstar, Eystar, Bzstar // w_n+1/2
-            );
-        time += dt/2;
-        solve( dt, w_exact,
-               Ex, Ey, Bz, // w_n
-               Exstar, Eystar, Bzstar, // w_*
-               Ex, Ey, Bz //
-            );
-        time += dt/2;
+        /*
+        switch( rkmethod )
+            {
+            case EULER_EXPLICIT:
+                EulerStep(time, dt, w_exact, Ex, Ey, Bz);
+                break;
+            case EULER_MODIFIED:
+                EulerModifiedStep(time, dt, w_exact, Ex, Ey, Bz);
+                break;
+            case HEUN:
+                HeunStep(time, dt, w_exact, Ex, Ey, Bz);
+                break;
+            case RK4:
+                RK4Step(time, dt, w_exact, Ex, Ey, Bz);
+                break;
+            }
+
 
         std::cout << "||exact-Ex||_2 = " << integrate(elements(mesh), (idv(Ex)-Ex_exact)*(idv(Ex)-Ex_exact) ).evaluate().norm() << std::endl;
         std::cout << "||exact-Ey||_2 = " << integrate(elements(mesh), (idv(Ey)-Ey_exact)*(idv(Ey)-Ey_exact) ).evaluate().norm() << std::endl;
