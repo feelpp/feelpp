@@ -266,6 +266,7 @@ namespace GeoTool {
             std::vector<std::map<std::string,std::map<std::string, std::map<uint,bool> > > > __dataMemGlobSurf1(2);
             std::vector<std::map<std::string,std::map<std::string, std::map<uint,std::string> > > > __dataMemGlobSurf2(2);
             std::vector<std::map<std::string,std::map<std::string, std::map<uint,bool> > > > __dataMemGlobIsRuled(1);
+            std::vector<std::map<std::string,std::map<std::string, std::map<uint,std::list<uint> > > > > __dataMemGlobPtsInSurf(1);
 
             //construction list ordonne d'objet a construire
             std::list<boost::tuple<std::string,std::string,double> > listPPP;
@@ -342,6 +343,7 @@ namespace GeoTool {
                     vec_map_data_surf1_ptrtype __dataMemSurf1(new vec_map_data_surf1_type(2));
                     vec_map_data_surf2_ptrtype __dataMemSurf2(new vec_map_data_surf2_type(2));
                     vec_map_data_surf1_ptrtype __dataMemIsRuled(new vec_map_data_surf1_type(1));
+                    vec_map_data_ptsinsurf_ptrtype __dataMemPtsInSurf(new vec_map_data_ptsinsurf_type(1));
 
                     GeoGMSHTool_ptrtype __geoTool(new GeoGMSHTool(this->dim()));
                     __geoTool->updateData(*this);
@@ -353,7 +355,8 @@ namespace GeoTool {
                                                                                                            Qname,//boost::get<0>(*itName),
                                                                                                            __dataMemSurf1,
                                                                                                            __dataMemSurf2,
-                                                                                                           __dataMemIsRuled
+                                                                                                           __dataMemIsRuled,
+                                                                                                           __dataMemPtsInSurf
                                                                                                            )));
 
                     // generate the code for the geometry
@@ -371,6 +374,7 @@ namespace GeoTool {
                     __dataMemGlobSurf1[1][Qshape][Qname] = (*(boost::get<4>(*__data_geoTool)))[1];// bool : volume is tab gmsh
                     __dataMemGlobSurf2[1][Qshape][Qname] = (*(boost::get<5>(*__data_geoTool)))[1];// string : volume name tab :
                     __dataMemGlobIsRuled[0][Qshape][Qname] = (*(boost::get<6>(*__data_geoTool)))[0];// bool : surface is tab gmsh
+                    __dataMemGlobPtsInSurf[0][Qshape][Qname] = (*(boost::get<7>(*__data_geoTool)))[0];// list of uint : pts in surface
 
                     // get infos
                     this->updateData( *boost::get<0>(*__data_geoTool));
@@ -425,6 +429,15 @@ namespace GeoTool {
                             __surface_str << boost::get<2>(*itSurf2);
 
                             __surface_str << "};\n";
+
+                            //maybe add more pts in surface
+                            auto ptInSurf_it = __dataMemGlobPtsInSurf[0][boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)][__surfnumber].begin();
+                            auto ptInSurf_en = __dataMemGlobPtsInSurf[0][boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)][__surfnumber].end();
+                            for ( ; ptInSurf_it != ptInSurf_en ; ++ptInSurf_it)
+                                {
+                                    __surface_str << "Point{" << *ptInSurf_it << "} In Surface{" << __surfnumber << "};\n";
+                                }
+
                         }
                     ++__surfnumber;
 
@@ -895,6 +908,14 @@ namespace GeoTool {
 
         /*_________________________________________________*/
 
+        void
+        writePtInSurface( data_geo_ptrtype __dg , uint __indLocPt,uint __indLocSurf)
+        {
+
+            auto indPtGlob = (*(boost::get<1>(*__dg)))[0][__indLocPt];
+            (*(boost::get<7>(*__dg)))[0][(*(boost::get<1>(*__dg)))[3][__indLocSurf]].push_back( indPtGlob);
+        }
+
 
         //ici on n'ecrit pas, on memorise cause des operations de difference
         //l'ecriture est realise dans geoStr()
@@ -1360,6 +1381,7 @@ namespace GeoTool {
             writeLineLoop( 1, dg, Loop()>>1>>2);
 
             writePlaneSurface( 1, dg, 1);
+            writePtInSurface(dg,2,1);
         }
 
 

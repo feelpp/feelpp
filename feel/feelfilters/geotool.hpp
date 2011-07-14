@@ -478,6 +478,10 @@ namespace Feel {
         //=> la string est le nom de ce tableau
         typedef std::vector<std::map<uint,std::string> > vec_map_data_surf2_type;
         typedef boost::shared_ptr<vec_map_data_surf2_type> vec_map_data_surf2_ptrtype;
+        // list of pt define in more in the surface
+        typedef std::vector<std::map<uint,std::list<uint> > > vec_map_data_ptsinsurf_type;
+        typedef boost::shared_ptr<vec_map_data_ptsinsurf_type> vec_map_data_ptsinsurf_ptrtype;
+
 
         typedef boost::tuple< GeoGMSHTool_ptrtype,
                               vec_map_data_ptrtype,
@@ -485,7 +489,8 @@ namespace Feel {
                               std::string,
                               vec_map_data_surf1_ptrtype,
                               vec_map_data_surf2_ptrtype,
-                              vec_map_data_surf1_ptrtype > data_geo_type;
+                              vec_map_data_surf1_ptrtype,
+                              vec_map_data_ptsinsurf_ptrtype > data_geo_type;
         typedef boost::shared_ptr<data_geo_type> data_geo_ptrtype;
 
 
@@ -1151,6 +1156,9 @@ namespace Feel {
 
         void
         writeExtrudeSurface( uint __numLoc,data_geo_ptrtype __dg , uint __ind,Loop /*const*/ __loop );
+
+        void
+        writePtInSurface( data_geo_ptrtype __dg , uint __indPt,uint __indSurf);
 
         void
         writeSurfaceLoop(uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
