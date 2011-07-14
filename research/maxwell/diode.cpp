@@ -391,11 +391,19 @@ Diode::FSolve( BdyExpr wbdy,
     lEx1 = integrate( internalfaces(mesh),
                       trans(Anm_1)*(wR-wL)*rightface(id(u)) +
                       trans(Anp_1)*(wR-wL)*leftface(id(u)) );
+
     F_Ex1->close();
+    F_Ex1->printMatlab( "jump_Ex.m" );
     std::cout << "internalfaces( Ex ) = " << Feel::dot( *F_Ex1, Ex ) << "\n";
 
     std::cout << "boundary term Ex : " <<integrate( boundaryfaces(mesh), trans(Anm_1)*(wbdy-w)*idv(Ex) ).evaluate() << endl;
 
+    lEx1 = integrate( boundaryfaces(mesh), trans(Anm_1)*(wbdy-w)*id(u) );
+    F_Ex1->close();
+    F_Ex1->printMatlab( "bdy_Ex.m" );
+    std::cout << "internalfaces( Ex ) = " << Feel::dot( *F_Ex1, Ex ) << "\n";
+
+    // Ey
     lEy = integrate( elements( mesh ), idv(Ey)*dx(u));
 
     std::cout<< "jump term Ey : "<<integrate(internalfaces(mesh),
@@ -424,8 +432,17 @@ Diode::FSolve( BdyExpr wbdy,
                       trans(Anm_3)*(wR-wL)*rightface(id(u)) +
                       trans(Anp_3)*(wR-wL)*leftface(id(u)) );
     lBz += integrate( boundaryfaces(mesh), trans(Anp_3)*(wbdy-w)*id(u) );
-    std::cout << "boundary term Bz : " <<integrate( boundaryfaces(mesh), trans(Anm_3)*(wbdy-w)*idv(Bz) ).evaluate() << endl;
 
+    std::cout << "boundary term Bz : " <<integrate( boundaryfaces(mesh), trans(Anm_3)*(wbdy-w)*idv(Bz) ).evaluate() << endl;
+    lEx1 = integrate( boundaryfaces(mesh), trans(Anm_3)*(wbdy-w)*id(u) );
+    F_Ex1->close();
+    F_Ex1->printMatlab( "bdy_Bz.m" );
+
+    std::cout << "bdy( Bz ) = " << Feel::dot( *F_Ex1, Bz ) << "\n";
+
+    F_Ex->printMatlab( "F_Ex.m" );
+    F_Ey->printMatlab( "F_Ey.m" );
+    F_Bz->printMatlab( "F_Bz.m" );
     M_backend->solve( _matrix=D, _solution=dtEx, _rhs=F_Ex  );
     M_backend->solve( _matrix=D, _solution=dtEy, _rhs=F_Ey  );
     M_backend->solve( _matrix=D, _solution=dtBz, _rhs=F_Bz  );
