@@ -30,6 +30,10 @@
 #ifndef __MatrixBlock_H
 #define __MatrixBlock_H 1
 
+
+#include <boost/spirit/home/phoenix.hpp>
+#include <boost/spirit/home/phoenix/core/argument.hpp>
+
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/backend.hpp>
 
@@ -145,11 +149,31 @@ public:
         for (uint i=0;i<NR;++i)
             size1 += v[i*NC]->size1();
 
-        M_mat = backend.newMatrix(size1,size2,size1,size2);
-        //this->init(size1,size2,size1,size2);
+
+        graph_ptrtype graph;//( new graph_type( ) );
 
         size_type start_i=0;
         size_type start_j=0;
+        for (uint i=0;i<NR;++i)
+            {
+                start_j=0;
+                for (uint j=0;j<NC;++j)
+                    {
+                        this->mergeBlockGraph(graph,v[i*NC+j],start_i,start_j);
+
+                        start_j += v[i*NC+j]->size2();
+                    }
+                start_i += v[i*NC]->size1();
+            }
+
+        graph->close();
+
+        M_mat = backend.newMatrix(size1,size2,size1,size2);
+        M_mat->init(size1,size2,size1,size2,graph);
+        M_mat->zero();
+
+        /*size_type*/ start_i=0;
+        /*size_type*/ start_j=0;
         for (uint i=0;i<NR;++i)
             {
                 start_j=0;
@@ -162,6 +186,50 @@ public:
                 start_i += v[i*NC]->size1();
             }
 
+    }
+
+    void mergeBlockGraph(graph_ptrtype & globGraph,boost::shared_ptr<MatrixSparse<value_type> > m,
+                         size_type start_i, size_type start_j)
+    {
+
+        //FEEL_ASSERT(m->hasGraph()).error("sub matrix doesn t have a graph");
+        //if ( !m->graph() )  std::cout << "\n Pas de graph \n";
+
+        // nothing yet in store
+        if ( !globGraph || globGraph->empty() )
+            {
+                //std::cout << "\n graph empty or no build\n";
+                globGraph.reset( new graph_type( *m->graph()));
+            }
+        else
+            {
+                auto g = m->graph();
+                globGraph->setLastRowEntryOnProc( start_i + g->lastRowEntryOnProc() );
+                globGraph->setLastColEntryOnProc( start_j + g->lastColEntryOnProc() );
+
+                auto it = g->begin();
+                auto en = g->end();
+                for( ; it != en; ++it )
+                    {
+                        int theglobalrow = start_i + it->first;
+                        int thelocalrow = start_i + boost::get<1>( it->second );
+
+                        globGraph->row(theglobalrow).template get<1>() = thelocalrow;
+
+                        // Get the row of the sparsity pattern
+                        std::vector<size_type> ivec( boost::get<2>( it->second ).begin(), boost::get<2>( it->second ).end() );
+                        std::for_each( ivec.begin(), ivec.end(), boost::phoenix::arg_names::arg1 += start_j );
+                        //std::set<size_type> iout( ivec.size()+ M_graph->row(theglobalrow).template get<2>().size() );
+                        std::set<size_type> iout( ivec.begin(), ivec.end() );
+
+                        iout.insert( globGraph->row(theglobalrow).template get<2>().begin(),
+                                     globGraph->row(theglobalrow).template get<2>().end() );
+
+                        globGraph->row(theglobalrow).template get<2>() = iout;
+
+                    }
+
+            }
     }
 
     MatrixBlock( MatrixBlock const & mb )
