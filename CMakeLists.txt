@@ -239,6 +239,11 @@ FIND_PACKAGE(Feel++ REQUIRED)
 FIND_PACKAGE(PythonInterp 2.2 REQUIRED)
 
 #
+# data
+#
+ADD_SUBDIRECTORY ( data )
+
+#
 # Feel
 #
 ADD_SUBDIRECTORY ( feel )
