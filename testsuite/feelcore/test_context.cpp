@@ -71,18 +71,12 @@ BOOST_AUTO_TEST_CASE( test_context_matrix_properties )
     using namespace Feel;
     Context ctx( HERMITIAN | POSITIVE_DEFINITE );
     BOOST_CHECK_EQUAL( ctx.test( HERMITIAN | POSITIVE_DEFINITE ), true );
+    BOOST_CHECK_EQUAL( ctx.test( SINGULAR ), false );
+
+    ctx = HERMITIAN|SINGULAR;
+    BOOST_CHECK_EQUAL( ctx.test( POSITIVE_DEFINITE ), false );
     BOOST_CHECK_EQUAL( ctx.test( SINGULAR ), true );
+    BOOST_CHECK_EQUAL( ctx.test( HERMITIAN ), true );
 
-#if 0
-    detail::Flags<on_context_type> oct;
-
-    //FEEL_DECLARE_FLAGS( onct, on_context_type );
-
-
-    onct |= (ON_ELIMINATION|ON_ELIMINATION_SYMMETRIC);
-    BOOST_CHECK_EQUAL( onct.testFlag(ON_ELIMINATION), true );
-    BOOST_CHECK_EQUAL( onct.testFlag(ON_ELIMINATION_KEEP_DIAGONAL), false );
-    BOOST_CHECK_EQUAL( onct.testFlag(ON_ELIMINATION_SYMMETRIC), true );
-#endif
 }
 
