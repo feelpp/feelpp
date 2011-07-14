@@ -844,8 +844,10 @@ public:
 
     // geomap
     typedef typename mesh_type::gm_type gm_type;
+    typedef typename mesh_type::gm1_type gm1_type;
     typedef typename mesh_type::element_type geoelement_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
     typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
@@ -2166,6 +2168,11 @@ public:
        \return the geometric mapping
     */
     gm_ptrtype const& gm() const { return _M_mesh->gm(); }
+
+    /**
+       \return the geometric mapping
+    */
+    gm1_ptrtype const& gm1() const { return _M_mesh->gm1(); }
 
     /**
        \return the degrees of freedom

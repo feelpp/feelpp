@@ -652,20 +652,28 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     // some typedefs
     //
     typedef typename eval::gm_type gm_type;
+    typedef typename eval::gm1_type gm1_type;
     typedef typename eval::gmc_type gmc_type;
+    typedef typename eval::gmc1_type gmc1_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
 
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
     typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
+    typedef typename FormType::template Context<map_gmc1_type, expression_type, im_type> form1_context_type;
     //typedef detail::FormContextBase<map_gmc_type,im_type> fcb_type;
     typedef form_context_type fcb_type;
+    typedef form1_context_type fcb1_type;
     typedef fcb_type* focb_ptrtype;
+    typedef fcb1_type* focb1_ptrtype;
 
     //
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
     //
     typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( __form.gm(), this->im().points() ) );
+    typename eval::gmpc1_ptrtype __geopc1( new typename eval::gmpc1_type( __form.gm1(), this->im2().points() ) );
 
 
 
@@ -677,15 +685,22 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         return;
 
     gmc_ptrtype __c( new gmc_type( __form.gm(), *it, __geopc ) );
+    gmc1_ptrtype __c1( new gmc1_type( __form.gm1(), *it, __geopc1 ) );
 
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+    map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
 
     focb_ptrtype formc( new form_context_type( __form,
                                                mapgmc,
                                                mapgmc,
                                                this->expression(),
                                                this->im() ) );
+    focb1_ptrtype formc1( new form1_context_type( __form,
+                                                  mapgmc1,
+                                                  mapgmc1,
+                                                  this->expression(),
+                                                  this->im2() ) );
 
     //int nelt = std::distance( this->beginElement(), this->endElement() );
     boost::timer ti0,ti1, ti2, ti3;
@@ -698,10 +713,11 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     // -# assemble the local contribution in the global representation of the bilinear form
     //
     for ( ; it != en; ++it )
-
-        //for( int i = 0; i < nelt; ++i )
+    {
+        switch( _M_gt )
         {
-#if 1
+        case GEOMAP_HO:
+        {
             ti0.restart();
             __c->update( *it );
             t0+=ti0.elapsed();
@@ -727,12 +743,98 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             formc->assemble();
             //Debug( 5065 )  << "assemble : " << ti3.elapsed() << "\n";
             t3+=ti3.elapsed();
-#else
-            __c->update( *it );
-            map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-            formc.update( mapgmc );
-            formc.integrate();
+        }
+        break;
+        case GEOMAP_O1:
+        {
+            ti0.restart();
+            __c1->update( *it );
+            t0+=ti0.elapsed();
+#if 0
+            Debug( 5065 ) << "Element: " << it->id() << "\n"
+                          << " o - points : " << it->G() << "\n"
+                          << " o - quadrature :\n"
+                          << "     ref : " << this->im().points() << "\n"
+                          << "     real : " << __c->xReal() << "\n";
 #endif
+            ti1.restart();
+            map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+            formc1->update( mapgmc1,mapgmc1 );
+            //Debug( 5065 )  << "update gmc : " << ti1.elapsed() << "\n";
+            t1+=ti1.elapsed();
+
+            ti2.restart();
+            formc1->integrate();
+            //Debug( 5065 )  << "integrate : " << ti2.elapsed() << "\n";
+            t2+=ti2.elapsed();
+
+            ti3.restart();
+            formc1->assemble();
+            //Debug( 5065 )  << "assemble : " << ti3.elapsed() << "\n";
+            t3+=ti3.elapsed();
+        }
+        break;
+        case GEOMAP_OPT:
+        {
+            if ( it->isOnBoundary() )
+            {
+                ti0.restart();
+                __c->update( *it );
+                t0+=ti0.elapsed();
+#if 0
+                Debug( 5065 ) << "Element: " << it->id() << "\n"
+                              << " o - points : " << it->G() << "\n"
+                              << " o - quadrature :\n"
+                              << "     ref : " << this->im().points() << "\n"
+                              << "     real : " << __c->xReal() << "\n";
+#endif
+                ti1.restart();
+                map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+                formc->update( mapgmc,mapgmc );
+                //Debug( 5065 )  << "update gmc : " << ti1.elapsed() << "\n";
+                t1+=ti1.elapsed();
+
+                ti2.restart();
+                formc->integrate();
+                //Debug( 5065 )  << "integrate : " << ti2.elapsed() << "\n";
+                t2+=ti2.elapsed();
+
+                ti3.restart();
+                formc->assemble();
+                //Debug( 5065 )  << "assemble : " << ti3.elapsed() << "\n";
+                t3+=ti3.elapsed();
+            }
+            else
+            {
+                ti0.restart();
+                __c1->update( *it );
+                t0+=ti0.elapsed();
+#if 0
+                Debug( 5065 ) << "Element: " << it->id() << "\n"
+                              << " o - points : " << it->G() << "\n"
+                              << " o - quadrature :\n"
+                              << "     ref : " << this->im().points() << "\n"
+                              << "     real : " << __c->xReal() << "\n";
+#endif
+                ti1.restart();
+                map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+                formc1->update( mapgmc1,mapgmc1 );
+                //Debug( 5065 )  << "update gmc : " << ti1.elapsed() << "\n";
+                t1+=ti1.elapsed();
+
+                ti2.restart();
+                formc1->integrate();
+                //Debug( 5065 )  << "integrate : " << ti2.elapsed() << "\n";
+                t2+=ti2.elapsed();
+
+                ti3.restart();
+                formc1->assemble();
+                //Debug( 5065 )  << "assemble : " << ti3.elapsed() << "\n";
+                t3+=ti3.elapsed();
+            }
+        }
+        break;
+        }
         } // end loop on elements
 
     Debug( 5065 ) << "[elements] Overall geometric mapping update time : " << (t0+t1+t2) << " per element:" << (t0+t1+t2)/std::distance( this->beginElement(), this->endElement() ) << "\n";

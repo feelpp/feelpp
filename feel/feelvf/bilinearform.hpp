@@ -243,6 +243,9 @@ public:
     typedef typename space_1_type::gm_type gm_type;
     typedef typename space_1_type::gm_ptrtype gm_ptrtype;
 
+    typedef typename space_1_type::gm1_type gm1_type;
+    typedef typename space_1_type::gm1_ptrtype gm1_ptrtype;
+
     //typedef ublas::compressed_matrix<value_type, ublas::row_major> csr_matrix_type;
     typedef MatrixSparse<value_type> matrix_type;
     static const bool is_row_major = true;//matrix_type::is_row_major;
@@ -807,6 +810,11 @@ public:
      * Geometric transformation
      */
     gm_ptrtype const& gm() const { return _M_X1->gm(); }
+
+    /**
+     * Geometric transformation
+     */
+    gm1_ptrtype const& gm1() const { return _M_X1->gm1(); }
 
 
     /**
