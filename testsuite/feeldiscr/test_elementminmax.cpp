@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax1, T, dim_types )
 
 #if defined(USE_BOOST_TEST)
     BOOST_CHECK_CLOSE( maximum, 1.0, 2e-1);
-    BOOST_CHECK_CLOSE( minimum, 0.0, 2e-1);
+    BOOST_CHECK_SMALL( minimum, 2e-1);
 #endif
 }
 
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax2, T, dim_types )
 
 #if defined(USE_BOOST_TEST)
     BOOST_CHECK_CLOSE( maximum, 1.0, 2e-1);
-    BOOST_CHECK_CLOSE( minimum, 0.0, 2e-1);
+    BOOST_CHECK_SMALL( minimum, 2e-1);
 #endif
 
     std::cout << "\n";
