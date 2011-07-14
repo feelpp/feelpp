@@ -342,8 +342,8 @@ Diode::FSolve2( BdyExpr wbdy,
 template<typename BdyExpr>
 void
 Diode::FSolve( BdyExpr wbdy,
-              element_type const& Ex, element_type const& Ey,element_type const& Bz,
-              element_type& dtEx, element_type& dtEy, element_type& dtBz )
+               element_type const& Ex, element_type const& Ey,element_type const& Bz,
+               element_type& dtEx, element_type& dtEy, element_type& dtBz )
 
 {
     //Solve dtw*M = l(W)
@@ -378,31 +378,48 @@ Diode::FSolve( BdyExpr wbdy,
     // update right hand side
     lEx = integrate( elements( mesh ), -idv(Ex)*dy(u));
     std::cout<< "jump term Ex : "<<integrate(internalfaces(mesh),
-                                                 trans(Anm_1)*(wR-wL)*rightfacev(idv(Ex)) +
-                                                 trans(Anp_1)*(wR-wL)*leftfacev(idv(Ex))).evaluate()(0,0)<< std::endl;
+                                             trans(Anm_1)*(wR-wL)*rightfacev(idv(Ex)) +
+                                             trans(Anp_1)*(wR-wL)*leftfacev(idv(Ex))).evaluate()(0,0)<< std::endl;
     lEx += integrate( internalfaces(mesh),
                       trans(Anm_1)*(wR-wL)*rightface(id(u)) +
                       trans(Anp_1)*(wR-wL)*leftface(id(u)) );
     lEx += integrate( boundaryfaces(mesh), trans(Anp_1)*(wbdy-w)*id(u) );
+
+
+    auto F_Ex1 = M_backend->newVector( Xh );
+    auto lEx1=form1( _test=Xh, _vector=F_Ex1, _init=true );
+    lEx1 = integrate( internalfaces(mesh),
+                      trans(Anm_1)*(wR-wL)*rightface(id(u)) +
+                      trans(Anp_1)*(wR-wL)*leftface(id(u)) );
+    F_Ex1->close();
+    std::cout << "internalfaces( Ex ) = " << Feel::dot( *F_Ex1, Ex ) << "\n";
+
     std::cout << "boundary term Ex : " <<integrate( boundaryfaces(mesh), trans(Anm_1)*(wbdy-w)*idv(Ex) ).evaluate() << endl;
 
     lEy = integrate( elements( mesh ), idv(Ey)*dx(u));
 
     std::cout<< "jump term Ey : "<<integrate(internalfaces(mesh),
-                                                 trans(Anm_2)*(wR-wL)*rightfacev(idv(Ey)) +
-                                                 trans(Anp_2)*(wR-wL)*leftfacev(idv(Ey))).evaluate()(0,0)<< std::endl;
+                                             trans(Anm_2)*(wR-wL)*rightfacev(idv(Ey)) +
+                                             trans(Anp_2)*(wR-wL)*leftfacev(idv(Ey))).evaluate()(0,0)<< std::endl;
     lEy += integrate( internalfaces(mesh),
                       trans(Anm_2)*(wR-wL)*rightface(id(u)) +
                       trans(Anp_2)*(wR-wL)*leftface(id(u)) );
     lEy += integrate( boundaryfaces(mesh), trans(Anp_2)*(wbdy-w)*id(u) );
+
+    lEx1 = integrate( internalfaces(mesh),
+                      trans(Anm_2)*(wR-wL)*rightfacev(idv(Ey)) +
+                      trans(Anp_2)*(wR-wL)*leftfacev(idv(Ey)));
+    F_Ex1->close();
+    std::cout << "internalfaces( Ex ) = " << Feel::dot( *F_Ex1, Ey ) << "\n";
     std::cout << "boundary term Ey : " <<integrate( boundaryfaces(mesh), trans(Anm_2)*(wbdy-w)*idv(Ey) ).evaluate() << endl;
+
 
     lBz = integrate( elements( mesh ), idv(Bz)*(dx(u) - dy(u)));
 
 
     std::cout<< "jump term Bz : "<<integrate(internalfaces(mesh),
-                                                 trans(Anm_3)*(wR-wL)*rightfacev(idv(Bz)) +
-                                                 trans(Anp_3)*(wR-wL)*leftfacev(idv(Bz))).evaluate()(0,0)<< std::endl;
+                                             trans(Anm_3)*(wR-wL)*rightfacev(idv(Bz)) +
+                                             trans(Anp_3)*(wR-wL)*leftfacev(idv(Bz))).evaluate()(0,0)<< std::endl;
     lBz += integrate( internalfaces(mesh),
                       trans(Anm_3)*(wR-wL)*rightface(id(u)) +
                       trans(Anp_3)*(wR-wL)*leftface(id(u)) );
