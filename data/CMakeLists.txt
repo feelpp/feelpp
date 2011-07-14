@@ -1,9 +1,9 @@
-# -*- mode: cmake; coding: utf-8 -*-
-#
+###  TEMPLATE.txt.tpl; coding: utf-8 ---
+
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2009-11-29
+#       Date: 2011-07-14
 #
-#  Copyright (C) 2009-2010 UniversitÃ© Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,19 +21,20 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-IF ( ENABLE_INSTANTIATION_MODE )
-  SET( FEELFILTERS_INST_SRCS
+add_custom_target(feel_mesh_data)
 
-    # exporterensight.cpp exportergmsh.cpp # exportergnuplot.cpp
-    )
-  endif()
+if (EXISTS $ENV{HOME})
+  # create $ENV{HOME}/feel/geo if it does not exist already: this is the geometry
+  # files repository
+  file(MAKE_DIRECTORY $ENV{HOME}/feel/geo)
 
-SET(SRC
-  gmshhypercubedomain.cpp gmshsimplexdomain.cpp gmshellipsoiddomain.cpp
-  #exporterfactorysimplex.cpp exporterfactoryhypercube.cpp
-  exporter.cpp gmsh.cpp importergambit.cpp ${FEELFILTERS_INST_SRCS} geotool.cpp
-  )
-
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
-feel_append_src(feelfilters "${SRC};${HDR}")
-
+  FILE(GLOB meditfiles "medit/*")
+  FILE(GLOB gmshfiles "gmsh/*")
+  foreach(file ${meditfiles} ${gmshfiles})
+    get_filename_component(filename ${file} NAME )
+    add_custom_target(copy_mesh_data_${filename}
+      ALL
+      COMMAND ${CMAKE_COMMAND} -E copy  ${file} $ENV{HOME}/feel/geo )
+    add_dependencies(feel_mesh_data copy_mesh_data_${filename} )
+  endforeach()
+endif(EXISTS $ENV{HOME})
