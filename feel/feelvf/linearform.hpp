@@ -100,6 +100,8 @@ public:
     typedef typename mesh_type::element_type::permutation_type permutation_type;
     typedef typename space_type::gm_type gm_type;
     typedef typename space_type::gm_ptrtype gm_ptrtype;
+    typedef typename space_type::gm1_type gm1_type;
+    typedef typename space_type::gm1_ptrtype gm1_ptrtype;
 
     typedef typename space_type::fe_type fe_type;
     typedef typename space_type::basis_0_type::precompute_type test_precompute_type;
@@ -512,10 +514,16 @@ public:
     * \return the test function space
      */
     space_ptrtype const& testSpace() const { return _M_X; }
+
     /**
      * Geometric transformation
      */
     gm_ptrtype const& gm() const { return _M_X->gm(); }
+
+    /**
+     * Geometric transformation
+     */
+    gm1_ptrtype const& gm1() const { return _M_X->gm1(); }
 
    /**
      * Return the structure that holds the test basis functions
