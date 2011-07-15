@@ -315,19 +315,19 @@ Diode::FSolve2( BdyExpr wbdy,
     auto u = Xh->element();
 
     // update right hand side
-    lEx = integrate( elements( mesh ), -dyv(Ex)*id(u));
+    lEx = integrate( elements( mesh ), dyv(Bz)*id(u));
     lEx += integrate( internalfaces(mesh),
                       trans(Anm_1)*(wR-wL)*rightface(id(u)) +
                       trans(Anp_1)*(wR-wL)*leftface(id(u)) );
     lEx += integrate( boundaryfaces(mesh), trans(Anp_1)*(wbdy-w)*id(u) );
 
-    lEy = integrate( elements( mesh ), dxv(Ey)*id(u));
+    lEy = integrate( elements( mesh ), -dxv(Bz)*id(u));
     lEy += integrate( internalfaces(mesh),
                       trans(Anm_2)*(wR-wL)*rightface(id(u)) +
                       trans(Anp_2)*(wR-wL)*leftface(id(u)) );
     lEy += integrate( boundaryfaces(mesh), trans(Anp_2)*(wbdy-w)*id(u) );
 
-    lBz = integrate( elements( mesh ), (dxv(Bz) - dyv(Bz))*id(u));
+    lBz = integrate( elements( mesh ), (-dxv(Ey) + dyv(Ex))*id(u));
     lBz += integrate( internalfaces(mesh),
                       trans(Anm_3)*(wR-wL)*rightface(id(u)) +
                       trans(Anp_3)*(wR-wL)*leftface(id(u)) );
@@ -376,7 +376,7 @@ Diode::FSolve( BdyExpr wbdy,
     auto u = Xh->element();
 
     // update right hand side
-    lEx = integrate( elements( mesh ), -idv(Ex)*dy(u));
+    lEx = integrate( elements( mesh ), -idv(Bz)*dy(u));
     std::cout<< "jump term Ex : "<<integrate(internalfaces(mesh),
                                              trans(Anm_1)*(wR-wL)*rightfacev(idv(Ex)) +
                                              trans(Anp_1)*(wR-wL)*leftfacev(idv(Ex))).evaluate()(0,0)<< std::endl;
@@ -404,7 +404,7 @@ Diode::FSolve( BdyExpr wbdy,
     std::cout << "internalfaces( Ex ) = " << Feel::dot( *F_Ex1, Ex ) << "\n";
 
     // Ey
-    lEy = integrate( elements( mesh ), idv(Ey)*dx(u));
+    lEy = integrate( elements( mesh ), idv(Bz)*dx(u));
 
     std::cout<< "jump term Ey : "<<integrate(internalfaces(mesh),
                                              trans(Anm_2)*(wR-wL)*rightfacev(idv(Ey)) +
@@ -422,7 +422,7 @@ Diode::FSolve( BdyExpr wbdy,
     std::cout << "boundary term Ey : " <<integrate( boundaryfaces(mesh), trans(Anm_2)*(wbdy-w)*idv(Ey) ).evaluate() << endl;
 
 
-    lBz = integrate( elements( mesh ), idv(Bz)*(dx(u) - dy(u)));
+    lBz = integrate( elements( mesh ), idv(Ey)*dx(u) - idv(Ex)*dy(u));
 
 
     std::cout<< "jump term Bz : "<<integrate(internalfaces(mesh),
@@ -719,8 +719,8 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
         checkDG( idv(Ex) );
         checkDG( idv(Ey) );
         checkDG( idv(Bz) );
-        FSolve(w, Ex, Ey, Bz, dtEx, dtEy, dtBz);
-        FSolve2(w, Ex, Ey, Bz, dtEx2, dtEy2, dtBz2);
+        FSolve2(w, Ex, Ey, Bz, dtEx, dtEy, dtBz);
+        FSolve(w, Ex, Ey, Bz, dtEx2, dtEy2, dtBz2);
         time += dt;
 
         std::cout << "||exact-Ex||_2" << integrate(elements(mesh), (idv(dtEx)+(idv(Ex)-Ex_exact)/dt)*(idv(dtEx)+(idv(Ex)-Ex_exact)/dt) ).evaluate().norm() << std::endl;
