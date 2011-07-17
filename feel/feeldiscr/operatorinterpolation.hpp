@@ -352,7 +352,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::update()
 
             // create analysys map : id -> List of pt
             localization_ptrtype __loc = this->domainSpace()->mesh()->tool_localization();
-            __loc->kdtree()->nbNearNeighbor(3);
+            __loc->updateForUse();
+            //__loc->kdtree()->nbNearNeighbor(3);
 
             iterator_type it, en;
             boost::tie( boost::tuples::ignore, it, en ) = _M_range;
