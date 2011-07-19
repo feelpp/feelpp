@@ -1,4 +1,3 @@
-
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
   This file is part of the Feel library
@@ -6,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-06-11
 
-  Copyright (C) 2007-2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -206,8 +205,8 @@ private:
     mesh_ptrtype mesh;
     space_ptrtype Xh;
 
-    sparse_matrix_ptrtype Dcst;
-    vector_ptrtype Fcst;
+    sparse_matrix_ptrtype D;
+    vector_ptrtype F;
 
 	bdf_ptrtype M_bdf;
 	
@@ -246,8 +245,8 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		 */
 		double surface = integrate( markedelements(mesh,"spreader_mesh"), cst(1.) ).evaluate()(0,0) +
 			integrate( markedelements(mesh,"fin_mesh"), cst(1.) ).evaluate()(0,0);
-	
-			
+
+
 		double perimeter = integrate( markedfaces(mesh,"gamma4"), cst(1.) ).evaluate()(0,0) +
 						integrate( markedfaces(mesh,"gamma7"), cst(1.) ).evaluate()(0,0) +
 						integrate( markedfaces(mesh,"gamma5"), cst(1.) ).evaluate()(0,0) +
@@ -255,9 +254,8 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 						integrate( markedfaces(mesh,"gamma6"), cst(1.) ).evaluate()(0,0) +
 						integrate( markedfaces(mesh,"gamma1"), cst(1.) ).evaluate()(0,0) +
 						integrate( markedfaces(mesh,"gamma2"), cst(1.) ).evaluate()(0,0);
-			
+
 		charact_length = surface/perimeter;
-			
 		/*
 		 * N.B : you can also calculate the surface with a p0 space.
 		 * To do it, you have to name a p0 space ptrtype (such as p0h)
@@ -265,12 +263,13 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		 * The value is obtain in the field 'Value' of the string return of
 		 *        auto surface2 = vf::sum( P0h, meas() );
 		 */
-			
-			
+
+
 		/*
 		 * calculate the biot number
 		 */
-		Bi = cst(60000.) * charact_length / lambda_fin;
+        double therm = 60000;
+		Bi = therm * charact_length / lambda_fin;
 
 		/*
 		 * calculate the ratio for the equation
@@ -283,34 +282,34 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
         Xh = space_type::New( mesh );
         element_type u( Xh, "u" );
         element_type v( Xh, "v" );
-			
+
 		/*
 		 * Construction of the right hand side (the linear form)
 		 */	
-        Fcst = M_backend->newVector( Xh );
-		form1( Xh, Fcst, _init=true ) = integrate( markedfaces(mesh,"gamma4"), cst(1.) );
+        F = M_backend->newVector( Xh );
+		form1( Xh, F, _init=true ) = integrate( markedfaces(mesh,"gamma4"), cst(1.) );
 
         if ( this->vm().count( "export-matlab" ) )
-            Fcst->printMatlab( "F.m" );
+            F->printMatlab( "F.m" );
 
         /*
          * Construction of the left hand side
          */
-        Dcst = M_backend->newMatrix( Xh, Xh );
-		form2( Xh, Xh, Dcst, _init=true ) = integrate( markedelements(mesh,"spreader_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) )
-										+ integrate( markedelements(mesh,"fin_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) )
-										+ integrate( markedfaces(mesh, "gamma1"), _Q<imOrder>(), Bi*idv(T));
+        D = M_backend->newMatrix( Xh, Xh );
+			form2( Xh, Xh, D, _init=true ) = integrate( markedelements(mesh,"spreader_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) );
+			form2( Xh, Xh, D) += integrate( markedelements(mesh,"fin_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) );
+			form2( Xh, Xh, D) += integrate( markedfaces(mesh, "gamma1"), _Q<imOrder>(), Bi*idv(T));
 
 		// At this step, all the elements have been introduced to the equation EXCEPT the discretization terms (right and left ones)
         // this part is included in the run() method
 
-		Dcst->close();
+		D->close();
         if ( this->vm().count( "export-matlab" ) )
-            Dcst->printMatlab( "Dcst" );
-			
+            D->printMatlab( "D" );
+
     }
-	
-template<int Dim, int Order>	
+
+template<int Dim, int Order>
 typename HeatSink<Dim,Order>::mesh_ptrtype
 HeatSink<Dim,Order>::createMesh( )
 {
@@ -356,19 +355,21 @@ HeatSink<Dim, Order>::run()
 		for ( M_bdf->start(); M_bdf->isFinished(); M_bdf->next() ) {
 
 			auto bdf_poly = M_bdf->polyDeriv();
-			form2(Xh, Xh, Dcst) += integrate( markedelements(mesh), density_s*trans(idv(T))*id(v)*M_bdf->polyDerivCoefficient(0) );
-			form1( Xh, Fcst) += integrate( elements(mesh), density_s*idv(bdf_poly)*idv(v) );
+			form2(Xh, Xh, D) += integrate( markedelements(mesh, "spreader_mesh"), density_s*trans(idv(T))*id(v)*M_bdf->polyDerivCoefficient(0) );
+            form2(Xh, Xh, D) += integrate( markedelements(mesh, "fin_mesh"), density_s*trans(idv(T))*id(v)*M_bdf->polyDerivCoefficient(0) );
+			form1( Xh, F) += integrate( elements(mesh, "spreader_mesh"), density_s*idv(bdf_poly)*idv(v) );
+            form1( Xh, F) += integrate( elements(mesh, "fin_mesh"), density_s*idv(bdf_poly)*idv(v) );
 
 		}
 
 		std::cout << " FIN DE LA BOUCLE \n";
 
-		Dcst->close();
+		D->close();
 
 		if ( this->vm().count( "export-matlab" ) )
-			Dcst->printMatlab( "D" );
+			D->printMatlab( "D" );
 
-		this->solve( Dcst, u, Fcst );
+		this->solve( D, u, F );
 
 		double moy_u = ( integrate( markedfaces(mesh,1), _Q<imOrder>(), idv(u) ).evaluate()(0,0) /
 							integrate( markedfaces(mesh,1), _Q<imOrder>(), constant(1.0) ).evaluate()(0,0) );
