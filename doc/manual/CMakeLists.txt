@@ -47,7 +47,7 @@ add_latex_document(feel-manual.tex
   tutorial/feel.tex
   examples/nonlinear.tex
   examples/natural-convection-2d.tex
-  examples/thermalfin.tex
+  examples/heatsink.tex
   randomnotes.tex gfdl.tex howto.tex version.tex ${CPPFILES} ${STYFILES}
   BIBFILES feel-manual.bib
   IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink
@@ -114,6 +114,17 @@ if ( NOT FEEL_MINIMAL_CONFIGURATION )
 foreach( docex  myintegrals mymesh geotool myfunctionspace laplacian loadmesh residualestimator stokes bratu nonlinearpow )
   add_docex( ${docex} )
 endforeach()
+
+#copy (${FEEL_SOURCE_DIR}/data/medit/Cylref.mesh ${CMAKE_CURRENT_BINARY_DIR}/)
+add_custom_target(
+  loadmesh
+  ALL
+  COMMAND ${CMAKE_COMMAND} -E copy ${FEEL_SOURCE_DIR}/data/medit/Cylref.mesh
+                                   ${FEEL_BUILD_DIR}/doc/manual/
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+
 
 # Natural convection problem
 #include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
