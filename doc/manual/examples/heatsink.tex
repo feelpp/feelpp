@@ -114,7 +114,7 @@ Our concern satisfies the heat equation which reads
 \begin{equation}
 \label{heat:eq}
    \begin{split}
-      \displaystyle{\rho \frac{ \partial T}{\partial t}}  -  \kappa \Delta T & = 0
+      \kappa \Delta T - \displaystyle{\rho \frac{ \partial T}{\partial t}}  & = 0
   \end{split}
 \end{equation}
 \begin{equation}
@@ -155,40 +155,59 @@ The problem requieres that the temperature and heat flux are continute on $\Gamm
 \item Non-homogeneous Neumann condition (\ref{nonhom_neu}) :  this boundary condition represents the transient state for the heat transfer calculation.
 \end{itemize}
 
-Theses conditions have been coded as explained in the section \ref{heat:bc_impl}.
+\noindent Theses conditions have been coded as explained in the section \ref{heat:bc_impl}.
 
 \subsection{Finite Element Method}
 Let's apply the method to our concern, we introduce the test function $v$ and we integrate the main equation, which reads now as :
 \begin{equation}
    \begin{split}
-      \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}} & =  \displaystyle{\kappa \int_\varOmega v\Delta T}
+      \displaystyle{\kappa \int_\varOmega v\Delta T} & = \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}}  
   \end{split}
 \end{equation}
 We integrate by parts, which leads to :
 \begin{equation}
    \begin{split}
-      \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}} & =  \displaystyle{\kappa \int_\Gamma {(\nabla T \cdot n) v} - \kappa \int_\varOmega {\nabla v \cdot \nabla T} }
+      \displaystyle{\kappa \int_\Gamma {(\nabla T \cdot n) v} - \kappa \int_\varOmega {\nabla v \cdot \nabla T} }  & = \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}} 
   \end{split}
 \end{equation}
 Now, we impose the condition $v=0$ on $\Gamma_3$ and $v=1$ anywhere else, which brings us to :
 \begin{equation}
    \begin{split}
-      \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}} & =  \displaystyle{\kappa \int_{\Gamma_{1,2,4,5,6,7}} {\nabla T \cdot n} - 
-		\kappa \int_\varOmega {\nabla v \cdot \nabla T} }
+    \displaystyle{\kappa \int_{\Gamma_{1,2,4,5,6,7}} {\nabla T \cdot n} - \kappa \int_\varOmega {\nabla v \cdot \nabla T} }  & =  
+	\displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}} 
   \end{split}
 \end{equation}
 We are now able to apply the boundary conditions, which leads to :
 \begin{equation}
    \begin{split}
-      \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}} & =  \displaystyle{\kappa \int_{\Gamma_1}{\nabla T \cdot n} + \kappa \int_{\Gamma_4} {\nabla T \cdot n}
-           - \kappa \int_\varOmega {\nabla v \cdot \nabla T} }
+ \displaystyle{\kappa \int_{\Gamma_1}{\nabla T \cdot n} + \kappa \int_{\Gamma_4} {\nabla T \cdot n} - \kappa \int_\varOmega {\nabla v \cdot \nabla T} }
+	 & =       \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}}
   \end{split}
 \end{equation}
 then :
 \begin{equation}
    \begin{split}
-      \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}} & =  \displaystyle{- B_i \int_{\Gamma_1}{T} + \int_{\Gamma_4}{1}
-           - \kappa \int_\varOmega {\nabla v \cdot \nabla T} }
+      \displaystyle{- B_i \int_{\Gamma_1}{T} + \int_{\Gamma_4}{1} - \kappa \int_\varOmega {\nabla v \cdot \nabla T} }  & = \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}}
+  \end{split}
+\end{equation}
+We discretize $T$ such as:
+\begin{equation}
+   \begin{split}
+      \displaystyle{- B_i \int_{\Gamma_1}{T} + \mathcal{L}_{\Gamma_4} - \kappa \int_\varOmega {\nabla v \cdot \nabla T} }  & = \displaystyle{\rho \int_\varOmega v\frac{ T^{n+1} - T^{n}}{dt}}
+  \end{split}
+\end{equation}
+where $\mathcal{L}_{\Gamma_4}$ is the length of the border $\Gamma_4$. Now we put in place the matrix form :
+\begin{equation}
+   \begin{split}
+	\displaystyle{ - \kappa \int_\varOmega {\nabla v \cdot \nabla T}  - B_i \int_{\Gamma_1}{T}   - \rho \int_\varOmega v\frac{ T^{n+1} }{ dt }       } & = 
+		\displaystyle{    - \rho \int_\varOmega v\frac{ T^{n} }{ dt }  - \mathcal{L}_{\Gamma_4}      }  
+  \end{split}
+\end{equation}
+the sign can be changed, so we obtain :
+\begin{equation}
+   \begin{split}
+	\displaystyle{ \kappa \int_\varOmega {\nabla v \cdot \nabla T}  + B_i \int_{\Gamma_1}{T}   + \rho \int_\varOmega v\frac{ T^{n+1} }{ dt }       } & = 
+		\displaystyle{   \rho \int_\varOmega v\frac{ T^{n} }{ dt }  + \mathcal{L}_{\Gamma_4}      }  
   \end{split}
 \end{equation}
 
