@@ -280,7 +280,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
          * The function space and some associate elements are then defined
          */
         Xh = space_type::New( mesh );
-        element_type u( Xh, "u" );
+        element_type T( Xh, "T" );
         element_type v( Xh, "v" );
 
 		/*
@@ -333,7 +333,7 @@ HeatSink<Dim, Order>::run()
 
 		using namespace Feel::vf;
 
-		element_type u( Xh, "u" );
+		element_type T( Xh, "T" );
 		element_type v( Xh, "v" );
 
 		/*
@@ -357,8 +357,8 @@ HeatSink<Dim, Order>::run()
 			auto bdf_poly = M_bdf->polyDeriv();
 			form2(Xh, Xh, D) += integrate( markedelements(mesh, "spreader_mesh"), density_s*trans(idv(T))*id(v)*M_bdf->polyDerivCoefficient(0) );
             form2(Xh, Xh, D) += integrate( markedelements(mesh, "fin_mesh"), density_s*trans(idv(T))*id(v)*M_bdf->polyDerivCoefficient(0) );
-			form1( Xh, F) += integrate( elements(mesh, "spreader_mesh"), density_s*idv(bdf_poly)*idv(v) );
-            form1( Xh, F) += integrate( elements(mesh, "fin_mesh"), density_s*idv(bdf_poly)*idv(v) );
+			form1( Xh, F) += integrate( markedelements(mesh, "spreader_mesh"), density_s*idv(bdf_poly)*idv(v) );
+            form1( Xh, F) += integrate( markedelements(mesh, "fin_mesh"), density_s*idv(bdf_poly)*idv(v) );
 
 		}
 
@@ -369,15 +369,15 @@ HeatSink<Dim, Order>::run()
 		if ( this->vm().count( "export-matlab" ) )
 			D->printMatlab( "D" );
 
-		this->solve( D, u, F );
+		this->solve( D, T, F );
 
-		double moy_u = ( integrate( markedfaces(mesh,1), _Q<imOrder>(), idv(u) ).evaluate()(0,0) /
-							integrate( markedfaces(mesh,1), _Q<imOrder>(), constant(1.0) ).evaluate()(0,0) );
+		//double moy_u = ( integrate( markedfaces(mesh,1), _Q<imOrder>(), idv(u) ).evaluate()(0,0) /
+        //	integrate( markedfaces(mesh,1), _Q<imOrder>(), constant(1.0) ).evaluate()(0,0) );
 
 		std::cout.precision( 5 );
-		std::cout << std::setw( 5 ) << Bi << " "
-				  << std::setw( 10 ) << moy_u << "\n";
-		this->exportResults( u );
+std::cout << std::setw( 5 ) << Bi << "\n";
+//				  << std::setw( 10 ) << moy_u << "\n";
+		this->exportResults( T );
 
 } // HeatSink::run
 	
