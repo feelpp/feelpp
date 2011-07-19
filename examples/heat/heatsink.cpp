@@ -141,8 +141,6 @@ public:
 
     typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
-	// NEW
-	typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
 
     /*basis*/
     typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
@@ -207,7 +205,6 @@ private:
 	
     mesh_ptrtype mesh;
     space_ptrtype Xh;
-	p0_space_ptrtype P0h;
 
     sparse_matrix_ptrtype Dcst;
     vector_ptrtype Fcst;
@@ -273,8 +270,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		/*
 		 * calculate the biot number
 		 */
-		//Bi = ?? * charact_length / lambda_fin;
-		Bi = 0.1;
+		Bi = cst(60000.) * charact_length / lambda_fin;
 
 		/*
 		 * calculate the ratio for the equation
@@ -288,22 +284,27 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
         element_type u( Xh, "u" );
         element_type v( Xh, "v" );
 			
+		/*
+		 * Construction of the right hand side (the linear form)
+		 */	
         Fcst = M_backend->newVector( Xh );
+		form1( Xh, Fcst, _init=true ) = integrate( markedfaces(mesh,"gamma4"), cst(1.) );
 
-        form1( Xh, Fcst, _init=true )  = integrate( markedfaces(mesh,1), _Q<imOrder>(), id(v) );
-		
-			
         if ( this->vm().count( "export-matlab" ) )
             Fcst->printMatlab( "F.m" );
-		
+
         /*
          * Construction of the left hand side
          */
         Dcst = M_backend->newMatrix( Xh, Xh );
-		
-        form2( Xh, Xh, Dcst, _init=true ) = integrate( markedelements(mesh,1), _Q<imOrder>(), ( gradt(u)*trans(grad(v))) );
-		
-        Dcst->close();
+		form2( Xh, Xh, Dcst, _init=true ) = integrate( markedelements(mesh,"spreader_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) )
+										+ integrate( markedelements(mesh,"fin_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) )
+										+ integrate( markedfaces(mesh, "gamma1"), _Q<imOrder>(), Bi*idv(T));
+
+		// At this step, all the elements have been introduced to the equation EXCEPT the discretization terms (right and left ones)
+        // this part is included in the run() method
+
+		Dcst->close();
         if ( this->vm().count( "export-matlab" ) )
             Dcst->printMatlab( "Dcst" );
 			
@@ -320,15 +321,16 @@ HeatSink<Dim,Order>::createMesh( )
     return mesh;
 } // HeatSink::createMesh
 
+	
 template<int Dim, int Order>
 void
 HeatSink<Dim, Order>::run()
 {
 		if ( this->vm().count( "help" ) )
-			{
-				std::cout << this->optionsDescription() << "\n";
-				return;
-			}
+		{
+			std::cout << this->optionsDescription() << "\n";
+			return;
+		}
 
 		using namespace Feel::vf;
 
@@ -338,7 +340,7 @@ HeatSink<Dim, Order>::run()
 		/*
 		 * Construction of the left hand side
 		 */
-		sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
+		//sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
 
 		Log() << "Bi = " << Bi << "\n"
 			  << "meshSize = " << meshSize << "\n"
@@ -347,37 +349,35 @@ HeatSink<Dim, Order>::run()
 			  << "lambda_fin = " << lambda_fin << "\n"
 			  << "density_s = " << density_s << "\n"
 			  << "density_f = " << density_f << "\n";
-	
+
 		std::cout << " DEBUT DE LA BOUCLE POUR BDF \n";
-	
+
 		/* discretization with BDF */
 		for ( M_bdf->start(); M_bdf->isFinished(); M_bdf->next() ) {
-	
-			auto bdf_poly = M_bdf->polyDeriv();
-			form2(Xh, Xh, D) += integrate( elements(mesh), trans(idv(u))*id(v)*M_bdf->polyDerivCoefficient(0) );
-			form1( Xh, Fcst) += integrate( elements(mesh), idv(bdf_poly)*idv(v) );
-	
-		}
-	
-		std::cout << " FIN DE LA BOUCLE \n";
-	
-            //form2( Xh, Xh, D ) += integrate( markedfaces(mesh,2), _Q<imOrder>(), Bi*idt(u)*id(v) );
 
-		D->close();
+			auto bdf_poly = M_bdf->polyDeriv();
+			form2(Xh, Xh, Dcst) += integrate( markedelements(mesh), density_s*trans(idv(T))*id(v)*M_bdf->polyDerivCoefficient(0) );
+			form1( Xh, Fcst) += integrate( elements(mesh), density_s*idv(bdf_poly)*idv(v) );
+
+		}
+
+		std::cout << " FIN DE LA BOUCLE \n";
+
+		Dcst->close();
 
 		if ( this->vm().count( "export-matlab" ) )
-			D->printMatlab( "D" );
+			Dcst->printMatlab( "D" );
 
-		this->solve( D, u, Fcst );
+		this->solve( Dcst, u, Fcst );
 
 		double moy_u = ( integrate( markedfaces(mesh,1), _Q<imOrder>(), idv(u) ).evaluate()(0,0) /
 							integrate( markedfaces(mesh,1), _Q<imOrder>(), constant(1.0) ).evaluate()(0,0) );
-		
+
 		std::cout.precision( 5 );
 		std::cout << std::setw( 5 ) << Bi << " "
 				  << std::setw( 10 ) << moy_u << "\n";
 		this->exportResults( u );
-	
+
 } // HeatSink::run
 	
 template<int Dim, int Order>
