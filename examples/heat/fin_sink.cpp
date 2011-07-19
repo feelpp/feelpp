@@ -64,8 +64,14 @@ makefin( double hsize , double deep)
              << "Plane Surface (9) = {9};\n"
              << "Plane Surface (10) = {10};\n"
             // physical entities
-             << "Physical Surface (1) = {9};\n"
-             << "Physical Surface (2) = {10};\n";
+			 << "Physical Line (\"gamma1\") = {5};\n"
+			 << "Physical Line (\"gamma2\") = {6};\n"
+			 << "Physical Line (\"gamma4\") = {1};\n"
+			 << "Physical Line (\"gamma5\") = {3};\n"
+			 << "Physical Line (\"gamma6\") = {7,8};\n"
+			 << "Physical Line (\"gamma7\") = {2};\n"
+             << "Physical Surface (\"spreader_mesh\") = {9};\n"
+             << "Physical Surface (\"fin_mesh\") = {10};\n";
     }
 
     else { //3D Mesh
