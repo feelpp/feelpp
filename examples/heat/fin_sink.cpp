@@ -66,6 +66,7 @@ makefin( double hsize , double deep)
             // physical entities
 			 << "Physical Line (\"gamma1\") = {5};\n"
 			 << "Physical Line (\"gamma2\") = {6};\n"
+			 << "Physical Line (\"gamma3\") = {4};\n"
 			 << "Physical Line (\"gamma4\") = {1};\n"
 			 << "Physical Line (\"gamma5\") = {3};\n"
 			 << "Physical Line (\"gamma6\") = {7,8};\n"
