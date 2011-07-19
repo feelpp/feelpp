@@ -197,6 +197,13 @@ public:
 
     template<typename BdyExpr>
     void
+    SolveEuler( BdyExpr wbdy, double dt,
+                       element_type const& Exn, element_type const& Eyn, element_type const& Bzn,
+                       element_type Exnp1, element_type Eynp1, element_type Bznp1);
+
+
+    template<typename BdyExpr>
+    void
     FSolve( BdyExpr wbdy,
            element_type const& Ex, element_type const& Ey,element_type const& Bz,
            element_type& Exstar, element_type& Eystar, element_type& Bzstar );
@@ -338,6 +345,54 @@ Diode::FSolve2( BdyExpr wbdy,
     M_backend->solve( _matrix=D, _solution=dtBz, _rhs=F_Bz  );
 
 }
+
+template<typename BdyExpr>
+void
+Diode::SolveEuler( BdyExpr wbdy, double dt,
+                   element_type const& Exn, element_type const& Eyn, element_type const& Bzn,
+                   element_type Exnp1, element_type Eynp1, element_type Bznp1){
+    auto w = vec(idv(Exn),idv(Eyn),idv(Bzn));
+    auto wR = vec(rightfacev(idv(Exn)),rightfacev(idv(Eyn)),rightfacev(idv(Bzn)));
+    auto wL = vec(leftfacev(idv(Exn)),leftfacev(idv(Eyn)),leftfacev(idv(Bzn)));
+    auto lEx=form1( _test=Xh, _vector=F_Ex, _init=true );
+    auto lEy=form1( _test=Xh, _vector=F_Ey, _init=true );
+    auto lBz=form1( _test=Xh, _vector=F_Bz, _init=true );
+
+    //Aini+
+    auto Anp_1 = vec(Ny() * Ny() /2.0, -Nx() * Ny() / 2.0, -Ny() / 2.0 );
+    auto Anp_2 = vec(-Nx() * Ny() / 2.0, Nx() * Nx() / 2.0, Nx() / 2.0 );
+    auto Anp_3 = vec( -Ny() / 2.0, Nx() / 2.0, cst(0.5) );
+
+    //Aini-
+    auto Anm_1 = vec(  -Ny() * Ny() / 2.0, Nx() * Ny() /2.0, -Ny() / 2.0 );
+    auto Anm_2 = vec( Nx() * Ny() / 2.0, -Nx() * Nx() / 2.0, Nx() / 2.0);
+    auto Anm_3 = vec( -Ny() / 2.0, Nx() /2.0, cst(0.5) );
+
+    auto u = Xh->element();
+
+    lEx = integrate( elements( mesh ),  idv(Exn)*id(u) + dt*dy(u)*idv(Bzn) );
+    lEx += integrate( internalfaces(mesh),
+                      dt*trans(Anm_1)*(wR-wL)*rightface(id(u)) +
+                      dt*trans(Anp_1)*(wR-wL)*leftface(id(u)) );
+    lEx += integrate( boundaryfaces(mesh), dt*trans(Anp_1)*(wbdy-w)*id(u) );
+
+    lEy = integrate( elements( mesh ),  idv(Eyn)*id(u) - dt*dx(u)*idv(Bzn));
+    lEy += integrate( internalfaces(mesh),
+                      dt*trans(Anm_2)*(wR-wL)*rightface(id(u)) +
+                      dt*trans(Anp_2)*(wR-wL)*leftface(id(u)) );
+    lEy += integrate( boundaryfaces(mesh), dt*trans(Anp_2)*(wbdy-w)*id(u) );
+
+    lBz = integrate( elements( mesh ), idv(Bzn)*id(u) - dt*( dx(u)*idv(Eyn) - dy(u)*idv(Exn) ) );
+    lBz += integrate( internalfaces(mesh),
+                      dt*trans(Anm_3)*(wR-wL)*rightface(id(u)) +
+                      dt*trans(Anp_3)*(wR-wL)*leftface(id(u)) );
+    lBz += integrate( boundaryfaces(mesh), dt*trans(Anp_3)*(wbdy-w)*id(u) );
+
+    M_backend->solve( _matrix=D, _solution=Exnp1, _rhs=F_Ex  );
+    M_backend->solve( _matrix=D, _solution=Eynp1, _rhs=F_Ey  );
+    M_backend->solve( _matrix=D, _solution=Bznp1, _rhs=F_Bz  );
+}
+
 
 template<typename BdyExpr>
 void
@@ -705,6 +760,9 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
             std::cout << "RK4" << endl;
             break;
         }
+    std::cout << "||exact-Ex||_2 = " << integrate(elements(mesh), (idv(Ex)-Ex_exact)*(idv(Ex)-Ex_exact) ).evaluate().norm() << std::endl;
+    std::cout << "||exact-Ey||_2 = " << integrate(elements(mesh), (idv(Ey)-Ey_exact)*(idv(Ey)-Ey_exact) ).evaluate().norm() << std::endl;
+    std::cout << "||exact-Bz||_2 = " << integrate(elements(mesh), (idv(Bz)-Bz_exact)*(idv(Bz)-Bz_exact) ).evaluate().norm() << std::endl;
     exporter->save();
     std::cout << "Saved initial/exact solution\n";
     for( time = 0; time <= Tfinal; )
@@ -712,7 +770,29 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
         std::cout << "============================================================" << std::endl;
         std::cout << "time = " << time << "s, dt=" << dt << ", final time=" << Tfinal << std::endl;
 
-        Ex = vf::project( Xh, elements(mesh), Ex_exact );
+        SolveEuler(w_exact, dt, Ex, Ey, Bz, dtEx,dtEy, dtBz);
+        time += dt;
+        Ex = dtEx;
+        Ey = dtEy;
+        Bz = dtBz;
+
+        dtEx = vf::project( Xh, elements(mesh), Ex_exact );
+        dtEy = vf::project( Xh, elements(mesh), Ey_exact );
+        dtBz = vf::project( Xh, elements(mesh), Bz_exact );
+
+        std::cout << "||proj exact-Ex||_2 = "
+                  << integrate(elements(mesh),
+                    (idv(Ex)-idv(dtEx))*(idv(Ex)-idv(dtEx)) ).evaluate().norm()
+                  << std::endl;
+        std::cout << "||proj exact-Ey||_2 = "
+                  << integrate(elements(mesh),
+                    (idv(Ey)-idv(dtEy))*(idv(Ey)-idv(dtEy)) ).evaluate().norm()
+                  << std::endl;
+        std::cout << "||proj exact-Bz||_2 = "
+                  << integrate(elements(mesh),
+                     (idv(Bz)-idv(dtBz))*(idv(Bz)-idv(dtBz)) ).evaluate().norm()
+                  << std::endl;
+        /* Ex = vf::project( Xh, elements(mesh), Ex_exact );
         Ey = vf::project( Xh, elements(mesh), Ey_exact );
         Bz = vf::project( Xh, elements(mesh), Bz_exact );
 
@@ -721,8 +801,8 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
         checkDG( idv(Bz) );
         FSolve2(w, Ex, Ey, Bz, dtEx, dtEy, dtBz);
         FSolve(w, Ex, Ey, Bz, dtEx2, dtEy2, dtBz2);
-        time += dt;
-
+        time += dt;*/
+                   /*
         std::cout << "||exact-Ex||_2" << integrate(elements(mesh), (idv(dtEx)+(idv(Ex)-Ex_exact)/dt)*(idv(dtEx)+(idv(Ex)-Ex_exact)/dt) ).evaluate().norm() << std::endl;
         std::cout << "||exact-Ey||_2" << integrate(elements(mesh), (idv(dtEy)+(idv(Ey)-Ey_exact)/dt)*(idv(dtEy)+(idv(Ey)-Ey_exact)/dt) ).evaluate().norm() << std::endl;
         std::cout << "||exact-Bz||_2" << integrate(elements(mesh), (idv(dtBz)+(idv(Bz)-Bz_exact)/dt)*(idv(dtBz)+(idv(Bz)-Bz_exact)/dt) ).evaluate().norm() << std::endl;
@@ -747,10 +827,10 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
                 break;
             }
 
-
+                   */
         std::cout << "||exact-Ex||_2 = " << integrate(elements(mesh), (idv(Ex)-Ex_exact)*(idv(Ex)-Ex_exact) ).evaluate().norm() << std::endl;
         std::cout << "||exact-Ey||_2 = " << integrate(elements(mesh), (idv(Ey)-Ey_exact)*(idv(Ey)-Ey_exact) ).evaluate().norm() << std::endl;
-        std::cout << "||exact-Bz||_2 = " << integrate(elements(mesh), (idv(Bz)-Bz_exact)*(idv(Bz)-Bz_exact) ).evaluate().norm() << std::endl;*/
+        std::cout << "||exact-Bz||_2 = " << integrate(elements(mesh), (idv(Bz)-Bz_exact)*(idv(Bz)-Bz_exact) ).evaluate().norm() << std::endl;
 
         // save
         exporter->step(time)->setMesh( mesh );
