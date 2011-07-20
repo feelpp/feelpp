@@ -245,23 +245,23 @@ PeriodicLaplacian<Dim, Order>::run()
 
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh, Xh, M, _init=true ) = integrate( elements( mesh ), _Q<2*(Order-1)>(), gradt(u)*trans(grad(v)) );
-    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, 1 ), _Q<2*(Order-1)>(),
-                                     -gradt(u)*N()*id(v)
+    form2( Xh, Xh, M, _init=true ) = integrate( _range=elements( mesh ), _quad=_Q<2*(Order-1)>(), _expr=gradt(u)*trans(grad(v)) );
+    form2( Xh, Xh, M ) += integrate( _range=markedfaces( mesh, 1 ), _quad=_Q<2*(Order-1)>(),
+                                     _expr=-gradt(u)*N()*id(v)
                                      -grad(v)*N()*idt(u)
                                      + penalisation_bc*id(u)*idt(v)/hFace() );
-    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, 3 ), _Q<2*(Order-1)>(),
-                                     -gradt(u)*N()*id(v)
+    form2( Xh, Xh, M ) += integrate( _range=markedfaces( mesh, 3 ), _quad=_Q<2*(Order-1)>(),
+                                     _expr=-gradt(u)*N()*id(v)
                                      -grad(v)*N()*idt(u)
                                      + penalisation_bc*id(u)*idt(v)/hFace() );
 
     M->close();
 
-    double area = integrate( elements(mesh), _Q<0>(), constant(1.0) ).evaluate()( 0, 0);
-    double mean = integrate( elements(mesh), _Q<5>(), g ).evaluate()( 0, 0)/area;
+    double area = integrate( _range=elements(mesh), _quad=_Q<0>(), _expr=constant(1.0) ).evaluate()( 0, 0);
+    double mean = integrate( _range=elements(mesh), _quad=_Q<5>(), _expr=g ).evaluate()( 0, 0)/area;
     Log() << "int g  = " << mean << "\n";
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( Xh, F, _init=true ) = ( integrate( elements( mesh ), _Q<Order+5>(), f*id(v) )
+    form1( Xh, F, _init=true ) = ( integrate( _range=elements( mesh ), _quad=_Q<Order+5>(), _expr=f*id(v) )
                                    //+integrate( boundaryfaces( mesh ), _Q<Order+5>(), (trans(grad_g)*N())*id(v) )
 
                                    );
@@ -276,9 +276,9 @@ PeriodicLaplacian<Dim, Order>::run()
     backend_type::build( this->vm() )->solve( _matrix=M, _solution=u, _rhs=F );
 
     Log() << "area   = " << area << "\n";
-    Log() << "int g  = " << integrate( elements(mesh), _Q<5>(), g ).evaluate()( 0, 0)/area << "\n";
-    Log() << "int u  = " << integrate( elements(mesh), _Q<Order>(), idv(u) ).evaluate()( 0, 0)/area << "\n";
-    Log() << "error  = " << math::sqrt( integrate( elements(mesh), _Q<10>(), (idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0) ) << "\n";
+    Log() << "int g  = " << integrate( elements(mesh), g, _Q<5>() ).evaluate()( 0, 0)/area << "\n";
+    Log() << "int u  = " << integrate( elements(mesh), idv(u), _Q<Order>() ).evaluate()( 0, 0)/area << "\n";
+    Log() << "error  = " << math::sqrt( integrate( elements(mesh), (idv(u)-g)*(idv(u)-g), _Q<10>() ).evaluate()( 0, 0) ) << "\n";
     double bdy1 = integrate( markedfaces(mesh,2), idv(u) ).evaluate()( 0, 0);
     double bdy2 = integrate( markedfaces(mesh,4), idv(u) ).evaluate()( 0, 0);
     Log() << "error mean periodic  boundary 1 - 2  = " << math::abs( bdy1-bdy2 ) << "\n";
