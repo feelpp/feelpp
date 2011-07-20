@@ -1602,6 +1602,63 @@ namespace GeoTool {
         }
 
         void
+        runCube(data_geo_ptrtype dg)
+        {
+
+            node_type Pt1 = param<0>(dg);
+            node_type Pt7 = param<1>(dg);
+            double lenx = Pt7(0)-Pt1(0);
+            double leny = Pt7(1)-Pt1(1);
+            double lenz = Pt7(2)-Pt1(2);
+            node_type Pt2 = Pt1; Pt2(0)+=lenx;
+            node_type Pt3 = Pt1; Pt3(0)+=lenx;Pt3(1)+=leny;
+            node_type Pt4 = Pt1; Pt4(1)+=leny;
+            node_type Pt5 = Pt1; Pt5(2)+=lenz;
+            node_type Pt6 = Pt1; Pt6(0)+=lenx;Pt6(2)+=lenz;
+            // Pt7 was give above by the user
+            node_type Pt8 = Pt1; Pt8(1)+=leny;Pt8(2)+=lenz;
+
+            writePoint( 1, dg , Pt1(0), Pt1(1), Pt1(2) );
+            writePoint( 2, dg , Pt2(0), Pt2(1), Pt2(2) );
+            writePoint( 3, dg , Pt3(0), Pt3(1), Pt3(2) );
+            writePoint( 4, dg , Pt4(0), Pt4(1), Pt4(2) );
+            writePoint( 5, dg , Pt5(0), Pt5(1), Pt5(2) );
+            writePoint( 6, dg , Pt6(0), Pt6(1), Pt6(2) );
+            writePoint( 7, dg , Pt7(0), Pt7(1), Pt7(2) );
+            writePoint( 8, dg , Pt8(0), Pt8(1), Pt8(2) );
+
+            writeLine( 1, dg , 1 , 2);
+            writeLine( 2, dg , 2 , 3);
+            writeLine( 3, dg , 3 , 4);
+            writeLine( 4, dg , 4 , 1);
+            writeLine( 5, dg , 5 , 6);
+            writeLine( 6, dg , 6 , 7);
+            writeLine( 7, dg , 7 , 8);
+            writeLine( 8, dg , 8 , 5);
+            writeLine( 9, dg , 1 , 5);
+            writeLine( 10, dg , 2 , 6);
+            writeLine( 11, dg , 3 , 7);
+            writeLine( 12, dg , 4 , 8);
+
+            writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4);
+            writePlaneSurface( 1, dg, 1);
+            writeLineLoop( 2, dg, Loop()>>5>>6>>7>>8);
+            writePlaneSurface( 2, dg, 2);
+            writeLineLoop( 3, dg, Loop()>>1>>10>>-5>>-9);
+            writePlaneSurface( 3, dg, 3);
+            writeLineLoop( 4, dg, Loop()>>10>>6>>-11>>-2);
+            writePlaneSurface( 4, dg, 4);
+            writeLineLoop( 5, dg, Loop()>>11>>7>>-12>>-3);
+            writePlaneSurface( 5, dg, 5);
+            writeLineLoop( 6, dg, Loop()>>9>>-8>>-12>>4);
+            writePlaneSurface( 6, dg, 6);
+
+            writeSurfaceLoop( 1, dg, Loop()>>1>>2>>3>>4>>5>>6);
+
+            writeVolume(1, dg, 1);
+        }
+
+        void
         runCylindre(data_geo_ptrtype dg)
         {
 #if 0
