@@ -690,7 +690,7 @@ BOOST_PARAMETER_FUNCTION(
 
     (optional
      (range,          *, elements(space->mesh())  )
-     (geomap,         *, GeomapStrategyType::GEOMAP_HO )
+     (geomap,         *, GeomapStrategyType::GEOMAP_OPT )
      (accumulate,     *(boost::is_integral<mpl::_>), false )
         )
     )
