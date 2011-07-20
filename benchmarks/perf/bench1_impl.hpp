@@ -50,7 +50,7 @@
     const int Qorder = ExpressionOrder<decltype(TheExprQ)>::value;     \
     typename _Q<Qorder>::template apply<FSType::fe_type::nDim,double,Simplex>::type quad; \
     timer.restart();                                                \
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()), _Q<Qorder>(),  TheExpr ); \
+    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()), TheExpr, _Q<Qorder>() );      \
     ofs << std::setw(20) << std::string(str1)+"_"+::boost::algorithm::replace_all_copy( std::string(str), " ", "_" ) << " " \
         << std::setw(4) << FSType::fe_type::nOrder << " "               \
         << std::setw(8) << std::setprecision( 5 ) << timer.elapsed() << " " \

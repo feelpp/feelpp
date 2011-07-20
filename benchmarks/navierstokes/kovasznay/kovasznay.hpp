@@ -324,8 +324,9 @@ Kovasznay<_OrderU, _OrderP, Entity>::addPressureStabilisation( element_1_type& p
               << OrderU << ", orderP=" << OrderP << " )\n";
         size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
         form2( Xh, Xh, D, _pattern=pattern )  +=
-            integrate( internalfaces(mesh), _Q<2*OrderP+2>(),
-                       (p_stabexpr)*(trans(jumpt(gradt(p)))*jump(grad(q))) );
+            integrate( internalfaces(mesh),
+                       (p_stabexpr)*(trans(jumpt(gradt(p)))*jump(grad(q))),
+                       _Q<2*OrderP+2>() );
         Log() << "[assembly] form2 D equal order stabilisation terms in " << t.elapsed() << "s\n"; t.restart();
     }
 

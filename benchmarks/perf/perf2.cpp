@@ -198,7 +198,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
 	std::cout << "is_activ2e: " << init2.is_active() << "\n";
         t0 = tbb::tick_count::now();
         //local_domain_area = integrate( elements(mesh), trace(vf::P()*trans(vf::P()))*idv(u)).evaluate()(0,0);
-        auto res  = integrate( elements(mesh), _Q<10>(), myexpr).evaluate();
+        auto res  = integrate( elements(mesh), myexpr, _Q<10>() ).evaluate();
        local_domain_area = res(0,0);
        //form2(Xh,Xh,M)=integrate( elements(mesh), myformexpr);
         t1 = tbb::tick_count::now();
@@ -214,7 +214,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
 	std::cout << "is_active: " << init.is_active() << "\n";
         t0 = tbb::tick_count::now();
        //form2(Xh,Xh,M)=integrate( elements(mesh),myformexpr );
-       auto res = integrate( elements(mesh),_Q<10>(), myexpr).evaluate();
+       auto res = integrate( elements(mesh), myexpr,_Q<10>()).evaluate();
        local_domain_area = res(0,0);
         t1 = tbb::tick_count::now();
         double t = (t1-t0).seconds();

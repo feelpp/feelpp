@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-04-17
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009-2011 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -233,10 +233,10 @@ Polyvis<A0,A1,A2,A3,A4>::run()
             U( i ) = 1;
 #if 0 // for rtk
             using namespace vf;
-            std::cout << "flux " << i << " = " << integrate( boundaryfaces(oneelement_mesh),_Q<4>(),
-                                                             trans(idv(U))*N() ).evaluate()( 0, 0 ) << "\n";;
-            std::cout << "div " << i << " = " << integrate( elements(oneelement_mesh), _Q<4>(),
-                                                            divv(U) ).evaluate()( 0, 0 ) << "\n";
+            std::cout << "flux " << i << " = " << integrate( boundaryfaces(oneelement_mesh),
+                                                             trans(idv(U))*N(), _Q<4>() ).evaluate()( 0, 0 ) << "\n";;
+            std::cout << "div " << i << " = " << integrate( elements(oneelement_mesh),
+                                                            divv(U), _Q<4>() ).evaluate()( 0, 0 ) << "\n";
 #endif
             std::ostringstream ostr;
             ostr << Xh->basis()->familyName() << "-" << i;

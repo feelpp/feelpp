@@ -334,12 +334,14 @@ TestALE<N>::run()
     /*
       Test ale map in boundary
     */
-    double error_bottom_first = math::sqrt(integrate( markedfaces( Ah->mesh(), 2 ), _Q<10>(),
-                                                      (trans(idv(aleFactory.getMap()))*oneX() - Px())*(trans(idv(aleFactory.getMap()))*oneX() - Px())
+    double error_bottom_first = math::sqrt(integrate( markedfaces( Ah->mesh(), 2 ),
+                                                      (trans(idv(aleFactory.getMap()))*oneX() - Px())*(trans(idv(aleFactory.getMap()))*oneX() - Px()),
+                                                      _Q<10>()
                                                       ).evaluate()( 0, 0 ));
 
-    double error_bottom_second = math::sqrt(integrate( markedfaces( Ah->mesh(), 2 ), _Q<10>(),
-                                                      (trans(idv(aleFactory.getMap()))*oneY() - f2)*(trans(idv(aleFactory.getMap()))*oneY() - f2)
+    double error_bottom_second = math::sqrt(integrate( markedfaces( Ah->mesh(), 2 ),
+                                                       (trans(idv(aleFactory.getMap()))*oneY() - f2)*(trans(idv(aleFactory.getMap()))*oneY() - f2),
+                                                       _Q<10>()
                                                       ).evaluate()( 0, 0 ));
 
     std::cout << "error bottom in " << time.elapsed() << "s\n"; time.restart();
@@ -348,12 +350,14 @@ TestALE<N>::run()
 
 
 
-    double error_bottom = math::sqrt(integrate( markedfaces( Ah->mesh(), 2 ), _Q<10>(),
-                                                trans(idv(aleFactory.getMap()) - vec(Px(),f2) )*(idv(aleFactory.getMap()) - vec(Px(),f2) )
+    double error_bottom = math::sqrt(integrate( markedfaces( Ah->mesh(), 2 ),
+                                                trans(idv(aleFactory.getMap()) - vec(Px(),f2) )*(idv(aleFactory.getMap()) - vec(Px(),f2) ),
+                                                _Q<10>()
                                          ).evaluate()( 0, 0 ));
 
-    double error_top = math::sqrt(integrate( markedfaces( Ah->mesh(), 4 ), _Q<10>(),
-                                             trans(idv(aleFactory.getMap()) - vec(Px(),f))*(idv(aleFactory.getMap()) - vec(Px(),f))
+    double error_top = math::sqrt(integrate( markedfaces( Ah->mesh(), 4 ),
+                                             trans(idv(aleFactory.getMap()) - vec(Px(),f))*(idv(aleFactory.getMap()) - vec(Px(),f)),
+                                             _Q<10>()
                                       ).evaluate()( 0, 0 ));
 
     std::cout << "error top in " << time.elapsed() << "s\n"; time.restart();
