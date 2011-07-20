@@ -113,25 +113,31 @@ Our concern satisfies the heat equation which reads
 \begin{equation}
 \label{heat:eq}
    \begin{split}
-      \displaystyle{\kappa_i \Delta T - \rho_i \frac{ \partial T}{\partial t}}  & = 0
+      \displaystyle{\sum_{i=1}^{2} \kappa_i \Delta T - \rho_i \frac{ \partial T}{\partial t}}  & = 0
   \end{split}
 \end{equation}
 \begin{equation}
-\label{hom_neu}
+\label{hom_neu1}
    \begin{split}
-      \displaystyle{ \kappa_i \frac{\partial T}{\partial n}} & =  0 \quad on \quad \Gamma_2,\Gamma_5, \Gamma_6 \quad and \quad \Gamma_7 \\ \\ 
+      \displaystyle{ \kappa_1 \frac{\partial T}{\partial n}} & =  0 \quad on \quad \Gamma_2 \quad and \quad \Gamma_6 \\ \\ 
+  \end{split}
+\end{equation}
+\begin{equation}
+\label{hom_neu2}
+   \begin{split}
+      \displaystyle{ \kappa_2 \frac{\partial T}{\partial n}} & =  0 \quad on \quad \Gamma_5 , \Gamma_7 \quad and \quad \Gamma_8 \\ \\ 
   \end{split}
 \end{equation}
 \begin{equation}
 \label{classic_neu}
    \begin{split}
-      \displaystyle{ \kappa_i \frac{\partial T}{\partial n}} & = - B T_{ | \Gamma_1 } \\ \\
+      \displaystyle{ \kappa_1 \frac{\partial T}{\partial n}} & = - B T_{ | \Gamma_1 } \\ \\
   \end{split}
 \end{equation}
 \begin{equation}
 \label{nonhom_neu}
    \begin{split}
-      \displaystyle{ \kappa_i \frac{\partial T}{\partial n}} & =  1_{| \Gamma_4} \\ \\
+      \displaystyle{ \kappa_2 \frac{\partial T}{\partial n}} & =  1_{| \Gamma_4} \\ \\
   \end{split}
 \end{equation}
 \begin{equation}
@@ -143,7 +149,7 @@ Our concern satisfies the heat equation which reads
 \begin{equation}
 \label{flux_conti}
    \begin{split}
-      \displaystyle{ \kappa_1 \frac{\partial T}{\partial n}} & = \displaystyle{ \kappa_2 \frac{\partial T}{\partial n} \quad on \quad \Gamma_3} \\ \\
+      \displaystyle{ \kappa_1 \nabla T \cdot n} & = \displaystyle{ \kappa_2 \nabla T \cdot n \quad on \quad \Gamma_3} \\ \\
   \end{split}
 \end{equation}
 
@@ -159,7 +165,7 @@ Our concern satisfies the heat equation which reads
 \label{heat:bc}
 The problem requieres that the temperature and heat flux are continute on $\Gamma_3$. Considering the problem's geometry, we also impose zero heat flux on the vertical surfaces of the spreader. Let's detail the conditions we have imposed :
 \begin{itemize}
-\item Homogeneous Neumann condition (\ref{hom_neu}) : it represents the fact that the heat flux is only vertical (for $\Gamma_6$ and $\Gamma_7$) or the fact that the heat flux is only provided by $\Gamma_4$ (for $\Gamma_2$ and $\Gamma_5$).
+\item Homogeneous Neumann condition (\ref{hom_neu1}) and (\ref{hom_neu2}) : it represents the fact that the heat flux is only vertical (for $\Gamma_6$ and $\Gamma_7$) or the fact that the heat flux is only provided by $\Gamma_4$ (for $\Gamma_2$ and $\Gamma_5$).
 
 \item Homogeneous Neumann condition (\ref{classic_neu}) : it imposes that the heat flux is brought by this surface (it mathematically represents that the heat sink is placed on the heat source).
 
@@ -177,61 +183,59 @@ The problem requieres that the temperature and heat flux are continute on $\Gamm
 Let's apply the method to our concern, we introduce the test function $v$ and we integrate the main equation, which reads now as :
 \begin{equation}
    \begin{split}
-      \displaystyle{\sum_{i=1}^{2} \kappa_i \int_{\varOmega_i} v\Delta T -  \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t}}  & = 0  
+      \displaystyle{\sum_{i=1}^{2} \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} - \kappa_i \int_{\varOmega_i} v\Delta T }  & = 0  
   \end{split}
 \end{equation}
 We integrate by parts, which leads to :
 \begin{equation}
    \begin{split}
-      \displaystyle{\sum_{i=1}^{2} \kappa_i \int_\Gamma {(\nabla T \cdot n) v} - \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}  - \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t}}  & = 0
+      \displaystyle{\sum_{i=1}^{2} \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} +  \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} - \kappa_i \int_\Gamma {(\nabla T \cdot n) v} }  & = 0
   \end{split}
 \end{equation}
 then, by decomposing the border $\Gamma$ we obtain :
+\begin{multline}
+ \displaystyle{- \kappa_1 \int_{\Gamma_1}{(\nabla T \cdot n) v} - \kappa_2 \int_{\Gamma_4} {(\nabla T \cdot n) v} - \kappa_1 \int_{\Gamma_{2,6}}{(\nabla T \cdot n) v}  - \kappa_2 \int_{\Gamma_{5,7}}{(\nabla T \cdot n) v} } \quad + \\ \displaystyle{ \sum_{i=1}^{2}  \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} - \kappa_i \int_{\Gamma_3}{(\nabla T \cdot n) v}  } =   0 
+\end{multline}
+Now, we apply the conditions (\ref{hom_neu1}), (\ref{hom_neu2}), (\ref{classic_neu}) and (\ref{nonhom_neu}) which brings us to :
 \begin{equation}
    \begin{split}
- \displaystyle{\sum_{i=1}^{2} \kappa_i \int_{\Gamma_1}{(\nabla T \cdot n) v} + \kappa_i \int_{\Gamma_4} {(\nabla T \cdot n) v} + \kappa_i \int_{\Gamma_{2,3,5,6,7}}{(\nabla T \cdot n) v}  - \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}	- \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t}} & =   0 
+ \displaystyle{ \kappa_2 B \int_{\Gamma_1}{T v} - \int_{\Gamma_4} {v} + \sum_{i=1}^{2}  \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}  - \underbrace{\kappa_i \int_{\Gamma_3}{(\nabla T \cdot n) v}}_{\text{=0 thanks to \ref{flux_conti}}}  } & =   0 
   \end{split}
 \end{equation}
-Now, we apply the conditions (\ref{hom_neu}), (\ref{classic_neu}) and (\ref{nonhom_neu}) which brings us to :
+Now we apply the boundary conditions (\ref{flux_conti}) which results in :
 \begin{equation}
    \begin{split}
- \displaystyle{\sum_{i=1}^{2} \kappa_i B \int_{\Gamma_1}{T v} + \kappa_i \int_{\Gamma_4} {v} + \underbrace{\kappa_i \int_{\Gamma_3}{(\nabla T \cdot n) v}}_{\text{=0 thanks to \ref{flux_conti}}}  - \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}	- \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t}} & =   0 
-  \end{split}
-\end{equation}
-Now we apply the latest boundary conditions (\ref{temp_conti}) and (\ref{flux_conti}) which reads as :
-\begin{equation}
-   \begin{split}
- \displaystyle{\sum_{i=1}^{2} \kappa_i B \int_{\Gamma_1}{T v} + \kappa_i \int_{\Gamma_4} {v} - \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}	- \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t}} & =   0 
+ \displaystyle{ \kappa_2 B \int_{\Gamma_1}{T v} - \int_{\Gamma_4} {v}  + \sum_{i=1}^{2} \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} } & =   0 
   \end{split}
 \end{equation}
 We can now start to transform the equation by puting in the right hand the known terms :
 \begin{equation}
    \begin{split}
- \displaystyle{\sum_{i=1}^{2} \kappa_i B \int_{\Gamma_1}{T v} - \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}	- \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t}} & =  
- - \kappa_2 \int_{\Gamma_4} {v}	 
+ \displaystyle{\kappa_2 B \int_{\Gamma_1}{T v}  + \sum_{i=1}^{2} \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} } & =  
+ \int_{\Gamma_4} {v}	 
   \end{split}
 \end{equation}
 We discretize $T$ such as:
 \begin{equation}
    \begin{split}
- \displaystyle{\sum_{i=1}^{2} \kappa_i B \int_{\Gamma_1}{T v} - \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}	- \rho_i \int_{\varOmega_i} v\frac{T^{n+1} - T^n}{\partial t}} & =  
- - \kappa_2 \int_{\Gamma_4} {v}	 
+ \displaystyle{ \kappa_2 B \int_{\Gamma_1}{T v} + \sum_{i=1}^{2} \rho_i \int_{\varOmega_i} v\frac{T^{n+1} - T^n}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} } & =  
+ \int_{\Gamma_4} {v}	 
   \end{split}
 \end{equation}
-So we obtain :
+Finally we obtain :
 \begin{equation}
    \begin{split}
- \displaystyle{\sum_{i=1}^{2} \kappa_i B \int_{\Gamma_1}{T v} - \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}	- \rho_i \int_{\varOmega_i} v\frac{T^{n+1}}{\partial t}} & =  
-	\displaystyle{ - ( \sum_{i=1}^{2}  \rho_i \int_{\varOmega_i} v \frac{T^n}{\partial t} + \kappa_2 \int_{\Gamma_4} {v} )	 }
+ \displaystyle{ \kappa_2 B \int_{\Gamma_1}{T v} + \sum_{i=1}^{2} \rho_i \int_{\varOmega_i} v\frac{T^{n+1}}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}} & =  
+	\displaystyle{ \int_{\Gamma_4} {v}	+  \sum_{i=1}^{2}  \rho_i \int_{\varOmega_i} v \frac{T^n}{\partial t}  }
   \end{split}
 \end{equation}
-We can multiply both sides by $-1$ to obtain :
-\begin{equation}
-   \begin{split}
- \displaystyle{\sum_{i=1}^{2} \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} + \rho_i \int_{\varOmega_i} v\frac{T^{n+1}}{\partial t} - \kappa_i B \int_{\Gamma_1}{T v} } & =  
-	\displaystyle{ \sum_{i=1}^{2}  \rho_i \int_{\varOmega_i} v \frac{T^n}{\partial t} + \kappa_2 \int_{\Gamma_4} {v}  }
-  \end{split}
-\end{equation}
+%We can multiply both sides by $-1$ to obtain :
+%\begin{equation}
+%   \begin{split}
+% \displaystyle{\sum_{i=1}^{2} \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} + \rho_i \int_{\varOmega_i} v\frac{T^{n+1}}{\partial t} - \kappa_i B \int_{\Gamma_1}{T v} } & =  
+%	\displaystyle{ \sum_{i=1}^{2}  \rho_i \int_{\varOmega_i} v \frac{T^n}{\partial t} + \kappa_2 \int_{\Gamma_4} {v}  }
+%  \end{split}
+%\end{equation}
 
 %sssssssssssssssssss
 %\begin{equation}
