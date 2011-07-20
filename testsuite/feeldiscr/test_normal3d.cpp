@@ -96,8 +96,8 @@ runtest(Application_ptrtype test_app)
     u = vf::project(Xh,elements(mesh),vf::vec( vf::cos(M_PI*Px()/5.),vf::cos(M_PI*Py()/5.),vf::cos(M_PI*Py()/5.)));
 
 
-    auto value1 = integrate(elements(mesh),_Q<15>(),divv(u)).evaluate()(0,0);
-    auto value2 = integrate(boundaryfaces(mesh),_Q<15>(),trans(idv(u))*N()).evaluate()(0,0);
+    auto value1 = integrate(elements(mesh),divv(u), _quad=_Q<15>()).evaluate()(0,0);
+    auto value2 = integrate(boundaryfaces(mesh),trans(idv(u))*N(),_quad=_Q<15>()).evaluate()(0,0);
 
     std::cout << "\n value 1 =" << value1;
     std::cout << "\n value 2 =" << value2 <<"\n";

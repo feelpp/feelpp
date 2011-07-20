@@ -473,9 +473,9 @@ BOOST_PARAMETER_FUNCTION(
     typedef FunctionSpace<_mesh_type,bases<Lagrange<_mesh_type::nOrder,Vectorial> > > space_t;
     auto Xh = space_t::New( _mesh );
     auto xHo = vf::project( _space=Xh, _range=elements(mesh), _expr=vf::P() );
-    auto xLo = vf::project( _space=Xh, _range=elements(mesh), _expr=vf::P(), _geomap=(int)GEOMAP_O1 );
+    auto xLo = vf::project( _space=Xh, _range=elements(mesh), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
     auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces(mesh), _expr=vf::P() );
-    auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces(mesh), _expr=vf::P(), _geomap=(int)GEOMAP_O1 );
+    auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces(mesh), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
     auto straightener = vf::project( _space=Xh, _range=elements(mesh), _expr=(idv(xLo)-idv(xHo))-(idv(xLoBdy)-idv(xHoBdy)) );
     MeshMover<_mesh_type> meshmove;
     meshmove.apply( _mesh, straightener );

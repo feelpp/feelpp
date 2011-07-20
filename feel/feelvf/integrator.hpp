@@ -716,7 +716,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     {
         switch( _M_gt )
         {
-        case GEOMAP_HO:
+        case GeomapStrategyType::GEOMAP_HO:
         {
             ti0.restart();
             __c->update( *it );
@@ -745,7 +745,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             t3+=ti3.elapsed();
         }
         break;
-        case GEOMAP_O1:
+        case GeomapStrategyType::GEOMAP_O1:
         {
             ti0.restart();
             __c1->update( *it );
@@ -774,7 +774,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             t3+=ti3.elapsed();
         }
         break;
-        case GEOMAP_OPT:
+        case GeomapStrategyType::GEOMAP_OPT:
         {
             if ( it->isOnBoundary() )
             {
@@ -845,6 +845,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     Debug( 5065 ) << "integrating over elements done in " << __timer.elapsed() << "s\n";
 
     delete formc;
+    delete formc1;
 #else
     element_iterator it = this->beginElement();
     element_iterator en = this->endElement();
@@ -1660,7 +1661,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 #if defined(USE_OPT_HO)
             switch( _M_gt )
             {
-            case  GEOMAP_HO :
+            case  GeomapStrategyType::GEOMAP_HO :
             {
 #endif
                 //Log() << "geomap ho" << "\n";
@@ -1681,7 +1682,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 #if defined(USE_OPT_HO)
             }
             break;
-            case GEOMAP_O1:
+            case GeomapStrategyType::GEOMAP_O1:
             {
                 //Log() << "geomap o1" << "\n";
                 __c1->update( *it );
@@ -1700,7 +1701,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 //Log() << it->id() << " : " << _M_im( expr1, 0, 0 ) << "\n";
             }
             break;
-            case GEOMAP_OPT:
+            case GeomapStrategyType::GEOMAP_OPT:
             {
                 //Log() << "geomap opt" << "\n";
                 if ( it->isOnBoundary() )
@@ -2225,22 +2226,22 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
 }
 /// \endcond
 
-
+#if 0
 /**
  * integrate an expression \c expr over a set of convexes \c elts
  * using the integration rule \c im .
  */
-template<typename IntElts, typename Im, typename ExprT>
-Expr<Integrator<IntElts, Im, ExprT, Im> >
-integrate( IntElts const& elts,
+template<size_t IntType, typename ItType, typename Im, typename ExprT>
+Expr<Integrator<boost::tuple<mpl::size_t<IntType>, ItType, ItType>, Im, ExprT, Im> >
+integrate( boost::tuple<mpl::size_t<IntType>, ItType, ItType> const& elts,
            Im const& im,
            ExprT const& expr,
-           GeomapStrategyType gt = GEOMAP_HO )
+           GeomapStrategyType gt = GeomapStrategyType::GEOMAP_HO )
 {
-    typedef Integrator<IntElts, Im, ExprT, Im> expr_t;
+    typedef Integrator<boost::tuple<mpl::size_t<IntType>, ItType, ItType>, Im, ExprT, Im> expr_t;
     return Expr<expr_t>( expr_t( elts, im, expr, gt, im ) );
 }
-
+#endif
 
 //Macro which get the good integration order
 # define VF_VALUE_OF_IM(O)                                              \
@@ -2251,35 +2252,38 @@ integrate( IntElts const& elts,
                                                                                boost::mpl::int_<10> >::type::value \
 /**/
 
+#if 0
 /**
  * integrate an expression \c expr over a set of convexes \c elts
  * using an automatic integration rule .
  */
-template<typename IntElts, typename ExprT>
-Expr<Integrator<IntElts, _Q< ExpressionOrder<IntElts,ExprT>::value >, ExprT> >
-integrate( IntElts const& elts,
+template<size_t IntType, typename ItType, typename ExprT>
+Expr<Integrator<boost::tuple<mpl::size_t<IntType>, ItType, ItType>, _Q< ExpressionOrder<boost::tuple<mpl::size_t<IntType>, ItType, ItType>,ExprT>::value >, ExprT> >
+integrate( boost::tuple<mpl::size_t<IntType>, ItType, ItType> const& elts,
            ExprT const& expr,
-           GeomapStrategyType gt = GEOMAP_HO )
+           GeomapStrategyType gt = GeomapStrategyType::GEOMAP_HO )
 {
 
-    Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<IntElts,ExprT>::value << "\n";
-    return integrate( elts, _Q< ExpressionOrder<IntElts,ExprT>::value >(), expr, gt );
+    Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<boost::tuple<mpl::size_t<IntType>, ItType, ItType>,ExprT>::value << "\n";
+    _Q< ExpressionOrder<boost::tuple<mpl::size_t<IntType>, ItType, ItType>,ExprT>::value > quad;
+    return integrate_impl( elts, quad, expr, gt, quad );
 
 }
+#endif
 
 /**
  * integrate an expression \c expr over a set of convexes \c elts
  * using the integration rule \c im .
  */
-template<typename IntElts, typename Im, typename ExprT, typename Im2 = Im>
-Expr<Integrator<IntElts, Im, ExprT, Im2> >
-integrate_impl( IntElts const& elts,
+template<size_t IntType, typename ItType, typename Im, typename ExprT, typename Im2 = Im>
+Expr<Integrator<boost::tuple<mpl::size_t<IntType>, ItType, ItType>, Im, ExprT, Im2> >
+integrate_impl( boost::tuple<mpl::size_t<IntType>, ItType, ItType> const& elts,
                 Im const& im,
                 ExprT const& expr,
-                GeomapStrategyType gt,
+                GeomapStrategyType const& gt,
                 Im2 const& im2 )
 {
-    typedef Integrator<IntElts, Im, ExprT, Im2> expr_t;
+    typedef Integrator<boost::tuple<mpl::size_t<IntType>, ItType,ItType>, Im, ExprT, Im2> expr_t;
     return Expr<expr_t>( expr_t( elts, im, expr, gt, im2 ) );
 }
 
@@ -2296,15 +2300,28 @@ struct clean_type
                 typename parameter::binding<TheArgs, Tag>::type
                 >::type
             >::type
-            >::type type;
+        >::type type;
 };
+template<typename TheArgs, typename Tag, typename Default>
+struct clean2_type
+{
+    typedef typename boost::remove_pointer<
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<TheArgs, Tag, Default>::type
+                >::type
+            >::type
+        >::type type;
+};
+
 template<typename Args>
 struct integrate_type
 {
     typedef typename clean_type<Args,tag::expr>::type _expr_type;
     typedef typename clean_type<Args,tag::range>::type _range_type;
-    typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > quad_type;
-    typedef Expr<Integrator<_range_type, quad_type, _expr_type, quad_type> > expr_type;
+    typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
+    typedef typename clean2_type<Args,tag::quad, the_quad_type>::type _quad_type;
+    typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad_type> > expr_type;
 
 };
 }
@@ -2322,25 +2339,22 @@ struct integrate_type
  */
 BOOST_PARAMETER_FUNCTION(
     (typename detail::integrate_type<Args>::expr_type), // return type
-    integrate2,    // 2. function name
+    integrate,    // 2. function name
 
     tag,           // 3. namespace of tag types
 
     (required
      (range, *  )
      (expr,   *)
-     //(quad,   *)
         ) // 4. one required parameter, and
 
     (optional
-     (geomap, *(boost::is_integral<mpl::_>), (int)GEOMAP_HO )
-     (quad,   *, typename detail::integrate_type<Args>::quad_type() )
-     (quad1,  *, typename detail::integrate_type<Args>::quad_type() )
-        )
+     (quad,   *, typename detail::integrate_type<Args>::the_quad_type() )
+     (geomap, *, GeomapStrategyType::GEOMAP_HO )
+     )
     )
 {
-    return integrate_impl( range, quad, expr, geomap, quad1 );
-    return 1;
+    return integrate_impl( range, quad, expr, geomap, quad );
 }
 
 

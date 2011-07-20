@@ -86,11 +86,19 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
     //straightenMesh( _mesh=mesh );
 
     //std::cout << "read mesh\n" << std::endl;
-    auto i1 = integrate( _range=elements(mesh), _quad=_Q<5>(), _expr=cst(1.), _geomap=GEOMAP_HO ).evaluate()( 0, 0 );
-    auto i2 = integrate( _range=elements(mesh), _quad=_Q<5>(), _expr=cst(1.), _geomap=GEOMAP_OPT ).evaluate()( 0, 0 );
+    boost::timer ti;
+    auto i1 = integrate( _range=elements(mesh), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate().norm();
+    std::cout << "Ho: " << ti.elapsed() << "s\n";
+    auto i2 = integrate( _range=elements(mesh), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate().norm();
+    std::cout << "Opt: " << ti.elapsed() << "s\n";
+    auto i3 = integrate( _range=elements(mesh),  _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate().norm();
+    std::cout << "P1: " << ti.elapsed() << "s\n";
+
     BOOST_CHECK_CLOSE( i1, i2, 1e-12 );
     BOOST_TEST_MESSAGE( "ho = " << std::scientific << std::setprecision( 16 ) << i1 << "\n" <<
-                        "opt = " << std::scientific << std::setprecision( 16 ) << i2 << "\n" << "\n");
+                        "opt = " << std::scientific << std::setprecision( 16 ) << i2 << "\n"
+                        "p1 = " << std::scientific << std::setprecision( 16 ) << i3 << "\n"
+                        << "\n");
 
 }
 BOOST_AUTO_TEST_SUITE_END()

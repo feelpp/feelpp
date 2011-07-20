@@ -235,8 +235,8 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
     AUTO( g, constant(0.0) );
 
     *M_residual =
-        integrate( elements( mesh ), _Q<2*Order>(), + gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) +id(v) ) +
-        integrate( boundaryfaces(mesh), _Q<2*Order>(),
+        integrate( elements( mesh ),  + gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) +id(v), _Q<2*Order>() ) +
+        integrate( boundaryfaces(mesh),
                    ( - trans(id(v))*(gradv(u)*N())
                      - trans(idv(u))*(grad(v)*N())
                      + penalisation_bc*trans(idv(u))*id(v)/hFace())-
@@ -260,13 +260,13 @@ NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, spars
     u = *X;
     if ( is_init == false )
         {
-            *M_jac = integrate( elements( mesh ), _Q<2*Order>(), M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) );
+            *M_jac = integrate( elements( mesh ),  M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v), _Q<2*Order>() );
             is_init = true;
         }
     else
         {
             M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ), _Q<2*Order>(), M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) );
+            *M_jac += integrate( elements( mesh ),  M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v), _Q<2*Order>() );
         }
     M_jac->close();
     M_jac->matPtr()->addMatrix( 1.0, M_oplin->mat() );
@@ -288,8 +288,8 @@ NonLinearPow<Dim, Order, Entity>::run()
 
     M_oplin = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
     *M_oplin =
-        integrate( elements( mesh ), _Q<2*Order>(), gradt(u)*trans(grad(v)) ) +
-        integrate( boundaryfaces(mesh), _Q<2*Order>(),
+        integrate( elements( mesh ), gradt(u)*trans(grad(v)) ) +
+        integrate( boundaryfaces(mesh),
                    ( - trans(id(v))*(gradt(u)*N())
                      - trans(idt(u))*(grad(v)*N())
                      + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
