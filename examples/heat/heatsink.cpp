@@ -53,36 +53,41 @@ makeOptions()
 {
     Feel::po::options_description heatsinkoptions("heatsink options");
     heatsinkoptions.add_options()
-        // mesh parameters
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ),
-         "first h value to start convergence")
+    // mesh parameters
+    ("hsize", Feel::po::value<double>()->default_value( 0.5 ),
+     "first h value to start convergence")
 
 	// 3D parameter
 	("deep", Feel::po::value<double>()->default_value( 0 ),
-	"depth of the fin, only in 3D simulation")
+	 "depth of the fin, only in 3D simulation")
 
-        // thermal conductivities parameters
-        ("spreader", Feel::po::value<double>()->default_value( 386 ),
-         "thermal conductivity of the base spreader")
-        ("fin", Feel::po::value<double>()->default_value( 386 ),
-         "thermal conductivity of the fin")
-	
+    // thermal conductivities parameters
+    ("spreader", Feel::po::value<double>()->default_value( 386 ),
+     "thermal conductivity of the base spreader")
+    ("fin", Feel::po::value<double>()->default_value( 386 ),
+     "thermal conductivity of the fin")
+
 	// density parameter
 	("rho_s", Feel::po::value<int>()->default_value( 8940 ),
-	"density of the spreader's material in SI unit kg.m^{-3}")
+	 "density of the spreader's material in SI unit kg.m^{-3}")
 	("rho_f", Feel::po::value<int>()->default_value( 8940 ),
 	 "density of the fin's material in SI unit kg.m^{-3}")
-		 
-		// physical coeff
-        ("Bimin", Feel::po::value<double>()->default_value( 0.01 ), "minimum value of Biot number")
-        ("Bimax", Feel::po::value<double>()->default_value( 1 ), "maximum value of Biot number")
 
-        ("N", Feel::po::value<int>()->default_value( 1 ), "number of samples withing parameter space")
+	// physical coeff
+    ("Bimin", Feel::po::value<double>()->default_value( 0.01 ),
+     "minimum value of Biot number")
+    ("Bimax", Feel::po::value<double>()->default_value( 1 ),
+     "maximum value of Biot number")
+    ("therm_coeff", Feel::po::value<double>()->default_value(60000),
+     "thermal coefficient for the biot number")
 
-        // export
-        ("export", "export results(ensight, data file(1D)")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ("N", Feel::po::value<int>()->default_value( 1 ),
+     "number of samples withing parameter space")
+
+    // export
+    ("export", "export results(ensight, data file(1D)")
+    ("export-matlab", "export matrix and vectors in matlab" );
+
     return heatsinkoptions.add( Feel::feel_options() );
 }
 //# endmarker1 #
@@ -163,7 +168,7 @@ public:
 
 	/* constructor */
 	HeatSink( int argc, char** argv, AboutData const& ad, po::options_description const& od );
-	
+
     /* run the simulation */
     void run();
 
@@ -192,16 +197,19 @@ private:
 	double lambda_spreader;
 	double lambda_fin;
 	double ratio;
-	
+
 	/* density of the material */
 	int density_s;
 	int density_f;
-	
+
 	/* Biot number */
 	double Bi;
-	
+    double therm_coeff;
+
+    /* characteristical length of the body */
 	double charact_length;
-	
+
+    /* messh, pointers and spaces*/
     mesh_ptrtype mesh;
     space_ptrtype Xh;
 
@@ -209,7 +217,7 @@ private:
     vector_ptrtype F;
 
 	bdf_ptrtype M_bdf;
-	
+
     boost::shared_ptr<export_type> exporter;
 
 }; // HeatSink class
@@ -226,6 +234,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		lambda_fin( this-> vm()["fin"].template as<double>() ),
 		density_s( this-> vm()["rho_s"].template as<int>() ),
 		density_f( this-> vm()["rho_f"].template as<int>() ),
+        therm_coeff( this-> vm()["therm_coeff"].template as <double>() ),
 		exporter( export_type::New( this->vm(), this->about().appName() ) )
 		{
 			this->changeRepository( boost::format( "%1%/%2%/%3%/" )
@@ -234,7 +243,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 								   % this->vm()["hsize"].template as<double>()
 								  );
 		using namespace Feel::vf;
-	
+
 	    /*
 		 * First we create the mesh
 		 */
@@ -244,8 +253,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		 * Calculate the characterisical length of the mesh = surface / perimeter
 		 */
 		double surface = integrate( markedelements(mesh,"spreader_mesh"), cst(1.) ).evaluate()(0,0) +
-			integrate( markedelements(mesh,"fin_mesh"), cst(1.) ).evaluate()(0,0);
-
+			                   integrate( markedelements(mesh,"fin_mesh"), cst(1.) ).evaluate()(0,0);
 
 		double perimeter = integrate( markedfaces(mesh,"gamma4"), cst(1.) ).evaluate()(0,0) +
 						integrate( markedfaces(mesh,"gamma7"), cst(1.) ).evaluate()(0,0) +
@@ -260,7 +268,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		 * N.B : you can also calculate the surface with a p0 space.
 		 * To do it, you have to name a p0 space ptrtype (such as p0h)
 		 * and then P0h = p0_space_type::New( mesh );
-		 * The value is obtain in the field 'Value' of the string return of
+		 * The value is obtained in the field 'Value' of the string return of
 		 *        auto surface2 = vf::sum( P0h, meas() );
 		 */
 
@@ -268,8 +276,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		/*
 		 * calculate the biot number
 		 */
-        double therm = 60000;
-		Bi = therm * charact_length / lambda_fin;
+		Bi = therm_coeff * charact_length / lambda_fin;
 
 		/*
 		 * calculate the ratio for the equation
@@ -277,35 +284,19 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		ratio = lambda_spreader/lambda_fin;
 
         /*
-         * The function space and some associate elements are then defined
+         * The function space associated to the mesh
          */
         Xh = space_type::New( mesh );
-        element_type T( Xh, "T" );
-        element_type v( Xh, "v" );
-
-		/*
-		 * Construction of the right hand side (the linear form)
-		 */	
-        F = M_backend->newVector( Xh );
-		form1( Xh, F, _init=true ) = integrate( markedfaces(mesh,"gamma4"), cst(1.) );
-
-        if ( this->vm().count( "export-matlab" ) )
-            F->printMatlab( "F.m" );
 
         /*
-         * Construction of the left hand side
+         * Right hand side
          */
-        D = M_backend->newMatrix( Xh, Xh );
-			form2( Xh, Xh, D, _init=true ) = integrate( markedelements(mesh,"spreader_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) );
-			form2( Xh, Xh, D) += integrate( markedelements(mesh,"fin_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) );
-			form2( Xh, Xh, D) += integrate( markedfaces(mesh, "gamma1"), _Q<imOrder>(), Bi*idv(T));
+		F = M_backend->newVector( Xh );
 
-		// At this step, all the elements have been introduced to the equation EXCEPT the discretization terms (right and left ones)
-        // this part is included in the run() method
-
-		D->close();
-        if ( this->vm().count( "export-matlab" ) )
-            D->printMatlab( "D" );
+		/*
+		 * Left hand side
+		 */
+		D = M_backend->newMatrix( Xh, Xh );
 
     }
 
@@ -320,7 +311,7 @@ HeatSink<Dim,Order>::createMesh( )
     return mesh;
 } // HeatSink::createMesh
 
-	
+
 template<int Dim, int Order>
 void
 HeatSink<Dim, Order>::run()
@@ -333,54 +324,65 @@ HeatSink<Dim, Order>::run()
 
 		using namespace Feel::vf;
 
-		element_type T( Xh, "T" );
-		element_type v( Xh, "v" );
-
-		/*
-		 * Construction of the left hand side
-		 */
-		//sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
-
 		Log() << "Bi = " << Bi << "\n"
 			  << "meshSize = " << meshSize << "\n"
 			  << "depth = " << depth << "\n"
 			  << "lambda_spreader = " << lambda_spreader << "\n"
 			  << "lambda_fin = " << lambda_fin << "\n"
 			  << "density_s = " << density_s << "\n"
-			  << "density_f = " << density_f << "\n";
+			  << "density_f = " << density_f << "\n"
+              << "thermal coeff = " << therm_coeff << "\n";
 
-		std::cout << " DEBUT DE LA BOUCLE POUR BDF \n";
+		/*
+		 * T is the unknown, v the test function
+		 */
+		element_type T( Xh, "T" );
+		element_type v( Xh, "v" );
 
-		/* discretization with BDF */
-		for ( M_bdf->start(); M_bdf->isFinished(); M_bdf->next() ) {
+		/*
+		 * Right hand side construction (steady state)
+		 */
+		form1( Xh, F, _init=true ) = integrate( markedfaces(mesh,"gamma4"), cst(1.) );
 
-			auto bdf_poly = M_bdf->polyDeriv();
-			form2(Xh, Xh, D) += integrate( markedelements(mesh, "spreader_mesh"), density_s*trans(idv(T))*id(v)*M_bdf->polyDerivCoefficient(0) );
-            form2(Xh, Xh, D) += integrate( markedelements(mesh, "fin_mesh"), density_s*trans(idv(T))*id(v)*M_bdf->polyDerivCoefficient(0) );
-			form1( Xh, F) += integrate( markedelements(mesh, "spreader_mesh"), density_s*idv(bdf_poly)*idv(v) );
-            form1( Xh, F) += integrate( markedelements(mesh, "fin_mesh"), density_s*idv(bdf_poly)*idv(v) );
+		/*
+		 * Left hand side construction (steady state)
+		 */
+		form2( Xh, Xh, D, _init=true ) = integrate( markedelements(mesh,"spreader_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) );
+        form2( Xh, Xh, D) += integrate( markedelements(mesh,"fin_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) );
+		form2 (Xh, Xh, D) += integrate( markedfaces(mesh, "gamma1"), _Q<imOrder>(), Bi*idv(T));
 
-		}
 
-		std::cout << " FIN DE LA BOUCLE \n";
+//		/*
+//		 * Left and right hand sides construction (non-steady state) with BDF
+//		 */
+//		for ( M_bdf->start(); M_bdf->isFinished(); M_bdf->next() ) {
+//
+//			auto bdf_poly = M_bdf->polyDeriv();
+//			form2(Xh, Xh, D) += integrate( markedelements(mesh, "spreader_mesh"), density_s*trans(idv(T))*id(v)*M_bdf->polyDerivCoefficient(0) )
+//                                 + integrate( markedelements(mesh, "fin_mesh"), density_s*trans(idv(T))*id(v)*M_bdf->polyDerivCoefficient(0) );
+//			form1( Xh, F) += integrate( markedelements(mesh, "spreader_mesh"), density_s*idv(bdf_poly)*idv(v) )
+//                              + integrate( markedelements(mesh, "fin_mesh"), density_s*idv(bdf_poly)*idv(v) );
+//
+//		}
 
 		D->close();
 
 		if ( this->vm().count( "export-matlab" ) )
-			D->printMatlab( "D" );
+            {
+                D->printMatlab( "D" );
+            }
 
+        std::cout << "Begin of the resolution \n";
 		this->solve( D, T, F );
-
-		//double moy_u = ( integrate( markedfaces(mesh,1), _Q<imOrder>(), idv(u) ).evaluate()(0,0) /
-        //	integrate( markedfaces(mesh,1), _Q<imOrder>(), constant(1.0) ).evaluate()(0,0) );
+        std::cout << "Resolution ended \n";
 
 		std::cout.precision( 5 );
-std::cout << std::setw( 5 ) << Bi << "\n";
-//				  << std::setw( 10 ) << moy_u << "\n";
+		std::cout << std::setw( 5 ) << "Bi = " << Bi << " \n ";
+
 		this->exportResults( T );
 
 } // HeatSink::run
-	
+
 template<int Dim, int Order>
 void
 HeatSink<Dim, Order>::solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F  )
@@ -407,8 +409,6 @@ HeatSink<Dim, Order>::exportResults( element_type& U )
 } // HeatSink::exportResults
 	
 } // Feel
-
-
 
 
 int
