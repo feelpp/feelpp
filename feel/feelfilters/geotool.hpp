@@ -51,7 +51,7 @@
 /*_________________________________________________*/
 
 # define GEOTOOL_SHAPE                                                  \
-    ( 14, ( ( Line          , 1, 0, 0, "line"         , 2, LINE ),      \
+    ( 15, ( ( Line          , 1, 0, 0, "line"         , 2, LINE ),      \
             ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE ),  \
             ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE ), \
             ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
@@ -62,6 +62,7 @@
             ( Special_1a    , 2, 2, 0, "special_1a"   , 1, SPECIAL_1A ), \
             ( Special_1b    , 2, 1, 0, "special_1b"   , 1, SPECIAL_1B ), \
             ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE  ), \
+            ( Cube          , 3, 6, 1, "cube"         , 2, CUBE  ), \
             ( Cylindre      , 3, 6, 1, "cylindre"     , 4, CYLINDRE  ), \
             ( Sphere        , 3, 8, 1, "sphere"       , 2, SPHERE  ),   \
             ( Tube          , 3, 16, 1, "tube"         , 5, TUBE  )    \
@@ -211,7 +212,7 @@
     /**/
 
 /*_________________________________________________*/
-//false : must be fix! 
+//false : must be fix!
 # define GEOTOOL_MARKER_POINT_PARTIALDISQUE     \
     ( 2, ( ( 1, 2, ( 1,3 ) ),                   \
            ( 2, 1, ( 2 ) ) )                    \
@@ -400,6 +401,42 @@
     ( 1, ( ( 1, 1, ( 1 ) ) )                    \
       )                                         \
     /**/
+/*_________________________________________________*/
+
+# define GEOTOOL_MARKER_POINT_CUBE            \
+    ( 1, ( ( 1, 8, ( 1,2,3,4,5,6,7,8 ) ) ) )      \
+    /**/
+# define GEOTOOL_MARKER_LINE_CUBE           \
+    ( 12, ( (  1, 1, (  1 ) ),                  \
+            (  2, 1, (  2 ) ),                  \
+            (  3, 1, (  3 ) ),                  \
+            (  4, 1, (  4 ) ),                  \
+            (  5, 1, (  5 ) ),                  \
+            (  6, 1, (  6 ) ),                  \
+            (  7, 1, (  7 ) ),                  \
+            (  8, 1, (  8 ) ),                  \
+            (  9, 1, (  9 ) ),                  \
+            ( 10, 1, ( 10 ) ),                  \
+            ( 11, 1, ( 11 ) ),                  \
+            ( 12, 1, ( 12 ) )                   \
+            )                                   \
+      )                                         \
+    /**/
+# define GEOTOOL_MARKER_SURFACE_CUBE        \
+    ( 6, ( ( 1, 1, ( 1 ) ),                     \
+           ( 2, 1, ( 2 ) ),                     \
+           ( 3, 1, ( 3 ) ),                     \
+           ( 4, 1, ( 4 ) ),                     \
+           ( 5, 1, ( 5 ) ),                     \
+           ( 6, 1, ( 6 ) )                      \
+           )                                    \
+      )                                         \
+    /**/
+# define GEOTOOL_MARKER_VOLUME_CUBE         \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
+
 
 /*_________________________________________________*/
 
