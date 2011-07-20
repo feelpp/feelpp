@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -525,6 +525,42 @@ private:
 
 
 }; // class Operator
+
+template<typename Args>
+struct compute_opLinear_return
+{
+    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::domainSpace>::type>::type::element_type domain_space_type;
+    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::imageSpace>::type>::type::element_type image_space_type;
+
+    typedef boost::shared_ptr<OperatorLinear<domain_space_type, image_space_type> > type;
+};
+
+BOOST_PARAMETER_FUNCTION(
+    (typename compute_opLinear_return<Args>::type), // 1. return type
+    opLinear,                        // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    (required
+     (domainSpace,    *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
+     (imageSpace,     *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
+        ) // required
+    (optional
+     (backend,        *, Backend<typename compute_opLinear_return<Args>::domain_space_type::value_type>::build())
+        ) // optionnal
+    )
+{
+    Feel::detail::ignore_unused_variable_warning(args);
+    typedef OperatorLinear<typename compute_opLinear_return<Args>::domain_space_type,
+                           typename compute_opLinear_return<Args>::image_space_type> operatorlinear_type;
+
+    boost::shared_ptr<operatorlinear_type> opI( new operatorlinear_type(domainSpace,imageSpace,backend));
+
+    return opI;
+
+} // opLinear
+
+
+
+
 
 } // Feel
 
