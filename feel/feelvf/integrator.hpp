@@ -716,17 +716,18 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     {
         switch( _M_gt )
         {
+        default:
         case GeomapStrategyType::GEOMAP_HO:
         {
             ti0.restart();
             __c->update( *it );
             t0+=ti0.elapsed();
 #if 0
-            Debug( 5065 ) << "Element: " << it->id() << "\n"
-                          << " o - points : " << it->G() << "\n"
-                          << " o - quadrature :\n"
-                          << "     ref : " << this->im().points() << "\n"
-                          << "     real : " << __c->xReal() << "\n";
+            std::cout << "Element: " << it->id() << "\n"
+                      << " o - points : " << it->G() << "\n"
+                      << " o - quadrature :\n"
+                      << "     ref : " << this->im().points() << "\n"
+                      << "     real : " << __c->xReal() << "\n";
 #endif
             ti1.restart();
             map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
@@ -2231,14 +2232,14 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
  * integrate an expression \c expr over a set of convexes \c elts
  * using the integration rule \c im .
  */
-template<size_t IntType, typename ItType, typename Im, typename ExprT>
-Expr<Integrator<boost::tuple<mpl::size_t<IntType>, ItType, ItType>, Im, ExprT, Im> >
-integrate( boost::tuple<mpl::size_t<IntType>, ItType, ItType> const& elts,
+template<typename Elts, typename Im, typename ExprT>
+Expr<Integrator<Elts, Im, ExprT, Im> >
+integrate( Elts const& elts,
            Im const& im,
            ExprT const& expr,
            GeomapStrategyType gt = GeomapStrategyType::GEOMAP_HO )
 {
-    typedef Integrator<boost::tuple<mpl::size_t<IntType>, ItType, ItType>, Im, ExprT, Im> expr_t;
+    typedef Integrator<Elts, Im, ExprT, Im> expr_t;
     return Expr<expr_t>( expr_t( elts, im, expr, gt, im ) );
 }
 #endif
@@ -2257,15 +2258,15 @@ integrate( boost::tuple<mpl::size_t<IntType>, ItType, ItType> const& elts,
  * integrate an expression \c expr over a set of convexes \c elts
  * using an automatic integration rule .
  */
-template<size_t IntType, typename ItType, typename ExprT>
-Expr<Integrator<boost::tuple<mpl::size_t<IntType>, ItType, ItType>, _Q< ExpressionOrder<boost::tuple<mpl::size_t<IntType>, ItType, ItType>,ExprT>::value >, ExprT> >
-integrate( boost::tuple<mpl::size_t<IntType>, ItType, ItType> const& elts,
+template<typename Elts, typename ExprT>
+Expr<Integrator<Elts, _Q< ExpressionOrder<Elts,ExprT>::value >, ExprT, _Q< ExpressionOrder<Elts,ExprT>::value > > >
+integrate( Elts const& elts,
            ExprT const& expr,
            GeomapStrategyType gt = GeomapStrategyType::GEOMAP_HO )
 {
 
-    Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<boost::tuple<mpl::size_t<IntType>, ItType, ItType>,ExprT>::value << "\n";
-    _Q< ExpressionOrder<boost::tuple<mpl::size_t<IntType>, ItType, ItType>,ExprT>::value > quad;
+    Debug(5065) << "[integrate] order to integrate = " << ExpressionOrder<Elts,ExprT>::value << "\n";
+    _Q< ExpressionOrder<Elts,ExprT>::value > quad;
     return integrate_impl( elts, quad, expr, gt, quad );
 
 }
@@ -2275,15 +2276,15 @@ integrate( boost::tuple<mpl::size_t<IntType>, ItType, ItType> const& elts,
  * integrate an expression \c expr over a set of convexes \c elts
  * using the integration rule \c im .
  */
-template<size_t IntType, typename ItType, typename Im, typename ExprT, typename Im2 = Im>
-Expr<Integrator<boost::tuple<mpl::size_t<IntType>, ItType, ItType>, Im, ExprT, Im2> >
-integrate_impl( boost::tuple<mpl::size_t<IntType>, ItType, ItType> const& elts,
+template<typename Elts, typename Im, typename ExprT, typename Im2 = Im>
+Expr<Integrator<Elts, Im, ExprT, Im2> >
+integrate_impl( Elts const& elts,
                 Im const& im,
                 ExprT const& expr,
                 GeomapStrategyType const& gt,
                 Im2 const& im2 )
 {
-    typedef Integrator<boost::tuple<mpl::size_t<IntType>, ItType,ItType>, Im, ExprT, Im2> expr_t;
+    typedef Integrator<Elts, Im, ExprT, Im2> expr_t;
     return Expr<expr_t>( expr_t( elts, im, expr, gt, im2 ) );
 }
 
@@ -2350,11 +2351,12 @@ BOOST_PARAMETER_FUNCTION(
 
     (optional
      (quad,   *, typename detail::integrate_type<Args>::the_quad_type() )
-     (geomap, *, GeomapStrategyType::GEOMAP_HO )
+     (geomap, *, GeomapStrategyType::GEOMAP_OPT )
+     (quad1,   *, quad )
      )
     )
 {
-    return integrate_impl( range, quad, expr, geomap, quad );
+    return integrate_impl( range, quad, expr, geomap, quad1 );
 }
 
 
