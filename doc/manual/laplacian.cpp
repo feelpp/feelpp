@@ -276,14 +276,14 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     vector_ptrtype F( M_backend->newVector( Xh ) );
     form1( _test=Xh, _vector=F, _init=true ) =
         integrate( elements(mesh), f*id(v) )+
-        integrate( markedfaces( mesh, mesh->markerName("Neumann") ), 
+        integrate( markedfaces( mesh, "Neumann" ),
 				  nu*gradv(gproj)*vf::N()*id(v) );
     //# endmarker2 #
     if ( this->comm().size() != 1 || weakdir )
         {
             //# marker41 #
             form1( _test=Xh, _vector=F ) +=
-                integrate( markedfaces(mesh,mesh->markerName("Dirichlet")), 
+                integrate( markedfaces(mesh,"Dirichlet"),
 						  g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
             //# endmarker41 #
         }
@@ -317,7 +317,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
             /** \code */
             //# marker10 #
             form2( Xh, Xh, D ) +=
-                integrate( markedfaces(mesh,mesh->markerName("Dirichlet")),
+                integrate( markedfaces(mesh,"Dirichlet"),
                            -(gradt(u)*vf::N())*id(v)
                            -(grad(v)*vf::N())*idt(u)
                            +penaldir*id(v)*idt(u)/hFace());
@@ -335,13 +335,12 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
             //# marker5 #
             D->close();
             form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, mesh->markerName("Dirichlet")), u, F, g );
+                on( markedfaces(mesh, "Dirichlet"), u, F, g );
             //# endmarker5 #
             /** \endcode */
 
         }
     /** \endcode */
-
 
     //! solve the system
     /** \code */
