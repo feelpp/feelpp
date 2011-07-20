@@ -975,6 +975,58 @@ struct test_integration_vectorial_functions: public Application
     mesh_ptrtype mesh;
 };
 
+template<int Order, typename value_type = double>
+struct test_integration_matricial_functions: public Application
+{
+    typedef typename imesh<value_type,2>::convex_type convex_type;
+    typedef typename imesh<value_type,2>::type mesh_type;
+    typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
+
+    test_integration_matricial_functions( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        Application( argc, argv, ad, od ),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        shape( "hypercube" ),
+        mesh()
+        {
+            BOOST_TEST_MESSAGE( "[test_integration_matricial_functions::test_integration_matricial_functions]\n" );
+            mesh = createGMSHMesh( _mesh=new mesh_type,
+                                   _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % 2).str() ,
+                                                 _usenames=true,
+                                                 _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
+                                                 _shape=shape,
+                                                 _dim=2,
+                                                 _xmin=-1.,_ymin=-1.,
+                                                 _h=meshSize ),
+                                   _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+        }
+    void operator()()
+    {
+        BOOST_TEST_MESSAGE( "[test_integration_matricial_functions::operator()]\n" );
+        using namespace Feel;
+        using namespace Feel::vf;
+
+        const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
+        auto xxT = P()*trans(P());
+        BOOST_TEST_MESSAGE( "[test_integration_matricial_functions::operator()] v0\n" );
+        auto v0 = integrate( _range=elements(mesh), _expr=sym(xxT) ).evaluate();
+        BOOST_TEST_MESSAGE( "[test_integration_matricial_functions::operator()] v1\n" );
+        auto v1 = integrate( _range=elements(mesh), _expr=0.5*(xxT+trans(xxT)) ).evaluate();
+        BOOST_CHECK_SMALL( (v0-v1).norm(), 1e-12 );
+        BOOST_TEST_MESSAGE( "[sym check] v0=" << v0 << " v1=" << v1 << " error=" << (v0-v1).norm() << "\n" );
+        BOOST_TEST_MESSAGE( "[test_integration_matricial_functions::operator()] v2\n" );
+        auto v2 = integrate( _range=elements(mesh), _expr=antisym(xxT) ).evaluate();
+        BOOST_TEST_MESSAGE( "[test_integration_matricial_functions::operator()] v3\n" );
+        auto v3 = integrate( _range=elements(mesh), _expr=0.5*(xxT-trans(xxT)) ).evaluate();
+        BOOST_CHECK_SMALL( (v2-v3).norm(), 1e-12 );
+        BOOST_TEST_MESSAGE( "[antisym check] v2=" << v2 << " v3=" << v3 << " error=" << (v2-v3).norm() << "\n" );
+        BOOST_TEST_MESSAGE( "[test_integration_matricial_functions::operator()] done\n" );
+    }
+    double meshSize;
+    std::string shape;
+    mesh_ptrtype mesh;
+};
+
 
 template<int Order, typename value_type = double>
 struct test_integration_composite_functions: public Application
@@ -1213,9 +1265,17 @@ BOOST_AUTO_TEST_CASE( test_integration_6 )
 BOOST_AUTO_TEST_CASE( test_integration_7 )
 {
     Feel::test_integration_simplex<double> t( boost::unit_test::framework::master_test_suite().argc,
-                                                          boost::unit_test::framework::master_test_suite().argv,
-                                                          makeAbout(), makeOptions() );
+                                              boost::unit_test::framework::master_test_suite().argv,
+                                              makeAbout(), makeOptions() );
     t();
+}
+BOOST_AUTO_TEST_CASE( test_integration_8 )
+{
+    Feel::test_integration_matricial_functions<2,double> t( boost::unit_test::framework::master_test_suite().argc,
+                                                            boost::unit_test::framework::master_test_suite().argv,
+                                                            makeAbout(), makeOptions() );
+    t();
+
 }
 BOOST_AUTO_TEST_SUITE_END()
 #if 0
