@@ -196,21 +196,25 @@ void run(Application_ptrtype & theApp)
 
     // assemblage
     form2( Xh, Xh, A2, _init=true ) =
-        integrate( elements(meshBis),  _Q<10>(),
-                   + gradt(u2)*trans(grad(v)) );
+        integrate( elements(meshBis),
+                   + gradt(u2)*trans(grad(v)),
+                   _Q<10>() );
 
     form2( Xh, Xh, A2 ) +=
-        integrate( boundaryfaces(meshBis), _Q<10>(),
+        integrate( boundaryfaces(meshBis),
                    - gradt(u2)*N()*id(v)
-                   + gammabc*idt(u2)*id(v)/hFace() );
+                   + gammabc*idt(u2)*id(v)/hFace(),
+                   _Q<10>());
 
     form1( Xh, F2, _init=true ) =
-        integrate( elements(meshBis),  _Q<10>(),
-                   trans(f)*id(v) );
+        integrate( elements(meshBis),
+                   trans(f)*id(v),
+                   _Q<10>());
 
     form1( Xh, F2 ) +=
-        integrate( boundaryfaces(meshBis), _Q<10>(),
-                   + gammabc*u_exact*id(v)/hFace() );
+        integrate( boundaryfaces(meshBis),
+                   + gammabc*u_exact*id(v)/hFace(),
+                   _Q<10>() );
 
 
     A2->close();

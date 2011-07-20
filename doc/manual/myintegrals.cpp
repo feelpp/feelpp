@@ -101,7 +101,7 @@ public:
 
     void run( const double* X, unsigned long P, double* Y, unsigned long N );
 	//# endmarker10 #
-	
+
 private:
 
     double meshSize;
@@ -147,13 +147,12 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
      */
 	//# marker11 #
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _update=MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                                         _desc=domain( _name= (boost::format( "%1%-%2%" ) % shape % Dim).str() ,
                                                       _shape=shape,
                                                       _order=1,
                                                       _dim=Dim,
                                                       _h=X[0] ) );
-    mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
-    mesh->updateForUse();
 	//# endmarker11 #
 
     /*
@@ -230,8 +229,9 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
           << "[ " << local_intsin << " ]\n";
 
     //# marker7 #
-    double local_intsin2 = integrate( elements(mesh), _Q<2>(),
-                                      sin( Px()*Px() + Py()*Py() + Pz()*Pz() )
+    double local_intsin2 = integrate( elements(mesh),
+                                      sin( Px()*Px() + Py()*Py() + Pz()*Pz() ),
+                                      _Q<2>()
                                     ).evaluate()(0,0);
     //# endmarker7 #
     double global_intsin2 = local_intsin2;

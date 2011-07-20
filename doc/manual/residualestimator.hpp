@@ -569,8 +569,8 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     double H1exact = math::sqrt(integrate(elements(mesh),g*g+grad_g*trans(grad_g) ).evaluate()(0,0));
 
 
-    auto RealL2ErrorP0 = integrate( elements(mesh), _Q<10>(), (idv(u)-g)*(idv(u)-g) ).broken(P0h);
-    auto RealSemiH1ErrorP0 = integrate( elements(mesh), _Q<10>(), (gradv(u)-grad_g)* trans(gradv(u)-grad_g) ).broken(P0h);
+    auto RealL2ErrorP0 = integrate( elements(mesh), (idv(u)-g)*(idv(u)-g), _Q<10>() ).broken(P0h);
+    auto RealSemiH1ErrorP0 = integrate( elements(mesh), (gradv(u)-grad_g)* trans(gradv(u)-grad_g), _Q<10>() ).broken(P0h);
     auto H1RealErrorP0 = RealL2ErrorP0;
     H1RealErrorP0 += RealSemiH1ErrorP0;
     H1RealErrorP0 = H1RealErrorP0.sqrt();
@@ -583,7 +583,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     auto term3 = gradv(u)*vf::N()-grad_g*N();
 
 
-    auto rho = integrate(elements(mesh), _Q<10>(), term1*term1 ).broken(P0h).sqrt();
+    auto rho = integrate(elements(mesh), term1*term1, _Q<10>() ).broken(P0h).sqrt();
 
 
     rho += integrate(internalfaces(mesh),0.25*vf::h()*term2*term2).broken( P0h ).sqrt();

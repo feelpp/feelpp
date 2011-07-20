@@ -213,16 +213,16 @@ Test_AOI::run()
 
     //-----------------------------------------------------------------------------------//
 
-    double int11=integrate(elements(mesh),_Q<4>(), f ).evaluate()(0,0);
+    double int11=integrate(elements(mesh), f, _Q<4>() ).evaluate()(0,0);
     double int12=integrate(elements(mesh), f ).evaluate()(0,0);
     BOOST_CHECK_EQUAL(int11,int12);
     //BOOST_CHECK(std::abs(int11-int12)<1e-15);
 
-    double int21=integrate(elements(mesh),_Q<3>(), g ).evaluate()(0,0);
+    double int21=integrate(elements(mesh), g, _Q<3>() ).evaluate()(0,0);
     double int22=integrate(elements(mesh), g ).evaluate()(0,0);
     BOOST_CHECK_EQUAL(int21,int22);
 
-    double int31=integrate(elements(mesh),_Q<us_order+p_mixed_order-1 >(), gradv(p_mixed)*idv(u_mixed) ).evaluate()(0,0);
+    double int31=integrate(elements(mesh), gradv(p_mixed)*idv(u_mixed),_Q<us_order+p_mixed_order-1 >() ).evaluate()(0,0);
     double int32=integrate(elements(mesh), gradv(p_mixed)*idv(u_mixed)  ).evaluate()(0,0);
     BOOST_CHECK_EQUAL(int31,int32);
 

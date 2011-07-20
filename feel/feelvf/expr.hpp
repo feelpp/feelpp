@@ -348,7 +348,8 @@ struct ExpressionOrder
                                                                          boost::mpl::int_<ExprT::imorder> >::type,
                                                boost::mpl::int_<10> >::type::value;
 #else
-    static const int value = ExprT::imorder*nOrderGeo;
+    // this is a very rough approximation
+    static const int value = (ExprT::imorder)?(ExprT::imorder*(nOrderGeo-1)):(nOrderGeo-1);
 #endif
 
 

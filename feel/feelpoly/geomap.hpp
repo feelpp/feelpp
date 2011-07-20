@@ -60,7 +60,7 @@ namespace Feel
 /**
  * \enum type of geomap strategy
  */
-enum GeomapStrategyType {
+enum class GeomapStrategyType {
     GEOMAP_OPT = 0,
     GEOMAP_O1 = 1,
     GEOMAP_HO = 2

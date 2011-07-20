@@ -252,7 +252,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     {
         switch( M_geomap_strategy )
         {
-        case GEOMAP_HO:
+        case GeomapStrategyType::GEOMAP_HO:
         {
             __c->update( *it );
             map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
@@ -271,7 +271,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
             }
         }
         break;
-        case GEOMAP_O1:
+        case GeomapStrategyType::GEOMAP_O1:
         {
             __c1->update( *it );
             map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
@@ -290,7 +290,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
             }
         }
         break;
-        case GEOMAP_OPT:
+        case GeomapStrategyType::GEOMAP_OPT:
         {
             if ( it->isOnBoundary() )
             {
@@ -482,8 +482,8 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
         switch( M_geomap_strategy )
         {
         default:
-        case GEOMAP_OPT:
-        case GEOMAP_HO:
+        case GeomapStrategyType::GEOMAP_OPT:
+        case GeomapStrategyType::GEOMAP_HO:
         {
             __c->update( __face_it->element(0), __face_id );
             Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
@@ -510,7 +510,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
                 }
         }
         break;
-        case GEOMAP_O1:
+        case GeomapStrategyType::GEOMAP_O1:
         {
             __c1->update( __face_it->element(0), __face_id );
             Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c1->xRefs() << "\n";
@@ -557,7 +557,7 @@ typename FunctionSpaceType::element_type
 project( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
          IteratorRange const& range_it,
          Expr<ExprT> const& __expr,
-         GeomapStrategyType geomap = GEOMAP_HO )
+         GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
     typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
@@ -569,7 +569,7 @@ typename FunctionSpaceType::element_type
 project_impl( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
               IteratorRange const& range_it,
               Expr<ExprT> const& __expr,
-              GeomapStrategyType geomap = GEOMAP_HO )
+              GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
     typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
@@ -583,7 +583,7 @@ project_impl( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
 template<typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
 project( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr,
-         GeomapStrategyType geomap = GEOMAP_HO )
+         GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
     return project( __functionspace, elements(__functionspace->mesh()), __expr, geomap );
 }
@@ -598,7 +598,7 @@ typename FunctionSpaceType::element_type
 sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
      IteratorRange const& range_it,
      Expr<ExprT> const& __expr,
-     GeomapStrategyType geomap = GEOMAP_HO )
+     GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
     typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
@@ -624,7 +624,7 @@ sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> co
 template<typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
 project( FunctionSpaceType const& __functionspace, Expr<ExprT> const& __expr,
-         GeomapStrategyType geomap = GEOMAP_HO )
+         GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
     typedef __typeof__( __functionspace->mesh()->elementsRange()) IteratorRange;
     typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
@@ -642,7 +642,7 @@ typename FunctionSpaceType::element_type
 project( FunctionSpaceType const& __functionspace,
          IteratorRange const& range_it,
          Expr<ExprT> const& __expr,
-         GeomapStrategyType geomap = GEOMAP_HO )
+         GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
     typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
@@ -690,7 +690,7 @@ BOOST_PARAMETER_FUNCTION(
 
     (optional
      (range,          *, elements(space->mesh())  )
-     (geomap,         *(boost::is_integral<mpl::_>), (int)GEOMAP_HO )
+     (geomap,         *, GeomapStrategyType::GEOMAP_HO )
      (accumulate,     *(boost::is_integral<mpl::_>), false )
         )
     )
@@ -706,7 +706,7 @@ BOOST_PARAMETER_FUNCTION(
 #else
 //    if ( accumulate  )
 //return sum( space, range, expr, geomap );
-    return project_impl( space, range, expr, (GeomapStrategyType)geomap );
+    return project_impl( space, range, expr, geomap );
 #endif
 }
 
