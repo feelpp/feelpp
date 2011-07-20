@@ -28,8 +28,8 @@ if (EXISTS $ENV{HOME})
   # files repository
   file(MAKE_DIRECTORY $ENV{HOME}/feel/geo)
 
-  FILE(GLOB meditfiles "medit/*")
-  FILE(GLOB gmshfiles "gmsh/*")
+  FILE(GLOB meditfiles "medit/*.[geomesh]")
+  FILE(GLOB gmshfiles "gmsh/*.[geomeshstl]")
   foreach(file ${meditfiles} ${gmshfiles})
     get_filename_component(filename ${file} NAME )
     add_custom_target(copy_mesh_data_${filename}
