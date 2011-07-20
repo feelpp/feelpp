@@ -520,6 +520,51 @@ public:
                              vector_ptrtype const& b,
                              bool reuse_prec
                              );
+
+    /**
+     * solve for \f$P F(x)=0 b\f$
+     */
+    BOOST_PARAMETER_MEMBER_FUNCTION((nl_solve_return_type),
+                                    nlSolve,
+                                    tag,
+                                    (required
+                                     (jacobian,(sparse_matrix_ptrtype))
+                                     (in_out(solution),*(mpl::or_<boost::is_convertible<mpl::_,vector_type&>,
+                                                         boost::is_convertible<mpl::_,vector_ptrtype> >))
+                                     (residual,(vector_ptrtype)))
+                                    (optional
+                                     (prec,(sparse_matrix_ptrtype), jacobian )
+                                     (maxit,(size_type), M_maxit/*1000*/ )
+                                     (rtolerance,(double), M_rtolerance/*1e-13*/)
+                                     (atolerance,(double), M_atolerance/*1e-50*/)
+                                     (dtolerance,(double), M_dtolerance/*1e5*/)
+                                     (reuse_prec,(bool), M_reuse_prec )
+                                     (transpose,(bool), false )
+                                     (pc,(std::string),M_pc/*"lu"*/)
+                                     (ksp,(std::string),M_ksp/*"gmres"*/)
+                                     )
+                                    )
+    {
+        this->setTolerances( _dtolerance=dtolerance,
+                             _rtolerance=rtolerance,
+                             _atolerance=atolerance,
+                             _maxit=maxit );
+        this->setSolverType( _pc=pc, _ksp=ksp );
+        vector_ptrtype _sol( this->newVector( detail::datamap(solution) ) );
+        // initialize
+        *_sol = detail::ref(solution);
+        this->setTranspose( transpose );
+        solve_return_type ret;
+        this->nlSolver()->residual( _sol, residual );
+        this->nlSolver()->jacobian( _sol, jacobian );
+        if ( reuse_prec == false )
+            ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
+        else
+            ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec );
+        detail::ref(solution) = *_sol;
+        return ret;
+    }
+
     /**
      * solve for the nonlinear problem \f$F( u ) = 0\f$
      */
