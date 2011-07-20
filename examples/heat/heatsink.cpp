@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -287,6 +287,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
          * The function space associated to the mesh
          */
         Xh = space_type::New( mesh );
+        M_bdf = bdf_ptrtype( new bdf_type( this->vm(), M_Xh ) );
 
         /*
          * Right hand side
@@ -316,70 +317,76 @@ template<int Dim, int Order>
 void
 HeatSink<Dim, Order>::run()
 {
-		if ( this->vm().count( "help" ) )
-		{
-			std::cout << this->optionsDescription() << "\n";
-			return;
-		}
+    if ( this->vm().count( "help" ) )
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
-		using namespace Feel::vf;
+    using namespace Feel::vf;
 
-		Log() << "Bi = " << Bi << "\n"
-			  << "meshSize = " << meshSize << "\n"
-			  << "depth = " << depth << "\n"
-			  << "lambda_spreader = " << lambda_spreader << "\n"
-			  << "lambda_fin = " << lambda_fin << "\n"
-			  << "density_s = " << density_s << "\n"
-			  << "density_f = " << density_f << "\n"
-              << "thermal coeff = " << therm_coeff << "\n";
+    Log() << "Bi = " << Bi << "\n"
+          << "meshSize = " << meshSize << "\n"
+          << "depth = " << depth << "\n"
+          << "lambda_spreader = " << lambda_spreader << "\n"
+          << "lambda_fin = " << lambda_fin << "\n"
+          << "density_s = " << density_s << "\n"
+          << "density_f = " << density_f << "\n"
+          << "thermal coeff = " << therm_coeff << "\n";
 
-		/*
-		 * T is the unknown, v the test function
-		 */
-		element_type T( Xh, "T" );
-		element_type v( Xh, "v" );
+    /*
+     * T is the unknown, v the test function
+     */
+    element_type T( Xh, "T" );
+    element_type v( Xh, "v" );
 
-		/*
-		 * Right hand side construction (steady state)
-		 */
-		form1( Xh, F, _init=true ) = integrate( markedfaces(mesh,"gamma4"), cst(1.) );
+    /*
+     * Right hand side construction (steady state)
+     */
+    form1( Xh, F, _init=true ) = integrate( markedfaces(mesh,"gamma4"), cst(1.) );
 
-		/*
-		 * Left hand side construction (steady state)
-		 */
-		form2( Xh, Xh, D, _init=true ) = integrate( markedelements(mesh,"spreader_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) );
-        form2( Xh, Xh, D) += integrate( markedelements(mesh,"fin_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) );
-		form2 (Xh, Xh, D) += integrate( markedfaces(mesh, "gamma1"), _Q<imOrder>(), Bi*idv(T));
+    /*
+     * Left hand side construction (steady state)
+     */
+    form2( Xh, Xh, D, _init=true ) = integrate( markedelements(mesh,"spreader_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) );
+    form2( Xh, Xh, D) += integrate( markedelements(mesh,"fin_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) );
+    form2 (Xh, Xh, D) += integrate( markedfaces(mesh, "gamma1"), _Q<imOrder>(), Bi*idv(T));
 
 
-//		/*
-//		 * Left and right hand sides construction (non-steady state) with BDF
-//		 */
-//		for ( M_bdf->start(); M_bdf->isFinished(); M_bdf->next() ) {
-//
-//			auto bdf_poly = M_bdf->polyDeriv();
-//			form2(Xh, Xh, D) += integrate( markedelements(mesh, "spreader_mesh"), density_s*trans(idv(T))*id(v)*M_bdf->polyDerivCoefficient(0) )
-//                                 + integrate( markedelements(mesh, "fin_mesh"), density_s*trans(idv(T))*id(v)*M_bdf->polyDerivCoefficient(0) );
-//			form1( Xh, F) += integrate( markedelements(mesh, "spreader_mesh"), density_s*idv(bdf_poly)*idv(v) )
-//                              + integrate( markedelements(mesh, "fin_mesh"), density_s*idv(bdf_poly)*idv(v) );
-//
-//		}
+    form2(Xh, Xh, D) +=
+        integrate( markedelements(mesh, "spreader_mesh"), density_s*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) )
+        + integrate( markedelements(mesh, "fin_mesh"), density_s*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) );
 
-		D->close();
 
-		if ( this->vm().count( "export-matlab" ) )
-            {
-                D->printMatlab( "D" );
-            }
+
+    D->close();
+
+    if ( this->vm().count( "export-matlab" ) )
+    {
+        D->printMatlab( "D.m" );
+    }
+
+    /*
+     * Left and right hand sides construction (non-steady state) with BDF
+     */
+    for ( M_bdf->start(); M_bdf->isFinished(); M_bdf->next() )
+    {
+        auto Ft = M_backend->newVector( Xh );
+        auto bdf_poly = M_bdf->polyDeriv();
+        form1( _test=Xh, _vector=Ft) =
+            integrate( markedelements(mesh, "spreader_mesh"), density_s*idv(bdf_poly)*id(v) )+
+            integrate( markedelements(mesh, "fin_mesh"), density_s*idv(bdf_poly)*id(v) );
+
 
         std::cout << "Begin of the resolution \n";
-		this->solve( D, T, F );
+		M_backend->solve( _matrix=D, _solution=T, _rhs=F );
         std::cout << "Resolution ended \n";
 
 		std::cout.precision( 5 );
 		std::cout << std::setw( 5 ) << "Bi = " << Bi << " \n ";
 
-		this->exportResults( T );
+		this->exportResults( M_bdf->time(), T );
+    }
 
 } // HeatSink::run
 
@@ -407,7 +414,7 @@ HeatSink<Dim, Order>::exportResults( element_type& U )
 
         }
 } // HeatSink::exportResults
-	
+
 } // Feel
 
 
@@ -415,14 +422,14 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-	
+
 	/* Parameters to be changed */
 	const int nDim = 2;
 	const int nOrder = 1;
-	
+
 	/* define application */
 	typedef Feel::HeatSink<nDim, nOrder> heat_sink_type;
-	
+
 	/* instanciate */
 	heat_sink_type heatsink( argc, argv, makeAbout(), makeOptions() );
 
