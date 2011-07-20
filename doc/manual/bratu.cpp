@@ -149,12 +149,6 @@ public:
 private:
 
     /**
-     * solve the system
-     */
-    void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
-
-
-    /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
     void exportResults( element_type& u );
@@ -226,7 +220,7 @@ Bratu<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vector_ptrty
     element_type v( M_Xh, "v" );
 
     u = *X;
-    AUTO( g, constant(0.0) );
+    auto g = constant(0.0);
 
     *M_residual = integrate( elements( mesh ), gradv(u)*trans(grad(v)) );
     *M_residual +=  integrate( elements( mesh ),  M_lambda*exp(idv(u))*id(v) );
@@ -279,7 +273,7 @@ Bratu<Dim, Order, Entity>::run()
 
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
 
-    M_oplin = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
+    M_oplin = opLinear( _domainSpace=M_Xh, _imageSpace=M_Xh, _backend=M_backend );
     *M_oplin = integrate( elements( mesh ), gradt(u)*trans(grad(v)) );
     *M_oplin += integrate( boundaryfaces(mesh),
                            ( - trans(id(v))*(gradt(u)*N())
@@ -287,7 +281,7 @@ Bratu<Dim, Order, Entity>::run()
                              + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
     M_oplin->close();
 
-    M_jac = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
+    M_jac = opLinear( _domainSpace=M_Xh, _imageSpace=M_Xh, _backend=M_backend );
     M_residual = funlin_ptrtype( new funlin_type( M_Xh, M_backend ) );
 
 
@@ -297,33 +291,14 @@ Bratu<Dim, Order, Entity>::run()
 
     u = vf::project( M_Xh, elements(mesh), constant(0.) );
 
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    *U = u;
-    vector_ptrtype R( M_backend->newVector( u.functionSpace() ) );
-    this->updateResidual( U, R );
-    sparse_matrix_ptrtype J;
-    this->updateJacobian( U, J );
-    solve( J, u, R );
+    auto R = M_backend->newVector( u.functionSpace() );
+    auto J = M_backend->newMatrix( u.functionSpace(), u.functionSpace() );
+    M_backend->nlSolve( _jacobian=J, _solution=u, _residual=R );
 
-    *U = u;
-    this->updateResidual( U, R );
-    std::cout << "R( u ) = " << M_backend->dot( U, R ) << "\n";
     std::cout << "lambda umax\n" << M_lambda << " " << u.linftyNorm() << "\n";
     exportResults( u );
 
 } // Bratu::run
-
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-void
-Bratu<Dim, Order, Entity>::solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F )
-{
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    *U = u;
-    M_backend->nlSolve( D, U, F, 1e-10, 10 );
-    u = *U;
-
-
-} // Bratu::solve
 
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
