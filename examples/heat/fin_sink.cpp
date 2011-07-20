@@ -69,8 +69,9 @@ makefin( double hsize , double deep)
 			 << "Physical Line (\"gamma3\") = {4};\n"
 			 << "Physical Line (\"gamma4\") = {1};\n"
 			 << "Physical Line (\"gamma5\") = {3};\n"
-			 << "Physical Line (\"gamma6\") = {7,8};\n"
+			 << "Physical Line (\"gamma6\") = {7};\n"
 			 << "Physical Line (\"gamma7\") = {2};\n"
+             << "Physical Line (\"gamma8\") = {8};\n"
              << "Physical Surface (\"spreader_mesh\") = {9};\n"
              << "Physical Surface (\"fin_mesh\") = {10};\n";
     }
