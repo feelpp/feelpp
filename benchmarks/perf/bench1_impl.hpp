@@ -31,10 +31,10 @@
 
 #define DO_BENCH( TheExpr, str1, str  )                             \
     {                                                               \
-    const int Qorder = ExpressionOrder<decltype(TheExpr)>::value;     \
+        const int Qorder = ExpressionOrder<decltype(elements(Xh->mesh())),decltype(TheExpr)>::value; \
     typename _Q<Qorder>::template apply<FSType::fe_type::nDim,double,Simplex>::type quad; \
     timer.restart();                                                    \
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()),  TheExpr );      \
+    form2(Xh,Xh,M) += integrate( _range=elements(Xh->mesh()),  _expr=TheExpr );      \
     ofs << std::setw(20) << std::string(str1)+"_"+::boost::algorithm::replace_all_copy( std::string(str), " ", "_" ) << " " \
         << std::setw(4) << FSType::fe_type::nOrder << " "               \
         << std::setw(8) << std::setprecision( 5 ) << timer.elapsed() << " " \
@@ -47,10 +47,10 @@
 
 #define DO_BENCH2( TheExpr, TheExprQ, str1, str  )                  \
     {                                                               \
-    const int Qorder = ExpressionOrder<decltype(TheExprQ)>::value;     \
+        const int Qorder = ExpressionOrder<decltype(elements(Xh->mesh())),decltype(TheExprQ)>::value; \
     typename _Q<Qorder>::template apply<FSType::fe_type::nDim,double,Simplex>::type quad; \
     timer.restart();                                                \
-    form2(Xh,Xh,M) += integrate( elements(Xh->mesh()), TheExpr, _Q<Qorder>() );      \
+    form2(Xh,Xh,M) += integrate( _range=elements(Xh->mesh()), _expr=TheExpr, _quad=_Q<Qorder>() );      \
     ofs << std::setw(20) << std::string(str1)+"_"+::boost::algorithm::replace_all_copy( std::string(str), " ", "_" ) << " " \
         << std::setw(4) << FSType::fe_type::nOrder << " "               \
         << std::setw(8) << std::setprecision( 5 ) << timer.elapsed() << " " \
