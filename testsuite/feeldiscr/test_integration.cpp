@@ -295,22 +295,22 @@ struct test_integration_circle: public Application
         AUTO( mycst, cst_ref( t ) );
 
         t = 1.0;
-        value_type v0 = integrate( elements(mesh), mycst ).evaluate()( 0, 0 );
+        value_type v0 = integrate( elements(mesh), mycst, _Q<2>() ).evaluate()( 0, 0 );
         BOOST_TEST_MESSAGE( "v0=" << v0 << "\n" );
-        value_type v00 = ( integrate( boundaryelements(mesh), mycst ).evaluate()( 0, 0 )+
-                           integrate( internalelements(mesh), mycst ).evaluate()( 0, 0 ) );
+        value_type v00 = ( integrate( boundaryelements(mesh), mycst, _Q<2>() ).evaluate()( 0, 0 )+
+                           integrate( internalelements(mesh), mycst, _Q<2>() ).evaluate()( 0, 0 ) );
         BOOST_TEST_MESSAGE( "v00=" << v00 << "\n" );
-        BOOST_TEST_MESSAGE( "[circle] v0 0 = " << integrate( boundaryfaces(mesh),  N() ).evaluate() << "\n" );
-        BOOST_TEST_MESSAGE( "[circle] v0 0 = " << integrate( boundaryfaces(mesh),  N() ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "[circle] v0 0 = " << integrate( boundaryfaces(mesh),  N(), _Q<2>() ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "[circle] v0 0 = " << integrate( boundaryfaces(mesh),  N(), _Q<2>() ).evaluate() << "\n" );
         BOOST_TEST_MESSAGE( "[circle] v0 1 = " << integrate( boundaryfaces(mesh),  vec( idf(f_Nx()), idf(f_Ny() ) ), _Q<2>() ).evaluate() << "\n" );
         BOOST_TEST_MESSAGE( "[circle] v0 2 = " << integrate( boundaryfaces(mesh),
-                                                        trans(vec(constant(1),Ny()))*one() ).evaluate() << "\n" );
+                                                        trans(vec(constant(1),Ny()))*one(), _Q<2>() ).evaluate() << "\n" );
 
         BOOST_TEST_MESSAGE( "[circle] v0 3 = " << integrate( boundaryfaces(mesh),
-                                                      mat<2,2>(Nx(),constant(1),constant(1),Ny())*vec(constant(1),constant(1)) ).evaluate() << "\n" );
+                                                      mat<2,2>(Nx(),constant(1),constant(1),Ny())*vec(constant(1),constant(1)), _Q<2>() ).evaluate() << "\n" );
         BOOST_TEST_MESSAGE( "[circle] v0 4 (==v0 3) = " << integrate( boundaryfaces(mesh),
                                                                mat<2,2>( idf(f_Nx()),constant(1),
-                                                                         constant(1),idf(f_Ny()) )*vec(constant(1),constant(1)) ).evaluate() << "\n" );
+                                                                         constant(1),idf(f_Ny()) )*vec(constant(1),constant(1)), _Q<2>() ).evaluate() << "\n" );
         value_type pi = 4.0*math::atan(1.0);
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 #if defined(USE_BOOST_TEST)
@@ -321,7 +321,7 @@ struct test_integration_circle: public Application
         FEEL_ASSERT( math::abs( v0-v00) < eps )( v0 )( v00 )( math::abs( v0-v00) )( eps ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
-        auto v1 = integrate( elements(mesh), Px()*Px()+Py()*Py() ).evaluate()( 0, 0 );
+        auto v1 = integrate( elements(mesh), Px()*Px()+Py()*Py(), _Q<2>() ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v1, pi/2, 2e-1 );
         BOOST_CHECK_CLOSE( v1, v0/2, 2e-1 );
@@ -340,7 +340,7 @@ struct test_integration_circle: public Application
 #endif /* USE_BOOST_TEST */
 
         u = vf::project( Xh, elements(mesh), Px()*Px()+Py()*Py() );
-        v0 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
+        v0 = integrate( elements(mesh), idv( u ), _Q<2>() ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_TEST_MESSAGE( "[circle] v0(~pi/2)=" << v0 << " pi/2=" << pi/2 << " should be equal \n");
         BOOST_CHECK_CLOSE( v0, pi/2, 2e-1);
@@ -498,8 +498,8 @@ struct test_integration_simplex: public Application
 
         auto p2 = Px()*Px()*Py()+Py()*Py()+cos(Px());
         v = vf::project( Yh, elements(mesh), vec(p2,p2) );
-        double divp2 = integrate( elements(mesh), divv(v) ).evaluate()( 0, 0 );
-        double unp2 = integrate( boundaryfaces(mesh), trans(idv(v))*N() ).evaluate()( 0, 0 );
+        double divp2 = integrate( elements(mesh), divv(v), _Q<2>() ).evaluate()( 0, 0 );
+        double unp2 = integrate( boundaryfaces(mesh), trans(idv(v))*N(), _Q<2>() ).evaluate()( 0, 0 );
         BOOST_CHECK_CLOSE( divp2, unp2, eps );
     }
     boost::shared_ptr<Feel::Backend<double> > backend;
@@ -786,7 +786,7 @@ struct test_integration_functions: public Application
 #endif /* USE_BOOST_TEST */
 
         u = vf::project( Xh, elements(mesh), exp(Px())*exp(Py()) );
-        value_type v4 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
+        value_type v4 = integrate( elements(mesh), idv( u ), _Q<2>() ).evaluate()( 0, 0 );
         value_type v4_ex = (math::exp(1.0)-math::exp(-1.0))*(math::exp(1.0)-math::exp(-1.0));
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v4, v4_ex, std::pow(10.0,-2.0*Order) );
@@ -816,7 +816,7 @@ struct test_integration_functions: public Application
             ( math::abs( v4_y-v4_ex ) )( std::pow(10.0,-2.0*Order) ).warn ( "v4_y != v4_ex" );
 #endif /* USE_BOOST_TEST */
 
-        value_type v5 = integrate( markedfaces(mesh,"Neumann"), idv(u) ).evaluate()( 0, 0 );
+        value_type v5 = integrate( markedfaces(mesh,"Neumann"), idv(u), _Q<2>() ).evaluate()( 0, 0 );
         value_type v5_ex = (math::exp(1.0)-math::exp(-1.0))*(math::exp(1.0)+math::exp(-1.0));
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v5, v5_ex, std::pow(10.0,-2.0*Order) );
