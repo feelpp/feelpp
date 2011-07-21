@@ -802,7 +802,7 @@ public:
         _M_measface = __e.faceMeasure( __f );
         _M_xrefq = _M_pc->nodes();
 
-        FEEL_ASSERT( __e.G().size2() == _M_gm->nbPoints() )( __e.G().size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
+        FEEL_ASSERT( _M_G.size2() == _M_gm->nbPoints() )( _M_G.size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
         FEEL_ASSERT( _M_pc ).error( "invalid precompute data structure" );
 
         if ( vm::has_point<context>::value )
@@ -885,7 +885,7 @@ public:
         _M_meas = __e.measure();
         _M_xrefq = _M_pc->nodes();
 
-        FEEL_ASSERT( __e.G().size2() == _M_gm->nbPoints() )( __e.G().size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
+        FEEL_ASSERT( _M_G.size2() == _M_gm->nbPoints() )( _M_G.size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
         FEEL_ASSERT( _M_pc ).error( "invalid precompute data structure" );
 
         if ( vm::has_point<context>::value )
