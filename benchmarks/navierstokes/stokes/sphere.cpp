@@ -71,7 +71,8 @@ int main(int argc, char** argv)
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    const int Order=4;
+    const int Order=2;
+    const int OrderP=4;
     using namespace Feel;
     using namespace Feel::vf;
     Feel::Environment env(argc, argv );
@@ -97,6 +98,10 @@ int main(int argc, char** argv)
     typedef FunctionSpace<mesh_type,bases<Lagrange<Order,Scalar> > > Ph_t;
     auto Vh = Vh_t::New( mesh );
     auto Ph = Ph_t::New( mesh );
+    typedef FunctionSpace<mesh_type,bases<Lagrange<OrderP,Vectorial> > > VhP_t;
+    typedef FunctionSpace<mesh_type,bases<Lagrange<OrderP,Scalar> > > PhP_t;
+    auto VhP = VhP_t::New( mesh );
+    auto PhP = PhP_t::New( mesh );
 
     auto r = sqrt(Px()*Px()+Py()*Py()+Pz()*Pz());
     auto rxy = sqrt(Px()*Px()+Py()*Py());
@@ -107,25 +112,30 @@ int main(int argc, char** argv)
     auto etheta=vec(Px()*Pz()/(r*rxy),Py()*Pz()/(r*rxy),-rxy/r);
     auto ephi=vec(-Py()/rxy,Px()/rxy,cst(0.));
 
-    auto phi = vf::project( _space=Ph, _expr=-R*2*U*0.5*pow((r/R)*sintheta,2)*(1-1.5*R/r+0.5*pow(R/r,3) ));
-    auto w = vf::project( _space=Vh, _expr=1.5*(U/R)*pow(R/r,2)*sintheta*ephi);
+    auto phi = vf::project( _space=PhP, _expr=-R*2*U*0.5*pow((r/R)*sintheta,2)*(1-1.5*R/r+0.5*pow(R/r,3) ));
+    auto w = vf::project( _space=VhP, _expr=1.5*(U/R)*pow(R/r,2)*sintheta*ephi);
     auto ur = -2*U*(1-1.5*(R/r)+.5*pow(R/r,3))*costheta/R;
+#if 0
     auto utheta = (2*U*r*sintheta*sintheta*(1-1.5*(R/r)+.5*pow(R/r,3)) +
                    U*(r*sintheta)*(r*sintheta)*(1.5*(R/(r*r))-1.5*pow(R,3)/(r*r*r*r)))/(R*r*sintheta);
-    auto u = vf::project( _space=Vh, _expr=ur*er+utheta*etheta);
-    auto p = vf::project( _space=Ph, _expr=1.5*(mu*U/R)*(R/r)*(R/r)*costheta);
-    auto st = vf::project( _space=Ph, _expr=sintheta);
-    auto uur = vf::project( _space=Ph, _expr=ur);
-    auto uut = vf::project( _space=Ph, _expr=utheta);
+#else
+    auto utheta = (2*U*sintheta*(1-1.5*(R/r)+.5*pow(R/r,3)) +
+                   U*(r*sintheta)*(1.5*(R/(r*r))-1.5*pow(R,3)/(r*r*r*r)))/(R);
+#endif
+    auto u = vf::project( _space=VhP, _expr=ur*er+utheta*etheta);
+    auto p = vf::project( _space=PhP, _expr=1.5*(mu*U/R)*(R/r)*(R/r)*costheta);
+    auto st = vf::project( _space=PhP, _expr=sintheta);
+    auto uur = vf::project( _space=PhP, _expr=ur);
+    auto uut = vf::project( _space=PhP, _expr=utheta);
 
     auto u_1 = U*( (3*R*Px()*Px()/(4*r*r*r))*(R*R/(r*r) -1) -(R/4*r)*(3 + R*R/(r*r)) +1 );
     auto u_2 = U*( (3*R*Px()*Py()/(4*r*r*r))*(R*R/(r*r) -1) );
     auto u_3 = U*( (3*R*Px()*Pz()/(4*r*r*r))*(R*R/(r*r) -1) );
-    auto p_goncalo = vf::project( _space=Ph, _expr=3*mu*R*U*Px()/(2*r*r*r) );
-    auto u_goncalo = vf::project( _space=Vh, _expr=vec(u_1,u_2,u_3));
+    auto p_goncalo = vf::project( _space=PhP, _expr=3*mu*R*U*Px()/(2*r*r*r) );
+    auto u_goncalo = vf::project( _space=VhP, _expr=vec(u_1,u_2,u_3));
 
     auto sigmaN_goncalo=-idv(p_goncalo)*N()+mu*(gradv(u_goncalo))*N();
-    auto force_goncalo = integrate( _range=markedfaces(mesh,"Sphere"), _expr=sigmaN_goncalo,_quad=_Q<6>() ).evaluate();
+    auto force_goncalo = integrate( _range=markedfaces(mesh,"Sphere"), _expr=sigmaN_goncalo,_quad=_Q<15>() ).evaluate();
     std::cout << "force_goncalo = " << force_goncalo << "\n";
 
 
@@ -133,7 +143,7 @@ int main(int argc, char** argv)
     auto sigmaN=-idv(p)*N()+mu*(gradv(u))*N();
     auto volume = integrate( _range=elements(mesh), _expr=cst(1.0),_quad=_Q<6>(), _geomap=(GeomapStrategyType)vm["geomap"].as<int>()  ).evaluate();
     auto surface = integrate( _range=markedfaces(mesh,"Sphere"), _expr=cst(1.0),_quad=_Q<6>() ).evaluate();
-    auto force = integrate( _range=markedfaces(mesh,"Sphere"), _expr=sigmaN,_quad=_Q<6>() ).evaluate();
+    auto force = integrate( _range=markedfaces(mesh,"Sphere"), _expr=sigmaN,_quad=_Q<15>() ).evaluate();
     Eigen::Vector3d force_exact;
     force_exact << 6*M_PI*mu*U*R, 0, 0;
 
@@ -150,24 +160,34 @@ int main(int argc, char** argv)
     std::cout << "force_exacte = " << force_exact << "\n";
     std::cout << "error=" << (force-force_exact).norm() << "\n";
 
+    auto v_phi = vf::project( _space=Ph, _expr=idv(phi ) );
+    auto v_w = vf::project( _space=Vh, _expr=idv(w ) );
+    auto v_u = vf::project( _space=Vh, _expr=idv(u ) );
+    auto v_st = vf::project( _space=Ph, _expr=idv(st) );
+    auto v_ur = vf::project( _space=Ph, _expr=idv(uur) );
+    auto v_ut = vf::project( _space=Ph, _expr=idv(uut) );
+    auto v_u_goncalo = vf::project( _space=Vh, _expr=idv(u_goncalo) );
+    auto v_p = vf::project( _space=Ph, _expr=idv(p) );
+    auto v_p_goncalo = vf::project( _space=Ph, _expr=idv(p_goncalo) );
+
     typedef Exporter<mesh_type,Order> exporter_type;
     auto exporter = exporter_type::New( "gmsh", "sphere" );
     exporter->step(0)->setMesh( mesh );
-    exporter->step(0)->add( "phi", phi );
-    exporter->step(0)->add( "w", w );
-    exporter->step(0)->add( "u", u );
-    exporter->step(0)->add( "sin(theta)", st );
-    exporter->step(0)->add( "ur", uur );
-    exporter->step(0)->add( "utheta", uut );
-    exporter->step(0)->add( "ux", u.comp(X) );
-    exporter->step(0)->add( "uy", u.comp(Y) );
-    exporter->step(0)->add( "uy", u.comp(Z) );
-    exporter->step(0)->add( "p", p );
-    exporter->step(0)->add( "u_1", u_goncalo );
-    exporter->step(0)->add( "u_1x", u_goncalo.comp(X) );
-    exporter->step(0)->add( "u_2y", u_goncalo.comp(Y) );
-    exporter->step(0)->add( "u_3y", u_goncalo.comp(Z) );
-    exporter->step(0)->add( "p_goncalo", p_goncalo );
+    exporter->step(0)->add( "phi", v_phi );
+    exporter->step(0)->add( "w", v_w );
+    exporter->step(0)->add( "u", v_u );
+    exporter->step(0)->add( "sin(theta)", v_st );
+    exporter->step(0)->add( "ur", v_ur );
+    exporter->step(0)->add( "utheta", v_ut );
+    exporter->step(0)->add( "ux", v_u.comp(X) );
+    exporter->step(0)->add( "uy", v_u.comp(Y) );
+    exporter->step(0)->add( "uy", v_u.comp(Z) );
+    exporter->step(0)->add( "p", v_p );
+    exporter->step(0)->add( "u_1", v_u_goncalo );
+    exporter->step(0)->add( "u_1x", v_u_goncalo.comp(X) );
+    exporter->step(0)->add( "u_2y", v_u_goncalo.comp(Y) );
+    exporter->step(0)->add( "u_3y", v_u_goncalo.comp(Z) );
+    exporter->step(0)->add( "p_goncalo", v_p_goncalo );
 
     exporter->save();
 
