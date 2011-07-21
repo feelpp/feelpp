@@ -37,8 +37,10 @@
 using namespace Feel;
 
 
+//L : adimensional length of the sink
+
 gmsh_ptrtype
-makefin( double hsize , double deep)
+makefin( double hsize , double deep, double L)
 {
     std::ostringstream ostr;
     if (!deep) { // 2D Mesh
@@ -49,8 +51,8 @@ makefin( double hsize , double deep)
              << "Point (3) = {3.5, 3, 0, h};\n"
              << "Point (4) = {1, 3, 0, h};\n"
              << "Point (5) = {0, 3, 0, h};\n"
-             << "Point (6) = {1, 17, 0, h};\n"
-             << "Point (7) = {0, 17, 0, h};\n"
+             << "Point (6) = {1, "<<3+L<<", 0, h};\n"
+             << "Point (7) = {0, "<<3+L<<", 0, h};\n"
              << "Line (1) = {1, 2};\n"
              << "Line (2) = {2, 3};\n"
              << "Line (3) = {3, 4};\n"
@@ -85,15 +87,15 @@ makefin( double hsize , double deep)
              << "Point (3) = {3.5, 3, 0, h};\n"
              << "Point (4) = {1, 3, 0, h};\n"
              << "Point (5) = {0, 3, 0, h};\n"
-             << "Point (6) = {1, 17, 0, h};\n"
-             << "Point (7) = {0, 17, 0, h};\n"
+             << "Point (6) = {1, "<<3+L"<<, 0, h};\n"
+             << "Point (7) = {0, "<<3+L<<", 0, h};\n"
              << "Point (8) = {0, 0, d, h};\n"
              << "Point (9) = {3.5, 0, d, h};\n"
              << "Point (10) = {3.5, 3, d, h};\n"
              << "Point (11) = {1, 3, d, h};\n"
              << "Point (12) = {0, 3, d, h};\n"
-             << "Point (13) = {1, 17, d, h};\n"
-             << "Point (14) = {0, 17, d, h};\n"
+             << "Point (13) = {1, "<<3+L<<", d, h};\n"
+             << "Point (14) = {0, "<<3+L<<", d, h};\n"
              << "Line (1) = {1, 2};\n"
              << "Line (2) = {2, 3};\n"
              << "Line (3) = {3, 4};\n"

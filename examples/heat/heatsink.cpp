@@ -44,7 +44,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/bdf2.hpp>
 
-Feel::gmsh_ptrtype makefin( double hsize, double deep );
+Feel::gmsh_ptrtype makefin( double hsize, double deep , double L );
 
 //# marker1 #
 inline
@@ -56,6 +56,8 @@ makeOptions()
     // mesh parameters
     ("hsize", Feel::po::value<double>()->default_value( 0.5 ),
      "first h value to start convergence")
+    ("L", Feel::po::value<double>()->default_value( 14 ),
+     "adimensional length of the sink")
 
 	// 3D parameter
 	("deep", Feel::po::value<double>()->default_value( 0 ),
@@ -181,6 +183,7 @@ private:
 	/* mesh parameters */
     double meshSize;
     double depth;
+    double L;
 
 	/* thermal conductivities */
 	double lambda_s;
@@ -218,6 +221,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		M_backend( backend_type::build( this->vm() ) ),
 		meshSize( this->vm()["hsize"].template as<double>() ),
 		depth( this->vm()["deep"].template as<double>() ),
+		L( this->vm()["L"].template as<double>() ),
 		lambda_s( this-> vm()["lambda_s"].template as<double>() ),
 		lambda_f( this-> vm()["lambda_f"].template as<double>() ),
 		rho_s( this-> vm()["rho_s"].template as<int>() ),
@@ -270,7 +274,7 @@ typename HeatSink<Dim,Order>::mesh_ptrtype
 HeatSink<Dim,Order>::createMesh( )
 {
 	mesh_ptrtype mesh = createGMSHMesh ( _mesh = new mesh_type,
-								         _desc = makefin( meshSize, depth ),
+								         _desc = makefin( meshSize, depth , L),
                                          _h = meshSize,
                                          _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
     return mesh;
@@ -291,6 +295,7 @@ HeatSink<Dim, Order>::run()
 
     Log() << "Bi = " << Bi << "\n"
           << "meshSize = " << meshSize << "\n"
+          << "L = "<<L<<"\n"
           << "depth = " << depth << "\n"
           << "lambda_spreader = " << lambda_s << "\n"
           << "lambda_fin = " << lambda_f << "\n"
