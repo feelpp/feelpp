@@ -112,6 +112,9 @@ int main(int argc, char** argv)
                    U*(r*sintheta)*(r*sintheta)*(1.5*(R/(r*r))-1.5*pow(R,3)/(r*r*r*r)))/(R*r*sintheta);
     auto u = vf::project( _space=Vh, _expr=ur*er+utheta*etheta);
     auto p = vf::project( _space=Ph, _expr=1.5*(mu*U/R)*(R/r)*(R/r)*costheta);
+    auto st = vf::project( _space=Ph, _expr=sintheta);
+    auto uur = vf::project( _space=Ph, _expr=ur);
+    auto uut = vf::project( _space=Ph, _expr=utheta);
 
     auto sigmaN=-idv(p)*N()+.5*mu*(gradv(u)+trans(gradv(u)))*N();
     auto volume = integrate( _range=elements(mesh), _expr=cst(1.0),_quad=_Q<6>(), _geomap=(GeomapStrategyType)vm["geomap"].as<int>()  ).evaluate();
@@ -139,6 +142,9 @@ int main(int argc, char** argv)
     exporter->step(0)->add( "phi", phi );
     exporter->step(0)->add( "w", w );
     exporter->step(0)->add( "u", u );
+    exporter->step(0)->add( "sin(theta)", st );
+    exporter->step(0)->add( "ur", uur );
+    exporter->step(0)->add( "utheta", uut );
     exporter->step(0)->add( "ux", u.comp(X) );
     exporter->step(0)->add( "uy", u.comp(Y) );
     exporter->step(0)->add( "uy", u.comp(Z) );
