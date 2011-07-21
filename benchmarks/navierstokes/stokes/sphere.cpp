@@ -72,7 +72,7 @@ int main(int argc, char** argv)
     po::notify(vm);
 
     const int Order=2;
-    const int OrderP=4;
+    const int OrderP=2;
     using namespace Feel;
     using namespace Feel::vf;
     Feel::Environment env(argc, argv );
@@ -136,8 +136,9 @@ int main(int argc, char** argv)
 
     auto sigmaN_goncalo=-idv(p_goncalo)*N()+mu*(gradv(u_goncalo))*N();
     auto force_goncalo = integrate( _range=markedfaces(mesh,"Sphere"), _expr=sigmaN_goncalo,_quad=_Q<15>() ).evaluate();
+    std::cout << "force_exacte = " << force_exact << "\n";
     std::cout << "force_goncalo = " << force_goncalo << "\n";
-
+    std::cout << "error_goncalo=" << (force-force_goncalo).norm() << "\n";
 
 
     auto sigmaN=-idv(p)*N()+mu*(gradv(u))*N();
@@ -157,7 +158,7 @@ int main(int argc, char** argv)
     std::cout << "error surface = " << math::abs(surface(0,0)-4*M_PI*R*R) << "\n";
 
     std::cout << "force = " << force << "\n";
-    std::cout << "force_exacte = " << force_exact << "\n";
+
     std::cout << "error=" << (force-force_exact).norm() << "\n";
 
     auto v_phi = vf::project( _space=Ph, _expr=idv(phi ) );
