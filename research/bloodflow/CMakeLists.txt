@@ -21,8 +21,13 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set( EXAMPLES oned )
+#set( EXAMPLES oned )
 
-foreach( EXAMPLE ${EXAMPLES} )
-  feel_add_example( ${EXAMPLE} )
-endforeach()
+#foreach( EXAMPLE ${EXAMPLES} )
+#  feel_add_example( ${EXAMPLE} )
+#endforeach()
+
+
+
+add_executable( fsi_oned  oned.cpp )
+target_link_libraries(fsi_oned ${FEEL_LIBRARIES} )

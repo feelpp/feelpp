@@ -34,6 +34,8 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/geotool.hpp>
+
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 
@@ -113,18 +115,18 @@ public:
 
     /*mesh*/
     typedef Simplex<1, 1, 1> entity_type;
-    typedef Mesh<GeoEntity<entity_type> > mesh_type;
+    typedef Mesh<entity_type > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptr_type;
 
-    typedef fusion::vector<fem::Lagrange<Dim, 1, Scalar, Continuous, double, Simplex> > basis_type;
+    typedef Lagrange< 1, Scalar, Continuous> basis_type;
 
-    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+    typedef FunctionSpace<mesh_type, bases<basis_type>, value_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef space_type::element_type element_type;
 
     /*quadrature*/
     //typedef IM_PK<Dim, imOrder, value_type> im_type;
-    typedef IM<Dim, imOrder, value_type, Simplex> im_type;
+    //typedef IM<Dim, imOrder, value_type, Simplex> im_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -133,33 +135,35 @@ public:
     OneD( int argc, char** argv, AboutData const& ad )
         :
         super( argc, argv, ad ),
+        M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "oned" ) ),
+        exporter( Exporter<mesh_type>::New( this->vm(), "Export-oned" ) ),
+        //timeSet( new timeset_type( "oned" ) ),
         timers(),
         stats()
     {
         Log() << "[OneD] hsize = " << meshSize << "\n";
-        Log() << "[OneD] export = " << this->vm().count("export") << "\n";
+        //Log() << "[OneD] export = " << this->vm().count("export") << "\n";
 
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
+        //timeSet->setTimeIncrement( 1.0 );
+        //exporter->addTimeSet( timeSet );
     }
 
     OneD( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
+        M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm()["exporter"].as<std::string>() )->setOptions( this->vm() ) ),
-        timeSet( new timeset_type( "oned" ) ),
+        exporter( Exporter<mesh_type>::New( this->vm(), "Export-oned" ) ),
+        //timeSet( new timeset_type( "oned" ) ),
         timers(),
         stats()
     {
         Log() << "[OneD] hsize = " << meshSize << "\n";
         Log() << "[OneD] export = " << this->vm().count("export") << "\n";
 
-        timeSet->setTimeIncrement( 1.0 );
-        exporter->addTimeSet( timeSet );
+        //timeSet->setTimeIncrement( 1.0 );
+        //exporter->addTimeSet( timeSet );
     }
 
     /**
@@ -195,7 +199,7 @@ private:
     double bcCoeff;
 
     boost::shared_ptr<export_type> exporter;
-    export_type::timeset_ptrtype timeSet;
+    //export_type::timeset_ptrtype timeSet;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
     std::map<std::string,double> stats;
@@ -205,9 +209,18 @@ OneD::mesh_ptr_type
 OneD::createMesh( double meshSize )
 {
     timers["mesh"].first.restart();
-    mesh_ptr_type mesh( new mesh_type );
 
 
+    GeoTool::Node x1(0);
+    GeoTool::Node x2(1);
+    GeoTool::Line L(meshSize,"hola",x1,x2);
+    L.setMarker(_type="point",_name="Left",_marker1=true);
+    L.setMarker(_type="point",_name="Right",_marker2=true);
+    L.setMarker(_type="line",_name="Omega",_markerAll=true);
+
+
+    auto mesh = L.createMesh<mesh_type>("hola");
+#if 0
     GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Simplex> td;
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( 0.0, 1.0 ) );
@@ -215,8 +228,10 @@ OneD::createMesh( double meshSize )
 
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
+#endif
     timers["mesh"].second = timers["mesh"].first.elapsed();
     Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+
     return mesh;
 } // OneD::createMesh
 
@@ -249,8 +264,10 @@ OneD::run()
      */
     mesh_ptr_type mesh = createMesh( meshSize );
     stats["nelt"] = mesh->elements().size();
-    const int Left = 1;
-    const int Right = 2;
+    //const int Left = 1;
+    //const int Right = 2;
+
+    Log() << "----------------1----------------\n";
 
     /*
      * The function space and some associate elements are then defined
@@ -265,10 +282,12 @@ OneD::run()
     timers["init"].second = timers["init"].first.elapsed();
     stats["ndof"] = Xh->nDof();
 
+    Log() << "----------------2----------------\n";
+
     /*
      * a quadrature rule for numerical integration
      */
-    im_type im;
+    //im_type im;
 
     value_type pi = 4.0*math::atan(1.0);
 
@@ -283,6 +302,8 @@ OneD::run()
     value_type alpha = this->vm()["alpha"].as<value_type>();
     value_type Kr = this->vm()["Kr"].as<value_type>();
 
+    Log() << "----------------3----------------\n";
+
 
 
     AUTO( E , constant(E_coeff));
@@ -290,22 +311,25 @@ OneD::run()
     AUTO( A0 , constant(A0_coeff));
     AUTO( beta , E*h0*math::sqrt(pi)/(1-0.5*0.5));
 
+
     element_type Beta( Xh, "Beta" );
-    Beta = vf::project( Xh, elements(*mesh), beta );
+    Beta = vf::project( Xh, elements(mesh), beta );
     element_type Area0( Xh, "Area0" );
-    Area0 = vf::project( Xh, elements(*mesh), A0 );
+    Area0 = vf::project( Xh, elements(mesh), A0 );
 
     element_type FA( Xh, "FA" );
     element_type FQ( Xh, "FQ" );
     vector_ptrtype rhsA( M_backend->newVector( Xh ) );
     vector_ptrtype rhsQ( M_backend->newVector( Xh ) );
 
+    Log() << "----------------4----------------\n";
+
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
     sparse_matrix_ptrtype MA( M_backend->newMatrix( Xh, Xh ) );
     sparse_matrix_ptrtype MQ( M_backend->newMatrix( Xh, Xh ) );
 
     form2( Xh, Xh, M, _init=true ) =
-        integrate( elements(*mesh), im,
+        integrate( elements(*mesh),// im,
                    idt(Qn)*id(Qn)
                    );
 
@@ -315,6 +339,8 @@ OneD::run()
     An = ublas::scalar_vector<double>(An.size(), A0_coeff );
     Qn = ublas::scalar_vector<double>(Qn.size(), 0 );
 
+    Log() << "----------------5----------------\n";
+
     int iteration = 1;
     // time loop
     for( double t = dt; t < Tf; t+=dt, ++iteration )
@@ -322,43 +348,43 @@ OneD::run()
             Log() << "============================================================\n";
             Log() << "time = " << t << "\n";
 
-            AUTO( H , (mat<2,2>( constant(0), constant(1),
-                                 -alpha*((idv(Qn)/idv(An))^(2))+beta*sqrt(idv(An))/(2*rho*A0), 2*alpha*idv(Qn)/idv(An) ) ) );
-            AUTO( F, vec( idv(Qn), alpha*(idv(Qn)^(2))/idv(An) + beta*pow(idv(An),1.5)/(3*rho*A0) ) );
-            AUTO( Fx, trans(vec(constant(1.),constant(0.)))*F );
-            AUTO( Fy, trans(vec(constant(0.),constant(1.)))*F );
+            auto H = mat<2,2>( constant(0), constant(1),
+                                 -alpha*((idv(Qn)/idv(An))^(2))+beta*sqrt(idv(An))/(2*rho*A0), 2*alpha*idv(Qn)/idv(An) );
+            auto F = vec( idv(Qn), alpha*(idv(Qn)^(2))/idv(An) + beta*pow(idv(An),1.5)/(3*rho*A0) );
+            auto Fx = trans(vec(constant(1.),constant(0.)))*F;
+            auto Fy = trans(vec(constant(0.),constant(1.)))*F;
 
             //FA = vf::project( Xh, elements(*mesh), Fx );
             //FQ = vf::project( Xh, elements(*mesh), trans(vec(constant(0.),constant(1.)))*F);
-            form( Xh, *rhsA )  = integrate( elements(*mesh), im, Fx*id(An));
-            form( Xh, *rhsQ )  = integrate( elements(*mesh), im, Fy*id(Qn));
+            form1( Xh, rhsA )  = integrate( elements(mesh), Fx*id(An));
+            form1( Xh, rhsQ )  = integrate( elements(mesh), Fy*id(Qn));
             this->solve( M, FA, rhsA );
             this->solve( M, FQ, rhsQ );
 
-            AUTO( B, vec( constant(0),
+            auto B = vec( constant(0),
                           Kr*idv(Qn)/idv(An)+
                           idv(An)/(A0*rho)*(2/3*sqrt(idv(An))-sqrt(A0))*gradv(Beta)-
-                          beta*idv(An)/(rho*pow(A0,2))*(2/3*sqrt(idv(An))-sqrt(A0))*gradv(Area0)));
-            AUTO( BU, ( mat<2,2>( constant(0), constant(0),
+                          beta*idv(An)/(rho*pow(A0,2))*(2/3*sqrt(idv(An))-sqrt(A0))*gradv(Area0));
+            auto BU = mat<2,2>( constant(0), constant(0),
                                   -Kr*idv(Qn)/pow(idv(An),2)+
                                   1.0/(A0*rho)*(2/3*sqrt(idv(An))-sqrt(A0))*gradv(Beta)+
                                   idv(An)/(A0*rho)*(1/3*pow(idv(An),-0.5))*gradv(Beta)-
 
                                   beta/(rho*pow(A0,2))*(2/3*sqrt(idv(An))-sqrt(A0))*gradv(Area0)-
-                                  beta*idv(An)/(rho*pow(A0,2))*(1/3*pow(idv(An),-0.5))*gradv(Area0), Kr/idv(An)) ));
-            AUTO( Flw, F-constant(dt/2)*H*B );
-            AUTO( Blw, B+constant(dt/2)*BU*B );
+                                  beta*idv(An)/(rho*pow(A0,2))*(1/3*pow(idv(An),-0.5))*gradv(Area0), Kr/idv(An));
+            auto Flw = F-constant(dt/2)*H*B;
+            auto Blw = B+constant(dt/2)*BU*B;
 
-            AUTO( rhs, ( dt*Flw*grad(An)
-                         - dt*dt/2*BU*vec(gradv(FA),gradv(FQ))*id(An)
-                         - dt*dt/2*H*vec(gradv(FA),gradv(FQ))*grad(An)
-                         - dt*Blw*id(Qn)) );
+            auto rhs = dt*Flw*grad(An)
+                - dt*dt/2*BU*vec(gradv(FA),gradv(FQ))*id(An)
+                - dt*dt/2*H*vec(gradv(FA),gradv(FQ))*grad(An)
+                - dt*Blw*id(Qn);
 
 
 
             timers["assembly"].first.restart();
-            form( Xh, *rhsA )  = integrate( elements(*mesh), im, idv(An)*id(An)+trans(vec(constant(1.),constant(0.)))*rhs);
-            form( Xh, *rhsQ )  = integrate( elements(*mesh), im, idv(Qn)*id(An)+trans(vec(constant(0.),constant(1.)))*rhs);
+            form1( Xh, rhsA )  = integrate( elements(*mesh), idv(An)*id(An)+trans(vec(constant(1.),constant(0.)))*rhs);
+            form1( Xh, rhsQ )  = integrate( elements(*mesh), idv(Qn)*id(An)+trans(vec(constant(0.),constant(1.)))*rhs);
 
             timers["assembly"].second = timers["assembly"].first.elapsed();
             timers["assembly_F"].second = timers["assembly"].first.elapsed();
@@ -369,14 +395,14 @@ OneD::run()
             //size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
             size_type pattern = DOF_PATTERN_COUPLED;
             form2( Xh, Xh, MA, _init=true, _pattern=pattern ) =
-                integrate( elements(*mesh), im,
+                integrate( elements(*mesh),
                            idt(Qn)*id(Qn)
                            );
 
             MA->close();
             rhsA->close();
             form2( Xh, Xh, MQ, _init=true, _pattern=pattern ) =
-                integrate( elements(*mesh), im,
+                integrate( elements(*mesh),
                            idt(Qn)*id(Qn)
                            );
 
@@ -437,7 +463,7 @@ OneD::run()
             // dZ_i(t,z_i)/dt + G_i(Z_1,Z_2) = 0 i=1,2
             // where G_i(Z1,Z2) = L B(U(zi))
             ublas::vector<value_type> Z0(2);
-            Z0[0]=math::sin(t); // on Q
+            Z0[0]=math::sin(100*t); // on Q
             Z0[1]= L0(1,0)*An(z0[1])+L0(1,1)*Qn(z0[1])- // l_2 Un^*
                 dt*( L0(1,0)*0+ L0(1,1)*Kr*Qn(z0[1])/An(z0[1]) );
 
@@ -466,10 +492,10 @@ OneD::run()
             Log() << "A(z=0)=" << A_0 << " Q(z=0)=" << Q_0 << "\n";
             Log() << "A(z=L)=" << A_1 << " Q(z=L)=" << Q_1 << "\n";
 
-            form( Xh, Xh, *MA, false ) += on( markedfaces(*mesh,Left), Anp1, *rhsA, constant(A_0) );
-            form( Xh, Xh, *MA, false ) += on( markedfaces(*mesh,Right), Anp1, *rhsA, constant(A_1) );
-            form( Xh, Xh, *MQ, false ) += on( markedfaces(*mesh,Left), Qnp1, *rhsQ, constant(Q_0) );
-            form( Xh, Xh, *MQ, false ) += on( markedfaces(*mesh,Right), Qnp1, *rhsQ, constant(Q_1) );
+            form2( Xh, Xh, MA ) += on( markedfaces(mesh,"Left"), Anp1, rhsA, constant(A_0) );
+            form2( Xh, Xh, MA ) += on( markedfaces(mesh,"Right"), Anp1, rhsA, constant(A_1) );
+            form2( Xh, Xh, MQ ) += on( markedfaces(mesh,"Left"), Qnp1, rhsQ, constant(Q_0) );
+            form2( Xh, Xh, MQ ) += on( markedfaces(mesh,"Right"), Qnp1, rhsQ, constant(Q_1) );
             timers["assembly"].second += timers["assembly"].first.elapsed();
             timers["assembly_D"].second += timers["assembly"].first.elapsed();
 
@@ -550,7 +576,7 @@ OneD::run()
                     }
                 ofs3.close();
             }
-            //this->exportResults( t, Anp1, Qnp1 );
+            this->exportResults( t, Anp1, Qnp1 );
 
             An = Anp1;
             Qn = Qnp1;
@@ -591,10 +617,10 @@ OneD::exportResults( double t,
 {
     timers["export"].first.restart();
 
-    timeset_type::step_ptrtype timeStep = timeSet->step( t );
-    timeStep->setMesh( U.functionSpace()->mesh() );
-    timeStep->add( "A", U );
-    timeStep->add( "Q", V );
+    //timeset_type::step_ptrtype timeStep = timeSet->step( t );
+    exporter->step( t )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( t )->add( "AA", U );
+    exporter->step( t )->add( "QQ", V );
     exporter->save();
 
     timers["export"].second = timers["export"].first.elapsed();
