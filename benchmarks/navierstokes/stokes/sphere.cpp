@@ -71,8 +71,8 @@ int main(int argc, char** argv)
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    const int Order=2;
-    const int OrderP=2;
+    const int Order=3;
+    const int OrderP=3;
     using namespace Feel;
     using namespace Feel::vf;
     Feel::Environment env(argc, argv );
@@ -85,9 +85,9 @@ int main(int argc, char** argv)
     GeoTool::Sphere C1(hsphere,"C1",GeoTool::Node(0,0,0),GeoTool::Node(R,0,0));
     C1.setMarker(_type="surface",_name="Sphere",_markerAll=true);
 
-    auto R1mC1mesh = (R1-C1).createMesh<mesh_type>( "R1-C1" );
+    auto R1mC1mesh = (R1-C1).createMesh<mesh_type>( (boost::format("sphere-%1%-%2%-%3%")% Order % hcube % hsphere).str() );
 
-    myexport<mesh_type>("R1-C1",R1mC1mesh);
+    //myexport<mesh_type>("R1-C1",R1mC1mesh);
 
     auto mesh = R1mC1mesh;
     if ( straighten )
@@ -134,32 +134,34 @@ int main(int argc, char** argv)
     auto p_goncalo = vf::project( _space=PhP, _expr=3*mu*R*U*Px()/(2*r*r*r) );
     auto u_goncalo = vf::project( _space=VhP, _expr=vec(u_1,u_2,u_3));
 
+    Eigen::Vector3d force_exact_x;
+    force_exact_x << 6*M_PI*mu*U*R, 0, 0;
+    std::cout << "force_exacte = " << force_exact_x << "\n";
+
     auto sigmaN_goncalo=-idv(p_goncalo)*N()+mu*(gradv(u_goncalo))*N();
-    auto force_goncalo = integrate( _range=markedfaces(mesh,"Sphere"), _expr=sigmaN_goncalo,_quad=_Q<15>() ).evaluate();
-    std::cout << "force_exacte = " << force_exact << "\n";
+    boost::timer ti;
+    auto force_goncalo = integrate( _range=markedfaces(mesh,"Sphere"), _expr=sigmaN_goncalo,_quad=_Q<15>()  ).evaluate();
     std::cout << "force_goncalo = " << force_goncalo << "\n";
-    std::cout << "error_goncalo=" << (force-force_goncalo).norm() << "\n";
+    std::cout << "error_goncalo=" << (force_exact_x-force_goncalo).norm() << " time: " << ti.elapsed() << "\n";
 
 
     auto sigmaN=-idv(p)*N()+mu*(gradv(u))*N();
     auto volume = integrate( _range=elements(mesh), _expr=cst(1.0),_quad=_Q<6>(), _geomap=(GeomapStrategyType)vm["geomap"].as<int>()  ).evaluate();
     auto surface = integrate( _range=markedfaces(mesh,"Sphere"), _expr=cst(1.0),_quad=_Q<6>() ).evaluate();
     auto force = integrate( _range=markedfaces(mesh,"Sphere"), _expr=sigmaN,_quad=_Q<15>() ).evaluate();
-    Eigen::Vector3d force_exact;
-    force_exact << 6*M_PI*mu*U*R, 0, 0;
 
     std::cout << "volume = " << volume << "\n";
     double ve = 6*6*6-4*M_PI*R*R*R/3;
     std::cout << "volume exact = " << ve << "\n";
-    std::cout << "error volume = " << math::abs(volume(0,0)-ve) << "\n";
+    std::cout << "error volume = " << std::scientific << math::abs(volume(0,0)-ve) << "\n";
 
     std::cout << "surface = " << surface << "\n";
     std::cout << "surface exact = " << 4*M_PI*R*R << "\n";
     std::cout << "error surface = " << math::abs(surface(0,0)-4*M_PI*R*R) << "\n";
-
+    Eigen::Vector3d force_exact_z;
+    force_exact_z << 0,0,6*M_PI*mu*U*R;
     std::cout << "force = " << force << "\n";
-
-    std::cout << "error=" << (force-force_exact).norm() << "\n";
+    std::cout << "error=" << (force-force_exact_z).norm() << "\n";
 
     auto v_phi = vf::project( _space=Ph, _expr=idv(phi ) );
     auto v_w = vf::project( _space=Vh, _expr=idv(w ) );
