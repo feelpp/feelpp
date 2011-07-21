@@ -305,33 +305,13 @@ NonLinearPow<Dim, Order, Entity>::run()
 
     u = vf::project( M_Xh, elements(mesh), constant(0.) );
 
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    *U = u;
-    vector_ptrtype R( M_backend->newVector( u.functionSpace() ) );
-    this->updateResidual( U, R );
-    sparse_matrix_ptrtype J;
-    this->updateJacobian( U, J );
-    solve( J, u, R );
-
-    *U = u;
-    this->updateResidual( U, R );
-    std::cout << "R( u ) = " << M_backend->dot( U, R ) << "\n";
+    auto R = M_backend->newVector( u.functionSpace() );
+    auto J = M_backend->newMatrix( u.functionSpace(), u.functionSpace() );
+    M_backend->nlSolve( _jacobian=J, _solution=u, _residual=R );
 
     exportResults( u );
 
 } // NonLinearPow::run
-
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-void
-NonLinearPow<Dim, Order, Entity>::solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F )
-{
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    *U = u;
-    M_backend->nlSolve( D, U, F, 1e-10, 10 );
-    u = *U;
-
-
-} // NonLinearPow::solve
 
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
