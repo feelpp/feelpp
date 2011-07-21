@@ -150,8 +150,8 @@ public:
     typedef typename space_type::element_type element_type;
 
 	/* BDF discretization */
-	//typedef Bdf<space_type>  bdf_type;
-	//typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+	typedef Bdf<space_type>  bdf_type;
+	typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -204,7 +204,7 @@ private:
     sparse_matrix_ptrtype D;
     vector_ptrtype F;
 
-	//bdf_ptrtype M_bdf;
+	bdf_ptrtype M_bdf;
 
     boost::shared_ptr<export_type> exporter;
 
@@ -251,7 +251,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
          * The function space associated to the mesh
          */
         Xh = space_type::New( mesh );
-        //M_bdf = bdf_ptrtype( new bdf_type( Xh ) );
+        M_bdf = bdf_ptrtype( new bdf_type(  Xh, "T discretization explicite" ) );
 
         /*
          * Right hand side
@@ -317,9 +317,9 @@ HeatSink<Dim, Order>::run()
     form2 (Xh, Xh, D) += integrate( _range= markedfaces(mesh, "gamma1"), _expr= lambda_f*Bi*idt(T)*id(v));
 
 
-    //form2(Xh, Xh, D) +=
-    //    integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) )
-    //    + integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) );
+    form2(Xh, Xh, D) +=
+        integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) )
+        + integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) );
 
     D->close();
 
@@ -330,7 +330,7 @@ HeatSink<Dim, Order>::run()
 
     /*
      * Left and right hand sides construction (non-steady state) with BDF
-     *//*
+     */
     for ( M_bdf->start(); M_bdf->isFinished(); M_bdf->next() )
     {
         auto Ft = M_backend->newVector( Xh );
@@ -345,7 +345,7 @@ HeatSink<Dim, Order>::run()
         std::cout << "Resolution ended \n";
 
 		this->exportResults( M_bdf->time(), T );
-     }*/
+     }
 
 } // HeatSink::run
 
