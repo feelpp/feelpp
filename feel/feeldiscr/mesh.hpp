@@ -586,17 +586,19 @@ public:
 
         container_search_type const & result_analysis() { return M_resultAnalysis;}
 
-        //container_search_type & result_analysis() { return M_resultAnalysis;}
-
         container_search_iterator_type result_analysis_begin() { return M_resultAnalysis.begin();}
         container_search_iterator_type result_analysis_end() { return M_resultAnalysis.end();}
 
 
         /*---------------------------------------------------------------
-         * Research the element wich contains the node p
+         * Research only one element wich contains the node p
          */
         boost::tuple<bool, size_type,node_type> searchElement(const node_type & p);
-        boost::tuple<bool, std::list<boost::tuple<size_type,node_type> > > searchElementBis(const node_type & p);
+
+        /*---------------------------------------------------------------
+         * Research all elements wich contains the node p
+         */
+        boost::tuple<bool, std::list<boost::tuple<size_type,node_type> > > searchElements(const node_type & p);
 
         /*---------------------------------------------------------------
          * Research the element wich contains the node p, forall p in the
@@ -1028,15 +1030,6 @@ Mesh<Shape, T>::createP1mesh() const
     // Prepare the new_mesh for use
     new_mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     new_mesh->updateForUse();
-
-
-
-
-
-
-
-
-
 
     return new_mesh;
 }

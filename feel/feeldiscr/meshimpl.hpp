@@ -1230,7 +1230,7 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m)
 
 template<typename Shape, typename T>
 boost::tuple<bool, std::list<boost::tuple<size_type, typename Mesh<Shape, T>::node_type> > >
-Mesh<Shape, T>::Localization::searchElementBis(const node_type & p)
+Mesh<Shape, T>::Localization::searchElements(const node_type & p)
 {
 
 #if !defined( NDEBUG )
@@ -1330,16 +1330,11 @@ Mesh<Shape, T>::Localization::searchElementBis(const node_type & p)
         }
 
 
-    //boost::tuple<bool, std::list<boost::tuple<size_type,node_type> > > newsol;
 
-    auto newsol = boost::make_tuple(find,newlistelts);
-
-    //bool __extrapolation=true;
-    if (find/*itLT != itLT_end*/) {
-        //std::cout << "\nOK listsize "<< newlistelts.size()<<"\n";
+    if (find)
         return boost::make_tuple(true,newlistelts);
-    }
-    else if (!find && !M_doExtrapolation) return boost::make_tuple(false,newlistelts);
+    else if (!find && !M_doExtrapolation)
+        return boost::make_tuple(false,newlistelts);
     else
         {
             //std::cout << "\n WARNING EXTRAPOLATION \n";
