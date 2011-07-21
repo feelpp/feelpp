@@ -119,16 +119,16 @@ int main(int argc, char** argv)
     auto u_1 = U*( (3*R*Px()*Px()/(4*r*r*r))*(R*R/(r*r) -1) -(R/4*r)*(3 + R*R/(r*r)) +1 );
     auto u_2 = U*( (3*R*Px()*Py()/(4*r*r*r))*(R*R/(r*r) -1) );
     auto u_3 = U*( (3*R*Px()*Pz()/(4*r*r*r))*(R*R/(r*r) -1) );
-    auto p_goncalo = vf::project( _space=Ph, _expr=-3*mu*R*U*Px()/(2*r*r*r) );
+    auto p_goncalo = vf::project( _space=Ph, _expr=3*mu*R*U*Px()/(2*r*r*r) );
     auto u_goncalo = vf::project( _space=Vh, _expr=vec(u_1,u_2,u_3));
 
-    auto sigmaN_goncalo=-idv(p_goncalo)*N()+.5*mu*(gradv(u_goncalo)+trans(gradv(u_goncalo)))*N();
+    auto sigmaN_goncalo=-idv(p_goncalo)*N()+mu*(gradv(u_goncalo))*N();
     auto force_goncalo = integrate( _range=markedfaces(mesh,"Sphere"), _expr=sigmaN_goncalo,_quad=_Q<6>() ).evaluate();
     std::cout << "force_goncalo = " << force_goncalo << "\n";
 
 
 
-    auto sigmaN=-idv(p)*N()+.5*mu*(gradv(u)+trans(gradv(u)))*N();
+    auto sigmaN=-idv(p)*N()+mu*(gradv(u))*N();
     auto volume = integrate( _range=elements(mesh), _expr=cst(1.0),_quad=_Q<6>(), _geomap=(GeomapStrategyType)vm["geomap"].as<int>()  ).evaluate();
     auto surface = integrate( _range=markedfaces(mesh,"Sphere"), _expr=cst(1.0),_quad=_Q<6>() ).evaluate();
     auto force = integrate( _range=markedfaces(mesh,"Sphere"), _expr=sigmaN,_quad=_Q<6>() ).evaluate();
@@ -161,6 +161,7 @@ int main(int argc, char** argv)
     exporter->step(0)->add( "uy", u.comp(Y) );
     exporter->step(0)->add( "uy", u.comp(Z) );
     exporter->step(0)->add( "p", p );
+    exporter->step(0)->add( "u_1", u_goncalo );
     exporter->step(0)->add( "u_1x", u_goncalo.comp(X) );
     exporter->step(0)->add( "u_2y", u_goncalo.comp(Y) );
     exporter->step(0)->add( "u_3y", u_goncalo.comp(Z) );
