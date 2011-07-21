@@ -382,9 +382,9 @@ Laplacian<Order>::run()
     timers["assembly"].first.restart();
 
 
-    form1( Xh, F, _init=true )  = integrate( elements(mesh), im_norm, f*id(v) );
+    form1( Xh, F, _init=true )  = integrate( _range=elements(mesh), _quad=im_norm, _expr=f*id(v) );
 	// ATTENTION: MESH MIGHT HAVE NEGATIVE X-COORDINATES (1E-18)
-    form1( Xh, F ) += integrate( boundaryfaces(mesh), im, g*( - theta*grad(v)*N() + gamma*id(v)*Order*Order/hFace() ) );
+    form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _quad=im, _expr=g*( - theta*grad(v)*N() + gamma*id(v)*Order*Order/hFace() ) );
     //    form( Xh, F, false ) += integrate( boundaryfaces(mesh), im, -g*trans(N())*(id(phi)) );
 
     if ( this->vm().count( "export-matlab" ) )
@@ -398,7 +398,7 @@ Laplacian<Order>::run()
 
     timers["assembly"].first.restart();
     size_type pattern = (DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR );
-    form2( Xh, Xh, D, _init=true, _pattern=pattern ) = integrate( elements(mesh), im, ( diff*gradt(u)*trans(grad(v)))
+    form2( Xh, Xh, D, _init=true, _pattern=pattern ) = integrate( _range=elements(mesh), _quad=im, _expr=( diff*gradt(u)*trans(grad(v)))
                                                                   //                                                             +trans(idt(tau))*id(phi)
                                                                   //                                                             +0.*idt(u)*div(phi)
                                                                   //                                                             +0.*divt(tau)*id(v)
@@ -409,7 +409,7 @@ Laplacian<Order>::run()
 	// -----------------------------------------
 	// TODO: Write correct lifting stabilization
 	// -----------------------------------------
-    form2( Xh, Xh, D ) +=integrate( internalfaces(mesh), im,
+    form2( Xh, Xh, D ) +=integrate( internalfaces(mesh),
                                     // - {grad(u)} . [v]
                                     - averaget(gradt(u))*jump(id(v))
                                     // - theta*[u] . {grad(v)}
@@ -423,7 +423,7 @@ Laplacian<Order>::run()
                                     );
     timers["assembly_D_internalfaces"].second += timers["assembly"].first.elapsed();
     timers["assembly"].first.restart();
-    form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh), im,
+    form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh),
                                      - trans(id(v))*(gradt(u)*N())
                                      - theta * trans(idt(u))*(grad(v)*N())
                                      + gamma * (trans(idt(u))*id(v))*Order*Order/hFace()
@@ -509,7 +509,7 @@ Laplacian<Order>::run()
 
                     sparse_matrix_ptrtype Mloc( M_backend->newMatrix( Wvh, Wvh ) );
                     // mass matrix for L2 Projection
-                    form2( Wvh, Wvh, Mloc, _init=true ) = integrate( elements( localmesh ), im, trans(idt( wv )) * id( vv ) );
+                    form2( Wvh, Wvh, Mloc, _init=true ) = integrate( elements( localmesh ), trans(idt( wv )) * id( vv ) );
                     Mloc->close();
                     if ( this->vm().count( "export-matlab" ) )
                         {
@@ -557,8 +557,8 @@ Laplacian<Order>::run()
                                     if ( it->isOnBoundary() )
                                         {
                                             FEEL_ASSERT( localmesh->face( itl->face( lface[n] ).id() ).isOnBoundary() ).error( "invalid local boundary face" );
-                                            form1( Wvh, Floc, _init=true ) = integrate( idedfaces( localmesh, itl->face( lface[n] ).id() ), im,
-                                                                                        trans(idv( w )*N())*id( vv ) );
+                                            form1( Wvh, Floc, _init=true ) = integrate( _range=idedfaces( localmesh, itl->face( lface[n] ).id() ), _quad=im,
+                                                                                        _expr=trans(idv( w )*N())*id( vv ) );
                                         }
                                     else
                                         {
@@ -567,8 +567,8 @@ Laplacian<Order>::run()
                                                          ( ublas::norm_frobenius( localmesh->beginInternalFace()->G() -
                                                                                   it->G() ) < 1e-10 ) ).error( "invalid local internal face");
                                             //form1( Wvh, Floc, _init=true ) = integrate( idedfaces( localmesh, itl->face( lface[n] ).id() ), im,
-                                            form1( Wvh, Floc, _init=true ) = integrate( internalfaces( localmesh ), im,
-                                                                                        trans(jumpv( idv( w ) ))*average( id( vv ) ) );
+                                            form1( Wvh, Floc, _init=true ) = integrate( _range=internalfaces( localmesh ), _quad=im,
+                                                                                        _expr=trans(jumpv( idv( w ) ))*average( id( vv ) ) );
                                         }
                                     Floc->close();
                                     Log() << "Floc element " << lelt[n] << " w_" << i << " flocnorm= " << Floc->l2Norm() << "\n";
@@ -613,12 +613,12 @@ Laplacian<Order>::run()
                                 }
                         }
                     // global assembly: we pass the vector of local/global basis functions
-                    form2( Xh, Xh, D ) += integrate( idedelements(mesh,lelt[0]), im,
-                                                     delta*trans(basist(wglobal))*basis(wglobal) );
+                    form2( Xh, Xh, D ) += integrate( _range=idedelements(mesh,lelt[0]), _quad=im,
+                                                     _expr=delta*trans(basist(wglobal))*basis(wglobal) );
 
                     if ( !it->isOnBoundary() )
-                        form2( Xh, Xh, D ) += integrate( idedelements(mesh,lelt[1]), im,
-                                                         delta*trans(basist(wglobal))*basis(wglobal) );
+                        form2( Xh, Xh, D ) += integrate( _range=idedelements(mesh,lelt[1]), _quad=im,
+                                                         _expr=delta*trans(basist(wglobal))*basis(wglobal) );
                     face_done[ face_id ] = true;
                     Log() << "\t Done with face " << face_id << "\n";
                 }
@@ -643,7 +643,7 @@ Laplacian<Order>::run()
     element_type_cont uEx( Xch, "uEx" );
 
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xch, Xch ) );
-    form2( Xch, Xch, M, _init=true ) = integrate( elements( mesh ), im, trans(idt(uEx))*id(uEx) );
+    form2( Xch, Xch, M, _init=true ) = integrate( elements( mesh ), trans(idt(uEx))*id(uEx) );
     M->close();
     vector_ptrtype L( M_backend->newVector( Xch ) );
     form1( Xch, L ) = integrate( elements( mesh ), im_norm, trans(g)*id(uEx) );
@@ -684,7 +684,7 @@ Laplacian<Order>::run()
     //this->writeResults(math::sqrt(n1+n2+n3+n4), math::sqrt(n5), math::sqrt(n1), -1, math::sqrt(n3+n4), theta, delta, gamma );
 	this->writeResults(math::sqrt(n1+n2+n3+n4), math::sqrt(n5), math::sqrt(n1), (n2>0)?math::sqrt(n2):-1, math::sqrt(n3+n4), theta, delta, gamma, anisomesh );
 
-    form1( Xch, L, _init=true ) = integrate( elements( mesh ), im, trans(idv(u))*id(uEx) );
+    form1( Xch, L, _init=true ) = integrate( elements( mesh ), trans(idv(u))*id(uEx) );
     element_type_cont uc( Xch, "uc" );
     this->solve( M, uc, L );
 

@@ -2320,8 +2320,8 @@ struct integrate_type
 {
     typedef typename clean_type<Args,tag::expr>::type _expr_type;
     typedef typename clean_type<Args,tag::range>::type _range_type;
-    typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
-    typedef typename clean2_type<Args,tag::quad, the_quad_type>::type _quad_type;
+    //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
+    typedef typename clean2_type<Args,tag::quad, _Q< ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
     typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad_type> > expr_type;
 
 };
@@ -2350,7 +2350,7 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     (optional
-     (quad,   *, typename detail::integrate_type<Args>::the_quad_type() )
+     (quad,   *, typename detail::integrate_type<Args>::_quad_type() )
      (geomap, *, GeomapStrategyType::GEOMAP_OPT )
      (quad1,   *, quad )
      )
