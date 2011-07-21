@@ -59,12 +59,12 @@ makeOptions()
 
 	// 3D parameter
 	("deep", Feel::po::value<double>()->default_value( 0 ),
-	 "depth of the fin, only in 3D simulation")
+	 "depth of the mesh, only in 3D simulation")
 
     // thermal conductivities parameters
-    ("spreader", Feel::po::value<double>()->default_value( 386 ),
+    ("lambda_s", Feel::po::value<double>()->default_value( 386 ),
      "thermal conductivity of the base spreader")
-    ("fin", Feel::po::value<double>()->default_value( 386 ),
+    ("lambda_f", Feel::po::value<double>()->default_value( 386 ),
      "thermal conductivity of the fin")
 
 	// density parameter
@@ -80,9 +80,6 @@ makeOptions()
      "maximum value of Biot number")
     ("therm_coeff", Feel::po::value<double>()->default_value(60000),
      "thermal coefficient for the biot number")
-
-    ("N", Feel::po::value<int>()->default_value( 1 ),
-     "number of samples withing parameter space")
 
     // export
     ("export", "export results(ensight, data file(1D)")
@@ -125,8 +122,6 @@ public:
 #define Entity Simplex
 
     // -- TYPEDEFS --
-    static const uint16_type imOrder = Dim*Order;
-
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
@@ -155,8 +150,8 @@ public:
     typedef typename space_type::element_type element_type;
 
 	/* BDF discretization */
-	typedef Bdf<space_type>  bdf_type;
-	typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+	//typedef Bdf<space_type>  bdf_type;
+	//typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -175,15 +170,9 @@ public:
 private:
 
     /**
-     * solve the system
-     */
-    void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
-
-
-    /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( element_type& u );
+    void exportResults( double time, element_type& u );
 
 private:
 
@@ -194,13 +183,12 @@ private:
     double depth;
 
 	/* thermal conductivities */
-	double lambda_spreader;
-	double lambda_fin;
-	double ratio;
+	double lambda_s;
+	double lambda_f;
 
 	/* density of the material */
-	int density_s;
-	int density_f;
+	int rho_s;
+	int rho_f;
 
 	/* Biot number */
 	double Bi;
@@ -216,7 +204,7 @@ private:
     sparse_matrix_ptrtype D;
     vector_ptrtype F;
 
-	bdf_ptrtype M_bdf;
+	//bdf_ptrtype M_bdf;
 
     boost::shared_ptr<export_type> exporter;
 
@@ -230,10 +218,10 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		M_backend( backend_type::build( this->vm() ) ),
 		meshSize( this->vm()["hsize"].template as<double>() ),
 		depth( this->vm()["deep"].template as<double>() ),
-		lambda_spreader( this-> vm()["spreader"].template as<double>() ),
-		lambda_fin( this-> vm()["fin"].template as<double>() ),
-		density_s( this-> vm()["rho_s"].template as<int>() ),
-		density_f( this-> vm()["rho_f"].template as<int>() ),
+		lambda_s( this-> vm()["lambda_s"].template as<double>() ),
+		lambda_f( this-> vm()["lambda_f"].template as<double>() ),
+		rho_s( this-> vm()["rho_s"].template as<int>() ),
+		rho_f( this-> vm()["rho_f"].template as<int>() ),
         therm_coeff( this-> vm()["therm_coeff"].template as <double>() ),
 		exporter( export_type::New( this->vm(), this->about().appName() ) )
 		{
@@ -250,44 +238,20 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
         mesh = createMesh();
 
 		/*
-		 * Calculate the characterisical length of the mesh = surface / perimeter
+		 * Calculate the characterisical length of the mesh = length of the base
 		 */
-		double surface = integrate( markedelements(mesh,"spreader_mesh"), cst(1.) ).evaluate()(0,0) +
-			                   integrate( markedelements(mesh,"fin_mesh"), cst(1.) ).evaluate()(0,0);
-
-		double perimeter = integrate( markedfaces(mesh,"gamma4"), cst(1.) ).evaluate()(0,0) +
-						integrate( markedfaces(mesh,"gamma7"), cst(1.) ).evaluate()(0,0) +
-						integrate( markedfaces(mesh,"gamma5"), cst(1.) ).evaluate()(0,0) +
-						integrate( markedfaces(mesh,"gamma3"), cst(1.) ).evaluate()(0,0) +
-						integrate( markedfaces(mesh,"gamma6"), cst(1.) ).evaluate()(0,0) +
-						integrate( markedfaces(mesh,"gamma1"), cst(1.) ).evaluate()(0,0) +
-						integrate( markedfaces(mesh,"gamma2"), cst(1.) ).evaluate()(0,0);
-
-		charact_length = surface/perimeter;
-		/*
-		 * N.B : you can also calculate the surface with a p0 space.
-		 * To do it, you have to name a p0 space ptrtype (such as p0h)
-		 * and then P0h = p0_space_type::New( mesh );
-		 * The value is obtained in the field 'Value' of the string return of
-		 *        auto surface2 = vf::sum( P0h, meas() );
-		 */
-
+		charact_length = integrate( _range= markedelements(mesh, "gamma4"), _expr= cst(1.) ).evaluate()(0,0);
 
 		/*
 		 * calculate the biot number
 		 */
-		Bi = therm_coeff * charact_length / lambda_fin;
-
-		/*
-		 * calculate the ratio for the equation
-		 */
-		ratio = lambda_spreader/lambda_fin;
+		Bi = therm_coeff * charact_length / lambda_f;
 
         /*
          * The function space associated to the mesh
          */
         Xh = space_type::New( mesh );
-        M_bdf = bdf_ptrtype( new bdf_type( this->vm(), M_Xh ) );
+        //M_bdf = bdf_ptrtype( new bdf_type( Xh ) );
 
         /*
          * Right hand side
@@ -328,11 +292,11 @@ HeatSink<Dim, Order>::run()
     Log() << "Bi = " << Bi << "\n"
           << "meshSize = " << meshSize << "\n"
           << "depth = " << depth << "\n"
-          << "lambda_spreader = " << lambda_spreader << "\n"
-          << "lambda_fin = " << lambda_fin << "\n"
-          << "density_s = " << density_s << "\n"
-          << "density_f = " << density_f << "\n"
-          << "thermal coeff = " << therm_coeff << "\n";
+          << "lambda_spreader = " << lambda_s << "\n"
+          << "lambda_fin = " << lambda_f << "\n"
+          << "rho_spreader = " << rho_s << "\n"
+          << "rho_fin = " << rho_f << "\n"
+          << "thermal coefficient = " << therm_coeff << "\n";
 
     /*
      * T is the unknown, v the test function
@@ -343,21 +307,19 @@ HeatSink<Dim, Order>::run()
     /*
      * Right hand side construction (steady state)
      */
-    form1( Xh, F, _init=true ) = integrate( markedfaces(mesh,"gamma4"), cst(1.) );
+    form1( Xh, F, _init=true ) = integrate( _range= markedfaces(mesh,"gamma4"), _expr= v );
 
     /*
      * Left hand side construction (steady state)
      */
-    form2( Xh, Xh, D, _init=true ) = integrate( markedelements(mesh,"spreader_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) );
-    form2( Xh, Xh, D) += integrate( markedelements(mesh,"fin_mesh"), _Q<imOrder>(), ( ratio*gradt(T)*trans(grad(v))) );
-    form2 (Xh, Xh, D) += integrate( markedfaces(mesh, "gamma1"), _Q<imOrder>(), Bi*idv(T));
+    form2( Xh, Xh, D, _init=true ) = integrate( _range= markedelements(mesh,"spreader_mesh"), _expr= lambda_s*gradt(T)*trans(grad(v)) );
+    form2( Xh, Xh, D) += integrate( _range= markedelements(mesh,"fin_mesh"), _expr= lambda_f*gradt(T)*trans(grad(v)) );
+    form2 (Xh, Xh, D) += integrate( _range= markedfaces(mesh, "gamma1"), _expr= lambda_f*Bi*idt(T)*id(v));
 
 
-    form2(Xh, Xh, D) +=
-        integrate( markedelements(mesh, "spreader_mesh"), density_s*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) )
-        + integrate( markedelements(mesh, "fin_mesh"), density_s*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) );
-
-
+    //form2(Xh, Xh, D) +=
+    //    integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) )
+    //    + integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) );
 
     D->close();
 
@@ -368,48 +330,35 @@ HeatSink<Dim, Order>::run()
 
     /*
      * Left and right hand sides construction (non-steady state) with BDF
-     */
+     *//*
     for ( M_bdf->start(); M_bdf->isFinished(); M_bdf->next() )
     {
         auto Ft = M_backend->newVector( Xh );
         auto bdf_poly = M_bdf->polyDeriv();
         form1( _test=Xh, _vector=Ft) =
-            integrate( markedelements(mesh, "spreader_mesh"), density_s*idv(bdf_poly)*id(v) )+
-            integrate( markedelements(mesh, "fin_mesh"), density_s*idv(bdf_poly)*id(v) );
+            integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*idv(bdf_poly)*id(v) )+
+            integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*idv(bdf_poly)*id(v) );
 
 
         std::cout << "Begin of the resolution \n";
 		M_backend->solve( _matrix=D, _solution=T, _rhs=F );
         std::cout << "Resolution ended \n";
 
-		std::cout.precision( 5 );
-		std::cout << std::setw( 5 ) << "Bi = " << Bi << " \n ";
-
 		this->exportResults( M_bdf->time(), T );
-    }
+     }*/
 
 } // HeatSink::run
 
-template<int Dim, int Order>
-void
-HeatSink<Dim, Order>::solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F  )
-{
-    vector_ptrtype U( M_backend->newVector( u.functionSpace()->map() ) );
-    M_backend->solve( D, D, U, F );
-    u = *U;
-} // HeatSink::solve
-
 
 template<int Dim, int Order>
 void
-HeatSink<Dim, Order>::exportResults( element_type& U )
+HeatSink<Dim, Order>::exportResults( double time, element_type& U )
 {
     if ( this->vm().count( "export" ) )
         {
             exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
-            exporter->step(1.)->add( "ProcessId",
-                           regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
             exporter->step(1.)->add( "Temperature", U );
+            //exporter->step(time)->add( "Temperature", U);
             exporter->save();
 
         }
