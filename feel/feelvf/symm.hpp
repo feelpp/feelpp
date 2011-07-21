@@ -132,6 +132,8 @@ public:
 
         template <class Args> struct sig { typedef value_type type; };
 
+        struct is_zero { static const bool value = tensor_expr_type::is_zero::value; };
+
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
