@@ -122,6 +122,12 @@ int main(int argc, char** argv)
     auto p_goncalo = vf::project( _space=Ph, _expr=-3*mu*R*U*Px()/(2*r*r*r) );
     auto u_goncalo = vf::project( _space=Vh, _expr=vec(u_1,u_2,u_3));
 
+    auto sigmaN_goncalo=-idv(p_goncalo)*N()+.5*mu*(gradv(u_goncalo)+trans(gradv(u_goncalo)))*N();
+    auto force_goncalo = integrate( _range=markedfaces(mesh,"Sphere"), _expr=sigmaN_goncalo,_quad=_Q<6>() ).evaluate();
+    std::cout << "force_goncalo = " << force_goncalo << "\n";
+
+
+
     auto sigmaN=-idv(p)*N()+.5*mu*(gradv(u)+trans(gradv(u)))*N();
     auto volume = integrate( _range=elements(mesh), _expr=cst(1.0),_quad=_Q<6>(), _geomap=(GeomapStrategyType)vm["geomap"].as<int>()  ).evaluate();
     auto surface = integrate( _range=markedfaces(mesh,"Sphere"), _expr=cst(1.0),_quad=_Q<6>() ).evaluate();
