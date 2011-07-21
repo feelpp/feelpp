@@ -47,7 +47,8 @@ void myexport( std::string const& name, boost::shared_ptr<MeshType> mesh )
 
 int main(int argc, char** argv)
 {
-    double hsize = 1;
+    double hsphere = 1;
+    double hcube = 1;
     double R = 1;
     double U = 1;
     double mu = 1;
@@ -59,7 +60,8 @@ int main(int argc, char** argv)
         ("help", "produce help message")
         ("geomap", po::value<int>()->default_value( 0 ), "straighten mesh (0=ho,1=p1,2=opt)")
         ("straighten", po::value<bool>(&straighten)->default_value( true ), "straighten mesh")
-        ("hsize", po::value<double>(&hsize)->default_value( 1 ), "h size")
+        ("hcube", po::value<double>(&hcube)->default_value( 1 ), "h size for cube")
+        ("hsphere", po::value<double>(&hsphere)->default_value( 1 ), "h size for sphere")
         ("R", po::value<double>(&R)->default_value( 1 ), "sphere radius")
         ("U", po::value<double>(&U)->default_value( 1 ), "characteristic fluid velocity")
         ("mu", po::value<double>(&U)->default_value( 1 ), "fluid viscosity")
@@ -69,17 +71,17 @@ int main(int argc, char** argv)
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    const int Order=2;
+    const int Order=4;
     using namespace Feel;
     using namespace Feel::vf;
     Feel::Environment env(argc, argv );
     typedef Mesh<Simplex<3,Order> > mesh_type;
 
-    GeoTool::Cube R1(hsize,"R1",GeoTool::Node(-3,-3,-3),GeoTool::Node(3,3,3));
+    GeoTool::Cube R1(hcube,"R1",GeoTool::Node(-3,-3,-3),GeoTool::Node(3,3,3));
     R1.setMarker(_type="surface",_name="Cube",_markerAll=true);
     R1.setMarker(_type="volume",_name="Omega",_markerAll=true);
 
-    GeoTool::Sphere C1(hsize,"C1",GeoTool::Node(0,0,0),GeoTool::Node(R,0,0));
+    GeoTool::Sphere C1(hsphere,"C1",GeoTool::Node(0,0,0),GeoTool::Node(R,0,0));
     C1.setMarker(_type="surface",_name="Sphere",_markerAll=true);
 
     auto R1mC1mesh = (R1-C1).createMesh<mesh_type>( "R1-C1" );
