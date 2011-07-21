@@ -307,7 +307,7 @@ HeatSink<Dim, Order>::run()
     /*
      * Right hand side construction (steady state)
      */
-    form1( Xh, F, _init=true ) = integrate( _range= markedfaces(mesh,"gamma4"), _expr= v );
+    form1( Xh, F, _init=true ) = integrate( _range= markedfaces(mesh,"gamma4"), _expr= id(v) );
 
     /*
      * Left hand side construction (steady state)
