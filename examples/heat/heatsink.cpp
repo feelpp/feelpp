@@ -83,13 +83,11 @@ makeOptions()
     ("therm_coeff", Feel::po::value<double>()->default_value(60000),
      "thermal coefficient for the biot number")
 
-    ("steady", Feel::po::value<bool>()->default_value("false"), "if true : steady then unsteady")
+    ("steady", Feel::po::value<bool>()->default_value(false), "if true : steady else unsteady")
 
     // export
     ("export", "export results(ensight, data file(1D)")
     ("export-matlab", "export matrix and vectors in matlab" );
-
-
 
     return heatsinkoptions.add( Feel::feel_options() );
 }
@@ -253,7 +251,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		charact_length = integrate( _range= markedelements(mesh, "gamma4"), _expr= cst(1.) ).evaluate()(0,0);
 
 		/*
-		 * calculate the biot number
+		 * Calculate the biot number
 		 */
 		Bi = therm_coeff * charact_length / lambda_f;
 
@@ -261,7 +259,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
          * The function space associated to the mesh
          */
         Xh = space_type::New( mesh );
-        M_bdf = bdf_ptrtype( new bdf_type(  Xh, "T discretization explicite" ) );
+        M_bdf = bdf_ptrtype( new bdf_type( this->vm(), Xh, "T implicite discretization" ) );
 
         /*
          * Right hand side
@@ -344,25 +342,30 @@ HeatSink<Dim, Order>::run()
      */
 
     M_bdf->initialize(T);
-    if(steady)
-        {
-            M_bdf->setSteady();
-        }
+
+    std::cout << "The step is : " << M_bdf->timeStep() << "\n"
+              << "The initial time is : " << M_bdf->timeInitial() << "\n"
+              << "The final time is  : " << M_bdf->timeFinal() << "\n";
+
+    if (steady)
+    {
+        M_bdf->setSteady();
+    }
+
     for ( M_bdf->start(); M_bdf->isFinished()==false; M_bdf->next() )
     {
+        std::cout << "M_bdf->time() =" << M_bdf->time() << "\n";
         auto Ft = M_backend->newVector( Xh );
         auto bdf_poly = M_bdf->polyDeriv();
         form1( _test=Xh, _vector=Ft) =
-            integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*idv(bdf_poly)*id(v) )+
+            integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*idv(bdf_poly)*id(v) ) +
             integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*idv(bdf_poly)*id(v) );
 
-
-        std::cout << "Begin of the resolution \n";
 		M_backend->solve( _matrix=D, _solution=T, _rhs=F );
-        std::cout << "Resolution ended \n";
-
 		this->exportResults( M_bdf->time(), T );
      }
+
+    std::cout << "Resolution ended, export done \n";
 
 } // HeatSink::run
 
@@ -375,9 +378,8 @@ HeatSink<Dim, Order>::exportResults( double time, element_type& U )
         {
             exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
             exporter->step(1.)->add( "Temperature", U );
-            //exporter->step(time)->add( "Temperature", U);
+            // exporter->step(time)->add( "Temperature", U );
             exporter->save();
-
         }
 } // HeatSink::exportResults
 
