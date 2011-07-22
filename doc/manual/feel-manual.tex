@@ -158,7 +158,7 @@
 \lstset{belowskip=\smallskipamount}
 \lstset{aboveskip=\smallskipamount}
 \lstset{emph={constant,cst,cst_ref,constant_ref,val,integrate,on,grad,gradt,gradv,dot,id,dx,dy,dz,idt,dxt,dyt,dzt,div,divt,idv,dxv,dyv,dzv,dn,dnt,mass,stiffness,trans,trace,jump,jumpt,average,averaget,maxface,project,P,Px,Py,Pz,h,H,Hface,hFace,N,Nx,Ny,Nz,sqrt,sin,cos,min,max,abs,sign,pow,chi,exp,log,form1,form2, FunctionSpace, bases,
-prod,element_prod, range, subrange, inner_prod,unite,elements,markedelements,markedfaces,boundaryfaces,_Q},emphstyle=\color{blue}}
+prod,element_prod, range, subrange, inner_prod,unite,elements,markedelements,markedfaces,boundaryfaces,faces,internalelements,boundaryelements,edges,boundaryedges,_Q},emphstyle=\color{blue}}
 \lstset{includerangemarker=false,rangeprefix=\/\/\#\ ,% curly left brace plus space
   rangesuffix=\ \#}% space plus curly right brace
 
@@ -215,7 +215,6 @@ prod,element_prod, range, subrange, inner_prod,unite,elements,markedelements,mar
 \newcommand{\Pk}{\ensuremath{\mathbb{P}_k(K)}\xspace}
 \newcommand{\PN}{\ensuremath{\mathbb{P}_N(K)}\xspace}
 \newcommand{\Pkmun}{\ensuremath{\mathbb{P}_{k-1}(K)}\xspace}
-
 
 \InputIfFileExists{version}{}{\def\feelversion{\texttt{x.y.z}}}
 \title{Feel Manual\\
@@ -317,7 +316,6 @@ Free Documentation License".
 %\include{examples/solid-mechanics}
 
 \part{Programming with \feel}
-
 %\include{developer/}
 
 
