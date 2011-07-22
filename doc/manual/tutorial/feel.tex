@@ -3,17 +3,17 @@
             {Christophe Prud'homme}
             {cha:appendix-feel}
 
-One of Life assets is it finite element embedded language
-(\feel). The language follows the C++ grammar, and provides keywords
-as well as operations between objects which are, mathematically,
-tensors of rank 0, 1 or 2.
+\section{Keywords}
 
-Some notations
+One of \feel assets is it finite element embedded language. The language follows the C++ grammar, and provides keywords
+as well as operations between objects which are, mathematically, tensors of rank 0, 1 or 2. \\
+
+\noindent Here are some notations :
 \begin{itemize}
 \item $f: \mathbb{R}^n \mapsto \mathbb{R}^{m\times p}$  with $n=1,2,3$, $m=1,2,3$, $p=1,2,3$.
 \item $\Omega^e$ current mesh element
 \end{itemize}
-
+and here is the table which gathers all tools you may need:
 
 \begin{longtable}[c]{rllll}
   Keyword & Math object & Description & Rank & $M \times N$\\\hline\hline
@@ -189,8 +189,83 @@ Some notations
   \lstinline!&&! & $f\ \text{and}\ g$ & element wise logical and  & & \\
   \lstinline!||! & $f\ \text{or}\ g$ & element wise logical or  & & \\\hline\\
 
-
 \end{longtable}
+
+
+\section{Operators}
+
+\subsection{Integrals}
+\label{keywords:integrals}
+
+Thank to its finite element embedded language, \feel has its owned \lstinline!integrate()! function, which can be written for example :
+\begin{lstlisting}
+integrate( _range= elements(mesh), _expr= gradt(T)*trans(grad(v)) );
+\end{lstlisting}
+please notice that the order of the parameter is not important, these are \lstinline!boost! parameters, so you can enter them in the order you want. 
+To make it clear, there are two required parameters and 2 optional and they of course can be entered in any order
+provided you give the parameter name. If you don't provide the parameter name (that is to say \lstinline!_range=! or the others) they must be entered in the order they are described
+below. \\
+
+\noindent The required parameters are
+\begin{itemize}
+ \item \lstinline!_range!  = domain of integration
+ \item \lstinline!_expr!  = integrand expression
+\end{itemize}
+The optional parameters are
+\begin{itemize}
+ \item \lstinline!_quad!  = quadrature to use instead of the default one, wich means \lstinline!_Q<integer>()! where the integer is the polynomal order to integrate exactely
+ \item \lstinline!_geomap!  = type of geometric mapping to use, that is to say :
+	\begin{itemize}
+  	\item \lstinline!GEOMAP_HO!  =  high order approximation (same of the mesh)
+  	\item \lstinline!GEOMAP_OPT!  = optimal approximation: high order on boundary elements, order 1 in the interior
+  	\item \lstinline!GEOMAP_O1!  = order 1 approximation
+	\end{itemize}
+\end{itemize}
+
+
+\subsection{Projections}
+\label{keywords:projections}
+It is also possible to make projections with the library, the interface is as follow :
+\begin{lstlisting}
+project( _range, _space, _expr, _geomap );
+\end{lstlisting}
+where
+\begin{itemize}
+ \item \lstinline!_space!  is the space in which lives the projected expression, it should be a nodal function space
+  \item \lstinline!_expr!  the expression to project
+  \item \lstinline!_range!  is the domain for the projection (optional, default: all elements from \lstinline!space->mesh()!) 
+  \item \lstinline!_geomap!  is the type of geometric mapping approximation (optional, default = \lstinline!GEOMAP_HO!)
+  \item \lstinline!_accumulate!  (optional, default = false)
+\end{itemize}
+
+
+\subsection{Meshes}
+\label{keywords:meshes}
+
+\feel enables full different ways to interact with the mesh on which you want to work. Mainly with the function \lstinline!integrate!, the various keywords we have established will make your program's code easier. The interoperability between \feel and \textsc{Gmsh} is huge and provides various access to any point, item, domain or almost anything you want in a mesh.
+The access to different items of a mesh is possible thanks to the filters which enable the access of only a mesh's part. Theses helpfull keywords are coded in \lstinline!feel/feelmesh/filters.hpp!, we are here going to describe most of them. \\ \\ To access one particular part of a mesh, you can use :
+\begin{itemize}
+\item \lstinline!elements(mesh)!  corresponds to all the elements of a mesh
+
+\item \lstinline!markedelements(mesh, id)!  corresponds to the precise element defined by the id. It can be any element (line, surface, domain, and so on).
+
+\item \lstinline!faces(mesh)!  corresponds to all the faces of the mesh.
+
+\item \lstinline!markedfaces(mesh)!  corresponds to all the faces of the mesh which are marked.
+
+\item \lstinline!boundaryfaces(mesh)!  corresponds to all elements that own a topological dimension one below the mesh. For example, if you mesh is a 2D one, \lstinline!boundaryfaces(mesh)! will return all the lines (because of dimension $2-1=1$). These elements which have one dimension less, are corresponding to the boundary faces.
+
+\item \lstinline!internalelements(mesh)!  corresponds to all the elements of the mesh which are stricly within the domain that is to say they do not share a face with the boundary.
+
+\item \lstinline!boundaryelements(mesh)!  corresponds to all the elements of the mesh which share a face with the boundary of the mesh.
+
+\item \lstinline!edges(mesh)!  corresponds to all the edges of the mesh.
+
+\item \lstinline!boundaryedges(mesh)!  corresponds to all boundary edges of the mesh.
+
+\end{itemize}
+where id is the element's identifier : thanks to \textsc{Gmsh}, this identifier can be an integer or a string, it depends on the identifier your have or you gave in the mesh .geo file.
+
 %%% Local Variables:
 %%% coding: utf-8
 %%% mode: latex
