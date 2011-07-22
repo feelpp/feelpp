@@ -989,7 +989,10 @@ namespace Feel {
                 mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
                 mesh->updateForUse();
 
-                return mesh;
+                if ( /*straighten && */mesh_type::nOrder > 1 )
+                    return straightenMesh( mesh );
+                else
+                    return mesh;
             }
 
             /*_________________________________________________*
@@ -1710,7 +1713,9 @@ namespace Feel {
             mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
             mesh->updateForUse();
 
-            return mesh;
+                if ( /*straighten && */mesh_type::nOrder > 1 )
+                    return straightenMesh( mesh );
+                return mesh;
         }
 
 
