@@ -176,7 +176,7 @@ private:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( int nb_iter, element_type& u );
+    void exportResults( double time, element_type& u );
 
 private:
 
@@ -352,7 +352,7 @@ HeatSink<Dim, Order>::run()
         M_bdf->setSteady();
     }
 
-    int nb_iter=0;
+
     for ( M_bdf->start(); M_bdf->isFinished()==false; M_bdf->next() )
     {
         std::cout << "M_bdf->time() =" << M_bdf->time() << "\n";
@@ -363,8 +363,8 @@ HeatSink<Dim, Order>::run()
             integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*idv(bdf_poly)*id(v) );
 
 		M_backend->solve( _matrix=D, _solution=T, _rhs=F );
-		this->exportResults( nb_iter, T );
-        nb_iter++;
+		this->exportResults( M_bdf->time(), T );
+
      }
 
     std::cout << "Resolution ended, export done \n";
@@ -374,12 +374,12 @@ HeatSink<Dim, Order>::run()
 
 template<int Dim, int Order>
 void
-HeatSink<Dim, Order>::exportResults( int nb_iter, element_type& U )
+HeatSink<Dim, Order>::exportResults( double time, element_type& U )
 {
     if ( this->vm().count( "export" ) )
         {
-            exporter->step(nb_iter)->setMesh( U.functionSpace()->mesh() );
-            exporter->step(nb_iter)->add( "Temperature", U );
+            exporter->step(time)->setMesh( U.functionSpace()->mesh() );
+            exporter->step(time)->add( "Temperature", U );
             exporter->save();
         }
 } // HeatSink::exportResults
