@@ -83,9 +83,13 @@ makeOptions()
     ("therm_coeff", Feel::po::value<double>()->default_value(60000),
      "thermal coefficient for the biot number")
 
+    ("steady", Feel::po::value<bool>()->default_value("false"), "if true : steady then unsteady")
+
     // export
     ("export", "export results(ensight, data file(1D)")
     ("export-matlab", "export matrix and vectors in matlab" );
+
+
 
     return heatsinkoptions.add( Feel::feel_options() );
 }
@@ -208,6 +212,7 @@ private:
     vector_ptrtype F;
 
 	bdf_ptrtype M_bdf;
+    bool steady;
 
     boost::shared_ptr<export_type> exporter;
 
@@ -227,6 +232,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		rho_s( this-> vm()["rho_s"].template as<int>() ),
 		rho_f( this-> vm()["rho_f"].template as<int>() ),
         therm_coeff( this-> vm()["therm_coeff"].template as <double>() ),
+        steady( this->vm()["steady"].template as<bool>() ),
 		exporter( export_type::New( this->vm(), this->about().appName() ) )
 		{
 			this->changeRepository( boost::format( "%1%/%2%/%3%/" )
@@ -336,7 +342,13 @@ HeatSink<Dim, Order>::run()
     /*
      * Left and right hand sides construction (non-steady state) with BDF
      */
-    for ( M_bdf->start(); M_bdf->isFinished(); M_bdf->next() )
+
+    M_bdf->initialize(T);
+    if(steady)
+        {
+            M_bdf->setSteady();
+        }
+    for ( M_bdf->start(); M_bdf->isFinished()==false; M_bdf->next() )
     {
         auto Ft = M_backend->newVector( Xh );
         auto bdf_poly = M_bdf->polyDeriv();
