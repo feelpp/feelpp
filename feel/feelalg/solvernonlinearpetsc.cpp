@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-02
 
-  Copyright (C) 2007,2008,2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -496,7 +496,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     // return the # of its. and the final residual norm.  Note that
     // n_iterations may be zero for PETSc versions 2.2.x and greater.
-    return std::make_pair(n_iterations, 0.);
+    return std::make_pair(reason, 0.);
 }
 
 
@@ -612,7 +612,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
 
     // return the # of its. and the final residual norm.  Note that
     // n_iterations may be zero for PETSc versions 2.2.x and greater.
-    return std::make_pair(n_iterations, 0.);
+    return std::make_pair(reason, 0.);
 }
 
 
