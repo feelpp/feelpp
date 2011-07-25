@@ -349,6 +349,7 @@ HeatSink<Dim, Order>::run()
     /*
      * Left and right hand sides construction (non-steady state) with BDF
      */
+    T = vf::project( _space=Xh, _expr=cst(Tamb) );
 
     M_bdf->initialize(T);
 
