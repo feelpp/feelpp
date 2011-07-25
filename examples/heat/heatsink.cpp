@@ -208,6 +208,7 @@ private:
 
     /* characteristical length of the body */
 	double charact_length;
+    double surface_base, surface_fin;
 
     /* messh, pointers and spaces*/
     mesh_ptrtype mesh;
@@ -219,6 +220,9 @@ private:
 	bdf_ptrtype M_bdf;
     bool steady;
 
+    // average file
+    std::ofstream out;
+    double Tavg, Tgamma1;
     boost::shared_ptr<export_type> exporter;
 
 }; // HeatSink class
@@ -255,9 +259,12 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
         mesh = createMesh();
 
 		/*
-		 * Calculate the characterisical length of the mesh = length of the base
+		 * Calculate the characterisical length of the mesh = length of the base and the two surfaces
+         * used for averages calculation
 		 */
-		charact_length = integrate( _range= markedelements(mesh, "gamma4"), _expr= cst(1.) ).evaluate()(0,0);
+		charact_length = integrate( _range= markedfaces(mesh, "gamma4"), _expr= cst(1.) ).evaluate()(0);
+        surface_base = charact_length;
+        surface_fin = integrate( _range= markedfaces(mesh,"gamma1"), _expr=cst(1.) ).evaluate()(0);
 
 		/*
 		 * Calculate the biot number
@@ -361,10 +368,11 @@ HeatSink<Dim, Order>::run()
         M_bdf->setSteady();
     }
 
+    // average file which contains: time Tavg T_on_Gamma_1
+    out.open("averages", std::ios::out);
 
     for ( M_bdf->start(); M_bdf->isFinished()==false; M_bdf->next() )
     {
-        std::cout << "M_bdf->time() =" << M_bdf->time() << "\n";
 
         // update right hand side with time dependent terms
         auto Ft = M_backend->newVector( Xh );
@@ -377,9 +385,13 @@ HeatSink<Dim, Order>::run()
         // add contrib from time independent terms
         Ft->add( 1., F );
 
-
 		M_backend->solve( _matrix=D, _solution=T, _rhs=Ft );
 
+        Tavg = integrate(_range=markedfaces(mesh,"spreader_mesh"), _expr=(1/surface_base)*idv(T) ).evaluate()(0,0);
+        Tgamma1 = integrate(_range=markedfaces(mesh,"fin_mesh"), _expr=(1/surface_fin)*idv(T) ).evaluate()(0,0);
+
+        // export results
+        out << M_bdf->time() << " " << Tavg << " " << Tgamma1 << "\n";
 		this->exportResults( M_bdf->time(), T );
 
      }
