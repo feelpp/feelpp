@@ -387,8 +387,8 @@ HeatSink<Dim, Order>::run()
 
 		M_backend->solve( _matrix=D, _solution=T, _rhs=Ft );
 
-        Tavg = integrate(_range=markedfaces(mesh,"spreader_mesh"), _expr=(1/surface_base)*idv(T) ).evaluate()(0,0);
-        Tgamma1 = integrate(_range=markedfaces(mesh,"fin_mesh"), _expr=(1/surface_fin)*idv(T) ).evaluate()(0,0);
+        Tavg = integrate( _range=markedfaces(mesh,"gamma4"), _expr=(1/surface_base)*idv(T) ).evaluate()(0);
+        Tgamma1 = integrate( _range=markedfaces(mesh,"gamma1"), _expr=(1/surface_fin)*idv(T) ).evaluate()(0);
 
         // export results
         out << M_bdf->time() << " " << Tavg << " " << Tgamma1 << "\n";
