@@ -932,6 +932,7 @@ void
 MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
 {
     MatrixPetsc<T>* Atrans = dynamic_cast<MatrixPetsc<T>*> (&Mt);
+    MatDestroy( Atrans->_M_mat );
 
 
 #if (PETSC_VERSION_MAJOR >= 3)
