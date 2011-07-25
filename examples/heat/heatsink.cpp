@@ -368,8 +368,8 @@ HeatSink<Dim, Order>::run()
         auto Ft = M_backend->newVector( Xh );
         auto bdf_poly = M_bdf->polyDeriv();
         form1( _test=Xh, _vector=Ft) =
-            integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*idv(bdf_poly)*id(v) - exp(-bdf->time())*id(v)) +
-            integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*idv(bdf_poly)*id(v) - exp(-bdf->time())*id(v) );
+            integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*idv(bdf_poly)*id(v) - exp(-M_bdf->time())*id(v)) +
+            integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*idv(bdf_poly)*id(v) - exp(-M_bdf->time())*id(v) );
         Ft->add( 1., F );
 		M_backend->solve( _matrix=D, _solution=T, _rhs=Ft );
 		this->exportResults( M_bdf->time(), T );
