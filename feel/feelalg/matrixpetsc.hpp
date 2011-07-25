@@ -437,7 +437,7 @@ public:
     void updateBlockMat(boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j);
 
 
-    void updatePCFieldSplit(PC pc);
+    void updatePCFieldSplit(PC & pc);
 
     //@}
 
@@ -460,7 +460,7 @@ private:
 
     std::vector<IS> _M_petscIS;
 
-    std::map<PC,bool > _M_mapPC;
+    std::map<PC*,bool > _M_mapPC;
 
     /**
      * This boolean value should only be set to false

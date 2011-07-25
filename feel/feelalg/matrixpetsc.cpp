@@ -299,15 +299,16 @@ void MatrixPetsc<T>::setIndexSplit(std::vector< std::vector<int> > const &indexS
 }
 
 template <typename T>
-void MatrixPetsc<T>::updatePCFieldSplit(PC pc)
+void MatrixPetsc<T>::updatePCFieldSplit(PC & pc)
 {
+#if 0
     int ierr=0;
-    if (_M_mapPC.find(pc)==_M_mapPC.end() )
+    if (_M_mapPC.find(&pc)==_M_mapPC.end() )
         {
-            _M_mapPC[pc]=false;
+            _M_mapPC[&pc]=false;
         }
 
-    if (_M_mapPC[pc]==false)
+    if (_M_mapPC[&pc]==false)
         {
             const PCType pcName;
             ierr = PCGetType(pc,&pcName);
@@ -315,7 +316,8 @@ void MatrixPetsc<T>::updatePCFieldSplit(PC pc)
 
             if ( std::string( PCFIELDSPLIT ) == std::string(pcName) )
                 {
-                    _M_mapPC[pc]=true;
+                    //std::cout << "\n updatePCFieldSplit \n";
+                    _M_mapPC[&pc]=true;
                     for (uint i = 0 ; i < _M_petscIS.size(); ++i)
                         {
                             ierr=PCFieldSplitSetIS(pc,_M_petscIS[i]);
@@ -323,7 +325,24 @@ void MatrixPetsc<T>::updatePCFieldSplit(PC pc)
                         }
                 }
         }
+#else
+    int ierr=0;
 
+    const PCType pcName;
+    ierr = PCGetType(pc,&pcName);
+    CHKERRABORT(this->comm(),ierr);
+
+    if ( std::string( PCFIELDSPLIT ) == std::string(pcName) )
+        {
+            //std::cout << "\n updatePCFieldSplit \n";
+            for (uint i = 0 ; i < _M_petscIS.size(); ++i)
+                {
+                    ierr=PCFieldSplitSetIS(pc,_M_petscIS[i]);
+                    CHKERRABORT(this->comm(),ierr);
+                }
+        }
+
+#endif
 }
 
 
