@@ -64,9 +64,9 @@ makeOptions()
 	 "depth of the mesh, only in 3D simulation")
 
     // thermal conductivities parameters
-    ("lambda_s", Feel::po::value<double>()->default_value( 386 ),
+    ("kappa_s", Feel::po::value<double>()->default_value( 386 ),
      "thermal conductivity of the base spreader")
-    ("lambda_f", Feel::po::value<double>()->default_value( 386 ),
+    ("kappa_f", Feel::po::value<double>()->default_value( 386 ),
      "thermal conductivity of the fin")
 
 	// density parameter
@@ -92,7 +92,6 @@ makeOptions()
     ("steady", Feel::po::value<bool>()->default_value(false), "if true : steady else unsteady")
 
     // export
-    ("export", "export results(ensight, data file(1D)")
     ("export-matlab", "export matrix and vectors in matlab" );
 
     return heatsinkoptions.add( Feel::feel_options() );
@@ -180,7 +179,7 @@ public:
 private:
 
     /**
-     * export results to ensight format (enabled by  --export cmd line options)
+     * export results to ensight format
      */
     void exportResults( double time, element_type& u );
 
@@ -194,8 +193,8 @@ private:
     double L;
 
 	/* thermal conductivities */
-	double lambda_s;
-	double lambda_f;
+	double kappa_s;
+	double kappa_f;
 
 	/* density of the materials */
 	int rho_s;
@@ -205,10 +204,10 @@ private:
 	double c_s;
 	double c_f;
 
-	/* Biot number */
-	double Bi;
+	/* biot number */
     double therm_coeff;
 
+	/* ambien temperature, and heat flux (Q) */
     double Tamb;
     double heat_flux;
 
@@ -216,13 +215,14 @@ private:
 	double charact_length;
     double surface_base, surface_fin;
 
-    /* messh, pointers and spaces*/
+    /* mesh, pointers and spaces */
     mesh_ptrtype mesh;
     space_ptrtype Xh;
 
     sparse_matrix_ptrtype D;
     vector_ptrtype F;
 
+	/* time management */
 	bdf_ptrtype M_bdf;
     bool steady;
 
@@ -242,8 +242,8 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		meshSize( this->vm()["hsize"].template as<double>() ),
 		depth( this->vm()["deep"].template as<double>() ),
 		L( this->vm()["L"].template as<double>() ),
-		lambda_s( this-> vm()["lambda_s"].template as<double>() ),
-		lambda_f( this-> vm()["lambda_f"].template as<double>() ),
+		kappa_s( this-> vm()["kappa_s"].template as<double>() ),
+		kappa_f( this-> vm()["kappa_f"].template as<double>() ),
 		rho_s( this-> vm()["rho_s"].template as<int>() ),
 		rho_f( this-> vm()["rho_f"].template as<int>() ),
 		c_s( this-> vm()["c_s"].template as<double>() ),
@@ -273,11 +273,6 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		charact_length = integrate( _range= markedfaces(mesh, "gamma4"), _expr= cst(1.) ).evaluate()(0);
         surface_base = charact_length;
         surface_fin = integrate( _range= markedfaces(mesh,"gamma1"), _expr=cst(1.) ).evaluate()(0);
-
-		/*
-		 * Calculate the biot number
-		 */
-		Bi = therm_coeff * charact_length / lambda_f;
 
         /*
          * The function space associated to the mesh
@@ -321,17 +316,19 @@ HeatSink<Dim, Order>::run()
 
     using namespace Feel::vf;
 
-    Log() << "Bi = " << Bi << "\n"
-          << "meshSize = " << meshSize << "\n"
-          << "L = "<<L<<"\n"
+    Log() << "meshSize = " << meshSize << "\n"
+          << "L = "<< L <<"\n"
           << "depth = " << depth << "\n"
-          << "lambda_spreader = " << lambda_s << "\n"
-          << "lambda_fin = " << lambda_f << "\n"
+          << "kappa_spreader = " << kappa_s << "\n"
+          << "kappa_fin = " << kappa_f << "\n"
           << "rho_spreader = " << rho_s << "\n"
           << "rho_fin = " << rho_f << "\n"
-          << "c_s = " << c_s << "\n"
-          << "c_f = " << c_f << "\n"
-          << "thermal coefficient = " << therm_coeff << "\n";
+          << "heat capacity of the base = " << c_s << "\n"
+          << "heat capacity of the fin = " << c_f << "\n"
+          << "ambient temperature = " << Tamb << "\n"
+          << "thermal coefficient = " << therm_coeff << "\n"
+          << "heat flux Q = " << heat_flux << "\n"
+          << "steady state = " << steady << "\n";
 
     /*
      * T is the unknown, v the test function
@@ -346,8 +343,8 @@ HeatSink<Dim, Order>::run()
     /*
      * Left hand side construction (steady state)
      */
-    form2( Xh, Xh, D, _init=true ) = integrate( _range= markedelements(mesh,"spreader_mesh"), _expr= lambda_s*gradt(T)*trans(grad(v)) );
-    form2( Xh, Xh, D) += integrate( _range= markedelements(mesh,"fin_mesh"), _expr= lambda_f*gradt(T)*trans(grad(v)) );
+    form2( Xh, Xh, D, _init=true ) = integrate( _range= markedelements(mesh,"spreader_mesh"), _expr= kappa_s*gradt(T)*trans(grad(v)) );
+    form2( Xh, Xh, D) += integrate( _range= markedelements(mesh,"fin_mesh"), _expr= kappa_f*gradt(T)*trans(grad(v)) );
     form2 (Xh, Xh, D) += integrate( _range= markedfaces(mesh, "gamma1"), _expr= therm_coeff*idt(T)*id(v));
 
 
