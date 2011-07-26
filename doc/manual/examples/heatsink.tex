@@ -46,34 +46,38 @@ We consider the physical domain $\varOmega (\mu)$ where $\mu = (\mu_1, ...,\mu_p
 \subsection{Parameters}
 The implementation of thoses parameters is described in the section ~\ref{heat:param}.
 
-\subsubsection{Biot number}
-The Biot number $B$ is a dimensionless number used in non-steady or transient states in heat transfer calculations. It gives a simple index of the ratio of the heat transfer resistances inside  and at the surface of a body. This number determines wheter or not the temperatures insdide a body will significantly vary in space while the body heats or cools over time from a thermal gradient applied to its surface. This number is defined as 
-\begin{equation}
-B = \frac{hL_c}{k_b}
-\end{equation} 
-where $h$ is the heat transfert coefficient, $L_c$ is the characteristic length (commonly defined as the volume of the body divided by the surface area) and $k_b$ is the thermal conductivity of the body (here the body is the thermal fin) and is expressed in $Wm^{-1}K^{-1}$. This number has to be between $0$ and $1$, this condition is included in the parameters described in ~\ref{heat:param}. This conductivity is typically one of the parameters we are insterested in to modify. This parameter corresponds to the material choosen for the heat sink. 
+%\subsubsection{Biot number}
+%The Biot number $B$ is a dimensionless number used in non-steady or transient states in heat transfer calculations. It gives a simple index of the ratio of the heat transfer resistances inside  and at the surface of a body. This number determines wheter or not the temperatures insdide a body will significantly vary in space while the body heats or cools over time from a thermal gradient applied to its surface. This number is defined as 
+%\begin{equation}
+%B = \frac{hL_c}{k_b}
+%\end{equation} 
+%where $h$ is the heat transfert coefficient, $L_c$ is the characteristic length (commonly defined as the volume of the body divided by the surface area) and $k_b$ is the thermal conductivity of the body (here the body is the thermal fin) and is expressed in $Wm^{-1}K^{-1}$. This number has to be between $0$ and $1$, this condition is included in the parameters described in ~\ref{heat:param}. This conductivity is typically one of the parameters we are insterested in to modify. This parameter corresponds to the material choosen for the heat sink. 
 
 \subsubsection{Material}
 
-Here the material parameter can be described with the spreader-to-fin conductivity ratio $\kappa$. This ratio is expressed as
-\begin{equation*}
-\displaystyle{\kappa = \frac{\tilde{\kappa}_{sp}}{\tilde{\kappa}_{fin}}}
-\end{equation*}
-where $\tilde{\kappa}_{sp}$ and $\tilde{\kappa}_{fin}$ are the thermal conductivities of the spreader and the fin. In that way, we make possible the construction of a heat sink with $2$ different materials. As a consequence, if you choose the same material, the ratio will be equal to $1$. \\
+Here the material parameter can be described with furthers parameters. We have, with $i=1$ for the fin and $i=2$ for the base :
+\begin{itemize}
+\item the thermal conductivity $\kappa_i$
 
-\noindent The material is also caracterized with its density (factor $\rho$ in the heat equation \ref{heat:eq}), here is a list of the well-known ones :
+\item the material's density $\rho_i$
+
+\item the heat capacity of the material $C_i$
+
+\end{itemize}
+The term $\rho_i C_i$ corresponds to the heat volumetric capacity. In that way, we make possible the construction of a heat sink with $2$ different materials. Here is a list of the well-known ones, $\rho$ and $C$ are gave at $298 K$ :
+
 \begin{center}
-\begin{tabular}{|c|c|c|}
+\begin{tabular}{|c|c|c|c|}
   \hline
-  \textbf{Material} & \textbf{Thermal conductivity} ($\tilde{\kappa}$ at $293 K$) & \textbf{Density }($\rho$ in $kg.m^{-3}$) \\
+  \textbf{Material} & \textbf{Thermal conductivity} ($\kappa$ in $W.m^{-1}.K^{-1}$) & \textbf{Density }($\rho$ in $kg.m^{-3}$) & \textbf{Heat Capacity} ($C$ in $J.g^{-1}.K^{-1}$) \\
   \hline
-  Aluminium & 0.1 & 2700 \\
+  Aluminium & 0.1 & 2700 & 0.897 \\
   \hline
-  Copper & 386 & 8940 \\
+  Copper & 386 & 8940 & 0.385 \\
   \hline
-  Gold & 314 & 19320 \\
+  Gold & 314 & 19320 & 0.129 \\
   \hline
-  Silver & 406 & 10500 \\
+  Silver & 406 & 10500 & 0.233 \\
   \hline
 \end{tabular}
 \end{center}
@@ -87,7 +91,6 @@ The thickness of a platefin (divided by two here because we are working on a hal
 \subsubsection{Width}
 
 This parameter is to take into account only if you are considering the 3D issue. Typically, this parameter is linked with constructor's standards. This parameter is called \lstinline!depth! in the application's implementation.
-
 
 \section{Theory}
 \label{therm:equations}
@@ -106,6 +109,7 @@ The global domain is $\varOmega = \varOmega_1 \cup \varOmega_2 $ where $\varOmeg
 \includegraphics[width=.60\linewidth]{heatsink/figure_3d.png}
 \caption{3D geometry details}
 \end{figure}
+\clearpage
 
 \subsection{Equations}
 
@@ -113,7 +117,7 @@ Our concern satisfies the heat equation which reads
 \begin{equation}
 \label{heat:eq}
    \begin{split}
-      \displaystyle{\sum_{i=1}^{2} \kappa_i \Delta T - \rho_i \frac{ \partial T}{\partial t}}  & = 0
+      \displaystyle{\sum_{i=1}^{2} \kappa_i \Delta T - \rho_i C_i \frac{ \partial T}{\partial t}}  & = 0
   \end{split}
 \end{equation}
 \begin{equation}
@@ -131,13 +135,13 @@ Our concern satisfies the heat equation which reads
 \begin{equation}
 \label{classic_neu}
    \begin{split}
-      \displaystyle{ \kappa_1 \frac{\partial T}{\partial n}} & = - B T_{ | \Gamma_1 } \\ \\
+      \displaystyle{ \kappa_1 \frac{\partial T}{\partial n}} & = - h( T_{ | \Gamma_1 } - T_{amb}) \\ \\
   \end{split}
 \end{equation}
 \begin{equation}
 \label{nonhom_neu}
    \begin{split}
-      \displaystyle{ \kappa_2 \frac{\partial T}{\partial n}} & =  1_{| \Gamma_4} \\ \\
+      \displaystyle{ \kappa_2 \frac{\partial T}{\partial n}} & =  Q(1-e^{-t}) \quad on \quad \Gamma_4 \\ \\
   \end{split}
 \end{equation}
 \begin{equation}
@@ -153,12 +157,7 @@ Our concern satisfies the heat equation which reads
   \end{split}
 \end{equation}
 
-\noindent with $i=1$ for the fin and $i=2$ for the base and where $\rho_i$ is the material's density ($kg.m^{-3}$ in the SI unit), $B$ the Biot number and $T$ the temperature at a precise point (in 2D or 3D). To see how it has been coded, you can read \ref{heat:eq_impl}.
-
-%\subsubsection{Steady-state}
-%Here the steady state can be considered as the standard state because it corresponds to the standard utilisation of the components. This state satisfies the conduction equation.
-%
-%\subsubsection{Transient states}
+\noindent with $i=1$ for the fin and $i=2$ for the base and where $\kappa_i$ is the thermal conductivity, $\rho_i$ is the material's density ($kg.m^{-3}$ in the SI unit), $C_i$ the heat capacity, $B$ the Biot number and $T$ the temperature at a precise point (in 2D or 3D). To see how it has been coded, you can read \ref{heat:eq_impl}.
 
 
 \subsection{Boundary conditions}
@@ -177,92 +176,58 @@ The problem requieres that the temperature and heat flux are continute on $\Gamm
 
 \end{itemize}
 
-\noindent Theses conditions have been coded as explained in the section \ref{heat:bc_impl}.
+\noindent Theses conditions have been coded as explained in the section \ref{heat:eq_impl}.
 
 \subsection{Finite Element Method}
 Let's apply the method to our concern, we introduce the test function $v$ and we integrate the main equation, which reads now as :
 \begin{equation}
    \begin{split}
-      \displaystyle{\sum_{i=1}^{2} \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} - \kappa_i \int_{\varOmega_i} v\Delta T }  & = 0  
+      \displaystyle{\sum_{i=1}^{2} \rho_i C_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} - \kappa_i \int_{\varOmega_i} v\Delta T }  & = 0  
   \end{split}
 \end{equation}
 We integrate by parts, which leads to :
 \begin{equation}
    \begin{split}
-      \displaystyle{\sum_{i=1}^{2} \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} +  \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} - \kappa_i \int_\Gamma {(\nabla T \cdot n) v} }  & = 0
+      \displaystyle{\sum_{i=1}^{2} \rho_i C_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} +  \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} - \kappa_i \int_{\partial \varOmega_i} {(\nabla T \cdot n) v} }  & = 0
   \end{split}
 \end{equation}
-then, by decomposing the border $\Gamma$ we obtain :
+then, by decomposing the borders $\partial\varOmega_i$, we obtain :
 \begin{multline}
- \displaystyle{- \kappa_1 \int_{\Gamma_1}{(\nabla T \cdot n) v} - \kappa_2 \int_{\Gamma_4} {(\nabla T \cdot n) v} - \kappa_1 \int_{\Gamma_{2,6}}{(\nabla T \cdot n) v}  - \kappa_2 \int_{\Gamma_{5,7}}{(\nabla T \cdot n) v} } \quad + \\ \displaystyle{ \sum_{i=1}^{2}  \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} - \kappa_i \int_{\Gamma_3}{(\nabla T \cdot n) v}  } =   0 
+ \displaystyle{- \kappa_1 \int_{\Gamma_1}{(\nabla T \cdot n) v} - \kappa_2 \int_{\Gamma_4} {(\nabla T \cdot n) v} - \kappa_1 \int_{\Gamma_{2,6}}{(\nabla T \cdot n) v}  - \kappa_2 \int_{\Gamma_{5,7,8}}{(\nabla T \cdot n) v} } \quad + \\ \displaystyle{ \sum_{i=1}^{2}  \rho_i C_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} - \kappa_i \int_{\partial\varOmega_i \cap \Gamma_3}{(\nabla T \cdot n) v}  } =   0 
 \end{multline}
 Now, we apply the conditions (\ref{hom_neu1}), (\ref{hom_neu2}), (\ref{classic_neu}) and (\ref{nonhom_neu}) which brings us to :
 \begin{equation}
    \begin{split}
- \displaystyle{ \kappa_2 B \int_{\Gamma_1}{T v} - \int_{\Gamma_4} {v} + \sum_{i=1}^{2}  \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}  - \underbrace{\kappa_i \int_{\Gamma_3}{(\nabla T \cdot n) v}}_{\text{=0 thanks to \ref{flux_conti}}}  } & =   0 
+ \displaystyle{ \int_{\Gamma_1}{hv(T-T_{amb})} - \int_{\Gamma_4} {vQ(1-e^{-t})} + \sum_{i=1}^{2}  \rho_i C_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}  - \underbrace{\kappa_i \int_{\partial\varOmega_i \cap \Gamma_3}{(\nabla T \cdot n) v}}_{\text{=0 thanks to \ref{flux_conti}}}  } & =   0 
   \end{split}
 \end{equation}
 Now we apply the boundary conditions (\ref{flux_conti}) which results in :
 \begin{equation}
    \begin{split}
- \displaystyle{ \kappa_2 B \int_{\Gamma_1}{T v} - \int_{\Gamma_4} {v}  + \sum_{i=1}^{2} \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} } & =   0 
+ \displaystyle{ h \int_{\Gamma_1}{v(T-T_{amb})} - \int_{\Gamma_4} {vQ(1-e^{-t})}  + \sum_{i=1}^{2} \rho_i C_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} } & =   0 
   \end{split}
 \end{equation}
 We can now start to transform the equation by puting in the right hand the known terms :
 \begin{equation}
    \begin{split}
- \displaystyle{\kappa_2 B \int_{\Gamma_1}{T v}  + \sum_{i=1}^{2} \rho_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} } & =  
- \int_{\Gamma_4} {v}	 
+ \displaystyle{ h \int_{\Gamma_1}{v T}  + \sum_{i=1}^{2} \rho_i C_i \int_{\varOmega_i} v\frac{ \partial T}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} } & =  
+ \int_{\Gamma_4} {vQ(1-e^{-t})}	 +  hT_{amb}\int_{\Gamma_1}{v}
   \end{split}
 \end{equation}
-We discretize $T$ such as:
+We discretize $\displaystyle{\frac{\partial T}{\partial t}}$ where $\delta t$ is the step of time, such as:
 \begin{equation}
    \begin{split}
- \displaystyle{ \kappa_2 B \int_{\Gamma_1}{T v} + \sum_{i=1}^{2} \rho_i \int_{\varOmega_i} v\frac{T^{n+1} - T^n}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} } & =  
- \int_{\Gamma_4} {v}	 
+ \displaystyle{ h \int_{\Gamma_1}{v T} + \sum_{i=1}^{2} \rho_i C_i \int_{\varOmega_i} v\frac{T^{n+1} - T^n}{\delta t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} } & =  
+ \int_{\Gamma_4} {vQ(1-e^{-t})}	 +  hT_{amb}\int_{\Gamma_1}{v}
   \end{split}
 \end{equation}
 Finally we obtain :
 \begin{equation}
    \begin{split}
- \displaystyle{ \kappa_2 B \int_{\Gamma_1}{T v} + \sum_{i=1}^{2} \rho_i \int_{\varOmega_i} v\frac{T^{n+1}}{\partial t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}} & =  
-	\displaystyle{ \int_{\Gamma_4} {v}	+  \sum_{i=1}^{2}  \rho_i \int_{\varOmega_i} v \frac{T^n}{\partial t}  }
+ \displaystyle{ h \int_{\Gamma_1}{v T} + \sum_{i=1}^{2} \rho_i C_i \int_{\varOmega_i} v\frac{T^{n+1}}{\delta t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}} & =  
+	\displaystyle{ \int_{\Gamma_4} {vQ(1-e^{-t})} +  hT_{amb}\int_{\Gamma_1}{v}	+  \sum_{i=1}^{2}  \rho_i C_i \int_{\varOmega_i} v \frac{T^n}{\delta t}  }
   \end{split}
 \end{equation}
-%We can multiply both sides by $-1$ to obtain :
-%\begin{equation}
-%   \begin{split}
-% \displaystyle{\sum_{i=1}^{2} \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T} + \rho_i \int_{\varOmega_i} v\frac{T^{n+1}}{\partial t} - \kappa_i B \int_{\Gamma_1}{T v} } & =  
-%	\displaystyle{ \sum_{i=1}^{2}  \rho_i \int_{\varOmega_i} v \frac{T^n}{\partial t} + \kappa_2 \int_{\Gamma_4} {v}  }
-%  \end{split}
-%\end{equation}
-
-%sssssssssssssssssss
-%\begin{equation}
-%   \begin{split}
-%      \displaystyle{- B \int_{\Gamma_1}{T} + \int_{\Gamma_4}{1} - \kappa \int_\varOmega {\nabla v \cdot \nabla T} }  & = \displaystyle{\rho \int_\varOmega v\frac{ \partial T}{\partial t}}
-%  \end{split}
-%\end{equation}
-%We discretize $T$ such as:
-%\begin{equation}
-%   \begin{split}
-%      \displaystyle{- B \int_{\Gamma_1}{T} + \mathcal{L}_{\Gamma_4} - \kappa \int_\varOmega {\nabla v \cdot \nabla T} }  & = \displaystyle{\rho \int_\varOmega v\frac{ T^{n+1} - T^{n}}{dt}}
-%  \end{split}
-%\end{equation}
-%where $\mathcal{L}_{\Gamma_4}$ is the length of the border $\Gamma_4$. Now we put in place the matrix form :
-%\begin{equation}
-%   \begin{split}
-%	\displaystyle{ - \kappa \int_\varOmega {\nabla v \cdot \nabla T}  - B \int_{\Gamma_1}{T}   - \rho \int_\varOmega v\frac{ T^{n+1} }{ dt }       } & = 
-%		\displaystyle{    - \rho \int_\varOmega v\frac{ T^{n} }{ dt }  - \mathcal{L}_{\Gamma_4}      }  
-%  \end{split}
-%\end{equation}
-%the sign can be changed, so we obtain :
-%\begin{equation}
-%   \begin{split}
-%	\displaystyle{ \kappa \int_\varOmega {\nabla v \cdot \nabla T}  + B \int_{\Gamma_1}{T}   + \rho \int_\varOmega v\frac{ T^{n+1} }{ dt }       } & = 
-%		\displaystyle{   \rho \int_\varOmega v\frac{ T^{n} }{ dt }  + \mathcal{L}_{\Gamma_4}      }  
-%  \end{split}
-%\end{equation}
 
 \section{Implementation}
 \label{heat:impl}
@@ -272,9 +237,6 @@ Finally we obtain :
 
 The parameters of the application are described such as 
 %\lstinputlisting[linerange=marker1-endmarker1]{../../../devel/feel/examples/heat/heatsink.cpp}
-
-\subsection{Boundaries conditions}
-\label{heat:bc_impl}
 
 \subsection{Equations}
 \label{heat:eq_impl}
