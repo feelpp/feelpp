@@ -75,11 +75,13 @@ makeOptions()
 	("rho_f", Feel::po::value<int>()->default_value( 8940 ),
 	 "density of the fin's material in SI unit kg.m^{-3}")
 
+	// heat capacities parameter
+	("c_s", Feel::po::value<double>()->default_value( 0.385 ),
+	 "heat capacity of the spreader's material in SI unit J.g^{-1}.K^{-1}")
+	("c_f", Feel::po::value<double>()->default_value( 0.385 ),
+	 "heat capacity of the fin's material in SI unit J.g^{-1}.K^{-1}")
+
 	// physical coeff
-    ("Bimin", Feel::po::value<double>()->default_value( 0.01 ),
-     "minimum value of Biot number")
-    ("Bimax", Feel::po::value<double>()->default_value( 1 ),
-     "maximum value of Biot number")
     ("therm_coeff", Feel::po::value<double>()->default_value(60000),
      "thermal coefficient for the biot number")
     ("Tamb", Feel::po::value<double>()->default_value(300),
@@ -195,9 +197,13 @@ private:
 	double lambda_s;
 	double lambda_f;
 
-	/* density of the material */
+	/* density of the materials */
 	int rho_s;
 	int rho_f;
+
+	/* heat capacity of the materials*/
+	double c_s;
+	double c_f;
 
 	/* Biot number */
 	double Bi;
@@ -240,6 +246,8 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		lambda_f( this-> vm()["lambda_f"].template as<double>() ),
 		rho_s( this-> vm()["rho_s"].template as<int>() ),
 		rho_f( this-> vm()["rho_f"].template as<int>() ),
+		c_s( this-> vm()["c_s"].template as<double>() ),
+		c_f( this-> vm()["c_f"].template as<double>() ),
         therm_coeff( this-> vm()["therm_coeff"].template as <double>() ),
         Tamb( this-> vm()["Tamb"].template as <double>() ),
         heat_flux( this-> vm()["heat_flux"].template as <double>() ),
@@ -321,6 +329,8 @@ HeatSink<Dim, Order>::run()
           << "lambda_fin = " << lambda_f << "\n"
           << "rho_spreader = " << rho_s << "\n"
           << "rho_fin = " << rho_f << "\n"
+          << "c_s = " << c_s << "\n"
+          << "c_f = " << c_f << "\n"
           << "thermal coefficient = " << therm_coeff << "\n";
 
     /*
@@ -342,8 +352,8 @@ HeatSink<Dim, Order>::run()
 
 
     form2(Xh, Xh, D) +=
-        integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) )
-        + integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) );
+        integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*c_s*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) )
+        + integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*c_f*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) );
 
     D->close();
 
@@ -378,8 +388,8 @@ HeatSink<Dim, Order>::run()
         auto Ft = M_backend->newVector( Xh );
         auto bdf_poly = M_bdf->polyDeriv();
         form1( _test=Xh, _vector=Ft) =
-            integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*idv(bdf_poly)*id(v)) +
-            integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*idv(bdf_poly)*id(v) );
+            integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*c_s*idv(bdf_poly)*id(v)) +
+            integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*c_f*idv(bdf_poly)*id(v) );
         form1( _test=Xh, _vector=F ) +=
             integrate( _range= markedfaces(mesh,"gamma4"), _expr= heat_flux*(1-exp(-M_bdf->time()))*id(v) );
         // add contrib from time independent terms
