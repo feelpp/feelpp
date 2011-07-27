@@ -69,6 +69,7 @@ makeOptions()
         ("theta", Feel::po::value<double>()->default_value( 0.0 ), "angle of propagation")
         ("metalFlag", Feel::po::value<int>()->default_value( 1 ), "specify the flag of faces with metalic condition")
         ("fieldFlag", Feel::po::value<int>()->default_value( 2 ), "specify the flag of faces where apply a field")
+        ("initfields", Feel::po::value<int>()->default_value( 1 ), "initialise the fields")
         ;
     return diodeoptions.add( Feel::feel_options() );
 }
@@ -320,7 +321,7 @@ Diode::FSolve( BdyExpr& wbdy,
     // lEx += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v1)*wbdy*id(u));
 
     lEx += integrate( markedfaces(mesh, 1 ), trans(Anm_1)*(wL-wMetal)*id(u));
-    lEx += integrate( markedfaces(mesh, 2 ), trans(Anm_1)*(wL-wbdy)*id(u));
+    lEx += integrate( markedfaces(mesh, "field" ), trans(Anm_1)*(wL-wbdy)*id(u));
 
     lEy = integrate( elements( mesh ),  -id(u)*dxv(Bzn));
     lEy += integrate( internalfaces(mesh),
@@ -331,7 +332,7 @@ Diode::FSolve( BdyExpr& wbdy,
     // lEy += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v2)*wbdy*id(u));
 
     lEy += integrate( markedfaces(mesh, 1 ), trans(Anm_2)*(wL-wMetal)*id(u));
-    lEy += integrate( markedfaces(mesh, 2 ), trans(Anm_2)*(wL-wbdy)*id(u));
+    lEy += integrate( markedfaces(mesh, "field" ), trans(Anm_2)*(wL-wbdy)*id(u));
 
     lBz = integrate( elements( mesh ),  -id(u)*dxv(Eyn) + id(u)*dyv(Exn) );
     lBz += integrate( internalfaces(mesh),
@@ -342,7 +343,7 @@ Diode::FSolve( BdyExpr& wbdy,
     // lBz += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v3)*wbdy*id(u));
 
     lBz += integrate( markedfaces(mesh, 1 ), trans(Anm_3)*(wL-wMetal)*id(u));
-    lBz += integrate( markedfaces(mesh, 2 ), trans(Anm_3)*(wL-wbdy)*id(u));
+    lBz += integrate( markedfaces(mesh, "field" ), trans(Anm_3)*(wL-wbdy)*id(u));
 
     M_backend->solve( _matrix=D, _solution=dtEx, _rhs=F_Ex  );
     M_backend->solve( _matrix=D, _solution=dtEy, _rhs=F_Ey  );
@@ -546,9 +547,11 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                       % this->about().appName()
                                       % convex).str() ) );
     auto L2ProjDisc = projector( Xh, Xh );
-    //Ex = L2ProjDisc->project( Ex_exact );
-    //Ey = L2ProjDisc->project( Ey_exact );
-    //Bz = L2ProjDisc->project( Bz_exact );
+    if ( this->vm()["initfields"].as<int>() == 1){
+        Ex = L2ProjDisc->project( Ex_exact );
+        Ey = L2ProjDisc->project( Ey_exact );
+        Bz = L2ProjDisc->project( Bz_exact );
+    }
 
     auto L2Proj = projector( Xhc, Xhc );
     Exc = L2Proj->project( idv(Ex) );

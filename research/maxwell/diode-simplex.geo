@@ -20,10 +20,13 @@ Line(7) = {6, 5};
 Line(8) = {5, 2};
 Circle(9) = {5, 4, 10};
 Circle(10) = {7, 4, 10};
-//Physical Line(2) = {1}
-//Physical Line(1) = {2,3,4,5,8,9,10}
 
-Physical Line(2) = {1,2,3,4,5,8,9,10}
+//injection of waves
+//Physical Line(2) = {1};
+//Physical Line(1) = {2,3,4,5,8,9,10};
+
+//test case
+Physical Line("field") = {1,2,3,4,5,8,9,10};
 
 //Physical Line(8) = {1,2,3,4,5,9,10,8};
 //Physical Line(8) = {1};

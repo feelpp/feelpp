@@ -51,7 +51,7 @@ extern "C"
 
 #endif /* HAVE_PETSC_H */
 #if defined( HAVE_MADLIB_H )
-# include <MAdLib.h>
+
 #endif
 namespace Feel
 {
@@ -96,7 +96,7 @@ Environment::Environment( int& argc, char**& argv )
 
 #if defined( HAVE_MADLIB_H )
     // \warning Madlib initializes MPI too (may generate warnings)
-    MAdLibInitialize( &argc, &argv );
+    //MAdLibInitialize( &argc, &argv );
 #endif // HAVE_MADLIB_H
 
     if ( argc >= 1 )
@@ -126,7 +126,7 @@ Environment::~Environment()
     }
 
 #if defined( HAVE_MADLIB_H )
-    MAdLibFinalize();
+    //MAdLibFinalize();
 #endif // HAVE_MADLIB_H
 }
 
