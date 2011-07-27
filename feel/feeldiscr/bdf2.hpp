@@ -59,6 +59,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel
 {
@@ -114,13 +115,13 @@ public:
 #endif
     BdfBase( po::variables_map const& vm, std::string name )
         :
-        M_order( vm["bdf-time-order"].as<int>() ),
+        M_order( vm["bdf.order"].as<int>() ),
         M_name( name ),
-        M_time( vm["bdf-time-initial"].as<double>() ),
-        M_Ti( vm["bdf-time-initial"].as<double>() ),
-        M_Tf( vm["bdf-time-final"].as<double>() ),
-        M_dt( vm["bdf-time-step"].as<double>() ),
-        M_strategy( (BDFStragegy)vm["bdf-time-strategy"].as<int>() ),
+        M_time( vm["bdf.time-initial"].as<double>() ),
+        M_Ti( vm["bdf.time-initial"].as<double>() ),
+        M_Tf( vm["bdf.time-final"].as<double>() ),
+        M_dt( vm["bdf.time-step"].as<double>() ),
+        M_strategy( (BDFStragegy)vm["bdf.strategy"].as<int>() ),
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
         M_alpha( BDF_MAX_ORDER ),
@@ -297,10 +298,12 @@ public:
     //! return the relative path where the bdf data is stored
     fs::path path() { return M_path_save; }
 
+    void setOrder( int order ) { M_order = order; }
+    void setTimeInitial( double ti ) { M_Ti = ti; }
     void setTimeStep( double dt ) { M_dt = dt; }
     void setTimeFinal( double T ) { M_Tf = T; }
-
-    void setSteady() { M_dt=1e30; M_Tf=1e30; }
+    void setStrategy( int strategy ) { M_strategy = (BDFStragegy)strategy; }
+    void setSteady( bool steady = true ) { if ( steady ) { M_dt=1e30; M_Tf=1e30; } }
 
     void print() const
     {
@@ -829,6 +832,35 @@ Bdf<SpaceType>::poly() const
         __t.add(  this->polyCoefficient( i ),  *M_unknowns[ i ] );
 
     return __t;
+}
+
+
+
+BOOST_PARAMETER_FUNCTION(
+    (boost::shared_ptr<Bdf<typename meta::remove_all<typename parameter::binding<Args, tag::space>::type>::type::value_type> >),
+    bdf, tag,
+    (required
+     (space,*(boost::is_convertible<mpl::_,boost::shared_ptr<Feel::FunctionSpaceBase> >))
+     (vm,*))
+    (optional
+     (prefix,*,"")
+     (name,*,"bdf")
+     (order,*(boost::is_integral<mpl::_>),vm[prefixvm(prefix,"bdf.order")].template as<int>())
+     (initial_time,*(boost::is_floating_point<mpl::_>),vm[prefixvm(prefix,"bdf.time-initial")].template as<double>())
+     (final_time,*(boost::is_floating_point<mpl::_>),vm[prefixvm(prefix,"bdf.time-final")].template as<double>())
+     (time_step,*(boost::is_floating_point<mpl::_>),vm[prefixvm(prefix,"bdf.time-step")].template as<double>())
+     (strategy,*(boost::is_integral<mpl::_>),vm[prefixvm(prefix,"bdf.strategy")].template as<int>())
+     (steady,*(bool),vm[prefixvm(prefix,"bdf.steady")].template as<bool>())
+        ))
+{
+    typedef typename meta::remove_all<space_type>::type::value_type _space_type;
+    auto thebdf = boost::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>(vm,space,name) );
+    thebdf->setTimeFinal( final_time );
+    thebdf->setTimeStep( time_step );
+    thebdf->setOrder( order );
+    thebdf->setSteady( steady );
+    thebdf->setStrategy( strategy );
+    return thebdf;
 }
 
 /**
