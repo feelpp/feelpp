@@ -39,26 +39,24 @@ namespace Feel
  */
 po::options_description exporter_options( std::string const& prefix )
 {
-    std::string _prefix = prefix;
-    if ( !_prefix.empty() )
-        _prefix += "-";
-
     po::options_description _options( "Exporter " + prefix + " options");
     _options.add_options()
         // do export
-        ((_prefix+"export").c_str(), Feel::po::value<bool>()->default_value( true ), "true if export, false otherwise")
+        (prefixvm(prefix,"export").c_str(), Feel::po::value<bool>()->default_value( true ), "true if export, false otherwise")
+        // do export
+        (prefixvm(prefix,"exporter.export").c_str(), Feel::po::value<bool>()->default_value( true ), "true if export, false otherwise")
 
         // exporter type
-        ((_prefix+"exporter-format").c_str(), Feel::po::value<std::string>()->default_value( "ensight" ), "type of exporter")
+        (prefixvm(prefix,"exporter.format").c_str(), Feel::po::value<std::string>()->default_value( "ensight" ), "type of exporter (ensight or gmsh)")
 
         // prefix options
-        ((_prefix+"exporter-prefix").c_str(), Feel::po::value<std::string>()->default_value( prefix ), "prefix for exported files")
+        (prefixvm(prefix,"exporter.prefix").c_str(), Feel::po::value<std::string>()->default_value( prefix ), "prefix for exported files")
 
         // frequency options
-        ((_prefix+"exporter-freq").c_str(), Feel::po::value<int>()->default_value( 1 ), "frequency at which results are exported")
+        (prefixvm(prefix,"exporter.freq").c_str(), Feel::po::value<int>()->default_value( 1 ), "frequency at which results are exported")
 
         // file type options
-        ((_prefix+"exporter-file-type").c_str(), Feel::po::value<int>()->default_value( ASCII ), "file type in which the results are exported ('ascii' = 0 or 'binary' = 1)")
+        (prefixvm(prefix,"exporter.file-type").c_str(), Feel::po::value<int>()->default_value( ASCII ), "file type in which the results are exported ('ascii' = 0 or 'binary' = 1)")
         ;
     return _options;
 }
