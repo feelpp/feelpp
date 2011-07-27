@@ -320,8 +320,8 @@ Diode::FSolve( BdyExpr& wbdy,
     // lEx += integrate( markedfaces(mesh, this->vm()["metalFlag"].as<int>() ), trans(Anm_1)*(wL-wMetal)*id(u));
     // lEx += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v1)*wbdy*id(u));
 
-    lEx += integrate( markedfaces(mesh, 1 ), trans(Anm_1)*(wL-wMetal)*id(u));
-    lEx += integrate( markedfaces(mesh, "field" ), trans(Anm_1)*(wL-wbdy)*id(u));
+    lEx += integrate( markedfaces(mesh, "Metal" ), trans(Anm_1)*(wL-wMetal)*id(u));
+    lEx += integrate( markedfaces(mesh, "Dirichlet" ), trans(Anm_1)*(wL-wbdy)*id(u));
 
     lEy = integrate( elements( mesh ),  -id(u)*dxv(Bzn));
     lEy += integrate( internalfaces(mesh),
@@ -331,8 +331,8 @@ Diode::FSolve( BdyExpr& wbdy,
     // lEy += integrate( markedfaces(mesh, this->vm()["metalFlag"].as<int>() ), trans(Anm_3)*(wL-wMetal)*id(u));
     // lEy += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v2)*wbdy*id(u));
 
-    lEy += integrate( markedfaces(mesh, 1 ), trans(Anm_2)*(wL-wMetal)*id(u));
-    lEy += integrate( markedfaces(mesh, "field" ), trans(Anm_2)*(wL-wbdy)*id(u));
+    lEy += integrate( markedfaces(mesh, "Metal" ), trans(Anm_2)*(wL-wMetal)*id(u));
+    lEy += integrate( markedfaces(mesh, "Dirichlet" ), trans(Anm_2)*(wL-wbdy)*id(u));
 
     lBz = integrate( elements( mesh ),  -id(u)*dxv(Eyn) + id(u)*dyv(Exn) );
     lBz += integrate( internalfaces(mesh),
@@ -342,8 +342,9 @@ Diode::FSolve( BdyExpr& wbdy,
     // lBz += integrate( markedfaces(mesh, this->vm()["metalFlag"].as<int>() ), trans(Anm_3)*(wL-wMetal)*id(u));
     // lBz += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v3)*wbdy*id(u));
 
-    lBz += integrate( markedfaces(mesh, 1 ), trans(Anm_3)*(wL-wMetal)*id(u));
-    lBz += integrate( markedfaces(mesh, "field" ), trans(Anm_3)*(wL-wbdy)*id(u));
+    lBz += integrate( markedfaces(mesh, "Metal" ), trans(Anm_3)*(wL-wMetal)*id(u));
+    lBz += integrate( markedfaces(mesh, "Dirichlet" ), trans(Anm_3)*(wL-wbdy)*id(u));
+
 
     M_backend->solve( _matrix=D, _solution=dtEx, _rhs=F_Ex  );
     M_backend->solve( _matrix=D, _solution=dtEy, _rhs=F_Ey  );
@@ -492,9 +493,10 @@ void
 Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "examples/maxwell/%1%/%2%/P%3%/h_%4%/" )
+        Environment::changeRepository( boost::format( "examples/maxwell/%1%/%2%/P%3%G%4%/h_%5%/" )
                                        % this->about().appName()
                                        % convex
+                                       % Order
                                        % OrderGeo
                                        % X[0] );
     mesh = createGMSHMesh( _mesh=new mesh_type,
