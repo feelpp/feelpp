@@ -66,6 +66,9 @@ makeOptions()
         ("dt", Feel::po::value<double>()->default_value( 0.01 ), "timestep value")
         ("Tfinal", Feel::po::value<double>()->default_value( 1 ), "final time")
         ("rkmethod", Feel::po::value<int>()->default_value( 2 ), "rk method, 0=euler, 1=modified euler, 2=heun, 3=rk4")
+        ("theta", Feel::po::value<double>()->default_value( 0.0 ), "angle of propagation")
+        ("metalFlag", Feel::po::value<int>()->default_value( 1 ), "specify the flag of faces with metalic condition")
+        ("fieldFlag", Feel::po::value<int>()->default_value( 2 ), "specify the flag of faces where apply a field")
         ;
     return diodeoptions.add( Feel::feel_options() );
 }
@@ -289,6 +292,7 @@ Diode::FSolve( BdyExpr& wbdy,
     auto w = vec(idv(Exn),idv(Eyn),idv(Bzn));
     auto wR = vec(rightfacev(idv(Exn)),rightfacev(idv(Eyn)),rightfacev(idv(Bzn)));
     auto wL = vec(leftfacev(idv(Exn)),leftfacev(idv(Eyn)),leftfacev(idv(Bzn)));
+    auto wMetal = vec(-leftfacev(idv(Exn)),-leftfacev(idv(Eyn)),leftfacev(idv(Bzn)));
     auto lEx=form1( _test=Xh, _vector=F_Ex, _init=true );
     auto lEy=form1( _test=Xh, _vector=F_Ey, _init=true );
     auto lBz=form1( _test=Xh, _vector=F_Bz, _init=true );
@@ -301,64 +305,44 @@ Diode::FSolve( BdyExpr& wbdy,
     auto Anm_2 = vec( Nx() * Ny() / 0.2e1, -Nx() * Nx() / 0.2e1, Nx() / 0.2e1);
     auto Anm_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst(-0.1e1 / 0.2e1) );
 
-    // //Aini+
-    // auto Anp_1 = vec(Ny() * Ny() /2.0, -Nx() * Ny() / 2.0, -Ny() / 2.0 );
-    // auto Anp_2 = vec(-Nx() * Ny() / 2.0, Nx() * Nx() / 2.0, Nx() / 2.0 );
-    // auto Anp_3 = vec( -Ny() / 2.0, Nx() / 2.0, cst(0.5) );
-
-    // //Aini-
-    // auto Anm_1 = vec(  -Ny() * Ny() / 2.0, Nx() * Ny() /2.0, -Ny() / 2.0 );
-    // auto Anm_2 = vec( Nx() * Ny() / 2.0, -Nx() * Nx() / 2.0, Nx() / 2.0);
-    // auto Anm_3 = vec( -Ny() / 2.0, Nx() /2.0, -cst(0.5) );
+    auto v1 = vec( cst(1.0) , cst(0.0) , cst(0.0) );
+    auto v2 = vec( cst(0.0) , cst(1.0) , cst(0.0) );
+    auto v3 = vec( cst(0.0) , cst(0.0) , cst(1.0) );
 
     auto u = Xh->element();
-
-    // lEx = integrate( elements( mesh ),  idv(Exn)*id(u)-dt*dy(u)*idv(Bzn) );
-    // lEy = integrate( elements( mesh ),  idv(Eyn)*id(u)+dt*dx(u)*idv(Bzn));
-    // lBz = integrate( elements( mesh ),  idv(Bzn)*id(u)+dt*(dx(u)*idv(Eyn) - dy(u)*idv(Exn)) );
-
-    // lEx = integrate( elements( mesh ),  idv(Exn)*id(u)+dt*id(u)*dyv(Bzn) );
-    // lEy = integrate( elements( mesh ),  idv(Eyn)*id(u)-dt*id(u)*dxv(Bzn));
-    // lBz = integrate( elements( mesh ),  idv(Bzn)*id(u)-dt*(id(u)*dxv(Eyn) - id(u)*dyv(Exn)) );
-
-    // lEx += integrate( internalfaces(mesh),
-    //                   dt*trans(Anp_1)*(wL-wR)*(rightface(id(u)))
-    //                   +dt*trans(Anm_1)*(wL-wR)*(leftface(id(u))) );
-    // lEy += integrate( internalfaces(mesh),
-    //                   dt*trans(Anp_2)*(wL-wR)*(rightface(id(u)))
-    //                   +dt*trans(Anm_2)*(wL-wR)*(leftface(id(u))) );
-    // lBz += integrate( internalfaces(mesh),
-    //                   dt*trans(Anp_3)*(wL-wR)*(rightface(id(u)))
-    //                   +dt*trans(Anm_3)*(wL-wR)*(leftface(id(u))) );
-
-    // //remettre l'autre formulation!!!
-    // lEx += integrate( boundaryfaces(mesh),
-    //                   //-dt*trans(Anp_1)*wbdy*leftface(id(u))
-    //                   dt*trans(Anm_1)*(wbdy-wL)*leftface(id(u)));
-    // lEy += integrate( boundaryfaces(mesh),
-    //                   //-dt*trans(Anp_2)*wbdy*leftface(id(u))
-    //                   dt*trans(Anm_2)*(wbdy-wL)*leftface(id(u)));
-    // lBz += integrate( boundaryfaces(mesh),
-    //                   //-dt*trans(Anp_3)*wbdy*leftface(id(u))
-    //                   dt*trans(Anm_3)*(wbdy-wL)*leftface(id(u)));
 
     lEx = integrate( elements( mesh ),  id(u)*dyv(Bzn) );
     lEx += integrate( internalfaces(mesh),
                       trans(Anm_1)*(wL-wR)*leftface(id(u))
                       + trans(Anp_1)*(wL-wR)*rightface(id(u)) );
-    lEx += integrate( boundaryfaces(mesh), trans(Anm_1)*(wL-wbdy)*id(u) );
+    //lEx += integrate( boundaryfaces(mesh), trans(Anm_1)*(wL-wbdy)*id(u) );
+    // lEx += integrate( markedfaces(mesh, this->vm()["metalFlag"].as<int>() ), trans(Anm_1)*(wL-wMetal)*id(u));
+    // lEx += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v1)*wbdy*id(u));
+
+    lEx += integrate( markedfaces(mesh, 1 ), trans(Anm_1)*(wL-wMetal)*id(u));
+    lEx += integrate( markedfaces(mesh, 2 ), trans(Anm_1)*(wL-wbdy)*id(u));
 
     lEy = integrate( elements( mesh ),  -id(u)*dxv(Bzn));
     lEy += integrate( internalfaces(mesh),
                       trans(Anm_2)*(wL-wR)*leftface(id(u))
                       + trans(Anp_2)*(wL-wR)*rightface(id(u)) );
-    lEy += integrate( boundaryfaces(mesh), trans(Anm_2)*(wL-wbdy)*id(u) );
+    //lEy += integrate( boundaryfaces(mesh), trans(Anm_2)*(wL-wbdy)*id(u) );
+    // lEy += integrate( markedfaces(mesh, this->vm()["metalFlag"].as<int>() ), trans(Anm_3)*(wL-wMetal)*id(u));
+    // lEy += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v2)*wbdy*id(u));
+
+    lEy += integrate( markedfaces(mesh, 1 ), trans(Anm_2)*(wL-wMetal)*id(u));
+    lEy += integrate( markedfaces(mesh, 2 ), trans(Anm_2)*(wL-wbdy)*id(u));
 
     lBz = integrate( elements( mesh ),  -id(u)*dxv(Eyn) + id(u)*dyv(Exn) );
     lBz += integrate( internalfaces(mesh),
                       trans(Anm_3)*(wL-wR)*leftface(id(u))
                       + trans(Anp_3)*(wL-wR)*rightface(id(u)) );
-    lBz += integrate( boundaryfaces(mesh), trans(Anm_3)*(wL-wbdy)*id(u) );
+    //lBz += integrate( boundaryfaces(mesh), trans(Anm_3)*(wL-wbdy)*id(u) );
+    // lBz += integrate( markedfaces(mesh, this->vm()["metalFlag"].as<int>() ), trans(Anm_3)*(wL-wMetal)*id(u));
+    // lBz += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v3)*wbdy*id(u));
+
+    lBz += integrate( markedfaces(mesh, 1 ), trans(Anm_3)*(wL-wMetal)*id(u));
+    lBz += integrate( markedfaces(mesh, 2 ), trans(Anm_3)*(wL-wbdy)*id(u));
 
     M_backend->solve( _matrix=D, _solution=dtEx, _rhs=F_Ex  );
     M_backend->solve( _matrix=D, _solution=dtEy, _rhs=F_Ey  );
@@ -525,50 +509,28 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto Ex = Xh->element();
     auto Ey = Xh->element();
     auto Bz = Xh->element();
-    auto dtEx = Xh->element();
-    auto dtEy = Xh->element();
-    auto dtBz = Xh->element();
-    auto dtEx2 = Xh->element();
-    auto dtEy2 = Xh->element();
-    auto dtBz2 = Xh->element();
-    auto Exe = Xhc->element();
-    auto Eye = Xhc->element();
-    auto Bze = Xhc->element();
     auto Exc = Xhc->element();
     auto Eyc = Xhc->element();
     auto Bzc = Xhc->element();
-    auto Exdiff = Xhc->element();
-    auto Eydiff = Xhc->element();
-    auto Bzdiff = Xhc->element();
     auto u = Xh->element();
     auto v = Xh->element();
 
     using namespace Feel::vf;
     double dt=std::min(0.1*meshSize/(Order+1),timeStep);
+    //double dt = timeStep;
 
     double pi=M_PI;
     double k=2*pi; //=0;
-    double theta=pi/4;
+    double theta=this->vm()["theta"].as<double>();
     //theta=0;
     double vu=cos(theta);
     double vv=sin(theta);
     double time = 0;
     auto c=cos(k * (vu * Px() + vv * Py() - cst_ref(time)));
-    auto s=k*sin(k * (vu * Px() + vv * Py() - cst_ref(time)));
     auto Ex_exact = -vv*c;
     auto Ey_exact = vu*c;
     auto Bz_exact = c;
-    auto dtEx_exact = -vv*s;
-    auto dtEy_exact = vu*s;
-    auto dtBz_exact = s;
     auto w_exact = vec(Ex_exact, Ey_exact, Bz_exact );
-    auto wL_exact = vec(leftfacev(Ex_exact), leftfacev(Ey_exact), leftfacev(Bz_exact) );
-    auto wR_exact = vec(rightfacev(Ex_exact), rightfacev(Ey_exact), rightfacev(Bz_exact) );
-
-    checkDG( Ex_exact );
-    checkDG( Ey_exact );
-    checkDG( Bz_exact );
-
     F_Ex = M_backend->newVector( Xh );
     F_Ey = M_backend->newVector( Xh );
     F_Bz = M_backend->newVector( Xh );
@@ -584,46 +546,20 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                       % this->about().appName()
                                       % convex).str() ) );
     auto L2ProjDisc = projector( Xh, Xh );
-    Ex = L2ProjDisc->project( Ex_exact );
-    Ey = L2ProjDisc->project( Ey_exact );
-    Bz = L2ProjDisc->project( Bz_exact );
+    //Ex = L2ProjDisc->project( Ex_exact );
+    //Ey = L2ProjDisc->project( Ey_exact );
+    //Bz = L2ProjDisc->project( Bz_exact );
 
     auto L2Proj = projector( Xhc, Xhc );
     Exc = L2Proj->project( idv(Ex) );
     Eyc = L2Proj->project( idv(Ey) );
     Bzc = L2Proj->project( idv(Bz) );
 
-    Exe = vf::project( Xhc, elements(mesh), Ex_exact );
-    Eye = vf::project( Xhc, elements(mesh), Ey_exact );
-    Bze = vf::project( Xhc, elements(mesh), Bz_exact );
-
-    Exdiff = L2Proj->project( idv(Ex)-Ex_exact );
-    Eydiff = L2Proj->project( idv(Ey)-Ey_exact );
-    Bzdiff = L2Proj->project( idv(Bz)-Bz_exact );
-
     exporter->step(time)->setMesh( mesh );
-#if 0
-    exporter->step(time)->add( "Ex", Ex );
-    exporter->step(time)->add( "Ey", Ey );
-    exporter->step(time)->add( "Bz", Bz );
-#endif
-    dtEx2 = vf::project( Xh, elements(mesh), Ex_exact );
-    dtEy2 = vf::project( Xh, elements(mesh), Ey_exact );
-    dtBz2 = vf::project( Xh, elements(mesh), Bz_exact );
-    Exdiff = L2Proj->project( dyv(dtBz2));// - dtEx_exact);
-    Eydiff = L2Proj->project( -dxv(dtBz2));//- dtEy_exact);
-    Bzdiff = L2Proj->project( dyv(dtEx2) - dxv(dtEy2));// - dtBz_exact);
-    exporter->step(time)->add( "Exd", Exdiff );
-    exporter->step(time)->add( "Eyd", Eydiff );
-    exporter->step(time)->add( "Bzd", Bzdiff );
 
     exporter->step(time)->add( "Exc", L2Proj->project(idv(Ex)) );
     exporter->step(time)->add( "Eyc", L2Proj->project(idv(Ey)) );
     exporter->step(time)->add( "Bzc", L2Proj->project(idv(Bz)) );
-
-    exporter->step(time)->add( "ExExact", Exe );
-    exporter->step(time)->add( "EyExact", Eye );
-    exporter->step(time)->add( "BzExact", Bze );
 
     auto w = vec(idv(Ex),idv(Ey),idv(Bz));
     auto wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
@@ -652,35 +588,6 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     {
         std::cout << "============================================================" << std::endl;
         std::cout << "time = " << time << "s, dt=" << dt << ", final time=" << Tfinal << ",hsize = "<< meshSize <<", method : "<<std::endl;
-        FSolve(w_exact, dt,
-               // L2ProjDisc->project(Ex_exact),
-               // L2ProjDisc->project(Ey_exact),
-               // L2ProjDisc->project(Bz_exact),
-               Ex, Ey, Bz, dtEx, dtEy, dtBz);
-        //time += dt;
-
-        /* dtEx2 = vf::project( Xh, elements(mesh), dtEx_exact );
-        dtEy2 = vf::project( Xh, elements(mesh), dtEy_exact );
-        dtBz2 = vf::project( Xh, elements(mesh), dtBz_exact );
-        dtEx = vf::project( Xh, elements(mesh), Ex_exact );
-        dtEy = vf::project( Xh, elements(mesh), Ey_exact );
-        dtBz = vf::project( Xh, elements(mesh), Bz_exact );
-
-        std::cout << "||proj exact-Ex||_2 = "
-                  << integrate(elements(mesh),
-            (-dyv(dtBz)+idv(dtEx2))*(-dyv(dtBz)+idv(dtEx2)) ).evaluate().norm()
-                  << std::endl;
-        std::cout << "||proj exact-Ey||_2 = "
-                  << integrate(elements(mesh),
-            (dxv(dtBz)+idv(dtEy2))*(dxv(dtBz)+idv(dtEy2)) ).evaluate().norm()
-                  << std::endl;
-        std::cout << "||proj exact-Bz||_2 = "
-                  << integrate(elements(mesh),
-            (dxv(dtEy)-dyv(dtEx)+idv(dtBz2))*
-            (dxv(dtEy)-dyv(dtEx)+idv(dtBz2)) ).evaluate().norm()
-            << std::endl;*/
-
-
         switch( rkmethod )
             {
             case EULER_EXPLICIT:
@@ -700,56 +607,29 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
                 RK4Step(time, dt, w_exact, Ex, Ey, Bz);
                 break;
                 }
-
+        /*
         std::cout << "||exact-Ex||_2 = "
                   << integrate(elements(mesh),
                   (idv(Ex)-Ex_exact)*(idv(Ex)-Ex_exact) ).evaluate().norm()
-            //(idv(dtEx2)-idv(dtEx))*(idv(dtEx2)-idv(dtEx)) ).evaluate().norm()
                   << std::endl;
         std::cout << "||exact-Ey||_2 = "
                   << integrate(elements(mesh),
                   (idv(Ey)-Ey_exact)*(idv(Ey)-Ey_exact) ).evaluate().norm()
-            //(idv(dtEy2)-idv(dtEy))*(idv(dtEy2)-idv(dtEy)) ).evaluate().norm()
                   << std::endl;
         std::cout << "||exact-Bz||_2 = "
                   << integrate(elements(mesh),
                   (idv(Bz)-Bz_exact)*(idv(Bz)-Bz_exact) ).evaluate().norm()
-            //(idv(dtBz2)-idv(dtBz))*(idv(dtBz2)-idv(dtBz)) ).evaluate().norm()
                   << std::endl;
-
+        */
         // save
         exporter->step(time)->setMesh( mesh );
 
-        /*Exc = L2Proj->project( idv(dtEx) );
-        Eyc = L2Proj->project( idv(dtEy) );
-        Bzc = L2Proj->project( idv(dtBz) );
-        exporter->step(time)->add( "dtExc", Exc );
-        exporter->step(time)->add( "dtEyc", Eyc );
-        exporter->step(time)->add( "dtBzc", Bzc );*/
-
-        dtEx2 = vf::project( Xh, elements(mesh), Ex_exact );
-        dtEy2 = vf::project( Xh, elements(mesh), Ey_exact );
-        dtBz2 = vf::project( Xh, elements(mesh), Bz_exact );
-        Exdiff = L2Proj->project( Ex_exact);//dyv(dtBz2));
-        Eydiff = L2Proj->project( Ey_exact);//-dxv(dtBz2));
-        Bzdiff = L2Proj->project( Bz_exact);//dyv(dtEx2) - dxv(dtEy2) );//- dtBz_exact);
-        exporter->step(time)->add( "ExExact", Exdiff );
-        exporter->step(time)->add( "EyExact", Eydiff );
-        exporter->step(time)->add( "BzExact", Bzdiff );
-        // exporter->step(time)->add( "Exd", L2Proj->project(idv(Ex)));//diff );
-        // exporter->step(time)->add( "Eyd", L2Proj->project(idv(Ey)));//Eydiff );
-        // exporter->step(time)->add( "Bzd", L2Proj->project(idv(Bz)));//diff );
-
-        exporter->step(time)->add( "Exd", L2Proj->project( idv(dtEx)) );
-        exporter->step(time)->add( "Eyd", L2Proj->project( idv(dtEy)) );
-        exporter->step(time)->add( "Bzd", L2Proj->project( idv(dtBz) ));
-
-        Exe = L2Proj->project( idv(Ex) );
-        Eye = L2Proj->project( idv(Ey) );
-        Bze = L2Proj->project( idv(Bz) );
-        exporter->step(time)->add( "Exc", Exe );
-        exporter->step(time)->add( "Eyc", Eye );
-        exporter->step(time)->add( "Bzc", Bze );
+        Exc = L2Proj->project( idv(Ex) );
+        Eyc = L2Proj->project( idv(Ey) );
+        Bzc = L2Proj->project( idv(Bz) );
+        exporter->step(time)->add( "Exc", Exc );
+        exporter->step(time)->add( "Eyc", Eyc );
+        exporter->step(time)->add( "Bzc", Bzc );
 
         exporter->save();
     }
