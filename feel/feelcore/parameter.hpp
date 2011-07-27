@@ -47,7 +47,10 @@ namespace Feel
 {
 namespace parameter = boost::parameter;
 
-BOOST_PARAMETER_NAME(matrix)    // Note: no semicolon
+BOOST_PARAMETER_NAME(vm)    // Note: no semicolon
+BOOST_PARAMETER_NAME(prefix)
+
+BOOST_PARAMETER_NAME(matrix)
 BOOST_PARAMETER_NAME(matrixA)
 BOOST_PARAMETER_NAME(matrixB)
 BOOST_PARAMETER_NAME(rhs)
@@ -62,7 +65,7 @@ BOOST_PARAMETER_NAME(atolerance)
 BOOST_PARAMETER_NAME(dtolerance)
 BOOST_PARAMETER_NAME(ksp)
 BOOST_PARAMETER_NAME(pc)
-BOOST_PARAMETER_NAME(test)    // Note: no semicolon
+BOOST_PARAMETER_NAME(test)
 BOOST_PARAMETER_NAME(trial)
 BOOST_PARAMETER_NAME(vector)
 BOOST_PARAMETER_NAME(pattern)
@@ -132,6 +135,7 @@ BOOST_PARAMETER_NAME(initial_time)
 BOOST_PARAMETER_NAME(final_time)
 BOOST_PARAMETER_NAME(time_step)
 BOOST_PARAMETER_NAME(strategy)
+BOOST_PARAMETER_NAME(steady)
 
 BOOST_PARAMETER_NAME(markerName)
 BOOST_PARAMETER_NAME(markerAll)
