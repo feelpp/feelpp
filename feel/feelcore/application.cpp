@@ -460,6 +460,21 @@ Application::doOptions( int argc, char** argv )
         _M_desc.add( generic ).add( debug );
 
         this->parseAndStoreOptions( po::command_line_parser(argc, argv), true );
+        processGenericOptions();
+        /**
+         * parse config file if given to command line
+         */
+        if ( _M_vm.count("config-file") )
+        {
+            std::cout << "[Application] parsing " << _M_vm["config-file"].as<std::string>() << "\n";
+            if ( fs::exists(  _M_vm["config-file"].as<std::string>() ) )
+            {
+
+                std::ifstream ifs( _M_vm["config-file"].as<std::string>().c_str() );
+                po::store(parse_config_file(ifs, _M_desc, true), _M_vm);
+                po::notify(_M_vm);
+            }
+        }
         std::vector<fs::path> prefixes = boost::assign::list_of( fs::current_path() )
             ( fs::path (Environment::localConfigRepository() ) )
             ( fs::path (Environment::systemConfigRepository().get<0>() ) );
@@ -468,7 +483,6 @@ Application::doOptions( int argc, char** argv )
         {
             std::string config_name = (boost::format( "%1%/%2%.cfg" ) % prefix.string() % this->about().appName()).str();
             Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
-            std::cout << "[Application] Looking for " << config_name << "\n";
             if ( fs::exists( config_name ) )
             {
                 std::cout << "[Application] parsing " << config_name << "\n";
@@ -481,10 +495,9 @@ Application::doOptions( int argc, char** argv )
                 // try with a prefix feel_
                 std::string config_name = (boost::format( "%1%/feel_%2%.cfg" ) % prefix.string() % this->about().appName()).str();
                 Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
-                std::cout << "[Application] looking for " << config_name << "\n";
                 if ( fs::exists( config_name ) )
                 {
-                    std::cout << "[Application] parsing " << config_name << "\n";
+                    std::cout << "[Application] loading configuration file " << config_name << "...\n";
                     std::ifstream ifs( config_name.c_str() );
                     store(parse_config_file(ifs, _M_desc, true), _M_vm);
                     break;
@@ -493,16 +506,16 @@ Application::doOptions( int argc, char** argv )
         }
         //po::store(po::parse_command_line(argc, argv, _M_desc), _M_vm);
         po::notify(_M_vm);
-        processGenericOptions();
+
     }
     catch( boost::program_options::unknown_option const& e )
-        {
-            std::cout << "[Application::Application] unknown option\n";
-        }
+    {
+        std::cout << "[Application::Application] unknown option\n";
+    }
     catch( ... )
-        {
-            std::cout << "[Application::Application] unknown exception\n";
-        }
+    {
+        std::cout << "[Application::Application] unknown exception\n";
+    }
 }
 char**
 Application::unknownArgv() const
@@ -571,20 +584,7 @@ Application::processGenericOptions()
         std::cout << _M_desc << "\n";
 #endif
 
-    /**
-     * parse config file if given to command line
-     */
-    if ( _M_vm.count("config-file") )
-    {
-        std::cout << "[Application] parsing " << _M_vm["config-file"].as<std::string>() << "\n";
-        if ( fs::exists(  _M_vm["config-file"].as<std::string>() ) )
-            {
 
-                std::ifstream ifs( _M_vm["config-file"].as<std::string>().c_str() );
-                po::store(parse_config_file(ifs, _M_desc, true), _M_vm);
-                po::notify(_M_vm);
-            }
-    }
     if ( _M_vm.count("response-file") )
         {
             using namespace std;
