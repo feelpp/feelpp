@@ -23,6 +23,7 @@
 #
 set(SRC
   info.cpp
+  feel.cpp
   application.cpp
   environment.cpp
   simget.cpp
