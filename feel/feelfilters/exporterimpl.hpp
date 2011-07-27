@@ -111,7 +111,7 @@ template<typename MeshType, int N>
 Exporter<MeshType, N>*
 Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix )
 {
-    std::string estr = vm["exporter-format"].template as<std::string>();
+    std::string estr = vm["exporter.format"].template as<std::string>();
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( estr  );
     if ( N == 1 && estr == "ensight" )
         exporter = new ExporterEnsight<MeshType, N>;
@@ -132,12 +132,13 @@ Exporter<MeshType, N>::setOptions( po::variables_map const& vm, std::string cons
     if ( !_prefix.empty() )
         _prefix += "-";
 
-    M_do_export = vm[_prefix+"export"].template as<bool>();
-    M_type =  vm[_prefix+"exporter-format"].template as<std::string>();
-    if ( vm.count ( _prefix+"exporter-prefix" ) )
-        M_prefix = vm[_prefix+"exporter-prefix"].template as<std::string>();
-    M_freq = vm[_prefix+"exporter-freq"].template as<int>();
-    M_ft = file_type( vm[_prefix+"exporter-file-type"].template as<int>() );
+    //M_do_export = vm[_prefix+"export"].template as<bool>();
+    M_do_export = vm[_prefix+"exporter.export"].template as<bool>();
+    M_type =  vm[_prefix+"exporter.format"].template as<std::string>();
+    if ( vm.count ( _prefix+"exporter.prefix" ) )
+        M_prefix = vm[_prefix+"exporter.prefix"].template as<std::string>();
+    M_freq = vm[_prefix+"exporter.freq"].template as<int>();
+    M_ft = file_type( vm[_prefix+"exporter.file-type"].template as<int>() );
 
     Debug() << "[Exporter] type:  " << M_type << "\n";
     Debug() << "[Exporter] prefix:  " << M_prefix << "\n";
