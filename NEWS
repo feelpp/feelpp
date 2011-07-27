@@ -43,6 +43,8 @@
 
  - merge the two implementations of aitken relaxation method and provide a
    simplified interface
+ - added interface nlSolve interface to backend similar to solve allowing to
+   order-free and optional parameters
 
 *** feeldiscr
 
@@ -51,10 +53,24 @@
  - fix copy/paste bug in bdf extrapolation, the coefficient were divided by dt
  - support for interpolating functions living on meshes of different
    topoligical dimension
+ - BDF:
+   - new bdf() free function to generate a new bdf shared_ptr object and
+     configure it
+#+begin_SRC:
+     // vm is the variable map provided by program options
+     // note that by default most option get their value from the command line
+     // or config files
+     auto mybdf = bdf( _space=Xh, _vm=this->vm(), _order=2, _time_step=0.1 );
+#+end_SRC:
+   - changed options for bdf: now use . to separate  bdf from rest of option in
+     order to be able to create section in config files
+   - can pass a prefix to handle several bdf in application
 
 *** feelfilters
 
- - update geotool to support markers for 1D meshes
+ - GeoTool:
+   - update geotool to support markers for 1D meshes
+   - added a new Cube object
  - added mshconvert() which allows to generate a gmsh mesh out of mesh formats
    supported by gmsh
 
@@ -63,6 +79,9 @@
  - support for passing shared_ptr<> to the differential operators and to on()
  - support in the language for test and trial functions not being defined on the
    same mesh
+ - Language:
+   - add sym() and antisym() to compute the symmetric and antisymmetric parts of
+     a matrix expression
 
 ** Documentation
 
