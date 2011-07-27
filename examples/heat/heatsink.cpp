@@ -278,7 +278,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
          * The function space associated to the mesh
          */
         Xh = space_type::New( mesh );
-        M_bdf = bdf_ptrtype( new bdf_type( this->vm(), Xh, "T implicit discretization" ) );
+        M_bdf = bdf( _space=Xh, _vm=this->vm(), _name="Temperature" );
 
         /*
          * Right hand side
@@ -377,12 +377,11 @@ HeatSink<Dim, Order>::run()
 
     // average file which contains: time Tavg T_on_Gamma_1
     out.open("averages", std::ios::out);
-
+    auto Ft = M_backend->newVector( Xh );
     for ( M_bdf->start(); M_bdf->isFinished()==false; M_bdf->next() )
     {
 
         // update right hand side with time dependent terms
-        auto Ft = M_backend->newVector( Xh );
         auto bdf_poly = M_bdf->polyDeriv();
         form1( _test=Xh, _vector=Ft) =
             integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*c_s*idv(bdf_poly)*id(v)) +
