@@ -347,9 +347,30 @@ namespace Feel
 // alias for program_options namespace
 namespace po = boost::program_options;
 
+std::string
+prefixvm(std::string const& prefix,
+         std::string const& opt,
+         std::string const& sep=".");
+
+
 // alias for date_time namespaces
 namespace posix_time = boost::posix_time;
 namespace gregorian = boost::gregorian;
+
+namespace meta
+{
+template<typename TheArgs>
+struct remove_all
+{
+    typedef typename boost::remove_pointer<
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                TheArgs
+                >::type
+            >::type
+        >::type type;
+};
+}
 }
 
 #if defined( HAVE_ARPREC)
