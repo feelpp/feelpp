@@ -60,6 +60,7 @@ makeOptions()
 {
     po::options_description diodeoptions("Diode options");
     diodeoptions.add_options()
+        ("verbose", po::value<bool>()->default_value( 1 ), "verbose output")
         ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
         ("convex", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the convex used in the mesh (either simplex or hypercube)")
         ("penaldir", Feel::po::value<double>()->default_value( 20 ), "penalisation parameter for the weak boundary conditions")
@@ -71,7 +72,7 @@ makeOptions()
         ("fieldFlag", Feel::po::value<int>()->default_value( 2 ), "specify the flag of faces where apply a field")
         ("initfields", Feel::po::value<int>()->default_value( 1 ), "initialise the fields")
         ;
-    return diodeoptions.add( Feel::feel_options() );
+    return diodeoptions.add( Feel::feel_options() ).add( backend_options( "mass" ) );
 }
 
 /**
@@ -127,8 +128,8 @@ class Diode
 public:
 
     //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = 2;
-    static const uint16_type OrderGeo = 2;
+    static const uint16_type Order = 4;
+    static const uint16_type OrderGeo = 4;
 
     //! numerical type is double
     typedef double value_type;
@@ -184,7 +185,8 @@ public:
     Diode( po::variables_map const& vm, AboutData const& about )
         :
         super( vm, about ),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( this->vm(), "mass" ) ),
+        verbose( this->vm()["verbose"].as<bool>() ),
         meshSize( this->vm()["hsize"].as<double>() ),
         timeStep( this->vm()["dt"].as<double>() ),
         Tfinal( this->vm()["Tfinal"].as<double>() ),
@@ -225,6 +227,8 @@ private:
 
     //! linear algebra backend
     backend_ptrtype M_backend;
+
+    bool verbose;
 
     //! mesh characteristic size
     double meshSize;
@@ -288,6 +292,7 @@ Diode::FSolve( BdyExpr& wbdy,
                element_type& dtBz )
 
 {
+    boost::timer ti;
     //Solve dtw*M = l(W)
     //l(W) = int (Ai di phi.w + bord)
     auto w = vec(idv(Exn),idv(Eyn),idv(Bzn));
@@ -345,10 +350,15 @@ Diode::FSolve( BdyExpr& wbdy,
     lBz += integrate( markedfaces(mesh, "Metal" ), trans(Anm_3)*(wL-wMetal)*id(u));
     lBz += integrate( markedfaces(mesh, "Dirichlet" ), trans(Anm_3)*(wL-wbdy)*id(u));
 
+    if ( verbose )
+        std::cout << " -- assembly in " << ti.elapsed() << "s\n";ti.restart();
 
     M_backend->solve( _matrix=D, _solution=dtEx, _rhs=F_Ex  );
     M_backend->solve( _matrix=D, _solution=dtEy, _rhs=F_Ey  );
     M_backend->solve( _matrix=D, _solution=dtBz, _rhs=F_Bz  );
+
+    if ( verbose )
+        std::cout << " -- solve in " << ti.elapsed() << "s\n";
 }
 
 template<typename BdyExpr>

@@ -74,9 +74,9 @@ diodegeo( double h, int Order, std::string const& convex )
          << "\n"
          << "Physical Line(\"Dirichlet\") = {1};\n"
          << "Physical Line(\"Metal\") = {2,3,4,5,8,9,10};\n"
-         << "Physical Surface(9) = {-1};\n"
+         << "Physical Surface(9) = {1};\n"
          << "Physical Surface(10) = {2};\n"
-         << "Physical Surface(11) = {-3};\n";
+         << "Physical Surface(11) = {3};\n";
     if ( convex == "hypercube" )
     {
         ostr << "Recombine Surface {1};\n"
