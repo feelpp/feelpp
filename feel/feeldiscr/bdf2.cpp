@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-06-10
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2011 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -38,18 +38,15 @@ namespace Feel
  */
 po::options_description bdf_options( std::string const& prefix )
 {
-    std::string _prefix = prefix;
-    if ( !_prefix.empty() )
-        _prefix += "-";
-
     po::options_description _options( "BDF (Backward Differences time discretization) options (" + prefix + ")");
     _options.add_options()
         // solver options
-        ((_prefix+"bdf-time-initial").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "initial time")
-        ((_prefix+"bdf-time-final").c_str(), Feel::po::value<double>()->default_value( 1.0 ), "final time")
-        ((_prefix+"bdf-time-step").c_str(), Feel::po::value<double>()->default_value( 1.0 ), "time step")
-        ((_prefix+"bdf-time-order").c_str(), Feel::po::value<int>()->default_value( 1 ), "order in time")
-        ((_prefix+"bdf-time-strategy").c_str(), Feel::po::value<int>()->default_value( 0 ), "strategy, 0=constant time steps, 1=adaptive time steps")
+        (prefixvm( prefix, "bdf.time-initial" ).c_str(), Feel::po::value<double>()->default_value( 0.0 ), "initial time")
+        (prefixvm( prefix, "bdf.time-final").c_str(), Feel::po::value<double>()->default_value( 1.0 ), "final time")
+        (prefixvm( prefix, "bdf.time-step").c_str(), Feel::po::value<double>()->default_value( 1.0 ), "time step")
+        (prefixvm( prefix, "bdf.order").c_str(), Feel::po::value<int>()->default_value( 1 ), "order in time")
+        (prefixvm( prefix, "bdf.strategy").c_str(), Feel::po::value<int>()->default_value( 0 ), "strategy, 0=constant time steps, 1=adaptive time steps")
+        (prefixvm( prefix, "bdf.steady").c_str(), Feel::po::value<bool>()->default_value( 0 ), "false: unsteady, true:steady")
         ;
     return _options;
 }
