@@ -20,24 +20,24 @@ Line(7) = {6, 5};
 Line(8) = {5, 2};
 Circle(9) = {5, 4, 10};
 Circle(10) = {7, 4, 10};
+//Physical Line(2) = {1}
+//Physical Line(1) = {2,3,4,5,8,9,10}
 
-//injection of waves
-//Physical Line(2) = {1};
-//Physical Line(1) = {2,3,4,5,8,9,10};
-
-//test case
-Physical Line("field") = {1,2,3,4,5,8,9,10};
-
+//Physical Line(2) = {1,2,3,4,5,8,9,10}
 //Physical Line(8) = {1,2,3,4,5,9,10,8};
 //Physical Line(8) = {1};
+
+
 Line Loop(1) = {1, 8, 7, 2};
 Plane Surface(1) = {1};
 Line Loop(2) = {7, 9, 6, 3};
 Plane Surface(2) = {2};
 Line Loop(3) = {4, 6, 10, 5};
 Plane Surface(3) = {3};
+
+Physical Line("Dirichlet") = {1}
+Physical Line("Metal") = {2,3,4,5,8,9,10}
+
 Physical Surface(9) = {-1};
 Physical Surface(10) = {2};
 Physical Surface(11) = {-3};
-
-
