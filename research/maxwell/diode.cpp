@@ -128,7 +128,7 @@ public:
 
     //! Polynomial order \f$P_2\f$
     static const uint16_type Order = 2;
-    static const uint16_type OrderGeo = 1;
+    static const uint16_type OrderGeo = 2;
 
     //! numerical type is double
     typedef double value_type;
@@ -592,7 +592,7 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     for( time = 0; time <= Tfinal; )
     {
         std::cout << "============================================================" << std::endl;
-        std::cout << "time = " << time << "s, dt=" << dt << ", final time=" << Tfinal << ",hsize = "<< meshSize <<", method : "<<std::endl;
+        std::cout << "time = " << time << "s, dt=" << dt << ", final time=" << Tfinal << ",hsize = "<< meshSize <<", method : " << rkmethod <<std::endl;
         switch( rkmethod )
             {
             case EULER_EXPLICIT:
