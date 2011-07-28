@@ -54,20 +54,20 @@ makeOptions()
     Feel::po::options_description heatsinkoptions("heatsink options");
     heatsinkoptions.add_options()
     // mesh parameters
-    ("hsize", Feel::po::value<double>()->default_value( 0.5 ),
+    ("hsize", Feel::po::value<double>()->default_value( 0.1 ),
      "first h value to start convergence")
-    ("L", Feel::po::value<double>()->default_value( 14 ),
-     "adimensional length of the sink")
+    ("L", Feel::po::value<double>()->default_value( 0.0025 ),
+     "dimensional length of the sink (in meters)")
 
 	// 3D parameter
 	("deep", Feel::po::value<double>()->default_value( 0 ),
-	 "depth of the mesh, only in 3D simulation")
+	 "depth of the mesh (in meters) only in 3D simulation")
 
     // thermal conductivities parameters
     ("kappa_s", Feel::po::value<double>()->default_value( 386 ),
-     "thermal conductivity of the base spreader")
+     "thermal conductivity of the base spreader in SI unit W.m^{-1}.K^{-1}")
     ("kappa_f", Feel::po::value<double>()->default_value( 386 ),
-     "thermal conductivity of the fin")
+     "thermal conductivity of the fin in SI unit W.m^{-1}.K^{-1}")
 
 	// density parameter
 	("rho_s", Feel::po::value<int>()->default_value( 8940 ),
@@ -204,7 +204,7 @@ private:
 	double c_s;
 	double c_f;
 
-	/* biot number */
+	/* thermal coeff */
     double therm_coeff;
 
 	/* ambien temperature, and heat flux (Q) */
@@ -383,7 +383,7 @@ HeatSink<Dim, Order>::run()
 
         // update right hand side with time dependent terms
         auto bdf_poly = M_bdf->polyDeriv();
-        form1( _test=Xh, _vector=Ft) =
+        form1( _test=Xh, _vector=Ft ) =
             integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*c_s*idv(bdf_poly)*id(v)) +
             integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*c_f*idv(bdf_poly)*id(v) );
         form1( _test=Xh, _vector=F ) +=
