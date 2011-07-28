@@ -37,7 +37,7 @@
 using namespace Feel;
 
 
-//L : adimensional length of the sink
+//L : dimensional length of the sink (in meters)
 
 gmsh_ptrtype
 makefin( double hsize , double deep, double L)
@@ -47,12 +47,12 @@ makefin( double hsize , double deep, double L)
         ostr << "Mesh.MshFileVersion = 2.1;\n"
              << "h=" << hsize << ";\n"
              << "Point (1) = {0, 0, 0, h};\n"
-             << "Point (2) = {3.5, 0, 0, h};\n"
-             << "Point (3) = {3.5, 3, 0, h};\n"
-             << "Point (4) = {1, 3, 0, h};\n"
-             << "Point (5) = {0, 3, 0, h};\n"
-             << "Point (6) = {1, "<<3+L<<", 0, h};\n"
-             << "Point (7) = {0, "<<3+L<<", 0, h};\n"
+             << "Point (2) = {0.0008, 0, 0, h};\n"
+             << "Point (3) = {0.0008, 0.0007, 0, h};\n"
+             << "Point (4) = {0.0002, 0.0007, 0, h};\n"
+             << "Point (5) = {0, 0.0007, 0, h};\n"
+             << "Point (6) = {0.0002, "<<0.0002+L<<", 0, h};\n"
+             << "Point (7) = {0, "<<0.0002+L<<", 0, h};\n"
              << "Line (1) = {1, 2};\n"
              << "Line (2) = {2, 3};\n"
              << "Line (3) = {3, 4};\n"
