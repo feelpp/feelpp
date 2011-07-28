@@ -71,6 +71,7 @@ makeOptions()
         ("metalFlag", Feel::po::value<int>()->default_value( 1 ), "specify the flag of faces with metalic condition")
         ("fieldFlag", Feel::po::value<int>()->default_value( 2 ), "specify the flag of faces where apply a field")
         ("initfields", Feel::po::value<int>()->default_value( 1 ), "initialise the fields")
+        ("exportfreq", Feel::po::value<int>()->default_value( 1 ), "results exporting frequency")
         ;
     return diodeoptions.add( Feel::feel_options() ).add( backend_options( "mass" ) );
 }
@@ -517,6 +518,8 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
      * The function space and some associated elements(functions) are then defined
      */
     /** \code */
+    int counter=0;
+    int exportf = this->vm()["exportfreq"].as<int>();
     Xh = space_type::New( mesh );
     auto Xhc = c_space_type::New( mesh );
     auto Ex = Xh->element();
@@ -539,7 +542,7 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     double vu=cos(theta);
     double vv=sin(theta);
     double time = 0;
-    auto c=cos(k * (vu * Px() + vv * Py() - cst_ref(time)));
+    auto c=cos(k * (vu * Px() + vv * Py() - cst_ref(time)) + cst(pi/2.0));
     auto Ex_exact = -vv*c;
     auto Ey_exact = vu*c;
     auto Bz_exact = c;
@@ -637,16 +640,20 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
                   << std::endl;
         */
         // save
-        exporter->step(time)->setMesh( mesh );
+        counter++;
+        if (counter % exportf == 0){
+            std::cout<<"exporting results"<<std::endl;
+            exporter->step(time)->setMesh( mesh );
 
-        Exc = L2Proj->project( idv(Ex) );
-        Eyc = L2Proj->project( idv(Ey) );
-        Bzc = L2Proj->project( idv(Bz) );
-        exporter->step(time)->add( "Exc", Exc );
-        exporter->step(time)->add( "Eyc", Eyc );
-        exporter->step(time)->add( "Bzc", Bzc );
+            Exc = L2Proj->project( idv(Ex) );
+            Eyc = L2Proj->project( idv(Ey) );
+            Bzc = L2Proj->project( idv(Bz) );
+            exporter->step(time)->add( "Exc", Exc );
+            exporter->step(time)->add( "Eyc", Eyc );
+            exporter->step(time)->add( "Bzc", Bzc );
 
-        exporter->save();
+            exporter->save();
+        }
     }
 
 
