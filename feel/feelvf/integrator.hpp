@@ -573,6 +573,7 @@ private:
     mutable im2_type M_im2;
     expression_type const&  M_expr;
     GeomapStrategyType M_gt;
+    bool M_use_tbb;
 
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_local_assembly;
 
@@ -1640,7 +1641,11 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
 
-    if ( !HAVE_TBB || !M_use_tbb )
+#if defined(HAVE_TBB)
+    if ( !M_use_tbb )
+#else
+    if ( 1 )
+#endif
     {
         //
         // some typedefs
