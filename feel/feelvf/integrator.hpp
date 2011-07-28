@@ -227,7 +227,8 @@ public:
         M_im( __vfi.M_im ),
         M_im2( __vfi.M_im2 ),
         M_expr( __vfi.M_expr ),
-        M_gt( __vfi.M_gt )
+        M_gt( __vfi.M_gt ),
+        M_use_tbb( __vfi.M_use_tbb )
     {
         Debug( 5065 ) << "Integrator copy constructor\n";
     }
@@ -1641,6 +1642,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
 
+    std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
+
 #if defined(HAVE_TBB)
     if ( !M_use_tbb )
 #else
@@ -1827,7 +1830,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     }
     else
     {
-        std::cout << "Integrator Uses TBB\n";
+
 #if defined(HAVE_TBB)
         element_iterator it = this->beginElement();
         element_iterator en = this->endElement();
@@ -2436,7 +2439,7 @@ BOOST_PARAMETER_FUNCTION(
      (quad,   *, typename detail::integrate_type<Args>::_quad_type() )
      (geomap, *, GeomapStrategyType::GEOMAP_OPT )
      (quad1,   *, typename detail::integrate_type<Args>::_quad1_type() )
-     (use_tbb,   *(bool), true )
+     (use_tbb,   (bool), true )
      )
     )
 {
