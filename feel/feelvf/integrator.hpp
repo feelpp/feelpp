@@ -29,7 +29,8 @@
  */
 #ifndef __Integrators_H
 #define __Integrators_H 1
-
+#include <cxxabi.h>
+#include <typeinfo>
 #include <boost/timer.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
@@ -661,7 +662,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
     typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
     typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
-    typedef typename FormType::template Context<map_gmc1_type, expression_type, im_type> form1_context_type;
+    typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type> form1_context_type;
     //typedef detail::FormContextBase<map_gmc_type,im_type> fcb_type;
     typedef form_context_type fcb_type;
     typedef form1_context_type fcb1_type;
@@ -2390,7 +2391,8 @@ struct integrate_type
     typedef typename clean_type<Args,tag::range>::type _range_type;
     //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
     typedef typename clean2_type<Args,tag::quad, _Q< ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
-    typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad_type> > expr_type;
+    typedef typename clean2_type<Args,tag::quad, _Q< ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
+    typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
 
 };
 }
@@ -2420,11 +2422,21 @@ BOOST_PARAMETER_FUNCTION(
     (optional
      (quad,   *, typename detail::integrate_type<Args>::_quad_type() )
      (geomap, *, GeomapStrategyType::GEOMAP_OPT )
-     (quad1,   *, quad )
+     (quad1,   *, typename detail::integrate_type<Args>::_quad1_type() )
      )
     )
 {
-    return integrate_impl( range, quad, expr, geomap, quad1 );
+#if 0
+    int status;
+    std::cout << "Integral " << "\n";
+    std::cout << "  -- domain: " << abi::__cxa_demangle(typeid(range).name(),0,0,&status) <<"\n";
+    std::cout << "  -- expression: " << abi::__cxa_demangle(typeid(expr).name(),0,0,&status) <<"\n";
+    std::cout << "  -- quad: " << abi::__cxa_demangle(typeid(quad).name(),0,0,&status) <<"\n";
+    std::cout << "  -- quad1: " << abi::__cxa_demangle(typeid(quad1).name(),0,0,&status) <<"\n";
+    std::cout << "  -- geomap : " << (int)geomap << "\n";
+#endif
+    auto ret =  integrate_impl( range, quad, expr, geomap, quad1 );
+    return ret;
 }
 
 
