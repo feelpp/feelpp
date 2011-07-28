@@ -81,11 +81,11 @@ makeAbout()
 namespace Feel
 {
 gmsh_ptrtype
-createRing( int Dim, double meshSize, std::string const& convex )
+createRing( int Dim, int Order, double meshSize, std::string const& convex )
 {
     std::ostringstream ostr;
     std::ostringstream nameStr;
-    gmsh_ptrtype gmshp( new Gmsh(Dim, 1) );
+    gmsh_ptrtype gmshp( new Gmsh(Dim, Order) );
     gmshp->setCharacteristicLength( meshSize );
     ostr << gmshp->preamble() << "\n";
 
@@ -169,7 +169,7 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<Dim,1,Dim> entity_type;
+    typedef Entity<Dim,Order,Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -181,7 +181,7 @@ public:
     };
 
     /* export */
-    typedef Exporter<mesh_type> export_type;
+    typedef Exporter<mesh_type,Order> export_type;
 
     Advection( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
@@ -189,7 +189,7 @@ public:
         backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm(), "advection" ) )
+        exporter( export_type::New( this->vm(), "advection" ) )
     {
         Log() << "[Advection] hsize = " << meshSize << "\n";
         Log() << "[Advection] bccoeff = " << bcCoeff << "\n";
@@ -256,11 +256,12 @@ Advection<Dim, Order, Cont, Entity>::run()
     if ( ring )
         mesh = createGMSHMesh( _mesh=new mesh_type,
                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                               _desc=createRing(Dim,meshSize,entity_type::name()) );
+                               _desc=createRing(Dim,Order,meshSize,entity_type::name()) );
     else
         mesh = createGMSHMesh( _mesh=new mesh_type,
                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                _desc=domain( _name=(boost::format( "hypercube-%1%" ) % Dim).str() ,
+                                             _order=Order,
                                              _shape="hypercube",
                                              _dim=Dim,
                                              _h=meshSize ) );
@@ -395,7 +396,7 @@ main( int argc, char** argv )
 
     /* change parameters below */
     const int nDim = 2;
-    const int nOrder = 1;
+    const int nOrder = 2;
     //typedef Continuous MyContinuity;
     typedef Discontinuous MyContinuity;
     typedef Feel::Advection<nDim, nOrder, MyContinuity, Simplex> advection_type;
