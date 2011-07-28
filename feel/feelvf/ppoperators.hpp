@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,7 @@
        Date: 2005-06-01
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -631,6 +631,10 @@
             return _M_left.evaluate() VF_OP_SYMBOL( O ) _M_right.evaluate(); \
         }                                                               \
                                                                         \
+        std::string expressionStr() const                               \
+        {                                                               \
+            return std::string();/*_M_left.expressionStr() + BOOST_PP_STRINGIZE( VF_OP_SYMBOL( O ) ) + _M_right.expressionStr();*/ \
+        }                                                               \
         BOOST_PP_IF(1,                                                  \
                     VF_SYMETRIC,                                        \
                     BOOST_PP_EMPTY )()                                  \
