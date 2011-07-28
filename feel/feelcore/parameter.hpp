@@ -167,7 +167,7 @@ BOOST_PARAMETER_NAME(initial_theta)
 BOOST_PARAMETER_NAME(forceRelaxation)
 
 
-
+BOOST_PARAMETER_NAME(use_tbb)
 
 }
 #endif /* __feelcore_parameter_H */

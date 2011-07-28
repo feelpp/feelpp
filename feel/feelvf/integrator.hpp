@@ -207,26 +207,27 @@ public:
      */
     //@{
 
-    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr, GeomapStrategyType gt, Im2 const& /*__im2*/ )
+    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr, GeomapStrategyType gt, Im2 const& /*__im2*/, bool use_tbb )
         :
-        _M_eltbegin( elts.template get<1>() ),
-        _M_eltend( elts.template get<2>() ),
-        _M_im( ),
-        _M_im2( ),
-        _M_expr( __expr ),
-        _M_gt( gt )
+        M_eltbegin( elts.template get<1>() ),
+        M_eltend( elts.template get<2>() ),
+        M_im( ),
+        M_im2( ),
+        M_expr( __expr ),
+        M_gt( gt ),
+        M_use_tbb( use_tbb )
     {
         Debug( 5065 ) << "Integrator constructor from expression\n";
     }
 
     Integrator( Integrator const& __vfi )
         :
-        _M_eltbegin( __vfi._M_eltbegin ),
-        _M_eltend( __vfi._M_eltend ),
-        _M_im( __vfi._M_im ),
-        _M_im2( __vfi._M_im2 ),
-        _M_expr( __vfi._M_expr ),
-        _M_gt( __vfi._M_gt )
+        M_eltbegin( __vfi.M_eltbegin ),
+        M_eltend( __vfi.M_eltend ),
+        M_im( __vfi.M_im ),
+        M_im2( __vfi.M_im2 ),
+        M_expr( __vfi.M_expr ),
+        M_gt( __vfi.M_gt )
     {
         Debug( 5065 ) << "Integrator copy constructor\n";
     }
@@ -252,7 +253,7 @@ public:
      *
      * @return the integration method
      */
-    im_type const& im() const { return _M_im; }
+    im_type const& im() const { return M_im; }
 
     /**
      * get the integration method
@@ -260,7 +261,7 @@ public:
      *
      * @return the integration method
      */
-    im2_type const& im2() const { return _M_im2; }
+    im2_type const& im2() const { return M_im2; }
 
     /**
      * get the integration method on face f
@@ -268,7 +269,7 @@ public:
      *
      * @return the integration method on face f
      */
-    im_face_type  im( uint16_type f ) const { return _M_im.face( f ); }
+    im_face_type  im( uint16_type f ) const { return M_im.face( f ); }
 
     /**
      * get the integration method on face f
@@ -276,7 +277,7 @@ public:
      *
      * @return the integration method on face f
      */
-    im2_face_type  im2( uint16_type f ) const { return _M_im2.face( f ); }
+    im2_face_type  im2( uint16_type f ) const { return M_im2.face( f ); }
 
     /**
      * get the variational expression
@@ -284,7 +285,7 @@ public:
      *
      * @return the variational expression
      */
-    expression_type const& expression() const { return _M_expr; }
+    expression_type const& expression() const { return M_expr; }
 
 
     /**
@@ -292,19 +293,19 @@ public:
      *
      * @return the geometric mapping integrator type
      */
-    GeomapStrategyType geomapIntegratorType() const { return _M_gt; }
+    GeomapStrategyType geomapIntegratorType() const { return M_gt; }
 
     /**
      * iterator that points at the beginning of the container that
      * holds the data that will apply the integration upon
      */
-    element_iterator beginElement() const { return _M_eltbegin; }
+    element_iterator beginElement() const { return M_eltbegin; }
 
     /**
      * iterator that points at the end of the container that
      * holds the data that will apply the integration upon
      */
-    element_iterator endElement() const { return _M_eltend; }
+    element_iterator endElement() const { return M_eltend; }
 
     /**
      * tell whether the expression is symmetric or not
@@ -312,7 +313,7 @@ public:
      *
      * @return true if symmetric, false otherwise
      */
-    bool isSymmetric() const { return _M_expr.isSymmetric(); }
+    bool isSymmetric() const { return M_expr.isSymmetric(); }
 
     //@}
 
@@ -566,16 +567,16 @@ private:
 private:
 
     mpi::communicator M_comm;
-    element_iterator _M_eltbegin;
-    element_iterator _M_eltend;
-    mutable im_type _M_im;
-    mutable im2_type _M_im2;
-    expression_type const&  _M_expr;
-    GeomapStrategyType _M_gt;
+    element_iterator M_eltbegin;
+    element_iterator M_eltend;
+    mutable im_type M_im;
+    mutable im2_type M_im2;
+    expression_type const&  M_expr;
+    GeomapStrategyType M_gt;
 
-    //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > _M_profile_local_assembly;
+    //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_local_assembly;
 
-    //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > _M_profile_global_assembly;
+    //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_global_assembly;
 };
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
@@ -715,7 +716,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     //
     for ( ; it != en; ++it )
     {
-        switch( _M_gt )
+        switch( M_gt )
         {
         default:
         case GeomapStrategyType::GEOMAP_HO:
@@ -1231,7 +1232,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         {
             if ( it->isConnectedTo1())
                 {
-                    switch( _M_gt )
+                    switch( M_gt )
                     {
                     default:
                     case GeomapStrategyType::GEOMAP_HO:
@@ -1638,98 +1639,99 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     Debug( 5065 ) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
-#define USE_OPT_HO
-#if !defined(HAVE_TBB)
-    //
-    // some typedefs
-    //
-    typedef typename boost::remove_reference<typename element_iterator::reference>::type const_t;
-    typedef typename boost::remove_const<const_t>::type the_element_type;
-    typedef the_element_type element_type;
-    typedef typename the_element_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef typename eval::gmc_type gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
 
-    typedef typename the_element_type::gm1_type gm1_type;
-    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
-    typedef typename eval::gmc1_type gmc1_type;
-    typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
-
-    //typedef typename eval_expr_type::value_type value_type;
-    //typedef typename Im::value_type value_type;
-
-    element_iterator it = this->beginElement();
-    element_iterator en = this->endElement();
-
-    // make sure that we have elements to iterate over (return 0
-    // otherwise)
-    if ( it == en )
-        return typename eval::matrix_type(eval::matrix_type::Zero());
-
-    //std::cout << "0" << std::endl;
-
-    //
-    // Precompute some data in the reference element for
-    // geometric mapping and reference finite element
-    //
-    // warning this is not efficient here, we want to use the geometric mapping
-    // from the elements in order to take advantage of the cache if possible
-    // this change hsa been made in order to circumvent a bug which is not yet found
-//#warning INEFFICIENT CODE HERE : TO DEBUG
-    //gm_ptrtype gm( new gm_type) ;//it->gm();
-    gm_ptrtype gm( it->gm() );
-    //std::cout << "0.5" << std::endl;
-    gm1_ptrtype gm1( new gm1_type);//it->gm1();
-    //std::cout << "0.6:  " << gm1.use_count() << " " << gm.use_count() << std::endl;
-    //Debug(5065) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
-    typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
-                                                                       this->im().points() ) );
-    //std::cout << "1" << std::endl;
-    typename eval::gmpc1_ptrtype __geopc1( new typename eval::gmpc1_type( gm1,
-                                                                          this->im().points() ) );
-
-    //std::cout << "2" << std::endl;
-    it = this->beginElement();
-    // wait for all the guys
-#ifdef HAVE_MPI
-    if ( M_comm.size() > 1 )
+    if ( !HAVE_TBB || !M_use_tbb )
     {
-        M_comm.barrier();
-    }
+        //
+        // some typedefs
+        //
+        typedef typename boost::remove_reference<typename element_iterator::reference>::type const_t;
+        typedef typename boost::remove_const<const_t>::type the_element_type;
+        typedef the_element_type element_type;
+        typedef typename the_element_type::gm_type gm_type;
+        typedef boost::shared_ptr<gm_type> gm_ptrtype;
+        typedef typename eval::gmc_type gmc_type;
+        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+
+        typedef typename the_element_type::gm1_type gm1_type;
+        typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+        typedef typename eval::gmc1_type gmc1_type;
+        typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
+
+        //typedef typename eval_expr_type::value_type value_type;
+        //typedef typename Im::value_type value_type;
+
+        element_iterator it = this->beginElement();
+        element_iterator en = this->endElement();
+
+        // make sure that we have elements to iterate over (return 0
+        // otherwise)
+        if ( it == en )
+            return typename eval::matrix_type(eval::matrix_type::Zero());
+
+        //std::cout << "0" << std::endl;
+
+        //
+        // Precompute some data in the reference element for
+        // geometric mapping and reference finite element
+        //
+        // warning this is not efficient here, we want to use the geometric mapping
+        // from the elements in order to take advantage of the cache if possible
+        // this change hsa been made in order to circumvent a bug which is not yet found
+//#warning INEFFICIENT CODE HERE : TO DEBUG
+        //gm_ptrtype gm( new gm_type) ;//it->gm();
+        gm_ptrtype gm( it->gm() );
+        //std::cout << "0.5" << std::endl;
+        gm1_ptrtype gm1( new gm1_type);//it->gm1();
+        //std::cout << "0.6:  " << gm1.use_count() << " " << gm.use_count() << std::endl;
+        //Debug(5065) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
+        typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
+                                                                           this->im().points() ) );
+        //std::cout << "1" << std::endl;
+        typename eval::gmpc1_ptrtype __geopc1( new typename eval::gmpc1_type( gm1,
+                                                                              this->im().points() ) );
+
+        //std::cout << "2" << std::endl;
+        it = this->beginElement();
+        // wait for all the guys
+#ifdef HAVE_MPI
+        if ( M_comm.size() > 1 )
+        {
+            M_comm.barrier();
+        }
 #endif
 
 
-    // possibly high order
-    gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-    //std::cout << "3" << std::endl;
-    typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
-    eval_expr_type expr( expression(), mapgmc );
-    typedef typename eval_expr_type::shape shape;
-    //std::cout << "4" << std::endl;
+        // possibly high order
+        gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
+        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+        //std::cout << "3" << std::endl;
+        typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
+        eval_expr_type expr( expression(), mapgmc );
+        typedef typename eval_expr_type::shape shape;
+        //std::cout << "4" << std::endl;
 
 #if defined(USE_OPT_HO)
-    // order 1
-    gmc1_ptrtype __c1( new gmc1_type( gm1, *it, __geopc1 ) );
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
-    map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
-    //std::cout << "5" << std::endl;
-    typedef typename expression_type::template tensor<map_gmc1_type> eval_expr1_type;
-    eval_expr1_type expr1( expression(), mapgmc1 );
+        // order 1
+        gmc1_ptrtype __c1( new gmc1_type( gm1, *it, __geopc1 ) );
+        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
+        map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+        //std::cout << "5" << std::endl;
+        typedef typename expression_type::template tensor<map_gmc1_type> eval_expr1_type;
+        eval_expr1_type expr1( expression(), mapgmc1 );
 #endif
-    //std::cout << "6" << std::endl;
-    typename eval::matrix_type res( eval::matrix_type::Zero() );
+        //std::cout << "6" << std::endl;
+        typename eval::matrix_type res( eval::matrix_type::Zero() );
 #if defined(USE_OPT_HO)
-    typename eval::matrix_type reso1( eval::matrix_type::Zero() );
-    typename eval::matrix_type resopt( eval::matrix_type::Zero() );
+        typename eval::matrix_type reso1( eval::matrix_type::Zero() );
+        typename eval::matrix_type resopt( eval::matrix_type::Zero() );
 #endif
-    //value_type res1 = 0;
-    for ( ; it != en; ++it )
+        //value_type res1 = 0;
+        for ( ; it != en; ++it )
         {
 #if defined(USE_OPT_HO)
-            switch( _M_gt )
+            switch( M_gt )
             {
             case  GeomapStrategyType::GEOMAP_HO :
             {
@@ -1740,15 +1742,15 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 expr.update( mapgmc );
                 const gmc_type& gmc = *__c;
 
-                _M_im.update( gmc );
+                M_im.update( gmc );
 
 
                 for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                     for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                     {
-                        res(c1,c2) += _M_im( expr, c1, c2 );
+                        res(c1,c2) += M_im( expr, c1, c2 );
                     }
-                //Log() << it->id() << " : " << _M_im( expr, 0, 0 ) << "\n";
+                //Log() << it->id() << " : " << M_im( expr, 0, 0 ) << "\n";
 #if defined(USE_OPT_HO)
             }
             break;
@@ -1760,15 +1762,15 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 expr1.update( mapgmc );
                 const gmc1_type& gmc = *__c1;
 
-                _M_im.update( gmc );
+                M_im.update( gmc );
 
 
                 for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                     for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                     {
-                        res(c1,c2) += _M_im( expr1, c1, c2 );
+                        res(c1,c2) += M_im( expr1, c1, c2 );
                     }
-                //Log() << it->id() << " : " << _M_im( expr1, 0, 0 ) << "\n";
+                //Log() << it->id() << " : " << M_im( expr1, 0, 0 ) << "\n";
             }
             break;
             case GeomapStrategyType::GEOMAP_OPT:
@@ -1782,15 +1784,15 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     expr.update( mapgmc );
                     const gmc_type& gmc = *__c;
 
-                    _M_im.update( gmc );
+                    M_im.update( gmc );
 
 
                     for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                         {
-                            res(c1,c2) += _M_im( expr, c1, c2 );
+                            res(c1,c2) += M_im( expr, c1, c2 );
                         }
-                    //Log() << it->id() << " : " << _M_im( expr, 0, 0 ) << "\n";
+                    //Log() << it->id() << " : " << M_im( expr, 0, 0 ) << "\n";
                 }
                 else
                 {
@@ -1800,39 +1802,44 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     expr1.update( mapgmc );
                     const gmc1_type& gmc = *__c1;
 
-                    _M_im.update( gmc );
+                    M_im.update( gmc );
 
 
                     for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                         {
-                            res(c1,c2) += _M_im( expr1, c1, c2 );
+                            res(c1,c2) += M_im( expr1, c1, c2 );
                         }
-                    //Log() << it->id() << " : " << _M_im( expr1, 0, 0 ) << "\n";
+                    //Log() << it->id() << " : " << M_im( expr1, 0, 0 ) << "\n";
                 }
             }
             //break;
             }
 #endif // 0
         }
-    Debug( 5065 ) << "integrating over elements done in " << __timer.elapsed() << "s\n";
-    return res;
-#else
-    element_iterator it = this->beginElement();
-    element_iterator en = this->endElement();
+        Debug( 5065 ) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+        return res;
+    }
+    else
+    {
+        std::cout << "Integrator Uses TBB\n";
+#if defined(HAVE_TBB)
+        element_iterator it = this->beginElement();
+        element_iterator en = this->endElement();
 
-    typedef ContextEvaluate<expression_type, im_type, typename eval::the_element_type> context_type;
-    if ( it == en )
-        return eval::zero();
+        typedef ContextEvaluate<expression_type, im_type, typename eval::the_element_type> context_type;
+        if ( it == en )
+            return eval::zero();
 
-    std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
-    for( auto _it = it; _it != en; ++_it )
-        _v.push_back(boost::cref(*_it));
-    tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end() );
-    context_type thecontext( this->expression(), this->im(), *it );
-    tbb::parallel_reduce( r,  thecontext);
-    return thecontext.result();
+        std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
+        for( auto _it = it; _it != en; ++_it )
+            _v.push_back(boost::cref(*_it));
+        tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end() );
+        context_type thecontext( this->expression(), this->im(), *it );
+        tbb::parallel_reduce( r,  thecontext);
+        return thecontext.result();
 #endif // HAVE_TBB
+    }
 
 }
 template<typename Elements, typename Im, typename Expr, typename Im2>
@@ -2089,14 +2096,14 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
             expr.update( mapgmc );
             const gmc_type& gmc = *__c;
 
-            _M_im.update( gmc );
+            M_im.update( gmc );
 
 
             for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
             {
                 size_type i;
                 boost::tie( i, boost::tuples::ignore, boost::tuples::ignore) = P0h->dof()->localToGlobal( it->id(), 0, c1 );
-                double v = _M_im( expr, c1, 0 );
+                double v = M_im( expr, c1, 0 );
                 p0.set( i, v );
             }
         }
@@ -2351,10 +2358,11 @@ integrate_impl( Elts const& elts,
                 Im const& im,
                 ExprT const& expr,
                 GeomapStrategyType const& gt,
-                Im2 const& im2 )
+                Im2 const& im2,
+                bool use_tbb )
 {
     typedef Integrator<Elts, Im, ExprT, Im2> expr_t;
-    return Expr<expr_t>( expr_t( elts, im, expr, gt, im2 ) );
+    return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb ) );
 }
 
 
@@ -2423,6 +2431,7 @@ BOOST_PARAMETER_FUNCTION(
      (quad,   *, typename detail::integrate_type<Args>::_quad_type() )
      (geomap, *, GeomapStrategyType::GEOMAP_OPT )
      (quad1,   *, typename detail::integrate_type<Args>::_quad1_type() )
+     (use_tbb,   *(bool), true )
      )
     )
 {
@@ -2435,7 +2444,7 @@ BOOST_PARAMETER_FUNCTION(
     std::cout << "  -- quad1: " << abi::__cxa_demangle(typeid(quad1).name(),0,0,&status) <<"\n";
     std::cout << "  -- geomap : " << (int)geomap << "\n";
 #endif
-    auto ret =  integrate_impl( range, quad, expr, geomap, quad1 );
+    auto ret =  integrate_impl( range, quad, expr, geomap, quad1, use_tbb );
     return ret;
 }
 
