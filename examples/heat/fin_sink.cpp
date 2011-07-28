@@ -42,17 +42,18 @@ using namespace Feel;
 gmsh_ptrtype
 makefin( double hsize , double deep, double L)
 {
+    std::cout << "hsize=" << hsize << "\n";
     std::ostringstream ostr;
     if (!deep) { // 2D Mesh
         ostr << "Mesh.MshFileVersion = 2.1;\n"
-             << "h=" << hsize << ";\n"
-             << "Point (1) = {0, 0, 0, h};\n"
-             << "Point (2) = {0.0008, 0, 0, h};\n"
-             << "Point (3) = {0.0008, 0.0007, 0, h};\n"
-             << "Point (4) = {0.0002, 0.0007, 0, h};\n"
-             << "Point (5) = {0, 0.0007, 0, h};\n"
-             << "Point (6) = {0.0002, "<<0.0002+L<<", 0, h};\n"
-             << "Point (7) = {0, "<<0.0002+L<<", 0, h};\n"
+             << "lc=" << hsize << ";\n"
+             << "Point (1) = {0, 0, 0, " << hsize << "};\n"
+             << "Point (2) = {0.001, 0, 0, " << hsize << "};\n"
+             << "Point (3) = {0.001, 0.001, 0, " << hsize << "};\n"
+             << "Point (4) = {0.0005, 0.001, 0, " << hsize << "};\n"
+             << "Point (5) = {0, 0.001, 0, " << hsize << "};\n"
+             << "Point (6) = {0.0005, "<<0.0005+L<<", 0, " << hsize << "};\n"
+             << "Point (7) = {0, "<<0.0005+L<<", 0, " << hsize << "};\n"
              << "Line (1) = {1, 2};\n"
              << "Line (2) = {2, 3};\n"
              << "Line (3) = {3, 4};\n"
