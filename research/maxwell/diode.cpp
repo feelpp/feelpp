@@ -61,6 +61,7 @@ makeOptions()
     po::options_description diodeoptions("Diode options");
     diodeoptions.add_options()
         ("verbose", po::value<bool>()->default_value( 1 ), "verbose output")
+        ("geomap", po::value<int>()->default_value( 0 ), "type of geomap")
         ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
         ("convex", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the convex used in the mesh (either simplex or hypercube)")
         ("penaldir", Feel::po::value<double>()->default_value( 20 ), "penalisation parameter for the weak boundary conditions")
@@ -318,42 +319,54 @@ Diode::FSolve( BdyExpr& wbdy,
 
     auto u = Xh->element();
 
-    lEx = integrate( elements( mesh ),  id(u)*dyv(Bzn) );
-    lEx += integrate( internalfaces(mesh),
-                      trans(Anm_1)*(wL-wR)*leftface(id(u))
-                      + trans(Anp_1)*(wL-wR)*rightface(id(u)) );
+    //
+    // Ex
+    //
+    lEx = integrate( _range=elements( mesh ),  _expr=id(u)*dyv(Bzn) );
+    lEx += integrate( _range=internalfaces(mesh),
+                      _expr=(trans(Anm_1)*(wL-wR))*leftface(id(u))
+                      + (trans(Anp_1)*(wL-wR))*rightface(id(u)) );
     //lEx += integrate( boundaryfaces(mesh), trans(Anm_1)*(wL-wbdy)*id(u) );
     // lEx += integrate( markedfaces(mesh, this->vm()["metalFlag"].as<int>() ), trans(Anm_1)*(wL-wMetal)*id(u));
     // lEx += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v1)*wbdy*id(u));
 
-    lEx += integrate( markedfaces(mesh, "Metal" ), trans(Anm_1)*(wL-wMetal)*id(u));
-    lEx += integrate( markedfaces(mesh, "Dirichlet" ), trans(Anm_1)*(wL-wbdy)*id(u));
+    lEx += integrate( _range=markedfaces(mesh, "Metal" ), _expr=(trans(Anm_1)*(wL-wMetal))*id(u));
+    lEx += integrate( _range=markedfaces(mesh, "Dirichlet" ), _expr=(trans(Anm_1)*(wL-wbdy))*id(u));
 
-    lEy = integrate( elements( mesh ),  -id(u)*dxv(Bzn));
-    lEy += integrate( internalfaces(mesh),
-                      trans(Anm_2)*(wL-wR)*leftface(id(u))
-                      + trans(Anp_2)*(wL-wR)*rightface(id(u)) );
+    //
+    // Ey
+    //
+    lEy = integrate( _range=elements( mesh ),  _expr=-id(u)*dxv(Bzn));
+    lEy += integrate( _range=internalfaces(mesh),
+                      _expr=(trans(Anm_2)*(wL-wR))*leftface(id(u))
+                      + (trans(Anp_2)*(wL-wR))*rightface(id(u)) );
     //lEy += integrate( boundaryfaces(mesh), trans(Anm_2)*(wL-wbdy)*id(u) );
     // lEy += integrate( markedfaces(mesh, this->vm()["metalFlag"].as<int>() ), trans(Anm_3)*(wL-wMetal)*id(u));
     // lEy += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v2)*wbdy*id(u));
 
-    lEy += integrate( markedfaces(mesh, "Metal" ), trans(Anm_2)*(wL-wMetal)*id(u));
-    lEy += integrate( markedfaces(mesh, "Dirichlet" ), trans(Anm_2)*(wL-wbdy)*id(u));
+    lEy += integrate( _range=markedfaces(mesh, "Metal" ), _expr=(trans(Anm_2)*(wL-wMetal))*id(u));
+    lEy += integrate( _range=markedfaces(mesh, "Dirichlet" ), _expr=(trans(Anm_2)*(wL-wbdy))*id(u));
 
-    lBz = integrate( elements( mesh ),  -id(u)*dxv(Eyn) + id(u)*dyv(Exn) );
-    lBz += integrate( internalfaces(mesh),
-                      trans(Anm_3)*(wL-wR)*leftface(id(u))
-                      + trans(Anp_3)*(wL-wR)*rightface(id(u)) );
+    //
+    // Bz
+    //
+    lBz = integrate( _range=elements( mesh ),  _expr=-id(u)*dxv(Eyn) + id(u)*dyv(Exn) );
+    lBz += integrate( _range=internalfaces(mesh),
+                      _expr=(trans(Anm_3)*(wL-wR))*leftface(id(u))
+                      + (trans(Anp_3)*(wL-wR))*rightface(id(u)) );
     //lBz += integrate( boundaryfaces(mesh), trans(Anm_3)*(wL-wbdy)*id(u) );
     // lBz += integrate( markedfaces(mesh, this->vm()["metalFlag"].as<int>() ), trans(Anm_3)*(wL-wMetal)*id(u));
     // lBz += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v3)*wbdy*id(u));
 
-    lBz += integrate( markedfaces(mesh, "Metal" ), trans(Anm_3)*(wL-wMetal)*id(u));
-    lBz += integrate( markedfaces(mesh, "Dirichlet" ), trans(Anm_3)*(wL-wbdy)*id(u));
+    lBz += integrate( _range=markedfaces(mesh, "Metal" ), _expr=(trans(Anm_3)*(wL-wMetal))*id(u));
+    lBz += integrate( _range=markedfaces(mesh, "Dirichlet" ), _expr=(trans(Anm_3)*(wL-wbdy))*id(u));
 
     if ( verbose )
         std::cout << " -- assembly in " << ti.elapsed() << "s\n";ti.restart();
 
+    //
+    // Solve
+    //
     M_backend->solve( _matrix=D, _solution=dtEx, _rhs=F_Ex  );
     M_backend->solve( _matrix=D, _solution=dtEy, _rhs=F_Ey  );
     M_backend->solve( _matrix=D, _solution=dtBz, _rhs=F_Bz  );
