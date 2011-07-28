@@ -165,11 +165,6 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
 
-    /**
-     * create the mesh
-     */
-    mesh_ptrtype createMesh();
-
 	/* constructor */
 	HeatSink( int argc, char** argv, AboutData const& ad, po::options_description const& od );
 
@@ -264,7 +259,10 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 	    /*
 		 * First we create the mesh
 		 */
-        mesh = createMesh();
+        mesh = createGMSHMesh ( _mesh = new mesh_type,
+                                _desc = makefin( meshSize, depth , L),
+                                //_h = meshSize,
+                                _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
 
 		/*
 		 * Calculate the characterisical length of the mesh = length of the base and the two surfaces
@@ -292,16 +290,6 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 
     }
 
-template<int Dim, int Order>
-typename HeatSink<Dim,Order>::mesh_ptrtype
-HeatSink<Dim,Order>::createMesh( )
-{
-	mesh_ptrtype mesh = createGMSHMesh ( _mesh = new mesh_type,
-								         _desc = makefin( meshSize, depth , L),
-                                         _h = meshSize,
-                                         _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
-    return mesh;
-} // HeatSink::createMesh
 
 
 template<int Dim, int Order>
