@@ -305,7 +305,11 @@ public:
     {
         return M_expr.evaluateAndSum();
     }
-
+    std::string expressionStr() const
+        {
+            return std::string();
+            //return M_expr.expressionStr();
+        }
 
 
     //@}
@@ -350,6 +354,7 @@ struct ExpressionOrder
 #else
     // this is a very rough approximation
     static const int value = (ExprT::imorder)?(ExprT::imorder*nOrderGeo):(nOrderGeo);
+    static const int value_1 = ExprT::imorder;
 #endif
 
 
