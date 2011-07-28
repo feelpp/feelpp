@@ -50,6 +50,7 @@ makeOptions()
         ("bx", Feel::po::value<double>()->default_value( 1.0 ), "convection X component")
         ("by", Feel::po::value<double>()->default_value( 1.0 ), "convection Y component")
         ("mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component")
+        ("geomap", Feel::po::value<int>()->default_value( 0 ), "type of geomap for integrals")
         ("stiff", Feel::po::value<double>()->default_value( 1.0 ), "stiffness parameter of solution")
         ("ring", Feel::po::value<bool>()->default_value( 0 ), "0 = square computational domain, 1 = quarter of a ring as computational domain")
         ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
@@ -189,6 +190,7 @@ public:
         backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
+        geomap( (GeomapStrategyType)this->vm()["geomap"].template as<int>() ),
         exporter( export_type::New( this->vm(), "advection" ) )
     {
         Log() << "[Advection] hsize = " << meshSize << "\n";
@@ -218,6 +220,7 @@ private:
     double meshSize;
     double bcCoeff;
 
+    GeomapStrategyType geomap;
 
     boost::shared_ptr<export_type> exporter;
 }; // Advection
@@ -292,28 +295,30 @@ Advection<Dim, Order, Cont, Entity>::run()
     if ( bctype == 1 || !Cont::is_continuous )
     {
         form1( _test=Xh, _vector=F ) +=
-            integrate( boundaryfaces(mesh), trans(beta_minus*g)*id(v) );
+            integrate( _range=boundaryfaces(mesh), _expr=trans(beta_minus*g)*id(v),_geomap=geomap );
     }
 
     auto D = backend->newMatrix( Xh, Xh );
     //size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
     size_type pattern = DOF_PATTERN_COUPLED;
     form2( _test=Xh, _trial=Xh, _matrix=D, _init=true, _pattern=pattern ) =
-        integrate( elements(mesh),
+        integrate( _range=elements(mesh), _quad=_Q<2*Order>(),
                    // -(u,beta*grad(v))+(mu*u,v)-(u,div(beta)*v)
-                   -trans(idt(u))*(grad(v)*beta) + mu*trans(idt(u))*id(v)
+                   _expr=-trans(idt(u))*(grad(v)*beta) + mu*trans(idt(u))*id(v),
                    //- idt(u)*id(v)*(dx(beta_x)+dy(beta_y))
+                   _geomap=geomap
                    );
 
     if ( !Cont::is_continuous )
         {
             form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-                integrate( internalfaces(mesh),
+                integrate( _range=internalfaces(mesh), _quad=_Q<2*Order>(),
                            // {beta u} . [v]
                            //( trans(averaget(trans(beta)*idt(u))) * jump(trans(id(v))) )
-                           ( averaget(trans(beta)*idt(u)) * jump(id(v)) )
+                           _expr=( averaget(trans(beta)*idt(u)) * jump(id(v)) )
                            // penal*[u] . [v]
-                           + penalisation*beta_abs*( trans(jumpt(trans(idt(u))))*jump(trans(id(v))) ) );
+                           + penalisation*beta_abs*( trans(jumpt(trans(idt(u))))*jump(trans(id(v))) ),
+                           _geomap=geomap);
         }
 
     else // continuous case: stabilization by interior penalty
@@ -327,7 +332,7 @@ Advection<Dim, Order, Cont, Entity>::run()
     if ( bctype == 1 || !Cont::is_continuous )
         {
             form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-                integrate( boundaryfaces(mesh), beta_plus*trans(idt(u))*id(v) );
+                integrate( _range=boundaryfaces(mesh), _expr=beta_plus*trans(idt(u))*id(v),_geomap=geomap );
 
             D->close();
             F->close();
