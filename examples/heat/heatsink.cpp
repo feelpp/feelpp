@@ -374,15 +374,15 @@ HeatSink<Dim, Order>::run()
         form1( _test=Xh, _vector=Ft ) =
             integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*c_s*idv(bdf_poly)*id(v)) +
             integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*c_f*idv(bdf_poly)*id(v) );
-        form1( _test=Xh, _vector=F ) +=
+        form1( _test=Xh, _vector=Ft ) +=
             integrate( _range= markedfaces(mesh,"gamma4"), _expr= heat_flux*(1-exp(-M_bdf->time()))*id(v) );
         // add contrib from time independent terms
         Ft->add( 1., F );
 
 		M_backend->solve( _matrix=D, _solution=T, _rhs=Ft );
 
-        Tavg = integrate( _range=markedfaces(mesh,"gamma4"), _expr=(1/surface_base)*idv(T) ).evaluate()(0);
-        Tgamma1 = integrate( _range=markedfaces(mesh,"gamma1"), _expr=(1/surface_fin)*idv(T) ).evaluate()(0);
+        Tavg = integrate( _range=markedfaces(mesh,"gamma4"), _expr=(1/surface_base)*idv(T) ).evaluate()(0,0);
+        Tgamma1 = integrate( _range=markedfaces(mesh,"gamma1"), _expr=(1/surface_fin)*idv(T) ).evaluate()(0,0);
 
         // export results
         out << M_bdf->time() << " " << Tavg << " " << Tgamma1 << "\n";
