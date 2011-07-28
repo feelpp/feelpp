@@ -64,22 +64,32 @@ diodegeo( double h, int Order, std::string const& convex )
          << "Circle(9) = {5, 4, 10};\n"
          << "Circle(10) = {7, 4, 10};\n"
          << "//Physical Line(8) = {1,2,3,4,5,9,10,8};\n"
-         << "//Physical Line(8) = {1};\n"
-         << "Line Loop(1) = {1, 8, 7, 2};\n"
-         << "Plane Surface(1) = {1};\n"
-         << "Line Loop(2) = {7, 9, 6, 3};\n"
-         << "Plane Surface(2) = {2};\n"
-         << "Line Loop(3) = {4, 6, 10, 5};\n"
-         << "Plane Surface(3) = {3};\n"
-         << "\n"
-         << "Physical Line(\"Dirichlet\") = {1};\n"
-         << "Physical Line(\"Metal\") = {2,3,4,5,8,9,10};\n"
-         << "Physical Surface(9) = {1};\n"
-         << "Physical Surface(10) = {2};\n"
-         << "Physical Surface(11) = {3};\n";
+         << "//Physical Line(8) = {1};\n";
+    if ( convex == "simplex" )
+    {
+        ostr << "Line Loop(11) = {1, 2, -3, 4, 5, 10, -9, 8};\n"
+             << "Plane Surface(12) = {11};\n"
+             << "\n"
+             << "Physical Line(\"Dirichlet\") = {1};\n"
+             << "Physical Line(\"Metal\") = {2,3,4,5,8,9,10};\n"
+             << "Physical Surface(\"Omega\") = {12};\n";
+    }
     if ( convex == "hypercube" )
     {
-        ostr << "Recombine Surface {1};\n"
+        ostr << "Line Loop(1) = {1, 8, 7, 2};\n"
+             << "Plane Surface(1) = {1};\n"
+             << "Line Loop(2) = {7, 9, 6, 3};\n"
+             << "Plane Surface(2) = {2};\n"
+             << "Line Loop(3) = {4, 6, 10, 5};\n"
+             << "Plane Surface(3) = {3};\n"
+             << "\n"
+             << "Physical Line(\"Dirichlet\") = {1};\n"
+             << "Physical Line(\"Metal\") = {2,3,4,5,8,9,10};\n"
+             << "Physical Surface(9) = {-1};\n"
+             << "Physical Surface(10) = {2};\n"
+             << "Physical Surface(11) = {-3};\n"
+
+             << "Recombine Surface {1};\n"
              << "Transfinite Surface {1};\n"
              << "Recombine Surface {2};\n"
              << "Transfinite Surface {2};\n"
