@@ -59,6 +59,14 @@ Environment::Environment()
     :
     M_env()
 {
+#if defined( HAVE_TBB )
+    int n = tbb::task_scheduler_init::default_num_threads();
+#else
+    int n = 1 ;
+#endif
+    Log() << "[Feel++] TBB running with " << n << " threads\n";
+    //tbb::task_scheduler_init init(1);
+
     mpi::communicator world;
 #if defined ( HAVE_PETSC_H )
     PetscTruth is_petsc_initialized;
@@ -77,6 +85,14 @@ Environment::Environment( int& argc, char**& argv )
     :
     M_env( argc, argv )
 {
+#if defined( HAVE_TBB )
+    int n = tbb::task_scheduler_init::default_num_threads();
+#else
+    int n = 1 ;
+#endif
+    Log() << "[Feel++] TBB running with " << n << " threads\n";
+    //tbb::task_scheduler_init init(1);
+
     mpi::communicator world;
 #if defined ( HAVE_PETSC_H )
     PetscTruth is_petsc_initialized;
@@ -135,6 +151,7 @@ Environment::~Environment()
 bool
 Environment::initialized()
 {
+
 #if defined( HAVE_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
