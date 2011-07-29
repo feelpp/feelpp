@@ -37,16 +37,20 @@
 using namespace Feel;
 
 
-//L : dimensional length of the sink (in meters)
-
+/**
+ * makefin creates the .geo file and returns a gmsh pointer type. 
+ * Be carefull, the problem considered here is dimensional
+ *
+ * \arg hsize : size of the mesh
+ * \arg deep : depth of the mesh (in meters)
+ * \arg L : dimensional length of the sink (in meters)
+ */
 gmsh_ptrtype
 makefin( double hsize , double deep, double L)
 {
-    std::cout << "hsize=" << hsize << "\n";
     std::ostringstream ostr;
     if (!deep) { // 2D Mesh
         ostr << "Mesh.MshFileVersion = 2.1;\n"
-             << "lc=" << hsize << ";\n"
              << "Point (1) = {0, 0, 0, " << hsize << "};\n"
              << "Point (2) = {0.001, 0, 0, " << hsize << "};\n"
              << "Point (3) = {0.001, 0.001, 0, " << hsize << "};\n"
@@ -81,22 +85,20 @@ makefin( double hsize , double deep, double L)
 
     else { //3D Mesh
         ostr << "Mesh.MshFileVersion = 2.1;\n"
-             << "h=" << hsize << ";\n"
-             << "d=" << deep << ";\n"
-             << "Point (1) = {0, 0, 0, h};\n"
-             << "Point (2) = {3.5, 0, 0, h};\n"
-             << "Point (3) = {3.5, 3, 0, h};\n"
-             << "Point (4) = {1, 3, 0, h};\n"
-             << "Point (5) = {0, 3, 0, h};\n"
-             << "Point (6) = {1, "<<3+L"<<, 0, h};\n"
-             << "Point (7) = {0, "<<3+L<<", 0, h};\n"
-             << "Point (8) = {0, 0, d, h};\n"
-             << "Point (9) = {3.5, 0, d, h};\n"
-             << "Point (10) = {3.5, 3, d, h};\n"
-             << "Point (11) = {1, 3, d, h};\n"
-             << "Point (12) = {0, 3, d, h};\n"
-             << "Point (13) = {1, "<<3+L<<", d, h};\n"
-             << "Point (14) = {0, "<<3+L<<", d, h};\n"
+             << "Point (1) = {0, 0, 0, " << hsize << "};\n"
+             << "Point (2) = {0.001, 0, 0, " << hsize << "};\n"
+             << "Point (3) = {0.001, 0.001, 0, " << hsize << "};\n"
+             << "Point (4) = {0.0005, 0.001, 0, " << hsize << "};\n"
+             << "Point (5) = {0, 0.001, 0, " << hsize << "};\n"
+             << "Point (6) = {0.0005, "<<0.0005+L<<", 0, " << hsize << "};\n"
+             << "Point (7) = {0, "<<0.0005+L<<", 0, " << hsize << "};\n"
+             << "Point (8) = {0, 0, "<< deep <<", h};\n"
+             << "Point (9) = {0.001, 0, "<< deep <<", h};\n"
+             << "Point (10) = {0.001, 0.001, "<< deep <<", h};\n"
+             << "Point (11) = {0.0005, 0.001, "<< deep <<", h};\n"
+             << "Point (12) = {0, 0.001, "<< deep <<", h};\n"
+             << "Point (13) = {0.0005, "<<0.0005+L<<", "<< deep <<", h};\n"
+             << "Point (14) = {0, "<<0.0005+L<<", "<< deep <<", h};\n"
              << "Line (1) = {1, 2};\n"
              << "Line (2) = {2, 3};\n"
              << "Line (3) = {3, 4};\n"
@@ -150,8 +152,29 @@ makefin( double hsize , double deep, double L)
              << "Plane Surface (37) = {37};\n"
              << "Surface Loop (1) = {32, 31, 27, 29, 33, 34};\n"
              << "Surface Loop (2) = {35, 36, 34, 26, 24, 28, 37};\n"
+             
+             // name the physical entities
+             << "Physical Surface (\"gamma4\") = {24};\n"
+             << "Physical Surface (25) = {25};\n"
+             << "Physical Surface (26) = {26};\n"
+             << "Physical Surface (27) = {27};\n"
+             << "Physical Surface (28) = {28};\n"
+             << "Physical Surface (29) = {29};\n"
+             << "Physical Surface (30) = {30};\n"
+             << "Physical Surface (\"gamma1\") = {31};\n"
+             << "Physical Surface (32) = {32};\n"
+             << "Physical Surface (33) = {33};\n"
+             << "Physical Surface (34) = {34};\n"
+             << "Physical Surface (35) = {35};\n"
+             << "Physical Surface (36) = {36};\n"
+             << "Physical Surface (37) = {37};\n"
+             
+             // volumes
              << "Volume (1) = {1};\n"
-             << "Volume (2) = {2};\n";
+             << "Volume (2) = {2};\n"
+             << "Physical Volume (\"fin_mesh\") = {1};\n"
+             << "Physical Volume (\"spreader_mesh\") = {2};\n";
+             
     }
 
     std::ostringstream nameStr;
