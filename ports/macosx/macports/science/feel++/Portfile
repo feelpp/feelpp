@@ -96,6 +96,7 @@ depends_lib    \
     port:gcc45\
     port:gmsh \
     port:openmpi\
+    port:tbb\
     port:boost\
     port:petsc\
     port:slepc\
@@ -103,7 +104,8 @@ depends_lib    \
     port:imagemagick\
     port:py26-scipy\
     port:py26-numpy\
-    port:doxygen
+    port:doxygen\
+    port:texlive-bin
 
  #   port:ghostscript\
 
