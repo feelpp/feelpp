@@ -693,24 +693,19 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
             parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
                                                                                     .options(_M_desc)
                                                                                     .extra_parser(at_option_parser)
-#if !defined( __APPLE__ )
                                                                                     .allow_unregistered()
-#endif
                                                                                     .run() ) );
         }
     else
         {
             parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
                                                                                     .options(_M_desc)
-#if !defined( __APPLE__ )
                                                                                     .allow_unregistered()
-#endif
                                                                                     .run() ) );
         }
 
     Debug( 1000 ) << "[Application::Application] parsing options done\n";
 
-#if !defined( __APPLE__ )
     _M_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
     Debug( 1000 ) << "[Application::Application] number of unrecognized options: " << (_M_to_pass_further.size()) << "\n";
 
@@ -726,7 +721,6 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
                 Debug( 1000 ) << "[Application::Application] remove from vector " << it->string_key << "\n";
                 parsed->options.erase( it );
             }
-#endif // APPLE
 
     po::store(*parsed, _M_vm );
 }
