@@ -1834,7 +1834,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 #if defined(HAVE_TBB)
         element_iterator it = this->beginElement();
         element_iterator en = this->endElement();
-
         typedef ContextEvaluate<expression_type, im_type, typename eval::the_element_type> context_type;
         if ( it == en )
             return eval::zero();
@@ -1842,9 +1841,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
         for( auto _it = it; _it != en; ++_it )
             _v.push_back(boost::cref(*_it));
-        tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end() );
+        tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end(), 50 );
         context_type thecontext( this->expression(), this->im(), *it );
-        tbb::parallel_reduce( r,  thecontext);
+        //tbb::parallel_reduce( r,  thecontext, tbb::simple_partitioner());
+        tbb::parallel_reduce( r,  thecontext );
         return thecontext.result();
 #endif // HAVE_TBB
     }
