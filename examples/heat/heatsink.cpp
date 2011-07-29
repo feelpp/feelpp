@@ -56,7 +56,7 @@ makeOptions()
     // mesh parameters
     ("hsize", Feel::po::value<double>()->default_value( 0.1 ),
      "first h value to start convergence")
-    ("L", Feel::po::value<double>()->default_value( 0.0025 ),
+    ("L", Feel::po::value<double>()->default_value( 0.03 ),
      "dimensional length of the sink (in meters)")
 
 	// 3D parameter
@@ -76,14 +76,14 @@ makeOptions()
 	 "density of the fin's material in SI unit kg.m^{-3}")
 
 	// heat capacities parameter
-	("c_s", Feel::po::value<double>()->default_value( 0.385 ),
-	 "heat capacity of the spreader's material in SI unit J.g^{-1}.K^{-1}")
-	("c_f", Feel::po::value<double>()->default_value( 0.385 ),
-	 "heat capacity of the fin's material in SI unit J.g^{-1}.K^{-1}")
+	("c_s", Feel::po::value<double>()->default_value( 385 ),
+	 "heat capacity of the spreader's material in SI unit J.kg^{-1}.K^{-1}")
+	("c_f", Feel::po::value<double>()->default_value( 385 ),
+	 "heat capacity of the fin's material in SI unit J.kg^{-1}.K^{-1}")
 
 	// physical coeff
-    ("therm_coeff", Feel::po::value<double>()->default_value(60000),
-     "thermal coefficient for the biot number")
+    ("therm_coeff", Feel::po::value<double>()->default_value(50),
+     "thermal coefficient")
     ("Tamb", Feel::po::value<double>()->default_value(300),
      "ambiant temperature")
     ("heat_flux", Feel::po::value<double>()->default_value(1e6),
@@ -206,8 +206,7 @@ private:
     double Tamb;
     double heat_flux;
 
-    /* characteristical length of the body */
-	double charact_length;
+    /* surfaces*/
     double surface_base, surface_fin;
 
     /* mesh, pointers and spaces */
@@ -261,16 +260,13 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		 */
         mesh = createGMSHMesh ( _mesh = new mesh_type,
                                 _desc = makefin( meshSize, depth , L),
-                                //_h = meshSize,
                                 _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
 
 		/*
-		 * Calculate the characterisical length of the mesh = length of the base and the two surfaces
-         * used for averages calculation
+		 * Calculate the two surfaces used for averages calculation
 		 */
-		charact_length = integrate( _range= markedfaces(mesh, "gamma4"), _expr= cst(1.) ).evaluate()(0);
-        surface_base = charact_length;
-        surface_fin = integrate( _range= markedfaces(mesh,"gamma1"), _expr=cst(1.) ).evaluate()(0);
+		surface_base = integrate( _range= markedfaces(mesh, "gamma4"), _expr= cst(1.) ).evaluate()(0,0);
+        surface_fin = integrate( _range= markedfaces(mesh,"gamma1"), _expr=cst(1.) ).evaluate()(0,0);
 
         /*
          * The function space associated to the mesh
@@ -328,6 +324,7 @@ HeatSink<Dim, Order>::run()
      * Right hand side construction (steady state)
      */
     form1( _test=Xh, _vector=F, _init=true ) = integrate( _range= markedfaces(mesh, "gamma1"), _expr= therm_coeff*Tamb*id(v));
+
     /*
      * Left hand side construction (steady state)
      */
@@ -376,6 +373,7 @@ HeatSink<Dim, Order>::run()
             integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*c_f*idv(bdf_poly)*id(v) );
         form1( _test=Xh, _vector=Ft ) +=
             integrate( _range= markedfaces(mesh,"gamma4"), _expr= heat_flux*(1-exp(-M_bdf->time()))*id(v) );
+
         // add contrib from time independent terms
         Ft->add( 1., F );
 
