@@ -166,8 +166,9 @@ BOOST_PARAMETER_NAME(space)
 BOOST_PARAMETER_NAME(initial_theta)
 BOOST_PARAMETER_NAME(forceRelaxation)
 
-
 BOOST_PARAMETER_NAME(use_tbb)
+BOOST_PARAMETER_NAME(grainsize)
+BOOST_PARAMETER_NAME(partitioner)
 
 }
 #endif /* __feelcore_parameter_H */
