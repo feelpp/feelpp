@@ -207,7 +207,7 @@ public:
      */
     //@{
 
-    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr, GeomapStrategyType gt, Im2 const& /*__im2*/, bool use_tbb )
+    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr, GeomapStrategyType gt, Im2 const& /*__im2*/, bool use_tbb, int grainsize, std::string const& partitioner )
         :
         M_eltbegin( elts.template get<1>() ),
         M_eltend( elts.template get<2>() ),
@@ -215,7 +215,9 @@ public:
         M_im2( ),
         M_expr( __expr ),
         M_gt( gt ),
-        M_use_tbb( use_tbb )
+        M_use_tbb( use_tbb ),
+        M_grainsize( grainsize ),
+        M_partitioner( partitioner )
     {
         Debug( 5065 ) << "Integrator constructor from expression\n";
     }
@@ -228,7 +230,9 @@ public:
         M_im2( __vfi.M_im2 ),
         M_expr( __vfi.M_expr ),
         M_gt( __vfi.M_gt ),
-        M_use_tbb( __vfi.M_use_tbb )
+        M_use_tbb( __vfi.M_use_tbb ),
+        M_grainsize( __vfi.M_grainsize ),
+        M_partitioner( __vfi.M_partitioner )
     {
         Debug( 5065 ) << "Integrator copy constructor\n";
     }
@@ -399,6 +403,7 @@ public:
             M_c( new gmc_type( _form.gm(), _elt, M_geopc ) ),
             M_formc( new form_context_type( _form,
                                             fusion::make_pair<detail::gmc<0> >( M_c ),
+                                            fusion::make_pair<detail::gmc<0> >( M_c ),
                                             _expr,
                                             _im ) )
 
@@ -415,18 +420,29 @@ public:
         typedef typename std::vector<boost::reference_wrapper<const typename eval::element_type> >::iterator elt_iterator;
         void operator() ( const tbb::blocked_range<elt_iterator>& r ) const
             {
+#if 1
                 tbb::mutex m;
                 tbb::mutex::scoped_lock lock( m  );
                 lock.release();
+                auto  mapgmc = fusion::make_pair<detail::gmc<0> >( M_c );
                 for( auto _elt = r.begin(); _elt != r.end(); ++_elt )
                 {
                     M_c->update( *_elt );
-                    M_formc->update( fusion::make_pair<detail::gmc<0> >( M_c ) );
+                    M_formc->update(mapgmc, mapgmc );
                     M_formc->integrate();
                     lock.acquire( m );
                     M_formc->assemble();
                     lock.release();
                 }
+#else
+                for( auto _elt = r.begin(); _elt != r.end(); ++_elt )
+                {
+                    M_c->update( *_elt );
+                    M_formc->update( fusion::make_pair<detail::gmc<0> >( M_c ),
+                                     fusion::make_pair<detail::gmc<0> >( M_c ) );
+                    M_formc->integrate();
+                }
+#endif
             }
         mutable gmpc_ptrtype M_geopc;
         mutable gmc_ptrtype M_c;
@@ -575,7 +591,8 @@ private:
     expression_type const&  M_expr;
     GeomapStrategyType M_gt;
     bool M_use_tbb;
-
+    int M_grainsize;
+    std::string M_partitioner;
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_local_assembly;
 
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_global_assembly;
@@ -650,8 +667,13 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
 
-//#if !defined(HAVE_TBB)
-#if 1
+#if defined(HAVE_TBB)
+    std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
+    if ( !M_use_tbb )
+#else
+    if ( 1 )
+#endif
+    {
     //
     // some typedefs
     //
@@ -851,22 +873,27 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
     delete formc;
     delete formc1;
-#else
-    element_iterator it = this->beginElement();
-    element_iterator en = this->endElement();
+    }
+#if defined( HAVE_TBB )
+    else
+    {
+        element_iterator it = this->beginElement();
+        element_iterator en = this->endElement();
 
-    if ( it == en )
-        return;
+        if ( it == en )
+            return;
 
-    std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
-    for( auto _it = it; _it != en; ++_it )
-        _v.push_back(boost::cref(*_it));
-    tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end() );
-    Context<FormType,expression_type, im_type, typename eval::the_element_type> thecontext (__form,
-                                                                                            this->expression(),
-                                                                                            this->im(),
-                                                                                            *it);
-    tbb::parallel_for( r,  thecontext);
+        std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
+        for( auto _it = it; _it != en; ++_it )
+            _v.push_back(boost::cref(*_it));
+        //tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end(), M_grainsize );
+        tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end(), std::distance( it, en ) );
+        Context<FormType,expression_type, im_type, typename eval::the_element_type> thecontext (__form,
+                                                                                                this->expression(),
+                                                                                                this->im(),
+                                                                                                *it);
+        tbb::parallel_for( r,  thecontext);
+    }
 #endif // HAVE_TBB
 }
 
@@ -1642,9 +1669,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
 
-    std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
-
 #if defined(HAVE_TBB)
+    std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
     if ( !M_use_tbb )
 #else
     if ( 1 )
@@ -1841,10 +1867,14 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
         for( auto _it = it; _it != en; ++_it )
             _v.push_back(boost::cref(*_it));
-        tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end(), 50 );
+        tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end(), M_grainsize );
         context_type thecontext( this->expression(), this->im(), *it );
-        //tbb::parallel_reduce( r,  thecontext, tbb::simple_partitioner());
-        tbb::parallel_reduce( r,  thecontext );
+        if ( M_partitioner == "auto" )
+            tbb::parallel_reduce( r,  thecontext );
+        else if ( M_partitioner == "simple" )
+            tbb::parallel_reduce( r,  thecontext, tbb::simple_partitioner() );
+        //else if ( M_partitioner == "affinity" )
+        //tbb::parallel_reduce( r,  thecontext, tbb::affinity_partitioner() );
         return thecontext.result();
 #endif // HAVE_TBB
     }
@@ -2367,10 +2397,12 @@ integrate_impl( Elts const& elts,
                 ExprT const& expr,
                 GeomapStrategyType const& gt,
                 Im2 const& im2,
-                bool use_tbb )
+                bool use_tbb,
+                int grainsize,
+                std::string const& partitioner )
 {
     typedef Integrator<Elts, Im, ExprT, Im2> expr_t;
-    return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb ) );
+    return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb, grainsize, partitioner ) );
 }
 
 
@@ -2439,7 +2471,9 @@ BOOST_PARAMETER_FUNCTION(
      (quad,   *, typename detail::integrate_type<Args>::_quad_type() )
      (geomap, *, GeomapStrategyType::GEOMAP_OPT )
      (quad1,   *, typename detail::integrate_type<Args>::_quad1_type() )
-     (use_tbb,   (bool), true )
+     (use_tbb,   (bool), false )
+     (grainsize,   (int), 100 )
+     (partitioner,   *, "auto" )
      )
     )
 {
@@ -2452,7 +2486,7 @@ BOOST_PARAMETER_FUNCTION(
     std::cout << "  -- quad1: " << abi::__cxa_demangle(typeid(quad1).name(),0,0,&status) <<"\n";
     std::cout << "  -- geomap : " << (int)geomap << "\n";
 #endif
-    auto ret =  integrate_impl( range, quad, expr, geomap, quad1, use_tbb );
+    auto ret =  integrate_impl( range, quad, expr, geomap, quad1, use_tbb, grainsize, partitioner );
     return ret;
 }
 
