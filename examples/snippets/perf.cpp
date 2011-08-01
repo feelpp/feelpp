@@ -26,7 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2011-03-15
  */
+#include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/gmsh.hpp>
@@ -59,21 +61,48 @@ static inline hrtime gethrtime() {
 #endif
 
 template<typename MeshT, typename EltT>
-double
-f( MeshT& mesh, EltT const& u, bool use_tbb )
+FEEL_DONT_INLINE double
+f( MeshT& mesh, EltT const& u, bool use_tbb, int gs, std::string const& part )
 {
     using namespace Feel;
     using namespace Feel::vf;
 
     //return integrate( _range=elements(mesh), _quad=_Q<10>(), _expr=trans(idv(u))*(sym(gradv(u))*idv(u)), _use_tbb=use_tbb ).evaluate()(0,0);
     //return integrate( _range=elements(mesh), _quad=_Q<10>(), _expr=(sym(hessv(u))*idv(u)), _use_tbb=use_tbb ).evaluate()(0,0);
-    return integrate( _range=elements(mesh), _quad=_Q<20>(), _expr=cos(idv(u))*sin(idv(u))+trace(P()*trans(P()))+exp(Px())*sin(Px()*Py()), _use_tbb=use_tbb ).evaluate()(0,0);
+    //return integrate( _range=elements(mesh), _quad=_Q<20>(), _expr=cos(idv(u))*sin(idv(u))+trace(P()*trans(P()))+exp(Px())*sin(Px()*Py()),
+    return integrate( _range=elements(mesh), _quad=_Q<5>(), _expr=cos(Px())*Py()*exp(Px()),
+                      _use_tbb=use_tbb, _grainsize=gs, _partitioner=part ).evaluate()(0,0);
 }
+template<typename SpaceT, typename EltT, typename MatrixT>
+FEEL_DONT_INLINE void
+g( SpaceT& Xh, EltT const& u, MatrixT& M, bool use_tbb, int gs, std::string const& part )
+{
+    using namespace Feel;
+    using namespace Feel::vf;
+
+#if 0
+    form2( _test=Xh, _trial=Xh, _matrix=M, _init=true) =
+        integrate( _range=elements(Xh->mesh()), _expr=idt(u)*id(u),
+           _use_tbb=use_tbb, _grainsize=gs, _partitioner=part  );
+    M->close();
+#else
+    form1( _test=Xh, _vector=M, _init=true) =
+        integrate( _range=elements(Xh->mesh()),
+                   _expr=cos(Px())*sin(Py())*id(u),
+                   //_expr=id(u),
+                   _use_tbb=use_tbb, _grainsize=gs, _partitioner=part  );
+    M->close();
+#endif
+
+}
+
 int main(int argc, char** argv)
 {
 
     double hsize = 2;
     int nt = 2;
+    int gs = 100;
+    std::string part = "auto";
     // Declare the supported options.
     namespace po = boost::program_options;
     po::options_description desc("Allowed options");
@@ -81,8 +110,10 @@ int main(int argc, char** argv)
         ("help", "produce help message")
         ("hsize", po::value<double>(&hsize)->default_value( 2 ), "h size")
         ("nt", po::value<int>(&nt)->default_value( 16 ), "nt")
+        ("gs", po::value<int>(&gs)->default_value( 100 ), "grainsize")
+        ("part", po::value<std::string>(&part)->default_value( "auto"), "thread partitioner (auto,affinity,simple)")
         ;
-
+    desc.add( Feel::feel_options() );
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
@@ -108,30 +139,45 @@ int main(int argc, char** argv)
     auto u = vf::project( _space=Xh, _range=elements(mesh), _expr=Px() );
     auto I = integrate( elements(mesh), cst(1.), _use_tbb=false ).evaluate();
 
-    hrtime starttime, endtime, singlethread_time, tbb_time; // for timing
-    starttime = gethrtime();
     tbb::tick_count t0 = tbb::tick_count::now();
-    double r = f(mesh,u,false);
-    endtime = gethrtime();
-    singlethread_time = endtime - starttime;
+    double r = f(mesh,u,false,gs,part);
     tbb::tick_count t1= tbb::tick_count::now();
     double singlethread_time2 = (t1-t0).seconds();
 
-    starttime = gethrtime();
-
     t0 = tbb::tick_count::now();
-    r = f(mesh,u,true);
+    r = f(mesh,u,true,gs,part);
     t1 = tbb::tick_count::now();
     double tbb_time2 = (t1-t0).seconds();
-    endtime = gethrtime();
-    tbb_time = endtime - starttime;
 
 
-    cout << "1T  hrtime:  " << singlethread_time << " ticks" << endl;
-    cout << "TBB  hrtime: " << tbb_time << " ticks" << endl;
-    cout << "speedup: " << singlethread_time/tbb_time << " " << endl;
     cout << "1T  tbbtime:  " << singlethread_time2 << " ticks" << endl;
     cout << "TBB  tbbtime: " << tbb_time2 << " ticks" << endl;
     cout << "speedup: " << singlethread_time2/tbb_time2 << " " << endl;
+
+    u = vf::project( _space=Xh, _range=elements(mesh), _expr=cst(1.0) );
+
+    auto backend = Backend<double>::build( vm );
+    //auto M = backend->newMatrix( Xh, Xh );
+    auto M = backend->newVector( Xh );
+    t0 = tbb::tick_count::now();
+    g( Xh, u, M, false, gs, part );
+    t1 = tbb::tick_count::now();
+    singlethread_time2 = (t1-t0).seconds();
+    M->printMatlab( "M1.m" );
+    double i1 = inner_product( *M, u );
+    std::cout << "inner1 = "  << i1 << "\n";
+
+    t0 = tbb::tick_count::now();
+    g( Xh, u, M, true, gs, part );
+    t1 = tbb::tick_count::now();
+    tbb_time2 = (t1-t0).seconds();
+    M->printMatlab( "M2.m" );
+    double i2 = inner_product( *M, u );
+    std::cout << "inner2 = "  << inner_product( *M, u ) << "\n";
+    std::cout << "|i1=i2| = "  << std::setprecision(16) << std::scientific << math::abs(i1-i2) << "\n";
+    cout << "1T  tbbtime:  " << singlethread_time2 << " ticks" << endl;
+    cout << "TBB  tbbtime: " << tbb_time2 << " ticks" << endl;
+    cout << "speedup: " << singlethread_time2/tbb_time2 << " " << endl;
+
 
 }
