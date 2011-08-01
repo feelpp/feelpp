@@ -836,7 +836,7 @@ public:
 
     value_type evaluate() const { return M_constant; }
 
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
+    template<typename Geo_t, typename Basis_i_t=mpl::void_, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
         typedef typename Cst<T>::expression_type expression_type;
