@@ -44,7 +44,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/bdf2.hpp>
 
-Feel::gmsh_ptrtype makefin( double hsize, double deep , double L );
+Feel::gmsh_ptrtype makefin( double hsize, double width, double deep , double L );
 
 //# marker1 #
 inline
@@ -58,6 +58,8 @@ makeOptions()
      "first h value to start convergence")
     ("L", Feel::po::value<double>()->default_value( 0.03 ),
      "dimensional length of the sink (in meters)")
+    ("width", Feel::po::value<double>()->default_value( 0.0005 ),
+     "dimensional width of the fin (in meters)")
 
 	// 3D parameter
 	("deep", Feel::po::value<double>()->default_value( 0 ),
@@ -186,6 +188,7 @@ private:
     double meshSize;
     double depth;
     double L;
+    double width;
 
 	/* thermal conductivities */
 	double kappa_s;
@@ -236,6 +239,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		meshSize( this->vm()["hsize"].template as<double>() ),
 		depth( this->vm()["deep"].template as<double>() ),
 		L( this->vm()["L"].template as<double>() ),
+        width( this->vm()["width"].template as <double>() ),
 		kappa_s( this-> vm()["kappa_s"].template as<double>() ),
 		kappa_f( this-> vm()["kappa_f"].template as<double>() ),
 		rho_s( this-> vm()["rho_s"].template as<int>() ),
@@ -259,7 +263,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		 * First we create the mesh
 		 */
         mesh = createGMSHMesh ( _mesh = new mesh_type,
-                                _desc = makefin( meshSize, depth , L),
+                                _desc = makefin( meshSize, width, depth , L),
                                 _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
 
 		/*
@@ -267,7 +271,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		 */
 		surface_base = integrate( _range= markedfaces(mesh, "gamma4"), _expr= cst(1.) ).evaluate()(0,0);
         surface_fin = integrate( _range= markedfaces(mesh,"gamma1"), _expr=cst(1.) ).evaluate()(0,0);
-
+       std::cout << "surface_base = " << surface_base << " and surface_fin = " << surface_fin << "\n";
         /*
          * The function space associated to the mesh
          */
@@ -302,6 +306,7 @@ HeatSink<Dim, Order>::run()
 
     Log() << "meshSize = " << meshSize << "\n"
           << "L = "<< L <<"\n"
+          << "width = " << width << "\n"
           << "depth = " << depth << "\n"
           << "kappa_spreader = " << kappa_s << "\n"
           << "kappa_fin = " << kappa_f << "\n"
