@@ -40,7 +40,7 @@
 namespace Feel
 {
 
-enum StabilizationMethods{NO, CIP, SGS, SUPG, GALS};
+    enum StabilizationMethods{NO, CIP, SGS, SUPG, GALS};
 
 /**
  * \class AdvReact
@@ -200,9 +200,22 @@ void AdvReact<Space>::update(const Esigma& sigma,
                                           * L_op
                                           * L_opt );
 
+
+                            M_operatorStab+=
+                                integrate(boundaryfaces(M_mesh),
+                                          coeff
+                                          * L_op
+                                          * L_opt );
+
                             M_rhsStab=
                                 integrate(elements(M_mesh),
                                           coeff*L_op*val(f));
+
+
+                            M_rhsStab+=
+                                integrate(boundaryfaces(M_mesh),
+                                          coeff*L_op*val(f) );
+
                         }//Streamline Upwind Petrov Galerkin
 
                     else if (M_StabMethod== GALS)
@@ -217,15 +230,28 @@ void AdvReact<Space>::update(const Esigma& sigma,
                                            * L_op
                                            * L_opt );
 
+                            M_operatorStab+=
+                                integrate(boundaryfaces(M_mesh),
+                                          coeff
+                                          * L_op
+                                          * L_opt );
+
                             M_rhsStab=
                                 integrate(elements(M_mesh),
                                           coeff*L_op*val(f));
+
+                            M_rhsStab+=
+                                integrate(boundaryfaces(M_mesh),
+                                          coeff*L_op*val(f) );
 
                         }//Galerkin Least Square
 
                     else if (M_StabMethod== SGS)
                         {
                             AUTO(coeff, 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::h()+vf::abs(val(sigma))));
+
+                            //                            AUTO(coeff_bound, 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::hFace()+vf::abs(val(sigma))));
+
                             AUTO(L_op, (grad(M_phi)* val(beta) - val(sigma) * id(M_phi) ) );
                             AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) ) );
 
@@ -234,9 +260,20 @@ void AdvReact<Space>::update(const Esigma& sigma,
                                           coeff
                                           * L_op
                                           * L_opt );
+
+                            M_operatorStab+=
+                                integrate(boundaryfaces(M_mesh),
+                                          coeff
+                                          * L_op
+                                          * L_opt );
+
                             M_rhsStab=
                                 integrate(elements(M_mesh),
                                           coeff*L_op*val(f));
+
+                            M_rhsStab+=
+                                integrate(boundaryfaces(M_mesh),
+                                          coeff*L_op*val(f) );
                         }//Subgrid Scale method
                 }//update stabilization
             M_operator.add(1.0, M_operatorStab);
