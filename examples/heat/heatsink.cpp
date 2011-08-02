@@ -41,6 +41,7 @@
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 
+#include <feel/feelmesh/filters.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/bdf2.hpp>
 
@@ -271,7 +272,7 @@ HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::o
 		 */
 		surface_base = integrate( _range= markedfaces(mesh, "gamma4"), _expr= cst(1.) ).evaluate()(0,0);
         surface_fin = integrate( _range= markedfaces(mesh,"gamma1"), _expr=cst(1.) ).evaluate()(0,0);
-       std::cout << "surface_base = " << surface_base << " and surface_fin = " << surface_fin << "\n";
+
         /*
          * The function space associated to the mesh
          */
@@ -365,12 +366,11 @@ HeatSink<Dim, Order>::run()
         M_bdf->setSteady();
     }
 
-    // average file which contains: time Tavg T_on_Gamma_1
+    // average file which contains: time Tavg_base Tavg_gamma1
     out.open("averages", std::ios::out);
     auto Ft = M_backend->newVector( Xh );
     for ( M_bdf->start(); M_bdf->isFinished()==false; M_bdf->next() )
     {
-
         // update right hand side with time dependent terms
         auto bdf_poly = M_bdf->polyDeriv();
         form1( _test=Xh, _vector=Ft ) =
@@ -419,8 +419,8 @@ main( int argc, char** argv )
     using namespace Feel;
 
 	/* Parameters to be changed */
-	const int nDim = 2;
-	const int nOrder = 1;
+	const int nDim = 3;
+	const int nOrder = 2;
 
 	/* define application */
 	typedef Feel::HeatSink<nDim, nOrder> heat_sink_type;
