@@ -52,6 +52,9 @@ po::options_description exporter_options( std::string const& prefix )
         // prefix options
         (prefixvm(prefix,"exporter.prefix").c_str(), Feel::po::value<std::string>()->default_value( prefix ), "prefix for exported files")
 
+        // directory options
+        (prefixvm(prefix,"exporter.directory").c_str(), Feel::po::value<std::string>()->default_value( "results" ), "directory for exported files")
+
         // frequency options
         (prefixvm(prefix,"exporter.freq").c_str(), Feel::po::value<int>()->default_value( 1 ), "frequency at which results are exported")
 
