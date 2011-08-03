@@ -222,8 +222,10 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
             reset();
             start();
             this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
-            std::cout << "reuse fail backend: " << this->precMatrixStructure() << "\n";
+            std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
+            Log() << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
             boost::tie( M_converged, M_iteration, M_residual ) = this->solve( A, P, x, b );
+            if ( !M_converged) throw std::logic_error("solver failed to converge");
             stop();
         }
 
