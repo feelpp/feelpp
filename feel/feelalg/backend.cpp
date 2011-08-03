@@ -33,14 +33,6 @@
 
 namespace Feel
 {
-std::string
-_o(std::string const& prefix, std::string const& opt )
-{
-    std::string o = prefix;
-    if ( !o.empty() )
-        o += "-";
-    return o+opt;
-}
 template <typename T>
 Backend<T>::Backend()
     :
@@ -87,15 +79,15 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     M_prefix( prefix ),
     M_nlsolver( solvernonlinear_type::build( vm ) ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
-    M_rtolerance( vm[_o(prefix,"ksp-rtol")].template as<double>() ),
-    M_dtolerance( vm[_o(prefix,"ksp-dtol")].template as<double>() ),
-    M_atolerance( vm[_o(prefix,"ksp-atol")].template as<double>() ),
-    M_reuse_prec( vm[_o(prefix,"reuse-prec")].template as<bool>() ),
+    M_rtolerance( vm[prefixvm(prefix,"ksp-rtol")].template as<double>() ),
+    M_dtolerance( vm[prefixvm(prefix,"ksp-dtol")].template as<double>() ),
+    M_atolerance( vm[prefixvm(prefix,"ksp-atol")].template as<double>() ),
+    M_reuse_prec( vm[prefixvm(prefix,"reuse-prec")].template as<bool>() ),
     M_transpose( false ),
-    M_maxit( vm[_o(prefix,"ksp-maxit")].template as<size_type>() ),
-    M_ksp( vm[_o(prefix,"ksp-type")].template as<std::string>() ),
-    M_pc( vm[_o(prefix,"pc-type")].template as<std::string>() ),
-    M_fieldSplit( vm[_o(prefix,"fieldsplit-type")].template as<std::string>() )
+    M_maxit( vm[prefixvm(prefix,"ksp-maxit")].template as<size_type>() ),
+    M_ksp( vm[prefixvm(prefix,"ksp-type")].template as<std::string>() ),
+    M_pc( vm[prefixvm(prefix,"pc-type")].template as<std::string>() ),
+    M_fieldSplit( vm[prefixvm(prefix,"fieldsplit-type")].template as<std::string>() )
 {
 }
 template <typename T>
@@ -405,42 +397,38 @@ template class Backend<double>;
  */
 po::options_description backend_options( std::string const& prefix )
 {
-    std::string _prefix = prefix;
-    if ( !_prefix.empty() )
-        _prefix += "-";
-
     po::options_description _options( "Linear and NonLinear Solvers Backend " + prefix + " options");
     _options.add_options()
         // solver options
 #if defined( HAVE_PETSC_H )
 
-        ((_prefix+"backend").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: PETSc, trilinos, gmm")
+        (prefixvm(prefix,"backend").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: PETSc, trilinos, gmm")
 #else
-        ((_prefix+"backend").c_str(), Feel::po::value<std::string>()->default_value( "gmm" ), "backend type: PETSc, trilinos, gmm")
+        (prefixvm(prefix,"backend").c_str(), Feel::po::value<std::string>()->default_value( "gmm" ), "backend type: PETSc, trilinos, gmm")
 #endif
-        ((_prefix+"ksp-rtol").c_str(), Feel::po::value<double>()->default_value( 1e-13 ), "relative tolerance")
-        ((_prefix+"ksp-atol").c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance")
-        ((_prefix+"ksp-dtol").c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance")
-        ((_prefix+"ksp-maxit").c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations")
-        ((_prefix+"reuse-prec").c_str(), Feel::po::value<bool>()->default_value( false ), "reuse preconditioner")
-        ((_prefix+"ksp-type").c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres")
+        (prefixvm(prefix,"ksp-rtol").c_str(), Feel::po::value<double>()->default_value( 1e-13 ), "relative tolerance")
+        (prefixvm(prefix,"ksp-atol").c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance")
+        (prefixvm(prefix,"ksp-dtol").c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance")
+        (prefixvm(prefix,"ksp-maxit").c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations")
+        (prefixvm(prefix,"reuse-prec").c_str(), Feel::po::value<bool>()->default_value( false ), "reuse preconditioner")
+        (prefixvm(prefix,"ksp-type").c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres")
 
         // preconditioner options
-        ((_prefix+"pc-type").c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of preconditioners (lu, ilut, ilutp, diag, id,...)")
-        ((_prefix+"ilu-threshold").c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "threshold value for preconditioners")
-        ((_prefix+"ilu-fillin").c_str(), Feel::po::value<int>()->default_value( 2 ), "fill-in level value for preconditioners")
+        (prefixvm(prefix,"pc-type").c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of preconditioners (lu, ilut, ilutp, diag, id,...)")
+        (prefixvm(prefix,"ilu-threshold").c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "threshold value for preconditioners")
+        (prefixvm(prefix,"ilu-fillin").c_str(), Feel::po::value<int>()->default_value( 2 ), "fill-in level value for preconditioners")
 
         // solver control options
-        ((_prefix+"gmres-restart").c_str(), Feel::po::value<int>()->default_value( 20 ), "number of iterations before solver restarts (gmres)")
-        ((_prefix+"ksp-verbose").c_str(), Feel::po::value<int>()->default_value( 0 ), "(=0,1,2) print solver iterations")
-        ((_prefix+"fieldsplit-type").c_str(), Feel::po::value<std::string>()->default_value( "additive" ), "type of fieldsplit (additive, multiplicative, schur)")
+        (prefixvm(prefix,"gmres-restart").c_str(), Feel::po::value<int>()->default_value( 20 ), "number of iterations before solver restarts (gmres)")
+        (prefixvm(prefix,"ksp-verbose").c_str(), Feel::po::value<int>()->default_value( 0 ), "(=0,1,2) print solver iterations")
+        (prefixvm(prefix,"fieldsplit-type").c_str(), Feel::po::value<std::string>()->default_value( "additive" ), "type of fieldsplit (additive, multiplicative, schur)")
         ;
 
     for ( uint16_type i=0;i<5;++i)
         {
             _options.add_options()
-                ((boost::format("%1%fieldsplit-%2%-pc-type") %_prefix%i).str().c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of fieldsplit preconditioners")
-                ((boost::format("%1%fieldsplit-%2%-ksp-type") %_prefix%i).str().c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "type of fieldsplit solver")
+                ((boost::format("%1%fieldsplit-%2%-pc-type") %prefixvm(prefix,"") %i).str().c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of fieldsplit preconditioners")
+                ((boost::format("%1%fieldsplit-%2%-ksp-type") %prefixvm(prefix,"") %i).str().c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "type of fieldsplit solver")
                 ;
 
         }
