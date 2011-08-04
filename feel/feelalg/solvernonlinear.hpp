@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-02
 
-  Copyright (C) 2007, 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -171,6 +171,10 @@ public:
     double getAbsoluteSolutionTol() const { return M_absoluteSolutionTol; }
 
     uint getNbItMax() const { return M_nbItMax; }
+
+    int reuseJacobian() const { return M_reuse_jac; }
+    int reusePreconditioner() const { return M_reuse_prec; }
+
     //@}
 
     /** @name  Mutators
@@ -211,6 +215,17 @@ public:
      * Returns the type of preconditioner to use.
      */
     PreconditionerType preconditionerType () const { return M_preconditioner_type; }
+
+    /**
+     * set reuse jacobian and/or preconditioner
+     *  - jac=-1: means never rebuilt (preconditioner is not rebuit either)
+     *  - jac=-2: build at each new nonlinear iterations (preconditioner is not rebuit either)
+     *  - jac= 1: build at each new nonlinear iterations (rebuild jacobian every single nonlinear iteration)
+     *  - jac= <n> (n>1): build every n iterations
+     * when jac >= n, prec=-1 (rebuilt once at each new nonlinear iteration)
+     * when jac >= n, prec=-1 (rebuilt once at each new nonlinear iteration)
+     */
+    virtual void setReuse( int jac=1, int prec=1 ) { M_reuse_jac=jac; M_reuse_prec=prec; }
 
     /**
      * Define values of tolerance for the non linear solver
@@ -330,6 +345,16 @@ protected:
      * The maximum numbers of allowable nonlinear iterations
      */
     uint M_nbItMax;
+
+    /**
+     * reuse jac level
+     */
+    int M_reuse_jac;
+
+    /**
+     * reuse preconditioner level
+     */
+    int M_reuse_prec;
 };
 
 

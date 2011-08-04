@@ -161,11 +161,8 @@ extern "C"
     std::cout << "[__ snes_jacobian] SAME_PRECONDITIONER = " << SAME_PRECONDITIONER << "\n";
 #endif
 
-#if ((PETSC_VERSION_MAJOR >= 3))
-    //PetscInt lag;
-    //SNESGetLagPreconditioner(snes,&lag);
-    //std::cout << "lag = " << lag << "\n";
-#endif
+    //solver->setReuse( solver->reuseJacobian(), solver->reusePreconditioner()a );
+    solver->setReuse( -1, 2 );
     //*msflag = MatStructure( solver->precMatrixStructure() );
     //*msflag = SAME_NONZERO_PATTERN;
     //*msflag = DIFFERENT_NONZERO_PATTERN;
@@ -278,7 +275,21 @@ void SolverNonLinearPetsc<T>::clear ()
             CHKERRABORT(PETSC_COMM_WORLD,ierr);
         }
 }
+// SolverNonLinearPetsc<> methods
+template <typename T>
+void SolverNonLinearPetsc<T>::setReuse (int jac, int prec )
+{
+    PetscInt cur_jac, cur_prec;
+    SNESGetLagJacobian( M_snes, &cur_jac );
+    SNESGetLagPreconditioner( M_snes, &cur_prec );
+    std::cout << "[PETSc non linear solver reuse] prev jac=" << cur_jac << " prev prec=" << cur_prec << "\n";
 
+    SNESSetLagJacobian( M_snes, jac );
+    SNESSetLagPreconditioner( M_snes, prec );
+    SNESGetLagJacobian( M_snes, &cur_jac );
+    SNESGetLagPreconditioner( M_snes, &cur_prec );
+    std::cout << "[PETSc non linear solver reuse] prev jac=" << cur_jac << " prev prec=" << cur_prec << "\n";
+}
 template <typename T>
 void SolverNonLinearPetsc<T>::init ()
 {

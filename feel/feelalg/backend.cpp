@@ -242,12 +242,24 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setPreconditionerType( this->pcEnumType() );
     M_nlsolver->setKspSolverType( this->kspEnumType() );
     M_nlsolver->setPrecMatrixStructure( this->precMatrixStructure() );
+    std::cout << "[nlSolve] reusepc:" << reusePC << std::endl;
     if ( reusePC )
+    {
+        M_nlsolver->init();
         M_nlsolver->setPrecMatrixStructure( SAME_PRECONDITIONER );
-    else
-        M_nlsolver->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
-    M_nlsolver->solve( A, x, b, tol, its );
-    return boost::make_tuple( true, its, tol );
+        M_nlsolver->setReuse( -2, -2 );
+    }
+    auto ret = M_nlsolver->solve( A, x, b, tol, its );
+    if ( ret.first < 0 )
+    {
+        std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
+        Log() << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
+        M_nlsolver->setPrecMatrixStructure( SAME_PRECONDITIONER );
+        M_nlsolver->setReuse( 1, -2 );
+        auto ret = M_nlsolver->solve( A, x, b, tol, its );
+        return boost::make_tuple( ret.first, its, tol );
+    }
+    return boost::make_tuple( ret.first, its, tol );
 }
 template <typename T>
 typename Backend<T>::nl_solve_return_type
