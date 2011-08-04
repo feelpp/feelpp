@@ -41,7 +41,7 @@ Our study is avaible in 2 or 3 dimensions, depending on the application's parame
 \end{minipage}
 \end{figure}
 
-\subsection{Parameters}
+\subsection{Inputs}
 The implementation of thoses parameters is described in the section ~\ref{heat:param}.
 
 \subsubsection{Material}
@@ -73,14 +73,34 @@ The term $\rho_i C_i$ corresponds to the heat volumetric capacity. In that way, 
 \end{tabular}
 \end{center}
 
-\subsubsection{Depth}
+\subsubsection{Physical}
+\begin{itemize}
+\item{Depth} \\
 This parameter is only to take into account for the 3D simulation. It represents the depth of the caracteristical heat sink and is called \lstinline!depth! in the application.
 
-\subsubsection{Width}
+\item{Length} \\
+You can also parameterize the length of the fin. This one is called \lstinline!L! in the application's parameters, its dimension is the meter.
+
+\item{Width} \\
 Typically, this parameter is linked with constructor's standards. This parameter is called \lstinline!width! in the application's implementation.
+\end{itemize}
+
+\subsubsection{Thermal}
+\begin{itemize}
+
+\item{Heat flux} \\
+It represents the heat flux brought by the electronic component at the bottom of the base. Here it's typically the heat brought by the processor.
+
+\item{Thermal coefficient} \\
+The thermal coefficient $h$ named $therm_coeff$ in the application is representative of the heat transfer between the fin and the air flow. 
+
+\item{Ambien temperature} \\
+This parameter called $T_{amb}$ represents the temperature around the heat sink at the beginning. That means the ambient temperature before the computer is turned on.
+
+\end{itemize}
 
 \subsubsection{Summary table}
-The table following table displays the various fixed and variables parameters of this application.
+The following table displays the various fixed and variables parameters of this application.
 \clearpage
 
 \begin{table}[htbp]
@@ -113,9 +133,9 @@ $\rho_s$ & material density & $8940$ & $[10^3,12\cdot 10^3 ]$ & $kg\cdot m^{-3}$
 $C_s$ & heat capacity & $385$ & $[10^2,10^3]$ & $J\cdot kg^{-1} \cdot K^{-1}$\\\\
 
 \multicolumn{2}{c}{Heat Parameters} \\ \cmidrule(r){1-2}
-$T_{amb}$ & Inflow temperature & $300$ & [300,310] & $K$ \\
-$heat\_flux$ & Heat flux $Q$ & $10^6$ & $[0 ,10^{6}]$ & $W \cdot m^{-3}$\\
-$therm\_coeff$ & Thermal coefficient $h$ & $10^3$ & $[0,10^3]$ & $W\cdot m^{-2} \cdot K^{-1}$ \\
+$T_{amb}$ & ambient temperature & $300$ & [300,310] & $K$ \\
+$heat\_flux$ & heat flux $Q$ & $10^6$ & $[0 ,10^{6}]$ & $W \cdot m^{-3}$\\
+$therm\_coeff$ & thermal coefficient $h$ & $10^3$ & $[0,10^3]$ & $W\cdot m^{-2} \cdot K^{-1}$ \\
 \end{tabular}
 
   \caption{Table of fixed and variable parameters}
@@ -408,12 +428,29 @@ for ( M_bdf->start(); M_bdf->isFinished()==false; M_bdf->next() )
 }
 \end{lstlisting}
 
+\subsection{Outputs}
+As you can see in the equation's implementation above, there are two ouputs :
+\begin{itemize}
+\item \textsc{Gmsh} format : this file contains the entire mesh and the temperatures associated to each degrees of freedom of the mesh. To open it, you juste have to do as you always do with \textsc{Gmsh} : \lstinline!gmsh heatsink-1_0.msh!. You will obtain the figure with the different temperatures, you are now able to click on "play" with its significative logo and admire the evolution
+
+\item \lstinline!averages! file : this file is completed at each time step, each line contains the current time, the average temperature on $\Gamma_4$ (surface where is the contact between the heat sink and the heat source) and the average temperature on $\Gamma_1$. To analyze this file, we recommend you to work with \textsc{Octave} which is an open-source software similar to \textsc{Matlab}. If it is installed, open a command line and go to \lstinline!~/feel/heatsink/Simplex_*.*.*/0.000*/! and try :
+\begin{lstlisting}
+> octave
+octave:1> M=load('averages');
+octave:2> plot(M(:,1),M(:,2))
+octave:3> plot(M(:,1),M(:,3))
+octave:4> plot(M(1:70,1),M(1:70,2))
+octave:5> plot(M(1:70,1),M(1:70,3))
+\end{lstlisting}
+
+The $4^{th}$ and $5^{th}$ lines are here to observe the transient state.
+\end{itemize}
 
 
 \section{Use cases}
 \subsection{How to use it ?}
 To make easier the use of this application, we recommand you to use the configurations files. This is the fastest way : to do it, you juste have to create the file \lstinline!heatsink.cfg! and place it in the same directory that your application's executable. \\
-We have created $3$ typical \lstinline!cfg! files as follow :
+We have created $3$ typical \lstinline!cfg! files such as :
 \begin{lstlisting}
 # file heatsink_1.cfg
 # spreader and fin in copper
@@ -428,7 +465,7 @@ kappa_f=386 # W/m/K
 c_f=385 #J/kg/K                                                                                                                                          
 rho_f=8940
 
-L=2e-2
+L=15e-3
 width=5e-4                                                                                                                                               
 
 therm_coeff=1000  #W/(m2K)                                                                                                                               
@@ -437,7 +474,7 @@ heat_flux=1e6
 [bdf]
 order=2
 time-step=0.05
-time-final=50
+time-final=100
 steady=0
 
 [exporter]
@@ -445,7 +482,7 @@ format=gmsh
 \end{lstlisting}
 
 \begin{lstlisting}
-# file heatsink_2.cfg
+# file heatsink_3.cfg
 # spreader in copper
 # fin in aluminium
 # 3D simulation
@@ -458,7 +495,7 @@ kappa_f=386 # W/m/K
 c_f=385 #J/kg/K                                                                                                                                          
 rho_f=8940
 
-L=2e-2
+L=15e-3
 width=5e-4
 deep=4e-2
 
@@ -467,8 +504,8 @@ heat_flux=1e6
 
 [bdf]
 order=2
-time-step=1
-time-final=1500
+time-step=0.05
+time-final=100
 steady=0
 
 [exporter]
@@ -479,19 +516,65 @@ This file is the only modification you will have to bring to the application, in
 
 \subsection{Results}
 
-\subsubsection{2D case}
-Here is the result of the 2D simulation considering the configuration with \lstinline!heatsink_1.cfg!, the following figures have been extracted thanks to \textsc{Gmsh} and \textsc{Octave} :
+\subsubsection{2D cases}
+Here are some results of the 2D simulations considering different configurations files. The figures have been extracted thanks to \textsc{Gmsh} and \textsc{Octave} :
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=10cm]{heatsink/heatsink_1.png}
+\caption{\lstinline!heatsink_1.cfg! : steady state, spreader and fin in copper, $Q=1e6$ and $h=1e3$}
+\end{figure}
+
+
+\begin{figure}[!h]
+\begin{minipage}[b]{.5\linewidth}
+\centering
+\includegraphics[width=7cm]{heatsink/heatsink_1_gamma4.png}
+\caption{\lstinline!heatsink_1.cfg! : transient state on $\Gamma_4$}
+\end{minipage}
+\begin{minipage}[b]{.5\linewidth}
+\centering
+\includegraphics[width=7cm]{heatsink/heatsink_1_gamma1.png}
+\caption{\lstinline!heatsink_1.cfg! : transient state on $\Gamma_1$}
+\end{minipage}
+\end{figure}
+
+\clearpage
+
+%\item \lstinline!heatsink_2.cfg! : spreader and fin in copper, $Q=1e8$ and $h=20$
 %\begin{figure}[!h]
-%\begin{minipage}[b]{.19\linewidth}
 %\centering
-%\includegraphics[width=1.7cm]{heatsink/heatsink_1.png}
-%\end{minipage}
-%\begin{minipage}[b]{.19\linewidth}
-%\centering
-%\includegraphics[width=1.7cm]{heatsink/heatsink_1_gamma4.png}
-%\end{minipage}
-%\begin{minipage}[b]{.19\linewidth}
-%\centering
-%\includegraphics[width=1.7cm]{heatsink/heatsink_1_gamma1.png}
-%\end{minipage}
+%\includegraphics[width=1.7cm]{heatsink/heatsink_2.png}
 %\end{figure}
+
+\subsubsection{3D cases}
+Here is the result of 3D simulations considering the following configurations :
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=10cm]{heatsink/heatsink_3.png}
+\caption{\lstinline!heatsink_3.cfg! : spreader and fin in copper, $Q=1e6$ and $h=1e3$}
+\end{figure}
+
+\begin{figure}[!h]
+\begin{minipage}[b]{.5\linewidth}
+\centering
+\includegraphics[width=7cm]{heatsink/heatsink_3_gamma4.png}
+\caption{\lstinline!heatsink_3.cfg! : transient state on $\Gamma_4$}
+\end{minipage}
+\begin{minipage}[b]{.5\linewidth}
+\centering
+\includegraphics[width=7cm]{heatsink/heatsink_3_gamma1.png}
+\caption{\lstinline!heatsink_3.cfg! : transient state on $\Gamma_1$}
+\end{minipage}
+\end{figure}
+
+
+%\item \lstinline!heatsink_4.cfg! : spreader in copper and fin in aluminium, $Q=1e8$ and $h=20$
+%\begin{figure}[!h]
+%\centering
+%\includegraphics[width=9cm]{heatsink/heatsink_4.png}
+%\caption{Steady state}
+%\end{figure}
+
+\clearpage
