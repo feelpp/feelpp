@@ -275,8 +275,8 @@ Stokes::run()
 
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F, _init=true );
-    stokes_rhs = integrate( elements(mesh), trans(f)*id(v) );
-    stokes_rhs += integrate( boundaryfaces(mesh), trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
+    stokes_rhs = integrate( elements(mesh), inner(f,id(v)) );
+    stokes_rhs += integrate( boundaryfaces(mesh), inner(u_exact,-SigmaN+penalbc*id(v)/hFace() ) );
 
     Log() << "[stokes] vector local assembly done\n";
 
@@ -287,13 +287,17 @@ Stokes::run()
     auto D =  M_backend->newMatrix( Xh, Xh );
 
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D, _init=true );
-    stokes = integrate( elements(mesh), mu*trace(deft*trans(def)) );
+    boost::timer chrono;
+    stokes = integrate( elements(mesh), mu*inner(deft,def) );
+    std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n"; chrono.restart();
     stokes +=integrate( elements(mesh), - div(v)*idt(p) + divt(u)*id(q) );
+    std::cout << "(u,p): " << chrono.elapsed() << "\n"; chrono.restart();
     stokes +=integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
-    stokes +=integrate( boundaryfaces(mesh), -trans(SigmaNt)*id(v) );
-    stokes +=integrate( boundaryfaces(mesh), -trans(SigmaN)*idt(u) );
-    stokes +=integrate( boundaryfaces(mesh), +penalbc*trans(idt(u))*id(v)/hFace() );
-
+    std::cout << "(lambda,p): " << chrono.elapsed() << "\n"; chrono.restart();
+    stokes +=integrate( boundaryfaces(mesh), -inner(SigmaNt,id(v)) );
+    stokes +=integrate( boundaryfaces(mesh), -inner(SigmaN,idt(u)) );
+    stokes +=integrate( boundaryfaces(mesh), +penalbc*inner(idt(u),id(v))/hFace() );
+    std::cout << "bc: " << chrono.elapsed() << "\n"; chrono.restart();
     //# endmarker7 #
     Log() << "[stokes] matrix local assembly done\n";
     D->close();

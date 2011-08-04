@@ -668,7 +668,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     boost::timer __timer;
 
 #if defined(HAVE_TBB)
-    std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
+    //std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
     if ( !M_use_tbb )
 #else
     if ( 1 )
@@ -1670,7 +1670,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     boost::timer __timer;
 
 #if defined(HAVE_TBB)
-    std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
+    //std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
     if ( !M_use_tbb )
 #else
     if ( 1 )
