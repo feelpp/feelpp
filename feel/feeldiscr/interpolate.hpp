@@ -129,19 +129,19 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
         f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
                                                  __c,
                                                  pc ) );
-        typedef boost::multi_array<value_type,3> array_type;
+
+        typedef boost::multi_array<typename f_fectx_type::id_type,1> array_type;
         array_type fvalues( f.idExtents( *fectx ) );
-        std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
 
         for( ; it != en; ++ it )
         {
             __c->update( *it );
             fectx->update( __c, pc );
-            std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
             f.id( *fectx, fvalues );
             //std::cout << "interpfunc :  " << interpfunc << "\n";
             for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
             {
+                fvalues[l].setZero();
                 const int ncdof = basis_type::is_product?basis_type::nComponents:1;
                 for ( uint16_type comp = 0;comp < ncdof;++comp )
                 {
@@ -161,7 +161,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                     if ( globaldof >= interp.firstLocalIndex() &&
                          globaldof < interp.lastLocalIndex() )
                     {
-                        interp( globaldof ) = fvalues[l][comp][0];
+                        interp( globaldof ) = fvalues[l](comp,0);
                         //Debug( 5010 ) << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
                         //std::cout << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
                     }
@@ -188,9 +188,9 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
         f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
                                                  __c,
                                                  pc ) );
-        typedef boost::multi_array<value_type,3> array_type;
+        typedef boost::multi_array<typename f_fectx_type::id_type,1> array_type;
         array_type fvalues( f.idExtents( *fectx ) );
-        std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
+
 
         typename domain_mesh_type::Inverse meshinv( f.functionSpace()->mesh() );
 
@@ -241,7 +241,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                     //typename FunctionType::id_type interpfunc( f.id( *__c, pc ) );
                     //typename FunctionType::id_type interpfunc;
 
-                    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), 0 );
+                    fvalues[0].setZero();
                     f.id( *fectx, fvalues );
                     //std::cout << "interpfunc :  " << interpfunc << "\n";
 
@@ -254,7 +254,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                         // update only values on the processor
                         if ( globaldof >= interp.firstLocalIndex() &&
                              globaldof < interp.lastLocalIndex() )
-                            interp( globaldof ) = fvalues[0][comp][0];
+                            interp( globaldof ) = fvalues[0](comp,0);
                         //interp( globaldof ) = interpfunc(comp,0,0);
                     }
                 }

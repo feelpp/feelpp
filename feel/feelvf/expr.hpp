@@ -47,6 +47,8 @@
 #include <boost/fusion/support/pair.hpp>
 #include <boost/multi_array.hpp>
 
+#include <Eigen/Core>
+
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/context.hpp>
 #include <feel/feelvf/shape.hpp>
@@ -1847,8 +1849,9 @@ public:
                                   mpl::identity<detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-
         typedef typename l_type::shape shape;
+
+        typedef typename Eigen::Matrix<value_type,shape::M,shape::N> loc_type;
 
         struct is_zero { static const bool value = l_type::is_zero::value; };
 
@@ -1858,7 +1861,7 @@ public:
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom, fev, feu ),
             M_right( expr.right(), geom, fev, feu ),
-            M_loc( boost::extents[M_gmc->nPoints()][shape::M][shape::N]  )
+            M_loc( boost::extents[M_gmc->nPoints()]  )
             {
                 update( geom );
             }
@@ -1868,7 +1871,7 @@ public:
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom, fev ),
             M_right( expr.right(), geom, fev ),
-            M_loc( boost::extents[M_gmc->nPoints()][shape::M][shape::N] )
+            M_loc( boost::extents[M_gmc->nPoints()] )
             {
                 update( geom );
             }
@@ -1877,7 +1880,7 @@ public:
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom ),
             M_right( expr.right(), geom ),
-            M_loc(  boost::extents[M_gmc->nPoints()][shape::M][shape::N] )
+            M_loc(  boost::extents[M_gmc->nPoints()] )
             {
                 update( geom );
             }
@@ -1907,7 +1910,7 @@ public:
                     {
                         value_type left = M_left.evalq( c1, c2, q );
                         value_type right = M_right.evalq( c1, c2, q );
-                        M_loc[q][c1][c2] = std::pow( left, right );
+                        M_loc[q](c1,c2) = std::pow( left, right );
                     }
         }
         void update( Geo_t const& geom, uint16_type face )
@@ -1922,7 +1925,7 @@ public:
                     {
                         value_type left = M_left.evalq( c1, c2, q );
                         value_type right = M_right.evalq( c1, c2, q );
-                        M_loc[q][c1][c2] = std::pow( left, right );
+                        M_loc[q](c1,c2) = std::pow( left, right );
                     }
         }
 
@@ -1957,19 +1960,19 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning(c1);
             Feel::detail::ignore_unused_variable_warning(c2);
-            return M_loc[q][0][0];
+            return M_loc[q](0,0);
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const
         {
             if ( shape::M > shape::N )
-                return M_loc[q][c1][0];
-            return M_loc[q][0][c2];
+                return M_loc[q](c1,0);
+            return M_loc[q](0,c2);
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> ) const
         {
-            return M_loc[q][c1][c2];
+            return M_loc[q](c1,c2);
         }
 
     private:
@@ -1977,7 +1980,7 @@ public:
         l_type M_left;
         r_type M_right;
         //ublas::vector<double> M_loc;
-        boost::multi_array<value_type,3> M_loc;
+        boost::multi_array<loc_type,1> M_loc;
     };
 
 protected:
@@ -2294,7 +2297,7 @@ public:
             M_loc( expr.basis().begin()->second.size() )
             {
                 for( uint16_type i = 0; i < M_loc.size(); ++i )
-                    M_loc[i].resize( boost::extents[M_pc.nPoints()][nComponents1][nComponents2] );
+                    M_loc[i].resize( boost::extents[M_pc.nPoints()] );
             }
         tensor( expression_type const& expr,
                 Geo_t const& geom )
@@ -2306,7 +2309,7 @@ public:
             M_loc( expr.basis().begin()->second.size() )
         {
             for( uint16_type i = 0; i < M_loc.size(); ++i )
-                M_loc[i].resize( boost::extents[M_pc.nPoints()][nComponents1][nComponents2] );
+                M_loc[i].resize( boost::extents[M_pc.nPoints()] );
         }
         template<typename IM>
         void init( IM const& /*im*/ )

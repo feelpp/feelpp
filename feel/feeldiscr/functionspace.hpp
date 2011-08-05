@@ -104,18 +104,19 @@ namespace Feel
                 return res;
             }
         };
-        template<typename T>
+        template<typename T,int M, int N>
         struct ID
         {
             friend class boost::serialization::access;
             typedef T value_type;
-            typedef boost::multi_array<value_type,3> array_type;
+            typedef Eigen::Matrix<value_type,M,N> m_type;
+            typedef boost::multi_array<m_type,1> array_type;
             typedef typename  array_type::index_range range;
 
             struct result
             {
 
-                typedef typename array_type::template array_view<3>::type type;
+                typedef typename array_type::template array_view<1>::type type;
             };
 
             ID()
@@ -154,7 +155,7 @@ namespace Feel
             }
             value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
             {
-                return M_id[q][c1][c2];
+                return M_id[q](c1,c2);
             }
 
             template <typename ExtentList>
@@ -188,7 +189,7 @@ namespace Feel
                 Debug( 5010 ) << "loading from archive e2= " << e2 << "\n";
                 ar  & e3;
                 Debug( 5010 ) << "loading from archive e3= " << e3 << "\n";
-                M_id.resize( boost::extents[e1][e2][e3] );
+                M_id.resize( boost::extents[e1] );
                 Debug( 5010 ) << "loading from archive array of size = " << M_id.num_elements() << "\n";
                 ar  & boost::serialization::make_array( M_id.data(), M_id.num_elements() );
                 Debug( 5010 ) << "loading from archive done\n";
@@ -196,12 +197,13 @@ namespace Feel
             }
             BOOST_SERIALIZATION_SPLIT_MEMBER()
         };
-        template<typename T>
+        template<typename T,int M,int N>
         struct DD
         {
             typedef T value_type;
             friend class boost::serialization::access;
-            typedef boost::multi_array<value_type,3> array_type;
+            typedef Eigen::Matrix<value_type,M,N> m_type;
+            typedef boost::multi_array<m_type,1> array_type;
             typedef typename array_type::index_range range;
             struct result
             {
@@ -224,7 +226,7 @@ namespace Feel
 
             value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
             {
-                return _M_grad[q][c1][c2];
+                return _M_grad[q](c1,c2);
             }
             array_type _M_grad;
 
@@ -254,7 +256,7 @@ namespace Feel
                 Debug( 5010 ) << "loading from archive e2= " << e2 << "\n";
                 ar  & e3;
                 Debug( 5010 ) << "loading from archive e3= " << e3 << "\n";
-                _M_grad.resize( boost::extents[e1][e2][e3] );
+                _M_grad.resize( boost::extents[e1] );
                 Debug( 5010 ) << "loading from archive array of size = " << _M_grad.num_elements() << "\n";
                 ar  & boost::serialization::make_array( _M_grad.data(), _M_grad.num_elements() );
                 Debug( 5010 ) << "loading from archive done\n";
@@ -263,17 +265,18 @@ namespace Feel
             BOOST_SERIALIZATION_SPLIT_MEMBER()
 
         };
-        template<typename T,int N>
+        template<typename T,int N, int M, int P>
         struct D
         {
             typedef T value_type;
-            typedef boost::multi_array<value_type,3> array_type;
+            typedef Eigen::Matrix<value_type,M,P> m_type;
+            typedef boost::multi_array<m_type,1> array_type;
             typedef typename array_type::index_range range;
 
             struct result
             {
 
-                typedef typename array_type::template array_view<3>::type type;
+                typedef typename array_type::template array_view<1>::type type;
             };
 
             D()
@@ -291,7 +294,7 @@ namespace Feel
 
             value_type operator()( uint16_type c1, uint16_type /*c2*/, uint16_type q  ) const
             {
-                return _M_grad[q][c1][0];
+                return _M_grad[q](c1,0);
             }
             array_type _M_grad;
         };
@@ -300,12 +303,13 @@ namespace Feel
         struct Div
         {
             typedef T value_type;
-            typedef boost::multi_array<value_type,3> array_type;
+            typedef Eigen::Matrix<value_type,1,1> m_type;
+            typedef boost::multi_array<m_type,1> array_type;
             typedef typename array_type::index_range range;
             struct result
             {
 
-                typedef typename array_type::template array_view<3>::type type;
+                typedef typename array_type::template array_view<1>::type type;
             };
 
             Div()
@@ -330,27 +334,28 @@ namespace Feel
                 for( int c1 = 0; c1 < nComponents1; ++c1 )
                     for( uint16_type q = 0; q < nq ; ++q )
                         {
-                            _M_div[q][0][0] += _M_grad[q][c1][c1];
+                            _M_div[q](0,0) += _M_grad[q](c1,c1);
                         }
 #endif
             }
 
             value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
             {
-                return _M_div[q][c1][c2];
+                return _M_div[q](c1,c2);
             }
             array_type _M_div;
         };
-        template<typename T, int N>
+        template<typename T, int N, int D>
         struct Curl
         {
             typedef T value_type;
-            typedef boost::multi_array<value_type,3> array_type;
+            typedef Eigen::Matrix<value_type,D,1> m_type;
+            typedef boost::multi_array<m_type,1> array_type;
             typedef typename array_type::index_range range;
             struct result
             {
 
-                typedef typename array_type::template array_view<3>::type type;
+                typedef typename array_type::template array_view<1>::type type;
             };
 
             Curl()
@@ -370,14 +375,14 @@ namespace Feel
                 if ( Elem::nDim == 3 )
                     for( uint16_type q = 0; q < nq ; ++q )
                         {
-                            _M_curl[q][0][0] +=  _M_grad[q][2][1] - _M_grad[q][1][2];
-                            _M_curl[q][1][0] +=  _M_grad[q][0][2] - _M_grad[q][2][0];
-                            _M_curl[q][2][0] +=  _M_grad[q][1][0] - _M_grad[q][0][1];
+                            _M_curl[q](0,0) +=  _M_grad[q](2,1) - _M_grad[q](1,2);
+                            _M_curl[q](1,0) +=  _M_grad[q](0,2) - _M_grad[q](2,0);
+                            _M_curl[q](2,0) +=  _M_grad[q](1,0) - _M_grad[q](0,1);
                         }
                 else if ( Elem::nDim == 2 )
                     for( uint16_type q = 0; q < nq ; ++q )
                         {
-                            _M_curl[q][0][0] +=  _M_grad[q][1][0] - _M_grad[q][0][1];
+                            _M_curl[q](0,0) +=  _M_grad[q](1,0) - _M_grad[q](0,1);
                         }
 #endif
             }
@@ -388,35 +393,36 @@ namespace Feel
             }
             value_type operator()( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<-1>  ) const
             {
-                return _M_curl[q][c1][c2];
+                return _M_curl[q](c1,c2);
             }
             value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<0>  ) const
             {
-                return _M_curl[q][0][0];
+                return _M_curl[q](0,0);
             }
             value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<1>  ) const
             {
-                return _M_curl[q][1][0];
+                return _M_curl[q](1,0);
             }
             value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<2>  ) const
             {
-                return _M_curl[q][2][0];
+                return _M_curl[q](2,0);
             }
             array_type _M_curl;
         };
 
-        template<typename T>
+        template<typename T,int M, int N>
         struct H
         {
             friend class boost::serialization::access;
             typedef T value_type;
-            typedef boost::multi_array<value_type,3> array_type;
+            typedef Eigen::Matrix<value_type,M,N> m_type;
+            typedef boost::multi_array<m_type,1> array_type;
             typedef typename  array_type::index_range range;
 
             struct result
             {
 
-                typedef typename array_type::template array_view<3>::type type;
+                typedef typename array_type::template array_view<1>::type type;
             };
 
             H()
@@ -434,7 +440,7 @@ namespace Feel
 
             value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
             {
-                return _M_hess[q][c1][c2];
+                return _M_hess[q](c1,c2);
             }
             array_type _M_hess;
         };
@@ -1205,6 +1211,16 @@ public:
         //@{
 
         typedef boost::multi_array<value_type,3> array_type;
+        typedef Eigen::Matrix<value_type,nComponents1,1> _id_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nDim> _grad_type;
+        typedef Eigen::Matrix<value_type,nDim,nDim> _hess_type;
+        typedef Eigen::Matrix<value_type,1,1> _div_type;
+        typedef Eigen::Matrix<value_type,3,1> _curl_type;
+        typedef boost::multi_array<_id_type,1> id_array_type;
+        typedef boost::multi_array<_grad_type,1> grad_array_type;
+        typedef boost::multi_array<_hess_type,1> hess_array_type;
+        typedef boost::multi_array<_div_type,1> div_array_type;
+        typedef boost::multi_array<_curl_type,1> curl_array_type;
 
         /**
          * \return the map
@@ -1280,7 +1296,7 @@ public:
          * data structure that stores the interpolated values of the
          * element at a set of points
          */
-        typedef detail::ID<value_type> id_type;
+        typedef detail::ID<value_type,nComponents1,nComponents2> id_type;
 
 
         /**
@@ -1288,13 +1304,13 @@ public:
          * a set of points
          */
         template<typename ContextType>
-        boost::array<typename array_type::index, 3>
+        boost::array<typename array_type::index, 1>
         idExtents( ContextType const & context ) const
         {
-            boost::array<typename array_type::index, 3> shape;
+            boost::array<typename array_type::index, 1> shape;
             shape[0] = context.xRefs().size2();
-            shape[1] = nComponents1;
-            shape[2] = nComponents2;
+            //shape[1] = nComponents1;
+            //shape[2] = nComponents2;
             return shape;
         }
 
@@ -1318,18 +1334,18 @@ public:
          */
         template<typename Context_t>
         void
-        id_( Context_t const & context, array_type& v ) const;
+        id_( Context_t const & context, id_array_type& v ) const;
 
         template<typename Context_t>
         void
-        id( Context_t const & context, array_type& v ) const
+        id( Context_t const & context, id_array_type& v ) const
         {
             id_( context, v );
         }
 
 
         void
-        idInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
+        idInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
 
         /*
          * Get the reals points matrix in a context
@@ -1407,19 +1423,19 @@ public:
         //! gradient interpolation tool
         //@{
 
-        typedef detail::DD<value_type> grad_type;
-        typedef detail::D<value_type,0> dx_type;
-        typedef detail::D<value_type,1> dy_type;
-        typedef detail::D<value_type,2> dz_type;
+        typedef detail::DD<value_type, nComponents1, nDim> grad_type;
+        typedef detail::D<value_type,0,nComponents1, 1> dx_type;
+        typedef detail::D<value_type,1,nComponents1, 1> dy_type;
+        typedef detail::D<value_type,2,nComponents1, 1> dz_type;
 
         template<typename ContextType>
-        boost::array<typename array_type::index, 3>
+        boost::array<typename array_type::index, 1>
         gradExtents( ContextType const & context ) const
         {
-            boost::array<typename array_type::index, 3> shape;
+            boost::array<typename array_type::index, 1> shape;
             shape[0] = context.xRefs().size2();
-            shape[1] = nComponents1;
-            shape[2] = nRealDim;
+            //shape[1] = nComponents1;
+            //shape[2] = nRealDim;
 
             return shape;
         }
@@ -1431,7 +1447,7 @@ public:
         }
         template<typename ElementType>
         void
-        grad( ElementType const& elt, array_type& v )
+        grad( ElementType const& elt, grad_array_type& v )
         {
             gmc_ptrtype gmc( geomapPtr( elt ) );
             v.resize( gradExtents(  *gmc ) );
@@ -1453,16 +1469,16 @@ public:
          * incorporate the pseudo-inverse of the jacobian for the derivative
          */
         template<typename ContextType>
-        void grad_( ContextType const & context, array_type& v ) const;
+        void grad_( ContextType const & context, grad_array_type& v ) const;
 
         template<typename ContextType>
-        void grad( ContextType const & context, array_type& v ) const
+        void grad( ContextType const & context, grad_array_type& v ) const
         {
             grad_( context, v );
         }
 
         void
-        gradInterpolate(matrix_node_type __ptsReal, array_type& v ) const;
+        gradInterpolate(matrix_node_type __ptsReal, grad_array_type& v ) const;
 
         /**
          * interpolate the gradient of the function at node (real coordinate) x
@@ -1492,61 +1508,61 @@ public:
         }
 
         template<typename ContextType>
-        boost::array<typename array_type::index, 3>
+        boost::array<typename array_type::index, 1>
         dxExtents( ContextType const & context ) const
         {
-            boost::array<typename array_type::index, 3> shape;
+            boost::array<typename array_type::index, 1> shape;
             shape[0] = context.xRefs().size2();
-            shape[1] = nComponents1;
-            shape[2] = nComponents2;
+            //shape[1] = nComponents1;
+            //shape[2] = nComponents2;
             return shape;
         }
         template<typename ContextType>
-        boost::array<typename array_type::index, 3>
+        boost::array<typename array_type::index, 1>
         dyExtents( ContextType const & context ) const
         {
             return dxExtents( context );
         }
         template<typename ContextType>
-        boost::array<typename array_type::index, 3>
+        boost::array<typename array_type::index, 1>
         dzExtents( ContextType const & context ) const
         {
             return dxExtents( context );
         }
         template<typename ContextType>
-        boost::array<typename array_type::index, 3>
+        boost::array<typename array_type::index, 1>
         dExtents( ContextType const & context ) const
         {
             return dxExtents( context );
         }
 
         template<typename ContextType>
-        void d_( int N, ContextType const & context, array_type& v ) const;
+        void d_( int N, ContextType const & context, id_array_type& v ) const;
 
         template<typename ContextType>
-        void dx( ContextType const & context, array_type& v ) const
+        void dx( ContextType const & context, id_array_type& v ) const
         {
             d_( 0, context, v );
         }
         template<typename ContextType>
-        void dy( ContextType const & context, array_type& v ) const
+        void dy( ContextType const & context, id_array_type& v ) const
         {
             d_( 1, context, v );
         }
         template<typename ContextType>
-        void dz( ContextType const & context, array_type& v ) const
+        void dz( ContextType const & context, id_array_type& v ) const
         {
             d_( 2, context, v );
         }
 
         void
-        dxInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
+        dxInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
 
         void
-        dyInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
+        dyInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
 
         void
-        dzInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
+        dzInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
 
 
         //@}
@@ -1554,13 +1570,13 @@ public:
         typedef detail::Div<value_type> div_type;
 
         template<typename ContextType>
-        boost::array<typename array_type::index, 3>
+        boost::array<typename array_type::index, 1>
         divExtents( ContextType const & context ) const
         {
-            boost::array<typename array_type::index, 3> shape;
+            boost::array<typename array_type::index, 1> shape;
             shape[0] = context.xRefs().size2();
-            shape[1] = 1;
-            shape[2] = 1;
+            //shape[1] = 1;
+            //shape[2] = 1;
             return shape;
         }
         template<typename ContextType>
@@ -1574,21 +1590,21 @@ public:
 
         template<typename ContextType>
         void
-        div( ContextType const & context, array_type& v ) const
+        div( ContextType const & context, div_array_type& v ) const
         {
             //BOOST_STATIC_ASSERT( (rank == 1) || (rank==2) );
             div_( context, v );
         }
         template<typename ContextType>
-        void div_( ContextType const & context, array_type& v ) const;
+        void div_( ContextType const & context, div_array_type& v ) const;
 
         void
-        divInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
+        divInterpolate( matrix_node_type __ptsReal, div_array_type& v ) const;
 
-        typedef detail::Curl<value_type,-1> curl_type;
-        typedef detail::Curl<value_type,0> curlx_type;
-        typedef detail::Curl<value_type,1> curly_type;
-        typedef detail::Curl<value_type,2> curlz_type;
+        typedef detail::Curl<value_type,-1,nDim> curl_type;
+        typedef detail::Curl<value_type,0,nDim> curlx_type;
+        typedef detail::Curl<value_type,1,nDim> curly_type;
+        typedef detail::Curl<value_type,2,nDim> curlz_type;
 
         template<typename ContextType>
         curl_type
@@ -1619,20 +1635,20 @@ public:
         }
 
         template<typename ContextType>
-        boost::array<typename array_type::index, 3>
+        boost::array<typename array_type::index, 1>
         curlExtents( ContextType const & context ) const
         {
             //BOOST_MPL_ASSERT_MSG( ( rank == 1 ), INVALID_RANK_FOR_CURL, (mpl::int_<rank>) );
 
-            boost::array<typename array_type::index, 3> shape;
+            boost::array<typename array_type::index, 1> shape;
             shape[0] = context.xRefs().size2();
-            shape[1] = nComponents1;
-            shape[2] = 1;
+            //shape[1] = nComponents1;
+            //shape[2] = 1;
             return shape;
         }
         template<typename ContextType>
         void
-        curl( ContextType const & context, array_type& v ) const
+        curl( ContextType const & context, curl_array_type& v ) const
         {
             //BOOST_MPL_ASSERT_MSG( ( rank == 1 ), INVALID_RANK_FOR_CURL, (mpl::int_<rank>) );
 
@@ -1640,30 +1656,30 @@ public:
         }
 
         void
-        curlInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
+        curlInterpolate( matrix_node_type __ptsReal, curl_array_type& v ) const;
 
         template<typename ContextType>
-        void curl_( ContextType const & context, array_type& v ) const;
+        void curl_( ContextType const & context, curl_array_type& v ) const;
 
 
         template<typename ContextType>
-        boost::array<typename array_type::index, 3>
+        boost::array<typename array_type::index, 1>
         curlxExtents( ContextType const & context ) const
         {
-            boost::array<typename array_type::index, 3> shape;
+            boost::array<typename array_type::index, 1> shape;
             shape[0] = context.xRefs().size2();
-            shape[1] = nComponents1;
-            shape[2] = nComponents2;
+            //shape[1] = nComponents1;
+            //shape[2] = nComponents2;
             return shape;
         }
         template<typename ContextType>
-        boost::array<typename array_type::index, 3>
+        boost::array<typename array_type::index, 1>
         curlyExtents( ContextType const & context ) const
         {
             return curlxExtents( context );
         }
         template<typename ContextType>
-        boost::array<typename array_type::index, 3>
+        boost::array<typename array_type::index, 1>
         curlzExtents( ContextType const & context ) const
         {
             return curlxExtents( context );
@@ -1671,45 +1687,45 @@ public:
 
         template<typename ContextType>
         void
-        curlx( ContextType const & context, array_type& v ) const
+        curlx( ContextType const & context, id_array_type& v ) const
         {
             //BOOST_STATIC_ASSERT( rank == 1 );
             curl_( context, v );
         }
         template<typename ContextType>
         void
-        curly( ContextType const & context, array_type& v ) const
+        curly( ContextType const & context, id_array_type& v ) const
         {
             //BOOST_STATIC_ASSERT( rank == 1 );
             curl_( context, v );
         }
         template<typename ContextType>
         void
-        curlz( ContextType const & context, array_type& v ) const
+        curlz( ContextType const & context, id_array_type& v ) const
         {
             //BOOST_STATIC_ASSERT( rank == 1 );
             curl_( context, v );
         }
 
         void
-        curlxInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
+        curlxInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
 
         void
-        curlyInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
+        curlyInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
 
         void
-        curlzInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
+        curlzInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
 
         template<typename ContextType>
-        boost::array<typename array_type::index, 3>
+        boost::array<typename array_type::index, 1>
         hessExtents( ContextType const & context ) const
         {
             BOOST_STATIC_ASSERT( rank == 0 );
 
-            boost::array<typename array_type::index, 3> shape;
+            boost::array<typename array_type::index, 1> shape;
             shape[0] = context.xRefs().size2();
-            shape[1] = nRealDim;
-            shape[2] = nRealDim;
+            //shape[1] = nRealDim;
+            //shape[2] = nRealDim;
             return shape;
         }
         /**
@@ -1727,16 +1743,16 @@ public:
          */
         template<typename ContextType>
         void
-        hess_( ContextType const & context, array_type& v ) const;
+        hess_( ContextType const & context, hess_array_type& v ) const;
 
         template<typename ContextType>
         void
-        hess_( ContextType const & context, array_type& v, mpl::int_<0> ) const;
+        hess_( ContextType const & context, hess_array_type& v, mpl::int_<0> ) const;
 
         void
-        hessInterpolate( matrix_node_type __ptsReal, array_type& v ) const;
+        hessInterpolate( matrix_node_type __ptsReal, hess_array_type& v ) const;
 
-        typedef detail::H<value_type> hess_type;
+        typedef detail::H<value_type,nDim,nDim> hess_type;
 
         template<typename ContextType>
         hess_type
@@ -1747,13 +1763,13 @@ public:
 
         template<typename ContextType>
         void
-        hess( ContextType const & context, array_type& v ) const
+        hess( ContextType const & context, hess_array_type& v ) const
         {
             hess_( context, v );
         }
         template<typename ElementType>
         void
-        hess( ElementType const& elt, array_type& v )
+        hess( ElementType const& elt, hess_array_type& v )
         {
             gmc_ptrtype gmc( geomapPtr( elt ) );
             v.resize( hessExtents(  *gmc ) );
@@ -2885,7 +2901,7 @@ template<typename Y,  typename Cont>
 template<typename Context_t>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -2917,8 +2933,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
                     for( typename array_type::index i = 0; i < nComponents1; ++i )
                         //for( typename array_type::index j = 0; j < nComponents2; ++j )
                     {
-                        v[q][i][0] += v_*context.id( ldof, i, 0, q );
-                        //v[q][i][0] += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
+                        v[q](i,0) += v_*context.id( ldof, i, 0, q );
+                        //v[q](i,0) += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
                     }
                 }
             }
@@ -2929,7 +2945,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3001,7 +3017,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
             {
                 for( typename array_type::index i = 0; i < nComponents1; ++i )
                 {
-                    v[boost::get<0>(*itL)][i][0] =  __id(i,0,k);
+                    v[boost::get<0>(*itL)](i,0) =  __id(i,0,k);
                 }
             }
         }
@@ -3115,7 +3131,7 @@ template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & context, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & context, grad_array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -3145,7 +3161,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
                         for( int k = 0; k < nComponents1; ++k )
                             for( int j = 0; j < nRealDim; ++j )
                             {
-                                v[q][k][j] += v_*context.grad( ldof, k, j, q );
+                                v[q](k,j) += v_*context.grad( ldof, k, j, q );
                             }
                     }
                 }
@@ -3178,7 +3194,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
             {
                 for( size_type q = 0; q < context.xRefs().size2(); ++q )
                     {
-                        std::cout << "v[ " << k << "," << j << "," << q << "]= " << v[q][k][j]  << "\n";
+                        std::cout << "v[ " << k << "," << j << "," << q << "]= " << v[q](k,j)  << "\n";
                         std::cout << "B(" << q << ")=" << context.B(q) << "\n";
                         std::cout << "J(" << q << ")=" << context.J(q) << "\n";
                         std::cout << "K(" << q << ")=" << context.K(q) << "\n";
@@ -3190,7 +3206,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_node_type __ptsReal, grad_array_type& v ) const
 {
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
     typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
@@ -3257,7 +3273,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_nod
                 for( typename array_type::index i = 0; i < nComponents1; ++i )
                     for( uint j = 0; j < nRealDim; ++j )
                     {
-                        v[boost::get<0>(*itL)][i][j] = __grad(i,j,k);
+                        v[boost::get<0>(*itL)](i,j) = __grad(i,j,k);
                     }
             }
 
@@ -3271,7 +3287,7 @@ template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & context, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & context, div_array_type& v ) const
 {
 #if 1
     if ( !this->areGlobalValuesUpdated() )
@@ -3300,7 +3316,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
                                 std::cout << "context.div(" << ldof << "," << q << ")="
                                           << context.div( ldof, 0, 0, q ) << "\n" ;
 #endif
-                                v[q][0][0] += v_*context.div( ldof, 0, 0, q );
+                                v[q](0,0) += v_*context.div( ldof, 0, 0, q );
                             }
                 }
         }
@@ -3329,7 +3345,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
                                 {
                                     for( size_type q = 0; q < context.xRefs().size2(); ++q )
                                         {
-                                            v[q][0][0] += v_*context.gmContext()->B(q)( k, i )*context.pc()->grad( ldof, k, i, q );
+                                            v[q](0,0) += v_*context.gmContext()->B(q)( k, i )*context.pc()->grad( ldof, k, i, q );
                                         }
                                 }
                         }
@@ -3341,7 +3357,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_type __ptsReal, div_array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3408,7 +3424,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_
             //   {
             itL=it->second.begin();
             for (uint k=0;k<nbPtsElt;++k,++itL)
-                v[boost::get<0>(*itL)][0][0] =  __div(0,0,k);
+                v[boost::get<0>(*itL)](0,0) =  __div(0,0,k);
             //   }
         }
 
@@ -3419,7 +3435,7 @@ template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & context, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & context, curl_array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -3447,12 +3463,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
                         {
                             for( typename array_type::index i = 0; i < nDim; ++i )
                             {
-                                v[q][i][0] += v_*context.curl( ldof, i, 0, q );
+                                v[q](i,0) += v_*context.curl( ldof, i, 0, q );
                             }
                         }
                         else if ( nDim == 2 )
                         {
-                            v[q][0][0] += v_*context.curl( ldof, 0, 0, q );
+                            v[q](0,0) += v_*context.curl( ldof, 0, 0, q );
                         }
 
                     }
@@ -3464,7 +3480,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node_type __ptsReal, curl_array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3534,16 +3550,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
                         {
-                            v[boost::get<0>(*itL)][0][0] =  __curl(0,0,k);
-                            v[boost::get<0>(*itL)][1][0] =  __curl(1,0,k);
-                            v[boost::get<0>(*itL)][2][0] =  __curl(2,0,k);
+                            v[boost::get<0>(*itL)](0,0) =  __curl(0,0,k);
+                            v[boost::get<0>(*itL)](1,0) =  __curl(1,0,k);
+                            v[boost::get<0>(*itL)](2,0) =  __curl(2,0,k);
                         }
                 }
             else if ( nDim == 2 )
                 {
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[boost::get<0>(*itL)][0][0] =  __curl(0,0,k);
+                        v[boost::get<0>(*itL)](0,0) =  __curl(0,0,k);
                 }
         }
 
@@ -3553,7 +3569,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate(matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate(matrix_node_type __ptsReal, id_array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3623,16 +3639,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate(matrix_node
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
                         {
-                            v[boost::get<0>(*itL)][0][0] =  __curlx(0,0,k);
-                            v[boost::get<0>(*itL)][1][0] =  __curlx(1,0,k);
-                            v[boost::get<0>(*itL)][2][0] =  __curlx(2,0,k);
+                            v[boost::get<0>(*itL)](0,0) =  __curlx(0,0,k);
+                            v[boost::get<0>(*itL)](1,0) =  __curlx(1,0,k);
+                            v[boost::get<0>(*itL)](2,0) =  __curlx(2,0,k);
                         }
                 }
             else if ( nDim == 2 )
                 {
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[boost::get<0>(*itL)][0][0] =  __curlx(0,0,k);
+                        v[boost::get<0>(*itL)](0,0) =  __curlx(0,0,k);
                 }
         }
 
@@ -3641,7 +3657,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate(matrix_node
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3710,16 +3726,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
                         {
-                            v[boost::get<0>(*itL)][0][0] =  __curly(0,0,k);
-                            v[boost::get<0>(*itL)][1][0] =  __curly(1,0,k);
-                            v[boost::get<0>(*itL)][2][0] =  __curly(2,0,k);
+                            v[boost::get<0>(*itL)](0,0) =  __curly(0,0,k);
+                            v[boost::get<0>(*itL)](1,0) =  __curly(1,0,k);
+                            v[boost::get<0>(*itL)](2,0) =  __curly(2,0,k);
                         }
                 }
             else if ( nDim == 2 )
                 {
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[boost::get<0>(*itL)][0][0] =  __curly(0,0,k);
+                        v[boost::get<0>(*itL)](0,0) =  __curly(0,0,k);
                 }
         }
 
@@ -3728,7 +3744,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3797,16 +3813,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
                         {
-                            v[boost::get<0>(*itL)][0][0] =  __curlz(0,0,k);
-                            v[boost::get<0>(*itL)][1][0] =  __curlz(1,0,k);
-                            v[boost::get<0>(*itL)][2][0] =  __curlz(2,0,k);
+                            v[boost::get<0>(*itL)](0,0) =  __curlz(0,0,k);
+                            v[boost::get<0>(*itL)](1,0) =  __curlz(1,0,k);
+                            v[boost::get<0>(*itL)](2,0) =  __curlz(2,0,k);
                         }
                 }
             else if ( nDim == 2 )
                 {
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[boost::get<0>(*itL)][0][0] =  __curlz(0,0,k);
+                        v[boost::get<0>(*itL)](0,0) =  __curlz(0,0,k);
                 }
         }
 
@@ -3817,7 +3833,7 @@ template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const & context, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const & context, id_array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -3842,7 +3858,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const
                     {
                         for( typename array_type::index i = 0; i < nComponents1; ++i )
                         {
-                            v[q][i][0] += v_*context.d( ldof, i, N, q );
+                            v[q](i,0) += v_*context.d( ldof, i, N, q );
                         }
                     }
 
@@ -3853,7 +3869,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3920,7 +3936,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
             for (uint k=0;k<nbPtsElt;++k,++itL)
                 for( typename array_type::index i = 0; i < nComponents1; ++i )
                 {
-                    v[boost::get<0>(*itL)][i][0] =  __dx(i,0,k);
+                    v[boost::get<0>(*itL)](i,0) =  __dx(i,0,k);
                 }
         }
 
@@ -3929,7 +3945,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3996,7 +4012,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
             for (uint k=0;k<nbPtsElt;++k,++itL)
                 for( typename array_type::index i = 0; i < nComponents1; ++i )
                 {
-                    v[boost::get<0>(*itL)][i][0] =  __dy(i,0,k);
+                    v[boost::get<0>(*itL)](i,0) =  __dy(i,0,k);
                 }
         }
 
@@ -4005,7 +4021,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -4071,7 +4087,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
             for (uint k=0;k<nbPtsElt;++k,++itL)
                 for( typename array_type::index i = 0; i < nComponents1; ++i )
                 {
-                    v[boost::get<0>(*itL)][i][0] =  __dz(i,0,k);
+                    v[boost::get<0>(*itL)](i,0) =  __dz(i,0,k);
                 }
         }
 
@@ -4082,7 +4098,7 @@ template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & context, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & context, hess_array_type& v ) const
 {
     hess_( context, v, mpl::int_<rank>() );
 }
@@ -4091,7 +4107,7 @@ template<typename Y,  typename Cont>
 template<typename ContextType>
 //typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & context, array_type& v, mpl::int_<0> ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & context, hess_array_type& v, mpl::int_<0> ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -4118,7 +4134,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
                         for( int i = 0; i < nRealDim; ++i )
                             for( int j = 0; j < nRealDim; ++j )
                             {
-                                v[q][i][j] += v_*context.hess( ldof, i, j, q );
+                                v[q](i,j) += v_*context.hess( ldof, i, j, q );
                             } // i,j
                     } // q
 
@@ -4130,7 +4146,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node_type __ptsReal, array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node_type __ptsReal, hess_array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -4197,14 +4213,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
             for (uint k=0;k<nbPtsElt;++k,++itL)
                 for( int i = 0; i < nRealDim; ++i )
                     for( int j = 0; j < nRealDim; ++j )
-                        v[boost::get<0>(*itL)][i][j] =  __hess(i,j,k);
+                        v[boost::get<0>(*itL)](i,j) =  __hess(i,j,k);
         }
 
 }
 
-template<typename T>
+template<typename T,int M,int N>
 std::ostream&
-operator<<( std::ostream& os, detail::ID<T> const& id )
+operator<<( std::ostream& os, detail::ID<T,M,N> const& id )
 {
     const size_type* shape =  id.M_id.shape();
     for( size_type i = 0;i < shape[0]; ++i )
@@ -4221,10 +4237,10 @@ operator<<( std::ostream& os, detail::ID<T> const& id )
         }
     return os;
 }
-template<typename T>
+template<typename T,int M, int N>
 inline
 DebugStream&
-operator<<( DebugStream& __os, detail::ID<T> const& id )
+operator<<( DebugStream& __os, detail::ID<T,M,N> const& id )
 {
     if ( __os.doPrint() )
         {
@@ -4236,10 +4252,10 @@ operator<<( DebugStream& __os, detail::ID<T> const& id )
         }
     return __os;
 }
-template<typename T>
+template<typename T, int M, int N>
 inline
 NdebugStream&
-operator<<( NdebugStream& os, detail::ID<T> const& )
+operator<<( NdebugStream& os, detail::ID<T,M,N> const& )
 {
     return os;
 }
