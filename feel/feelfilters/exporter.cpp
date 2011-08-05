@@ -60,6 +60,9 @@ po::options_description exporter_options( std::string const& prefix )
 
         // file type options
         (prefixvm(prefix,"exporter.file-type").c_str(), Feel::po::value<int>()->default_value( ASCII ), "file type in which the results are exported ('ascii' = 0 or 'binary' = 1)")
+
+        // matlab options
+        (prefixvm(prefix,"exporter.matlab").c_str(), Feel::po::value<bool>()->default_value( 0 ), "export matrices and vectors to matlab files")
         ;
     return _options;
 }
