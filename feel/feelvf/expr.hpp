@@ -1858,7 +1858,7 @@ public:
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom, fev, feu ),
             M_right( expr.right(), geom, fev, feu ),
-            M_loc( boost::extents[shape::M][shape::N][M_gmc->nPoints()]  )
+            M_loc( boost::extents[M_gmc->nPoints()][shape::M][shape::N]  )
             {
                 update( geom );
             }
@@ -1868,7 +1868,7 @@ public:
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom, fev ),
             M_right( expr.right(), geom, fev ),
-            M_loc( boost::extents[shape::M][shape::N][M_gmc->nPoints()] )
+            M_loc( boost::extents[M_gmc->nPoints()][shape::M][shape::N] )
             {
                 update( geom );
             }
@@ -1877,7 +1877,7 @@ public:
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom ),
             M_right( expr.right(), geom ),
-            M_loc(  boost::extents[shape::M][shape::N][M_gmc->nPoints()] )
+            M_loc(  boost::extents[M_gmc->nPoints()][shape::M][shape::N] )
             {
                 update( geom );
             }
@@ -1901,14 +1901,14 @@ public:
             M_left.update( geom );
             M_right.update( geom );
 
-            for( int c1 = 0; c1 < shape::M; ++c1 )
-                for( int c2 = 0; c2 < shape::N; ++c2 )
-                    for ( int q = 0; q < npts; ++q )
-                        {
-                            value_type left = M_left.evalq( c1, c2, q );
-                            value_type right = M_right.evalq( c1, c2, q );
-                            M_loc[c1][c2][q] = std::pow( left, right );
-                        }
+            for ( int q = 0; q < npts; ++q )
+                for( int c1 = 0; c1 < shape::M; ++c1 )
+                    for( int c2 = 0; c2 < shape::N; ++c2 )
+                    {
+                        value_type left = M_left.evalq( c1, c2, q );
+                        value_type right = M_right.evalq( c1, c2, q );
+                        M_loc[q][c1][c2] = std::pow( left, right );
+                    }
         }
         void update( Geo_t const& geom, uint16_type face )
         {
@@ -1916,14 +1916,14 @@ public:
             M_left.update( geom, face );
             M_right.update( geom, face );
 
-            for( int c1 = 0; c1 < shape::M; ++c1 )
-                for( int c2 = 0; c2 < shape::N; ++c2 )
-                    for ( int q = 0; q < M_gmc->nPoints(); ++q )
-                        {
-                            value_type left = M_left.evalq( c1, c2, q );
-                            value_type right = M_right.evalq( c1, c2, q );
-                            M_loc[c1][c2][q] = std::pow( left, right );
-                        }
+            for ( int q = 0; q < M_gmc->nPoints(); ++q )
+                for( int c1 = 0; c1 < shape::M; ++c1 )
+                    for( int c2 = 0; c2 < shape::N; ++c2 )
+                    {
+                        value_type left = M_left.evalq( c1, c2, q );
+                        value_type right = M_right.evalq( c1, c2, q );
+                        M_loc[q][c1][c2] = std::pow( left, right );
+                    }
         }
 
         value_type
@@ -1957,19 +1957,19 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning(c1);
             Feel::detail::ignore_unused_variable_warning(c2);
-            return M_loc[0][0][q];
+            return M_loc[q][0][0];
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const
         {
             if ( shape::M > shape::N )
-                return M_loc[c1][0][q];
-            return M_loc[0][c2][q];
+                return M_loc[q][c1][0];
+            return M_loc[q][0][c2];
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> ) const
         {
-            return M_loc[c1][c2][q];
+            return M_loc[q][c1][c2];
         }
 
     private:
@@ -2281,7 +2281,7 @@ public:
             M_loc( expr.basis().begin()->second.size() )
             {
                 for( uint16_type i = 0; i < M_loc.size(); ++i )
-                    M_loc[i].resize( boost::extents[nComponents1][nComponents2][M_pc.nPoints()] );
+                    M_loc[i].resize( boost::extents[M_pc.nPoints()][nComponents1][nComponents2] );
             }
         tensor( expression_type const& expr,
                 Geo_t const& geom,
@@ -2294,7 +2294,7 @@ public:
             M_loc( expr.basis().begin()->second.size() )
             {
                 for( uint16_type i = 0; i < M_loc.size(); ++i )
-                    M_loc[i].resize( boost::extents[nComponents1][nComponents2][M_pc.nPoints()] );
+                    M_loc[i].resize( boost::extents[M_pc.nPoints()][nComponents1][nComponents2] );
             }
         tensor( expression_type const& expr,
                 Geo_t const& geom )
@@ -2306,7 +2306,7 @@ public:
             M_loc( expr.basis().begin()->second.size() )
         {
             for( uint16_type i = 0; i < M_loc.size(); ++i )
-                M_loc[i].resize( boost::extents[nComponents1][nComponents2][M_pc.nPoints()] );
+                M_loc[i].resize( boost::extents[M_pc.nPoints()][nComponents1][nComponents2] );
         }
         template<typename IM>
         void init( IM const& /*im*/ )

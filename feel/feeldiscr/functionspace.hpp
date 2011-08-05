@@ -154,7 +154,7 @@ namespace Feel
             }
             value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
             {
-                return M_id[c1][c2][q];
+                return M_id[q][c1][c2];
             }
 
             template <typename ExtentList>
@@ -224,7 +224,7 @@ namespace Feel
 
             value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
             {
-                return _M_grad[c1][c2][q];
+                return _M_grad[q][c1][c2];
             }
             array_type _M_grad;
 
@@ -291,7 +291,7 @@ namespace Feel
 
             value_type operator()( uint16_type c1, uint16_type /*c2*/, uint16_type q  ) const
             {
-                return _M_grad[c1][0][q];
+                return _M_grad[q][c1][0];
             }
             array_type _M_grad;
         };
@@ -330,14 +330,14 @@ namespace Feel
                 for( int c1 = 0; c1 < nComponents1; ++c1 )
                     for( uint16_type q = 0; q < nq ; ++q )
                         {
-                            _M_div[0][0][q] += _M_grad[c1][c1][q];
+                            _M_div[q][0][0] += _M_grad[q][c1][c1];
                         }
 #endif
             }
 
             value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
             {
-                return _M_div[c1][c2][q];
+                return _M_div[q][c1][c2];
             }
             array_type _M_div;
         };
@@ -370,14 +370,14 @@ namespace Feel
                 if ( Elem::nDim == 3 )
                     for( uint16_type q = 0; q < nq ; ++q )
                         {
-                            _M_curl[0][0][q] +=  _M_grad[2][1][q] - _M_grad[1][2][q];
-                            _M_curl[1][0][q] +=  _M_grad[0][2][q] - _M_grad[2][0][q];
-                            _M_curl[2][0][q] +=  _M_grad[1][0][q] - _M_grad[0][1][q];
+                            _M_curl[q][0][0] +=  _M_grad[q][2][1] - _M_grad[q][1][2];
+                            _M_curl[q][1][0] +=  _M_grad[q][0][2] - _M_grad[q][2][0];
+                            _M_curl[q][2][0] +=  _M_grad[q][1][0] - _M_grad[q][0][1];
                         }
                 else if ( Elem::nDim == 2 )
                     for( uint16_type q = 0; q < nq ; ++q )
                         {
-                            _M_curl[0][0][q] +=  _M_grad[1][0][q] - _M_grad[0][1][q];
+                            _M_curl[q][0][0] +=  _M_grad[q][1][0] - _M_grad[q][0][1];
                         }
 #endif
             }
@@ -388,19 +388,19 @@ namespace Feel
             }
             value_type operator()( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<-1>  ) const
             {
-                return _M_curl[c1][c2][q];
+                return _M_curl[q][c1][c2];
             }
             value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<0>  ) const
             {
-                return _M_curl[0][0][q];
+                return _M_curl[q][0][0];
             }
             value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<1>  ) const
             {
-                return _M_curl[1][0][q];
+                return _M_curl[q][1][0];
             }
             value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<2>  ) const
             {
-                return _M_curl[2][0][q];
+                return _M_curl[q][2][0];
             }
             array_type _M_curl;
         };
@@ -434,7 +434,7 @@ namespace Feel
 
             value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
             {
-                return _M_hess[c1][c2][q];
+                return _M_hess[q][c1][c2];
             }
             array_type _M_hess;
         };
@@ -1292,9 +1292,9 @@ public:
         idExtents( ContextType const & context ) const
         {
             boost::array<typename array_type::index, 3> shape;
-            shape[0] = nComponents1;
-            shape[1] = nComponents2;
-            shape[2] = context.xRefs().size2();
+            shape[0] = context.xRefs().size2();
+            shape[1] = nComponents1;
+            shape[2] = nComponents2;
             return shape;
         }
 
@@ -1417,9 +1417,10 @@ public:
         gradExtents( ContextType const & context ) const
         {
             boost::array<typename array_type::index, 3> shape;
-            shape[0] = nComponents1;
-            shape[1] = nRealDim;
-            shape[2] = context.xRefs().size2();
+            shape[0] = context.xRefs().size2();
+            shape[1] = nComponents1;
+            shape[2] = nRealDim;
+
             return shape;
         }
         template<typename ContextType>
@@ -1495,9 +1496,9 @@ public:
         dxExtents( ContextType const & context ) const
         {
             boost::array<typename array_type::index, 3> shape;
-            shape[0] = nComponents1;
-            shape[1] = nComponents2;
-            shape[2] = context.xRefs().size2();
+            shape[0] = context.xRefs().size2();
+            shape[1] = nComponents1;
+            shape[2] = nComponents2;
             return shape;
         }
         template<typename ContextType>
@@ -1557,9 +1558,9 @@ public:
         divExtents( ContextType const & context ) const
         {
             boost::array<typename array_type::index, 3> shape;
-            shape[0] = 1;
+            shape[0] = context.xRefs().size2();
             shape[1] = 1;
-            shape[2] = context.xRefs().size2();
+            shape[2] = 1;
             return shape;
         }
         template<typename ContextType>
@@ -1624,9 +1625,9 @@ public:
             //BOOST_MPL_ASSERT_MSG( ( rank == 1 ), INVALID_RANK_FOR_CURL, (mpl::int_<rank>) );
 
             boost::array<typename array_type::index, 3> shape;
-            shape[0] = nComponents1;
-            shape[1] = 1;
-            shape[2] = context.xRefs().size2();
+            shape[0] = context.xRefs().size2();
+            shape[1] = nComponents1;
+            shape[2] = 1;
             return shape;
         }
         template<typename ContextType>
@@ -1650,9 +1651,9 @@ public:
         curlxExtents( ContextType const & context ) const
         {
             boost::array<typename array_type::index, 3> shape;
-            shape[0] = nComponents1;
-            shape[1] = nComponents2;
-            shape[2] = context.xRefs().size2();
+            shape[0] = context.xRefs().size2();
+            shape[1] = nComponents1;
+            shape[2] = nComponents2;
             return shape;
         }
         template<typename ContextType>
@@ -1706,9 +1707,9 @@ public:
             BOOST_STATIC_ASSERT( rank == 0 );
 
             boost::array<typename array_type::index, 3> shape;
-            shape[0] = nRealDim;
+            shape[0] = context.xRefs().size2();
             shape[1] = nRealDim;
-            shape[2] = context.xRefs().size2();
+            shape[2] = nRealDim;
             return shape;
         }
         /**
@@ -2917,8 +2918,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
                             {
 
                                 for( uint16_type q = 0; q < nq; ++q )
-                                    v[i][0][q] += v_*context.id( ldof, i, 0, q );
-                                    //v[i][0][q] += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
+                                    v[i][q][0] += v_*context.id( ldof, i, 0, q );
+                                    //v[i][q][0] += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
                             }
                     }
                 }
@@ -3000,7 +3001,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
                 {
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL){
-                        v[i][0][boost::get<0>(*itL)] =  __id(i,0,k);
+                        v[i][boost::get<0>(*itL)][0] =  __id(i,0,k);
                     }
                 }
         }
@@ -3144,7 +3145,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
                             {
                                 for( size_type q = 0; q < context.xRefs().size2(); ++q )
                                 {
-                                    v[k][j][q] += v_*context.grad( ldof, k, j, q );
+                                    v[q][k][j] += v_*context.grad( ldof, k, j, q );
                                 }
                             }
                 }
@@ -3177,7 +3178,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
             {
                 for( size_type q = 0; q < context.xRefs().size2(); ++q )
                     {
-                        std::cout << "v[ " << k << "," << j << "," << q << "]= " << v[k][j][q]  << "\n";
+                        std::cout << "v[ " << k << "," << j << "," << q << "]= " << v[q][k][j]  << "\n";
                         std::cout << "B(" << q << ")=" << context.B(q) << "\n";
                         std::cout << "J(" << q << ")=" << context.J(q) << "\n";
                         std::cout << "K(" << q << ")=" << context.K(q) << "\n";
@@ -3255,7 +3256,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_nod
                     {
                         itL=it->second.begin();
                         for (uint k=0;k<nbPtsElt;++k,++itL){
-                            v[i][j][boost::get<0>(*itL)] = __grad(i,j,k);
+                            v[boost::get<0>(*itL)][i][j] = __grad(i,j,k);
                         }
                     }
 
@@ -3298,7 +3299,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
                                 std::cout << "context.div(" << ldof << "," << q << ")="
                                           << context.div( ldof, 0, 0, q ) << "\n" ;
 #endif
-                                v[0][0][q] += v_*context.div( ldof, 0, 0, q );
+                                v[q][0][0] += v_*context.div( ldof, 0, 0, q );
                             }
                 }
         }
@@ -3327,7 +3328,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
                                 {
                                     for( size_type q = 0; q < context.xRefs().size2(); ++q )
                                         {
-                                            v[0][0][q] += v_*context.gmContext()->B(q)( k, i )*context.pc()->grad( ldof, k, i, q );
+                                            v[q][0][0] += v_*context.gmContext()->B(q)( k, i )*context.pc()->grad( ldof, k, i, q );
                                         }
                                 }
                         }
@@ -3406,7 +3407,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_
             //   {
             itL=it->second.begin();
             for (uint k=0;k<nbPtsElt;++k,++itL)
-                v[0][0][boost::get<0>(*itL)] =  __div(0,0,k);
+                v[boost::get<0>(*itL)][0][0] =  __div(0,0,k);
             //   }
         }
 
@@ -3445,7 +3446,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
                         {
                             for( uint16_type q = 0; q < nq ; ++q )
                             {
-                                v[i][0][q] += v_*context.curl( ldof, i, 0, q );
+                                v[q][i][0] += v_*context.curl( ldof, i, 0, q );
                             }
                         }
                     }
@@ -3453,7 +3454,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
                     {
                         for( uint16_type q = 0; q < nq ; ++q )
                         {
-                            v[0][0][q] += v_*context.curl( ldof, 0, 0, q );
+                            v[q][0][0] += v_*context.curl( ldof, 0, 0, q );
                         }
                     }
                 }
@@ -3534,16 +3535,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
                         {
-                            v[0][0][boost::get<0>(*itL)] =  __curl(0,0,k);
-                            v[1][0][boost::get<0>(*itL)] =  __curl(1,0,k);
-                            v[2][0][boost::get<0>(*itL)] =  __curl(2,0,k);
+                            v[boost::get<0>(*itL)][0][0] =  __curl(0,0,k);
+                            v[boost::get<0>(*itL)][1][0] =  __curl(1,0,k);
+                            v[boost::get<0>(*itL)][2][0] =  __curl(2,0,k);
                         }
                 }
             else if ( nDim == 2 )
                 {
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[0][0][boost::get<0>(*itL)] =  __curl(0,0,k);
+                        v[boost::get<0>(*itL)][0][0] =  __curl(0,0,k);
                 }
         }
 
@@ -3623,16 +3624,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate(matrix_node
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
                         {
-                            v[0][0][boost::get<0>(*itL)] =  __curlx(0,0,k);
-                            v[1][0][boost::get<0>(*itL)] =  __curlx(1,0,k);
-                            v[2][0][boost::get<0>(*itL)] =  __curlx(2,0,k);
+                            v[boost::get<0>(*itL)][0][0] =  __curlx(0,0,k);
+                            v[boost::get<0>(*itL)][1][0] =  __curlx(1,0,k);
+                            v[boost::get<0>(*itL)][2][0] =  __curlx(2,0,k);
                         }
                 }
             else if ( nDim == 2 )
                 {
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[0][0][boost::get<0>(*itL)] =  __curlx(0,0,k);
+                        v[boost::get<0>(*itL)][0][0] =  __curlx(0,0,k);
                 }
         }
 
@@ -3710,16 +3711,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
                         {
-                            v[0][0][boost::get<0>(*itL)] =  __curly(0,0,k);
-                            v[1][0][boost::get<0>(*itL)] =  __curly(1,0,k);
-                            v[2][0][boost::get<0>(*itL)] =  __curly(2,0,k);
+                            v[boost::get<0>(*itL)][0][0] =  __curly(0,0,k);
+                            v[boost::get<0>(*itL)][1][0] =  __curly(1,0,k);
+                            v[boost::get<0>(*itL)][2][0] =  __curly(2,0,k);
                         }
                 }
             else if ( nDim == 2 )
                 {
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[0][0][boost::get<0>(*itL)] =  __curly(0,0,k);
+                        v[boost::get<0>(*itL)][0][0] =  __curly(0,0,k);
                 }
         }
 
@@ -3797,16 +3798,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
                         {
-                            v[0][0][boost::get<0>(*itL)] =  __curlz(0,0,k);
-                            v[1][0][boost::get<0>(*itL)] =  __curlz(1,0,k);
-                            v[2][0][boost::get<0>(*itL)] =  __curlz(2,0,k);
+                            v[boost::get<0>(*itL)][0][0] =  __curlz(0,0,k);
+                            v[boost::get<0>(*itL)][1][0] =  __curlz(1,0,k);
+                            v[boost::get<0>(*itL)][2][0] =  __curlz(2,0,k);
                         }
                 }
             else if ( nDim == 2 )
                 {
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[0][0][boost::get<0>(*itL)] =  __curlz(0,0,k);
+                        v[boost::get<0>(*itL)][0][0] =  __curlz(0,0,k);
                 }
         }
 
@@ -3842,7 +3843,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const
                     {
                         for( size_type q = 0; q < context.xRefs().size2(); ++q )
                         {
-                            v[i][0][q] += v_*context.d( ldof, i, N, q );
+                            v[q][i][0] += v_*context.d( ldof, i, N, q );
                         }
                     }
 
@@ -3920,7 +3921,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
                 {
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[i][0][boost::get<0>(*itL)] =  __dx(i,0,k);
+                        v[boost::get<0>(*itL)][i][0] =  __dx(i,0,k);
                 }
         }
 
@@ -3996,7 +3997,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
                 {
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[i][0][boost::get<0>(*itL)] =  __dy(i,0,k);
+                        v[boost::get<0>(*itL)][i][0] =  __dy(i,0,k);
                 }
         }
 
@@ -4071,7 +4072,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
                 {
                     itL=it->second.begin();
                     for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[i][0][boost::get<0>(*itL)] =  __dz(i,0,k);
+                        v[boost::get<0>(*itL)][i][0] =  __dz(i,0,k);
                 }
         }
 
@@ -4119,7 +4120,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
                                 for( size_type q = 0; q < context.xRefs().size2(); ++q )
                                 {
 
-                                    v[i][j][q] += v_*context.hess( ldof, i, j, q );
+                                    v[q][i][j] += v_*context.hess( ldof, i, j, q );
 
 
                                 } // q
@@ -4200,7 +4201,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
             for( int i = 0; i < nRealDim; ++i )
                 for( int j = 0; j < nRealDim; ++j )
                     for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[i][j][boost::get<0>(*itL)] =  __hess(i,j,k);
+                        v[boost::get<0>(*itL)][i][j] =  __hess(i,j,k);
         }
 
 }

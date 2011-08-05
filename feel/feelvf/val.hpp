@@ -166,7 +166,7 @@ public:
             :
             _M_expr( expr.expression(), geom ),
             _M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            _M_loc( boost::extents[shape::M][shape::N][_M_gmc->nPoints()] )
+            _M_loc( boost::extents[_M_gmc->nPoints()][shape::M][shape::N] )
         {
             update( geom );
         }
@@ -175,7 +175,7 @@ public:
             :
             _M_expr( expr.expression(), geom ),
             _M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            _M_loc( boost::extents[shape::M][shape::N][_M_gmc->nPoints()] )
+            _M_loc( boost::extents[_M_gmc->nPoints()][shape::M][shape::N] )
         {
             update( geom );
         }
@@ -184,7 +184,7 @@ public:
             :
             _M_expr( expr.expression(), geom ),
             _M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            _M_loc( boost::extents[shape::M][shape::N][_M_gmc->nPoints()] )
+            _M_loc( boost::extents[_M_gmc->nPoints()][shape::M][shape::N] )
         {
             update( geom );
         }
@@ -204,22 +204,22 @@ public:
         void update( Geo_t const& geom )
         {
             _M_expr.update( geom );
-            for( int c1 = 0; c1 < shape::M; ++c1 )
-                for( int c2 = 0; c2 < shape::N; ++c2 )
-                    for ( int q = 0; q < _M_gmc->nPoints(); ++q )
-                        {
-                            _M_loc[c1][c2][q] = _M_expr.evalq( c1, c2, q );
-                        }
+            for ( int q = 0; q < _M_gmc->nPoints(); ++q )
+                for( int c1 = 0; c1 < shape::M; ++c1 )
+                    for( int c2 = 0; c2 < shape::N; ++c2 )
+                    {
+                        _M_loc[q][c1][c2] = _M_expr.evalq( c1, c2, q );
+                    }
         }
         void update( Geo_t const& geom, uint16_type face )
         {
             _M_expr.update( geom, face );
-            for( int c1 = 0; c1 < shape::M; ++c1 )
-                for( int c2 = 0; c2 < shape::N; ++c2 )
-                    for ( int q = 0; q < _M_gmc->nPoints(); ++q )
-                        {
-                            _M_loc[c1][c2][q] = _M_expr.evalq( c1, c2, q );
-                        }
+            for ( int q = 0; q < _M_gmc->nPoints(); ++q )
+                for( int c1 = 0; c1 < shape::M; ++c1 )
+                    for( int c2 = 0; c2 < shape::N; ++c2 )
+                    {
+                        _M_loc[q][c1][c2] = _M_expr.evalq( c1, c2, q );
+                    }
         }
 
         value_type
@@ -251,19 +251,19 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning(c1);
             Feel::detail::ignore_unused_variable_warning(c2);
-            return _M_loc[0][0][q];
+            return _M_loc[q][0][0];
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const
         {
             if ( shape::M > shape::N )
                 return _M_loc[c1][0][q];
-            return _M_loc[0][c2][q];
+            return _M_loc[q][0][c2];
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> ) const
         {
-            return _M_loc[c1][c2][q];
+            return _M_loc[q][c1][c2];
         }
     private:
         tensor2_expr_type _M_expr;

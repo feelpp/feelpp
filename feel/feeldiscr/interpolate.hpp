@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-01-31
 
-  Copyright (C) 2008-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -161,7 +161,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                     if ( globaldof >= interp.firstLocalIndex() &&
                          globaldof < interp.lastLocalIndex() )
                     {
-                        interp( globaldof ) = fvalues[comp][0][l];
+                        interp( globaldof ) = fvalues[l][comp][0];
                         //Debug( 5010 ) << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
                         //std::cout << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
                     }
@@ -254,7 +254,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                         // update only values on the processor
                         if ( globaldof >= interp.firstLocalIndex() &&
                              globaldof < interp.lastLocalIndex() )
-                            interp( globaldof ) = fvalues[comp][0][0];
+                            interp( globaldof ) = fvalues[0][comp][0];
                         //interp( globaldof ) = interpfunc(comp,0,0);
                     }
                 }
