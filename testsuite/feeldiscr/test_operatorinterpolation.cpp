@@ -60,7 +60,7 @@ makeAbout()
 }
 
 
-template <uint OrderGeo>
+template <uint32_type OrderGeo>
 void
 test2dTo1d( Application_ptrtype test_app)
 {
@@ -144,7 +144,7 @@ test2dTo1d( Application_ptrtype test_app)
 #if 1
     opI->apply(u2d,u1d);
 
-    for (uint i=0;i<u1d.size();++i)
+    for (uint32_type i=0;i<u1d.size();++i)
         std::cout << "\n i = "<< i << " val : " << u1d(i);
 
 #endif
@@ -176,7 +176,7 @@ test2dTo1d( Application_ptrtype test_app)
 
 
 
-template <uint OrderGeo>
+template <uint32_type OrderGeo>
 void
 test2d( Application_ptrtype test_app)
 {

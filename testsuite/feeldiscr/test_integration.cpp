@@ -1205,7 +1205,7 @@ BOOST_AUTO_TEST_CASE( test_integration_1 )
                                              boost::unit_test::framework::master_test_suite().argv,
                                              makeAbout(), makeOptions() );
 #if defined( HAVE_TBB )
-    int n = tbb::task_scheduler_init::default_num_threads();
+    //int n = tbb::task_scheduler_init::default_num_threads();
     int n = 1 ;
 
     for( int p=1; p<=n; ++p ) {

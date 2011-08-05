@@ -56,7 +56,7 @@ makeAbout()
     return about;
 }
 
-template <uint orderGeo = 1>
+template <uint32_type orderGeo = 1>
 void
 runtest(Application_ptrtype test_app)
 {

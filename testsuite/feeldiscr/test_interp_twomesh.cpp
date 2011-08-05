@@ -74,7 +74,7 @@ makeAbout()
  * run_test_geomap
  *_________________________________________________*/
 
-template<uint Dim,uint OrderChamp,uint OrderGeo>
+template<uint32_type Dim,uint32_type OrderChamp,uint32_type OrderGeo>
 void
 run_test_geomap(Application_ptrtype & test_app)
 {
@@ -146,7 +146,7 @@ run_test_geomap(Application_ptrtype & test_app)
         //init inverse geometric transformation phi^{-1}
         typename mesh_type::Inverse::gic_type gic( __gm, *el_it );
 
-        for (uint i=0;i< __c->xReal().size2();++i)
+        for (uint32_type i=0;i< __c->xReal().size2();++i)
         {
 
             // get phi for one point
@@ -156,7 +156,7 @@ run_test_geomap(Application_ptrtype & test_app)
             gic.setXReal(n);
 
             //verify that : phi°phi^{-1}=Id
-            for (uint j=0;j<n.size();++j)
+            for (uint32_type j=0;j<n.size();++j)
             {
                 double err = std::abs(ublas::column(im.points(),i)(j) - gic.xRef()(j));
                 //if ( err> 1e-9) std::cout<< "\nProb : "<< err;
@@ -177,7 +177,7 @@ run_test_geomap(Application_ptrtype & test_app)
  * run_interp_boundary
  *_________________________________________________*/
 
-template<uint Dim,uint OrderChamp,uint OrderGeo>
+template<uint32_type Dim,uint32_type OrderChamp,uint32_type OrderGeo>
 void
 test_interp_boundary(boost::tuple<
                          boost::shared_ptr< Mesh<Simplex<Dim,OrderGeo,Dim> > >,
@@ -335,7 +335,7 @@ test_interp_boundary(boost::tuple<
  * run_test_interp
  *_________________________________________________*/
 
-template<uint Dim,uint OrderChamp,uint OrderGeo>
+template<uint32_type Dim,uint32_type OrderChamp,uint32_type OrderGeo>
 void
 run_test_interp(Application_ptrtype & test_app)
 {
@@ -415,7 +415,7 @@ run_test_interp(Application_ptrtype & test_app)
  * runTestExport
  *_________________________________________________*/
 
-template<uint Dim,uint OrderChamp,uint OrderGeo>
+template<uint32_type Dim,uint32_type OrderChamp,uint32_type OrderGeo>
 void
 run_test_export(Application_ptrtype & test_app)
 {
