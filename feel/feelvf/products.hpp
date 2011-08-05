@@ -202,48 +202,42 @@ public:
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q ) const
             {
-                //if ( Type == 1 )
+                if ( Type == 1 )
                 {
-#if 0
                     for( int c1 = 0; c1 < left_shape::M; ++ c1 )
                         for( int c2 = 0; c2 < left_shape::N; ++ c2 )
                         {
                             M1(c1, c2)=M_l_tensor_expr.evalijq( i, j, c1, c2, q );
                             M2(c1, c2)=M_r_tensor_expr.evalijq( i, j, c1, c2, q );
                         }
-#endif
                     return (M1.adjoint()*M2).trace();
                 }
             }
         value_type
         evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q ) const
             {
-                //if ( Type == 1 )
+                if ( Type == 1 )
                 {
-#if 0
                     for( int c1 = 0; c1 < left_shape::M; ++ c1 )
                         for( int c2 = 0; c2 < left_shape::N; ++ c2 )
                         {
                             M1(c1, c2)=M_l_tensor_expr.evaliq( i, c1, c2, q );
                             M2(c1, c2)=M_r_tensor_expr.evaliq( i, c1, c2, q );
                         }
-#endif
                     return (M1.adjoint()*M2).trace();
                 }
             }
         value_type
         evalq( uint16_type cc1, uint16_type cc2, uint16_type q ) const
             {
-                //if ( Type == 1 )
+                if ( Type == 1 )
                 {
-#if 0
                     for( int c1 = 0; c1 < left_shape::M; ++ c1 )
                         for( int c2 = 0; c2 < left_shape::N; ++ c2 )
                         {
                             M1(c1, c2)=M_l_tensor_expr.evalq( c1, c2, q );
                             M2(c1, c2)=M_r_tensor_expr.evalq( c1, c2, q );
                         }
-#endif
                     return (M1.adjoint()*M2).trace();
                 }
             }
