@@ -410,9 +410,9 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    //app.add( new Laplacian<1>( app.vm(), app.about() ) );
+    app.add( new Laplacian<1>( app.vm(), app.about() ) );
     app.add( new Laplacian<2>( app.vm(), app.about() ) );
-    //app.add( new Laplacian<3>( app.vm(), app.about() ) );
+    app.add( new Laplacian<3>( app.vm(), app.about() ) );
     /** \endcode */
 
     /**
