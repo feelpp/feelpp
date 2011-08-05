@@ -847,7 +847,12 @@ public:
 #endif
     typedef boost::shared_ptr<component_basis_type> component_basis_ptrtype;
 
-
+#if 0
+    // trace space
+    typedef typename mesh_type::trace_mesh_type trace_mesh_type;
+    typedef FunctionSpace<trace_mesh_type, bases_list> trace_functionspace_type;
+    typedef typename trace_functionspace_type::element_type trace_element_type;
+#endif
     // geomap
     typedef typename mesh_type::gm_type gm_type;
     typedef typename mesh_type::gm1_type gm1_type;
