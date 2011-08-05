@@ -137,11 +137,12 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
         {
             __c->update( *it );
             fectx->update( __c, pc );
+            std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), f_fectx_type::id_type::Zero());
             f.id( *fectx, fvalues );
             //std::cout << "interpfunc :  " << interpfunc << "\n";
             for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
             {
-                fvalues[l].setZero();
+
                 const int ncdof = basis_type::is_product?basis_type::nComponents:1;
                 for ( uint16_type comp = 0;comp < ncdof;++comp )
                 {
@@ -241,7 +242,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                     //typename FunctionType::id_type interpfunc( f.id( *__c, pc ) );
                     //typename FunctionType::id_type interpfunc;
 
-                    fvalues[0].setZero();
+                    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), f_fectx_type::id_type::Zero());
                     f.id( *fectx, fvalues );
                     //std::cout << "interpfunc :  " << interpfunc << "\n";
 
