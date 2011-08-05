@@ -576,7 +576,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 {                                                       \
                     Feel::detail::ignore_unused_variable_warning(c1);   \
                     Feel::detail::ignore_unused_variable_warning(c2);   \
-                    return M_loc[0][0][q];                           \
+                    return M_loc[q][0][0];                           \
                 }                                                       \
                 result_type                                             \
                     evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const \
@@ -588,19 +588,19 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 {                                                       \
                     Feel::detail::ignore_unused_variable_warning(c1);   \
                     Feel::detail::ignore_unused_variable_warning(c2);   \
-                    return M_loc[c1][0][q];                            \
+                    return M_loc[q][c1][0];                                \
                 }                                                       \
                 result_type                                             \
                     evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1>, mpl::bool_<true> ) const \
                 {                                                       \
                     Feel::detail::ignore_unused_variable_warning(c1);   \
                     Feel::detail::ignore_unused_variable_warning(c2);   \
-                    return M_loc[0][c2][q];                            \
+                    return M_loc[q][0][c2];                                \
                 }                                                       \
                 result_type                                             \
                     evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> ) const \
                 {                                                       \
-                    return M_loc[c1][c2][q];                           \
+                    return M_loc[q][c1][c2];                               \
                 }                                                      \
                 pc_ptrtype createPcIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<true>) \
                 {                                                       \
