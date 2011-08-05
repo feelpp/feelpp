@@ -253,6 +253,9 @@ public:
         return M_real_time_per_iteration;
     }
 
+    //! return vector of time
+    std::vector<double> timeValue() const { return M_time_values; }
+
     //! start the bdf
     double start() const
     {
@@ -689,7 +692,7 @@ Bdf<SpaceType>::init()
 
     if ( timeInitial() > 0. )
         {
-            for( int p = 0; p < std::max( M_order, M_iteration); ++p )
+            for( int p = 0; p < std::min( M_order, M_iteration); ++p )
                 {
                     // create and open a character archive for output
                     std::ostringstream ostr;
