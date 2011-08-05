@@ -818,7 +818,7 @@ public:
                     for( uint16_type j = 0; j < size2; ++j )
                         {
                             for( uint16_type k = 0; k < size3; ++k )
-                                _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc->phi()[k][0][0][j];
+                                _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc->phi()[k][j](0,0);
                         }
             }
         if ( vm::has_jacobian<context>::value )
@@ -899,7 +899,7 @@ public:
                     for( uint16_type j = 0; j < size2; ++j )
                         {
                             for( uint16_type k = 0; k < size3; ++k )
-                                _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc->phi()[k][0][0][j];
+                                _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc->phi()[k][j](0,0);
                         }
             }
         if ( vm::has_jacobian<context>::value )

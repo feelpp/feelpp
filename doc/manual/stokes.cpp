@@ -250,7 +250,7 @@ Stokes::run()
     auto F = M_backend->newVector( Xh );
 
     //# marker5 #
-    auto deft = gradt(u);
+    auto deft = sym(gradt(u));
     auto def = grad(v);
     //# endmarker5 #
 
@@ -294,9 +294,11 @@ Stokes::run()
     std::cout << "(u,p): " << chrono.elapsed() << "\n"; chrono.restart();
     stokes +=integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
     std::cout << "(lambda,p): " << chrono.elapsed() << "\n"; chrono.restart();
+
     stokes +=integrate( boundaryfaces(mesh), -inner(SigmaNt,id(v)) );
     stokes +=integrate( boundaryfaces(mesh), -inner(SigmaN,idt(u)) );
     stokes +=integrate( boundaryfaces(mesh), +penalbc*inner(idt(u),id(v))/hFace() );
+
     std::cout << "bc: " << chrono.elapsed() << "\n"; chrono.restart();
     //# endmarker7 #
     Log() << "[stokes] matrix local assembly done\n";

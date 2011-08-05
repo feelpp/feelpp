@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -173,9 +173,10 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     fectx_ptrtype __ctx( new fectx_type( u.functionSpace()->fe(),
                                          __c,
                                          __pc ) );
-    typedef boost::multi_array<value_type,3> array_type;
+    typedef typename fectx_type::id_type m_type;
+    typedef boost::multi_array<m_type,1> array_type;
     array_type uvalues( u.idExtents( *__ctx ) );
-    std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), 0 );
+    std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m_type::Zero() );
     u.id( *__ctx, uvalues );
 
     //const uint16_type ndofv = fe_type::nDof;
@@ -195,14 +196,14 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
         {
             __c->update( *it_elt );
             __ctx->update( __c );
-            std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), 0 );
+            std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m_type::Zero() );
             u.id( *__ctx, uvalues );
 
             for( uint16_type l =0; l < nptsperelem; ++l )
                 {
                     for ( uint16_type comp = 0;comp < fe_type::nComponents;++comp )
                         {
-                            val[ comp ] = uvalues[comp][0][l];
+                            val[ comp ] = uvalues[comp](0,l);
                         }
                     if ( points_done[ it_elt->point( l ).id() ] == false )
                         {

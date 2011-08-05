@@ -278,7 +278,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     mpl::identity<typename fusion::result_of::value_at_key<map_basis_context_type,basis_context_key_type>::type::pointer > >::type::type basis_context_ptrtype; \
                 typedef typename element_type::value_type value_type;   \
                 typedef typename matrix_node<value_type>::type matrix_node_type; \
-                typedef boost::multi_array<value_type,3> array_type;    \
                                                                         \
                 typedef value_type result_type;                         \
                 typedef typename element_type::polyset_type function_rank_type; \
@@ -295,6 +294,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 typedef boost::shared_ptr<pc_type> pc_ptrtype;          \
                 typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type; \
                 typedef boost::shared_ptr<ctx_type> ctx_ptrtype;        \
+                typedef Eigen::Matrix<value_type,shape::M,shape::N> loc_type; \
+                typedef boost::multi_array<loc_type,1> array_type;    \
                                                                         \
                                                                         \
                 template<typename E>\
@@ -482,7 +483,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
                 void update( Geo_t const& geom, uint16_type face1, mpl::bool_<true> ) \
                 {                                                       \
-                    std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), value_type( 0 ) ); \
+                    std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), loc_type::Zero() ); \
                     this->updateCtxFaceIfSameGeom(geom,mpl::bool_<isSameGeo>() ); \
                     if (M_same_mesh)                                   \
                         M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
@@ -493,7 +494,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<true> )      \
                 {                                                       \
-                    std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), value_type( 0 ) ); \
+                    std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), loc_type::Zero() ); \
                     this->updateCtxIfSameGeom(geom,mpl::bool_<isSameGeo>() ); \
                     if (M_same_mesh) {                                  \
                         /*std::cout << "\n idv no interp \n";*/         \
@@ -576,7 +577,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 {                                                       \
                     Feel::detail::ignore_unused_variable_warning(c1);   \
                     Feel::detail::ignore_unused_variable_warning(c2);   \
-                    return M_loc[q][0][0];                           \
+                    return M_loc[q](0,0);                           \
                 }                                                       \
                 result_type                                             \
                     evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const \
@@ -588,19 +589,19 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 {                                                       \
                     Feel::detail::ignore_unused_variable_warning(c1);   \
                     Feel::detail::ignore_unused_variable_warning(c2);   \
-                    return M_loc[q][c1][0];                                \
+                    return M_loc[q](c1,0);                                \
                 }                                                       \
                 result_type                                             \
                     evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1>, mpl::bool_<true> ) const \
                 {                                                       \
                     Feel::detail::ignore_unused_variable_warning(c1);   \
                     Feel::detail::ignore_unused_variable_warning(c2);   \
-                    return M_loc[q][0][c2];                                \
+                    return M_loc[q](0,c2);                                \
                 }                                                       \
                 result_type                                             \
                     evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> ) const \
                 {                                                       \
-                    return M_loc[q][c1][c2];                               \
+                    return M_loc[q](c1,c2);                               \
                 }                                                      \
                 pc_ptrtype createPcIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<true>) \
                 {                                                       \
