@@ -1070,6 +1070,29 @@ public:
     {
         _M_step_set.clear();
     }
+
+    void load(std::string _nameFile)
+    {
+        fs::ifstream ifs( _nameFile );
+        // load data from archive
+        boost::archive::text_iarchive ia(ifs);
+        ia >> *this;
+
+    }
+
+    void save(std::string _nameFile)
+    {
+        setNumberOfStepsInMemory(0);
+        cleanup();
+        setNumberOfStepsInMemory(1);
+
+        fs::ofstream ofs( _nameFile );
+        // save data from archive
+        boost::archive::text_oarchive oa(ofs);
+        oa << *this;
+    }
+
+
     //@}
 
 protected:

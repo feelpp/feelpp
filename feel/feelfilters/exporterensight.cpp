@@ -115,6 +115,10 @@ ExporterEnsight<MeshType,N>::save() const
     _F_writeVariableFiles();
     Debug( 8006 ) << "[ExporterEnsight::save] export variable files ok, time " << ti.elapsed() << "\n";
 
+    ti.restart();
+    Debug( 8006 ) << "[ExporterEnsight::save] export time set\n";
+    this->saveTimeSet();
+    Debug( 8006 ) << "[ExporterEnsight::save] export time set ok, time " << ti.elapsed() << "\n";
 }
 
 template<typename MeshType, int N>

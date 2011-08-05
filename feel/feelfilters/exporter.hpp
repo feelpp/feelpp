@@ -280,7 +280,33 @@ public:
      */
     virtual void save() const = 0;
 
+    /**
+     * save in a file set of time which are been exported
+     */
+    void saveTimeSet() const
+    {
+        auto __ts_it = this->beginTimeSet();
+        auto __ts_en = this->endTimeSet();
+        for( ; __ts_it != __ts_en ; ++__ts_it )
+            {
+                auto filename = this->path()+"/"+prefix()+".timeset";
+                (*__ts_it)->save(filename);
+            }
+    }
 
+    /**
+     * reload from file set of time which are been exported
+     */
+    void restart()
+    {
+        auto __ts_it = this->beginTimeSet();
+        auto __ts_en = this->endTimeSet();
+        for( ; __ts_it != __ts_en ; ++__ts_it )
+            {
+                auto filename = this->path()+"/"+prefix()+".timeset";
+                (*__ts_it)->load(filename);
+            }
+    }
 
     //@}
 protected:
