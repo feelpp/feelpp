@@ -326,8 +326,8 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
                                        % meshSize );
 
 
-    uint k0 = 0;
-    uint k1 = 1;
+    uint32_type k0 = 0;
+    uint32_type k1 = 1;
 
     value_type x1max = this->vm()["x1max"].template as<double>();
     value_type x2min = this->vm()["x2min"].template as<double>();
