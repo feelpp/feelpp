@@ -250,7 +250,7 @@ Stokes::run()
     auto F = M_backend->newVector( Xh );
 
     //# marker5 #
-    auto deft = sym(gradt(u));
+    auto deft = gradt(u);
     auto def = grad(v);
     //# endmarker5 #
 
@@ -275,7 +275,7 @@ Stokes::run()
 
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F, _init=true );
-    stokes_rhs = integrate( elements(mesh), inner(f,id(v)) );
+    stokes_rhs = integrate( elements(mesh),inner(f,id(v)) );
     stokes_rhs += integrate( boundaryfaces(mesh), inner(u_exact,-SigmaN+penalbc*id(v)/hFace() ) );
 
     Log() << "[stokes] vector local assembly done\n";
