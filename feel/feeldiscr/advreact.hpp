@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -220,9 +220,9 @@ void AdvReact<Space>::update(const Esigma& sigma,
 
                     else if (M_StabMethod== GALS)
                         {
-                            AUTO(coeff, 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::h()+vf::abs(val(sigma))));
-                            AUTO(L_op, ( grad(M_phi)*val(beta) + val(sigma)*id(M_phi) ) );
-                            AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) ) );
+                            auto coeff = val(1.0 / (2*vf::sqrt(trans(beta)*beta)/vf::h()+vf::abs(sigma)));
+                            auto L_op = (grad(M_phi)*val(beta) + val(sigma)*id(M_phi));
+                            auto L_opt = (gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi));
 
                             M_operatorStab=
                                 integrate( elements(M_mesh),
@@ -275,11 +275,15 @@ void AdvReact<Space>::update(const Esigma& sigma,
                                 integrate(boundaryfaces(M_mesh),
                                           coeff*L_op*val(f) );
                         }//Subgrid Scale method
+
+                    //M_operatorStab.mat().printMatlab("M_advReact_stab.m");
+                    //M_rhsStab.container().printMatlab("M_rhs_stab.m");
                 }//update stabilization
             M_operator.add(1.0, M_operatorStab);
+
         }//DoStabilize
     M_operator.mat().close();
-    //     M_operator.mat().printMatlab("M_advReact.m");
+    //M_operator.mat().printMatlab("M_advReact.m");
 
     M_rhs =
         integrate( elements(M_mesh),
@@ -290,15 +294,15 @@ void AdvReact<Space>::update(const Esigma& sigma,
         {
             M_rhs +=
                 integrate( boundaryfaces(M_mesh),
-                           - chi( trans(beta)*N() < 0 ) * /* inflow */
-                           val( (trans(beta)*N())*(g) ) * id(M_phi)
+                           val(- chi( trans(beta)*N() < 0 ) /* inflow */ *
+                               (trans(beta)*N())*(g) ) * id(M_phi)
                            );
         }
 
     if (M_StabMethod != NO)
         M_rhs.add(M_rhsStab);
 
-//     M_rhs.container().printMatlab("F_advReact.m");
+    //M_rhs.container().printMatlab("F_advReact.m");
 
 } // update
 
