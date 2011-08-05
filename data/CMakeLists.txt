@@ -28,8 +28,9 @@ if (EXISTS $ENV{HOME})
   # files repository
   file(MAKE_DIRECTORY $ENV{HOME}/feel/geo)
 
-  FILE(GLOB meditfiles "medit/*.[geomesh]")
-  FILE(GLOB gmshfiles "gmsh/*.[geomeshstl]")
+  FILE(GLOB meditfiles "${CMAKE_CURRENT_SOURCE_DIR}/medit/*.[geomesh]")
+  FILE(GLOB gmshfiles "${CMAKE_CURRENT_SOURCE_DIR}/gmsh/*.[geomeshstl]")
+  message(STATUS "copying mesh files: ${meditfiles} ${gmshfiles}")
   foreach(file ${meditfiles} ${gmshfiles})
     get_filename_component(filename ${file} NAME )
     add_custom_target(copy_mesh_data_${filename}

@@ -2892,37 +2892,36 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
 
     const uint16_type nq = context.xRefs().size2();
     //array_type v( boost::extents[nComponents1][nComponents2][context.xRefs().size2()] );
-    for( int l = 0; l < basis_type::nDof; ++l )
+        for( int l = 0; l < basis_type::nDof; ++l )
         {
             const int ncdof = is_product?nComponents1:1;
             for( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
+            {
+                typename array_type::index ldof = basis_type::nDof*c1+l;
+                size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
+                //std::cout << "ldof = " << ldof << "\n";
+                //std::cout << "gdof = " << gdof << "\n";
+
+                FEEL_ASSERT( gdof < this->size() )
+                    ( context.eId() )
+                    ( l )( c1 )( ldof)( gdof )
+                    ( this->size() )( this->localSize() )
+                    ( this->firstLocalIndex() )( this->lastLocalIndex() )
+                    .error( "FunctionSpace::Element invalid access index" );
+
+                value_type v_ = this->globalValue( gdof );
+                //std::cout << "v_ =" << v_ << "\n";
+                //for( typename array_type::index c2 = 0; c2 < nComponents2; ++c2 )
+                for( uint16_type q = 0; q < nq; ++q )
                 {
-                    typename array_type::index ldof = basis_type::nDof*c1+l;
-                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
-                    //std::cout << "ldof = " << ldof << "\n";
-                    //std::cout << "gdof = " << gdof << "\n";
-
-                    FEEL_ASSERT( gdof < this->size() )
-                        ( context.eId() )
-                        ( l )( c1 )( ldof)( gdof )
-                        ( this->size() )( this->localSize() )
-                        ( this->firstLocalIndex() )( this->lastLocalIndex() )
-                        .error( "FunctionSpace::Element invalid access index" );
-
-                    value_type v_ = this->globalValue( gdof );
-                    //std::cout << "v_ =" << v_ << "\n";
-                    //for( typename array_type::index c2 = 0; c2 < nComponents2; ++c2 )
+                    for( typename array_type::index i = 0; i < nComponents1; ++i )
+                        //for( typename array_type::index j = 0; j < nComponents2; ++j )
                     {
-                        for( typename array_type::index i = 0; i < nComponents1; ++i )
-                            //for( typename array_type::index j = 0; j < nComponents2; ++j )
-                            {
-
-                                for( uint16_type q = 0; q < nq; ++q )
-                                    v[i][q][0] += v_*context.id( ldof, i, 0, q );
-                                    //v[i][q][0] += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
-                            }
+                        v[q][i][0] += v_*context.id( ldof, i, 0, q );
+                        //v[q][i][0] += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
                     }
                 }
+            }
         }
     //return v;
 }
@@ -2997,13 +2996,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
             id_type __id( this->id( *__ctx ));
 
             //update the output data
-            for( typename array_type::index i = 0; i < nComponents1; ++i )
+            itL=it->second.begin();
+            for (uint k=0;k<nbPtsElt;++k,++itL)
+            {
+                for( typename array_type::index i = 0; i < nComponents1; ++i )
                 {
-                    itL=it->second.begin();
-                    for (uint k=0;k<nbPtsElt;++k,++itL){
-                        v[i][boost::get<0>(*itL)][0] =  __id(i,0,k);
-                    }
+                    v[boost::get<0>(*itL)][i][0] =  __id(i,0,k);
                 }
+            }
         }
 
 }
@@ -3140,14 +3140,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
 
                     //value_type v_ = (*this)( gdof );
                     value_type v_ = this->globalValue( gdof );
-                    for( int k = 0; k < nComponents1; ++k )
-                        for( int j = 0; j < nRealDim; ++j )
+                    for( size_type q = 0; q < context.xRefs().size2(); ++q )
+                    {
+                        for( int k = 0; k < nComponents1; ++k )
+                            for( int j = 0; j < nRealDim; ++j )
                             {
-                                for( size_type q = 0; q < context.xRefs().size2(); ++q )
-                                {
-                                    v[q][k][j] += v_*context.grad( ldof, k, j, q );
-                                }
+                                v[q][k][j] += v_*context.grad( ldof, k, j, q );
                             }
+                    }
                 }
         }
 #if 0
@@ -3251,14 +3251,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_nod
             grad_type __grad( this->grad( *__ctx ));
 
             //update the output data
-            for( typename array_type::index i = 0; i < nComponents1; ++i )
-                for( uint j = 0; j < nRealDim; ++j )
+            itL=it->second.begin();
+            for (uint k=0;k<nbPtsElt;++k,++itL)
+            {
+                for( typename array_type::index i = 0; i < nComponents1; ++i )
+                    for( uint j = 0; j < nRealDim; ++j )
                     {
-                        itL=it->second.begin();
-                        for (uint k=0;k<nbPtsElt;++k,++itL){
-                            v[boost::get<0>(*itL)][i][j] = __grad(i,j,k);
-                        }
+                        v[boost::get<0>(*itL)][i][j] = __grad(i,j,k);
                     }
+            }
 
         }
 
@@ -3440,22 +3441,20 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
                     //value_type v_ = (*this)( gdof );
                     value_type v_ = this->globalValue( gdof );
                     const uint16_type nq = context.xRefs().size2();
-                    if ( nDim == 3 )
+                    for( uint16_type q = 0; q < nq ; ++q )
                     {
-                        for( typename array_type::index i = 0; i < nDim; ++i )
+                        if ( nDim == 3 )
                         {
-                            for( uint16_type q = 0; q < nq ; ++q )
+                            for( typename array_type::index i = 0; i < nDim; ++i )
                             {
                                 v[q][i][0] += v_*context.curl( ldof, i, 0, q );
                             }
                         }
-                    }
-                    else if ( nDim == 2 )
-                    {
-                        for( uint16_type q = 0; q < nq ; ++q )
+                        else if ( nDim == 2 )
                         {
                             v[q][0][0] += v_*context.curl( ldof, 0, 0, q );
                         }
+
                     }
                 }
         }
@@ -3839,9 +3838,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const
                         .error( "FunctionSpace::Element invalid access index" );
 
                     value_type v_ = this->globalValue( gdof );
-                    for( typename array_type::index i = 0; i < nComponents1; ++i )
+                    for( size_type q = 0; q < context.xRefs().size2(); ++q )
                     {
-                        for( size_type q = 0; q < context.xRefs().size2(); ++q )
+                        for( typename array_type::index i = 0; i < nComponents1; ++i )
                         {
                             v[q][i][0] += v_*context.d( ldof, i, N, q );
                         }
@@ -3917,11 +3916,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
             dx_type __dx( this->dx( *__ctx ));
 
             //update the output data
-            for( typename array_type::index i = 0; i < nComponents1; ++i )
+            itL=it->second.begin();
+            for (uint k=0;k<nbPtsElt;++k,++itL)
+                for( typename array_type::index i = 0; i < nComponents1; ++i )
                 {
-                    itL=it->second.begin();
-                    for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[boost::get<0>(*itL)][i][0] =  __dx(i,0,k);
+                    v[boost::get<0>(*itL)][i][0] =  __dx(i,0,k);
                 }
         }
 
@@ -3993,11 +3992,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
             dy_type __dy( this->dy( *__ctx ));
 
             //update the output data
-            for( typename array_type::index i = 0; i < nComponents1; ++i )
+            itL=it->second.begin();
+            for (uint k=0;k<nbPtsElt;++k,++itL)
+                for( typename array_type::index i = 0; i < nComponents1; ++i )
                 {
-                    itL=it->second.begin();
-                    for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[boost::get<0>(*itL)][i][0] =  __dy(i,0,k);
+                    v[boost::get<0>(*itL)][i][0] =  __dy(i,0,k);
                 }
         }
 
@@ -4068,11 +4067,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
             dz_type __dz( this->dz( *__ctx ));
 
             //update the output data
-            for( typename array_type::index i = 0; i < nComponents1; ++i )
+            itL=it->second.begin();
+            for (uint k=0;k<nbPtsElt;++k,++itL)
+                for( typename array_type::index i = 0; i < nComponents1; ++i )
                 {
-                    itL=it->second.begin();
-                    for (uint k=0;k<nbPtsElt;++k,++itL)
-                        v[boost::get<0>(*itL)][i][0] =  __dz(i,0,k);
+                    v[boost::get<0>(*itL)][i][0] =  __dz(i,0,k);
                 }
         }
 
@@ -4114,17 +4113,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
 
                     value_type v_ = this->globalValue( gdof );
 
-                    for( int i = 0; i < nRealDim; ++i )
-                        for( int j = 0; j < nRealDim; ++j )
+                    for( size_type q = 0; q < context.xRefs().size2(); ++q )
+                    {
+                        for( int i = 0; i < nRealDim; ++i )
+                            for( int j = 0; j < nRealDim; ++j )
                             {
-                                for( size_type q = 0; q < context.xRefs().size2(); ++q )
-                                {
-
-                                    v[q][i][j] += v_*context.hess( ldof, i, j, q );
-
-
-                                } // q
+                                v[q][i][j] += v_*context.hess( ldof, i, j, q );
                             } // i,j
+                    } // q
 
                 }
         }
@@ -4198,9 +4194,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
 
             //update the output data
             itL=it->second.begin();
-            for( int i = 0; i < nRealDim; ++i )
-                for( int j = 0; j < nRealDim; ++j )
-                    for (uint k=0;k<nbPtsElt;++k,++itL)
+            for (uint k=0;k<nbPtsElt;++k,++itL)
+                for( int i = 0; i < nRealDim; ++i )
+                    for( int j = 0; j < nRealDim; ++j )
                         v[boost::get<0>(*itL)][i][j] =  __hess(i,j,k);
         }
 
