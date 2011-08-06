@@ -966,7 +966,7 @@ struct test_integration_vectorial_functions: public Application
         BOOST_TEST_MESSAGE( "int_ut = " << int_ut << "\n" );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( int_curlu, eps );
-        BOOST_CHECK_SMALL( int_intu, eps );
+        BOOST_CHECK_SMALL( int_int_ut, eps );
 #endif
     }
     boost::shared_ptr<Feel::Backend<double> > backend;
