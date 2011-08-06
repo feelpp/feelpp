@@ -98,10 +98,10 @@ struct f_sinPx
     }
 };
 
-template<typename T, int Order = 1>
+template<typename T, int Dim = 2,int Order = 1>
 struct imesh
 {
-    typedef Mesh<Simplex<2, Order>, T > type;
+    typedef Mesh<Simplex<Dim, Order>, T > type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 
@@ -174,8 +174,8 @@ typename imesh<T,Order>::ptrtype
 createCircle( double hsize )
 {
     double meshSize = hsize;
-    typename imesh<T,Order>::ptrtype mesh( new typename imesh<T,Order>::type );
-    typedef typename imesh<T,Order>::type mesh_type;
+    typename imesh<T,2,Order>::ptrtype mesh( new typename imesh<T,2,Order>::type );
+    typedef typename imesh<T,2,Order>::type mesh_type;
 #if 1
 
     //std::cout << "hsize = " << meshSize << std::endl;
@@ -219,7 +219,7 @@ createCircle( double hsize )
 
 
 
-    ImporterGmsh<typename imesh<T, Order>::type> import( fname );
+    ImporterGmsh<typename imesh<T, 2, Order>::type> import( fname );
     mesh->accept( import );
 #else
 
@@ -291,7 +291,7 @@ createCircle( double hsize )
     return mesh;
 }
 template<typename T, int Order>
-typename imesh<T,Order>::ptrtype
+typename imesh<T,2,Order>::ptrtype
 createSimplex( double hsize )
 {
     double meshSize = hsize;
@@ -301,20 +301,20 @@ createSimplex( double hsize )
     ts.setCharacteristicLength( meshSize );
     ts.setOrder( Order );
     std::string fname = ts.generate( "simplex" );
-    typename imesh<T,Order>::ptrtype mesh( new typename imesh<T,Order>::type );
+    typename imesh<T,2,Order>::ptrtype mesh( new typename imesh<T,2,Order>::type );
 
-    ImporterGmsh<typename imesh<T,Order>::type> import( fname );
+    ImporterGmsh<typename imesh<T,2,Order>::type> import( fname );
     mesh->accept( import );
 
     return mesh;
 }
 template<typename T, int Order>
-typename imesh<T,Order>::ptrtype
+typename imesh<T,2,Order>::ptrtype
 createSin( double hsize )
 {
     double meshSize = hsize;
-    typename imesh<T,Order>::ptrtype mesh( new typename imesh<T,Order>::type );
-    typedef typename imesh<T,Order>::type mesh_type;
+    typename imesh<T,2,Order>::ptrtype mesh( new typename imesh<T,2,Order>::type );
+    typedef typename imesh<T,2,Order>::type mesh_type;
 
     //std::cout << "hsize = " << meshSize << std::endl;
 
@@ -336,7 +336,7 @@ createSin( double hsize )
     __gmsh.setOrder( Order );
     fname = __gmsh.generate( nameStr.str(), ostr.str(), true );
 
-    ImporterGmsh<typename imesh<T, Order>::type> import( fname, "2.0" );
+    ImporterGmsh<typename imesh<T, 2,Order>::type> import( fname, "2.0" );
     mesh->accept( import );
 
     mesh->components().set( MESH_RENUMBER | MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
@@ -358,7 +358,7 @@ struct test_integration_circle
 
         double t = 0.0;
         AUTO( mycst, cst_ref( t ) );
-        typename imesh<value_type,Order>::ptrtype mesh( createCircle<value_type,Order>( meshSize ) );
+        typename imesh<value_type,2,Order>::ptrtype mesh( createCircle<value_type,Order>( meshSize ) );
 
         t = 1.0;
         value_type v0 = integrate( elements(mesh), mycst, _Q<Order-1>() ).evaluate()( 0, 0 );
@@ -389,7 +389,7 @@ struct test_integration_circle
         FEEL_ASSERT( math::abs( v0-v00) < 1e-2 )( v0 )( v00 )( math::abs( v0-v00) )( eps ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
-        typedef typename imesh<value_type,Order>::type mesh_type;
+        typedef typename imesh<value_type,2,Order>::type mesh_type;
         typedef fusion::vector<Lagrange<Order+1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
@@ -453,7 +453,7 @@ struct test_integration_circle
     double meshSize;
 };
 
-template<int Order, typename value_type = double>
+template<int Dim, int Order, typename value_type = double>
 struct test_integration_sin
 {
     test_integration_sin( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_) {}
@@ -465,9 +465,19 @@ struct test_integration_sin
         using namespace Feel;
         using namespace Feel::vf;
 
-        typedef typename imesh<value_type,Order>::type mesh_type;
+        typedef typename imesh<value_type,Dim,Order>::type mesh_type;
 
-        typename imesh<value_type,Order>::ptrtype mesh( createSin<value_type,Order>( meshSize ) );
+        //typename imesh<value_type,Order>::ptrtype mesh( createSin<value_type,Order>( meshSize ) );
+        auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                    _desc=domain( _name=(boost::format( "ellipsoid-%1%-%2%" ) % Dim % Order).str() ,
+                                                  _usenames=true,
+                                                  _shape="ellipsoid",
+                                                  _xmin=-1,_xmax=1,
+                                                  _ymin=-1,_ymax=1,
+                                                  _zmin=-1,_zmax=1,
+                                                  _dim=Dim,
+                                                  _order=Order,
+                                                  _h=meshSize ) );
 
         typedef fusion::vector<Lagrange<Order+1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -538,32 +548,32 @@ main( int argc, char** argv )
     std::cout << "Order = " << mpi.vm()["order"].as<int>() << " / " << FEEL_MESH_MAX_ORDER << "\n";
     if ( mpi.vm()["order"].as<int>() == 1 )
         {
-            test_integration_sin<1,double> t1( mpi.vm()["hsize"].as<double>() ); t1();
+            test_integration_sin<2,1,double> t1( mpi.vm()["hsize"].as<double>() ); t1();
         }
 
     else if ( mpi.vm()["order"].as<int>() == 2 )
         {
 #if BOOST_PP_GREATER_EQUAL(FEEL_MESH_MAX_ORDER, 2)
-            test_integration_sin<2,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
+            test_integration_sin<2,2,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
 #endif
         }
 
     else if ( mpi.vm()["order"].as<int>() == 3 )
         {
 #if BOOST_PP_GREATER_EQUAL(FEEL_MESH_MAX_ORDER, 3)
-            test_integration_sin<3,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
+            test_integration_sin<2,3,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
 #endif
         }
     else if ( mpi.vm()["order"].as<int>() == 4 )
         {
 #if BOOST_PP_GREATER_EQUAL(FEEL_MESH_MAX_ORDER, 4)
-            test_integration_sin<4,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
+            test_integration_sin<2,4,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
 #endif
         }
     else if ( mpi.vm()["order"].as<int>() == 5 )
         {
 #if BOOST_PP_GREATER_EQUAL(FEEL_MESH_MAX_ORDER, 5)
-            test_integration_sin<5,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
+            test_integration_sin<2,5,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
 #endif
         }
 

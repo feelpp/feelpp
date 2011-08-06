@@ -368,24 +368,20 @@ namespace Feel
                 :
                 _M_curl( elem.curlExtents( context ) )
             {
-                elem.curl_( context, _M_curl );
-#if 0
-                std::fill( _M_curl.data(), _M_curl.data()+_M_curl.num_elements(), value_type( 0 ) );
-                const uint16_type nq = context.xRefs().size2();
-                if ( Elem::nDim == 3 )
-                    for( uint16_type q = 0; q < nq ; ++q )
-                        {
-                            _M_curl[q](0,0) +=  _M_grad[q](2,1) - _M_grad[q](1,2);
-                            _M_curl[q](1,0) +=  _M_grad[q](0,2) - _M_grad[q](2,0);
-                            _M_curl[q](2,0) +=  _M_grad[q](1,0) - _M_grad[q](0,1);
-                        }
-                else if ( Elem::nDim == 2 )
-                    for( uint16_type q = 0; q < nq ; ++q )
-                        {
-                            _M_curl[q](0,0) +=  _M_grad[q](1,0) - _M_grad[q](0,1);
-                        }
-#endif
+                init( elem, context, boost::is_same<mpl::int_<N>, mpl::int_<-1> >() );
             }
+            template<typename Elem, typename ContextType>
+            void
+            init( Elem const& elem, ContextType const& context, mpl::bool_<true> )
+                {
+                    elem.curl_( context, _M_curl );
+                }
+            template<typename Elem, typename ContextType>
+            void
+            init( Elem const& elem, ContextType const& context, mpl::bool_<false> )
+                {
+                    elem.curl_( context, _M_curl, N );
+                }
 
             value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
             {
@@ -401,11 +397,11 @@ namespace Feel
             }
             value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<1>  ) const
             {
-                return _M_curl[q](1,0);
+                return _M_curl[q](0,0);
             }
             value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<2>  ) const
             {
-                return _M_curl[q](2,0);
+                return _M_curl[q](0,0);
             }
             array_type _M_curl;
         };
@@ -1226,6 +1222,7 @@ public:
         typedef boost::multi_array<_hess_type,1> hess_array_type;
         typedef boost::multi_array<_div_type,1> div_array_type;
         typedef boost::multi_array<_curl_type,1> curl_array_type;
+        typedef boost::multi_array<_div_type,1> comp_curl_array_type;
 
         /**
          * \return the map
@@ -1607,9 +1604,9 @@ public:
         divInterpolate( matrix_node_type __ptsReal, div_array_type& v ) const;
 
         typedef detail::Curl<value_type,-1,nDim> curl_type;
-        typedef detail::Curl<value_type,0,nDim> curlx_type;
-        typedef detail::Curl<value_type,1,nDim> curly_type;
-        typedef detail::Curl<value_type,2,nDim> curlz_type;
+        typedef detail::Curl<value_type,0,1> curlx_type;
+        typedef detail::Curl<value_type,1,1> curly_type;
+        typedef detail::Curl<value_type,2,1> curlz_type;
 
         template<typename ContextType>
         curl_type
@@ -1666,6 +1663,9 @@ public:
         template<typename ContextType>
         void curl_( ContextType const & context, curl_array_type& v ) const;
 
+        template<typename ContextType>
+        void curl_( ContextType const & context, comp_curl_array_type& v, int comp ) const;
+
 
         template<typename ContextType>
         boost::array<typename array_type::index, 1>
@@ -1692,34 +1692,34 @@ public:
 
         template<typename ContextType>
         void
-        curlx( ContextType const & context, id_array_type& v ) const
+        curlx( ContextType const & context, comp_curl_array_type& v ) const
         {
             //BOOST_STATIC_ASSERT( rank == 1 );
-            curl_( context, v );
+            curl_( context, v, 0 );
         }
         template<typename ContextType>
         void
-        curly( ContextType const & context, id_array_type& v ) const
+        curly( ContextType const & context, comp_curl_array_type& v ) const
         {
             //BOOST_STATIC_ASSERT( rank == 1 );
-            curl_( context, v );
+            curl_( context, v, 1 );
         }
         template<typename ContextType>
         void
-        curlz( ContextType const & context, id_array_type& v ) const
+        curlz( ContextType const & context, comp_curl_array_type& v ) const
         {
             //BOOST_STATIC_ASSERT( rank == 1 );
-            curl_( context, v );
+            curl_( context, v, 2 );
         }
 
         void
-        curlxInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
+        curlxInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v ) const;
 
         void
-        curlyInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
+        curlyInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v ) const;
 
         void
-        curlzInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
+        curlzInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v ) const;
 
         template<typename ContextType>
         boost::array<typename array_type::index, 1>
@@ -3484,6 +3484,50 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
+template<typename ContextType>
+//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & context, comp_curl_array_type& v, int comp ) const
+{
+    if ( !this->areGlobalValuesUpdated() )
+        this->updateGlobalValues();
+    for( int l = 0; l < basis_type::nDof; ++l )
+        {
+            const int ncdof = is_product?nComponents1:1;
+            for(int c1 = 0; c1 < ncdof; ++c1 )
+                {
+                    int ldof = c1*basis_type::nDof+l;
+                    size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
+                    FEEL_ASSERT( gdof >= this->firstLocalIndex() &&
+                                 gdof < this->lastLocalIndex() )
+                        ( context.eId() )
+                        ( l )( c1 )( ldof)( gdof )
+                        ( this->size() )( this->localSize() )
+                        ( this->firstLocalIndex() )( this->lastLocalIndex() )
+                        .error( "FunctionSpace::Element invalid access index" );
+
+                    //value_type v_ = (*this)( gdof );
+                    value_type v_ = this->globalValue( gdof );
+                    const uint16_type nq = context.xRefs().size2();
+                    for( uint16_type q = 0; q < nq ; ++q )
+                    {
+                        if ( nDim == 3 )
+                        {
+                            v[q](0,0) += v_*context.curl( ldof, comp, 0, q );
+                        }
+                        else if ( nDim == 2 )
+                        {
+                            v[q](0,0) += v_*context.curl( ldof, 2, 0, q );
+                        }
+
+                    }
+                }
+        }
+
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node_type __ptsReal, curl_array_type& v ) const
 {
@@ -3574,7 +3618,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate(matrix_node_type __ptsReal, id_array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate(matrix_node_type __ptsReal, comp_curl_array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3662,7 +3706,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate(matrix_node
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
@@ -3749,7 +3793,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v ) const
 {
 
     typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
