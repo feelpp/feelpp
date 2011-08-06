@@ -965,8 +965,8 @@ struct test_integration_vectorial_functions: public Application
         auto int_ut = integrate( boundaryfaces(mesh), trans( idv( u ) )*(Ny()*oneX()-Nx()*oneY() ) ).evaluate()(0,0);
         BOOST_TEST_MESSAGE( "int_ut = " << int_ut << "\n" );
 #if defined(USE_BOOST_TEST)
-        value_type norm_stokes = (int_curlu-int_ut).norm();
-        BOOST_CHECK_CLOSE( int_curlu, int_ut, eps );
+        BOOST_CHECK_SMALL( int_curlu, eps );
+        BOOST_CHECK_SMALL( int_intu, eps );
 #endif
     }
     boost::shared_ptr<Feel::Backend<double> > backend;

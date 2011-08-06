@@ -1004,7 +1004,7 @@ public:
         typedef Eigen::Matrix<value_type,nDim,nDim> hess_type;
         typedef Eigen::Matrix<value_type,1,1> div_type;
         typedef Eigen::Matrix<value_type,nComponents1,1> dn_type;
-        typedef Eigen::Matrix<value_type,nDim,1> curl_type;
+        typedef Eigen::Matrix<value_type,3,1> curl_type;
 #if 0
         typedef boost::multi_array<id_type,2> functionvalue_type;
         typedef boost::multi_array<g_type,2> grad_type;
