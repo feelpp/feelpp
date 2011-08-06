@@ -161,8 +161,9 @@ extern "C"
     std::cout << "[__ snes_jacobian] SAME_PRECONDITIONER = " << SAME_PRECONDITIONER << "\n";
 #endif
 
-    //solver->setReuse( solver->reuseJacobian(), solver->reusePreconditioner()a );
-    solver->setReuse( -1, 2 );
+    //std::cout << "\nsolver->reuseJacobian() " << solver->reuseJacobian() << " solver->reusePreconditioner() " << solver->reusePreconditioner() << "\n";
+    //solver->setReuse( solver->reuseJacobian(), solver->reusePreconditioner() );
+    //solver->setReuse( -1, 2 );
     //*msflag = MatStructure( solver->precMatrixStructure() );
     //*msflag = SAME_NONZERO_PATTERN;
     //*msflag = DIFFERENT_NONZERO_PATTERN;
@@ -279,6 +280,8 @@ void SolverNonLinearPetsc<T>::clear ()
 template <typename T>
 void SolverNonLinearPetsc<T>::setReuse (int jac, int prec )
 {
+    this->M_reuse_jac=jac; this->M_reuse_prec=prec;
+
     PetscInt cur_jac, cur_prec;
     SNESGetLagJacobian( M_snes, &cur_jac );
     SNESGetLagPreconditioner( M_snes, &cur_prec );
@@ -387,7 +390,7 @@ void SolverNonLinearPetsc<T>::init ()
 
 
 template <typename T>
-std::pair<unsigned int, typename SolverNonLinearPetsc<T>::real_type>
+std::pair< int, typename SolverNonLinearPetsc<T>::real_type>
 SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jacobian Matrix
                                  vector_ptrtype& x_in,    // Solution vector
                                  vector_ptrtype& r_in,    // Residual vector

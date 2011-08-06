@@ -112,7 +112,7 @@ void SolverNonLinearTrilinos<T>::init ()
 }
 
 template <typename T>
-std::pair<unsigned int, typename SolverNonLinearTrilinos<T>::real_type>
+std::pair<int, typename SolverNonLinearTrilinos<T>::real_type>
 SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jacobian Matrix
                                     vector_ptrtype& x_in,    // Solution vector
                                     vector_ptrtype& r_in,    // Residual vector

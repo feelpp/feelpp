@@ -134,11 +134,11 @@ public:
      * Call the Trilinos solver.  It calls the method below, using the
      * same matrix for the system and preconditioner matrices.
      */
-    virtual std::pair<unsigned int, real_type> solve ( sparse_matrix_ptrtype&,    // System Jacobian Matrix
-                                                       vector_ptrtype&,          // Solution vector
-                                                       vector_ptrtype&,          // Residual vector
-                                                       const double,        // Stopping tolerance
-                                                       const unsigned int); // N. Iterations
+    virtual std::pair<int, real_type> solve ( sparse_matrix_ptrtype&,    // System Jacobian Matrix
+                                              vector_ptrtype&,          // Solution vector
+                                              vector_ptrtype&,          // Residual vector
+                                              const double,        // Stopping tolerance
+                                              const unsigned int); // N. Iterations
 
     virtual std::pair<unsigned int, real_type> solve ( dense_matrix_type&,    // System Jacobian Matrix
                                                        dense_vector_type&,          // Solution vector

@@ -247,11 +247,11 @@ public:
     /**
      * Solves a sparse nonlinear system.
      */
-    virtual std::pair<unsigned int, real_type> solve ( sparse_matrix_ptrtype&,  // System Jacobian Matrix
-                                                       vector_ptrtype&, // Solution vector
-                                                       vector_ptrtype&, // Residual vector
-                                                       const double,      // Stopping tolerance
-                                                       const unsigned int) = 0; // N. Iterations
+    virtual std::pair<int, real_type> solve ( sparse_matrix_ptrtype&,  // System Jacobian Matrix
+                                              vector_ptrtype&, // Solution vector
+                                              vector_ptrtype&, // Residual vector
+                                              const double,      // Stopping tolerance
+                                              const unsigned int) = 0; // N. Iterations
 
     /**
      * Solves a sparse nonlinear system.

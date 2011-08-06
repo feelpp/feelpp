@@ -539,6 +539,7 @@ public:
                                      (atolerance,(double), M_atolerance/*1e-50*/)
                                      (dtolerance,(double), M_dtolerance/*1e5*/)
                                      (reuse_prec,(bool), M_reuse_prec )
+                                     (reuse_jac,(bool), M_reuse_jac )
                                      (transpose,(bool), false )
                                      (pc,(std::string),M_pc/*"lu"*/)
                                      (ksp,(std::string),M_ksp/*"gmres"*/)
@@ -557,10 +558,10 @@ public:
         solve_return_type ret;
         this->nlSolver()->residual( _sol, residual );
         this->nlSolver()->jacobian( _sol, jacobian );
-        if ( reuse_prec == false )
+        if ( reuse_prec == false && reuse_jac == false )
             ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
         else
-            ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec );
+            ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec, reuse_jac );
         detail::ref(solution) = *_sol;
         return ret;
     }
@@ -581,7 +582,7 @@ public:
                                           vector_ptrtype& x,
                                           vector_ptrtype& b,
                                           const double, const int,
-                                          bool reusePC );
+                                          bool reusePC, bool reuseJAC );
     //@}
 
 
@@ -615,6 +616,7 @@ private:
     double M_rtolerance;
     double M_dtolerance;
     bool M_reuse_prec;
+    bool M_reuse_jac;
     double M_atolerance;
     size_t M_nUsePC;
     bool   M_converged;
