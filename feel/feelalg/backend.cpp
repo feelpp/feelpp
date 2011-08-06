@@ -47,6 +47,7 @@ Backend<T>::Backend()
     M_dtolerance( 1e5 ),
     M_atolerance( 1e-50 ),
     M_reuse_prec( false ),
+    M_reuse_jac( false ),
     M_transpose( false ),
     M_maxit( 1000 ),
     M_ksp( "gmres" ),
@@ -66,6 +67,7 @@ Backend<T>::Backend( Backend const& backend )
     M_dtolerance( backend.M_dtolerance ),
     M_atolerance( backend.M_atolerance ),
     M_reuse_prec( backend.M_reuse_prec ),
+    M_reuse_jac( backend.M_reuse_jac ),
     M_transpose( backend.M_transpose ),
     M_maxit( backend.M_maxit ),
     M_ksp( backend.M_ksp ),
@@ -83,6 +85,7 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     M_dtolerance( vm[prefixvm(prefix,"ksp-dtol")].template as<double>() ),
     M_atolerance( vm[prefixvm(prefix,"ksp-atol")].template as<double>() ),
     M_reuse_prec( vm[prefixvm(prefix,"reuse-prec")].template as<bool>() ),
+    M_reuse_jac(  vm[prefixvm(prefix,"reuse-jac")].template as<bool>() ),
     M_transpose( false ),
     M_maxit( vm[prefixvm(prefix,"ksp-maxit")].template as<size_type>() ),
     M_ksp( vm[prefixvm(prefix,"ksp-type")].template as<std::string>() ),
@@ -237,25 +240,37 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
                      vector_ptrtype& x,
                      vector_ptrtype& b,
                      const double tol, const int its,
-                     bool reusePC )
+                     bool reusePC, bool reuseJac )
 {
     M_nlsolver->setPreconditionerType( this->pcEnumType() );
     M_nlsolver->setKspSolverType( this->kspEnumType() );
     M_nlsolver->setPrecMatrixStructure( this->precMatrixStructure() );
     std::cout << "[nlSolve] reusepc:" << reusePC << std::endl;
-    if ( reusePC )
+    if ( reusePC || reuseJac )
     {
         M_nlsolver->init();
+
         M_nlsolver->setPrecMatrixStructure( SAME_PRECONDITIONER );
-        M_nlsolver->setReuse( -2, -2 );
+
+        int typeReusePrec = 1,typeReuseJac = 1 ;
+        if ( reusePC ) typeReusePrec = -1;
+        if ( reuseJac ) typeReuseJac = -1;
+
+        //M_nlsolver->setReuse( -2, -2 );
+        //M_nlsolver->setReuse( -1, -2 );
+        M_nlsolver->setReuse( typeReuseJac, typeReusePrec );
     }
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
+    //std::cout << "[nlSolve] ret.first " << ret.first <<std::endl;
     if ( ret.first < 0 )
     {
         std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
         Log() << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
-        M_nlsolver->setPrecMatrixStructure( SAME_PRECONDITIONER );
-        M_nlsolver->setReuse( 1, -2 );
+        //M_nlsolver->setPrecMatrixStructure( SAME_PRECONDITIONER );
+        M_nlsolver->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
+
+        //M_nlsolver->setReuse( 1, -2 );
+        M_nlsolver->setReuse( 1, 1 );
         auto ret = M_nlsolver->solve( A, x, b, tol, its );
         return boost::make_tuple( ret.first, its, tol );
     }
@@ -270,8 +285,9 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 {
     M_nlsolver->setPreconditionerType( this->pcEnumType() );
     M_nlsolver->setKspSolverType( this->kspEnumType() );
-
     M_nlsolver->setPrecMatrixStructure( this->precMatrixStructure() );
+    M_nlsolver->setReuse( 1, 1 );
+
     M_nlsolver->solve( A, x, b, tol, its );
 
     return boost::make_tuple( true, its, tol );
@@ -424,7 +440,9 @@ po::options_description backend_options( std::string const& prefix )
         (prefixvm(prefix,"ksp-atol").c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance")
         (prefixvm(prefix,"ksp-dtol").c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance")
         (prefixvm(prefix,"ksp-maxit").c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations")
+        (prefixvm(prefix,"reuse-jac").c_str(), Feel::po::value<bool>()->default_value( false ), "reuse jacobian")
         (prefixvm(prefix,"reuse-prec").c_str(), Feel::po::value<bool>()->default_value( false ), "reuse preconditioner")
+
         (prefixvm(prefix,"ksp-type").c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres")
 
         // preconditioner options
