@@ -257,7 +257,7 @@ public:
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const
         {
             if ( shape::M > shape::N )
-                return _M_loc[c1][0][q];
+                return _M_loc[q][c1][0];
             return _M_loc[q][0][c2];
         }
         value_type
