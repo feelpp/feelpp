@@ -101,9 +101,27 @@ public :
     /** @name  Methods
      */
     //@{
-    template<typename RhsExpr>
-    domain_element_type
-    project( RhsExpr const& rhs_expr )
+    template<typename Args,typename IntEltsDefault>
+    struct integrate_type
+    {
+        typedef typename vf::detail::clean_type<Args,tag::expr>::type _expr_type;
+        typedef typename vf::detail::clean2_type<Args,tag::range,IntEltsDefault>::type _range_type;
+        //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
+        typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
+        typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
+    };
+
+    BOOST_PARAMETER_MEMBER_FUNCTION((domain_element_type),
+                                    project,
+                                    tag,
+                                    (required
+                                     (expr,   *))
+                                    (optional
+                                     (range,   *, elements(this->domainSpace()->mesh()))
+                                     (quad,   *, (typename integrate_type<Args,decltype(elements(this->domainSpace()->mesh()))>::_quad_type()) )
+                                     (quad1,   *, (typename integrate_type<Args,decltype(elements(this->domainSpace()->mesh()))>::_quad1_type()) )
+                                     (geomap, *, GeomapStrategyType::GEOMAP_OPT )
+                                        ))
         {
             using namespace vf;
             domain_element_type de = this->domainSpace()->element();
@@ -111,7 +129,7 @@ public :
             auto ie = M_backend->newVector(this->dualImageSpace());
             form1(_test=this->dualImageSpace(), _vector=ie, _init=true) =
                 integrate(elements(this->domainSpace()->mesh()),
-                          rhs_expr * id( this->dualImageSpace()->element() ) );
+                          expr * id( this->dualImageSpace()->element() ) );
 
             //weak boundary conditions
             if (M_proj_type == DIFF)
@@ -119,11 +137,11 @@ public :
                     form1(_test=this->dualImageSpace(), _vector=ie) +=
                         integrate(boundaryfaces(this->domainSpace()->mesh()),
                                   M_gamma / vf::hFace() *
-                                  rhs_expr * id( this->dualImageSpace()->element() ) );
-                        -
+                                  expr * id( this->dualImageSpace()->element() ) )
+                        +
                         integrate( boundaryfaces(this->domainSpace()->mesh()),
-                                   M_epsilon
-                                   * rhs_expr
+                                   -M_epsilon
+                                   * expr
                                    * grad(this->domainSpace()->element() )*vf::N()
                                     ) ;
                 }
@@ -232,15 +250,15 @@ private :
                                   M_gamma / vf::hFace()
                                   * trans(idt( this->domainSpace()->element() )) /*trial*/
                                   *id( this->domainSpace()->element() ) /*test*/
-                                   );
-                        -
+                                   )
+                        +
                         integrate( boundaryfaces(this->domainSpace()->mesh()),
-                                   M_epsilon
+                                   -M_epsilon
                                    * trans(id(this->domainSpace()->element() ))
                                    * gradt(this->domainSpace()->element())*vf::N())
-                        -
+                        +
                         integrate( boundaryfaces(this->domainSpace()->mesh()),
-                                   M_epsilon
+                                   -M_epsilon
                                    * trans(idt(this->domainSpace()->element() ))
                                    * grad(this->domainSpace()->element())*vf::N());
                 }
