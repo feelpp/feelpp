@@ -128,22 +128,17 @@ public :
 
             auto ie = M_backend->newVector(this->dualImageSpace());
             form1(_test=this->dualImageSpace(), _vector=ie, _init=true) =
-                integrate(elements(this->domainSpace()->mesh()),
-                          expr * id( this->dualImageSpace()->element() ) );
+                integrate(_range=range, _expr=expr * id( this->dualImageSpace()->element() ),
+                          _quad=quad, _quad1=quad1, _geomap=geomap );
 
             //weak boundary conditions
             if (M_proj_type == DIFF)
                 {
                     form1(_test=this->dualImageSpace(), _vector=ie) +=
-                        integrate(boundaryfaces(this->domainSpace()->mesh()),
-                                  M_gamma / vf::hFace() *
-                                  expr * id( this->dualImageSpace()->element() ) )
-                        +
-                        integrate( boundaryfaces(this->domainSpace()->mesh()),
-                                   -M_epsilon
-                                   * expr
-                                   * grad(this->domainSpace()->element() )*vf::N()
-                                    ) ;
+                        integrate(_range=boundaryfaces(this->domainSpace()->mesh()),
+                                  _expr=expr*M_epsilon*(-grad(this->domainSpace()->element() )*vf::N() +
+                                                        M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
+                                  _quad=quad );
                 }
 
             M_backend->solve(M_matrix, de, ie);
@@ -247,20 +242,11 @@ private :
                            _test=this->dualImageSpace(),
                            _matrix=M_matrix) +=
                         integrate( boundaryfaces(this->domainSpace()->mesh()),
-                                  M_gamma / vf::hFace()
-                                  * trans(idt( this->domainSpace()->element() )) /*trial*/
-                                  *id( this->domainSpace()->element() ) /*test*/
-                                   )
-                        +
-                        integrate( boundaryfaces(this->domainSpace()->mesh()),
-                                   -M_epsilon
-                                   * trans(id(this->domainSpace()->element() ))
-                                   * gradt(this->domainSpace()->element())*vf::N())
-                        +
-                        integrate( boundaryfaces(this->domainSpace()->mesh()),
-                                   -M_epsilon
-                                   * trans(idt(this->domainSpace()->element() ))
-                                   * grad(this->domainSpace()->element())*vf::N());
+                                   M_epsilon*(-trans(id(this->domainSpace()->element() ))*gradt(this->domainSpace()->element())*vf::N()
+                                              -trans(idt(this->domainSpace()->element() ))* grad(this->domainSpace()->element())*vf::N()
+                                              + M_gamma * trans(idt( this->domainSpace()->element() )) /*trial*/
+                                              *id( this->domainSpace()->element() ) / vf::hFace()   /*test*/
+                                       ));
                 }
 
             M_matrix->close();
