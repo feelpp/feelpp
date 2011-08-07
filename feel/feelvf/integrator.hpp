@@ -2439,7 +2439,7 @@ struct integrate_type
     typedef typename clean_type<Args,tag::range>::type _range_type;
     //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
     typedef typename clean2_type<Args,tag::quad, _Q< ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
-    typedef typename clean2_type<Args,tag::quad, _Q< ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
+    typedef typename clean2_type<Args,tag::quad1, _Q< ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
     typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
 
 };
