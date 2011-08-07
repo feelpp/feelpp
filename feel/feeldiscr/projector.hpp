@@ -108,7 +108,7 @@ public :
         typedef typename vf::detail::clean2_type<Args,tag::range,IntEltsDefault>::type _range_type;
         //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
         typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
-        typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
+        typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
     };
 
     BOOST_PARAMETER_MEMBER_FUNCTION((domain_element_type),
