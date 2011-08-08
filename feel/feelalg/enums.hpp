@@ -231,6 +231,15 @@ enum AitkenType
         AITKEN_METHOD_1=1,
         FIXED_RELAXATION_METHOD=2
     };
+/**
+ *
+ */
+enum WeakDirichlet
+    {
+        STRONG=0,
+        WEAK=1
+    };
+
 
 } // Feel
 #endif /* __FeelAlgEnums_H */
