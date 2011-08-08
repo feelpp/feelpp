@@ -1010,10 +1010,23 @@ struct test_integration_matricial_functions: public Application
         auto xxT = P()*trans(P());
         BOOST_TEST_MESSAGE( "[test_integration_matricial_functions::operator()] v0\n" );
         auto v0 = integrate( _range=elements(mesh), _expr=sym(xxT) ).evaluate();
+        auto v000 = integrate( _range=elements(mesh), _expr=sym(xxT)(0,0) ).evaluate()(0,0);
+        auto v011 = integrate( _range=elements(mesh), _expr=sym(xxT)(1,1) ).evaluate()(0,0);
+        auto v001 = integrate( _range=elements(mesh), _expr=sym(xxT)(0,1) ).evaluate()(0,0);
+        auto v010 = integrate( _range=elements(mesh), _expr=sym(xxT)(1,0) ).evaluate()(0,0);
+        decltype( v0 ) mat;
+        mat << v000, v001, v010, v011;
         BOOST_TEST_MESSAGE( "[test_integration_matricial_functions::operator()] v1\n" );
         auto v1 = integrate( _range=elements(mesh), _expr=0.5*(xxT+trans(xxT)) ).evaluate();
+        auto v101 = integrate( _range=elements(mesh), _expr=(0.5*(xxT+trans(xxT)))(0,1) ).evaluate()(0,0);
+        auto v110 = integrate( _range=elements(mesh), _expr=(0.5*(xxT+trans(xxT)))(1,0) ).evaluate()(0,0);
         BOOST_CHECK_SMALL( (v0-v1).norm(), 1e-12 );
-        BOOST_TEST_MESSAGE( "[sym check] v0=" << v0 << " v1=" << v1 << " error=" << (v0-v1).norm() << "\n" );
+        BOOST_CHECK_SMALL( (v0-mat).norm(), 1e-12 );
+        BOOST_CHECK_CLOSE( v001, v010, 1e-12 );
+        BOOST_CHECK_CLOSE( v001, v110, 1e-12 );
+        BOOST_CHECK_CLOSE( v001, v101, 1e-12 );
+
+        BOOST_TEST_MESSAGE( "[sym check] v0=" << v0 << "\n v1=" << v1 << "\n mat=" << mat << "\n error=" << (v0-v1).norm() << "\n" );
         BOOST_TEST_MESSAGE( "[test_integration_matricial_functions::operator()] v2\n" );
         auto v2 = integrate( _range=elements(mesh), _expr=antisym(xxT) ).evaluate();
         BOOST_TEST_MESSAGE( "[test_integration_matricial_functions::operator()] v3\n" );
@@ -1117,6 +1130,23 @@ struct test_integration_composite_functions: public Application
 
         m= integrate( elements(mesh), gradv( u.template element<0>() ) ).evaluate();
         BOOST_TEST_MESSAGE( "int(grad(u)) = " << m << "\n" );
+        auto du_dx1 = integrate( _range=elements(mesh), _expr=gradv( u.template element<0>() )(0,0) ).evaluate()(0,0);
+        auto du_dy1 = integrate( _range=elements(mesh), _expr=gradv( u.template element<0>() )(0,1) ).evaluate()(0,0);
+        auto du_dx2 = integrate( elements(mesh), du_dx ).evaluate()(0,0);
+        auto du_dy2 = integrate( elements(mesh), du_dy ).evaluate()(0,0);
+        BOOST_CHECK_SMALL( du_dx1,  1e-12 );
+        BOOST_CHECK_SMALL( du_dy1, 1e-12 );
+        BOOST_CHECK_SMALL( du_dx2,  1e-12 );
+        BOOST_CHECK_SMALL( du_dy2, 1e-12 );
+        auto dv_dx1 = integrate( _range=elements(mesh), _expr=gradv( u.template element<0>() )(1,0) ).evaluate()(0,0);
+        auto dv_dy1 = integrate( _range=elements(mesh), _expr=gradv( u.template element<0>() )(1,1) ).evaluate()(0,0);
+        auto dv_dx2 = integrate( elements(mesh), dv_dx ).evaluate()(0,0);
+        auto dv_dy2 = integrate( elements(mesh), dv_dy ).evaluate()(0,0);
+        BOOST_CHECK_SMALL( dv_dx1,  1e-12 );
+        BOOST_CHECK_SMALL( dv_dy1, 1e-12 );
+        BOOST_CHECK_SMALL( dv_dx2,  1e-12 );
+        BOOST_CHECK_SMALL( dv_dy2, 1e-12 );
+
 
         auto m11= integrate( boundaryfaces(mesh), gradv( u.template element<0>() )*N() ).evaluate();
         BOOST_TEST_MESSAGE( "int_bfaces(grad_u*N()) = " << m11 << "\n" );
