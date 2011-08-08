@@ -74,6 +74,7 @@
 #include <feel/feelcore/feelassert.hpp>
 
 #include <feel/feelcore/flags.hpp>
+#include <feel/feelcore/serialization.hpp>
 
 #if defined( HAVE_TBB )
 #include <tbb/tick_count.h>
@@ -507,7 +508,6 @@ BOOST_DETAIL_IS_XXX_DEF(shared_ptr, boost::shared_ptr, 1)
 #define OMP_GET_WTICK           0
 
 #endif /* HAVE_OPENMP */
-
 
 
 #endif
