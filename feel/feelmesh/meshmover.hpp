@@ -203,7 +203,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
                 {
                     for ( uint16_type comp = 0;comp < fe_type::nComponents;++comp )
                         {
-                            val[ comp ] = uvalues[comp](0,l);
+                            val[ comp ] = uvalues[l](comp,0);
                         }
                     if ( points_done[ it_elt->point( l ).id() ] == false )
                         {
