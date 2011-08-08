@@ -745,9 +745,9 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         default:
         case GeomapStrategyType::GEOMAP_HO:
         {
-            ti0.restart();
+            //ti0.restart();
             __c->update( *it );
-            t0+=ti0.elapsed();
+            //t0+=ti0.elapsed();
 #if 0
             std::cout << "Element: " << it->id() << "\n"
                       << " o - points : " << it->G() << "\n"
@@ -755,28 +755,28 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                       << "     ref : " << this->im().points() << "\n"
                       << "     real : " << __c->xReal() << "\n";
 #endif
-            ti1.restart();
+            //ti1.restart();
             map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
             formc->update( mapgmc,mapgmc );
             //Debug( 5065 )  << "update gmc : " << ti1.elapsed() << "\n";
-            t1+=ti1.elapsed();
+            //t1+=ti1.elapsed();
 
-            ti2.restart();
+            //ti2.restart();
             formc->integrate();
             //Debug( 5065 )  << "integrate : " << ti2.elapsed() << "\n";
-            t2+=ti2.elapsed();
+            //t2+=ti2.elapsed();
 
-            ti3.restart();
+            //ti3.restart();
             formc->assemble();
             //Debug( 5065 )  << "assemble : " << ti3.elapsed() << "\n";
-            t3+=ti3.elapsed();
+            //t3+=ti3.elapsed();
         }
         break;
         case GeomapStrategyType::GEOMAP_O1:
         {
-            ti0.restart();
+            //ti0.restart();
             __c1->update( *it );
-            t0+=ti0.elapsed();
+            //t0+=ti0.elapsed();
 #if 0
             Debug( 5065 ) << "Element: " << it->id() << "\n"
                           << " o - points : " << it->G() << "\n"
@@ -784,30 +784,30 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                           << "     ref : " << this->im().points() << "\n"
                           << "     real : " << __c->xReal() << "\n";
 #endif
-            ti1.restart();
+            //ti1.restart();
             map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
             formc1->update( mapgmc1,mapgmc1 );
             //Debug( 5065 )  << "update gmc : " << ti1.elapsed() << "\n";
-            t1+=ti1.elapsed();
+            //t1+=ti1.elapsed();
 
-            ti2.restart();
+            //ti2.restart();
             formc1->integrate();
             //Debug( 5065 )  << "integrate : " << ti2.elapsed() << "\n";
-            t2+=ti2.elapsed();
+            //t2+=ti2.elapsed();
 
-            ti3.restart();
+            //ti3.restart();
             formc1->assemble();
             //Debug( 5065 )  << "assemble : " << ti3.elapsed() << "\n";
-            t3+=ti3.elapsed();
+            //t3+=ti3.elapsed();
         }
         break;
         case GeomapStrategyType::GEOMAP_OPT:
         {
             if ( it->isOnBoundary() )
             {
-                ti0.restart();
+                //ti0.restart();
                 __c->update( *it );
-                t0+=ti0.elapsed();
+                //t0+=ti0.elapsed();
 #if 0
                 Debug( 5065 ) << "Element: " << it->id() << "\n"
                               << " o - points : " << it->G() << "\n"
@@ -815,27 +815,27 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                               << "     ref : " << this->im().points() << "\n"
                               << "     real : " << __c->xReal() << "\n";
 #endif
-                ti1.restart();
+                //ti1.restart();
                 map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
                 formc->update( mapgmc,mapgmc );
                 //Debug( 5065 )  << "update gmc : " << ti1.elapsed() << "\n";
-                t1+=ti1.elapsed();
+                //t1+=ti1.elapsed();
 
-                ti2.restart();
+                //ti2.restart();
                 formc->integrate();
                 //Debug( 5065 )  << "integrate : " << ti2.elapsed() << "\n";
-                t2+=ti2.elapsed();
+                //t2+=ti2.elapsed();
 
-                ti3.restart();
+                //ti3.restart();
                 formc->assemble();
                 //Debug( 5065 )  << "assemble : " << ti3.elapsed() << "\n";
-                t3+=ti3.elapsed();
+                //t3+=ti3.elapsed();
             }
             else
             {
-                ti0.restart();
+                //ti0.restart();
                 __c1->update( *it );
-                t0+=ti0.elapsed();
+                //t0+=ti0.elapsed();
 #if 0
                 Debug( 5065 ) << "Element: " << it->id() << "\n"
                               << " o - points : " << it->G() << "\n"
@@ -843,32 +843,34 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                               << "     ref : " << this->im().points() << "\n"
                               << "     real : " << __c->xReal() << "\n";
 #endif
-                ti1.restart();
+                //ti1.restart();
                 map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
                 formc1->update( mapgmc1,mapgmc1 );
                 //Debug( 5065 )  << "update gmc : " << ti1.elapsed() << "\n";
-                t1+=ti1.elapsed();
+                //t1+=ti1.elapsed();
 
-                ti2.restart();
+                //ti2.restart();
                 formc1->integrate();
                 //Debug( 5065 )  << "integrate : " << ti2.elapsed() << "\n";
-                t2+=ti2.elapsed();
+                //t2+=ti2.elapsed();
 
-                ti3.restart();
+                //ti3.restart();
                 formc1->assemble();
                 //Debug( 5065 )  << "assemble : " << ti3.elapsed() << "\n";
-                t3+=ti3.elapsed();
+                //t3+=ti3.elapsed();
             }
         }
         break;
         }
         } // end loop on elements
 
+#if 0
     Debug( 5065 ) << "[elements] Overall geometric mapping update time : " << (t0+t1+t2) << " per element:" << (t0+t1+t2)/std::distance( this->beginElement(), this->endElement() ) << "\n";
     Debug( 5065 ) << "[elements] Overall geometric mapping update time : " << t0 << "\n";
     Debug( 5065 ) << "[elements] Overall form update time : " << t1 << "\n";
     Debug( 5065 ) << "[elements] Overall local assembly time : " << t2 << "\n";
     Debug( 5065 ) << "[elements] Overall global assembly time : " << t3 << "\n";
+#endif
     Debug( 5065 ) << "integrating over elements done in " << __timer.elapsed() << "s\n";
 
     delete formc;
@@ -1268,28 +1270,28 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     {
                         FEEL_ASSERT( it->isOnBoundary() == false  )
                             ( it->id() ).error( "face on boundary but connected on both sides");
-                        ti0.restart();
+                        //ti0.restart();
                         // get the id of the face in each adjacent element
                         uint16_type __face_id_in_elt_0 = it->pos_first();
                         uint16_type __face_id_in_elt_1 = it->pos_second();
 
                         __c0->update( it->element(0), __face_id_in_elt_0 );
                         __c1->update( it->element(1), __face_id_in_elt_1 );
-                        t0 += ti0.elapsed();
+                        //t0 += ti0.elapsed();
 
-                        ti1.restart();
+                        //ti1.restart();
                         map2_gmc_type mapgmc2 = map2_gmc_type( fusion::make_pair<detail::gmc<0> >( __c0 ),
                                                                fusion::make_pair<detail::gmc<1> >( __c1 ) );
                         form2->update( mapgmc2, mapgmc2, face_ims[__face_id_in_elt_0], mpl::int_<2>() );
-                        t1 += ti1.elapsed();
+                        //t1 += ti1.elapsed();
 
-                        ti2.restart();
+                        //ti2.restart();
                         form2->integrate( );
-                        t2 += ti2.elapsed();
+                        //t2 += ti2.elapsed();
 
-                        ti3.restart();
+                        //ti3.restart();
                         form2->assemble( it->element(0).id(), it->element(1).id() );
-                        t3 += ti3.elapsed();
+                        //t3 += ti3.elapsed();
                     }
                     break;
                     case GeomapStrategyType::GEOMAP_O1:
@@ -1297,28 +1299,28 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     {
                         FEEL_ASSERT( it->isOnBoundary() == false  )
                             ( it->id() ).error( "face on boundary but connected on both sides");
-                        ti0.restart();
+                        //ti0.restart();
                         // get the id of the face in each adjacent element
                         uint16_type __face_id_in_elt_0 = it->pos_first();
                         uint16_type __face_id_in_elt_1 = it->pos_second();
 
                         __c01->update( it->element(0), __face_id_in_elt_0 );
                         __c11->update( it->element(1), __face_id_in_elt_1 );
-                        t0 += ti0.elapsed();
+                        //t0 += ti0.elapsed();
 
-                        ti1.restart();
+                        //ti1.restart();
                         map21_gmc_type mapgmc21 = map21_gmc_type( fusion::make_pair<detail::gmc<0> >( __c01 ),
                                                                   fusion::make_pair<detail::gmc<1> >( __c11 ) );
                         form21->update( mapgmc21, mapgmc21, face_ims2[__face_id_in_elt_0], mpl::int_<2>() );
-                        t1 += ti1.elapsed();
+                        //t1 += ti1.elapsed();
 
-                        ti2.restart();
+                        //ti2.restart();
                         form21->integrate( );
-                        t2 += ti2.elapsed();
+                        //t2 += ti2.elapsed();
 
-                        ti3.restart();
+                        //ti3.restart();
                         form21->assemble( it->element(0).id(), it->element(1).id() );
-                        t3 += ti3.elapsed();
+                        //t3 += ti3.elapsed();
                     }
                     break;
                     }
@@ -1326,27 +1328,27 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             else
             {
 #if 1
-                ti0.restart();
+                //ti0.restart();
                 uint16_type __face_id_in_elt_0 = it->pos_first();
                 __c0->update( it->element(0),__face_id_in_elt_0 );
-                t0 += ti0.elapsed();
+                //t0 += ti0.elapsed();
 
                 FEEL_ASSERT( __face_id_in_elt_0 == __c0->faceId() )
                     ( __face_id_in_elt_0 )
                     ( __c0->faceId() ).warn ( "invalid face id" );
 
-                ti1.restart();
+                //ti1.restart();
                 map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
                 form->update( mapgmc, mapgmc, face_ims[__face_id_in_elt_0] );
-                t1 += ti1.elapsed();
+                //t1 += ti1.elapsed();
 
-                ti2.restart();
+                //ti2.restart();
                 form->integrate( );
-                t2 += ti2.elapsed();
+                //t2 += ti2.elapsed();
 
-                ti3.restart();
+                //ti3.restart();
                 form->assemble( it->element(0).id() );
-                t3 += ti3.elapsed();
+                //t3 += ti3.elapsed();
 #else
                 map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
                 form->update( mapgmc, face_ims[__face_id_in_elt_0] );
@@ -1355,13 +1357,13 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             } // end loop on elements
 
         }
-
+#if 0
     Debug( 5065 ) << "[faces] Overall integration time : " << (t0+t1+t2+t3) << " per element:" << (t0+t1+t2+t3)/std::distance( this->beginElement(), this->endElement() ) << "for " << std::distance( this->beginElement(), this->endElement() ) << "elements\n";
     Debug( 5065 ) << "[faces] Overall geometric mapping update time : " << t0 << "\n";
     Debug( 5065 ) << "[faces] Overall form update time : " << t1 << "\n";
     Debug( 5065 ) << "[faces] Overall local assembly time : " << t2 << "\n";
     Debug( 5065 ) << "[faces] Overall global assembly time : " << t3 << "\n";
-
+#endif
     Debug( 5065 ) << "integrating over faces done in " << __timer.elapsed() << "s\n";
     std::cout << "integrating over faces done in " << __timer.elapsed() << "s\n";
 }
