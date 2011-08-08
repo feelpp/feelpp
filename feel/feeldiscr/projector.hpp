@@ -198,38 +198,30 @@ private :
     void initMatrix()
         {
             using namespace vf;
+            auto a = form2 (_trial=this->domainSpace(),
+                            _test=this->dualImageSpace(),
+                            _matrix=M_matrix,
+                            _init=true);
             if (M_proj_type == L2)
                 {
-                    form2 (_trial=this->domainSpace(),
-                           _test=this->dualImageSpace(),
-                           _matrix=M_matrix,
-                           _init=true) =
-                        integrate(elements(this->domainSpace()->mesh()),
+                    a = integrate(elements(this->domainSpace()->mesh()),
                                   trans(idt( this->domainSpace()->element() )) /*trial*/
                                   *id( this->domainSpace()->element() ) /*test*/
                                   );
                 }
             else if (M_proj_type == H1)
                 {
-                    form2 (_trial=this->domainSpace(),
-                           _test=this->dualImageSpace(),
-                           _matrix=M_matrix,
-                           _init=true) =
-                        integrate(elements(this->domainSpace()->mesh()),
+                    a = integrate(elements(this->domainSpace()->mesh()),
                                   trans(idt( this->domainSpace()->element() )) /*trial*/
                                   *id( this->domainSpace()->element() ) /*test*/
                                   +
                                   trace( gradt(this->domainSpace()->element())
                                          * trans(grad(this->domainSpace()->element())))
-                                  );
+                        );
                 }
             else if (M_proj_type == DIFF)
                 {
-                    form2 (_trial=this->domainSpace(),
-                           _test=this->dualImageSpace(),
-                           _matrix=M_matrix,
-                           _init=true) =
-                        integrate(elements(this->domainSpace()->mesh()),
+                    a = integrate(elements(this->domainSpace()->mesh()),
                                   trans(idt( this->domainSpace()->element() )) /*trial*/
                                   *id( this->domainSpace()->element() ) /*test*/
                                   +
@@ -238,15 +230,14 @@ private :
                                          * trans(grad(this->domainSpace()->element())))
                                   );
                     //weak boundary conditions
-                    form2 (_trial=this->domainSpace(),
-                           _test=this->dualImageSpace(),
-                           _matrix=M_matrix) +=
-                        integrate( boundaryfaces(this->domainSpace()->mesh()),
-                                   M_epsilon*(-trans(id(this->domainSpace()->element() ))*gradt(this->domainSpace()->element())*vf::N()
-                                              -trans(idt(this->domainSpace()->element() ))* grad(this->domainSpace()->element())*vf::N()
-                                              + M_gamma * trans(idt( this->domainSpace()->element() )) /*trial*/
-                                              *id( this->domainSpace()->element() ) / vf::hFace()   /*test*/
-                                       ));
+                    a += integrate( boundaryfaces(this->domainSpace()->mesh()),
+                                    M_epsilon*(-trans(id(this->domainSpace()->element() ))*gradt(this->domainSpace()->element())*vf::N() ));
+                    a += integrate( boundaryfaces(this->domainSpace()->mesh()),
+                                    M_epsilon*(-trans(idt(this->domainSpace()->element() ))* grad(this->domainSpace()->element())*vf::N()));
+                    a += integrate( boundaryfaces(this->domainSpace()->mesh()),
+                                    M_epsilon*(M_gamma * trans(idt( this->domainSpace()->element() )) /*trial*/
+                                               *id( this->domainSpace()->element() ) / vf::hFace()   /*test*/
+                                        ));
                 }
 
             M_matrix->close();
