@@ -54,7 +54,7 @@ typedef boost::mpl::list<boost::mpl::pair<mpl::int_<2>,mpl::int_<2> >,
                          boost::mpl::pair<mpl::int_<3>,mpl::int_<2> >,
                          boost::mpl::pair<mpl::int_<3>,mpl::int_<4> >
                          > dim_types;
-
+#if 0
 BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "============================================================\n"
@@ -79,8 +79,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
 
     using namespace Feel;
     using namespace Feel::vf;
-    typedef Mesh<Simplex<T::first::value,T::second::value> > mesh_type;
 
+    typedef Mesh<Simplex<T::first::value,T::second::value> > mesh_type;
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _desc=domain( _name=(boost::format( "ellipsoid-%1%-%2%" ) % T::first::value % T::second::value).str() ,
                                               _usenames=true,
@@ -91,9 +91,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                                 _straighten=straighten );
     saveGMSHMesh( _mesh=mesh, _filename=(boost::format( "ellipsoid-%1%-%2%-%3%-saved.msh" ) % T::first::value % T::second::value % straighten ).str() );
-    //straightenMesh( _mesh=mesh );
 
-    //std::cout << "read mesh\n" << std::endl;
     boost::timer ti;
     auto i1 = integrate( _range=elements(mesh), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate().norm();
     std::cout << "Ho: " << ti.elapsed() << "s\n";
@@ -107,6 +105,102 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
                         "opt = " << std::scientific << std::setprecision( 16 ) << i2 << "\n"
                         "p1 = " << std::scientific << std::setprecision( 16 ) << i3 << "\n"
                         << "\n");
+
+
+}
+#endif
+
+typedef boost::mpl::list<mpl::int_<1>,mpl::int_<2>, mpl::int_<3>, mpl::int_<4>, mpl::int_<5> > order_types;
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
+{
+    BOOST_TEST_MESSAGE( "============================================================\n"
+                        << "Order: " << T::value << "\n" );
+
+    int nlevels = 3;
+    double hsize = 2;
+    int straighten = 1;
+    // Declare the supported options.
+    namespace po = boost::program_options;
+    po::options_description desc("Allowed options");
+    desc.add_options()
+        ("help", "produce help message")
+        ("nlevels", po::value<int>(&nlevels)->default_value( 3 ), "number of refinement levels")
+        ("hsize", po::value<double>(&hsize)->default_value( 2 ), "h size")
+        ("straight", po::value<int>(&straighten)->default_value( 1 ), "straighten")
+        ("shape", po::value<std::string>()->default_value( "pie" ), "pie,circle")
+        ;
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(boost::unit_test::framework::master_test_suite().argc,
+                                     boost::unit_test::framework::master_test_suite().argv,
+                                     desc), vm);
+    po::notify(vm);
+
+    using namespace Feel;
+    using namespace Feel::vf;
+    typedef Mesh<Simplex<2,T::value> > mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    mesh_ptrtype mesh;
+    std::string shape =  vm["shape"].template as<std::string>();
+    std::map<std::string,std::vector<boost::tuple<double,double,double> > > ho;
+    double exact=1;
+    for( int l = 1;l <= nlevels; ++l )
+    {
+        double meshSize= hsize/std::pow(2.,l);
+        if ( shape == "pie" );
+        {
+            exact = M_PI/8;
+            GeoTool::Node C(0,0);
+            GeoTool::Node A(1,0.);
+            GeoTool::Node B(std::sqrt(2.)/2,std::sqrt(2.)/2); // 45D
+
+            GeoTool::Pie Pie(meshSize,"pie", C, A, B );
+            mesh = Pie.createMesh<mesh_type>( (boost::format("pie-%1%-%2%") % T::value % l ).str() );
+        }
+        else if ( shape == "circle" )
+        {
+            exact = M_PI;
+            GeoTool::Node C(0,0);
+            GeoTool::Node A(1,0.);
+            GeoTool::Circle Circle(meshSize,"circle", C, A );
+            mesh = Circle.createMesh<mesh_type>( (boost::format("circle-%1%-%2%") % T::value % l ).str() );
+        }
+
+
+        //boost::timer ti;
+        double i1 =  integrate( _range=elements(mesh), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate().norm();
+        ho["ho"].push_back(boost::make_tuple( meshSize, i1, math::abs(i1-exact) ));
+        //std::cout << "Ho: " << ti.elapsed() << "s\n";
+        double i2 = integrate( _range=elements(mesh), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate().norm();
+        ho["opt"].push_back( boost::make_tuple( meshSize, i2, math::abs(i2-exact) ));
+        BOOST_CHECK_CLOSE( i1, i2, 1e-12 );
+        //std::cout << "Opt: " << ti.elapsed() << "s\n";
+        double i3 = integrate( _range=elements(mesh),  _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate().norm();
+        ho["p1"].push_back( boost::make_tuple( meshSize, i3, math::abs(i3-exact)) );
+        //std::cout << "P1: " << ti.elapsed() << "s\n";
+    }
+
+
+    for( auto it = ho.begin(); it != ho.end(); ++ it )
+    {
+        BOOST_TEST_MESSAGE( std::setw(10) << std::right << "levels" <<
+                            std::setw(10) << std::right << "h"  <<
+                            std::setw(15) << std::right << it->first <<
+                            std::setw(15) << std::right << "error" <<
+                            std::setw(15) << std::right << "ROC" << "\n" );
+        for( int l = 1; l <= nlevels; ++l )
+        {
+            auto data = it->second;
+            double roc = 1;
+            if ( l > 1 )
+                roc = std::log10( data[l-2].template get<2>()/data[l-1].template get<2>() )/std::log10( data[l-2].template get<0>()/data[l-1].template get<0>() );
+            BOOST_TEST_MESSAGE( std::right << std::setw(10) << l <<
+                                std::right << std::setw(10) << data[l-1].template get<0>() <<
+                                std::right << std::setw(15) << std::scientific << std::setprecision( 5 ) << data[l-1].template get<1>() <<
+                                std::right << std::setw(15) << std::scientific << std::setprecision( 5 ) << data[l-1].template get<2>() <<
+                                std::right << std::setw(15) << std::scientific << std::setprecision( 5 ) << roc << "\n" );
+        }
+    }
 
 }
 BOOST_AUTO_TEST_SUITE_END()
