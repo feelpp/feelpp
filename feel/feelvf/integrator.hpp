@@ -1748,7 +1748,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         typedef typename eval_expr_type::shape shape;
         //std::cout << "4" << std::endl;
 
-#if defined(USE_OPT_HO)
         // order 1
         gmc1_ptrtype __c1( new gmc1_type( gm1, *it, __geopc1 ) );
         typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
@@ -1756,22 +1755,18 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         //std::cout << "5" << std::endl;
         typedef typename expression_type::template tensor<map_gmc1_type> eval_expr1_type;
         eval_expr1_type expr1( expression(), mapgmc1 );
-#endif
+
         //std::cout << "6" << std::endl;
         typename eval::matrix_type res( eval::matrix_type::Zero() );
-#if defined(USE_OPT_HO)
-        typename eval::matrix_type reso1( eval::matrix_type::Zero() );
-        typename eval::matrix_type resopt( eval::matrix_type::Zero() );
-#endif
+
+
         //value_type res1 = 0;
         for ( ; it != en; ++it )
         {
-#if defined(USE_OPT_HO)
             switch( M_gt )
             {
             case  GeomapStrategyType::GEOMAP_HO :
             {
-#endif
                 //Log() << "geomap ho" << "\n";
                 __c->update( *it );
                 map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
@@ -1781,13 +1776,12 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 M_im.update( gmc );
 
 
-                for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                    for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                    for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                     {
                         res(c1,c2) += M_im( expr, c1, c2 );
                     }
                 //Log() << it->id() << " : " << M_im( expr, 0, 0 ) << "\n";
-#if defined(USE_OPT_HO)
             }
             break;
             case GeomapStrategyType::GEOMAP_O1:
@@ -1801,8 +1795,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 M_im.update( gmc );
 
 
-                for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                    for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                    for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                     {
                         res(c1,c2) += M_im( expr1, c1, c2 );
                     }
@@ -1823,8 +1817,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     M_im.update( gmc );
 
 
-                    for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                        for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                    for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                        for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         {
                             res(c1,c2) += M_im( expr, c1, c2 );
                         }
@@ -1840,9 +1834,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
                     M_im.update( gmc );
 
-
-                    for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                        for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                    for( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                        for( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         {
                             res(c1,c2) += M_im( expr1, c1, c2 );
                         }
@@ -1851,7 +1844,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             }
             //break;
             }
-#endif // 0
         }
         Debug( 5065 ) << "integrating over elements done in " << __timer.elapsed() << "s\n";
         return res;
