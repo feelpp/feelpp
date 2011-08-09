@@ -58,7 +58,7 @@
             ( Pentagon      , 2, 1, 0, "pentagon"      , 5, PENTAGON ), \
             ( Hexagon       , 2, 1, 0, "hexagon"      , 6, HEXAGON ),   \
             ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE    ), \
-            ( PartialDisque , 2, 1, 0, "partialdisque", 3, PARTIALDISQUE), \
+            ( Pie           , 2, 1, 0, "pie"          , 3, PIE),        \
             ( Special_1a    , 2, 2, 0, "special_1a"   , 1, SPECIAL_1A ), \
             ( Special_1b    , 2, 1, 0, "special_1b"   , 1, SPECIAL_1B ), \
             ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE  ), \
@@ -213,18 +213,18 @@
 
 /*_________________________________________________*/
 //false : must be fix!
-# define GEOTOOL_MARKER_POINT_PARTIALDISQUE     \
+# define GEOTOOL_MARKER_POINT_PIE               \
     ( 2, ( ( 1, 2, ( 1,3 ) ),                   \
            ( 2, 1, ( 2 ) ) )                    \
       )                                         \
     /**/
-# define GEOTOOL_MARKER_LINE_PARTIALDISQUE      \
+# define GEOTOOL_MARKER_LINE_PIE                \
     ( 2, ( ( 1, 4, ( 1,2,3,4 ) ),               \
            ( 2, 1, (    5    ) ) )              \
       )                                         \
     /**/
 
-# define GEOTOOL_MARKER_SURFACE_PARTIALDISQUE   \
+# define GEOTOOL_MARKER_SURFACE_PIE             \
     ( 1, ( ( 1, 1, ( 1 ) ) )                    \
       )                                         \
     /**/
