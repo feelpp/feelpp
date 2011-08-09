@@ -344,8 +344,8 @@ BOOST_AUTO_TEST_CASE( test_space1_32 ) { BOOST_TEST_MESSAGE( "test_space1_32" );
 BOOST_AUTO_TEST_CASE( test_space2_2 ) { BOOST_TEST_MESSAGE( "test_space2_2" );   Feel::TestSpace2<2, double> t;t(); BOOST_TEST_MESSAGE( "test_space2_2 done" );}
 BOOST_AUTO_TEST_CASE( test_space2_3 ) { BOOST_TEST_MESSAGE( "test_space2_3" );   Feel::TestSpace2<3, double> t;t(); BOOST_TEST_MESSAGE( "test_space2_3 done" );}
 
-BOOST_AUTO_TEST_CASE( test_space_rt_1 ) { BOOST_TEST_MESSAGE( "test_space_rt_1" );   Feel::TestSpaceRT<2> t;t(); BOOST_TEST_MESSAGE( "test_space_rt_1 done" );}
-BOOST_AUTO_TEST_CASE( test_space_rt_2 ) { BOOST_TEST_MESSAGE( "test_space_rt_2" );   Feel::TestSpaceRT<3> t;t(); BOOST_TEST_MESSAGE( "test_space_rt_2 done" );}
+//BOOST_AUTO_TEST_CASE( test_space_rt_1 ) { BOOST_TEST_MESSAGE( "test_space_rt_1" );   Feel::TestSpaceRT<2> t;t(); BOOST_TEST_MESSAGE( "test_space_rt_1 done" );}
+//BOOST_AUTO_TEST_CASE( test_space_rt_2 ) { BOOST_TEST_MESSAGE( "test_space_rt_2" );   Feel::TestSpaceRT<3> t;t(); BOOST_TEST_MESSAGE( "test_space_rt_2 done" );}
 
 BOOST_AUTO_TEST_SUITE_END()
 #if 0

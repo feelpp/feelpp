@@ -49,6 +49,7 @@ Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
                        boost::unit_test::framework::master_test_suite().argv );
 
 typedef boost::mpl::list<boost::mpl::pair<mpl::int_<2>,mpl::int_<2> >,
+                         boost::mpl::pair<mpl::int_<2>,mpl::int_<3> >,
                          boost::mpl::pair<mpl::int_<2>,mpl::int_<4> >,
                          boost::mpl::pair<mpl::int_<3>,mpl::int_<2> >,
                          boost::mpl::pair<mpl::int_<3>,mpl::int_<4> >
@@ -56,13 +57,18 @@ typedef boost::mpl::list<boost::mpl::pair<mpl::int_<2>,mpl::int_<2> >,
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
 {
+    BOOST_TEST_MESSAGE( "============================================================\n"
+                        << "Dim: " << T::first::value << "  Order: " << T::second::value << "\n" );
+
     double hsize = 2;
+    int straighten = 1;
     // Declare the supported options.
     namespace po = boost::program_options;
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
         ("hsize", po::value<double>(&hsize)->default_value( 2 ), "h size")
+        ("straight", po::value<int>(&straighten)->default_value( 1 ), "straighten")
         ;
 
     po::variables_map vm;
@@ -82,7 +88,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
                                               _dim=T::first::value,
                                               _order=T::second::value,
                                               _h=hsize ),
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
+                                _straighten=straighten );
+    saveGMSHMesh( _mesh=mesh, _filename=(boost::format( "ellipsoid-%1%-%2%-%3%-saved.msh" ) % T::first::value % T::second::value % straighten ).str() );
     //straightenMesh( _mesh=mesh );
 
     //std::cout << "read mesh\n" << std::endl;

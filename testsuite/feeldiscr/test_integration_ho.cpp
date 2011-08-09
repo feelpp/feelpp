@@ -28,7 +28,7 @@
    \date 2006-08-25
  */
 
-//#define USE_BOOST_TEST 1
+#define USE_BOOST_TEST 1
 
 // Boost.Test
 #define BOOST_TEST_MAIN
@@ -456,7 +456,7 @@ struct test_integration_circle
 template<int Dim, int Order, typename value_type = double>
 struct test_integration_sin
 {
-    test_integration_sin( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_) {}
+    test_integration_sin( double meshSize_=DEFAULT_MESH_SIZE, int _straighten = 1 ): meshSize(meshSize_), M_straighten(_straighten) {}
     void operator()()
     {
         std::cout.setf( std::ios::scientific );
@@ -477,24 +477,30 @@ struct test_integration_sin
                                                   _zmin=-1,_zmax=1,
                                                   _dim=Dim,
                                                   _order=Order,
-                                                  _h=meshSize ) );
+                                                  _h=meshSize,
+                                                  _straighten=M_straighten) );
 
-        typedef fusion::vector<Lagrange<Order+1, Scalar> > basis_type;
+        typedef fusion::vector<Lagrange<1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type(mesh) );
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
         u = vf::project( Xh, elements(mesh), constant(1.0) );
-        double v0 = integrate( elements(mesh), idv( u ), _Q<(Order-1)*(Order-1)>()  ).evaluate()( 0, 0 );
+        double v3 = integrate( elements(mesh), cst(1.0), _Q<15>()  ).evaluate()( 0, 0 );
+        double v0 = integrate( elements(mesh), idv( u ), _Q<15>()  ).evaluate()( 0, 0 );
+        double v2 = integrate( boundaryfaces(mesh), idv( u ), _Q<15>()  ).evaluate()( 0, 0 );
         //double v0 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
-        std::cout << "int( 1 )=" << v0 << "  (=pi) error= " << math::abs( v0 - M_PI ) << std::endl;
+        std::cout << "int( 1 )=" << v3 << "  (=pi) error= " << math::abs( v3 - M_PI ) << std::endl;
+        std::cout << "int( u=1 )=" << v0 << "  (=pi) error= " << math::abs( v0 - M_PI ) << std::endl;
+        std::cout << "int(boundary, 1 )=" << v2 << "  (=2*pi) error= " << math::abs( v2 - 2*M_PI ) << std::endl;
         double v1 = integrate( boundaryfaces(mesh), trans(vec(cst(1.),cst(1.)))*N(), _Q<(Order-1)*(Order-1)>()  ).evaluate()( 0, 0 );
         std::cout << "int( 1 .N )=" << v1 << "  (=pi) error= " << math::abs( v1 ) << std::endl;
-
+        BOOST_CHECK_SMALL( v1, 1e-12 );
         //BOOST_CHECK_SMALL( math::abs( v0 - M_PI ), 3*exp(-4*Order));
     }
     double meshSize;
+    int M_straighten;
 };
 
 inline
@@ -505,6 +511,7 @@ makeOptions()
     integrationoptions.add_options()
         ("hsize", Feel::po::value<double>()->default_value( 0.3 ), "h value")
         ("order", Feel::po::value<int>()->default_value( 1 ), "geometry order ")
+        ("straighten", Feel::po::value<int>()->default_value( 0 ), "straighten mesh ")
         ;
     return integrationoptions.add( Feel::feel_options() );
 }
@@ -513,8 +520,8 @@ inline
 Feel::AboutData
 makeAbout()
 {
-    Feel::AboutData about( "test_integration" ,
-                           "test_integration" ,
+    Feel::AboutData about( "test_integration_ho" ,
+                           "test_integration_ho" ,
                             "0.1",
                            "integration tests",
                            Feel::AboutData::License_GPL,
@@ -526,6 +533,29 @@ makeAbout()
 }
 
 #if defined(USE_BOOST_TEST)
+BOOST_AUTO_TEST_SUITE( integration )
+Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv );
+
+typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<4>,boost::mpl::int_<5>  > order_types;
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ho, T, order_types )
+{
+    std::cout << "============================================================\n";
+    Feel::Application mpi( boost::unit_test::framework::master_test_suite().argc,
+                           boost::unit_test::framework::master_test_suite().argv,
+                           makeAbout(), makeOptions() );
+    Feel::Assert::setLog( "test_integration_ho.assert");
+    std::cout << "Order=" << T::value << "/5, hsize=" << mpi.vm()["hsize"].as<double>() << "\n";
+
+    test_integration_sin<2,T::value,double> t(  mpi.vm()["hsize"].as<double>(), mpi.vm()["straighten"].as<int>() );
+    t();
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+#endif
+
+#if defined(USE_BOOST_TEST)
 boost::shared_ptr<Feel::Application> mpi;
 test_suite*
 init_unit_test_suite( int argc, char** argv )
@@ -535,7 +565,7 @@ init_unit_test_suite( int argc, char** argv )
     Feel::Assert::setLog( "test_integration.assert");
     test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
 
-    test->add( BOOST_TEST_CASE( ( test_integration_sin<1,double>( mpi->vm()["hsize"].as<double>() ) ) ) );
+    test->add( BOOST_TEST_CASE( ( test_integration_sin<2,1,double>( mpi->vm()["hsize"].as<double>() ) ) ) );
     return test;
 }
 #else
