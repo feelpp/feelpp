@@ -112,6 +112,9 @@ Application::initPETSc()
 #else
             int ierr = PetscInitialize( &__argc, &__argv, PETSC_NULL, PETSC_NULL );
 #endif
+            // make sure that petsc do not catch signals and hence do not print long
+            //and often unuseful messages
+            PetscPopSignalHandler();
 #if 0
             std::cerr << "[Application] argc " << __argc << "\n";
             --__argc;
