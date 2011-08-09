@@ -456,7 +456,7 @@ struct test_integration_circle
 template<int Dim, int Order, typename value_type = double>
 struct test_integration_sin
 {
-    test_integration_sin( double meshSize_=DEFAULT_MESH_SIZE, int _straighten = 1 ): meshSize(meshSize_), M_straighten(_straighten) {}
+    test_integration_sin( Feel::po::variables_map const& _vm ): vm( _vm ) {}
     void operator()()
     {
         std::cout.setf( std::ios::scientific );
@@ -464,12 +464,14 @@ struct test_integration_sin
 
         using namespace Feel;
         using namespace Feel::vf;
-
+        double meshSize = vm["hsize"].template as<double>();
+        GeomapStrategyType geomap = (GeomapStrategyType)vm["geomap"].template as<int>();
+        int straighten = vm["straighten"].template as<int>();
         typedef typename imesh<value_type,Dim,Order>::type mesh_type;
 
         //typename imesh<value_type,Order>::ptrtype mesh( createSin<value_type,Order>( meshSize ) );
         auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                    _desc=domain( _name=(boost::format( "ellipsoid-%1%-%2%" ) % Dim % Order).str() ,
+                                    _desc=domain( _name=(boost::format( "ellipsoid-%1%-%2%-%3%" ) % Dim % Order % straighten ).str() ,
                                                   _usenames=true,
                                                   _shape="ellipsoid",
                                                   _xmin=-1,_xmax=1,
@@ -478,7 +480,7 @@ struct test_integration_sin
                                                   _dim=Dim,
                                                   _order=Order,
                                                   _h=meshSize,
-                                                  _straighten=M_straighten) );
+                                                  _straighten=straighten  ));
 
         typedef fusion::vector<Lagrange<1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -487,20 +489,19 @@ struct test_integration_sin
 
         // int ([-1,1],[-1,x]) 1 dx
         u = vf::project( Xh, elements(mesh), constant(1.0) );
-        double v3 = integrate( elements(mesh), cst(1.0), _Q<15>()  ).evaluate()( 0, 0 );
-        double v0 = integrate( elements(mesh), idv( u ), _Q<15>()  ).evaluate()( 0, 0 );
-        double v2 = integrate( boundaryfaces(mesh), idv( u ), _Q<15>()  ).evaluate()( 0, 0 );
+        double v3 = integrate( _range=elements(mesh), _expr=cst(1.0), _quad=_Q<15>(), _geomap=geomap  ).evaluate()( 0, 0 );
+        double v0 = integrate( _range=elements(mesh), _expr=idv( u ), _quad=_Q<15>(), _geomap=geomap ).evaluate()( 0, 0 );
+        double v2 = integrate( _range=boundaryfaces(mesh), _expr=idv( u ), _quad=_Q<15>(), _geomap=geomap  ).evaluate()( 0, 0 );
         //double v0 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
         std::cout << "int( 1 )=" << v3 << "  (=pi) error= " << math::abs( v3 - M_PI ) << std::endl;
         std::cout << "int( u=1 )=" << v0 << "  (=pi) error= " << math::abs( v0 - M_PI ) << std::endl;
         std::cout << "int(boundary, 1 )=" << v2 << "  (=2*pi) error= " << math::abs( v2 - 2*M_PI ) << std::endl;
-        double v1 = integrate( boundaryfaces(mesh), trans(vec(cst(1.),cst(1.)))*N(), _Q<(Order-1)*(Order-1)>()  ).evaluate()( 0, 0 );
+        double v1 = integrate( _range=boundaryfaces(mesh), _expr=trans(vec(cst(1.),cst(1.)))*N(), _quad=_Q<(Order-1)*(Order-1)>()  ).evaluate()( 0, 0 );
         std::cout << "int( 1 .N )=" << v1 << "  (=pi) error= " << math::abs( v1 ) << std::endl;
         BOOST_CHECK_SMALL( v1, 1e-12 );
         //BOOST_CHECK_SMALL( math::abs( v0 - M_PI ), 3*exp(-4*Order));
     }
-    double meshSize;
-    int M_straighten;
+    Feel::po::variables_map vm;
 };
 
 inline
@@ -512,6 +513,7 @@ makeOptions()
         ("hsize", Feel::po::value<double>()->default_value( 0.3 ), "h value")
         ("order", Feel::po::value<int>()->default_value( 1 ), "geometry order ")
         ("straighten", Feel::po::value<int>()->default_value( 0 ), "straighten mesh ")
+        ("geomap", Feel::po::value<int>()->default_value( 2 ), "high order integration (0=opt, 1=p1, 2=ho ")
         ;
     return integrationoptions.add( Feel::feel_options() );
 }
@@ -546,9 +548,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ho, T, order_types )
                            boost::unit_test::framework::master_test_suite().argv,
                            makeAbout(), makeOptions() );
     Feel::Assert::setLog( "test_integration_ho.assert");
-    std::cout << "Order=" << T::value << "/5, hsize=" << mpi.vm()["hsize"].as<double>() << "\n";
+    std::cout << "Order=" << T::value << "/5,"
+              << " hsize=" << mpi.vm()["hsize"].as<double>() << ","
+              << " straighten=" << mpi.vm()["straighten"].as<int>() << ","
+              << " geomap=" << mpi.vm()["geomap"].as<int>() << "\n";
 
-    test_integration_sin<2,T::value,double> t(  mpi.vm()["hsize"].as<double>(), mpi.vm()["straighten"].as<int>() );
+    test_integration_sin<2,T::value,double> t(  mpi.vm() );
     t();
 }
 
@@ -565,7 +570,7 @@ init_unit_test_suite( int argc, char** argv )
     Feel::Assert::setLog( "test_integration.assert");
     test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
 
-    test->add( BOOST_TEST_CASE( ( test_integration_sin<2,1,double>( mpi->vm()["hsize"].as<double>() ) ) ) );
+    test->add( BOOST_TEST_CASE( ( test_integration_sin<2,1,double>( mpi->vm() ) )));
     return test;
 }
 #else
