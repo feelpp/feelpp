@@ -157,7 +157,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
             GeoTool::Pie Pie(meshSize,"pie", C, A, B );
             mesh = Pie.createMesh<mesh_type>( (boost::format("pie-%1%-%2%") % T::value % l ).str() );
         }
-        else if ( shape == "circle" )
+        if ( shape == "circle" )
         {
             exact = M_PI;
             GeoTool::Node C(0,0);
