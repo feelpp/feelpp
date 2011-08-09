@@ -79,6 +79,9 @@ Environment::Environment()
         boost::ignore_unused_variable_warning(ierr);
         CHKERRABORT(world,ierr);
     }
+    // make sure that petsc do not catch signals and hence do not print long
+    //and often unuseful messages
+    PetscPopSignalHandler();
 #endif // HAVE_PETSC_H
 }
 Environment::Environment( int& argc, char**& argv )
@@ -109,6 +112,9 @@ Environment::Environment( int& argc, char**& argv )
         boost::ignore_unused_variable_warning(ierr);
         CHKERRABORT(world,ierr);
     }
+    // make sure that petsc do not catch signals and hence do not print long
+    //and often unuseful messages
+    PetscPopSignalHandler();
 #endif // HAVE_PETSC_H
 
 #if defined( HAVE_MADLIB_H )
