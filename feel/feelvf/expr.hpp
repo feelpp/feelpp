@@ -301,7 +301,7 @@ public:
      */
     //@{
     Expr<ComponentsExpr<Expr<ExprT> > >
-    operator()( int c1, int c2 )
+    operator()( int c1 = 0, int c2 = 0 ) const
         {
             auto ex = ComponentsExpr<Expr<ExprT> >( Expr<ExprT>(M_expr), c1, c2 );
             return Expr<ComponentsExpr<Expr<ExprT> > >( ex );
