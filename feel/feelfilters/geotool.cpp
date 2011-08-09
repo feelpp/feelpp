@@ -807,9 +807,9 @@ namespace GeoTool {
             std::ostringstream __ostr;
             __ostr << "Point(" << boost::get<0>(*__dg)->cptPt()
                    << ") = {"
-                   << __x1 << ","
-                   << __x2 << ","
-                   << __x3 <<", h};\n";
+                   << std::setprecision(16) << __x1 << ","
+                   << std::setprecision(16) << __x2 << ","
+                   << std::setprecision(16) << __x3 <<", h};\n";
             boost::get<0>(*__dg)->updateOstr(__ostr.str());
             ++(boost::get<0>(*__dg)->_M_cptPt);
         }
@@ -1387,63 +1387,24 @@ namespace GeoTool {
 
 
         void
-        runPartialDisque(data_geo_ptrtype dg)
+        runPie(data_geo_ptrtype dg)
         {
+            node_type PtA = param<0>(dg);
+            node_type PtB = param<1>(dg);
+            node_type PtC = param<2>(dg);
 
-            node_type center = param<0>(dg);
-            node_type rayon = param<1>(dg);
-            node_type angle1 = param<2>(dg);
-            node_type angle2 = param<3>(dg);
+            writePoint( 1, dg , PtB(0), PtB(1) );
+            writePoint( 2, dg , PtA(0), PtA(1) );
+            writePoint( 3, dg , PtC(0), PtC(1) );
 
-#if 0
-            node base1;
-
-            writePoint( 1, dg , center(0), center(1) );
-            writePoint( 2, dg , ptdeb(0), ptdeb(1) );
-            writePoint( 3, dg , ptfin(0), ptfin(1) );
-
-            if (angle1<90)
-                {
-                    if (angle2>90)
-                        {
-                            writePoint( 4, dg , ref1(0), ref1(1) );
-                            if (angle2>180)
-                                {
-                                    writePoint( 5, dg , ref2(0), ref2(1) );
-                                    if (angle2>270)
-                                        {
-                                            writePoint( 6, dg , ref3(0), ref3(1) );
-                                        }
-                                }
-                        }
-                }
-            else if (angle1<180)
-                {
-                    if (angle2>180)
-                        {
-                            writePoint( 6, dg , ref2(0), ref2(1) );
-                            if (angle2>270)
-                                {
-                                    writePoint( 6, dg , ref3(0), ref3(1) );
-                                }
-                        }
-                }
-            else if (angle1<270)
-                {
-                    if (angle2>270)
-                        {
-                            writePoint( 6, dg , ref3(0), ref3(1) );
-                        }
-                }
-
-#endif
             writeCircle( 1, dg, 1, 2, 3);
-            writeCircle( 2, dg, 3, 2, 1);
+            writeLine( 2, dg , 3 , 2);
+            writeLine( 3, dg , 2 , 1);
 
-            writeLineLoop( 1, dg, Loop()>>1>>2);
+            writeLineLoop( 1, dg, Loop()>>1>>2>>3);
 
             writePlaneSurface( 1, dg, 1);
-
+            writePtInSurface(dg,2,1);
 
         }
 
