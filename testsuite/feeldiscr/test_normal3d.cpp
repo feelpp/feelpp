@@ -33,8 +33,8 @@ makeOptions()
     po::options_description desc_options("test_normal3d options");
     desc_options.add_options()
         ("hsize", po::value<double>()->default_value( 0.4 ), "mesh size")
-        ("geomap", po::value<int>()->default_value( 0 ), "geomap (0=opt, 1=p1, 2=ho)")
-        ("straighten", po::value<int>()->default_value( 1 ), "straighten mesh")
+        ("geomap", po::value<int>()->default_value( (int)GeomapStrategyType::GEOMAP_HO ), "geomap (0=opt, 1=p1, 2=ho)")
+        ("straighten", po::value<int>()->default_value( 0 ), "straighten mesh")
         ;
     return desc_options.add( Feel::feel_options() );
 }
