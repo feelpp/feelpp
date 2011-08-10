@@ -969,7 +969,7 @@ namespace Feel {
 
             template<typename mesh_type>
             boost::shared_ptr<mesh_type>
-            createMesh(std::string name, int straighten = 0 )
+            createMesh(std::string name, int straighten = 1 )
             {
                 this->cleanOstr();
                 this->zeroCpt();
