@@ -462,6 +462,7 @@ BOOST_PARAMETER_FUNCTION(
         )
     (optional
      (refine,          *(boost::is_integral<mpl::_>), 0 )
+     (save,          *(boost::is_integral<mpl::_>), 0 )
         ))
 {
     typedef typename detail::mesh<Args>::type _mesh_type;
@@ -472,11 +473,32 @@ BOOST_PARAMETER_FUNCTION(
     using namespace vf;
     typedef FunctionSpace<_mesh_type,bases<Lagrange<_mesh_type::nOrder,Vectorial> > > space_t;
     auto Xh = space_t::New( _mesh );
-    auto xHo = vf::project( _space=Xh, _range=elements(mesh), _expr=vf::P() );
+    auto xHo = vf::project( _space=Xh, _range=elements(mesh), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
     auto xLo = vf::project( _space=Xh, _range=elements(mesh), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
-    auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces(mesh), _expr=vf::P() );
+    auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces(mesh), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
     auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces(mesh), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
-    auto straightener = vf::project( _space=Xh, _range=elements(mesh), _expr=(idv(xLo)-idv(xHo))-(idv(xLoBdy)-idv(xHoBdy)) );
+    auto straightener = Xh->element();
+    straightener=(xLo-xHo)-(xLoBdy-xHoBdy);
+    double norm_mean_value = integrate( _range=boundaryfaces(_mesh), _expr=idv(straightener) ).evaluate().norm();
+    if ( norm_mean_value > 1e-12 )
+        std::cout << "the straightening process may have failed\n"
+                  << "norm of component-wise mean value of displacement on the boundary should be 0"
+                  << "norm_mean_value: "  << norm_mean_value << "\n"
+                  << "you should consider not using straightenMesh()\n"
+                  << "\n";
+
+    boost::shared_ptr<Exporter<_mesh_type,_mesh_type::nOrder> > exporter;
+    if ( save )
+    {
+        exporter.reset( Exporter<_mesh_type,_mesh_type::nOrder>::New( "gmsh"/*test_app->vm()*/, "straightener") );
+        exporter->step( 0 )->setMesh( _mesh );
+        exporter->step( 0 )->add( "xHo", xHo );
+        exporter->step( 0 )->add( "xLo", xLo );
+        exporter->step( 0 )->add( "xHoBdy", xHoBdy );
+        exporter->step( 0 )->add( "xLoBdy", xLoBdy );
+        exporter->step( 0 )->add( "straightener", straightener );
+        exporter->save();
+    }
     MeshMover<_mesh_type> meshmove;
     meshmove.apply( _mesh, straightener );
 
@@ -505,7 +527,7 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     (optional
-     (straighten,          *(boost::is_integral<mpl::_>), 0 )
+     (straighten,          *(boost::is_integral<mpl::_>), 1 )
      (refine,          *(boost::is_integral<mpl::_>), 0 )
      (update,          *(boost::is_integral<mpl::_>), 0 )
 	 (physical_are_elementary_regions,		   *,false)
