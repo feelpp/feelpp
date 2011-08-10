@@ -807,9 +807,9 @@ namespace GeoTool {
             std::ostringstream __ostr;
             __ostr << "Point(" << boost::get<0>(*__dg)->cptPt()
                    << ") = {"
-                   << std::setprecision(16) << __x1 << ","
-                   << std::setprecision(16) << __x2 << ","
-                   << std::setprecision(16) << __x3 <<", h};\n";
+                   << std::scientific << std::setprecision(16) << __x1 << ","
+                   << std::scientific << std::setprecision(16) << __x2 << ","
+                   << std::scientific << std::setprecision(16) << __x3 <<", h};\n";
             boost::get<0>(*__dg)->updateOstr(__ostr.str());
             ++(boost::get<0>(*__dg)->_M_cptPt);
         }
