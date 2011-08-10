@@ -33,6 +33,8 @@ makeOptions()
     po::options_description desc_options("test_normal3d options");
     desc_options.add_options()
         ("hsize", po::value<double>()->default_value( 0.4 ), "mesh size")
+        ("geomap", po::value<int>()->default_value( 0 ), "geomap (0=opt, 1=p1, 2=ho)")
+        ("straighten", po::value<int>()->default_value( 1 ), "straighten mesh")
         ;
     return desc_options.add( Feel::feel_options() );
 }
@@ -60,6 +62,9 @@ template <uint32_type orderGeo = 1>
 void
 runtest(Application_ptrtype test_app)
 {
+    BOOST_MESSAGE( "================================================================================\n"
+                   << "Order: " << orderGeo << "\n" );
+
     typedef Simplex<3,orderGeo,3> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<  mesh_type > mesh_ptrtype;
@@ -72,6 +77,8 @@ runtest(Application_ptrtype test_app)
     //-----------------------------------------------------------//
 
     double meshSize = test_app->vm()["hsize"].as<double>();
+    int straighten = test_app->vm()["straighten"].as<int>();
+    GeomapStrategyType geomap = (GeomapStrategyType)test_app->vm()["geomap"].as<int>();
 
     GeoTool::Node Centre(0,0,0);
     GeoTool::Node Rayon( 1);
@@ -86,25 +93,28 @@ runtest(Application_ptrtype test_app)
     std::ostringstream __ostrData;
     __ostrData<<convex_type::name()<<"h"<<meshSize;
 
-    auto mesh = C.createMesh<mesh_type>("domain"+__ostrData.str());
+    auto mesh = C.createMesh<mesh_type>("domain"+__ostrData.str(), straighten );
 
     //-----------------------------------------------------------//
 
     auto Xh = space_type::New( mesh );
     auto u = Xh->element();
 
+    BOOST_MESSAGE( "testing Gauss formula on ( 1, 1, 1 )\n" );
+    u = vf::project(Xh,elements(mesh),vf::vec(cst(1.0),cst(1.0),cst(1.0)));
+    auto value1 = integrate(_range=elements(mesh),_expr=divv(u), _quad=_Q<15>(),_geomap=geomap).evaluate()(0,0);
+    auto value2 = integrate(_range=boundaryfaces(mesh),_expr=trans(idv(u))*N(),_quad=_Q<15>(),_geomap=geomap).evaluate()(0,0);
+    BOOST_MESSAGE( "\n value (div) =" << value1 << "\n value (n) =" << value2 <<"\n" );
+    BOOST_CHECK_SMALL( value1, 1e-12 );
+    BOOST_CHECK_SMALL( value2, 1e-12 );
+
+    BOOST_MESSAGE( "testing Gauss formula on ( vf::cos(M_PI*Px()/5.),vf::cos(M_PI*Py()/5.),vf::cos(M_PI*Py()/5.))\n" );
     u = vf::project(Xh,elements(mesh),vf::vec( vf::cos(M_PI*Px()/5.),vf::cos(M_PI*Py()/5.),vf::cos(M_PI*Py()/5.)));
-
-
-    auto value1 = integrate(elements(mesh),divv(u), _quad=_Q<15>()).evaluate()(0,0);
-    auto value2 = integrate(boundaryfaces(mesh),trans(idv(u))*N(),_quad=_Q<15>()).evaluate()(0,0);
-
-    std::cout << "\n value 1 =" << value1;
-    std::cout << "\n value 2 =" << value2 <<"\n";
-
-    //-----------------------------------------------------------//
-
-    BOOST_CHECK_SMALL( value1-value2,1e-8);
+    value1 = integrate(_range=elements(mesh),_expr=divv(u), _quad=_Q<15>(),_geomap=geomap).evaluate()(0,0);
+    value2 = integrate(_range=boundaryfaces(mesh),_expr=trans(idv(u))*N(),_quad=_Q<15>(),_geomap=geomap).evaluate()(0,0);
+    BOOST_MESSAGE( "\n value (div) =" << value1 << "\n value (n) =" << value2 <<"\n" );
+    BOOST_CHECK_CLOSE( value1, value2, 1e-8 );
+    //BOOST_CHECK_SMALL( value1-value2,1e-8);
 
 
 #if 0
