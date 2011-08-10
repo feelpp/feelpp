@@ -77,6 +77,7 @@ runtest(Application_ptrtype test_app)
     //-----------------------------------------------------------//
 
     double meshSize = test_app->vm()["hsize"].as<double>();
+    bool exportResults = test_app->vm()["exporter.export"].as<bool>();
     int straighten = test_app->vm()["straighten"].as<int>();
     GeomapStrategyType geomap = (GeomapStrategyType)test_app->vm()["geomap"].as<int>();
 
@@ -93,8 +94,10 @@ runtest(Application_ptrtype test_app)
     std::ostringstream __ostrData;
     __ostrData<<convex_type::name()<<"h"<<meshSize;
 
-    auto mesh = C.createMesh<mesh_type>("domain"+__ostrData.str(), straighten );
-
+    auto mesh_ = C.createMesh<mesh_type>("domain"+__ostrData.str(), 0 );
+    auto mesh=mesh_;
+    if ( straighten )
+        mesh = straightenMesh( _mesh=mesh_, _save=1 );
     //-----------------------------------------------------------//
 
     auto Xh = space_type::New( mesh );
@@ -117,18 +120,16 @@ runtest(Application_ptrtype test_app)
     //BOOST_CHECK_SMALL( value1-value2,1e-8);
 
 
-#if 0
-    auto nnn = Xh->element();
-
-    nnn = vf::project(Xh,markedfaces(mesh,"Wall"),N());
-
-
-    auto UNexporter = Exporter<mesh_type>::New( "gmsh"/*test_app->vm()*/, "ExportOOOO"+__ostrData.str() );
-    UNexporter->step( 0 )->setMesh( mesh );
-    UNexporter->step( 0 )->add( "u", u );
-    UNexporter->step( 0 )->add( "n", nnn );
-    UNexporter->save();
-#endif
+    if ( exportResults )
+    {
+        auto nnn = Xh->element();
+        nnn = vf::project(Xh,markedfaces(mesh,"Wall"),N());
+        auto UNexporter = Exporter<mesh_type>::New( "gmsh"/*test_app->vm()*/, "ExportOOOO"+__ostrData.str() );
+        UNexporter->step( 0 )->setMesh( mesh );
+        UNexporter->step( 0 )->add( "u", u );
+        UNexporter->step( 0 )->add( "n", nnn );
+        UNexporter->save();
+    }
 }
 
 }
