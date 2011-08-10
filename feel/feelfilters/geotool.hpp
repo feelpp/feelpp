@@ -969,7 +969,7 @@ namespace Feel {
 
             template<typename mesh_type>
             boost::shared_ptr<mesh_type>
-            createMesh(std::string name)
+            createMesh(std::string name, int straighten = 0 )
             {
                 this->cleanOstr();
                 this->zeroCpt();
@@ -989,7 +989,7 @@ namespace Feel {
                 mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
                 mesh->updateForUse();
 
-                if ( /*straighten && */mesh_type::nOrder > 1 )
+                if ( straighten && mesh_type::nOrder > 1 )
                     return straightenMesh( mesh );
                 else
                     return mesh;

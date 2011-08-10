@@ -505,7 +505,7 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     (optional
-     (straighten,          *(boost::is_integral<mpl::_>), 1 )
+     (straighten,          *(boost::is_integral<mpl::_>), 0 )
      (refine,          *(boost::is_integral<mpl::_>), 0 )
      (update,          *(boost::is_integral<mpl::_>), 0 )
 	 (physical_are_elementary_regions,		   *,false)

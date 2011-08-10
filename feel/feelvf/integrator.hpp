@@ -2463,7 +2463,7 @@ BOOST_PARAMETER_FUNCTION(
 
     (optional
      (quad,   *, typename detail::integrate_type<Args>::_quad_type() )
-     (geomap, *, GeomapStrategyType::GEOMAP_OPT )
+     (geomap, *, GeomapStrategyType::GEOMAP_HO )
      (quad1,   *, typename detail::integrate_type<Args>::_quad1_type() )
      (use_tbb,   (bool), false )
      (grainsize,   (int), 100 )
