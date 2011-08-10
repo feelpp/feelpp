@@ -54,7 +54,6 @@ typedef boost::mpl::list<boost::mpl::pair<mpl::int_<2>,mpl::int_<2> >,
                          boost::mpl::pair<mpl::int_<3>,mpl::int_<2> >,
                          boost::mpl::pair<mpl::int_<3>,mpl::int_<4> >
                          > dim_types;
-#if 0
 BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "============================================================\n"
@@ -108,7 +107,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
 
 
 }
-#endif
 
 typedef boost::mpl::list<mpl::int_<1>,mpl::int_<2>, mpl::int_<3>, mpl::int_<4>, mpl::int_<5> > order_types;
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
