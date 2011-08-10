@@ -171,5 +171,7 @@ BOOST_PARAMETER_NAME(use_tbb)
 BOOST_PARAMETER_NAME(grainsize)
 BOOST_PARAMETER_NAME(partitioner)
 
+BOOST_PARAMETER_NAME(save)
+
 }
 #endif /* __feelcore_parameter_H */
