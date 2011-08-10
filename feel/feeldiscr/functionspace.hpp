@@ -1216,7 +1216,7 @@ public:
         typedef Eigen::Matrix<value_type,nComponents1,nDim> _grad_type;
         typedef Eigen::Matrix<value_type,nDim,nDim> _hess_type;
         typedef Eigen::Matrix<value_type,1,1> _div_type;
-        typedef Eigen::Matrix<value_type,3,1> _curl_type;
+        typedef Eigen::Matrix<value_type,nDim,1> _curl_type;
         typedef boost::multi_array<_id_type,1> id_array_type;
         typedef boost::multi_array<_grad_type,1> grad_array_type;
         typedef boost::multi_array<_hess_type,1> hess_array_type;
