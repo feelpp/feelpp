@@ -93,11 +93,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
 
     boost::timer ti;
     auto i1 = integrate( _range=elements(mesh), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate().norm();
-    std::cout << "Ho: " << ti.elapsed() << "s\n";
+    std::cout << "Ho: " << ti.elapsed() << "s\n";ti.restart();
     auto i2 = integrate( _range=elements(mesh), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate().norm();
-    std::cout << "Opt: " << ti.elapsed() << "s\n";
+    std::cout << "Opt: " << ti.elapsed() << "s\n";ti.restart();
     auto i3 = integrate( _range=elements(mesh),  _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate().norm();
-    std::cout << "P1: " << ti.elapsed() << "s\n";
+    std::cout << "P1: " << ti.elapsed() << "s\n";ti.restart();
 
     BOOST_CHECK_CLOSE( i1, i2, 1e-12 );
     BOOST_TEST_MESSAGE( "ho = " << std::scientific << std::setprecision( 16 ) << i1 << "\n" <<
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     mesh_ptrtype mesh;
     std::string shape =  vm["shape"].template as<std::string>();
-    std::map<std::string,std::vector<boost::tuple<double,double,double> > > ho;
+    std::map<std::string,std::vector<boost::tuple<double,double,double,double> > > ho;
     double exact=1;
     for( int l = 1;l <= nlevels; ++l )
     {
@@ -165,16 +165,17 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
         }
 
 
-        //boost::timer ti;
+        boost::timer ti;
         double i1 =  integrate( _range=elements(mesh), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate().norm();
-        ho["ho"].push_back(boost::make_tuple( meshSize, i1, math::abs(i1-exact) ));
-        //std::cout << "Ho: " << ti.elapsed() << "s\n";
+        ho["ho"].push_back(boost::make_tuple( meshSize, i1, math::abs(i1-exact), ti.elapsed() ));
+        ti.restart();
         double i2 = integrate( _range=elements(mesh), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate().norm();
-        ho["opt"].push_back( boost::make_tuple( meshSize, i2, math::abs(i2-exact) ));
+        ho["opt"].push_back( boost::make_tuple( meshSize, i2, math::abs(i2-exact), ti.elapsed() ));
+        ti.restart();
         BOOST_CHECK_CLOSE( i1, i2, 1e-12 );
         //std::cout << "Opt: " << ti.elapsed() << "s\n";
         double i3 = integrate( _range=elements(mesh),  _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate().norm();
-        ho["p1"].push_back( boost::make_tuple( meshSize, i3, math::abs(i3-exact)) );
+        ho["p1"].push_back( boost::make_tuple( meshSize, i3, math::abs(i3-exact), ti.elapsed()) );
         //std::cout << "P1: " << ti.elapsed() << "s\n";
     }
 
@@ -185,7 +186,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
                             std::setw(10) << std::right << "h"  <<
                             std::setw(15) << std::right << it->first <<
                             std::setw(15) << std::right << "error" <<
-                            std::setw(15) << std::right << "ROC" << "\n" );
+                            std::setw(15) << std::right << "ROC" <<
+                            std::setw(10) << std::right << "Time(s)"
+                            << "\n" );
         for( int l = 1; l <= nlevels; ++l )
         {
             auto data = it->second;
@@ -196,7 +199,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
                                 std::right << std::setw(10) << data[l-1].template get<0>() <<
                                 std::right << std::setw(15) << std::scientific << std::setprecision( 5 ) << data[l-1].template get<1>() <<
                                 std::right << std::setw(15) << std::scientific << std::setprecision( 5 ) << data[l-1].template get<2>() <<
-                                std::right << std::setw(15) << std::scientific << std::setprecision( 5 ) << roc << "\n" );
+                                std::right << std::setw(15) << std::scientific << std::setprecision( 5 ) << roc <<
+                                std::right << std::setw(10) << std::scientific << std::setprecision( 2 ) << data[l-1].template get<3>() << "\n" );
         }
     }
 
