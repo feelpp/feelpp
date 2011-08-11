@@ -1674,7 +1674,7 @@ namespace Feel {
 
         template<typename mesh_type>
         boost::shared_ptr<mesh_type>
-        createMeshFromGeoFile(std::string geofile,std::string name,double meshSize)
+        createMeshFromGeoFile(std::string geofile,std::string name,double meshSize,int straighten = 1)
         {
 
             Gmsh gmsh(mesh_type::nDim,mesh_type::nOrder);
@@ -1713,7 +1713,7 @@ namespace Feel {
             mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
             mesh->updateForUse();
 
-                if ( /*straighten && */mesh_type::nOrder > 1 )
+                if ( straighten && mesh_type::nOrder > 1 )
                     return straightenMesh( mesh );
                 return mesh;
         }
