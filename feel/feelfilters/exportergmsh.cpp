@@ -138,17 +138,18 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                               << __ts->index() << " in "
                               << __fname.str() << "\n";
 
+                // save mesh only at first iteration
+                if ( __stepIt == __ts->beginStep() )
+                {
+                    gmshSaveFormat( out );
 
-                gmshSaveFormat( out );
+                    gmshSavePhysicalNames( out, __step->mesh() );
 
-                gmshSavePhysicalNames( out, __step->mesh() );
+                    gmshSaveNodes( out,__step->mesh());
 
-                gmshSaveNodes( out,__step->mesh());
-
-                gmshSaveElements( out, __step->mesh());
-
+                    gmshSaveElements( out, __step->mesh());
+                }
                 //gmshSaveNodeData( out, __step);
-
                 gmshSaveElementNodeData( out, __step);
             }
         }
