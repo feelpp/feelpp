@@ -23,6 +23,7 @@
 #
 add_custom_target(feel_mesh_data)
 
+macro(feel_geo files)
 if (EXISTS $ENV{HOME})
   # create $ENV{HOME}/feel/geo if it does not exist already: this is the geometry
   # files repository
@@ -39,3 +40,9 @@ if (EXISTS $ENV{HOME})
     add_dependencies(feel_mesh_data copy_mesh_data_${filename} )
   endforeach()
 endif(EXISTS $ENV{HOME})
+endmacro(feel_geo)
+
+FILE(GLOB meditfiles "medit/*.[geomesh]")
+feel_geo(meditfiles)
+FILE(GLOB gmshfiles "gmsh/*.[geomeshstl]")
+feel_geo(gmshfiles)
