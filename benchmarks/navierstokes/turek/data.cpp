@@ -418,7 +418,7 @@ Data::createMatlabScript()
              <<"    h=" << M_h << "; \n"
              <<"    hcyl_scale=" << M_hcyl_scale << "; \n"
              <<"    dimension=" << M_dimension << "; \n"
-             <<"    dt=" << M_vm["bdf-time-step"].as<double>() << "; \n"
+             <<"    dt=" << M_vm["bdf.time-step"].as<double>() << "; \n"
              <<"IndexL=Matrix(:,1)>=Tspan(1) & Matrix(:,1)<= Tspan(2);\n"
              <<"% Benchmarks limits \n"
              <<"    % Drag coefficient :  \n"
