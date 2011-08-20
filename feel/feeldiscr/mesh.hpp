@@ -343,6 +343,15 @@ public:
      *
      * \todo make use of \c extraction_policies
      */
+
+    template<typename Iterator>
+    //self_type
+    void
+    trace( self_type& mesh,
+           Iterator const& begin_elt,
+           Iterator const& end_elt );
+
+
     template<typename Iterator>
     void createSubmesh( self_type& mesh,
                         Iterator const& begin_elt,
@@ -721,7 +730,19 @@ private:
     boost::shared_ptr<Localization> M_tool_localization;
 };
 
+template<typename Shape, typename T>
+template<typename Iterator>
+void
+Mesh<Shape, T>::trace( self_type& mesh,
+                       Iterator const& begin_elt,
+                       Iterator const& end_elt )
+{
 
+    createSubmesh( mesh,
+                   begin_elt,
+                   end_elt );
+
+}
 
 template<typename Shape, typename T>
 template<typename Iterator>
