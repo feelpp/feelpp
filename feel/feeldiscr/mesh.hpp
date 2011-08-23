@@ -175,6 +175,10 @@ public:
 
     typedef boost::shared_ptr<P1_mesh_type> P1_mesh_ptrtype;
 
+    typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
+                              mpl::identity< Mesh< Simplex< GeoShape::nDim-1,nOrder,GeoShape::nRealDim>, value_type > >,
+                              mpl::identity< Mesh< Hypercube<GeoShape::nDim-1,nOrder,GeoShape::nRealDim>,value_type > > >::type::type trace_mesh_type;
+    typedef typename boost::shared_ptr<trace_mesh_type> trace_mesh_ptrtype;
     //@}
 
     /**
@@ -344,12 +348,9 @@ public:
      * \todo make use of \c extraction_policies
      */
 
-    template<typename Iterator>
-    //self_type
-    void
-    trace( self_type& mesh,
-           Iterator const& begin_elt,
-           Iterator const& end_elt );
+    template<typename RangeT>
+    trace_mesh_ptrtype
+    trace( RangeT const& range );
 
 
     template<typename Iterator>
@@ -731,17 +732,15 @@ private:
 };
 
 template<typename Shape, typename T>
-template<typename Iterator>
-void
-Mesh<Shape, T>::trace( self_type& mesh,
-                       Iterator const& begin_elt,
-                       Iterator const& end_elt )
+template<typename RangeT>
+typename Mesh<Shape, T>::trace_mesh_ptrtype
+Mesh<Shape, T>::trace( RangeT const& range )
 {
-
+    /*
     createSubmesh( mesh,
                    begin_elt,
                    end_elt );
-
+    */
 }
 
 template<typename Shape, typename T>
