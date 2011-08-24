@@ -844,10 +844,21 @@ public:
     typedef boost::shared_ptr<component_basis_type> component_basis_ptrtype;
 
     // trace space
-    typedef typename mesh_type::trace_mesh_type trace_mesh_type;
-    typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
-    typedef FunctionSpace<trace_mesh_type, bases_list> trace_functionspace_type;
-    typedef typename trace_functionspace_type::element_type trace_element_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
+                              mpl::identity<typename mesh_type::trace_mesh_type>,
+                              mpl::identity<mpl::void_> >::type::type trace_mesh_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
+                              mpl::identity<typename mesh_type::trace_mesh_ptrtype>,
+                              mpl::identity<mpl::void_> >::type::type trace_mesh_ptrtype;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
+                              mpl::identity<FunctionSpace<trace_mesh_type, bases_list> >,
+                              mpl::identity<mpl::void_> >::type::type trace_functionspace_type;
+    typedef typename boost::shared_ptr<trace_functionspace_type> trace_functionspace_ptrtype;
+#if 0
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
+                              mpl::identity<typename trace_functionspace_type::element_type>,
+                              mpl::identity<mpl::void_> >::type::type trace_element_type;
+#endif
 
     // geomap
     typedef typename mesh_type::gm_type gm_type;
@@ -1851,15 +1862,6 @@ public:
          */
         component_functionspace_ptrtype const& compSpace() const { return _M_functionspace->compSpace(); }
 
-        /**
-         * \return trace space
-         */
-        template<typename RangeT>
-        trace_mesh_ptrtype
-        trace( RangeT range = boundaryfaces( this->mesh() ) )  const
-            {
-                return trace_functionspace_type::New( this->mesh()->trace(range) );
-            }
 
         /**
          * \return the number of dof
@@ -2254,6 +2256,23 @@ public:
      * @return the finite element space associated with the n-th component
      */
     component_functionspace_ptrtype const& compSpace() const { return _M_comp_space; }
+
+    /**
+     * \return trace space
+     */
+    trace_functionspace_ptrtype
+    trace()  const
+        {
+            //return trace( mpl::greater<mpl::int_<nDim>,mpl::int_<1> >::type() )
+            return trace_functionspace_type::New( mesh()->trace(boundaryfaces(mesh())) );
+        }
+    template<typename RangeT>
+    trace_functionspace_ptrtype
+    trace( RangeT range  )  const
+        {
+            return trace_functionspace_type::New( mesh()->trace(range) );
+        }
+
 
     /**
        \return true if Space has a region tree to localize points
