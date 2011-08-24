@@ -1756,7 +1756,7 @@ public:
     Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge )
         :
         _M_gm( __gm ),
-        _M_xref( __gm->realDim() ),
+        _M_xref( __gm->dim() ),
         _M_xreal( __ge.G().size1() ),
         _M_is_in( false ),
         _M_G( __ge.G() ),
