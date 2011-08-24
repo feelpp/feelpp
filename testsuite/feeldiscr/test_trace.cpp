@@ -187,7 +187,7 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
     gproj = vf::project( Xh, elements(mesh), g );
 
     auto f = pi*pi*Dim*g;
-
+#if 0
     bool weakdir = this->vm()["weakdir"].template as<int>();
     double_type penaldir = this->vm()["penaldir"].template as<double>();
     double_type nu = this->vm()["nu"].template as<double>();
@@ -267,6 +267,7 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
         exporter->save();
         Log() << "export done\n";
     }
+#endif
 
     auto trace_mesh = mesh->trace( boundaryfaces(mesh) );
     auto Th = Xh->trace( boundaryfaces(mesh)) ;
@@ -314,9 +315,9 @@ main( int argc, char** argv )
     }
 
     // app.add( new Test<1>( app.vm(), app.about() ) );
-    // app.add( new Test<2,1>( app.vm(), app.about() ) );
-    app.add( new Test<2,2>( app.vm(), app.about() ) );
-    //app.add( new Test<2,3>( app.vm(), app.about() ) );
+    //app.add( new Test<2,1>( app.vm(), app.about() ) );
+    //app.add( new Test<2,2>( app.vm(), app.about() ) );
+    app.add( new Test<2,3>( app.vm(), app.about() ) );
     // app.add( new Test<3>( app.vm(), app.about() ) );
 
     app.run();
