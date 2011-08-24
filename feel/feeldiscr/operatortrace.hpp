@@ -57,25 +57,18 @@ public :
 
     typedef OperatorLinear<TraceSpace, TraceSpace> ol_type;
 
-    typedef typename super::domain_space_type domain_space_type;
-    typedef typename super::domain_space_ptrtype domain_space_ptrtype;
-    typedef typename domain_space_type::element_type trace_element_type;
-
+    typedef typename super::domain_space_type trace_space_type;
+    typedef typename super::domain_space_ptrtype trace_space_ptrtype;
+    typedef typename trace_space_type::element_type trace_element_type;
     typedef typename super::backend_type backend_type;
     typedef typename super::backend_ptrtype backend_ptrtype;
-    typedef typename backend_type::sparse_matrix_type matrix_type;
-    typedef typename backend_type::vector_type vector_type;
-    typedef typename backend_type::vector_ptrtype vector_ptrtype;
-    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
-
-    typedef FsFunctionalLinear<TraceSpace> image_element_type;
 
     //@}
     /** @name Constructors, destructor
      */
     //@{
 
-    OperatorTrace(domain_space_ptrtype traceSpace,
+    OperatorTrace(trace_space_ptrtype traceSpace,
                   backend_ptrtype backend = Backend<double>::build(BACKEND_PETSC))
         :
         ol_type(traceSpace, traceSpace, backend),
@@ -94,8 +87,6 @@ public :
     {
         typedef typename vf::detail::clean_type<Args,tag::expr>::type _expr_type;
         typedef typename vf::detail::clean2_type<Args,tag::range,IntEltsDefault>::type _range_type;
-        typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
-        typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
     };
 
     BOOST_PARAMETER_MEMBER_FUNCTION((trace_element_type),
@@ -108,6 +99,11 @@ public :
 
     {
         using namespace vf;
+
+        // auto trace_mesh = mesh->trace( boundaryfaces(mesh) );
+        //auto Th = this->domainSpace()->trace( range ) ;
+        // auto t = vf::project( Th, elements( Th->mesh() ), g );
+
 
         trace_element_type te = this->domainSpace()->element();
 
@@ -132,12 +128,12 @@ private :
  * \param backend
  */
 
-template<typename TTraceSpace>
-boost::shared_ptr< OperatorTrace<TTraceSpace> >
-operatorTrace( boost::shared_ptr<TTraceSpace> const& tracespace,
-               typename OperatorTrace<TTraceSpace>::backend_ptrtype const& backend = Backend<double>::build(BACKEND_PETSC) )
+template<typename TraceSpace>
+boost::shared_ptr< OperatorTrace<TraceSpace> >
+operatorTrace( boost::shared_ptr<TraceSpace> const& tracespace,
+               typename OperatorTrace<TraceSpace>::backend_ptrtype const& backend = Backend<double>::build(BACKEND_PETSC) )
 {
-    typedef OperatorTrace<TTraceSpace> Trace_type;
+    typedef OperatorTrace<TraceSpace> Trace_type;
     boost::shared_ptr<Trace_type> Trace( new Trace_type(tracespace, backend ) );
     return Trace;
 }
