@@ -65,7 +65,7 @@
 #include <boost/preprocessor/facilities/identity.hpp>
 
 #include <boost/enable_shared_from_this.hpp>
-
+#include <feel/feeldiscr/createsubmesh.hpp>
 
 namespace Feel
 {
