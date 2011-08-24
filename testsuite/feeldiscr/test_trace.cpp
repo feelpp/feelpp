@@ -268,10 +268,21 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
         Log() << "export done\n";
     }
 
-    // auto range = boundaryfaces(mesh);
     auto trace_mesh = mesh->trace( boundaryfaces(mesh) );
     auto Th = Xh->trace( boundaryfaces(mesh)) ;
     auto t = vf::project( Th, elements( Th->mesh() ), g );
+
+    auto op_trace = operatorTrace( Th, M_backend );
+
+    auto g_trace = op_trace->trace( _range=elements( Th->mesh() ), _expr=g);
+
+    double error = integrate( elements( Th->mesh() ), idv(t)-idv(g_trace) ).evaluate()(0,0);
+
+    std::cout << "error  =" << error << "\n";
+
+
+
+
     trace_export_ptrtype trace_exporter( trace_export_type::New( this->vm(),
                                                                  (boost::format( "trace-%1%-%2%-%3%" )
                                                                   % this->about().appName()
@@ -303,7 +314,7 @@ main( int argc, char** argv )
     }
 
     // app.add( new Test<1>( app.vm(), app.about() ) );
-    //app.add( new Test<2,1>( app.vm(), app.about() ) );
+    // app.add( new Test<2,1>( app.vm(), app.about() ) );
     app.add( new Test<2,2>( app.vm(), app.about() ) );
     //app.add( new Test<2,3>( app.vm(), app.about() ) );
     // app.add( new Test<3>( app.vm(), app.about() ) );
