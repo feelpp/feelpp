@@ -181,7 +181,7 @@ Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     space_ptrtype Xh = space_type::New( mesh );
     auto u = Xh->element();
     auto v = Xh->element();
-    auto gprof = Xh->element();
+    auto gproj = Xh->element();
 
     double_type pi = M_PI;
 
@@ -196,7 +196,7 @@ Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     using namespace Feel::vf;
 
-    vector_ptrtype F( M_backend->newVector( Xh ) );
+    auto F = M_backend->newVector( Xh );
     form1( _test=Xh, _vector=F, _init=true ) =
         integrate( elements(mesh), f*id(v) )+
         integrate( markedfaces( mesh, "Neumann" ),
@@ -213,7 +213,7 @@ Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     F->close();
 
 
-    sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
+    auto D = M_backend->newMatrix( Xh, Xh );
 
     form2( Xh, Xh, D, _init=true ) =
         integrate( elements(mesh), nu*gradt(u)*trans(grad(v)) );
@@ -247,7 +247,7 @@ Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     Log() << "||error||_L2=" << L2error << "\n";
 
-    element_type e( Xh, "e" );
+    auto e = Xh->element();
     e = vf::project( Xh, elements(mesh), g );
 
 
@@ -282,7 +282,7 @@ Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     {
         Log() << "trace export starts\n";
 
-        trace_exporter->step(0)->setMesh( mesh );
+        trace_exporter->step(0)->setMesh( trace_mesh );
 
         trace_exporter->save();
         Log() << "trace export done\n";
