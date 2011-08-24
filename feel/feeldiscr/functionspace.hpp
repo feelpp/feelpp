@@ -1224,10 +1224,10 @@ public:
 
         typedef boost::multi_array<value_type,3> array_type;
         typedef Eigen::Matrix<value_type,nComponents1,1> _id_type;
-        typedef Eigen::Matrix<value_type,nComponents1,nDim> _grad_type;
-        typedef Eigen::Matrix<value_type,nDim,nDim> _hess_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nRealDim> _grad_type;
+        typedef Eigen::Matrix<value_type,nRealDim,nRealDim> _hess_type;
         typedef Eigen::Matrix<value_type,1,1> _div_type;
-        typedef Eigen::Matrix<value_type,nDim,1> _curl_type;
+        typedef Eigen::Matrix<value_type,nRealDim,1> _curl_type;
         typedef boost::multi_array<_id_type,1> id_array_type;
         typedef boost::multi_array<_grad_type,1> grad_array_type;
         typedef boost::multi_array<_hess_type,1> hess_array_type;
@@ -1436,7 +1436,7 @@ public:
         //! gradient interpolation tool
         //@{
 
-        typedef detail::DD<value_type, nComponents1, nDim> grad_type;
+        typedef detail::DD<value_type, nComponents1, nRealDim> grad_type;
         typedef detail::D<value_type,0,nComponents1, 1> dx_type;
         typedef detail::D<value_type,1,nComponents1, 1> dy_type;
         typedef detail::D<value_type,2,nComponents1, 1> dz_type;
@@ -1614,7 +1614,7 @@ public:
         void
         divInterpolate( matrix_node_type __ptsReal, div_array_type& v ) const;
 
-        typedef detail::Curl<value_type,-1,nDim> curl_type;
+        typedef detail::Curl<value_type,-1,nRealDim> curl_type;
         typedef detail::Curl<value_type,0,1> curlx_type;
         typedef detail::Curl<value_type,1,1> curly_type;
         typedef detail::Curl<value_type,2,1> curlz_type;
@@ -1768,7 +1768,7 @@ public:
         void
         hessInterpolate( matrix_node_type __ptsReal, hess_array_type& v ) const;
 
-        typedef detail::H<value_type,nDim,nDim> hess_type;
+        typedef detail::H<value_type,nRealDim,nRealDim> hess_type;
 
         template<typename ContextType>
         hess_type
