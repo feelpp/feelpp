@@ -273,6 +273,7 @@ Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     // auto range = boundaryfaces(mesh);
     auto trace_mesh = mesh->trace( boundaryfaces(mesh) );
     auto Th = Xh->trace( boundaryfaces(mesh)) ;
+    auto t = vf::project( Th, elements( Th->mesh() ), g );
     trace_export_ptrtype trace_exporter( trace_export_type::New( this->vm(),
                                                                  (boost::format( "trace-%1%-%2%-%3%" )
                                                                   % this->about().appName()
@@ -284,7 +285,7 @@ Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         Log() << "trace export starts\n";
 
         trace_exporter->step(0)->setMesh( trace_mesh );
-
+        trace_exporter->step(0)->add( "trace_g", t );
         trace_exporter->save();
         Log() << "trace export done\n";
     }
