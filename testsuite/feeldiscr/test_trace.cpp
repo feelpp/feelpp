@@ -272,6 +272,7 @@ Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     // auto range = boundaryfaces(mesh);
     auto trace_mesh = mesh->trace( boundaryfaces(mesh) );
+    auto Th = Xh->trace( boundaryfaces(mesh)) ;
     trace_export_ptrtype trace_exporter( trace_export_type::New( this->vm(),
                                                                  (boost::format( "trace-%1%-%2%-%3%" )
                                                                   % this->about().appName()

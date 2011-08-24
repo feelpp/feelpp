@@ -843,12 +843,12 @@ public:
 #endif
     typedef boost::shared_ptr<component_basis_type> component_basis_ptrtype;
 
-#if 0
     // trace space
     typedef typename mesh_type::trace_mesh_type trace_mesh_type;
+    typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
     typedef FunctionSpace<trace_mesh_type, bases_list> trace_functionspace_type;
     typedef typename trace_functionspace_type::element_type trace_element_type;
-#endif
+
     // geomap
     typedef typename mesh_type::gm_type gm_type;
     typedef typename mesh_type::gm1_type gm1_type;
@@ -1850,6 +1850,16 @@ public:
          * @return the finite element space associated with the n-th component
          */
         component_functionspace_ptrtype const& compSpace() const { return _M_functionspace->compSpace(); }
+
+        /**
+         * \return trace space
+         */
+        template<typename RangeT>
+        trace_mesh_ptrtype
+        trace( RangeT range = boundaryfaces( this->mesh() ) )  const
+            {
+                return trace_functionspace_type::New( this->mesh()->trace(range) );
+            }
 
         /**
          * \return the number of dof
