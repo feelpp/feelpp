@@ -1000,8 +1000,9 @@ public:
         typedef typename matrix_type::value_type id_type;
 #else
         typedef Eigen::Matrix<value_type,nComponents1,1> id_type;
-        typedef Eigen::Matrix<value_type,nComponents1,nDim> grad_type;
-        typedef Eigen::Matrix<value_type,nDim,nDim> hess_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nDim> ref_grad_type;
+        typedef Eigen::Matrix<value_type,nComponents1,NDim> grad_type;
+        typedef Eigen::Matrix<value_type,NDim,NDim> hess_type;
         typedef Eigen::Matrix<value_type,1,1> div_type;
         typedef Eigen::Matrix<value_type,nComponents1,1> dn_type;
         typedef Eigen::Matrix<value_type,3,1> curl_type;
@@ -1950,7 +1951,7 @@ public:
         geometric_mapping_context_ptrtype _M_gmc;
 
         boost::multi_array<id_type,2> _M_phi;
-        boost::multi_array<grad_type,2> _M_gradphi;
+        boost::multi_array<ref_grad_type,2> _M_gradphi;
         boost::multi_array<hess_type,2> _M_hessphi;
         boost::multi_array<dn_type,2> _M_dn;
         boost::multi_array<grad_type,2> _M_grad;
