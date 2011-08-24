@@ -29,21 +29,11 @@
 #include <feel/options.hpp>
 
 #include <feel/feelalg/backend.hpp>
-
 #include <feel/feeldiscr/functionspace.hpp>
-
 #include <feel/feeldiscr/operatortrace.hpp>
-
 #include <feel/feeldiscr/region.hpp>
-
-#include <feel/feelpoly/im.hpp>
-
 #include <feel/feelfilters/gmsh.hpp>
-
 #include <feel/feelfilters/exporter.hpp>
-
-#include <feel/feelpoly/polynomialset.hpp>
-
 #include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
@@ -72,7 +62,7 @@ makeAbout()
     AboutData about( "test_trace" ,
                      "test_trace" ,
                      "0.2",
-                     "nD(n=1,2,3) Test on simplices or simplex products",
+                     "nD(n=1,2,3) Test Trace operations on simplices or simplex products",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2008-2009 Universite Joseph Fourier");
 
@@ -102,51 +92,20 @@ public:
 
     typedef typename imesh<double_type,Dim>::convex_type convex_type;
     typedef typename imesh<double_type,Dim>::type mesh_type;
-    // typedef typename mesh_type::value_type value_type;
     typedef typename imesh<double_type,Dim>::ptrtype mesh_ptrtype;
+    typedef typename mesh_type::trace_mesh_type trace_mesh_type;
+    typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
+
+
     typedef FunctionSpace<mesh_type, bases<Lagrange<Order, Scalar> >, double> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef typename space_type::element_type element_type;
-    typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
     typedef Backend<double_type> backend_type;
 
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
-
-    typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
-
-    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-
-    typedef typename backend_type::vector_type vector_type;
-
-    typedef typename backend_type::vector_ptrtype vector_ptrtype;
-
     typedef Exporter<mesh_type> export_type;
-
     typedef boost::shared_ptr<export_type> export_ptrtype;
-
-    //***********************************************************************
-
-    // typedef MeshType mesh_type;
-
-    // typedef typename mesh_type::value_type value_type;
-
-    // typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
-    //typedef typename boost::tuples::element<0, mesh_type>::type idim_type;
-    // typedef typename boost::tuples::element<1, mesh_type>::type iterator_type;
-
-    typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
-                              mpl::identity< Mesh< Simplex< Dim-1, Order,mesh_type::nRealDim>, value_type > >,
-                              mpl::identity< Mesh< Hypercube<Dim-1,Order,mesh_type::nRealDim>, value_type > > >::type::type mesh_trace_type;
-    typedef boost::shared_ptr<mesh_trace_type> mesh_trace_ptrtype;
-
-    // typedef typename mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> >,
-    //                            mesh_type,
-    //                            mesh_trace_type>::type mesh_build_type;
-
-    //typedef boost::shared_ptr<mesh_build_type> mesh_build_ptrtype;
-
-    //***********************************************************************
+    typedef Exporter<trace_mesh_type> trace_export_type;
+    typedef boost::shared_ptr<trace_export_type> trace_export_ptrtype;
 
 
 
@@ -220,9 +179,9 @@ Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                                       _h=X[0] ) );
 
     space_ptrtype Xh = space_type::New( mesh );
-    element_type u( Xh, "u" );
-    element_type v( Xh, "v" );
-    element_type gproj( Xh, "v" );
+    auto u = Xh->element();
+    auto v = Xh->element();
+    auto gprof = Xh->element();
 
     double_type pi = M_PI;
 
@@ -291,48 +250,6 @@ Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     element_type e( Xh, "e" );
     e = vf::project( Xh, elements(mesh), g );
 
-    // auto range = boundaryfaces(mesh);
-    auto trace_mesh = mesh->trace( boundaryfaces(mesh) );
-
-    // location_element_const_iterator it,en;
-    // boost::tie(it,en) = mesh->boundaryElements( 0 );
-    // mesh_ptrtype meshbdy( new mesh_type );
-    // mesh->trace( *meshbdy, it, en );
-
-    // double intm1 = integrate( markedfaces(meshbdy,"Dirichlet"), cst(1.) ).evaluate()(0,0);
-    // double intm2 = integrate( markedfaces(mesh,"Dirichlet"), cst(1.) ).evaluate()(0,0);
-
-    // std::cout << "meshbdy  " << intm1 << "\n";
-    // std::cout << "mesh  " << intm2 << "\n";
-
-    // mesh_ptrtype meshint( new mesh_type );
-    // boost::tie(it,en) = mesh->internalElements( 0 );
-    // mesh->trace( *meshint, it, en );
-
-    // double intm3 = integrate( elements(meshint), cst(1.) ).evaluate()(0,0);
-    // double intm4 = integrate( internalelements(mesh), cst(1.) ).evaluate()(0,0);
-    // std::cout << "meshint  " << intm3 << "\n";
-    // std::cout << "mesh  " << intm4 << "\n";
-
-    // auto Yh = space_type::New( meshbdy );
-    // auto ui = Yh->element();
-
-    // auto op_trace = operatorTrace( Yh, M_backend );
-
-    // auto u_trace = op_trace->trace( _range=markedfaces(meshbdy,"Dirichlet"), _expr=idv(u));
-
-    // auto g_proj = vf::project( _space=Yh, _range=markedfaces(meshbdy,"Dirichlet"), _expr=g );
-
-    // auto u_proj = vf::project( _space=Yh, _range=markedfaces(meshbdy,"Dirichlet"), _expr=idv(u) );
-
-    // double error = integrate( markedfaces(meshbdy,"Dirichlet"), idv(u)-idv(u_trace) ).evaluate()(0,0);
-
-    // double error1 = integrate( markedfaces(meshbdy,"Neumann"), idv(u)-idv(u_trace) ).evaluate()(0,0);
-
-    // std::cout << "error  =" << error << "\n";
-    // std::cout << "error1  =" << error1 << "\n";
-
-
 
     export_ptrtype exporter( export_type::New( this->vm(),
                                                (boost::format( "%1%-%2%-%3%" )
@@ -342,7 +259,7 @@ Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     if ( exporter->doExport() )
     {
-        Log() << "exportResults starts\n";
+        Log() << "export starts\n";
 
         exporter->step(0)->setMesh( mesh );
 
@@ -350,30 +267,26 @@ Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         exporter->step(0)->add( "g", e );
 
         exporter->save();
-        Log() << "exportResults done\n";
+        Log() << "export done\n";
     }
 
+    // auto range = boundaryfaces(mesh);
+    auto trace_mesh = mesh->trace( boundaryfaces(mesh) );
+    trace_export_ptrtype trace_exporter( trace_export_type::New( this->vm(),
+                                                                 (boost::format( "trace-%1%-%2%-%3%" )
+                                                                  % this->about().appName()
+                                                                  % shape
+                                                                  % Dim).str() ) );
 
-    // boost::shared_ptr<Exporter<mesh_type> > trace_exporter( Exporter<mesh_type>::New( "gmsh", std::string("submesh")
-    // + "_"
+    if ( trace_exporter->doExport() )
+    {
+        Log() << "trace export starts\n";
 
-                                                                                          // + mesh_type::shape_type::name() ) );
+        trace_exporter->step(0)->setMesh( mesh );
 
-    // export_ptrtype trace_exporter( export_type::New( this->vm(),
-    //                                            (boost::format( "%1%-%2%" )
-    //                                             % this->about().appName()
-    //                                             % Dim).str() ) );
-
-    // std::cout<<"export starts\n";
-    // trace_exporter->step(0)->setMesh( meshbdy );
-    // trace_exporter->step(0)->add( "u", u_proj );
-    // trace_exporter->step(0)->add( "trace(u)", u_trace );
-    // trace_exporter->step(0)->add( "g", g_proj );
-    // trace_exporter->save();
-
-    // std::cout<<"export done\n";
-
-
+        trace_exporter->save();
+        Log() << "trace export done\n";
+    }
 
 } // Test::run
 
