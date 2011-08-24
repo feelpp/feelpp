@@ -22,7 +22,7 @@
 #
 #
 if( PETSC_FOUND )
-  set( FEEL_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp)
+  set( FEEL_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp functionspetsc.cpp)
 
   if ( HAVE_SLEPC )
     set( FEEL_SLEPC_SRCS solvereigenslepc.cpp )

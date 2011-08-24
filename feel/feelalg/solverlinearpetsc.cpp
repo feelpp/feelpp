@@ -51,6 +51,7 @@
 #ifdef HAVE_PETSC_H
 
 #include <feel/feelalg/solverlinearpetsc.hpp>
+#include <feel/feelalg/functionspetsc.hpp>
 
 namespace Feel
 {
@@ -151,6 +152,9 @@ void SolverLinearPetsc<T>::init ()
         this->setPetscSolverType();
         this->setPetscPreconditionerType();
 
+        // sets the software that is used to perform the factorization
+        PetscPCFactorSetMatSolverPackage(_M_pc,this->matSolverPackageType());
+
         // Set the options from user-input
         // Set runtime options, e.g.,
         //      -ksp_type <type> -pc_type <type> -ksp_monitor -ksp_rtol <rtol>
@@ -164,6 +168,7 @@ void SolverLinearPetsc<T>::init ()
 
 
 #endif
+
 
         // Notify PETSc of location to store residual history.
         // This needs to be called before any solves, since

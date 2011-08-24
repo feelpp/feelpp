@@ -149,6 +149,15 @@ public:
     FieldSplitType fieldSplitType() const { return _M_fieldSplit_type; }
 
     /**
+     * Sets the type of preconditioner to use.
+     */
+    void setMatSolverPackageType (const MatSolverPackageType mspackt) { M_matSolverPackage_type = mspackt; }
+    /**
+     * Returns the type of preconditioner to use.
+     */
+    MatSolverPackageType matSolverPackageType () const { return M_matSolverPackage_type; }
+
+    /**
      * \return the preconditioner matrix structure
      * it may not be relevant to all non linear solvers
      */
@@ -247,6 +256,12 @@ protected:
     PreconditionerType _M_preconditioner_type;
 
     FieldSplitType _M_fieldSplit_type;
+
+    /**
+     * Enum the software that is used to perform the factorization
+     */
+    MatSolverPackageType M_matSolverPackage_type;
+
 
     /**
      * Flag indicating if the data structures have been initialized.

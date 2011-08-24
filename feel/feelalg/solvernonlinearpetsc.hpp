@@ -59,6 +59,7 @@ extern "C" {
 
 namespace Feel
 {
+
 /**
  * \class SolverNonLinearPetsc
  * \brief Petsc non linear solvers interface
@@ -181,7 +182,6 @@ private:
      * \p _preconditioner_type
      */
     void setPetscPreconditionerType ();
-
 
     mpi::communicator M_comm;
 

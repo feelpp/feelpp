@@ -232,6 +232,8 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
                                   _dtolerance=this->dTolerance(),
                                   _maxit = this->maxIterations() );
     M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
+    M_solver_petsc.setMatSolverPackageType( this->matSolverPackageEnumType() );
+
     //std::pair<size_type,value_type> res = M_solver_petsc.solve( *A, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
     auto res = M_solver_petsc.solve( *A, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
     Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.get<1>()/*first*/ << "\n";
@@ -256,6 +258,8 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
                                   _dtolerance=this->dTolerance(),
                                   _maxit = this->maxIterations() );
     M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
+    M_solver_petsc.setMatSolverPackageType( this->matSolverPackageEnumType() );
+
     std::pair<size_type,value_type> res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations() );
     Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.first << "\n";
     Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.second << "\n";
@@ -265,6 +269,7 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
 } // BackendPetsc::solve
 
 po::options_description backendpetsc_options( std::string const& prefix = "" );
+
 #endif // HAVE_PETSC_H
 } // Feel
 

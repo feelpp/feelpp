@@ -217,6 +217,17 @@ public:
     PreconditionerType preconditionerType () const { return M_preconditioner_type; }
 
     /**
+     * Sets the type of preconditioner to use.
+     */
+    void setMatSolverPackageType (const MatSolverPackageType mspackt) { M_matSolverPackage_type = mspackt; }
+    /**
+     * Returns the type of preconditioner to use.
+     */
+    MatSolverPackageType matSolverPackageType () const { return M_matSolverPackage_type; }
+
+
+
+    /**
      * set reuse jacobian and/or preconditioner
      *  - jac=-1: means never rebuilt (preconditioner is not rebuit either)
      *  - jac=-2: build at each new nonlinear iterations (preconditioner is not rebuit either)
@@ -329,6 +340,11 @@ protected:
      * Enum statitng with type of preconditioner to use.
      */
     PreconditionerType M_preconditioner_type;
+
+    /**
+     * Enum the software that is used to perform the factorization
+     */
+    MatSolverPackageType M_matSolverPackage_type;
 
     /**
      * Two differents tolerances on the residual for the resolution of non linear system

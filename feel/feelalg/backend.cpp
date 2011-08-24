@@ -52,7 +52,8 @@ Backend<T>::Backend()
     M_maxit( 1000 ),
     M_ksp( "gmres" ),
     M_pc( "lu" ),
-    M_fieldSplit("additive")
+    M_fieldSplit("additive"),
+    M_pcFactorMatSolverPackage("petsc")
 {
 }
 
@@ -72,7 +73,8 @@ Backend<T>::Backend( Backend const& backend )
     M_maxit( backend.M_maxit ),
     M_ksp( backend.M_ksp ),
     M_pc( backend.M_pc ),
-    M_fieldSplit( backend.M_fieldSplit)
+    M_fieldSplit( backend.M_fieldSplit ),
+    M_pcFactorMatSolverPackage( backend.M_pcFactorMatSolverPackage )
 {
 }
 template <typename T>
@@ -90,7 +92,8 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     M_maxit( vm[prefixvm(prefix,"ksp-maxit")].template as<size_type>() ),
     M_ksp( vm[prefixvm(prefix,"ksp-type")].template as<std::string>() ),
     M_pc( vm[prefixvm(prefix,"pc-type")].template as<std::string>() ),
-    M_fieldSplit( vm[prefixvm(prefix,"fieldsplit-type")].template as<std::string>() )
+    M_fieldSplit( vm[prefixvm(prefix,"fieldsplit-type")].template as<std::string>() ),
+    M_pcFactorMatSolverPackage( vm[prefixvm(prefix,"pc-factor-mat-solver-package-type")].template as<std::string>() )
 {
 }
 template <typename T>
@@ -244,7 +247,9 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 {
     M_nlsolver->setPreconditionerType( this->pcEnumType() );
     M_nlsolver->setKspSolverType( this->kspEnumType() );
+    M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
     M_nlsolver->setPrecMatrixStructure( this->precMatrixStructure() );
+
     std::cout << "[nlSolve] reusepc:" << reusePC << std::endl;
     if ( reusePC || reuseJac )
     {
@@ -283,6 +288,9 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
                      vector_ptrtype& b,
                      const double tol, const int its )
 {
+
+    M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
+
     M_nlsolver->init();
     M_nlsolver->setPreconditionerType( this->pcEnumType() );
     M_nlsolver->setKspSolverType( this->kspEnumType() );
@@ -418,6 +426,27 @@ Backend<T>::fieldSplitEnumType() const
 
 } //Backend fieldSplitEnumType
 
+template<typename T>
+MatSolverPackageType
+Backend<T>::matSolverPackageEnumType() const
+{
+    if (this->pcFactorMatSolverPackageType()=="spooles")           return MATSOLVER_SPOOLES;
+    else if (this->pcFactorMatSolverPackageType()=="superlu")      return MATSOLVER_SUPERLU;
+    else if (this->pcFactorMatSolverPackageType()=="superlu-dist") return MATSOLVER_SUPERLU_DIST;
+    else if (this->pcFactorMatSolverPackageType()=="umfpack")      return MATSOLVER_UMFPACK;
+    else if (this->pcFactorMatSolverPackageType()=="essl")         return MATSOLVER_ESSL;
+    else if (this->pcFactorMatSolverPackageType()=="lusol")        return MATSOLVER_LUSOL;
+    else if (this->pcFactorMatSolverPackageType()=="mumps")        return MATSOLVER_MUMPS;
+    else if (this->pcFactorMatSolverPackageType()=="pastix")       return MATSOLVER_PASTIX;
+    else if (this->pcFactorMatSolverPackageType()=="dscpack")      return MATSOLVER_DSCPACK;
+    else if (this->pcFactorMatSolverPackageType()=="matlab")       return MATSOLVER_MATLAB;
+    else if (this->pcFactorMatSolverPackageType()=="petsc")        return MATSOLVER_PETSC;
+    else if (this->pcFactorMatSolverPackageType()=="plapack")      return MATSOLVER_PLAPACK;
+    else if (this->pcFactorMatSolverPackageType()=="bas")          return MATSOLVER_BAS;
+    else return MATSOLVER_PETSC;
+} // Backend matSolverPackageEnumType
+
+
 /*
  * Explicit instantiations
  */
@@ -448,6 +477,9 @@ po::options_description backend_options( std::string const& prefix )
 
         // preconditioner options
         (prefixvm(prefix,"pc-type").c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of preconditioners (lu, ilut, ilutp, diag, id,...)")
+        (prefixvm(prefix,"pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
+         "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mump,...)")
+
         (prefixvm(prefix,"ilu-threshold").c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "threshold value for preconditioners")
         (prefixvm(prefix,"ilu-fillin").c_str(), Feel::po::value<int>()->default_value( 2 ), "fill-in level value for preconditioners")
 
@@ -469,4 +501,5 @@ po::options_description backend_options( std::string const& prefix )
     return _options;
 }
 
-}
+
+} // namespace Feel

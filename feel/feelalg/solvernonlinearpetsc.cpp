@@ -35,6 +35,7 @@
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
+#include <feel/feelalg/functionspetsc.hpp>
 
 
 //--------------------------------------------------------------------
@@ -445,6 +446,9 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     this->setPetscKspSolverType();
     this->setPetscPreconditionerType();
+
+    PetscPCFactorSetMatSolverPackage(M_pc,this->matSolverPackageType());
+    //this->setPetscMatSolverPackageType();
 
     //PCSetType(pc,PCNONE);
     //PCSetType(M_pc,PCILU);
