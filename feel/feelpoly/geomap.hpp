@@ -1801,6 +1801,7 @@ public:
        \return the dimension of the space of the real element
     */
     uint16_type N() const { return G().size1(); }
+    uint16_type P() const { return _M_gm->dim(); }
 
     /**
        \return the node in the reference element
@@ -1947,7 +1948,15 @@ private:
     void updateResidual( dense_vector_type const& x, dense_vector_type& r )
     {
         dense_vector_type y = _M_gm->transform( x, _M_G );
-        r = y - _M_xreal ;
+        if ( N() == P() )
+            r = y - _M_xreal ;
+        else
+        {
+            _M_gm->gradient( x, _M_g );
+            ublas::axpy_prod( _M_G, _M_g, _M_K );
+            ublas::prod( ublas::trans( _M_K ), y-_M_xreal, r );
+        }
+
 #if 0
         Log() << "[geomap::residual] begin ------------------------------\n";
         Log() << "[geomap::residual] x =" << x << "\n";
@@ -1964,7 +1973,13 @@ private:
     void updateJacobian( dense_vector_type const& x, dense_matrix_type& j )
     {
         _M_gm->gradient( x, _M_g );
-        ublas::axpy_prod( _M_G, _M_g, j );
+        if ( N() == P() )
+            ublas::axpy_prod( _M_G, _M_g, j );
+        else
+        {
+            ublas::axpy_prod( _M_G, _M_g, _M_K );
+            ublas::prod( ublas::trans( _M_K ), _M_K, j );
+        }
 #if 0
         Log() << "[geomap::jacobian] begin ------------------------------\n";
         Log() << "[geomap::jacobian] x =" << x << "\n";
@@ -2113,8 +2128,8 @@ private:
         _M_xref = barycenterRef();
 #endif
 
-        dense_matrix_type J( N, N );
-        dense_vector_type R( N );
+        dense_matrix_type J( P, P );
+        dense_vector_type R( P );
 
         updateResidual( _M_xref, R );
         updateJacobian( _M_xref, J );
