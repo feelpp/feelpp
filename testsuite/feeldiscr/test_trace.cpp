@@ -79,7 +79,7 @@ struct imesh
     typedef boost::shared_ptr<type> ptrtype;
 };
 
-template<int Dim>
+template<int Dim, int Order>
 class Test
     :
     public Simget
@@ -87,12 +87,11 @@ class Test
     typedef Simget super;
 public:
 
-    static const uint16_type Order = 3;
     typedef double double_type;
 
-    typedef typename imesh<double_type,Dim>::convex_type convex_type;
-    typedef typename imesh<double_type,Dim>::type mesh_type;
-    typedef typename imesh<double_type,Dim>::ptrtype mesh_ptrtype;
+    typedef typename imesh<double_type,Dim,Order>::convex_type convex_type;
+    typedef typename imesh<double_type,Dim,Order>::type mesh_type;
+    typedef typename imesh<double_type,Dim,Order>::ptrtype mesh_ptrtype;
     typedef typename mesh_type::trace_mesh_type trace_mesh_type;
     typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
 
@@ -102,9 +101,9 @@ public:
     typedef Backend<double_type> backend_type;
 
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
-    typedef Exporter<mesh_type> export_type;
+    typedef Exporter<mesh_type,Order> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    typedef Exporter<trace_mesh_type> trace_export_type;
+    typedef Exporter<trace_mesh_type,Order> trace_export_type;
     typedef boost::shared_ptr<trace_export_type> trace_export_ptrtype;
 
 
@@ -138,14 +137,12 @@ private:
     std::string shape;
 }; // Test
 
-template<int Dim> const uint16_type Test<Dim>::Order;
-
-template<int Dim>
+template<int Dim,int Order>
 void
-Test<Dim>::run()
+Test<Dim,Order>::run()
 {
     std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute Test<" << Dim << ">\n";
+    std::cout << "Execute Test<" << Dim << "," << Order << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
     if ( shape == "hypercube" )
@@ -155,15 +152,15 @@ Test<Dim>::run()
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
-template<int Dim>
+template<int Dim, int Order>
 void
-Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
+Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";
 
     if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%/h_%5%/" )
+        Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%G%4%/h_%5%/" )
                                        % this->about().appName()
                                        % shape
                                        % Dim
@@ -175,6 +172,7 @@ Test<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                                       _usenames=true,
                                                       _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
                                                       _shape=shape,
+                                                      _order=Order,
                                                       _dim=Dim,
                                                       _h=X[0] ) );
 
@@ -305,7 +303,9 @@ main( int argc, char** argv )
     }
 
     // app.add( new Test<1>( app.vm(), app.about() ) );
-    app.add( new Test<2>( app.vm(), app.about() ) );
+    //app.add( new Test<2,1>( app.vm(), app.about() ) );
+    app.add( new Test<2,2>( app.vm(), app.about() ) );
+    //app.add( new Test<2,3>( app.vm(), app.about() ) );
     // app.add( new Test<3>( app.vm(), app.about() ) );
 
     app.run();
