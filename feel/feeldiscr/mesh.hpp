@@ -737,7 +737,7 @@ typename Mesh<Shape, T>::trace_mesh_ptrtype
 Mesh<Shape, T>::trace( RangeT const& range )
 {
 
-    return createSubmesh(this->shared_from_this(), range);
+    return Feel::createSubmesh(this->shared_from_this(), range);
 
 }
 
