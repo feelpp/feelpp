@@ -241,5 +241,22 @@ enum WeakDirichlet
     };
 
 
+enum MatSolverPackageType
+    {
+        MATSOLVER_SPOOLES=0,
+        MATSOLVER_SUPERLU,
+        MATSOLVER_SUPERLU_DIST,
+        MATSOLVER_UMFPACK,
+        MATSOLVER_ESSL,
+        MATSOLVER_LUSOL,
+        MATSOLVER_MUMPS,
+        MATSOLVER_PASTIX,
+        MATSOLVER_DSCPACK,
+        MATSOLVER_MATLAB,
+        MATSOLVER_PETSC,
+        MATSOLVER_PLAPACK,
+        MATSOLVER_BAS
+    };
+
 } // Feel
 #endif /* __FeelAlgEnums_H */

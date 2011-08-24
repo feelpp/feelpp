@@ -279,20 +279,29 @@ public:
     std::string fieldsplitType() const { return M_fieldSplit; }
 
     /**
-     * return enum pc type from options
+     * \return enum pc type from options
      **/
     PreconditionerType pcEnumType() const;
 
     /**
-     * return enum solver type from options
+     * \return enum solver type from options
      **/
     SolverType kspEnumType() const;
 
     /**
-     * return enum fieldsplit type from options
+     * \return enum fieldsplit type from options
      **/
     FieldSplitType fieldSplitEnumType() const;
 
+    /**
+     * \return the type of pcFactorMatSolverPackageType
+     */
+    std::string pcFactorMatSolverPackageType() const { return M_pcFactorMatSolverPackage; }
+
+    /**
+     * \return enum MatSolverPackage type from options
+     **/
+    MatSolverPackageType matSolverPackageEnumType() const;
 
     /**
      * \return the type of preconditioner associated to the matrix
@@ -631,6 +640,9 @@ private:
     std::string M_ksp;
     std::string M_pc;
     std::string M_fieldSplit;
+    std::string M_pcFactorMatSolverPackage;
+
+
     //std::map<std::string,boost::tuple<std::string,std::string> > M_sub;
 
 };
