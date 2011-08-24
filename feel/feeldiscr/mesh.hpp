@@ -37,6 +37,7 @@
 
 #include <feel/feelcore/context.hpp>
 
+#include <feel/feelmesh/mesh0d.hpp>
 #include <feel/feelmesh/mesh1d.hpp>
 #include <feel/feelmesh/mesh2d.hpp>
 #include <feel/feelmesh/mesh3d.hpp>
@@ -95,18 +96,22 @@ template<typename Mesh> class Partitioner;
 template <typename GeoShape, typename T = double>
 class Mesh
     :
-        public mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<1> >,
-                        mpl::identity<Mesh1D<GeoShape > >,
-                        typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
-                                          mpl::identity<Mesh2D<GeoShape> >,
-                                          mpl::identity<Mesh3D<GeoShape> > >::type>::type::type,
+        public mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
+                        mpl::identity<Mesh0D<GeoShape > >,
+                        typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<1> >,
+                                          mpl::identity<Mesh1D<GeoShape > >,
+                                          typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
+                                                            mpl::identity<Mesh2D<GeoShape> >,
+                                                            mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type,
         public boost::enable_shared_from_this< Mesh<GeoShape,T> >
 {
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<1> >,
-                              mpl::identity<Mesh1D<GeoShape> >,
-                              typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
-                                                mpl::identity<Mesh2D<GeoShape> >,
-                                                mpl::identity<Mesh3D<GeoShape> > >::type>::type::type super;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
+                              mpl::identity<Mesh0D<GeoShape> >,
+                              typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<1> >,
+                                                mpl::identity<Mesh1D<GeoShape> >,
+                                                typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
+                                                                  mpl::identity<Mesh2D<GeoShape> >,
+                                                                  mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type super;
 public:
 
 
