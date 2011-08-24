@@ -71,7 +71,9 @@ public:
                               mpl::identity<GeoElement3D<ElementType::nRealDim, ElementType> >,
                               typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<2> >,
                                                 mpl::identity<GeoElement2D<ElementType::nRealDim, ElementType> >,
-                                                mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType> > >::type>::type::type element_type;
+                                                typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<1> >,
+                                                                  mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType> >,
+                                                                  mpl::identity<GeoElement0D<ElementType::nRealDim, ElementType> > >::type>::type>::type::type element_type;
 
     /**
      * multi-indexed element container

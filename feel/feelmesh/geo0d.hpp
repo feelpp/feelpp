@@ -59,11 +59,11 @@ class Geo0D
         public boost::equality_comparable<Geo0D<Dim,T> >,
         public boost::less_than_comparable<Geo0D<Dim,T> >,
         public boost::less_than_comparable<Geo0D<Dim,T>, size_type>,
-        public GeoPoint,
+        public GeoEntity<Simplex<0, 1, Dim> >,
         public node<T, Dim>::type
 {
-    typedef GeoPoint super;
-    typedef typename node<T, nDim>::type super2;
+    typedef GeoEntity<Simplex<0, 1, Dim> > super;
+    typedef typename node<T, Dim>::type super2;
 public:
 
     typedef Geo0D<Dim,T> self_type;
@@ -522,7 +522,7 @@ Geo0D<Dim, T>::showMe( bool /*verbose*/, std::ostream & out ) const
 {
     out.setf( std::ios::scientific, std::ios::floatfield );
     out << "----- BEGIN of Geo0D ---\n";
-    out << "id = " << id() << " node:" << node() << "\n";
+    out << "id = " << this->id() << " node:" << this->node() << "\n";
     out << "is a vertex = " << isVertex() << "\n";
     out << "----- END OF Geo0D ---\n";
     return out;
