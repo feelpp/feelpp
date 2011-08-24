@@ -736,11 +736,9 @@ template<typename RangeT>
 typename Mesh<Shape, T>::trace_mesh_ptrtype
 Mesh<Shape, T>::trace( RangeT const& range )
 {
-    /*
-    createSubmesh( mesh,
-                   begin_elt,
-                   end_elt );
-    */
+
+    return createSubmesh(this->shared_from_this(), range);
+
 }
 
 template<typename Shape, typename T>
