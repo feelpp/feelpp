@@ -231,6 +231,10 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     auto u1 = Xh1->element();
     auto v1 = Xh1->element();
 
+    lagmult_space_ptrtype Lh1 = lagmult_space_type::New( mesh1->trace( markedfaces(mesh,"gamma") ));
+    auto mu = Lh1->element();
+    auto nu = Lh1->element();
+
     space_ptrtype Xh2 = space_type::New( mesh2 );
     auto u2 = Xh2->element();
     auto v2 = Xh2->element();
@@ -242,15 +246,6 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
 
-    using namespace Feel::vf;
-
-    /**
-     * Construction of the right hand side. F is the vector that holds
-     * the algebraic representation of the right habd side of the
-     * problem
-     */
-    /** \code */
-    //# marker2 #
     auto F1 = M_backend->newVector( Xh1 );
     form1( _test=Xh, _vector=F, _init=true ) =
         integrate( elements(mesh), f*id(v) )+
@@ -261,72 +256,42 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
                    g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
 
     auto D = M_backend->newMatrix( Xh, Xh );
-    /** \endcode */
 
-    //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
-    /** \code */
-    form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), nu*gradt(u)*trans(grad(v)) );
-    /** \endcode */
-    //# endmarker3 #
 
-    if ( this->comm().size() != 1 || weakdir )
-        {
-            /** weak dirichlet conditions treatment for the boundaries marked 1 and 3
-             * -# assemble \f$\int_{\partial \Omega} -\nabla u \cdot \mathbf{n} v\f$
-             * -# assemble \f$\int_{\partial \Omega} -\nabla v \cdot \mathbf{n} u\f$
-             * -# assemble \f$\int_{\partial \Omega} \frac{\gamma}{h} u v\f$
-             */
-            /** \code */
-            //# marker10 #
-            form2( Xh, Xh, D ) +=
-                integrate( markedfaces(mesh,"Dirichlet"),
-                           -(gradt(u)*vf::N())*id(v)
-                           -(grad(v)*vf::N())*idt(u)
-                           +penaldir*id(v)*idt(u)/hFace());
-            D->close();
-            //# endmarker10 #
-            /** \endcode */
-        }
-    else
-        {
-            /** strong(algebraic) dirichlet conditions treatment for the boundaries marked 1 and 3
-             * -# first close the matrix (the matrix must be closed first before any manipulation )
-             * -# modify the matrix by cancelling out the rows and columns of D that are associated with the Dirichlet dof
-             */
-            /** \code */
-            //# marker5 #
-            D->close();
-            form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, "Dirichlet"), u, F, g );
-            //# endmarker5 #
-            /** \endcode */
+    form2( Xh1, Xh1, D1, _init=true ) =
+        integrate( elements(mesh), nu*gradt(u1)*trans(grad(v1)) );
+    form2( _trial=Xh1, _test=Lh, B1, _init=true ) +=
+        integrate( markedfaces(mesh,"gamma"), idt(u1)*id(nu) );
 
-        }
-    /** \endcode */
+    form2( Xh1, Xh1, D1 ) +=
+        integrate( markedfaces(mesh,"Dirichlet"),
+                   -(gradt(u1)*vf::N())*id(v1)
+                   -(grad(v1)*vf::N())*idt(u1)
+                   +penaldir*id(v1)*idt(u1)/hFace());
 
-    //! solve the system
-    /** \code */
-	//# marker6 #
+    form2( Xh2, Xh2, D2, _init=true ) =
+        integrate( elements(mesh), nu*gradt(u2)*trans(grad(v2)) );
+
+    form2( _trial=Xh2, _test=Lh, B2, _init=true ) +=
+        integrate( markedfaces(mesh,"gamma"), -idt(u2)*id(nu) );
+
+
+    form2( Xh2, Xh2, D2 ) +=
+        integrate( markedfaces(mesh,"Dirichlet"),
+                   -(gradt(u2)*vf::N())*id(v2)
+                   -(grad(v2)*vf::N())*idt(u2)
+                   +penaldir*id(v2)*idt(u2)/hFace());
+    D->close();
+
     backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
-	//# endmarker6 #
-    /** \endcode */
 
-    //! compute the \f$L_2$ norm of the error
-    /** \code */
-    //# marker7 #
     double L2error2 =integrate(elements(mesh),
                                (idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
     double L2error =   math::sqrt( L2error2 );
 
 
     Log() << "||error||_L2=" << L2error << "\n";
-    //# endmarker7 #
-    /** \endcode */
 
-    //! save the results
-    /** \code */
-    //! project the exact solution
     element_type e( Xh, "e" );
     e = vf::project( Xh, elements(mesh), g );
 
