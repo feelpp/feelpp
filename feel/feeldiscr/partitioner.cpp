@@ -85,6 +85,10 @@ typedef Mesh<Simplex<1,2,2> > meshs122_t;
 const bool meshs122e = Partitioner<meshs122_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs122_t> );
 const bool meshs122g = Partitioner<meshs122_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs122_t> );
 
+typedef Mesh<Simplex<1,3,2> > meshs132_t;
+const bool meshs132e = Partitioner<meshs132_t>::Factory::type::instance().registerProduct( "metis", &detail::createMetis<meshs132_t> );
+const bool meshs132g = Partitioner<meshs132_t>::Factory::type::instance().registerProduct( "parmetis", &detail::createParmetis<meshs132_t> );
+
 //
 // Simplex 2,1
 //
@@ -208,14 +212,17 @@ template class Partitioner<Mesh<Simplex<2,2> > >;
 template class Partitioner<Mesh<Simplex<3,2> > >;
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 3 )
+template class Partitioner<Mesh<Simplex<1,3,2> > >;
 template class Partitioner<Mesh<Simplex<2,3> > >;
 template class Partitioner<Mesh<Simplex<3,3> > >;
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 4 )
+template class Partitioner<Mesh<Simplex<1,4,2> > >;
 template class Partitioner<Mesh<Simplex<2,4> > >;
 template class Partitioner<Mesh<Simplex<3,4> > >;
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 5 )
+template class Partitioner<Mesh<Simplex<1,5,2> > >;
 template class Partitioner<Mesh<Simplex<2,5> > >;
 template class Partitioner<Mesh<Simplex<3,5> > >;
 #endif
