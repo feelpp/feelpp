@@ -376,6 +376,7 @@ template class PartitionerMetis<Mesh<Hypercube<3,2> > >;
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 3 )
 template class PartitionerMetis<Mesh<Simplex<1,3> > >;
+template class PartitionerMetis<Mesh<Simplex<1,3,2> > >;
 template class PartitionerMetis<Mesh<Simplex<2,3> > >;
 template class PartitionerMetis<Mesh<Simplex<3,3> > >;
 
