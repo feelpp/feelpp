@@ -145,7 +145,9 @@ Test<Dim,Order>::run()
     std::cout << "Execute Test<" << Dim << "," << Order << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
-    if ( shape == "hypercube" )
+    if ( shape == "ellipsoid" )
+        X[1] = 2;
+    else if ( shape == "hypercube" )
         X[1] = 1;
     else // default is simplex
         X[1] = 0;
@@ -158,6 +160,7 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
 {
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";
+    if ( X[1] == 2 ) shape = "ellipsoid";
 
     if ( !this->vm().count( "nochdir" ) )
         Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%G%4%/h_%5%/" )
@@ -277,11 +280,45 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
 
     auto g_trace = op_trace->trace( _range=elements( Th->mesh() ), _expr=g);
 
+    double measure = integrate( elements( Th->mesh() ), cst(1.0), _quad=_Q<5>() ).evaluate()(0,0);
+    std::cout << " -- measure  =" << measure << "\n";
+    double e1 = integrate( _range=elements( Th->mesh() ), _expr=idv(t), _quad=_Q<15>() ).evaluate()(0,0);
+    std::cout << " -- |trace|  =" << e1 << "\n";
+    double e2 = integrate( _range=elements( Th->mesh() ), _expr=g, _quad=_Q<15>() ).evaluate()(0,0);
+    std::cout << " -- |g|_bdy  =" << e2 << "\n";
+    double e3 = integrate( _range=boundaryfaces(mesh), _expr=g, _quad=_Q<15>() ).evaluate()(0,0);
+    std::cout << " -- |g|  =" << e3 << "\n";
     double error = integrate( elements( Th->mesh() ), idv(t)-idv(g_trace) ).evaluate()(0,0);
+    std::cout << " -- |op_trace-trace|  =" << error << "\n";
 
-    std::cout << "error  =" << error << "\n";
+    std::vector<std::string> bdynames = boost::assign::list_of("Dirichlet")("Neumann");
+    BOOST_FOREACH( auto bdy, bdynames )
+    {
+        std::cout << "============================================================\n";
+        std::cout << "Boundary "  << bdy << "\n";
+        auto Lh = Xh->trace( markedfaces(mesh,bdy)) ;
+        auto l = vf::project( Lh, elements( Lh->mesh() ), g );
 
 
+        double measure = integrate( elements( Lh->mesh() ), cst(1.0), _quad=_Q<5>() ).evaluate()(0,0);
+        std::cout << " -- measure(" << bdy << ")  =" << measure << "\n";
+        double e1 = integrate( _range=elements( Lh->mesh() ), _expr=idv(l), _quad=_Q<15>() ).evaluate()(0,0);
+        std::cout << " -- |trace|(" << bdy << ")  =" << e1 << "\n";
+        double e2 = integrate( _range=elements( Lh->mesh() ), _expr=g, _quad=_Q<15>() ).evaluate()(0,0);
+        std::cout << " -- |g|_bdy(" << bdy << ")  =" << e2 << "\n";
+        double e3 = integrate( _range=markedfaces(mesh,bdy), _expr=g, _quad=_Q<15>() ).evaluate()(0,0);
+        std::cout << " -- |g|(" << bdy << ")  =" << e3 << "\n";
+
+        auto g2 = trans(vf::P())*vf::P();
+        auto l2 = vf::project( Lh, elements( Lh->mesh() ), g2 );
+        double p1 = integrate( _range=elements( Lh->mesh() ), _expr=idv(l2), _quad=_Q<15>() ).evaluate()(0,0);
+        std::cout << " -- proj(x^2+y^2)(" << bdy << ")  =" << p1 << "\n";
+        double p2 = integrate( _range=elements( Lh->mesh() ),  _expr=g2, _quad=_Q<15>() ).evaluate()(0,0);
+        std::cout << " -- x^2+y^2(" << bdy << ")  =" << p2 << "\n";
+        double p3 = integrate( _range=markedfaces( Xh->mesh(), bdy ),  _expr=g2, _quad=_Q<15>() ).evaluate()(0,0);
+        std::cout << " -- 2D(x^2+y^2)(" << bdy << ")  =" << p3 << "\n";
+
+    }
 
 
     trace_export_ptrtype trace_exporter( trace_export_type::New( this->vm(),
