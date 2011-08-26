@@ -82,6 +82,7 @@ public:
     BdfBase()
         :
         M_order( 1 ),
+        M_order_cur( 1 ),
         M_name( "bdf" ),
         M_time( 0.0 ),
         M_Ti( 0.0 ),
@@ -104,6 +105,7 @@ public:
         M_Ti( args[_initial_time | 0] ),
         M_Tf( args[_final_time | 1] ),
         M_dt( args[_time_step | 0.1] ),
+        M_iterations_between_order_change( 1 ),
         M_strategy( (BDFStragegy)args[_strategy | BDF_STRATEGY_DT_CONSTANT] ),
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
@@ -116,11 +118,13 @@ public:
     BdfBase( po::variables_map const& vm, std::string name )
         :
         M_order( vm["bdf.order"].as<int>() ),
+        M_order_cur( 1 ),
         M_name( name ),
         M_time( vm["bdf.time-initial"].as<double>() ),
         M_Ti( vm["bdf.time-initial"].as<double>() ),
         M_Tf( vm["bdf.time-final"].as<double>() ),
         M_dt( vm["bdf.time-step"].as<double>() ),
+        M_iterations_between_order_change( vm["bdf.iterations-between-order-change"].as<int>() ),
         M_strategy( (BDFStragegy)vm["bdf.strategy"].as<int>() ),
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
@@ -132,11 +136,13 @@ public:
     BdfBase( std::string name )
         :
         M_order( 1 ),
+        M_order_cur( 1 ),
         M_name( name ),
         M_time( 0. ),
         M_Ti( 0. ),
         M_Tf( 1.0 ),
         M_dt( 1.0 ),
+        M_iterations_between_order_change( 1 ),
         M_strategy( (BDFStragegy)0 ),
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
@@ -154,6 +160,7 @@ public:
         M_Ti( b.M_Ti ),
         M_Tf( b.M_Tf ),
         M_dt( b.M_dt ),
+        M_iterations_between_order_change( b.M_iterations_between_order_change ),
         M_strategy( b.M_strategy ),
         M_state( b.M_state ),
         M_n_restart( b.M_n_restart ),
@@ -179,11 +186,13 @@ public:
         if ( this != &b )
             {
                 M_order = b.M_order;
+                M_order_cur = b.M_order_cur;
                 M_name = b.M_name;
                 M_time = b.M_time;
                 M_Ti = b.M_Ti;
                 M_Tf = b.M_Tf;
                 M_dt = b.M_dt;
+                M_iterations_between_order_change = b.M_iterations_between_order_change;
                 M_n_restart = b.M_n_restart;
                 M_strategy = b.M_strategy;
                 M_state = b.M_state;
@@ -235,6 +244,12 @@ public:
 
     //! return the BDF strategy
     BDFStragegy strategy() const { return M_strategy; }
+
+    //! return the number of iterations between order change
+    int numberOfIterationsBetweenOrderChange() const { return M_iterations_between_order_change; }
+
+    //! return the number of iterations since last order change
+    int numberOfIterationsSinceOrderChange() const { return M_iteration-M_last_iteration_since_order_change; }
 
     //! return the number of restarts
     int nRestart() const { return M_n_restart; }
@@ -339,6 +354,8 @@ protected:
     //! time
     mutable double M_time;
     mutable int M_iteration;
+    mutable int M_last_iteration_since_order_change;
+    int M_iterations_between_order_change;
 
     //! initial time to start
     double M_Ti;
