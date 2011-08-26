@@ -83,8 +83,6 @@
 #include <feel/feelfilters/pointsettomesh.hpp>
 
 
-//#include <feel/feelvf/vf.hpp>
-
 namespace Feel
 {
     namespace fusion = boost::fusion;
