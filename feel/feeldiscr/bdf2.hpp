@@ -222,7 +222,7 @@ public:
     }
 
     //! return the order in time
-    int timeOrder() const { return M_order; }
+    int timeOrder() const { return M_order_cur; }
 
     //! return the initial time
     double timeInitial() const { return M_Ti; }
@@ -263,6 +263,8 @@ public:
         M_timer.restart();
         M_iteration = 1;
         M_time = M_Ti+this->timeStep();
+        // warning: this needs to be fixed wrt restart
+        M_order_cur = 1;
         return M_Ti;
     }
 
@@ -285,8 +287,17 @@ public:
         FEEL_ASSERT( state() == BDF_RUNNING ).error( "invalid BDF state" );
         M_real_time_per_iteration = M_timer.elapsed();
         M_timer.restart();
-        ++M_iteration;
         M_time += M_dt;
+        ++M_iteration;
+        if ( ( M_iteration - M_last_iteration_since_order_change == M_iterations_between_order_change )&&
+             M_order_cur < M_order )
+        {
+            M_last_iteration_since_order_change = M_iteration;
+            ++M_order_cur;
+        }
+        else
+            ++M_last_iteration_since_order_change;
+
         return M_time;
     }
 
@@ -320,6 +331,7 @@ public:
 protected:
     //! time order
     int M_order;
+    int M_order_cur;
 
     //! name of the file holding the bdf data
     std::string M_name;
