@@ -346,7 +346,7 @@ public:
 protected:
     //! time order
     int M_order;
-    int M_order_cur;
+    mutable int M_order_cur;
 
     //! name of the file holding the bdf data
     std::string M_name;
