@@ -280,6 +280,7 @@ public:
         M_iteration = 1;
         M_time = M_Ti+this->timeStep();
         // warning: this needs to be fixed wrt restart
+        M_last_iteration_since_order_change = 1;
         M_order_cur = 1;
         return M_Ti;
     }
@@ -311,8 +312,6 @@ public:
             M_last_iteration_since_order_change = M_iteration;
             ++M_order_cur;
         }
-        else
-            ++M_last_iteration_since_order_change;
 
         return M_time;
     }
