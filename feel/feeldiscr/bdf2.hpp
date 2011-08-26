@@ -118,7 +118,7 @@ public:
     BdfBase( po::variables_map const& vm, std::string name )
         :
         M_order( vm["bdf.order"].as<int>() ),
-        M_order_cur( 1 ),
+        M_order_cur( M_order ),
         M_name( name ),
         M_time( vm["bdf.time-initial"].as<double>() ),
         M_Ti( vm["bdf.time-initial"].as<double>() ),
@@ -155,6 +155,7 @@ public:
     BdfBase( BdfBase const& b )
         :
         M_order( b.M_order ),
+        M_order_cur( b.M_order_cur ),
         M_name( b.M_name ),
         M_time( b.M_time ),
         M_Ti( b.M_Ti ),
