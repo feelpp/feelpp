@@ -247,23 +247,25 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     value_type nu = this->vm()["nu"].template as<double>();
 
     auto F1 = M_backend->newVector( Xh1 );
-    form1( _test=Xh, _vector=F, _init=true ) =
+    form1( _test=Xh1, _vector=F1, _init=true ) =
         integrate( elements(mesh), f*id(v) )+
         integrate( markedfaces( mesh, "Neumann" ),
 				  nu*gradv(gproj)*vf::N()*id(v) );
-    form1( _test=Xh, _vector=F ) +=
+    form1( _test=Xh1, _vector=F1 ) +=
         integrate( markedfaces(mesh,"Dirichlet"),
                    g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
 
-    auto D = M_backend->newMatrix( Xh, Xh );
+    auto D1 = M_backend->newMatrix( Xh1, Xh1 );
 
 
     form2( Xh1, Xh1, D1, _init=true ) =
         integrate( elements(mesh), nu*gradt(u1)*trans(grad(v1)) );
-    form2( _trial=Xh1, _test=Lh, B1, _init=true ) +=
-        integrate( markedfaces(mesh,"gamma"), idt(u1)*id(nu) );
+    auto B1 = M_backend->newMatrix( Xh1, Lh1 );
+    form2( _trial=Xh1, _test=Lh1, B1, _init=true ) +=
+        integrate( markedfaces(mesh1,"gamma"), idt(u1)*id(nu) );
 
-    form2( Xh1, Xh1, D1 ) +=
+    auto D2 = M_backend->newMatrix( Xh2, Xh2 );
+    form2( Xh2, Xh2, D2 ) +=
         integrate( markedfaces(mesh,"Dirichlet"),
                    -(gradt(u1)*vf::N())*id(v1)
                    -(grad(v1)*vf::N())*idt(u1)
@@ -273,7 +275,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
         integrate( elements(mesh), nu*gradt(u2)*trans(grad(v2)) );
 
     form2( _trial=Xh2, _test=Lh, B2, _init=true ) +=
-        integrate( markedfaces(mesh,"gamma"), -idt(u2)*id(nu) );
+        integrate( markedfaces(mesh1,"gamma"), -idt(u2)*id(nu) );
 
 
     form2( Xh2, Xh2, D2 ) +=
