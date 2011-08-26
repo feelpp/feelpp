@@ -190,94 +190,12 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
     gproj = vf::project( Xh, elements(mesh), g );
 
     auto f = pi*pi*Dim*g;
-#if 0
-    bool weakdir = this->vm()["weakdir"].template as<int>();
-    double_type penaldir = this->vm()["penaldir"].template as<double>();
-    double_type nu = this->vm()["nu"].template as<double>();
-
-    using namespace Feel::vf;
-
-    auto F = M_backend->newVector( Xh );
-    form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), f*id(v) )+
-        integrate( markedfaces( mesh, "Neumann" ),
-                   nu*gradv(gproj)*vf::N()*id(v) );
-
-    if ( this->comm().size() != 1 || weakdir )
-    {
-
-        form1( _test=Xh, _vector=F ) +=
-            integrate( markedfaces(mesh,"Dirichlet"),
-                       g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
-
-    }
-    F->close();
-
-
-    auto D = M_backend->newMatrix( Xh, Xh );
-
-    form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), nu*gradt(u)*trans(grad(v)) );
-
-    if ( this->comm().size() != 1 || weakdir )
-        {
-
-            form2( Xh, Xh, D ) +=
-                integrate( markedfaces(mesh,"Dirichlet"),
-                           -(gradt(u)*vf::N())*id(v)
-                           -(grad(v)*vf::N())*idt(u)
-                           +penaldir*id(v)*idt(u)/hFace());
-            D->close();
-
-        }
-    else
-        {
-
-            D->close();
-            form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, "Dirichlet"), u, F, g );
-
-        }
-
-    backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
-
-    double L2error2 =integrate(elements(mesh),
-                               (idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
-    double L2error =   math::sqrt( L2error2 );
-
-
-    Log() << "||error||_L2=" << L2error << "\n";
-
-    auto e = Xh->element();
-    e = vf::project( Xh, elements(mesh), g );
-
-
-    export_ptrtype exporter( export_type::New( this->vm(),
-                                               (boost::format( "%1%-%2%-%3%" )
-                                                % this->about().appName()
-                                                % shape
-                                                % Dim).str() ) );
-
-    if ( exporter->doExport() )
-    {
-        Log() << "export starts\n";
-
-        exporter->step(0)->setMesh( mesh );
-
-        exporter->step(0)->add( "u", u );
-        exporter->step(0)->add( "g", e );
-
-        exporter->save();
-        Log() << "export done\n";
-    }
-#endif
 
     auto trace_mesh = mesh->trace( boundaryfaces(mesh) );
     auto Th = Xh->trace( boundaryfaces(mesh)) ;
     auto t = vf::project( Th, elements( Th->mesh() ), g );
 
     auto op_trace = operatorTrace( Th, M_backend );
-
     auto g_trace = op_trace->trace( _range=elements( Th->mesh() ), _expr=g);
 
     double measure = integrate( elements( Th->mesh() ), cst(1.0), _quad=_Q<5>() ).evaluate()(0,0);
