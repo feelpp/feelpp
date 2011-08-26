@@ -285,6 +285,16 @@ public:
         return M_Ti;
     }
 
+    //! start the bdf
+    double restart() const
+    {
+        M_state = BDF_RUNNING;
+        M_timer.restart();
+        M_time = M_Ti+this->timeStep();
+        return M_Ti;
+    }
+
+
     //! return true if Bdf is finished, false otherwise
     bool isFinished() const
     {
