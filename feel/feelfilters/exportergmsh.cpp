@@ -77,6 +77,9 @@ ExporterGmsh<MeshType,N>::save() const
     gmshSaveAscii();
 
     Debug( 8007 ) << "[ExporterGmsh] saving done\n";
+
+    this->saveTimeSet();
+
 }
 
 template<typename MeshType, int N>
