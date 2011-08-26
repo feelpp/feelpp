@@ -32,11 +32,11 @@
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feelvf/vf.hpp>
 #include<iostream>
+#include <feel/feeldiscr/functionspace.hpp>
+
 namespace Feel
 {
 
-/* use weak or strong Dirichlet condition */
-    // enum WeakDirichlet{ strong=0, weak=1 };
 /**
  * \class OperatorTrace
  * \brief OperatorTrace made easy
@@ -44,10 +44,10 @@ namespace Feel
  * @author Abdoulaye Samake
  * @see OperatorLinear
  */
-template<class TraceSpace>
-class OperatorTrace : public OperatorLinear<TraceSpace, TraceSpace>
+template<class fs_type>
+class OperatorTrace
 {
-    typedef OperatorTrace<TraceSpace> super;
+    typedef OperatorTrace<fs_type> super;
 
 public :
 
@@ -55,24 +55,19 @@ public :
      */
     //@{
 
-    typedef OperatorLinear<TraceSpace, TraceSpace> ol_type;
-
-    typedef typename super::domain_space_type trace_space_type;
-    typedef typename super::domain_space_ptrtype trace_space_ptrtype;
-    typedef typename trace_space_type::element_type trace_element_type;
-    typedef typename super::backend_type backend_type;
-    typedef typename super::backend_ptrtype backend_ptrtype;
+    typedef fs_type functionspace_type;
+    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef typename functionspace_type::trace_functionspace_type trace_functionspace_type;
+    typedef typename trace_functionspace_type::element_type trace_element_type;
 
     //@}
     /** @name Constructors, destructor
      */
     //@{
 
-    OperatorTrace(trace_space_ptrtype traceSpace,
-                  backend_ptrtype backend = Backend<double>::build(BACKEND_PETSC))
+    OperatorTrace(functionspace_ptrtype domainSpace)
         :
-        ol_type(traceSpace, traceSpace, backend),
-        M_backend(backend)
+        M_domainSpace(domainSpace)
     {
     }
 
@@ -100,14 +95,12 @@ public :
     {
         using namespace vf;
 
-        // auto trace_mesh = mesh->trace( boundaryfaces(mesh) );
-        //auto Th = this->domainSpace()->trace( range ) ;
-        // auto t = vf::project( Th, elements( Th->mesh() ), g );
 
+        auto Th = M_domainSpace->trace( range ) ;
 
-        trace_element_type te = this->domainSpace()->element();
+        trace_element_type te = Th->element();
 
-        te = vf::project(_space=this->domainSpace(), _range=range, _expr=expr );
+        te = vf::project(_space=Th, _range=elements( Th->mesh() ), _expr=expr );
 
         return te;
     }
@@ -117,25 +110,23 @@ public :
 
 private :
 
-    backend_ptrtype M_backend;
-
+    functionspace_ptrtype M_domainSpace;
 };//OperatorTrace
 
 /**
  * this function returns a \c OperatorTrace \c shared_ptr with
  *
  * \param traceSpace
- * \param backend
+ *
  */
 
-template<typename TraceSpace>
-boost::shared_ptr< OperatorTrace<TraceSpace> >
-operatorTrace( boost::shared_ptr<TraceSpace> const& tracespace,
-               typename OperatorTrace<TraceSpace>::backend_ptrtype const& backend = Backend<double>::build(BACKEND_PETSC) )
+template<typename self_type>
+boost::shared_ptr< OperatorTrace<self_type> >
+operatorTrace( boost::shared_ptr<self_type> const& domainspace )
 {
-    typedef OperatorTrace<TraceSpace> Trace_type;
-    boost::shared_ptr<Trace_type> Trace( new Trace_type(tracespace, backend ) );
-    return Trace;
+    typedef OperatorTrace<self_type> Trace_type;
+    boost::shared_ptr<Trace_type> trace( new Trace_type(domainspace) );
+    return trace;
 }
 
 } //namespace Feel
