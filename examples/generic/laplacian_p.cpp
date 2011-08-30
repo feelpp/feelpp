@@ -382,9 +382,9 @@ Laplacian<Order>::run()
     timers["assembly"].first.restart();
 
 
-    form1( Xh, F, _init=true )  = integrate( _range=elements(mesh), _quad=im_norm, _expr=f*id(v) );
+    form1( Xh, F, _init=true )  = integrate( _range=elements(mesh), _expr=f*id(v), _quad=im_norm );
 	// ATTENTION: MESH MIGHT HAVE NEGATIVE X-COORDINATES (1E-18)
-    form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _quad=im, _expr=g*( - theta*grad(v)*N() + gamma*id(v)*Order*Order/hFace() ) );
+    form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=g*( - theta*grad(v)*N() + gamma*id(v)*Order*Order/hFace() ), _quad=im );
     //    form( Xh, F, false ) += integrate( boundaryfaces(mesh), im, -g*trans(N())*(id(phi)) );
 
     if ( this->vm().count( "export-matlab" ) )
@@ -398,18 +398,13 @@ Laplacian<Order>::run()
 
     timers["assembly"].first.restart();
     size_type pattern = (DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR );
-    form2( Xh, Xh, D, _init=true, _pattern=pattern ) = integrate( _range=elements(mesh), _quad=im, _expr=( diff*gradt(u)*trans(grad(v)))
-                                                                  //                                                             +trans(idt(tau))*id(phi)
-                                                                  //                                                             +0.*idt(u)*div(phi)
-                                                                  //                                                             +0.*divt(tau)*id(v)
-
-                                                                  );
+    form2( Xh, Xh, D, _init=true, _pattern=pattern ) = integrate( _range=elements(mesh), _expr=( diff*gradt(u)*trans(grad(v))),_quad=im );
     timers["assembly_D_elements"].second += timers["assembly"].first.elapsed();
     timers["assembly"].first.restart();
 	// -----------------------------------------
 	// TODO: Write correct lifting stabilization
 	// -----------------------------------------
-    form2( Xh, Xh, D ) +=integrate( _range=internalfaces(mesh), _quad=im,
+    form2( Xh, Xh, D ) +=integrate( _range=internalfaces(mesh),
                                     _expr=
                                     // - {grad(u)} . [v]
                                     - averaget(gradt(u))*jump(id(v))
@@ -421,16 +416,18 @@ Laplacian<Order>::run()
                                     //                                        + delta * (trans(averaget(idt(tau)))*jump(id(v)) )
                                     // - [u] . {phi}
                                     //                                        - trans(jumpt(idt(u)))*average(id(phi))
+                                    ,_quad=im
                                     );
     timers["assembly_D_internalfaces"].second += timers["assembly"].first.elapsed();
     timers["assembly"].first.restart();
-    form2( Xh, Xh, D ) += integrate( _range=boundaryfaces(mesh), _quad=im,
+    form2( Xh, Xh, D ) += integrate( _range=boundaryfaces(mesh),
                                      _expr=
                                      - trans(id(v))*(gradt(u)*N())
                                      - theta * trans(idt(u))*(grad(v)*N())
                                      + gamma * (trans(idt(u))*id(v))*Order*Order/hFace()
                                      //										  + delta * (trans(idt(tau))*id(v)*N() )
                                      //										  - trans(idt(u)*N())*id(phi)
+                                     ,_quad=im
                                      );
     timers["assembly_D_boundaryfaces"].second += timers["assembly"].first.elapsed();
     timers["assembly"].first.restart();
@@ -508,7 +505,7 @@ Laplacian<Order>::run()
 
                                     sparse_matrix_ptrtype Mloc( M_backend->newMatrix( Wvh, Wvh ) );
                                     // mass matrix for L2 Projection
-                                    form2( Wvh, Wvh, Mloc, _init=true ) = integrate( _range=elements( localmesh ), _quad=im, _expr=trans(idt( wv )) * id( vv ) );
+                                    form2( Wvh, Wvh, Mloc, _init=true ) = integrate( _range=elements( localmesh ), _expr=trans(idt( wv )) * id( vv ), _quad=im );
                                     Mloc->close();
                                     if ( this->vm().count( "export-matlab" ) )
                                         {
@@ -544,8 +541,8 @@ Laplacian<Order>::run()
                                                             Log() << "bdy face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).isOnBoundary() << "\n";
                                                             Log() << "bdy face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).G() << "\n";
                                                             Log() << "  global face (mesh) : " << it->face( f ).G() << "\n";
-                                                            form1( Wvh, Floc, _init=true ) = integrate( _range=idedfaces( localmesh, itl->face( lface[n] ).id() ), _quad=im,
-                                                                                                        _expr=trans(idv( w )*N())*id( vv ) );
+                                                            form1( Wvh, Floc, _init=true ) = integrate( _range=idedfaces( localmesh, itl->face( lface[n] ).id() ),
+                                                                                                        _expr=trans(idv( w )*N())*id( vv ), _quad=im );
                                                         }
                                                     else
                                                         {
@@ -554,8 +551,8 @@ Laplacian<Order>::run()
                                                             Log() << "internal face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).isOnBoundary() << "\n";
                                                             Log() << "internal face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).G() << "\n";
                                                             Log() << "  global face (mesh) : " << it->face( f ).G() << "\n";
-                                                            form1( Wvh, Floc, _init=true ) = integrate( _range=idedfaces( localmesh, itl->face( lface[n] ).id() ), _quad=im,
-                                                                                                        _expr=trans(jumpv( idv( w ) ))*average( id( vv ) ) );
+                                                            form1( Wvh, Floc, _init=true ) = integrate( _range=idedfaces( localmesh, itl->face( lface[n] ).id() ),
+                                                                                                        _expr=trans(jumpv( idv( w ) ))*average( id( vv ) ), _quad=im );
                                                         }
                                                     Floc->close();
                                                     Log() << "Floc element " << lelt[n] << " w_" << i << " flocnorm= " << Floc->l2Norm() << "\n";
@@ -592,11 +589,11 @@ Laplacian<Order>::run()
                                                 }
                                         }
                                     // global assembly: we pass the vector of local/global basis functions
-                                    form2( Xh, Xh, Mdelta ) += integrate( _range=idedelements(mesh,lelt[0]), _quad=im,
-                                                                          _expr=delta*trans(basist(wglobal))*basis(wglobal) );
+                                    form2( Xh, Xh, Mdelta ) += integrate( _range=idedelements(mesh,lelt[0]),
+                                                                          _expr=delta*trans(basist(wglobal))*basis(wglobal), _quad=im );
                                     if ( !it->face( f ).isOnBoundary() )
-                                        form2( Xh, Xh, Mdelta ) += integrate( _range=idedelements(mesh,lelt[1]), _quad=im,
-                                                                              _expr=delta*trans(basist(wglobal))*basis(wglobal) );
+                                        form2( Xh, Xh, Mdelta ) += integrate( _range=idedelements(mesh,lelt[1]),
+                                                                              _expr=delta*trans(basist(wglobal))*basis(wglobal), _quad=im );
                                     face_done[ face_id ] = true;
                                     Log() << "\t Done with face " << face_id << "\n";
                                 }
@@ -626,14 +623,14 @@ Laplacian<Order>::run()
     form2( Xch, Xch, M, _init=true ) = integrate( _range=elements( mesh ), _expr=trans(idt(uEx))*id(uEx) );
     M->close();
     vector_ptrtype L( M_backend->newVector( Xch ) );
-    form1( Xch, L ) = integrate( elements( mesh ), im_norm, trans(g)*id(uEx) );
+    form1( Xch, L ) = integrate( _range=elements( mesh ), _expr=trans(g)*id(uEx), _quad=im_norm );
     this->solve( M, uEx, L );
 
     //    Log() << "||error||_0 = " << math::sqrt(integrate( elements(mesh), im, val( trans(idv(u)-g)*(idv(u)-g) ) ).evaluate()(0,0)) << "\n";
     //    Log() << "||error||_0 = " << math::sqrt(integrate( elements(mesh), im, trans(idv(u)-idv(uEx))*(idv(u)-idv(uEx)) ).evaluate()(0,0)) << "\n";
 
 	// Norm computations
-	value_type n1 = integrate( elements(mesh), im_norm, val( (gradv(u)-trans(grad_g))*(trans(gradv(u))-grad_g) ) ).evaluate()(0,0);
+	value_type n1 = integrate( _range=elements(mesh), _expr=val( (gradv(u)-trans(grad_g))*(trans(gradv(u))-grad_g) ), _quad=im_norm ).evaluate()(0,0);
     //value_type n2 = delta*integrate( elements(mesh), im_norm, val( trans(idv(tau))*idv(tau) ) ).evaluate()(0,0);
 
     value_type n2 = 0;
@@ -644,9 +641,9 @@ Laplacian<Order>::run()
             n2 = Mdelta->energy( U, U );
         }
 
-	value_type n3 = gamma*Order*Order*integrate( internalfaces(mesh), im_norm,  (trans(jumpv(idv(u)))*jumpv(idv(u)))/hFace()  ).evaluate()(0,0);
-	value_type n4 = gamma*Order*Order*integrate( boundaryfaces(mesh), im_norm,  (trans(idv(u)-g)*(idv(u)-g))/hFace()  ).evaluate()(0,0);
-	value_type n5 = integrate( elements(mesh), im_norm, val( (idv(u)-g)^2 ) ).evaluate()(0,0);
+	value_type n3 = gamma*Order*Order*integrate( internalfaces(mesh), (trans(jumpv(idv(u)))*jumpv(idv(u)))/hFace()  ).evaluate()(0,0);
+	value_type n4 = gamma*Order*Order*integrate( boundaryfaces(mesh), (trans(idv(u)-g)*(idv(u)-g))/hFace()  ).evaluate()(0,0);
+	value_type n5 = integrate( elements(mesh), val( (idv(u)-g)^2 ) ).evaluate()(0,0);
 
 
     // 	n1 = integrate( elements(mesh), im, val( (gradv(u)-trans(grad_g))*(trans(gradv(u))-grad_g) ) ).evaluate()(0,0);

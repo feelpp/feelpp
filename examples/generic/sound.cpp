@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-05
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -73,7 +73,7 @@ makeAbout()
                             "0.2",
                             "nD(n=1,2,3) acoustics in an amphitheater",
                             Feel::AboutData::License_GPL,
-                            "Copyright (c) 2007 Université Joseph Fourier");
+                            "Copyright (c) 2007-2011 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -264,9 +264,9 @@ Sound<Dim, Order, Entity>::run()
 
 
     if ( Dim == 2 )
-        form( Xh, *F )  = integrate( markedfaces(mesh,2), im, val(Py()*(1-Py()))*id(v) );
+        form( Xh, *F )  = integrate( markedfaces(mesh,2), val(Py()*(1-Py()))*id(v) );
     else
-        form( Xh, *F )  = integrate( markedfaces(mesh,51), im, val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) );
+        form( Xh, *F )  = integrate( markedfaces(mesh,51),  val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) );
 
     if ( this->vm().count( "export-matlab" ) )
         F->printMatlab( "F.m" );
@@ -281,7 +281,7 @@ Sound<Dim, Order, Entity>::run()
 
     timers["assembly"].first.restart();
 
-    form2( Xh, Xh, D ) = integrate( elements(mesh), im, ( kc2*idt(u)*id(v)-gradt(u)*trans(grad(v))) );
+    form2( Xh, Xh, D ) = integrate( elements(mesh),  ( kc2*idt(u)*id(v)-gradt(u)*trans(grad(v))) );
     D->close();
 
     timers["assembly"].second += timers["assembly"].first.elapsed();
@@ -294,13 +294,13 @@ Sound<Dim, Order, Entity>::run()
     // eigen modes
     double sigma = this->vm()["sigma"].template as<double>();
     sparse_matrix_ptrtype S( M_backend->newMatrix( Xh, Xh ) );
-    form2( Xh, Xh, S ) = integrate( elements(mesh), im, gradt(u)*trans(grad(v)) );
+    form2( Xh, Xh, S ) = integrate( elements(mesh),  gradt(u)*trans(grad(v)) );
     S->close();
     if ( this->vm().count( "export-matlab" ) )
         S->printMatlab( "S" );
 
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
-    form2( Xh, Xh, M ) = integrate( elements(mesh), im, idt(u)*id(v));
+    form2( Xh, Xh, M ) = integrate( elements(mesh),  idt(u)*id(v));
     M->close();
     if ( this->vm().count( "export-matlab" ) )
         M->printMatlab( "M.m" );
