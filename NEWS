@@ -28,6 +28,7 @@
  - cmake: fix bug in make_directory
  - cmake: even more minimal configuration in doc/tutorial
  - fix compilation in APPLE and s390 platforms
+ - added macport port for feel++ with support for snow leopard and lion
 
 ** Libraries
 
@@ -45,6 +46,13 @@
    simplified interface
  - added interface nlSolve interface to backend similar to solve allowing to
    order-free and optional parameters
+ - added interface to external solver libraries via petsc such as mumps or
+   umfpack. This is configurable via the config file (.cfg)
+
+*** feelpoly
+
+ - various fixes in geometric mapping (and inverse) and polynomialset to handle
+   objects of topoligical dimension d-1 living in dimension d space.
 
 *** feeldiscr
 
@@ -53,6 +61,9 @@
  - fix copy/paste bug in bdf extrapolation, the coefficient were divided by dt
  - support for interpolating functions living on meshes of different
    topoligical dimension
+ - added mesh elements and faces extraction using createSubmesh() based on mesh
+   filters
+ - added lift and trace operator, interface might change
  - BDF:
    - new bdf() free function to generate a new bdf shared_ptr object and
      configure it
@@ -71,6 +82,7 @@
  - GeoTool:
    - update geotool to support markers for 1D meshes
    - added a new Cube object
+   - added a pie object
  - added mshconvert() which allows to generate a gmsh mesh out of mesh formats
    supported by gmsh
 
@@ -80,8 +92,9 @@
  - support in the language for test and trial functions not being defined on the
    same mesh
  - Language:
-   - add sym() and antisym() to compute the symmetric and antisymmetric parts of
+   - added sym() and antisym() to compute the symmetric and antisymmetric parts of
      a matrix expression
+   - added access to expression components via () operator
 
 ** Documentation
 
