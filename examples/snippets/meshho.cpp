@@ -68,9 +68,9 @@ int main(int argc, char** argv)
     //std::cout << "read mesh\n" << std::endl;
 
     std::cout << "ho  p1  opt " << std::endl
-              << std::setprecision( 16 ) << std::scientific << integrate( elements(mesh), _Q<5>(), cst(1.), GEOMAP_HO ).evaluate() << " "
-              << std::setprecision( 16 ) << std::scientific << integrate( elements(mesh), _Q<5>(), cst(1.), GEOMAP_O1 ).evaluate() << " "
-              << std::setprecision( 16 ) << std::scientific << integrate( elements(mesh), _Q<5>(), cst(1.), GEOMAP_OPT ).evaluate() << std::endl;
+              << std::setprecision( 16 ) << std::scientific << integrate( _range=elements(mesh), _quad=_Q<5>(), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate() << " "
+              << std::setprecision( 16 ) << std::scientific << integrate( _range=elements(mesh), _quad=_Q<5>(), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate() << " "
+              << std::setprecision( 16 ) << std::scientific << integrate( _range=elements(mesh), _quad=_Q<5>(), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate() << std::endl;
 
 
 }
