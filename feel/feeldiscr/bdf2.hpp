@@ -115,17 +115,17 @@ public:
 
         }
 #endif
-    BdfBase( po::variables_map const& vm, std::string name )
+    BdfBase( po::variables_map const& vm, std::string name, std::string const& prefix )
         :
-        M_order( vm["bdf.order"].as<int>() ),
+        M_order( vm[prefixvm( prefix, "bdf.order" )].as<int>() ),
         M_order_cur( M_order ),
         M_name( name ),
-        M_time( vm["bdf.time-initial"].as<double>() ),
-        M_Ti( vm["bdf.time-initial"].as<double>() ),
-        M_Tf( vm["bdf.time-final"].as<double>() ),
-        M_dt( vm["bdf.time-step"].as<double>() ),
-        M_iterations_between_order_change( vm["bdf.iterations-between-order-change"].as<int>() ),
-        M_strategy( (BDFStragegy)vm["bdf.strategy"].as<int>() ),
+        M_time( vm[prefixvm( prefix, "bdf.time-initial")].as<double>() ),
+        M_Ti( vm[prefixvm( prefix, "bdf.time-initial")].as<double>() ),
+        M_Tf( vm[prefixvm( prefix, "bdf.time-final")].as<double>() ),
+        M_dt( vm[prefixvm( prefix, "bdf.time-step")].as<double>() ),
+        M_iterations_between_order_change( vm[prefixvm( prefix, "bdf.iterations-between-order-change")].as<int>() ),
+        M_strategy( (BDFStragegy)vm[prefixvm( prefix, "bdf.strategy")].as<int>() ),
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
         M_alpha( BDF_MAX_ORDER ),
@@ -316,7 +316,7 @@ public:
         M_timer.restart();
         M_time += M_dt;
         ++M_iteration;
-        if ( ( M_iteration - M_last_iteration_since_order_change == M_iterations_between_order_change )&&
+        if ( ( (M_iteration - M_last_iteration_since_order_change) == M_iterations_between_order_change )&&
              M_order_cur < M_order )
         {
             M_last_iteration_since_order_change = M_iteration;
@@ -618,7 +618,7 @@ public:
      * @param space approximation space
      * @param n order of the BDF
      */
-    Bdf( po::variables_map const& vm, space_ptrtype const& space, std::string const& name );
+    Bdf( po::variables_map const& vm, space_ptrtype const& space, std::string const& name, std::string const& prefix="" );
 
     /**
      * Constructor
@@ -698,9 +698,10 @@ private:
 template <typename SpaceType>
 Bdf<SpaceType>::Bdf( po::variables_map const& vm,
                      space_ptrtype const& __space,
-                     std::string const& name  )
+                     std::string const& name,
+                     std::string const& prefix )
     :
-    super( vm, name ),
+    super( vm, name, prefix ),
     M_space( __space )
 {
     this->init();
@@ -896,7 +897,7 @@ BOOST_PARAMETER_FUNCTION(
         ))
 {
     typedef typename meta::remove_all<space_type>::type::value_type _space_type;
-    auto thebdf = boost::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>(vm,space,name) );
+    auto thebdf = boost::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>(vm,space,name,prefix) );
     thebdf->setTimeFinal( final_time );
     thebdf->setTimeStep( time_step );
     thebdf->setOrder( order );
