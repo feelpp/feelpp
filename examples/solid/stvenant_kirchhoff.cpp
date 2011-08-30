@@ -336,7 +336,7 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
     AUTO( eta, 0.1*Px()*( Px() -5 )*(Px()-2.5)*sin( omega*M_PI*cst_ref(time)  ) );
 
     *M_residual =
-        integrate( elements( mesh ), _Q<imOrder>(),
+        integrate( elements( mesh ),
                    .5*mu*(trace( (gradv(u)*trans(gradv(u)))*grad(v) ) )+
                    .25*lambda*trace(gradv(u)*trans(gradv(u)))*div(v) -
                    trans(gravity*oneY())*id(v) );
@@ -344,18 +344,18 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
 #if 1
     // force applied at the bottom
     *M_residual +=
-        integrate( markedfaces( mesh, 2 ), _Q<imOrder>(),
+        integrate( markedfaces( mesh, 2 ),
                    -trans(eta*oneY())*id(v) );
 #endif
 
 #if MIXED
     *M_residual +=
-        integrate( elements( mesh ), _Q<imOrder>(),
+        integrate( elements( mesh ),
                    - density*trans(idv( M_bdf->derivate( M_time_order, dt ).template element<1>() ) ) *id(v)
                    //-density*trans(2*idv(un->template element<0>())-idv(un1->template element<0>())) *id(v) /(dt*dt)
                    );
     *M_residual +=
-        integrate( elements( mesh ), _Q<imOrder>(),
+        integrate( elements( mesh ),
                    + trans(idv( u ))*id(vv)*M_bdf->derivateCoefficient( M_time_order, dt )
                    - trans(idv( M_bdf->derivate( M_time_order, dt ).template element<0>() ) )*id(vv)
                    );
@@ -363,7 +363,7 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
     M_oplin->apply( U, flin );
 #else
     *M_residual +=
-        integrate( elements( mesh ), _Q<imOrder>(),
+        integrate( elements( mesh ),
                    -density*trans(2*idv(*un)-idv(*un1)) *id(v) /(dt*dt)
                    );
 
@@ -405,7 +405,7 @@ StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_m
 #endif
     if ( is_init == false )
         {
-            *M_jac = integrate( elements( mesh ), _Q<imOrder>(),
+            *M_jac = integrate( elements( mesh ),
                                 .5*mu*(trace( (gradv(u)*trans(gradt(u)))*grad(v) ) )+
                                 .25*lambda*trace(gradv(u)*trans(gradt(u)))*div(v)
                                 );
@@ -415,7 +415,7 @@ StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_m
     else
         {
             M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ), _Q<imOrder>(),
+            *M_jac += integrate( elements( mesh ),
                                  .5*mu*(trace( (gradv(u)*trans(gradt(u)))*grad(v) ) )+
                                  .25*lambda*trace(gradv(u)*trans(gradt(u)))*div(v) );
         }
@@ -468,7 +468,7 @@ StVenantKirchhoff<Dim, Order>::run()
     AUTO( def, 0.5*( grad(v)+trans(grad(v)) ) );
     AUTO( Id, (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) )) );
     *M_oplin =
-        integrate( elements(mesh), _Q<imOrder>(),
+        integrate( elements(mesh),
                    //density*trans(idt(uu))*id(v)*M_bdf->derivateCoefficient( M_time_order, dt ) +
                    density*trans(idt(u))*id(v)/(dt*dt)+
                    lambda*divt(u)*div(v)  +
@@ -481,13 +481,13 @@ StVenantKirchhoff<Dim, Order>::run()
                    );
 
     *M_oplin +=
-        integrate( markedfaces(mesh,1), _Q<imOrder>(),
+        integrate( markedfaces(mesh,1),
                    - trans((2*mu*deft+lambda*trace(deft)*Id )*N())*id(v)
                    - trans((2*mu*def+lambda*trace(def)*Id )*N())*idt(u)
                    + penalisation_bc*trans(idt(u))*id(v)/hFace() );
 
     *M_oplin +=
-        integrate( markedfaces(mesh,3), _Q<imOrder>(),
+        integrate( markedfaces(mesh,3),
                    - trans((2*mu*deft+lambda*trace(deft)*Id )*N())*id(v)
                    - trans((2*mu*def+lambda*trace(def)*Id )*N())*idt(u)
                    + penalisation_bc*trans(idt(u))*id(v)/hFace() );

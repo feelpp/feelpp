@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-06-11
 
-  Copyright (C) 2007-2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -82,7 +82,7 @@ makeAbout()
                             "0.2",
                             "nD(n=1,2,3) Thermalfin on simplices or simplex products",
                             Feel::AboutData::License_GPL,
-                            "Copyright (c) 2006, 2007 Université Joseph Fourier");
+                            "Copyright (c) 2006-2011 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -172,7 +172,7 @@ public:
         Fcst = M_backend->newVector( Xh );
 
 
-        form1( Xh, Fcst, _init=true )  = integrate( markedfaces(mesh,1), _Q<imOrder>(), id(v) );
+        form1( Xh, Fcst, _init=true )  = integrate( markedfaces(mesh,1), id(v) );
 
         if ( this->vm().count( "export-matlab" ) )
             Fcst->printMatlab( "F.m" );
@@ -183,7 +183,7 @@ public:
          */
         Dcst = M_backend->newMatrix( Xh, Xh );
 
-        form2( Xh, Xh, Dcst, _init=true ) = integrate( markedelements(mesh,1), _Q<imOrder>(), ( gradt(u)*trans(grad(v))) );
+        form2( Xh, Xh, Dcst, _init=true ) = integrate( markedelements(mesh,1), ( gradt(u)*trans(grad(v))) );
 
         Dcst->close();
         if ( this->vm().count( "export-matlab" ) )
@@ -202,12 +202,6 @@ public:
     void run();
 
 private:
-
-    /**
-     * solve the system
-     */
-    void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
-
 
     /**
      * export results to ensight format (enabled by  --export cmd line options)
@@ -284,7 +278,7 @@ ThermalFin::run()
                 for( int c = 0; c < Nb; ++c )
                     {
 
-                        form2( Xh, Xh, D ) += integrate( markedelements(mesh,Nb*c+r+1), _Q<imOrder>(),
+                        form2( Xh, Xh, D ) += integrate( markedelements(mesh,Nb*c+r+1),
                                                          k(r,c)*gradt(u)*trans(grad(v)) );
                     }
 
@@ -295,17 +289,17 @@ ThermalFin::run()
                 Bi = math::exp( math::log(Bimin)+value_type(i)*(math::log(Bimax)-math::log(Bimin))/value_type(N-1) );
             Log() << "Bi = " << Bi << "\n";
 
-            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,2), _Q<imOrder>(), Bi*idt(u)*id(v) );
+            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,2), Bi*idt(u)*id(v) );
 
             D->close();
 
             if ( this->vm().count( "export-matlab" ) )
                 D->printMatlab( "D" );
 
-            this->solve( D, u, Fcst );
+            M_backend->solve( _matrix=D, _solution=u, _rhs=Fcst );
 
-            double moy_u = ( integrate( markedfaces(mesh,1), _Q<imOrder>(), idv(u) ).evaluate()(0,0) /
-                             integrate( markedfaces(mesh,1), _Q<imOrder>(), constant(1.0) ).evaluate()(0,0) );
+            double moy_u = ( integrate( markedfaces(mesh,1), idv(u) ).evaluate()(0,0) /
+                             integrate( markedfaces(mesh,1), constant(1.0) ).evaluate()(0,0) );
             std::cout.precision( 5 );
             std::cout << std::setw( 5 ) << k(0,0) << " "
                       << std::setw( 5 ) << k(1,0) << " "
@@ -320,13 +314,6 @@ ThermalFin::run()
         }
 } // ThermalFin::run
 
-void
-ThermalFin::solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F  )
-{
-    vector_ptrtype U( M_backend->newVector( u.functionSpace()->map() ) );
-    M_backend->solve( D, D, U, F );
-    u = *U;
-} // ThermalFin::solve
 
 
 void

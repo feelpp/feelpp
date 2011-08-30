@@ -313,15 +313,15 @@ Wave<Dim, Order, Cont, Entity, FType>::run()
 
     double factor = 1./(dt*dt);
     OperatorLinear<functionspace_type,functionspace_type> Mass( Xh, Xh, M_backend );
-    Mass = integrate( elements( mesh ), im, idt(u)*id(v)/dt );
+    Mass = integrate( elements( mesh ),  idt(u)*id(v)/dt );
     Mass.close();
 
     OperatorLinear<functionspace_type,functionspace_type> Stiff( Xh, Xh, M_backend );
 
     Stiff =
-        integrate( elements( mesh ), im, factor*idt(u)*id(v)+gradt(u)*trans(grad(v)) ) +
+        integrate( elements( mesh ),  factor*idt(u)*id(v)+gradt(u)*trans(grad(v)) ) +
 #if 0
-        integrate( internalfaces(mesh), im,
+        integrate( internalfaces(mesh),
                    // - {grad(u)} . [v]
                    -averaget(gradt(u))*jump(id(v))
                    // - [u] . {grad(v)}
@@ -329,8 +329,8 @@ Wave<Dim, Order, Cont, Entity, FType>::run()
                    // penal*[u] . [v]/h_face
                    + penalisation* (trans(jumpt(idt(u)))*jump(id(v)) )/hFace() ) +
 #endif
-        integrate( boundaryfaces(mesh), im,
-        //integrate( markedfaces(mesh,1), im,
+        integrate( boundaryfaces(mesh),
+        //integrate( markedfaces(mesh,1),
                    ( - trans(id(v))*(gradt(u)*N())
                      - trans(idt(u))*(grad(v)*N())
                      + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
@@ -339,7 +339,7 @@ Wave<Dim, Order, Cont, Entity, FType>::run()
 
 
     FsFunctionalLinear<functionspace_type> F( Xh, M_backend );
-    F = integrate( elements( mesh ), im, id(v) );
+    F = integrate( elements( mesh ),  id(v) );
 
     Stiff.applyInverse( u, F );
 
@@ -359,7 +359,7 @@ Wave<Dim, Order, Cont, Entity, FType>::run()
     un.zero();
     for( double time = dt; time <= ft; time += dt )
         {
-            form1( _test=Xh, _vector=L, _init=true ) = integrate( elements( mesh ), im, id(v)+factor*(2.*idv(un)-idv(un1))*id(v) );
+            form1( _test=Xh, _vector=L, _init=true ) = integrate( elements( mesh ),  id(v)+factor*(2.*idv(un)-idv(un1))*id(v) );
 
             L->close();
 

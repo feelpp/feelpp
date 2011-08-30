@@ -1,4 +1,5 @@
-set( EXAMPLES pmesh laplacian laplacian_p laplacian_p2 advection dar  wave
+# laplacian_p laplacian_p2
+set( EXAMPLES pmesh laplacian advection dar  wave
     laplacian_multiplicateur_lagrange periodic stokes)
 
 foreach( EXAMPLE ${EXAMPLES} )

@@ -326,14 +326,14 @@ Elaxi<Order, Entity>::run()
 
         //size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
         form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
-            integrate( elements(mesh), _Q<2*Order>(), 2.0*(
-                                                              //idt(u1)*id(v1)/Py()
-                                                              idt(u0)*id(v0)/Py()
-                                                              +dyt(u0)*dy(v0)*Py()
-                                                              +dxt(u0)*dx(v0)*Py()
-                                                              +dyt(u1)*dy(v1)*Py()
-                                                              +dxt(u1)*dx(v1)*Py()
-                                                              ));
+            integrate( elements(mesh), 2.0*(
+                           //idt(u1)*id(v1)/Py()
+                           idt(u0)*id(v0)/Py()
+                           +dyt(u0)*dy(v0)*Py()
+                           +dxt(u0)*dx(v0)*Py()
+                           +dyt(u1)*dy(v1)*Py()
+                           +dxt(u1)*dx(v1)*Py()
+                           ));
 
 
         Log() << "[elaxi] matrix local assembly done\n";
@@ -355,10 +355,10 @@ Elaxi<Order, Entity>::run()
 #endif
 
         form1( Xh, newt_nl_source_term,_init=true ) =
-            integrate( elements(mesh), _Q<2*Order-1>(),  2.0*(
-                                                              //idv(phi1)*id(v1)/Py()
-                                                              dyv(phi1)*dy(v1)*val(Py())
-                                                              ));
+            integrate( elements(mesh), 2.0*(
+                           //idv(phi1)*id(v1)/Py()
+                           dyv(phi1)*dy(v1)*val(Py())
+                           ));
 
 #if 0
         newt_nl_source_term->print();
