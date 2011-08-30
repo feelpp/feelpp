@@ -117,7 +117,7 @@ int main(int argc, char** argv)
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
-
+#if defined( HAVE_TBB )
     tbb::task_scheduler_init init(nt);
     std::cout << "is_active: " << init.is_active() << "\n";
     using namespace Feel;
@@ -178,6 +178,6 @@ int main(int argc, char** argv)
     cout << "1T  tbbtime:  " << singlethread_time2 << " ticks" << endl;
     cout << "TBB  tbbtime: " << tbb_time2 << " ticks" << endl;
     cout << "speedup: " << singlethread_time2/tbb_time2 << " " << endl;
-
+#endif
 
 }
