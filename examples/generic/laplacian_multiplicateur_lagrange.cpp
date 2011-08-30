@@ -147,14 +147,6 @@ public:
 
 private:
 
-
-
-    /**
-     * solve the system
-     */
-    void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
-
-
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
@@ -285,19 +277,18 @@ LaplacianML<Dim, Order>::run()
 
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh, Xh, M, _init=true ) = integrate( elements( mesh ),
-                                                MyIM<2*Order>(),
-                                                gradt(u)*trans(grad(v)) + id(u)*idt(lambda) + idt(u)*id(nu) + 0*idt(lambda)*id(nu));
+    form2( Xh, Xh, M, _init=true ) = integrate( _range=elements( mesh ),
+                                                _expr=gradt(u)*trans(grad(v)) + id(u)*idt(lambda) + idt(u)*id(nu) + 0*idt(lambda)*id(nu));
 
     M->close();
 
-    double area = integrate( elements(mesh), MyIM<5>(), constant(1.0) ).evaluate()( 0, 0);
-    double mean = integrate( elements(mesh), MyIM<5>(), g ).evaluate()( 0, 0)/area;
+    double area = integrate( _range=elements(mesh), _expr=constant(1.0) ).evaluate()( 0, 0);
+    double mean = integrate( _range=elements(mesh), _expr=g ).evaluate()( 0, 0)/area;
     Log() << "int g  = " << mean << "\n";
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( Xh, F, _init=true ) = ( integrate( elements( mesh ), MyIM<Order+5>(), f*id(v) )+
-                                   integrate( boundaryfaces( mesh ), MyIM<Order+5>(), (trans(grad_g)*N())*id(v) ) +
-                                   integrate( elements( mesh ), MyIM<Order+5>(), mean*id(nu) )
+    form1( Xh, F, _init=true ) = ( integrate( _range=elements( mesh ), _expr=f*id(v) )+
+                                   integrate( _range=boundaryfaces( mesh ), _expr=(trans(grad_g)*N())*id(v) ) +
+                                   integrate( _range=elements( mesh ), _expr=mean*id(nu) )
 
                                    );
     F->close();
@@ -308,40 +299,23 @@ LaplacianML<Dim, Order>::run()
             F->printMatlab( "F.m" );
         }
 
-    this->solve( M, U, F );
+    M_backend->solve( _matrix=M, _solution=u, _rhs=F );
 
     Log() << "lambda = " << lambda( 0 ) << "\n";
     Log() << "area   = " << area << "\n";
-    Log() << "int g  = " << integrate( elements(mesh), MyIM<5>(), g ).evaluate()( 0, 0)/area << "\n";
-    Log() << "int u  = " << integrate( elements(mesh), MyIM<Order>(), idv(u) ).evaluate()( 0, 0)/area << "\n";
-    Log() << "error  = " << math::sqrt( integrate( elements(mesh), MyIM<10>(), (idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0) ) << "\n";
+    Log() << "int g  = " << integrate( _range=elements(mesh), _expr=g ).evaluate()( 0, 0)/area << "\n";
+    Log() << "int u  = " << integrate( _range=elements(mesh), _expr=idv(u) ).evaluate()( 0, 0)/area << "\n";
+    Log() << "error  = " << math::sqrt( integrate( _range=elements(mesh), _expr=(idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0) ) << "\n";
 
-    v = vf::project( Xh->template functionSpace<0>(), elements(mesh), g );
+    v = vf::project( _space=Xh->template functionSpace<0>(), _range=elements(mesh), _expr=g );
 
     element_type E( Xh, "e" );
     element_0_type e = E.template element<0>();
-    e = vf::project( Xh->template functionSpace<0>(), elements(mesh), idv(u)-g );
+    e = vf::project( _space=Xh->template functionSpace<0>(), _range=elements(mesh), _expr=idv(u)-g );
 
     exportResults( U, V, E );
 
 } // LaplacianML::run
-
-template<int Dim, int Order>
-void
-LaplacianML<Dim, Order>::solve( sparse_matrix_ptrtype& D,
-                                element_type& u,
-                                vector_ptrtype& F )
-{
-    timers["solver"].first.restart();
-
-
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    M_backend->solve( D, D, U, F );
-    u = *U;
-
-    timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve: " << timers["solver"].second << "\n";
-} // LaplacianML::solve
 
 
 template<int Dim, int Order>

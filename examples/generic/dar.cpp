@@ -317,7 +317,7 @@ Dar<Dim, Order, Cont, Entity>::run()
     backend_ptrtype backend( backend_type::build( this->vm() ) );
     vector_ptrtype F( backend->newVector( Xh->map() ) );
     timers["assembly"].first.restart();
-    form1( Xh, F, _init=true )  = integrate( _range=elements(mesh), _quad=_Q<imOrder>(), _expr=f*id(v) + stab*delta*f*Aepsi );
+    form1( Xh, F, _init=true )  = integrate( _range=elements(mesh), _expr=f*id(v) + stab*delta*f*Aepsi, _quad=_Q<imOrder>() );
     Log() << "[dar] vector local assembly done\n";
     timers["assembly"].second = timers["assembly"].first.elapsed();
     timers["assembly_F"].second = timers["assembly"].first.elapsed();
@@ -331,10 +331,11 @@ Dar<Dim, Order, Cont, Entity>::run()
     //size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
     size_type pattern = DOF_PATTERN_COUPLED;
     form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
-        integrate( _range=elements(mesh), _quad=_Q<imOrder>(),
+        integrate( _range=elements(mesh),
                    _expr=epsilon*gradt(u)*trans(grad(v)) +(gradt(u)*beta)*id(v) + mu*idt(u)*id(v)
                    // stabilisation
-                   + stab*delta*Aepsi*Aepsit
+                   + stab*delta*Aepsi*Aepsit,
+                   _quad=_Q<imOrder>()
                    );
     Log() << "[dar] matrix local assembly done\n";
     D->close();
@@ -379,11 +380,11 @@ Dar<Dim, Order, Cont, Entity>::run()
     sparse_matrix_ptrtype M( backend->newMatrix( Xch->map(), Xch->map() ) );
     vector_ptrtype L( backend->newVector( Xch->map() ) );
     timers["assembly"].first.restart();
-    form2( Xch, Xch, M, _init=true, _pattern=pattern ) = integrate( _range=elements( mesh ), _quad=_Q<imOrder>(), _expr=idt(uEx)*id(uEx) );
+    form2( Xch, Xch, M, _init=true, _pattern=pattern ) = integrate( _range=elements( mesh ), _expr=idt(uEx)*id(uEx), _quad=_Q<imOrder>() );
     M->close();
     timers["assembly_M"].second += timers["assembly"].first.elapsed();
 
-    form1( Xch, L, _init=true ) = integrate( _range=elements( mesh ), _quad=_Q<imOrder>(), _expr=g*id(uEx) );
+    form1( Xch, L, _init=true ) = integrate( _range=elements( mesh ), _expr=g*id(uEx), _quad=_Q<imOrder>() );
     L->close();
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_L"].second += timers["assembly"].first.elapsed();
@@ -401,7 +402,7 @@ Dar<Dim, Order, Cont, Entity>::run()
             uEx.printMatlab( "uEx.m" );
         }
     timers["assembly"].first.restart();
-    double error = integrate( _range=elements(mesh), _quad=_Q<imOrder>(), _expr=(idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0 );
+    double error = integrate( _range=elements(mesh), _expr=(idv(u)-g)*(idv(u)-g), _quad=_Q<imOrder>() ).evaluate()( 0, 0 );
     double global_error = 0;
     mpi::all_reduce( Application::comm(), error, global_error, std::plus<double>() );
     timers["assembly"].second += timers["assembly"].first.elapsed();
@@ -415,7 +416,7 @@ Dar<Dim, Order, Cont, Entity>::run()
     else
         {
 
-            form1( Xch, L, _init=true ) = integrate( _range=elements( mesh ), _quad=_Q<imOrder>(), _expr=idv(u)*id(uEx) );
+            form1( Xch, L, _init=true ) = integrate( _range=elements( mesh ), _expr=idv(u)*id(uEx ), _quad=_Q<imOrder>() );
             typename space<Continuous>::element_type uc( Xch, "uc" );
             this->solve( M, uc, L, true );
             this->exportResults( u, uc, uEx );
