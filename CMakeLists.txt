@@ -370,8 +370,8 @@ INSTALL(FILES ${FEEL_INSTALL_APPS} DESTINATION bin/ COMPONENT Bin)
 
 # documentation and examples
 if ( FEEL_ENABLE_DOCUMENTATION )
-  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/tutorial/feel_get_tutorial DESTINATION bin COMPONENT Doc)
-  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/tutorial/manual/feel-manual.pdf DESTINATION share/doc/feel COMPONENT Doc)
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/feel_get_tutorial DESTINATION bin COMPONENT Doc)
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/manual/feel-manual.pdf DESTINATION share/doc/feel COMPONENT Doc)
   if ( NOT APPLE )
     if ( EXISTS ${CMAKE_CURRENT_BINARY_DIR}/doc/api/html )
       install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/api/html DESTINATION share/doc/feel COMPONENT Doc
@@ -381,7 +381,7 @@ if ( FEEL_ENABLE_DOCUMENTATION )
         PATTERN ".svn" EXCLUDE PATTERN ".git" EXCLUDE )
     endif()
   endif(NOT APPLE)
-  FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/tutorial/*.*pp")
+  FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/*.*pp")
   INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
 endif()
 
@@ -436,7 +436,7 @@ set(CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/benchmarks/ethiersteinman/"
   "${PROJECT_SOURCE_DIR}/benchmarks/kovasznay/"
   "${PROJECT_SOURCE_DIR}/doc/poster/"
-  "${PROJECT_SOURCE_DIR}/doc/tutorial/pdfs/"
+  "${PROJECT_SOURCE_DIR}/doc/manual/pdfs/"
   "${PROJECT_SOURCE_DIR}/doc/figures/backgrounds/"
   "${PROJECT_SOURCE_DIR}/doc/figures/logos/"
   "${PROJECT_SOURCE_DIR}/examples/fluid/"
@@ -490,7 +490,7 @@ if(cmake_generator_tolower MATCHES "makefile")
   message(STATUS "               |     cmake . -DCMAKE_INSTALL_PREFIX=yourpath")
   message(STATUS "               |   Feel++ headers will then be installed to:")
   message(STATUS "               |     ${INCLUDE_INSTALL_DIR}")
-  message(STATUS "make doc       | Generate the tutorial applications, manual and the API ")
+  message(STATUS "make doc       | Generate the manual applications, manual and the API ")
   message(STATUS "               | documentation, requires Doxygen & LaTeX")
   message(STATUS "make examples  | Generate the examples ")
   message(STATUS "make benchmarks| Generate the benchmarks(Warning: takes a long time!) ")
