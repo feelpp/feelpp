@@ -231,7 +231,7 @@ struct test_integration_internal_faces_lf : public Application
     {
         using namespace Feel::vf;
 
-        const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
+        const value_type eps = 1e-10;
 
 
         space_ptrtype Xh = space_type::New( mesh );
