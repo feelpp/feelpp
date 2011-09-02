@@ -186,6 +186,22 @@ public:
                 start_i += v[i*NC]->size1();
             }
 
+        // index container for field split preconditioner
+        std::vector < std::vector<int> > indexSplit(NR);
+        uint16_type startIS = 0;
+        for (uint i=0;i<NR;++i)
+            {
+                auto Loc_nDof = v[i*NC]->size1();
+                indexSplit[i].resize(Loc_nDof);
+                for (uint l = 0; l< Loc_nDof ; ++l )
+                    {
+                        indexSplit[i][l] = startIS + l;
+                    }
+                startIS += Loc_nDof;
+            }
+        // update
+        M_mat->setIndexSplit(indexSplit);
+
     }
 
     void mergeBlockGraph(graph_ptrtype & globGraph,boost::shared_ptr<MatrixSparse<value_type> > m,
