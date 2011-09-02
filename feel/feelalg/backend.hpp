@@ -378,10 +378,12 @@ public:
                                         )
                                     (optional
                                      (pc,      (std::string), "lu" )
-                                        ) )
+                                     (pcfactormatsolverpackage,  (std::string), "petsc" )
+                                     ) )
         {
             M_ksp = ksp;
             M_pc = pc;
+            M_pcFactorMatSolverPackage = pcfactormatsolverpackage;
         }
 
     /**
@@ -467,6 +469,7 @@ public:
                                      (transpose,(bool), false )
                                      (pc,(std::string),M_pc/*"lu"*/)
                                      (ksp,(std::string),M_ksp/*"gmres"*/)
+                                     (pcfactormatsolverpackage,(std::string), M_pcFactorMatSolverPackage)
                                      )
                                     )
     {
@@ -474,7 +477,8 @@ public:
                              _rtolerance=rtolerance,
                              _atolerance=atolerance,
                              _maxit=maxit );
-        this->setSolverType( _pc=pc, _ksp=ksp );
+        this->setSolverType( _pc=pc, _ksp=ksp,
+                             _pcfactormatsolverpackage = pcfactormatsolverpackage);
         vector_ptrtype _sol( this->newVector( detail::datamap(solution) ) );
         // initialize
         *_sol = detail::ref(solution);
@@ -552,6 +556,7 @@ public:
                                      (transpose,(bool), false )
                                      (pc,(std::string),M_pc/*"lu"*/)
                                      (ksp,(std::string),M_ksp/*"gmres"*/)
+                                     (pcfactormatsolverpackage,(std::string), M_pcFactorMatSolverPackage)
                                      )
                                     )
     {
@@ -559,7 +564,8 @@ public:
                              _rtolerance=rtolerance,
                              _atolerance=atolerance,
                              _maxit=maxit );
-        this->setSolverType( _pc=pc, _ksp=ksp );
+        this->setSolverType( _pc=pc, _ksp=ksp,
+                             _pcfactormatsolverpackage = pcfactormatsolverpackage);
         vector_ptrtype _sol( this->newVector( detail::datamap(solution) ) );
         // initialize
         *_sol = detail::ref(solution);
