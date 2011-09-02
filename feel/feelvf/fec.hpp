@@ -46,7 +46,12 @@ struct FEContextInit
     typedef boost::shared_ptr<fe_type> fe_ptrtype;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >, mpl::identity<typename FormContextType::test_fecontext_type>,mpl::identity<typename FormContextType::trial_fecontext_type> >::type::type fecontext_type; typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
 
-    typedef typename FormContextType::geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >,
+                              mpl::identity<typename FormContextType::test_geometric_mapping_context_ptrtype>,
+                              mpl::identity<typename FormContextType::trial_geometric_mapping_context_ptrtype> >::type::type geometric_mapping_context_ptrtype;
+
+    //typedef typename FormContextType::test_geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
+
     //typedef typename FormContextType::form_type form_type;
     typedef FormContextType form_type;
     typedef boost::shared_ptr<form_type> form_ptrtype;
@@ -109,8 +114,8 @@ struct FEContextUpdate
     // 0 : test, 1 : trial
     static const uint16_type type = Type;
 
-    typedef typename FormContextType::geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
-    typedef typename FormContextType::map_geometric_mapping_context_type map_geometric_mapping_context_type;
+    typedef typename FormContextType::test_geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
+    typedef typename FormContextType::map_test_geometric_mapping_context_type map_geometric_mapping_context_type;
     //typedef typename FormContextType::form_type form_type;
     typedef FormContextType form_type;
     typedef boost::shared_ptr<form_type> form_ptrtype;
@@ -152,14 +157,27 @@ struct FEContextUpdateInCaseOfInterpolate
     // 0 : test, 1 : trial
     static const uint16_type type = Type;
 
-    typedef typename FormContextType::geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
-    typedef typename FormContextType::map_geometric_mapping_context_type map_geometric_mapping_context_type;
+    //typedef typename FormContextType::test_geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
+    //typedef typename FormContextType::map_test_geometric_mapping_context_type map_geometric_mapping_context_type;
+
+    //typedef typename FormContextType::map_trial_geometric_mapping_context_type map_trial_geometric_mapping_context_type;
+
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >,
+                              mpl::identity<typename FormContextType::test_geometric_mapping_context_ptrtype>,
+                              mpl::identity<typename FormContextType::trial_geometric_mapping_context_ptrtype> >::type::type geometric_mapping_context_ptrtype;
+
+
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >,
+                              mpl::identity<typename FormContextType::map_test_geometric_mapping_context_type>,
+                              mpl::identity<typename FormContextType::map_trial_geometric_mapping_context_type> >::type::type map_geometric_mapping_context_type;
+
+
     //typedef typename FormContextType::form_type form_type;
     typedef FormContextType form_type;
     typedef boost::shared_ptr<form_type> form_ptrtype;
 
     FEContextUpdateInCaseOfInterpolate( map_geometric_mapping_context_type const& mapgmc,
-                                form_type const& form )
+                                        form_type const& form )
         :
         _M_mapgmc( mapgmc ),
         _M_form( form )
@@ -188,6 +206,8 @@ struct FEContextUpdateInCaseOfInterpolate
         }
 
     map_geometric_mapping_context_type const& _M_mapgmc;
+    //map_trial_geometric_mapping_context_type const& _M_trial_mapgmc;
+
     form_type const& _M_form;
 };
 

@@ -234,17 +234,28 @@ public:
     typedef typename element_2_type::component_type component_2_type;
 #endif // 0
 
-    typedef typename space_1_type::mesh_type mesh_type;
-    typedef typename mesh_type::element_type mesh_element_type;
-    typedef typename mesh_element_type::permutation_type permutation_type;
+    typedef typename space_1_type::mesh_type mesh_1_type;
+    typedef typename mesh_1_type::element_type mesh_element_1_type;
+    typedef typename mesh_element_1_type::permutation_type permutation_1_type;
+
+    typedef typename space_2_type::mesh_type mesh_2_type;
+    typedef typename mesh_2_type::element_type mesh_element_2_type;
+    typedef typename mesh_element_2_type::permutation_type permutation_2_type;
+
     typedef typename space_1_type::fe_type fe_1_type;
     typedef typename space_2_type::fe_type fe_2_type;
 
-    typedef typename space_1_type::gm_type gm_type;
-    typedef typename space_1_type::gm_ptrtype gm_ptrtype;
+    typedef typename space_1_type::gm_type gm_1_type;
+    typedef typename space_1_type::gm_ptrtype gm_1_ptrtype;
 
-    typedef typename space_1_type::gm1_type gm1_type;
-    typedef typename space_1_type::gm1_ptrtype gm1_ptrtype;
+    typedef typename space_1_type::gm1_type gm1_1_type;
+    typedef typename space_1_type::gm1_ptrtype gm1_1_ptrtype;
+
+    typedef typename space_2_type::gm_type gm_2_type;
+    typedef typename space_2_type::gm_ptrtype gm_2_ptrtype;
+
+    typedef typename space_2_type::gm1_type gm1_2_type;
+    typedef typename space_2_type::gm1_ptrtype gm1_2_ptrtype;
 
     //typedef ublas::compressed_matrix<value_type, ublas::row_major> csr_matrix_type;
     typedef MatrixSparse<value_type> matrix_type;
@@ -291,20 +302,21 @@ public:
      *
      *
      */
-    template<typename GeomapContext,
+    template<typename GeomapTestContext,
              typename ExprT,
              typename IM,
-             typename GeomapExprContext = GeomapContext
+             typename GeomapExprContext = GeomapTestContext,
+             typename GeomapTrialContext = GeomapTestContext
              >
-    class Context : public FormContextBase<GeomapContext,IM,GeomapExprContext>
+    class Context //: public FormContextBase<GeomapTestContext,IM,GeomapExprContext>
     {
-        typedef FormContextBase<GeomapContext,IM,GeomapExprContext> super;
+        typedef FormContextBase<GeomapTestContext,IM,GeomapExprContext> super;
 
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 
-        typedef Context<GeomapContext,ExprT,IM,GeomapExprContext> form_context_type;
+        typedef Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext> form_context_type;
         typedef BilinearForm<FE1, FE2, ElemContType> form_type;
         typedef typename FE1::dof_type dof_1_type;
         typedef typename FE2::dof_type dof_2_type;
@@ -312,27 +324,36 @@ public:
         typedef typename form_type::value_type value_type;
 
 
-#if 0
-        typedef GeomapContext map_geometric_mapping_context_type;
+        typedef typename super::map_geometric_mapping_context_type map_test_geometric_mapping_context_type;
+        typedef typename super::geometric_mapping_context_ptrtype test_geometric_mapping_context_ptrtype;
+        typedef typename super::geometric_mapping_context_type test_geometric_mapping_context_type;
+        typedef typename super::geometric_mapping_type test_geometric_mapping_type;
+        typedef typename super::map_size test_map_size;
+        typedef typename super::gmc1 test_gmc1;
+        typedef typename super::left_gmc_ptrtype test_left_gmc_ptrtype;
+        typedef typename super::right_gmc_ptrtype test_right_gmc_ptrtype;
+        typedef typename super::map_left_gmc_type test_map_left_gmc_type;
+        typedef typename super::map_right_gmc_type test_map_right_gmc_type;
 
-        typedef typename fusion::result_of::value_at_key<GeomapContext,gmc<0> >::type geometric_mapping_context_ptrtype;
 
-        typedef typename geometric_mapping_context_ptrtype::element_type geometric_mapping_context_type;
-        typedef typename geometric_mapping_context_type::gm_type geometric_mapping_type;
-#else
-        typedef typename super::map_geometric_mapping_context_type map_geometric_mapping_context_type;
-        typedef typename super::geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
-        typedef typename super::geometric_mapping_context_type geometric_mapping_context_type;
-        typedef typename super::geometric_mapping_type geometric_mapping_type;
-        typedef typename super::map_size map_size;
-        typedef typename super::gmc1 gmc1;
-        typedef typename super::left_gmc_ptrtype left_gmc_ptrtype;
-        typedef typename super::right_gmc_ptrtype right_gmc_ptrtype;
-        typedef typename super::map_left_gmc_type map_left_gmc_type;
-        typedef typename super::map_right_gmc_type map_right_gmc_type;
+        typedef FormContextBase<GeomapTrialContext,IM,GeomapExprContext> super2;
 
-#endif
-        static const uint16_type nDim = geometric_mapping_type::nDim;
+        typedef typename super2::map_geometric_mapping_context_type map_trial_geometric_mapping_context_type;
+        typedef typename super2::geometric_mapping_context_ptrtype trial_geometric_mapping_context_ptrtype;
+        typedef typename super2::geometric_mapping_context_type trial_geometric_mapping_context_type;
+        typedef typename super2::geometric_mapping_type trial_geometric_mapping_type;
+        typedef typename super2::map_size trial_map_size;
+        typedef typename super2::gmc1 trial_gmc1;
+        typedef typename super2::left_gmc_ptrtype trial_left_gmc_ptrtype;
+        typedef typename super2::right_gmc_ptrtype trial_right_gmc_ptrtype;
+        typedef typename super2::map_left_gmc_type trial_map_left_gmc_type;
+        typedef typename super2::map_right_gmc_type trial_map_right_gmc_type;
+
+
+
+
+
+        static const uint16_type nDim = test_geometric_mapping_type::nDim;
 
         typedef ExprT expression_type;
 
@@ -343,32 +364,32 @@ public:
 
         typedef typename FE2::fe_type trial_fe_type;
         typedef boost::shared_ptr<trial_fe_type> trial_fe_ptrtype;
-        typedef typename trial_fe_type::template Context< geometric_mapping_context_type::context,
+        typedef typename trial_fe_type::template Context< trial_geometric_mapping_context_type::context,
                                                           trial_fe_type,
-                                                          geometric_mapping_type,
-                                                          mesh_element_type> trial_fecontext_type;
+                                                          trial_geometric_mapping_type,
+                                                          mesh_element_2_type> trial_fecontext_type;
         typedef boost::shared_ptr<trial_fecontext_type> trial_fecontext_ptrtype;
-        typedef typename mpl::if_<mpl::equal_to<map_size, mpl::int_<1> >,
+        typedef typename mpl::if_<mpl::equal_to<trial_map_size, mpl::int_<1> >,
                                   mpl::identity<fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype> > >,
                                   mpl::identity<fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype>,
                                                             fusion::pair<gmc<1>, trial_fecontext_ptrtype> > > >::type::type map_trial_fecontext_type;
 
         typedef fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype> > map_left_trial_fecontext_type;
-        typedef fusion::map<fusion::pair<gmc1, trial_fecontext_ptrtype> > map_right_trial_fecontext_type;
+        typedef fusion::map<fusion::pair<trial_gmc1, trial_fecontext_ptrtype> > map_right_trial_fecontext_type;
 
         typedef typename FE1::fe_type test_fe_type;
         typedef boost::shared_ptr<test_fe_type> test_fe_ptrtype;
-        typedef typename test_fe_type::template Context< geometric_mapping_context_type::context,
+        typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
                                                          test_fe_type,
-                                                         geometric_mapping_type,
-                                                         mesh_element_type> test_fecontext_type;
+                                                         test_geometric_mapping_type,
+                                                         mesh_element_1_type> test_fecontext_type;
         typedef boost::shared_ptr<test_fecontext_type> test_fecontext_ptrtype;
-        typedef typename mpl::if_<mpl::equal_to<map_size, mpl::int_<1> >,
+        typedef typename mpl::if_<mpl::equal_to<test_map_size, mpl::int_<1> >,
                                   mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > >,
                                   mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype>,
                                                             fusion::pair<gmc<1>, test_fecontext_ptrtype> > > >::type::type map_test_fecontext_type;
         typedef fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > map_left_test_fecontext_type;
-        typedef fusion::map<fusion::pair<gmc1, test_fecontext_ptrtype> > map_right_test_fecontext_type;
+        typedef fusion::map<fusion::pair<test_gmc1, test_fecontext_ptrtype> > map_right_test_fecontext_type;
 
         //--------------------------------------------------------------------------------------//
 
@@ -432,14 +453,16 @@ public:
         map_left_trial_fecontext_type getMapL( Left  /*left*/, Right right, mpl::bool_<false> ) { return right; }
 
         Context( form_type& __form,
-                 map_geometric_mapping_context_type const& gmc,
+                 map_test_geometric_mapping_context_type const& gmcTest,
+                 map_trial_geometric_mapping_context_type const& _gmcTrial,
                  map_geometric_mapping_expr_context_type const & gmcExpr,
                  ExprT const& expr,
                  IM const& im );
 
         template<typename IM2>
         Context( form_type& __form,
-                 map_geometric_mapping_context_type const& gmc,
+                 map_test_geometric_mapping_context_type const& gmcTest,
+                 map_trial_geometric_mapping_context_type const& _gmcTrial,
                  map_geometric_mapping_expr_context_type const & gmcExpr,
                  ExprT const& expr,
                  IM const& im,
@@ -447,71 +470,80 @@ public:
 
         template<typename IM2>
         Context( form_type& __form,
-                 map_geometric_mapping_context_type const& gmc,
+                 map_test_geometric_mapping_context_type const& gmcTest,
+                 map_trial_geometric_mapping_context_type const& _gmcTrial,
                  map_geometric_mapping_expr_context_type const & gmcExpr,
                  ExprT const& expr,
                  IM const& im,
                  IM2 const& im2,
                  mpl::int_<2> );
 
-        void update( map_geometric_mapping_context_type const& gmc,
+        void update( map_test_geometric_mapping_context_type const& gmcTest,
+                     map_trial_geometric_mapping_context_type const& _gmcTrial,
                      map_geometric_mapping_expr_context_type const& gmcExpr );
 
-        void updateInCaseOfInterpolate( map_geometric_mapping_context_type const& gmc,
+        void updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& gmcTest,
+                                        map_trial_geometric_mapping_context_type const& gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
                                         std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad );
 
-        void update( map_geometric_mapping_context_type const& gmc,
+        void update( map_test_geometric_mapping_context_type const& gmcTest,
+                     map_trial_geometric_mapping_context_type const& _gmcTrial,
                      map_geometric_mapping_expr_context_type const& gmcExpr,
                      mpl::int_<2> );
 
-        void update( map_geometric_mapping_context_type const& gmc,
+        void update( map_test_geometric_mapping_context_type const& gmcTest,
+                     map_trial_geometric_mapping_context_type const& gmcTrial,
                      map_geometric_mapping_expr_context_type const& gmcExpr,
                      IM const& im )
         {
             M_integrator = im;
-            update( gmc,gmcExpr );
+            update( gmcTest, gmcTrial, gmcExpr );
         }
 
-        void updateInCaseOfInterpolate( map_geometric_mapping_context_type const& gmc,
+        void updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& gmcTest,
+                                        map_trial_geometric_mapping_context_type const& gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
                                         IM const& im,
                                         std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
         {
             M_integrator = im;
-            updateInCaseOfInterpolate( gmc,gmcExpr, indexLocalToQuad);
+            updateInCaseOfInterpolate( gmcTest, gmcTrial, gmcExpr, indexLocalToQuad);
         }
 
-        void update( map_geometric_mapping_context_type const& gmc,
+        void update( map_test_geometric_mapping_context_type const& gmcTest,
+                     map_trial_geometric_mapping_context_type const& gmcTrial,
                      map_geometric_mapping_expr_context_type const& gmcExpr,
                      IM const& im, mpl::int_<2> )
         {
             M_integrator = im;
-            update( gmc, gmcExpr, mpl::int_<2>() );
+            update( gmcTest, gmcTrial, gmcExpr, mpl::int_<2>() );
         }
 
         void integrate()
         {
-            integrate( mpl::int_<fusion::result_of::size<GeomapContext>::type::value>() );
+            integrate( mpl::int_<fusion::result_of::size<GeomapTestContext>::type::value>() );
         }
         void integrateInCaseOfInterpolate(std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
                                           bool isFirstExperience )
         {
-            integrateInCaseOfInterpolate( mpl::int_<fusion::result_of::size<GeomapContext>::type::value>(),
+            integrateInCaseOfInterpolate( mpl::int_<fusion::result_of::size<GeomapTestContext>::type::value>(),
                                           indexLocalToQuad,
                                           isFirstExperience );
         }
 
 
-        void assemble() { assemble( fusion::at_key<gmc<0> >( _M_gmc )->id());  }
+        void assemble() { assemble( fusion::at_key<gmc<0> >( _M_test_gmc )->id());  }
         void assemble( size_type elt_0 );
 
         void assemble( mpl::int_<2> )
             {
-                assemble( fusion::at_key<gmc<0> >( _M_gmc )->id(),
-                          fusion::at_key<gmc1>( _M_gmc )->id() );
+                assemble( fusion::at_key<gmc<0> >( _M_test_gmc )->id(),
+                          fusion::at_key<test_gmc1>( _M_test_gmc )->id() );
             }
         void assemble( size_type elt_0, size_type elt_1  );
+
+        void assembleInCaseOfInterpolate();
 
         /**
          * precompute the basis function associated with the test and
@@ -524,13 +556,21 @@ public:
                 _M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( _M_form.trialSpace()->fe(), pts ) );
             }
 
+        template<typename PtsTest,typename PtsTrial>
+        void precomputeBasisAtPoints( PtsTest const& pts1,PtsTrial const& pts2  )
+            {
+                _M_test_pc = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts1 ) );
+                _M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( _M_form.trialSpace()->fe(), pts2 ) );
+            }
+
+
         /**
          * precompute the basis function associated with the test and
          * trial space at a set of points on the face of
          * the reference element
          */
         template<typename Pts>
-        void precomputeBasisAtPoints( uint16_type __f, permutation_type const& __p, Pts const& pts )
+        void precomputeBasisAtPoints( uint16_type __f, permutation_1_type const& __p, Pts const& pts ) // !!!!!!!!!!!!!!!!!
             {
                 _M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
                 //FEEL_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
@@ -540,8 +580,25 @@ public:
             }
 
         template<typename PtsSet>
-        std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> >
+        std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> >
         precomputeTestBasisAtPoints( PtsSet const& pts )
+        {
+            typedef typename boost::is_same< permutation_1_type, typename QuadMapped<PtsSet>::permutation_type>::type is_same_permuation_type;
+            return precomputeTestBasisAtPoints(pts, mpl::bool_<is_same_permuation_type::value>() );
+        }
+
+        template<typename PtsSet>
+        std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> >
+        precomputeTestBasisAtPoints( PtsSet const& pts, mpl::bool_<false> )
+        {
+            std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> > testpc;
+            return testpc;
+        }
+
+        template<typename PtsSet>
+        std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> >
+        //std::map<uint16_type, std::map< typename QuadMapped<PtsSet>::permutation_type ,test_precompute_ptrtype> >
+        precomputeTestBasisAtPoints( PtsSet const& pts, mpl::bool_<true> )
             {
                 QuadMapped<PtsSet> qm;
                 typedef typename QuadMapped<PtsSet>::permutation_type permutation_type;
@@ -559,9 +616,26 @@ public:
                 }
                 return testpc;
             }
+
         template<typename PtsSet>
-        std::map<uint16_type, std::map<permutation_type,trial_precompute_ptrtype> >
+        std::map<uint16_type, std::map<permutation_2_type,trial_precompute_ptrtype> >
         precomputeTrialBasisAtPoints( PtsSet const& pts )
+        {
+            typedef typename boost::is_same< permutation_2_type, typename QuadMapped<PtsSet>::permutation_type>::type is_same_permuation_type;
+            return precomputeTrialBasisAtPoints(pts, mpl::bool_<is_same_permuation_type::value>() );
+        }
+
+        template<typename PtsSet>
+        std::map<uint16_type, std::map<permutation_2_type,trial_precompute_ptrtype> >
+        precomputeTrialBasisAtPoints( PtsSet const& pts,  mpl::bool_<false> )
+        {
+            std::map<uint16_type, std::map<permutation_2_type,trial_precompute_ptrtype> > trialpc;
+            return trialpc;
+        }
+
+        template<typename PtsSet>
+        std::map<uint16_type, std::map<permutation_2_type,trial_precompute_ptrtype> >
+        precomputeTrialBasisAtPoints( PtsSet const& pts, mpl::bool_<true> )
             {
                 QuadMapped<PtsSet> qm;
                 typedef typename QuadMapped<PtsSet>::permutation_type permutation_type;
@@ -588,7 +662,7 @@ public:
          * \see precomputeBasisAtPoints()
          */
         test_precompute_ptrtype const& testPc( uint16_type __f,
-                                               permutation_type __p = permutation_type( permutation_type::NO_PERMUTATION ) ) const
+                                               permutation_1_type __p = permutation_1_type( permutation_1_type::NO_PERMUTATION ) ) const
             {
                 if ( __f == invalid_uint16_type_value )
                     return  _M_test_pc;
@@ -603,7 +677,7 @@ public:
          * \see precomputeBasisAtPoints()
          */
         trial_precompute_ptrtype const& trialPc( uint16_type __f,
-                                                 permutation_type __p = permutation_type( permutation_type::NO_PERMUTATION ) ) const
+                                                 permutation_2_type __p = permutation_2_type( permutation_2_type::NO_PERMUTATION ) ) const
             {
                 if ( __f == invalid_uint16_type_value )
                     return  _M_trial_pc;
@@ -614,19 +688,23 @@ public:
 
     private:
 
-        void update( map_geometric_mapping_context_type const& gmc,
+        void update( map_test_geometric_mapping_context_type const& gmcTest,
+                     map_trial_geometric_mapping_context_type const& gmcTrial,
                      map_geometric_mapping_expr_context_type const& gmcExpr,
                      mpl::bool_<false> );
 
-        void update( map_geometric_mapping_context_type const& gmc,
+        void update( map_test_geometric_mapping_context_type const& gmcTest,
+                     map_trial_geometric_mapping_context_type const& gmcTrial,
                      map_geometric_mapping_expr_context_type const& gmcExpr,
                      mpl::bool_<true> );
 
-        void updateInCaseOfInterpolate( map_geometric_mapping_context_type const& gmc,
+        void updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& gmcTest,
+                                        map_trial_geometric_mapping_context_type const& gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
                                         mpl::bool_<false> );
 
-        void updateInCaseOfInterpolate( map_geometric_mapping_context_type const& gmc,
+        void updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& gmcTest,
+                                        map_trial_geometric_mapping_context_type const& gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
                                         mpl::bool_<true> );
 
@@ -646,12 +724,14 @@ public:
         dof_2_type* _M_trial_dof;
 
         test_precompute_ptrtype _M_test_pc;
-        std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > _M_test_pc_face;
+        std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> > _M_test_pc_face;
         trial_precompute_ptrtype _M_trial_pc;
-        std::map<uint16_type, std::map<permutation_type, trial_precompute_ptrtype> > _M_trial_pc_face;
+        std::map<uint16_type, std::map<permutation_2_type, trial_precompute_ptrtype> > _M_trial_pc_face;
 
 
-        map_geometric_mapping_context_type _M_gmc;
+        map_test_geometric_mapping_context_type _M_test_gmc;
+        map_trial_geometric_mapping_context_type _M_trial_gmc;
+
         map_test_fecontext_type _M_test_fec;
         map_left_test_fecontext_type _M_test_fec0;
         map_right_test_fecontext_type _M_test_fec1;
@@ -809,12 +889,22 @@ public:
     /**
      * Geometric transformation
      */
-    gm_ptrtype const& gm() const { return _M_X1->gm(); }
+    gm_1_ptrtype const& gm() const { return _M_X1->gm(); }//!!!!!!!!!!!!!!!
 
     /**
      * Geometric transformation
      */
-    gm1_ptrtype const& gm1() const { return _M_X1->gm1(); }
+    gm1_1_ptrtype const& gm1() const { return _M_X1->gm1(); }//!!!!!!!!!!!!!!!
+
+    /**
+     * Geometric transformation
+     */
+    gm_2_ptrtype const& gmTrial() const { return _M_X2->gm(); }//!!!!!!!!!!!!!!!
+
+    /**
+     * Geometric transformation
+     */
+    gm1_2_ptrtype const& gm1Trial() const { return _M_X2->gm1(); }//!!!!!!!!!!!!!!!
 
 
     /**
@@ -917,6 +1007,9 @@ public:
     graph_ptrtype computeGraph( size_type hints, mpl::bool_<false> );
     void mergeGraph( int row, int col, graph_ptrtype g );
 
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> );
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> );
+
     //@}
 
 protected:
@@ -987,7 +1080,13 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
 
             boost::timer t;
             Debug( 5050 ) << "compute graph\n";
-            graph_ptrtype graph = computeGraph( graph_hints, mpl::bool_<(FE1::nSpaces == 1)>() );
+
+            graph_ptrtype graph;
+            if ( dynamic_cast<void*>( _M_X1->mesh().get()) == dynamic_cast<void*>( _M_X2->mesh().get()) )
+                graph = computeGraph( graph_hints, mpl::bool_<(FE1::nSpaces == 1)>() );
+            else
+                graph = computeGraphInCaseOfInterpolate( graph_hints, mpl::bool_<(FE1::nSpaces == 1)>() );
+
             Debug( 5050 ) << "computed graph in " << t.elapsed() << "s\n"; t.restart();
             //_M_X1.setState( space_1_type::SOLUTION );
             // _M_X2->setState( space_2_type::TRIAL );
@@ -1001,6 +1100,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
 
 
         }
+
     Debug( 5050 ) << "begin constructor with default listblock done\n";
 }
 
@@ -1528,7 +1628,7 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
                                                   first1_dof_on_proc, last1_dof_on_proc,
                                                   first2_dof_on_proc, last2_dof_on_proc ) );
 
-    typedef typename mesh_type::element_const_iterator mesh_element_const_iterator;
+    typedef typename mesh_1_type::element_const_iterator mesh_element_const_iterator;
 
     mesh_element_const_iterator       elem_it  = _M_X1->mesh()->beginElementWithProcessId( proc_id );
     const mesh_element_const_iterator elem_en  = _M_X1->mesh()->endElementWithProcessId( proc_id );
@@ -1555,7 +1655,7 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
 #if !defined(NDEBUG)
         Debug( 5050 ) << "[BilinearForm::computePatter] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
 #endif /* NDEBUG */
-        mesh_element_type const& elem = *elem_it;
+        mesh_element_1_type const& elem = *elem_it;
 
         // Get the global indices of the DOFs with support on this element
         element_dof1 = _M_X1->dof()->getIndices( elem.id() );
@@ -1614,7 +1714,7 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
                 {
                     for (uint16_type ms=0; ms < elem.nNeighbors(); ms++)
                     {
-                        mesh_element_type const* neighbor = NULL;
+                        mesh_element_1_type const* neighbor = NULL;
                         size_type neighbor_id = elem.neighbor(ms).first;
                         size_type neighbor_process_id = elem.neighbor(ms).second;
                         if ( neighbor_id != invalid_size_type_value )
@@ -1657,6 +1757,112 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
     return sparsity_graph;
 }
 #endif
+
+template<typename FE1,  typename FE2, typename ElemContType>
+typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
+BilinearForm<FE1,FE2,ElemContType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> )
+{
+#warning todo
+    graph_ptrtype sparsity_graph;
+    return sparsity_graph;
+}
+
+template<typename FE1,  typename FE2, typename ElemContType>
+typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
+BilinearForm<FE1,FE2,ElemContType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> )
+{
+
+    const size_type nprocs           = _M_X1->mesh()->comm().size();
+    const size_type proc_id           = _M_X1->mesh()->comm().rank();
+    const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
+    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
+    const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
+    const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
+    const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
+    const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
+
+    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
+                                                  first1_dof_on_proc, last1_dof_on_proc,
+                                                  first2_dof_on_proc, last2_dof_on_proc ) );
+
+    typedef typename mesh_1_type::element_const_iterator mesh_element_const_iterator;
+    mesh_element_const_iterator       elem_it  = _M_X1->mesh()->beginElementWithProcessId( proc_id );
+    const mesh_element_const_iterator elem_en  = _M_X1->mesh()->endElementWithProcessId( proc_id );
+
+    auto locTool = _M_X2->mesh()->tool_localization();
+    locTool->updateForUse();
+    locTool->setExtrapolation(false);
+
+    std::vector<size_type>
+        element_dof1,
+        element_dof2;
+
+    for ( ; elem_it != elem_en; ++elem_it)
+    {
+        mesh_element_1_type const& elem = *elem_it;
+
+        // Get the global indices of the DOFs with support on this element
+        element_dof1 = _M_X1->dof()->getIndices( elem.id() );
+
+        const uint16_type  n1_dof_on_element = element_dof1.size();
+        //const uint16_type  n2_dof_on_element = element_dof2.size();
+
+        for (size_type i=0; i<n1_dof_on_element; i++)
+            {
+                const size_type ig1 = element_dof1[i];
+                const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
+                const int ncomp1 = i / ndofpercomponent1;
+                //const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
+
+                auto ptRealDof = boost::get<0>(_M_X1->dof()->dofPoint(ig1));
+
+                //std::cout << "\n Pt dof " << ptRealDof;
+
+                auto res = locTool->searchElements(ptRealDof);
+                auto hasFind = res.get<0>();
+
+                if ( hasFind )
+                    {
+                        auto res_it = res.get<1>().begin();
+                        auto res_en = res.get<1>().end();
+                        for ( ; res_it != res_en ; ++res_it)
+                            {
+                                element_dof2 = _M_X2->dof()->getIndices( res_it->get<0>() );
+
+                                graph_type::row_type& row = sparsity_graph->row(ig1);
+                                bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
+                                row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                                row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+
+                                //if ( do_less ) {}
+                                //else
+                                row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+
+
+                            }
+
+                    } // if (hasFind)
+                else
+                    {
+                        // row empty
+                        graph_type::row_type& row = sparsity_graph->row(ig1);
+                        bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
+                        row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                        row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                    }
+
+            } // for (size_type i=0; i<n1_dof_on_element; i++)
+
+
+
+    } // for ( ; elem_it ... )
+
+    locTool->setExtrapolation(true);
+
+    sparsity_graph->close();
+
+    return sparsity_graph;
+}
 
 template<typename BFType, typename ExprType, typename TestSpaceType>
 template<typename SpaceType>

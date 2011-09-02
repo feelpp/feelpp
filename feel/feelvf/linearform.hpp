@@ -150,13 +150,19 @@ public:
         typedef typename geometric_mapping_context_ptrtype::element_type geometric_mapping_context_type;
         typedef typename geometric_mapping_context_type::gm_type geometric_mapping_type;
 #else
-        typedef typename super::map_geometric_mapping_context_type map_geometric_mapping_context_type;
-        typedef typename super::geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
-        typedef typename super::geometric_mapping_context_type geometric_mapping_context_type;
-        typedef typename super::geometric_mapping_type geometric_mapping_type;
+        typedef typename super::map_geometric_mapping_context_type map_test_geometric_mapping_context_type;
+        typedef typename super::geometric_mapping_context_ptrtype test_geometric_mapping_context_ptrtype;
+        typedef typename super::geometric_mapping_context_type test_geometric_mapping_context_type;
+        typedef typename super::geometric_mapping_type test_geometric_mapping_type;
+
+        typedef typename super::map_geometric_mapping_context_type map_trial_geometric_mapping_context_type;
+        typedef typename super::geometric_mapping_context_ptrtype trial_geometric_mapping_context_ptrtype;
+        typedef typename super::geometric_mapping_context_type trial_geometric_mapping_context_type;
+        typedef typename super::geometric_mapping_type trial_geometric_mapping_type;
+
 #endif
 
-        static const uint16_type nDim = geometric_mapping_type::nDim;
+        static const uint16_type nDim = test_geometric_mapping_type::nDim;
 
         typedef ExprT expression_type;
 
@@ -166,10 +172,10 @@ public:
         typedef typename space_type::fe_type test_fe_type;
         typedef typename space_type::fe_type trial_fe_type;
         typedef boost::shared_ptr<test_fe_type> test_fe_ptrtype;
-        typedef typename test_fe_type::template Context< geometric_mapping_context_type::context,
-                                                            test_fe_type,
-                                                            geometric_mapping_type,
-                                                            mesh_element_type> test_fecontext_type;
+        typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
+                                                         test_fe_type,
+                                                         test_geometric_mapping_type,
+                                                         mesh_element_type> test_fecontext_type;
         typedef test_fecontext_type trial_fecontext_type;
 
 #if 0
@@ -224,10 +230,10 @@ public:
         //typedef typename ExprT::template tensor<map_right_gmc_type, map_test_fecontext_type> eval1_expr_type;
 
 
-        typedef typename test_fe_type::template Context< geometric_mapping_context_type::context,
-                                                            test_fe_type,
-                                                            geometric_mapping_type,
-                                                            mesh_element_type>::template Index<> test_index_type;
+        typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
+                                                         test_fe_type,
+                                                         test_geometric_mapping_type,
+                                                         mesh_element_type>::template Index<> test_index_type;
 
 
         //typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map0_test_fecontext_type> eval0_expr_type;
@@ -246,14 +252,16 @@ public:
     public:
 
         Context( form_type& __form,
-                 map_geometric_mapping_context_type const& _gmc,
+                 map_test_geometric_mapping_context_type const& _gmcTest,
+                 map_trial_geometric_mapping_context_type const & _gmcTrial, //useless(fix compilation)
                  map_geometric_mapping_expr_context_type const& _gmcExpr,
                  ExprT const& expr,
                  IM const& im );
 
         template<typename IM2>
         Context( form_type& __form,
-                 map_geometric_mapping_context_type const& _gmc,
+                 map_test_geometric_mapping_context_type const& _gmcTest,
+                 map_trial_geometric_mapping_context_type const & _gmcTrial, //useless(fix compilation)
                  map_geometric_mapping_expr_context_type const& _gmcExpr,
                  ExprT const& expr,
                  IM const& im,
@@ -261,41 +269,48 @@ public:
 
         template<typename IM2>
         Context( form_type& __form,
-                 map_geometric_mapping_context_type const& _gmc,
+                 map_test_geometric_mapping_context_type const& _gmcTest,
+                 map_trial_geometric_mapping_context_type const & _gmcTrial, //useless(fix compilation)
                  map_geometric_mapping_expr_context_type const& _gmcExpr,
                  ExprT const& expr,
                  IM const& im,
                  IM2 const& im2,
                  mpl::int_<2> );
 
-        void update( map_geometric_mapping_context_type const& _gmc,
+        void update( map_test_geometric_mapping_context_type const& _gmcTest,
+                     map_trial_geometric_mapping_context_type const & gmcTrial,
                      map_geometric_mapping_expr_context_type const& _gmcExpr );
 
 
-        void updateInCaseOfInterpolate( map_geometric_mapping_context_type const& gmc,
+        void updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& gmcTest,
+                                        map_trial_geometric_mapping_context_type const & gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
                                         std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad );
 
-        void update( map_geometric_mapping_context_type const& _gmc,
+        void update( map_test_geometric_mapping_context_type const& _gmcTest,
+                     map_trial_geometric_mapping_context_type const & gmcTrial,
                      map_geometric_mapping_expr_context_type const& _gmcExpr,
                      mpl::int_<2> );
 
 
-        void update( map_geometric_mapping_context_type const& _gmc,
+        void update( map_test_geometric_mapping_context_type const& _gmcTest,
+                     map_trial_geometric_mapping_context_type const & gmcTrial,
                      map_geometric_mapping_expr_context_type const& _gmcExpr,
                      IM const& im );
 
-        void updateInCaseOfInterpolate( map_geometric_mapping_context_type const& gmc,
+        void updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& gmcTest,
+                                        map_trial_geometric_mapping_context_type const & gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
                                         IM const& im,
                                         std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
         {
             M_integrator = im;
-            this->updateInCaseOfInterpolate( gmc, gmcExpr, indexLocalToQuad);
+            this->updateInCaseOfInterpolate( gmcTest, gmcTrial, gmcExpr, indexLocalToQuad);
         }
 
 
-        void update( map_geometric_mapping_context_type const& _gmc,
+        void update( map_test_geometric_mapping_context_type const& _gmcTest,
+                     map_trial_geometric_mapping_context_type const & gmcTrial,
                      map_geometric_mapping_expr_context_type const& _gmcExpr,
                      IM const& im, mpl::int_<2> );
 
@@ -359,6 +374,23 @@ public:
         template<typename PtsSet>
         std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> >
         precomputeTestBasisAtPoints( PtsSet const& pts )
+        {
+            typedef typename boost::is_same< permutation_type, typename QuadMapped<PtsSet>::permutation_type>::type is_same_permuation_type;
+            return precomputeTestBasisAtPoints(pts, mpl::bool_<is_same_permuation_type::value>() );
+        }
+
+
+        template<typename PtsSet>
+        std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> >
+        precomputeTestBasisAtPoints( PtsSet const& pts, mpl::bool_<false> )
+        {
+            std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > testpc;
+            return testpc;
+        }
+
+        template<typename PtsSet>
+        std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> >
+        precomputeTestBasisAtPoints( PtsSet const& pts, mpl::bool_<true> )
             {
                 QuadMapped<PtsSet> qm;
                 typedef typename QuadMapped<PtsSet>::permutation_type permutation_type;
@@ -397,7 +429,7 @@ public:
         test_precompute_ptrtype _M_test_pc;
         std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > _M_test_pc_face;
 
-        map_geometric_mapping_context_type _M_gmc;
+        map_test_geometric_mapping_context_type _M_gmc;
         left_gmc_ptrtype _M_gmc_left;
         right_gmc_ptrtype _M_gmc_right;
         map_left_gmc_type _M_left_map;

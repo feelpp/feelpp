@@ -42,7 +42,8 @@ namespace detail
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT, typename IM,typename GeomapExprContext>
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::Context( form_type& __form,
-                                                                                                             map_geometric_mapping_context_type const& _gmc,
+                                                                                                             map_test_geometric_mapping_context_type const& _gmcTest,
+                                                                                                             map_trial_geometric_mapping_context_type const & _gmcTrial,
                                                                                                              map_geometric_mapping_expr_context_type const& _gmcExpr,
                                                                                                              ExprT const& expr,
                                                                                                              IM const& im )
@@ -55,8 +56,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     _M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), im.points() ) ),
     _M_test_pc_face( precomputeTestBasisAtPoints( im ) ),
 
-    _M_gmc( _gmc ),
-    _M_gmc_left( fusion::at_key<gmc<0> >( _gmc ) ),
+    _M_gmc( _gmcTest ),
+    _M_gmc_left( fusion::at_key<gmc<0> >( _gmcTest ) ),
     _M_left_map( fusion::make_map<gmc<0> >( _M_gmc_left ) ),
     _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>(__form.functionSpace()->fe(), *this ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
@@ -73,7 +74,8 @@ template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT, typename IM,typename GeomapExprContext>
 template<typename IM2>
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::Context( form_type& __form,
-                                                                                                             map_geometric_mapping_context_type const& _gmc,
+                                                                                                             map_test_geometric_mapping_context_type const& _gmcTest,
+                                                                                                             map_trial_geometric_mapping_context_type const & _gmcTrial,
                                                                                                              map_geometric_mapping_expr_context_type const& _gmcExpr,
                                                                                                              ExprT const& expr,
                                                                                                              IM const& im,
@@ -87,8 +89,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     _M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), im2.points() ) ),
     _M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
 
-    _M_gmc( _gmc ),
-    _M_gmc_left( fusion::at_key<gmc<0> >( _gmc ) ),
+    _M_gmc( _gmcTest ),
+    _M_gmc_left( fusion::at_key<gmc<0> >( _gmcTest ) ),
     _M_left_map( fusion::make_map<gmc<0> >( _M_gmc_left ) ),
     _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>(__form.functionSpace()->fe(), *this ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
@@ -104,7 +106,8 @@ template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT, typename IM,typename GeomapExprContext>
 template<typename IM2>
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::Context( form_type& __form,
-                                                                                                             map_geometric_mapping_context_type const& _gmc,
+                                                                                                             map_test_geometric_mapping_context_type const& _gmcTest,
+                                                                                                             map_trial_geometric_mapping_context_type const & _gmcTrial,
                                                                                                              map_geometric_mapping_expr_context_type const& _gmcExpr,
                                                                                                              ExprT const& expr,
                                                                                                              IM const& im,
@@ -119,9 +122,9 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     _M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), im2.points() ) ),
     _M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
 
-    _M_gmc( _gmc ),
-    _M_gmc_left( fusion::at_key<gmc<0> >( _gmc ) ),
-    _M_gmc_right( fusion::at_key<gmc1 >( _gmc ) ),
+    _M_gmc( _gmcTest ),
+    _M_gmc_left( fusion::at_key<gmc<0> >( _gmcTest ) ),
+    _M_gmc_right( fusion::at_key<gmc1 >( _gmcTest ) ),
     _M_left_map( fusion::make_map<gmc<0> >( _M_gmc_left ) ),
     _M_right_map( fusion::make_map<gmc<0> >( _M_gmc_right ) ),
     _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>(__form.functionSpace()->fe(), *this ) ) ),
@@ -140,30 +143,32 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
-LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::update( map_geometric_mapping_context_type const& _gmc,
+LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::update( map_test_geometric_mapping_context_type const& _gmcTest,
+                                                                                                            map_trial_geometric_mapping_context_type const & _gmcTrial,
                                                                                                             map_geometric_mapping_expr_context_type const& _gmcExpr )
 {
-    _M_gmc = _gmc;
-    _M_gmc_left = fusion::at_key<gmc<0> >( _gmc );
+    _M_gmc = _gmcTest;
+    _M_gmc_left = fusion::at_key<gmc<0> >( _gmcTest );
     _M_left_map = fusion::make_map<gmc<0> >( _M_gmc_left );
-    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, *this ) );
+    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_eval0_expr->update( _gmcExpr, _M_test_fec0 );
 
-    M_integrator.update( *fusion::at_key<gmc<0> >( _gmc ) );
+    M_integrator.update( *fusion::at_key<gmc<0> >( _gmcTest ) );
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
-LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::updateInCaseOfInterpolate( map_geometric_mapping_context_type const& _gmc,
+LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& _gmcTest,
+                                                                                                                               map_trial_geometric_mapping_context_type const & _gmcTrial,
                                                                                                                                map_geometric_mapping_expr_context_type const& _gmcExpr,
                                                                                                                                std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
 {
-    _M_gmc = _gmc;
-    _M_gmc_left = fusion::at_key<gmc<0> >( _gmc );
+    _M_gmc = _gmcTest;
+    _M_gmc_left = fusion::at_key<gmc<0> >( _gmcTest );
     _M_left_map = fusion::make_map<gmc<0> >( _M_gmc_left );
-    precomputeBasisAtPoints( fusion::at_key<gmc<0> >( _gmc )->xRefs());
-    fusion::for_each( _M_test_fec, detail::FEContextUpdateInCaseOfInterpolate<0,form_context_type>( _gmc, *this ) );
+    precomputeBasisAtPoints( fusion::at_key<gmc<0> >( _gmcTest )->xRefs());
+    fusion::for_each( _M_test_fec, detail::FEContextUpdateInCaseOfInterpolate<0,form_context_type>( _gmcTest, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_eval0_expr->update( _gmcExpr, _M_test_fec0 );
 
@@ -173,7 +178,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
-LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::update( map_geometric_mapping_context_type const& _gmc,
+LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::update( map_test_geometric_mapping_context_type const& _gmcTest,
+                                                                                                            map_trial_geometric_mapping_context_type const & _gmcTrial,
                                                                                                             map_geometric_mapping_expr_context_type const& _gmcExpr,
                                                                                                             mpl::int_<2> )
 {
@@ -183,38 +189,40 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
                           (map_size,map_geometric_mapping_context_type ));*/
     //_M_gmc = _gmc;
 #if 0
-    _M_gmc_left = fusion::at_key<gmc<0> >( _gmc );
-    _M_gmc_right =  fusion::at_key<gmc1 >( _gmc );
+    _M_gmc_left = fusion::at_key<gmc<0> >( _gmcTest );
+    _M_gmc_right =  fusion::at_key<gmc1 >( _gmcTest );
     _M_left_map = fusion::make_map<gmc<0> >( _M_gmc_left );
     _M_right_map = fusion::make_map<gmc<0> >( _M_gmc_right );
 #endif
-    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmc, *this ) );
+    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_test_fec1 = fusion::make_map<gmc1 >( fusion::at_key<gmc1 >( _M_test_fec ) );
     _M_eval0_expr->update( _gmcExpr, _M_test_fec0 );
     _M_eval1_expr->update( _gmcExpr, _M_test_fec1 );
 
-    M_integrator.update( *fusion::at_key<gmc<0> >( _gmc ) );
+    M_integrator.update( *fusion::at_key<gmc<0> >( _gmcTest ) );
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
-LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::update( map_geometric_mapping_context_type const& _gmc,
+LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::update( map_test_geometric_mapping_context_type const& _gmcTest,
+                                                                                                            map_trial_geometric_mapping_context_type const & _gmcTrial,
                                                                                                             map_geometric_mapping_expr_context_type const& _gmcExpr,
                                                                                                             IM const& im )
 {
     M_integrator = im;
-    this->update( _gmc, _gmcExpr );
+    this->update( _gmcTest, _gmcTrial, _gmcExpr );
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext>
 void
-LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::update( map_geometric_mapping_context_type const& _gmc,
+LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::update( map_test_geometric_mapping_context_type const& _gmcTest,
+                                                                                                            map_trial_geometric_mapping_context_type const & _gmcTrial,
                                                                                                             map_geometric_mapping_expr_context_type const& _gmcExpr,
                                                                                                             IM const& im, mpl::int_<2> )
 {
     M_integrator = im;
-    this->update( _gmc, _gmcExpr, mpl::int_<2>() );
+    this->update( _gmcTest, _gmcTrial, _gmcExpr, mpl::int_<2>() );
 }
 
 
@@ -238,8 +246,8 @@ template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprCo
 void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::integrate( mpl::int_<2> )
 {
-    typedef mpl::int_<fusion::result_of::template size<map_geometric_mapping_context_type>::type::value> map_size;
-    BOOST_MPL_ASSERT_MSG( map_size::value == 2, INVALID_GEOMAP, (map_size,map_geometric_mapping_context_type ));
+    typedef mpl::int_<fusion::result_of::template size<map_test_geometric_mapping_context_type>::type::value> map_size;
+    BOOST_MPL_ASSERT_MSG( map_size::value == 2, INVALID_GEOMAP, (map_size,map_test_geometric_mapping_context_type ));
 
     typedef typename eval0_expr_type::shape shape;
     BOOST_MPL_ASSERT_MSG( (shape::M == 1 && shape::N == 1),
