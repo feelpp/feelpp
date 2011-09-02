@@ -297,6 +297,56 @@ public :
         return vec_res;
     }
 
+    //--------------------------------------------------------------------------------------//
+
+    std::vector< boost::tuple< std::vector<boost::tuple<size_type,size_type> >,gmc_ptrtype,matrix_node_type, matrix_node_type > >
+    getUsableDataInFormContext( std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                matrix_node_type const & ptsRefTest,
+                                matrix_node_type const & ptsRefTrial )
+    {
+        // compute the number of several elements
+        uint nContextPt = indexLocalToQuad.size();
+        std::map<size_type,std::list<size_type> > mapEltId;
+        for (uint i=0;i<nContextPt; ++i)
+            {
+                size_type eltId = this->eltForThisQuadPt(indexLocalToQuad[i].get<1>(),mpl::int_<iDim>());
+                mapEltId[eltId].push_back(i);
+            }
+
+        // number of elements
+        auto nEltInContext = mapEltId.size();
+
+        // the vector result
+        std::vector< boost::tuple< std::vector<boost::tuple<size_type,size_type> >, gmc_ptrtype, matrix_node_type, matrix_node_type > > vec_res(nEltInContext);
+
+        auto map_it = mapEltId.begin();
+        auto map_en = mapEltId.end();
+        size_type cptId = 0;
+        for ( ; map_it!= map_en ; ++map_it, ++cptId )
+            {
+                // subdivide into elements the map indexLocalToQuad
+                std::vector<boost::tuple<size_type,size_type> > newindexLocalToQuad(map_it->second.size());
+                // subdivide into elements the ptsRef
+                matrix_node_type newptsRefTest(ptsRefTest.size1(), map_it->second.size() );
+                matrix_node_type newptsRefTrial(ptsRefTrial.size1(), map_it->second.size() );
+
+                auto sublist_it = map_it->second.begin();
+                auto sublist_en = map_it->second.end();
+                size_type index = 0;
+                for ( ; sublist_it != sublist_en ; ++sublist_it,++index )
+                    {
+                        newindexLocalToQuad[index] = indexLocalToQuad[*sublist_it];
+                        ublas::column( newptsRefTest, index ) = ublas::column( ptsRefTest,*sublist_it);
+                        ublas::column( newptsRefTrial, index ) = ublas::column( ptsRefTrial,*sublist_it);
+                    }
+                // get the corresponding gmc
+                auto thegmc = gmcForThisElt(map_it->first,newindexLocalToQuad,mpl::int_<iDim>() );
+                // add to result
+                vec_res[cptId] = boost::make_tuple(newindexLocalToQuad, thegmc, newptsRefTest,newptsRefTrial);
+            }
+
+        return vec_res;
+    }
 
     //--------------------------------------------------------------------------------------//
 
@@ -527,6 +577,7 @@ public :
                         auto trialAnalysis= meshTrialLocalization->searchElement(gmc->xReal( q ));
                         auto trialIdElt = trialAnalysis.get<1>();
                         auto trialNodeRef = trialAnalysis.get<2>();
+                        //std::cout << "\n trialNodeRef " << trialNodeRef << std::endl;
                         trialEltToPtsQuad[trialIdElt].push_back( boost::make_tuple(idq,q,trialNodeRef) );
                         // search in test mesh
                         auto testAnalysis = meshTestLocalization->searchElement(gmc->xReal( q ));
