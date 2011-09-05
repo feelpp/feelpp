@@ -38,6 +38,7 @@
  * together with PETSc.
  */
 #if defined(HAVE_SLEPC) && defined(HAVE_PETSC)
+#if !defined ( __APPLE__ )
 
 #ifndef USE_COMPLEX_NUMBERS
 extern "C"
@@ -50,6 +51,19 @@ extern "C"
 # include <slepc/slepcip.h>
 #endif
 
+#else
+#ifndef USE_COMPLEX_NUMBERS
+extern "C"
+{
+# include <slepceps.h>
+# include <slepcip.h>
+}
+#else
+# include <slepceps.h>
+# include <slepcip.h>
+#endif
+
+#endif
 
 
 namespace Feel
