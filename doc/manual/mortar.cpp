@@ -3,6 +3,7 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+             Abdoulaye Samake <abdoulaye.samake@e.ujf-grenoble.fr>
        Date: 2011-08-24
 
   Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
@@ -24,6 +25,7 @@
 /**
    \file mortar.cpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Abdoulaye Samake <abdoulaye.samake@e.ujf-grenoble.fr>
    \date 2011-08-24
  */
 #include <feel/options.hpp>
@@ -49,16 +51,16 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description laplacianoptions("Laplacian options");
-    laplacianoptions.add_options()
+    po::options_description mortaroptions("Mortar options");
+    mortaroptions.add_options()
         ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
         ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ("nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
+        ("coeff", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
         ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
         ("penaldir", Feel::po::value<double>()->default_value( 10 ),
          "penalisation parameter for the weak boundary Dirichlet formulation")
         ;
-    return laplacianoptions.add( Feel::feel_options() );
+    return mortaroptions.add( Feel::feel_options() );
 }
 
 /**
@@ -72,29 +74,30 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "laplacian" ,
-                     "laplacian" ,
+    AboutData about( "mortar" ,
+                     "mortar" ,
                      "0.2",
-                     "nD(n=1,2,3) Laplacian using mortar",
+                     "nD(n=1,2,3) Mortar using mortar",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2011 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor("Abdoulaye Samake", "developer", "abdoulaye.samake@e.ujf-grenoble.fr", "");
     return about;
 
 }
 
 
 /**
- * \class Laplacian
+ * \class Mortar
  *
- * Laplacian Solver using continuous approximation spaces
+ * Mortar Solver using continuous approximation spaces
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=1, 2 or 3)
  */
-template<int Dim>
-class Laplacian
+template<int Dim, int Order>
+class Mortar
     :
     public Simget
 {
@@ -102,7 +105,7 @@ class Laplacian
 public:
 
     //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = 2;
+    // static const uint16_type Order = 2;
 
     //! numerical type is double
     typedef double value_type;
@@ -141,6 +144,9 @@ public:
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     //! the approximation function space type (shared_ptr<> type)
     typedef boost::shared_ptr<space_type> space_ptrtype;
+
+    typedef typename space_type::trace_functionspace_type lagmult_space_type;
+    typedef typename boost::shared_ptr<lagmult_space_type> lagmult_space_ptrtype;
     //! an element type of the approximation function space
     typedef typename space_type::element_type element_type;
 
@@ -152,7 +158,7 @@ public:
     /**
      * Constructor
      */
-    Laplacian( po::variables_map const& vm, AboutData const& about )
+    Mortar( po::variables_map const& vm, AboutData const& about )
         :
         super( vm, about ),
         M_backend( backend_type::build( this->vm() ) ),
@@ -175,16 +181,16 @@ private:
 
     //! shape of the domain
     std::string shape;
-}; // Laplacian
+}; // Mortar
 
-template<int Dim> const uint16_type Laplacian<Dim>::Order;
+//template<int Dim> const uint16_type Mortar<Dim>::Order;
 
-template<int Dim>
+template<int Dim, int Order>
 void
-Laplacian<Dim>::run()
+Mortar<Dim, Order>::run()
 {
     std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute Laplacian<" << Dim << ">\n";
+    std::cout << "Execute Mortar<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
     if ( shape == "hypercube" )
@@ -194,9 +200,9 @@ Laplacian<Dim>::run()
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
-template<int Dim>
+template<int Dim, int Order>
 void
-Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
+Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";
@@ -231,7 +237,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     auto u1 = Xh1->element();
     auto v1 = Xh1->element();
 
-    lagmult_space_ptrtype Lh1 = lagmult_space_type::New( mesh1->trace( markedfaces(mesh,"gamma") ));
+    lagmult_space_ptrtype Lh1 = lagmult_space_type::New( mesh1->trace( markedfaces(mesh1,"gamma") ));
     auto mu = Lh1->element();
     auto nu = Lh1->element();
 
@@ -239,83 +245,95 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     auto u2 = Xh2->element();
     auto v2 = Xh2->element();
 
+    value_type pi = M_PI;
+
     auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
     auto f = pi*pi*Dim*g;
 
     bool weakdir = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
-    value_type nu = this->vm()["nu"].template as<double>();
+    value_type coeff = this->vm()["coeff"].template as<double>();
 
     auto F1 = M_backend->newVector( Xh1 );
     form1( _test=Xh1, _vector=F1, _init=true ) =
-        integrate( elements(mesh), f*id(v) )+
-        integrate( markedfaces( mesh, "Neumann" ),
-				  nu*gradv(gproj)*vf::N()*id(v) );
-    form1( _test=Xh1, _vector=F1 ) +=
-        integrate( markedfaces(mesh,"Dirichlet"),
-                   g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
+        integrate( elements(mesh1), f*id(v1) );
+        form1( _test=Xh1, _vector=F1 ) +=
+        integrate( markedfaces(mesh1,"Dirichlet"),
+                   g*(-grad(v1)*vf::N()+penaldir*id(v1)/hFace()) );
 
     auto D1 = M_backend->newMatrix( Xh1, Xh1 );
 
+    form2( _trial=Xh1, _test=Xh1, _matrix=D1, _init=true ) =
+        integrate( elements(mesh1), coeff*gradt(u1)*trans(grad(v1)) );
 
-    form2( Xh1, Xh1, D1, _init=true ) =
-        integrate( elements(mesh), nu*gradt(u1)*trans(grad(v1)) );
-    auto B1 = M_backend->newMatrix( Xh1, Lh1 );
-    form2( _trial=Xh1, _test=Lh1, B1, _init=true ) +=
-        integrate( markedfaces(mesh1,"gamma"), idt(u1)*id(nu) );
-
-    auto D2 = M_backend->newMatrix( Xh2, Xh2 );
-    form2( Xh2, Xh2, D2 ) +=
-        integrate( markedfaces(mesh,"Dirichlet"),
+    form2( _trial=Xh1, _test=Xh1, _matrix=D1 ) +=
+        integrate( markedfaces(mesh1,"Dirichlet"),
                    -(gradt(u1)*vf::N())*id(v1)
                    -(grad(v1)*vf::N())*idt(u1)
                    +penaldir*id(v1)*idt(u1)/hFace());
 
-    form2( Xh2, Xh2, D2, _init=true ) =
-        integrate( elements(mesh), nu*gradt(u2)*trans(grad(v2)) );
-
-    form2( _trial=Xh2, _test=Lh, B2, _init=true ) +=
-        integrate( markedfaces(mesh1,"gamma"), -idt(u2)*id(nu) );
+    auto B1 = M_backend->newMatrix( Xh1, Lh1 );
+    form2( _trial=Xh1, _test=Lh1, _matrix=B1, _init=true ) +=
+        integrate( markedfaces(mesh1,"gamma"), idt(u1)*id(nu) );
 
 
-    form2( Xh2, Xh2, D2 ) +=
-        integrate( markedfaces(mesh,"Dirichlet"),
+    auto F2 = M_backend->newVector( Xh2 );
+    form1( _test=Xh2, _vector=F2, _init=true ) =
+        integrate( elements(mesh2), f*id(v2) );
+        form1( _test=Xh2, _vector=F2 ) +=
+        integrate( markedfaces(mesh2,"Dirichlet"),
+                   g*(-grad(v2)*vf::N()+penaldir*id(v2)/hFace()) );
+
+    auto D2 = M_backend->newMatrix( Xh2, Xh2 );
+
+    form2( _trial=Xh2, _test=Xh2, _matrix=D2, _init=true ) =
+        integrate( elements(mesh2), coeff*gradt(u2)*trans(grad(v2)) );
+
+    form2( _trial=Xh2, _test=Xh2, _matrix=D2 ) +=
+        integrate( markedfaces(mesh2,"Dirichlet"),
                    -(gradt(u2)*vf::N())*id(v2)
                    -(grad(v2)*vf::N())*idt(u2)
                    +penaldir*id(v2)*idt(u2)/hFace());
-    D->close();
 
-    backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+    D2->close();
 
-    double L2error2 =integrate(elements(mesh),
-                               (idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
-    double L2error =   math::sqrt( L2error2 );
+    auto B2 = M_backend->newMatrix( Xh2, Lh1 );
+    form2( _trial=Xh2, _test=Lh1, _matrix=B2, _init=true ) +=
+        integrate( markedfaces(mesh1,"gamma"), -idt(u2)*id(nu) );
+
+    // backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+
+    // double L2error2 =integrate(elements(mesh),
+    //                            (idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
+    // double L2error =   math::sqrt( L2error2 );
 
 
-    Log() << "||error||_L2=" << L2error << "\n";
+    // Log() << "||error||_L2=" << L2error << "\n";
 
-    element_type e( Xh, "e" );
-    e = vf::project( Xh, elements(mesh), g );
+    // element_type e( Xh, "e" );
+    // e = vf::project( Xh, elements(mesh), g );
 
     export_ptrtype exporter( export_type::New( this->vm(),
                                                (boost::format( "%1%-%2%-%3%" )
                                                 % this->about().appName()
                                                 % shape
                                                 % Dim).str() ) );
-    if ( exporter->doExport() )
-    {
-        Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( mesh );
+    // if ( exporter->doExport() )
+    // {
+    //     Log() << "exportResults starts\n";
 
-        exporter->step(0)->add( "u", u );
-        exporter->step(0)->add( "g", e );
+    //     exporter->step(0)->setMesh( mesh );
 
-        exporter->save();
-        Log() << "exportResults done\n";
-    }
+    //     exporter->step(0)->add( "u", u );
+    //     exporter->step(0)->add( "g", e );
+
+    //     exporter->save();
+    //     Log() << "exportResults done\n";
+    // }
+
     /** \endcode */
-} // Laplacian::run
+} // Mortar::run
 
 /**
  * main function: entry point of the program
@@ -340,9 +358,9 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    app.add( new Laplacian<1>( app.vm(), app.about() ) );
-    app.add( new Laplacian<2>( app.vm(), app.about() ) );
-    app.add( new Laplacian<3>( app.vm(), app.about() ) );
+    // app.add( new Mortar<1>( app.vm(), app.about() ) );
+    app.add( new Mortar<2,2>( app.vm(), app.about() ) );
+    // app.add( new Mortar<3>( app.vm(), app.about() ) );
     /** \endcode */
 
     /**
