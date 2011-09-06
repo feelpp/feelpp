@@ -35,6 +35,7 @@
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/geotool.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -215,20 +216,49 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
                                        % Order
                                        % meshSize );
 
-    mesh_ptrtype mesh1 = createGMSHMesh( _mesh=new mesh_type,
-                                         _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                                       _usenames=true,
-                                                       _shape=shape,
-                                                       _dim=Dim,
-                                                       _h=X[0],
-                                                       _xmin=-1,_xmax=0 ) );
-    mesh_ptrtype mesh2 = createGMSHMesh( _mesh=new mesh_type,
-                                         _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                                       _usenames=true,
-                                                       _shape=shape,
-                                                       _dim=Dim,
-                                                       _h=X[0],
-                                                       _xmin=0,_xmax=1) );
+    // mesh_ptrtype mesh1 = createGMSHMesh( _mesh=new mesh_type,
+    //                                      _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+    //                                                    _usenames=true,
+    //                                                    _shape=shape,
+    //                                                    _dim=Dim,
+    //                                                    _h=X[0],
+    //                                                    _xmin=-1,_xmax=0 ) );
+    // mesh_ptrtype mesh2 = createGMSHMesh( _mesh=new mesh_type,
+    //                                      _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+    //                                                    _usenames=true,
+    //                                                    _shape=shape,
+    //                                                    _dim=Dim,
+    //                                                    _h=X[0],
+    //                                                    _xmin=0,_xmax=1) );
+
+    // use geotool for generate meshes
+
+
+    GeoTool::Node x11(-1,0); // lower left point of the first rectangle
+    GeoTool::Node x12(0,1); // top right point of the first rectangle
+
+    GeoTool::Rectangle R1( meshSize,"R1",x11,x12);
+
+    R1.setMarker(_type="line",_name="outside",_marker1=true,_marker3=true,_marker4=true);
+    R1.setMarker(_type="line",_name="gamma",_marker2=true);
+    R1.setMarker(_type="surface",_name="Mat1",_markerAll=true);
+
+    auto mesh1 = R1.createMesh<mesh_type>("domain1");
+
+    GeoTool::Node x21(0,0); // lower left point of the first rectangle
+    GeoTool::Node x22(1,1); // top right point of the first rectangle
+
+    GeoTool::Rectangle R2( meshSize,"R2",x21,x22);
+
+    R2.setMarker(_type="line",_name="outside",_marker1=true,_marker2=true,_marker3=true);
+    R2.setMarker(_type="line",_name="gamma",_marker4=true);
+    R2.setMarker(_type="surface",_name="Mat1",_markerAll=true);
+
+    auto mesh2 = R2.createMesh<mesh_type>("domain2");
+
+
+
+
 
     /**
      * The function space and some associated elements(functions) are then defined
@@ -258,7 +288,7 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     form1( _test=Xh1, _vector=F1, _init=true ) =
         integrate( elements(mesh1), f*id(v1) );
         form1( _test=Xh1, _vector=F1 ) +=
-        integrate( markedfaces(mesh1,"Dirichlet"),
+        integrate( markedfaces(mesh1,"outside"),
                    g*(-grad(v1)*vf::N()+penaldir*id(v1)/hFace()) );
 
     auto D1 = M_backend->newMatrix( Xh1, Xh1 );
@@ -267,7 +297,7 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
         integrate( elements(mesh1), coeff*gradt(u1)*trans(grad(v1)) );
 
     form2( _trial=Xh1, _test=Xh1, _matrix=D1 ) +=
-        integrate( markedfaces(mesh1,"Dirichlet"),
+        integrate( markedfaces(mesh1,"outside"),
                    -(gradt(u1)*vf::N())*id(v1)
                    -(grad(v1)*vf::N())*idt(u1)
                    +penaldir*id(v1)*idt(u1)/hFace());
@@ -281,7 +311,7 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     form1( _test=Xh2, _vector=F2, _init=true ) =
         integrate( elements(mesh2), f*id(v2) );
         form1( _test=Xh2, _vector=F2 ) +=
-        integrate( markedfaces(mesh2,"Dirichlet"),
+        integrate( markedfaces(mesh2,"outside"),
                    g*(-grad(v2)*vf::N()+penaldir*id(v2)/hFace()) );
 
     auto D2 = M_backend->newMatrix( Xh2, Xh2 );
@@ -290,7 +320,7 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
         integrate( elements(mesh2), coeff*gradt(u2)*trans(grad(v2)) );
 
     form2( _trial=Xh2, _test=Xh2, _matrix=D2 ) +=
-        integrate( markedfaces(mesh2,"Dirichlet"),
+        integrate( markedfaces(mesh2,"outside"),
                    -(gradt(u2)*vf::N())*id(v2)
                    -(grad(v2)*vf::N())*idt(u2)
                    +penaldir*id(v2)*idt(u2)/hFace());
