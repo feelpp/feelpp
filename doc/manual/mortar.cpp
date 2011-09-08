@@ -129,6 +129,10 @@ public:
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    typedef typename mesh_type::trace_mesh_type trace_mesh_type;
+    typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
+
     //! the basis type of our approximation space
     typedef bases<Lagrange<Order,Scalar> > basis_type;
 
@@ -141,11 +145,18 @@ public:
     typedef typename boost::shared_ptr<lagmult_space_type> lagmult_space_ptrtype;
     //! an element type of the approximation function space
     typedef typename space_type::element_type element_type;
+    typedef typename lagmult_space_type::element_type trace_element_type;
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
     typedef boost::shared_ptr<export_type> export_ptrtype;
+
+    //! the trace exporter factory type
+    typedef Exporter<trace_mesh_type> trace_export_type;
+    //! the trace exporter factory (shared_ptr<> type)
+    typedef boost::shared_ptr<trace_export_type> trace_export_ptrtype;
+
 
     /**
      * Constructor
@@ -166,12 +177,18 @@ public:
                                             (boost::format( "%1%-%2%-%3%" )
                                              % this->about().appName()
                                              % Dim
-                                             % int(2)).str() ) )
+                                             % int(2)).str() ) ),
+        M_trace_exporter( trace_export_type::New( this->vm(),
+                                            (boost::format( "%1%-%2%-%3%" )
+                                             % this->about().appName()
+                                             % Dim
+                                             % int(3)).str() ) )
+
 
     {
     }
 
-    void exportResults( element_type& u,element_type& v );
+    void exportResults( element_type& u,element_type& v, trace_element_type& t );
 
     void run();
 
@@ -191,6 +208,7 @@ private:
     //! exporter
     export_ptrtype M_firstExporter;
     export_ptrtype M_secondExporter;
+    trace_export_ptrtype M_trace_exporter;
 
     //! boost timer
     std::map<std::string, std::pair<boost::timer, double> > timers;
@@ -199,13 +217,14 @@ private:
 
 template<int Dim, int Order>
 void
-Mortar<Dim, Order>::exportResults( element_type& u, element_type& v )
+Mortar<Dim, Order>::exportResults( element_type& u, element_type& v, trace_element_type& t )
 {
 
     auto Xh1=u.functionSpace();
     auto mesh1=Xh1->mesh();
     auto Xh2=v.functionSpace();
     auto mesh2=Xh2->mesh();
+    auto trace_mesh = mesh1->trace( markedfaces(mesh1,"gamma") );
 
     double pi = M_PI;
     using namespace vf;
@@ -230,6 +249,11 @@ Mortar<Dim, Order>::exportResults( element_type& u, element_type& v )
     M_secondExporter->step(0)->add( "exact",(boost::format( "exact-%1%" ) % int(2) ).str(), e2 );
     M_secondExporter->save();
 
+    M_trace_exporter->step(0)->setMesh( trace_mesh );
+    M_trace_exporter->step(0)->add( "solution",(boost::format( "solution-%1%" ) % int(3) ).str(), t );
+    M_trace_exporter->save();
+
+
     std::ofstream ofs( (boost::format( "%1%.sos" ) % this->about().appName() ).str().c_str() );
 
     if ( ofs )
@@ -237,8 +261,8 @@ Mortar<Dim, Order>::exportResults( element_type& u, element_type& v )
         ofs << "FORMAT:\n"
             << "type: master_server gold\n"
             << "SERVERS\n"
-            << "number of servers: " << int(2) << "\n";
-        for( int j = 1; j <= 2; ++ j )
+            << "number of servers: " << int(3) << "\n";
+        for( int j = 1; j <= 3; ++ j )
         {
             ofs << "#Server " << j << "\n";
             ofs << "machine id: " << mpi::environment::processor_name()  << "\n";
@@ -258,7 +282,7 @@ void
 Mortar<Dim, Order>::run()
 {
     std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute Mortar<" << Dim << ">\n";
+    std::cout << "Execute Mortar<" << Dim << "," << Order << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
     if ( shape == "hypercube" )
@@ -492,7 +516,7 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     Log() << "||u2_error||_L2=" << L2error2 << "\n";
 
 
-    this->exportResults(u1,u2);
+    this->exportResults(u1,u2,mu);
 
 
 } // Mortar::run
