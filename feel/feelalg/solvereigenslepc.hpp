@@ -38,7 +38,6 @@
  * together with PETSc.
  */
 #if defined(FEEL_HAVE_SLEPC) && defined(HAVE_PETSC)
-
 #ifndef USE_COMPLEX_NUMBERS
 extern "C"
 {
@@ -48,20 +47,6 @@ extern "C"
 #else
 # include <slepceps.h>
 # include <slepcip.h>
-#endif
-
-#else
-#ifndef USE_COMPLEX_NUMBERS
-extern "C"
-{
-# include <slepceps.h>
-# include <slepcip.h>
-}
-#else
-# include <slepceps.h>
-# include <slepcip.h>
-#endif
-
 #endif
 
 
