@@ -220,11 +220,11 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
     FEEL_ASSERT( fusion::at_key<gmc<0> >( _M_test_fec0 ).get() != 0 )
         ( 0 ).error( "invalid test_fec0" );
-    FEEL_ASSERT( fusion::at_key<gmc1 >( _M_test_fec1 ).get() != 0 )
+    FEEL_ASSERT( fusion::at_key<gmc<1> >( _M_test_fec1 ).get() != 0 )
         ( 1 ).error( "invalid test_fec1" );
     FEEL_ASSERT( fusion::at_key<gmc<0> >( _M_trial_fec0 ).get() != 0 )
         ( 0 ).error( "invalid trial_fec0" );
-    FEEL_ASSERT( fusion::at_key<gmc1 >( _M_trial_fec1 ).get() != 0 )
+    FEEL_ASSERT( fusion::at_key<gmc<1> >( _M_trial_fec1 ).get() != 0 )
         ( 0 ).error( "invalid trial_fec1" );
 
     _M_eval_expr00->update( _gmcExpr, _M_test_fec0, _M_trial_fec0 );
@@ -292,7 +292,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                           (mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
 #if !defined(NDEBUG)
-    geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_test_gmc );
+    test_geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_test_gmc );
     Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
 
@@ -356,7 +356,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                           (mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
 #if !defined(NDEBUG)
-    geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_test_gmc );
+    test_geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_test_gmc );
     Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
     if (isFirstExperience)
