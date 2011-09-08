@@ -55,7 +55,7 @@ makeOptions()
 {
     po::options_description mortaroptions("Mortar options");
     mortaroptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
+        ("hsize", po::value<double>()->default_value( 0.02 ), "mesh size")
         ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
         ("coeff", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
         ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
@@ -429,9 +429,23 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
 
     BLL->close();
 
-    auto B1t = B1->transpose();
+    // auto B1t = B1->transpose();
 
-    auto B2t = B2->transpose();
+    // auto B2t = B2->transpose();
+
+    auto B1t = M_backend->newMatrix( Lh1, Xh1 );
+    form2( _trial=Lh1, _test=Xh1, _matrix=B1t, _init=true ) +=
+        integrate( markedfaces(mesh1,"gamma"), id(v1)*idt(mu) );
+
+    B1t->close();
+
+    auto B2t = M_backend->newMatrix( Lh1, Xh2 );
+   form2( _trial=Lh1, _test=Xh2, _matrix=B2t, _init=true ) +=
+        integrate( markedfaces(mesh1,"gamma"), -id(v2)*idt(mu) );
+
+    B2t->close();
+
+
 
     auto myb = Blocks<3,3,double>()<< D1 << B12 << B1t
                                    << B21 << D2 << B2t
