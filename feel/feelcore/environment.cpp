@@ -45,14 +45,8 @@ extern "C"
 #include <petsc.h>
 #include <petscerror.h>
 }
-#if defined( HAVE_SLEPC )
-
-#if !defined ( __APPLE__ )
-# include <slepc/slepc.h>
-#else
+#if defined( FEEL_HAVE_SLEPC )
 # include <slepc.h>
-#endif
-
 #endif /* HAVE_SLEPC */
 
 #endif /* HAVE_PETSC_H */
