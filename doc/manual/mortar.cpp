@@ -281,7 +281,7 @@ template<int Dim, int Order>
 void
 Mortar<Dim, Order>::run()
 {
-    std::cout << "------------------------------------------------------------\n";
+    std::cout << "-------------------------------------\n";
     std::cout << "Execute Mortar<" << Dim << "," << Order << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
@@ -365,7 +365,12 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     value_type pi = M_PI;
 
     auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
+
+    auto gradg = trans( +pi*cos(pi*Px())*cos(pi*Py())*unitX()+
+                        -pi*sin(pi*Px())*sin(pi*Py())*unitY());
+
     auto f = pi*pi*Dim*g;
+    auto trace_mesh = mesh1->trace( markedfaces(mesh1,"gamma") );
 
     bool weakdir = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
@@ -519,8 +524,27 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
                                (idv(u2)-g)*(idv(u2)-g) ).evaluate()(0,0);
     double L2error2 =   math::sqrt( L2error22 );
 
+    double semi_H1error1 =integrate(elements(mesh1),
+                                   ( gradv(u1)-gradg )*trans( (gradv(u1)-gradg) ) ).evaluate()(0,0);
+
+    double semi_H1error2 =integrate(elements(mesh2),
+                                   ( gradv(u2)-gradg )*trans( (gradv(u2)-gradg) ) ).evaluate()(0,0);
+
+    double H1error1 = math::sqrt( L2error12 + semi_H1error1 );
+
+    double H1error2 = math::sqrt( L2error22 + semi_H1error2 );
+
+    double error =integrate(elements(trace_mesh),
+                            (idv(u1)-idv(u2))*(idv(u1)-idv(u2)) ).evaluate()(0,0);
+
+    Log() << "----------L2 errors---------- \n" ;
     Log() << "||u1_error||_L2=" << L2error1 << "\n";
     Log() << "||u2_error||_L2=" << L2error2 << "\n";
+    Log() << "----------H1 errors---------- \n" ;
+    Log() << "||u1_error||_H1=" << H1error1 << "\n";
+    Log() << "||u2_error||_H1=" << H1error2 << "\n";
+    Log() << "L2 norm of jump at interface  \n" ;
+    Log() << "||u1-u2||_L2=" << math::sqrt(error) << "\n";
 
 
     this->exportResults(u1,u2,mu);
