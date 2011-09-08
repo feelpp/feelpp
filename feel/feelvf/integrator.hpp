@@ -1385,7 +1385,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     Debug( 5065 ) << "[faces] Overall global assembly time : " << t3 << "\n";
 #endif
     Debug( 5065 ) << "integrating over faces done in " << __timer.elapsed() << "s\n";
-    std::cout << "integrating over faces done in " << __timer.elapsed() << "s\n";
+    //std::cout << "integrating over faces done in " << __timer.elapsed() << "s\n";
 }
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
