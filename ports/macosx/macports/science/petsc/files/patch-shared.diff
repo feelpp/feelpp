@@ -1,0 +1,10 @@
+--- conf/rules.orig	2011-09-04 20:29:41.000000000 +0200
++++ conf/rules	2011-09-04 20:29:59.000000000 +0200
+@@ -917,6 +917,7 @@
+ shared_darwin8: shared_darwin7
+ shared_darwin9: shared_darwin7
+ shared_darwin10: shared_darwin7
++shared_darwin11: shared_darwin7
+
+ shared_darwin7:
+ 	-@cd ${SHARED_LIBRARY_TMPDIR}; \
