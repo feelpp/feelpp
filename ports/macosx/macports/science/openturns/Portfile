@@ -2,13 +2,14 @@
 # $Id$
 
 PortSystem          1.0
+#PortGroup           cmake 1.0
 
 name                openturns
-version             0.13.2
+version             0.15
 categories          science math
 platforms           darwin
 maintainers         ujf-grenoble.fr:Christophe.Prudhomme
-description         
+description
 long_description    \
  OpenTURNS is a powerful and generic tool to treat and quantify        \
  uncertainties in numerical simulations in design, optimization and    \
@@ -20,26 +21,40 @@ distname            openturns-${version}
 extract.suffix      .tar.gz
 
 checksums           \
-  md5 194df6437d4bc95e88bc1fd32f2b6f4d\
-  sha1 d3160e2180fc5cd88d1b53e30ca056b57cd55024\
-  rmd160  7d1bbb1fac9e7c0cde60e3132b41f4ffea1f0ad1
+  md5 6c8feaf4c8f5be47b57bf56d2ce28158\
+  sha1 5a2215d1b2adcb43326212240849ea1e635e08d5\
+  rmd160  9425d7076284899cde7455faea95c409b3ff6ab6
 
-#configure.cppflags-append -I/Developer//SDKs/MacOSX10.5.sdk/usr/include/sys/
-#configure.ldflags-append -L/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/ 
-configure.args \
-  --prefix=${prefix}\
-  --enable-lib\
-  --disable-python\
-  --enable-doc\
-  --disable-debug
+# make sure to keep below in sync with cmake Portgroup except
+# for the configure.args option that mess up openturns
+# standard place to install extra CMake modules
+set cmake_share_module_dir ${prefix}/share/cmake/modules
+configure.cmd       cmake
+configure.pre_args  -DCMAKE_INSTALL_PREFIX=${prefix}
+configure.args      -DCMAKE_VERBOSE_MAKEFILE=ON \
+                    -DCMAKE_COLOR_MAKEFILE=ON \
+                    -DCMAKE_BUILD_TYPE=Release \
+                    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+                    -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
+                    -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
+                    -DCMAKE_MODULE_PATH=${cmake_share_module_dir} \
+                    -Wno-dev
+
+configure.cxx ${prefix}/bin/g++-mp-4.5
+configure.cc  ${prefix}/bin/gcc-mp-4.5
+configure.args-append -DOPENTURNS_SYSTEM_INSTALL=ON
 
 post-build {
 }
 
+depends_build port:cmake
+
 depends_lib  \
     port:libxml2 \
     port:R \
-    port:py26-rpy2 \
-    port:doxygen   
+    port:doxygen \
+    port:swig
+
+#    port:py26-rpy2 \
 
 
