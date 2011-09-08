@@ -36,29 +36,32 @@ configure.args  --with-python --with-debugging=0 \
 		--with-cc=${prefix}/bin/openmpicc \
 		--with-fc=0 --with-x11=0 \
 		--with-cxx=${prefix}/bin/openmpicxx \
-		--with-mpiexec=${prefix}/bin/openmpiexec \
-        --with-umfpack=1 --download-umfpack=yes
+		--with-mpiexec=${prefix}/bin/openmpiexec\
+        --with-umfpack=1 --with-umfpack-include=${prefix}/include/ufsparse --with-umfpack-lib=\[${prefix}/lib/libumfpack.a,${prefix}/lib/libamd.a\]
+
+#        --with-umfpack=1 #--download-umfpack=/
 
 #        --with-parmetis=1 --download-parmetis=yes \
 #        --with-blacs=1 --download-blacs=yes \
 #        --with-scalapack=1 --download-scalapack=yes \
 #        --with-mumps=1 --download-mumps=yes
 
-#        --with-umfpack=1 --with-umfpack-include=${prefix}/include/ufsparse --with-umfpack-lib=${prefix}/lib/libumfpack.a \
+
+
 post-destroot {
-   reinplace "s|${destroot}${prefix}|${prefix}|g" ${destroot}${prefix}/lib/petsc/conf/RDict.db \
-                                                  ${destroot}${prefix}/lib/petsc/conf/petscrules \
-                                                  ${destroot}${prefix}/lib/petsc/conf/petscvariables \
-                                                  ${destroot}${prefix}/lib/petsc/conf/reconfigure-darwin.py \
-                                                  ${destroot}${prefix}/lib/petsc/conf/rules \
-                                                  ${destroot}${prefix}/lib/petsc/conf/test \
-                                                  ${destroot}${prefix}/lib/petsc/conf/variables \
-                                                  ${destroot}${prefix}/lib/petsc/include/petscconf.h
-   reinplace "s|${worksrcpath}|${prefix}/petsc|g" ${destroot}${prefix}/lib/petsc/include/petscconf.h \
-                                                  ${destroot}${prefix}/lib/petsc/include/petscmachineinfo.h \
-                                                  ${destroot}${prefix}/lib/petsc/conf/petscvariables \
-                                                  ${destroot}${prefix}/lib/petsc/conf/RDict.db
-}
+     reinplace "s|${destroot}${prefix}|${prefix}|g" ${destroot}${prefix}/lib/petsc/conf/RDict.db \
+                                                    ${destroot}${prefix}/lib/petsc/conf/petscrules \
+                                                    ${destroot}${prefix}/lib/petsc/conf/petscvariables \
+                                                    ${destroot}${prefix}/lib/petsc/conf/reconfigure-darwin.py \
+                                                    ${destroot}${prefix}/lib/petsc/conf/rules \
+                                                    ${destroot}${prefix}/lib/petsc/conf/test \
+                                                    ${destroot}${prefix}/lib/petsc/conf/variables \
+                                                    ${destroot}${prefix}/lib/petsc/include/petscconf.h
+    reinplace "s|${worksrcpath}|${prefix}/petsc|g" ${destroot}${prefix}/lib/petsc/include/petscconf.h \
+                                                    ${destroot}${prefix}/lib/petsc/include/petscmachineinfo.h \
+                                                    ${destroot}${prefix}/lib/petsc/conf/petscvariables \
+                                                    ${destroot}${prefix}/lib/petsc/conf/RDict.db
+ }
 
 # disabled for now; no mpi support in fftw port yet
 # variant fftw description {build with fftw support} {
