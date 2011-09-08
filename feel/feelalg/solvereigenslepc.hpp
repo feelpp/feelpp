@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-04
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -37,18 +37,17 @@
  * SLEPc include files. SLEPs can only be used
  * together with PETSc.
  */
-#if defined(HAVE_SLEPC) && defined(HAVE_PETSC)
-#if !defined ( __APPLE__ )
+#if defined(FEEL_HAVE_SLEPC) && defined(HAVE_PETSC)
 
 #ifndef USE_COMPLEX_NUMBERS
 extern "C"
 {
-# include <slepc/slepceps.h>
-# include <slepc/slepcip.h>
+# include <slepceps.h>
+# include <slepcip.h>
 }
 #else
-# include <slepc/slepceps.h>
-# include <slepc/slepcip.h>
+# include <slepceps.h>
+# include <slepcip.h>
 #endif
 
 #else

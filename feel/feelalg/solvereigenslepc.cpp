@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -57,7 +57,7 @@ solvereigenslepc_options( std::string const& prefix )
 }
 
 // must have both slepc and petsc
-#if defined(HAVE_SLEPC) && defined(HAVE_PETSC)
+#if defined(FEEL_HAVE_SLEPC) && defined(HAVE_PETSC)
 
 
 /*----------------------- functions ----------------------------------*/
@@ -114,7 +114,7 @@ SolverEigenSlepc<T>::init ()
             ierr = IPSetOrthogonalization (M_ip, IP_ORTH_MGS, refinement, eta);
 #else
             ierr = IPSetOrthogonalization (M_ip, IP_MGS_ORTH, refinement, eta);
-#endif // 
+#endif //
 #endif // 0
             CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
@@ -558,7 +558,7 @@ SolverEigenSlepc<T>:: setSlepcSpectralTransform()
                 ierr = STSetType( st, STSINVERT );
 #else
                 ierr = STSetType( st, STSINV );
-#endif 
+#endif
                 break;
             case FOLD:
                 ierr = STSetType( st, STFOLD );
