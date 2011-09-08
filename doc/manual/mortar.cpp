@@ -490,10 +490,17 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     for (size_type i = 0 ; i < FL->size(); ++ i)
         FbB->set(F1->size()+F2->size()+i, (*FL)(i) );
 
+    Log() << "solve starts\n";
+    timers["solve"].first.restart();
+
     M_backend->solve(_matrix=AbB,
                      _solution=UbB,
                      _rhs=FbB,
                      _pcfactormatsolverpackage="umfpack");
+
+    Log() << "solve done\n";
+    timers["solve"].second = timers["solve"].first.elapsed();
+    std::cout << "[timer] solve: " << timers["solve"].second << "\n";
 
     for (size_type i = 0 ; i < u1.size(); ++ i)
         u1.set(i, (*UbB)(i) );
