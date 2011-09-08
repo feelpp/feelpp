@@ -106,8 +106,6 @@ class Mortar
     typedef Simget super;
 public:
 
-    //! Polynomial order \f$P_2\f$
-    // static const uint16_type Order = 2;
 
     //! numerical type is double
     typedef double value_type;
@@ -116,8 +114,6 @@ public:
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
-
-
     //! sparse matrix type associated with backend
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     //! sparse matrix type associated with backend (shared_ptr<> type)
@@ -133,12 +129,6 @@ public:
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
-    //! function space that holds piecewise constant (\f$P_0\f$) functions (e.g. to store material properties or partitioning
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar, Discontinuous> > > p0_space_type;
-    //! an element type of the \f$P_0\f$ discontinuous function space
-    typedef typename p0_space_type::element_type p0_element_type;
-
     //! the basis type of our approximation space
     typedef bases<Lagrange<Order,Scalar> > basis_type;
 
@@ -165,9 +155,23 @@ public:
         super( vm, about ),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() )
+        shape( this->vm()["shape"].template as<std::string>() ),
+        timers(),
+        M_firstExporter( export_type::New( this->vm(),
+                                           (boost::format( "%1%-%2%-%3%" )
+                                            % this->about().appName()
+                                            % Dim
+                                            % int(1)).str() ) ),
+        M_secondExporter( export_type::New( this->vm(),
+                                            (boost::format( "%1%-%2%-%3%" )
+                                             % this->about().appName()
+                                             % Dim
+                                             % int(2)).str() ) )
+
     {
     }
+
+    void exportResults( element_type& u,element_type& v );
 
     void run();
 
@@ -183,9 +187,73 @@ private:
 
     //! shape of the domain
     std::string shape;
+
+    //! exporter
+    export_ptrtype M_firstExporter;
+    export_ptrtype M_secondExporter;
+
+    //! boost timer
+    std::map<std::string, std::pair<boost::timer, double> > timers;
+
 }; // Mortar
 
-//template<int Dim> const uint16_type Mortar<Dim>::Order;
+template<int Dim, int Order>
+void
+Mortar<Dim, Order>::exportResults( element_type& u, element_type& v )
+{
+
+    auto Xh1=u.functionSpace();
+    auto mesh1=Xh1->mesh();
+    auto Xh2=v.functionSpace();
+    auto mesh2=Xh2->mesh();
+
+    double pi = M_PI;
+    using namespace vf;
+    auto g = sin(pi*Px())*cos(pi*Py());
+
+    auto e1 = Xh1->element();
+    e1 = vf::project( Xh1, elements(mesh1), g );
+
+    auto e2 = Xh2->element();
+    e2 = vf::project( Xh2, elements(mesh2), g );
+
+
+
+    Log() << "exportResults starts\n";
+    timers["export"].first.restart();
+
+    M_firstExporter->step(0)->setMesh( mesh1 );
+    M_firstExporter->step(0)->add( "solution", (boost::format( "solution-%1%" ) % int(1) ).str(), u );
+    M_firstExporter->step(0)->add( "exact", (boost::format( "solution-%1%" ) % int(1) ).str(), e1 );
+    M_firstExporter->save();
+
+    M_secondExporter->step(0)->setMesh( mesh2 );
+    M_secondExporter->step(0)->add( "solution",(boost::format( "solution-%1%" ) % int(2) ).str(), v );
+    M_secondExporter->step(0)->add( "exact",(boost::format( "solution-%1%" ) % int(2) ).str(), e2 );
+    M_secondExporter->save();
+
+    std::ofstream ofs( (boost::format( "%1%.sos" ) % this->about().appName() ).str().c_str() );
+
+    if ( ofs )
+    {
+        ofs << "FORMAT:\n"
+            << "type: master_server gold\n"
+            << "SERVERS\n"
+            << "number of servers: " << int(2) << "\n";
+        for( int j = 1; j <= 2; ++ j )
+        {
+            ofs << "#Server " << j << "\n";
+            ofs << "machine id: " << mpi::environment::processor_name()  << "\n";
+            ofs << "executable:\n";
+            ofs << "data_path: .\n";
+            ofs << "casefile: mortar-" << Dim << "-" << j << "-1_0.case\n";
+        }
+    }
+    Log() << "exportResults done\n";
+    timers["export"].second = timers["export"].first.elapsed();
+    std::cout << "[timer] exportResults(): " << timers["export"].second << "\n";
+} // Mortar::export
+
 
 template<int Dim, int Order>
 void
@@ -256,10 +324,6 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     R2.setMarker(_type="surface",_name="Mat1",_markerAll=true);
 
     auto mesh2 = R2.createMesh<mesh_type>("domain2");
-
-
-
-
 
     /**
      * The function space and some associated elements(functions) are then defined
@@ -404,49 +468,21 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     for (size_type i = 0 ; i < mu.size(); ++ i)
         mu.set(i, (*UbB)(u1.size()+u2.size()+i) );
 
+    double L2error12 =integrate(elements(mesh1),
+                               (idv(u1)-g)*(idv(u1)-g) ).evaluate()(0,0);
+    double L2error1 =   math::sqrt( L2error12 );
+
+    double L2error22 =integrate(elements(mesh2),
+                               (idv(u2)-g)*(idv(u2)-g) ).evaluate()(0,0);
+    double L2error2 =   math::sqrt( L2error22 );
+
+    Log() << "||u1_error||_L2=" << L2error1 << "\n";
+    Log() << "||u2_error||_L2=" << L2error2 << "\n";
 
 
+    this->exportResults(u1,u2);
 
 
-    // auto myb = Blocks<2,2,double>()<< D1 << B12
-    //                                << B21 << D2;
-
-    // auto AbB = M_backend->newBlockMatrix(myb);
-    // AbB->close();
-
-
-    // backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
-
-    // double L2error2 =integrate(elements(mesh),
-    //                            (idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
-    // double L2error =   math::sqrt( L2error2 );
-
-
-    // Log() << "||error||_L2=" << L2error << "\n";
-
-    // element_type e( Xh, "e" );
-    // e = vf::project( Xh, elements(mesh), g );
-
-    export_ptrtype exporter( export_type::New( this->vm(),
-                                               (boost::format( "%1%-%2%-%3%" )
-                                                % this->about().appName()
-                                                % shape
-                                                % Dim).str() ) );
-
-    // if ( exporter->doExport() )
-    // {
-    //     Log() << "exportResults starts\n";
-
-    //     exporter->step(0)->setMesh( mesh );
-
-    //     exporter->step(0)->add( "u", u );
-    //     exporter->step(0)->add( "g", e );
-
-    //     exporter->save();
-    //     Log() << "exportResults done\n";
-    // }
-
-    /** \endcode */
 } // Mortar::run
 
 /**
@@ -456,33 +492,30 @@ int
 main( int argc, char** argv )
 {
     Environment env( argc, argv );
+
     /**
      * create an application
      */
-    /** \code */
+
     Application app( argc, argv, makeAbout(), makeOptions() );
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
-    /** \endcode */
 
     /**
      * register the simgets
      */
-    /** \code */
-    // app.add( new Mortar<1>( app.vm(), app.about() ) );
+
     app.add( new Mortar<2,2>( app.vm(), app.about() ) );
-    // app.add( new Mortar<3>( app.vm(), app.about() ) );
-    /** \endcode */
 
     /**
      * run the application
      */
-    /** \code */
+
     app.run();
-    /** \endcode */
+
 }
 
 
