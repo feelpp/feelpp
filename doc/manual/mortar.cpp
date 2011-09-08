@@ -36,6 +36,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/geotool.hpp>
+#include <feel/feelalg/matrixblock.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -287,9 +288,11 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     auto F1 = M_backend->newVector( Xh1 );
     form1( _test=Xh1, _vector=F1, _init=true ) =
         integrate( elements(mesh1), f*id(v1) );
-        form1( _test=Xh1, _vector=F1 ) +=
+    form1( _test=Xh1, _vector=F1 ) +=
         integrate( markedfaces(mesh1,"outside"),
                    g*(-grad(v1)*vf::N()+penaldir*id(v1)/hFace()) );
+
+    F1->close();
 
     auto D1 = M_backend->newMatrix( Xh1, Xh1 );
 
@@ -302,17 +305,22 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
                    -(grad(v1)*vf::N())*idt(u1)
                    +penaldir*id(v1)*idt(u1)/hFace());
 
+    D1->close();
+
     auto B1 = M_backend->newMatrix( Xh1, Lh1 );
     form2( _trial=Xh1, _test=Lh1, _matrix=B1, _init=true ) +=
         integrate( markedfaces(mesh1,"gamma"), idt(u1)*id(nu) );
 
+    B1->close();
 
     auto F2 = M_backend->newVector( Xh2 );
     form1( _test=Xh2, _vector=F2, _init=true ) =
         integrate( elements(mesh2), f*id(v2) );
-        form1( _test=Xh2, _vector=F2 ) +=
+    form1( _test=Xh2, _vector=F2 ) +=
         integrate( markedfaces(mesh2,"outside"),
                    g*(-grad(v2)*vf::N()+penaldir*id(v2)/hFace()) );
+
+    F2->close();
 
     auto D2 = M_backend->newMatrix( Xh2, Xh2 );
 
@@ -330,6 +338,82 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     auto B2 = M_backend->newMatrix( Xh2, Lh1 );
     form2( _trial=Xh2, _test=Lh1, _matrix=B2, _init=true ) +=
         integrate( markedfaces(mesh1,"gamma"), -idt(u2)*id(nu) );
+
+    B2->close();
+
+
+    auto B12 = M_backend->newMatrix( Xh2, Xh1 );
+
+    form2( _trial=Xh2, _test=Xh1, _matrix=B12, _init=true );
+
+    B12->close();
+
+    auto B21 = M_backend->newMatrix( Xh1, Xh2 );
+
+    form2( _trial=Xh1, _test=Xh2, _matrix=B21, _init=true );
+
+    B21->close();
+
+    auto FL = M_backend->newVector( Lh1 );
+
+    form1( _test=Lh1, _vector=FL, _init=true );
+
+    FL->close();
+
+
+    auto BLL = M_backend->newMatrix( Lh1, Lh1 );
+
+    form2( _trial=Lh1, _test=Lh1, _matrix=BLL, _init=true );
+
+    BLL->close();
+
+    auto B1t = B1->transpose();
+
+    auto B2t = B2->transpose();
+
+    auto myb = Blocks<3,3,double>()<< D1 << B12 << B1t
+                                   << B21 << D2 << B2t
+                                   << B1 << B2  << BLL ;
+    auto AbB = M_backend->newBlockMatrix(myb);
+    AbB->close();
+
+
+    auto FbB = M_backend->newVector( F1->size()+F2->size()+FL->size(),F1->size()+F2->size()+FL->size() );
+    auto UbB = M_backend->newVector( F1->size()+F2->size()+FL->size(),F1->size()+F2->size()+FL->size() );
+
+    for (size_type i = 0 ; i < F1->size(); ++ i)
+        FbB->set(i, (*F1)(i) );
+
+    for (size_type i = 0 ; i < F2->size(); ++ i)
+        FbB->set(F1->size()+i, (*F2)(i) );
+
+    for (size_type i = 0 ; i < FL->size(); ++ i)
+        FbB->set(F1->size()+F2->size()+i, (*FL)(i) );
+
+    M_backend->solve(_matrix=AbB,
+                     _solution=UbB,
+                     _rhs=FbB,
+                     _pcfactormatsolverpackage="umfpack");
+
+    for (size_type i = 0 ; i < u1.size(); ++ i)
+        u1.set(i, (*UbB)(i) );
+
+    for (size_type i = 0 ; i < u2.size(); ++ i)
+        u2.set(i, (*UbB)(u1.size()+i) );
+
+    for (size_type i = 0 ; i < mu.size(); ++ i)
+        mu.set(i, (*UbB)(u1.size()+u2.size()+i) );
+
+
+
+
+
+    // auto myb = Blocks<2,2,double>()<< D1 << B12
+    //                                << B21 << D2;
+
+    // auto AbB = M_backend->newBlockMatrix(myb);
+    // AbB->close();
+
 
     // backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
 
