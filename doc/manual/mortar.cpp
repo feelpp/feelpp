@@ -217,19 +217,17 @@ Mortar<Dim, Order>::exportResults( element_type& u, element_type& v )
     auto e2 = Xh2->element();
     e2 = vf::project( Xh2, elements(mesh2), g );
 
-
-
     Log() << "exportResults starts\n";
     timers["export"].first.restart();
 
     M_firstExporter->step(0)->setMesh( mesh1 );
     M_firstExporter->step(0)->add( "solution", (boost::format( "solution-%1%" ) % int(1) ).str(), u );
-    M_firstExporter->step(0)->add( "exact", (boost::format( "solution-%1%" ) % int(1) ).str(), e1 );
+    M_firstExporter->step(0)->add( "exact", (boost::format( "exact-%1%" ) % int(1) ).str(), e1 );
     M_firstExporter->save();
 
     M_secondExporter->step(0)->setMesh( mesh2 );
     M_secondExporter->step(0)->add( "solution",(boost::format( "solution-%1%" ) % int(2) ).str(), v );
-    M_secondExporter->step(0)->add( "exact",(boost::format( "solution-%1%" ) % int(2) ).str(), e2 );
+    M_secondExporter->step(0)->add( "exact",(boost::format( "exact-%1%" ) % int(2) ).str(), e2 );
     M_secondExporter->save();
 
     std::ofstream ofs( (boost::format( "%1%.sos" ) % this->about().appName() ).str().c_str() );
@@ -278,7 +276,7 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     if ( X[1] == 1 ) shape = "hypercube";
 
     if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
+        Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%/h_%5%/" )
                                        % this->about().appName()
                                        % shape
                                        % Dim
