@@ -46,10 +46,10 @@
 #cmakedefine HAVE_PETSC_H @HAVE_PETSC_H@
 
 /* Define to 1 if you have slepc. */
-#cmakedefine HAVE_SLEPC @HAVE_SLEPC@
+#cmakedefine FEEL_HAVE_SLEPC @FEEL_HAVE_SLEPC@
 
 /* Define to 1 if you have the <slepc.h> header file. */
-#cmakedefine HAVE_SLEPC_H @HAVE_SLEPC_H@
+#cmakedefine FEEL_HAVE_SLEPC_H @FEEL_HAVE_SLEPC_H@
 
 /* Define to 1 if you have the <slu_Cnames.h> header file. */
 #cmakedefine HAVE_SLU_CNAMES_H
