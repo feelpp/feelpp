@@ -348,9 +348,9 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
                                        % mesh1Size
                                        % mesh2Size );
 
-    mesh_ptrtype mesh1 = createMesh(-1.,0,mesh1Size,1);
+    mesh_ptrtype mesh1 = createMesh(0.,0.5,mesh1Size,1);
 
-    mesh_ptrtype mesh2 = createMesh(0,1.,mesh2Size,2);
+    mesh_ptrtype mesh2 = createMesh(0.5,1.,mesh2Size,2);
 
 
     if ( Dim == 2 )
@@ -570,12 +570,15 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
     double error =integrate(elements(trace_mesh),
                             (idv(u1)-idv(u2))*(idv(u1)-idv(u2)) ).evaluate()(0,0);
 
+    double global_error = math::sqrt(L2error12 + L2error22 + semi_H1error1 + semi_H1error2);
+
     Log() << "----------L2 errors---------- \n" ;
     Log() << "||u1_error||_L2=" << L2error1 << "\n";
     Log() << "||u2_error||_L2=" << L2error2 << "\n";
     Log() << "----------H1 errors---------- \n" ;
     Log() << "||u1_error||_H1=" << H1error1 << "\n";
     Log() << "||u2_error||_H1=" << H1error2 << "\n";
+    Log() << "||u_error||_H1=" << global_error << "\n";
     Log() << "L2 norm of jump at interface  \n" ;
     Log() << "||u1-u2||_L2=" << math::sqrt(error) << "\n";
 
