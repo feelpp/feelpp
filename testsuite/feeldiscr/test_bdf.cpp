@@ -49,7 +49,7 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    return Feel::feel_options();
+    return Feel::feel_options().add( Feel::bdf_options( "test_bdf" ) );
 }
 
 using namespace Feel;
@@ -60,7 +60,7 @@ public:
     MyApp( int argc, char** argv, Feel::AboutData const& about, po::options_description const& od )
         :
         super( argc, argv, about, od ),
-        bdf( this->vm(), "bdf" )
+        bdf( this->vm(), "bdf","test_bdf" )
     {}
     void run()
     {
