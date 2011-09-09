@@ -37,6 +37,10 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feelalg/matrixblock.hpp>
+#include <boost/assign/list_of.hpp>
+#include <boost/assign/std/vector.hpp>
+#include <boost/assign/std/vector.hpp>
+
 
 /** use Feel namespace */
 using namespace Feel;
@@ -185,6 +189,8 @@ public:
     {
     }
 
+    mesh_ptrtype createMesh(  double xmin, double xmax, double meshsize, int id );
+
     void exportResults( element1_type& u,element2_type& v, trace_element_type& t );
 
     void run();
@@ -201,7 +207,7 @@ private:
 
     double mesh2Size;
 
-    //! shape of the domain
+    //! shape of the domains
     std::string shape;
 
     //! exporter
@@ -212,7 +218,40 @@ private:
     //! boost timer
     std::map<std::string, std::pair<boost::timer, double> > timers;
 
+    // flags for outsides
+    std::vector<int> outside1;
+    std::vector<int> outside2;
+
+    // marker for interfaces
+    int gamma1;
+    int gamma2;
+
 }; // Mortar
+
+
+template<int Dim, int Order1, int Order2>
+typename Mortar<Dim, Order1, Order2>::mesh_ptrtype
+Mortar<Dim, Order1, Order2>::createMesh(  double xmin, double xmax, double meshsize, int id )
+{
+
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                        _desc=domain( _name=(boost::format( "%1%-%2%-%3%" ) % shape % Dim % id).str() ,
+                                                      _addmidpoint=false,
+                                                      _usenames=false,
+                                                      _shape=this->shape,
+                                                      _dim=Dim,
+                                                      _h=meshsize,
+                                                      _xmin=xmin,
+                                                      _xmax=xmax,
+                                                      _ymin=0.,
+                                                      _ymax=1.,
+                                                      _zmin=0.,
+                                                      _zmax=1.) );
+
+        return mesh;
+}
+
 
 template<int Dim, int Order1, int Order2>
 void
@@ -223,11 +262,11 @@ Mortar<Dim, Order1, Order2>::exportResults( element1_type& u, element2_type& v, 
     auto mesh1=Xh1->mesh();
     auto Xh2=v.functionSpace();
     auto mesh2=Xh2->mesh();
-    auto trace_mesh = mesh1->trace( markedfaces(mesh1,"gamma") );
+    auto trace_mesh = mesh1->trace( markedfaces(mesh1,gamma1) );
 
     double pi = M_PI;
     using namespace vf;
-    auto g = sin(pi*Px())*cos(pi*Py());
+    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
 
     auto e1 = Xh1->element();
     e1 = vf::project( Xh1, elements(mesh1), g );
@@ -309,45 +348,27 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
                                        % mesh1Size
                                        % mesh2Size );
 
-    // mesh_ptrtype mesh1 = createGMSHMesh( _mesh=new mesh_type,
-    //                                      _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-    //                                                    _usenames=true,
-    //                                                    _shape=shape,
-    //                                                    _dim=Dim,
-    //                                                    _h=X[0],
-    //                                                    _xmin=-1,_xmax=0 ) );
-    // mesh_ptrtype mesh2 = createGMSHMesh( _mesh=new mesh_type,
-    //                                      _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-    //                                                    _usenames=true,
-    //                                                    _shape=shape,
-    //                                                    _dim=Dim,
-    //                                                    _h=X[0],
-    //                                                    _xmin=0,_xmax=1) );
+    mesh_ptrtype mesh1 = createMesh(-1.,0,mesh1Size,1);
 
-    // use geotool for generate meshes
+    mesh_ptrtype mesh2 = createMesh(0,1.,mesh2Size,2);
 
 
-    GeoTool::Node x11(-1,0); // lower left point of the first rectangle
-    GeoTool::Node x12(0,1); // top right point of the first rectangle
-
-    GeoTool::Rectangle R1( mesh1Size,"R1",x11,x12);
-
-    R1.setMarker(_type="line",_name="outside",_marker1=true,_marker3=true,_marker4=true);
-    R1.setMarker(_type="line",_name="gamma",_marker2=true);
-    R1.setMarker(_type="surface",_name="Mat1",_markerAll=true);
-
-    auto mesh1 = R1.createMesh<mesh_type>("domain1");
-
-    GeoTool::Node x21(0,0); // lower left point of the first rectangle
-    GeoTool::Node x22(1,1); // top right point of the first rectangle
-
-    GeoTool::Rectangle R2( mesh2Size,"R2",x21,x22);
-
-    R2.setMarker(_type="line",_name="outside",_marker1=true,_marker2=true,_marker3=true);
-    R2.setMarker(_type="line",_name="gamma",_marker4=true);
-    R2.setMarker(_type="surface",_name="Mat1",_markerAll=true);
-
-    auto mesh2 = R2.createMesh<mesh_type>("domain2");
+    if ( Dim == 2 )
+    {
+        using namespace boost::assign;
+        outside1 += 1,2,4;
+        outside2 += 2,3,4;
+        gamma1 = 3;
+        gamma2 = 1;
+    }
+    else if( Dim == 3 )
+    {
+        using namespace boost::assign;
+        outside1 += 6,15,19,23,28;
+        outside2 += 6,15,23,27,28;
+        gamma1 = 27;
+        gamma2 = 19;
+    }
 
     /**
      * The function space and some associated elements(functions) are then defined
@@ -356,7 +377,7 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
     auto u1 = Xh1->element();
     auto v1 = Xh1->element();
 
-    lagmult_space_ptrtype Lh1 = lagmult_space_type::New( mesh1->trace( markedfaces(mesh1,"gamma") ));
+    lagmult_space_ptrtype Lh1 = lagmult_space_type::New( mesh1->trace( markedfaces(mesh1,gamma1) ));
     auto mu = Lh1->element();
     auto nu = Lh1->element();
 
@@ -368,11 +389,12 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
 
     auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
 
-    auto gradg = trans( +pi*cos(pi*Px())*cos(pi*Py())*unitX()+
-                        -pi*sin(pi*Px())*sin(pi*Py())*unitY());
+    auto gradg = trans( +pi*cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()
+                        -pi*sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()
+                        -pi*sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ() );
 
     auto f = pi*pi*Dim*g;
-    auto trace_mesh = mesh1->trace( markedfaces(mesh1,"gamma") );
+    auto trace_mesh = mesh1->trace( markedfaces(mesh1,gamma1) );
 
     bool weakdir = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
@@ -381,9 +403,13 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
     auto F1 = M_backend->newVector( Xh1 );
     form1( _test=Xh1, _vector=F1, _init=true ) =
         integrate( elements(mesh1), f*id(v1) );
-    form1( _test=Xh1, _vector=F1 ) +=
-        integrate( markedfaces(mesh1,"outside"),
-                   g*(-grad(v1)*vf::N()+penaldir*id(v1)/hFace()) );
+
+    BOOST_FOREACH( int marker, outside1 )
+    {
+        form1( _test=Xh1, _vector=F1 ) +=
+            integrate( markedfaces(mesh1,marker),
+                       g*(-grad(v1)*vf::N()+penaldir*id(v1)/hFace()) );
+    }
 
     F1->close();
 
@@ -392,45 +418,56 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
     form2( _trial=Xh1, _test=Xh1, _matrix=D1, _init=true ) =
         integrate( elements(mesh1), coeff*gradt(u1)*trans(grad(v1)) );
 
-    form2( _trial=Xh1, _test=Xh1, _matrix=D1 ) +=
-        integrate( markedfaces(mesh1,"outside"),
-                   -(gradt(u1)*vf::N())*id(v1)
-                   -(grad(v1)*vf::N())*idt(u1)
-                   +penaldir*id(v1)*idt(u1)/hFace());
+    BOOST_FOREACH( int marker, outside1 )
+    {
+        form2( _trial=Xh1, _test=Xh1, _matrix=D1 ) +=
+            integrate( markedfaces(mesh1,marker),
+                       -(gradt(u1)*vf::N())*id(v1)
+                       -(grad(v1)*vf::N())*idt(u1)
+                       +penaldir*id(v1)*idt(u1)/hFace());
+    }
 
     D1->close();
 
     auto B1 = M_backend->newMatrix( Xh1, Lh1 );
     form2( _trial=Xh1, _test=Lh1, _matrix=B1, _init=true ) +=
-        integrate( markedfaces(mesh1,"gamma"), idt(u1)*id(nu) );
+        integrate( markedfaces(mesh1,gamma1), idt(u1)*id(nu) );
 
     B1->close();
 
     auto F2 = M_backend->newVector( Xh2 );
     form1( _test=Xh2, _vector=F2, _init=true ) =
         integrate( elements(mesh2), f*id(v2) );
-    form1( _test=Xh2, _vector=F2 ) +=
-        integrate( markedfaces(mesh2,"outside"),
-                   g*(-grad(v2)*vf::N()+penaldir*id(v2)/hFace()) );
+
+    BOOST_FOREACH( int marker, outside2 )
+    {
+        form1( _test=Xh2, _vector=F2 ) +=
+            integrate( markedfaces(mesh2,marker),
+                       g*(-grad(v2)*vf::N()+penaldir*id(v2)/hFace()) );
+    }
 
     F2->close();
+
 
     auto D2 = M_backend->newMatrix( Xh2, Xh2 );
 
     form2( _trial=Xh2, _test=Xh2, _matrix=D2, _init=true ) =
         integrate( elements(mesh2), coeff*gradt(u2)*trans(grad(v2)) );
 
-    form2( _trial=Xh2, _test=Xh2, _matrix=D2 ) +=
-        integrate( markedfaces(mesh2,"outside"),
-                   -(gradt(u2)*vf::N())*id(v2)
-                   -(grad(v2)*vf::N())*idt(u2)
-                   +penaldir*id(v2)*idt(u2)/hFace());
+    BOOST_FOREACH( int marker, outside2 )
+    {
+        form2( _trial=Xh2, _test=Xh2, _matrix=D2 ) +=
+            integrate( markedfaces(mesh2,marker),
+                       -(gradt(u2)*vf::N())*id(v2)
+                       -(grad(v2)*vf::N())*idt(u2)
+                       +penaldir*id(v2)*idt(u2)/hFace());
+    }
 
     D2->close();
 
     auto B2 = M_backend->newMatrix( Xh2, Lh1 );
     form2( _trial=Xh2, _test=Lh1, _matrix=B2, _init=true ) +=
-        integrate( markedfaces(mesh1,"gamma"), -idt(u2)*id(nu) );
+        integrate( markedfaces(mesh1,gamma1), -idt(u2)*id(nu) );
 
     B2->close();
 
@@ -460,23 +497,17 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
 
     BLL->close();
 
-    // auto B1t = B1->transpose();
-
-    // auto B2t = B2->transpose();
-
     auto B1t = M_backend->newMatrix( Lh1, Xh1 );
     form2( _trial=Lh1, _test=Xh1, _matrix=B1t, _init=true ) +=
-        integrate( markedfaces(mesh1,"gamma"), id(v1)*idt(mu) );
+        integrate( markedfaces(mesh1,gamma1), id(v1)*idt(mu) );
 
     B1t->close();
 
     auto B2t = M_backend->newMatrix( Lh1, Xh2 );
    form2( _trial=Lh1, _test=Xh2, _matrix=B2t, _init=true ) +=
-        integrate( markedfaces(mesh1,"gamma"), -id(v2)*idt(mu) );
+        integrate( markedfaces(mesh1,gamma1), -id(v2)*idt(mu) );
 
     B2t->close();
-
-
 
     auto myb = Blocks<3,3,double>()<< D1 << B12 << B1t
                                    << B21 << D2 << B2t
