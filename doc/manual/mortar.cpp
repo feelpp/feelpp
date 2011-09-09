@@ -43,10 +43,6 @@ using namespace Feel;
 using namespace Feel::vf;
 
 /**
- * This routine returns the list of options using the
- * boost::program_options library. The data returned is typically used
- * as an argument of a Feel::Application subclass.
- *
  * \return the list of options
  */
 inline
@@ -55,7 +51,8 @@ makeOptions()
 {
     po::options_description mortaroptions("Mortar options");
     mortaroptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.02 ), "mesh size")
+        ("hsize1", po::value<double>()->default_value( 0.02 ), "mesh size for first domain")
+        ("hsize2", po::value<double>()->default_value( 0.02 ), "mesh size for second domain")
         ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
         ("coeff", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
         ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
@@ -66,10 +63,6 @@ makeOptions()
 }
 
 /**
- * This routine defines some information about the application like
- * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Feel::Application subclass.
- *
  * \return some data about the application.
  */
 inline
@@ -98,7 +91,7 @@ makeAbout()
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=1, 2 or 3)
  */
-template<int Dim, int Order>
+template<int Dim, int Order1, int Order2>
 class Mortar
     :
     public Simget
@@ -106,55 +99,58 @@ class Mortar
     typedef Simget super;
 public:
 
-
-    //! numerical type is double
     typedef double value_type;
 
-    //! linear algebra backend factory
     typedef Backend<value_type> backend_type;
-    //! linear algebra backend factory shared_ptr<> type
+
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
-    //! sparse matrix type associated with backend
+
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
-    //! sparse matrix type associated with backend (shared_ptr<> type)
+
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    //! vector type associated with backend
+
     typedef typename backend_type::vector_type vector_type;
-    //! vector type associated with backend (shared_ptr<> type)
+
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
-    //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order 1
     typedef Simplex<Dim> convex_type;
-    //! mesh type
+
     typedef Mesh<convex_type> mesh_type;
-    //! mesh shared_ptr<> type
+
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename mesh_type::trace_mesh_type trace_mesh_type;
+
     typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
 
-    //! the basis type of our approximation space
-    typedef bases<Lagrange<Order,Scalar> > basis_type;
+    typedef bases<Lagrange<Order1,Scalar> > basis1_type;
 
-    //! the approximation function space type
-    typedef FunctionSpace<mesh_type, basis_type> space_type;
-    //! the approximation function space type (shared_ptr<> type)
-    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef bases<Lagrange<Order2,Scalar> > basis2_type;
 
-    typedef typename space_type::trace_functionspace_type lagmult_space_type;
+    typedef FunctionSpace<mesh_type, basis1_type> space1_type;
+
+    typedef FunctionSpace<mesh_type, basis2_type> space2_type;
+
+    typedef boost::shared_ptr<space1_type> space1_ptrtype;
+
+    typedef boost::shared_ptr<space2_type> space2_ptrtype;
+
+    typedef typename space1_type::trace_functionspace_type lagmult_space_type;
+
     typedef typename boost::shared_ptr<lagmult_space_type> lagmult_space_ptrtype;
-    //! an element type of the approximation function space
-    typedef typename space_type::element_type element_type;
+
+    typedef typename space1_type::element_type element1_type;
+
+    typedef typename space2_type::element_type element2_type;
+
     typedef typename lagmult_space_type::element_type trace_element_type;
 
-    //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
-    //! the exporter factory (shared_ptr<> type)
+
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
-    //! the trace exporter factory type
     typedef Exporter<trace_mesh_type> trace_export_type;
-    //! the trace exporter factory (shared_ptr<> type)
+
     typedef boost::shared_ptr<trace_export_type> trace_export_ptrtype;
 
 
@@ -165,7 +161,8 @@ public:
         :
         super( vm, about ),
         M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
+        mesh1Size( this->vm()["hsize1"].template as<double>() ),
+        mesh2Size( this->vm()["hsize2"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         timers(),
         M_firstExporter( export_type::New( this->vm(),
@@ -188,7 +185,7 @@ public:
     {
     }
 
-    void exportResults( element_type& u,element_type& v, trace_element_type& t );
+    void exportResults( element1_type& u,element2_type& v, trace_element_type& t );
 
     void run();
 
@@ -200,7 +197,9 @@ private:
     backend_ptrtype M_backend;
 
     //! mesh characteristic size
-    double meshSize;
+    double mesh1Size;
+
+    double mesh2Size;
 
     //! shape of the domain
     std::string shape;
@@ -215,9 +214,9 @@ private:
 
 }; // Mortar
 
-template<int Dim, int Order>
+template<int Dim, int Order1, int Order2>
 void
-Mortar<Dim, Order>::exportResults( element_type& u, element_type& v, trace_element_type& t )
+Mortar<Dim, Order1, Order2>::exportResults( element1_type& u, element2_type& v, trace_element_type& t )
 {
 
     auto Xh1=u.functionSpace();
@@ -277,35 +276,38 @@ Mortar<Dim, Order>::exportResults( element_type& u, element_type& v, trace_eleme
 } // Mortar::export
 
 
-template<int Dim, int Order>
+template<int Dim, int Order1, int Order2>
 void
-Mortar<Dim, Order>::run()
+Mortar<Dim, Order1, Order2>::run()
 {
     std::cout << "-------------------------------------\n";
-    std::cout << "Execute Mortar<" << Dim << "," << Order << ">\n";
-    std::vector<double> X( 2 );
-    X[0] = meshSize;
+    std::cout << "Execute Mortar<" << Dim << "," << Order1 << "," << Order2 << ">\n";
+    std::vector<double> X( 3 );
+    X[0] = mesh1Size;
+    X[1] = mesh2Size;
     if ( shape == "hypercube" )
-        X[1] = 1;
+        X[2] = 1;
     else // default is simplex
-        X[1] = 0;
+        X[2] = 0;
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
-template<int Dim, int Order>
+template<int Dim, int Order1, int Order2>
 void
-Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned long N )
+Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
-    if ( X[1] == 0 ) shape = "simplex";
-    if ( X[1] == 1 ) shape = "hypercube";
+    if ( X[2] == 0 ) shape = "simplex";
+    if ( X[2] == 1 ) shape = "hypercube";
 
     if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%/h_%5%/" )
+        Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%-P%5%/h_%6%-%7%/" )
                                        % this->about().appName()
                                        % shape
                                        % Dim
-                                       % Order
-                                       % meshSize );
+                                       % Order1
+                                       % Order2
+                                       % mesh1Size
+                                       % mesh2Size );
 
     // mesh_ptrtype mesh1 = createGMSHMesh( _mesh=new mesh_type,
     //                                      _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
@@ -328,7 +330,7 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     GeoTool::Node x11(-1,0); // lower left point of the first rectangle
     GeoTool::Node x12(0,1); // top right point of the first rectangle
 
-    GeoTool::Rectangle R1( meshSize,"R1",x11,x12);
+    GeoTool::Rectangle R1( mesh1Size,"R1",x11,x12);
 
     R1.setMarker(_type="line",_name="outside",_marker1=true,_marker3=true,_marker4=true);
     R1.setMarker(_type="line",_name="gamma",_marker2=true);
@@ -339,7 +341,7 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     GeoTool::Node x21(0,0); // lower left point of the first rectangle
     GeoTool::Node x22(1,1); // top right point of the first rectangle
 
-    GeoTool::Rectangle R2( meshSize,"R2",x21,x22);
+    GeoTool::Rectangle R2( mesh2Size,"R2",x21,x22);
 
     R2.setMarker(_type="line",_name="outside",_marker1=true,_marker2=true,_marker3=true);
     R2.setMarker(_type="line",_name="gamma",_marker4=true);
@@ -350,7 +352,7 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     /**
      * The function space and some associated elements(functions) are then defined
      */
-    space_ptrtype Xh1 = space_type::New( mesh1 );
+    space1_ptrtype Xh1 = space1_type::New( mesh1 );
     auto u1 = Xh1->element();
     auto v1 = Xh1->element();
 
@@ -358,7 +360,7 @@ Mortar<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned l
     auto mu = Lh1->element();
     auto nu = Lh1->element();
 
-    space_ptrtype Xh2 = space_type::New( mesh2 );
+    space2_ptrtype Xh2 = space2_type::New( mesh2 );
     auto u2 = Xh2->element();
     auto v2 = Xh2->element();
 
@@ -575,7 +577,7 @@ main( int argc, char** argv )
      * register the simgets
      */
 
-    app.add( new Mortar<2,2>( app.vm(), app.about() ) );
+    app.add( new Mortar<2,2,2>( app.vm(), app.about() ) );
 
     /**
      * run the application
