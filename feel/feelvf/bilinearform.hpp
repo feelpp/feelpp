@@ -69,6 +69,29 @@ enum DofGraph
 template<typename FE1,typename FE2,typename ElemContType> class BilinearForm;
 namespace detail
 {
+
+template<typename BFType, typename Space1Type>
+struct compute_graph3
+{
+    compute_graph3( BFType& bf, boost::shared_ptr<Space1Type> const& space1, size_type trial_index, size_type hints  )
+        :
+        M_bf( bf ),
+        M_space1( space1 ),
+        M_test_index( 0 ),
+        M_trial_index( trial_index ),
+        M_hints( hints )
+    {}
+
+    template <typename Space2>
+    void operator()( boost::shared_ptr<Space2> const& space2 ) const;
+
+    mutable BFType& M_bf;
+    boost::shared_ptr<Space1Type> const& M_space1;
+    mutable size_type M_test_index;
+    size_type M_trial_index;
+    size_type M_hints;
+};
+
 template<typename BFType, typename Space1Type>
 struct compute_graph2
 {
@@ -190,6 +213,47 @@ make_bfassign1( BFType& lf,
                 boost::shared_ptr<TestSpaceType> const& test_space,
                 size_type test_index )
 { return BFAssign1<BFType,ExprType,TestSpaceType>( lf, expr, test_space, test_index ); }
+
+
+template<typename BFType, typename ExprType, typename TrialSpaceType>
+struct BFAssign3
+{
+    typedef typename BFType::matrix_type matrix_type;
+    BFAssign3( BFAssign3 const& lfa )
+        :
+        _M_bf( lfa._M_bf ),
+        _M_trial( lfa._M_trial ),
+        _M_expr( lfa._M_expr ),
+        _M_test_index( lfa._M_test_index )
+    {}
+    BFAssign3( BFType& lf,
+               ExprType const& expr,
+               boost::shared_ptr<TrialSpaceType> const& Trialh,
+               size_type trial_index )
+        :
+        _M_bf( lf ),
+        _M_trial( Trialh ),
+        _M_expr( expr ),
+        _M_trial_index( trial_index ),
+        _M_test_index( 0 )
+    {}
+    template<typename SpaceType>
+    void operator()( boost::shared_ptr<SpaceType> const& test ) const;
+
+private:
+    BFType& _M_bf;
+    boost::shared_ptr<TrialSpaceType> _M_trial;
+    ExprType const& _M_expr;
+    size_type _M_trial_index;
+    mutable size_type _M_test_index;
+};
+template<typename BFType, typename ExprType, typename TrialSpaceType>
+BFAssign3<BFType,ExprType,TrialSpaceType>
+make_bfassign3( BFType& lf,
+                ExprType const& expr,
+                boost::shared_ptr<TrialSpaceType> const& trial_space,
+                size_type trial_index )
+{ return BFAssign3<BFType,ExprType,TrialSpaceType>( lf, expr, trial_space, trial_index ); }
 
 
 /*!
@@ -570,7 +634,7 @@ public:
          * the reference element
          */
         template<typename Pts>
-        void precomputeBasisAtPoints( uint16_type __f, permutation_1_type const& __p, Pts const& pts ) // !!!!!!!!!!!!!!!!!
+        void precomputeBasisAtPoints( uint16_type __f, permutation_1_type const& __p, Pts const& pts )
             {
                 _M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
                 //FEEL_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
@@ -597,7 +661,6 @@ public:
 
         template<typename PtsSet>
         std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> >
-        //std::map<uint16_type, std::map< typename QuadMapped<PtsSet>::permutation_type ,test_precompute_ptrtype> >
         precomputeTestBasisAtPoints( PtsSet const& pts, mpl::bool_<true> )
             {
                 QuadMapped<PtsSet> qm;
@@ -889,22 +952,22 @@ public:
     /**
      * Geometric transformation
      */
-    gm_1_ptrtype const& gm() const { return _M_X1->gm(); }//!!!!!!!!!!!!!!!
+    gm_1_ptrtype const& gm() const { return _M_X1->gm(); }
 
     /**
      * Geometric transformation
      */
-    gm1_1_ptrtype const& gm1() const { return _M_X1->gm1(); }//!!!!!!!!!!!!!!!
+    gm1_1_ptrtype const& gm1() const { return _M_X1->gm1(); }
 
     /**
      * Geometric transformation
      */
-    gm_2_ptrtype const& gmTrial() const { return _M_X2->gm(); }//!!!!!!!!!!!!!!!
+    gm_2_ptrtype const& gmTrial() const { return _M_X2->gm(); }
 
     /**
      * Geometric transformation
      */
-    gm1_2_ptrtype const& gm1Trial() const { return _M_X2->gm1(); }//!!!!!!!!!!!!!!!
+    gm1_2_ptrtype const& gm1Trial() const { return _M_X2->gm1(); }
 
 
     /**
@@ -1009,6 +1072,9 @@ public:
 
     graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> );
     graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> );
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> );
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> );
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> );
 
     //@}
 
@@ -1083,9 +1149,11 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
 
             graph_ptrtype graph;
             if ( dynamic_cast<void*>( _M_X1->mesh().get()) == dynamic_cast<void*>( _M_X2->mesh().get()) )
-                graph = computeGraph( graph_hints, mpl::bool_<(FE1::nSpaces == 1)>() );
+                graph = computeGraph( graph_hints, mpl::bool_<mpl::and_< mpl::bool_< (FE1::nSpaces == 1)>,
+                                                                         mpl::bool_< (FE2::nSpaces == 1)> >::type::value >() );
             else
-                graph = computeGraphInCaseOfInterpolate( graph_hints, mpl::bool_<(FE1::nSpaces == 1)>() );
+                graph = computeGraphInCaseOfInterpolate( graph_hints, mpl::bool_<mpl::and_< mpl::bool_< (FE1::nSpaces == 1)>,
+                                                                                            mpl::bool_< (FE2::nSpaces == 1)> >::type::value >() );
 
             Debug( 5050 ) << "computed graph in " << t.elapsed() << "s\n"; t.restart();
             //_M_X1.setState( space_1_type::SOLUTION );
@@ -1162,7 +1230,15 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
                                               mpl::bool_<true> )
 {
     Debug( 5050 ) << "BilinearForm::assign() start loop on test spaces\n";
-    fusion::for_each( _M_X1->functionSpaces(), make_bfassign2( *this, __expr ) );
+    if (FE1::nSpaces > 1 && FE2::nSpaces > 1 )
+        fusion::for_each( _M_X1->functionSpaces(), make_bfassign2( *this, __expr ) );
+    else if (FE1::nSpaces > 1 )
+        fusion::for_each( _M_X1->functionSpaces(),
+                          make_bfassign3( *this, __expr, _M_X2, 0 ) );
+    else
+        fusion::for_each( _M_X2->functionSpaces(),
+                          make_bfassign1( *this, __expr, _M_X1, 0 ) );
+
     Debug( 5050 ) << "BilinearForm::assign() stop loop on test spaces\n";
 }
 template<typename FE1,  typename FE2,  typename ElemContType>
@@ -1172,7 +1248,8 @@ BilinearForm<FE1, FE2, ElemContType>::operator=( Expr<ExprT> const& __expr )
 {
     // loop(fusion::for_each) over sub-functionspaces in SpaceType
     // pass expression and initialize
-    this->assign( __expr, true, mpl::bool_<(FE1::nSpaces > 1)>() );
+    this->assign( __expr, true, mpl::bool_<mpl::or_< mpl::bool_< (FE1::nSpaces > 1)>,
+                                           mpl::bool_< (FE2::nSpaces > 1)> >::type::value >() );
     return *this;
 }
 
@@ -1182,7 +1259,8 @@ BilinearForm<FE1, FE2, ElemContType>&
 BilinearForm<FE1, FE2, ElemContType>::operator+=( Expr<ExprT> const& __expr )
 {
     Debug( 5055 ) << "[BilinearForm::operator+=] start\n";
-    this->assign( __expr, false, mpl::bool_<(FE1::nSpaces > 1)>() );
+    this->assign( __expr, false, mpl::bool_<mpl::or_< mpl::bool_< (FE1::nSpaces > 1)>,
+                                            mpl::bool_< (FE2::nSpaces > 1)> >::type::value >() );
     Debug( 5055 ) << "[BilinearForm::operator+=] stop\n";
     return *this;
 }
@@ -1762,10 +1840,45 @@ template<typename FE1,  typename FE2, typename ElemContType>
 typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
 BilinearForm<FE1,FE2,ElemContType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> )
 {
-#warning todo
-    graph_ptrtype sparsity_graph;
-    return sparsity_graph;
+    boost::timer t;
+    Debug( 5050 ) << "compute graph for composite bilinear form with interpolation\n";
+
+    auto graph = computeGraphInCaseOfInterpolate( hints, mpl::bool_< ( FE1::nSpaces > 1)>(), mpl::bool_< ( FE2::nSpaces > 1)>() );
+
+    Debug( 5050 ) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n"; t.restart();
+    graph->close();
+    Debug( 5050 ) << "compute graph for composite bilinear form done in " << t.elapsed() << "s\n";
+
+    return graph;
 }
+
+template<typename FE1,  typename FE2, typename ElemContType>
+typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
+BilinearForm<FE1,FE2,ElemContType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
+{
+    fusion::for_each( _M_X1->functionSpaces(), compute_graph1<self_type>( *this, hints ) );
+
+    return M_graph;
+}
+
+template<typename FE1,  typename FE2, typename ElemContType>
+typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
+BilinearForm<FE1,FE2,ElemContType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
+{
+    fusion::for_each( _M_X1->functionSpaces(),
+                      compute_graph3<self_type,space_2_type>( *this, _M_X2, 0, hints ) );
+    return M_graph;
+}
+
+template<typename FE1,  typename FE2, typename ElemContType>
+typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
+BilinearForm<FE1,FE2,ElemContType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
+{
+    fusion::for_each( _M_X2->functionSpaces(),
+                      compute_graph2<self_type,space_1_type>( *this, _M_X1, 0, hints ) );
+    return M_graph;
+}
+
 
 template<typename FE1,  typename FE2, typename ElemContType>
 typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
@@ -1906,6 +2019,48 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
     ++_M_trial_index;
 }
 
+template<typename BFType, typename ExprType, typename TrialSpaceType>
+template<typename SpaceType>
+void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<SpaceType> const& test ) const
+{
+    Debug(5050) << "[BFAssign3::operator()] expression has trial functions index "
+                << _M_test_index << " : "
+                << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
+    Debug(5050) << "[BFAssign3::operator()] expression has test functions index "
+                << _M_trial_index << " :"
+                << ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
+
+    if ( !ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result ||
+         !ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result )
+        {
+            ++_M_test_index;
+            return;
+        }
+
+    Debug( 5050 ) << "[BFAssign3::operator()] terms found with "
+                  << "testindex: " << _M_test_index << " trialindex: " << _M_trial_index << "\n";
+    typedef SpaceType test_space_type;
+    typedef TrialSpaceType trial_space_type;
+
+    Feel::vf::Block block ( 0, 0,
+                            _M_bf.testSpace()->nDofStart( _M_test_index ),
+                            _M_bf.trialSpace()->nDofStart( _M_trial_index ) );
+    Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
+    Feel::vf::list_block_type list_block;
+    list_block.push_back( block );
+
+    typedef typename BFType::matrix_type matrix_type;
+    typedef Feel::vf::detail::BilinearForm<test_space_type,
+        trial_space_type,
+        ublas::vector_range<ublas::vector<double> > > bf_type;
+
+    bf_type bf( test, _M_trial, _M_bf.matrix(), list_block );
+
+    bf += _M_expr;
+
+    ++_M_test_index;
+}
+
 template<typename BFType, typename TestSpaceType>
 template<typename SpaceType>
 void
@@ -1932,7 +2087,15 @@ compute_graph2<BFType,TestSpaceType>::operator()( boost::shared_ptr<SpaceType> c
 
 
     bf_type bf( M_space1, trial, M_bf.matrix(), list_block );
-    typename bf_type::graph_ptrtype graph = bf.computeGraph( M_hints, mpl::bool_<true>() );
+
+    typename bf_type::graph_ptrtype graph;
+
+    if ( dynamic_cast<void*>( bf.testSpace()->mesh().get()) == dynamic_cast<void*>( bf.trialSpace()->mesh().get()) )
+        graph = bf.computeGraph( M_hints, mpl::bool_<true>() );
+    else
+        graph = bf.computeGraphInCaseOfInterpolate( M_hints, mpl::bool_<true>() );
+
+
     Debug( 5050 ) << "[compute_graph2::operator()] testindex: " << M_test_index << " row space index starts at " << M_bf.testSpace()->nDofStart( M_test_index ) << "\n";
     Debug( 5050 ) << "[compute_graph2::operator()] trialindex: " << M_trial_index << " col space index starts at " << M_bf.trialSpace()->nDofStart( M_trial_index ) << "\n";
     M_bf.mergeGraph( M_bf.testSpace()->nDofStart( M_test_index ), M_bf.trialSpace()->nDofStart( M_trial_index ) , graph );
@@ -1949,6 +2112,52 @@ compute_graph2<BFType,TestSpaceType>::operator()( boost::shared_ptr<SpaceType> c
 #endif
     Debug( 5050 ) << "[compute_graph2] trial index " << M_trial_index << " done in " << t.elapsed() << "s\n";
     ++M_trial_index;
+
+    Debug( 5050 ) << "[compute_graph2::operator()] end ==================================================\n";
+}
+
+template<typename BFType, typename TrialSpaceType>
+template<typename SpaceType>
+void
+compute_graph3<BFType,TrialSpaceType>::operator()( boost::shared_ptr<SpaceType> const& test ) const
+{
+    boost::timer t;
+    Debug( 5050 ) << "[compute_graph2::operator()] begin ==================================================\n";
+    Debug( 5050 ) << "[compute_graph2::operator()] testindex: " << M_test_index << "\n";
+    Debug( 5050 ) << "[compute_graph2::operator()] trialindex: " << M_trial_index << "\n";
+    typedef SpaceType test_space_type;
+    typedef TrialSpaceType trial_space_type;
+
+    Feel::vf::Block block ( 0, 0,
+                            M_bf.testSpace()->nDofStart( M_test_index ),
+                            M_bf.trialSpace()->nDofStart( M_trial_index ) );
+    Debug( 5050 ) << "[compute_graph2::operator()] block: " << block << "\n";
+    Feel::vf::list_block_type list_block;
+    list_block.push_back( block );
+
+    typedef typename BFType::matrix_type matrix_type;
+    typedef Feel::vf::detail::BilinearForm<test_space_type,
+        trial_space_type,
+        ublas::vector_range<ublas::vector<double> > > bf_type;
+
+
+    bf_type bf( test, M_space1, M_bf.matrix(), list_block );
+
+    typename bf_type::graph_ptrtype graph;
+
+    if ( dynamic_cast<void*>( bf.testSpace()->mesh().get()) == dynamic_cast<void*>( bf.trialSpace()->mesh().get()) )
+        graph = bf.computeGraph( M_hints, mpl::bool_<true>() );
+    else
+        graph = bf.computeGraphInCaseOfInterpolate( M_hints, mpl::bool_<true>() );
+
+
+    Debug( 5050 ) << "[compute_graph2::operator()] testindex: " << M_test_index << " row space index starts at " << M_bf.testSpace()->nDofStart( M_test_index ) << "\n";
+    Debug( 5050 ) << "[compute_graph2::operator()] trialindex: " << M_trial_index << " col space index starts at " << M_bf.trialSpace()->nDofStart( M_trial_index ) << "\n";
+    M_bf.mergeGraph( M_bf.testSpace()->nDofStart( M_test_index ), M_bf.trialSpace()->nDofStart( M_trial_index ) , graph );
+
+
+    Debug( 5050 ) << "[compute_graph2] test index " << M_test_index << " done in " << t.elapsed() << "s\n";
+    ++M_test_index;
 
     Debug( 5050 ) << "[compute_graph2::operator()] end ==================================================\n";
 }
