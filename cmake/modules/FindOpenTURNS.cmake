@@ -104,6 +104,7 @@ if (NOT (OpenTURNS_INCLUDE_DIR
         "${OpenTURNS_INSTALL_PATH}"
         /usr/lib
         /usr/local/lib
+        /opt/local/lib
         /opt/lib
         /opt
       PATH_SUFFIXES
