@@ -474,13 +474,29 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
 
     auto B12 = M_backend->newMatrix( Xh2, Xh1 );
 
+    Log() << "init_B12 starts\n";
+    timers["init_B12"].first.restart();
+
     form2( _trial=Xh2, _test=Xh1, _matrix=B12, _init=true );
+
+    Log() << "init_B12 done\n";
+    timers["init_B12"].second = timers["init_B12"].first.elapsed();
+    std::cout << "[timer] init_B12: " << timers["init_B12"].second << "\n";
+
 
     B12->close();
 
     auto B21 = M_backend->newMatrix( Xh1, Xh2 );
 
+    Log() << "init_B21 starts\n";
+    timers["init_B21"].first.restart();
+
     form2( _trial=Xh1, _test=Xh2, _matrix=B21, _init=true );
+
+    Log() << "init_B21 done\n";
+    timers["init_B21"].second = timers["init_B21"].first.elapsed();
+    std::cout << "[timer] init_B21: " << timers["init_B21"].second << "\n";
+
 
     B21->close();
 
