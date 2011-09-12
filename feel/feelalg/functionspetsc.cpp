@@ -75,10 +75,10 @@ PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
 
     case MATSOLVER_PLAPACK :
       ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_PLAPACK);      CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
-
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 1)
     case MATSOLVER_BAS :
       ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_BAS);          CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
-
+#endif
     default:
       std::cerr << "ERROR:  Unsupported PETSC mat solver package: "
 		<< mspackt               << std::endl
