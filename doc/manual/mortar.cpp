@@ -481,7 +481,7 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
 
     Log() << "init_B12 done\n";
     timers["init_B12"].second = timers["init_B12"].first.elapsed();
-    std::cout << "[timer] init_B12: " << timers["init_B12"].second << "\n";
+    std::cout << "[timer] init_B12: " << timers["init_B12"].second << "s\n";
 
 
     B12->close();
@@ -495,7 +495,7 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
 
     Log() << "init_B21 done\n";
     timers["init_B21"].second = timers["init_B21"].first.elapsed();
-    std::cout << "[timer] init_B21: " << timers["init_B21"].second << "\n";
+    std::cout << "[timer] init_B21: " << timers["init_B21"].second << "s\n";
 
 
     B21->close();
@@ -554,7 +554,7 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
 
     Log() << "solve done\n";
     timers["solve"].second = timers["solve"].first.elapsed();
-    std::cout << "[timer] solve: " << timers["solve"].second << "\n";
+    std::cout << "[timer] solve: " << timers["solve"].second << "s\n";
 
     for (size_type i = 0 ; i < u1.size(); ++ i)
         u1.set(i, (*UbB)(i) );
