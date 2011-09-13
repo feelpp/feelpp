@@ -75,6 +75,7 @@ void serialize( Archive & ar,
     split_free(ar, t, file_version);
 }
 
+
 // 3
 template<class Archive>
 void load( Archive & ar,
@@ -257,6 +258,79 @@ void save( Archive & ar,
 template<int N, int M, class Archive>
 void serialize( Archive & ar,
                 Eigen::Matrix<double,N,M>& t,
+                const unsigned int file_version )
+{
+    split_free(ar, t, file_version);
+}
+
+
+template<class Archive>
+void load( Archive & ar,
+           boost::multi_array<Eigen::MatrixXd,2> & t,
+           const unsigned int file_version )
+{
+    typedef boost::multi_array<Eigen::MatrixXd,2> multi_array_;
+    typedef typename multi_array_::size_type size_;
+    size_ n0;
+    ar >> BOOST_SERIALIZATION_NVP(n0);
+    size_ n1;
+    ar >> BOOST_SERIALIZATION_NVP(n1);
+    t.resize(boost::extents[n0][n1]);
+    ar >> make_array(t.data(), t.num_elements());
+}
+template<typename Archive>
+void save( Archive & ar,
+           const boost::multi_array<Eigen::MatrixXd,2> & t,
+           const unsigned int file_version )
+{
+    typedef boost::multi_array<Eigen::MatrixXd,2> multi_array_;
+    typedef typename multi_array_::size_type size_;
+    size_ n0 = (t.shape()[0]);
+    ar << BOOST_SERIALIZATION_NVP(n0);
+    size_ n1 = (t.shape()[1]);
+    ar << BOOST_SERIALIZATION_NVP(n1);
+    ar << boost::serialization::make_array(t.data(),
+                                           t.num_elements());
+}
+template<class Archive>
+void serialize( Archive & ar,
+                boost::multi_array<Eigen::MatrixXd,2>& t,
+                const unsigned int file_version )
+{
+    split_free(ar, t, file_version);
+}
+
+template<class Archive>
+void load( Archive & ar,
+           boost::multi_array<Eigen::VectorXd,2> & t,
+           const unsigned int file_version )
+{
+    typedef boost::multi_array<Eigen::VectorXd,2> multi_array_;
+    typedef typename multi_array_::size_type size_;
+    size_ n0;
+    ar >> BOOST_SERIALIZATION_NVP(n0);
+    size_ n1;
+    ar >> BOOST_SERIALIZATION_NVP(n1);
+    t.resize(boost::extents[n0][n1]);
+    ar >> make_array(t.data(), t.num_elements());
+}
+template<typename Archive>
+void save( Archive & ar,
+           const boost::multi_array<Eigen::VectorXd,2> & t,
+           const unsigned int file_version )
+{
+    typedef boost::multi_array<Eigen::VectorXd,2> multi_array_;
+    typedef typename multi_array_::size_type size_;
+    size_ n0 = (t.shape()[0]);
+    ar << BOOST_SERIALIZATION_NVP(n0);
+    size_ n1 = (t.shape()[1]);
+    ar << BOOST_SERIALIZATION_NVP(n1);
+    ar << boost::serialization::make_array(t.data(),
+                                           t.num_elements());
+}
+template<class Archive>
+void serialize( Archive & ar,
+                boost::multi_array<Eigen::VectorXd,2>& t,
                 const unsigned int file_version )
 {
     split_free(ar, t, file_version);
