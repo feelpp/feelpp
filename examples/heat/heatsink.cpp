@@ -340,6 +340,12 @@ HeatSink<Dim, Order>::run()
     form2 (Xh, Xh, D) += integrate( _range= markedfaces(mesh, "gamma1"), _expr= therm_coeff*idt(T)*id(v));
 
 
+    //from now if the option "steady" is set to true then M_bdf->setSteady will set time-step=time-final=1e30
+    if (steady)
+    {
+        M_bdf->setSteady();
+    }
+
     form2(Xh, Xh, D) +=
         integrate( _range=markedelements(mesh, "spreader_mesh"), _expr=rho_s*c_s*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) )
         + integrate( _range=markedelements(mesh, "fin_mesh"), _expr=rho_f*c_f*idt(T)*id(v)*M_bdf->polyDerivCoefficient(0) );
@@ -361,11 +367,6 @@ HeatSink<Dim, Order>::run()
     std::cout << "The step is : " << M_bdf->timeStep() << "\n"
               << "The initial time is : " << M_bdf->timeInitial() << "\n"
               << "The final time is  : " << M_bdf->timeFinal() << "\n";
-
-    if (steady)
-    {
-        M_bdf->setSteady();
-    }
 
     // average file which contains: time Tavg_base Tavg_gamma1
     out.open("averages", std::ios::out);
