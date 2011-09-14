@@ -311,7 +311,7 @@ Mortar<Dim, Order1, Order2>::exportResults( element1_type& u, element2_type& v, 
     }
     Log() << "exportResults done\n";
     timers["export"].second = timers["export"].first.elapsed();
-    std::cout << "[timer] exportResults(): " << timers["export"].second << "\n";
+    std::cout << "[timer] exportResults(): " << timers["export"].second << "s\n";
 } // Mortar::export
 
 
@@ -377,7 +377,8 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
     auto u1 = Xh1->element();
     auto v1 = Xh1->element();
 
-    lagmult_space_ptrtype Lh1 = lagmult_space_type::New( mesh1->trace( markedfaces(mesh1,gamma1) ));
+    auto trace_mesh = mesh1->trace( markedfaces(mesh1,gamma1) );
+    lagmult_space_ptrtype Lh1 = lagmult_space_type::New( trace_mesh );
     auto mu = Lh1->element();
     auto nu = Lh1->element();
 
@@ -394,7 +395,6 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
                         -pi*sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ() );
 
     auto f = pi*pi*Dim*g;
-    auto trace_mesh = mesh1->trace( markedfaces(mesh1,gamma1) );
 
     bool weakdir = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
@@ -430,7 +430,17 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
     D1->close();
 
     auto B1 = M_backend->newMatrix( Xh1, Lh1 );
-    form2( _trial=Xh1, _test=Lh1, _matrix=B1, _init=true ) +=
+
+    Log() << "init_B1 starts\n";
+    timers["init_B1"].first.restart();
+
+    form2( _trial=Xh1, _test=Lh1, _matrix=B1, _init=true );
+
+    Log() << "init_B1 done\n";
+    timers["init_B1"].second = timers["init_B1"].first.elapsed();
+    std::cout << "[timer] init_B1: " << timers["init_B1"].second << "s\n";
+
+    form2( _trial=Xh1, _test=Lh1, _matrix=B1 ) +=
         integrate( markedfaces(mesh1,gamma1), idt(u1)*id(nu) );
 
     B1->close();
@@ -466,8 +476,19 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
     D2->close();
 
     auto B2 = M_backend->newMatrix( Xh2, Lh1 );
-    form2( _trial=Xh2, _test=Lh1, _matrix=B2, _init=true ) +=
+
+    Log() << "init_B2 starts\n";
+    timers["init_B2"].first.restart();
+
+    form2( _trial=Xh2, _test=Lh1, _matrix=B2, _init=true );
+
+    Log() << "init_B2 done\n";
+    timers["init_B2"].second = timers["init_B2"].first.elapsed();
+    std::cout << "[timer] init_B2: " << timers["init_B2"].second << "s\n";
+
+    form2( _trial=Xh2, _test=Lh1, _matrix=B2 ) +=
         integrate( markedfaces(mesh1,gamma1), -idt(u2)*id(nu) );
+
 
     B2->close();
 
@@ -514,14 +535,34 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
     BLL->close();
 
     auto B1t = M_backend->newMatrix( Lh1, Xh1 );
-    form2( _trial=Lh1, _test=Xh1, _matrix=B1t, _init=true ) +=
+    Log() << "init_B1t starts\n";
+    timers["init_B1t"].first.restart();
+
+    form2( _trial=Lh1, _test=Xh1, _matrix=B1t, _init=true );
+
+    Log() << "init_B1t done\n";
+    timers["init_B1t"].second = timers["init_B1t"].first.elapsed();
+    std::cout << "[timer] init_B1t: " << timers["init_B1t"].second << "s\n";
+
+    form2( _trial=Lh1, _test=Xh1, _matrix=B1t ) +=
         integrate( markedfaces(mesh1,gamma1), id(v1)*idt(mu) );
+
 
     B1t->close();
 
     auto B2t = M_backend->newMatrix( Lh1, Xh2 );
-   form2( _trial=Lh1, _test=Xh2, _matrix=B2t, _init=true ) +=
+    Log() << "init_B2t starts\n";
+    timers["init_B2t"].first.restart();
+
+    form2( _trial=Lh1, _test=Xh2, _matrix=B2t, _init=true );
+
+    Log() << "init_B2t done\n";
+    timers["init_B2t"].second = timers["init_B2t"].first.elapsed();
+    std::cout << "[timer] init_B2t: " << timers["init_B2t"].second << "s\n";
+
+    form2( _trial=Lh1, _test=Xh2, _matrix=B2t ) +=
         integrate( markedfaces(mesh1,gamma1), -id(v2)*idt(mu) );
+
 
     B2t->close();
 
