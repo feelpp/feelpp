@@ -228,6 +228,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
         }
 
     imesh->gm()->initCache( imesh.get() );
+    imesh->gm1()->initCache( imesh.get() );
     // notify observers that the mesh has changed
     imesh->meshChanged( MESH_CHANGES_POINTS_COORDINATES );
     //return boost::make_tuple( omesh, 1.0  );
