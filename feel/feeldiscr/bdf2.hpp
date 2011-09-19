@@ -291,6 +291,19 @@ public:
         M_state = BDF_RUNNING;
         M_timer.restart();
         M_time = M_Ti+this->timeStep();
+        M_last_iteration_since_order_change = 1;
+        M_order_cur = 1;
+
+        for (int i = 2; i<=M_iteration;++i)
+            {
+                if ( ( (i - M_last_iteration_since_order_change) == M_iterations_between_order_change )&&
+                     M_order_cur < M_order )
+                    {
+                        M_last_iteration_since_order_change = M_iteration;
+                        ++M_order_cur;
+                    }
+            }
+
         return M_Ti;
     }
 
