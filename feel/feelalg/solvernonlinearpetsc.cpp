@@ -286,13 +286,13 @@ void SolverNonLinearPetsc<T>::setReuse (int jac, int prec )
     PetscInt cur_jac, cur_prec;
     SNESGetLagJacobian( M_snes, &cur_jac );
     SNESGetLagPreconditioner( M_snes, &cur_prec );
-    std::cout << "[PETSc non linear solver reuse] prev jac=" << cur_jac << " prev prec=" << cur_prec << "\n";
+    //std::cout << "[PETSc non linear solver reuse] prev jac=" << cur_jac << " prev prec=" << cur_prec << "\n";
 
     SNESSetLagJacobian( M_snes, jac );
     SNESSetLagPreconditioner( M_snes, prec );
     SNESGetLagJacobian( M_snes, &cur_jac );
     SNESGetLagPreconditioner( M_snes, &cur_prec );
-    std::cout << "[PETSc non linear solver reuse] prev jac=" << cur_jac << " prev prec=" << cur_prec << "\n";
+    //std::cout << "[PETSc non linear solver reuse] prev jac=" << cur_jac << " prev prec=" << cur_prec << "\n";
 }
 template <typename T>
 void SolverNonLinearPetsc<T>::init ()
