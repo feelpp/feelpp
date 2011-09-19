@@ -563,6 +563,11 @@ Aitken<fs_type>::printInfo()
               <<" theta=" << previousParameter
               <<" residualNorm : " << M_residualConvergence
               << "\n";
+
+    Feel::Log() << "[Aitken] iteration : "<< M_cptIteration
+                <<" theta=" << previousParameter
+                <<" residualNorm : " << M_residualConvergence
+                << "\n";
 }
 
 template< typename fs_type >
