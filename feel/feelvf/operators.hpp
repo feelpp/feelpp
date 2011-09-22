@@ -322,7 +322,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     :                                                   \
                     M_expr( t.M_expr ),                                 \
                     M_geot( new gmc_type( *t.M_geot ) ),                \
-                    M_fec( VF_OP_SWITCH( VF_OP_TYPE_IS_VALUE( T ), , new basis_context_type( *t.M_fec ) ) ), \
+                    M_fec( VF_OP_SWITCH( VF_OP_TYPE_IS_VALUE( T ), , t.M_fec/*new basis_context_type( *t.M_fec )*/ ) ), \
                     M_np( M_geot->nPoints() ),                          \
                     M_pc( new pc_type( M_expr.e().functionSpace()->fe(), M_geot->xRefs() )), \
                     M_pcf(),                                            \
