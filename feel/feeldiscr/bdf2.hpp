@@ -131,7 +131,6 @@ public:
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER )
     {
-        this->init();
     }
     BdfBase( std::string name )
         :
@@ -149,7 +148,6 @@ public:
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER )
     {
-        this->init();
     }
 
     BdfBase( BdfBase const& b )
@@ -273,7 +271,7 @@ public:
     std::vector<double> timeValue() const { return M_time_values; }
 
     //! start the bdf
-    double start() const
+    double start()
     {
         M_state = BDF_RUNNING;
         M_timer.restart();
@@ -285,8 +283,8 @@ public:
         return M_Ti;
     }
 
-    //! start the bdf
-    double restart() const
+    //! restart the bdf
+    double restart()
     {
         M_state = BDF_RUNNING;
         M_timer.restart();
@@ -656,6 +654,16 @@ public:
     void initialize( unknowns_type const& uv0 );
 
     /**
+       start the bdf
+    */
+    double start();
+
+    /**
+       restart the bdf
+    */
+    double restart();
+
+    /**
        Update the vectors of the previous time steps by shifting on the right
        the old values.
        @param u_curr current (new) value of the state vector
@@ -717,7 +725,13 @@ Bdf<SpaceType>::Bdf( po::variables_map const& vm,
     super( vm, name, prefix ),
     M_space( __space )
 {
-    this->init();
+    M_unknowns.resize( BDF_MAX_ORDER );
+    for ( uint8_type __i = 0; __i < ( uint8_type )BDF_MAX_ORDER; ++__i )
+        {
+            M_unknowns[__i] = unknown_type( new element_type( M_space ) );
+            M_unknowns[__i]->zero();
+        }
+
 }
 
 template <typename SpaceType>
@@ -727,7 +741,13 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     super( name ),
     M_space( __space )
 {
-    this->init();
+    M_unknowns.resize( BDF_MAX_ORDER );
+    for ( uint8_type __i = 0; __i < ( uint8_type )BDF_MAX_ORDER; ++__i )
+        {
+            M_unknowns[__i] = unknown_type( new element_type( M_space ) );
+            M_unknowns[__i]->zero();
+        }
+
 }
 
 template <typename SpaceType>
@@ -735,13 +755,6 @@ void
 Bdf<SpaceType>::init()
 {
     super::init();
-
-    M_unknowns.resize( BDF_MAX_ORDER );
-    for ( uint8_type __i = 0; __i < ( uint8_type )BDF_MAX_ORDER; ++__i )
-        {
-            M_unknowns[__i] = unknown_type( new element_type( M_space ) );
-            M_unknowns[__i]->zero();
-        }
 
     if ( timeInitial() > 0. )
         {
@@ -791,6 +804,25 @@ Bdf<SpaceType>::initialize( unknowns_type const& uv0 )
     std::copy( uv0.begin(), uv0.end(), M_unknowns.begin() );
     this->saveCurrent();
 }
+
+template <typename SpaceType>
+double
+Bdf<SpaceType>::start()
+{
+    this->init();
+
+    return super::start();
+}
+
+template <typename SpaceType>
+double
+Bdf<SpaceType>::restart()
+{
+    this->init();
+
+    return super::restart();
+}
+
 
 template <typename SpaceType>
 const
@@ -911,6 +943,7 @@ BOOST_PARAMETER_FUNCTION(
 {
     typedef typename meta::remove_all<space_type>::type::value_type _space_type;
     auto thebdf = boost::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>(vm,space,name,prefix) );
+    thebdf->setTimeInitial(initial_time);
     thebdf->setTimeFinal( final_time );
     thebdf->setTimeStep( time_step );
     thebdf->setOrder( order );
