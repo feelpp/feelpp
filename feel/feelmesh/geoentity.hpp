@@ -114,7 +114,9 @@ public:
         M_entity( MESH_ENTITY_INTERNAL ),
         M_geometry( Geometry ),
         M_shape( Shape ),
+        M_npids( 1 ),
         M_pid( 0 ),
+        M_neighor_pids(),
         M_elist()
         {}
 
@@ -128,7 +130,9 @@ public:
         M_entity( context ),
         M_geometry( geometry ),
         M_shape( shape ),
+        M_npids( 1 ),
         M_pid( 0 ),
+        M_neighor_pids(),
         M_elist()
         {}
 
@@ -139,7 +143,9 @@ public:
         M_entity( __me.M_entity ),
         M_geometry( __me.M_geometry ),
         M_shape( __me.M_shape ),
+        M_npids( __me.M_npids ),
         M_pid( __me.M_pid ),
+        M_neighor_pids( __me.M_neighor_pids ),
         M_elist( __me.M_elist )
         {}
 
@@ -151,7 +157,9 @@ public:
                 M_entity = __me.M_entity;
                 M_geometry = __me.M_geometry;
                 M_shape = __me.M_shape;
+                M_npids = __me.M_npids;
                 M_pid = __me.M_pid;
+                M_neighor_pids = __me.M_neighor_pids;
                 M_elist = __me.M_elist;
             }
             return *this;
