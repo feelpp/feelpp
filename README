@@ -6,11 +6,10 @@
 
 * Requirements
 
- - g++ (>=4.0)
- - boost (>=1.42)
- - superlu, umfpack
+ - g++ (>=4.4)
+ - boost (>=1.46)
  - petsc(>=3.1)
- - trilinos (>=8.0.8)
+ - trilinos (>=10)
  - gmsh
 
 * Building Feel++
@@ -29,6 +28,4 @@ cmake <top level feel directory>
 make
 ctest
 
-More details in Feel++ manual and Feel++ website (https://feel.prudhomm.org)
-
- -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Thu, 26 Aug 2010 14:45:04 +0200
+More details in Feel++ manual and Feel++ website (http://www.feelpp.org)
