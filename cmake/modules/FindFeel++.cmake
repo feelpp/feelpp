@@ -260,16 +260,15 @@ if ( OCTAVE_FOUND )
   SET(FEEL_ENABLED_OPTIONS "${FEEL_ENABLED_OPTIONS} Octave" )
 endif( OCTAVE_FOUND )
 
-
-
 #
-# programs
+# Gmsh
 #
-find_program( GMSH_EXECUTABLE gmsh DOC "Gmsh mesh generator" )
-if ( GMSH_EXECUTABLE )
+FIND_PACKAGE(Gmsh)
+if ( GMSH_FOUND )
   ADD_DEFINITIONS( -DHAVE_GMSH=1 -D_HAVE_GMSH_ -DGMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
+  SET(FEEL_LIBRARIES ${GMSH_LIBRARY} ${FEEL_LIBRARIES})
 endif()
-mark_as_advanced( GMSH_EXECUTABLE )
+
 
 #
 # if Feel++ has been installed on the system
@@ -277,7 +276,7 @@ mark_as_advanced( GMSH_EXECUTABLE )
 if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib )
   FIND_PATH(FEEL_INCLUDE_DIR feelconfig.h  PATHS /usr/include/feel /usr/lib/feel/include /opt/feel/include /usr/ljk/include/feel /usr/local  )
 
-  FIND_LIBRARY(FEEL_LIBRARY        feel++      PATHS /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  FIND_LIBRARY(FEEL_LIBRARY feel++ PATHS /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
 
   INCLUDE_DIRECTORIES ( ${FEEL_INCLUDE_DIR} )
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (Feel DEFAULT_MSG
