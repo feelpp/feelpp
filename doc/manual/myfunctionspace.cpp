@@ -87,7 +87,7 @@ public:
     typedef double value_type;
 
     //! mesh
-    typedef Simplex<Dim, Order> convex_type;
+    typedef Simplex<Dim, 1> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -113,7 +113,7 @@ public:
     //# endmarker2 #
 
     /* export */
-    typedef Exporter<mesh_type,Order> export_type;
+    typedef Exporter<mesh_type,1> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
     MyFunctionSpace( po::variables_map const& vm, AboutData const& about )
@@ -180,7 +180,8 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     //! create the mesh
     mesh_ptrtype mesh =
 		createGMSHMesh( _mesh=new mesh_type,
-						_update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+						//_update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                         _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % shape % Dim % Order).str() ,
                                       _shape=shape,
                                       _dim=Dim,
@@ -233,9 +234,12 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     //# endmarker6 #
 #endif
     //# marker7 #
+    std::cout << "exporting\n" << std::endl;
     exporter = export_ptrtype( export_type::New( this->vm(), (boost::format( "%1%-%2%-%3%-%4%" ) % this->about().appName() % shape % Dim % Order).str() ) );
+    std::cout << "exporting mesh \n" << std::endl;
     exporter->step(0)->setMesh( mesh );
     auto P0h = p0_space_type::New( mesh );
+    std::cout << "saving pid\n" << std::endl;
     exporter->step(0)->add( "pid", regionProcess( P0h ) );
 #if 0
     exporter->step(0)->add( "g", u );
