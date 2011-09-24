@@ -290,10 +290,18 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     argv[4] = new char[__geoname.size()];
     strcpy( argv[4], __geoname.c_str() );
     Log() << "argv[4] = " << argv[4] << "\n";
+    boost::timer ti;
+    std::cout << "Executing ";
+    for( int i = 0;i < 5; ++i )
+    {
+        std::cout << argv[i] << " ";
+    }
+    std::cout << " ...\n";
     new GModel();
     GmshInitialize(argc, argv);
     GmshBatch();
     GmshFinalize();
+    std::cout << "Executing gmsh done in "<< ti.elapsed() << "s.\n";
 #endif
 #else
     throw std::invalid_argument("Gmsh is not available on this system");
