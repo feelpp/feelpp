@@ -1,3 +1,6 @@
+#ifndef _FEEL_CONFIG_H_
+#define _FEEL_CONFIG_H_
+
 /* the maximum of parameters for boost.parameter */
 #cmakedefine BOOST_PARAMETER_MAX_ARITY @BOOST_PARAMETER_MAX_ARITY@
 
@@ -14,6 +17,9 @@
 
 /* Define if F77 and FC dummy `main' functions are identical. */
 #cmakedefine FC_DUMMY_MAIN_EQ_F77
+
+/* define if Bamg is enabled */
+#cmakedefine FEEL_HAVE_BAMG
 
 /* Define to 1 if you have the <Cnames.h> header file. */
 #cmakedefine HAVE_CNAMES_H
@@ -143,3 +149,7 @@
 
 /* Define to `unsigned' if <sys/types.h> does not define. */
 #cmakedefine size_t
+
+#define FEEL_CONFIG_OPTIONS "${FEEL_CONFIG_OPTIONS}"
+
+#endif
