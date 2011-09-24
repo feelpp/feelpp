@@ -129,6 +129,21 @@ BOOST_AUTO_TEST_CASE( gmshgeo )
                        std::distance( markedelts.get<1>(), markedelts.get<2>() ) );
 }
 
+BOOST_AUTO_TEST_CASE( gmshpartgeo )
+{
+    typedef Mesh<Simplex<2,1> > mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    mesh_ptrtype mesh;
+    // simplex
+    mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=geo( _filename="feel.geo",
+                                      _dim=2,
+                                      _order=1,
+                                      _h=0.2 ),
+                           _partitions=2 );
+}
+
 #if defined( HAVE_TBB )
 template<typename elt_iterator>
 class tbb_check_mesh
