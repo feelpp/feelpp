@@ -153,6 +153,9 @@ public:
     FEEL_DONT_INLINE
     Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od );
 
+    // init mesh and space
+    FEEL_DONT_INLINE
+    void init();
 
     /**
      * run the convergence test
@@ -179,6 +182,11 @@ private:
     double mu;
     double penalbc;
 
+    mesh_ptrtype mesh;
+    space_ptrtype Xh;
+    sparse_matrix_ptrtype M;
+    vector_ptrtype F;
+
     boost::shared_ptr<export_type> exporter;
 }; // Stokes
 
@@ -196,13 +204,13 @@ Stokes::Stokes( int argc, char** argv, AboutData const& ad, po::options_descript
 }
 
 void
-Stokes::run()
+Stokes::init()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
 
     if ( this->vm().count( "nochdir" ) == false )
@@ -212,22 +220,23 @@ Stokes::run()
                                 % basis_u_type::nOrder % basis_p_type::nOrder
                                 % this->vm()["hsize"].as<double>() );
 
-    /*
-     * First we create the mesh
-     */
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1).str() ,
-                                                      _shape="hypercube",
-                                                      _dim=convex_type().dimension(),
-                                                      _h=meshSize ) );
+    mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                           _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1).str() ,
+                                         _shape="hypercube",
+                                         _dim=convex_type().dimension(),
+                                         _h=meshSize ) );
 
 
-    /*
-     * The function space and some associate elements are then defined
-     */
-    //# marker4 #
-    space_ptrtype Xh = space_type::New( mesh );
+    Xh = space_type::New( mesh );
+
+    F = M_backend->newVector( Xh );
+    D =  M_backend->newMatrix( Xh, Xh );
+}
+void
+Stokes::run()
+{
+    this->init();
 
     auto U = Xh->element();
     auto V = Xh->element();
@@ -247,7 +256,7 @@ Stokes::run()
     Log() << " bccoeff = " << penalbc << "\n";
 
 
-    auto F = M_backend->newVector( Xh );
+
 
     //# marker5 #
     auto deft = gradt(u);
@@ -284,8 +293,6 @@ Stokes::run()
      * Construction of the left hand side
      */
     //# marker7 #
-    auto D =  M_backend->newMatrix( Xh, Xh );
-
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D, _init=true );
     boost::timer chrono;
     stokes = integrate( elements(mesh), mu*inner(deft,def) );
@@ -301,19 +308,8 @@ Stokes::run()
 
     std::cout << "bc: " << chrono.elapsed() << "\n"; chrono.restart();
     //# endmarker7 #
-    Log() << "[stokes] matrix local assembly done\n";
-    D->close();
-    F->close();
-    Log() << "[stokes] vector/matrix global assembly done\n";
-
-    if ( this->vm().count ( "export-matlab" ) )
-    {
-        D->printMatlab( "D.m" );
-        F->printMatlab( "F.m" );
-    }
 
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
-
 
     this->exportResults( u_exact, p_exact, U, V );
 
