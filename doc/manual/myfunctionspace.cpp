@@ -93,10 +93,10 @@ public:
 
     //! function space that holds piecewise constant (\f$P_0\f$) functions (e.g. to store material properties or partitioning
 	//# marker1 #
-typedef FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous> > > 
-			p0_space_type;
+    typedef FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous> > >
+    p0_space_type;
 	//# endmarker1 #
-	
+
     //! an element type of the \f$P_0\f$ discontinuous function space
     typedef typename p0_space_type::element_type p0_element_type;
 
@@ -170,25 +170,26 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     if ( X[1] == 1 ) shape = "hypercube";
     if ( X[1] == 2 ) shape = "ellipsoid";
 
-    if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/" )
-                                       % this->about().appName()
-                                       % shape
-                                       % meshSize );
+    Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/" )
+                                   % this->about().appName()
+                                   % shape
+                                   % meshSize );
+    Environment::setLogs( this->about().appName() );
 
     //# marker31 #
     //! create the mesh
-    mesh_ptrtype mesh = 
-	createGMSHMesh( _mesh=new mesh_type,
-	_update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-	_desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % shape % Dim % Order).str() ,
-			 _shape=shape,
-			 _dim=Dim,
-			 _order=Order,
-			 _h=X[0] ) );
+    mesh_ptrtype mesh =
+		createGMSHMesh( _mesh=new mesh_type,
+						_update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % shape % Dim % Order).str() ,
+                                      _shape=shape,
+                                      _dim=Dim,
+                                      _order=Order,
+                                      _h=X[0] ),
+                        _partitions=this->comm().size());
 
     //# endmarker31 #
-
+#if 0
     /**
      * The function space and some associated elements(functions) are then defined
      */
@@ -197,7 +198,7 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     //# marker32 #
     space_ptrtype Xh = space_type::New( mesh );
 	//# endmarker32 #
-	
+
 	//# marker33 #
     // an element of the function space X_h
     auto u = Xh->element( "u" );
@@ -212,7 +213,7 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
 
     //# marker4 #
     auto g = sin(2*pi*Px())*cos(2*pi*Py())*cos(2*pi*Pz());
-    auto f = 
+    auto f =
 (1-Px()*Px())*(1-Py()*Py())*(1-Pz()*Pz())*pow(trans(vf::P())*vf::P(),(alpha/2.0));
     //# endmarker4 #
 
@@ -230,13 +231,17 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     double L2verror2 = integrate( elements(mesh), (idv(v)-f)*(idv(v)-f) ).evaluate()(0,0);
     Log() << "||v-f||_0=" << math::sqrt( L2verror2/L2f2 ) << "\n";
     //# endmarker6 #
-
+#endif
     //# marker7 #
     exporter = export_ptrtype( export_type::New( this->vm(), (boost::format( "%1%-%2%-%3%-%4%" ) % this->about().appName() % shape % Dim % Order).str() ) );
     exporter->step(0)->setMesh( mesh );
+    auto P0h = p0_space_type::New( mesh );
+    exporter->step(0)->add( "pid", regionProcess( P0h ) );
+#if 0
     exporter->step(0)->add( "g", u );
     exporter->step(0)->add( "u-g", w );
     exporter->step(0)->add( "f", v );
+#endif
     exporter->save();
     //# endmarker7 #
 
@@ -271,7 +276,7 @@ main( int argc, char** argv )
     //app.add( new MyFunctionSpace<2,5>( app.vm(), app.about() ) );
 #else
     app.add( new MyFunctionSpace<2,3>( app.vm(), app.about() ) );
-    app.add( new MyFunctionSpace<3,3>( app.vm(), app.about() ) );
+    //app.add( new MyFunctionSpace<3,3>( app.vm(), app.about() ) );
 // need to be debugged
 #if 0
 
@@ -282,6 +287,7 @@ main( int argc, char** argv )
 #endif
     app.run();
 }
+
 
 
 
