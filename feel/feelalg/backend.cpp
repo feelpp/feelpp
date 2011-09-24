@@ -96,7 +96,7 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     M_pc( vm[prefixvm(prefix,"pc-type")].template as<std::string>() ),
     M_fieldSplit( vm[prefixvm(prefix,"fieldsplit-type")].template as<std::string>() ),
     M_pcFactorMatSolverPackage( vm[prefixvm(prefix,"pc-factor-mat-solver-package-type")].template as<std::string>() ),
-    M_export( vm[prefixvm(prefix,"export-matlab")].template as<std::string>() ),
+    M_export( vm[prefixvm(prefix,"export-matlab")].template as<std::string>() )
 {
 }
 template <typename T>
