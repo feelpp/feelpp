@@ -95,6 +95,8 @@
    - added sym() and antisym() to compute the symmetric and antisymmetric parts of
      a matrix expression
    - added access to expression components via () operator
+   - allow integration of test and/or trial functions which are defined  on different
+     meshes as well as integrating on a different mesh. 
 
 ** Documentation
 
