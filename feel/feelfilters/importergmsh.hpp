@@ -34,6 +34,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <algorithm>
 
 #include <feel/feelfilters/importer.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
@@ -234,21 +235,15 @@ template<typename MeshType>
 bool
 ImporterGmsh<MeshType>::isElementOnProcessor( std::vector<int> const& tag ) const
 {
-    mpi::communicator world;
     bool is_element_on_processor = false;
 
     // tag[2] is the number of partition tags (1 in general 2 if cell share an
     // face with 2 processors)
-    if ( ( tag[2] == 1 || tag[2] == 2 ) &&
-         tag[3] == world.rank() )
+    mpi::communicator world;
+    int rank = world.rank();
+    auto it = std::find_if( tag.begin()+3, tag.end(), [&rank] (int i) {    return i == rank; } );
+    if ( it != tag.end() )
         is_element_on_processor = true;
-
-    // ghosts cells
-    if ( tag[2] == 2 &&
-         tag[3] != world.rank() &&
-         tag[4] == world.rank() )
-        is_element_on_processor = true;
-
     return is_element_on_processor;
 }
 template<typename MeshType>
@@ -479,10 +474,10 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 else
                     __et[__i].push_back( tag );
             }
+
             // shift partition id according to processor ids
-            if ( __ntag == 4 || __ntag == 5 ) __et[__i][3] -= 1;
-            // shift partition id of ghost cells according to processor ids
-            if ( __ntag == 5 ) __et[__i][4] -= 1;
+            for( int ii = 3; ii < __ntag; ++ ii )
+                __et[__i][ii] -= 1;
 
             ++__gt[ __t ];
             __etype[__i] = GMSH_ENTITY(__t);
