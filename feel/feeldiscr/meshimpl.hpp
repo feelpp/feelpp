@@ -118,7 +118,7 @@ Mesh<Shape, T>::updateForUse()
 
 #if !defined ( NDEBUG )
                         Debug( 4015 ) << "------------------------------------------------------------\n";
-                        Debug( 4015 ) << "Element id: " << iv->id() << " local face id: " << j << "\n";
+                        Debug( 4015 ) << "Element id: " << iv->id() << " local face id: " << j << " process id:" << iv->processId() << "\n";
 #endif
                         //e = _be.addIfNotThere( baremaker( j ) );
 
@@ -149,6 +149,7 @@ Mesh<Shape, T>::updateForUse()
                     } // local face
                 } // element loop
             Debug( 4015 ) << "Compute adjacency graph done in " << ti.elapsed() << "\n";
+#if 0
             // partition mesh
             if ( this->components().test( MESH_PARTITION ) || ( M_comm.size() > 1 ) )
                 {
@@ -156,7 +157,7 @@ Mesh<Shape, T>::updateForUse()
                     this->partition();
                     Debug( 4015 ) << "[Mesh::updateForUse] partition time : " << ti1.elapsed() << "\n";
                 }
-
+#endif
             if ( this->components().test( MESH_UPDATE_FACES ) )
                 {
                     ti.restart();
@@ -605,6 +606,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
 #if !defined( NDEBUG )
                             Debug( 4015 ) << "Adding [new] face info : \n";
                             Debug( 4015 ) << "element id: " << __element_id << "\n";
+                            Debug( 4015 ) << "process id: " << __fit->processId() << "\n";
                             Debug( 4015 ) << "id: " << __fit->id() << "\n";
                             Debug( 4015 ) << "bdy: " << __fit->isOnBoundary() << "\n";
                             Debug( 4015 ) << "marker: " << __fit->marker() << "\n";
@@ -653,6 +655,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
 #if !defined( NDEBUG )
                                     Debug( 4015 ) << "adding [!isConnectedTo0] face info : \n";
                                     Debug( 4015 ) << "id: " << __fit->id() << "\n";
+                                    Debug( 4015 ) << "process id: " << __fit->processId() << "\n";
                                     Debug( 4015 ) << "bdy: " << __fit->isOnBoundary() << "\n";
                                     Debug( 4015 ) << "marker: " << __fit->marker() << "\n";
                                     Debug( 4015 ) << "ad_first: " << __fit->ad_first() << "\n";
@@ -661,6 +664,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                                     Debug( 4015 ) << "ad_second: " << __fit->ad_second() << "\n";
                                     Debug( 4015 ) << "pos_second: " << __fit->pos_second() << "\n";
                                     Debug( 4015 ) << "proc_second: " << __fit->proc_second() << "\n";
+                                    Debug( 4015 ) << "element process id: " << iv->processId() << "\n";
 #endif
                                 }
                             // we found an internal face
@@ -697,6 +701,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
 #if !defined( NDEBUG )
                                     Debug( 4015 ) << "adding face info : \n";
                                     Debug( 4015 ) << "id: " << __fit->id() << "\n";
+                                    Debug( 4015 ) << "process id: " << __fit->processId() << "\n";
                                     Debug( 4015 ) << "bdy: " << __fit->isOnBoundary() << "\n";
                                     Debug( 4015 ) << "marker: " << __fit->marker() << "\n";
                                     Debug( 4015 ) << "ad_first: " << __fit->ad_first() << "\n";
@@ -705,6 +710,8 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                                     Debug( 4015 ) << "ad_second: " << __fit->ad_second() << "\n";
                                     Debug( 4015 ) << "pos_second: " << __fit->pos_second() << "\n";
                                     Debug( 4015 ) << "proc_second: " << __fit->proc_second() << "\n";
+                                    Debug( 4015 ) << "element1 process id: " << elt1->processId() << "\n";
+                                    Debug( 4015 ) << "element2 process id: " << iv->processId() << "\n";
 #endif
 
                                 }
