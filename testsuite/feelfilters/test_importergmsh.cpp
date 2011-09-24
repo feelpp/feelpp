@@ -197,6 +197,7 @@ BOOST_AUTO_TEST_CASE( gmshgeo_tbb )
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
 {
+    BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -222,18 +223,25 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
     meshimp = loadGMSHMesh( _mesh=new mesh_type,
                             _filename=fstr.str(),
                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+
+    auto elements1 = elements( mesh );
+    auto elements2 = elements( meshimp );
+    BOOST_CHECK_EQUAL( std::distance( elements1.get<1>(), elements1.get<2>() ),
+                       std::distance( elements2.get<1>(), elements2.get<2>() ) );
+
     auto neumann1 = markedfaces( mesh, "Neumann" );
-    auto neumann2 = markedfaces( meshimp, mesh->markerName("Neumann") );
+    auto neumann2 = markedfaces( meshimp, "Neumann" );
     BOOST_CHECK_EQUAL( std::distance( neumann1.get<1>(), neumann1.get<2>() ),
                        std::distance( neumann2.get<1>(), neumann2.get<2>() ) );
     auto dirichlet1 = markedfaces( mesh, "Dirichlet" );
-    auto dirichlet2 = markedfaces( meshimp, mesh->markerName("Dirichlet") );
+    auto dirichlet2 = markedfaces( meshimp, "Dirichlet" );
     BOOST_CHECK_EQUAL( std::distance( dirichlet1.get<1>(), dirichlet1.get<2>() ),
                        std::distance( dirichlet2.get<1>(), dirichlet2.get<2>() ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
                        std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
                        std::distance( meshimp->beginElement(), meshimp->endElement() ) );
+    BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << T::value << " done.\n" );
 }
 
 /*

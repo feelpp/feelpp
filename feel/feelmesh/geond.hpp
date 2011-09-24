@@ -636,7 +636,7 @@ public:
                 M_marker2.assign(tags[1]);
             if ( tags.size() > 2 )
             {
-                this->setNumberOfPartitionIds( tags[2] );
+                this->setNumberOfPartitions( tags[2] );
                 this->setProcessId( tags[3] );
                 if ( tags[2] > 1 )
                 {
