@@ -1716,7 +1716,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
 Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 {
-    Log()  << "integrating over "
+    Debug(5065)  << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
 
@@ -1779,6 +1779,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         //std::cout << "2" << std::endl;
         it = this->beginElement();
         // wait for all the guys
+
 #ifdef HAVE_MPI
         if ( M_comm.size() > 1 )
         {
@@ -1816,7 +1817,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             {
             case  GeomapStrategyType::GEOMAP_HO :
             {
-                //Log() << "geomap ho" << "\n";
                 __c->update( *it );
                 map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
                 expr.update( mapgmc );
@@ -1830,12 +1830,11 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     {
                         res(c1,c2) += M_im( expr, c1, c2 );
                     }
-                //Log() << it->id() << " : " << M_im( expr, 0, 0 ) << "\n";
             }
             break;
             case GeomapStrategyType::GEOMAP_O1:
             {
-                //Log() << "geomap o1" << "\n";
+                //Debug(5065) << "geomap o1" << "\n";
                 __c1->update( *it );
                 map_gmc1_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c1 ) );
                 expr1.update( mapgmc );
@@ -1849,15 +1848,14 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     {
                         res(c1,c2) += M_im( expr1, c1, c2 );
                     }
-                //Log() << it->id() << " : " << M_im( expr1, 0, 0 ) << "\n";
             }
             break;
             case GeomapStrategyType::GEOMAP_OPT:
             {
-                //Log() << "geomap opt" << "\n";
+                //Debug(5065) << "geomap opt" << "\n";
                 if ( it->isOnBoundary() )
                 {
-                    //Log() << "boundary element using ho" << "\n";
+                    //Debug(5065) << "boundary element using ho" << "\n";
                     __c->update( *it );
                     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
                     expr.update( mapgmc );
@@ -1871,11 +1869,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                         {
                             res(c1,c2) += M_im( expr, c1, c2 );
                         }
-                    //Log() << it->id() << " : " << M_im( expr, 0, 0 ) << "\n";
                 }
                 else
                 {
-                    //Log() << "interior element using order 1" << "\n";
+                    //Debug(5065) << "interior element using order 1" << "\n";
                     __c1->update( *it );
                     map_gmc1_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c1 ) );
                     expr1.update( mapgmc );
@@ -1888,7 +1885,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                         {
                             res(c1,c2) += M_im( expr1, c1, c2 );
                         }
-                    //Log() << it->id() << " : " << M_im( expr1, 0, 0 ) << "\n";
                 }
             }
             //break;
@@ -1899,7 +1895,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     }
     else
     {
-
 #if defined(HAVE_TBB)
         element_iterator it = this->beginElement();
         element_iterator en = this->endElement();
