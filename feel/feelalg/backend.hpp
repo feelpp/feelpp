@@ -485,10 +485,10 @@ public:
         rhs->close();
 
         // print them in matlab format
-        if ( M_export )
+        if ( !M_export.empty() )
         {
-            matrix->printMatlab( "A.m" );
-            rhs->printMatlab( "b.m" );
+            matrix->printMatlab( M_export+"_A.m" );
+            rhs->printMatlab( M_export+"_b.m" );
         }
         vector_ptrtype _sol( this->newVector( detail::datamap(solution) ) );
         // initialize
@@ -653,7 +653,7 @@ private:
     bool   M_transpose;
     size_type    M_maxit;
     size_type    M_iteration;
-    bool M_export;
+    std::string M_export;
     std::string M_ksp;
     std::string M_pc;
     std::string M_fieldSplit;

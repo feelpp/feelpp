@@ -50,7 +50,7 @@ Backend<T>::Backend()
     M_reuse_jac( false ),
     M_transpose( false ),
     M_maxit( 1000 ),
-    M_export( false ),
+    M_export( "" ),
     M_ksp( "gmres" ),
     M_pc( "lu" ),
     M_fieldSplit("additive"),
@@ -95,7 +95,8 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     M_ksp( vm[prefixvm(prefix,"ksp-type")].template as<std::string>() ),
     M_pc( vm[prefixvm(prefix,"pc-type")].template as<std::string>() ),
     M_fieldSplit( vm[prefixvm(prefix,"fieldsplit-type")].template as<std::string>() ),
-    M_pcFactorMatSolverPackage( vm[prefixvm(prefix,"pc-factor-mat-solver-package-type")].template as<std::string>() )
+    M_pcFactorMatSolverPackage( vm[prefixvm(prefix,"pc-factor-mat-solver-package-type")].template as<std::string>() ),
+    M_export( vm[prefixvm(prefix,"export-matlab")].template as<std::string>() ),
 {
 }
 template <typename T>
@@ -474,6 +475,8 @@ po::options_description backend_options( std::string const& prefix )
         (prefixvm(prefix,"ksp-maxit").c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations")
         (prefixvm(prefix,"reuse-jac").c_str(), Feel::po::value<bool>()->default_value( false ), "reuse jacobian")
         (prefixvm(prefix,"reuse-prec").c_str(), Feel::po::value<bool>()->default_value( false ), "reuse preconditioner")
+
+        (prefixvm(prefix,"export-matlab").c_str(), Feel::po::value<std::string>()->default_value( "" ), "export matrix/vector to matlab, default empty string means no export, other string is used as prefix")
 
         (prefixvm(prefix,"ksp-type").c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres")
 
