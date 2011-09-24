@@ -350,12 +350,12 @@ public:
      * \return the number of partition the element is linked to including the
      * partition to which it belongs
      */
-    uint16_type nPartitionId() const { return M_npids; }
+    uint16_type numberOfPartitions() const { return M_npids; }
 
     /**
      * \return the number of partition the element is linked to
      */
-    size_type nNeighborPartitionId() const { return M_neighor_pids.size(); }
+    size_type numberOfNeighborPartitions() const { return M_neighor_pids.size(); }
 
     /**
      * \return true if the element is linked to other partitions through one of
@@ -409,6 +409,25 @@ public:
             }
         }
 
+    /**
+     * \return the number of partition the element is linked to including the
+     * partition to which it belongs
+     */
+    void setNumberOfPartitions( uint16_type np ) { M_npids = np; }
+
+    /**
+     * set the number of partition the element is linked to
+     */
+    void setNumberOfNeighborPartitions( uint16_type nep )
+        {
+            FEEL_ASSERT( M_npids -1 == M_neighor_pids.size() )(M_npids)(M_neighor_pids).error( "invalid partitioning data" );
+            M_neighor_pids.size();
+        }
+
+    /**
+     * \return the number of partition the element is linked to
+     */
+    void setNeighborPartitionIds( std::vector<int> const& npids ) { M_neighor_pids = npids; }
 
     //@}
 
