@@ -183,11 +183,16 @@ public:
 
     //! get  \c variables_map from \c options_description \p desc
     static po::variables_map vm( po::options_description const& desc );
+
+    /**
+     * set log files
+     * \param prefix prefix for log filenames
+     */
+    static void setLogs( std::string const& prefix );
+
     //@}
 
 
-
-protected:
 
 private:
     /// Whether this environment object called MPI_Init

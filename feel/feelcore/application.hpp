@@ -370,7 +370,10 @@ protected:
      */
     void parseAndStoreOptions( po::command_line_parser parser, bool extra_parser = false );
 
-protected:
+    /**
+     * set log files
+     * \param prefix prefix for log filenames
+     */
     void setLogs();
 
 private:

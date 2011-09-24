@@ -513,7 +513,7 @@ Application::doOptions( int argc, char** argv )
     }
     catch( boost::program_options::unknown_option const& e )
     {
-        std::cout << "[Application::Application] unknown option\n";
+        std::cout << "[Application::Application] unknown option:" << e.what() << "\n";
     }
     catch( ... )
     {

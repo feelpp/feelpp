@@ -263,6 +263,8 @@ Environment::changeRepository( boost::format fmt )
         }
 
     ::chdir( rep_path.string().c_str() );
+
+    setLogs("toto");
 }
 
 po::variables_map
@@ -274,4 +276,19 @@ Environment::vm( po::options_description const& desc )
 
     return vm;
 }
+
+void
+Environment::setLogs( std::string const& prefix )
+{
+    mpi::communicator world;
+    Log().detachAll();
+    std::ostringstream ostr;
+    ostr << prefix << "-" << world.size()  << "." << world.rank();
+    Log().attach( ostr.str() );
+
+    std::ostringstream ostr_assert;
+    ostr_assert << prefix  << "-" << world.size()  << "." << world.rank() << ".assertions";
+    Assert::setLog( ostr_assert.str().c_str() );
+}
+
 }
