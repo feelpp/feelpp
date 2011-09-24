@@ -1,12 +1,14 @@
 # -*- mode: org -*-
 
 * TODO [0/3]
- - [ ] parallelisation (2j)
-    - up to laplacian/stokes
-    -
+ - [ ] parallelisation (2j) [0/2]
+    - [ ] doftable
+    - [ ] interpolation
+    - [ ] test laplacian
+    - [ ] test mixed approximation stokes
  - [ ] paper August 15
 
- - [ ] integration (1 ou 2 j) [0/5]
+ - [ ] integration (1 ou 2 j) [0/6]
    - [ ] 2D/3D
    - [ ] generate meshes of faces
    - [ ] generate function spaces from meshes of topology d-1
@@ -27,8 +29,11 @@ _flags=assign::list of( "fixed")("toto") );
 _
 #+end_SRC
 
- - [ ] solver NS (1j) [0/3]
-   - [ ] preconditioners, fieldsplit
+ - linear algebra [1/1]
+   - [X] aitken automatic restart
+
+ - [-] solver NS (1j) [1/2]
+   - [X] preconditioners, fieldsplit
      - cas stokes 2d/3d
      - interface backendpetsc
      - change in bilinearform when composite spaces
