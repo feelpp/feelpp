@@ -422,7 +422,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     for( uint __i = 0; __i < __nele;++__i )
         {
             int __ne, __t, __physical_region, __np, __dummy, __elementary_region = 1, __partition_region = 0;
-
+            int npartitions=1;
+            std::vector<int> partitions;
             if ( this->version() == "1.0" )
                 {
                     __is >> __ne  // elm-number
@@ -437,16 +438,20 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                     int __ntag;
                     __is >> __ne  // elm-number
                          >> __t // elm-type
-                         >> __ntag // number-of-tags
-                         >> __physical_region; // reg-phys
-                    if ( __ntag >= 2 )
-                        __is >> __elementary_region; // elementary region
-                    if ( __ntag >= 3 )
-                        __is >> __partition_region;
-                    for( int nt = 3; nt < __ntag; ++nt )
-                        __is >> __dummy;
-                    FEEL_ASSERT( __ntag >= 2 )( __ntag )( __physical_region )( __elementary_region )( __partition_region ).warn( "invalid number of tags (should be at least 2)" );
-
+                         >> __ntag; // number-of-tags
+                    for( int t = 0; t < __ntag; ++t )
+                    {
+                        int tag;
+                        // tag=1 physical region
+                        // tag=2 elementary region
+                        // tag=3 n partition tags
+                        // tag=4.. partition ids
+                        __is >> tag;
+                        if ( tag < 0 )
+                            __et[__i].push_back( -tag );
+                        else
+                            __et[__i].push_back( tag );
+                    }
                     __np = nptable[__t];
 
                     Debug( 8011 ) << "element type: " << __t << " nb pts: " << __np << "\n";

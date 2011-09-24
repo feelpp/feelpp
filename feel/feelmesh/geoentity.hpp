@@ -342,6 +342,33 @@ public:
     void setProcessId( uint16_type pid )  { M_pid = pid ; }
 
     /**
+     * \return the partition id
+     */
+    uint16_type partitionId() const { return M_pid; }
+
+    /**
+     * \return the number of partition the element is linked to including the
+     * partition to which it belongs
+     */
+    uint16_type nPartitionId() const { return M_npids; }
+
+    /**
+     * \return the number of partition the element is linked to
+     */
+    size_type nNeighborPartitionId() const { return M_neighor_pids.size(); }
+
+    /**
+     * \return true if the element is linked to other partitions through one of
+     * more of its faces
+     */
+    bool isLinkedToOtherPartitions() const { return M_neighor_pids.size() > 0; }
+
+    /**
+     * \return the number of partition the element is linked to
+     */
+    std::vector<int> const& neighborPartitionIds() const { return M_neighor_pids; }
+
+    /**
      * \return \c true if active, \c false otherwise
      *
      * \note for now it is a dummy function that returns always true,
@@ -442,7 +469,9 @@ private:
     Context M_geometry;
     Context M_shape;
 
+    uint16_type M_npids;
     uint16_type M_pid;
+    std::vector<int> M_neighor_pids;
 
     //! element list to which the point belongs
     std::set<size_type> M_elist;

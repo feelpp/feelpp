@@ -635,7 +635,20 @@ public:
             if ( tags.size() > 1 )
                 M_marker2.assign(tags[1]);
             if ( tags.size() > 2 )
-                this->setProcessId( tags[2] );
+            {
+                this->setNumberOfPartitionIds( tags[2] );
+                this->setProcessId( tags[3] );
+                if ( tags[2] > 1 )
+                {
+                    std::vector<int> p( tags[2]-1 );
+                    for( int i = 0;i < p.size(); ++i )
+                    {
+                        p[i] = tags[4+i];
+                    }
+                    this->setNeighborPartitionIds(p);
+                }
+
+            }
         }
     Marker1 const& marker() const { return M_marker1; }
     Marker1& marker() { return M_marker1; }
