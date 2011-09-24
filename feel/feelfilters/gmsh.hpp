@@ -59,7 +59,12 @@ extern const char* FEEL_GMSH_FORMAT_VERSION;
 
 namespace Feel
 {
+enum GMSH_PARTITIONER
+{
+    GMSH_PARTITIONER_CHACO = 1,
+    GMSH_PARTITIONER_METIS = 2
 
+};
 enum GMSH_ORDER
 {
     GMSH_ORDER_ONE = 1,
@@ -213,6 +218,14 @@ public:
      */
     bool usePhysicalNames() const { return M_usePhysicalNames; }
 
+    //! \return the nnumber of partitions
+    int numberOfPartitions() const { return M_partitions; }
+
+    //! \return true if save msh file by partitions, false otherwise
+    bool mshFileByPartition() const { return M_partition_file; }
+
+    //! \return the partitioner
+    GMSH_PARTITIONER partitioner() const { return M_partitioner; }
 
     //@}
 
@@ -320,19 +333,21 @@ public:
      */
     void usePhysicalNames( bool option ) { M_usePhysicalNames = option; }
 
+
+    //! set the nnumber of partitions
+    void setNumberOfPartitions( int n ) { M_partitions = n; }
+
+    //! set save msh file by partitions
+    void setMshFileByPartition( bool p ) { M_partition_file = p; }
+
+    //! set the partitioner
+    void setPartitioner( GMSH_PARTITIONER const& p ) {  M_partitioner = p; }
+
     //@}
 
     /** \name  Methods
      */
     //@{
-
-    std::string generateLine( std::string const& __name, double __h );
-
-    std::string generateCube( std::string const& __name, double __h );
-
-    std::string generateCircle( std::string const& __name, double __h );
-
-    std::string generateSquare( std::string const& __name, double __h );
 
     /**
      * generate a Gmsh msh file from \p name
@@ -417,6 +432,13 @@ protected:
     bool M_addmidpoint;
     //! add physical names to msh files
     bool M_usePhysicalNames;
+
+    //! partitioner type
+    GMSH_PARTITIONER M_partitioner;
+    //! number of partitions
+    int M_partitions;
+    //! save msh file by partition
+    bool M_partition_file;
 };
 
 ///! \typedef gmsh_type Gmsh
@@ -631,6 +653,9 @@ BOOST_PARAMETER_FUNCTION(
      (update,          *(boost::is_integral<mpl::_>), 0 )
      (force_rebuild,   *(boost::is_integral<mpl::_>), 0 )
      (physical_are_elementary_regions,           *,false)
+     (partitions,   *(boost::is_integral<mpl::_>), 1 )
+     (partition_file,   *(boost::is_integral<mpl::_>), 0 )
+     (partitioner,   *(boost::is_integral<mpl::_>), GMSH_PARTITIONER_CHACO )
         )
     )
 {
@@ -638,7 +663,12 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
+    desc->setNumberOfPartitions( partitions );
+    desc->setPartitioner( partitioner );
+    desc->setMshFileByPartition( partition_file );
+
     std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
+
 
     // refinement if option is enabled to a value greater or equal to 1
     if ( refine )
