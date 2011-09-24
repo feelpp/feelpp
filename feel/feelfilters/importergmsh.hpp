@@ -192,26 +192,26 @@ protected:
 
 private:
 
-    void addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type );
-    void addPoint( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY /*type*/, mpl::int_<1> );
+    void addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type );
+    void addPoint( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY /*type*/, mpl::int_<1> );
     void addPoint( mesh_type*/*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> /*tag*/, GMSH_ENTITY /*type*/, mpl::int_<2> );
     void addPoint( mesh_type*/*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> /*tag*/, GMSH_ENTITY /*type*/, mpl::int_<3> );
 
-    void addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type );
-    void addEdge( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type, mpl::int_<1> );
-    void addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type, mpl::int_<2> );
+    void addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type );
+    void addEdge( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, mpl::int_<1> );
+    void addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, mpl::int_<2> );
 
-    void addEdge( mesh_type*, std::vector<int> const&, std::vector<int>, GMSH_ENTITY, mpl::int_<3> );
+    void addEdge( mesh_type*, std::vector<int> const&, std::vector<int> const&, GMSH_ENTITY, mpl::int_<3> );
 
-    void addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type );
-    void addFace( mesh_type*, std::vector<int> const&, std::vector<int>, GMSH_ENTITY, mpl::int_<1> );
-    void addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type, mpl::int_<2> );
-    void addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type, mpl::int_<3> );
+    void addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type );
+    void addFace( mesh_type*, std::vector<int> const&, std::vector<int> const&, GMSH_ENTITY, mpl::int_<1> );
+    void addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, mpl::int_<2> );
+    void addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, mpl::int_<3> );
 
-    void addVolume( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type );
-    void addVolume( mesh_type*, std::vector<int> const&, std::vector<int>, GMSH_ENTITY, mpl::int_<1> );
-    void addVolume( mesh_type*, std::vector<int> const&, std::vector<int>, GMSH_ENTITY, mpl::int_<2> );
-    void addVolume( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type, mpl::int_<3> );
+    void addVolume( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type );
+    void addVolume( mesh_type*, std::vector<int> const&, std::vector<int> const&, GMSH_ENTITY, mpl::int_<1> );
+    void addVolume( mesh_type*, std::vector<int> const&, std::vector<int> const&, GMSH_ENTITY, mpl::int_<2> );
+    void addVolume( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, mpl::int_<3> );
 
 private:
 
@@ -236,6 +236,11 @@ bool
 ImporterGmsh<MeshType>::isElementOnProcessor( std::vector<int> const& tag ) const
 {
     bool is_element_on_processor = false;
+
+    // if there is no partition tag (only 2 tags) then consider all elements on
+    // current processor
+    if ( tag.size() == 2 )
+        return true;
 
     // tag[2] is the number of partition tags (1 in general 2 if cell share an
     // face with 2 processors)
@@ -659,13 +664,13 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type )
+ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type )
 {
     addPoint( mesh, __e, tag, type, mpl::int_<mesh_type::nDim>() );
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY /*type*/, mpl::int_<1> )
+ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY /*type*/, mpl::int_<1> )
 {
     face_type pf;
     pf.setId( mesh->numFaces() );
@@ -697,13 +702,13 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*/*mesh*/, std::vector<int> const& /*
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type )
+ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type )
 {
     addEdge( mesh, __e, tag, type, mpl::int_<mesh_type::nDim>() );
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type, mpl::int_<1> )
+ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, mpl::int_<1> )
 {
     element_type e;
 
@@ -729,7 +734,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, st
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type, mpl::int_<2> )
+ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, mpl::int_<2> )
 {
     face_type pf;
     pf.setId( mesh->numFaces() );
@@ -762,24 +767,24 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, s
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addEdge( mesh_type*, std::vector<int> const&, std::vector<int>, GMSH_ENTITY, mpl::int_<3> )
+ImporterGmsh<MeshType>::addEdge( mesh_type*, std::vector<int> const&, std::vector<int> const&, GMSH_ENTITY, mpl::int_<3> )
 {}
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type )
+ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type )
 {
     addFace( mesh, __e, tag, type, mpl::int_<mesh_type::nDim>() );
 }
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addFace( mesh_type*, std::vector<int> const&, std::vector<int>, GMSH_ENTITY, mpl::int_<1> )
+ImporterGmsh<MeshType>::addFace( mesh_type*, std::vector<int> const&, std::vector<int> const&, GMSH_ENTITY, mpl::int_<1> )
 {}
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type, mpl::int_<2> )
+ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, mpl::int_<2> )
 {
     GmshOrdering<element_type> ordering;
 
@@ -812,7 +817,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type, mpl::int_<3> )
+ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, mpl::int_<3> )
 {
     GmshOrdering<face_type> ordering;
 
@@ -848,21 +853,21 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type )
+ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type )
 {
     addVolume( mesh, __e, tag, type, mpl::int_<mesh_type::nDim>() );
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addVolume( mesh_type*, std::vector<int> const&, std::vector<int>, GMSH_ENTITY, mpl::int_<1> )
+ImporterGmsh<MeshType>::addVolume( mesh_type*, std::vector<int> const&, std::vector<int> const&, GMSH_ENTITY, mpl::int_<1> )
 {}
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addVolume( mesh_type*, std::vector<int> const&, std::vector<int>, GMSH_ENTITY, mpl::int_<2> )
+ImporterGmsh<MeshType>::addVolume( mesh_type*, std::vector<int> const&, std::vector<int> const&, GMSH_ENTITY, mpl::int_<2> )
 {}
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> tag, GMSH_ENTITY type, mpl::int_<3> )
+ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, mpl::int_<3> )
 {
     element_type pv;
     GmshOrdering<element_type> ordering;
