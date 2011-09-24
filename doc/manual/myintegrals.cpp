@@ -147,14 +147,20 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
      */
 	//# marker11 #
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _update=MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
+                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                         _desc=domain( _name= (boost::format( "%1%-%2%" ) % shape % Dim).str() ,
                                                       _shape=shape,
                                                       _order=1,
                                                       _dim=Dim,
-                                                      _h=X[0] ) );
-	//# endmarker11 #
+                                                      _h=X[0] ),
+                                        _partitions=this->comm().size());
 
+	//# endmarker11 #
+    Log() << "mesh loaded\n";
+    Log() << "Number of elements: " << mesh->numElements() << "\n";
+    Log() << "   Number of faces: " << mesh->numFaces() << "\n";
+    Log() << "  Number of points: " << mesh->numPoints() << "\n";
+    this->comm().barrier();
     /*
      * Compute domain Area
      */
@@ -162,14 +168,16 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     double local_domain_area = integrate( elements(mesh),
                                           constant(1.0)).evaluate()(0,0);
     //# endmarker1 #
-
+    Log() << "local integral computed: " << local_domain_area << "\n";
+    this->comm().barrier();
     //# marker2 #
     double global_domain_area=local_domain_area;
     if ( this->comm().size()  > 1 )
         mpi::all_reduce( this->comm(),
                          local_domain_area,
                          global_domain_area,
-                         std::plus<double>() );
+                         std::plus<double>());
+                         //[] ( double x, double y ) { return x + y; } );
     //# endmarker2 #
     //# marker3 #
     Log() << "int_Omega 1 = " << global_domain_area
@@ -259,9 +267,9 @@ main( int argc, char** argv )
         return 0;
     }
 
-    app.add( new MyIntegrals<1>( app.vm(), app.about() ) );
+    //app.add( new MyIntegrals<1>( app.vm(), app.about() ) );
     app.add( new MyIntegrals<2>( app.vm(), app.about() ) );
-    app.add( new MyIntegrals<3>( app.vm(), app.about() ) );
+    //app.add( new MyIntegrals<3>( app.vm(), app.about() ) );
 
     app.run();
 }

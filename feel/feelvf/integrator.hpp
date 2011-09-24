@@ -1716,7 +1716,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
 Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 {
-    Debug( 5065 ) << "integrating over "
+    Log()  << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
 
