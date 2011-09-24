@@ -477,8 +477,19 @@ public:
                              _rtolerance=rtolerance,
                              _atolerance=atolerance,
                              _maxit=maxit );
+
         this->setSolverType( _pc=pc, _ksp=ksp,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage);
+        // make sure matrix and rhs are closed
+        matrix->close();
+        rhs->close();
+
+        // print them in matlab format
+        if ( M_export )
+        {
+            matrix->printMatlab( "A.m" );
+            rhs->printMatlab( "b.m" );
+        }
         vector_ptrtype _sol( this->newVector( detail::datamap(solution) ) );
         // initialize
         *_sol = detail::ref(solution);
@@ -642,7 +653,7 @@ private:
     bool   M_transpose;
     size_type    M_maxit;
     size_type    M_iteration;
-
+    bool M_export;
     std::string M_ksp;
     std::string M_pc;
     std::string M_fieldSplit;
