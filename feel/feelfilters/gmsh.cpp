@@ -45,6 +45,9 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <Gmsh.h>
+#include <GModel.h>
+
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
 #include <feel/feelmesh/hypercube.hpp>
@@ -192,6 +195,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
     std::string fname;
     if ( !mpi::environment::initialized() || (mpi::environment::initialized()  && M_comm.rank() == 0 ) )
         {
+            Log() << "[Gmsh::generate] generate on processor " <<  M_comm.rank() << "/" << M_comm.size() << "\n";
             bool geochanged (generateGeo(__name,__geo,modifGeo));
             std::ostringstream __geoname;
             __geoname << __name << ".geo";
@@ -214,11 +218,15 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
                     //else
                         //generate( __geoname.str(), 3, parametric );
                 }
-            Debug( 10000 ) << "[Gmsh::generate] meshname = " << __meshname.str() << "\n";
+            Log() << "[Gmsh::generate] meshname = " << __meshname.str() << "\n";
             fname=__meshname.str();
         }
     if ( mpi::environment::initialized() )
+    {
         mpi::broadcast( M_comm, fname, 0 );
+        Log() << "[Gmsh::generate] broadcast mesh filename : " << fname << " to all other processes\n";
+
+    }
     return fname;
 }
 std::string
@@ -250,6 +258,7 @@ void
 Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  ) const
 {
 #if HAVE_GMSH
+#if 0
     // generate mesh
     std::ostringstream __str;
     //__str << "gmsh -algo tri -" << dim << " " << "-order " << this->order() << " " << __geoname;
@@ -258,8 +267,34 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
               << " -parametric -" << dim << " " << __geoname;
     else
         __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
-              << " -" << dim << " " << __geoname;
+              << " -" << dim << " -part " << M_partitions  << " " << __geoname;
+    Log() << "[Gmsh::generate] execute '" <<  __str.str() << "\n";
+
     auto err = ::system( __str.str().c_str() );
+#else
+    // Initialize static stuff (parser symbols, options)
+    int argc = 5;
+    char**argv = new char*[5];
+    argv[0] = new char[5];
+    strcpy( argv[0], "gmsh" );
+    Log() << "argv[0] = " << argv[0] << "\n";
+    argv[1] = new char[3];
+    strcpy( argv[1], (boost::format( "-%1%" ) % dim).str().c_str() );
+    Log() << "argv[1] = " << argv[1] << "\n";
+    argv[2] = new char[6];
+    strcpy( argv[2], "-part" );
+    Log() << "argv[2] = " << argv[2] << "\n";
+    argv[3] = new char[4];
+    strcpy( argv[3], (boost::format( "%1%" ) % M_partitions).str().c_str() );
+    Log() << "argv[3] = " << argv[3] << "\n";
+    argv[4] = new char[__geoname.size()];
+    strcpy( argv[4], __geoname.c_str() );
+    Log() << "argv[4] = " << argv[4] << "\n";
+    new GModel();
+    GmshInitialize(argc, argv);
+    GmshBatch();
+    GmshFinalize();
+#endif
 #else
     throw std::invalid_argument("Gmsh is not available on this system");
 #endif
