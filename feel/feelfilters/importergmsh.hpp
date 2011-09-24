@@ -119,28 +119,28 @@ public:
         super( GMSH ),
         _M_version( FEEL_GMSH_FORMAT_VERSION ),
         M_use_elementary_region_as_physical_region( false )
-    {
-        //showMe();
-    }
+        {
+            //showMe();
+        }
 
     explicit ImporterGmsh( std::string const& fname, std::string version = FEEL_GMSH_FORMAT_VERSION )
         :
         super( fname, GMSH ),
         _M_version( version ),
         M_use_elementary_region_as_physical_region( false )
-    {
-        //showMe();
-    }
+        {
+            //showMe();
+        }
     ImporterGmsh( ImporterGmsh const & i )
         :
         super( i ),
         _M_version( i._M_version ),
         M_use_elementary_region_as_physical_region( false )
-    {
-        //showMe();
-    }
+        {
+            //showMe();
+        }
     ~ImporterGmsh()
-    {}
+        {}
 
     //@}
 
@@ -159,6 +159,11 @@ public:
      * @return the file format version
      */
     std::string version() const { return _M_version; }
+
+    /**
+     * \return true if the element is on processor or is a ghost cell
+     */
+    bool isElementOnProcessor( std::vector<int> const& tags ) const;
 
     //@}
 
@@ -226,9 +231,31 @@ ImporterGmsh<MeshType>::showMe() const
     Log() << "[ImporterGmsh::showMe]    npoints_per_edge = " << npoints_per_edge << "\n";
 }
 template<typename MeshType>
+bool
+ImporterGmsh<MeshType>::isElementOnProcessor( std::vector<int> const& tag ) const
+{
+    mpi::communicator world;
+    bool is_element_on_processor = false;
+
+    // tag[2] is the number of partition tags (1 in general 2 if cell share an
+    // face with 2 processors)
+    if ( ( tag[2] == 1 || tag[2] == 2 ) &&
+         tag[3] == world.rank() )
+        is_element_on_processor = true;
+
+    // ghosts cells
+    if ( tag[2] == 2 &&
+         tag[3] != world.rank() &&
+         tag[4] == world.rank() )
+        is_element_on_processor = true;
+
+    return is_element_on_processor;
+}
+template<typename MeshType>
 void
 ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 {
+
     if ( this->version() != "1.0" &&
          this->version() != "2.0" &&
          this->version() != "2.1" &&
@@ -257,46 +284,46 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
            (this->version() == "2.2") ||
            (this->version() == FEEL_GMSH_FORMAT_VERSION ) )  &&
          std::string( __buf ) == "$MeshFormat" )
+    {
+        std::string theversion;
+        // version file-type(0=ASCII,1=BINARY) data-size(sizeof(double))
+        __is >> theversion >> __buf >> __buf;
+        FEEL_ASSERT( boost::lexical_cast<double>( theversion ) >= 2 )( theversion )( this->version() ).warn( "invalid gmsh file format version ");
+        // should be $EndMeshFormat
+        __is >> __buf;
+        FEEL_ASSERT( std::string( __buf ) == "$EndMeshFormat" )
+            ( __buf )
+            ( "$EndMeshFormat").error ( "invalid file format entry" );
+        __is >> __buf;
+        Debug( 8011 ) << "[importergmsh] " << __buf << " (expect $PhysicalNames)\n";
+        if ( std::string( __buf ) == "$PhysicalNames" )
         {
-            std::string theversion;
-            // version file-type(0=ASCII,1=BINARY) data-size(sizeof(double))
-            __is >> theversion >> __buf >> __buf;
-            FEEL_ASSERT( boost::lexical_cast<double>( theversion ) >= 2 )( theversion )( this->version() ).warn( "invalid gmsh file format version ");
-            // should be $EndMeshFormat
-            __is >> __buf;
-            FEEL_ASSERT( std::string( __buf ) == "$EndMeshFormat" )
-                ( __buf )
-                ( "$EndMeshFormat").error ( "invalid file format entry" );
-            __is >> __buf;
-            Debug( 8011 ) << "[importergmsh] " << __buf << " (expect $PhysicalNames)\n";
-            if ( std::string( __buf ) == "$PhysicalNames" )
+            int nnames;
+            __is >> nnames;
+            for( int n = 0; n < nnames; ++n )
+            {
+                int id, topodim;
+                std::string name;
+                if ( boost::lexical_cast<double>( this->version()) >= 2.1  )
                 {
-                    int nnames;
-                    __is >> nnames;
-                    for( int n = 0; n < nnames; ++n )
-                        {
-                            int id, topodim;
-                            std::string name;
-                            if ( boost::lexical_cast<double>( this->version()) >= 2.1  )
-                            {
-                                __is >> topodim >> id >> name;
-                                Debug( 8011 ) << "[importergmsh] reading topodim: "  << topodim << " id: " << id << " name: " << name << "\n";
-                            }
-                            else if ( this->version() == "2.0" )
-                                __is >> id >> name;
-                            boost::trim( name );
-                            boost::trim_if(name,boost::is_any_of("\""));
-
-                            mesh->addMarkerName( std::make_pair( name, boost::make_tuple( id, topodim ) ) );
-                        }
-                    FEEL_ASSERT( mesh->markerNames().size() == nnames )( mesh->markerNames().size() )( nnames ).error( "invalid number of physical names" );
-                    __is >> __buf;
-                    FEEL_ASSERT( std::string( __buf ) == "$EndPhysicalNames" )
-                        ( __buf )
-                        ( "$EndPhysicalNames").error ( "invalid file format entry" );
-                    __is >> __buf;
+                    __is >> topodim >> id >> name;
+                    Debug( 8011 ) << "[importergmsh] reading topodim: "  << topodim << " id: " << id << " name: " << name << "\n";
                 }
+                else if ( this->version() == "2.0" )
+                    __is >> id >> name;
+                boost::trim( name );
+                boost::trim_if(name,boost::is_any_of("\""));
+
+                mesh->addMarkerName( std::make_pair( name, boost::make_tuple( id, topodim ) ) );
+            }
+            FEEL_ASSERT( mesh->markerNames().size() == nnames )( mesh->markerNames().size() )( nnames ).error( "invalid number of physical names" );
+            __is >> __buf;
+            FEEL_ASSERT( std::string( __buf ) == "$EndPhysicalNames" )
+                ( __buf )
+                ( "$EndPhysicalNames").error ( "invalid file format entry" );
+            __is >> __buf;
         }
+    }
 
     //
     // Read NODES
@@ -326,27 +353,27 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     Debug( 8011 ) << "reading "<< __n << " nodes\n";
     std::map<int,int> itoii;
     for( uint __i = 0; __i < __n;++__i )
+    {
+        uint __ni;
+        __is >> __ni
+             >> __x[3*__i]
+             >> __x[3*__i+1]
+             >> __x[3*__i+2];
+        if ( has_parametric_nodes )
         {
-            uint __ni;
-            __is >> __ni
-                 >> __x[3*__i]
-                 >> __x[3*__i+1]
-                 >> __x[3*__i+2];
-            if ( has_parametric_nodes )
-            {
-                __is >> __gdim[__i] >> __gtag[__i];
-                // if gdim == 0 then u = v = 0
-                // if gdim == 3 then no need for a parametric point
-                // this logic is done later when filling the mesh data structure
-                if ( __gdim[__i] == 1 )
-                    __is >> __uv[2*__i];
-                else if ( __gdim[__i] == 2 )
-                    __is >> __uv[2*__i] >> __uv[2*__i+1];
-            }
-            // stores mapping to be able to reorder the indices
-            // so that they are contiguous
-            itoii[__ni] = __i;
+            __is >> __gdim[__i] >> __gtag[__i];
+            // if gdim == 0 then u = v = 0
+            // if gdim == 3 then no need for a parametric point
+            // this logic is done later when filling the mesh data structure
+            if ( __gdim[__i] == 1 )
+                __is >> __uv[2*__i];
+            else if ( __gdim[__i] == 2 )
+                __is >> __uv[2*__i] >> __uv[2*__i+1];
         }
+        // stores mapping to be able to reorder the indices
+        // so that they are contiguous
+        itoii[__ni] = __i;
+    }
 
     __is >> __buf;
     Debug( 8011 ) << "buf: "<< __buf << "\n";
@@ -420,42 +447,42 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     nptable[31]=56;
 
     for( uint __i = 0; __i < __nele;++__i )
+    {
+        int __ne, __t, __physical_region, __np, __dummy, __elementary_region = 1, __partition_region = 0;
+        int npartitions=1;
+        std::vector<int> partitions;
+        if ( this->version() == "1.0" )
         {
-            int __ne, __t, __physical_region, __np, __dummy, __elementary_region = 1, __partition_region = 0;
-            int npartitions=1;
-            std::vector<int> partitions;
-            if ( this->version() == "1.0" )
-                {
-                    __is >> __ne  // elm-number
-                         >> __t // elm-type
-                         >> __physical_region // reg-phys
-                         >> __elementary_region // reg-elem
-                         >> __np; // number-of-nodes
-                    FEEL_ASSERT( __np == nptable[__t] )( __np )( __t )( nptable[__t] ).error( "invalid number of nodes" );
-                }
-            else if ( boost::lexical_cast<double>( this->version()) >= 2  )
-                {
-                    int __ntag;
-                    __is >> __ne  // elm-number
-                         >> __t // elm-type
-                         >> __ntag; // number-of-tags
-                    for( int t = 0; t < __ntag; ++t )
-                    {
-                        int tag;
-                        // tag=1 physical region
-                        // tag=2 elementary region
-                        // tag=3 n partition tags
-                        // tag=4.. partition ids
-                        __is >> tag;
-                        if ( tag < 0 )
-                            __et[__i].push_back( -tag );
-                        else
-                            __et[__i].push_back( tag );
-                    }
-                    __np = nptable[__t];
-
-                    Debug( 8011 ) << "element type: " << __t << " nb pts: " << __np << "\n";
-                }
+            __is >> __ne  // elm-number
+                 >> __t // elm-type
+                 >> __physical_region // reg-phys
+                 >> __elementary_region // reg-elem
+                 >> __np; // number-of-nodes
+            FEEL_ASSERT( __np == nptable[__t] )( __np )( __t )( nptable[__t] ).error( "invalid number of nodes" );
+        }
+        else if ( boost::lexical_cast<double>( this->version()) >= 2  )
+        {
+            int __ntag;
+            __is >> __ne  // elm-number
+                 >> __t // elm-type
+                 >> __ntag; // number-of-tags
+            for( int t = 0; t < __ntag; ++t )
+            {
+                int tag;
+                // tag=1 physical region
+                // tag=2 elementary region
+                // tag=3 n partition tags
+                // tag=4.. partition ids
+                __is >> tag;
+                if ( tag < 0 )
+                    __et[__i].push_back( -tag );
+                else
+                    __et[__i].push_back( tag );
+            }
+            // shift partition id according to processor ids
+            if ( __ntag == 4 || __ntag == 5 ) __et[__i][3] -= 1;
+            // shift partition id of ghost cells according to processor ids
+            if ( __ntag == 5 ) __et[__i][4] -= 1;
 
             ++__gt[ __t ];
             __etype[__i] = GMSH_ENTITY(__t);
@@ -474,15 +501,15 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             __e[__i].resize( __np );
             int __p = 0;
             while ( __p != __np )
-                {
-                    __is >> __e[__i][__p];
+            {
+                __is >> __e[__i][__p];
+                // reorder the nodes since they may not have had a contiguous ordering
+                __e[__i][__p] = itoii[ __e[__i][__p]];
 
-                    // reorder the nodes since they may not have had a contiguous ordering
-                    __e[__i][__p] = itoii[ __e[__i][__p]];
-
-                    ++__p;
-                }
+                ++__p;
+            }
         }
+    }
 
     // make sure that we have read everything
     __is >> __buf;
@@ -494,9 +521,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     // read physical names
     if ( boost::lexical_cast<double>( this->version()) >= 2  )
-        {
+    {
 
-        }
+    }
 
     //
     // FILL Mesh Data Structure
@@ -507,73 +534,75 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     std::vector<int> vv( 2, 0 );
     __whichboundary.assign( __n, vv );
     for( uint __i = 0; __i < __nele;++__i )
+    {
+        if ( isElementOnProcessor( __et[__i] ) == false )
+            continue;
+        switch( __etype[__i] )
         {
-            switch( __etype[__i] )
-                {
-                case GMSH_POINT:
-                    if ( mesh_type::nDim == 1 )
-                        {
-                            __isonboundary[ __e[__i][0] ] = true;
+        case GMSH_POINT:
+            if ( mesh_type::nDim == 1 )
+            {
+                __isonboundary[ __e[__i][0] ] = true;
 
-                            __whichboundary[__e[__i][0] ] = __et[__i];
-                        }
-                    break;
-                case GMSH_LINE:
-                case GMSH_LINE_2:
-                case GMSH_LINE_3:
-                case GMSH_LINE_4:
-                case GMSH_LINE_5:
-                    if ( mesh_type::nDim == 2 )
-                        {
-                            for( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
-                                {
-                                    __isonboundary[ __e[__i][jj] ] = true;
-                                    __whichboundary[__e[__i][jj] ] = __et[__i];
-                                }
-                        }
-                    break;
-                case GMSH_QUADRANGLE:
-                case GMSH_QUADRANGLE_2:
-                case GMSH_TRIANGLE:
-                case GMSH_TRIANGLE_2:
-                case GMSH_TRIANGLE_3:
-                case GMSH_TRIANGLE_4:
-                case GMSH_TRIANGLE_5:
-                    if ( mesh_type::nDim == 3 )
-                        {
-                            for( uint16_type jj = 0; jj < npoints_per_face; ++jj )
-                                {
-                                    __isonboundary[ __e[__i][jj] ] = true;
-                                    __whichboundary[__e[__i][jj] ] = __et[__i];
-                                }
-                        }
-                    break;
-                default:
-                    break;
+                __whichboundary[__e[__i][0] ] = __et[__i];
+            }
+            break;
+        case GMSH_LINE:
+        case GMSH_LINE_2:
+        case GMSH_LINE_3:
+        case GMSH_LINE_4:
+        case GMSH_LINE_5:
+            if ( mesh_type::nDim == 2 )
+            {
+                for( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
+                {
+                    __isonboundary[ __e[__i][jj] ] = true;
+                    __whichboundary[__e[__i][jj] ] = __et[__i];
                 }
+            }
+            break;
+        case GMSH_QUADRANGLE:
+        case GMSH_QUADRANGLE_2:
+        case GMSH_TRIANGLE:
+        case GMSH_TRIANGLE_2:
+        case GMSH_TRIANGLE_3:
+        case GMSH_TRIANGLE_4:
+        case GMSH_TRIANGLE_5:
+            if ( mesh_type::nDim == 3 )
+            {
+                for( uint16_type jj = 0; jj < npoints_per_face; ++jj )
+                {
+                    __isonboundary[ __e[__i][jj] ] = true;
+                    __whichboundary[__e[__i][jj] ] = __et[__i];
+                }
+            }
+            break;
+        default:
+            break;
         }
+    }
 
     // add the points to the mesh
     for( uint __i = 0; __i < __n;++__i )
+    {
+        node_type __n( mesh_type::nRealDim );
+        for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
+            __n[j] = __x[3*__i+j];
+        point_type __pt( __i,__n, __isonboundary[ __i ] );
+        __pt.setOnBoundary( __isonboundary[ __i ] );
+        __pt.setTags( __whichboundary[__i] );
+        if ( has_parametric_nodes )
         {
-            node_type __n( mesh_type::nRealDim );
-            for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
-                __n[j] = __x[3*__i+j];
-            point_type __pt( __i,__n, __isonboundary[ __i ] );
-            __pt.setOnBoundary( __isonboundary[ __i ] );
-            __pt.setTags( __whichboundary[__i] );
-            if ( has_parametric_nodes )
+            __pt.setGDim( __gdim[__i] );
+            __pt.setGTag( __gtag[__i] );
+            if ( __gdim[__i] < 3 )
             {
-                __pt.setGDim( __gdim[__i] );
-                __pt.setGTag( __gtag[__i] );
-                if ( __gdim[__i] < 3 )
-                {
-                    __pt.setParametricCoordinates( __uv[2*__i], __uv[2*__i+1] );
-                    mesh->setParametric( true );
-                }
+                __pt.setParametricCoordinates( __uv[2*__i], __uv[2*__i+1] );
+                mesh->setParametric( true );
             }
-            mesh->addPoint( __pt );
         }
+        mesh->addPoint( __pt );
+    }
 
     _M_n_vertices.resize( __n );
     _M_n_vertices.assign( __n, 0 );
@@ -582,49 +611,51 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     // add the element to the mesh
     for( uint __i = 0; __i < __nele;++__i )
+    {
+        if ( isElementOnProcessor( __et[__i] ) == false )
+            continue;
+        switch( __etype[__i] )
         {
-            switch( __etype[__i] )
-                {
-                    // Points
-                case GMSH_POINT:
-                    addPoint( mesh, __e[__i], __et[__i], __etype[__i] );
-                    break;
+            // Points
+        case GMSH_POINT:
+            addPoint( mesh, __e[__i], __et[__i], __etype[__i] );
+            break;
 
-                    // Edges
-                case GMSH_LINE:
-                case GMSH_LINE_2:
-                case GMSH_LINE_3:
-                case GMSH_LINE_4:
-                case GMSH_LINE_5:
-                    addEdge( mesh, __e[__i], __et[__i], __etype[__i] );
-                    break;
+            // Edges
+        case GMSH_LINE:
+        case GMSH_LINE_2:
+        case GMSH_LINE_3:
+        case GMSH_LINE_4:
+        case GMSH_LINE_5:
+            addEdge( mesh, __e[__i], __et[__i], __etype[__i] );
+            break;
 
-                    // Faces
-                case GMSH_TRIANGLE:
-                case GMSH_TRIANGLE_2:
-                case GMSH_TRIANGLE_3:
-                case GMSH_TRIANGLE_4:
-                case GMSH_TRIANGLE_5:
-                case GMSH_QUADRANGLE:
-                case GMSH_QUADRANGLE_2:
-                    addFace( mesh, __e[__i], __et[__i], __etype[__i] );
-                    break;
+            // Faces
+        case GMSH_TRIANGLE:
+        case GMSH_TRIANGLE_2:
+        case GMSH_TRIANGLE_3:
+        case GMSH_TRIANGLE_4:
+        case GMSH_TRIANGLE_5:
+        case GMSH_QUADRANGLE:
+        case GMSH_QUADRANGLE_2:
+            addFace( mesh, __e[__i], __et[__i], __etype[__i] );
+            break;
 
-                    // Volumes
-                case GMSH_TETRAHEDRON:
-                case GMSH_TETRAHEDRON_2:
-                case GMSH_TETRAHEDRON_3:
-                case GMSH_TETRAHEDRON_4:
-                case GMSH_TETRAHEDRON_5:
-                case GMSH_HEXAHEDRON:
-                case GMSH_HEXAHEDRON_2:
+            // Volumes
+        case GMSH_TETRAHEDRON:
+        case GMSH_TETRAHEDRON_2:
+        case GMSH_TETRAHEDRON_3:
+        case GMSH_TETRAHEDRON_4:
+        case GMSH_TETRAHEDRON_5:
+        case GMSH_HEXAHEDRON:
+        case GMSH_HEXAHEDRON_2:
 
-                    addVolume( mesh, __e[__i], __et[__i], __etype[__i] );
-                    break;
-                default:
-                    break;
-                }
-        } // loop over geometric entities in gmsh file (can be elements or faces)
+            addVolume( mesh, __e[__i], __et[__i], __etype[__i] );
+            break;
+        default:
+            break;
+        }
+    } // loop over geometric entities in gmsh file (can be elements or faces)
 
     mesh->setNumVertices( std::accumulate( _M_n_vertices.begin(), _M_n_vertices.end(), 0 ) );
 
@@ -687,10 +718,10 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, st
          type == GMSH_LINE_3 ||
          type == GMSH_LINE_4 ||
          type == GMSH_LINE_5 )
-        {
-            for( uint16_type jj = 0; jj < npoints_per_element; ++jj )
-                e.setPoint( jj, mesh->point( __e[jj] ) );
-        }
+    {
+        for( uint16_type jj = 0; jj < npoints_per_element; ++jj )
+            e.setPoint( jj, mesh->point( __e[jj] ) );
+    }
 
     mesh->addElement( e );
 
@@ -714,10 +745,10 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, s
          type == GMSH_LINE_3 ||
          type == GMSH_LINE_4 ||
          type == GMSH_LINE_5 )
-        {
-            for( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
-                pf.setPoint( jj, mesh->point( __e[jj] ) );
-        }
+    {
+        for( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
+            pf.setPoint( jj, mesh->point( __e[jj] ) );
+    }
 
     _M_n_vertices[ __e[0] ] = 1;
     _M_n_vertices[ __e[1] ] = 1;
@@ -767,13 +798,13 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
          type == GMSH_TRIANGLE_3 ||
          type == GMSH_TRIANGLE_4 ||
          type == GMSH_TRIANGLE_5 )
+    {
+        for( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
-            for( uint16_type jj = 0; jj < npoints_per_element; ++jj )
-            {
-                //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
-                pf.setPoint( ordering.fromGmshId(jj), mesh->point( __e[jj] ) );
-            }
+            //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
+            pf.setPoint( ordering.fromGmshId(jj), mesh->point( __e[jj] ) );
         }
+    }
 
     mesh->addElement( pf );
 
@@ -801,11 +832,11 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
          type == GMSH_TRIANGLE_3 ||
          type == GMSH_TRIANGLE_4 ||
          type == GMSH_TRIANGLE_5 )
-        {
-            for( uint16_type jj = 0; jj < npoints_per_face; ++jj )
-                pf.setPoint( ordering.fromGmshId(jj), mesh->point( __e[jj] ) );
-            //pf.setPoint( jj, mesh->point( __e[jj] ) );
-        }
+    {
+        for( uint16_type jj = 0; jj < npoints_per_face; ++jj )
+            pf.setPoint( ordering.fromGmshId(jj), mesh->point( __e[jj] ) );
+        //pf.setPoint( jj, mesh->point( __e[jj] ) );
+    }
 
     pf.setOnBoundary( true );
     bool inserted;
@@ -852,13 +883,13 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e,
          type == GMSH_TETRAHEDRON_3 ||
          type == GMSH_TETRAHEDRON_4 ||
          type == GMSH_TETRAHEDRON_5 )
+    {
+        for( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
-            for( uint16_type jj = 0; jj < npoints_per_element; ++jj )
-            {
-                //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
-                pv.setPoint( ordering.fromGmshId(jj), mesh->point( __e[jj] ) );
-            }
+            //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
+            pv.setPoint( ordering.fromGmshId(jj), mesh->point( __e[jj] ) );
         }
+    }
     mesh->addElement( pv );
 
     _M_n_vertices[ __e[0] ] = 1;
@@ -866,12 +897,12 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e,
     _M_n_vertices[ __e[2] ] = 1;
     _M_n_vertices[ __e[3] ] = 1;
     if ( type == GMSH_HEXAHEDRON )
-        {
-            _M_n_vertices[ __e[4] ] = 1;
-            _M_n_vertices[ __e[5] ] = 1;
-            _M_n_vertices[ __e[6] ] = 1;
-            _M_n_vertices[ __e[7] ] = 1;
-        }
+    {
+        _M_n_vertices[ __e[4] ] = 1;
+        _M_n_vertices[ __e[5] ] = 1;
+        _M_n_vertices[ __e[6] ] = 1;
+        _M_n_vertices[ __e[7] ] = 1;
+    }
 
 }
 

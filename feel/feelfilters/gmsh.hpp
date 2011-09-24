@@ -666,7 +666,6 @@ BOOST_PARAMETER_FUNCTION(
     desc->setNumberOfPartitions( partitions );
     desc->setPartitioner( partitioner );
     desc->setMshFileByPartition( partition_file );
-
     std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
 
 
