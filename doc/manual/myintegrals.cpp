@@ -147,7 +147,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
      */
 	//# marker11 #
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                                         _desc=domain( _name= (boost::format( "%1%-%2%" ) % shape % Dim).str() ,
                                                       _shape=shape,
                                                       _order=1,
@@ -156,11 +156,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                         _partitions=this->comm().size());
 
 	//# endmarker11 #
-    Log() << "mesh loaded\n";
-    Log() << "Number of elements: " << mesh->numElements() << "\n";
-    Log() << "   Number of faces: " << mesh->numFaces() << "\n";
-    Log() << "  Number of points: " << mesh->numPoints() << "\n";
-    this->comm().barrier();
+
     /*
      * Compute domain Area
      */
@@ -168,22 +164,18 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     double local_domain_area = integrate( elements(mesh),
                                           constant(1.0)).evaluate()(0,0);
     //# endmarker1 #
-    Log() << "local integral computed: " << local_domain_area << "\n";
-    this->comm().barrier();
+
     //# marker2 #
     double global_domain_area=local_domain_area;
-    if ( this->comm().size()  > 1 )
-        mpi::all_reduce( this->comm(),
-                         local_domain_area,
-                         global_domain_area,
-                         std::plus<double>());
-                         //[] ( double x, double y ) { return x + y; } );
+    mpi::all_reduce( world,
+                     local_domain_area,
+                     global_domain_area,
+                     [] ( double x, double y ) { return x + y; } );
     //# endmarker2 #
     //# marker3 #
     Log() << "int_Omega 1 = " << global_domain_area
           << "[ " << local_domain_area << " ]\n";
     //# endmarker3 #
-
     if ( Dim > 1 )
     {
         /*
@@ -193,11 +185,10 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
         double local_boundary_length = integrate( boundaryfaces(mesh),
                                                   constant(1.0)).evaluate()(0,0);
         double global_boundary_length = local_boundary_length;
-        if ( this->comm().size() > 1 )
-            mpi::all_reduce( this->comm(),
-                             local_boundary_length,
-                             global_boundary_length,
-                             std::plus<double>() );
+        mpi::all_reduce( this->comm(),
+                         local_boundary_length,
+                         global_boundary_length,
+                         std::plus<double>() );
         Log() << "int_BoundaryOmega (1)= " << global_boundary_length
               << "[ " << local_boundary_length << " ]\n";
         //# endmarker4 #
@@ -214,11 +205,10 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                    ).evaluate()(0,0);
     //# endmarker5 #
     double global_intf = local_intf;
-    if ( this->comm().size() > 1 )
-        mpi::all_reduce( this->comm(),
-                         local_intf,
-                         global_intf,
-                         std::plus<double>() );
+    mpi::all_reduce( this->comm(),
+                     local_intf,
+                     global_intf,
+                     std::plus<double>() );
     Log() << "int_Omega (x^2+y^2+z^2) = " << global_intf
           << "[ " << local_intf << " ]\n";
 
@@ -228,11 +218,10 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                     ).evaluate()(0,0);
     //# endmarker6 #
     double global_intsin = local_intsin;
-    if ( this->comm().size() > 1 )
-        mpi::all_reduce( this->comm(),
-                         local_intsin,
-                         global_intsin,
-                         std::plus<double>() );
+    mpi::all_reduce( this->comm(),
+                     local_intsin,
+                     global_intsin,
+                     std::plus<double>() );
     Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << global_intsin
           << "[ " << local_intsin << " ]\n";
 
@@ -243,11 +232,10 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                     ).evaluate()(0,0);
     //# endmarker7 #
     double global_intsin2 = local_intsin2;
-    if ( this->comm().size() > 1 )
-        mpi::all_reduce( this->comm(),
-                         local_intsin2,
-                         global_intsin2,
-                         std::plus<double>() );
+    mpi::all_reduce( this->comm(),
+                     local_intsin2,
+                     global_intsin2,
+                     std::plus<double>() );
     Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = " << global_intsin2
           << "[ " << local_intsin2 << " ]\n";
 
