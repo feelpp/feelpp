@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -100,9 +100,9 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 elements( MeshType const& mesh, flag_type flag, mpl::bool_<false> )
 {
 
-    Debug(4000) << "[filters] elements on proc " << mesh.comm().rank() << " flag = " << flag << "\n";
-    Debug(4000) << "[filters] elements begin id : " << mesh.beginElementWithProcessId( flag )->id() << "\n";
-    Debug(4000) << "[filters] elements n : " << std::distance( mesh.beginElementWithProcessId( flag ),
+    Log() << "[filters] elements on proc " << mesh.comm().rank() << " flag = " << flag << "\n";
+    Log() << "[filters] elements begin id : " << mesh.beginElementWithProcessId( flag )->id() << "\n";
+    Log() << "[filters] elements n : " << std::distance( mesh.beginElementWithProcessId( flag ),
                                                                mesh.endElementWithProcessId( flag ) )
                 << "\n";
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
@@ -770,7 +770,7 @@ markedfaces( MeshType const& mesh,
              flag_type __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    Debug(4000) << "[markedfaces] marker = " << __marker << "\n";
+    Log() << "[markedfaces] marker = " << __marker << "\n";
     return detail::markedfaces( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 /**
@@ -791,7 +791,7 @@ markedfaces( MeshType const& mesh,
              std::string const& __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    Debug(4000) << "[markedfaces] marker = " << __marker << " id: "<< mesh->markerName( __marker ) << "\n";
+    Log() << "[markedfaces] marker = " << __marker << " id: "<< mesh->markerName( __marker ) << "\n";
     return detail::markedfaces( mesh, mesh->markerName(__marker), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
