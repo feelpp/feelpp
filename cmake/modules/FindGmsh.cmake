@@ -30,9 +30,9 @@ FIND_PATH(GMSH_INCLUDE_DIR
   DOC "Directory where GMSH header files are stored" )
 
 
-#CHECK_INCLUDE_FILE_CXX(GMSH.h HAVE_GMSH_H)
+#CHECK_INCLUDE_FILE_CXX(Gmsh.h HAVE_GMSH_H)
 
-FIND_LIBRARY(GMSH_LIBRARY Gmsh
+FIND_LIBRARY(GMSH_LIBRARY gmsh
   /usr/lib
   /usr/local/lib
   )
