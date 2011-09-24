@@ -1,12 +1,12 @@
 # -*- mode: org -*-
 
-* TODO
- - paper August 15
- - integration
- - solver NS
-   - preconditioners
-   - slip conditions
-   - newton/fix point
- - environment
-   - mac
-   -
+* TODO [0/3]
+ - [ ] paper August 15
+ - [ ] integration
+ - [ ] solver NS [0/3]
+   - [ ] preconditioners
+   - [ ] slip conditions
+   - [ ] newton/fix point
+ - [ ] environment [0/0]
+   - [ ] mac
+
