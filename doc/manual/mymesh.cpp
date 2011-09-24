@@ -144,6 +144,7 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     //Environment::setLogs( this->about().appName() );
     //# marker4 #
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
                                               _shape=shape,
                                               _dim=Dim,
@@ -151,9 +152,12 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                 _partitions=this->comm().size());
     //# endmarker4 #
 
-    Log() << "Number of elements: " << mesh->numElements() << "\n";
-    Log() << "   Number of faces: " << mesh->numFaces() << "\n";
-    Log() << "  Number of points: " << mesh->numPoints() << "\n";
+    int ne = std::distance( mesh->beginElementWithProcessId( this->comm().rank() ),
+                            mesh->endElementWithProcessId( this->comm().rank() ) );
+    Log() << "Local number of elements: " << ne << "\n";
+    int gne;
+    mpi::all_reduce( this->comm(), ne, gne, [] ( double x, double y ) { return x + y; } );
+    Log() << "Global number of elements: " << gne << "\n";
 
     //# marker62 #
     exporter->step(0)->setMesh( mesh );
