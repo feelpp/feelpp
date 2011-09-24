@@ -141,14 +141,19 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                    % shape
                                    % Dim
                                    % meshSize );
+    //Environment::setLogs( this->about().appName() );
     //# marker4 #
-auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                         _shape=shape,
-                                         _dim=Dim,
-                                         _h=X[0] ) );
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                                              _shape=shape,
+                                              _dim=Dim,
+                                              _h=X[0] ),
+                                _partitions=this->comm().size());
     //# endmarker4 #
 
+    Log() << "Number of elements: " << mesh->numElements() << "\n";
+    Log() << "   Number of faces: " << mesh->numFaces() << "\n";
+    Log() << "  Number of points: " << mesh->numPoints() << "\n";
 
     //# marker62 #
     exporter->step(0)->setMesh( mesh );
@@ -170,9 +175,9 @@ int main( int argc, char** argv )
         return 0;
     }
 
-    app.add( new MyMesh<1>( app.vm(), app.about() ) );
+    //app.add( new MyMesh<1>( app.vm(), app.about() ) );
     app.add( new MyMesh<2>( app.vm(), app.about() ) );
-    app.add( new MyMesh<3>( app.vm(), app.about() ) );
+    //app.add( new MyMesh<3>( app.vm(), app.about() ) );
 
     app.run();
 }
