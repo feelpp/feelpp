@@ -167,7 +167,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
 
     //# marker2 #
     double global_domain_area=local_domain_area;
-    mpi::all_reduce( world,
+    mpi::all_reduce( this->comm(),
                      local_domain_area,
                      global_domain_area,
                      [] ( double x, double y ) { return x + y; } );
