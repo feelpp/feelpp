@@ -161,8 +161,8 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
      * Compute domain Area
      */
     //# marker1 #
-    double local_domain_area = integrate( elements(mesh),
-                                          constant(1.0)).evaluate()(0,0);
+    double local_domain_area = integrate( _range=elements(mesh),
+                                          _expr=constant(1.0)).evaluate()(0,0);
     //# endmarker1 #
 
     //# marker2 #
@@ -201,7 +201,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
      */
     //# marker5 #
     double local_intf = integrate( elements(mesh),
-                                   Px()*Px() + Py()*Py() + Pz()*Pz()
+                                   Px()*Px() + Py()*Py() + Pz()*Pz() // trans(P())*P()
                                    ).evaluate()(0,0);
     //# endmarker5 #
     double global_intf = local_intf;
