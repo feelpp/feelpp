@@ -184,7 +184,7 @@ private:
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
-    sparse_matrix_ptrtype M;
+    sparse_matrix_ptrtype M,D;
     vector_ptrtype F;
 
     boost::shared_ptr<export_type> exporter;
