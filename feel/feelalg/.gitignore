@@ -4,6 +4,7 @@
 /Makefile
 /Makefile.in
 /TAGS
+/backend.cpp~
 /cmake_install.cmake
 /liblifealg.a
 /lu.hpp~
