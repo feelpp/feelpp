@@ -227,9 +227,9 @@ template<typename MeshType>
 void
 ImporterGmsh<MeshType>::showMe() const
 {
-    Log() << "[ImporterGmsh::showMe] npoints_per_element = " << npoints_per_element << "\n";
-    Log() << "[ImporterGmsh::showMe]    npoints_per_face = " << npoints_per_face << "\n";
-    Log() << "[ImporterGmsh::showMe]    npoints_per_edge = " << npoints_per_edge << "\n";
+    Debug( 8011 ) << "[ImporterGmsh::showMe] npoints_per_element = " << npoints_per_element << "\n";
+    Debug( 8011 ) << "[ImporterGmsh::showMe]    npoints_per_face = " << npoints_per_face << "\n";
+    Debug( 8011 ) << "[ImporterGmsh::showMe]    npoints_per_edge = " << npoints_per_edge << "\n";
 }
 template<typename MeshType>
 bool
@@ -484,33 +484,34 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             for( int ii = 3; ii < __ntag; ++ ii )
                 __et[__i][ii] -= 1;
 
-            ++__gt[ __t ];
-            __etype[__i] = GMSH_ENTITY(__t);
-			if (M_use_elementary_region_as_physical_region)
-            {
-				__et[__i].push_back(__elementary_region);
-				__et[__i].push_back(__elementary_region);
-			}
-			else
-            {
-				__et[__i].push_back(__physical_region);
-				__et[__i].push_back(__elementary_region);
-			}
+            for( int jj=0;jj < __et[__i].size(); ++jj )
+                Debug( 8011 ) << __et[__i][jj] << " ";
+            Debug( 8011 ) << " is on proc:" << isElementOnProcessor( __et[__i] ) << "\n";
+            __np = nptable[__t];
 
-            __et[__i].push_back(__partition_region);
-            __e[__i].resize( __np );
-            int __p = 0;
-            while ( __p != __np )
-            {
-                __is >> __e[__i][__p];
-                // reorder the nodes since they may not have had a contiguous ordering
-                __e[__i][__p] = itoii[ __e[__i][__p]];
+            Debug( 8011 ) << "element type: " << __t << " nb pts: " << __np << "\n";
+        }
 
-                ++__p;
-            }
+        ++__gt[ __t ];
+        __etype[__i] = GMSH_ENTITY(__t);
+
+        if (M_use_elementary_region_as_physical_region)
+        {
+            __et[__i][0]=__et[__i][1];
+        }
+
+        __e[__i].resize( __np );
+        int __p = 0;
+        while ( __p != __np )
+        {
+            __is >> __e[__i][__p];
+            // reorder the nodes since they may not have had a contiguous ordering
+            __e[__i][__p] = itoii[ __e[__i][__p]];
+
+            ++__p;
         }
     }
-
+    std::cout << "done reading mesh\n";
     // make sure that we have read everything
     __is >> __buf;
     Debug( 8011 ) << "buf: "<< __buf << "\n";
