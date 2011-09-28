@@ -91,6 +91,7 @@ public:
         M_strategy( BDF_STRATEGY_DT_CONSTANT ),
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
+        M_restart( false ),
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER )
     {}
@@ -109,6 +110,7 @@ public:
         M_strategy( (BDFStragegy)args[_strategy | BDF_STRATEGY_DT_CONSTANT] ),
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
+        M_restart(args[_restart | false]),
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER )
         {
@@ -128,6 +130,7 @@ public:
         M_strategy( (BDFStragegy)vm[prefixvm( prefix, "bdf.strategy")].as<int>() ),
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
+        M_restart( vm[prefixvm( prefix, "bdf.restart")].as<bool>() ),
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER )
     {
@@ -145,6 +148,7 @@ public:
         M_strategy( (BDFStragegy)0 ),
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
+        M_restart( false ),
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER )
     {
@@ -163,6 +167,7 @@ public:
         M_strategy( b.M_strategy ),
         M_state( b.M_state ),
         M_n_restart( b.M_n_restart ),
+        M_restart( b.M_restart ),
         M_alpha( b.M_alpha ),
         M_beta( b.M_beta )
     {}
@@ -193,6 +198,7 @@ public:
                 M_dt = b.M_dt;
                 M_iterations_between_order_change = b.M_iterations_between_order_change;
                 M_n_restart = b.M_n_restart;
+                M_restart = b.M_restart;
                 M_strategy = b.M_strategy;
                 M_state = b.M_state;
 
@@ -252,6 +258,9 @@ public:
 
     //! return the number of restarts
     int nRestart() const { return M_n_restart; }
+
+    //! return the value of the bool restart
+    bool boolRestart() const {return M_restart; }
 
     //! return the current time
     double time() const { return M_time; }
@@ -394,6 +403,7 @@ protected:
     mutable BDFState M_state;
 
     int M_n_restart;
+    bool M_restart;
 
     //! timer for real time per iteration
     mutable boost::timer M_timer;
@@ -419,6 +429,7 @@ protected:
 protected:
     void init()
     {
+
         for( int i = 0; i < BDF_MAX_ORDER; ++i )
             {
                 M_alpha[ i ].resize( i+2 );
@@ -465,7 +476,6 @@ protected:
                     }
             }
 
-
         std::ostringstream ostr;
         ostr << "bdf_o_" << M_order << "_dt_" << M_dt;
         M_path_save = ostr.str();
@@ -474,7 +484,7 @@ protected:
         if ( !fs::exists( M_path_save ) )
             fs::create_directory( M_path_save );
 
-        if ( M_Ti != 0.0 )
+        if ( M_restart )
             {
                 // read the saved bdf data
                 if ( fs::exists( M_path_save / "metadata" ) )
@@ -756,7 +766,7 @@ Bdf<SpaceType>::init()
 {
     super::init();
 
-    if ( timeInitial() > 0. )
+    if ( this->boolRestart() )
         {
             for( int p = 0; p < std::min( M_order, M_iteration); ++p )
                 {
