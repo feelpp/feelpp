@@ -1,5 +1,4 @@
 repo: 8a21fd850624c931e448cbcfb38168cb2717c790
-node: 6344922bf0fd30ba513a634cbefebcb71ef554c9
-branch: default
-latesttag: 3.0-beta1
-latesttagdistance: 138
+node: 786d67eaed28d11ba6841e5664f6fe918964c25a
+branch: 3.0
+tag: 3.0.2
