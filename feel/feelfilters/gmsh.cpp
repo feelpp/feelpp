@@ -264,7 +264,7 @@ void
 Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  ) const
 {
 #if HAVE_GMSH
-#if 0
+#if 1
     // generate mesh
     std::ostringstream __str;
     //__str << "gmsh -algo tri -" << dim << " " << "-order " << this->order() << " " << __geoname;
@@ -283,19 +283,20 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     char**argv = new char*[5];
     argv[0] = new char[5];
     strcpy( argv[0], "gmsh" );
-    Log() << "argv[0] = " << argv[0] << "\n";
+    Log() << "argv[0] = " << argv[0] << "xxx\n";
     argv[1] = new char[3];
     strcpy( argv[1], (boost::format( "-%1%" ) % dim).str().c_str() );
-    Log() << "argv[1] = " << argv[1] << "\n";
+    Log() << "argv[1] = " << argv[1] << "xxx\n";
     argv[2] = new char[6];
     strcpy( argv[2], "-part" );
-    Log() << "argv[2] = " << argv[2] << "\n";
-    argv[3] = new char[4];
-    strcpy( argv[3], (boost::format( "%1%" ) % M_partitions).str().c_str() );
-    Log() << "argv[3] = " << argv[3] << "\n";
+    Log() << "argv[2] = " << argv[2] << "xxx\n";
+    std::string nparts = (boost::format( "%1%" ) % M_partitions).str();
+    argv[3] = new char[nparts.size()];
+    strcpy( argv[3], nparts.c_str() );
+    Log() << "argv[3] = " << argv[3] << "xxx\n";
     argv[4] = new char[__geoname.size()];
     strcpy( argv[4], __geoname.c_str() );
-    Log() << "argv[4] = " << argv[4] << "\n";
+    Log() << "argv[4] = " << argv[4] << "xxx\n";
     boost::timer ti;
     std::cout << "Executing ";
     for( int i = 0;i < 5; ++i )
@@ -307,6 +308,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     GmshInitialize(argc, argv);
     GmshBatch();
     GmshFinalize();
+    for(int i = 0;i < 5; ++i ) delete argv[i]; delete argv;
     std::cout << "Executing gmsh done in "<< ti.elapsed() << "s.\n";
 #endif
 #else
