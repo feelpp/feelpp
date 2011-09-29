@@ -457,6 +457,11 @@ public:
                                   mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Hypercube> > >::type::type super;
         typedef typename super::gic_type gic_type;
 
+        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
+                                  mpl::identity<GeoMapInverse<nDim,1,nRealDim,T,Simplex> >,
+                                  mpl::identity<GeoMapInverse<nDim,1,nRealDim,T,Hypercube> > >::type::type super1;
+        typedef typename super1::gic_type gic1_type;
+
         Inverse( boost::shared_ptr<self_type> const& m )
             :
             super(),
@@ -609,6 +614,19 @@ public:
          * Research only one element wich contains the node p
          */
         boost::tuple<bool, size_type,node_type> searchElement(const node_type & p);
+        boost::tuple<bool, size_type,node_type> searchElement(const node_type & p,
+                                                              const matrix_node_type & setPoints,
+                                                              mpl::bool_<false> /**/ )
+        {
+            return searchElement(p);
+        }
+
+        /*---------------------------------------------------------------
+         * Research only one element wich contains the node p and which this elt have as geometric point contain setPoints
+         */
+        boost::tuple<bool, size_type,node_type> searchElement(const node_type & p,
+                                                              const matrix_node_type & setPoints,
+                                                              mpl::bool_<true> /**/);
 
         /*---------------------------------------------------------------
          * Research all elements wich contains the node p
@@ -620,8 +638,22 @@ public:
          * matrix_node_type m. The result is save by this object
          */
         void run_analysis(const matrix_node_type & m);
+        void run_analysis(const matrix_node_type & m,
+                          const matrix_node_type & setPoints,
+                          mpl::bool_<false> /**/)
+        {
+            run_analysis(m);
+        }
 
-        /*
+        /*---------------------------------------------------------------
+         * Research the element wich contains the node p, forall p in the
+         * matrix_node_type m. The result is save by this object
+         */
+        void run_analysis(const matrix_node_type & m,
+                          const matrix_node_type & setPoints,
+                          mpl::bool_<true> /**/);
+
+        /*---------------------------------------------------------------
          * Reset all data
          */
         void reset()
@@ -636,6 +668,12 @@ public:
          *initializes the kd tree and the map between node and list elements
          */
         void init();
+
+        /*---------------------------------------------------------------
+         *search near elt in kd tree and get a sorted list
+         */
+        void searchInKdTree(const node_type & p,
+                            std::list< std::pair<size_type, uint> > & listTri);
 
     private:
 
