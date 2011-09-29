@@ -34,6 +34,17 @@
 namespace Feel
 {
 
+struct InterpolationNonConforme
+{
+    static const bool value=false;
+};
+
+struct InterpolationConforme
+{
+    static const bool value=true;
+};
+
+
 namespace detailsup {
 
     template < typename EltType >
@@ -66,7 +77,8 @@ template<typename DomainSpaceType,
          typename ImageSpaceType,
          typename IteratorRange = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                                                typename MeshTraits<typename ImageSpaceType::mesh_type>::element_const_iterator,
-                                               typename MeshTraits<typename ImageSpaceType::mesh_type>::element_const_iterator> >
+                                               typename MeshTraits<typename ImageSpaceType::mesh_type>::element_const_iterator>,
+         typename InterpType = InterpolationNonConforme >
 class OperatorInterpolation : public OperatorLinear<DomainSpaceType, ImageSpaceType >
 {
     typedef OperatorLinear<DomainSpaceType, ImageSpaceType> super;
@@ -124,6 +136,10 @@ public:
                                                                  mpl::int_< image_mesh_type::face_type::numVertices*dual_image_space_type::fe_type::nDofPerVertex +
                                                                             image_mesh_type::face_type::numEdges*dual_image_space_type::fe_type::nDofPerEdge +
                                                                             image_mesh_type::face_type::numFaces*dual_image_space_type::fe_type::nDofPerFace > >::type::value;
+
+    // type conforme or non conforme
+    typedef InterpType interpolation_type;
+
     //@}
 
     /** @name Constructors, destructor
@@ -203,8 +219,8 @@ private:
 
 };
 
-template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange>
-OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
+template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
                                                                                              dual_image_space_ptrtype const& imagespace,
                                                                                              backend_ptrtype const& backend )
     :
@@ -215,8 +231,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::OperatorIn
 }
 
 
-template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange>
-OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
+template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
                                                                                              dual_image_space_ptrtype const& imagespace,
                                                                                              IteratorRange const& r,
                                                                                              backend_ptrtype const& backend )
@@ -227,9 +243,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::OperatorIn
     update();
 }
 
-template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange>
+template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 void
-OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::update()
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::update()
 {
     if ( this->dualImageSpace()->mesh()->numElements() == 0 )
         return;
@@ -373,8 +389,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::update()
                                             //        size_type gdof = boost::get<1>(*it_dofpt);
                                             //        ublas::column(__ptsReal,0 )= boost::get<0>(*it_dofpt);
                                             //        std::cout << "\nOla comp "<< boost::get<2>(*it_dofpt)<< "\n";
-
+#if 0
                                             __loc->run_analysis(__ptsReal);
+#else
+                                            __loc->run_analysis(__ptsReal,it->G(),mpl::bool_<interpolation_type::value>());
+#endif
                                             itanal = __loc->result_analysis_begin();
                                             itanal_end = __loc->result_analysis_end();
 
@@ -585,14 +604,16 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::update()
 
 
 
-template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange>
-boost::shared_ptr<OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange> >
+template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
+boost::shared_ptr<OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType> >
 opInterp( boost::shared_ptr<DomainSpaceType> const& domainspace,
           boost::shared_ptr<ImageSpaceType> const& imagespace,
           IteratorRange const& r,
-          typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange>::backend_ptrtype const& backend )
+          typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::backend_ptrtype const& backend,
+          InterpType /**/
+          )
 {
-    typedef OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange> operatorinterpolation_type;
+    typedef OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType> operatorinterpolation_type;
 
     boost::shared_ptr<operatorinterpolation_type> opI( new operatorinterpolation_type(domainspace,imagespace,r,backend));
 
@@ -614,7 +635,15 @@ struct compute_opInterpolation_return
                                         typename OperatorInterpolation<domain_space_type, image_space_type>::range_iterator
                                         >::type >::type >::type iterator_range_type;
 
-    typedef boost::shared_ptr<OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type> > type;
+    typedef typename boost::remove_const<
+        typename boost::remove_reference<
+            typename parameter::binding<Args,
+                                        tag::type,
+                                        InterpolationNonConforme
+                                        >::type >::type >::type interpolation_type;
+
+
+    typedef boost::shared_ptr<OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type,interpolation_type> > type;
 };
 
 BOOST_PARAMETER_FUNCTION(
@@ -628,12 +657,13 @@ BOOST_PARAMETER_FUNCTION(
                          (optional
                           (range,          *, elements(imageSpace->mesh())  )
                           (backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build())
+                          (type,           *, InterpolationNonConforme()  )
                           ) // optionnal
                          )
 {
     Feel::detail::ignore_unused_variable_warning(args);
 
-    return opInterp(domainSpace,imageSpace,range,backend);
+    return opInterp(domainSpace,imageSpace,range,backend,type);
 
 } // opInterpolation
 
