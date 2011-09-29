@@ -70,7 +70,10 @@ Gmsh::Gmsh( int nDim, int nOrder )
     M_I( nDim ),
     M_h( 0.1 ),
     M_addmidpoint( true ),
-    M_usePhysicalNames( false )
+    M_usePhysicalNames( false ),
+    M_partitioner( GMSH_PARTITIONER_CHACO ),
+    M_partitions( 1 ),
+    M_partition_file( 0 )
 {
     this->setReferenceDomain();
 }
@@ -82,7 +85,10 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_I( __g.M_I ),
     M_h( __g.M_h ),
     M_addmidpoint( __g.M_addmidpoint ),
-    M_usePhysicalNames( __g.M_usePhysicalNames )
+    M_usePhysicalNames( __g.M_usePhysicalNames ),
+    M_partitioner( __g.M_partitioner ),
+    M_partitions( __g.M_partitions ),
+    M_partition_file( __g.M_partition_file )
 {}
 Gmsh::~Gmsh()
 {}
