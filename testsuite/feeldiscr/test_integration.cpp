@@ -295,7 +295,11 @@ struct test_integration_circle: public Application
         AUTO( mycst, cst_ref( t ) );
 
         t = 1.0;
-        value_type v0 = integrate( elements(mesh), mycst, _Q<2>() ).evaluate()( 0, 0 );
+        //value_type v0 = integrate( elements(mesh), mycst, _Q<2>() ).evaluate()( 0, 0 );
+        value_type v0 = integrate( _range=elements(mesh), _expr=mycst ).evaluate()( 0, 0 );
+        value_type v0x = integrate( _range=elements(mesh), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate()( 0, 0 );
+        value_type v0y = integrate( _range=elements(mesh), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate()( 0, 0 );
+        value_type v0z = integrate( _range=elements(mesh), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate()( 0, 0 );
         BOOST_TEST_MESSAGE( "v0=" << v0 << "\n" );
         value_type v00 = ( integrate( boundaryelements(mesh), mycst, _Q<2>() ).evaluate()( 0, 0 )+
                            integrate( internalelements(mesh), mycst, _Q<2>() ).evaluate()( 0, 0 ) );
@@ -315,7 +319,11 @@ struct test_integration_circle: public Application
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v0, pi, 2e-1 );
+        BOOST_CHECK_CLOSE( v0x, pi, 2e-1 );
+        BOOST_CHECK_CLOSE( v0y, pi, 2e-1 );
+        BOOST_CHECK_CLOSE( v0z, pi, 2e-1 );
         BOOST_CHECK_CLOSE( v0, v00, eps  );
+        BOOST_CHECK_CLOSE( v00, pi, eps  );
 #else
         FEEL_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
         FEEL_ASSERT( math::abs( v0-v00) < eps )( v0 )( v00 )( math::abs( v0-v00) )( eps ).warn ( "v0 != pi" );
