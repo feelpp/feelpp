@@ -147,7 +147,7 @@ Application::initMPI( int argc, char** argv, MPI_Comm comm )
 #else
     int n = 1 ;
 #endif
-    Log() << "[Feel++] TBB running with " << n << " threads\n";
+    Debug( 1000 ) << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(1);
 
 #if defined( HAVE_MPI_H )
@@ -469,7 +469,7 @@ Application::doOptions( int argc, char** argv )
          */
         if ( _M_vm.count("config-file") )
         {
-            std::cout << "[Application] parsing " << _M_vm["config-file"].as<std::string>() << "\n";
+            Debug( 1000 ) << "[Application] parsing " << _M_vm["config-file"].as<std::string>() << "\n";
             if ( fs::exists(  _M_vm["config-file"].as<std::string>() ) )
             {
 
@@ -480,15 +480,19 @@ Application::doOptions( int argc, char** argv )
         }
         std::vector<fs::path> prefixes = boost::assign::list_of( fs::current_path() )
             ( fs::path (Environment::localConfigRepository() ) )
-            ( fs::path (Environment::systemConfigRepository().get<0>() ) );
+            ( fs::path (Environment::systemConfigRepository().get<0>() ) )
+            ( fs::path ("/usr/share/feel/config") )
+            ( fs::path ("/usr/local/share/feel/config") )
+            ( fs::path ("/opt/local/share/feel/config") );
 
         BOOST_FOREACH( auto prefix, prefixes )
         {
             std::string config_name = (boost::format( "%1%/%2%.cfg" ) % prefix.string() % this->about().appName()).str();
             Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
+            Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
             if ( fs::exists( config_name ) )
             {
-                std::cout << "[Application] parsing " << config_name << "\n";
+                Debug( 1000 ) << "[Application] parsing " << config_name << "\n";
                 std::ifstream ifs( config_name.c_str() );
                 store(parse_config_file(ifs, _M_desc, true), _M_vm);
                 break;
@@ -500,7 +504,7 @@ Application::doOptions( int argc, char** argv )
                 Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
                 if ( fs::exists( config_name ) )
                 {
-                    std::cout << "[Application] loading configuration file " << config_name << "...\n";
+                    Debug( 1000 ) << "[Application] loading configuration file " << config_name << "...\n";
                     std::ifstream ifs( config_name.c_str() );
                     store(parse_config_file(ifs, _M_desc, true), _M_vm);
                     break;
@@ -569,10 +573,10 @@ Application::setDimension( int dim )
 void
 Application::setLogs()
 {
-    Log().detachAll();
+    Debug( 1000 ).detachAll();
     std::ostringstream ostr;
     ostr << this->about().appName() << "-" << nProcess()  << "." << processId();
-    Log().attach( ostr.str() );
+    Debug( 1000 ).attach( ostr.str() );
 
     std::ostringstream ostr_assert;
     ostr_assert << this->about().appName() << "_assertions" << "-" << nProcess()  << "." << processId();
