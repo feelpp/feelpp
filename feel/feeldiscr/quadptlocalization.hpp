@@ -184,13 +184,13 @@ public :
     {
         //search element
         auto elt_it = this->beginElement();
-        for (uint i=0;i<theIdElt;++i) ++elt_it;
+        for (size_type i=0;i<theIdElt;++i) ++elt_it;
 
         // get only usefull quad point and reoder
-        uint nContextPt = indexLocalToQuad.size();
+        uint16_type nContextPt = indexLocalToQuad.size();
         matrix_node_type quadPtsRef = this->im().points();
         matrix_node_type newquadPtsRef(quadPtsRef.size1() , nContextPt);
-        for (uint i=0;i<nContextPt; ++i)
+        for (uint16_type i=0;i<nContextPt; ++i)
             {
                 ublas::column( newquadPtsRef, i ) = ublas::column( quadPtsRef, indexLocalToQuad[i].get<0>() );
             }
@@ -210,10 +210,10 @@ public :
     {
         //search element
         auto elt_it = this->beginElement();
-        for (uint i=0;i<theIdElt;++i) ++elt_it;
+        for (size_type i=0;i<theIdElt;++i) ++elt_it;
 
         // get only usefull quad point and reoder
-        uint nContextPt = indexLocalToQuad.size();
+        uint16_type nContextPt = indexLocalToQuad.size();
         uint16_type __face_id_in_elt_0 = elt_it->pos_first();
 
         QuadMapped<im_type> qm;
@@ -223,7 +223,7 @@ public :
         matrix_node_type quadPtsRef =  ppts[ __face_id_in_elt_0].find(__perm)->second;
         //matrix_node_type quadPtsRef = this->im().points();
         matrix_node_type newquadPtsRef(quadPtsRef.size1() , nContextPt);
-        for (uint i=0;i<nContextPt; ++i)
+        for (uint16_type i=0;i<nContextPt; ++i)
             {
                 ublas::column( newquadPtsRef, i ) = ublas::column( quadPtsRef, indexLocalToQuad[i].get<0>() );
             }
@@ -257,9 +257,9 @@ public :
                                 matrix_node_type const & ptsRefTest )
     {
         // compute the number of several elements
-        uint nContextPt = indexLocalToQuad.size();
+        uint16_type nContextPt = indexLocalToQuad.size();
         std::map<size_type,std::list<size_type> > mapEltId;
-        for (uint i=0;i<nContextPt; ++i)
+        for (uint16_type i=0;i<nContextPt; ++i)
             {
                 size_type eltId = this->eltForThisQuadPt(indexLocalToQuad[i].get<1>(),mpl::int_<iDim>());
                 mapEltId[eltId].push_back(i);
@@ -305,9 +305,9 @@ public :
                                 matrix_node_type const & ptsRefTrial )
     {
         // compute the number of several elements
-        uint nContextPt = indexLocalToQuad.size();
+        uint16_type nContextPt = indexLocalToQuad.size();
         std::map<size_type,std::list<size_type> > mapEltId;
-        for (uint i=0;i<nContextPt; ++i)
+        for (uint16_type i=0;i<nContextPt; ++i)
             {
                 size_type eltId = this->eltForThisQuadPt(indexLocalToQuad[i].get<1>(),mpl::int_<iDim>());
                 mapEltId[eltId].push_back(i);
@@ -623,7 +623,7 @@ public :
                         // build
                         auto idq_it = eltTest_it->begin();
                         auto idq_en = eltTest_it->end();
-                        uint cptIdq = 0;
+                        uint16_type cptIdq = 0;
                         for ( ; idq_it != idq_en ; ++idq_it, ++cptIdq )
                             {
                                 indexLocalToQuad[cptIdq] = boost::make_tuple(idq_it->get<1>(),idq_it->get<0>());
@@ -707,7 +707,7 @@ public :
                         // build
                         auto idq_it = map_it->second.begin();
                         auto idq_en = map_it->second.end();
-                        uint cptIdq = 0;
+                        uint16_type cptIdq = 0;
                         for ( ; idq_it != idq_en ; ++idq_it, ++cptIdq )
                             {
                                 indexLocalToQuad[cptIdq] = boost::make_tuple(idq_it->get<0>(),idq_it->get<1>());
@@ -721,7 +721,6 @@ public :
                 // add to result container
                 _M_resBilinear.push_back(boost::make_tuple(theIdEltTest,mapiIdTrial2qAndPtRef));
             }
-
 
     } // update
 
