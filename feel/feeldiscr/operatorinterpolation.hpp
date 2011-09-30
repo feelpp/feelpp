@@ -370,6 +370,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
             localization_ptrtype __loc = this->domainSpace()->mesh()->tool_localization();
             __loc->updateForUse();
             //__loc->kdtree()->nbNearNeighbor(3);
+            //__loc->kdtree()->nbNearNeighbor(this->domainSpace()->mesh()->numElements());
+            //__loc->setExtrapolation(false);
 
             iterator_type it, en;
             boost::tie( boost::tuples::ignore, it, en ) = _M_range;
@@ -392,7 +394,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 #if 0
                                             __loc->run_analysis(__ptsReal);
 #else
-                                            __loc->run_analysis(__ptsReal,it->G(),mpl::bool_<interpolation_type::value>());
+                                            //__loc->run_analysis(__ptsReal,it->G(),mpl::bool_<interpolation_type::value>());
+                                            __loc->run_analysis(__ptsReal,it->vertices(),mpl::bool_<interpolation_type::value>());
 #endif
                                             itanal = __loc->result_analysis_begin();
                                             itanal_end = __loc->result_analysis_end();

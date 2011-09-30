@@ -598,8 +598,11 @@ public:
         /*--------------------------------------------------------------
          * Access
          */
+        boost::shared_ptr<self_type> mesh() { return M_mesh; }
 
         bool isInit() { return IsInit;}
+
+        bool doExtrapolation() { return M_doExtrapolation; }
 
         //KDTree kdtree() { return M_kd_tree; }
         kdtree_ptrtype kdtree() { return M_kd_tree; }
@@ -608,7 +611,6 @@ public:
 
         container_search_iterator_type result_analysis_begin() { return M_resultAnalysis.begin();}
         container_search_iterator_type result_analysis_end() { return M_resultAnalysis.end();}
-
 
         /*---------------------------------------------------------------
          * Research only one element wich contains the node p
