@@ -242,7 +242,7 @@ namespace GeoTool {
 
 
         void//std::string
-        GeoGMSHTool::init(int orderGeo)
+        GeoGMSHTool::init(int orderGeo, GMSH_PARTITIONER partitioner, int partitions, bool partition_file)
         {
             //fait dans gmsh.cpp
             *_M_ostr << "Mesh.MshFileVersion = 2;\n"
@@ -251,7 +251,12 @@ namespace GeoTool {
                      << "Mesh.ElementOrder="<< orderGeo <<";\n"
                      << "Mesh.SecondOrderIncomplete = 0;\n"
                      << "Mesh.Algorithm = 6;\n"
-                     << "Mesh.OptimizeNetgen=1;\n";
+                     << "Mesh.OptimizeNetgen=1;\n"
+                     << "// partitioning data\n"
+                     << "Mesh.Partitioner=" << partitioner << ";\n"
+                     << "Mesh.NbPartitions=" << partitions << ";\n"
+                     << "Mesh.MshFilePartitioned=" << partition_file << ";\n";
+
 
             //<< "Mesh.CharacteristicLengthFromCurvature=1;\n";
         }

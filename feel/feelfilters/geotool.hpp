@@ -853,7 +853,10 @@ namespace Feel {
 
             GeoGMSHTool opFusion(const GeoGMSHTool & m,int __typeop);
 
-            void init(int orderGeo);
+            void init(int orderGeo,
+                      GMSH_PARTITIONER partitioner=GMSH_PARTITIONER_CHACO,
+                      int partitions=1,
+                      bool partition_file=false);
 
             /*
              *
@@ -964,6 +967,57 @@ namespace Feel {
 
 
 
+
+
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+                                    (typename detail::mesh<Args>::ptrtype), // return type
+                                    createMesh, // function name
+                                    tag,
+                                    (required
+                                     (mesh, * )
+                                     (name, (std::string) )
+                                     ) //required
+                                    (optional
+                                     (straighten,     *(boost::is_integral<mpl::_>), 1 )
+                                     (partitions,   *(boost::is_integral<mpl::_>), 1 )
+                                     (partition_file,   *(boost::is_integral<mpl::_>), 0 )
+                                     (partitioner,   *(boost::is_integral<mpl::_>), GMSH_PARTITIONER_CHACO )
+                                     ) //optional
+                                    )
+        {
+                typedef typename detail::mesh<Args>::type _mesh_type;
+                typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+
+                this->cleanOstr();
+                this->zeroCpt();
+                this->init(_mesh_type::nOrder,partitioner,partitions,partition_file);
+                this->geoStr();
+
+                _mesh_ptrtype _mesh( mesh );
+
+                Gmsh gmsh;
+                gmsh.setOrder(_mesh_type::nOrder);
+                gmsh.setNumberOfPartitions( partitions );
+                gmsh.setPartitioner( partitioner );
+                gmsh.setMshFileByPartition( partition_file );
+
+                std::string fname = gmsh.generate( name,
+                                                   _M_ostr->str(),false,false,false );
+
+                ImporterGmsh<_mesh_type> import( fname );
+                import.setVersion( "2.1" );
+
+                //boost::shared_ptr<mesh_type> mesh( new mesh_type );
+                _mesh->accept( import );
+                _mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+                _mesh->updateForUse();
+
+                if ( straighten && _mesh_type::nOrder > 1 )
+                    return straightenMesh( _mesh );
+                else
+                    return _mesh;
+
+        }
 
 
 
