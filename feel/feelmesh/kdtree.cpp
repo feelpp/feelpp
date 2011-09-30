@@ -372,7 +372,7 @@ distanceNodes(const KDTree::node_type & p1, const KDTree::node_type & p2) {
 
     double res=0.0;
 
-    for (uint i=0;i<p1.size();++i) {
+    for (uint16_type i=0;i<p1.size();++i) {
         res+=(p2(i)-p1(i))*(p2(i)-p1(i));
     }
 
@@ -603,7 +603,7 @@ KDTree::showResultSearch() {
 }
 
 void
-KDTree::run_search( KDTree::Element * tree, uint iter) {
+KDTree::run_search( KDTree::Element * tree, uint16_type iter) {
 
     if ( ! tree->isleaf() ) {
         bool aGauche=false;
@@ -710,7 +710,7 @@ KDTree::writeLatexData(std::string __nameFile)
 
     points_const_iterator itpts = M_pts.begin();
     points_const_iterator itpts_end = M_pts.end();
-    uint __dim = boost::get<0>(*itpts).size();
+    uint16_type __dim = boost::get<0>(*itpts).size();
     if (__dim==2)
         for ( ; itpts!=itpts_end ; ++itpts)
             {

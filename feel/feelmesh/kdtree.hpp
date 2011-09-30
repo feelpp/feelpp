@@ -147,6 +147,12 @@ public:
     }
 
 
+    size_type nPtMaxNearNeighbor()
+    {
+        return M_nbPtMax;
+    }
+
+
     //@}
 
     /** @name  Mutators
@@ -239,7 +245,7 @@ private:
     /**
      * Run the the research of M_node_search neighbors(recursive)
      */
-    void run_search( Element * tree, uint iter);
+    void run_search( Element * tree, uint16_type iter);
 
     /**
      * Updating the list of nearest points
@@ -257,7 +263,7 @@ private:
     //greater distance from the vector of nearest neighbors
     double M_distanceMax;
     //the maximum number of neighbors points that we want to search
-    uint M_nbPtMax;
+    size_type M_nbPtMax;
 
 
 };
