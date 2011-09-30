@@ -1132,7 +1132,7 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
             else
                 {
                     // get inverse geometric transformation
-                    typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt );
+                    typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt,mpl::int_<1>() );
 
                     //apply the inverse geometric transformation for the point p
                     gic.setXReal( p);
@@ -1180,22 +1180,52 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m)
 
     M_resultAnalysis.clear();
 
+    bool doExtrapolationAtStart = this->doExtrapolation();
+    auto nPtMaxNearNeighborAtStart = this->kdtree()->nPtMaxNearNeighbor();
+
     for (size_type i=0;i< m.size2();++i)
         {
+            // first step : no extrapolation
+            if (doExtrapolationAtStart) this->setExtrapolation(false);
+
             boost::tie( find_x, __cv_id, __x_ref ) = this->searchElement(ublas::column( m, i ));
 
+            // if find : OK
             if (find_x)
                 {
                     M_resultAnalysis[__cv_id].push_back( boost::make_tuple(i,__x_ref) );
                 }
-            //else std::cout<<"\nProbleme Localization\n";
+            // try an other method (no efficient but maybe a solution)
+            else
+                {
+                    // search in all element
+                    this->kdtree()->nbNearNeighbor(this->mesh()->numElements());
 
-#if !defined( NDEBUG )
-            //FEEL_ASSERT( false )
-            //( false ).warn( "problem localization" );
-            //std::cout<<"\nProbleme de Localisation : "<<ublas::column( m, i )<<"\n";
-            //this->M_kd_tree->showResultSearch();}
-#endif
+                    boost::tie( find_x, __cv_id, __x_ref ) = this->searchElement(ublas::column( m, i ));
+                    //revert parameter
+                    this->kdtree()->nbNearNeighbor(nPtMaxNearNeighborAtStart);
+                    // if find : OK (but strange!)
+                    if (find_x)
+                        {
+                            M_resultAnalysis[__cv_id].push_back( boost::make_tuple(i,__x_ref) );
+                        }
+                    else if (doExtrapolationAtStart)
+                        {
+                            this->setExtrapolation(true);
+
+                            boost::tie( find_x, __cv_id, __x_ref ) = this->searchElement(ublas::column( m, i ));
+                            // normaly is find
+                            if (find_x)
+                                {
+                                    M_resultAnalysis[__cv_id].push_back( boost::make_tuple(i,__x_ref) );
+                                }
+                        }
+                    else
+                        std::cout<<"\n Il y a un GROS Probleme de Localization\n";
+                }
+
+            //revert parameter
+            if (doExtrapolationAtStart) this->setExtrapolation(true);
 
         }
 } //run_analysis
@@ -1254,7 +1284,7 @@ Mesh<Shape, T>::Localization::searchElements(const node_type & p)
             else
                 {
                     // get inverse geometric transformation
-                    typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt );
+                    typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt,mpl::int_<1>() );
 
                     //apply the inverse geometric transformation for the point p
                     gic.setXReal( p);
@@ -1359,8 +1389,6 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p,
                                             const matrix_node_type & setPoints,
                                             mpl::bool_<true> /**/ )
 {
-    //std::cout << "\n new searchElement " << std::endl;
-
     typename self_type::element_type elt;
     typename self_type::gm_type::reference_convex_type refelem;
     typename self_type::gm1_type::reference_convex_type refelem1;
@@ -1401,7 +1429,7 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p,
             else
                 {
                     // get inverse geometric transformation
-                    typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt );
+                    typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt,mpl::int_<1>() );
 
                     //apply the inverse geometric transformation for the point p
                     gic.setXReal( p);
