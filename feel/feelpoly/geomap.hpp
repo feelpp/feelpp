@@ -1787,6 +1787,42 @@ public:
     }
 
 
+    template<typename GeoElem>
+    Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge,mpl::int_<1>/**/ )
+        :
+        _M_gm( __gm ),
+        _M_xref( __gm->dim() ),
+        _M_xreal( __ge.vertices().size1() ),
+        _M_is_in( false ),
+        _M_G( __ge.vertices() ),
+        _M_K( N(), __gm->dim() ),
+        _M_B( N(), __gm->dim() ),
+        _M_CS( __gm->dim(), __gm->dim() ),
+        _M_g( _M_gm->nbPoints(), __gm->dim() ),
+#if defined( HAVE_PETSC )
+        _M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC ) )
+#else
+        _M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM ) )
+#endif
+    {
+        FEEL_ASSERT( _M_G.size2() == __gm->nbPoints() )
+            ( _M_G.size2() )( __gm->nbPoints() ).error( "invalid dimensions" );
+
+        if ( _M_gm->isLinear() )
+            update();
+        else
+            {
+#if defined( HAVE_PETSC )
+                _M_nlsolver->dense_residual = boost::bind( &Inverse::updateResidual, boost::ref( *this ), _1, _2 );
+                _M_nlsolver->dense_jacobian = boost::bind( &Inverse::updateJacobian, boost::ref( *this ), _1, _2 );
+#else
+
+#endif
+            }
+    }
+
+
+
 
     /** @name Accessors
      */
