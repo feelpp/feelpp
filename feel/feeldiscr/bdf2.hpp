@@ -363,6 +363,7 @@ public:
     void setTimeFinal( double T ) { M_Tf = T; }
     void setStrategy( int strategy ) { M_strategy = (BDFStragegy)strategy; }
     void setSteady( bool steady = true ) { if ( steady ) { M_dt=1e30; M_Tf=1e30; } }
+    void setRestart( bool doRestart ) { M_restart=doRestart; }
 
     void print() const
     {
@@ -949,7 +950,8 @@ BOOST_PARAMETER_FUNCTION(
      (time_step,*(boost::is_floating_point<mpl::_>),vm[prefixvm(prefix,"bdf.time-step")].template as<double>())
      (strategy,*(boost::is_integral<mpl::_>),vm[prefixvm(prefix,"bdf.strategy")].template as<int>())
      (steady,*(bool),vm[prefixvm(prefix,"bdf.steady")].template as<bool>())
-        ))
+     (restart,*(boost::is_integral<mpl::_>),vm[prefixvm(prefix,"bdf.restart")].template as<bool>())
+     ))
 {
     typedef typename meta::remove_all<space_type>::type::value_type _space_type;
     auto thebdf = boost::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>(vm,space,name,prefix) );
@@ -959,6 +961,7 @@ BOOST_PARAMETER_FUNCTION(
     thebdf->setOrder( order );
     thebdf->setSteady( steady );
     thebdf->setStrategy( strategy );
+    thebdf->setRestart(restart);
     return thebdf;
 }
 
