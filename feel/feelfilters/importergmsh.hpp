@@ -279,13 +279,15 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     char __buf[256];
     __is >> __buf;
 
+    std::string theversion;
+
     if ( ( (this->version() == "2.0") ||
            (this->version() == "2.1") ||
            (this->version() == "2.2") ||
            (this->version() == FEEL_GMSH_FORMAT_VERSION ) )  &&
          std::string( __buf ) == "$MeshFormat" )
     {
-        std::string theversion;
+
         // version file-type(0=ASCII,1=BINARY) data-size(sizeof(double))
         __is >> theversion >> __buf >> __buf;
         FEEL_ASSERT( boost::lexical_cast<double>( theversion ) >= 2 )( theversion )( this->version() ).warn( "invalid gmsh file format version ");
@@ -479,6 +481,13 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 else
                     __et[__i].push_back( tag );
             }
+
+            if ((theversion=="2.0" || theversion=="2.1" ) &&  __ntag==3)
+                {
+                    __et[__i].push_back( __et[__i][2] );
+                    __et[__i][2]=1;
+                    ++__ntag;
+                }
 
             // shift partition id according to processor ids
             for( int ii = 3; ii < __ntag; ++ ii )
