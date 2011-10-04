@@ -257,13 +257,13 @@ createSimplex( double hsize )
 template<typename value_type = double>
 struct test_integration_circle: public Application
 {
-    typedef typename imesh<value_type,2>::convex_type convex_type;
-    typedef typename imesh<value_type,2>::type mesh_type;
-    typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
-    typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
+    typedef typename imesh<value_type,2,4>::convex_type convex_type;
+    typedef typename imesh<value_type,2,4>::type mesh_type;
+    typedef typename imesh<value_type,2,4>::ptrtype mesh_ptrtype;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<4, Scalar> >, double> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef fusion::vector<Lagrange<2, Vectorial> > vector_basis_type;
+    typedef fusion::vector<Lagrange<4, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
 
     test_integration_circle( int argc, char** argv, AboutData const& ad, po::options_description const& od )
@@ -280,6 +280,7 @@ struct test_integration_circle: public Application
                                                  _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
                                                  _shape=shape,
                                                  _dim=2,
+                                                 _order=4,
                                                  _xmin=-1.,_ymin=-1.,
                                                  _h=meshSize ),
                                    _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
@@ -296,26 +297,26 @@ struct test_integration_circle: public Application
 
         t = 1.0;
         //value_type v0 = integrate( elements(mesh), mycst, _Q<2>() ).evaluate()( 0, 0 );
-        value_type v0 = integrate( _range=elements(mesh), _expr=mycst ).evaluate()( 0, 0 );
+        value_type v0 = integrate( _range=elements(mesh), _expr=mycst,_quad=_Q<10>() ).evaluate()( 0, 0 );
         value_type v0x = integrate( _range=elements(mesh), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate()( 0, 0 );
         value_type v0y = integrate( _range=elements(mesh), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate()( 0, 0 );
         value_type v0z = integrate( _range=elements(mesh), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate()( 0, 0 );
         BOOST_TEST_MESSAGE( "v0=" << v0 << "\n" );
-        value_type v00 = ( integrate( boundaryelements(mesh), mycst, _Q<2>() ).evaluate()( 0, 0 )+
-                           integrate( internalelements(mesh), mycst, _Q<2>() ).evaluate()( 0, 0 ) );
+        value_type v00 = ( integrate( _range=boundaryelements(mesh), _expr=mycst, _quad=_Q<10>() ).evaluate()( 0, 0 )+
+                           integrate( _range=internalelements(mesh), _expr=mycst, _quad=_Q<10>()  ).evaluate()( 0, 0 ) );
         BOOST_TEST_MESSAGE( "v00=" << v00 << "\n" );
-        BOOST_TEST_MESSAGE( "[circle] v0 0 = " << integrate( boundaryfaces(mesh),  N(), _Q<2>() ).evaluate() << "\n" );
-        BOOST_TEST_MESSAGE( "[circle] v0 0 = " << integrate( boundaryfaces(mesh),  N(), _Q<2>() ).evaluate() << "\n" );
-        BOOST_TEST_MESSAGE( "[circle] v0 1 = " << integrate( boundaryfaces(mesh),  vec( idf(f_Nx()), idf(f_Ny() ) ), _Q<2>() ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "[circle] v0 0 = " << integrate( boundaryfaces(mesh),  N(), _Q<4>() ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "[circle] v0 0 = " << integrate( boundaryfaces(mesh),  N(), _Q<4>() ).evaluate() << "\n" );
+        BOOST_TEST_MESSAGE( "[circle] v0 1 = " << integrate( boundaryfaces(mesh),  vec( idf(f_Nx()), idf(f_Ny() ) ), _Q<4>() ).evaluate() << "\n" );
         BOOST_TEST_MESSAGE( "[circle] v0 2 = " << integrate( boundaryfaces(mesh),
-                                                        trans(vec(constant(1),Ny()))*one(), _Q<2>() ).evaluate() << "\n" );
+                                                        trans(vec(constant(1),Ny()))*one(), _Q<4>() ).evaluate() << "\n" );
 
         BOOST_TEST_MESSAGE( "[circle] v0 3 = " << integrate( boundaryfaces(mesh),
-                                                      mat<2,2>(Nx(),constant(1),constant(1),Ny())*vec(constant(1),constant(1)), _Q<2>() ).evaluate() << "\n" );
+                                                      mat<2,2>(Nx(),constant(1),constant(1),Ny())*vec(constant(1),constant(1)), _Q<4>() ).evaluate() << "\n" );
         BOOST_TEST_MESSAGE( "[circle] v0 4 (==v0 3) = " << integrate( boundaryfaces(mesh),
                                                                mat<2,2>( idf(f_Nx()),constant(1),
-                                                                         constant(1),idf(f_Ny()) )*vec(constant(1),constant(1)), _Q<2>() ).evaluate() << "\n" );
-        value_type pi = 4.0*math::atan(1.0);
+                                                                         constant(1),idf(f_Ny()) )*vec(constant(1),constant(1)), _Q<4>() ).evaluate() << "\n" );
+        value_type pi = M_PI;//4.0*math::atan(1.0);
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v0, pi, 2e-1 );
