@@ -433,8 +433,8 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
     double error1 = 2.;
     double error2 = 2.;
 
-    auto Ih12 = opInterpolation( _domainSpace=Xh1, _imageSpace=Xh2, _range=elements(Xh2->mesh()) );
-    auto Ih21 = opInterpolation( _domainSpace=Xh2, _imageSpace=Xh1, _range=elements(Xh1->mesh()) );
+    auto Ih12 = opInterpolation( _domainSpace=Xh1, _imageSpace=Xh2, _range=markedfaces(Xh2->mesh(), interfaceFlags2[0]) );
+    auto Ih21 = opInterpolation( _domainSpace=Xh2, _imageSpace=Xh1, _range=markedfaces(Xh1->mesh(), interfaceFlags1[0]) );
 
     aitkenRelax.restart();
 

@@ -50,13 +50,14 @@ int main( int argc,  char** argv )
 {
     Feel::Environment env( argc, argv );
     typedef Mesh<Simplex<3,1> > mesh_type;
-    mesh_type aMesh;
 
-    Gmsh __gmsh;
-    std::string fname = __gmsh.generateCube( "cube", 1 );
-
-    ImporterGmsh<mesh_type> gmsh_import( fname );
-    aMesh.accept( gmsh_import );
+    auto shape = "hypercube";
+    auto aMesh = createGMSHMesh( _mesh=new mesh_type,
+                                 _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % mesh_type::nDim).str() ,
+                                               _usenames=true,
+                                               _shape=shape,
+                                               _dim=mesh_type::nDim,
+                                               _h=1 ) );
 
     RegionTree __rt;
     typedef node<double>::type node_type;
@@ -66,9 +67,9 @@ int main( int argc,  char** argv )
     __rt.clear();
 
     BoundingBox<> bb( true );
-    for ( size_type __i = 0; __i < aMesh.numElements(); ++__i )
+    for ( size_type __i = 0; __i < aMesh->numElements(); ++__i )
     {
-        bb.make( aMesh.element( __i ).G() );
+        bb.make( aMesh->element( __i ).G() );
         for (unsigned k=0; k < min.size(); ++k)
         {
             bb.min[k]-=EPS;

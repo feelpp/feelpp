@@ -556,24 +556,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ho, T, order_types )
     test_integration_sin<2,T::value,double> t(  mpi.vm() );
     t();
 }
-
 BOOST_AUTO_TEST_SUITE_END()
-#endif
 
-#if defined(USE_BOOST_TEST)
-boost::shared_ptr<Feel::Application> mpi;
-test_suite*
-init_unit_test_suite( int argc, char** argv )
-{
-    //boost::mpi::environment( argc, argv );
-    mpi = boost::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
-    Feel::Assert::setLog( "test_integration.assert");
-    test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
-
-    test->add( BOOST_TEST_CASE( ( test_integration_sin<2,1,double>( mpi->vm() ) )));
-    return test;
-}
 #else
+
 int
 main( int argc, char** argv )
 {
