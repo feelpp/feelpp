@@ -146,8 +146,13 @@ public:
 
     void gmshSavePhysicalNames( std::ostream& out, mesh_ptrtype mesh ) const;
 
-    void gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, bool parametric = false ) const;
-    void gmshSaveElements( std::ostream& out, mesh_ptrtype __mesh ) const;
+    void gmshSaveNodesStart( std::ostream& out, mesh_ptrtype mesh, size_type nGlobPt, bool parametric = false ) const;
+    void gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, size_type indexPtStart, bool parametric = false ) const;
+    void gmshSaveNodesEnd( std::ostream& out, mesh_ptrtype mesh, bool parametric = false ) const;
+
+    void gmshSaveElementsStart( std::ostream& out,size_type nGlobElt ) const;
+    void gmshSaveElements( std::ostream& out, mesh_ptrtype __mesh, size_type indexEltStart, size_type indexPtStart ) const;
+    void gmshSaveElementsEnd( std::ostream& out ) const;
 
     void gmshSaveNodeData( std::ostream& out, step_ptrtype __step ) const;
 
@@ -155,6 +160,13 @@ public:
 
 
     //@}
+
+private:
+
+    boost::tuple<size_type,size_type > numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const;
+
+    boost::tuple<size_type,size_type> numberOfGlobalEltAndIndex( mesh_ptrtype mesh ) const;
+
 
 private:
     mpi::communicator M_comm;
