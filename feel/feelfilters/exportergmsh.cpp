@@ -148,9 +148,19 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
 
                     gmshSavePhysicalNames( out, __step->mesh() );
 
-                    gmshSaveNodes( out,__step->mesh());
+                    auto nPointAndIndex = numberOfGlobalPtAndIndex(__step->mesh());
+                    auto nGlobPoint = nPointAndIndex.get<0>();
+                    auto indexPointStart = nPointAndIndex.get<1>();
+                    gmshSaveNodesStart(out, __step->mesh(), nGlobPoint);
+                    gmshSaveNodes( out,__step->mesh(),indexPointStart);
+                    gmshSaveNodesEnd(out, __step->mesh());
 
-                    gmshSaveElements( out, __step->mesh());
+                    auto nEltAndIndex = numberOfGlobalEltAndIndex(__step->mesh());
+                    auto nGlobElement = nEltAndIndex.get<0>();
+                    auto indexElementStart = nEltAndIndex.get<1>();
+                    gmshSaveElementsStart(out, nGlobElement);
+                    gmshSaveElements( out, __step->mesh(), indexElementStart, indexPointStart);
+                    gmshSaveElementsEnd(out);
                 }
                 //gmshSaveNodeData( out, __step);
                 gmshSaveElementNodeData( out, __step);
@@ -165,16 +175,81 @@ template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype mesh, bool parametric ) const
 {
-    std::ofstream out( filename.c_str(), std::ios::out);
-    if (out.fail())
+
+    if (  M_comm.rank() == 0 )
     {
-        Log() << "[ExporterGmsh::SaveMesh] cannot open " << filename << "\n";
-        exit(0);
+        std::ofstream out( filename.c_str(), std::ios::out);
+        if (out.fail())
+            {
+                Log() << "[ExporterGmsh::SaveMesh] cannot open " << filename << "\n";
+                exit(0);
+            }
+
+        gmshSaveFormat( out );
+        gmshSavePhysicalNames( out, mesh );
+        out.close();
     }
-    gmshSaveFormat( out );
-    gmshSavePhysicalNames( out, mesh );
-    gmshSaveNodes( out, mesh, parametric );
-    gmshSaveElements( out, mesh);
+    M_comm.barrier();
+
+    //-----------------------------------------------------------------//
+
+    auto nPointAndIndex = numberOfGlobalPtAndIndex(mesh);
+    auto nGlobPoint = nPointAndIndex.get<0>();
+    auto indexPointStart = nPointAndIndex.get<1>();
+    if (  M_comm.rank() == 0 )
+        {
+            std::ofstream out( filename.c_str(), std::ios::app);
+            gmshSaveNodesStart(out, mesh, nGlobPoint, parametric);
+            out.close();
+        }
+
+    for (int therank=0;therank<M_comm.size();++therank)
+        {
+            if ( therank == M_comm.rank() )
+                {
+                    std::ofstream out( filename.c_str(), std::ios::app);
+                    gmshSaveNodes( out, mesh, indexPointStart, parametric );
+                    out.close();
+                }
+            M_comm.barrier();
+        }
+
+    if (  M_comm.rank() == 0 )
+        {
+            std::ofstream out( filename.c_str(), std::ios::app);
+            gmshSaveNodesEnd(out, mesh, parametric);
+            out.close();
+        }
+
+    //-----------------------------------------------------------------//
+
+    auto nEltAndIndex = numberOfGlobalEltAndIndex(mesh);
+    auto nGlobElement = nEltAndIndex.get<0>();
+    auto indexElementStart = nEltAndIndex.get<1>();
+    if (  M_comm.rank() == 0 )
+        {
+            std::ofstream out( filename.c_str(), std::ios::app);
+            gmshSaveElementsStart(out, nGlobElement);
+            out.close();
+        }
+
+    for (int therank=0;therank<M_comm.size();++therank)
+        {
+            if ( therank == M_comm.rank() )
+                {
+                    std::ofstream out( filename.c_str(), std::ios::app);
+                    gmshSaveElements( out, mesh, indexElementStart, indexPointStart);
+                    out.close();
+                }
+            M_comm.barrier();
+        }
+
+    if (  M_comm.rank() == 0 )
+        {
+            std::ofstream out( filename.c_str(), std::ios::app);
+            gmshSaveElementsEnd(out);
+            out.close();
+        }
 }
 
 template<typename MeshType, int N>
@@ -205,20 +280,62 @@ ExporterGmsh<MeshType,N>::gmshSavePhysicalNames( std::ostream& out, mesh_ptrtype
 }
 
 template<typename MeshType, int N>
+boost::tuple<size_type,size_type>
+ExporterGmsh<MeshType,N>::numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const
+{
+    auto local_numberPoints = mesh->numPoints();
+    auto global_numberPoints=local_numberPoints;
+
+    mpi::all_reduce( M_comm,
+                     local_numberPoints,
+                     global_numberPoints,
+                     std::plus<size_type>() );
+
+    std::vector<size_type> all_localnumberPoint;
+
+    mpi::all_gather( M_comm,
+                     local_numberPoints,
+                     all_localnumberPoint );
+
+    size_type indexPtStart = 0;
+
+    for( int i=0;i<M_comm.rank();++i)
+        indexPtStart+=all_localnumberPoint[i];
+
+    return boost::make_tuple(global_numberPoints,indexPtStart);
+}
+
+template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, bool parametric ) const
+ExporterGmsh<MeshType,N>::gmshSaveNodesStart( std::ostream& out, mesh_ptrtype mesh, size_type nGlobPt, bool parametric ) const
 {
     if ( parametric && mesh->isParametric() )
         out << "$ParametricNodes\n";
     else
         out << "$Nodes\n";
-    out << mesh->numPoints() << "\n";//number points
+    out << nGlobPt << "\n";//number points
+}
+
+template<typename MeshType, int N>
+void
+ExporterGmsh<MeshType,N>::gmshSaveNodesEnd( std::ostream& out, mesh_ptrtype mesh, bool parametric ) const
+{
+    if ( parametric && mesh->isParametric() )
+        out << "$EndParametricNodes\n";
+    else
+        out << "$EndNodes\n";
+}
+
+template<typename MeshType, int N>
+void
+ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, size_type indexPtStart, bool parametric ) const
+{
 
     point_const_iterator pt_it = mesh->beginPoint();
     point_const_iterator pt_en = mesh->endPoint();
     for ( ; pt_it!=pt_en ; ++pt_it )
     {
-        out << pt_it->id()+1
+        out << pt_it->id()+1+indexPtStart
             << " "  << std::setw( 20 ) << std::setprecision(16) << pt_it->node()[0];
         if ( mesh_type::nRealDim >= 2 )
             out << " "  << std::setw( 20 ) << std::setprecision(16) << pt_it->node()[1];
@@ -240,30 +357,68 @@ ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, b
         out << "\n";
     }
 
-    if ( parametric && mesh->isParametric() )
-        out << "$EndParametricNodes\n";
-    else
-        out << "$EndNodes\n";
+}
 
+template<typename MeshType, int N>
+boost::tuple<size_type,size_type>
+ExporterGmsh<MeshType,N>::numberOfGlobalEltAndIndex( mesh_ptrtype mesh) const
+{
+    //auto allmarkedfaces = markedfaces( mesh );
+    auto allmarkedfaces = boundaryfaces( mesh );
+    size_type number_markedfaces= std::distance(allmarkedfaces.get<1>(),allmarkedfaces.get<2>());
+
+    auto eltOnProccess = elements(mesh);
+    size_type number_elements= std::distance(eltOnProccess.get<1>(),eltOnProccess.get<2>());
+
+    auto local_numberElements = number_markedfaces+number_elements;
+    auto global_numberElements=local_numberElements;
+
+    mpi::all_reduce( M_comm,
+                     local_numberElements,
+                     global_numberElements,
+                     std::plus<size_type>() );
+
+    std::vector<size_type> all_localnumberElements;
+
+    mpi::all_gather( M_comm,
+                     local_numberElements,
+                     all_localnumberElements );
+
+    size_type indexEltStart = 0;
+
+    for( int i=0;i<M_comm.rank();++i)
+        indexEltStart+=all_localnumberElements[i];
+
+    return boost::make_tuple(global_numberElements,indexEltStart);
 }
 
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh ) const
+ExporterGmsh<MeshType,N>::gmshSaveElementsStart( std::ostream& out, size_type nGlobElt ) const
 {
-    out << "$Elements\n";
+    out << "$Elements\n"
+        << nGlobElt << "\n";//number element
+}
+
+template<typename MeshType, int N>
+void
+ExporterGmsh<MeshType,N>::gmshSaveElementsEnd( std::ostream& out) const
+{
+    out << "$EndElements\n";
+}
+
+
+template<typename MeshType, int N>
+void
+ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh, size_type indexEltStart, size_type indexPtStart) const
+{
 
     //auto allmarkedfaces = markedfaces( mesh );
     auto allmarkedfaces = boundaryfaces( mesh );
     auto face_it = allmarkedfaces.get<1>();
     auto face_end = allmarkedfaces.get<2>();
-    int number_markedfaces= std::distance(allmarkedfaces.get<1>(),allmarkedfaces.get<2>());
-    double numberElements=number_markedfaces+mesh->numElements();
 
-    out << numberElements << "\n";//number element
-
-    //first : elements and then in a second time we will put faces
-    int elem_number=1; //initialization
+    auto elem_number=indexEltStart+1;
 
     typedef typename MeshType::element_type element_type;
     GmshOrdering<element_type> ordering;
@@ -271,37 +426,71 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
     typedef typename MeshType::face_type face_type;
     GmshOrdering<face_type> ordering_face;
     // save the faces
+
     for ( ; face_it != face_end; ++face_it )
     {
         // elm-number elm-type number-of-tags < tag > ... node-number-list
         out<< elem_number++ <<" ";
         out << ordering_face.type();
         // number-of-tags < tag >
-        out<<" 3 " << face_it->marker().value() << " " << face_it->marker2().value() << " " << face_it->processId();
+
+        if (FEEL_GMSH_FORMAT_VERSION==std::string("2.1"))
+            {
+                // out<<" 2 " << face_it->marker().value() << " " << face_it->marker2().value();
+                out<<" 3 " << face_it->marker().value() << " " << face_it->marker2().value() << " " << face_it->processId()+1;
+            }
+        else if (FEEL_GMSH_FORMAT_VERSION==std::string("2.2"))
+            {
+                uint16_type nbTag = 3 + face_it->numberOfPartitions();
+                out << " " << nbTag
+                    << " " << face_it->marker().value()
+                    << " " << face_it->marker2().value()
+                    << " " << face_it->numberOfPartitions()
+                    << " " << face_it->processId()+1;
+                for (size_type i=0 ; i<face_it->numberOfNeighborPartitions(); ++i)
+                    out << " " << -(face_it->neighborPartitionIds()[i]+1);
+            }
         // node-number-list
         for (uint16_type p=0;p<face_type::numPoints;++p)
-            out << " " << face_it->point( ordering_face.fromGmshId( p ) ).id()+1;
+            out << " " << face_it->point( ordering_face.fromGmshId( p ) ).id()+1+indexPtStart;
         out<<"\n";
     } // faces
 
 
-    auto elt_it = mesh->beginElement();
-    auto elt_en = mesh->endElement();
+    auto eltOnProccess = elements(mesh);
+    auto elt_it = eltOnProccess.get<1>();
+    auto elt_en = eltOnProccess.get<2>();
     for ( ; elt_it != elt_en; ++elt_it )
     {
         out << elem_number++ <<" ";
         out << ordering.type();
-        out<<" 3 " << elt_it->marker().value() << " " << elt_it->marker2().value() << " " << elt_it->processId();
+
+        if (FEEL_GMSH_FORMAT_VERSION==std::string("2.1") )
+            {
+                //out<<" 2 " << elt_it->marker().value() << " " << elt_it->marker2().value();
+                out<<" 3 " << elt_it->marker().value() << " " << elt_it->marker2().value() << " " << elt_it->processId()+1;
+            }
+        else if (FEEL_GMSH_FORMAT_VERSION== std::string("2.2") )
+            {
+                uint16_type nbTag = 3 + elt_it->numberOfPartitions();
+                out << " " << nbTag
+                    << " " << elt_it->marker().value()
+                    << " " << elt_it->marker2().value()
+                    << " " << elt_it->numberOfPartitions()
+                    << " " << elt_it->processId()+1;
+                for (size_type i=0 ; i<elt_it->numberOfNeighborPartitions(); ++i)
+                    out << " " << -(elt_it->neighborPartitionIds()[i]+1);
+            }
         for (uint16_type p=0;p<element_type::numPoints;++p)
         {
             //std::cout << "index " << p << " -> " << ordering.fromGmshId(p) << " -> " << elt_it->point( ordering.fromGmshId(p) ).id()+1 << " : " << elt_it->point( ordering.fromGmshId(p) ).node() << "\n";
-            out << " " << elt_it->point( ordering.fromGmshId( p ) ).id()+1;
+            out << " " << elt_it->point( ordering.fromGmshId( p ) ).id()+1+indexPtStart;
         }
 
         out<<"\n";
     } // elements
 
-    out << "$EndElements\n";
+    //out << "$EndElements\n";
 
 }
 

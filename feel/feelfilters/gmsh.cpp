@@ -60,7 +60,7 @@ namespace Feel
 {
 namespace fs = boost::filesystem;
 
-const char* FEEL_GMSH_FORMAT_VERSION = "2.1";
+const char* FEEL_GMSH_FORMAT_VERSION = "2.2";
 
 Gmsh::Gmsh( int nDim, int nOrder )
     :
