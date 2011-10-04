@@ -1020,9 +1020,39 @@ public:
     size_type numberOfSteps() const { return _M_step_set.size(); }
 
     /**
+       \return the number of steps ignored
+    */
+    size_type numberOfStepsIgnored() const { return _M_stepIgnored_set.size(); }
+
+    /**
+       \return the number of steps already stored
+    */
+    size_type numberOfSteps( mpl::bool_<false> /**/ ) const { return _M_step_set.size(); }
+
+    /**
+       \return the number of steps ignored
+    */
+    size_type numberOfSteps( mpl::bool_<true> /**/ ) const { return _M_stepIgnored_set.size(); }
+
+    /**
+       \return the number of steps already stored + steps ignored
+    */
+    size_type numberOfTotalSteps() const { return _M_step_set.size()+_M_stepIgnored_set.size(); }
+
+    /**
        \return the time increment between two steps
     */
     Real timeIncrement() const { return _M_time_increment; }
+
+    /**
+       \return the step set container
+    */
+    //step_set_type & step_set( mpl::bool_<false> /**/ ) { return _M_step_set; }
+
+    /**
+       \return the step ignored set container
+    */
+    //step_set_type & step_set( mpl::bool_<true> /**/ ) { return _M_stepIgnored_set; }
 
     //@}
 
@@ -1049,9 +1079,20 @@ public:
 
     /**
      * \param __time time at which we want to get the step
+     *        __ignoreStep : exporter don't save
      * \return a step defined at time \c __time if not found then generate a new one
      */
+    step_ptrtype step( Real __time, bool __ignoreStep=false )
+    {
+        if (__ignoreStep)
+            return step< mpl::bool_<true> >(__time);
+        else
+            return step< mpl::bool_<false> >(__time);
+    }
+
+    template <typename IgnoreStepType>
     step_ptrtype step( Real __time );
+
 
     step_iterator beginStep() { return _M_step_set.begin(); }
     step_const_iterator beginStep() const { return _M_step_set.begin(); }
@@ -1066,18 +1107,33 @@ public:
     step_const_reverse_iterator rendStep() const { return _M_step_set.rend(); }
 
 
+    step_iterator beginStep( mpl::bool_<false> /**/) { return _M_step_set.begin(); }
+    step_const_iterator beginStep(  mpl::bool_<false> /**/ ) const { return _M_step_set.begin(); }
+    step_iterator endStep( mpl::bool_<false> /**/) { return _M_step_set.end(); }
+    step_const_iterator endStep( mpl::bool_<false> /**/) const { return _M_step_set.end(); }
+
+    step_iterator beginStep( mpl::bool_<true> /**/) { return _M_stepIgnored_set.begin(); }
+    step_const_iterator beginStep(  mpl::bool_<true> /**/ ) const { return _M_stepIgnored_set.begin(); }
+    step_iterator endStep( mpl::bool_<true> /**/) { return _M_stepIgnored_set.end(); }
+    step_const_iterator endStep( mpl::bool_<true> /**/) const { return _M_stepIgnored_set.end(); }
+
+    std::pair<step_iterator,bool> insertStep(step_ptrtype __step, mpl::bool_<false> /**/) { return _M_step_set.insert(__step); }
+    std::pair<step_iterator,bool> insertStep(step_ptrtype __step, mpl::bool_<true> /**/) { return _M_stepIgnored_set.insert(__step); }
+
     void clear()
     {
         _M_step_set.clear();
+        _M_stepIgnored_set.clear();
     }
 
-    void load(std::string _nameFile)
+    void load(std::string _nameFile, Real __time)
     {
         fs::ifstream ifs( _nameFile );
         // load data from archive
         boost::archive::text_iarchive ia(ifs);
         ia >> *this;
 
+        resetPreviousTime(__time);
     }
 
     void save(std::string _nameFile)
@@ -1113,6 +1169,11 @@ protected:
     step_set_type _M_step_set;
 
     /**
+       steps ignored because of frequence > 1 in exporter
+    */
+    step_set_type _M_stepIgnored_set;
+
+    /**
        time increment
     */
     Real _M_time_increment;
@@ -1134,6 +1195,8 @@ private:
             {
                 size_type s = _M_step_set.size();
                 ar & boost::serialization::make_nvp( "number_of_steps", s );
+                size_type s2 = _M_stepIgnored_set.size();
+                ar & boost::serialization::make_nvp( "number_of_steps_ignored", s2 );
 
                 step_iterator __it = _M_step_set.begin();
                 step_iterator __en = _M_step_set.end();
@@ -1153,11 +1216,32 @@ private:
                         size_type state = (*__it)->state();
                         ar & boost::serialization::make_nvp( "state", state );
                     }
+
+                __it = _M_stepIgnored_set.begin();
+                __en = _M_stepIgnored_set.end();
+                for( ; __it != __en; ++__it )
+                    {
+                        if ( !(*__it)->isOnDisk() )
+                            {
+                                Debug( 8000 ) << "not including step " << (*__it)->index()
+                                              << " at time " << (*__it)->time() << "\n";
+                                (*__it)->showMe( "TimeSet::serialize" );
+                                continue;
+                            }
+                        double t = (*__it)->time();
+                        ar & boost::serialization::make_nvp( "time_ignored", t );
+                        size_type ind = (*__it)->index();
+                        ar & boost::serialization::make_nvp( "index_ignored", ind );
+                        size_type state = (*__it)->state();
+                        ar & boost::serialization::make_nvp( "state_ignored", state );
+                    }
             }
         if (Archive::is_loading::value)
             {
                 size_type s( 0 );
                 ar & boost::serialization::make_nvp( "number_of_steps", s );
+                size_type s2( 0 );
+                ar & boost::serialization::make_nvp( "number_of_steps_ignored", s2 );
 
                 for( size_type __i = 0; __i < s; ++__i )
                     {
@@ -1175,13 +1259,34 @@ private:
                         boost::tie( __sit, __inserted ) = _M_step_set.insert( step_ptrtype( new Step( this, t,ind, __state ) ) );
 
                         FEEL_ASSERT( __inserted )( t )( ind ).error ("insertion failed");
-
                     }
+
+                for( size_type __i = 0; __i < s2; ++__i )
+                    {
+                        double t = 0;
+                        ar & boost::serialization::make_nvp( "time_ignored", t );
+
+                        size_type ind = 0;
+                        ar & boost::serialization::make_nvp( "index_ignored", ind );
+
+                        size_type __state = 0;
+                        ar & boost::serialization::make_nvp( "state_ignored", __state );
+
+                        step_iterator __sit;
+                        bool __inserted;
+                        boost::tie( __sit, __inserted ) = _M_stepIgnored_set.insert( step_ptrtype( new Step( this, t,ind, __state ) ) );
+
+                        FEEL_ASSERT( __inserted )( t )( ind ).error ("insertion failed");
+                    }
+
             }
     }
 
     //! cleanup steps states
     void cleanup();
+
+    //! delete all time next this __time (after a restart by exemple)
+    void resetPreviousTime(Real __time);
 
 public:
     boost::optional<mesh_ptrtype> _M_mesh;
@@ -1315,7 +1420,6 @@ template<typename MeshType, int N>
 void
 TimeSet<MeshType, N>::cleanup()
 {
-
     step_iterator __it = _M_step_set.begin();
     step_iterator __en = _M_step_set.end();
     for( ; __it != __en; ++__it )
@@ -1323,6 +1427,16 @@ TimeSet<MeshType, N>::cleanup()
         if ( (*__it)->index() <= _M_step_set.size() - _M_keep_steps )
             (*__it)->setState( STEP_ON_DISK );
     }
+
+    __it = _M_stepIgnored_set.begin();
+    __en = _M_stepIgnored_set.end();
+    for( ; __it != __en; ++__it )
+    {
+        if ( (*__it)->index() <= _M_stepIgnored_set.size() - _M_keep_steps )
+            (*__it)->setState( STEP_ON_DISK );
+    }
+
+
 #if 0
     std::ostringstream __str;
     __str << _M_name << ".ts";
@@ -1338,7 +1452,64 @@ TimeSet<MeshType, N>::cleanup()
         }
 #endif
 }
+
 template<typename MeshType, int N>
+void
+TimeSet<MeshType, N>::resetPreviousTime(Real __time)
+{
+    step_iterator __it = _M_step_set.begin();
+    step_iterator __en = _M_step_set.end();
+    bool find=false;
+
+    while( !find &&  __it != __en )
+        {
+            if ( !(*__it)->isOnDisk() )
+                {
+                    Debug( 8000 ) << "not including step " << (*__it)->index()
+                                  << " at time " << (*__it)->time() << "\n";
+                    (*__it)->showMe( "TimeSet::resetPreviousTime" );
+                    ++__it;
+                }
+            else
+                {
+                    double t = (*__it)->time();
+                    double eps = 1e-10;
+                    if ( (t+eps) <= __time) ++__it;
+                    else find=true;
+                }
+        }
+
+    if (find) _M_step_set.erase(__it,__en);
+
+    __it = _M_stepIgnored_set.begin();
+    __en = _M_stepIgnored_set.end();
+    find=false;
+
+    while( !find &&  __it != __en )
+        {
+            if ( !(*__it)->isOnDisk() )
+                {
+                    Debug( 8000 ) << "not including step " << (*__it)->index()
+                                  << " at time " << (*__it)->time() << "\n";
+                    (*__it)->showMe( "TimeSet::resetPreviousTime" );
+                    ++__it;
+                }
+            else
+                {
+                    double t = (*__it)->time();
+                    double eps = 1e-10;
+                    if ( (t-eps) <= __time) ++__it;
+                    else find=true;
+                }
+        }
+
+    if (find) _M_stepIgnored_set.erase(__it,__en);
+
+}
+
+
+template<typename MeshType, int N>
+template <typename IgnoreStepType>
 typename TimeSet<MeshType, N>::step_ptrtype
 TimeSet<MeshType, N>::step( Real __time )
 {
@@ -1348,22 +1519,26 @@ TimeSet<MeshType, N>::step( Real __time )
                                         lambda::bind( &Step::time, lambda::_1 ) - __time < 1e-10 &&
                                         lambda::bind( &Step::time, lambda::_1 ) - __time > -1e-10 );
     */
-    step_iterator __sit = _M_step_set.begin();
-    for(; __sit != _M_step_set.end(); ++__sit )
+    step_iterator __sit = beginStep( mpl::bool_<IgnoreStepType::value>() );
+    for(; __sit != endStep( mpl::bool_<IgnoreStepType::value>() ); ++__sit )
     {
       if ( math::abs( (*__sit)->time() - __time ) < 1e-10 )
         break;
     }
 
-    if ( __sit == _M_step_set.end() )
+    if ( __sit == endStep( mpl::bool_<IgnoreStepType::value>() ) )
     {
         bool __inserted;
 
         Debug( 8000 ) << "[TimeSet<MeshType, N>::step] Inserting new step at time " << __time << " with index "
-                << _M_step_set.size() << "\n";
+                      << numberOfSteps( mpl::bool_<IgnoreStepType::value>() ) << "\n";
 
-        boost::tie( __sit, __inserted ) = _M_step_set.insert( step_ptrtype( new Step( this, __time,
-                                                                                      _M_step_set.size() + 1 ) ) );
+        step_ptrtype thestep( new Step( this, __time, numberOfSteps( mpl::bool_<IgnoreStepType::value>() ) + 1 ) );
+
+        boost::tie( __sit, __inserted ) = insertStep(thestep,mpl::bool_<IgnoreStepType::value>());
+
+        //boost::tie( __sit, __inserted ) = _M_step_set.insert( step_ptrtype( new Step( this, __time,
+        //                                                                              _M_step_set.size() + 1 ) ) );
 
         Debug( 8000 ) << "[TimeSet<MeshType, N>::step] step was inserted properly? " << ( __inserted?"yes":"no" ) << "\n";
         Debug( 8000 ) << "[TimeSet<MeshType, N>::step] step index : " << (*__sit)->index() << " time : " << (*__sit)->time() << "\n";
