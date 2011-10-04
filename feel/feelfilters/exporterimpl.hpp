@@ -52,6 +52,7 @@ Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& _
     M_type( __type ),
     M_prefix( __prefix ),
     M_freq( __freq ),
+    M_cptOfSave(0),
     M_ft( ASCII ),
     M_path( "." )
 {
@@ -67,6 +68,7 @@ Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const&
     M_type(),
     M_prefix( exp_prefix ),
     M_freq(1),
+    M_cptOfSave(0),
     M_ft( ASCII ),
     M_path( "." )
 {
@@ -82,6 +84,7 @@ Exporter<MeshType, N>::Exporter( Exporter const & __ex )
     M_type( __ex.M_type ),
     M_prefix( __ex.M_prefix ),
     M_freq( __ex.M_freq ),
+    M_cptOfSave( __ex.M_cptOfSave),
     M_ft( __ex.M_ft ),
     M_path( __ex.M_path )
 {

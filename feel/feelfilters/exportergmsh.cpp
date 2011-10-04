@@ -63,12 +63,13 @@ template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::save() const
 {
-    static int freq = 0;
-
     Debug( 8007 ) << "[ExporterGmsh] checking if frequency is ok\n";
 
-    if ( freq++ % this->freq()  )
-        return;
+    if ( this->cptOfSave() % this->freq()  )
+        {
+            this->saveTimeSet();
+            return;
+        }
 
     Debug( 8007 ) << "[ExporterGmsh] frequency is ok\n";
 
@@ -79,7 +80,6 @@ ExporterGmsh<MeshType,N>::save() const
     Debug( 8007 ) << "[ExporterGmsh] saving done\n";
 
     this->saveTimeSet();
-
 }
 
 template<typename MeshType, int N>

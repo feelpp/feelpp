@@ -93,6 +93,16 @@ template<typename MeshType, int N>
 void
 ExporterEnsight<MeshType,N>::save() const
 {
+    static int freq = 0;
+
+    Debug( 8006 ) << "[ExporterEnsight::save] checking if frequency is ok\n";
+
+    if ( this->cptOfSave() % this->freq()  )
+        {
+            this->saveTimeSet();
+            return;
+        }
+
     boost::timer ti;
     Debug( 8006 ) << "[ExporterEnsight::save] export in ensight format\n";
 

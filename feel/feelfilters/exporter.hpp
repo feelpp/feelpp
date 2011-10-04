@@ -176,6 +176,12 @@ public:
      */
     int freq() const { return M_freq; }
 
+
+    /**
+     * \return the frequency at which the results are saved
+     */
+    int cptOfSave() const { return M_cptOfSave; }
+
     /**
      * \return the file type format (ASCII or BINARY)
      */
@@ -255,8 +261,20 @@ public:
     timeset_ptrtype defaultTimeSet() { return M_ts_set.front(); }
     timeset_ptrtype timeSet( int ts ) { return M_ts_set[ts]; }
 
-    step_ptrtype step( double time ) { return M_ts_set.back()->step( time ); }
-    step_ptrtype step( double time, int s ) { return M_ts_set[s]->step( time ); }
+    step_ptrtype step( double time )
+    {
+        if ( this->cptOfSave() % this->freq()  )
+            return M_ts_set.back()->step( time, true );
+        else
+            return M_ts_set.back()->step( time, false );
+    }
+    step_ptrtype step( double time, int s )
+    {
+        if ( M_cptOfSave % this->freq()  )
+            return M_ts_set[s]->step( time, true );
+        else
+            return M_ts_set[s]->step( time, false );
+    }
 
     //@}
 
@@ -292,19 +310,22 @@ public:
                 auto filename = this->path()+"/"+prefix()+".timeset";
                 (*__ts_it)->save(filename);
             }
+        ++M_cptOfSave;
     }
 
     /**
      * reload from file set of time which are been exported
      */
-    void restart()
+    void restart(double __time)
     {
         auto __ts_it = this->beginTimeSet();
         auto __ts_en = this->endTimeSet();
         for( ; __ts_it != __ts_en ; ++__ts_it )
             {
                 auto filename = this->path()+"/"+prefix()+".timeset";
-                (*__ts_it)->load(filename);
+                (*__ts_it)->load(filename,__time);
+
+                M_cptOfSave = (*__ts_it)->numberOfTotalSteps()+1;
             }
     }
 
@@ -315,6 +336,7 @@ protected:
     std::string M_type;
     std::string M_prefix;
     int M_freq;
+    mutable int M_cptOfSave;
     file_type M_ft;
     std::string M_path;
 
