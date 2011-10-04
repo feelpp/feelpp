@@ -242,6 +242,11 @@ public:
     matrix_node_type G() const { matrix_node_type __G( Dim, 1 ); ublas::column( __G, 0 ) = *this; return __G; }
 
     /**
+     * @return the node data structure
+     */
+    matrix_node_type vertices() const { return this->G(); }
+
+    /**
      * \return the measure of a point
      */
     value_type measure() const { return 0; }
