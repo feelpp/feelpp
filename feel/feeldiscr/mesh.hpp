@@ -710,10 +710,14 @@ public:
 
 protected:
     /**
-     * Update connectiviry of entities of codimension 1
+     * Update connectivity of entities of codimension 1
      */
     void updateEntitiesCoDimensionOne();
 
+    /**
+     * Update in ghost cells of entities of codimension 1
+     */
+    void updateEntitiesCoDimensionOneGhostCell();
 
     /**
      * check mesh connectivity
