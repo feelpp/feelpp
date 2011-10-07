@@ -97,6 +97,26 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_const_iterator,
              typename MeshTraits<MeshType>::element_const_iterator>
+allelements( MeshType const& mesh, mpl::bool_<false> )
+{
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                              mesh.beginElement(),
+                              mesh.endElement() );
+}
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+             typename MeshTraits<MeshType>::element_const_iterator,
+             typename MeshTraits<MeshType>::element_const_iterator>
+allelements( MeshType const& mesh,mpl::bool_<true> )
+{
+    return allelements(*mesh, mpl::bool_<false>() );
+}
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+             typename MeshTraits<MeshType>::element_const_iterator,
+             typename MeshTraits<MeshType>::element_const_iterator>
 elements( MeshType const& mesh, flag_type flag, mpl::bool_<false> )
 {
 
@@ -557,9 +577,8 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_const_iterator>
 allelements( MeshType const& mesh )
 {
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              mesh.beginElement(),
-                              mesh.endElement() );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::allelements( mesh, is_ptr_or_shared_ptr() );
 }
 
 /**
