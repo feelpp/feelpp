@@ -134,7 +134,14 @@ public:
             multi_index::ordered_non_unique<multi_index::tag<detail::by_pid>,
                                            multi_index::const_mem_fun<element_type,
                                                                       uint16_type,
-                                                                      &element_type::processId> >
+                                                                      &element_type::processId> >,
+
+            // sort by less<int> on processId
+            multi_index::ordered_non_unique<multi_index::tag<detail::by_ghostcell>,
+                                            multi_index::const_mem_fun<element_type,
+                                                                       bool,
+                                                                       &element_type::isGhostCell> >
+
 
             > > elements_type;
 
@@ -165,6 +172,10 @@ public:
     typedef typename elements_type::template index<detail::by_location>::type location_elements;
     typedef typename location_elements::iterator location_element_iterator;
     typedef typename location_elements::const_iterator location_element_const_iterator;
+
+    typedef typename elements_type::template index<detail::by_ghostcell>::type ghostcell_elements;
+    typedef typename ghostcell_elements::iterator ghostcell_element_iterator;
+    typedef typename ghostcell_elements::const_iterator ghostcell_element_const_iterator;
 
     typedef std::map<int, size_type> parts_map_type;
     typedef typename parts_map_type::const_iterator parts_const_iterator_type;
@@ -676,6 +687,56 @@ public:
     {
         return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(ON_BOUNDARY,M_comm.rank())).second;
     }
+
+    /**
+     * get the begin() iterator on all ghost elements
+     *
+     * @return the begin() iterator on all ghost elements
+     */
+    ghostcell_element_iterator beginGhostElement()
+    {
+        //return _M_elements.template get<detail::by_ghostcell>().equal_range(boost::make_tuple(true)).first;
+        return _M_elements.template get<detail::by_ghostcell>().equal_range(true).first;
+        //return _M_elements.template get<detail::by_ghostcell>().begin();
+    }
+
+    /**
+     * get the end() iterator on all ghost elements
+     *
+     * @return the end() iterator on all ghost elements
+     */
+    ghostcell_element_iterator endGhostElement()
+    {
+        //return _M_elements.template get<detail::by_ghostcell>().equal_range(boost::make_tuple(true)).second;
+        return _M_elements.template get<detail::by_ghostcell>().equal_range(true).second;
+        //return _M_elements.template get<detail::by_ghostcell>().end();
+    }
+
+    /**
+     * get the begin() iterator on all ghost elements
+     *
+     * @return the begin() iterator on all ghost elements
+     */
+    ghostcell_element_const_iterator beginGhostElement() const
+    {
+        //return _M_elements.template get<detail::by_ghostcell>().equal_range(boost::make_tuple(true)).first;
+        return _M_elements.template get<detail::by_ghostcell>().equal_range(true).first;
+        //return _M_elements.template get<detail::by_ghostcell>().begin();
+    }
+
+    /**
+     * get the end() iterator on all ghost elements
+     *
+     * @return the end() iterator on all ghost elements
+     */
+    ghostcell_element_const_iterator endGhostElement() const
+    {
+        //return _M_elements.template get<detail::by_ghostcell>().equal_range(boost::make_tuple(true)).second;
+        return _M_elements.template get<detail::by_ghostcell>().equal_range(true).second;
+        //return _M_elements.template get<detail::by_ghostcell>().end();
+    }
+
+
 
     //@}
 

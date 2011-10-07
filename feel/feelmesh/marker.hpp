@@ -72,6 +72,7 @@ struct by_location{};
 struct by_pid{};
 struct by_element{};
 struct by_entity{};
+struct by_ghostcell{};
 }
 /// \endcond detail
 } // Feel

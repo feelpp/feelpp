@@ -238,6 +238,8 @@ public:
 
     face_type const& face( size_type i ) const { return *_M_faces.find( face_type( i ) ); };
 
+    face_iterator faceIterator( size_type i ) const { return  _M_faces.find( face_type( i ) ); };
+
     face_iterator beginFace() { return _M_faces.begin(); }
     face_const_iterator beginFace() const { return _M_faces.begin(); }
     face_iterator endFace() { return _M_faces.end(); }

@@ -117,6 +117,7 @@ public:
         M_npids( 1 ),
         M_pid( 0 ),
         M_neighor_pids(),
+        M_idInPartition(),
         M_elist()
         {}
 
@@ -133,6 +134,7 @@ public:
         M_npids( 1 ),
         M_pid( 0 ),
         M_neighor_pids(),
+        M_idInPartition(),
         M_elist()
         {}
 
@@ -146,6 +148,7 @@ public:
         M_npids( __me.M_npids ),
         M_pid( __me.M_pid ),
         M_neighor_pids( __me.M_neighor_pids ),
+        M_idInPartition( __me.M_idInPartition),
         M_elist( __me.M_elist )
         {}
 
@@ -160,6 +163,7 @@ public:
                 M_npids = __me.M_npids;
                 M_pid = __me.M_pid;
                 M_neighor_pids = __me.M_neighor_pids;
+                M_idInPartition = __me.M_idInPartition;
                 M_elist = __me.M_elist;
             }
             return *this;
@@ -339,6 +343,15 @@ public:
         };
 
     /**
+     * \return \c true if ghost cell, \c false otherwise
+     */
+    bool isGhostCell() const
+    {
+        mpi::communicator world;
+        return (world.rank()!=M_pid);
+    }
+
+    /**
      * \return the processor id of the entity
      */
     uint16_type processId() const { return M_pid; }
@@ -375,6 +388,16 @@ public:
      * \return the number of partition the element is linked to
      */
     std::vector<int> const& neighborPartitionIds() const { return M_neighor_pids; }
+
+    /**
+     * set id in a partition pid of the entity
+     */
+    void setIdInPartition( uint16_type pid, size_type id )  { M_idInPartition.insert(std::make_pair( pid, id ) ); }
+
+    /**
+     * \return the id of the entity in a partition pid
+     */
+    size_type idInPartition(uint16_type pid ) const { return M_idInPartition.find(pid)->second; }
 
     /**
      * \return \c true if active, \c false otherwise
@@ -499,6 +522,7 @@ private:
     uint16_type M_npids;
     uint16_type M_pid;
     std::vector<int> M_neighor_pids;
+    std::map<uint16_type, size_type> M_idInPartition;
 
     //! element list to which the point belongs
     std::set<size_type> M_elist;
