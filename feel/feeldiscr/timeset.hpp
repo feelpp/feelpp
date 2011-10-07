@@ -1474,7 +1474,7 @@ TimeSet<MeshType, N>::resetPreviousTime(Real __time)
                 {
                     double t = (*__it)->time();
                     double eps = 1e-10;
-                    if ( (t+eps) <= __time) ++__it;
+                    if ( (t-eps) <= __time) ++__it;
                     else find=true;
                 }
         }
