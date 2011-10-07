@@ -311,11 +311,15 @@ public:
         return super2::isInterProcessDomain( super::processId()  );
     }
 
-
     /**
      * \return \c true if on the boundary, \c false otherwise
      */
     bool isOnBoundary() const { return super::isOnBoundary(); }
+
+    /**
+     * \return \c true if ghost cell, \c false otherwise
+     */
+    bool isGhostCell() const { return super::isGhostCell(); }
 
     /**
      * \return the point associated to the face
@@ -477,6 +481,11 @@ public:
      * \return \c true if on the boundary, \c false otherwise
      */
     bool isOnBoundary() const { return super::isOnBoundary(); }
+
+    /**
+     * \return \c true if ghost cell, \c false otherwise
+     */
+    bool isGhostCell() const { return super::isGhostCell(); }
 
     /**
      * \return process id
@@ -682,6 +691,11 @@ public:
      * \return \c true if on the boundary, \c false otherwise
      */
     bool isOnBoundary() const { return super::isOnBoundary(); }
+
+    /**
+     * \return \c true if ghost cell, \c false otherwise
+     */
+    bool isGhostCell() const { return super::isGhostCell(); }
 
     /**
      * \return process id
@@ -925,6 +939,11 @@ public:
      * \return \c true if on the boundary, \c false otherwise
      */
     bool isOnBoundary() const { return super::isOnBoundary(); }
+
+    /**
+     * \return \c true if ghost cell, \c false otherwise
+     */
+    bool isGhostCell() const { return super::isGhostCell(); }
 
     /**
      * \return process id
