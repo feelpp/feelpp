@@ -165,6 +165,10 @@ Mesh<Shape, T>::updateForUse()
                     this->updateEntitiesCoDimensionOne();
                     // update permutation of entities of co-dimension 1
                     this->updateEntitiesCoDimensionOnePermutation();
+                    // update in ghost cells of entities of co-dimension 1
+                    if (M_comm.size()>1)
+                        this->updateEntitiesCoDimensionOneGhostCell();
+
                     Debug( 4015 ) << "[Mesh::updateForUse] update entities of codimension 1 : " << ti.elapsed() << "\n";
                 }
             if ( this->components().test( MESH_UPDATE_EDGES ) )
@@ -529,6 +533,10 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                             // faces ids
                             face_type __f = *__it;
                             __f.setId( _faceit->second );
+
+                            // set the id for this partition
+                            __f.setIdInPartition(this->comm().rank(),__f.id());
+
 #if !defined( NDEBUG )
                             Debug( 4015 ) << "set face id " << __f.id()
                                           << " iterator id = " << __it->id()
@@ -583,6 +591,9 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
 
                             // set the process id from element
                             face.setProcessId( __element.processId() );
+
+                            // set the id for this partition
+                            face.setIdInPartition(this->comm().rank(),face.id());
 
                             // set the vertices of the face
                             for ( size_type k = 0;k < face_type::numPoints;++k )
@@ -754,6 +765,95 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
     ti.restart();
 }
 
+template<typename Shape, typename T>
+void
+Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
+{
+    std::vector<int> nbMsgToSend(M_comm.size());
+    std::fill(nbMsgToSend.begin(),nbMsgToSend.end(),0);
+
+    std::vector< std::map<int,int> > mapMsg(M_comm.size());
+
+    auto iv = this->beginGhostElement();
+    auto en = this->endGhostElement();
+    for ( ;iv != en; ++iv )
+        {
+            element_type const& __element = *iv;
+            int IdProcessOfGhost = __element.processId();
+            int idInPartition = __element.idInPartition(IdProcessOfGhost);
+            // send
+            M_comm.send(IdProcessOfGhost , nbMsgToSend[IdProcessOfGhost], idInPartition);
+#if 0
+            std::cout<< "I am the proc" << M_comm.rank()<<" , I send to proc " << IdProcessOfGhost
+                     <<" with tag "<< nbMsgToSend[IdProcessOfGhost]
+                     << " idSend " << idInPartition
+                     << " it_ghost->G() " << __element.G()
+                     << std::endl;
+#endif
+            // save tag of request
+            mapMsg[IdProcessOfGhost].insert(std::make_pair(nbMsgToSend[IdProcessOfGhost],__element.id() ) );
+            // update nb send
+            ++nbMsgToSend[IdProcessOfGhost];
+        }
+
+    // counter of msg received for each process
+    std::vector<int> nbMsgToRecv;
+    mpi::all_to_all(M_comm,
+                    nbMsgToSend,
+                    nbMsgToRecv);
+
+    // recv id asked and re-send set of face id
+    for (int proc=0; proc<M_comm.size();++proc)
+        {
+            for ( int cpt=0;cpt<nbMsgToRecv[proc];++cpt)
+                {
+                    int idRecv;
+                    //recv
+                    M_comm.recv( proc, cpt, idRecv);
+#if 0
+                    std::cout<< "I am the proc" << M_comm.rank()<<" I receive to proc " << proc
+                             <<" with tag "<< cpt
+                             << " idRecv " << idRecv
+                             << " it_ghost->G() " << this->element(idRecv).G()
+                             << std::endl;
+#endif
+                    // get faces id
+                    std::vector<int> idFaces(this->numLocalFaces());
+                    for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+                        {
+                            idFaces[j]=this->element(idRecv).face( j ).id();
+                        }
+                    // response
+                    M_comm.send( proc, cpt, idFaces );
+                }
+        }
+
+    // get response to initial request and update Feel::Mesh::Faces data
+    for (int proc=0; proc<M_comm.size();++proc)
+        {
+            for ( int cpt=0;cpt<nbMsgToSend[proc];++cpt)
+                {
+                    std::vector<int> idFacesRecv;
+                    //recv
+                    M_comm.recv( proc, cpt, idFacesRecv);
+#if 0
+                    std::cout<< "I am the proc " << M_comm.rank()<<" I receive to proc " << proc
+                             <<" with tag "<< cpt
+                             << " idFacesRecv " << idFacesRecv[0] << " " << idFacesRecv[1] << " "<< idFacesRecv[2]
+                             << std::endl;
+#endif
+                    //update data
+                    auto theelt = this->element(mapMsg[proc][cpt],proc);
+                    for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+                        {
+                            auto face_it = faceIterator(theelt.face( j ).id());
+                            this->faces().modify( face_it, detail::update_id_in_partition_type( proc, idFacesRecv[j] ) );
+                        }
+                }
+        }
+
+
+}
 
 template<typename Shape, typename T>
 void
