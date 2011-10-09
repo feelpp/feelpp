@@ -694,6 +694,13 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                                     detail::UpdateFaceConnection1<typename face_type::element_connectivity_type> update1( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) );
                                     update1( face );
                                     face.setOnBoundary( false );
+                                    // force processId equal to M_comm.rank() if face on interprocessfaces
+                                    if (face.processId()!=M_comm.rank())
+                                        {
+                                            if ( (face.element0().processId()==M_comm.rank()) || (face.element1().processId()==M_comm.rank()) )
+                                                face.setProcessId(M_comm.rank());
+                                        }
+
                                     this->faces().replace( __fit, face );
 #if 0
                                     // update neighbors for each element and replace in element container
