@@ -178,8 +178,8 @@ public:
     isInterProcessDomain( size_type p ) const
     {
         return ( ( boost::get<3>( M_element1 ) != invalid_size_type_value ) &&
-                 ( boost::get<3>( M_element0 ) == p ) &&
-                 ( boost::get<3>( M_element0 ) != boost::get<3>( M_element1 )) );
+                 ( ( boost::get<3>( M_element0 ) == p ) || ( boost::get<3>( M_element1 ) == p ) ) &&
+                 ( boost::get<3>( M_element0 ) != boost::get<3>( M_element1 ) ) );
     }
     bool
     isIntraProcessDomain( size_type p ) const
