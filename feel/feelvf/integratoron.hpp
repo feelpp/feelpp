@@ -323,10 +323,13 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
     for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
         {
-            permutation_type __p( permutation_type::IDENTITY );
-            __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
-            //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-            FEEL_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
+            for( permutation_type __p( permutation_type::IDENTITY );
+                 __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+            {
+                __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
+                //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
+                FEEL_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
+            }
         }
 
     uint16_type __face_id = __face_it->pos_first();
