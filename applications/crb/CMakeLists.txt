@@ -21,6 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+add_custom_target(opus)
+include(UseCRB)
 
 OPTION(FEELPP_OPUS_ENABLE_EADS "enable EADS testcase" OFF)
 IF ( FEELPP_OPUS_ENABLE_EADS )
