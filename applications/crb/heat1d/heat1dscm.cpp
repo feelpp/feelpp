@@ -34,7 +34,7 @@
 
 //#include <opusdata.hpp>
 //#include <opusmodelrb.hpp>
-#include <feel/feelmodels/heat1d/heat1d.hpp>
+#include <heat1d.hpp>
 
 #include <feel/feelcrb/crbscm.hpp>
 #include <feel/feelcrb/crbmodel.hpp>

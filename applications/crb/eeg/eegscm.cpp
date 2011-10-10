@@ -33,7 +33,7 @@
 #include <feel/feelcore/application.hpp>
 #include <feel/options.hpp>
 
-#include <feel/feelmodels/eeg/eeg.hpp>
+#include <eeg.hpp>
 
 #include <feel/feelcrb/crbscm.hpp>
 #include <feel/feelcrb/crbmodel.hpp>

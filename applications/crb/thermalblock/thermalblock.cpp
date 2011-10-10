@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2011-06-04
  */
-#include <feel/feelmodels/thermalblock/thermalblock.hpp>
+#include <thermalblock.hpp>
 
 
 namespace Feel
