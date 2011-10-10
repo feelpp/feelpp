@@ -132,7 +132,6 @@ public:
     typedef POD<truth_model_type> pod_type;
     typedef boost::shared_ptr<pod_type> pod_ptrtype;
 
-
     //! function space type
     typedef typename model_type::functionspace_type functionspace_type;
     typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
@@ -321,7 +320,6 @@ public:
             M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
             M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu ) );
 
-
             M_scm->setTruthModel( M_model );
         }
 
@@ -379,12 +377,14 @@ public:
      * \param N the size of the reduced basis space to use
      * \param uN primal solution
      * \param uNdu dual solution
+     * \param K : index of time ( time = K*dt) at which we want to evaluate the output
+     * Note : K as a default value for non time-dependent problems
      *
      *\return compute online the lower bound
      */
-    value_type lb( size_type K, parameter_type const& mu, vectorN_type& uN, vectorN_type& uNdu ) const;
-    value_type lb( size_type K, parameter_type const& mu, vectorN_type& uN, vectorN_type& uNdu, mpl::bool_<true> ) const;
-    value_type lb( size_type K, parameter_type const& mu, vectorN_type& uN, vectorN_type& uNdu, mpl::bool_<false> ) const;
+    value_type lb( size_type N, parameter_type const& mu, vectorN_type& uN, vectorN_type& uNdu , int K=0) const;
+    value_type lb( size_type N, parameter_type const& mu, vectorN_type& uN, vectorN_type& uNdu, mpl::bool_<true> , int K=0 ) const;
+    value_type lb( size_type N, parameter_type const& mu, vectorN_type& uN, vectorN_type& uNdu, mpl::bool_<false>, int K=0 ) const;
 
     /**
      * Returns the lower bound of the output
@@ -396,9 +396,9 @@ public:
      *
      *\return compute online the lower bound
      */
-    value_type lb( parameter_ptrtype const& mu, size_type K, vectorN_type& uN, vectorN_type& uNdu ) const
+    value_type lb( parameter_ptrtype const& mu, size_type N, vectorN_type& uN, vectorN_type& uNdu ) const
         {
-            return lb( K, *mu, uN, uNdu );
+            return lb( N, *mu, uN, uNdu );
         }
 
     /**
@@ -1252,6 +1252,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         M_WNmu->push_back( mu, index );
         M_WNmu_complement = M_WNmu->complement();
 
+
         //POD in time
         int K = M_model->computeNumberOfSnapshots();
         Log()<<"[CRB::offlineNoErrorEstimation] start of POD \n";
@@ -1373,6 +1374,8 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
         boost::tie( maxerror, mu, index ) = maxErrorBounds( M_N );
         std::cout << "  -- max error bounds computed in " << timer2.elapsed() << "s\n"; timer2.restart();
+
+        std::cout<<"New mu is given by "<<mu<<std::endl;
 
         M_rbconv.insert( convergence( M_N, maxerror ) );
 
@@ -1717,19 +1720,34 @@ CRB<TruthModelType>::computeErrorEstimationEfficiencyIndicator (parameterspace_p
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::value_type
-CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & uN, vectorN_type & uNdu   ) const
+CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & uN, vectorN_type & uNdu , int K) const
 {
-    return lb(N,mu,uN,uNdu,mpl::bool_<model_type::is_time_dependent>());
+    return lb(N,mu,uN,uNdu,mpl::bool_<model_type::is_time_dependent>() , K);
 }
 
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::value_type
-CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & uN, vectorN_type & uNdu, mpl::bool_<true>   ) const
+CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & uN, vectorN_type & uNdu, mpl::bool_<true> , int K  ) const
 {
 
-    int K = M_model->computeNumberOfSnapshots();
+
+    //if K>0 then the time at which we want to evaluate output is defined by
+    //time_for_output = K * time_step
+    //else it's the default value and in this case we take final time
+    double time_for_output;
     double time_step=M_model->timeStep();
+
+    if( K > 0)
+    {
+        time_for_output = K * time_step;
+    }
+    else
+    {
+        int model_K = M_model->computeNumberOfSnapshots();
+        time_for_output = model_K * time_step;
+    }
+
 
     if ( N > M_N ) N = M_N;
 
@@ -1765,8 +1783,13 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
     L.setZero();
 
     vectorN_type u_old ( (int)N );
+    u_old.setZero();
 
-    for(double time=time_step; time<=K*time_step; time+=time_step)
+
+    //vector containing oututs from time=time_step until time=time_for_output
+    std::vector<double>output_vector;
+    double output;
+    for(double time=time_step; time<=time_for_output; time+=time_step)
     {
 
         F=F1;
@@ -1778,22 +1801,25 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
         uN = A.lu().solve( F );
         u_old = uN/time_step;
 
+        L.setZero();
+        for(int q = 0;q < M_model->Ql(M_output_index); ++q)
+        {
+            L += theta_fq[M_output_index][q]*M_Lq_pr[q].block(0,0,N,N);
+        }
+        output = L.dot( uN );
+        output_vector.push_back(output);
+
     }
 
-    for(int q = 0;q < M_model->Ql(M_output_index); ++q)
-    {
-        L += theta_fq[M_output_index][q]*M_Lq_pr[q].block(0,0,N,N);//*u_old;
-    }
 
     double s_wo_correction = L.dot( uN );
-    // std::cout<<"[CRB::lb]  Need to be implemented in the case of time_dependent models"<<std::endl;
     return s_wo_correction;
 }
 
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::value_type
-CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & uN, vectorN_type & uNdu, mpl::bool_<false> ) const
+CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & uN, vectorN_type & uNdu, mpl::bool_<false> , int K) const
 {
     if ( N > M_N ) N = M_N;
     vectorN_type vN( N );
