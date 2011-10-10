@@ -260,7 +260,7 @@ public:
     int nRestart() const { return M_n_restart; }
 
     //! return the value of the bool restart
-    bool boolRestart() const {return M_restart; }
+    bool isRestart() const {return M_restart; }
 
     //! return the current time
     double time() const { return M_time; }
@@ -767,7 +767,7 @@ Bdf<SpaceType>::init()
 {
     super::init();
 
-    if ( this->boolRestart() )
+    if ( this->isRestart() )
         {
             for( int p = 0; p < std::min( M_order, M_iteration); ++p )
                 {
