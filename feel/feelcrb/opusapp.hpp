@@ -243,15 +243,22 @@ public:
 
                     if( crb->errorType()==2 )
                     {
+
                         std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.get<0>() )( o.get<1>() )( ti.elapsed() )( relative_error );
                         std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions\n";
+                        std::ofstream file_summary_of_simulations( (boost::format("summary_of_simulations_%d") % o.get<2>() ).str().c_str() ,std::ios::out | std::ios::app);
+                        printEntry( file_summary_of_simulations, mu, v );
                         printEntry( ostr, mu, v );
+                        file_summary_of_simulations.close();
                     }
                     else
                     {
                         std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.get<0>() )( o.get<1>() )( ti.elapsed() ) ( relative_error ) ;
                         std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions  (error estimation on this output : " << o.get<1>()<<") \n";
+                        std::ofstream file_summary_of_simulations( (boost::format("summary_of_simulations_%d") % o.get<2>() ).str().c_str() ,std::ios::out | std::ios::app);
+                        printEntry( file_summary_of_simulations, mu, v );
                         printEntry( ostr, mu, v );
+                        file_summary_of_simulations.close();
                     }
 
                 }
