@@ -26,7 +26,7 @@
    \author Sylvain Vallaghé <sylvain.vallaghe@gmail.com>
    \date 2011-06-27
  */
-#include <feel/feelmodels/eeg/eeg.hpp>
+#include <eeg.hpp>
 #include <feel/feelcrb/pfemapp.hpp>
 
 

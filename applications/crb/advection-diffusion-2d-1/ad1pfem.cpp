@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2011-04-23
  */
-#include <feel/feelmodels/advection-diffusion-2d-1/ad.hpp>
+#include <ad.hpp>
 #include <feel/feelcrb/pfemapp.hpp>
 
 
