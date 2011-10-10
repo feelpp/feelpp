@@ -29,9 +29,10 @@
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/bdf2.hpp>
-#include <feel/feelmodels/eads/eads.hpp>
-#include <feel/feelmodels/eads/opusdata.hpp>
 #include <feel/feelalg/solvereigen.hpp>
+#include <eads.hpp>
+#include <opusdata.hpp>
+
 
 
 namespace Feel

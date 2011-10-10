@@ -38,10 +38,10 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feelmodels/eads/opusmodel.hpp>
-#include <feel/feelmodels/eads/opusmodelthermal.hpp>
-#include <feel/feelmodels/eads/opusmodelfluidpoiseuille.hpp>
-#include <feel/feelmodels/eads/opusmodelfluidoseen.hpp>
+#include <opusmodel.hpp>
+#include <opusmodelthermal.hpp>
+#include <opusmodelfluidpoiseuille.hpp>
+#include <opusmodelfluidoseen.hpp>
 
 namespace Feel
 {

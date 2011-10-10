@@ -39,10 +39,10 @@
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 
 /**/
-#include <feel/feelmodels/eads/opusdata.hpp>
-#include <feel/feelmodels/eads/opusmodelbase.hpp>
-#include <feel/feelmodels/eads/opusdefs.hpp>
-#include <feel/feelmodels/eads/eads.hpp>
+#include <opusdata.hpp>
+#include <opusmodelbase.hpp>
+#include <opusdefs.hpp>
+#include <eads.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 
 /**/

@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2009-08-10
  */
-#include <feel/feelmodels/eads/eads.hpp>
-#include <feel/feelmodels/eads/eadsscmapp.hpp>
+#include <eads.hpp>
+#include <eadsscmapp.hpp>
 
 
 

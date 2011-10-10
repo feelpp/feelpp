@@ -46,7 +46,7 @@
 #include <feel/feeldiscr/bdf2.hpp>
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feelmodels/eads/opusdefs.hpp>
+#include <opusdefs.hpp>
 
 namespace Feel
 {

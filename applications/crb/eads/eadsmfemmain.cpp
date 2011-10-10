@@ -27,8 +27,8 @@
    \date 2010-02-06
  */
 #include <vector>
-#include <feel/feelmodels/eads/eads.hpp>
-#include <feel/feelmodels/eads/eadsmfemapp.hpp>
+#include <eads.hpp>
+#include <eadsmfemapp.hpp>
 
 int main( int argc, char** argv )
 {

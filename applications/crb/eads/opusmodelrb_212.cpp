@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2009-01-14
  */
-#include <feel/feelmodels/eads/opusmodelrb_impl.hpp>
+#include <opusmodelrb_impl.hpp>
 
 namespace Feel
 {

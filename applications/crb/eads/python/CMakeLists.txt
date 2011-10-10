@@ -22,6 +22,9 @@
 #
 #
 
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/..
+  )
 
 #files(GLOB pyfiles "*.py")
 opus_add_python_module( opuseadsmfem opuseadsmfem_wrapper.cpp LINK_LIBRARIES feel++_opus_models SCRIPTS opuseadsmfemtest.py )
