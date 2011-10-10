@@ -43,7 +43,7 @@
 #include <feel/feelpoly/im.hpp>
 #include <feel/feeldiscr/bdf2.hpp>
 
-#include <feel/feelmodels/eads/opusmodelbase.hpp>
+#include <opusmodelbase.hpp>
 
 namespace Feel
 {

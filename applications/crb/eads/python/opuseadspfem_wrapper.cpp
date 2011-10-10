@@ -34,7 +34,7 @@
 
 #include <feel/feelcore/opuswrapper.hpp>
 #include <feel/feelcrb/pfemapp.hpp>
-#include <feel/feelmodels/eads/opusmodelrb.hpp>
+#include <opusmodelrb.hpp>
 
 /* WARNING : Please read the following lines
  *

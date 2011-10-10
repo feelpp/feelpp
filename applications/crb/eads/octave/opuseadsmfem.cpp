@@ -28,7 +28,7 @@
  */
 #include <octave/oct.h>
 
-#include <feel/feelmodels/eads/eadsmfemapp.hpp>
+#include <eadsmfemapp.hpp>
 
 static boost::shared_ptr<Feel::EadsMFemApp> app;
 

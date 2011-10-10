@@ -37,8 +37,8 @@
 #include <feel/feeldiscr/bdf2.hpp>
 
 
-#include <feel/feelmodels/eads/opusmodelbase.hpp>
-#include <feel/feelmodels/eads/opusdefs.hpp>
+#include <opusmodelbase.hpp>
+#include <opusdefs.hpp>
 
 namespace Feel
 {

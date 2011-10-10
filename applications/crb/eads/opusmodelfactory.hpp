@@ -29,7 +29,7 @@
 #ifndef __OpusModelFactory_H
 #define __OpusModelFactory_H 1
 
-#include <feel/feelmodels/eads/opusmodelbase.hpp>
+#include <opusmodelbase.hpp>
 
 namespace Feel
 {

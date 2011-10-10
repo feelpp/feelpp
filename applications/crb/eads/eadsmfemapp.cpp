@@ -25,11 +25,11 @@
 #include <feel/feelcore/application.hpp>
 #include <feel/options.hpp>
 
-#include <feel/feelmodels/eads/opusdata.hpp>
-#include <feel/feelmodels/eads/opusmodelbase.hpp>
-#include <feel/feelmodels/eads/opusmodelfactory.hpp>
+#include <opusdata.hpp>
+#include <opusmodelbase.hpp>
+#include <opusmodelfactory.hpp>
 
-#include <feel/feelmodels/eads/eadsmfemapp.hpp>
+#include <eadsmfemapp.hpp>
 
 namespace Feel
 {

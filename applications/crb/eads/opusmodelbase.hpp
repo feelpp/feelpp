@@ -29,8 +29,8 @@
 #ifndef __OpusModelBase_H
 #define __OpusModelBase_H 1
 
-#include <feel/feelmodels/eads/opusdata.hpp>
-#include <feel/feelmodels/eads/eads.hpp>
+#include <opusdata.hpp>
+#include <eads.hpp>
 
 namespace Feel
 {

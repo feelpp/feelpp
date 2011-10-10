@@ -32,9 +32,9 @@
 #include <string>
 
 #include <feel/options.hpp>
-#include <feel/feelmodels/eads/opusdefs.hpp>
-#include <feel/feelmodels/eads/opusdata.hpp>
-#include <feel/feelmodels/eads/opuscomponent.hpp>
+#include <opusdefs.hpp>
+#include <opusdata.hpp>
+#include <opuscomponent.hpp>
 
 namespace Feel
 {

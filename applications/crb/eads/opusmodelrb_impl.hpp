@@ -39,7 +39,7 @@
 
 
 #include<feel/feelcore/debugeigen.hpp>
-#include<feel/feelmodels/eads/opusmodelrb.hpp>
+#include<opusmodelrb.hpp>
 //#include <opusoffline.hpp>
 //#include <opusonlines1.hpp>
 

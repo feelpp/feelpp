@@ -33,12 +33,12 @@
 #include <feel/feelcore/application.hpp>
 #include <feel/options.hpp>
 
-#include <feel/feelmodels/eads/eads.hpp>
+#include <eads.hpp>
 
 #include <feel/feelcore/opuswrapper.hpp>
-#include <feel/feelmodels/eads/opusdata.hpp>
-#include <feel/feelmodels/eads/opusmodelbase.hpp>
-#include <feel/feelmodels/eads/opusmodelfactory.hpp>
+#include <opusdata.hpp>
+#include <opusmodelbase.hpp>
+#include <opusmodelfactory.hpp>
 
 
 /*

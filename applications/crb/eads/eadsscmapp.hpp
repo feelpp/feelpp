@@ -32,10 +32,10 @@
 #include <feel/feelcore/application.hpp>
 #include <feel/options.hpp>
 
-#include <feel/feelmodels/eads/opusdata.hpp>
-#include <feel/feelmodels/eads/opusmodelbase.hpp>
-#include <feel/feelmodels/eads/opusmodelfactory.hpp>
-#include <feel/feelmodels/eads/opusmodelrb.hpp>
+#include <opusdata.hpp>
+#include <opusmodelbase.hpp>
+#include <opusmodelfactory.hpp>
+#include <opusmodelrb.hpp>
 
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>

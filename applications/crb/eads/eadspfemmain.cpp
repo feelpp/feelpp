@@ -31,8 +31,8 @@
 #include <feel/options.hpp>
 
 
-#include <feel/feelmodels/eads/eads.hpp>
-#include <feel/feelmodels/eads/opusmodelrb.hpp>
+#include <eads.hpp>
+#include <opusmodelrb.hpp>
 #include <feel/feelcrb/pfemapp.hpp>
 
 

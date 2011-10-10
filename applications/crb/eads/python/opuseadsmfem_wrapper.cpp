@@ -25,7 +25,7 @@
 #include <signal.h>
 
 
-#include <feel/feelmodels/eads/eadsmfemapp.hpp>
+#include <eadsmfemapp.hpp>
 #include <feel/feelcore/opuswrapper.hpp>
 
 #include <WrapperCommon.h>

@@ -32,7 +32,7 @@
 #include <feel/options.hpp>
 
 
-#include <feel/feelmodels/eads/opusmodelrb.hpp>
+#include <opusmodelrb.hpp>
 #include <feel/feelcrb/pfemapp.hpp>
 
 static boost::shared_ptr<Feel::PFemApp<Feel::OpusModelRB<2,1,2> > > app;
