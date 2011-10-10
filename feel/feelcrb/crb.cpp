@@ -28,8 +28,8 @@
  */
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/solvereigen.hpp>
-#include <crb.hpp>
-#include <crbscm.hpp>
+#include <feel/feelcrb/crb.hpp>
+#include <feel/feelcrb/crbscm.hpp>
 
 namespace Feel
 {
