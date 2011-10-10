@@ -429,8 +429,6 @@ public:
 
     void exportResults1d( double time, element_type& T, double s);
 
-    void solve( sparse_matrix_ptrtype& ,element_type& ,vector_ptrtype&  );
-
     /**
      * returns the scalar product of the boost::shared_ptr vector x and
      * boost::shared_ptr vector y
@@ -595,10 +593,10 @@ UnsteadyHeat1D::init()
 
     /*
     Feel::ParameterSpace<4>::Element mu_min( M_Dmu );
-    mu_min << 1, 1, 1, 1;
+    mu_min << 3.5857, 0.2531,  1.4058, 0.53378;
     M_Dmu->setMin( mu_min );
     Feel::ParameterSpace<4>::Element mu_max( M_Dmu );
-    mu_max << 1, 1, 1, 1;
+    mu_max << 3.5857, 0.2531,  1.4058, 0.53378;
     M_Dmu->setMax( mu_max );
     */
 
@@ -715,18 +713,6 @@ UnsteadyHeat1D::computeAffineDecomposition()
 
 
 void
-UnsteadyHeat1D::solve( sparse_matrix_ptrtype& D,
-               element_type& u,
-               vector_ptrtype& F )
-{
-
-    vector_ptrtype U( backend->newVector( u.functionSpace() ) );
-    backend->solve( D, D, U, F );
-    u = *U;
-} // Heat1d::solve
-
-
-void
 UnsteadyHeat1D::exportResults(double time, element_type& T )
 {
     if ( M_do_export )
@@ -789,9 +775,9 @@ void
 UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index)
 {
     //first direct model
-
-    *D = *M_Aq[0];
-    for( size_type q = 1;q < M_Aq.size(); ++q )
+    D->close();
+    D->zero();
+    for( size_type q = 0;q < M_Aq.size(); ++q )
     {
         D->addMatrix( M_thetaAq[q], M_Aq[q] );
     }
@@ -804,53 +790,33 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
         F->add( M_thetaFq[output_index][q], M_Fq[output_index][q] );
     }
 
+    auto vec_bdf_poly = backend->newVector(Xh);
     //add contribution from mass matrix
     for( size_type q = 0;q < M_Mq.size(); ++q )
     {
         //left hand side
-        sparse_matrix_ptrtype matrix_temp;
-        matrix_temp = backend->newMatrix( Xh, Xh );
-        matrix_temp->close();
-        matrix_temp->zero();
-        matrix_temp->addMatrix(bdf_coeff , M_Mq[q]);
-        matrix_temp->close();
-        D->addMatrix( M_thetaMq[q], matrix_temp );
-        //right hand side
-        sparse_matrix_ptrtype matrix_temp2;
-        matrix_temp2 = backend->newMatrix( Xh, Xh );
-        matrix_temp2->close();
-        matrix_temp2->zero();
-        matrix_temp2->addMatrix( M_thetaMq[q], M_Mq[q]);
-        vector_ptrtype vec_bdf_poly;
-        vec_bdf_poly = backend->newVector(Xh);
-        for(int i=0;i<bdf_poly.size();i++)
-        {
-            vec_bdf_poly->set(i,bdf_poly(i)) ;
-        }
-        F->addVector( *vec_bdf_poly, *matrix_temp2);
+        D->addMatrix( M_thetaMq[q]*bdf_coeff, M_Mq[q] );
+
+        *vec_bdf_poly = bdf_poly;
+        vec_bdf_poly->scale( M_thetaMq [q]);
+
+        F->addVector( *vec_bdf_poly, *M_Mq[q]);
     }
 
-
-
     //now adjoint model
-
-    *A_du = M_Aq_du[0];
-    for( size_type q = 1;q < M_Aq_du.size(); ++q )
+    A_du->close();
+    A_du->zero();
+    for( size_type q = 0;q < M_Aq_du.size(); ++q )
     {
         A_du->addMatrix( M_thetaAq[q], M_Aq_du[q] );
     }
-
     F_du->close();
     F_du->zero();
 
     for( size_type q = 0;q < M_Fq[output_index].size(); ++q )
     {
         //right hand side
-        vector_ptrtype vector_temp;
-        vector_temp = backend->newVector(Xh);
-        vector_temp->add( M_thetaFq[output_index][q], M_Fq[output_index][q] );
-        vector_temp->scale( -1 );
-        F_du->add(1,vector_temp);
+        F_du->add( -M_thetaFq[output_index][q], M_Fq[output_index][q] );
     }
     for( size_type q = 0;q < M_Fq_du.size(); ++q )
     {
@@ -863,26 +829,11 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
     for( size_type q = 0;q < M_Mq.size(); ++q )
     {
         //left hand side
-        sparse_matrix_ptrtype matrix_temp;
-        matrix_temp = backend->newMatrix( Xh, Xh );
-        matrix_temp->close();
-        matrix_temp->zero();
-        matrix_temp->addMatrix(-bdf_coeff , M_Mq[q]);
-        matrix_temp->close();
-        A_du->addMatrix( M_thetaMq[q], matrix_temp );
+        A_du->addMatrix( M_thetaMq[q]*(-bdf_coeff), M_Mq[q] );
         //right hand side
-        sparse_matrix_ptrtype matrix_temp2;
-        matrix_temp2 = backend->newMatrix( Xh, Xh );
-        matrix_temp2->close();
-        matrix_temp2->zero();
-        matrix_temp2->addMatrix( M_thetaMq[q], M_Mq[q]);
-        vector_ptrtype vec_bdf_poly;
-        vec_bdf_poly = backend->newVector(Xh);
-        for(int i=0;i<bdf_poly.size();i++)
-        {
-            vec_bdf_poly->set(i,-bdf_poly(i)) ;
-        }
-        F_du->addVector( *vec_bdf_poly, *matrix_temp2);
+        *vec_bdf_poly = bdf_poly;
+        vec_bdf_poly->scale(M_thetaMq[q]);
+        F_du->addVector( *vec_bdf_poly, *M_Mq[q]);
     }
 
 
@@ -934,11 +885,16 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
 
     double bdf_coeff = M_bdf->polyDerivCoefficient(0);
     int column_index=0;//usefull to fill the snapshots matrix
+    std::cout<<"  -- solving primal "<<std::endl;
     for ( M_bdf->start(); !M_bdf->isFinished();M_bdf->next() )
     {
         auto bdf_poly = M_bdf->polyDeriv();
         this->update( mu , bdf_coeff, bdf_poly );
-        backend->solve( _matrix=D,  _solution=T, _rhs=F, _prec=D );
+        auto ret = backend->solve( _matrix=D,  _solution=T, _rhs=F, _prec=D, _reuse_prec=(M_bdf->iteration() >=2));
+        if ( !ret.get<0>() )
+        {
+            Log()<<"WARNING : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+        }
 
 #if( 0 )
         //this->exportResults(M_bdf->time(), *T );
@@ -958,6 +914,8 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
         column_index++;
         M_bdf->shiftRight( *T );
     }
+
+#if (0)
     if( M_fill_snapshots_matrix )
     {
         //and now we compute dual ( z ) solution
@@ -969,13 +927,20 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
         M_bdf->setTimeStep(dt);
         M_bdf->setTimeInitial(M_bdf->timeFinal());
         M_bdf->setTimeFinal(0);
+        std::cout<<"  -- solving dual "<<std::endl;
         for ( M_bdf->start(); M_bdf->time()>=M_bdf->timeFinal(); M_bdf->next() )
         {
             element_type v( Xh, "v" );//test functions
             auto bdf_poly = M_bdf->polyDeriv();
 
             this->update( mu, bdf_coeff, bdf_poly, output_index );
-            backend->solve( _matrix=A_du,  _solution=Tdu, _rhs=F_du, _prec=A_du );
+
+            auto ret = backend->solve( _matrix=A_du,  _solution=Tdu, _rhs=F_du, _prec=A_du , _reuse_prec=0);
+            if ( !ret.get<0>() )
+            {
+                Log()<<"ADJOINT MODEL WARNING : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+            }
+
             //fill the matrix
             element_type adjoint=*Tdu;
             for(int i=0;i<adjoint.size();i++)
@@ -990,6 +955,7 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
         M_bdf->setTimeFinal(M_bdf->timeInitial());
         M_bdf->setTimeInitial(0);
     }
+#endif
 }
 
 void
