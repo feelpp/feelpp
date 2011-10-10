@@ -496,7 +496,10 @@ public:
         this->setTranspose( transpose );
         solve_return_type ret;
         if ( reuse_prec == false )
-            ret = solve( matrix, prec, _sol, rhs );
+            {
+                this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
+                ret = solve( matrix, prec, _sol, rhs );
+            }
         else
             ret = solve( matrix, prec, _sol, rhs, reuse_prec );
         detail::ref(solution) = *_sol;
