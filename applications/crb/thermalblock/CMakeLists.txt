@@ -25,7 +25,7 @@
 #opus_add_executable(thermalblockpfem
 #  thermalblockmain.cpp thermalblock.cpp  thermalblockgeo.cpp
 #  LINK_LIBRARIES ${FEEL_LIBRARIES} CFG thermalblock.cfg )
-
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 opus_add_executable(thermalblockpfem thermalblock.cpp thermalblockpfem.cpp thermalblockgeo.cpp LINK_LIBRARIES ${FEEL_LIBRARIES} CFG thermalblockpfem.cfg )
 opus_add_executable(thermalblockcrb  thermalblock.cpp thermalblockcrb.cpp  thermalblockgeo.cpp LINK_LIBRARIES ${FEEL_LIBRARIES} CFG thermalblockcrb.cfg )
