@@ -423,12 +423,15 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     std::vector<std::map<permutation_type, geopc1_ptrtype> > __geopc1( geoelement_type::numTopologicalFaces );
     for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
     {
-        permutation_type __p( permutation_type::IDENTITY );
-        __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
-        __geopc1[__f][__p] = geopc1_ptrtype(  new geopc1_type( __gm1, __fe->points( __f ) ) );
-        //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-        FEEL_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points for geopc" );
-        FEEL_ASSERT( __geopc1[__f][__p]->nPoints() ).error( "invalid number of points for geopc1" );
+        for( permutation_type __p( permutation_type::IDENTITY );
+             __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+            {
+                __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
+                __geopc1[__f][__p] = geopc1_ptrtype(  new geopc1_type( __gm1, __fe->points( __f ) ) );
+                //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
+                FEEL_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points for geopc" );
+                FEEL_ASSERT( __geopc1[__f][__p]->nPoints() ).error( "invalid number of points for geopc1" );
+            }
     }
 
     uint16_type __face_id = __face_it->pos_first();
