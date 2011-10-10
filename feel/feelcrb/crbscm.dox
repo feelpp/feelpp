@@ -1,0 +1,203 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2009-08-07
+
+  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+/**
+   \file scm
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2009-08-07
+   \version 1.0
+*/
+/**
+   \page scm The Successive Constraints Method
+
+   This page descrives the Successive Constraints Method that allows to compute a
+   lower bound for coercive or inf-sup constants associated with bilinear
+   forms. It is implemented in \ref OpusSCM.
+
+   We wish to compute \f$ \alpha^{\mathrm{LB}}: \mathcal{D} \rightarrow \mathbb{R}\f$ such that
+   \f[
+   0 < \alpha^{\mathrm{LB}}(\mu) \leq \alpha^{\mathcal{N}}(\mu), \quad \mu \in \mathcal{D}
+   \f]
+
+   and it computations is rapid (e.g. in \f$ O(1)\f$ where
+
+   \f[
+   \alpha^{\mathcal{N}}(\mu)= \mathrm{inf}_{w \in X^{\mathcal{N}}}  \frac{a(w,w;\mu)}{\|w\|_X^2}
+   \f]
+
+   \paragraph eigenvalue Remark
+
+   \f$ \alpha^{\mathcal{N}}(\mu)\f$ is the minimum eigenvalue of the following
+   generalized eigenvalue problem:
+
+   \f[
+   a(w,v;\mu) = \lambda(\mu)\ m(w,v;\mu), \quad (A w = \lambda B w)
+   \f]
+
+   where \f$ m(\cdot,\cdot)\f$  is the bilinear form associated with
+   \f$ \|\cdot\|_{X^{\mathcal{N}}}\f$  and \f$ B\f$  is the associated matrix. For
+   example the \f$ L_2-\f$ norm.
+
+   \section reformulation Reformulation of the problem
+
+   We re-formulate the problem as a minimization problem, first recall
+   \f[
+   a(w,v;\mu) = \sum_{q=1}^Q\ \theta_q(\mu)\ a_q(w,v)
+   \f]
+
+   Hence we have
+
+   \f[
+   \alpha^{\mathcal{N}}(\mu)= \mathrm{inf}_{w \in X^{\mathcal{N}}} \sum_{q=1}^Q\ \theta_q(\mu) \frac{a_q(w,w;\mu)}{\|w\|_X^2}
+   \f]
+
+   and we note
+
+   \f[
+   \mathcal{J}^{\mathrm{obj}}(w;\mu) = \sum_{q=1}^Q\ \theta_q(\mu) \frac{a_q(w,w;\mu)}{\|w\|_X^2}
+   \f]
+
+   \section lowerbound Lower bounds: Ingredients
+
+  First we set the design space for the minimisation problem~\eqref{eq:44}. We
+  introduce
+
+  \f[
+  \mathcal{B} = \prod_{q=1}^Q \Big[  \mathrm{inf}_{w\in X^{\mathcal{N}}} \frac{a_q(w,w;\mu)}{\|w\|_X^2}; \mathrm{sup}_{w\in X^{\mathcal{N}}} \frac{a_q(w,w;\mu)}{\|w\|_X^2} \Big]
+  \f]
+
+  \f[
+  \Xi = \Big\{ \mu_i \in \mathcal{D}; i=1,...,J \Big\}
+  \f]
+
+  and
+
+  \f[
+  C_K = \Big\{ \mu_i \in \Xi; i=1,...,K \Big\} \subset \Xi
+  \f]
+
+  \f$ \Xi\f$  is constructed using a \f$ \frac{1}{2^p}\f$  division of
+  \f$ \mathcal{D}\f$:  in 1D, \f$ 0, 1; \frac{1}{2}; \frac{1}{4}, \frac{3}{4};...\f$
+  \f$ C_K\f$  will be constructed using a greedy algorithm.
+
+  Finally we shall denote \f$ P_M(\nu;E)\f$  the set of \f$ M\f$  points closest to $\nu$
+  in the set \f$ E\f$ . We shall need this type of set to construct the lower bounds.
+
+  Given \f$ M_\alpha, M_+ \in \mathbb{N}\f$ , we are now ready to define \f$ \mathcal{Y}_{\mathrm{LB}}\f$
+
+  \f[
+    \mathcal{Y}_{\mathrm{LB}}(\nu; C_K) = \Big\{ y \in \mathbb{R}^Q\ |\ y \in  \mathcal{B}, \\
+    \ \sum_{q=1}^Q \theta_q(\nu')  y_q \geq \alpha^{\mathcal{N}}(\nu'),\ \forall \nu' \in P_{M_\alpha}(\nu;C_K)\\
+    \sum_{q=1}^Q \theta_q(\nu')  y_q \geq \alpha_{\mathrm{LB}}(\nu';C_{K-1}),\ \forall \nu' \in P_{M_+}(\nu;\Xi\backslash C_K) \Big\}
+  \f]
+
+  We now set
+
+  \f[
+  \alpha_{\mathrm{LB}}(\nu;C_K) = \mathrm{inf}_{y \in \mathcal{Y}_{\mathrm{LB}(\nu;C_K)}}\ \mathcal{J}^{\mathrm{obj}}(\nu;y)
+  \f]
+
+  This is in fact a linear program with \f$  Q\f$  design variables, \f$  y_q\f$ , and \f$  2  Q+M_\alpha+M_+\f$  constraints online.
+  It requires the construction of \f$  C_K\f$   offline.
+
+  \section upperbound Upper bounds
+
+  We are now ready to construct \f$ \mathcal{Y}_{\mathrm{UB}}\f$.  Let
+  \f[
+  \mathcal{Y}_{\mathrm{UB}}( C_K ) = \Big\{ y^*(\mu_k), 1 \leq k \leq K \Big\}
+  \f]
+
+  with
+
+  \f[
+  y^*(\nu) = \mathrm{arg}\mathrm{min}_{y \in \mathcal{Y}}\ \mathcal{J}^{\mathrm{obj}}( \nu; y )
+  \f]
+
+  We set
+
+  \f[
+  \alpha_{\mathrm{UB}}( \nu; C_K) = \mathrm{inf}_{y \in \mathcal{Y}_{\mathrm{UB}}(C_K)}\ \mathcal{J}^{\mathrm{obj}}(\nu;y)
+  \f]
+
+
+  \f$ \mathcal{Y}_{\mathrm{UB}}\f$ requires \f$ K\f$ eigensolves to compute the
+  eigenmode \f$\eta_k\f$ associated with \f$w_k, k=1,...,K\f$ and \f$K Q \mathcal{N}\f$
+  inner products to compute the
+  \f[
+  y^*_q(w_k)=\frac{a_q(\eta_k,\eta_k;\mu)}{\|\eta_k\|_{X^{\mathcal{N}}}^2}, k=1,...,K
+  \f]
+
+  offline . Then previous equation is a simple enumeration online.
+
+  \section Ck Construction of \f$ C_K\f$
+
+  Here is the \f$[C_{K_\mathrm{max}}] = \mathrm{Greedy}(\Xi, \epsilon$)\f$
+
+  Given \f$\Xi\f$ and \f$\epsilon \in [0;1]\f$
+
+  \li While \f$\mathrm{max}_{\nu \in \Xi}\ \frac{\alpha_{\mathrm{UB}}( \nu; C_K) - \alpha_{\mathrm{LB}}( \nu; C_K)}{\alpha_{\mathrm{UB}}( \nu; C_K)} > \epsilon\f$
+
+      - \f$\mu_{K+1} = \mathrm{arg} \mathrm{max}_{\nu \in \Xi}\ \frac{\alpha_{\mathrm{UB}}( \nu; C_K) - \alpha_{\mathrm{LB}}( \nu; C_K)}{\alpha_{\mathrm{UB}}( \nu; C_K)}\f$
+      - \f$C_{K+1} = C_K \cup \{ \mu_{K+1} \}\f$
+      - \f$K \leftarrow K+1\f$
+
+  \li set \f$K_{\mathrm{max}} = K\f$
+
+  \subsection operationcounts Operations Counts
+
+  \par offline \f$\mathrm{Offline}\f$
+
+  \li \f$2Q+M_\alpha+M_+\f$ eigensolves \f$\alpha^{\mathcal{N}}(\nu), y^*(\mu_k)\f$\ \
+  \li \f$n_\Xi K_{\mathrm{max}} LP(Q,M_\alpha,M_+)\f$ to build \f$C_{K_{\mathrm{max}}}\f$\ \
+  \li \f$K_{\mathrm{max}} Q\f$ inner products over \f$X^{\mathcal{N}} \Rightarrow \mathcal{Y}_{\mathrm{UB}}\f$
+
+
+  \f$[\alpha_{\mathrm{LB}}(\mu)] = \mathrm{Online}( \mu, C_{K_{\mathrm{max}}}, M_\alpha, M_+ )\f$
+
+  \par online \f$\mathrm{Online}\f$
+  Given \f$\mu \in \mathcal{D}\f$
+
+  \li sort over \f$C_{K_{\mathrm{max}}} \Rightarrow P_{M_\alpha}(\nu;C_{K_{\mathrm{max}}})\f$
+  and \f$P_{M_+}(\nu;\Xi\backslash C_{K_{\mathrm{max}}})\f$
+
+  \li \f$ (M_\alpha+M_++2) Q\f$ evaluation of \f$\theta_q(\nu')\f$
+  \li \f$ M_\alpha\f$ lookups to get \f$\nu' \rightarrow \alpha^{\mathcal{N}}(\nu')\f$
+  \li \f$ LP(Q,M_\alpha,M+\f$  to get \f$\alpha_{\mathrm{LB}} (\mu)\f$
+
+
+
+
+\subsection algorithm Algorithm
+
+
+\li Two algorithm to construct the primal and dual reduced basis
+\li Both method are based on a greedy approach
+\li Chose recursively the parameters that a distance between the
+reduced basis approximation and the truth one is minimized
+\li For the second algorithm we use this estimator given for primal and dual problem:
+\f[
+\Delta_{N,M}(\nu)=\frac{\epsilon_N^{p,p}(\nu)\epsilon_N^{d,p}(\nu)}{\bar{\alpha}^{p,p}(\nu)}
+\f]
+
+
+*/
