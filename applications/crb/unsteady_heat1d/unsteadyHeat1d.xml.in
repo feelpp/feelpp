@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE wrapper SYSTEM "@OpenTURNS_WRAPPER_DIR@/wrapper.dtd">
+
+<wrapper>
+  <library>
+
+    <!-- The path of the shared object -->
+    <path>opusheat1dcrb.so</path>
+
+    <!-- This section describes all exchanges data between the wrapper and the platform -->
+    <description>
+
+      <!-- Those variables are substituted in the files above -->
+      <!-- The order of variables is the order of the arguments of the function -->
+      <variable-list>
+
+        <variable id="k1"         type="in" />
+        <variable id="k2"         type="in" />
+        <variable id="delta"      type="in" />
+        <variable id="phi"        type="in" />
+
+        <!-- mesh size for the offline computation -->
+        <variable id="meshsize"   type="in" />
+        <!-- the dimension of the reduced basis space we want to use -->
+        <variable id="N"          type="in" />
+        <!-- the max error bound over a fine sampling of the parameter space -->
+        <variable id="DeltaNmax"  type="in" />
+
+        <!-- certified reduced basis outputs are decomposed into two components: -->
+        <!-- the output (lower bound) which is denoted s1 and the error bound -->
+        <!-- with respect to the finite element approximation  which is denoted -->
+        <!-- deltas1 -->
+        <variable id="s1" type="out" />
+        <variable id="deltas1" type="out" />
+
+      </variable-list>
+
+      <!-- The function that we try to execute through the wrapper -->
+      <function provided="yes">opusheat1dcrb</function>
+
+      <!-- the gradient is  defined  -->
+      <gradient provided="no"></gradient>
+
+      <!--  the hessian is  defined  -->
+      <hessian provided="no"></hessian>
+
+    </description>
+
+
+  </library>
+
+  <external-code>
+    <!-- Those data are external to the platform (input files, etc.)-->
+    <data></data>
+
+    <wrap-mode type="static-link" state="shared">
+      <in-data-transfer mode="arguments" />
+      <out-data-transfer mode="arguments" />
+    </wrap-mode>
+
+    <command># no command</command>
+
+  </external-code>
+
+</wrapper>
