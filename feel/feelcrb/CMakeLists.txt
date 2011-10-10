@@ -23,13 +23,9 @@
 #
 # set(CMAKE_CXX_FLAGS "-g -O0" )
 
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
+set(SRC crb.cpp crbdb.cpp crbscm.cpp pfemapp.cpp opusapp.cpp )
 
-add_library( feel++_opus_crb SHARED crb.cpp crbdb.cpp crbscm.cpp pfemapp.cpp opusapp.cpp )
-target_link_libraries(feel++_opus_crb ${FEEL_LIBRARIES} ${MPI_LIBRARIES} )
-set_target_properties( feel++_opus_crb PROPERTIES VERSION ${FEELPP_OPUS_SHARED_VERSION} SOVERSION ${FEELPP_OPUS_SHARED_SOVERSION})
-set_property(TARGET feel++_opus_crb PROPERTY LABELS opus)
 
-install(TARGETS feel++_opus_crb DESTINATION lib COMPONENT Bin)
-
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+feel_append_src(feelcrb "${SRC};${HDR}")
 
