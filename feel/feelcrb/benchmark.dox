@@ -1,0 +1,196 @@
+/* -*- mode: c++ -*-
+
+  This file is part of the Life library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2009-08-09
+
+  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+/**
+   \file benchmark
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2009-08-09
+   \version 1.0
+*/
+/**
+   \page benchmark Benchmark for OPUS
+
+   This test case has been proposed by Annabelle
+   Le-Hyaric\footnote{\href{mailto:Anabelle.Le-Hyaric@eads.net}{Anabelle.Le-Hyaric@eads.net}}
+   and Michel
+   Fouquembergh\footnote{\href{mailto:michel.fouquembergh@eads.net}{michel.fouquembergh@eads.net}}
+   both from \textsc{EADS IW}.
+
+   \section description Problem description
+
+   We consider a 2D model representative of the neighboring of an electronic
+   component submitted to a cooling air flow.  It is described by four
+   geometrical domains in \f$\mathbb{R}^2\f$ named \f$\Omega_i,i=1,2,3,4\f$, see figure
+   below.  We suppose the velocity \f$\mathbf{v}\f$ is known in each domain --- for
+   instance in \f$\Omega_4\f$ it is the solution of previous Navier-Stokes
+   computations. --- The temperature \f$T\f$ of the domain \f$\Omega = \cup_{i=1}^4 \Omega_i\f$
+   is then solution of heat transfer equation :
+
+   \f[
+   \rho C_i \Big( \frac{\partial T}{\partial t} + \mathbf{v} \cdot   \nabla T \Big) - \nabla \cdot \left( k_i \nabla T \right) = Q_i,\quad   i=1,2,3,4
+   \f]
+
+   where \f$t\f$ is the time and in each sub-domain \f$\Omega_i\f$, \f$\rho C_i\f$ is the
+   volumic thermal capacity , \f$k_i\f$ is thermal conductivity and \f$Q_i\f$ is a
+   volumic heat dissipated.
+
+
+
+   One should notice that the convection term in heat transfer equation may lead
+   to spatial oscillations which can be overcome by Petrov-Galerkin type or
+   continuous interior penalty stabilization techniques.
+
+
+   Integrated circuits (\f$\mathrm{IC}\f$s) (domains \f$\Omega_1\f$ and \f$\Omega_2\f$
+   ) are respectively soldered on \f$\mathrm{PCB}\f$ at
+   \f$\mathbf{x1}=(e_{\mathrm{PCB}}, h_1)\f$ and
+   \f$\mathbf{x_2}=(e_{\mathrm{PCB}}, h_2)\f$.  They are considered as
+   rectangles with width \f$e_{\mathrm{IC}}\f$ and height
+   \f$h_{\mathrm{IC}}\f$. The printed circuit board (\f$\mathrm{PCB}\f$) is a
+   rectangle \f$\Omega_3\f$ of width \f$e_{\mathrm{PCB}}\f$ and height
+   \f$h_{\mathrm{PCB}}\f$.  The air(\Air) is flowing along the \mathrm{PCB} in
+   domain \f$\Omega_4\f$.  Speed in the air channel \f$\Omega_4\f$ is supposed
+   to have a parabolic profile function of \f$x\f$ coordinate. Its expression is
+   simplified as follows (notice that \f$\mathbf{v}\f$ is normally solution of
+   Navier-Stokes equations; the resulting temperature and velocity fields should
+   be quite different from that simplified model), we have for all
+   \f$0 \leq y \leq h_{PCB}\f$
+
+   \f[
+   \begin{array}[c]{rl}
+   e_{Pcb} + e_{Ic} \leq x \leq e_{Pcb} + e_a, & \displaystyle \mathbf{v} = \frac{3}{2 (e_a-e_{Ic})}\ D\ \Big( 1 - \Big( \frac{x - ( \frac{e_a+e_{Ic}}{2} + e_{Pcb})}{\frac{(e_a-e_{Ic})}{2}} \Big)^2 \Big)\ f(t)\ \mathbf{y} \\
+   e_{Pcb}  \leq x \leq e_{Pcb} + e_{Ic}, & \mathbf{v} = 0
+   \end{array}
+   \f]
+
+   where \f$f\f$ is a function of time modelling the starting of the \mathrm{PCB} ventilation, \emph{i.e.}
+
+   \f[
+   f(t) = 1-\exp(-\frac{t}{3}),
+   \f]
+
+
+   \f$D\f$ is the air flow rate, see table~\vref{tab:1} and \f$\mathbf{y}=(0, 1)^T\f$ is the unit vector along the \f$y\f$ axis.
+   A quick verification shows that
+   \f[
+   \int_{\Gamma_4 \cap \Omega_4} \mathbf{v} \cdot \mathbf{n} = \int_{\Gamma_4 \cap \Omega_4} v_y = D
+   \f]
+
+   The medium velocity \f$\mathbf{v}_i = \mathbf{0}, i=1,2,3\f$ in  the solid domains \f$\Omega_i, i=1,2,3\f$.
+
+   \mathrm{IC}s dissipate heat, we have respectively
+   \f[
+   \begin{array}[c]{rl}
+   Q_1 &= Q \big( 1 - \exp(-t) \big)\quad \text{ in } \Omega_1 \\
+   Q_2 &= Q \big( 1 - \exp(-t) \big)\quad \text{ in } \Omega_2
+   \end{array}
+   \f]
+
+   where \f$Q\f$ is defined in table below.
+
+   We shall denote  \f$\mathbf{n}_{|{\Omega_i}} = \mathbf{n}_i\f$ denotes the unit outward normal to
+   \f$\Omega_i\f$ and \f$\mathbf{n}_{|{\Omega_j}} = \mathbf{n}_j\f$ denotes the unit outward
+   normal to \f$\Omega_j\f$.
+
+   \subsection bc Boundary conditions
+
+   We set
+   \begin{enumerate}
+   \item on \f$\Gamma_3 \cap \Omega_3\f$, a zero flux (Neumann-like) condition
+
+   \f[
+   -k_3\ \nabla T \cdot \mathbf{n}_3\ =\ 0;
+   \f]
+
+   \item on \f$\Gamma_3 \cap \Omega_4\f$, a zero flux (Robin-like) condition
+   \f[
+   (-k_4\ \nabla T + \rho C_4 T  \mathbf{v} ) \cdot \mathbf{n}_4\ =\ 0;
+   \f]
+
+   \item on \f$\Gamma_4, (0 \leq x \leq e_\mathrm{PCB}+e_a, y=0)\f$ the temperature is set (Dirichlet condition)
+   \f[
+   T\ = T_0;
+   \f]
+
+   \item between \f$\Gamma_1\f$ and \f$\Gamma_2\f$, periodic conditions
+   \f[
+  \begin{array}{rl}
+  T_{\big|\mathbf{x} = 0} &= T_{\big|\mathbf{x} = e_{Pcb} + e_{a}}     \\
+  -k_3\ \nabla T \cdot \mathbf{n}_{3_{\big|\mathbf{x} = 0}} &= k_4\ \nabla T \cdot \mathbf{n}_4{_{\big|\mathbf{x} = e_{Pcb} + e_{a}}};
+  \end{array}
+  \f]
+
+  \item at interfaces between the \mathrm{IC}s and \mathrm{PCB}, there is a thermal contact conductance:
+
+  \f[
+  \begin{array}{rl}
+  -k_1\ \nabla T \cdot \mathbf{n}_1 - k_3\ \nabla T \cdot \mathbf{n}_3 = r_{13}\big( T_{\partial \Omega_1} - T_{\partial \Omega_3} \big) \\
+  -k_2\ \nabla T \cdot \mathbf{n}_2 - k_3\ \nabla T \cdot \mathbf{n}_3 = r_{23}\big( T_{\partial \Omega_2} - T_{\partial \Omega_3} \big);
+  \end{array}
+  \f]
+
+  \item on other internal boundaries, the coontinuity of the heat
+  flux and temperature, on \f$\Gamma_{ij} = \Omega_i \cap \Omega_j \neq \emptyset\f$
+  \f[
+  \begin{array}{rl}
+  T_i &= T_j \\
+  k_i\ \nabla T \cdot \mathbf{n}_i &= -k_j\ \nabla T \cdot \mathbf{n}_j.
+  \end{array}
+  \f]
+
+  \end{enumerate}
+
+
+  \subsection ic Initial condition
+
+  At \f$t=0s\f$, we set \f$T = T_0\f$.
+
+  \subsection inputs Inputs
+
+  The table below displays the various fixed and variables parameters of this
+  test-case.
+
+
+  \subsection outputs Outputs
+
+  The outputs are \textit{(i)} the mean temperature \f$s_1(\mu)\f$ of the hottest IC
+
+  \f[
+  s_1(\mu) = \frac{1}{e_{\mathrm{IC}} h_\mathrm{IC}} \int_{\Omega_2} T
+  \f]
+
+  and \textit{(ii)} mean temperature \f$s_2(\mu)\f$ of the air at the outlet
+
+  \f[
+  s_2(\mu) = \frac{1}{e_{a}} \int_{\Omega_4 \cap \Gamma_3 } T
+  \f]
+  both depends on the solution of \eqref{eq:1} and are dependent on
+  the parameter set \f$\mu\f$.
+
+
+  We need to monitor \f$s_1(\mu)\f$ and \f$s_2(\mu)\f$ because \f$s_1(\mu)\f$ is the hottest part of the model
+  and the IC can't have a temperature above \f$340K\f$. \f$s_2(\mu)\f$ is the outlet of the air and in an
+  industrial system we can have others components behind this outlet. So the
+  temperature of the air doesn't have to be high to not interfere the proper functioning of these.
+
+*/
