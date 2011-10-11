@@ -120,11 +120,11 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 elements( MeshType const& mesh, flag_type flag, mpl::bool_<false> )
 {
 
-    Log() << "[filters] elements on proc " << mesh.comm().rank() << " flag = " << flag << "\n";
-    Log() << "[filters] elements begin id : " << mesh.beginElementWithProcessId( flag )->id() << "\n";
-    Log() << "[filters] elements n : " << std::distance( mesh.beginElementWithProcessId( flag ),
-                                                               mesh.endElementWithProcessId( flag ) )
-                << "\n";
+    Debug() << "[filters] elements on proc " << mesh.comm().rank() << " flag = " << flag << "\n";
+    Debug() << "[filters] elements begin id : " << mesh.beginElementWithProcessId( flag )->id() << "\n";
+    Debug() << "[filters] elements n : " << std::distance( mesh.beginElementWithProcessId( flag ),
+                                                           mesh.endElementWithProcessId( flag ) )
+            << "\n";
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               mesh.beginElementWithProcessId( flag ),
                               mesh.endElementWithProcessId( flag ) );
