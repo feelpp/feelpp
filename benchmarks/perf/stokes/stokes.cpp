@@ -112,15 +112,10 @@ class Stokes
     typedef Application super;
 public:
 
-
     typedef double value_type;
 
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
-
-    /*matrix*/
-    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
     typedef Entity<Dim,1,Dim> convex_type;
@@ -131,28 +126,13 @@ public:
     //# marker1 #
     typedef BasisU basis_u_type;
     typedef BasisP basis_p_type;
-    typedef Lagrange<0, Scalar> basis_l_type;
-    typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
+    typedef bases<basis_u_type,basis_p_type> basis_type;
     //# endmarker1 #
 
     /*space*/
-    //# marker2 #
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
-    //# endmarker2 #
-
-    BOOST_MPL_ASSERT( ( boost::is_same<typename space_type::bases_list, basis_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<0> >::type, basis_u_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<1> >::type, basis_p_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<2> >::type, basis_l_type> ) );
-
-    /* functions */
-    //# marker3 #
     typedef typename space_type::element_type element_type;
-    typedef typename element_type::template sub_element<0>::type element_0_type;
-    typedef typename element_type::template sub_element<1>::type element_1_type;
-    typedef typename element_type::template sub_element<2>::type element_2_type;
-    //# endmarker3 #
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -234,15 +214,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     boost::timer t;
     space_ptrtype Xh = space_type::New( mesh );
 
-    element_type U( Xh, "u" );
-    element_type V( Xh, "v" );
-    element_0_type u = U.template element<0>();
-    element_0_type v = V.template element<0>();
-    element_1_type p = U.template element<1>();
-    element_1_type q = V.template element<1>();
-    element_2_type lambda = U.template element<2>();
-    element_2_type nu = V.template element<2>();
-    //# endmarker4 #
+    auto U = Xh->element( "u" );
+    auto V = Xh->element( "v" );
+    auto u = U.template element<0>();
+    auto v = V.template element<0>();
+    auto p = U.template element<1>();
+    auto q = V.template element<1>();
 
     Log() << "Data Summary:\n";
     Log() << "   hsize = " << meshSize << "\n";
@@ -282,9 +259,11 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto f = vec(cst(0.),cst(0.)) ;
 
     // right hand side
-    form1( Xh, F, _init=true )  =
-        integrate( elements(mesh), trans(f)*id(v) )+
-        integrate( boundaryfaces(mesh), trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
+    form1( Xh, F, _init=true )  = integrate( elements(mesh), trans(f)*id(v) );
+    if ( this->vm()[ "bctype" ].template as<int>() == 1  )
+    {
+        form1( Xh, F, _init=true ) += integrate( boundaryfaces(mesh), trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
+    }
 
     Log() << "[stokes] vector local assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
@@ -298,21 +277,27 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(trans(dxt(u))*dx(v)+trans(dyt(u))*dy(v)));
     Log() << "time for diffusion terms: " << subt.elapsed() << "\n";subt.restart();
 
-    form2( Xh, Xh, D )+=integrate( _range=elements(mesh),_expr=-div(v)*idt(p) + divt(u)*id(q) );
+    form2( Xh, Xh, D )+=integrate( _range=elements(mesh),_expr=-div(v)*idt(p));
+    form2( Xh, Xh, D )+=integrate( _range=elements(mesh),_expr=divt(u)*id(q) );
     Log() << "time for velocity/pressure terms: " << subt.elapsed() << "\n";subt.restart();
 
-    form2( Xh, Xh, D )+=integrate( _range=elements(mesh),_expr=id(q)*idt(lambda) + idt(p)*id(nu) );
-    Log() << "time for lagrange multiplier terms: " << subt.elapsed() << "\n";subt.restart();
-
-    form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
-    form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(u) );
-    form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*trans(idt(u))*id(v)/hFace() );
-    Log() << "time for weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
+    if ( this->vm()[ "bctype" ].template as<int>() == 1  )
+    {
+        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
+        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(u) );
+        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*trans(idt(u))*id(v)/hFace() );
+        Log() << "time for weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
+    }
 
     //# endmarker7 #
     Log() << "[stokes] matrix local assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
     D->close();
     F->close();
+    if ( this->vm()[ "bctype" ].template as<int>() == 0  )
+    {
+        form2( Xh, Xh, D ) += on( boundaryfaces(mesh), u, F, u_exact );
+        Log() << "time for strong dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
+    }
     Log() << "[stokes] vector/matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
 
@@ -322,14 +307,23 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     Log() << " time for solver : "<<t.elapsed()<<" seconds \n";
 
+
+    double meas = integrate( _range=elements(mesh), _expr=constant(1.0) ).evaluate()( 0, 0);
+    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 4)\n";
+    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 4)\n";
+
+    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/meas;
+    Log() << "[stokes] mean(p)=" << mean_p << "\n";
+    std::cout << "[stokes] mean(p)=" << mean_p << "\n";
+
+    // get the zero mean pressure
+    p.add( - mean_p );
+
     size_type nnz = 0 ;
-    std::vector<size_type> const& nNz = D->graph()->nNz() ;
+    auto nNz = D->graph()->nNz() ;
     for(auto iter = nNz.begin();iter!=nNz.end();++iter)
       nnz += (*iter) ;
     Log() << "[stokes] matrix NNZ "<< nnz << "\n";
-
-    Log() << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
-    std::cout << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
 
     double u_errorL2 = integrate( _range=elements(mesh), _expr=trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
@@ -341,14 +335,6 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
     Log() << "[stokes] solve for D done\n";
-
-    double meas = integrate( _range=elements(mesh), _expr=constant(4.0) ).evaluate()( 0, 0);
-    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 4)\n";
-    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 4)\n";
-
-    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/meas;
-    Log() << "[stokes] mean(p)=" << mean_p << "\n";
-    std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
     double mean_div_u = integrate( elements(mesh), divv(u) ).evaluate()( 0, 0 );
     Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
