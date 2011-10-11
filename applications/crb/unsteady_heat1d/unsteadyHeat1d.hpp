@@ -943,7 +943,7 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
             }
 
             //fill the matrix
-            element_type adjoint=*T;
+            element_type adjoint=*Tdu;
             for(int i=0;i<adjoint.size();i++)
             {
                 Mdu_snapshots_matrix(i,column_index)=adjoint[i];
