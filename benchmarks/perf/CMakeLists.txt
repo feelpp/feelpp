@@ -39,3 +39,5 @@ add_executable( feel_perf2
   perf2.cpp
   )
 target_link_libraries(feel_perf2 ${FEEL_LIBRARIES} )
+
+add_subdirectory(stokes)

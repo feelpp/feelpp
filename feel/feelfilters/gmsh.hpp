@@ -844,6 +844,43 @@ BOOST_PARAMETER_FUNCTION(
     return gmsh_ptr;
 }
 
+/**
+ * \brief convert to msh format
+ *
+ * \arg filename
+ */
+BOOST_PARAMETER_FUNCTION(
+    (std::string), // return type
+    img2msh,    // 2. function name
+    tag,           // 3. namespace of tag types
+    (required
+     (filename,       *(boost::is_convertible<mpl::_,std::string>)))
+    (optional
+     (prefix,       *(boost::is_convertible<mpl::_,std::string>), fs::path(filename).stem()))
+    )
+{
+    gmsh_ptrtype gmsh_ptr( new Gmsh( 2, 1 ) );
+    gmsh_ptr->setPrefix( prefix );
+    std::string meshname = (boost::format( "%1%-0.msh" ) % prefix ).str();
+
+    // first try in the current path
+    if ( fs::exists( filename ) )
+        gmsh_ptr->setDescription((boost::format( "Merge \"%1%\";\nSave View [0] \"%2%\";\n" ) % filename % meshname ).str());
+    else if ( fs::exists( fs::path(Environment::localGeoRepository()) / filename ) )
+        gmsh_ptr->setDescription((boost::format( "Merge \"%1%\";\nSave View [0] \"%2%\";\n" ) % (fs::path(Environment::localGeoRepository()) / filename).string() % meshname ).str() );
+    else if ( Environment::systemGeoRepository().template get<1>()  &&
+              fs::exists( fs::path(Environment::systemGeoRepository().get<0>()) / filename ) )
+        gmsh_ptr->setDescription( (boost::format( "Merge \"%1%\";\nSave View [0] \"%2%\";\n" ) % (fs::path(Environment::systemGeoRepository().get<0>()) / filename).string() % meshname ).str() );
+    else
+    {
+        std::ostringstream ostr;
+        ostr << "File " << filename << " was not found neither in current directory or in " << Environment::localGeoRepository() << " or in " << Environment::systemGeoRepository();
+        throw std::invalid_argument( ostr.str() );
+    }
+    gmsh_ptr->generate(gmsh_ptr->prefix(), gmsh_ptr->description());
+    return meshname;
+}
+
 
 } // Feel
 
