@@ -316,12 +316,6 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "[stokes] vector/matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
 
-    if ( this->vm().count ( "export-matlab" ) )
-    {
-        D->printMatlab( "D.m" );
-        F->printMatlab( "F.m" );
-    }
-
     t.restart();
 
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
