@@ -166,13 +166,6 @@ public:
 private:
 
     /**
-     * solve the system
-     */
-    template<typename Mat, typename Vec1, typename Vec2>
-    void solve( Mat& D, Vec1& u, Vec2& F, bool is_sym );
-
-
-    /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
     void exportResults( element_type& u, element_type& mode0 );
@@ -239,71 +232,54 @@ Sound<Dim, Order, Entity>::run()
     /*
      * First we create the mesh
      */
-    mesh_ptr_type mesh = createMesh( meshSize );
+    auto mesh = createMesh( meshSize );
     stats["nelt"] = mesh->elements().size();
 
     /*
      * The function space and some associate elements are then defined
      */
     timers["init"].first.restart();
-    space_ptrtype Xh = space_type::New( mesh );
-    //Xh->dof()->showMe();
-    element_type u( Xh, "u" );
-    element_type v( Xh, "v" );
+    auto Xh = space_type::New( mesh );
+    auto u = Xh->element();
+    auto v = Xh->element();
     timers["init"].second = timers["init"].first.elapsed();
     stats["ndof"] = Xh->nDof();
 
-    /*
-     * a quadrature rule for numerical integration
-     */
-    im_type im;
-
-
-    vector_ptrtype F( M_backend->newVector( Xh ) );
+    auto F = M_backend->newVector( Xh );
     timers["assembly"].first.restart();
 
-
     if ( Dim == 2 )
-        form( Xh, *F )  = integrate( markedfaces(mesh,2), val(Py()*(1-Py()))*id(v) );
+        form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces(mesh,2), _expr=val(Py()*(1-Py()))*id(v) );
     else
-        form( Xh, *F )  = integrate( markedfaces(mesh,51),  val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) );
+        form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces(mesh,51),  _expr=val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) );
 
-    if ( this->vm().count( "export-matlab" ) )
-        F->printMatlab( "F.m" );
     timers["assembly"].second = timers["assembly"].first.elapsed();
 
     /*
      * Construction of the left hand side
      */
-    sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
+    auto D = M_backend->newMatrix( Xh, Xh );
 
     double kc2 = this->vm()["kc2"].template as<double>();
 
     timers["assembly"].first.restart();
 
-    form2( Xh, Xh, D ) = integrate( elements(mesh),  ( kc2*idt(u)*id(v)-gradt(u)*trans(grad(v))) );
+    form2( _test=Xh, _trial=Xh, _matrix=D,_init=true ) = integrate( _range=elements(mesh),  _expr=( kc2*idt(u)*id(v)-gradt(u)*trans(grad(v))) );
     D->close();
 
     timers["assembly"].second += timers["assembly"].first.elapsed();
 
-    if ( this->vm().count( "export-matlab" ) )
-        D->printMatlab( "D.m" );
-
-    this->solve( D, u, F, true );
+    M_backend->solve( _matrix=D, _solution=u, _rhs=F );
 
     // eigen modes
     double sigma = this->vm()["sigma"].template as<double>();
-    sparse_matrix_ptrtype S( M_backend->newMatrix( Xh, Xh ) );
-    form2( Xh, Xh, S ) = integrate( elements(mesh),  gradt(u)*trans(grad(v)) );
+    auto S = M_backend->newMatrix( Xh, Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=S, _init=true ) = integrate( _range=elements(mesh),  _expr=gradt(u)*trans(grad(v)) );
     S->close();
-    if ( this->vm().count( "export-matlab" ) )
-        S->printMatlab( "S" );
 
-    sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
-    form2( Xh, Xh, M ) = integrate( elements(mesh),  idt(u)*id(v));
+    auto M = M_backend->newMatrix( Xh, Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=M, _init=true ) = integrate( _range=elements(mesh),  _expr=idt(u)*id(v));
     M->close();
-    if ( this->vm().count( "export-matlab" ) )
-        M->printMatlab( "M.m" );
 
     int maxit = this->vm()["solvereigen-maxiter"].template as<int>();
     int tol = this->vm()["solvereigen-tol"].template as<double>();
@@ -341,23 +317,6 @@ Sound<Dim, Order, Entity>::run()
 
 } // Sound::run
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-template<typename Mat, typename Vec1, typename Vec2>
-void
-Sound<Dim, Order, Entity>::solve( Mat& D, Vec1& u, Vec2& F, bool is_sym  )
-{
-    timers["solver"].first.restart();
-
-    //backend.set_symmetric( is_sym );
-
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    M_backend->solve( D, D, U, F );
-    u = *U;
-
-    timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve: " << timers["solver"].second << "\n";
-} // Sound::solve
-
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
@@ -365,20 +324,17 @@ Sound<Dim, Order, Entity>::exportResults( element_type& U, element_type& Mode )
 {
     timers["export"].first.restart();
 
-    if ( this->vm().count( "export" ) )
-        {
-            Log() << "exportResults starts\n";
-            exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
-            //exporter->step(1.)->setMesh( this->createMesh( meshSize/2, 0.5, 1 ) );
-            //exporter->step(1.)->setMesh( this->createMesh( meshSize/Order, 0, 1 ) );
-            //exporter->step(1.)->setMesh( this->createMesh( meshSize ) );
-            if ( !this->vm().count( "export-mesh-only" ) )
-                {
-                    exporter->step(1.)->add( "p", U );
-                    exporter->step(1.)->add( "mode", Mode );
-                }
-            exporter->save();
-        }
+    Log() << "exportResults starts\n";
+    exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
+    //exporter->step(1.)->setMesh( this->createMesh( meshSize/2, 0.5, 1 ) );
+    //exporter->step(1.)->setMesh( this->createMesh( meshSize/Order, 0, 1 ) );
+    //exporter->step(1.)->setMesh( this->createMesh( meshSize ) );
+    if ( !this->vm().count( "export-mesh-only" ) )
+    {
+        exporter->step(1.)->add( "p", U );
+        exporter->step(1.)->add( "mode", Mode );
+    }
+    exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
     Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Sound::export
