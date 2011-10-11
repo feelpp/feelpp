@@ -227,7 +227,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "      mu = " << mu << "\n";
     Log() << " bccoeff = " << penalbc << "\n";
 
-    Log() << "[stokes] space and functions construction "<<t.elapsed()<<" seconds \n"; t.restart() ;
+    Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     auto F = M_backend->newVector( Xh );
 
@@ -265,7 +265,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
         form1( Xh, F, _init=true ) += integrate( boundaryfaces(mesh), trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
     }
 
-    Log() << "[stokes] vector local assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+    Log() << "  -- vector local assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     /*
      * Construction of the left hand side
@@ -275,37 +275,36 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     form2( Xh, Xh, D, _init=true );
     boost::timer subt;
     form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(trans(dxt(u))*dx(v)+trans(dyt(u))*dy(v)));
-    Log() << "time for diffusion terms: " << subt.elapsed() << "\n";subt.restart();
+    Log() << "   o time for diffusion terms: " << subt.elapsed() << "\n";subt.restart();
 
     form2( Xh, Xh, D )+=integrate( _range=elements(mesh),_expr=-div(v)*idt(p));
     form2( Xh, Xh, D )+=integrate( _range=elements(mesh),_expr=divt(u)*id(q) );
-    Log() << "time for velocity/pressure terms: " << subt.elapsed() << "\n";subt.restart();
+    Log() << "   o time for velocity/pressure terms: " << subt.elapsed() << "\n";subt.restart();
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
         form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
         form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(u) );
         form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*trans(idt(u))*id(v)/hFace() );
-        Log() << "time for weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
+        Log() << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
 
     //# endmarker7 #
-    Log() << "[stokes] matrix local assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
     D->close();
     F->close();
     if ( this->vm()[ "bctype" ].template as<int>() == 0  )
     {
         form2( Xh, Xh, D ) += on( boundaryfaces(mesh), u, F, u_exact );
-        Log() << "time for strong dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
+        Log() << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
-    Log() << "[stokes] vector/matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+    Log() << " -- time vector/matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
 
     t.restart();
 
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
 
-    Log() << " time for solver : "<<t.elapsed()<<" seconds \n";
+    Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";
 
 
     double meas = integrate( _range=elements(mesh), _expr=constant(1.0) ).evaluate()( 0, 0);
@@ -349,6 +348,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     this->exportResults( U, V );
 
+    Log() << "[mesh]   number of elements: " << Xh->mesh()->numElements() << "\n";
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
     Log() << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
