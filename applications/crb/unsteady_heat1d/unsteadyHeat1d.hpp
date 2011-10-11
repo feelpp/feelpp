@@ -694,6 +694,10 @@ UnsteadyHeat1D::assemble()
     form2( Xh, Xh, M_Aq_du[2], _init=true ) = integrate( markedelements(mesh,"k2_1"), (gradt(u)*trans(grad(v)) ) );
     form2( Xh, Xh, M_Aq_du[2] ) += integrate( markedelements(mesh,"k2_2"), (gradt(u)*trans(grad(v)) ) );
     M_Aq_du[2]->close();
+
+    form1( Xh , M_Fq_du[0] , _init=true) = integrate( markedelements(mesh,"right"), idt(u)*(alpha-1)*id(v) );
+    M_Fq_du[0]->close();
+
 }
 
 
@@ -798,7 +802,7 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
         D->addMatrix( M_thetaMq[q]*bdf_coeff, M_Mq[q] );
         //right hand side
         *vec_bdf_poly = bdf_poly;
-        vec_bdf_poly->scale( M_thetaMq [q]);
+        vec_bdf_poly->scale( M_thetaMq[q]);
         F->addVector( *vec_bdf_poly, *M_Mq[q]);
     }
 
@@ -835,8 +839,6 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
         F_du->addVector( *vec_bdf_poly, *M_Mq[q]);
     }
 
-
-
 }
 
 
@@ -844,7 +846,6 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
 void
 UnsteadyHeat1D::fillSnapshotsMatrix (parameter_type const& mu, int output_index)
 {
-
 
     M_fill_snapshots_matrix=true;
 
@@ -871,6 +872,7 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
     element_type v( Xh, "v" );//test functions
 
     pT->zero();
+
     assemble();
 
     this->computeThetaq( mu );
@@ -914,7 +916,7 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
         M_bdf->shiftRight( *T );
     }
 
-#if (0)
+#if (1)
     if( M_fill_snapshots_matrix )
     {
         //and now we compute dual ( z ) solution
@@ -941,7 +943,7 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
             }
 
             //fill the matrix
-            element_type adjoint=*Tdu;
+            element_type adjoint=*T;
             for(int i=0;i<adjoint.size();i++)
             {
                 Mdu_snapshots_matrix(i,column_index)=adjoint[i];
