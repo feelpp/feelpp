@@ -1172,8 +1172,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
     std::vector<sparse_matrix_ptrtype> Aq;
     std::vector<sparse_matrix_ptrtype> Mq;
     std::vector<std::vector<vector_ptrtype> > Fq,Lq;
-     boost::tie(Mq, Aq, Fq) = M_model->computeAffineDecomposition();
-
+    boost::tie(Mq, Aq, Fq) = M_model->computeAffineDecomposition();
 
     // scm offline stage: build C_K
     if ( M_error_type == CRB_RESIDUAL_SCM )
@@ -1207,7 +1206,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
     Log() << "[CRB::offlineNoErrorEstimation] strategy "<< M_error_type <<"\n";
     std::cout << "[CRB::offlineNoErrorEstimation] strategy "<< M_error_type <<"\n";
 
-    while ( maxerror > M_tolerance && M_N <= M_iter_max )
+    while ( maxerror > M_tolerance && M_N < M_iter_max )
     {
         boost::timer timer, timer2;
         Log() <<"========================================"<<"\n";
@@ -1288,6 +1287,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             M_WNdu.push_back( ModeSetdu[i] ) ;
 
             ++M_N;
+
 
             orthonormalize( M_N, M_WN );
             orthonormalize( M_N, M_WN );
@@ -1375,10 +1375,8 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         boost::tie( maxerror, mu, index ) = maxErrorBounds( M_N );
         std::cout << "  -- max error bounds computed in " << timer2.elapsed() << "s\n"; timer2.restart();
 
-        std::cout<<"New mu is given by "<<mu<<std::endl;
-
         M_rbconv.insert( convergence( M_N, maxerror ) );
-
+        
         //mu = M_Xi->at( M_N );//M_WNmu_complement->min().get<0>();
 
         check( M_WNmu->size() );
@@ -2548,6 +2546,13 @@ CRB<TruthModelType>::save(Archive & ar, const unsigned int version) const
     ar & BOOST_SERIALIZATION_NVP( M_Gamma_pr );
     ar & BOOST_SERIALIZATION_NVP( M_Gamma_du );
 
+    if( model_type::is_time_dependent )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_Mq_pr );
+        ar & BOOST_SERIALIZATION_NVP( M_Mq_du );
+        ar & BOOST_SERIALIZATION_NVP( M_Mq_pr_du );
+    }
+
 }
 
 template<typename TruthModelType>
@@ -2576,6 +2581,15 @@ CRB<TruthModelType>::load(Archive & ar, const unsigned int version)
     ar & BOOST_SERIALIZATION_NVP( M_Lambda_du );
     ar & BOOST_SERIALIZATION_NVP( M_Gamma_pr );
     ar & BOOST_SERIALIZATION_NVP( M_Gamma_du );
+
+    if( model_type::is_time_dependent )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_Mq_pr );
+        ar & BOOST_SERIALIZATION_NVP( M_Mq_du );
+        ar & BOOST_SERIALIZATION_NVP( M_Mq_pr_du );
+    }
+
+
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"
               << "[loadDB] N : " << M_N << "\n"
