@@ -23,6 +23,7 @@
 #
 add_executable(feel_perf_stokes  stokes.cpp )
 configure_file(stokes.cfg stokes.cfg)
+configure_file(exec.sh exec.sh)
 add_executable(feel_perf_stokes_s  stokes_bench.cpp )
 add_executable(feel_perf_stokes_hc  stokes_bench_hc.cpp )
 
