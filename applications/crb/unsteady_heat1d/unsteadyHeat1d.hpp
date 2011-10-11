@@ -796,10 +796,9 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
     {
         //left hand side
         D->addMatrix( M_thetaMq[q]*bdf_coeff, M_Mq[q] );
-
+        //right hand side
         *vec_bdf_poly = bdf_poly;
         vec_bdf_poly->scale( M_thetaMq [q]);
-
         F->addVector( *vec_bdf_poly, *M_Mq[q]);
     }
 
@@ -808,7 +807,7 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
     A_du->zero();
     for( size_type q = 0;q < M_Aq_du.size(); ++q )
     {
-        A_du->addMatrix( M_thetaAq[q], M_Aq_du[q] );
+        A_du->addMatrix( M_thetaAq_du[q], M_Aq_du[q] );
     }
     F_du->close();
     F_du->zero();
@@ -832,7 +831,7 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
         A_du->addMatrix( M_thetaMq[q]*(-bdf_coeff), M_Mq[q] );
         //right hand side
         *vec_bdf_poly = bdf_poly;
-        vec_bdf_poly->scale(M_thetaMq[q]);
+        vec_bdf_poly->scale(-M_thetaMq[q]);
         F_du->addVector( *vec_bdf_poly, *M_Mq[q]);
     }
 
@@ -935,7 +934,7 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
 
             this->update( mu, bdf_coeff, bdf_poly, output_index );
 
-            auto ret = backend->solve( _matrix=A_du,  _solution=Tdu, _rhs=F_du, _prec=A_du , _reuse_prec=0);
+            auto ret = backend->solve( _matrix=A_du,  _solution=Tdu, _rhs=F_du, _prec=A_du , _reuse_prec=(M_bdf->iteration() >=2));
             if ( !ret.get<0>() )
             {
                 Log()<<"ADJOINT MODEL WARNING : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
