@@ -78,6 +78,7 @@ class BdfBase
 public:
     typedef std::vector<double>::iterator time_iterator;
     typedef std::vector<double>::const_iterator time_const_iterator;
+    typedef std::vector<double> time_values_map_type;
 
     BdfBase()
         :
@@ -168,6 +169,7 @@ public:
         M_state( b.M_state ),
         M_n_restart( b.M_n_restart ),
         M_restart( b.M_restart ),
+        M_time_values_map( b.M_time_values_map ),
         M_alpha( b.M_alpha ),
         M_beta( b.M_beta )
     {}
@@ -204,6 +206,7 @@ public:
 
                 M_alpha = b.M_alpha;
                 M_beta = b.M_beta;
+                M_time_values_map = b.M_time_values_map;
             }
         return *this;
     }
@@ -223,14 +226,15 @@ public:
         ar & M_Tf;
 #endif
         //ar & M_time_orders;
-        ar & boost::serialization::make_nvp( "time_values", M_time_values );
+        ar & boost::serialization::make_nvp( "time_values", M_time_values_map );
 
         Debug( 5017 ) << "[BDF::serialize] time orders size: " << M_time_orders.size() << "\n";
-        Debug( 5017 ) << "[BDF::serialize] time values size: " << M_time_values.size() << "\n";
-        for(size_type i = 0; i < M_time_values.size(); ++ i )
+        Debug( 5017 ) << "[BDF::serialize] time values size: " << M_time_values_map.size() << "\n";
+        for( auto it = M_time_values_map.begin(), en = M_time_values_map.end(); it!=en; ++it )
             {
                 //Log() << "[Bdf] order " << i << "=" << M_time_orders[i] << "\n";
-                Debug( 5017 ) << "[Bdf::serialize] value " << i << "=" << M_time_values[i] << "\n";
+                Debug( 5017 ) << "[Bdf::serialize] value " << *it << "\n";
+
             }
         Debug( 5017 ) << "[BDF::serialize] serialize BDFBase done\n";
     }
@@ -277,7 +281,7 @@ public:
     }
 
     //! return vector of time
-    std::vector<double> timeValue() const { return M_time_values; }
+    time_values_map_type timeValues() const { return M_time_values_map; }
 
     //! start the bdf
     double start()
@@ -348,7 +352,13 @@ public:
 
     virtual void shiftRight()
     {
-        M_time_values.push_back( this->time() );
+        // create and open a character archive for output
+        std::ostringstream ostr;
+        ostr << M_name << "-" << M_iteration;
+        Debug( 5017 ) << "[BdfBase::shiftRight] solution name " << ostr.str() << "\n";
+
+        //M_time_values_map.insert( std::make_pair( M_iteration, this->time() ) );
+        M_time_values_map.push_back( this->time() );
     }
 
     //! return the state of the BDF
@@ -416,7 +426,7 @@ protected:
     std::vector<int> M_time_orders;
 
     //! vector that holds the time value at each bdf step
-    std::vector<double> M_time_values;
+    time_values_map_type M_time_values_map;
 
     //! path to the directory to store the functions
     fs::path M_path_save;
@@ -501,27 +511,26 @@ protected:
                         //BdfBaseMetadata bdfloader( *this );
                         //bdfloader.load();
 
-                        time_iterator it;
-                        // look for M_ti in the time values
                         M_iteration = 0;
+                        // look for M_ti in the time values
                         bool found = false;
-                        BOOST_FOREACH( double time, M_time_values )
+                        BOOST_FOREACH( auto time, M_time_values_map )
                             {
                                 if ( math::abs( time-M_Ti ) < 1e-10 )
                                     {
+                                        //M_iteration = time.first;
                                         found = true;
                                         break;
                                     }
                                 ++M_iteration;
                             }
 
-                        //it = std::find( M_time_values.begin(), M_time_values.end(), M_Ti );
                         if ( !found )
                             {
                                 Debug( 5017 ) << "[Bdf] intial time " << M_Ti << " not found\n";
                                 M_Ti = 0.0;
                                 M_iteration = 0;
-                                M_time_values.resize( 0 );
+                                M_time_values_map.clear();
                                 return;
                             }
                         Debug( 5017 ) << "[Bdf] initial time is Ti=" << M_Ti << "\n";
@@ -531,7 +540,7 @@ protected:
                 else
                     {
                         M_Ti = 0.0;
-                        M_time_values.resize( 0 );
+                        M_time_values_map.clear();
                     }
             }
 
@@ -611,7 +620,8 @@ class Bdf : public BdfBase
     friend class boost::serialization::access;
     typedef BdfBase super;
 public:
-
+    typedef Bdf<SpaceType> bdf_type;
+    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
     typedef SpaceType space_type;
     typedef boost::shared_ptr<space_type>  space_ptrtype;
     typedef typename space_type::element_type element_type;
@@ -649,8 +659,26 @@ public:
      */
     Bdf( space_ptrtype const& space, std::string const& name );
 
+    //! copy operator
+    Bdf( Bdf const& b )
+    :
+    super( b ),
+    M_space( b.M_space ),
+    M_unknowns( b.M_unknowns )
+        {}
 
     ~Bdf();
+
+    //! return a deep copy of the bdf object
+    bdf_ptrtype deepCopy() const
+        {
+            auto b = bdf_ptrtype( new bdf_type( *this ) );
+            for( auto it = b->M_unknowns.begin(), en = b->M_unknowns.end(); it != en; ++ it )
+            {
+                *it = unknown_type( new element_type( M_space ) );
+            }
+            return b;
+        }
 
     /**
        Initialize all the entries of the unknown vector to be derived with the
@@ -704,6 +732,7 @@ public:
 
     void showMe( std::ostream& __out = std::cout ) const;
 
+    void loadCurrent();
 private:
     void init();
 
@@ -797,8 +826,11 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::initialize( element_type const& u0 )
 {
-    M_time_values.resize( 0 );
-    M_time_values.push_back( 0. );
+    M_time_values_map.clear();
+    std::ostringstream ostr;
+    ostr << M_name << "-" << 0;
+    //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
+    M_time_values_map.push_back( 0 );
     std::for_each( M_unknowns.begin(), M_unknowns.end(), *boost::lambda::_1 = u0 );
     this->saveCurrent();
 }
@@ -807,10 +839,11 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::initialize( unknowns_type const& uv0 )
 {
-    M_time_values.resize( 0 );
-    M_time_values.push_back( 0. );
-    // Check if uv0 has the right dimensions
-    //FEEL_ASSERT( uv0.size() == uint16_type(M_order) ).error( "Initial data set are not enough for the selected BDF" );
+    M_time_values_map.clear();
+    std::ostringstream ostr;
+    ostr << M_name << "-" << 0;
+    //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
+    M_time_values_map.push_back( 0);
 
     std::copy( uv0.begin(), uv0.end(), M_unknowns.begin() );
     this->saveCurrent();
@@ -860,13 +893,8 @@ Bdf<SpaceType>::saveCurrent()
     bdfsaver.save();
 
     {
-        int dist = M_time_values.size()-1;
-
-        // create and open a character archive for output
         std::ostringstream ostr;
-        ostr << M_name << "-" << dist;
-        Debug( 5017 ) << "[Bdf::saveCurrent] saving" << ostr.str() << "\n";
-
+        ostr << M_name << "-" << M_iteration;
         fs::ofstream ofs( M_path_save / ostr.str() );
 
 
@@ -875,6 +903,25 @@ Bdf<SpaceType>::saveCurrent()
         oa << *M_unknowns[0];
     }
 }
+
+template <typename SpaceType>
+void
+Bdf<SpaceType>::loadCurrent()
+{
+    BdfBaseMetadata bdfsaver( *this );
+    bdfsaver.save();
+
+    {
+        std::ostringstream ostr;
+        ostr << M_name << "-" << M_iteration;
+        fs::ifstream ifs( M_path_save / ostr.str() );
+
+        // load data from archive
+        boost::archive::binary_iarchive ia(ifs);
+        ia >> *M_unknowns[0];
+    }
+}
+
 template <typename SpaceType>
 template<typename container_type>
 void
