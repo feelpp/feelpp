@@ -199,7 +199,7 @@ public:
             std::map<CRBModelMode,std::vector<std::string> > hdrs;
             using namespace boost::assign;
             std::vector<std::string> pfemhdrs = boost::assign::list_of("FEM Output")("FEM Time");
-            std::vector<std::string> crbhdrs = boost::assign::list_of("FEM Output")("FEM Time")("RB Output")("Error Bounds")("CRB Time")("Relative error PFEM/CRB (in percentage)");
+            std::vector<std::string> crbhdrs = boost::assign::list_of("FEM Output")("FEM Time")("RB Output")("Error Bounds")("CRB Time")("Relative error PFEM/CRB");
             std::vector<std::string> scmhdrs = boost::assign::list_of("Lb")("Lb Time")("Ub")("Ub Time")("FEM")("FEM Time");
             std::vector<std::string> crbonlinehdrs = boost::assign::list_of("RB Output")("Error Bounds")("CRB Time");
             std::vector<std::string> scmonlinehdrs = boost::assign::list_of("Lb")("Lb Time")("Ub")("Ub Time");
@@ -239,7 +239,8 @@ public:
                     ti.restart();
                     auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
 
-                    double relative_error = std::abs( ofem[0]-o.get<0>() )/ofem[0] * 100 ;
+                    //double relative_error = std::abs( ofem[0]-o.get<0>() )/ofem[0] * 100 ;
+                    double relative_error = std::abs( ofem[0]-o.get<0>() ) /ofem[0];
 
                     if( crb->errorType()==2 )
                     {
