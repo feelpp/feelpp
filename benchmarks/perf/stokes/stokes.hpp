@@ -27,6 +27,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2009-01-04
  */
+#if !defined( __FEELPP_BENCH_STOKES_HPP)
+#define __FEELPP_BENCH_STOKES_HPP 1
+
 #include <feel/options.hpp>
 #include <feel/feelcore/application.hpp>
 
@@ -229,7 +232,6 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
-    auto F = M_backend->newVector( Xh );
 
     //# marker5 #
     auto deft = gradt(u);
@@ -257,23 +259,31 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     //auto f = vec( (2*cos(Px())*cos(Py())-sin(Px())*sin(Py())),
     //              2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) );
     auto f = vec(cst(0.),cst(0.)) ;
-
+    boost::timer subt;
     // right hand side
-    form1( Xh, F, _init=true )  = integrate( elements(mesh), trans(f)*id(v) );
+    auto F = M_backend->newVector( Xh );
+    form1( Xh, F, _init=true );
+    Log() << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+    form1( Xh, F ) = integrate( elements(mesh), trans(f)*id(v) );
+    Log() << "   o time for rhs force terms: " << subt.elapsed() << "\n";subt.restart();
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form1( Xh, F, _init=true ) += integrate( boundaryfaces(mesh), trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
+        form1( Xh, F, _init=true ) += integrate( _range=boundaryfaces(mesh), _expr=trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ), _quad=_Q<10>() );
+        Log() << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
 
-    Log() << "  -- vector local assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+    Log() << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     /*
      * Construction of the left hand side
      */
     //# marker7 #
+    t.restart();
     auto D = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, D, _init=true );
-    boost::timer subt;
+    Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+
+    subt.restart();
     form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(trans(dxt(u))*dx(v)+trans(dyt(u))*dy(v)));
     Log() << "   o time for diffusion terms: " << subt.elapsed() << "\n";subt.restart();
 
@@ -297,7 +307,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
         form2( Xh, Xh, D ) += on( boundaryfaces(mesh), u, F, u_exact );
         Log() << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
-    Log() << " -- time vector/matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+    Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
 
     t.restart();
@@ -324,12 +334,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
       nnz += (*iter) ;
     Log() << "[stokes] matrix NNZ "<< nnz << "\n";
 
-    double u_errorL2 = integrate( _range=elements(mesh), _expr=trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
+    double u_errorL2 = integrate( _range=elements(mesh), _expr=trans(idv(u)-u_exact)*(idv(u)-u_exact), _quad=_Q<10>() ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
     Log() << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
 
-    double p_errorL2 = integrate( _range=elements(mesh), _expr=(idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
+    double p_errorL2 = integrate( _range=elements(mesh), _expr=(idv(p)-p_exact)*(idv(p)-p_exact), _quad=_Q<10>() ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
     Log() << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
@@ -374,22 +384,5 @@ Stokes<Dim, BasisU, BasisP, Entity>::exportResults( element_type& U, element_typ
 } // Stokes::export
 } // Feel
 
-int
-main( int argc, char** argv )
-{
+#endif // __FEELPP_BENCH_STOKES_HPP
 
-    using namespace Feel;
-    /* assertions handling */
-    Feel::Assert::setLog( "stokes.assert");
-
-    const int nDim = 2;
-    //typedef Feel::Stokes<nDim, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex> stokes_type;
-    //typedef Feel::Stokes<nDim, Lagrange<1, Vectorial>,Lagrange<1, Scalar>, Simplex> stokes_type;
-    typedef Feel::Stokes<nDim, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Simplex> stokes_type;
-    //typedef Feel::Stokes<nDim, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<1, Scalar>, Simplex> stokes_type;
-
-
-    /* define and run application */
-    stokes_type stokes( argc, argv, makeAbout(), makeOptions() );
-    stokes.run();
-}
