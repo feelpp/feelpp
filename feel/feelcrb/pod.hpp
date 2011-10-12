@@ -306,6 +306,25 @@ void POD<TruthModelType>::exportMode(double time, element_ptrtype& mode)
 template<typename TruthModelType>
 void POD<TruthModelType>::fillPodMatrix()
 {
+#if 0
+    M_bdf->setRestart( true );
+    auto bdfi = M_bdf->deepCopy();
+    auto bdfj = M_bdf->deepCopy();
+    for( bdfi->start(); bdfi->isFinished(); bdfi->next() )
+    {
+        int i = bdfi->iteration()-1;
+        bdfi->loadCurrent();
+        for( bdfj->start(); !bdfj->isFinished() && (bdfj->iteration() < bdfi->iteration()); bdfj->next() )
+        {
+            int j = bdfj->iteration()-1;
+            bdfj->loadCurrent();
+            M_pod_matrix(i,j) = M_model->scalarProduct(bdfj->unknown(0), bdfi->unknown(0));
+            M_pod_matrix(j,i) = M_pod_matrix(i,j);
+
+        }
+        M_pod_matrix(i,i) = M_model->scalarProduct(bdfi->unknown(0), bdfi->unknown(0));
+    }
+#else
 
     vector_ptrtype ui( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype uj( M_backend->newVector( M_model->functionSpace() ) );
@@ -331,7 +350,7 @@ void POD<TruthModelType>::fillPodMatrix()
         }
         M_pod_matrix(i,i) = M_model->scalarProduct(ui,ui);
     }
-
+#endif
 }//fillPodMatrix
 
 template<typename TruthModelType>
