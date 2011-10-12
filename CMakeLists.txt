@@ -257,6 +257,7 @@ if(FEEL_ENABLE_BAMG)
   set_config_option(FEEL_HAVE_BAMG "Bamg")
 endif(FEEL_ENABLE_BAMG)
 
+
 #
 # Python
 #
@@ -297,6 +298,11 @@ IF( FEEL_MINIMAL_CONFIGURATION )
   UNSET( FEEL_INSTANTIATION_MODE CACHE )
   SET(FEEL_MESH_MAX_ORDER "1" CACHE STRING "maximum geometrical order in templates to instantiate" FORCE )
 ENDIF( FEEL_MINIMAL_CONFIGURATION )
+
+option(FEEL_ENABLE_APPLICATIONS_CRB "Enable CRB applications in Feel++" OFF)
+if (ANN_FOUND AND GLPK_FOUND)
+  set( FEEL_ENABLE_APPLICATIONS_CRB ON )
+endif()
 
 #
 # Enable testing
