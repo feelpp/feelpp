@@ -48,10 +48,10 @@ do
 
 echo \"==============================\"
 echo \"h=\$h\"
-cat $HOME/feel/perf/stokes/stokes/Simplex_2_1_2/${fem}/h_\$h/toto-1.0 | grep \"_error||_2\"
-cat $HOME/feel/perf/stokes/stokes/Simplex_2_1_2/${fem}/h_\$h/toto-1.0 | grep time
-cat $HOME/feel/perf/stokes/stokes/Simplex_2_1_2/${fem}/h_\$h/toto-1.0 | grep elements
-cat $HOME/feel/perf/stokes/stokes/Simplex_2_1_2/${fem}/h_\$h/toto-1.0 | grep dof
+cat $HOME/feel/perf/stokes/Simplex_2_1_2/${fem}/h_\$h/toto-1.0 | grep \"_error||_2\"
+cat $HOME/feel/perf/stokes/Simplex_2_1_2/${fem}/h_\$h/toto-1.0 | grep time
+cat $HOME/feel/perf/stokes/Simplex_2_1_2/${fem}/h_\$h/toto-1.0 | grep elements
+cat $HOME/feel/perf/stokes/Simplex_2_1_2/${fem}/h_\$h/toto-1.0 | grep dof
 
 done
 
