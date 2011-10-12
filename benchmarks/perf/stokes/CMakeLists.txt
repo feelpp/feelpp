@@ -56,7 +56,8 @@ cat $HOME/feel/perf/stokes/stokes/Simplex_2_1_2/P2/h_\$h/toto-1.0 | grep dof
 done
 
 ")
-file(WRITE ${EXEC} ${CMAKE_CURRENT_BINARY_DIR}/exec-${fem}.sh)
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/exec-${fem}.sh ${EXEC})
+endforeach()
 
 foreach(N 2 3 4 5)
   math (EXPR P '${N}-1')
