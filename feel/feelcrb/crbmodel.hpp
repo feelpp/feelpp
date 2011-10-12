@@ -313,9 +313,9 @@ public:
     /**
      * \brief update the model wrt \p mu
      */
-    offline_merge_type update( parameter_type const& mu )
+    offline_merge_type update( parameter_type const& mu, double time=0 )
         {
-            M_model->computeThetaq( mu );
+            M_model->computeThetaq( mu , time);
             return offlineMerge( mu );
         }
     /**
@@ -612,6 +612,18 @@ public:
     double timeStep()
     {
         return M_model->timeStep();
+    }
+    double timeInitial()
+    {
+        return M_model->timeInitial();
+    }
+    double timeFinal()
+    {
+        return M_model->timeFinal();
+    }
+    int timeOrder()
+    {
+        return M_model->timeOrder();
     }
     eigen_matrix_type snapshotsMatrix()
     {
