@@ -23,4 +23,5 @@
 #
 feel_add_example( dofpoints dofpoints.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
 feel_add_example( meshho meshho.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
+feel_add_example( bdfpod bdfpod.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
 feel_add_example( perf_int perf.cpp LINK_LIBRARIES ${FEEL_LIBRARIES} )
