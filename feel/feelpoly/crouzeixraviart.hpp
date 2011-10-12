@@ -328,6 +328,18 @@ reference_convex_type _M_refconvex;
 private:
 
 };
+template<uint16_type N,
+         uint16_type RealDim,
+         template<uint16_type Dim> class PolySetType,
+         typename T,
+         template<uint16_type, uint16_type, uint16_type> class Convex>
+const uint16_type CrouzeixRaviart<N,RealDim,PolySetType,T,Convex>::nDim;
+template<uint16_type N,
+         uint16_type RealDim,
+         template<uint16_type Dim> class PolySetType,
+         typename T,
+         template<uint16_type, uint16_type, uint16_type> class Convex>
+const uint16_type CrouzeixRaviart<N,RealDim,PolySetType,T,Convex>::nOrder;
 
 } // fem
 
