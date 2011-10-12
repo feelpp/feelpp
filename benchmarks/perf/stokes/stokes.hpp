@@ -140,11 +140,13 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
 
-    Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    Stokes( std::string const& basis_name,
+            int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
+        M_basis_name( basis_name ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         mu = this->vm()["mu"].template as<value_type>();
@@ -168,7 +170,7 @@ private:
 
     backend_ptrtype M_backend;
     double meshSize;
-
+    std::string M_basis_name;
     double mu;
     double penalbc;
 
@@ -190,10 +192,10 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     if ( this->vm().count( "nochdir" ) == false )
     {
-        this->changeRepository( boost::format( "perf/stokes/%1%/%2%/P%3%/h_%4%/" )
+        this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/" )
                                 % this->about().appName()
                                 % convex_type::name()
-                                % BasisU::nOrder
+                                % M_basis_name
                                 % this->vm()["hsize"].template as<double>() );
     }
 

@@ -31,10 +31,10 @@ main( int argc, char** argv )
     Feel::Assert::setLog( \"stokes-.assert\")\;
     const int nDim = 2\;
     typedef Feel::Stokes<nDim, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Simplex> stokes_type\;
-    stokes_type stokes( argc, argv, makeAbout(), makeOptions() )\;
+    stokes_type stokes( \"cr1p0\", argc, argv, makeAbout(), makeOptions() )\;
     stokes.run()\;
 }")
-file(WRITE feel_perf_stokes_cr1p0.cpp ${CR1P0})
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_stokes_cr1p0.cpp ${CR1P0})
 add_executable(feel_perf_stokes_cr1p0  feel_perf_stokes_cr1p0.cpp )
 target_link_libraries(feel_perf_stokes_cr1p0 ${FEEL_LIBRARIES} )
 
@@ -48,10 +48,10 @@ do
 
 echo \"==============================\"
 echo \"h=\$h\"
-cat $HOME/feel/perf/stokes/stokes/Simplex_2_1_2/P2/h_\$h/toto-1.0 | grep \"_error||_2\"
-cat $HOME/feel/perf/stokes/stokes/Simplex_2_1_2/P2/h_\$h/toto-1.0 | grep time
-cat $HOME/feel/perf/stokes/stokes/Simplex_2_1_2/P2/h_\$h/toto-1.0 | grep elements
-cat $HOME/feel/perf/stokes/stokes/Simplex_2_1_2/P2/h_\$h/toto-1.0 | grep dof
+cat $HOME/feel/perf/stokes/stokes/Simplex_2_1_2/${fem}/h_\$h/toto-1.0 | grep \"_error||_2\"
+cat $HOME/feel/perf/stokes/stokes/Simplex_2_1_2/${fem}/h_\$h/toto-1.0 | grep time
+cat $HOME/feel/perf/stokes/stokes/Simplex_2_1_2/${fem}/h_\$h/toto-1.0 | grep elements
+cat $HOME/feel/perf/stokes/stokes/Simplex_2_1_2/${fem}/h_\$h/toto-1.0 | grep dof
 
 done
 
@@ -71,10 +71,10 @@ main( int argc, char** argv )
 
     const int nDim = 2\;
     typedef Feel::Stokes<nDim, Lagrange<${N}, Vectorial>,Lagrange<${P}, Scalar>, Simplex> stokes_type\;
-    stokes_type stokes( argc, argv, makeAbout(), makeOptions() )\;
+    stokes_type stokes( \"p${N}p${P}\", argc, argv, makeAbout(), makeOptions() )\;
     stokes.run()\;
 }")
-file(WRITE feel_perf_stokes_p${N}p${P}.cpp ${LAG})
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_stokes_p${N}p${P}.cpp ${LAG})
 add_executable(feel_perf_stokes_p${N}p${P}  feel_perf_stokes_p${N}p${P}.cpp )
 target_link_libraries(feel_perf_stokes_p${N}p${P} ${FEEL_LIBRARIES} )
 endforeach()
