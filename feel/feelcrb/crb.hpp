@@ -920,7 +920,6 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
 
         //and now the dual
         POD->setBdf( M_bdf_dual );
-        //std::cout<<" DUAL "<<std::endl;
         mode_set_type ModeSetdu;
         POD->pod(ModeSetdu);
 
@@ -2714,9 +2713,6 @@ CRB<TruthModelType>::projectionOnPodSpace( element_ptrtype & u , const std::stri
     {
         u->add( -1 , *projection );
     }
-
-    //std::cout<<"[projection]"<<std::endl;
-    //for(int i=0;i<projection->size();i++) std::cout<<"projection("<<i<<") : "<<projection->operator()(i)<<std::endl;
 
 }
 
