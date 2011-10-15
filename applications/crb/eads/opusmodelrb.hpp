@@ -255,7 +255,7 @@ public:
      * \param mu parameter to evaluate the coefficients
      */
     theta_vectors_type
-    computeThetaq( parameter_type const& mu );
+    computeThetaq( parameter_type const& mu , double time=0 );
 
     /**
      * \brief return the coefficient vector

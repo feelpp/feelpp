@@ -23,5 +23,5 @@
 #
 
 
-opus_add_model(heatSink2d HeatSink2D HDRS heatSink2d.hpp LINK_LIBRARIES feel++_opus_crb ${FEEL_LIBRARIES} CFG heatSink2d.cfg XML heatSink2d.xml SCRIPTS heatSink2d.m)
+opus_add_model(heatSink2d HeatSink2D HDRS heatSink2d.hpp LINK_LIBRARIES ${FEEL_LIBRARIES} CFG heatSink2d.cfg XML heatSink2d.xml SCRIPTS heatSink2d.m)
 

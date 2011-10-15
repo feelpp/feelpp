@@ -214,7 +214,7 @@ public:
      * \param mu parameter to evaluate the coefficients
      */
     boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu )
+    computeThetaq( parameter_type const& mu , double time=0)
         {
             M_thetaAq.resize( Qa() );
             M_thetaAq( 0 ) = 1;

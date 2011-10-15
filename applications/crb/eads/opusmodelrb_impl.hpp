@@ -707,7 +707,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::Ql( int l ) const
 
 template<int OrderU, int OrderP, int OrderT>
 typename OpusModelRB<OrderU,OrderP,OrderT>::theta_vectors_type
-OpusModelRB<OrderU,OrderP,OrderT>::computeThetaq( parameter_type const& mu )
+OpusModelRB<OrderU,OrderP,OrderT>::computeThetaq( parameter_type const& mu, double time )
 {
     //Log() << "[OpusModelRB::computeThetaq] mu = " << mu << "\n";
     double kIC = mu(0);

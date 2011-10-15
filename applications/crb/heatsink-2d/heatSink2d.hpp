@@ -279,7 +279,7 @@ public:
      * list of parameters : k_f k_s and L
      */
     boost::tuple<theta_vector_type, theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu )
+    computeThetaq( parameter_type const& mu , double time=0)
         {
 
             double kf = mu( 0 );
@@ -396,12 +396,13 @@ public:
      */
     void solve( parameter_type const& mu, element_ptrtype& T, int output_index=0 );
 
-    eigen_matrix_type snapshotsMatrix(){return M_snapshots_matrix;}
-    eigen_matrix_type dualSnapshotsMatrix(){return Mdu_snapshots_matrix;}
-    void fillSnapshotsMatrix (parameter_type const& mu, int output_index);
     void assemble();
     int computeNumberOfSnapshots();
+    double timeFinal() {return M_bdf->timeFinal();}
     double timeStep() { return  M_bdf->timeStep(); }
+    double timeInitial() {return M_bdf->timeInitial();}
+    int timeOrder() {return M_bdf->timeOrder(); }
+
     /**
      * solve for a given parameter \p mu
      */
@@ -943,18 +944,6 @@ void HeatSink2D::update( parameter_type const& mu,double bdf_coeff, element_type
 }
 
 
-
-void HeatSink2D::fillSnapshotsMatrix (parameter_type const& mu, int output_index)
-{
-
-    M_fill_snapshots_matrix=true;
-
-    const int Ndof = Xh->nDof();//number of dofs used
-    M_snapshots_matrix.resize(Ndof,M_Nsnap);
-    Mdu_snapshots_matrix.resize(Ndof,M_Nsnap);
-
-    solve(mu , pT);
-}
 
 
 void HeatSink2D::solve( parameter_type const& mu )
