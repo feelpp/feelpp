@@ -70,6 +70,7 @@
 #include <feel/feelcore/serialization.hpp>
 
 #include <feel/feelvf/vf.hpp>
+#include <feel/feeldiscr/bdf2.hpp>
 
 namespace Feel
 {
@@ -115,12 +116,13 @@ public :
     typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
 
 
-    //! space type
-    //typedef typename model_type::FunctionSpace<mesh_type, basis_type, value_type> space_type;
-
-
     typedef typename fusion::vector<Lagrange<1, Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+
+
+    //! time discretization
+	typedef Bdf<space_type>  bdf_type;
+	typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
 
     /* export */
@@ -212,15 +214,13 @@ public :
     //! return model used
     const truth_model_ptrtype & model()  { return M_model; }
 
-
+    void setBdf( bdf_ptrtype& bdf ) { M_bdf = bdf; }
     void setSnapshotsMatrix (matrixN_type& Matrix ) { M_snapshots_matrix=Matrix; }
     void setWN (wn_type& WN) { M_WN=WN; }
-    void setK  ( int K ) { M_K=K; }
-    void setNm ( int Nm ) { M_Nm=Nm; }
+    void setK  (const int K ) { M_K=K; }
+    void setNm ( const int Nm ) { M_Nm=Nm; }
     void setModel ( truth_model_ptrtype Model ) { M_model=Model; }
-
-    //! projection step to remove the part of the solution already in the reduced space.
-    void projectionOnPodSpace();
+    void setNdof ( const int Ndof ) { M_Ndof = Ndof;  }
 
     //! fill the matrix which will be used to perform the POD
     void fillPodMatrix();
@@ -232,11 +232,16 @@ public :
 
     void exportMode(double time, element_ptrtype& mode);
 
+
+    void podWithSnapshotsMatrix( mode_set_type& ModeSet );
+    void projectionOnPodSpace();
+
 private :
 
     int M_Nm;
 
     int M_K;
+    int M_Ndof;
 
     truth_model_ptrtype M_model;
 
@@ -254,6 +259,7 @@ private :
 
     export_ptrtype exporter;
 
+    bdf_ptrtype M_bdf;
 };//class POD
 
 
@@ -306,11 +312,10 @@ void POD<TruthModelType>::exportMode(double time, element_ptrtype& mode)
 template<typename TruthModelType>
 void POD<TruthModelType>::fillPodMatrix()
 {
-#if 0
     M_bdf->setRestart( true );
     auto bdfi = M_bdf->deepCopy();
     auto bdfj = M_bdf->deepCopy();
-    for( bdfi->start(); bdfi->isFinished(); bdfi->next() )
+    for( bdfi->start(); !bdfi->isFinished(); bdfi->next() )
     {
         int i = bdfi->iteration()-1;
         bdfi->loadCurrent();
@@ -318,88 +323,17 @@ void POD<TruthModelType>::fillPodMatrix()
         {
             int j = bdfj->iteration()-1;
             bdfj->loadCurrent();
+
+            element_type ej = bdfj->unknown(0);
+            element_type ei = bdfi->unknown(0);
+
             M_pod_matrix(i,j) = M_model->scalarProduct(bdfj->unknown(0), bdfi->unknown(0));
             M_pod_matrix(j,i) = M_pod_matrix(i,j);
-
         }
         M_pod_matrix(i,i) = M_model->scalarProduct(bdfi->unknown(0), bdfi->unknown(0));
     }
-#else
-
-    vector_ptrtype ui( M_backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype uj( M_backend->newVector( M_model->functionSpace() ) );
-
-    for(int i=0;i<M_pod_matrix.rows();i++)
-    {
-
-        for(int k=0;k<M_snapshots_matrix.rows();k++)
-        {
-            ui->set(k,M_snapshots_matrix(k,i));
-        }
-
-        for(int j=0;j<i;j++)
-        {
-
-            for(int k=0;k<M_snapshots_matrix.rows();k++)
-            {
-                uj->set(k,M_snapshots_matrix(k,j));
-            }
-
-            M_pod_matrix(i,j) = M_model->scalarProduct(ui,uj);
-            M_pod_matrix(j,i) = M_pod_matrix(i,j);
-        }
-        M_pod_matrix(i,i) = M_model->scalarProduct(ui,ui);
-    }
-#endif
 }//fillPodMatrix
 
-template<typename TruthModelType>
-void POD<TruthModelType>::projectionOnPodSpace()
-{
-    int Nrows = M_snapshots_matrix.rows();
-    int Ncols = M_snapshots_matrix.cols();
-
-    vector_ptrtype u( M_backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype v( M_backend->newVector( M_model->functionSpace() ) );
-
-    for(int column=0;column<Ncols;column++)
-    {
-
-        element_type projection;
-        projection.resize(Nrows);
-        projection.zero();
-
-        for(int s=0;s<M_WN.size();s++)
-        {
-            element_type e = M_WN[s];
-
-            for(int i=0;i<Nrows;i++)
-            {
-                u->set(i,e(i));
-                v->set(i,M_snapshots_matrix(i,column));
-            }
-
-
-            double k =M_model->scalarProduct(u,v);
-            e.scale(k);
-
-            for(int i=0;i<Nrows;i++)
-            {
-                projection(i)+=e(i);
-            }
-
-        }//end of loop over elements of WN
-        //now we have the projection for this solution
-        if(M_WN.size()>0)
-        {
-            for(int i=0;i<Nrows;i++)
-            {
-                M_snapshots_matrix(i,column) = M_snapshots_matrix(i,column) - projection(i);
-            }
-        }
-    }//end of loop over columns of Matrix
-
-}
 
 
 template<typename TruthModelType>
@@ -407,11 +341,12 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
 {
     M_backend = backend_type::build( BACKEND_PETSC );
 
-    projectionOnPodSpace();
     Eigen::SelfAdjointEigenSolver< matrixN_type > eigen_solver;
-    M_pod_matrix.resize(M_K,M_K);
-    fillPodMatrix();
 
+    int K = M_bdf->timeValues().size();
+    M_pod_matrix.resize(K,K);
+
+    fillPodMatrix();
 
     //store the matrix
     if( M_store_pod_matrix )
@@ -472,29 +407,28 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
         eigen_values[i]=real(eigen_solver.eigenvalues()[i]);
     }
 
-
-    const int Ndof = M_snapshots_matrix.rows();
     int position_of_largest_eigenvalue=number_of_eigenvalues-1;
-
 
 
     for(int i=0;i<M_Nm;i++)
     {
         element_ptrtype mode ( new element_type( M_model->functionSpace() ) );
         mode->zero();
-        for(int k=0;k<M_K;k++)
-        {
-            double psi_k = real( eigen_solver.eigenvectors().col(position_of_largest_eigenvalue)[k] );
-            for(int i=0;i<Ndof;i++)
-            {
-                mode->operator()(i) += psi_k * M_snapshots_matrix(i,k);
-            }
 
+        M_bdf->setRestart( true );
+        int index=0;
+        for( M_bdf->start(); !M_bdf->isFinished(); M_bdf->next() )
+        {
+            M_bdf->loadCurrent();
+            double psi_k = real( eigen_solver.eigenvectors().col(position_of_largest_eigenvalue)[index] );
+            M_bdf->unknown(0).scale( psi_k );
+            mode->add( 1 , M_bdf->unknown(0) );
+            index++;
         }
+
         --position_of_largest_eigenvalue;
         ModeSet.push_back(*mode);
     }
-
 
     if( M_store_pod_matrix_format_octave )
     {
@@ -528,8 +462,8 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
         eigenvector_file.close();
 
     }
-
 }
+
 
 }//namespace Feel
 
