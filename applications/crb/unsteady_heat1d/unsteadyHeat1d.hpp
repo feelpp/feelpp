@@ -283,7 +283,7 @@ public:
      * \param mu parameter to evaluate the coefficients
      */
     boost::tuple<theta_vector_type, theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu, double time=0 )
+    computeThetaq( parameter_type const& mu , double time=0)
         {
             M_thetaAq.resize( Qa() );
             M_thetaAq( 0 ) = 1;
@@ -404,11 +404,9 @@ public:
     void assemble();
     int computeNumberOfSnapshots();
     double timeStep() { return  M_bdf->timeStep(); }
-    double timeInitial() {return M_bdf->timeInitial();}
-    double timeFinal() {return M_bdf->timeFinal(); }
-    int timeOrder() {return M_bdf->timeOrder(); }
-
-
+    double timeFinal() { return M_bdf->timeFinal(); }
+    double timeInitial() { return M_bdf->timeInitial(); }
+    int timeOrder() { return M_bdf->timeOrder();  }
     /**
      * solve for a given parameter \p mu
      */
@@ -462,6 +460,9 @@ public:
     value_type output( int output_index, parameter_type const& mu , bool export_output=false);
 
     static const bool is_time_dependent = true;
+
+
+
 private:
 
     bool steady ;
@@ -595,6 +596,7 @@ UnsteadyHeat1D::init()
     mu_max << 50, 50, 5, 5;
     M_Dmu->setMax( mu_max );
 
+
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
@@ -690,7 +692,7 @@ UnsteadyHeat1D::assemble()
     form2( Xh, Xh, M_Aq_du[2] ) += integrate( markedelements(mesh,"k2_2"), (gradt(u)*trans(grad(v)) ) );
     M_Aq_du[2]->close();
 
-    //form1( Xh , M_Fq_du[0] , _init=true) = integrate( markedelements(mesh,"right"), idt(u)*(alpha-1)*id(v) );
+    form1( Xh , M_Fq_du[0] , _init=true) = integrate( markedelements(mesh,"right"), idt(u)*(alpha-1)*id(v) );
     M_Fq_du[0]->close();
 
 }
@@ -910,7 +912,6 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
         column_index++;
         M_bdf->shiftRight( *T );
     }
-
 
 #if (1)
     if( M_fill_snapshots_matrix )

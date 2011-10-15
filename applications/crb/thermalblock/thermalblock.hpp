@@ -248,7 +248,7 @@ public:
     parameterspace_ptrtype parameterSpace() const { return M_Dmu;}
 
     boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu )
+    computeThetaq( parameter_type const& mu , double time=0)
         {
             M_thetaAq.resize( Qa() );
 
