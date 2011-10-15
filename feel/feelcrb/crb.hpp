@@ -858,6 +858,8 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         *udu = *u;
         M_bdf_dual->initialize(*udu);
 
+#if 0
+
         bdf_coeff = M_bdf_dual->polyDerivCoefficient(0);
         for ( M_bdf_dual->start(); !M_bdf_dual->isFinished(); M_bdf_dual->next() )
         {
@@ -891,6 +893,8 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         }
         std::cout<<"dual problem solved"<<std::endl;
 
+#endif
+
         for( int l = 0; l < M_model->Nl(); ++l )
             Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
 
@@ -918,20 +922,25 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
             M_WN.push_back( ModeSet[i] );
         }
 
+
         //and now the dual
         POD->setBdf( M_bdf_dual );
         mode_set_type ModeSetdu;
         POD->pod(ModeSetdu);
 
+
         for(int i=0;i<Nm;i++)
         {
             M_WNdu.push_back( ModeSetdu[i] ) ;
+
             ++M_N;
 
             orthonormalize( M_N, M_WN );
             orthonormalize( M_N, M_WN );
+#if 0
             orthonormalize( M_N, M_WNdu );
             orthonormalize( M_N, M_WNdu );
+#endif
 
             Log() << "[CRB::offlineNoErrorEstimation] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
             for( int q = 0; q < M_model->Qa(); ++q )
@@ -1000,6 +1009,7 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
             }
 
 
+
         }//end of loop over the number of mode per mu
 
         check( M_WNmu->size() );
@@ -1009,6 +1019,8 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         std::cout << "============================================================\n";
         Log() <<"========================================"<<"\n";
         std::cout<<"number of elements in the reduced basis : "<<M_N<<std::endl;
+
+
     }
     this->saveDB();
     //return M_rbconv;
@@ -1383,6 +1395,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         *udu = *u;
         M_bdf_dual->initialize(*udu);
 
+#if 0
         bdf_coeff = M_bdf_dual->polyDerivCoefficient(0);
         for ( M_bdf_dual->start(); !M_bdf_dual->isFinished(); M_bdf_dual->next() )
         {
@@ -1415,7 +1428,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         }
         std::cout<<"dual problem solved"<<std::endl;
 
-
+#endif
         for( int l = 0; l < M_model->Nl(); ++l )
             Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
 
@@ -1454,9 +1467,10 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
             orthonormalize( M_N, M_WN );
             orthonormalize( M_N, M_WN );
+#if 0
             orthonormalize( M_N, M_WNdu );
             orthonormalize( M_N, M_WNdu );
-
+#endif
             Log() << "[CRB::offlineNoErrorEstimation] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
             for( int q = 0; q < M_model->Qa(); ++q )
             {
