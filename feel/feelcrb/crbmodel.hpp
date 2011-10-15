@@ -308,16 +308,20 @@ public:
     /**
      * \brief compute the thetaq given \p mu
      */
-    thetaq_type computeThetaq( parameter_type const& mu ) { return M_model->computeThetaq( mu ); }
+    thetaq_type computeThetaq( parameter_type const& mu , double time=0 )
+    {
+        return M_model->computeThetaq( mu , time );
+    }
 
     /**
      * \brief update the model wrt \p mu
      */
     offline_merge_type update( parameter_type const& mu, double time=0 )
-        {
-            M_model->computeThetaq( mu , time);
-            return offlineMerge( mu );
-        }
+    {
+        M_model->computeThetaq( mu , time);
+        return offlineMerge( mu );
+    }
+
     /**
      * \brief Compute the affine decomposition of the various forms
      *
@@ -600,11 +604,6 @@ public:
         {
             return M_model->output( output_index, mu );
         }
-
-    void fillSnapshotsMatrix(parameter_type const& mu, int output_index)
-    {
-        M_model->fillSnapshotsMatrix(mu,output_index);
-    }
     int computeNumberOfSnapshots()
     {
         return M_model->computeNumberOfSnapshots();
@@ -624,14 +623,6 @@ public:
     int timeOrder()
     {
         return M_model->timeOrder();
-    }
-    eigen_matrix_type snapshotsMatrix()
-    {
-        return M_model->snapshotsMatrix();
-    }
-    eigen_matrix_type dualSnapshotsMatrix()
-    {
-        return M_model->dualSnapshotsMatrix();
     }
 
     //@}
@@ -735,6 +726,8 @@ CRBModel<TruthModelType>::initB()
 #endif
     M_B->addMatrix( eigmin, M );
 }
+
+
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::offline_merge_type
@@ -995,10 +988,6 @@ CRBModel<TruthModelType>::run( mpl::bool_<false>)
 
     return res;
 }
-
-
-
-
 
 template<typename TruthModelType>
 std::map<double, boost::tuple<double,double,double,int,double,double> >
