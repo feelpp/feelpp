@@ -239,8 +239,8 @@ public:
                     ti.restart();
                     auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
 
-                    //double relative_error = std::abs( ofem[0]-o.get<0>() )/ofem[0] * 100 ;
                     double relative_error = std::abs( ofem[0]-o.get<0>() ) /ofem[0];
+
 
                     if( crb->errorType()==2 )
                     {
