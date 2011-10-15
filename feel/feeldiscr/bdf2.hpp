@@ -322,9 +322,24 @@ public:
     //! return true if Bdf is finished, false otherwise
     bool isFinished() const
     {
-        if ( M_time > M_Tf )
-            M_state = BDF_STOPPED;
-        return ( M_time > M_Tf );
+        bool finished=false;
+        if( M_Tf>M_Ti )
+        {
+            if ( M_time > M_Tf )
+            {
+                M_state = BDF_STOPPED;
+                finished=true;
+            }
+        }
+        else
+        {
+            if ( M_time < M_Tf )
+            {
+                M_state = BDF_STOPPED;
+                finished=true;
+            }
+        }
+        return finished;
     }
 
     /**
