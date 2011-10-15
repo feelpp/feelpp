@@ -157,6 +157,8 @@ public:
     typedef Eigen::VectorXd vectorN_type;
     typedef Eigen::MatrixXd matrixN_type;
 
+
+
     typedef std::vector<element_type> mode_set_type;
     typedef boost::shared_ptr<mode_set_type> mode_set_ptrtype;
 
@@ -552,6 +554,13 @@ public:
      */
     bool loadDB();
 
+    /**
+     *  do the projection on the POD space of u (for transient problems)
+     *  \param u : the solution to project
+     *  \param name_of_space : primal or dual
+     */
+    void projectionOnPodSpace( element_ptrtype & u , const std::string& name_of_space="primal");
+
     //@}
 
 private:
@@ -605,7 +614,8 @@ private:
 
 
     //time
-    bdf_ptrtype M_bdf;
+    bdf_ptrtype M_bdf_primal;
+    bdf_ptrtype M_bdf_dual;
 
     // left hand side
     std::vector<matrixN_type> M_Aq_pr;
@@ -720,8 +730,6 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
     //useful for POD in time
     int Nm = this->vm()["crb.Nm"].template as<int>() ;
     const int Ndof = M_model->functionSpace()->nDof();//number of dofs used
-    matrixN_type SnapshotsMatrix;
-    matrixN_type SnapshotsMatrixdu;
 
     // dimension of reduced basis space
     M_N = 0;
@@ -764,6 +772,8 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
     Log() << "[CRB::offlineNoErrorEstimation] strategy "<< M_error_type <<"\n";
     std::cout << "[CRB::offlineNoErrorEstimation] strategy "<< M_error_type <<"\n";
 
+    bool reuse_prec = this->vm()["crb.reuse_prec"].template as<bool>() ;
+
     for( size_type index = 0; index < Sampling->size(); ++index )
     {
         parameter_type const& mu = M_Xi->at( index );
@@ -773,7 +783,6 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         std::cout << "N=" << M_N << "\n";
         Log() << "N=" << M_N << "\n";
 
-
         backend_ptrtype backend_primal_problem = backend_type::build( BACKEND_PETSC );
         backend_ptrtype backend_dual_problem = backend_type::build( BACKEND_PETSC );
 
@@ -781,97 +790,106 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
 
         u->setName( (boost::format( "fem-primal-%1%" ) % (M_N-1)).str() );
 
+        M_bdf_primal = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal");
 
-        double time_step = M_model->timeStep();
-        double time_final = M_model->timeFinal();
-        double time_initial = M_model->timeInitial();
-        double time_order = M_model->timeOrder();
-        int K = time_final/time_step;
-        SnapshotsMatrix.resize(Ndof,K);
-        SnapshotsMatrixdu.resize(Ndof,K);
-
-        M_bdf = bdf( _space=M_model->functionSpace(), _vm=this->vm() );
-        M_bdf->start();
-        M_bdf->initialize(*u);
         //set parameters for time discretization
-        M_bdf->setTimeInitial( M_model->timeInitial() );
-        M_bdf->setTimeStep( M_model->timeStep() );
-        M_bdf->setTimeFinal( M_model->timeFinal() );
-        M_bdf->setOrder( M_model->timeOrder() );
+        M_bdf_primal->setTimeInitial( M_model->timeInitial() );
+        M_bdf_primal->setTimeStep( M_model->timeStep() );
+        M_bdf_primal->setTimeFinal( M_model->timeFinal() );
+        M_bdf_primal->setOrder( M_model->timeOrder() );
+
+        M_bdf_primal->start();
 
         //initialization of unknown
         u->zero();
+        M_bdf_primal->initialize(*u);
 
         //direct problem
-        double bdf_coeff = M_bdf->polyDerivCoefficient(0);
+        double bdf_coeff = M_bdf_primal->polyDerivCoefficient(0);
         auto vec_bdf_poly = backend_primal_problem->newVector(M_model->functionSpace() );
 
         int col_index=0;
 
-        for ( M_bdf->start(); !M_bdf->isFinished();M_bdf->next() )
+        for ( M_bdf_primal->start(); !M_bdf_primal->isFinished();M_bdf_primal->next() )
         {
-            auto bdf_poly = M_bdf->polyDeriv();
-            boost::tie(M, A, F ) = M_model->update( mu , M_bdf->time() );
+            auto bdf_poly = M_bdf_primal->polyDeriv();
+            boost::tie( M, A, F ) = M_model->update( mu , M_bdf_primal->time() );
+
             A->addMatrix( bdf_coeff, M);
             *Rhs = *F[0];
             *vec_bdf_poly = bdf_poly;
             Rhs->addVector( *vec_bdf_poly, *M);
-            auto ret = backend_primal_problem->solve( _matrix=A, _solution=u, _rhs=Rhs, _reuse_prec=(M_bdf->iteration() >=2) );
-            //auto ret = backend_primal_problem->solve( _matrix=A, _solution=U, _rhs=Rhs, _prec=A );
-            if ( !ret.get<0>() )
+
+            if( reuse_prec )
             {
-                Log()<<"[CRB] WARNING : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                auto ret = backend_primal_problem->solve( _matrix=A, _solution=u, _rhs=Rhs, _reuse_prec=(M_bdf_primal->iteration() >=2) );
+                if ( !ret.get<0>() )
+                Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+            }
+            else
+            {
+                auto ret = backend_primal_problem->solve( _matrix=A, _solution=u, _rhs=Rhs );
+                if ( !ret.get<0>() )
+                Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
             }
 
-            for(int i=0;i<u->size();i++) SnapshotsMatrix(i,col_index)=u->operator()(i);
-            col_index++;
+            projectionOnPodSpace( u , "primal" );
 
-            M_bdf->shiftRight( *u );
+            M_bdf_primal->shiftRight( *u );
         }
-
 
         std::cout<<"direct problem solved"<<std::endl;
 
         //dual problem
-        time_step = - time_step;
-        M_bdf->setTimeStep( time_step );
-        M_bdf->setTimeInitial( time_final );
-        M_bdf->setTimeFinal( time_initial );
+
+        M_bdf_dual = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_dual" );
+
+        //set parameters for time discretization
+        M_bdf_dual->setTimeInitial( M_model->timeFinal() );
+        M_bdf_dual->setTimeStep( -M_model->timeStep() );
+        M_bdf_dual->setTimeFinal( M_model->timeInitial() );
+        M_bdf_dual->setOrder( M_model->timeOrder() );
+
+        M_bdf_dual->start();
+
         Adu = M_model->newMatrix();
 
         //ini
         *udu = *u;
+        M_bdf_dual->initialize(*udu);
 
-        col_index=0;
-        bdf_coeff = M_bdf->polyDerivCoefficient(0);
-        for ( M_bdf->start(); M_bdf->time()>=M_bdf->timeFinal(); M_bdf->next() )
+        bdf_coeff = M_bdf_dual->polyDerivCoefficient(0);
+        for ( M_bdf_dual->start(); !M_bdf_dual->isFinished(); M_bdf_dual->next() )
         {
-            auto bdf_poly = M_bdf->polyDeriv();
-            boost::tie(M, A, F ) = M_model->update( mu , M_bdf->time() );
+
+            auto bdf_poly = M_bdf_dual->polyDeriv();
+            boost::tie(M, A, F ) = M_model->update( mu , M_bdf_dual->time() );
             A->addMatrix( bdf_coeff, M);
             A->transpose( Adu );
             *Rhs = *F[M_output_index];
             Rhs->scale(-1);
             *vec_bdf_poly = bdf_poly;
             Rhs->addVector( *vec_bdf_poly, *M);
-            //auto ret = backend_dual_problem->solve( _matrix=Adu, _solution=U, _rhs=Rhs, _reuse_prec=(M_bdf->iteration() >=2) );
-            auto ret = backend_dual_problem->solve( _matrix=Adu, _solution=udu, _rhs=Rhs, _prec=Adu );
-            if ( !ret.get<0>() )
+
+            if( reuse_prec )
             {
-                Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                auto ret = backend_primal_problem->solve( _matrix=Adu, _solution=udu, _rhs=Rhs, _reuse_prec=(M_bdf_dual->iteration() >=2) );
+                if ( !ret.get<0>() )
+                Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+
+            }
+            else
+            {
+                auto ret = backend_primal_problem->solve( _matrix=Adu, _solution=udu, _rhs=Rhs );
+                if ( !ret.get<0>() )
+                Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
             }
 
-            for(int i=0;i<udu->size();i++) SnapshotsMatrixdu(i,col_index)=udu->operator()(i);
-            col_index++;
+            projectionOnPodSpace( udu , "dual" );
 
-            M_bdf->shiftRight( *udu );
+            M_bdf_dual->shiftRight( *udu );
         }
         std::cout<<"dual problem solved"<<std::endl;
-        //for (int i=0;i<u->size();i++) std::cout<<"udu("<<i<<") = "<<udu->operator()(i)<<std::endl;
-        time_step = - time_step;
-        M_bdf->setTimeStep( time_step );
-        M_bdf->setTimeFinal( time_final );
-        M_bdf->setTimeInitial( time_initial );
 
         for( int l = 0; l < M_model->Nl(); ++l )
             Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
@@ -883,18 +901,15 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         M_WNmu_complement = M_WNmu->complement();
 
 
-
         //POD in time
         Log()<<"[CRB::offlineNoErrorEstimation] start of POD \n";
 
         pod_ptrtype POD = pod_ptrtype( new pod_type(  ) );
-        POD->setK(K);
-        POD->setWN(M_WN);
+
         POD->setNm(Nm);
-        POD->setSnapshotsMatrix(SnapshotsMatrix);
+        POD->setBdf( M_bdf_primal );
         POD->setModel(M_model);
         mode_set_type ModeSet;
-
         POD->pod(ModeSet);
 
         //now : loop over number modes per mu
@@ -904,15 +919,14 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         }
 
         //and now the dual
-        Log()<<"Dual problem"<<"\n";
-        POD->setSnapshotsMatrix(SnapshotsMatrixdu);
+        POD->setBdf( M_bdf_dual );
+        //std::cout<<" DUAL "<<std::endl;
         mode_set_type ModeSetdu;
         POD->pod(ModeSetdu);
+
         for(int i=0;i<Nm;i++)
         {
-            //M_WNdu.push_back( ModeSetdu[Nm] );
             M_WNdu.push_back( ModeSetdu[i] ) ;
-
             ++M_N;
 
             orthonormalize( M_N, M_WN );
@@ -997,7 +1011,6 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         Log() <<"========================================"<<"\n";
         std::cout<<"number of elements in the reduced basis : "<<M_N<<std::endl;
     }
-
     this->saveDB();
     //return M_rbconv;
 }
@@ -1245,9 +1258,6 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
     //useful for POD in time
     int Nm = this->vm()["crb.Nm"].template as<int>() ;
     const int Ndof = M_model->functionSpace()->nDof();//number of dofs used
-    matrixN_type SnapshotsMatrix;
-    matrixN_type SnapshotsMatrixdu;
-    matrixN_type PodMatrix;
 
     // dimension of reduced basis space
     M_N = 0;
@@ -1283,13 +1293,14 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
     element_ptrtype u( new element_type( M_model->functionSpace() ) );
     element_ptrtype udu( new element_type( M_model->functionSpace() ) );
-    vector_ptrtype U( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype Rhs( M_backend->newVector( M_model->functionSpace() ) );
 
 
     Log() << "[CRB::offlineWithErrorEstimation] starting offline adaptive loop\n";
     Log() << "[CRB::offlineNoErrorEstimation] strategy "<< M_error_type <<"\n";
     std::cout << "[CRB::offlineNoErrorEstimation] strategy "<< M_error_type <<"\n";
+
+    bool reuse_prec = this->vm()["crb.reuse_prec"].template as<bool>() ;
 
     while ( maxerror > M_tolerance && M_N < M_iter_max )
     {
@@ -1303,142 +1314,144 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         backend_ptrtype backend_primal_problem = backend_type::build( BACKEND_PETSC );
         backend_ptrtype backend_dual_problem = backend_type::build( BACKEND_PETSC );
 
+        // for a given parameter \p mu assemble the left and right hand side
 
-        double time_step = M_model->timeStep();
-        double time_final = M_model->timeFinal();
-        double time_initial = M_model->timeInitial();
-        double time_order = M_model->timeOrder();
-        int K = time_final/time_step;
-        SnapshotsMatrix.resize(Ndof,K);
-        SnapshotsMatrixdu.resize(Ndof,K);
+        u->setName( (boost::format( "fem-primal-%1%" ) % (M_N-1)).str() );
 
-        M_bdf = bdf( _space=M_model->functionSpace(), _vm=this->vm() );
-        M_bdf->start();
-        M_bdf->initialize(*u);
+        M_bdf_primal = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal");
+
         //set parameters for time discretization
-        M_bdf->setTimeInitial( time_initial );
-        M_bdf->setTimeStep( time_step );
-        M_bdf->setTimeFinal( time_final );
-        M_bdf->setOrder( time_order );
+        M_bdf_primal->setTimeInitial( M_model->timeInitial() );
+        M_bdf_primal->setTimeStep( M_model->timeStep() );
+        M_bdf_primal->setTimeFinal( M_model->timeFinal() );
+        M_bdf_primal->setOrder( M_model->timeOrder() );
+
+        M_bdf_primal->start();
 
         //initialization of unknown
         u->zero();
+        M_bdf_primal->initialize(*u);
 
         //direct problem
-        double bdf_coeff = M_bdf->polyDerivCoefficient(0);
+        double bdf_coeff = M_bdf_primal->polyDerivCoefficient(0);
         auto vec_bdf_poly = backend_primal_problem->newVector(M_model->functionSpace() );
-
-        int col_index=0;
-
-        std::cout<<"solving direct model"<<std::endl;
-        for ( M_bdf->start(); !M_bdf->isFinished();M_bdf->next() )
+        for ( M_bdf_primal->start(); !M_bdf_primal->isFinished();M_bdf_primal->next() )
         {
-            auto bdf_poly = M_bdf->polyDeriv();
-            boost::tie(M, A, F ) = M_model->update( mu , M_bdf->time() );
+            auto bdf_poly = M_bdf_primal->polyDeriv();
+            boost::tie(M, A, F ) = M_model->update( mu , M_bdf_primal->time() );
+
             A->addMatrix( bdf_coeff, M);
             *Rhs = *F[0];
             *vec_bdf_poly = bdf_poly;
             Rhs->addVector( *vec_bdf_poly, *M);
-            //auto ret = backend_primal_problem->solve( _matrix=A, _solution=U, _rhs=Rhs, _reuse_prec=(M_bdf->iteration() >=2) );
-            auto ret = backend_primal_problem->solve( _matrix=A, _solution=U, _rhs=Rhs, _prec=A );
-            if ( !ret.get<0>() )
+
+            if( reuse_prec )
             {
-                Log()<<"[CRB] WARNING : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                auto ret = backend_primal_problem->solve( _matrix=A, _solution=u, _rhs=Rhs, _reuse_prec=(M_bdf_primal->iteration() >=2) );
+                if ( !ret.get<0>() )
+                Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
             }
-            *u = *U;
+            else
+            {
+                auto ret = backend_primal_problem->solve( _matrix=A, _solution=u, _rhs=Rhs );
+                if ( !ret.get<0>() )
+                Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+            }
 
-            for(int i=0;i<u->size();i++) SnapshotsMatrix(i,col_index) = u->operator()(i);
-            col_index++;
+            projectionOnPodSpace ( u , "primal" );
 
-            M_bdf->shiftRight( *u );
+            M_bdf_primal->shiftRight( *u );
         }
+
 
         std::cout<<"direct problem solved"<<std::endl;
 
         //dual problem
-        time_step = - time_step;
-        M_bdf->setTimeStep( time_step );
-        M_bdf->setTimeInitial( time_final );
-        M_bdf->setTimeFinal( time_initial );
+
+        M_bdf_dual = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_dual" );
+
+        //set parameters for time discretization
+        M_bdf_dual->setTimeInitial( M_model->timeFinal() );
+        M_bdf_dual->setTimeStep( -M_model->timeStep() );
+        M_bdf_dual->setTimeFinal( M_model->timeInitial() );
+        M_bdf_dual->setOrder( M_model->timeOrder() );
+
         Adu = M_model->newMatrix();
 
-        col_index=0;
+        M_bdf_dual->start();
 
-        //ini
+        //initialization
         *udu = *u;
+        M_bdf_dual->initialize(*udu);
 
-        for ( M_bdf->start(); M_bdf->time()>=M_bdf->timeFinal(); M_bdf->next() )
+        bdf_coeff = M_bdf_dual->polyDerivCoefficient(0);
+        for ( M_bdf_dual->start(); !M_bdf_dual->isFinished(); M_bdf_dual->next() )
         {
-            auto bdf_poly = M_bdf->polyDeriv();
-            boost::tie(M, A, F ) = M_model->update( mu , M_bdf->time() );
-            A->addMatrix( -bdf_coeff, M);
+            auto bdf_poly = M_bdf_dual->polyDeriv();
+            boost::tie(M, A, F ) = M_model->update( mu , M_bdf_dual->time() );
+            A->addMatrix( bdf_coeff, M);
             A->transpose( Adu );
             *Rhs = *F[M_output_index];
             Rhs->scale(-1);
             *vec_bdf_poly = bdf_poly;
             Rhs->addVector( *vec_bdf_poly, *M);
-            //auto ret = backend_dual_problem->solve( _matrix=Adu, _solution=U, _rhs=Rhs, _reuse_prec=(M_bdf->iteration() >=2) );
-            auto ret = backend_dual_problem->solve( _matrix=Adu, _solution=udu, _rhs=Rhs, _prec=Adu );
-            if ( !ret.get<0>() )
+
+            if( reuse_prec )
             {
-                Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                auto ret = backend_primal_problem->solve( _matrix=Adu, _solution=udu, _rhs=Rhs, _reuse_prec=(M_bdf_dual->iteration() >=2) );
+                if ( !ret.get<0>() )
+                Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+
+            }
+            else
+            {
+                auto ret = backend_primal_problem->solve( _matrix=Adu, _solution=udu, _rhs=Rhs );
+                if ( !ret.get<0>() )
+                Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
             }
 
-            for(int i=0;i<udu->size();i++) SnapshotsMatrixdu(i,col_index) = udu->operator()(i);
-            col_index++;
+            projectionOnPodSpace( udu , "dual" );
 
-            M_bdf->shiftRight( *udu );
+            M_bdf_dual->shiftRight( *udu );
         }
         std::cout<<"dual problem solved"<<std::endl;
-        //for (int i=0;i<u->size();i++) std::cout<<"udu("<<i<<") = "<<udu->operator()(i)<<std::endl;
-        time_step = - time_step;
-        M_bdf->setTimeStep( time_step );
-        M_bdf->setTimeFinal( time_initial );
-        M_bdf->setTimeInitial( time_final );
+
 
         for( int l = 0; l < M_model->Nl(); ++l )
             Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
 
-        Log() << "[CRB::offlineWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
+        Log() << "[CRB::offlineNoErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
+
 
         M_WNmu->push_back( mu, index );
         M_WNmu_complement = M_WNmu->complement();
 
 
         //POD in time
-
         Log()<<"[CRB::offlineNoErrorEstimation] start of POD \n";
-        //M_model->fillSnapshotsMatrix(mu,M_output_index);
-
-        //SnapshotsMatrix = M_model->snapshotsMatrix();
-        //SnapshotsMatrixdu = M_model->dualSnapshotsMatrix();
 
         pod_ptrtype POD = pod_ptrtype( new pod_type(  ) );
-        POD->setK(K);
-        POD->setWN(M_WN);
+
+
         POD->setNm(Nm);
-        POD->setSnapshotsMatrix(SnapshotsMatrix);
+        POD->setBdf( M_bdf_primal );
         POD->setModel(M_model);
         mode_set_type ModeSet;
-
         POD->pod(ModeSet);
-        //now : loop over number modes per mu
         for(int i=0;i<Nm;i++)
         {
             M_WN.push_back( ModeSet[i] );
         }
-        //and now the dual
-        Log()<<"Dual problem"<<"\n";
-        POD->setSnapshotsMatrix(SnapshotsMatrixdu);
+
+
+        POD->setBdf( M_bdf_dual );
         mode_set_type ModeSetdu;
         POD->pod(ModeSetdu);
         for(int i=0;i<Nm;i++)
         {
-            //M_WNdu.push_back( ModeSetdu[Nm] );
             M_WNdu.push_back( ModeSetdu[i] ) ;
 
             ++M_N;
-
 
             orthonormalize( M_N, M_WN );
             orthonormalize( M_N, M_WN );
@@ -2150,6 +2163,7 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn )
         wn[i].scale( 1./__rii_pr );
     }
 
+
     Debug (12000) << "[CRB::orthonormalize] finished ...\n";
     Debug (12000) << "[CRB::orthonormalize] copying back results in basis\n";
 
@@ -2669,6 +2683,46 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
     Y[1] = delta( Nwn, mu, uN, uNdu );
 
 }
+
+
+
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::projectionOnPodSpace( element_ptrtype & u , const std::string& name_of_space)
+{
+    element_ptrtype projection ( new element_type( M_model->functionSpace() ) );
+    projection->zero();
+
+    //we assume that M_WN and M_ANdu have the same size
+    for(int s=0;s<M_WN.size();s++)
+    {
+        element_type e;
+        if( name_of_space=="dual")
+        {
+            e = M_WNdu[s];
+        }
+        else
+        {
+            e = M_WN[s];
+        }
+        double k =  M_model->scalarProduct(*u, e);
+        e.scale(k);
+        projection->add( 1 , e );
+    }
+    if( M_WN.size()>0 )
+    {
+        u->add( -1 , *projection );
+    }
+
+    //std::cout<<"[projection]"<<std::endl;
+    //for(int i=0;i<projection->size();i++) std::cout<<"projection("<<i<<") : "<<projection->operator()(i)<<std::endl;
+
+}
+
+
+
+
 
 template<typename TruthModelType>
 template<class Archive>
