@@ -115,10 +115,7 @@ public :
     typedef typename model_type::functionspace_type functionspace_type;
     typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
 
-
-    typedef typename fusion::vector<Lagrange<1, Scalar> > basis_type;
-    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-
+    typedef typename model_type::space_type space_type;
 
     //! time discretization
 	typedef Bdf<space_type>  bdf_type;
@@ -400,7 +397,6 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
             std::cout<<" imaginary part of eigen value is "<<imag(eigen_solver.eigenvalues()[i])<<std::endl;
             exit(0);
         }
-        eigen_values[i]=real(eigen_solver.eigenvalues()[i]);
     }
 
     int position_of_largest_eigenvalue=number_of_eigenvalues-1;
