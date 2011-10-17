@@ -44,7 +44,7 @@
 #include <opusdefs.hpp>
 #include <eads.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
-
+#include <feel/feeldiscr/bdf2.hpp>
 /**/
 namespace Feel
 {
@@ -83,7 +83,7 @@ public:
     static const double Qmax = 1000000;
     static const uint16_type ParameterSpaceDimension = 5;
 
-    static const bool is_time_dependent = false;
+    static const bool is_time_dependent = true;
     //@}
     /** @name Typedefs
      */
@@ -122,6 +122,9 @@ public:
     typedef fusion::vector<Lagrange<OrderT, Vectorial> > grad_temp_basis_type;
     typedef Periodic<1,2,value_type> periodic_type;
 
+
+    typedef temp_basis_type basis_type;
+
 #if defined( OPUS_WITH_THERMAL_DISCONTINUITY )
     typedef FunctionSpace<mesh_type, temp_basis_type, discontinuity_type, periodic_type> temp_functionspace_type;
 #else
@@ -136,6 +139,7 @@ public:
     typedef temp_functionspace_ptrtype functionspace_ptrtype;
     typedef temp_element_ptrtype element_ptrtype;
     typedef temp_element_type element_type;
+    typedef temp_functionspace_type space_type;
 
     typedef FunctionSpace<mesh_type, grad_temp_basis_type> grad_temp_functionspace_type;
     typedef boost::shared_ptr<grad_temp_functionspace_type> grad_temp_functionspace_ptrtype;
@@ -194,10 +198,16 @@ public:
     typedef typename parameterspace_type::sampling_type sampling_type;
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
-    typedef Eigen::VectorXd theta_vector_type;
-    typedef boost::tuple<theta_vector_type, std::vector<theta_vector_type> > theta_vectors_type;
 
-    typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype> > > affine_decomposition_type;
+    /* time */
+    typedef Bdf<temp_functionspace_type>  temp_bdf_type;
+    typedef boost::shared_ptr<temp_bdf_type> temp_bdf_ptrtype;
+
+
+    typedef Eigen::VectorXd theta_vector_type;
+    typedef boost::tuple<theta_vector_type, theta_vector_type, std::vector<theta_vector_type> > theta_vectors_type;
+
+    typedef boost::tuple<std::vector<sparse_matrix_ptrtype>,std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype> > > affine_decomposition_type;
     //@}
 
     /** @name Constructors, destructor
@@ -227,6 +237,10 @@ public:
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form
     int Qa() const;
+
+    // \return the number of terms in affine decomposition of mass matrix
+    int Qm() const;
+
 
     /**
      * there is at least one output which is the right hand side of the
@@ -265,6 +279,12 @@ public:
     /**
      * \brief return the coefficient vector
      */
+    theta_vector_type const& thetaMq() const { return M_thetaMq; }
+
+
+    /**
+     * \brief return the coefficient vector
+     */
     std::vector<theta_vector_type> const& thetaL() const { return M_thetaL; }
 
     /**
@@ -274,6 +294,15 @@ public:
     value_type thetaAq( int q ) const
         {
             return M_thetaAq( q );
+        }
+
+    /**
+     * \brief return the coefficient vector \p q component
+     *
+     */
+    value_type thetaMq( int q ) const
+        {
+            return M_thetaMq( q );
         }
 
     /**
@@ -317,7 +346,7 @@ public:
      */
     affine_decomposition_type computeAffineDecomposition()
         {
-            return boost::make_tuple( M_Aq, M_L );
+            return boost::make_tuple(M_Mq, M_Aq, M_L );
         }
 
 
@@ -348,13 +377,13 @@ public:
     /**
      * update the PDE system with respect to \param mu
      */
-    void update( parameter_type const& mu );
+    void update( parameter_type const& mu, const double time=0 );
 
     void run();
     void run( const double * X, unsigned long N, double * Y, unsigned long P );
 
     //void exportResults( double time, temp_element_type& T, fluid_element_type& U, bool force_export = false );
-    void exportResults( temp_element_type& T );
+    void exportResults(double time, temp_element_type& T );
 
 
     std::vector<double> sigmaQ( double k,double r, double Q );
@@ -376,6 +405,42 @@ public:
      * the value of the corresponding FEM output
      */
     value_type output( int output_index, parameter_type const& mu );
+
+
+    /**
+     * return true if we want to be in a steady state
+     */
+    bool isSteady(){ return M_is_steady;}
+
+    /**
+     * return value of the time step
+     */
+    double timeStep() { return M_temp_bdf->timeStep();}
+
+    /**
+     * return value of the time final
+     */
+    double timeFinal() { return M_temp_bdf->timeFinal();}
+
+    /**
+     * return value of the time initial
+     */
+    double timeInitial() { return M_temp_bdf->timeInitial();}
+
+    /**
+     * return value of the time order
+     */
+    double timeOrder() { return M_temp_bdf->timeOrder();}
+
+    /**
+     * return number of snapshots used
+     */
+    int computeNumberOfSnapshots() { return M_temp_bdf->timeFinal()/M_temp_bdf->timeStep(); }
+
+    /**
+     * return initialization filed used
+     */
+    double initializationField() { return M_T0;}
 
     //@}
 
@@ -421,10 +486,19 @@ private:
     sparse_matrix_ptrtype D,M;
     std::vector<vector_ptrtype> L;
     std::vector<sparse_matrix_ptrtype> M_Aq;
+    std::vector<sparse_matrix_ptrtype> M_Mq;
     std::vector<std::vector<vector_ptrtype> > M_L;
     parameterspace_ptrtype M_Dmu;
     theta_vector_type M_thetaAq;
+    theta_vector_type M_thetaMq;
     std::vector<theta_vector_type> M_thetaL;
+
+    temp_bdf_ptrtype M_temp_bdf;
+    double M_bdf_coeff;
+    element_ptrtype M_bdf_poly;
+    double M_T0;//initial value of temperature
+
+    bool M_is_steady;
 };
 template<int OrderU, int OrderP, int OrderT>
 const double

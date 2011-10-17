@@ -66,6 +66,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB( po::variables_map const& vm )
     backend( backend_type::build( vm, "backend.crb.fem" ) ),
     backendM( backend_type::build( vm, "backend.crb.norm" ) ),
     M_meshSize( vm["hsize"].template as<double>() ),
+    M_is_steady( vm["steady"].template as<bool>() ),
     M_is_initialized( false ),
     M_mesh( new mesh_type ),
     M_mesh_air( new mesh_type ),
@@ -86,6 +87,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB(  )
     backend(),
     backendM(),
     M_meshSize( 1 ),
+    M_is_steady( true ),
     M_is_initialized( false ),
     M_mesh( new mesh_type ),
     M_mesh_air( new mesh_type ),
@@ -106,7 +108,7 @@ template<int OrderU, int OrderP, int OrderT>
 void
 OpusModelRB<OrderU,OrderP,OrderT>::initParametrization()
 {
-    parameter_type mu_min( M_Dmu );
+    /*    parameter_type mu_min( M_Dmu );
     //mu_min << 0.2, 1e-5, 1e6, 0.1, 5e-2;
     mu_min << 0.2, 1e-5, 1e6, 0.1, 4e-3;
     //mu_min << 0.2, 1e-5, 0, 0.1, 4e-3;
@@ -114,6 +116,16 @@ OpusModelRB<OrderU,OrderP,OrderT>::initParametrization()
     parameter_type mu_max( M_Dmu );
     mu_max << 150, 1e-2, 1e6, 1e2, 5e-2;
     M_Dmu->setMax( mu_max );
+*/
+
+
+    parameter_type mu_min( M_Dmu );
+    mu_min << 150, 1e-2, 1e6, 1e2, 5e-2;
+    M_Dmu->setMin( mu_min );
+    parameter_type mu_max( M_Dmu );
+    mu_max << 150, 1e-2, 1e6, 1e2, 5e-2;
+    M_Dmu->setMax( mu_max );
+
 
     std::cout << "  -- Dmu min : "  << M_Dmu->min() << "\n";
     std::cout << "  -- Dmu max : "  << M_Dmu->max() << "\n";
@@ -194,6 +206,9 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
 
     pT = element_ptrtype( new element_type( M_Th ) );
     pV = element_ptrtype( new element_type( M_Th ) );
+
+    M_bdf_poly = element_ptrtype(  new element_type( M_Th ) ) ;
+
     Log() << "   - pT  built\n";
 
     Log() << "   - Generated function space\n";
@@ -252,6 +267,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
     //auto conv_coeff = vec( constant(0.), vy*ft*chi_AIR );
     auto conv_coeff = vec( constant(0.), vy );
 
+
     auto k_AIR = this->data()->component("AIR").k();
     auto detJ44 = (e_AIR - e_IC)/(e_AIR_ref - e_IC);
     auto detJinv44 = (e_AIR_ref - e_IC)/(e_AIR - e_IC);
@@ -264,6 +280,12 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
     for( int q = 0; q < Qa(); ++q )
     {
         M_Aq[q] = backend->newMatrix( M_Th, M_Th );
+    }
+    // mass matrix
+    M_Mq.resize( Qm() );
+    for( int q = 0; q < Qm(); ++q )
+    {
+        M_Mq[q] = backend->newMatrix( M_Th, M_Th );
     }
     // outputs
     M_L.resize(Nl());
@@ -284,8 +306,12 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
         L[l] = backend->newVector( M_Th );
     }
 
+
+    M_temp_bdf = bdf( _space=M_Th, _vm=this->vm(), _name="temperature" , _prefix="temperature" );
+
     using namespace Feel::vf;
 
+    element_ptrtype bdf_poly ( new element_type ( M_Th ) );
 
     element_type u( M_Th, "u" );
     element_type v( M_Th, "v" );
@@ -293,7 +319,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
 
     Log() << "   - Number of dof " << M_Th->nLocalDof() << "\n";
 
-    double M_T0 = 300;
+    M_T0 = 300;
 
     std::vector<std::string> markers;
     markers.push_back( "Gamma_4_AIR1" );
@@ -658,6 +684,18 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
     Log() << "   - Aq[" << AqIndex << "]  done\n";
     M_Aq[AqIndex++]->close();
 
+
+    //mas matrix
+    form2( M_Th, M_Th, M_Mq[0], _init=true, _pattern=pattern ) =
+        integrate ( markedelements(M_mesh,"PCB") ,    idv(rhoC)*idt(u)*id(w) ) +
+        integrate ( markedelements(M_mesh,"IC1") ,    idv(rhoC)*idt(u)*id(w) ) +
+        integrate ( markedelements(M_mesh,"IC2") ,    idv(rhoC)*idt(u)*id(w) ) +
+        integrate ( markedelements(M_mesh,"AIR123") , idv(rhoC)*idt(u)*id(w) ) ;
+
+    form2( M_Th, M_Th, M_Mq[1], _init=true, _pattern=pattern ) =
+        integrate ( markedelements(M_mesh,"AIR4") , idv(rhoC)*idt(u)*id(w) ) ;
+
+
     //
     // H_1 scalar product
     //
@@ -680,6 +718,13 @@ OpusModelRB<OrderU,OrderP,OrderT>::Qa() const
     //return 17;
     return 20;
 }
+template<int OrderU, int OrderP, int OrderT>
+int
+OpusModelRB<OrderU,OrderP,OrderT>::Qm() const
+{
+    return 2;
+}
+
 template<int OrderU, int OrderP, int OrderT>
 int
 OpusModelRB<OrderU,OrderP,OrderT>::Nl() const
@@ -727,7 +772,9 @@ OpusModelRB<OrderU,OrderP,OrderT>::computeThetaq( parameter_type const& mu, doub
     double TJ = (e_AIR-e_IC)/(e_AIR_ref-e_IC);
     double Tb = (e_AIR_ref-e_AIR)*(e_PCB+e_IC)/(e_AIR_ref-e_IC);
 
-    auto ft = (constant(1.0));
+    //auto ft = (constant(1.0));
+    double ft = 1.0-math::exp(-time/3);
+
     //auto vy = (1.-vf::pow((Px()-((e_AIR+e_IC)/2+e_PCB))/((e_AIR-e_IC)/2),2));
     //auto conv_coeff = D*vy;
     double denom = ((e_IC - e_AIR)*(e_IC - e_AIR_ref)*(e_IC - e_AIR_ref));
@@ -760,28 +807,28 @@ OpusModelRB<OrderU,OrderP,OrderT>::computeThetaq( parameter_type const& mu, doub
     M_thetaAq( AqIndex++ ) = kIC; //
     M_thetaAq( AqIndex++ ) = Jinv44xx*Jinv44xx*detJ44; // AIR4  diffusion
     M_thetaAq( AqIndex++ ) = Jinv44yy*Jinv44yy*detJ44; // AIR4  diffusion
-    M_thetaAq( AqIndex++ ) = D*conv1*Jinv44yy*detJ44; //
-    M_thetaAq( AqIndex++ ) = D*conv2*Jinv44yy*detJ44; //
-    M_thetaAq( AqIndex++ ) = D*conv3*Jinv44yy*detJ44; //
+    M_thetaAq( AqIndex++ ) = ft*D*conv1*Jinv44yy*detJ44; //
+    M_thetaAq( AqIndex++ ) = ft*D*conv2*Jinv44yy*detJ44; //
+    M_thetaAq( AqIndex++ ) = ft*D*conv3*Jinv44yy*detJ44; //
     //M_thetaAq( AqIndex++ ) = 0*conv1*detJ44; //
     //M_thetaAq( AqIndex++ ) = 0*conv2*detJ44; //
     //M_thetaAq( AqIndex++ ) = 0*conv3*detJ44; //
     M_thetaAq( AqIndex++ ) = r; //
-    M_thetaAq( AqIndex++ ) = D*conv1*Jinv44xx*Jinv44xx*detJ44; // x
-    M_thetaAq( AqIndex++ ) = D*conv2*Jinv44xx*Jinv44xx*detJ44; // x
-    M_thetaAq( AqIndex++ ) = D*conv3*Jinv44xx*Jinv44xx*detJ44; // x
-    M_thetaAq( AqIndex++ ) = D*conv1*Jinv44yy*Jinv44yy*detJ44; // y
-    M_thetaAq( AqIndex++ ) = D*conv2*Jinv44yy*Jinv44yy*detJ44; // y
-    M_thetaAq( AqIndex++ ) = D*conv3*Jinv44yy*Jinv44yy*detJ44; // y
-    M_thetaAq( AqIndex++ ) = D*conv1*Jinv44xx*Jinv44yy*detJ44; // x y
-    M_thetaAq( AqIndex++ ) = D*conv2*Jinv44xx*Jinv44yy*detJ44; // x y
-    M_thetaAq( AqIndex++ ) = D*conv3*Jinv44xx*Jinv44yy*detJ44; // x y
+    M_thetaAq( AqIndex++ ) = ft*D*conv1*Jinv44xx*Jinv44xx*detJ44; // x
+    M_thetaAq( AqIndex++ ) = ft*D*conv2*Jinv44xx*Jinv44xx*detJ44; // x
+    M_thetaAq( AqIndex++ ) = ft*D*conv3*Jinv44xx*Jinv44xx*detJ44; // x
+    M_thetaAq( AqIndex++ ) = ft*D*conv1*Jinv44yy*Jinv44yy*detJ44; // y
+    M_thetaAq( AqIndex++ ) = ft*D*conv2*Jinv44yy*Jinv44yy*detJ44; // y
+    M_thetaAq( AqIndex++ ) = ft*D*conv3*Jinv44yy*Jinv44yy*detJ44; // y
+    M_thetaAq( AqIndex++ ) = ft*D*conv1*Jinv44xx*Jinv44yy*detJ44; // x y
+    M_thetaAq( AqIndex++ ) = ft*D*conv2*Jinv44xx*Jinv44yy*detJ44; // x y
+    M_thetaAq( AqIndex++ ) = ft*D*conv3*Jinv44xx*Jinv44yy*detJ44; // x y
 
     //Log() << "ThetaQ = " << M_thetaAq << "\n";
     M_thetaL.resize( Nl() );
     // l = 0
     M_thetaL[0].resize( Ql(0) );
-    M_thetaL[0]( 0 ) = Q; //
+    M_thetaL[0]( 0 ) = Q * (1.0-math::exp(-time)); //
     M_thetaL[0]( 1 ) = 1; // start Dirichlet terms
     M_thetaL[0]( 2 ) = Jinv44xx*detJ44; // ea : dx Nx term dirichlet
     M_thetaL[0]( 3 ) = Jinv44yy*detJ44; // ea : dy Ny term dirichlet
@@ -805,7 +852,12 @@ OpusModelRB<OrderU,OrderP,OrderT>::computeThetaq( parameter_type const& mu, doub
     M_thetaL[ 3 ]( 1 ) = detJ44;
     //Log() << "ThetaL[3] = " << M_thetaL[3] << "\n";
 
-    return boost::make_tuple( M_thetaAq, M_thetaL);
+
+    M_thetaMq.resize( Qm() );
+    M_thetaMq( 0 ) = 1 ;
+    M_thetaMq( 1 ) = detJ44;
+
+    return boost::make_tuple(M_thetaMq, M_thetaAq, M_thetaL);
 }
 
 template<int OrderU, int OrderP, int OrderT>
@@ -823,10 +875,9 @@ OpusModelRB<OrderU,OrderP,OrderT>::newMatrix() const
 
 template<int OrderU, int OrderP, int OrderT>
 void
-OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu )
+OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu , double time)
 {
-    this->computeThetaq( mu );
-
+    this->computeThetaq( mu , time);
 
     double Fr = mu(1);
     double e_AIR = mu(4);
@@ -841,7 +892,8 @@ OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu )
     double TJ = (e_AIR-e_IC)/(e_AIR_ref-e_IC);
     double Tb = (e_AIR_ref-e_AIR)*(e_PCB+e_IC)/(e_AIR_ref-e_IC);
 
-    auto ft = (constant(1.0));
+    //auto ft = (constant(1.0));
+    double ft = 1.0-math::exp(-time/3);
     //auto vy = (1.-vf::pow((Px()-((e_AIR+e_IC)/2+e_PCB))/((e_AIR-e_IC)/2),2));
     //auto conv_coeff = D*vy;
     double denom = ((e_IC - e_AIR)*(e_IC - e_AIR_ref)*(e_IC - e_AIR_ref));
@@ -850,7 +902,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu )
     double conv3 = 6/denom;
 
     *pV = vf::project( M_Th, markedelements(M_Th->mesh(), M_Th->mesh()->markerName("AIR4") ),
-                       Fr*(conv1+conv2*Px()+conv3*Px()*Px()) );
+                       ft*Fr*(conv1+conv2*Px()+conv3*Px()*Px()) );
     Log() << "[update(mu)] pV done\n";
     boost::timer ti;
     D->zero();
@@ -859,7 +911,8 @@ OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu )
         //Log() << "[affine decomp] scale q=" << q << " with " << M_thetaAq(q) << "\n";
         D->addMatrix( M_thetaAq(q) , M_Aq[q] );
     }
-    Log() << "[update(mu)] D assembled in " << ti.elapsed() << "s\n";ti.restart();
+
+    Log() << "[update(mu,"<<time<<")] D assembled in " << ti.elapsed() << "s\n";ti.restart();
     for( int l = 0; l < Nl(); ++l )
     {
         L[l]->zero();
@@ -868,8 +921,21 @@ OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu )
             //Log() << "[affine decomp] output " << l << " term " << q << "=" << M_thetaL[l](q) << "\n";
             L[l]->add( M_thetaL[l]( q ) , M_L[l][q] );
         }
-        Log() << "[update(mu)] L[" << l << "] assembled in " << ti.elapsed() << "s\n";ti.restart();
+        Log() << "[update(mu,"<<time<<")] L[" << l << "] assembled in " << ti.elapsed() << "s\n";ti.restart();
     }
+
+    //mass matrix contribution
+    auto vec_bdf_poly = backend->newVector( M_Th );
+    for( size_type q = 0;q < M_Mq.size(); ++q )
+    {
+        //left hand side
+        D->addMatrix( M_thetaMq[q]*M_bdf_coeff, M_Mq[q] );
+        //right hand side
+        *vec_bdf_poly = *M_bdf_poly;
+        vec_bdf_poly->scale( M_thetaMq[q]);
+        L[0]->addVector( *vec_bdf_poly, *M_Mq[q]);
+    }
+    Log() << "[update(mu,"<<time<<")] add mass matrix contributions in " << ti.elapsed() << "s\n";ti.restart();
 
 }
 template<int OrderU, int OrderP, int OrderT>
@@ -877,6 +943,11 @@ void
 OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu )
 {
     element_ptrtype T( new element_type( M_Th ) );
+
+    //initialization of temperature
+    *T = vf::project( M_Th, elements( M_Th->mesh() ), constant( M_T0 ) );
+    M_temp_bdf->initialize(*T);
+
     this->solve( mu, T );
     //this->exportResults( *T );
 
@@ -897,14 +968,36 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
     boost::timer ti;
     //Log() << "solve(mu,T) for parameter " << mu << "\n";
     using namespace Feel::vf;
-    this->update( mu );
-    Log() << "[solve(mu)] update(mu) done in " << ti.elapsed() << "s\n";ti.restart();
-    Log() << "[solve(mu)] start solve\n";
 
-    backend->solve( _matrix=D,  _solution=*T, _rhs=L[0], _prec=D );
-    Log() << "[solve(mu)] solve done in " << ti.elapsed() << "s\n";ti.restart();
-    this->exportResults( *T );
-    Log() << "[solve(mu)] export done in " << ti.elapsed() << "s\n";ti.restart();
+    if ( M_is_steady )
+    {
+        M_temp_bdf->setSteady();
+    }
+
+    M_temp_bdf->start();
+    M_bdf_coeff = M_temp_bdf->polyDerivCoefficient(0);
+
+    for( M_temp_bdf->start(); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
+    {
+        *M_bdf_poly = M_temp_bdf->polyDeriv();
+        this->update( mu , M_temp_bdf->time() );
+        Log() << "[solve(mu)] : time = "<<M_temp_bdf->time()<<"\n";
+        Log() << "[solve(mu)] update(mu) done in " << ti.elapsed() << "s\n";ti.restart();
+        Log() << "[solve(mu)] start solve\n";
+        //backend->solve( _matrix=D,  _solution=*T, _rhs=L[0], _prec=D );
+        auto ret = backend->solve( _matrix=D,  _solution=*T, _rhs=L[0], _reuse_prec=(M_temp_bdf->iteration() >=2));
+
+        if ( !ret.get<0>() )
+        {
+            Log()<<"WARNING : we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+        }
+
+        Log() << "[solve(mu)] solve done in " << ti.elapsed() << "s\n";ti.restart();
+        this->exportResults(M_temp_bdf->time(), *T );
+        Log() << "[solve(mu)] export done in " << ti.elapsed() << "s\n";ti.restart();
+
+    }
+
 }
 
 template<int OrderU, int OrderP, int OrderT>
@@ -913,12 +1006,41 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
 {
     //Log() << "solve(mu,T) for parameter " << mu << "\n";
     using namespace Feel::vf;
-    this->update( mu );
-    if ( transpose )
-        backend->solve( _matrix=D->transpose(),  _solution=*T, _rhs=rhs, _prec=D );
-    else
-        backend->solve( _matrix=D,  _solution=*T, _rhs=rhs, _prec=D );
-    this->exportResults( *T );
+
+    if ( M_is_steady )
+    {
+        M_temp_bdf->setSteady();
+    }
+
+    M_temp_bdf->start();
+    M_bdf_coeff = M_temp_bdf->polyDerivCoefficient(0);
+    for( M_temp_bdf->start(); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
+    {
+        *M_bdf_poly = M_temp_bdf->polyDeriv();
+        this->update( mu , M_temp_bdf->time() );
+        if( transpose )
+        {
+            auto ret = backend->solve( _matrix=D->transpose(),  _solution=*T, _rhs=rhs , _reuse_prec=(M_temp_bdf->iteration() >=2));
+            if ( !ret.get<0>() )
+            {
+                Log()<<"WARNING : we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+            }
+
+        }
+        else
+        {
+            auto ret = backend->solve( _matrix=D,  _solution=*T, _rhs=rhs , _reuse_prec=(M_temp_bdf->iteration() >=2));
+            if ( !ret.get<0>() )
+            {
+                Log()<<"WARNING : we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+            }
+        }
+        this->exportResults(M_temp_bdf->time(), *T );
+    }
+
+
+
+
 }
 
 template<int OrderU, int OrderP, int OrderT>
@@ -963,7 +1085,20 @@ OpusModelRB<OrderU,OrderP,OrderT>::run( const double * X, unsigned long N, doubl
     Log() << "[OpusModel::run] input/output relationship\n";
 
     parameter_type mu( M_Dmu );
-    mu << X[0], X[1], X[2], X[3], X[4];
+
+    mu << /*kIC*/X[0],/*D*/X[1], /*Q*/X[2], /*r*/X[3], /*ea*/X[4];
+
+#if 0
+    M_is_steady = X[0];
+    if( M_is_steady )
+    {
+       mu << /*kIC*/X[1],/*D*/X[2], /*Q*/X[3], /*r*/X[4], /*ea*/X[5];
+    }
+    else
+   {
+       mu << /*kIC*/X[1],/*D*/X[2], /*Q*/X[3], /*r*/X[4], /*ea*/X[5], /*dt*/X[6], /*Tf*/X[7];
+   }
+#endif
 
     for( int i = 0;i < N; ++i )
         Log() << "[OpusModelRB::run] X[" << i << "]=" << X[i] << "\n";
@@ -988,6 +1123,10 @@ OpusModelRB<OrderU,OrderP,OrderT>::run( const double * X, unsigned long N, doubl
     this->init();
     Log() << "[OpusModelRB::run] init done\n";
 
+    *pT = vf::project( M_Th, elements( M_Th->mesh() ), constant( M_T0 ) );
+    M_temp_bdf->initialize(*pT);
+
+
     this->solve( mu, pT );
     Log() << "[OpusModelRB::run] solve done\n";
 
@@ -1007,11 +1146,11 @@ OpusModelRB<OrderU,OrderP,OrderT>::run()
 
 template<int OrderU, int OrderP, int OrderT>
 void
-OpusModelRB<OrderU,OrderP,OrderT>::exportResults( temp_element_type& T )
+OpusModelRB<OrderU,OrderP,OrderT>::exportResults(double time, temp_element_type& T )
 {
     std::ostringstream osstr ;
 
-    double time = 0.0;
+
     int j = time;
     osstr<<j;
     //Log() << "exportresults : " << this->data()->doExport() << "\n";
