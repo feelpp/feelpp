@@ -397,6 +397,7 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
             std::cout<<" imaginary part of eigen value is "<<imag(eigen_solver.eigenvalues()[i])<<std::endl;
             exit(0);
         }
+        eigen_values[i]=real(eigen_solver.eigenvalues()[i]);
     }
 
     int position_of_largest_eigenvalue=number_of_eigenvalues-1;
