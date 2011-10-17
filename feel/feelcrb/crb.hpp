@@ -368,7 +368,7 @@ public:
     /**
      * orthonormalize the basis
      */
-    void orthonormalize( size_type N, wn_type& wn );
+    void orthonormalize( size_type N, wn_type& wn, int Nm = 1 );
 
 
     /**
@@ -1305,6 +1305,8 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
     //useful for POD in time
     int Nm = this->vm()["crb.Nm"].template as<int>() ;
+    if ( M_model->isSteady() )
+        Nm = 1;
     const int Ndof = M_model->functionSpace()->nDof();//number of dofs used
 
     // dimension of reduced basis space
@@ -1435,6 +1437,12 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                 projectionOnPodSpace ( uproj , "primal" );
                 M_bdf_primal_save->shiftRight( *uproj );
             }
+            for( int l = 0; l < M_model->Nl(); ++l )
+                Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
+
+            Log() << "[CRB::offlineNWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
+
+
         }
 
 
@@ -1504,7 +1512,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         for( int l = 0; l < M_model->Nl(); ++l )
             Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
 
-        Log() << "[CRB::offlineNoErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
+        Log() << "[CRB::offlineNWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
 
 
         M_WNmu->push_back( mu, index );
@@ -1515,6 +1523,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         {
             M_WN.push_back( *u );
             M_WNdu.push_back( *udu );
+            ++M_N;
         }//end of steady case
         else
         {
@@ -1544,16 +1553,16 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             {
                 M_WNdu.push_back( ModeSetdu[i] ) ;
             }
-
+            M_N+=Nm;
         }//end of transient case
 
-        ++M_N;
 
-        orthonormalize( M_N, M_WN );
-        orthonormalize( M_N, M_WN );
+
+        orthonormalize( M_N, M_WN, Nm );
+        orthonormalize( M_N, M_WN, Nm );
 #if 0
-        orthonormalize( M_N, M_WNdu );
-        orthonormalize( M_N, M_WNdu );
+        orthonormalize( M_N, M_WNdu, Nm );
+        orthonormalize( M_N, M_WNdu, Nm );
 #endif
         Log() << "[CRB::offlineNoErrorEstimation] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
         for( int q = 0; q < M_model->Qa(); ++q )
@@ -1563,14 +1572,14 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             M_Aq_pr_du[q].conservativeResize( M_N, M_N );
 
             // only compute the last line and last column of reduced matrices
-            int i = M_N-1;
+            int i = std::max(0,M_N-Nm);
             for( int j = 0; j < M_N; ++j )
             {
                 M_Aq_pr[q]( i, j ) = Aq[q]->energy( M_WN[i], M_WN[j] );
                 M_Aq_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WNdu[j], true );
                 M_Aq_pr_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WN[j] );
             }
-            int j = M_N-1;
+            int j = std::max(0,M_N-Nm);
             for( int i = 0; i < M_N; ++i )
             {
                 M_Aq_pr[q]( i, j ) = Aq[q]->energy( M_WN[i], M_WN[j] );
@@ -1587,14 +1596,14 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             M_Mq_pr_du[q].conservativeResize( M_N, M_N );
 
             // only compute the last line and last column of reduced matrices
-            int i = M_N-1;
+            int i = std::max(0,M_N-Nm);
             for( int j = 0; j < M_N; ++j )
             {
                 M_Mq_pr[q]( i, j ) = Mq[q]->energy( M_WN[i], M_WN[j] );
                 M_Mq_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WNdu[j], true );
                 M_Mq_pr_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WN[j] );
             }
-            int j = M_N-1;
+            int j = std::max(0,M_N-Nm);
             for( int i = 0; i < M_N; ++i )
             {
                 M_Mq_pr[q]( i, j ) = Mq[q]->energy( M_WN[i], M_WN[j] );
@@ -1609,16 +1618,25 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         {
             M_Fq_pr[q].conservativeResize( M_N );
             M_Fq_du[q].conservativeResize( M_N );
-            M_Fq_pr[q]( M_N-1 ) = M_model->Fq( 0, q, M_WN[M_N-1] );
-            M_Fq_du[q]( M_N-1 ) = M_model->Fq( 0, q, M_WNdu[M_N-1] );
+            for( int l = 0; l < Nm; ++l )
+            {
+                int index = std::max(0,M_N-l)
+                M_Fq_pr[q]( index ) = M_model->Fq( 0, q, M_WN[M_N-1] );
+                M_Fq_du[q]( index ) = M_model->Fq( 0, q, M_WNdu[M_N-1] );
+            }
         }
         Log() << "[CRB::offlineNoErrorEstimation] compute Lq_pr, Lq_du" << "\n";
         for( int q = 0; q < M_model->Ql(M_output_index); ++q )
         {
             M_Lq_pr[q].conservativeResize( M_N );
             M_Lq_du[q].conservativeResize( M_N );
-            M_Lq_pr[q]( M_N-1 ) = M_model->Fq( M_output_index, q, M_WN[M_N-1] );
-            M_Lq_du[q]( M_N-1 ) = M_model->Fq( M_output_index, q, M_WNdu[M_N-1] );
+            for( int l = 0; l < Nm; ++l )
+            {
+                int index = std::max(0,M_N-l)
+                M_Lq_pr[q]( index ) = M_model->Fq( M_output_index, q, M_WN[M_N-1] );
+                M_Lq_du[q]( index ) = M_model->Fq( M_output_index, q, M_WNdu[M_N-1] );
+            }
+
         }
 
 
@@ -2242,7 +2260,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 }
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn )
+CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 {
     std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
     Debug (12000) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
