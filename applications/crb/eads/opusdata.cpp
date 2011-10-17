@@ -35,6 +35,7 @@
 #include <opusdefs.hpp>
 #include <opusdata.hpp>
 #include <opuscomponent.hpp>
+#include <feel/feeldiscr/bdf2.hpp>
 
 namespace Feel
 {
@@ -86,7 +87,8 @@ OpusData::makeOptions()
         ;
 
     return opusoptions
-        .add( makeComponentOptions() );
+        .add( makeComponentOptions() )
+        .add( bdf_options("temperature") );
 }
 
 OpusData::OpusData( int d )
