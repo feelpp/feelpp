@@ -407,6 +407,9 @@ public:
     double timeFinal() { return M_bdf->timeFinal(); }
     double timeInitial() { return M_bdf->timeInitial(); }
     int timeOrder() { return M_bdf->timeOrder();  }
+    bool isSteady() {return M_is_steady;}
+    double initializationField(){return 0;}
+
     /**
      * solve for a given parameter \p mu
      */
@@ -465,7 +468,7 @@ public:
 
 private:
 
-    bool steady ;
+    bool M_is_steady ;
     bool pfem;
     double alpha;
 
@@ -512,7 +515,7 @@ private:
 UnsteadyHeat1D::UnsteadyHeat1D()
     :
     backend( backend_type::build( BACKEND_PETSC ) ),
-    steady( false ),
+    M_is_steady( false ),
     alpha( 1 ),
     meshSize( 0.01 ),
     M_do_export( true ),
@@ -527,7 +530,7 @@ UnsteadyHeat1D::UnsteadyHeat1D( po::variables_map const& vm )
     :
     M_vm( vm ),
     backend( backend_type::build( vm ) ),
-    steady( vm["steady"].as<bool>() ),
+    M_is_steady( vm["steady"].as<bool>() ),
     alpha( vm["alpha"].as<double>() ),
     meshSize( vm["hsize"].as<double>() ),
     M_do_export( !vm.count( "no-export" ) ),
@@ -876,7 +879,7 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
 
     M_bdf->initialize(*T);
 
-    if(steady)
+    if(M_is_steady)
     {
         M_bdf->setSteady();
     }
