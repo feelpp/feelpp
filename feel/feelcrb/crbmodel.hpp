@@ -89,6 +89,9 @@ public:
     //! mesh shared_ptr
     typedef typename ModelType::mesh_ptrtype mesh_ptrtype;
 
+    //! space_type
+    typedef typename ModelType::space_type space_type;
+
     //! function space type
     typedef typename model_type::functionspace_type functionspace_type;
     typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
@@ -623,6 +626,16 @@ public:
     int timeOrder()
     {
         return M_model->timeOrder();
+    }
+
+    bool isSteady()
+    {
+        return M_model->isSteady();
+    }
+
+    double initializationField()
+    {
+        return M_model->initializationField();
     }
 
     //@}
