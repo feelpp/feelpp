@@ -1572,14 +1572,14 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             M_Aq_pr_du[q].conservativeResize( M_N, M_N );
 
             // only compute the last line and last column of reduced matrices
-            int i = std::max(0,M_N-Nm);
+            int i = std::max(size_type(0),M_N-Nm);
             for( int j = 0; j < M_N; ++j )
             {
                 M_Aq_pr[q]( i, j ) = Aq[q]->energy( M_WN[i], M_WN[j] );
                 M_Aq_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WNdu[j], true );
                 M_Aq_pr_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WN[j] );
             }
-            int j = std::max(0,M_N-Nm);
+            int j = std::max(size_type(0),M_N-Nm);
             for( int i = 0; i < M_N; ++i )
             {
                 M_Aq_pr[q]( i, j ) = Aq[q]->energy( M_WN[i], M_WN[j] );
@@ -1596,14 +1596,14 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             M_Mq_pr_du[q].conservativeResize( M_N, M_N );
 
             // only compute the last line and last column of reduced matrices
-            int i = std::max(0,M_N-Nm);
+            int i = std::max(0,(int)M_N-Nm);
             for( int j = 0; j < M_N; ++j )
             {
                 M_Mq_pr[q]( i, j ) = Mq[q]->energy( M_WN[i], M_WN[j] );
                 M_Mq_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WNdu[j], true );
                 M_Mq_pr_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WN[j] );
             }
-            int j = std::max(0,M_N-Nm);
+            int j = std::max(size_type(0),M_N-Nm);
             for( int i = 0; i < M_N; ++i )
             {
                 M_Mq_pr[q]( i, j ) = Mq[q]->energy( M_WN[i], M_WN[j] );
@@ -1620,7 +1620,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             M_Fq_du[q].conservativeResize( M_N );
             for( int l = 0; l < Nm; ++l )
             {
-                int index = std::max(0,M_N-l)
+                int index = std::max(size_type(0),M_N-l);
                 M_Fq_pr[q]( index ) = M_model->Fq( 0, q, M_WN[M_N-1] );
                 M_Fq_du[q]( index ) = M_model->Fq( 0, q, M_WNdu[M_N-1] );
             }
@@ -1632,7 +1632,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             M_Lq_du[q].conservativeResize( M_N );
             for( int l = 0; l < Nm; ++l )
             {
-                int index = std::max(0,M_N-l)
+                int index = std::max(size_type(0),M_N-l);
                 M_Lq_pr[q]( index ) = M_model->Fq( M_output_index, q, M_WN[M_N-1] );
                 M_Lq_du[q]( index ) = M_model->Fq( M_output_index, q, M_WNdu[M_N-1] );
             }
