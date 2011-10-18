@@ -1596,7 +1596,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             M_Mq_pr_du[q].conservativeResize( M_N, M_N );
 
             // only compute the last line and last column of reduced matrices
-            int i = std::max(0,(int)M_N-Nm);
+            int i = std::max(size_type(0),M_N-Nm);
             for( int j = 0; j < M_N; ++j )
             {
                 M_Mq_pr[q]( i, j ) = Mq[q]->energy( M_WN[i], M_WN[j] );
