@@ -310,12 +310,17 @@ template<typename TruthModelType>
 void POD<TruthModelType>::fillPodMatrix()
 {
     M_bdf->setRestart( true );
+
+    int K = M_bdf->timeValues().size();
+    M_pod_matrix.resize(K,K);
+
     auto bdfi = M_bdf->deepCopy();
     auto bdfj = M_bdf->deepCopy();
     for( bdfi->start(); !bdfi->isFinished(); bdfi->next() )
     {
         int i = bdfi->iteration()-1;
         bdfi->loadCurrent();
+
         for( bdfj->start(); !bdfj->isFinished() && (bdfj->iteration() < bdfi->iteration()); bdfj->next() )
         {
             int j = bdfj->iteration()-1;
@@ -335,9 +340,6 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
     M_backend = backend_type::build( BACKEND_PETSC );
 
     Eigen::SelfAdjointEigenSolver< matrixN_type > eigen_solver;
-
-    int K = M_bdf->timeValues().size();
-    M_pod_matrix.resize(K,K);
 
     fillPodMatrix();
 
@@ -398,6 +400,7 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
             exit(0);
         }
         eigen_values[i]=real(eigen_solver.eigenvalues()[i]);
+        Log()<<"eigen value ["<<i<<"] : "<<eigen_values[i]<<"\n";
     }
 
     int position_of_largest_eigenvalue=number_of_eigenvalues-1;
@@ -427,8 +430,8 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
     {
         std::cout<<"M_store_pod_matrix_format_octave = "<<M_store_pod_matrix_format_octave<<std::endl;
         std::ofstream eigenvalue_file;
-        eigenvalue_file.open("E2.mat",std::ios::out);
-        eigenvalue_file<<"# name: E2\n";
+        eigenvalue_file.open("eigen_values.mat",std::ios::out);
+        eigenvalue_file<<"# name: E\n";
         eigenvalue_file<<"# type: matrix\n";
         eigenvalue_file<<"# rows: "<<number_of_eigenvalues<<"\n";
         eigenvalue_file<<"# columns: 1\n";
@@ -439,8 +442,8 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
         eigenvalue_file.close();
 
         std::ofstream eigenvector_file;
-        eigenvector_file.open("V2.mat",std::ios::out);
-        eigenvector_file<<"# name: V2\n";
+        eigenvector_file.open("eigen_vectors.mat",std::ios::out);
+        eigenvector_file<<"# name: V\n";
         eigenvector_file<<"# type: matrix\n";
         eigenvector_file<<"# rows: "<<M_K<<"\n";
         eigenvector_file<<"# columns: "<<number_of_eigenvalues<<"\n";
@@ -453,6 +456,20 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
             eigenvector_file<<"\n";
         }
         eigenvector_file.close();
+
+
+        for(int i=0; i<M_Nm; i++)
+        {
+            std::ofstream mode_file( (boost::format("mode_%1%") %i).str().c_str() );
+            mode_file<<"# name: mode\n";
+            mode_file<<"# type: matrix\n";
+            mode_file<<"# rows: "<<M_Ndof<<"\n";
+            mode_file<<"# columns: 1\n";
+            element_type e = ModeSet[i];
+            for(int j=0; j<e.size(); j++) mode_file<<e(j)<<"\n";
+            mode_file.close();
+        }
+
 
     }
 }

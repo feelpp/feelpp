@@ -607,6 +607,7 @@ private:
 
 
     size_type M_N;
+    size_type M_Nm;
 
     convergence_type M_rbconv;
 
@@ -661,6 +662,11 @@ CRB<TruthModelType>::offline()
     Log() << "[CRB::offline] initialize underlying finite element model\n";
     M_model->init();
     std::cout << " -- model init done in " << ti.elapsed() << "s\n"; ti.restart();
+
+    M_Nm = this->vm()["crb.Nm"].template as<int>() ;
+    if ( M_model->isSteady() )
+        M_Nm = 1;
+
 
     //scm_ptrtype M_scm = scm_ptrtype( new scm_type( M_vm ) );
     //M_scm->setTruthModel( M_model );
@@ -729,8 +735,6 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
     std::vector<vector_ptrtype> F,L;
 
 
-    //useful for POD in time
-    int Nm = this->vm()["crb.Nm"].template as<int>() ;
     const int Ndof = M_model->functionSpace()->nDof();//number of dofs used
 
     // dimension of reduced basis space
@@ -767,7 +771,7 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
     sampling_ptrtype Sampling;
     Sampling = sampling_ptrtype( new sampling_type( M_Dmu ) );
 
-    int sampling_size = M_iter_max / Nm ;
+    int sampling_size = M_iter_max / M_Nm ;
     Sampling->logEquidistribute( sampling_size );
     Log() << "[CRB::offlineNoErrorEstimation] sampling parameter space with "<< sampling_size <<"elements done\n";
 
@@ -950,39 +954,41 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
 
             pod_ptrtype POD = pod_ptrtype( new pod_type(  ) );
 
-            POD->setNm(Nm);
+            POD->setNm(M_Nm);
             POD->setBdf( M_bdf_primal_save );
             POD->setModel(M_model);
             mode_set_type ModeSet;
             POD->pod(ModeSet);
 
             //now : loop over number modes per mu
-            for(int i=0;i<Nm;i++)
+            for(int i=0;i<M_Nm;i++)
             {
                 M_WN.push_back( ModeSet[i] );
             }
 
             //and now the dual
-            POD->setBdf( M_bdf_dual );
-            mode_set_type ModeSetdu;
-            POD->pod(ModeSetdu);
+            //POD->setBdf( M_bdf_dual );
+            //mode_set_type ModeSetdu;
+            //POD->pod(ModeSetdu);
+            element_ptrtype mode_zero ( new element_type( M_model->functionSpace() ) );
 
-            for(int i=0;i<Nm;i++)
+            for(int i=0;i<M_Nm;i++)
             {
-                M_WNdu.push_back( ModeSetdu[i] ) ;
+                //M_WNdu.push_back( ModeSetdu[i] ) ;
+                M_WNdu.push_back( *mode_zero ) ;
             }
-
         }//end of transient case
 
+        M_N+=M_Nm;
 
-        ++M_N;
 
-        orthonormalize( M_N, M_WN );
-        orthonormalize( M_N, M_WN );
+        orthonormalize( M_N, M_WN, M_Nm );
+        orthonormalize( M_N, M_WN, M_Nm );
 #if 0
-        orthonormalize( M_N, M_WNdu );
-        orthonormalize( M_N, M_WNdu );
+        orthonormalize( M_N, M_WNdu, M_Nm );
+        orthonormalize( M_N, M_WNdu, M_Nm );
 #endif
+
 
         Log() << "[CRB::offlineNoErrorEstimation] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
         for( int q = 0; q < M_model->Qa(); ++q )
@@ -992,22 +998,25 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
             M_Aq_pr_du[q].conservativeResize( M_N, M_N );
 
             // only compute the last line and last column of reduced matrices
-            int i = M_N-1;
-            for( int j = 0; j < M_N; ++j )
+            for(int i = M_N-M_Nm; i < M_N; i++ )
             {
-                M_Aq_pr[q]( i, j ) = Aq[q]->energy( M_WN[i], M_WN[j] );
-                M_Aq_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WNdu[j], true );
-                M_Aq_pr_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WN[j] );
+                for( int j = 0; j < M_N; ++j )
+                {
+                    M_Aq_pr[q]( i, j ) = Aq[q]->energy( M_WN[i], M_WN[j] );
+                    M_Aq_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WNdu[j], true );
+                    M_Aq_pr_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WN[j] );
+                }
             }
-            int j = M_N-1;
-            for( int i = 0; i < M_N; ++i )
+            for(int j=M_N-M_Nm; j < M_N; j++ )
             {
-                M_Aq_pr[q]( i, j ) = Aq[q]->energy( M_WN[i], M_WN[j] );
-                M_Aq_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WNdu[j], true );
-                M_Aq_pr_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WN[j] );
+                for( int i = 0; i < M_N; ++i )
+                {
+                    M_Aq_pr[q]( i, j ) = Aq[q]->energy( M_WN[i], M_WN[j] );
+                    M_Aq_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WNdu[j], true );
+                    M_Aq_pr_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WN[j] );
+                }
             }
         }
-
         Log() << "[CRB::offlineNoErrorEstimation] compute Mq_pr, Mq_du, Mq_pr_du" << "\n";
         for( int q = 0; q < M_model->Qm(); ++q )
         {
@@ -1016,43 +1025,51 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
             M_Mq_pr_du[q].conservativeResize( M_N, M_N );
 
             // only compute the last line and last column of reduced matrices
-            int i = M_N-1;
-            for( int j = 0; j < M_N; ++j )
+            for( int i=M_N-M_Nm ; i < M_N; i++ )
             {
-                M_Mq_pr[q]( i, j ) = Mq[q]->energy( M_WN[i], M_WN[j] );
-                M_Mq_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WNdu[j], true );
-                M_Mq_pr_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WN[j] );
+                for( int j = 0; j < M_N; ++j )
+                {
+                    M_Mq_pr[q]( i, j ) = Mq[q]->energy( M_WN[i], M_WN[j] );
+                    M_Mq_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WNdu[j], true );
+                    M_Mq_pr_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WN[j] );
+                }
             }
-            int j = M_N-1;
-            for( int i = 0; i < M_N; ++i )
+            for(int j = M_N-M_Nm; j < M_N ; j++ )
             {
-                M_Mq_pr[q]( i, j ) = Mq[q]->energy( M_WN[i], M_WN[j] );
-                M_Mq_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WNdu[j], true );
-                M_Mq_pr_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WN[j] );
+                for( int i = 0; i < M_N; ++i )
+                {
+                    M_Mq_pr[q]( i, j ) = Mq[q]->energy( M_WN[i], M_WN[j] );
+                    M_Mq_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WNdu[j], true );
+                    M_Mq_pr_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WN[j] );
+                }
             }
         }
-
 
         Log() << "[CRB::offlineNoErrorEstimation] compute Fq_pr, Fq_du" << "\n";
         for( int q = 0; q < M_model->Ql(0); ++q )
         {
             M_Fq_pr[q].conservativeResize( M_N );
             M_Fq_du[q].conservativeResize( M_N );
-            M_Fq_pr[q]( M_N-1 ) = M_model->Fq( 0, q, M_WN[M_N-1] );
-            M_Fq_du[q]( M_N-1 ) = M_model->Fq( 0, q, M_WNdu[M_N-1] );
+            for( int l = 1; l <= M_Nm; ++l )
+            {
+                int index = M_N-l;
+                M_Fq_pr[q]( index ) = M_model->Fq( 0, q, M_WN[index] );
+                M_Fq_du[q]( index ) = M_model->Fq( 0, q, M_WNdu[index] );
+            }
         }
         Log() << "[CRB::offlineNoErrorEstimation] compute Lq_pr, Lq_du" << "\n";
         for( int q = 0; q < M_model->Ql(M_output_index); ++q )
         {
             M_Lq_pr[q].conservativeResize( M_N );
             M_Lq_du[q].conservativeResize( M_N );
-            M_Lq_pr[q]( M_N-1 ) = M_model->Fq( M_output_index, q, M_WN[M_N-1] );
-            M_Lq_du[q]( M_N-1 ) = M_model->Fq( M_output_index, q, M_WNdu[M_N-1] );
-        }
+            for( int l = 1; l <= M_Nm; ++l )
+            {
+                int index = M_N-l;
+                M_Lq_pr[q]( index ) = M_model->Fq( M_output_index, q, M_WN[index] );
+                M_Lq_du[q]( index ) = M_model->Fq( M_output_index, q, M_WNdu[index] );
+            }
 
-        check( M_WNmu->size() );
-        double error=M_iter_max-M_N;
-        M_rbconv.insert( convergence( M_N, error ) );
+        }
 
         std::cout << "============================================================\n";
         Log() <<"========================================"<<"\n";
@@ -1304,9 +1321,6 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
     std::vector<vector_ptrtype> F,L;
 
     //useful for POD in time
-    int Nm = this->vm()["crb.Nm"].template as<int>() ;
-    if ( M_model->isSteady() )
-        Nm = 1;
     const int Ndof = M_model->functionSpace()->nDof();//number of dofs used
 
     // dimension of reduced basis space
@@ -1402,12 +1416,14 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
         //direct problem
         double bdf_coeff = M_bdf_primal->polyDerivCoefficient(0);
+
         auto vec_bdf_poly = backend_primal_problem->newVector(M_model->functionSpace() );
         for ( M_bdf_primal->start(),M_bdf_primal_save->start();
               !M_bdf_primal->isFinished() , !M_bdf_primal_save->isFinished();
               M_bdf_primal->next() , M_bdf_primal_save->next() )
         {
             auto bdf_poly = M_bdf_primal->polyDeriv();
+
             boost::tie(M, A, F ) = M_model->update( mu , M_bdf_primal->time() );
 
             A->addMatrix( bdf_coeff, M);
@@ -1437,14 +1453,14 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                 projectionOnPodSpace ( uproj , "primal" );
                 M_bdf_primal_save->shiftRight( *uproj );
             }
-            for( int l = 0; l < M_model->Nl(); ++l )
-                Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
 
-            Log() << "[CRB::offlineNWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
+            for( int l = 0; l < M_model->Nl(); ++l )
+                Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << " at time : "<<M_bdf_primal->time()<<"\n";
+
+            Log() << "[CRB::offlineWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
 
 
         }
-
 
 
         std::cout<<"direct problem solved"<<std::endl;
@@ -1523,7 +1539,6 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         {
             M_WN.push_back( *u );
             M_WNdu.push_back( *udu );
-            ++M_N;
         }//end of steady case
         else
         {
@@ -1532,39 +1547,44 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
             pod_ptrtype POD = pod_ptrtype( new pod_type(  ) );
 
-            POD->setNm(Nm);
+            POD->setNm(M_Nm);
             POD->setBdf( M_bdf_primal_save );
             POD->setModel(M_model);
             mode_set_type ModeSet;
             POD->pod(ModeSet);
 
             //now : loop over number modes per mu
-            for(int i=0;i<Nm;i++)
+            for(int i=0;i<M_Nm;i++)
             {
                 M_WN.push_back( ModeSet[i] );
             }
 
-            //and now the dual
-            POD->setBdf( M_bdf_dual );
-            mode_set_type ModeSetdu;
-            POD->pod(ModeSetdu);
 
-            for(int i=0;i<Nm;i++)
+            //and now the dual
+            //POD->setBdf( M_bdf_dual );
+            //mode_set_type ModeSetdu;
+            //POD->pod(ModeSetdu);
+            element_ptrtype mode_zero ( new element_type( M_model->functionSpace() ) );
+
+            for(int i=0;i<M_Nm;i++)
             {
-                M_WNdu.push_back( ModeSetdu[i] ) ;
+                //M_WNdu.push_back( ModeSetdu[i] ) ;
+                M_WNdu.push_back( *mode_zero ) ;
             }
-            M_N+=Nm;
+
         }//end of transient case
 
+        M_N+=M_Nm;
 
-
-        orthonormalize( M_N, M_WN, Nm );
-        orthonormalize( M_N, M_WN, Nm );
+        orthonormalize( M_N, M_WN, M_Nm );
+        orthonormalize( M_N, M_WN, M_Nm );
 #if 0
-        orthonormalize( M_N, M_WNdu, Nm );
-        orthonormalize( M_N, M_WNdu, Nm );
+        orthonormalize( M_N, M_WNdu, M_Nm );
+        orthonormalize( M_N, M_WNdu, M_Nm );
 #endif
-        Log() << "[CRB::offlineNoErrorEstimation] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
+
+
+        Log() << "[CRB::offlineWithErrorEstimation] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
         for( int q = 0; q < M_model->Qa(); ++q )
         {
             M_Aq_pr[q].conservativeResize( M_N, M_N );
@@ -1572,23 +1592,26 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             M_Aq_pr_du[q].conservativeResize( M_N, M_N );
 
             // only compute the last line and last column of reduced matrices
-            int i = std::max(size_type(0),M_N-Nm);
-            for( int j = 0; j < M_N; ++j )
+            for(int i = M_N-M_Nm; i < M_N; i++ )
             {
-                M_Aq_pr[q]( i, j ) = Aq[q]->energy( M_WN[i], M_WN[j] );
-                M_Aq_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WNdu[j], true );
-                M_Aq_pr_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WN[j] );
+                for( int j = 0; j < M_N; ++j )
+                {
+                    M_Aq_pr[q]( i, j ) = Aq[q]->energy( M_WN[i], M_WN[j] );
+                    M_Aq_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WNdu[j], true );
+                    M_Aq_pr_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WN[j] );
+                }
             }
-            int j = std::max(size_type(0),M_N-Nm);
-            for( int i = 0; i < M_N; ++i )
+            for(int j=M_N-M_Nm; j < M_N; j++ )
             {
-                M_Aq_pr[q]( i, j ) = Aq[q]->energy( M_WN[i], M_WN[j] );
-                M_Aq_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WNdu[j], true );
-                M_Aq_pr_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WN[j] );
+                for( int i = 0; i < M_N; ++i )
+                {
+                    M_Aq_pr[q]( i, j ) = Aq[q]->energy( M_WN[i], M_WN[j] );
+                    M_Aq_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WNdu[j], true );
+                    M_Aq_pr_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WN[j] );
+                }
             }
         }
-
-        Log() << "[CRB::offlineNoErrorEstimation] compute Mq_pr, Mq_du, Mq_pr_du" << "\n";
+        Log() << "[CRB::offlineWithErrorEstimation] compute Mq_pr, Mq_du, Mq_pr_du" << "\n";
         for( int q = 0; q < M_model->Qm(); ++q )
         {
             M_Mq_pr[q].conservativeResize( M_N, M_N );
@@ -1596,49 +1619,51 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             M_Mq_pr_du[q].conservativeResize( M_N, M_N );
 
             // only compute the last line and last column of reduced matrices
-            int i = std::max(size_type(0),M_N-Nm);
-            for( int j = 0; j < M_N; ++j )
+            for( int i=M_N-M_Nm ; i < M_N; i++ )
             {
-                M_Mq_pr[q]( i, j ) = Mq[q]->energy( M_WN[i], M_WN[j] );
-                M_Mq_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WNdu[j], true );
-                M_Mq_pr_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WN[j] );
+                for( int j = 0; j < M_N; ++j )
+                {
+                    M_Mq_pr[q]( i, j ) = Mq[q]->energy( M_WN[i], M_WN[j] );
+                    M_Mq_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WNdu[j], true );
+                    M_Mq_pr_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WN[j] );
+                }
             }
-            int j = std::max(size_type(0),M_N-Nm);
-            for( int i = 0; i < M_N; ++i )
+            for(int j = M_N-M_Nm; j < M_N ; j++ )
             {
-                M_Mq_pr[q]( i, j ) = Mq[q]->energy( M_WN[i], M_WN[j] );
-                M_Mq_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WNdu[j], true );
-                M_Mq_pr_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WN[j] );
+                for( int i = 0; i < M_N; ++i )
+                {
+                    M_Mq_pr[q]( i, j ) = Mq[q]->energy( M_WN[i], M_WN[j] );
+                    M_Mq_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WNdu[j], true );
+                    M_Mq_pr_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WN[j] );
+                }
             }
         }
 
-
-        Log() << "[CRB::offlineNoErrorEstimation] compute Fq_pr, Fq_du" << "\n";
+        Log() << "[CRB::offlineWithErrorEstimation] compute Fq_pr, Fq_du" << "\n";
         for( int q = 0; q < M_model->Ql(0); ++q )
         {
             M_Fq_pr[q].conservativeResize( M_N );
             M_Fq_du[q].conservativeResize( M_N );
-            for( int l = 0; l < Nm; ++l )
+            for( int l = 1; l <= M_Nm; ++l )
             {
-                int index = std::max(size_type(0),M_N-l);
-                M_Fq_pr[q]( index ) = M_model->Fq( 0, q, M_WN[M_N-1] );
-                M_Fq_du[q]( index ) = M_model->Fq( 0, q, M_WNdu[M_N-1] );
+                int index = M_N-l;
+                M_Fq_pr[q]( index ) = M_model->Fq( 0, q, M_WN[index] );
+                M_Fq_du[q]( index ) = M_model->Fq( 0, q, M_WNdu[index] );
             }
         }
-        Log() << "[CRB::offlineNoErrorEstimation] compute Lq_pr, Lq_du" << "\n";
+        Log() << "[CRB::offlineWithErrorEstimation] compute Lq_pr, Lq_du" << "\n";
         for( int q = 0; q < M_model->Ql(M_output_index); ++q )
         {
             M_Lq_pr[q].conservativeResize( M_N );
             M_Lq_du[q].conservativeResize( M_N );
-            for( int l = 0; l < Nm; ++l )
+            for( int l = 1; l <= M_Nm; ++l )
             {
-                int index = std::max(size_type(0),M_N-l);
-                M_Lq_pr[q]( index ) = M_model->Fq( M_output_index, q, M_WN[M_N-1] );
-                M_Lq_du[q]( index ) = M_model->Fq( M_output_index, q, M_WNdu[M_N-1] );
+                int index = M_N-l;
+                M_Lq_pr[q]( index ) = M_model->Fq( M_output_index, q, M_WN[index] );
+                M_Lq_du[q]( index ) = M_model->Fq( M_output_index, q, M_WNdu[index] );
             }
 
         }
-
 
         timer2.restart();
         if(M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM)
@@ -2278,7 +2303,7 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 
     }
     // normalize
-    for( int i =N-1;i < N;++i )
+    for( int i =N-Nm;i < N;++i )
     {
         value_type __rii_pr = math::sqrt( M_model->scalarProduct(  wn[i], wn[i] ) );
         wn[i].scale( 1./__rii_pr );
@@ -2294,7 +2319,7 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
         A.setZero( N, N );
         I.setIdentity( N, N );
         for( int i = 0;i < N;++i )
-        {
+            {
             for( int j = 0;j < N;++j )
             {
                 A( i, j ) = M_model->scalarProduct(  wn[i], wn[j] );

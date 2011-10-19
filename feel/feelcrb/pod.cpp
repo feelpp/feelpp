@@ -29,7 +29,7 @@
  */
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/solvereigen.hpp>
-#include <pod.hpp>
+#include <feel/feelcrb/pod.hpp>
 
 
 namespace Feel
