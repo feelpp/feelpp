@@ -40,7 +40,7 @@ podOptions( std::string const& prefix )
     Feel::po::options_description podoptions("POD Options");
     podoptions.add_options()
         ("pod.store-pod-matrix"   , Feel::po::value<bool>()->default_value( false ), "indicate if we store the pod matrix on a file" )
-        ("pod.store-pod-matrix-format-octave"   , Feel::po::value<bool>()->default_value( false ), "indicate if we store the pod matrix on a file with octave format" )
+        ("pod.store-pod-matrix-format-octave"   , Feel::po::value<bool>()->default_value( true ), "indicate if we store the pod matrix on a file with octave format" )
         ;
 
     return podoptions;

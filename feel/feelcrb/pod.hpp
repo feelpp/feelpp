@@ -139,10 +139,11 @@ public :
     typedef typename model_type::backend_type backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
+
     POD()
         :
         M_store_pod_matrix ( false ),
-        M_store_pod_matrix_format_octave ( false ),
+        M_store_pod_matrix_format_octave ( true ),
         M_Nm( 1 ),
         M_K( 500 ),
         M_pod_matrix(),
@@ -309,22 +310,41 @@ void POD<TruthModelType>::exportMode(double time, element_ptrtype& mode)
 template<typename TruthModelType>
 void POD<TruthModelType>::fillPodMatrix()
 {
-    M_bdf->setRestart( true );
+    //M_bdf->setRestart( true );
 
-    int K = M_bdf->timeValues().size();
-    M_pod_matrix.resize(K,K);
+    M_pod_matrix.resize(M_K,M_K);
 
     auto bdfi = M_bdf->deepCopy();
     auto bdfj = M_bdf->deepCopy();
+
+    bdfi->setRestart(true);
+    bdfj->setRestart(true);
     for( bdfi->start(); !bdfi->isFinished(); bdfi->next() )
     {
         int i = bdfi->iteration()-1;
         bdfi->loadCurrent();
 
+
+        std::ofstream ofs30( (boost::format("POD_bdfi_time=%1%") %bdfi->time()).str().c_str() );
+        for(int z=0; z<bdfi->unknown(0).size() ; z++ )
+        {
+            ofs30<<std::setprecision(16)<<bdfi->unknown(0)(z) <<"\n";
+        }
+        ofs30.close();
+
         for( bdfj->start(); !bdfj->isFinished() && (bdfj->iteration() < bdfi->iteration()); bdfj->next() )
         {
             int j = bdfj->iteration()-1;
             bdfj->loadCurrent();
+
+            std::ofstream ofs31( (boost::format("POD_bdfj_i=%1%_time=%2%") %i %bdfj->time()).str().c_str() );
+            for(int z=0; z<bdfj->unknown(0).size() ; z++ )
+            {
+                ofs31<< bdfj->unknown(0)(z) <<"\n";
+            }
+            ofs31.close();
+
+
             M_pod_matrix(i,j) = M_model->scalarProduct(bdfj->unknown(0), bdfi->unknown(0));
             M_pod_matrix(j,i) = M_pod_matrix(i,j);
         }
@@ -340,6 +360,9 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
     M_backend = backend_type::build( BACKEND_PETSC );
 
     Eigen::SelfAdjointEigenSolver< matrixN_type > eigen_solver;
+
+    int M_K = M_bdf->timeValues().size()-1;
+    std::cout<<" K = "<<M_K<<std::endl;
 
     fillPodMatrix();
 
@@ -461,15 +484,10 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
         for(int i=0; i<M_Nm; i++)
         {
             std::ofstream mode_file( (boost::format("mode_%1%") %i).str().c_str() );
-            mode_file<<"# name: mode\n";
-            mode_file<<"# type: matrix\n";
-            mode_file<<"# rows: "<<M_Ndof<<"\n";
-            mode_file<<"# columns: 1\n";
             element_type e = ModeSet[i];
-            for(int j=0; j<e.size(); j++) mode_file<<e(j)<<"\n";
+            for(int j=0; j<e.size(); j++) mode_file<<std::setprecision(16)<<e(j)<<"\n";
             mode_file.close();
         }
-
 
     }
 }
