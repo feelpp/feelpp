@@ -50,6 +50,7 @@ int main(int argc, char** argv)
     Feel::Environment env(argc, argv );
     typedef Mesh<Simplex<3> > mesh_type;
     std::string mesh_name=vm["filename"].as<std::string>();
+#if 0
     auto mesh = loadGMSHMesh( _mesh=new mesh_type,
                                 _desc=img2msh( _filename=mesh_name),
                                 _physical_are_elementary_regions=true,
@@ -60,6 +61,6 @@ int main(int argc, char** argv)
               << integrate( elements(mesh), cst(1.) ).evaluate() << "\n";
     std::cout << "surface =" << std::endl
               << integrate( boundaryfaces(mesh), cst(1.) ).evaluate() << "\n";
-
+#endif
 
 }
