@@ -833,6 +833,9 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         double bdf_coeff = M_bdf_primal->polyDerivCoefficient(0);
         auto vec_bdf_poly = backend_primal_problem->newVector(M_model->functionSpace() );
 
+
+
+
         for ( M_bdf_primal->start() , M_bdf_primal_save->start() ;
               !M_bdf_primal->isFinished() && !M_bdf_primal_save->isFinished() ;
               M_bdf_primal->next() , M_bdf_primal_save->next() )
@@ -1417,6 +1420,11 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         //direct problem
         double bdf_coeff = M_bdf_primal->polyDerivCoefficient(0);
 
+
+        std::cout<<"dt used : "<<M_model->timeStep()<<std::endl;
+        std::cout<<"time final used : "<<M_model->timeFinal()<<std::endl;
+
+
         auto vec_bdf_poly = backend_primal_problem->newVector(M_model->functionSpace() );
         for ( M_bdf_primal->start(),M_bdf_primal_save->start();
               !M_bdf_primal->isFinished() , !M_bdf_primal_save->isFinished();
@@ -1447,12 +1455,22 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
             M_bdf_primal->shiftRight( *u );
 
+
             if( ! M_model->isSteady() )
             {
                 *uproj=*u;
                 projectionOnPodSpace ( uproj , "primal" );
                 M_bdf_primal_save->shiftRight( *uproj );
             }
+
+
+            std::ofstream ofs31( (boost::format("CRB_Solutionproj_time=%1%")  %M_bdf_primal->time()).str().c_str() );
+            for(int z=0; z<uproj->size() ; z++ )
+            {
+                ofs31<<std::setprecision(16)<< uproj->operator()(z) <<"\n";
+            }
+            ofs31.close();
+
 
             for( int l = 0; l < M_model->Nl(); ++l )
                 Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << " at time : "<<M_bdf_primal->time()<<"\n";
