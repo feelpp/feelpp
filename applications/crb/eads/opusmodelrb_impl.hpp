@@ -120,10 +120,10 @@ OpusModelRB<OrderU,OrderP,OrderT>::initParametrization()
 
 
     parameter_type mu_min( M_Dmu );
-    mu_min << 150, 1e-2, 1e6, 1e2, 5e-2;
+    mu_min << 50, 1e-2, 1e6, 1e2, 5e-2;
     M_Dmu->setMin( mu_min );
     parameter_type mu_max( M_Dmu );
-    mu_max << 150, 1e-2, 1e6, 1e2, 5e-2;
+    mu_max << 50, 1e-2, 1e6, 1e2, 5e-2;
     M_Dmu->setMax( mu_max );
 
 
@@ -696,6 +696,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
         integrate ( markedelements(M_mesh,"AIR4") , idv(rhoC)*idt(u)*id(w) ) ;
 
 
+#if 0
     //
     // H_1 scalar product
     //
@@ -707,6 +708,21 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
                    +grad(u)*trans(gradt(u))
             );
     M->close();
+#endif
+
+    //
+    // L_2 scalar product
+    //
+    M = backendM->newMatrix( M_Th, M_Th );
+
+    form2( M_Th, M_Th, M, _init=true ) =
+        integrate( elements(M_mesh),
+                   id(u)*idt(v)
+            );
+    M->close();
+
+
+
     Log() << "   - M  done\n";
     Log() << "OpusModelRB::init done\n";
 }
@@ -937,6 +953,12 @@ OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu , double tim
     }
     Log() << "[update(mu,"<<time<<")] add mass matrix contributions in " << ti.elapsed() << "s\n";ti.restart();
 
+    M->zero();
+    for( size_type q = 0;q < M_Mq.size(); ++q )
+    {
+        M->addMatrix( M_thetaMq(q) , M_Mq[q] );
+    }
+
 }
 template<int OrderU, int OrderP, int OrderT>
 void
@@ -944,9 +966,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu )
 {
     element_ptrtype T( new element_type( M_Th ) );
 
-    //initialization of temperature
-    *T = vf::project( M_Th, elements( M_Th->mesh() ), constant( M_T0 ) );
-    M_temp_bdf->initialize(*T);
 
     this->solve( mu, T );
     //this->exportResults( *T );
@@ -968,6 +987,12 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
     boost::timer ti;
     //Log() << "solve(mu,T) for parameter " << mu << "\n";
     using namespace Feel::vf;
+
+
+    //initialization of temperature
+    *T = vf::project( M_Th, elements( M_Th->mesh() ), constant( M_T0 ) );
+    M_temp_bdf->initialize(*T);
+
 
     if ( M_is_steady )
     {
@@ -996,6 +1021,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
         this->exportResults(M_temp_bdf->time(), *T );
         Log() << "[solve(mu)] export done in " << ti.elapsed() << "s\n";ti.restart();
 
+        M_temp_bdf->shiftRight(*T);
     }
 
 }
@@ -1006,6 +1032,11 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
 {
     //Log() << "solve(mu,T) for parameter " << mu << "\n";
     using namespace Feel::vf;
+
+
+    *T = vf::project( M_Th, elements( M_Th->mesh() ), constant( M_T0 ) );
+    M_temp_bdf->initialize(*T);
+
 
     if ( M_is_steady )
     {
@@ -1036,6 +1067,9 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
             }
         }
         this->exportResults(M_temp_bdf->time(), *T );
+
+
+        M_temp_bdf->shiftRight(*T);
     }
 
 
