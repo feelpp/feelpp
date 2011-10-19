@@ -145,7 +145,6 @@ public :
         M_store_pod_matrix ( false ),
         M_store_pod_matrix_format_octave ( true ),
         M_Nm( 1 ),
-        M_K( 500 ),
         M_pod_matrix(),
         M_snapshots_matrix(),
         M_model(),
@@ -159,7 +158,6 @@ public :
         M_store_pod_matrix(vm["pod.store-pod-matrix"].template as<bool>() ),
         M_store_pod_matrix_format_octave(vm["pod.store-pod-matrix-format-octave"].template as<bool>() ),
         M_Nm( Nm ),
-        M_K( K ),
         M_pod_matrix(),
         M_snapshots_matrix(SnapshotsMatrix),
         M_model(),
@@ -174,7 +172,6 @@ public :
         :
         M_store_pod_matrix( o.M_store_pod_matrix ),
         M_store_pod_matrix_format_octave( o.M_store_pod_matrix_format_octave ),
-        M_K( o.M_K ),
         M_Nm( o.M_Nm ),
         M_pod_matrix( o.M_matrix ),
         M_snapshots_matrix(o.M_snapshots_matrix),
@@ -203,9 +200,6 @@ public :
     //! return number of mode used per mu
     const int nm() { return M_Nm; }
 
-    //! return number of snapshots (or number of time step)
-    const int k()  { return M_K; }
-
     //! return reduced basis
     const wn_type & wn() { return M_WN; }
 
@@ -215,7 +209,6 @@ public :
     void setBdf( bdf_ptrtype& bdf ) { M_bdf = bdf; }
     void setSnapshotsMatrix (matrixN_type& Matrix ) { M_snapshots_matrix=Matrix; }
     void setWN (wn_type& WN) { M_WN=WN; }
-    void setK  (const int K ) { M_K=K; }
     void setNm ( const int Nm ) { M_Nm=Nm; }
     void setModel ( truth_model_ptrtype Model ) { M_model=Model; }
     void setNdof ( const int Ndof ) { M_Ndof = Ndof;  }
@@ -238,7 +231,6 @@ private :
 
     int M_Nm;
 
-    int M_K;
     int M_Ndof;
 
     truth_model_ptrtype M_model;
@@ -311,8 +303,8 @@ template<typename TruthModelType>
 void POD<TruthModelType>::fillPodMatrix()
 {
     //M_bdf->setRestart( true );
-
-    M_pod_matrix.resize(M_K,M_K);
+    int K = M_bdf->timeValues().size()-1;
+    M_pod_matrix.resize(K,K);
 
     auto bdfi = M_bdf->deepCopy();
     auto bdfj = M_bdf->deepCopy();
@@ -361,9 +353,6 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
 
     Eigen::SelfAdjointEigenSolver< matrixN_type > eigen_solver;
 
-    int M_K = M_bdf->timeValues().size()-1;
-    std::cout<<" K = "<<M_K<<std::endl;
-
     fillPodMatrix();
 
     //store the matrix
@@ -409,6 +398,7 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
 
 
     eigen_solver.compute(M_pod_matrix); // solve M_pod_matrix psi = lambda psi
+
     int number_of_eigenvalues =  eigen_solver.eigenvalues().size();
     Log()<<"Number of eigenvalues  : "<<number_of_eigenvalues<<"\n";
     //we copy eigenvalues in a std::vector beacause it's easier to manipulate it
@@ -464,13 +454,9 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
         }
         eigenvalue_file.close();
 
-        std::ofstream eigenvector_file;
-        eigenvector_file.open("eigen_vectors.mat",std::ios::out);
-        eigenvector_file<<"# name: V\n";
-        eigenvector_file<<"# type: matrix\n";
-        eigenvector_file<<"# rows: "<<M_K<<"\n";
-        eigenvector_file<<"# columns: "<<number_of_eigenvalues<<"\n";
-        for(int j=0;j<M_K;j++)
+
+        std::ofstream eigenvector_file( (boost::format("eigen_vectors") ).str().c_str() );
+        for(int j=0;j<M_pod_matrix.cols();j++)
         {
             for(int i=0;i<number_of_eigenvalues;i++)
             {
