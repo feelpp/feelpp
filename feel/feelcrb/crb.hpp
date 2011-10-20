@@ -1502,7 +1502,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
                 Log() << "u^T Rhs "<< inner_product( *u, *Rhs ) <<  " at time : "<<M_bdf_primal->time()<<"\n";
                 for( int l = 0; l < M_model->Nl(); ++l )
-                    std::cout << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << " at time : "<<M_bdf_primal->time()<<"\n";
+                    Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << " at time : "<<M_bdf_primal->time()<<"\n";
 
                 Log() << "[CRB::offlineWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
             }
@@ -2434,8 +2434,96 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::value_type
 CRB<TruthModelType>::N2Q2( int Ncur,parameter_type const& mu, vectorN_type const& Un,vectorN_type const& Undu, mpl::bool_<true> ) const
 {
-    std::cout<<"[CRB::N2Q2] ERROR : N2Q2 need to be implemented for time dependent models"<<std::endl;
-    return 0;
+    //std::cout<<"[CRB::N2Q2] ERROR : N2Q2 need to be implemented for time dependent models"<<std::endl;
+    //WARNING works only for steady case
+    double time=1e30;
+
+    theta_vector_type theta_aq;
+    theta_vector_type theta_mq;
+    std::vector<theta_vector_type> theta_fq, theta_lq;
+    boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu, time );
+
+    int __QLhs = M_model->Qa();
+    int __QRhs = M_model->Ql(0);
+    int __QOutput = M_model->Ql(M_output_index);
+    int __size = Un.size();
+    int __N = Ncur;
+
+    // primal terms
+    value_type __c0_pr = 0.0;
+    for ( int __q1 = 0;__q1 < __QRhs;++__q1 )
+    {
+        value_type fq1 = theta_fq[0][__q1];
+        for ( int __q2 = 0;__q2 < __QRhs;++__q2 )
+        {
+            value_type fq2 = theta_fq[0][__q2];
+            __c0_pr += M_C0_pr[__q1][__q2]*fq1*fq2;
+        }
+    }
+
+    value_type __lambda_pr = 0.0;
+    value_type __gamma_pr = 0.0;
+    for ( int __q1 = 0;__q1 < __QLhs;++__q1 )
+    {
+        value_type a_q1 = theta_aq[__q1];
+        for ( int __q2 = 0;__q2 < __QRhs;++__q2 )
+        {
+            value_type f_q2 = theta_fq[0][__q2];
+            __lambda_pr += a_q1*f_q2*M_Lambda_pr[__q1][__q2].dot( Un );
+        }
+        for ( int __q2 = 0;__q2 < __QLhs;++__q2 )
+        {
+            value_type a_q2 = theta_aq[__q2];
+            __gamma_pr += a_q1 * a_q2 * Un.transpose()*(M_Gamma_pr[__q1][__q2]*Un);
+        }
+    }
+
+    // dual terms
+    value_type __c0_du = 0.0;
+    for ( int __q1 = 0;__q1 < __QOutput;++__q1 )
+    {
+        value_type fq1 = theta_fq[M_output_index][__q1];
+        for ( int __q2 = 0;__q2 < __QOutput;++__q2 )
+        {
+            value_type fq2 = theta_fq[M_output_index][__q2];
+            __c0_du += M_C0_du[__q1][__q2]*fq1*fq2;
+        }
+    }
+
+    value_type __lambda_du = 0.0;
+    value_type __gamma_du = 0.0;
+    for ( int __q1 = 0;__q1 < __QLhs;++__q1 )
+    {
+        value_type a_q1 = theta_aq[__q1];
+        for ( int __q2 = 0;__q2 < __QOutput;++__q2 )
+        {
+            value_type a_q2 = theta_fq[M_output_index][__q2]*a_q1;
+            __lambda_du += a_q2 * M_Lambda_du[__q1][__q2].dot(Undu);
+        }
+        for ( int __q2 = 0;__q2 < __QLhs;++__q2 )
+        {
+            value_type a_q2 = theta_aq[__q2]*a_q1;
+            __gamma_du += a_q2*Undu.transpose()*M_Gamma_du[ __q1][ __q2]*Undu;
+        }
+    }
+
+    //std::cout << "c0= " << __c0_du << std::endl;
+    //std::cout << "lambda= " << __lambda_du << std::endl;
+    //std::cout << "gamma= " << __gamma_du << std::endl;
+    value_type delta_pr = math::sqrt( math::abs(__c0_pr+__lambda_pr+__gamma_pr) );
+    value_type delta_du = math::sqrt( math::abs(__c0_du+__lambda_du+__gamma_du) );
+    //std::cout << "delta_pr=" << delta_pr << std::endl;
+    //std::cout << "delta_du=" << delta_du << std::endl;
+
+    double alpha = 1;
+    if ( M_error_type == CRB_RESIDUAL_SCM )
+    {
+        double alpha_up, lbti;
+        boost::tie( alpha, lbti ) = M_scm->lb( mu );
+        boost::tie( alpha_up, lbti ) = M_scm->ub( mu );
+        std::cout << "alpha_lo = " << alpha << " alpha_hi = " << alpha_up << "\n";
+    }
+    return (delta_pr*delta_du)/alpha;
 }
 
 template<typename TruthModelType>
@@ -2541,7 +2629,291 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::generateN2Q2( int Ncur, mpl::bool_<true> )
 {
-    std::cout<<"[CRB::generateN2Q2]  ERROR : need to be implemented for time dependent problems "<<std::endl;
+    //std::cout<<"[CRB::generateN2Q2]  ERROR : need to be implemented for time dependent problems "<<std::endl;
+    //WARNING works only for steady case
+    double time=1e30;
+
+    boost::timer ti;
+    int __QLhs = M_model->Qa();
+    int __QRhs = M_model->Ql(0);
+    int __QOutput = M_model->Ql(M_output_index);
+    int __size = Ncur;
+    int __N = Ncur;
+    std::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
+              << " QRhs=" << __QRhs << " Qoutput=" << __QOutput << "\n";
+    vector_ptrtype __X( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype __Fdu( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype __Xdu( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype __Y( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype __Ydu( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype __Z_pr(  M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype __Z2_pr(  M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype __W_pr(  M_backend->newVector( M_model->functionSpace() ) );
+    namespace ublas = boost::numeric::ublas;
+
+    std::vector<sparse_matrix_ptrtype> Aq;
+    std::vector<sparse_matrix_ptrtype> Mq;
+    std::vector<std::vector<vector_ptrtype> > Fq,Lq;
+    boost::tie( Mq, Aq, Fq ) = M_model->computeAffineDecomposition();
+    __X->zero();
+    __X->add( 1.0 );
+    //std::cout << "measure of domain= " << M_model->scalarProduct( __X, __X ) << "\n";
+#if 0
+    ublas::vector<value_type> mu(P);
+    for ( int q = 0; q < P; ++q )
+    {
+        mu[q] = mut(0.0);
+    }
+#endif
+
+    // Primal
+    // no need to recompute this term each time
+    if ( Ncur == 1 )
+    {
+        Log() << "[generateN2Q2] Compute Primal residual data\n";
+        Log() << "[generateN2Q2] C0_pr\n";
+        // see above X = C^-1 F and Y = F
+        for ( int __q1 = 0;__q1 < __QRhs;++__q1 )
+        {
+            //Log() << "__Fq->norm1=" << Fq[0][__q1]->l2Norm() << "\n";
+            M_model->l2solve( __X, Fq[0][__q1] );
+            //for ( int __q2 = 0;__q2 < __q1;++__q2 )
+            for ( int __q2 = 0;__q2 < __QRhs;++__q2 )
+            {
+                //Log() << "__Fq->norm 2=" << Fq[0][__q2]->l2Norm() << "\n";
+                M_model->l2solve( __Y, Fq[0][__q2] );
+                //M_C0_pr[__q1][__q2] = M_model->scalarProduct( __X, Fq[0][__q2] );
+                M_C0_pr[__q1][__q2] = M_model->scalarProduct( __X, __Y );
+                //M_C0_pr[__q2][__q1] = M_C0_pr[__q1][__q2];
+                //Debug() << "M_C0_pr[" << __q1 << "][" << __q2 << "]=" << M_C0_pr[__q1][__q2] << "\n";
+                //Log() << "M_C0_pr[" << __q1 << "][" << __q2 << "]=" << M_C0_pr[__q1][__q2] << "\n";
+            }
+            //M_C0_pr[__q1][__q1] = M_model->scalarProduct( __X, __X );
+        }
+    }
+    std::cout << "     o initialize generateN2Q2 in " << ti.elapsed() << "s\n"; ti.restart();
+
+#if 0
+    parameter_type const& mu = M_WNmu->at( 0 );
+    //std::cout << "[generateN2Q2] mu=" << mu << "\n";
+    theta_vector_type theta_aq;
+    std::vector<theta_vector_type> theta_fq;
+    boost::tie( theta_aq, theta_fq ) = M_model->computeThetaq( mu );
+    value_type __c0_pr = 0.0;
+    for ( int __q1 = 0;__q1 < __QRhs;++__q1 )
+    {
+        value_type fq1 = theta_fq[0][__q1];
+        for ( int __q2 = 0;__q2 < __QRhs;++__q2 )
+        {
+            value_type fq2 = theta_fq[0][__q2];
+            __c0_pr += M_C0_pr[__q1][__q2]*fq1*fq2;
+        }
+    }
+
+    //std::cout << "c0=" << __c0_pr << std::endl;
+
+    sparse_matrix_ptrtype A;
+    sparse_matrix_ptrtype M;
+    std::vector<vector_ptrtype> F;
+    boost::tie( M, A, F ) = M_model->update( mu, time );
+    M_model->l2solve( __X, F[0] );
+    //std::cout << "c0 2 = " << M_model->scalarProduct( __X, __X ) << "\n";;
+#endif
+
+    //
+    //  Primal
+    //
+    Log() << "[generateN2Q2] Lambda_pr, Gamma_pr\n";
+    for ( int __q1 = 0;__q1 < __QLhs;++__q1 )
+    {
+        for ( int __q2 = 0; __q2 < __QRhs;++__q2 )
+        {
+            M_Lambda_pr[__q1][__q2].conservativeResize( __N );
+
+            *__X=M_WN[__N-1];
+            Aq[__q1]->multVector(  __X, __W_pr );
+            __W_pr->scale( -1. );
+            //std::cout << "__W_pr->norm=" << __W_pr->l2Norm() << "\n";
+            M_model->l2solve( __Z_pr, __W_pr );
+
+            //__Y = Fq[0][__q2];
+            //std::cout << "__Fq->norm=" << Fq[0][__q2]->l2Norm() << "\n";
+            M_model->l2solve( __Y, Fq[0][__q2] );
+            M_Lambda_pr[ __q1][ __q2](__N-1) = 2.0*M_model->scalarProduct( __Y, __Z_pr );
+            //Debug() << "M_Lambda_pr[" << __q1 << "][" << __q2 << "][" << __j << "]=" << M_Lambda_pr[__q1][__q2][__j] << "\n";
+            //std::cout << "M_Lambda_pr[" << __q1 << "][" << __q2 << "][" << __j << "]=" << M_Lambda_pr[__q1][__q2][__j] << "\n";
+        }
+    }
+    std::cout << "     o Lambda_pr updated in " << ti.elapsed() << "s\n"; ti.restart();
+    for ( int __q1 = 0;__q1 < __QLhs;++__q1 )
+    {
+        for ( int __q2 = 0; __q2 < __QLhs;++__q2 )
+        {
+            M_Gamma_pr[__q1][__q2].conservativeResize( __N, __N );
+
+            // line N-1
+            int __j=__N-1;
+            *__X=M_WN[__j];
+            Aq[__q1]->multVector(  __X, __W_pr );
+            __W_pr->scale( -1. );
+            //std::cout << "__W_pr->norm=" << __W_pr->l2Norm() << "\n";
+            M_model->l2solve( __Z_pr, __W_pr );
+
+            //Aq[__q2]->multVector(  __Z_pr, __W_pr );
+            for ( int __l = 0; __l < ( int )__N;++__l )
+            {
+                *__X=M_WN[__l];
+                Aq[__q2]->multVector(  __X, __W_pr );
+                __W_pr->scale( -1. );
+                //std::cout << "__W2_pr->norm=" << __W_pr->l2Norm() << "\n";
+                M_model->l2solve( __Z2_pr, __W_pr );
+                M_Gamma_pr[ __q1][ __q2](__j,__l) = M_model->scalarProduct( __Z_pr, __Z2_pr );
+                //M_Gamma_pr[ __q2][ __q1][ __j ][__l] = M_Gamma_pr[ __q1][ __q2][ __j ][__l];
+                //Debug() << "M_Gamma_pr[" << __q1 << "][" << __q2 << "][" << __j << "][" << __l << "]=" << M_Gamma_pr[__q1][__q2][__j][__l] << "\n";
+                //std::cout << "M_Gamma_pr[" << __q1 << "][" << __q2 << "][" << __j << "][" << __l << "]=" << M_Gamma_pr[__q1][__q2][__j][__l] << "\n";
+            }
+
+            for ( int __j = 0;__j < ( int )__N;++__j )
+            {
+                *__X=M_WN[__j];
+                Aq[__q1]->multVector(  __X, __W_pr );
+                __W_pr->scale( -1. );
+                //std::cout << "__W_pr->norm=" << __W_pr->l2Norm() << "\n";
+                M_model->l2solve( __Z_pr, __W_pr );
+
+                //Aq[__q2]->multVector(  __Z_pr, __W_pr );
+                //column N-1
+                int __l = __N-1;
+                {
+                    *__X=M_WN[__l];
+                    Aq[__q2]->multVector(  __X, __W_pr );
+                    __W_pr->scale( -1. );
+                    //std::cout << "__W2_pr->norm=" << __W_pr->l2Norm() << "\n";
+                    M_model->l2solve( __Z2_pr, __W_pr );
+                    M_Gamma_pr[ __q1][ __q2](__j,__l) = M_model->scalarProduct( __Z_pr, __Z2_pr );
+                    //M_Gamma_pr[ __q2][ __q1][ __j ][__l] = M_Gamma_pr[ __q1][ __q2][ __j ][__l];
+                    //Debug() << "M_Gamma_pr[" << __q1 << "][" << __q2 << "][" << __j << "][" << __l << "]=" << M_Gamma_pr[__q1][__q2][__j][__l] << "\n";
+                    //std::cout << "M_Gamma_pr[" << __q1 << "][" << __q2 << "][" << __j << "][" << __l << "]=" << M_Gamma_pr[__q1][__q2][__j][__l] << "\n";
+                }
+            }
+
+        }// on N1
+    } // on q1
+    std::cout << "     o Gamma_pr updated in " << ti.elapsed() << "s\n"; ti.restart();
+    sparse_matrix_ptrtype Atq1 = M_model->newMatrix();
+    sparse_matrix_ptrtype Atq2 = M_model->newMatrix();
+    //
+    // Dual
+    //
+    // compute this only once
+    if ( Ncur == 1 )
+    {
+        Log() << "[generateN2Q2] Compute Dual residual data\n";
+        Log() << "[generateN2Q2] C0_du\n";
+        for ( int __q1 = 0;__q1 < __QOutput;++__q1 )
+        {
+            *__Fdu = *Fq[M_output_index][__q1];
+            __Fdu->scale(-1.0);
+            M_model->l2solve( __Xdu, __Fdu );
+            for ( int __q2 = 0;__q2 < __QOutput;++__q2 )
+            {
+                *__Fdu = *Fq[M_output_index][__q2];
+                __Fdu->scale(-1.0);
+                M_model->l2solve( __Ydu, __Fdu );
+                M_C0_du[__q1][__q2] = M_model->scalarProduct( __Xdu, __Ydu );
+                //M_C0_du[__q2][__q1] = M_C0_du[__q1][__q2];
+            }
+            //M_C0_du[__q1][__q1] = M_model->scalarProduct( __Xdu, __Xdu );
+        }
+        std::cout << "     o C0_du updated in " << ti.elapsed() << "s\n"; ti.restart();
+    }
+
+    Log() << "[generateN2Q2] Lambda_du, Gamma_du\n";
+    for ( int __q1 = 0;__q1 < __QLhs;++__q1 )
+    {
+        Aq[__q1]->transpose( Atq1 );
+        for ( int __q2 = 0; __q2 < __QOutput;++__q2 )
+        {
+            M_Lambda_du[__q1][__q2].conservativeResize( __N );
+
+            *__Xdu=M_WNdu[__N-1];
+            Atq1->multVector(  __Xdu, __W_pr );
+            __W_pr->scale( -1. );
+            //std::cout << "__W_pr->norm=" << __W_pr->l2Norm() << "\n";
+            M_model->l2solve( __Z_pr, __W_pr );
+
+            *__Fdu = *Fq[M_output_index][__q2];
+            __Fdu->scale(-1.0);
+            M_model->l2solve( __Y, __Fdu );
+            M_Lambda_du[ __q1][ __q2](__N-1) = 2.0*M_model->scalarProduct( __Y, __Z_pr );
+            //Debug() << "M_Lambda_pr[" << __q1 << "][" << __q2 << "][" << __j << "]=" << M_Lambda_pr[__q1][__q2][__j] << "\n";
+            //std::cout << "M_Lambda_pr[" << __q1 << "][" << __q2 << "][" << __j << "]=" << M_Lambda_pr[__q1][__q2][__j] << "\n";
+        } // q2
+    } // q2
+    std::cout << "     o Lambda_du updated in " << ti.elapsed() << "s\n"; ti.restart();
+    for ( int __q1 = 0;__q1 < __QLhs;++__q1 )
+    {
+        Aq[__q1]->transpose( Atq1 );
+
+        for ( int __q2 = 0; __q2 < __QLhs;++__q2 )
+        {
+            Aq[__q2]->transpose( Atq2 );
+            M_Gamma_du[__q1][__q2].conservativeResize( __N, __N );
+            // update line N-1
+            {
+                int __j = __N-1;
+                *__Xdu=M_WNdu[__j];
+                Atq1->multVector(  __Xdu, __W_pr );
+                __W_pr->scale( -1. );
+                //std::cout << "__W_pr->norm=" << __W_pr->l2Norm() << "\n";
+                M_model->l2solve( __Z_pr, __W_pr );
+
+                //Aq[__q2]->multVector(  __Z_pr, __W_pr );
+
+                for ( int __l = 0; __l < ( int )__N;++__l )
+                {
+                    *__X=M_WNdu[__l];
+                    Atq2->multVector(  __X, __W_pr );
+                    __W_pr->scale( -1. );
+                    //std::cout << "__W2_pr->norm=" << __W_pr->l2Norm() << "\n";
+                    M_model->l2solve( __Z2_pr, __W_pr );
+                    M_Gamma_du[ __q1][ __q2](__j,__l) = M_model->scalarProduct( __Z_pr, __Z2_pr );
+                    //M_Gamma_pr[ __q2][ __q1][ __j ][__l] = M_Gamma_pr[ __q1][ __q2][ __j ][__l];
+                    //Debug() << "M_Gamma_pr[" << __q1 << "][" << __q2 << "][" << __j << "][" << __l << "]=" << M_Gamma_pr[__q1][__q2][__j][__l] << "\n";
+                    //std::cout << "M_Gamma_pr[" << __q1 << "][" << __q2 << "][" << __j << "][" << __l << "]=" << M_Gamma_pr[__q1][__q2][__j][__l] << "\n";
+                }
+            }
+
+            // update column __N-1
+            for ( int __j = 0;__j < ( int )__N;++__j )
+            {
+                *__Xdu=M_WNdu[__j];
+                Atq1->multVector(  __Xdu, __W_pr );
+                __W_pr->scale( -1. );
+                //std::cout << "__W_pr->norm=" << __W_pr->l2Norm() << "\n";
+                M_model->l2solve( __Z_pr, __W_pr );
+
+                //Aq[__q2]->multVector(  __Z_pr, __W_pr );
+                int __l = __N-1;
+                {
+                    *__X=M_WNdu[__l];
+                    Atq2->multVector(  __X, __W_pr );
+                    __W_pr->scale( -1. );
+                    //std::cout << "__W2_pr->norm=" << __W_pr->l2Norm() << "\n";
+                    M_model->l2solve( __Z2_pr, __W_pr );
+                    M_Gamma_du[ __q1][ __q2](__j,__l) = M_model->scalarProduct( __Z_pr, __Z2_pr );
+                    //M_Gamma_pr[ __q2][ __q1][ __j ][__l] = M_Gamma_pr[ __q1][ __q2][ __j ][__l];
+                    //Debug() << "M_Gamma_pr[" << __q1 << "][" << __q2 << "][" << __j << "][" << __l << "]=" << M_Gamma_pr[__q1][__q2][__j][__l] << "\n";
+                    //std::cout << "M_Gamma_pr[" << __q1 << "][" << __q2 << "][" << __j << "][" << __l << "]=" << M_Gamma_pr[__q1][__q2][__j][__l] << "\n";
+                }
+            }
+
+        }// on N1
+    } // on q1
+    std::cout << "     o Gamma_du updated in " << ti.elapsed() << "s\n"; ti.restart();
+    Log() << "[generateN2Q2] Done.\n";
+
+
 }
 
 template<typename TruthModelType>
