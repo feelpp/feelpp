@@ -609,6 +609,9 @@ private:
     size_type M_N;
     size_type M_Nm;
 
+    bool orthonormalize_primal;
+    bool orthonormalize_dual;
+
     convergence_type M_rbconv;
 
     //scm
@@ -663,6 +666,8 @@ CRB<TruthModelType>::offline()
     M_model->init();
     std::cout << " -- model init done in " << ti.elapsed() << "s\n"; ti.restart();
 
+    orthonormalize_primal = this->vm()["crb.orthonormalize_primal"].template as<bool>() ;
+    orthonormalize_dual = this->vm()["crb.orthonormalize_dual"].template as<bool>() ;
     M_Nm = this->vm()["crb.Nm"].template as<int>() ;
     if ( M_model->isSteady() )
         M_Nm = 1;
@@ -938,7 +943,6 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
 
         for( int l = 0; l < M_model->Nl(); ++l )
             Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
-
         Log() << "[CRB::offlineNoErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
 
 
@@ -984,13 +988,16 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
 
         M_N+=M_Nm;
 
-
-        orthonormalize( M_N, M_WN, M_Nm );
-        orthonormalize( M_N, M_WN, M_Nm );
-#if 0
-        orthonormalize( M_N, M_WNdu, M_Nm );
-        orthonormalize( M_N, M_WNdu, M_Nm );
-#endif
+        if(orthonormalize_primal)
+        {
+            orthonormalize( M_N, M_WN, M_Nm );
+            orthonormalize( M_N, M_WN, M_Nm );
+        }
+        if( orthonormalize_dual )
+        {
+            orthonormalize( M_N, M_WNdu, M_Nm );
+            orthonormalize( M_N, M_WNdu, M_Nm );
+        }
 
 
         Log() << "[CRB::offlineNoErrorEstimation] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
@@ -1073,6 +1080,10 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
             }
 
         }
+
+        check( M_WNmu->size() );
+        double error=M_iter_max-M_N;
+        M_rbconv.insert( convergence( M_N, error ) );
 
         std::cout << "============================================================\n";
         Log() <<"========================================"<<"\n";
@@ -1160,6 +1171,7 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<false>)
         // for a given parameter \p mu assemble the left and right hand side
         Log() << "[CRB::offlineNoErrorEstimation] update model for parameter" << "\n";
         boost::tie( A, F ) = M_model->update( mu );
+
         At = M_model->newMatrix();
         Log() << "[CRB::offlineNoErrorEstimation] transpose primal matrix" << "\n";
         A->transpose( At );
@@ -1190,11 +1202,16 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<false>)
         M_WN.push_back( *u );
         M_WNdu.push_back( *udu );
 
-        orthonormalize( M_N, M_WN );
-        orthonormalize( M_N, M_WN );
-        orthonormalize( M_N, M_WNdu );
-        orthonormalize( M_N, M_WNdu );
-
+        if(orthonormalize_primal)
+        {
+            orthonormalize( M_N, M_WN );
+            orthonormalize( M_N, M_WN );
+        }
+        if(orthonormalize_dual)
+        {
+            orthonormalize( M_N, M_WNdu );
+            orthonormalize( M_N, M_WNdu );
+        }
 
         Log() << "[CRB::offlineNoErrorEstimation] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
         for( int q = 0; q < M_model->Qa(); ++q )
@@ -1439,6 +1456,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             *vec_bdf_poly = bdf_poly;
             Rhs->addVector( *vec_bdf_poly, *M);
 
+
             if( reuse_prec )
             {
                 auto ret = backend_primal_problem->solve( _matrix=A, _solution=u, _rhs=Rhs, _reuse_prec=(M_bdf_primal->iteration() >=2) );
@@ -1463,6 +1481,12 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                 M_bdf_primal_save->shiftRight( *uproj );
             }
 
+            std::ofstream ofs30( (boost::format("CRB_solution_time=%1%")  %M_bdf_primal->time()).str().c_str() );
+            for(int z=0; z<u->size() ; z++ )
+            {
+                ofs30<<std::setprecision(16)<< u->operator()(z) <<"\n";
+            }
+            ofs30.close();
 
             std::ofstream ofs31( (boost::format("CRB_Solutionproj_time=%1%")  %M_bdf_primal->time()).str().c_str() );
             for(int z=0; z<uproj->size() ; z++ )
@@ -1472,7 +1496,8 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             ofs31.close();
 
 
-            for( int l = 0; l < M_model->Nl(); ++l )
+            std::cout << "u^T Rhs "<< inner_product( *u, *Rhs ) <<  " at time : "<<M_bdf_primal->time()<<"\n";
+            for( int l = 1; l < M_model->Nl(); ++l )
                 Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << " at time : "<<M_bdf_primal->time()<<"\n";
 
             Log() << "[CRB::offlineWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
@@ -1590,17 +1615,25 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                 M_WNdu.push_back( *mode_zero ) ;
             }
 
+
         }//end of transient case
 
         M_N+=M_Nm;
 
-        orthonormalize( M_N, M_WN, M_Nm );
-        orthonormalize( M_N, M_WN, M_Nm );
-#if 0
-        orthonormalize( M_N, M_WNdu, M_Nm );
-        orthonormalize( M_N, M_WNdu, M_Nm );
-#endif
+        if(orthonormalize_primal)
+        {
+            orthonormalize( M_N, M_WN, M_Nm );
+            orthonormalize( M_N, M_WN, M_Nm );
+        }
+        if(orthonormalize_dual)
+        {
+            orthonormalize( M_N, M_WNdu, M_Nm );
+            orthonormalize( M_N, M_WNdu, M_Nm );
+        }
 
+
+
+std::ofstream ofs33( (boost::format("CRB_offline_scalar_product") ).str().c_str() );
 
         Log() << "[CRB::offlineWithErrorEstimation] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
         for( int q = 0; q < M_model->Qa(); ++q )
@@ -1658,6 +1691,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         }
 
         Log() << "[CRB::offlineWithErrorEstimation] compute Fq_pr, Fq_du" << "\n";
+        double sum=0;
         for( int q = 0; q < M_model->Ql(0); ++q )
         {
             M_Fq_pr[q].conservativeResize( M_N );
@@ -1667,6 +1701,10 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                 int index = M_N-l;
                 M_Fq_pr[q]( index ) = M_model->Fq( 0, q, M_WN[index] );
                 M_Fq_du[q]( index ) = M_model->Fq( 0, q, M_WNdu[index] );
+                ofs33<<"index = "<<index<<"et M_Fq_pr["<<q<<"]( "<<index<<" ) = "<<M_Fq_pr[q]( index )<<"\n";
+                if( q == 0 ) sum+=M_Fq_pr[q]( index )*1e6;
+                else sum+=M_Fq_pr[q]( index );
+                ofs33<<"somme : "<<sum<<"\n";
             }
         }
         Log() << "[CRB::offlineWithErrorEstimation] compute Lq_pr, Lq_du" << "\n";
@@ -1682,6 +1720,10 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             }
 
         }
+
+
+            ofs33.close();
+
 
         timer2.restart();
         if(M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM)
@@ -1820,10 +1862,16 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<false>)
         M_WN.push_back( *u );
         M_WNdu.push_back( *udu );
 
-        orthonormalize( M_N, M_WN );
-        orthonormalize( M_N, M_WN );
-        orthonormalize( M_N, M_WNdu );
-        orthonormalize( M_N, M_WNdu );
+        if(orthonormalize_primal)
+        {
+            orthonormalize( M_N, M_WN );
+            orthonormalize( M_N, M_WN );
+        }
+        if(orthonormalize_dual)
+        {
+            orthonormalize( M_N, M_WNdu );
+            orthonormalize( M_N, M_WNdu );
+        }
 
         Log() << "[CRB::offlineWithErrorEstimation] compute Aq_pr, Aq_du, Aq_pr_du" << "\n"; timer2.restart();
         for( int q = 0; q < M_model->Qa(); ++q )
@@ -1871,10 +1919,16 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<false>)
 #if 0
         Log() << "[CRB::offlineWithErrorEstimation] orthonormalize basis functions" << "\n";
         // orthonormalize twice
-        orthonormalize( M_N, M_WN );
-        orthonormalize( M_N, M_WN );
-        orthonormalize( M_N, M_WNdu );
-        orthonormalize( M_N, M_WNdu );
+        if(orthonormalize_primal)
+        {
+            orthonormalize( M_N, M_WN );
+            orthonormalize( M_N, M_WN );
+        }
+        if(orthonormalize_dual)
+        {
+            orthonormalize( M_N, M_WNdu );
+            orthonormalize( M_N, M_WNdu );
+        }
         std::cout << "  -- orthonormalization done in " << timer2.elapsed() << "s\n"; timer2.restart();
 #endif// 0
 
@@ -2050,11 +2104,16 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
 {
 
 
+
+
     //if K>0 then the time at which we want to evaluate output is defined by
     //time_for_output = K * time_step
     //else it's the default value and in this case we take final time
     double time_for_output;
     double time_step=M_model->timeStep();
+
+
+    std::ofstream file( (boost::format("lb_function_dt=%1%") %time_step).str().c_str() );
 
     if( K > 0)
     {
@@ -2082,7 +2141,13 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
     u_old.setOnes();
     double initialization_field = M_model->initializationField();
     u_old *= initialization_field;
+    //u_old/=time_step;
 
+
+
+    file<<"initialization_field = "<<initialization_field<<"\n";
+    file<<"orthonormalize_primal : "<<orthonormalize_primal<<"\n";
+    file<<"orthonormalize_dual : "<<orthonormalize_dual<<"\n";
     int Qm;
 
     if( M_model->isSteady() )
@@ -2096,13 +2161,33 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
         Qm = M_model->Qm();
     }
 
+    file<<"Qm = "<<Qm<<"\n";
+    file<<"time loop"<<"\n";
+
     //vector containing oututs from time=time_step until time=time_for_output
     std::vector<double>output_vector;
     double output;
     for(double time=time_step; time<=time_for_output; time+=time_step)
     {
 
+        file<<"time : "<<time<<" and time_step : "<<time_step<<"\n";
+        file<<" --------------------------------- \n";
         boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu ,time);
+
+        for(int q=0;q<M_model->Qa();q++)
+            file<<"theta_aq["<<q<<"] = "<<theta_aq[q]<<"\n";
+        file<<"\n";
+        for(int q=0;q<M_model->Qm();q++)
+            file<<"theta_mq["<<q<<"] = "<<theta_mq[q]<<"\n";
+        file<<"\n";
+        for(int output_ = 0; output_<M_model->Nl(); output_++ )
+        {
+            for(int q=0; q<M_model->Ql(output_); q++)
+            {
+                file<<"theta_fq["<<output_<<"]["<<q<<"] = "<<theta_fq[output_][q]<<"\n";
+            }
+        }
+        file<<"---------------------------------- \n";
 
         A.setZero(N,N);
         for(int q = 0;q < M_model->Qa(); ++q)
@@ -2110,32 +2195,79 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
             A += theta_aq[q]*M_Aq_pr[q].block(0,0,N,N);
         }
 
-        F.setZero(N,N);
-        for(int q = 0;q < M_model->Ql(0); ++q)
+        file<<"A.rows : "<<A.rows()<<" and A.cols : "<<A.cols()<<"\n";
+        file<<"matrix A before mass matrix contributions : "<<"\n";
+        for(int i=0;i<A.rows();i++)
         {
-            F += theta_fq[0][q]*M_Fq_pr[q].block(0,0,N,N);
+            for(int j=0;j<A.cols();j++)
+            {
+                file<<A(i,j)<<" ";
+            }
+            file<<"\n";
         }
 
+        file<<"**************************************\n";
+        F.setZero(N);
+        for(int q = 0;q < M_model->Ql(0); ++q)
+        {
+            F += theta_fq[0][q]*M_Fq_pr[q].head(N);
+            file<<"theta_fq[0]["<<q<<"]*M_Fq_pr["<<q<<"] = "<<theta_fq[0][q]<<" * "<<M_Fq_pr[q]<<"\n";
+            file<<"donc F = "<<F<<"\n";
+        }
+        file<<"**************************************\n";
+
+        file<<"vector F before mass matrix contributions: "<<"\n";
+        for(int i=0;i<F.cols();i++) file<<F(i)<<"\n";
+
+        file<<"\n loop for mass matrix \n";
         for(int q = 0;q < Qm; ++q)
         {
             A += theta_mq[q]*M_Mq_pr[q].block(0,0,N,N)/time_step;
-            F += theta_mq[q]*M_Mq_pr[q]*u_old;
+            F += theta_mq[q]*M_Mq_pr[q].block(0,0,N,N)*u_old/time_step;
         }
+
+        file<<"\nsystem we solve (with mass matrix contributions) : "<<"\n";
+        file<<"matrix A : "<<"\n";
+        for(int i=0;i<A.rows();i++)
+        {
+            for(int j=0;j<A.cols();j++)
+            {
+                file<<A(i,j)<<" ";
+            }
+            file<<"\n";
+        }
+
+        file<<"vector F : "<<"\n";
+        for(int i=0;i<F.cols();i++) file<<F(i)<<"\n";
 
         uN = A.lu().solve( F );
-        u_old = uN/time_step;
 
-        L.setZero();
+        file<<"solution : "<<"\n";
+        for(int i=0;i<uN.cols();i++) file<<uN(i)<<"\n";
+
+        //u_old = uN/time_step;
+        u_old = uN;
+        file<<"u_old : "<<"\n";
+        for(int i=0;i<u_old.cols();i++) file<<u_old(i)<<"\n";
+
+        file<<"\n output_index : "<<M_output_index<<"\n";
+        L.setZero(N);
         for(int q = 0;q < M_model->Ql(M_output_index); ++q)
         {
-            L += theta_fq[M_output_index][q]*M_Lq_pr[q].block(0,0,N,N);
+            L += theta_fq[M_output_index][q]*M_Lq_pr[q].head(N);
         }
+        file<<" L : "<<"\n";
+        for(int i=0;i<L.cols();i++) file<<L(i)<<"\n";
+
         output = L.dot( uN );
+        file<<"\n output : "<<output<<"\n";
         output_vector.push_back(output);
 
     }
 
     double s_wo_correction = L.dot( uN );
+    file<<"\n\n final output : "<<s_wo_correction<<"\n";
+    file.close();
     return s_wo_correction;
 }
 
@@ -2189,13 +2321,13 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
     Ldu.setZero(N);
     for(int q = 0;q < M_model->Ql(0); ++q)
     {
-        F += theta_fq[0][q]*M_Fq_pr[q].block(0,0,N,N);
-        Fdu += theta_fq[0][q]*M_Fq_du[q].block(0,0,N,N);
+        F += theta_fq[0][q]*M_Fq_pr[q].head(N);
+        Fdu += theta_fq[0][q]*M_Fq_du[q].head(N);
     }
     for(int q = 0;q < M_model->Ql(M_output_index); ++q)
     {
-        L += theta_fq[M_output_index][q]*M_Lq_pr[q].block(0,0,N,N);
-        Ldu += theta_fq[M_output_index][q]*M_Lq_du[q].block(0,0,N,N);
+        L += theta_fq[M_output_index][q]*M_Lq_pr[q].head(N);
+        Ldu += theta_fq[M_output_index][q]*M_Lq_du[q].head(N);
     }
     //std::cout << "[lb] F=" << F << "\n";
     //std::cout << "[lb] Fdu=" << Fdu << "\n";
