@@ -49,6 +49,8 @@ crbOptions( std::string const& prefix )
         ("crb.check.rb"   , Feel::po::value<int>()->default_value( 0 ),       "check reduced basis" )
         ("crb.check.gs"   , Feel::po::value<int>()->default_value( 0 ),       "check Gram-Schmidt orthonormalisation" )
         ("crb.reuse_prec"   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner")
+        ("crb.orthonormalize_primal" , Feel::po::value<bool>()->default_value( 1 ), "orthonormalize or not ")
+        ("crb.orthonormalize_dual" , Feel::po::value<bool>()->default_value( 1 ), "orthonormalize or not ")
         ;
 
 
