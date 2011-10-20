@@ -1337,7 +1337,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
     std::cout << "  -- start with mu = " << mu << "\n";
     //std::cout << " -- WN size :  " << M_WNmu->size() << "\n";
 
-    sparse_matrix_ptrtype M,A,Adu;
+    sparse_matrix_ptrtype M,A,Adu,At;
     std::vector<vector_ptrtype> F,L;
 
     //useful for POD in time
@@ -1403,180 +1403,182 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
         u->setName( (boost::format( "fem-primal-%1%" ) % (M_N-1)).str() );
 
-        M_bdf_primal = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal");
-        M_bdf_primal_save = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal_save");
+        //steph
 
-        //set parameters for time discretization
-        if( M_model->isSteady() )
+        if(M_model->isSteady() )
         {
-            M_bdf_primal->setSteady();
-            M_bdf_primal_save->setSteady();
+            boost::tie( M, A, F ) = M_model->update( mu , 1e30 );
+            std::cout << "  -- updated model for parameter in " << timer2.elapsed() << "s\n"; timer2.restart();
+            Log() << "[CRB::offlineWithErrorEstimation] transpose primal matrix" << "\n";
+            At = M_model->newMatrix();
+            A->transpose( At );
+            u->setName( (boost::format( "fem-primal-%1%" ) % (M_N-1)).str() );
+            udu->setName( (boost::format( "fem-dual-%1%" ) % (M_N-1)).str() );
+
+            Log() << "[CRB::offlineWithErrorEstimation] solving primal" << "\n";
+            backend_primal_problem->solve( _matrix=A,  _solution=u, _rhs=F[0], _prec=A );
+            //std::cout << "solving primal done" << std::endl;
+            std::cout << "  -- primal problem solved in " << timer2.elapsed() << "s\n"; timer2.restart();
+            *Rhs = *F[M_output_index];
+            Rhs->scale( -1 );
+            backend_dual_problem->solve( _matrix=At,  _solution=udu, _rhs=Rhs, _prec=At );
         }
         else
         {
-            M_bdf_primal->setTimeInitial( M_model->timeInitial() );
-            M_bdf_primal->setTimeStep( M_model->timeStep() );
-            M_bdf_primal->setTimeFinal( M_model->timeFinal() );
-            M_bdf_primal->setOrder( M_model->timeOrder() );
 
-            M_bdf_primal_save->setTimeInitial( M_model->timeInitial() );
-            M_bdf_primal_save->setTimeStep( M_model->timeStep() );
-            M_bdf_primal_save->setTimeFinal( M_model->timeFinal() );
-            M_bdf_primal_save->setOrder( M_model->timeOrder() );
-        }
+            M_bdf_primal = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal");
+            M_bdf_primal_save = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal_save");
 
-        M_bdf_primal->start();
-        M_bdf_primal_save->start();
-
-        //initialization of unknown
-        double initialization_field=M_model->initializationField();
-        u->setConstant(initialization_field);
-        M_bdf_primal->initialize(*u);
-        M_bdf_primal_save->initialize(*u);
-
-        //direct problem
-        double bdf_coeff = M_bdf_primal->polyDerivCoefficient(0);
-
-
-        std::cout<<"dt used : "<<M_model->timeStep()<<std::endl;
-        std::cout<<"time final used : "<<M_model->timeFinal()<<std::endl;
-
-
-        auto vec_bdf_poly = backend_primal_problem->newVector(M_model->functionSpace() );
-        for ( M_bdf_primal->start(),M_bdf_primal_save->start();
-              !M_bdf_primal->isFinished() , !M_bdf_primal_save->isFinished();
-              M_bdf_primal->next() , M_bdf_primal_save->next() )
-        {
-            auto bdf_poly = M_bdf_primal->polyDeriv();
-
-            boost::tie(M, A, F ) = M_model->update( mu , M_bdf_primal->time() );
-
-            A->addMatrix( bdf_coeff, M);
-            *Rhs = *F[0];
-            *vec_bdf_poly = bdf_poly;
-            Rhs->addVector( *vec_bdf_poly, *M);
-
-
-            if( reuse_prec )
+            //set parameters for time discretization
+            if( M_model->isSteady() )
             {
-                auto ret = backend_primal_problem->solve( _matrix=A, _solution=u, _rhs=Rhs, _reuse_prec=(M_bdf_primal->iteration() >=2) );
-                if ( !ret.get<0>() )
-                Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                M_bdf_primal->setSteady();
+                M_bdf_primal_save->setSteady();
             }
             else
             {
-                auto ret = backend_primal_problem->solve( _matrix=A, _solution=u, _rhs=Rhs );
-                if ( !ret.get<0>() )
-                Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+               M_bdf_primal->setTimeInitial( M_model->timeInitial() );
+               M_bdf_primal->setTimeStep( M_model->timeStep() );
+               M_bdf_primal->setTimeFinal( M_model->timeFinal() );
+               M_bdf_primal->setOrder( M_model->timeOrder() );
+
+               M_bdf_primal_save->setTimeInitial( M_model->timeInitial() );
+               M_bdf_primal_save->setTimeStep( M_model->timeStep() );
+               M_bdf_primal_save->setTimeFinal( M_model->timeFinal() );
+               M_bdf_primal_save->setOrder( M_model->timeOrder() );
             }
 
+            M_bdf_primal->start();
+            M_bdf_primal_save->start();
 
-            M_bdf_primal->shiftRight( *u );
+            //initialization of unknown
+            double initialization_field=M_model->initializationField();
+            u->setConstant(initialization_field);
+            M_bdf_primal->initialize(*u);
+            M_bdf_primal_save->initialize(*u);
 
+            //direct problem
+            double bdf_coeff = M_bdf_primal->polyDerivCoefficient(0);
 
-            if( ! M_model->isSteady() )
+            auto vec_bdf_poly = backend_primal_problem->newVector(M_model->functionSpace() );
+            for ( M_bdf_primal->start(),M_bdf_primal_save->start();
+                  !M_bdf_primal->isFinished() , !M_bdf_primal_save->isFinished();
+                  M_bdf_primal->next() , M_bdf_primal_save->next() )
             {
-                *uproj=*u;
-                projectionOnPodSpace ( uproj , "primal" );
-                M_bdf_primal_save->shiftRight( *uproj );
+                auto bdf_poly = M_bdf_primal->polyDeriv();
+
+                boost::tie(M, A, F ) = M_model->update( mu , M_bdf_primal->time() );
+
+                A->addMatrix( bdf_coeff, M);
+                *Rhs = *F[0];
+                *vec_bdf_poly = bdf_poly;
+                Rhs->addVector( *vec_bdf_poly, *M);
+
+
+                if( reuse_prec )
+                {
+                    auto ret = backend_primal_problem->solve( _matrix=A, _solution=u, _rhs=Rhs, _reuse_prec=(M_bdf_primal->iteration() >=2) );
+                    if ( !ret.get<0>() )
+                        Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                }
+                else
+                {
+                    auto ret = backend_primal_problem->solve( _matrix=A, _solution=u, _rhs=Rhs );
+                    if ( !ret.get<0>() )
+                        Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                }
+
+
+                M_bdf_primal->shiftRight( *u );
+
+
+                if( ! M_model->isSteady() )
+                {
+                    *uproj=*u;
+                    projectionOnPodSpace ( uproj , "primal" );
+                    M_bdf_primal_save->shiftRight( *uproj );
+                }
+
+
+                Log() << "u^T Rhs "<< inner_product( *u, *Rhs ) <<  " at time : "<<M_bdf_primal->time()<<"\n";
+                for( int l = 0; l < M_model->Nl(); ++l )
+                    std::cout << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << " at time : "<<M_bdf_primal->time()<<"\n";
+
+                Log() << "[CRB::offlineWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
             }
 
-            std::ofstream ofs30( (boost::format("CRB_solution_time=%1%")  %M_bdf_primal->time()).str().c_str() );
-            for(int z=0; z<u->size() ; z++ )
-            {
-                ofs30<<std::setprecision(16)<< u->operator()(z) <<"\n";
-            }
-            ofs30.close();
+            std::cout<<"direct problem solved"<<std::endl;
 
-            std::ofstream ofs31( (boost::format("CRB_Solutionproj_time=%1%")  %M_bdf_primal->time()).str().c_str() );
-            for(int z=0; z<uproj->size() ; z++ )
-            {
-                ofs31<<std::setprecision(16)<< uproj->operator()(z) <<"\n";
-            }
-            ofs31.close();
+            //dual problem
 
-
-            std::cout << "u^T Rhs "<< inner_product( *u, *Rhs ) <<  " at time : "<<M_bdf_primal->time()<<"\n";
-            for( int l = 1; l < M_model->Nl(); ++l )
-                Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << " at time : "<<M_bdf_primal->time()<<"\n";
-
-            Log() << "[CRB::offlineWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
-
-
-        }
-
-
-        std::cout<<"direct problem solved"<<std::endl;
-
-        //dual problem
-
-        M_bdf_dual = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_dual" );
-
-        //set parameters for time discretization
-        if( M_model->isSteady() )
-        {
-            M_bdf_primal->setSteady();
-        }
-        else
-        {
-            M_bdf_dual->setTimeInitial( M_model->timeFinal() );
-            M_bdf_dual->setTimeStep( -M_model->timeStep() );
-            M_bdf_dual->setTimeFinal( M_model->timeInitial() );
-            M_bdf_dual->setOrder( M_model->timeOrder() );
-        }
-
-        Adu = M_model->newMatrix();
-
-        M_bdf_dual->start();
-
-        //initialization
-        *udu = *u;
-        M_bdf_dual->initialize(*udu);
+            M_bdf_dual = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_dual" );
 
 #if 0
-        bdf_coeff = M_bdf_dual->polyDerivCoefficient(0);
-        for ( M_bdf_dual->start(); !M_bdf_dual->isFinished(); M_bdf_dual->next() )
-        {
-            auto bdf_poly = M_bdf_dual->polyDeriv();
-            boost::tie(M, A, F ) = M_model->update( mu , M_bdf_dual->time() );
-            A->addMatrix( bdf_coeff, M);
-            A->transpose( Adu );
-            *Rhs = *F[M_output_index];
-            Rhs->scale(-1);
-            *vec_bdf_poly = bdf_poly;
-            Rhs->addVector( *vec_bdf_poly, *M);
-
-            if( reuse_prec )
+            //set parameters for time discretization
+            if( M_model->isSteady() )
             {
-                auto ret = backend_primal_problem->solve( _matrix=Adu, _solution=udu, _rhs=Rhs, _reuse_prec=(M_bdf_dual->iteration() >=2) );
-                if ( !ret.get<0>() )
-                Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
-
+                M_bdf_primal->setSteady();
             }
             else
             {
-                auto ret = backend_primal_problem->solve( _matrix=Adu, _solution=udu, _rhs=Rhs );
-                if ( !ret.get<0>() )
-                Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                M_bdf_dual->setTimeInitial( M_model->timeFinal() );
+                M_bdf_dual->setTimeStep( -M_model->timeStep() );
+                M_bdf_dual->setTimeFinal( M_model->timeInitial() );
+                M_bdf_dual->setOrder( M_model->timeOrder() );
             }
 
-            if( !M_model->isSteady() )
-                projectionOnPodSpace( udu , "dual" );
+            Adu = M_model->newMatrix();
+            M_bdf_dual->start();
 
-            M_bdf_dual->shiftRight( *udu );
-        }
-        std::cout<<"dual problem solved"<<std::endl;
+            //initialization
+            *udu = *u;
+            M_bdf_dual->initialize(*udu);
+
+            bdf_coeff = M_bdf_dual->polyDerivCoefficient(0);
+            for ( M_bdf_dual->start(); !M_bdf_dual->isFinished(); M_bdf_dual->next() )
+            {
+                auto bdf_poly = M_bdf_dual->polyDeriv();
+                boost::tie(M, A, F ) = M_model->update( mu , M_bdf_dual->time() );
+                A->addMatrix( bdf_coeff, M);
+                A->transpose( Adu );
+                *Rhs = *F[M_output_index];
+                Rhs->scale(-1);
+                *vec_bdf_poly = bdf_poly;
+                Rhs->addVector( *vec_bdf_poly, *M);
+
+                if( reuse_prec )
+                {
+                    auto ret = backend_primal_problem->solve( _matrix=Adu, _solution=udu, _rhs=Rhs, _reuse_prec=(M_bdf_dual->iteration() >=2) );
+                    if ( !ret.get<0>() )
+                        Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                }
+                else
+                {
+                    auto ret = backend_primal_problem->solve( _matrix=Adu, _solution=udu, _rhs=Rhs );
+                    if ( !ret.get<0>() )
+                        Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                }
+
+                if( !M_model->isSteady() )
+                    projectionOnPodSpace( udu , "dual" );
+
+                M_bdf_dual->shiftRight( *udu );
+            }
+            std::cout<<"dual problem solved"<<std::endl;
 
 #endif
+
+        }//end of transient case
+
         for( int l = 0; l < M_model->Nl(); ++l )
             Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
 
-        Log() << "[CRB::offlineNWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
 
+
+        Log() << "[CRB::offlineNWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
 
         M_WNmu->push_back( mu, index );
         M_WNmu_complement = M_WNmu->complement();
-
 
         if( M_model->isSteady() )
         {
@@ -1602,7 +1604,6 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                 M_WN.push_back( ModeSet[i] );
             }
 
-
             //and now the dual
             //POD->setBdf( M_bdf_dual );
             //mode_set_type ModeSetdu;
@@ -1614,7 +1615,6 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                 //M_WNdu.push_back( ModeSetdu[i] ) ;
                 M_WNdu.push_back( *mode_zero ) ;
             }
-
 
         }//end of transient case
 
@@ -1630,10 +1630,6 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             orthonormalize( M_N, M_WNdu, M_Nm );
             orthonormalize( M_N, M_WNdu, M_Nm );
         }
-
-
-
-std::ofstream ofs33( (boost::format("CRB_offline_scalar_product") ).str().c_str() );
 
         Log() << "[CRB::offlineWithErrorEstimation] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
         for( int q = 0; q < M_model->Qa(); ++q )
@@ -1691,7 +1687,6 @@ std::ofstream ofs33( (boost::format("CRB_offline_scalar_product") ).str().c_str(
         }
 
         Log() << "[CRB::offlineWithErrorEstimation] compute Fq_pr, Fq_du" << "\n";
-        double sum=0;
         for( int q = 0; q < M_model->Ql(0); ++q )
         {
             M_Fq_pr[q].conservativeResize( M_N );
@@ -1701,10 +1696,6 @@ std::ofstream ofs33( (boost::format("CRB_offline_scalar_product") ).str().c_str(
                 int index = M_N-l;
                 M_Fq_pr[q]( index ) = M_model->Fq( 0, q, M_WN[index] );
                 M_Fq_du[q]( index ) = M_model->Fq( 0, q, M_WNdu[index] );
-                ofs33<<"index = "<<index<<"et M_Fq_pr["<<q<<"]( "<<index<<" ) = "<<M_Fq_pr[q]( index )<<"\n";
-                if( q == 0 ) sum+=M_Fq_pr[q]( index )*1e6;
-                else sum+=M_Fq_pr[q]( index );
-                ofs33<<"somme : "<<sum<<"\n";
             }
         }
         Log() << "[CRB::offlineWithErrorEstimation] compute Lq_pr, Lq_du" << "\n";
@@ -1720,9 +1711,6 @@ std::ofstream ofs33( (boost::format("CRB_offline_scalar_product") ).str().c_str(
             }
 
         }
-
-
-            ofs33.close();
 
 
         timer2.restart();
@@ -1914,6 +1902,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<false>)
                 M_Lq_du[q]( M_N-1 ) = M_model->Fq( M_output_index, q, M_WNdu[M_N-1] );
             }
         std::cout << "  -- Fq/Lq computed in " << timer2.elapsed() << "s\n"; timer2.restart();
+
 
 
 #if 0
@@ -2113,8 +2102,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
     double time_step=M_model->timeStep();
 
 
-    std::ofstream file( (boost::format("lb_function_dt=%1%") %time_step).str().c_str() );
-
     if( K > 0)
     {
         time_for_output = K * time_step;
@@ -2141,13 +2128,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
     u_old.setOnes();
     double initialization_field = M_model->initializationField();
     u_old *= initialization_field;
-    //u_old/=time_step;
 
-
-
-    file<<"initialization_field = "<<initialization_field<<"\n";
-    file<<"orthonormalize_primal : "<<orthonormalize_primal<<"\n";
-    file<<"orthonormalize_dual : "<<orthonormalize_dual<<"\n";
     int Qm;
 
     if( M_model->isSteady() )
@@ -2161,33 +2142,13 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
         Qm = M_model->Qm();
     }
 
-    file<<"Qm = "<<Qm<<"\n";
-    file<<"time loop"<<"\n";
-
     //vector containing oututs from time=time_step until time=time_for_output
     std::vector<double>output_vector;
     double output;
     for(double time=time_step; time<=time_for_output; time+=time_step)
     {
 
-        file<<"time : "<<time<<" and time_step : "<<time_step<<"\n";
-        file<<" --------------------------------- \n";
         boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu ,time);
-
-        for(int q=0;q<M_model->Qa();q++)
-            file<<"theta_aq["<<q<<"] = "<<theta_aq[q]<<"\n";
-        file<<"\n";
-        for(int q=0;q<M_model->Qm();q++)
-            file<<"theta_mq["<<q<<"] = "<<theta_mq[q]<<"\n";
-        file<<"\n";
-        for(int output_ = 0; output_<M_model->Nl(); output_++ )
-        {
-            for(int q=0; q<M_model->Ql(output_); q++)
-            {
-                file<<"theta_fq["<<output_<<"]["<<q<<"] = "<<theta_fq[output_][q]<<"\n";
-            }
-        }
-        file<<"---------------------------------- \n";
 
         A.setZero(N,N);
         for(int q = 0;q < M_model->Qa(); ++q)
@@ -2195,79 +2156,35 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
             A += theta_aq[q]*M_Aq_pr[q].block(0,0,N,N);
         }
 
-        file<<"A.rows : "<<A.rows()<<" and A.cols : "<<A.cols()<<"\n";
-        file<<"matrix A before mass matrix contributions : "<<"\n";
-        for(int i=0;i<A.rows();i++)
-        {
-            for(int j=0;j<A.cols();j++)
-            {
-                file<<A(i,j)<<" ";
-            }
-            file<<"\n";
-        }
-
-        file<<"**************************************\n";
         F.setZero(N);
         for(int q = 0;q < M_model->Ql(0); ++q)
         {
             F += theta_fq[0][q]*M_Fq_pr[q].head(N);
-            file<<"theta_fq[0]["<<q<<"]*M_Fq_pr["<<q<<"] = "<<theta_fq[0][q]<<" * "<<M_Fq_pr[q]<<"\n";
-            file<<"donc F = "<<F<<"\n";
         }
-        file<<"**************************************\n";
 
-        file<<"vector F before mass matrix contributions: "<<"\n";
-        for(int i=0;i<F.cols();i++) file<<F(i)<<"\n";
 
-        file<<"\n loop for mass matrix \n";
         for(int q = 0;q < Qm; ++q)
         {
             A += theta_mq[q]*M_Mq_pr[q].block(0,0,N,N)/time_step;
             F += theta_mq[q]*M_Mq_pr[q].block(0,0,N,N)*u_old/time_step;
         }
 
-        file<<"\nsystem we solve (with mass matrix contributions) : "<<"\n";
-        file<<"matrix A : "<<"\n";
-        for(int i=0;i<A.rows();i++)
-        {
-            for(int j=0;j<A.cols();j++)
-            {
-                file<<A(i,j)<<" ";
-            }
-            file<<"\n";
-        }
-
-        file<<"vector F : "<<"\n";
-        for(int i=0;i<F.cols();i++) file<<F(i)<<"\n";
-
         uN = A.lu().solve( F );
 
-        file<<"solution : "<<"\n";
-        for(int i=0;i<uN.cols();i++) file<<uN(i)<<"\n";
-
-        //u_old = uN/time_step;
         u_old = uN;
-        file<<"u_old : "<<"\n";
-        for(int i=0;i<u_old.cols();i++) file<<u_old(i)<<"\n";
 
-        file<<"\n output_index : "<<M_output_index<<"\n";
         L.setZero(N);
         for(int q = 0;q < M_model->Ql(M_output_index); ++q)
         {
             L += theta_fq[M_output_index][q]*M_Lq_pr[q].head(N);
         }
-        file<<" L : "<<"\n";
-        for(int i=0;i<L.cols();i++) file<<L(i)<<"\n";
 
         output = L.dot( uN );
-        file<<"\n output : "<<output<<"\n";
         output_vector.push_back(output);
 
     }
 
     double s_wo_correction = L.dot( uN );
-    file<<"\n\n final output : "<<s_wo_correction<<"\n";
-    file.close();
     return s_wo_correction;
 }
 

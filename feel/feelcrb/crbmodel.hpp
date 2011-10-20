@@ -339,19 +339,6 @@ public:
     affine_decomposition_type computeAffineDecomposition(mpl::bool_<true>)
         {
             boost::tie( M_Mq, M_Aq, M_Fq ) = M_model->computeAffineDecomposition();
-
-
- for( int l = 0;l < M_Fq.size(); ++l )
-     {
-         for( int q = 0; q < M_Fq[l].size(); ++q )
-        {
-            std::ofstream ofs31( (boost::format("CRB_AffineDecomposition_l=%1%_q=%2%") %l %q ).str().c_str() );
-            ofs31<<std::setprecision(16)<< *M_Fq[l][q] <<"\n";
-        }
-    }
-
-
-
             return boost::make_tuple(M_Mq, M_Aq, M_Fq );
         }
     affine_decomposition_type computeAffineDecomposition(mpl::bool_<false>)
