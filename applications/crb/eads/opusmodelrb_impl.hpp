@@ -108,22 +108,13 @@ template<int OrderU, int OrderP, int OrderT>
 void
 OpusModelRB<OrderU,OrderP,OrderT>::initParametrization()
 {
-    /*    parameter_type mu_min( M_Dmu );
+    parameter_type mu_min( M_Dmu );
     //mu_min << 0.2, 1e-5, 1e6, 0.1, 5e-2;
     mu_min << 0.2, 1e-5, 1e6, 0.1, 4e-3;
     //mu_min << 0.2, 1e-5, 0, 0.1, 4e-3;
     M_Dmu->setMin( mu_min );
     parameter_type mu_max( M_Dmu );
     mu_max << 150, 1e-2, 1e6, 1e2, 5e-2;
-    M_Dmu->setMax( mu_max );
-*/
-
-
-    parameter_type mu_min( M_Dmu );
-    mu_min << 50, 1e-2, 1e6, 1e2, 5e-2;
-    M_Dmu->setMin( mu_min );
-    parameter_type mu_max( M_Dmu );
-    mu_max << 50, 1e-2, 1e6, 1e2, 5e-2;
     M_Dmu->setMax( mu_max );
 
 
@@ -1022,7 +1013,9 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
         Log() << "[solve(mu)] export done in " << ti.elapsed() << "s\n";ti.restart();
 
         M_temp_bdf->shiftRight(*T);
+
     }
+
 
 }
 
