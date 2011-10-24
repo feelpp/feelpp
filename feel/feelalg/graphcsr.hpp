@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-10-29
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -231,6 +231,10 @@ public:
      */
     mpi::communicator const& comm() const { return M_comm; }
 
+    nz_type const& ia() const { return M_ia; }
+    nz_type const& ja() const { return M_ja; }
+    std::vector<double> const& a() const { return M_a; }
+
 
     //@}
 
@@ -277,6 +281,8 @@ private:
     nz_type M_n_nz;
     nz_type M_n_oz;
     storage_type M_storage;
+    nz_type M_ia, M_ja;
+    std::vector<double> M_a;
 };
 
 } // Feel
