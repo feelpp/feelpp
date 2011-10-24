@@ -240,6 +240,16 @@ public:
         return _M_el_l2g[ boost::indices[id_el][range_type()] ];
     }
 
+    size_type getIndicesSize() const
+        {
+            size_type nldof =
+                fe_type::nDofPerVolume * element_type::numVolumes +
+                fe_type::nDofPerFace * element_type::numGeometricFaces +
+                fe_type::nDofPerEdge * element_type::numEdges +
+                fe_type::nDofPerVertex * element_type::numVertices;
+            const size_type ntdof = is_product?nComponents*nldof:nldof;
+            return ntdof;
+        }
     std::vector<size_type> getIndices( size_type id_el ) const
     {
         size_type nldof =
@@ -252,6 +262,13 @@ public:
         for( size_type i = 0; i < ntdof; ++i )
             ind[i] = boost::get<0>( _M_el_l2g[ id_el][ i ] );
         return ind;
+    }
+
+    void getIndicesSet( size_type id_el, std::vector<size_type>& ind ) const
+    {
+        const size_type s = getIndicesSize();
+        for( size_type i = 0; i < s; ++i )
+            ind[i] = boost::get<0>( _M_el_l2g[ id_el][ i ] );
     }
 
     /**
@@ -374,6 +391,11 @@ public:
      *
      * \return the global numbering of a DOF, given an element and the local numbering
      */
+    size_type localToGlobalId( const size_type ElId,
+                               const uint16_type id ) const
+    {
+        return boost::get<0>(_M_el_l2g[ ElId][ id ]);
+    }
 
     global_dof_type localToGlobal( const size_type ElId,
                                    const uint16_type localNode,
