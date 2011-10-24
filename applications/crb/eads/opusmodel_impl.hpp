@@ -140,9 +140,9 @@ OpusModel<OrderU,OrderP,OrderT>::init()
     Log() << "[init] M_Th init done\n";
     M_grad_Th = grad_temp_functionspace_type::New( M_mesh, MESH_COMPONENTS_DEFAULTS );
     Log() << "[init] M_grad_Th init done\n";
-    //M_Xh = fluid_functionspace_type::New( M_mesh );
+    M_Xh = fluid_functionspace_type::New( M_mesh );
     Log() << "[init] M_Xh init done\n";
-    M_Xh = fluid_functionspace_type::New( M_mesh_air );
+    //M_Xh = fluid_functionspace_type::New( M_mesh_air );
     //M_Xh = oseen_functionspace_type::New( M_mesh->extract(  ) );
 
     Log() << "Generated function space\n";
@@ -302,8 +302,8 @@ OpusModel<OrderU,OrderP,OrderT>::run()
     auto ft = constant(1.0-( !this->data()->isSteady() )*math::exp(-time/3.0 ) );
     auto vy = ft*constant(3.)/(2.*(e_AIR-e_IC))*flow_rate*(1.-vf::pow((Px()-((e_AIR+e_IC)/2+e_PCB))/((e_AIR-e_IC)/2),2));
 
-    u = vf::project( M_Xh->template functionSpace<0>(), elements( M_Xh->mesh() ), vec(constant(0.),vy) );
-    p = vf::project( M_Xh->template functionSpace<1>(), elements( M_Xh->mesh() ), constant(0.) );
+    u = vf::project( M_Xh->template functionSpace<0>(), markedelements( M_Xh->mesh(), "AIR4" ), vec(constant(0.),vy) );
+    p = vf::project( M_Xh->template functionSpace<1>(), markedelements( M_Xh->mesh(), "AIR4" ), constant(0.) );
 
 
     Log() << "fluid and temperature fields set\n";
@@ -368,8 +368,9 @@ OpusModel<OrderU,OrderP,OrderT>::run()
                                (!this->data()->isSteady())*idv(*rhoC)*M_temp_bdf->polyDerivCoefficient(0), // mass
                                (idv(*k)),    // diff
                                (idv(*rhoC)*idv(U.template element<0>())), // conv
-                               ( idv(*Q)*(1.0-vf::exp(-cst_ref(thetime))) + // source term
-                                 (!this->data()->isSteady())*idv(*rhoC)*idv( M_temp_bdf->polyDeriv() ) ) // bdf contrib
+                               //( print(idv(*Q)*(1.0-vf::exp(-cst_ref(thetime))),"Q=") + // source term
+                               ( print(idv(*Q),"Q=") + // source term
+                                 (!this->data()->isSteady())*print(idv(*rhoC)*print(idv( M_temp_bdf->polyDeriv() ),"Tn="),"rhoc*Tn") ) // bdf contrib
                                );
 
             Log() << "[thermal] update done in " << ti.elapsed() << "\n";
