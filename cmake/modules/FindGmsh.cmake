@@ -26,7 +26,7 @@ INCLUDE(CheckIncludeFileCXX)
 
 FIND_PATH(GMSH_INCLUDE_DIR
   Gmsh.h
-  PATHS /usr/include/ /usr/include/gmsh/ /usr/local/include/gmsh /opt/local/include/gmsh
+  PATHS /usr/include/ /usr/include/gmsh/ /usr/local/include/gmsh /opt/local/include/gmsh $ENV{GMSH_DIR}/include/gmsh
   DOC "Directory where GMSH header files are stored" )
 
 
@@ -37,6 +37,7 @@ FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh
   /usr/lib
   /usr/local/lib
   /opt/local/lib
+  $ENV{GMSH_DIR}/lib
   )
 
 find_program( GMSH_EXECUTABLE gmsh DOC "GMSH mesh generator" )

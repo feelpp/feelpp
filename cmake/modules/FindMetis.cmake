@@ -14,6 +14,7 @@ FIND_PATH(METIS_INCLUDE_DIR metis.h
   /usr/local/include
   /usr/include
   /usr/include/metis
+  $ENV{METIS_DIR}/include
   )
 message( STATUS ${METIS_INCLUDE_DIR} )
 #FIND_LIBRARY(PARMETIS_LIBRARY parmetis
@@ -24,6 +25,7 @@ message( STATUS ${METIS_INCLUDE_DIR} )
 FIND_LIBRARY(METIS_LIBRARY metis
   /usr/local/lib
   /usr/lib
+  $ENV{METIS_DIR}/lib
   )
 
 IF(METIS_INCLUDE_DIR)
