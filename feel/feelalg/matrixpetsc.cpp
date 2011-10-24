@@ -5,8 +5,8 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-01-03
 
-  Copyright (C) 2008, 2009 Christophe Prud'homme
-  Copyright (C) 2008 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2011 Christophe Prud'homme
+  Copyright (C) 2008-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-01-03
  */
+#include <boost/timer.hpp>
+
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 
@@ -140,14 +142,14 @@ void MatrixPetsc<T>::init (const size_type m,
     ierr = MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS );
 #endif
     CHKERRABORT(this->comm(),ierr);
-#if 0
+#if 1
     // additional insertions will not be allowed if they generate
     // a new nonzero
     //ierr = MatSetOption (_M_mat, MAT_NO_NEW_NONZERO_LOCATIONS);
     //CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
-    ierr = MatSetOption (_M_mat, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_TRUE);
+    ierr = MatSetOption (_M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
     CHKERRABORT(this->comm(),ierr);
 #endif // 0
 
@@ -226,7 +228,6 @@ void MatrixPetsc<T>::init (const size_type m,
         std::copy( this->graph()->nNzOnProc().begin(),
                    this->graph()->nNzOnProc().end(),
                    dnz );
-
         //std::copy( dnz, dnz+this->graph()->nNzOnProc().size(), std::ostream_iterator<PetscInt>( std::cout, "\n" ) );
         ierr = MatCreateSeqAIJ (this->comm(), m_global, n_global,
                                 0,
@@ -236,7 +237,21 @@ void MatrixPetsc<T>::init (const size_type m,
         CHKERRABORT(this->comm(),ierr);
 
         //ierr = MatSeqAIJSetPreallocation( _M_mat, 0, (int*)this->graph()->nNzOnProc().data() );
+#if 1
         ierr = MatSeqAIJSetPreallocation( _M_mat, 0, dnz );
+#else
+        this->graph()->close();
+        //std::cout << "sizes:" << this->graph()->ia().size() << "," << this->graph()->ja().size()  << std::endl;
+        std::vector<PetscInt> ia( this->graph()->ia().size() ), ja( this->graph()->ja().size() );
+        std::copy( this->graph()->ia().begin(), this->graph()->ia().end(), ia.begin() );
+        std::copy( this->graph()->ja().begin(), this->graph()->ja().end(), ja.begin() );
+        //std::for_each( ia.begin(), ia.end(), [](const int& i ){ std::cout << i << std::endl; } );
+#if 1
+        ierr = MatSeqAIJSetPreallocationCSR( _M_mat,
+                                             ia.data(), ja.data(),
+                                             this->graph()->a().data() );
+#endif
+#endif
         CHKERRABORT(this->comm(),ierr);
     }
 
@@ -261,14 +276,14 @@ void MatrixPetsc<T>::init (const size_type m,
 #else
     MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS);
 #endif
-#if 0
+#if 1
     // additional insertions will not be allowed if they generate
     // a new nonzero
-    ierr = MatSetOption (_M_mat, MAT_NO_NEW_NONZERO_LOCATIONS);
+    //ierr = MatSetOption (_M_mat, MAT_NO_NEW_NONZERO_LOCATIONS);
     CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
-    ierr = MatSetOption (_M_mat, MAT_NEW_NONZERO_LOCATION_ERR);
+    ierr = MatSetOption (_M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
     CHKERRABORT(this->comm(),ierr);
 #endif
 
