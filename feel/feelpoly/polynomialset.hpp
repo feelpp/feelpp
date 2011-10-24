@@ -1014,6 +1014,15 @@ public:
         typedef boost::multi_array<d_type,2> div_type;
 #endif
 #endif
+
+        typedef geometric_mapping_context_type gmc_type;
+        typedef Eigen::Matrix<double,gmc_type::NDim,gmc_type::PDim> matrix_eigen_NP_type;
+        typedef Eigen::Matrix<double,gmc_type::PDim,gmc_type::NDim> matrix_eigen_PN_type;
+        typedef Eigen::Matrix<double,gmc_type::NDim,gmc_type::NDim> matrix_eigen_NN_type;
+        typedef Eigen::Matrix<double,nComponents1,NDim> matrix_eigen_grad_type;
+        typedef typename Eigen::Map<const Eigen::Matrix<double,gmc_type::NDim,gmc_type::PDim,Eigen::RowMajor> > matrix_eigen_ublas_NP_type;
+
+
         template<uint16_type TheRank = polyset_type::rank+2>
         struct Index
         {
@@ -1272,8 +1281,14 @@ public:
             _M_pc = __pc;
             _M_gmc = __gmc ;
 
-            if ( _M_npoints != __pc->nPoints() )
+            if ( ( _M_npoints != _M_gmc->nPoints()) ||
+                 ( _M_npoints != __pc->nPoints()) ||
+                 ( _M_npoints != _M_phi.shape()[1] ) )
                 {
+                    std::cout << "_M_npoints = "  << _M_npoints << "\n";
+                    std::cout << "pc->npoints = "  << __pc->nPoints() << "\n";
+                    std::cout << "phi->npoints = "  << _M_phi.shape()[1] << "\n";
+                    std::cout << "gmc->npoints = "  << _M_gmc->nPoints() << "\n";
                     _M_npoints = __pc->nPoints();
 
                     if ( rank == 0 )
@@ -1341,29 +1356,20 @@ public:
             if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
                 {
                     precompute_type* __pc = _M_pc.get().get();
-                    const uint16_type Q = __gmc->nPoints();//_M_grad.size2();
+                    const uint16_type Q = _M_npoints;//__gmc->nPoints();//_M_grad.size2();
                     const uint16_type I = nDof; //_M_ref_ele->nbDof();
 
-                    // can take any B(q), B is contant (Geo is P1)
-                    matrix_type const& B = thegmc->B( 0 );
 
-                    std::fill( _M_grad.data(), _M_grad.data()+_M_grad.num_elements(), grad_type::Zero());
+                    matrix_eigen_ublas_NP_type Bt ( thegmc->B( 0 ).data().begin() );
+                    matrix_eigen_grad_type grad_real = matrix_eigen_grad_type::Zero();
+                    matrix_eigen_PN_type B=Bt.transpose();
+
                     for ( uint16_type i = 0; i < I; ++i )
                         {
+                            grad_real.noalias() = _M_gradphi[i][0]*B;
                             for ( uint16_type q = 0; q < Q; ++q )
                             {
-                                for ( uint16_type l = 0; l < NDim; ++l )
-                                {
-                                    for ( uint16_type p = 0; p < PDim; ++p )
-                                    {
-                                        // can take any quad points (polynomial is P1, so grad is constant)
-                                        // CHANGE:
-                                        value_type g = B( l, p ) * __pc->grad( i, 0, p, 0 );
-                                        //value_type g = B( l, p ) * _M_gradphi[i][0][l][q]
-
-                                        _M_grad[i][q](0,l) += g;
-                                    }
-                                }
+                                _M_grad[i][q] = grad_real;
                             }
                         }
                     // we need the normal derivative
@@ -1392,7 +1398,7 @@ public:
             if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
                 {
                     precompute_type* __pc = _M_pc.get().get();
-                    const uint16_type Q = __gmc->nPoints();//_M_grad.size2();
+                    const uint16_type Q = _M_npoints;//__gmc->nPoints();//_M_grad.size2();
                     const uint16_type I = nDof; //_M_ref_ele->nbDof();
 
                     // hessian only for P1 geometric mappings
@@ -1433,23 +1439,15 @@ public:
             if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
                 {
                     precompute_type* __pc = _M_pc.get().get();
-                    const uint16_type Q = __gmc->nPoints();//_M_grad.size2();
+                    const uint16_type Q = _M_npoints;//__gmc->nPoints();//_M_grad.size2();
                     const uint16_type I = nDof; //_M_ref_ele->nbDof();
 
-
-                    std::fill( _M_grad.data(), _M_grad.data()+_M_grad.num_elements(), grad_type::Zero());
                     for ( uint16_type i = 0; i < I; ++i )
                         {
                             for ( uint16_type q = 0; q < Q; ++q )
                             {
-                                for ( uint16_type l = 0; l < NDim; ++l )
-                                {
-                                    for ( uint16_type p = 0; p < PDim; ++p )
-                                    {
-                                        matrix_type const& Bq = thegmc->B( q );
-                                        _M_grad[i][q](0,l)  += Bq( l, p ) * _M_pc.get()->grad( i, 0, p, q );
-                                    }
-                                }
+                                matrix_eigen_ublas_NP_type Bt ( thegmc->B( q ).data().begin() );
+                                _M_grad[i][q] = _M_gradphi[i][q]*Bt.transpose();
                             }
                         }
                     // we need the normal derivative
@@ -1474,7 +1472,7 @@ public:
             if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
                 {
                     precompute_type* __pc = _M_pc.get().get();
-                    const uint16_type Q = __gmc->nPoints();//_M_grad.size2();
+                    const uint16_type Q = _M_npoints;//__gmc->nPoints();//_M_grad.size2();
                     const uint16_type I = nDof; //_M_ref_ele->nbDof();
 
                     // hessian only for P1 geometric mappings
@@ -1515,20 +1513,8 @@ public:
             geometric_mapping_context_type* thegmc = __gmc.get();
             if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value )
                 {
-
-                    std::fill( _M_grad.data(), _M_grad.data()+_M_grad.num_elements(), grad_type::Zero() );
-
-                    if ( vm::has_div<context>::value )
-                        {
-                            std::fill( _M_div.data(), _M_div.data()+_M_div.num_elements(), div_type::Zero());
-                        }
-                    if ( vm::has_curl<context>::value )
-                        {
-                            std::fill( _M_curl.data(), _M_curl.data()+_M_curl.num_elements(), curl_type::Zero() );
-                        }
-
                     precompute_type* __pc = _M_pc.get().get();
-                    const uint16_type Q = __gmc->nPoints();//_M_grad.size2();
+                    const uint16_type Q = _M_npoints;//__gmc->nPoints();//_M_grad.size2();
                     const uint16_type I = nDof; //_M_ref_ele->nbDof();
 
                     typedef typename boost::multi_array<value_type,4>::index_range range;
@@ -1542,27 +1528,14 @@ public:
                             for ( uint16_type q = 0; q < Q; ++q )
                             {
                                 //uint16_type c1 = c;
-                                for ( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
+                                matrix_eigen_ublas_NP_type Bt ( thegmc->B( q ).data().begin() );
+                                //matrix_type const& Bq = thegmc->B( q );
+                                _M_grad[i][q] = _M_gradphi[i][q]*Bt.transpose();
+                                // update divergence if needed
+                                if ( vm::has_div<context>::value )
                                 {
-                                    for ( uint16_type l = 0; l < NDim; ++l )
-                                    {
-                                        for ( uint16_type p = 0; p < PDim; ++p )
-                                        {
-                                            matrix_type const& Bq = thegmc->B( q );
-                                            //gradreal[l][q]  += Bq( l, p ) *gradref[p][q];
-                                            //_M_grad[i][c1][l][q] += Bq( l, p ) * __pc->grad( i, c1, p, q );
-                                            _M_grad[i][q](c1,l) += Bq( l, p ) * _M_gradphi[i][q](c1,p);
-                                        }
-                                    }
-                                    // update divergence if needed
-                                    if ( vm::has_div<context>::value )
-                                    {
-                                        if ( reference_element_type::is_product && c1 == c )
-                                            _M_div[i][q](0,0) +=  _M_grad[i][q](c1,c1);
-                                        else
-                                            _M_div[i][q](0,0) +=  _M_grad[i][q](c1,c1);
-                                    }
-                                } // c1
+                                    _M_div[i][q](0,0) =  _M_grad[i][q].trace();
+                                }
                                 // update divergence if needed
                                 if ( vm::has_curl<context>::value )
                                 {
@@ -1606,23 +1579,15 @@ public:
             geometric_mapping_context_type* thegmc = __gmc.get();
             if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
                 {
-
-                    std::fill( _M_grad.data(), _M_grad.data()+_M_grad.num_elements(), grad_type::Zero() );
-
-                    if ( vm::has_div<context>::value )
-                        {
-                            std::fill( _M_div.data(), _M_div.data()+_M_div.num_elements(), div_type::Zero() );
-                        }
-                    if ( vm::has_curl<context>::value )
-                        {
-                            std::fill( _M_curl.data(), _M_curl.data()+_M_curl.num_elements(), curl_type::Zero() );
-                        }
-
                     precompute_type* __pc = _M_pc.get().get();
-                    const uint16_type Q = __gmc->nPoints();//_M_grad.size2();
+                    const uint16_type Q = _M_npoints;//__gmc->nPoints();//_M_grad.size2();
                     const uint16_type I = nDof; //_M_ref_ele->nbDof();
 
                     typedef typename boost::multi_array<value_type,4>::index_range range;
+
+                    matrix_eigen_ublas_NP_type Bt ( thegmc->B( 0 ).data().begin() );
+                    matrix_eigen_grad_type grad_real = matrix_eigen_grad_type::Zero();
+                    matrix_eigen_PN_type B=Bt.transpose();
 
                     for ( uint16_type ii = 0; ii < I; ++ii )
                     {
@@ -1632,31 +1597,16 @@ public:
                             //std::cout << "component " << c << "\n";
                             uint16_type i = I*c + ii;
                             //uint16_type c1 = c;
-
+                            grad_real.noalias() = _M_gradphi[i][0]*B;
                             for ( uint16_type q = 0; q < Q; ++q )
                             {
-                                for ( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
-                                {
-                                    for ( uint16_type l = 0; l < NDim; ++l )
-                                    {
-                                        for ( uint16_type p = 0; p < PDim; ++p )
-                                        {
-                                            matrix_type const& Bq = thegmc->B( 0 );
-                                            value_type g =
-                                                Bq( l, p ) * _M_gradphi[i][0](c1,p);
+                                _M_grad[i][q] = grad_real;
 
-                                                _M_grad[i][q](c1,l) += g;
-                                        }
-                                    }
-                                    // update divergence if needed
-                                    if ( vm::has_div<context>::value )
-                                    {
-                                        if ( reference_element_type::is_product && c1 == c )
-                                            _M_div[i][q](0,0) +=  _M_grad[i][q](c1,c1);
-                                        else
-                                            _M_div[i][q](0,0) +=  _M_grad[i][q](c1,c1);
-                                    }
-                                } // c1
+                                // update divergence if needed
+                                if ( vm::has_div<context>::value )
+                                {
+                                    _M_div[i][q](0,0) =  _M_grad[i][q].trace();
+                                }
                                 // update curl if needed
                                 if ( vm::has_curl<context>::value )
                                 {
