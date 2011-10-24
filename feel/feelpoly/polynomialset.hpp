@@ -1016,11 +1016,11 @@ public:
 #endif
 
         typedef geometric_mapping_context_type gmc_type;
-        typedef Eigen::Matrix<double,gmc_type::NDim,gmc_type::PDim> matrix_eigen_NP_type;
-        typedef Eigen::Matrix<double,gmc_type::PDim,gmc_type::NDim> matrix_eigen_PN_type;
-        typedef Eigen::Matrix<double,gmc_type::NDim,gmc_type::NDim> matrix_eigen_NN_type;
-        typedef Eigen::Matrix<double,nComponents1,NDim> matrix_eigen_grad_type;
-        typedef typename Eigen::Map<const Eigen::Matrix<double,gmc_type::NDim,gmc_type::PDim,Eigen::RowMajor> > matrix_eigen_ublas_NP_type;
+        typedef Eigen::Matrix<value_type,gmc_type::NDim,gmc_type::PDim> matrix_eigen_NP_type;
+        typedef Eigen::Matrix<value_type,gmc_type::PDim,gmc_type::NDim> matrix_eigen_PN_type;
+        typedef Eigen::Matrix<value_type,gmc_type::NDim,gmc_type::NDim> matrix_eigen_NN_type;
+        typedef Eigen::Matrix<value_type,nComponents1,NDim> matrix_eigen_grad_type;
+        typedef typename Eigen::Map<const Eigen::Matrix<value_type,gmc_type::NDim,gmc_type::PDim,Eigen::RowMajor> > matrix_eigen_ublas_NP_type;
 
 
         template<uint16_type TheRank = polyset_type::rank+2>
