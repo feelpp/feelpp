@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-10-29
 
-  Copyright (C) 2007, 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-10-29
  */
+#include <boost/timer.hpp>
+
 #include <feel/feelcore/application.hpp>
 #include <feel/feelalg/graphcsr.hpp>
 
@@ -89,6 +91,7 @@ GraphCSR::operator=( GraphCSR const& g )
 void
 GraphCSR::close()
 {
+    boost::timer ti;
     Debug(5050) << "[close] nrows=" << this->size() << "\n";
     Debug(5050) << "[close] firstRowEntryOnProc()=" << this->firstRowEntryOnProc() << "\n";
     Debug(5050) << "[close] lastRowEntryOnProc()=" << this->lastRowEntryOnProc() << "\n";
@@ -103,19 +106,16 @@ GraphCSR::close()
     std::fill( M_n_nz.begin(), M_n_nz.end(), 0 );
     std::fill( M_n_oz.begin(), M_n_oz.end(), 0 );
 
+    size_type sum_nz = 0;
     M_max_nnz = 0;
-    storage_type::iterator it = M_storage.begin();
-    storage_type::iterator en = M_storage.end();
-    //for (size_type i=0; i< M_storage.size(); i++)
-    for( ; it != en; ++it )
+    for( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
         {
             // Get the row of the sparsity pattern
             row_type const& irow = it->second;
             if ( boost::get<0>( irow ) == M_comm.rank() )
                 {
                     //std::vector<size_type> const& ivec = boost::get<2>( irow );
-                    std::vector<size_type> ivec( boost::get<2>( irow ).begin(),
-                                                 boost::get<2>( irow ).end() );
+                    size_type vec_size = boost::get<2>( irow ).size();
                     size_type globalindex = it->first;
                     size_type localindex = boost::get<1>( irow );
 
@@ -127,12 +127,14 @@ GraphCSR::close()
                     FEEL_ASSERT( globalindex >= 0 )( globalindex < M_n_total_nz.size() )
                         ( globalindex )
                         ( M_n_total_nz.size() ).error ( "invalid local/global index for M_n_total_nz" );
-                    M_n_total_nz[localindex] = ivec.size();
-
-                    for (size_type j=0; j< ivec.size(); j++)
+                    M_n_total_nz[localindex] = vec_size;
+                    sum_nz += vec_size;
+                    for( auto vecit = boost::get<2>( irow ).begin(), vecen = boost::get<2>( irow ).end(); vecit != vecen; ++vecit )
                         {
-                            if ( (ivec[j] < firstColEntryOnProc()) ||
-                                 (ivec[j] > lastColEntryOnProc() ))
+// parallel version coming soon....
+#if 0
+                            if ( (*vecit < firstColEntryOnProc()) ||
+                                 (*vecit > lastColEntryOnProc() ))
                                 {
                                     //Debug() << "globalindex=" << globalindex << " localindex="
                                     //<< localindex << " off-block diag: " << M_n_oz[localindex] << "\n";
@@ -140,6 +142,7 @@ GraphCSR::close()
                                     ++M_n_oz[localindex];
                                 }
                             else
+#endif
                                 {
                                     //Debug() << "globalindex=" << globalindex << " localindex="
                                     //<< localindex << " on-block diag: " << M_n_nz[localindex] << "\n";
@@ -165,7 +168,22 @@ GraphCSR::close()
 
 
         }
-
+#if 0
+    M_ia.resize( M_storage.size()+1 );
+    M_ja.resize( sum_nz );
+    M_a.resize(  sum_nz, 0. );
+    size_type col_cursor = 0;
+    auto jait = M_ja.begin();
+    for( auto it = M_storage.begin(), en = M_storage.end()  ; it != en; ++it )
+    {
+        row_type const& irow = it->second;
+        size_type localindex = boost::get<1>( irow );
+        M_ia[localindex] = col_cursor;
+        jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
+        col_cursor+=boost::get<2>( irow ).size();
+    }
+    M_ia[M_storage.size()] = sum_nz;
+#endif // 0
 
 } // close
 } // Feel
