@@ -47,6 +47,7 @@ find_path (PETSC_DIR include/petsc.h
   /usr/lib/petscdir/3.1 /usr/lib/petscdir/3.0.0 /usr/lib/petscdir/2.3.3 /usr/lib/petscdir/2.3.2 # Debian
   /opt/local/lib/petsc # macports
   $ENV{HOME}/petsc
+  $ENV{PETSC_HOME}
   DOC "PETSc Directory")
 
 find_program (MAKE_EXECUTABLE NAMES make gmake)

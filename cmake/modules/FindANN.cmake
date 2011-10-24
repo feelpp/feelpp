@@ -30,12 +30,12 @@ INCLUDE(CheckIncludeFileCXX)
 # CHECK_INCLUDE_FILE_CXX(ANN/ANN.h HAVE_ANN_H)
 
 
-FIND_LIBRARY( ANN_LIB ann PATHS /usr/lib /opt/local/lib )
+FIND_LIBRARY( ANN_LIB ann PATHS /usr/lib /opt/local/lib $ENV{ANN_DIR}/lib)
 SET(ANN_LIBRARIES ${ANN_LIB} )
 
 FIND_PATH(ANN_INCLUDE_DIR
   ANN.h
-  PATHS /usr/include/ /usr/include/ANN /opt/local/include/ANN /usr/local/include/ANN
+  PATHS /usr/include/ /usr/include/ANN /opt/local/include/ANN /usr/local/include/ANN $ENV{ANN_DIR}/include/ANN
   DOC "Directory where ANN header files are stored" )
 
 include(FindPackageHandleStandardArgs)
