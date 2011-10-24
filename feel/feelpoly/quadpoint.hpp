@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -7,7 +7,7 @@
        Date: 2005-07-28
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2010 Université Joseph Fourier
+  Copyright (C) 2006-2010 Universite Joseph Fourier
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -71,7 +71,7 @@ public :
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
-
+    typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vector_type;
     typedef ublas::vector<value_type> weights_type;
 
     typedef PointSetQuadrature<Convex, Integration_Degree, T> self_type;
@@ -79,25 +79,27 @@ public :
     typedef self_type parent_quadrature_type;
     static const uint16_type I_deg = Integration_Degree;
 
-    PointSetQuadrature(): super(), _M_w(), _M_prod() {}
+    PointSetQuadrature(): super(), _M_w(), _M_prod(), _M_exprq() {}
 
     PointSetQuadrature( const PointSetQuadrature& Qp )
         : super(Qp),
           _M_w( Qp.weights() ),
           _M_w_face( Qp.allfweights() ),
           _M_n_face( Qp.allfpoints() ),
-          _M_prod( Qp.nPoints() )
+          _M_prod( Qp.nPoints() ),
+          _M_exprq( Qp.nPoints() )
     {}
 
     PointSetQuadrature(uint32_type Npoints)
-        : super(Npoints), _M_w(Npoints), _M_prod( Npoints )
+        : super(Npoints), _M_w(Npoints), _M_prod( Npoints ), _M_exprq( Npoints )
     {}
 
     PointSetQuadrature(weights_type Wts)
         :
         super(Wts.size()),
         _M_w(Wts),
-        _M_prod( Wts.size() )
+        _M_prod( Wts.size() ),
+        _M_exprq( Wts.size() )
     {}
 
 
@@ -115,6 +117,7 @@ public :
                 _M_w_face = q._M_w_face;
                 _M_n_face = q._M_n_face;
                 _M_prod = q._M_prod;
+                _M_exprq = q._M_exprq;
             }
         return *this;
     }
@@ -292,14 +295,11 @@ public :
                            uint16_type c1,
                            uint16_type c2 ) const
     {
-        value_type res = value_type(0);
-
         for( uint16_type q = 0; q < this->nPoints(); ++q )
-            {
-                const value_type val_expr = expr.evalijq( indi, indj, c1, c2, q );
-                res += _M_prod[q]*val_expr;
-            }
-        return res;
+        {
+            _M_exprq[q] = expr.evalijq( indi, indj, c1, c2, q );
+        }
+        return _M_prod.dot( _M_exprq );
     }
     template<typename IndexTest, typename ExprType>
     value_type operator()( ExprType const& expr,
@@ -307,15 +307,11 @@ public :
                            uint16_type c1,
                            uint16_type c2 ) const
     {
-        value_type res = value_type(0);
-
         for( uint16_type q = 0; q < this->nPoints(); ++q )
             {
-                const value_type val_expr = expr.evaliq( indi, c1, c2, q );
-                res += _M_prod[q]*val_expr;
-
+                _M_exprq[q] = expr.evaliq( indi, c1, c2, q );
             }
-        return res;
+        return _M_prod.dot( _M_exprq );
     }
 
     template<typename ExprT>
@@ -323,15 +319,11 @@ public :
                            uint16_type c1,
                            uint16_type c2 ) const
     {
-        value_type res = value_type(0);
-
         for( uint16_type q = 0; q < this->nPoints(); ++q )
             {
-                const value_type val_expr = expr.evalq( c1, c2, q );
-                res += _M_prod[q]*val_expr;
-
+                _M_exprq[q] = expr.evalq( c1, c2, q );
             }
-        return res;
+        return _M_prod.dot( _M_exprq );
     }
     template<typename IndexTest, typename IndexTrial, typename ExprType>
     value_type operator()( ExprType const& expr,
@@ -459,7 +451,7 @@ public :
 
 protected:
 
-    void setWeights( weights_type const& w ) { _M_prod.resize( w.size() ); _M_w = w; }
+    void setWeights( weights_type const& w ) { _M_prod.resize( w.size() ); _M_exprq.resize( w.size() ); _M_w = w; }
 
     template<typename Elem, typename GM, typename IM>
     void constructQROnFace(Elem const& ref_convex,
@@ -504,7 +496,9 @@ protected:
     std::vector<weights_type> _M_w_face;
     std::vector<nodes_type> _M_n_face;
 
-    std::vector<value_type> _M_prod;
+    vector_type _M_prod;
+    mutable vector_type _M_exprq;
+
 };
 
 template<class Convex, uint16_type Integration_Degree, typename T>
