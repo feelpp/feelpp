@@ -1134,6 +1134,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
                              Xh->nDofStart(), Xh->nDofStart()+Xh->nLocalDof(),
                              Yh->nDofStart(), Yh->nDofStart()+Yh->nLocalDof() ) )
 {
+    boost::timer tim;
     Debug( 5050 ) << "begin constructor with default listblock\n";
 
     _M_lb.push_back( Block ( 0, 0, 0, 0 ) );
@@ -1168,7 +1169,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
 
 
         }
-
+    Debug( 5050 ) << " - form init in " << tim.elapsed() << "\n";
     Debug( 5050 ) << "begin constructor with default listblock done\n";
 }
 
@@ -1336,6 +1337,7 @@ template<typename FE1,  typename FE2, typename ElemContType>
 void
 BilinearForm<FE1,FE2,ElemContType>::mergeGraph( int row, int col, graph_ptrtype g )
 {
+    boost::timer tim;
     Debug( 5050 ) << "[merge graph] for composite bilinear form\n";
     Debug( 5050 ) << "[mergeGraph] row = " << row << "\n";
     Debug( 5050 ) << "[mergeGraph] col = " << col << "\n";
@@ -1368,43 +1370,32 @@ BilinearForm<FE1,FE2,ElemContType>::mergeGraph( int row, int col, graph_ptrtype 
             typename graph_type::const_iterator it = g->begin();
             typename graph_type::const_iterator en = g->end();
             for( ; it != en; ++it )
+            {
+                int theglobalrow = row+it->first;
+                int thelocalrow = row + boost::get<1>( it->second );
+                //auto row1_entries = boost::unwrap_ref( boost::ref( M_graph->row(theglobalrow).template get<2>() ) );
+                std::set<size_type>& row1_entries = M_graph->row(theglobalrow).template get<2>();
+                std::set<size_type> const& row2_entries = boost::get<2>( it->second );
+
+                Debug( 5050 ) << "[mergeGraph] adding information to global row [" << theglobalrow << "], localrow=" << thelocalrow << "\n";
+                M_graph->row(theglobalrow).template get<1>() = thelocalrow;
+
+                if ( row1_entries.empty() )
                 {
-                    int theglobalrow = row+it->first;
-                    int thelocalrow = row + boost::get<1>( it->second );
-
-
-
-                    Debug( 5050 ) << "[mergeGraph] adding information to global row [" << theglobalrow << "], localrow=" << thelocalrow << "\n";
-                    M_graph->row(theglobalrow).template get<1>() = thelocalrow;
-
-                    // Get the row of the sparsity pattern
-                    std::vector<size_type> ivec( boost::get<2>( it->second ).begin(), boost::get<2>( it->second ).end() );
-                    std::for_each( ivec.begin(), ivec.end(), boost::phoenix::arg_names::arg1 += col );
-                    //std::set<size_type> iout( ivec.size()+ M_graph->row(theglobalrow).template get<2>().size() );
-                    std::set<size_type> iout( ivec.begin(), ivec.end() );
-
-                    iout.insert( M_graph->row(theglobalrow).template get<2>().begin(),
-                                 M_graph->row(theglobalrow).template get<2>().end() );
-#if 0
-                    size_type start1 = M_graph->row(theglobalrow).template get<2>().size();
-                    std::copy( M_graph->row(theglobalrow).template get<2>().begin(),
-                               M_graph->row(theglobalrow).template get<2>().end(),
-                               iout.begin() );
-
-                    for( size_type i = 0;i < ivec.size(); ++i )
-                        {
-                            //Debug( 5050 ) << "[mergeGraph] ivec[" << i << "] = " << ivec[i] << "\n";
-                            iout[start1+i]=col+ivec[i];
-                        }
-#endif
-                    M_graph->row(theglobalrow).template get<2>() = iout;
+                    // if row is empty then no need to shift the dof in
+                    // composite case since the merge in done block-row-wise
+                    row1_entries = row2_entries;
                 }
-
-
+                else
+                {
+                    // ensure unique sorted ids
+                    auto itg = boost::prior(row1_entries.end());
+                    // shift dofs in case of composite spaces
+                    std::for_each( row2_entries.begin(), row2_entries.end(),[&]( size_type o ){ itg = row1_entries.insert( itg, o+col); });
+                }
+            }
         }
-
-
-
+    Debug( 5050 ) << " -- merge_graph (" << row << "," << col << ") in " << tim.elapsed() << "\n";
     Debug( 5050 ) << "merge graph for composite bilinear form done\n";
 }
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -1678,8 +1669,9 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
     else
         {}
 
-
+    Debug( 5050 ) << "[computeGraph<true>] before calling close in " << t.elapsed() << "s\n";
     sparsity_graph->close();
+    Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
     Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
     return sparsity_graph;
 }
@@ -1724,8 +1716,7 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
                           _M_X2->dof()->nComponents ) ) &&
                       !graph.test( DOF_PATTERN_COUPLED ) );
     std::vector<size_type>
-        element_dof1,
-        element_dof2,
+        element_dof2(_M_X2->dof()->getIndicesSize()),
         neighbor_dof;
 
     for ( ; elem_it != elem_en; ++elem_it)
@@ -1736,20 +1727,23 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
         mesh_element_1_type const& elem = *elem_it;
 
         // Get the global indices of the DOFs with support on this element
-        element_dof1 = _M_X1->dof()->getIndices( elem.id() );
-        element_dof2 = _M_X2->dof()->getIndices( elem.id() );
+        //element_dof1 = _M_X1->dof()->getIndices( elem.id() );
+        _M_X2->dof()->getIndicesSet( elem.id(), element_dof2 );
 
         // We can be more efficient if we sort the element DOFs
         // into increasing order
-        std::sort(element_dof1.begin(), element_dof1.end());
+        //std::sort(element_dof1.begin(), element_dof1.end());
         std::sort(element_dof2.begin(), element_dof2.end());
 
-        const uint16_type  n1_dof_on_element = element_dof1.size();
+        //const uint16_type  n1_dof_on_element = element_dof1.size();
+        const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize();
         const uint16_type  n2_dof_on_element = element_dof2.size();
 
         for (size_type i=0; i<n1_dof_on_element; i++)
+        //BOOST_FOREACH( auto ig1, _M_X1->dof()->getIndices( elem.id() ) )
         {
-            const size_type ig1 = element_dof1[i];
+            const size_type ig1 = _M_X1->dof()->localToGlobalId( elem.id(), i );
+            //const size_type ig1 = element_dof1[i];
             const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
             const int ncomp1 = i / ndofpercomponent1;
             const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
@@ -1829,8 +1823,9 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
 
         }// dof loop
     } // element iterator loop
-
+    Debug( 5050 )<< "[computeGraph<true>] before calling close in " << t.elapsed() << "s\n";
     sparsity_graph->close();
+    Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
     Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
     return sparsity_graph;
 }
