@@ -231,6 +231,13 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "  export = " << this->vm().count("export") << "\n";
     Log() << "      mu = " << mu << "\n";
     Log() << " bccoeff = " << penalbc << "\n";
+    Log() << "[mesh]   number of elements: " << Xh->mesh()->numElements() << "\n";
+    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    Log() << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
+    Log() << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
+    Log() << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
+    Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 
     Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
@@ -360,13 +367,6 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     this->exportResults( U, V );
 
-    Log() << "[mesh]   number of elements: " << Xh->mesh()->numElements() << "\n";
-    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    Log() << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
-    Log() << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
 
 
