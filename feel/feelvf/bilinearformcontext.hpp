@@ -297,8 +297,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
 
-    for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
-        for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+    for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+        for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
         {
             _M_rep(i, j ) = M_integrator( *_M_eval_expr00, i, j, 0, 0 );
         }
@@ -317,8 +317,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                           (mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
 
-    for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
-        for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+    for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+        for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
         {
             uint16_type ii = i;
             uint16_type jj = j;
@@ -361,18 +361,17 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
     if (isFirstExperience)
-        for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
-            for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                {
-                    _M_rep(i, j ) = M_integrator( *_M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
-                }
+        for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+            for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+            {
+                _M_rep(i, j ) = M_integrator( *_M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+            }
     else
-        for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
-            for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                {
-                    _M_rep(i, j ) += M_integrator( *_M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
-                }
-
+        for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+            for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+            {
+                _M_rep(i, j ) += M_integrator( *_M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+            }
 }
 template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
