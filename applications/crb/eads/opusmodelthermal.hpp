@@ -229,11 +229,10 @@ OpusModelThermal<SpaceType>::update( double time,
     markers.push_back( "Gamma_4_PCB" );
 
     size_type pattern = DOF_PATTERN_COUPLED | DOF_PATTERN_NEIGHBOR;
-    //if ( do_init )
-    if ( 1 )
+    if ( do_init )
+    //if ( 1 )
     {
-
-
+        //M_D->zero();
         form2( _test=M_Xh, _trial=M_Xh, _matrix=M_D, _init=do_init, _pattern=pattern )
             = integrate( _range=elements(M_Xh->mesh()),
                          _expr=(mass_coeff)*idt(u)*id(w)+(diff_coeff)*gradt(u)*trans(grad(w)));
@@ -349,8 +348,7 @@ OpusModelThermal<SpaceType>::update( double time,
     }
 #endif
     // right hand side
-    form1( M_Xh, M_F, _init=do_init ) = integrate( elements(M_Xh->mesh()),
-                                                   (rhs_coeff)*id(w),_Q<2*(Order)>() );
+    form1( M_Xh, M_F, _init=do_init ) = integrate( _range=elements(M_Xh->mesh()), _expr=(rhs_coeff)*id(w));
     BOOST_FOREACH( std::string marker, markers )
     {
         Log() << "[add weakbc boundary terms velocity] boundary "

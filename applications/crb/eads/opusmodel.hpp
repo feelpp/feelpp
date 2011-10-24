@@ -163,7 +163,7 @@ public:
     typedef typename fluid_element_type::template sub_element<0>::type fluid_element_0_type;
     typedef typename fluid_element_type::template sub_element<1>::type fluid_element_1_type;
 
-#if 0
+#if 1
     typedef Feel::OpusModelFluidPoiseuille<fluid_functionspace_type> fluid_operator_type;
 #else
     typedef Feel::OpusModelFluidOseen<fluid_functionspace_type> fluid_operator_type;
