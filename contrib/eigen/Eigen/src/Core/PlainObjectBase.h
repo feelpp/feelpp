@@ -84,7 +84,7 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
     template<typename StrideType> struct StridedConstMapType { typedef Eigen::Map<const Derived, Unaligned, StrideType> type; };
     template<typename StrideType> struct StridedAlignedMapType { typedef Eigen::Map<Derived, Aligned, StrideType> type; };
     template<typename StrideType> struct StridedConstAlignedMapType { typedef Eigen::Map<const Derived, Aligned, StrideType> type; };
-    
+
 
   protected:
     DenseStorage<Scalar, Base::MaxSizeAtCompileTime, Base::RowsAtCompileTime, Base::ColsAtCompileTime, Options> m_storage;
@@ -293,7 +293,7 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
       * of rows and/or of columns, you can use conservativeResize(NoChange_t, Index) or
       * conservativeResize(Index, NoChange_t).
       *
-      * Matrices are resized relative to the top-left element. In case values need to be 
+      * Matrices are resized relative to the top-left element. In case values need to be
       * appended to the matrix they will be uninitialized.
       */
     EIGEN_STRONG_INLINE void conservativeResize(Index rows, Index cols)
@@ -346,7 +346,7 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
       * of rows and/or of columns, you can use conservativeResize(NoChange_t, Index) or
       * conservativeResize(Index, NoChange_t).
       *
-      * Matrices are resized relative to the top-left element. In case values need to be 
+      * Matrices are resized relative to the top-left element. In case values need to be
       * appended to the matrix they will copied from \c other.
       */
     template<typename OtherDerived>
@@ -612,16 +612,21 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
 #ifndef EIGEN_PARSED_BY_DOXYGEN
     EIGEN_STRONG_INLINE static void _check_template_params()
     {
+#if 0
       EIGEN_STATIC_ASSERT((EIGEN_IMPLIES(MaxRowsAtCompileTime==1 && MaxColsAtCompileTime!=1, (Options&RowMajor)==RowMajor)
-                        && EIGEN_IMPLIES(MaxColsAtCompileTime==1 && MaxRowsAtCompileTime!=1, (Options&RowMajor)==0)
-                        && ((RowsAtCompileTime == Dynamic) || (RowsAtCompileTime >= 0))
+                           && EIGEN_IMPLIES(MaxColsAtCompileTime==1 && MaxRowsAtCompileTime!=1, (Options&RowMajor)==0)
+                         && ((RowsAtCompileTime == Dynamic) || (RowsAtCompileTime >= 0))
                         && ((ColsAtCompileTime == Dynamic) || (ColsAtCompileTime >= 0))
                         && ((MaxRowsAtCompileTime == Dynamic) || (MaxRowsAtCompileTime >= 0))
                         && ((MaxColsAtCompileTime == Dynamic) || (MaxColsAtCompileTime >= 0))
                         && (MaxRowsAtCompileTime == RowsAtCompileTime || RowsAtCompileTime==Dynamic)
                         && (MaxColsAtCompileTime == ColsAtCompileTime || ColsAtCompileTime==Dynamic)
-                        && (Options & (DontAlign|RowMajor)) == Options),
-        INVALID_MATRIX_TEMPLATE_PARAMETERS)
+                           && (Options & (DontAlign|RowMajor)) == Options),
+                          INVALID_MATRIX_TEMPLATE_PARAMETERS);
+#endif
+      //EIGEN_STATIC_ASSERT((EIGEN_IMPLIES(MaxRowsAtCompileTime==1 && MaxColsAtCompileTime!=1, (Options&RowMajor)==RowMajor)),INVALID_MATRIX_TEMPLATE_PARAMETERS_1);
+      //EIGEN_STATIC_ASSERT(EIGEN_IMPLIES(MaxColsAtCompileTime==1 && MaxRowsAtCompileTime!=1, (Options&RowMajor)==0),INVALID_MATRIX_TEMPLATE_PARAMETERS_1);
+
     }
 #endif
 
