@@ -504,11 +504,12 @@ protected:
 
         std::ostringstream ostr;
         ostr << "bdf_o_" << M_order << "_dt_" << M_dt;
+        //ostr << "bdf/" << M_name << "/o_" << M_order << "/dt_" << M_dt;
         M_path_save = ostr.str();
 
         // if directory does not exist, create it
         if ( !fs::exists( M_path_save ) )
-            fs::create_directory( M_path_save );
+            fs::create_directories( M_path_save );
 
         if ( M_restart )
             {
