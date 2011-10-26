@@ -143,7 +143,7 @@ public :
     POD()
         :
         M_store_pod_matrix ( false ),
-        M_store_pod_matrix_format_octave ( true ),
+        M_store_pod_matrix_format_octave ( false ),
         M_Nm( 1 ),
         M_pod_matrix(),
         M_snapshots_matrix(),
@@ -316,26 +316,10 @@ void POD<TruthModelType>::fillPodMatrix()
         int i = bdfi->iteration()-1;
         bdfi->loadCurrent();
 
-
-        std::ofstream ofs30( (boost::format("POD_bdfi_time=%1%") %bdfi->time()).str().c_str() );
-        for(int z=0; z<bdfi->unknown(0).size() ; z++ )
-        {
-            ofs30<<std::setprecision(16)<<bdfi->unknown(0)(z) <<"\n";
-        }
-        ofs30.close();
-
         for( bdfj->start(); !bdfj->isFinished() && (bdfj->iteration() < bdfi->iteration()); bdfj->next() )
         {
             int j = bdfj->iteration()-1;
             bdfj->loadCurrent();
-
-            std::ofstream ofs31( (boost::format("POD_bdfj_i=%1%_time=%2%") %i %bdfj->time()).str().c_str() );
-            for(int z=0; z<bdfj->unknown(0).size() ; z++ )
-            {
-                ofs31<< bdfj->unknown(0)(z) <<"\n";
-            }
-            ofs31.close();
-
 
             M_pod_matrix(i,j) = M_model->scalarProduct(bdfj->unknown(0), bdfi->unknown(0));
             M_pod_matrix(j,i) = M_pod_matrix(i,j);
@@ -408,12 +392,9 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
     {
         if( imag(eigen_solver.eigenvalues()[i])>1e-12)
         {
-            std::cout<<"[CRB - POD] we have complex eigenvalues, it was not planned"<<std::endl;
-            std::cout<<" imaginary part of eigen value is "<<imag(eigen_solver.eigenvalues()[i])<<std::endl;
-            exit(0);
+            throw std::logic_error( "[POD::pod] ERROR : complex eigenvalues were found" );
         }
         eigen_values[i]=real(eigen_solver.eigenvalues()[i]);
-        Log()<<"eigen value ["<<i<<"] : "<<eigen_values[i]<<"\n";
     }
 
     int position_of_largest_eigenvalue=number_of_eigenvalues-1;

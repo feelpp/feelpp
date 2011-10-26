@@ -633,9 +633,13 @@ public:
         return M_model->isSteady();
     }
 
-    double initializationField()
+    void initializationField(element_ptrtype& initial_field)
     {
-        return M_model->initializationField();
+        return M_model->initializationField(initial_field);
+    }
+    sparse_matrix_ptrtype& scalarProductMatrix()
+    {
+        return M_model->scalarProductMatrix();
     }
 
     //@}
@@ -760,22 +764,46 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu, mpl::bool_<tru
     auto M = this->newMatrix();
 #endif
     std::vector<vector_ptrtype> F( Nl() );
+
+    //when calling A->zero, PETSc wants to add new nonzero elements
+    //so to do the same thing define A as the mass matrix but with a zero coefficient
+
+    typename functionspace_type::element_type u( M_model->functionSpace() );
+
+    form2( M_model->functionSpace() , M_model->functionSpace() , A, _init=true)
+           =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
+    form2( M_model->functionSpace() , M_model->functionSpace() , M, _init=true)
+           =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
+
+
+    //WARNING
+    //idea of a better method : bring back the pattern from the model
+    //instead of comparate first_nnz_Aq and first_nnz_A
+    int first_nnz_Aq = M_Aq[0]->graph()->nNz()[0];
+    int first_nnz_A  = A->graph()->nNz()[0];
+    if(first_nnz_Aq > first_nnz_A)
+    {
+        size_type pattern = Feel::vf::DOF_PATTERN_COUPLED | Feel::vf::DOF_PATTERN_NEIGHBOR;
+        form2( M_model->functionSpace() , M_model->functionSpace() , A, _init=true, _pattern=pattern)
+           =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
+        form2( M_model->functionSpace() , M_model->functionSpace() , M, _init=true, _pattern=pattern)
+           =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
+    }
+
+
     A->close();
-    A->zero();
+    //A->zero();
     for( int q = 0; q < Qa(); ++q )
     {
         A->addMatrix( this->thetaAq( q ), M_Aq[q] );
     }
 
     M->close();
-    M->zero();
+    //M->zero();
     for( int q = 0; q < Qm(); ++q )
     {
         M->addMatrix( this->thetaMq( q ), M_Mq[q] );
     }
-
-
-
 
     for( int l = 0;l < Nl(); ++l )
     {
@@ -788,8 +816,6 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu, mpl::bool_<tru
         }
 
     }
-
-
 
     return boost::make_tuple( M, A, F );
 }
@@ -805,10 +831,30 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu, mpl::bool_<fal
     auto A = this->newMatrix();
 #endif
     std::vector<vector_ptrtype> F( Nl() );
+
+
+    typename functionspace_type::element_type u( M_model->functionSpace() );
+
+    form2( M_model->functionSpace() , M_model->functionSpace() , A, _init=true)
+           =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
+
+
+    //WARNING
+    //better method : bring back the pattern from the model instead of comparate first_nnz_Aq and first_nnz_A
+    int first_nnz_Aq = M_Aq[0]->graph()->nNz()[0];
+    int first_nnz_A  = A->graph()->nNz()[0];
+    if(first_nnz_Aq > first_nnz_A)
+    {
+        size_type pattern = Feel::vf::DOF_PATTERN_COUPLED | Feel::vf::DOF_PATTERN_NEIGHBOR;
+        form2( M_model->functionSpace() , M_model->functionSpace() , A, _init=true, _pattern=pattern)
+           =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
+    }
+
+
     A->close();
     //*A = *M_Aq[0];
     //A->scale( this->thetaAq( 0 ) );
-    A->zero();
+    //A->zero();
     for( int q = 0; q < Qa(); ++q )
     {
         A->addMatrix( this->thetaAq( q ), M_Aq[q] );
