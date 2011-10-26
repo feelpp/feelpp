@@ -1,4 +1,4 @@
-;/* -*- mode: c++ -*-
+/* -*- mode: c++ -*-
 
   This file is part of the Feel library
 
@@ -118,10 +118,20 @@ OpusModelRB<OrderU,OrderP,OrderT>::initParametrization()
     M_Dmu->setMax( mu_max );
 
 
+
     std::cout << "  -- Dmu min : "  << M_Dmu->min() << "\n";
     std::cout << "  -- Dmu max : "  << M_Dmu->max() << "\n";
 
 }
+
+template<int OrderU, int OrderP, int OrderT>
+void
+OpusModelRB<OrderU, OrderP, OrderT>::initializationField(element_ptrtype& initial_field)
+{
+    initial_field->setOnes();
+    initial_field->scale(M_T0);
+}
+
 template<int OrderU, int OrderP, int OrderT>
 void
 OpusModelRB<OrderU,OrderP,OrderT>::init()
@@ -297,6 +307,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
         L[l] = backend->newVector( M_Th );
     }
 
+    Mass = backend->newMatrix( M_Th, M_Th );
 
     M_temp_bdf = bdf( _space=M_Th, _vm=this->vm(), _name="temperature" , _prefix="temperature" );
 
@@ -677,6 +688,8 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
 
 
     //mas matrix
+    form2( M_Th, M_Th, Mass, _init=true, _pattern=pattern );
+
     form2( M_Th, M_Th, M_Mq[0], _init=true, _pattern=pattern ) =
         integrate ( markedelements(M_mesh,"PCB") ,    idv(rhoC)*idt(u)*id(w) ) +
         integrate ( markedelements(M_mesh,"IC1") ,    idv(rhoC)*idt(u)*id(w) ) +
@@ -711,8 +724,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
                    id(u)*idt(v)
             );
     M->close();
-
-
 
     Log() << "   - M  done\n";
     Log() << "OpusModelRB::init done\n";
@@ -944,11 +955,13 @@ OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu , double tim
     }
     Log() << "[update(mu,"<<time<<")] add mass matrix contributions in " << ti.elapsed() << "s\n";ti.restart();
 
-    M->zero();
+    Mass->close();
+    //Mass->zero();
     for( size_type q = 0;q < M_Mq.size(); ++q )
     {
-        M->addMatrix( M_thetaMq(q) , M_Mq[q] );
+        Mass->addMatrix( M_thetaMq(q) , M_Mq[q] );
     }
+
 
 }
 template<int OrderU, int OrderP, int OrderT>
@@ -979,11 +992,9 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
     //Log() << "solve(mu,T) for parameter " << mu << "\n";
     using namespace Feel::vf;
 
-
     //initialization of temperature
     *T = vf::project( M_Th, elements( M_Th->mesh() ), constant( M_T0 ) );
     M_temp_bdf->initialize(*T);
-
 
     if ( M_is_steady )
     {

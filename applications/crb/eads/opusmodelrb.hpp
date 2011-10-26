@@ -440,11 +440,9 @@ public:
     /**
      * return initialization filed used
      */
-    double initializationField() { return M_T0;}
+    void initializationField(element_ptrtype& initial_field) ;
 
     //@}
-
-
 
 protected:
 
@@ -483,7 +481,7 @@ private:
     boost::shared_ptr<export_type> M_exporter;
     export_type::timeset_ptrtype M_timeSet;
 
-    sparse_matrix_ptrtype D,M;
+    sparse_matrix_ptrtype D,M,Mass;
     std::vector<vector_ptrtype> L;
     std::vector<sparse_matrix_ptrtype> M_Aq;
     std::vector<sparse_matrix_ptrtype> M_Mq;
