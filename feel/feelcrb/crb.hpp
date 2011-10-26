@@ -157,6 +157,9 @@ public:
 
     typedef std::vector<element_type> wn_type;
 
+    typedef std::vector<double> vector_double_type;
+    typedef boost::shared_ptr<vector_double_type> vector_double_ptrtype;
+
     typedef Eigen::VectorXd vectorN_type;
     typedef Eigen::MatrixXd matrixN_type;
 
@@ -371,6 +374,12 @@ public:
     void orthonormalize( size_type N, wn_type& wn, int Nm = 1 );
 
 
+    /*
+     * check orthonormality
+     */
+    //void checkOrthonormality( int N, const wn_type& wn) const;
+    void checkOrthonormality( int N, const wn_type& wn) const;
+
     /**
      * check the reduced basis space invariant properties
      * \param N dimension of \f$W_N\f$
@@ -524,7 +533,6 @@ public:
     value_type empiricalErrorEstimation ( int Ncur, parameter_type const& mu, int k) const ;
 
 
-
     /**
      * run the certified reduced basis with P parameters and returns 1 output
      */
@@ -557,10 +565,11 @@ public:
 
     /**
      *  do the projection on the POD space of u (for transient problems)
-     *  \param u : the solution to project
+     *  \param u : the solution to project (input parameter)
+     *  \param projection : the projection (output parameter)
      *  \param name_of_space : primal or dual
      */
-    void projectionOnPodSpace( element_ptrtype & u , const std::string& name_of_space="primal");
+    void projectionOnPodSpace(const element_ptrtype & u , element_ptrtype& projection ,const std::string& name_of_space="primal" );
 
     //@}
 
@@ -669,8 +678,6 @@ CRB<TruthModelType>::offline()
     orthonormalize_primal = this->vm()["crb.orthonormalize_primal"].template as<bool>() ;
     orthonormalize_dual = this->vm()["crb.orthonormalize_dual"].template as<bool>() ;
     M_Nm = this->vm()["crb.Nm"].template as<int>() ;
-    if ( M_model->isSteady() )
-        M_Nm = 1;
 
 
     //scm_ptrtype M_scm = scm_ptrtype( new scm_type( M_vm ) );
@@ -780,7 +787,6 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
     Sampling->logEquidistribute( sampling_size );
     Log() << "[CRB::offlineNoErrorEstimation] sampling parameter space with "<< sampling_size <<"elements done\n";
 
-
     Log() << "[CRB::offlineNoErrorEstimation] strategy "<< M_error_type <<"\n";
     std::cout << "[CRB::offlineNoErrorEstimation] strategy "<< M_error_type <<"\n";
 
@@ -829,16 +835,15 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         M_bdf_primal_save->start();
 
         //initialization of unknown
-        double initialization_field=M_model->initializationField();
-        u->setConstant(initialization_field);
+        //double initialization_field=M_model->initializationField();
+        M_model->initializationField( u );
+        //u->setConstant(initialization_field);
         M_bdf_primal->initialize(*u);
         M_bdf_primal_save->initialize(*u);
 
         //direct problem
         double bdf_coeff = M_bdf_primal->polyDerivCoefficient(0);
         auto vec_bdf_poly = backend_primal_problem->newVector(M_model->functionSpace() );
-
-
 
 
         for ( M_bdf_primal->start() , M_bdf_primal_save->start() ;
@@ -870,8 +875,10 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
 
             if ( !M_model->isSteady() )
             {
-                *uproj=*u;
-                projectionOnPodSpace( uproj , "primal" );
+                element_ptrtype projection( new element_type( M_model->functionSpace() ) );
+                projectionOnPodSpace( u , projection, "primal" );
+                *uproj = *u;
+                uproj->add( -1 , *projection );
                 M_bdf_primal_save->shiftRight( *uproj );
             }
         }
@@ -933,7 +940,12 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
             }
 
             if ( !M_model->isSteady() )
-                projectionOnPodSpace( udu , "dual" );
+            {
+                element_ptrtype projection( new element_type( M_model->functionSpace() ) );
+                projectionOnPodSpace( udu , projection, "dual" );
+                *uproj = *udu;
+                uproj->add( -1 , *projection );
+            }
 
             M_bdf_dual->shiftRight( *udu );
         }
@@ -1099,6 +1111,10 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<false>)
 {
+
+    //in steady case M_Nm must be 1
+    M_Nm = 1;
+
     parameter_type mu( M_Dmu );
 
     double relative_error = 1e30;
@@ -1340,6 +1356,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
     sparse_matrix_ptrtype M,A,Adu,At;
     std::vector<vector_ptrtype> F,L;
 
+
     //useful for POD in time
     const int Ndof = M_model->functionSpace()->nDof();//number of dofs used
 
@@ -1403,8 +1420,6 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
         u->setName( (boost::format( "fem-primal-%1%" ) % (M_N-1)).str() );
 
-        //steph
-
         if(M_model->isSteady() )
         {
             boost::tie( M, A, F ) = M_model->update( mu , 1e30 );
@@ -1452,8 +1467,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             M_bdf_primal_save->start();
 
             //initialization of unknown
-            double initialization_field=M_model->initializationField();
-            u->setConstant(initialization_field);
+            M_model->initializationField( u );
             M_bdf_primal->initialize(*u);
             M_bdf_primal_save->initialize(*u);
 
@@ -1474,6 +1488,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                 *vec_bdf_poly = bdf_poly;
                 Rhs->addVector( *vec_bdf_poly, *M);
 
+                A->close();
 
                 if( reuse_prec )
                 {
@@ -1488,14 +1503,13 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                         Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
                 }
 
-
                 M_bdf_primal->shiftRight( *u );
-
 
                 if( ! M_model->isSteady() )
                 {
+                    element_ptrtype projection ( new element_type (M_model->functionSpace() ) );
+                    projectionOnPodSpace ( u , projection, "primal" );
                     *uproj=*u;
-                    projectionOnPodSpace ( uproj , "primal" );
                     M_bdf_primal_save->shiftRight( *uproj );
                 }
 
@@ -1559,8 +1573,14 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                         Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
                 }
 
-                if( !M_model->isSteady() )
-                    projectionOnPodSpace( udu , "dual" );
+                if( ! M_model->isSteady() )
+                {
+                    element_ptrtype projection ( new element_type (M_model->functionSpace() ) );
+                    projectionOnPodSpace ( udu , projection, "dual" );
+                    *uproj=*udu;
+                    M_bdf_primal_save->shiftRight( *uproj );
+                }
+
 
                 M_bdf_dual->shiftRight( *udu );
             }
@@ -1572,7 +1592,6 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
         for( int l = 0; l < M_model->Nl(); ++l )
             Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
-
 
 
         Log() << "[CRB::offlineNWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
@@ -1597,12 +1616,12 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             POD->setModel(M_model);
             mode_set_type ModeSet;
             POD->pod(ModeSet);
-
             //now : loop over number modes per mu
             for(int i=0;i<M_Nm;i++)
             {
                 M_WN.push_back( ModeSet[i] );
             }
+
 
             //and now the dual
             //POD->setBdf( M_bdf_dual );
@@ -1619,6 +1638,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         }//end of transient case
 
         M_N+=M_Nm;
+
 
         if(orthonormalize_primal)
         {
@@ -1722,6 +1742,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                 std::cout << "  -- N2Q2 updated in " << timer2.elapsed() << "s\n"; timer2.restart();
             }
 
+
         boost::tie( maxerror, mu, index ) = maxErrorBounds( M_N );
         std::cout << "  -- max error bounds computed in " << timer2.elapsed() << "s\n"; timer2.restart();
 
@@ -1730,6 +1751,8 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         //mu = M_Xi->at( M_N );//M_WNmu_complement->min().get<0>();
 
         check( M_WNmu->size() );
+
+
         if ( this->vm()["crb.check.rb"].template as<int>() == 1 )std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n"; timer2.restart();
 
         std::cout << "time: " << timer.elapsed() << "\n";
@@ -1741,6 +1764,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
     this->saveDB();
     std::cout << "Offline CRB is done\n";
+
 
 }
 
@@ -2004,6 +2028,8 @@ CRB<TruthModelType>::check( size_type N ) const
         return;
 
     std::cout << "  -- check reduced basis\n";
+
+
    Log() << "----------------------------------------------------------------------\n";
     // check that for each mu associated to a basis function of \f$W_N\f$
    for( int k = std::max(0,(int)N-2); k < N; ++k )
@@ -2014,6 +2040,7 @@ CRB<TruthModelType>::check( size_type N ) const
         vectorN_type uNdu( N );
         double s = lb( N, mu, uN, uNdu );
         double err = delta( N, mu, uN, uNdu );
+
 #if 0
         //if (  err > 1e-5 )
         // {
@@ -2093,8 +2120,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
 {
 
 
-
-
     //if K>0 then the time at which we want to evaluate output is defined by
     //time_for_output = K * time_step
     //else it's the default value and in this case we take final time
@@ -2125,9 +2150,57 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
     vectorN_type L ( (int)N );
 
     vectorN_type u_old ( (int)N );
-    u_old.setOnes();
-    double initialization_field = M_model->initializationField();
-    u_old *= initialization_field;
+
+
+    //-- initialization step
+    element_ptrtype initial_field ( new element_type ( M_model->functionSpace() ) );
+    element_ptrtype projection    ( new element_type ( M_model->functionSpace() ) );
+    M_model->initializationField( initial_field ); //fill initial_field
+
+    std::vector<double> coeffs;
+    if(M_WN.size()==0)
+    {
+        throw std::logic_error( "[CRB::lb] ERROR : size of M_WN is zero so the projection of initial condition on the reduced basis is impossible" );
+    }
+
+    if( orthonormalize_primal)
+    {
+        BOOST_FOREACH( auto pr, M_WN )
+        {
+            double k =  M_model->scalarProduct(*initial_field, pr);
+            coeffs.push_back(k);
+        }
+    }
+    else
+    {
+        matrixN_type MN ( (int)M_N, (int)M_N ) ;
+        vectorN_type FN ( (int)M_N );
+        for(int i=0; i<M_N; i++)
+        {
+            for(int j=0; j<i; j++)
+            {
+                MN(i,j) = M_model->scalarProduct( M_WN[j] , M_WN[i] );
+                MN(j,i) = MN(i,j);
+            }
+            MN(i,i) = M_model->scalarProduct( M_WN[i] , M_WN[i] );
+            FN(i) = M_model->scalarProduct(*initial_field,M_WN[i]);
+        }
+        vectorN_type projectionN ((int) M_N);
+        projectionN = MN.lu().solve( FN );
+
+        for(int i=0;i <projectionN.size(); i++)
+        {
+            coeffs.push_back(projectionN(i));
+        }
+    }
+
+    int index=0;
+    for (std::vector<double>::iterator it = coeffs.begin(); it != coeffs.end(); ++it)
+    {
+        u_old(index) = *it;
+        index++;
+    }
+    //-- end of initialization step
 
     int Qm;
 
@@ -2147,7 +2220,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
     double output;
     for(double time=time_step; time<=time_for_output; time+=time_step)
     {
-
         boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu ,time);
 
         A.setZero(N,N);
@@ -2161,7 +2233,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
         {
             F += theta_fq[0][q]*M_Fq_pr[q].head(N);
         }
-
 
         for(int q = 0;q < Qm; ++q)
         {
@@ -2307,7 +2378,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
     if( M_error_type == CRB_EMPIRICAL )
     {
-      if(N==1)
+      if(N==M_Nm)
       {
           parameter_type mu (M_Dmu);
           size_type id;
@@ -2376,30 +2447,46 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
         wn[i].scale( 1./__rii_pr );
     }
 
-
     Debug (12000) << "[CRB::orthonormalize] finished ...\n";
     Debug (12000) << "[CRB::orthonormalize] copying back results in basis\n";
 
     if ( this->vm()["crb.check.gs"].template as<int>() )
-    {
-        matrixN_type A, I;
-        A.setZero( N, N );
-        I.setIdentity( N, N );
-        for( int i = 0;i < N;++i )
-            {
-            for( int j = 0;j < N;++j )
-            {
-                A( i, j ) = M_model->scalarProduct(  wn[i], wn[j] );
-            }
-        }
-        A -= I;
-        Debug(12000) << "orthonormalization: " << A.norm() << "\n";
-        std::cout << "    o check : " << A.norm() << " (should be 0)\n";
-    }
-    //FEEL_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
+        checkOrthonormality( N , wn);
+
 }
 
+template <typename TruthModelType>
+void
+CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn) const
+{
 
+    if(wn.size()==0)
+    {
+        throw std::logic_error( "[CRB::checkOrthonormality] ERROR : size of wn is zero" );
+    }
+
+    if(orthonormalize_primal*orthonormalize_dual==0)
+    {
+        std::cout<<"Warning : calling checkOrthonormality is called but ";
+        std::cout<<" orthonormalize_dual = "<<orthonormalize_dual;
+        std::cout<<" and orthonormalize_primal = "<<orthonormalize_primal<<std::endl;
+    }
+
+    matrixN_type A, I;
+    A.setZero( N, N );
+    I.setIdentity( N, N );
+    for( int i = 0;i < N;++i )
+    {
+        for( int j = 0;j < N;++j )
+        {
+            A( i, j ) = M_model->scalarProduct(  wn[i], wn[j] );
+        }
+    }
+    A -= I;
+    Debug(12000) << "orthonormalization: " << A.norm() << "\n";
+    std::cout << "    o check : " << A.norm() << " (should be 0)\n";
+    //FEEL_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
+}
 
 
 
@@ -3203,16 +3290,19 @@ template<typename TruthModelType>
 boost::tuple<double,double,double>
 CRB<TruthModelType>::run( parameter_type const& mu, double eps )
 {
-    int Nwn = M_N;
-    auto lo = M_rbconv.right.range( boost::bimaps::unbounded, boost::bimaps::_key <= eps );
-    for( auto it = lo.first; it != lo.second; ++it )
-        {
-            std::cout << "rbconv[" << it->first <<"]=" << it->second << "\n";
-        }
-    auto it = M_rbconv.project_left( lo.first );
-    Nwn = it->first;
-    std::cout << "Nwn = "<< Nwn << " error = "<< it->second << " eps=" << eps << "\n";
 
+    int Nwn = M_N;
+    if( M_error_type!=CRB_EMPIRICAL )
+    {
+        auto lo = M_rbconv.right.range( boost::bimaps::unbounded, boost::bimaps::_key <= eps );
+        for( auto it = lo.first; it != lo.second; ++it )
+           {
+               std::cout << "rbconv[" << it->first <<"]=" << it->second << "\n";
+           }
+        auto it = M_rbconv.project_left( lo.first );
+        Nwn = it->first;
+        std::cout << "Nwn = "<< Nwn << " error = "<< it->second << " eps=" << eps << "\n";
+    }
     vectorN_type uN( Nwn );
     vectorN_type uNdu( Nwn );
     uN.setZero( Nwn );
@@ -3274,31 +3364,94 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::projectionOnPodSpace( element_ptrtype & u , const std::string& name_of_space)
+CRB<TruthModelType>::projectionOnPodSpace( const element_ptrtype & u , element_ptrtype& projection, const std::string& name_of_space)
 {
-    element_ptrtype projection ( new element_type( M_model->functionSpace() ) );
+
     projection->zero();
 
-    //we assume that M_WN and M_ANdu have the same size
-    for(int s=0;s<M_WN.size();s++)
+    if( name_of_space=="dual")
     {
-        element_type e;
-        if( name_of_space=="dual")
+        if( orthonormalize_dual )
+        //in this case we can simplify because elements of reduced basis are orthonormalized
         {
-            e = M_WNdu[s];
-        }
+            BOOST_FOREACH( auto du, M_WNdu )
+            {
+                element_type e;
+                e = du;
+                double k =  M_model->scalarProduct(*u, e);
+                e.scale(k);
+                projection->add( 1 , e );
+            }
+        }//end of if orthonormalize_dual
         else
         {
-            e = M_WN[s];
-        }
-        double k =  M_model->scalarProduct(*u, e);
-        e.scale(k);
-        projection->add( 1 , e );
-    }
-    if( M_WN.size()>0 )
+            matrixN_type MN ( (int)M_N, (int)M_N ) ;
+            vectorN_type FN ( (int)M_N );
+            for(int i=0; i<M_N; i++)
+            {
+                for(int j=0; j<i; j++)
+                {
+                    MN(i,j) = M_model->scalarProduct( M_WNdu[j] , M_WNdu[i] );
+                    MN(j,i) = MN(i,j);
+                }
+                MN(i,i) = M_model->scalarProduct( M_WNdu[i] , M_WNdu[i] );
+                FN(i) = M_model->scalarProduct(*u,M_WNdu[i]);
+            }
+            vectorN_type projectionN ((int) M_N);
+            projectionN = MN.lu().solve( FN );
+            int index=0;
+            BOOST_FOREACH( auto du, M_WNdu )
+            {
+                element_type e;
+                e = du;
+                double k =  projectionN(index);
+                e.scale(k);
+                projection->add( 1 , e );
+                index++;
+            }
+       }//end of if( ! orthonormalize_dual )
+    }//end of projection on dual POD space
+    else
     {
-        u->add( -1 , *projection );
-    }
+        if( orthonormalize_primal)
+        {
+            BOOST_FOREACH( auto pr, M_WN )
+            {
+                element_type e;
+                e = pr;
+                double k =  M_model->scalarProduct(*u, e);
+                e.scale(k);
+                projection->add( 1 , e );
+            }
+        }//end of if orthonormalize_primal
+        else
+       {
+           matrixN_type MN ( (int)M_N, (int)M_N ) ;
+           vectorN_type FN ( (int)M_N );
+           for(int i=0; i<M_N; i++)
+           {
+                for(int j=0; j<i; j++)
+                {
+                    MN(i,j) = M_model->scalarProduct( M_WN[j] , M_WN[i] );
+                    MN(j,i) = MN(i,j);
+                }
+                MN(i,i) = M_model->scalarProduct( M_WN[i] , M_WN[i] );
+                FN(i) = M_model->scalarProduct(*u,M_WN[i]);
+            }
+            vectorN_type projectionN ((int) M_N);
+            projectionN = MN.lu().solve( FN );
+            int index=0;
+            BOOST_FOREACH( auto pr, M_WN )
+            {
+                element_type e;
+                e = pr;
+                double k =  projectionN(index);
+                e.scale(k);
+                projection->add( 1 , e );
+                index++;
+            }
+       }//end of if( ! orthonormalize_primal )
+    }//end of projection on primal POD space
 
 }
 
