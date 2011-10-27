@@ -257,6 +257,10 @@ public:
              << nRealDim;
         return ostr.str();
     }
+    static std::string type()
+        {
+            return "simplex";
+        }
 };
 
 template<uint16_type Dim, uint16_type Order, uint16_type RDim >

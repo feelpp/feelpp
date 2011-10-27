@@ -179,6 +179,8 @@ public:
         super( argc, argv, ad, od ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
+        b( backend_type::build( this->vm() ) ),
+        bc( backend_type::build( this->vm() ) ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers(),
         stats()
@@ -201,13 +203,6 @@ public:
 private:
 
     /**
-     * solve the system
-     */
-    template<typename Mat, typename Vec1, typename Vec2>
-    void solve( boost::shared_ptr<Mat>& D, Vec1& u, boost::shared_ptr<Vec2>& F, bool is_sym );
-
-
-    /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
     template<typename f1_type, typename f2_type, typename f3_type>
@@ -220,6 +215,7 @@ private:
 
     double meshSize;
     std::string shape;
+    backend_ptrtype b,bc;
     export_ptrtype exporter;
     std::map<std::string,std::pair<boost::timer,double> > timers;
     std::map<std::string,double> stats;
@@ -254,6 +250,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
                                                       _usenames=true,
+                                                      _convex=entity_type::type(),
                                                       _shape=shape,
                                                       _dim=Dim,
                                                       _h=meshSize ) );
@@ -263,10 +260,10 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
      * The function space and some associate elements are then defined
      */
     timers["init"].first.restart();
-    typename space<Cont>::ptrtype Xh = space<Cont>::type::New( mesh );
+    auto Xh = space<Cont>::type::New( mesh );
     //Xh->dof()->showMe();
-    typename space<Cont>::element_type u( Xh, "u" );
-    typename space<Cont>::element_type v( Xh, "v" );
+    auto u = Xh->element("u");
+    auto v = Xh->element("v");
     timers["init"].second = timers["init"].first.elapsed();
     stats["ndof"] = Xh->nDof();
 
@@ -296,12 +293,11 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     mpi::all_reduce( Application::comm(), local_boundary_size, global_boundary_size, std::plus<double>() );
     Log() << "int_Omega = " << global_boundary_size << "[ " << local_boundary_size << " ]\n";
 
-    backend_ptrtype b( backend_type::build( this->vm() ) );
     /*
      * Construction of the left hand side
      */
-    sparse_matrix_ptrtype D( b->newMatrix( Xh, Xh ) );
-    sparse_matrix_ptrtype Mt( b->newMatrix( Xh, Xh ) );
+    auto D = b->newMatrix( Xh, Xh );
+    auto Mt = b->newMatrix( Xh, Xh );
 
     value_type diff = this->vm()["diff"].template as<double>();
     value_type dt = this->vm()["dt"].template as<double>();
@@ -376,12 +372,12 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     //
     // Construct L2-projection operator
     //
-    typename space<Continuous>::ptrtype Xch = space<Continuous>::type::New( mesh );
-    typename space<Continuous>::element_type uEx( Xch, "uEx" );
-    sparse_matrix_ptrtype M( b->newMatrix( Xch, Xch ) );
+    auto Xch = space<Continuous>::type::New( mesh );
+    auto uEx = Xch->element( "uEx" );
+    auto M = bc->newMatrix( Xch, Xch );
     form2( Xch, Xch, M, _init=true ) = integrate( elements( mesh ),  trans(idt(uEx))*id(uEx) );
     M->close();
-    vector_ptrtype L( b->newVector( Xch ) );
+    auto L = bc->newVector( Xch );
 
     //
     // initially u = g(0,x,y,z)
@@ -409,9 +405,12 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     if ( this->vm().count( "export-matlab" ) )
         L->printMatlab( "L.m" );
 
-    this->solve( D, u, Ft, ( bctype == 1 || !Cont::is_continuous ) );
+    // compute PDE solution
+    b->solve( _matrix=D, _solution=u, _rhs=Ft );
 
-    this->solve( M, uEx, L, true );
+    // compute L2 projection of exact solution
+    bc->solve( _matrix=M, _solution=uEx, _rhs=L );
+
 
 
     // compute local error wrt the exact solution
@@ -443,7 +442,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
             form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans(idv(u))*id(uEx) );
             typename space<Continuous>::element_type uc( Xch, "uc" );
-            this->solve( M, uc, L, true );
+            bc->solve( _matrix=M, _solution=uc, _rhs=L );
             this->exportResults( t, u, uc, uEx );
         }
 
@@ -478,7 +477,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
                     Ft->printMatlab( ostr.str() );
                 }
 
-            this->solve( D, u, Ft, ( bctype == 1 || !Cont::is_continuous ) );
+            b->solve( _matrix=D, _solution=u, _rhs=Ft );
 
             if ( this->vm().count( "export-matlab" ) )
                 {
@@ -491,7 +490,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
             // find the L2-projection (with a continuous expansion) of
             // the exact solution
             form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans(g)*id(uEx) );
-            this->solve( M, uEx, L, true );
+            bc->solve( _matrix=M, _solution=uEx, _rhs=L );
 
             // compute local error wrt the exact solution
             double error = integrate( elements(mesh),  val( trans(idv(u)-g)*(idv(u)-g) ) ).evaluate()(0,0);
@@ -531,7 +530,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
                     form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans(idv(u))*id(uEx) );
                     typename space<Continuous>::element_type uc( Xch, "uc" );
-                    this->solve( M, uc, L, true );
+                    bc->solve( _matrix=M, _solution=uc, _rhs=L );
                     this->exportResults( t, u, uc, uEx );
                 }
 
@@ -540,27 +539,6 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
         } // time loop
 
 } // Laplacian::run
-
-template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
-template<typename Mat, typename Vec1, typename Vec2>
-void
-Laplacian<Dim, Order, Cont, Entity, FType>::solve( boost::shared_ptr<Mat>& D,
-                                                   Vec1& u,
-                                                   boost::shared_ptr<Vec2>& F,
-                                                   bool is_sym  )
-{
-    timers["solver"].first.restart();
-
-    backend_ptrtype backend =  backend_type::build( this->vm() );
-    //backend->set_symmetric( is_sym );
-
-    vector_ptrtype U( backend->newVector( u.functionSpace() ) );
-    backend->solve( D, D, U, F );
-    u = *U;
-
-    timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve: " << timers["solver"].second << "\n";
-} // Laplacian::solve
 
 
 template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>

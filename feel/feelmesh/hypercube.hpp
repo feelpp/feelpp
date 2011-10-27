@@ -233,6 +233,10 @@ public:
              << nRealDim;
         return ostr.str();
     }
+    static std::string type()
+        {
+            return "hypercube";
+        }
 };
 
 }
