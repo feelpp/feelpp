@@ -30,6 +30,11 @@
 #if !defined( __FEELPP_BENCH_STOKES_HPP)
 #define __FEELPP_BENCH_STOKES_HPP 1
 
+#include <boost/any.hpp>
+#include <boost/utility.hpp>
+
+
+
 #include <feel/options.hpp>
 #include <feel/feelcore/application.hpp>
 
@@ -47,6 +52,8 @@
 #include <feel/feelmesh/elements.hpp>
 
 #include <feel/feelvf/vf.hpp>
+
+void printStats( std::ostream& out, std::vector<std::map<std::string,boost::any> > & stats);
 
 /**
  * This routine returns the list of options using the
@@ -89,7 +96,7 @@ makeAbout()
                            "0.1",
                            "Stokes equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2010 Universite de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2009-2011 Universite de Grenoble 1 (Joseph Fourier)");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
    return about;
@@ -145,19 +152,22 @@ public:
         :
         super( argc, argv, ad, od ),
         M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
+        M_meshSize( this->vm()["hsize"].template as<double>() ),
         M_basis_name( basis_name ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         mu = this->vm()["mu"].template as<value_type>();
         penalbc = this->vm()["bccoeff"].template as<value_type>();
     }
-
+    double meshSize() const { return M_meshSize; }
+    void setMeshSize( double h ) { M_meshSize = h; }
 
     /**
      * run the convergence test
      */
     void run();
+
+    std::map<std::string,boost::any> stats() const { return M_stats; }
 
 private:
 
@@ -169,12 +179,13 @@ private:
 private:
 
     backend_ptrtype M_backend;
-    double meshSize;
+    double M_meshSize;
     std::string M_basis_name;
     double mu;
     double penalbc;
 
     boost::shared_ptr<export_type> exporter;
+    std::map<std::string,boost::any> M_stats;
 }; // Stokes
 
 
@@ -207,7 +218,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
                                         _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1).str() ,
                                                       _shape="hypercube",
                                                       _dim=Dim,
-                                                      _h=meshSize,
+                                                      _h=M_meshSize,
                                                       _xmin=-1.,_xmax=1.,
                                                       _ymin=-1.,_ymax=1. ) );
 
@@ -227,7 +238,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto q = V.template element<1>();
 
     Log() << "Data Summary:\n";
-    Log() << "   hsize = " << meshSize << "\n";
+    Log() << "   hsize = " << M_meshSize << "\n";
     Log() << "  export = " << this->vm().count("export") << "\n";
     Log() << "      mu = " << mu << "\n";
     Log() << " bccoeff = " << penalbc << "\n";
@@ -239,7 +250,14 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
     Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 
+    M_stats["h"]= M_meshSize;
+    M_stats["space.nelts"]= Xh->mesh()->numElements();
+    M_stats["space.ndof"]= Xh->nLocalDof();
+    M_stats["space.ndof.u"]= Xh->template functionSpace<0>()->nDof();
+    M_stats["space.ndof.p"]= Xh->template functionSpace<1>()->nDof();
+    M_stats["space.time"]= t.elapsed();
     Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n"; t.restart() ;
+
 
 
     //# marker5 #
@@ -272,15 +290,18 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     // right hand side
     auto F = M_backend->newVector( Xh );
     form1( Xh, F, _init=true );
+    M_stats["vector.init"]=t.elapsed();
     Log() << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
     form1( Xh, F ) = integrate( elements(mesh), trans(f)*id(v) );
+    M_stats["vector.assembly.source"]=subt.elapsed();
     Log() << "   o time for rhs force terms: " << subt.elapsed() << "\n";subt.restart();
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form1( Xh, F, _init=true ) += integrate( _range=boundaryfaces(mesh), _expr=trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ), _quad=_Q<10>() );
+        form1( Xh, F, _init=true ) += integrate( _range=boundaryfaces(mesh), _expr=trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
+        M_stats["vector.assembly.dirichlet"]=subt.elapsed();
         Log() << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
-
+    M_stats["vector.assembly"]=t.elapsed();
     Log() << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     /*
@@ -290,6 +311,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     t.restart();
     auto D = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, D, _init=true );
+    M_stats["matrix.init"]=t.elapsed();
     Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     subt.restart();
@@ -316,13 +338,14 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
         form2( Xh, Xh, D ) += on( boundaryfaces(mesh), u, F, u_exact );
         Log() << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
+    M_stats["matrix.assembly"]=t.elapsed();
     Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
 
     t.restart();
 
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
-
+    M_stats["solver.time"]=t.elapsed();
     Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";
 
 
@@ -342,16 +365,16 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     for(auto iter = nNz.begin();iter!=nNz.end();++iter)
       nnz += (*iter) ;
     Log() << "[stokes] matrix NNZ "<< nnz << "\n";
-
-    double u_errorL2 = integrate( _range=elements(mesh), _expr=trans(idv(u)-u_exact)*(idv(u)-u_exact), _quad=_Q<10>() ).evaluate()( 0, 0 );
+    M_stats["matrix.nnz"]=nnz;
+    double u_errorL2 = integrate( _range=elements(mesh), _expr=trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
     Log() << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
+    M_stats["||u_error||_L2"]=math::sqrt( u_errorL2 );
 
-
-    double p_errorL2 = integrate( _range=elements(mesh), _expr=(idv(p)-p_exact)*(idv(p)-p_exact), _quad=_Q<10>() ).evaluate()( 0, 0 );
+    double p_errorL2 = integrate( _range=elements(mesh), _expr=(idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
     Log() << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
-
+    M_stats["||p_error||_L2"]=math::sqrt( p_errorL2 );
     Log() << "[stokes] solve for D done\n";
 
     double mean_div_u = integrate( elements(mesh), divv(u) ).evaluate()( 0, 0 );

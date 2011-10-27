@@ -28,14 +28,22 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel\;
-    Feel::Assert::setLog( \"stokes-.assert\")\;
+    Feel::Assert::setLog( \"stokes.assert\")\;
     const int nDim = 2\;
     typedef Feel::Stokes<nDim, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Simplex> stokes_type\;
-    stokes_type stokes( \"cr1p0\", argc, argv, makeAbout(), makeOptions() )\;
-    stokes.run()\;
+    std::vector<std::map<std::string,boost::any> > stats\;
+    for(int l = 0\; l <= 3\; ++l )
+    {
+      stokes_type stokes( \"cr1p0\", argc, argv, makeAbout(), makeOptions() )\;
+      double meshSize= stokes.meshSize()/std::pow(2.,l)\;
+      stokes.setMeshSize( meshSize )\;
+      stokes.run()\;
+      stats.push_back( stokes.stats() )\;
+    }
+   printStats( std::cout, stats )\;
 }")
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_stokes_cr1p0.cpp ${CR1P0})
-add_executable(feel_perf_stokes_cr1p0  feel_perf_stokes_cr1p0.cpp )
+add_executable(feel_perf_stokes_cr1p0  feel_perf_stokes_cr1p0.cpp printstats.cpp)
 target_link_libraries(feel_perf_stokes_cr1p0 ${FEEL_LIBRARIES} )
 
 foreach( fem cr1p0 p2p1 p3p2 p4p3 p5p4 )
@@ -71,11 +79,19 @@ main( int argc, char** argv )
 
     const int nDim = 2\;
     typedef Feel::Stokes<nDim, Lagrange<${N}, Vectorial>,Lagrange<${P}, Scalar>, Simplex> stokes_type\;
-    stokes_type stokes( \"p${N}p${P}\", argc, argv, makeAbout(), makeOptions() )\;
-    stokes.run()\;
+    std::vector<std::map<std::string,boost::any> > stats\;
+    for(int l = 0\; l <= 3\; ++l )
+    {
+      stokes_type stokes( \"p${N}p${P}\", argc, argv, makeAbout(), makeOptions() )\;
+      double meshSize= stokes.meshSize()/std::pow(2.,l)\;
+      stokes.setMeshSize( meshSize )\;
+      stokes.run()\;
+      stats.push_back( stokes.stats() )\;
+    }
+   printStats( std::cout, stats )\;
 }")
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_stokes_p${N}p${P}.cpp ${LAG})
-add_executable(feel_perf_stokes_p${N}p${P}  feel_perf_stokes_p${N}p${P}.cpp )
+add_executable(feel_perf_stokes_p${N}p${P}  feel_perf_stokes_p${N}p${P}.cpp printstats.cpp)
 target_link_libraries(feel_perf_stokes_p${N}p${P} ${FEEL_LIBRARIES} )
 endforeach()
 
