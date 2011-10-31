@@ -36,7 +36,7 @@
 
 
 #include <feel/options.hpp>
-#include <feel/feelcore/application.hpp>
+#include <feel/feelcore/simget.hpp>
 
 #include <feel/feelalg/backend.hpp>
 
@@ -55,53 +55,6 @@
 
 void printStats( std::ostream& out, std::vector<std::map<std::string,boost::any> > & stats);
 
-/**
- * This routine returns the list of options using the
- * boost::program_options library. The data returned is typically used
- * as an argument of a Feel::Application subclass.
- *
- * \return the list of options
- */
-inline
-Feel::po::options_description
-makeOptions()
-{
-    Feel::po::options_description stokesoptions("Stokes options");
-    stokesoptions.add_options()
-        ("penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
-        ("f", Feel::po::value<double>()->default_value( 0 ), "forcing term")
-        ("mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component")
-        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence")
-        ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
-    return stokesoptions.add( Feel::feel_options() ) ;
-}
-
-
-/**
- * This routine defines some information about the application like
- * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Feel::Application subclass.
- *
- * \return some data about the application.
- */
-inline
-Feel::AboutData
-makeAbout()
-{
-    Feel::AboutData about( "stokes" ,
-                           "stokes" ,
-                           "0.1",
-                           "Stokes equation on simplices or simplex products",
-                           Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2011 Universite de Grenoble 1 (Joseph Fourier)");
-
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-   return about;
-
-}
 
 
 namespace Feel
@@ -117,9 +70,9 @@ template<int Dim,
          template<uint16_type,uint16_type,uint16_type> class Entity>
 class Stokes
     :
-        public Application
+        public Simget
 {
-    typedef Application super;
+    typedef Simget super;
 public:
 
     typedef double value_type;
@@ -148,9 +101,9 @@ public:
     typedef Exporter<mesh_type> export_type;
 
     Stokes( std::string const& basis_name,
-            int argc, char** argv, AboutData const& ad, po::options_description const& od )
+            po::variables_map const& vm, AboutData const& ad )
         :
-        super( argc, argv, ad, od ),
+        super( vm, ad ),
         M_backend( backend_type::build( this->vm() ) ),
         M_meshSize( this->vm()["hsize"].template as<double>() ),
         M_basis_name( basis_name ),
@@ -159,15 +112,11 @@ public:
         mu = this->vm()["mu"].template as<value_type>();
         penalbc = this->vm()["bccoeff"].template as<value_type>();
     }
-    double meshSize() const { return M_meshSize; }
-    void setMeshSize( double h ) { M_meshSize = h; }
 
     /**
      * run the convergence test
      */
     void run();
-
-    std::map<std::string,boost::any> stats() const { return M_stats; }
 
 private:
 
@@ -179,13 +128,11 @@ private:
 private:
 
     backend_ptrtype M_backend;
-    double M_meshSize;
     std::string M_basis_name;
     double mu;
     double penalbc;
 
     boost::shared_ptr<export_type> exporter;
-    std::map<std::string,boost::any> M_stats;
 }; // Stokes
 
 
