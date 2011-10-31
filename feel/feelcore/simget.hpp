@@ -83,7 +83,7 @@ public:
     /**
      * constructor with a \c variables_map
      */
-    Simget( po::variables_map const& vm ) : M_vm( vm ), M_about( "", "", "" ) {}
+    Simget( po::variables_map const& vm );
 
     /**
      * constructor with an \c AboutData that describes the simget
@@ -118,6 +118,9 @@ public:
     /** @name Accessors
      */
     //@{
+
+    //! return the name of the simget
+    virtual std::string name() const { return M_about.appName(); }
 
     //! \return the mpi communicator
     mpi::communicator comm() const { return M_comm; }
@@ -175,13 +178,15 @@ protected:
      */
     Simget& changeRepository( boost::format fmt);
 
+protected:
+    double M_meshSize;
+    ptree::ptree M_stats;
 private:
     mpi::communicator M_comm;
     po::variables_map M_vm;
     AboutData M_about;
 
-    double M_meshSize;
-    ptree::ptree M_stats;
+
 };
 
 

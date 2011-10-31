@@ -442,16 +442,26 @@ Application::~Application()
 
 #endif // 0
 }
-
+po::options_description
+benchmark_options( std::string const& prefix  )
+{
+    po::options_description benchopt( "Benchmarking options" );
+    benchopt.add_options()
+        (prefixvm(prefix,"benchmark.nlevels").c_str(), po::value<int>()->default_value(1), "number of mesh levels to benchmark")
+        (prefixvm(prefix,"benchmark.hsize").c_str(), po::value<double>()->default_value(0.1), "default mesh size")
+        (prefixvm(prefix,"benchmark.refine").c_str(), po::value<double>()->default_value(2), "refine ratio for meshes")
+        ;
+    // make sense only for global benchmark options
+    if ( prefix.empty() )
+        benchopt.add_options()
+            ("benchmark.only", po::value<std::string>()->default_value(""), "benchmarks to run, empty means all")
+            ;
+    return benchopt;
+}
 void
 Application::doOptions( int argc, char** argv )
 {
     try{
-        po::options_description runopt( "Run options" );
-        runopt.add_options()
-            ("run.nlevels", po::value<int>()->default_value(1), "number of mesh levels to run")
-            ("run.hsize", po::value<double>()->default_value(0.1), "default mesh size")
-            ;
         po::options_description generic( "Generic options" );
         generic.add_options()
             ("authors", "prints the authors list")
@@ -468,7 +478,7 @@ Application::doOptions( int argc, char** argv )
         po::options_description debug( "Debugging options" );
         debug.add_options()
             ("debug", po::value<std::string>()->default_value( "" ), "specify a debugging area list");
-        _M_desc.add( generic ).add( debug ).add( runopt );
+        _M_desc.add( generic ).add( debug ).add( benchmark_options() );
 
         this->parseAndStoreOptions( po::command_line_parser(argc, argv), true );
         processGenericOptions();
@@ -749,17 +759,29 @@ Application::add( Simget* simget )
 void
 Application::run()
 {
+    std::string runonly = _M_vm["benchmark.only"].as<std::string>();
     for( auto i = M_simgets.begin(), end = M_simgets.end(); i != end; ++i )
     {
-        std::vector<ptree::ptree> stats;
-        for(int l = 0; l < _M_vm["run.nlevels"].as<int>(); ++l )
+        if ( ( runonly.empty() == false  ) &&
+             runonly.find( i->name() ) == std::string::npos )
+            continue;
+
+
+        std::string s1 = prefixvm(i->name(),"benchmark.nlevels");
+        int nlevels = _M_vm.count( s1 )?_M_vm[s1].as<int>():_M_vm["benchmark.nlevels"].as<int>();
+        std::string s2 = prefixvm(i->name(),"benchmark.hsize");
+        double hsize = _M_vm.count( s2 )?_M_vm[s2].as<double>():_M_vm["benchmark.hsize"].as<double>();
+        std::string s3 = prefixvm(i->name(),"benchmark.refine");
+        double refine = _M_vm.count( s3 )?_M_vm[s3].as<double>():_M_vm["benchmark.refine"].as<double>();
+
+        for(int l = 0; l < nlevels; ++l )
         {
-            double meshSize= _M_vm["run.hsize"].as<double>()/std::pow(_M_vm["run.refine"].as<double>(),l);
+            double meshSize= hsize/std::pow(refine,l);
             i->setMeshSize( meshSize );
             i->run();
-            stats.push_back( i->stats() );
+            M_stats[i->name()].push_back( i->stats() );
         }
-        i->print( std::cout, stats );
+
     }
 }
 
@@ -774,5 +796,127 @@ Application::run( const double* X, unsigned long P, double* Y, unsigned long N )
     }
 }
 
+void
+printErrors( std::ostream& out, std::vector<ptree::ptree> const& stats, std::string const& key )
+{
+    out << std::setw(10) << std::right << "levels"
+        << std::setw(10) << std::right << "h";
+    BOOST_FOREACH(auto v, stats.front().get_child(key))
+        {
+            out << std::setw(15) << std::right << v.first
+                << std::setw(15) << std::right << "ROC";
+        }
+    out << "\n";
+    int l=1;
+    for( auto it = stats.begin(), en =stats.end(); it!=en; ++it,++l )
+    {
+        //std::for_each( it->begin(),it->end(), []( std::pair<std::string,boost::any> const& o ) { std::cout << o.first << "\n"; } );
+        //std::map<std::string,boost::any> data = *it;
+        //std::map<std::string,boost::any> datap;
+        double rocu = 1, rocp=1;
+        double h  = it->get<double>("h");
+        double hp = h;
+        out << std::right << std::setw(10) << l
+            << std::right << std::setw(10) << std::fixed  << std::setprecision( 4 ) << h;
+        if ( l > 1 )
+            hp = boost::prior(it)->get<double>("h");
+        BOOST_FOREACH(auto v, it->get_child(key))
+        {
+            double u  = it->get<double>( key+"."+v.first );
+            double up = u;
+            double roc = 1;
+            if ( l > 1 )
+            {
+                up  = boost::prior(it)->get<double>( key+"."+v.first );
+                roc = std::log10( up/u )/std::log10( hp/h );
+            }
+            out << std::right << std::setw(15) << std::scientific << std::setprecision( 2 ) << u
+                << std::right << std::setw(15) << std::fixed << std::setprecision( 2 ) << roc;
+        }
+        out << "\n";
+    }
+}
+void
+printNumbers( std::ostream& out, std::vector<ptree::ptree> const& stats, std::string const& key )
+{
+    out << std::setw(10) << std::right << "levels"
+        << std::setw(10) << std::right << "h";
+    BOOST_FOREACH(auto v, stats.front().get_child(key))
+        {
+            out << std::setw(10) << std::right << v.first;
+        }
+    out << "\n";
+    int l=1;
+    for( auto it = stats.begin(), en =stats.end(); it!=en; ++it,++l )
+    {
+        double h  = it->get<double>("h");
+        out << std::right << std::setw(10) << l
+            << std::right << std::setw(10) << std::fixed  << std::setprecision( 4 ) << h;
+        BOOST_FOREACH(auto v, it->get_child(key))
+        {
+            size_type u  = it->get<size_type>( key+"."+v.first );
+            out << std::right << std::setw(10)  << u;
+        }
+        out << "\n";
+    }
+}
 
+void
+printTime( std::ostream& out, std::vector<ptree::ptree> const& stats, std::string const& key )
+{
+    out << std::setw(10) << std::right << "levels"
+        << std::setw(10) << std::right << "h";
+    BOOST_FOREACH(auto v, stats.front().get_child(key))
+        {
+            out << std::setw(15) << std::right << v.first;
+        }
+    out << "\n";
+    int l=1;
+    for( auto it = stats.begin(), en =stats.end(); it!=en; ++it,++l )
+    {
+        double h  = it->get<double>("h");
+        out << std::right << std::setw(10) << l
+            << std::right << std::setw(10) << std::fixed  << std::setprecision( 4 ) << h;
+        BOOST_FOREACH(auto v, it->get_child(key))
+        {
+            double u  = it->get<double>( key+"."+v.first );
+            out << std::right << std::setw(15) << std::scientific << std::setprecision( 2 ) << u;
+        }
+        out << "\n";
+    }
+}
+
+void
+Application::printStats( std::ostream& out, std::vector<std::string> const& keys ) const
+{
+    std::string runonly = _M_vm["benchmark.only"].as<std::string>();
+    for( auto i = M_simgets.begin(), end = M_simgets.end(); i != end; ++i )
+    {
+        if ( ( runonly.empty() == false  ) &&
+             runonly.find( i->name() ) == std::string::npos )
+            continue;
+        std::cout << "================================================================================\n";
+        std::cout << "Simulation " << i->name() << "\n";
+        BOOST_FOREACH( auto key, keys )
+        {
+            std::cout << "------------------------------------------------------------\n";
+            std::cout << "Key: " << key << "\n";
+            if ( key.find("e.") != std::string::npos )
+            {
+                if ( M_stats.find(i->name()) != M_stats.end() )
+                    printErrors( out, M_stats.find(i->name())->second, key );
+            }
+            if ( key.find("n.") != std::string::npos )
+            {
+                if ( M_stats.find(i->name()) != M_stats.end() )
+                    printNumbers( out, M_stats.find(i->name())->second, key );
+            }
+            if ( key.find("t.") != std::string::npos )
+            {
+                if ( M_stats.find(i->name()) != M_stats.end() )
+                    printTime( out, M_stats.find(i->name())->second, key );
+            }
+        }
+    }
+}
 }
