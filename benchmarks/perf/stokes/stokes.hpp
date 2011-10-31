@@ -250,12 +250,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
     Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 
-    M_stats["h"]= M_meshSize;
-    M_stats["space.nelts"]= Xh->mesh()->numElements();
-    M_stats["space.ndof"]= Xh->nLocalDof();
-    M_stats["space.ndof.u"]= Xh->template functionSpace<0>()->nDof();
-    M_stats["space.ndof.p"]= Xh->template functionSpace<1>()->nDof();
-    M_stats["space.time"]= t.elapsed();
+    M_stats["mesh.h"]= M_meshSize;
+    M_stats["mesh.nelts"]= Xh->mesh()->numElements();
+    M_stats["n.space.ndof"]= Xh->nLocalDof();
+    M_stats["n.space.ndof.u"]= Xh->template functionSpace<0>()->nDof();
+    M_stats["n.space.ndof.p"]= Xh->template functionSpace<1>()->nDof();
+    M_stats["t.init.space"]= t.elapsed();
     Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
 
@@ -290,18 +290,18 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     // right hand side
     auto F = M_backend->newVector( Xh );
     form1( Xh, F, _init=true );
-    M_stats["vector.init"]=t.elapsed();
+    M_stats["t.init.vector"]=t.elapsed();
     Log() << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
     form1( Xh, F ) = integrate( elements(mesh), trans(f)*id(v) );
-    M_stats["vector.assembly.source"]=subt.elapsed();
+    M_stats["t.assembly.vector.source"]=subt.elapsed();
     Log() << "   o time for rhs force terms: " << subt.elapsed() << "\n";subt.restart();
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
         form1( Xh, F, _init=true ) += integrate( _range=boundaryfaces(mesh), _expr=trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
-        M_stats["vector.assembly.dirichlet"]=subt.elapsed();
+        M_stats["t.assembly.vector.dirichlet"]=subt.elapsed();
         Log() << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
-    M_stats["vector.assembly"]=t.elapsed();
+    M_stats["t.assembly.vector"]=t.elapsed();
     Log() << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     /*
@@ -311,15 +311,17 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     t.restart();
     auto D = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, D, _init=true );
-    M_stats["matrix.init"]=t.elapsed();
+    M_stats["t.init.matrix"]=t.elapsed();
     Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     subt.restart();
     form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(trans(dxt(u))*dx(v)+trans(dyt(u))*dy(v)));
+    M_stats["t.assembly.matrix.diffusion"]=subt.elapsed();
     Log() << "   o time for diffusion terms: " << subt.elapsed() << "\n";subt.restart();
 
     form2( Xh, Xh, D )+=integrate( _range=elements(mesh),_expr=-div(v)*idt(p));
     form2( Xh, Xh, D )+=integrate( _range=elements(mesh),_expr=divt(u)*id(q) );
+    M_stats["t.assembly.matrix.up"]=subt.elapsed();
     Log() << "   o time for velocity/pressure terms: " << subt.elapsed() << "\n";subt.restart();
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
@@ -327,6 +329,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
         form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
         form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(u) );
         form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*trans(idt(u))*id(v)/hFace() );
+        M_stats["t.assembly.matrix.dirichlet"]=subt.elapsed();
         Log() << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
 
@@ -336,16 +339,17 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     if ( this->vm()[ "bctype" ].template as<int>() == 0  )
     {
         form2( Xh, Xh, D ) += on( boundaryfaces(mesh), u, F, u_exact );
+        M_stats["t.assembly.matrix.dirichlet"]=subt.elapsed();
         Log() << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
-    M_stats["matrix.assembly"]=t.elapsed();
+    M_stats["t,assembly.matrix"]=t.elapsed();
     Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
 
     t.restart();
 
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
-    M_stats["solver.time"]=t.elapsed();
+    M_stats["t.solver"]=t.elapsed();
     Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";
 
 
@@ -365,16 +369,16 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     for(auto iter = nNz.begin();iter!=nNz.end();++iter)
       nnz += (*iter) ;
     Log() << "[stokes] matrix NNZ "<< nnz << "\n";
-    M_stats["matrix.nnz"]=nnz;
+    M_stats["n.matrix.nnz"]=nnz;
     double u_errorL2 = integrate( _range=elements(mesh), _expr=trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
     Log() << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
-    M_stats["||u_error||_L2"]=math::sqrt( u_errorL2 );
+    M_stats["e.l2.u"]=math::sqrt( u_errorL2 );
 
     double p_errorL2 = integrate( _range=elements(mesh), _expr=(idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
     Log() << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
-    M_stats["||p_error||_L2"]=math::sqrt( p_errorL2 );
+    M_stats["e.l2.p"]=math::sqrt( p_errorL2 );
     Log() << "[stokes] solve for D done\n";
 
     double mean_div_u = integrate( elements(mesh), divv(u) ).evaluate()( 0, 0 );

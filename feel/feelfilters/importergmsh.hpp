@@ -533,7 +533,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             ++__p;
         }
     }
-    std::cout << "done reading mesh\n";
+
     // make sure that we have read everything
     __is >> __buf;
     Debug( 8011 ) << "buf: "<< __buf << "\n";
