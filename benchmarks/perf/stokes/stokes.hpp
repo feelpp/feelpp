@@ -104,19 +104,21 @@ public:
             po::variables_map const& vm, AboutData const& ad )
         :
         super( vm, ad ),
-        M_backend( backend_type::build( this->vm() ) ),
-        M_meshSize( this->vm()["hsize"].template as<double>() ),
+        M_backend(),
         M_basis_name( basis_name ),
-        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
+        exporter()
     {
         mu = this->vm()["mu"].template as<value_type>();
         penalbc = this->vm()["bccoeff"].template as<value_type>();
     }
 
+    std::string name() const { return M_basis_name; }
+
     /**
      * run the convergence test
      */
     void run();
+    void run( const double* X, unsigned long P, double* Y, unsigned long N ) { run(); }
 
 private:
 
@@ -140,12 +142,6 @@ template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_
 void
 Stokes<Dim, BasisU, BasisP, Entity>::run()
 {
-    if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
-
     using namespace Feel::vf;
 
     if ( this->vm().count( "nochdir" ) == false )
@@ -154,9 +150,14 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
                                 % this->about().appName()
                                 % convex_type::name()
                                 % M_basis_name
-                                % this->vm()["hsize"].template as<double>() );
+                                % meshSize() );
     }
 
+    //! init backend
+    M_backend = backend_type::build( this->vm() );
+    exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
+
+    boost::timer t;
     /*
      * First we create the mesh
      */
@@ -169,12 +170,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
                                                       _xmin=-1.,_xmax=1.,
                                                       _ymin=-1.,_ymax=1. ) );
 
-
+    M_stats.put("t.init.mesh",t.elapsed());t.restart();
     /*
      * The function space and some associate elements are then defined
      */
     //# marker4 #
-    boost::timer t;
+
     space_ptrtype Xh = space_type::New( mesh );
 
     auto U = Xh->element( "u" );
@@ -197,12 +198,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
     Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 
-    M_stats["mesh.h"]= M_meshSize;
-    M_stats["mesh.nelts"]= Xh->mesh()->numElements();
-    M_stats["n.space.ndof"]= Xh->nLocalDof();
-    M_stats["n.space.ndof.u"]= Xh->template functionSpace<0>()->nDof();
-    M_stats["n.space.ndof.p"]= Xh->template functionSpace<1>()->nDof();
-    M_stats["t.init.space"]= t.elapsed();
+    M_stats.put("h",M_meshSize);
+    M_stats.put("n.space.nelts",Xh->mesh()->numElements());
+    M_stats.put("n.space.ndof",Xh->nLocalDof());
+    M_stats.put("n.space.ndof.u",Xh->template functionSpace<0>()->nDof());
+    M_stats.put("n.space.ndof.p",Xh->template functionSpace<1>()->nDof());
+    M_stats.put("t.init.space",t.elapsed());
     Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
 
@@ -214,41 +215,43 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     //# marker6 #
     // total stress tensor (trial)
-    auto SigmaNt = -idt(p)*N()+mu*deft*N();
+    auto SigmaNt = -idt(p)*N()+mu*dnt(u);
 
     // total stress tensor (test)
-    auto SigmaN = -id(p)*N()+mu*def*N();
+    auto SigmaN = -id(p)*N()+mu*dn(u);
     //# endmarker6 #
 
     // u exact solution
     //auto u_exact = vec(cos(Px())*cos(Py()), sin(Px())*sin(Py()));
-    auto u_exact = vec(-exp(Px())*(Py()*cos(Py())+sin(Py())), exp(Px())*Py()*sin(Py()));
+    auto u_exact = val(vec(-exp(Px())*(Py()*cos(Py())+sin(Py())), exp(Px())*Py()*sin(Py())));
 
     // this is the exact solution which has zero mean : the mean of
     // cos(x)*sin(y) is sin(1)*(1-cos(1))) on [0,1]^2
     //auto p_exact = cos(Px())*sin(Py())-(sin(1.0)*(1.-cos(1.0)));
-    auto p_exact = 2.0*exp(Px())*sin(Py());
+    auto p_exact = val(2.0*exp(Px())*sin(Py()));
 
     // f is such that f = \Delta u_exact + \nabla p_exact
     //auto f = vec( (2*cos(Px())*cos(Py())-sin(Px())*sin(Py())),
     //              2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) );
-    auto f = vec(cst(0.),cst(0.)) ;
+    auto f = val(vec(cst(0.),cst(0.)));
     boost::timer subt;
     // right hand side
     auto F = M_backend->newVector( Xh );
     form1( Xh, F, _init=true );
-    M_stats["t.init.vector"]=t.elapsed();
+    M_stats.put("t.init.vector",t.elapsed());
     Log() << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
-    form1( Xh, F ) = integrate( elements(mesh), trans(f)*id(v) );
-    M_stats["t.assembly.vector.source"]=subt.elapsed();
+    //form1( Xh, F ) = integrate( elements(mesh), trans(f)*id(v) );
+    //M_stats.put("t.assembly.vector.source",subt.elapsed());
     Log() << "   o time for rhs force terms: " << subt.elapsed() << "\n";subt.restart();
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form1( Xh, F, _init=true ) += integrate( _range=boundaryfaces(mesh), _expr=trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
-        M_stats["t.assembly.vector.dirichlet"]=subt.elapsed();
+        form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=-inner(u_exact,SigmaN) );
+        M_stats.put("t.assembly.vector.dirichletup",subt.elapsed());subt.restart();
+        form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*inner(u_exact,id(v))/hFace() );
+        M_stats.put("t.assembly.vector.dirichletp",subt.elapsed());
         Log() << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
-    M_stats["t.assembly.vector"]=t.elapsed();
+    M_stats.put("t.assembly.vector.total",t.elapsed());
     Log() << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     /*
@@ -258,25 +261,27 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     t.restart();
     auto D = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, D, _init=true );
-    M_stats["t.init.matrix"]=t.elapsed();
+    M_stats.put("t.init.matrix",t.elapsed());
     Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     subt.restart();
-    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(trans(dxt(u))*dx(v)+trans(dyt(u))*dy(v)));
-    M_stats["t.assembly.matrix.diffusion"]=subt.elapsed();
+    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(dxt(u),dx(v))+inner(dyt(u),dy(v))));
+    M_stats.put("t.assembly.matrix.diffusion",subt.elapsed());
     Log() << "   o time for diffusion terms: " << subt.elapsed() << "\n";subt.restart();
 
     form2( Xh, Xh, D )+=integrate( _range=elements(mesh),_expr=-div(v)*idt(p));
     form2( Xh, Xh, D )+=integrate( _range=elements(mesh),_expr=divt(u)*id(q) );
-    M_stats["t.assembly.matrix.up"]=subt.elapsed();
+    M_stats.put("t.assembly.matrix.up",subt.elapsed());
     Log() << "   o time for velocity/pressure terms: " << subt.elapsed() << "\n";subt.restart();
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
-        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(u) );
-        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*trans(idt(u))*id(v)/hFace() );
-        M_stats["t.assembly.matrix.dirichlet"]=subt.elapsed();
+        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-inner(SigmaNt,id(v)) );
+        M_stats.put("t.assembly.matrix.dirichlet1",subt.elapsed());subt.restart();
+        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-inner(SigmaN,idt(u)) );
+        M_stats.put("t.assembly.matrix.dirichlet2",subt.elapsed());subt.restart();
+        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*inner(idt(u),id(v))/hFace() );
+        M_stats.put("t.assembly.matrix.dirichlet3",subt.elapsed());subt.restart();
         Log() << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
 
@@ -286,17 +291,17 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     if ( this->vm()[ "bctype" ].template as<int>() == 0  )
     {
         form2( Xh, Xh, D ) += on( boundaryfaces(mesh), u, F, u_exact );
-        M_stats["t.assembly.matrix.dirichlet"]=subt.elapsed();
+        M_stats.put("t.assembly.matrix.dirichlet",subt.elapsed());
         Log() << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
-    M_stats["t,assembly.matrix"]=t.elapsed();
+    M_stats.put("t.assembly.matrix.total",t.elapsed());
     Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
 
     t.restart();
 
-    M_backend->solve( _matrix=D, _solution=U, _rhs=F );
-    M_stats["t.solver"]=t.elapsed();
+    M_backend->solve( _matrix=D, _solution=U, _rhs=F, _constant_null_space=true );
+    M_stats.put("t.solver.total",t.elapsed());
     Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";
 
 
@@ -316,16 +321,16 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     for(auto iter = nNz.begin();iter!=nNz.end();++iter)
       nnz += (*iter) ;
     Log() << "[stokes] matrix NNZ "<< nnz << "\n";
-    M_stats["n.matrix.nnz"]=nnz;
+    M_stats.put("n.matrix.nnz",nnz);
     double u_errorL2 = integrate( _range=elements(mesh), _expr=trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
     Log() << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
-    M_stats["e.l2.u"]=math::sqrt( u_errorL2 );
+    M_stats.put("e.l2.u",math::sqrt( u_errorL2 ));
 
     double p_errorL2 = integrate( _range=elements(mesh), _expr=(idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
     Log() << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
-    M_stats["e.l2.p"]=math::sqrt( p_errorL2 );
+    M_stats.put("e.l2.p",math::sqrt( p_errorL2 ));
     Log() << "[stokes] solve for D done\n";
 
     double mean_div_u = integrate( elements(mesh), divv(u) ).evaluate()( 0, 0 );
@@ -333,6 +338,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
     double div_u_error_L2 = integrate( elements(mesh), divv(u)*divv(u) ).evaluate()( 0, 0 );
+    M_stats.put("e.l2.div_u",math::sqrt( div_u_error_L2 ));
     Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 
