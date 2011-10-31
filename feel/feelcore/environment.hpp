@@ -179,7 +179,7 @@ public:
     static boost::tuple<std::string,bool> systemConfigRepository();
 
     //! change the directory where the results are stored
-    static void changeRepository( boost::format fmt );
+    static void changeRepository( boost::format fmt, std::string const& = "logfile" );
 
     //! get  \c variables_map from \c options_description \p desc
     static po::variables_map vm( po::options_description const& desc );
