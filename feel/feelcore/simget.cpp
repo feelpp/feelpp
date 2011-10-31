@@ -33,6 +33,11 @@
 
 namespace Feel
 {
+Simget::Simget(  po::variables_map const& vm )
+    :
+    M_vm( vm ),
+    M_about( "", "", "" )
+{}
 
 Simget&
 Simget::changeRepository( boost::format fmt)
@@ -45,28 +50,27 @@ void
 Simget::print( std::ostream& out, std::vector<ptree::ptree> & stats)
 {
     const std::string key = M_about.appName();
-    ptree::write_xml(key+".dat", stats.front());
-#if 0
-    if ( stats.count( key + ".e") )
+
+    if ( stats.front().count( "e") )
     {
         out << std::setw(10) << std::right << "levels"
             << std::setw(10) << std::right << "h";
-        BOOST_FOREACH(ptree::value_type &v,
-                      pt.get_child(key + ".e"))
+        BOOST_FOREACH(ptree::ptree::value_type &v,
+                      stats.front().get_child("e"))
         {
-            out << std::setw(15) << std::right << "e_u"
-                << std::setw(15) << std::right << "ROC"
-                << std::setw(15) << std::right << "e_p"
-                << std::setw(15) << std::right << "ROC"
-                << "\n" ;
-            int l=1;
+            out << std::setw(15) << std::right << v.first
+                << std::setw(15) << std::right << "ROC";
+        }
+        out << "\n" ;
+        int l=1;
         for( auto it = stats.begin(), en =stats.end(); it!=en; ++it,++l )
         {
             //std::for_each( it->begin(),it->end(), []( std::pair<std::string,boost::any> const& o ) { std::cout << o.first << "\n"; } );
-            std::map<std::string,boost::any> data = *it;
-            std::map<std::string,boost::any> datap;
+            //std::map<std::string,boost::any> data = *it;
+            //std::map<std::string,boost::any> datap;
             double rocu = 1, rocp=1;
-            double h  = boost::any_cast<double>( data.find("h")->second ) ;
+            double h  = it->get<double>("h");
+#if 0
             double u  = boost::any_cast<double>( data.find("||u_error||_L2")->second );
             double p  =  boost::any_cast<double>( data.find("||p_error||_L2")->second );
 
@@ -80,15 +84,17 @@ Simget::print( std::ostream& out, std::vector<ptree::ptree> & stats)
                 rocu = std::log10( up/u )/std::log10( hp/h );
                 rocp = std::log10( pp/p )/std::log10( hp/h );
             }
+#endif
             out << std::right << std::setw(10) << l
                 << std::right << std::setw(10) << std::fixed  << std::setprecision( 4 ) << h
-                << std::right << std::setw(15) << std::scientific << std::setprecision( 2 ) << u
-                << std::right << std::setw(15) << std::fixed << std::setprecision( 2 ) << rocu
-                << std::right << std::setw(15) << std::scientific << std::setprecision( 2 ) << p
-                << std::right << std::setw(15) << std::fixed << std::setprecision( 2 ) << rocp
+                //<< std::right << std::setw(15) << std::scientific << std::setprecision( 2 ) << u
+                //<< std::right << std::setw(15) << std::fixed << std::setprecision( 2 ) << rocu
+                //<< std::right << std::setw(15) << std::scientific << std::setprecision( 2 ) << p
+                //<< std::right << std::setw(15) << std::fixed << std::setprecision( 2 ) << rocp
                 << "\n";
         }
-
+    }
+#if 0
         out << std::setw(10) << std::right << "levels"
             << std::setw(10) << std::right << "h"
             << std::setw(10) << std::right << "nElts"
