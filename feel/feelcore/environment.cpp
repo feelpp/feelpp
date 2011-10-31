@@ -240,7 +240,7 @@ Environment::systemConfigRepository()
 }
 
 void
-Environment::changeRepository( boost::format fmt )
+Environment::changeRepository( boost::format fmt, std::string const& logfilename )
 {
     fs::path rep_path;
 
@@ -264,7 +264,7 @@ Environment::changeRepository( boost::format fmt )
 
     ::chdir( rep_path.string().c_str() );
 
-    setLogs("toto");
+    setLogs(logfilename);
 }
 
 po::variables_map

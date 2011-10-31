@@ -38,6 +38,8 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -85,6 +87,7 @@ extern "C"
 namespace Feel
 {
 namespace fs = boost::filesystem;
+namespace ptree = boost::property_tree;
 
 
 FEEL_NO_EXPORT
@@ -444,6 +447,11 @@ void
 Application::doOptions( int argc, char** argv )
 {
     try{
+        po::options_description runopt( "Run options" );
+        runopt.add_options()
+            ("run.nlevels", po::value<int>()->default_value(1), "number of mesh levels to run")
+            ("run.hsize", po::value<double>()->default_value(0.1), "default mesh size")
+            ;
         po::options_description generic( "Generic options" );
         generic.add_options()
             ("authors", "prints the authors list")
@@ -460,7 +468,7 @@ Application::doOptions( int argc, char** argv )
         po::options_description debug( "Debugging options" );
         debug.add_options()
             ("debug", po::value<std::string>()->default_value( "" ), "specify a debugging area list");
-        _M_desc.add( generic ).add( debug );
+        _M_desc.add( generic ).add( debug ).add( runopt );
 
         this->parseAndStoreOptions( po::command_line_parser(argc, argv), true );
         processGenericOptions();
@@ -685,7 +693,7 @@ Application::changeRepository( boost::format fmt )
         this->setLogs();
         return *this;
     }
-    Environment::changeRepository( fmt );
+    Environment::changeRepository( fmt, _M_about.appName() );
     this->setLogs();
     return *this;
 }
@@ -743,7 +751,15 @@ Application::run()
 {
     for( auto i = M_simgets.begin(), end = M_simgets.end(); i != end; ++i )
     {
-        i->run();
+        std::vector<ptree::ptree> stats;
+        for(int l = 0; l < _M_vm["run.nlevels"].as<int>(); ++l )
+        {
+            double meshSize= _M_vm["run.hsize"].as<double>()/std::pow(_M_vm["run.refine"].as<double>(),l);
+            i->setMeshSize( meshSize );
+            i->run();
+            stats.push_back( i->stats() );
+        }
+        i->print( std::cout, stats );
     }
 }
 
@@ -757,5 +773,6 @@ Application::run( const double* X, unsigned long P, double* Y, unsigned long N )
         it->run( &X[i*P], P, &Y[i*N], N );
     }
 }
+
 
 }

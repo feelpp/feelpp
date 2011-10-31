@@ -29,12 +29,18 @@
 #ifndef __Simget_H
 #define __Simget_H 1
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/about.hpp>
 #include <feel/feelcore/factory.hpp>
 #include <feel/feelcore/singleton.hpp>
 
 namespace Feel
 {
+namespace ptree = boost::property_tree;
+
 class Application;
 
 /**
@@ -122,12 +128,20 @@ public:
     //! \return the \c AboutData object
     AboutData const& about() const { return M_about; }
 
+    //! return the mesh size
+    double meshSize() const { return M_meshSize; }
+
+    //! return the statistics associated to the simget after calling run
+    ptree::ptree const& stats() const { return M_stats; }
+
     //@}
 
     /** @name  Mutators
      */
     //@{
 
+    //! set the mesh size
+    void setMeshSize( double h ) { M_meshSize= h; }
 
     //@}
 
@@ -145,6 +159,11 @@ public:
      */
     virtual void run( const double* X, unsigned long P, double* Y, unsigned long N ) = 0;
 
+    /**
+     * print statistics from simget
+     */
+    void print( std::ostream& out, std::vector<ptree::ptree> & stats);
+
     //@}
 
 protected:
@@ -160,6 +179,9 @@ private:
     mpi::communicator M_comm;
     po::variables_map M_vm;
     AboutData M_about;
+
+    double M_meshSize;
+    ptree::ptree M_stats;
 };
 
 
