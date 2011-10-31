@@ -122,6 +122,7 @@ void SolverLinearPetsc<T>::init ()
         // Set user-specified  solver and preconditioner types
         this->setPetscSolverType();
         this->setPetscPreconditionerType();
+        this->setPetscConstantNullSpace();
 
         // Set the options from user-input
         // Set runtime options, e.g.,
@@ -151,7 +152,7 @@ void SolverLinearPetsc<T>::init ()
         // Set user-specified  solver and preconditioner types
         this->setPetscSolverType();
         this->setPetscPreconditionerType();
-
+        this->setPetscConstantNullSpace();
         // sets the software that is used to perform the factorization
         PetscPCFactorSetMatSolverPackage(_M_pc,this->matSolverPackageType());
 
@@ -487,7 +488,20 @@ SolverLinearPetsc<T>::getInitialResidual()
 }
 
 
+template <typename T>
+void
+SolverLinearPetsc<T>::setPetscConstantNullSpace()
+{
+    if ( M_constant_null_space )
+    {
+        MatNullSpace nullsp;
 
+        MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_NULL, &nullsp);
+        KSPSetNullSpace(_M_ksp, nullsp);
+        MatNullSpaceDestroy(nullsp);
+    }
+
+}
 
 template <typename T>
 void

@@ -54,7 +54,8 @@ Backend<T>::Backend()
     M_ksp( "gmres" ),
     M_pc( "lu" ),
     M_fieldSplit("additive"),
-    M_pcFactorMatSolverPackage("petsc")
+    M_pcFactorMatSolverPackage("petsc"),
+    M_constant_null_space(false)
 {
 }
 
@@ -76,7 +77,8 @@ Backend<T>::Backend( Backend const& backend )
     M_ksp( backend.M_ksp ),
     M_pc( backend.M_pc ),
     M_fieldSplit( backend.M_fieldSplit ),
-    M_pcFactorMatSolverPackage( backend.M_pcFactorMatSolverPackage )
+    M_pcFactorMatSolverPackage( backend.M_pcFactorMatSolverPackage ),
+    M_constant_null_space(backend.M_constant_null_space)
 {
 }
 template <typename T>
@@ -96,6 +98,7 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     M_pc( vm[prefixvm(prefix,"pc-type")].template as<std::string>() ),
     M_fieldSplit( vm[prefixvm(prefix,"fieldsplit-type")].template as<std::string>() ),
     M_pcFactorMatSolverPackage( vm[prefixvm(prefix,"pc-factor-mat-solver-package-type")].template as<std::string>() ),
+    M_constant_null_space( vm[prefixvm(prefix,"constant-null-space")].template as<bool>() ),
     M_export( vm[prefixvm(prefix,"export-matlab")].template as<std::string>() )
 {
 }
@@ -482,6 +485,7 @@ po::options_description backend_options( std::string const& prefix )
 
         // preconditioner options
         (prefixvm(prefix,"pc-type").c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of preconditioners (lu, ilut, ilutp, diag, id,...)")
+        (prefixvm(prefix,"constant-null-space").c_str(), Feel::po::value<bool>()->default_value( "lu" ), "set the null space to be the constant values")
         (prefixvm(prefix,"pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mump,...)")
 

@@ -274,6 +274,11 @@ public:
     std::string pcType() const { return M_pc; }
 
     /**
+     * return true if the null space is the constant values, false otherwise
+     */
+    bool hasConstantNullSpace() const { return M_constant_null_space; }
+
+    /**
      * \return the type of fieldsplitType
      */
     std::string fieldsplitType() const { return M_fieldSplit; }
@@ -378,12 +383,14 @@ public:
                                         )
                                     (optional
                                      (pc,      (std::string), "lu" )
+                                     (constant_null_space,      (bool), false )
                                      (pcfactormatsolverpackage,  (std::string), "petsc" )
                                      ) )
         {
             M_ksp = ksp;
             M_pc = pc;
             M_pcFactorMatSolverPackage = pcfactormatsolverpackage;
+            M_constant_null_space = constant_null_space;
         }
 
     /**
@@ -467,6 +474,7 @@ public:
                                      (dtolerance,(double), M_dtolerance/*1e5*/)
                                      (reuse_prec,(bool), M_reuse_prec )
                                      (transpose,(bool), false )
+                                     (constant_null_space,(bool), false )
                                      (pc,(std::string),M_pc/*"lu"*/)
                                      (ksp,(std::string),M_ksp/*"gmres"*/)
                                      (pcfactormatsolverpackage,(std::string), M_pcFactorMatSolverPackage)
@@ -479,6 +487,7 @@ public:
                              _maxit=maxit );
 
         this->setSolverType( _pc=pc, _ksp=ksp,
+                             _constant_null_space=constant_null_space,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage);
         // make sure matrix and rhs are closed
         matrix->close();
@@ -661,7 +670,7 @@ private:
     std::string M_pc;
     std::string M_fieldSplit;
     std::string M_pcFactorMatSolverPackage;
-
+    bool M_constant_null_space;
 
     //std::map<std::string,boost::tuple<std::string,std::string> > M_sub;
 
