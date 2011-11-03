@@ -508,6 +508,34 @@ public:
         return _M_faces.erase( position );
     }
 
+    /**
+     * update the faces markers by setting them from the elements markers associated to the face
+     */
+    void updateMarkersFromElements()
+    {
+        face_iterator it;
+        face_iterator en;
+        boost::tie( it, en ) = facesWithProcessId( M_comm.rank() );
+
+        for(  ; it != en; ++it )
+            _M_faces.modify( it,
+                             []( face_type& e )
+                             {
+                                 int tag2_0 = e.isConnectedTo0()?e.element0().marker2():-1;
+                                 int tag2_1 = e.isConnectedTo1()?e.element1().marker2():-1;
+                                 int tag3_0 = e.isConnectedTo0()?e.element0().marker3():-1;
+                                 int tag3_1 = e.isConnectedTo1()?e.element1().marker3():-1;
+                                 if ( (tag2_0 != -1 && tag2_0 == tag2_1) || e.isOnBoundary() )
+                                     e.setMarker2( tag2_0 );
+                                 else
+                                     e.setMarker3( 0 );
+                                 if ( ( tag3_0 != -1 && tag3_0 == tag3_1 ) || e.isOnBoundary() )
+                                     e.setMarker3( tag3_0 );
+                                 else
+                                     e.setMarker3( 0 );
+                             } );
+    }
+
     //@}
 
 private:
