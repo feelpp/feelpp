@@ -783,47 +783,25 @@ public:
     template<typename ElementVecType>
     void updateMarker2( ElementVecType const& evec )
     {
-        UpdaterMarker2<ElementVecType> updaterMarker2( evec );
-
         element_iterator it;
         element_iterator en;
         boost::tie( it, en ) = elementsWithProcessId( M_comm.rank() );
 
         for( ; it != en; ++it )
-            _M_elements.modify( it, updaterMarker2 );
+            _M_elements.modify( it, [&evec]( element_type& e ) { e.setMarker2(  evec.localToGlobal( e.id(), 0, 0 ) ); } );
     }
 
     template<typename ElementVecType>
     void updateMarker3( ElementVecType const& evec )
     {
-        UpdaterMarker3<ElementVecType> updaterMarker3( evec );
-
         element_iterator it;
         element_iterator en;
         boost::tie( it, en ) = elementsWithProcessId( M_comm.rank() );
 
         for( ; it != en; ++it )
-            _M_elements.modify( it, updaterMarker3 );
+            _M_elements.modify( it, [&evec]( element_type& e ) { e.setMarker3(  evec.localToGlobal( e.id(), 0, 0 ) ); } );
     }
     //@}
-
-private:
-
-    template<typename ElementVecType>
-    struct UpdaterMarker2
-    {
-        UpdaterMarker2( ElementVecType const& evec ) : M_evec(evec) {}
-        inline void operator() ( element_type& e ) { e.setMarker2( flag_type( M_evec.localToGlobal( e.id(), size_type(0), 0 ) ) ); }
-        ElementVecType const& M_evec;
-    };
-
-    template<typename ElementVecType>
-    struct UpdaterMarker3
-    {
-        UpdaterMarker3( ElementVecType const& evec ) : M_evec(evec) {}
-        inline void operator() ( element_type& e ) { e.setMarker3( flag_type( M_evec.localToGlobal( e.id(), size_type(0), 0 ) ) ); }
-        ElementVecType const& M_evec;
-    };
 
 private:
     mpi::communicator M_comm;
