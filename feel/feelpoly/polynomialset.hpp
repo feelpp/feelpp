@@ -1692,6 +1692,8 @@ public:
             return _M_phi[i][q](c1,0);
         }
 
+        id_type const& id( uint32_type i, uint32_type q ) const { return _M_phi[i][q]; }
+
         value_type const& id( uint32_type i,
                                uint16_type c1,
                                uint16_type c2,
@@ -1766,6 +1768,8 @@ public:
             return _M_dn[i][q](c1,c2);
         }
 
+        dn_type const& dn( uint16_type i, uint32_type q ) const { return _M_dn[i][q]; }
+
         value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
             return grad( i, c1, c2, q, mpl::int_<rank>() );
@@ -1780,6 +1784,11 @@ public:
         {
             return _M_grad[i][q](c1,c2);
         }
+
+        grad_type const& grad( uint16_type i, uint32_type q ) const { return _M_grad[i][q]; }
+        typename grad_type::ColXpr const& dx( uint16_type i, uint32_type q ) const { return _M_grad[i][q].row(0); }
+        typename grad_type::ColXpr const& dy( uint16_type i, uint32_type q ) const { return _M_grad[i][q].row(1); }
+        typename grad_type::ColXpr const& dz( uint16_type i, uint32_type q ) const { return _M_grad[i][q].row(2); }
 
         /**
          * divergence of the basis function at the q-th point.
