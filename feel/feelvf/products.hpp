@@ -204,8 +204,8 @@ public:
             {
                 if ( Type == 1 )
                 {
-                    for( int c1 = 0; c1 < left_shape::M; ++ c1 )
-                        for( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                        for( int c1 = 0; c1 < left_shape::M; ++ c1 )
                         {
                             M1(c1, c2)=M_l_tensor_expr.evalijq( i, j, c1, c2, q );
                             M2(c1, c2)=M_r_tensor_expr.evalijq( i, j, c1, c2, q );
@@ -218,8 +218,8 @@ public:
             {
                 if ( Type == 1 )
                 {
-                    for( int c1 = 0; c1 < left_shape::M; ++ c1 )
-                        for( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                        for( int c1 = 0; c1 < left_shape::M; ++ c1 )
                         {
                             M1(c1, c2)=M_l_tensor_expr.evaliq( i, c1, c2, q );
                             M2(c1, c2)=M_r_tensor_expr.evaliq( i, c1, c2, q );
@@ -232,8 +232,8 @@ public:
             {
                 if ( Type == 1 )
                 {
-                    for( int c1 = 0; c1 < left_shape::M; ++ c1 )
-                        for( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                        for( int c1 = 0; c1 < left_shape::M; ++ c1 )
                         {
                             M1(c1, c2)=M_l_tensor_expr.evalq( c1, c2, q );
                             M2(c1, c2)=M_r_tensor_expr.evalq( c1, c2, q );
