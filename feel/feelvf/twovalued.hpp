@@ -50,6 +50,7 @@ class SumvExpr
 public:
 
     static const size_type context = ExprT::context;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = ExprT::imorder;
     static const bool imIsPoly = ExprT::imIsPoly;
@@ -331,6 +332,7 @@ class SumExpr
 public:
 
     static const size_type context = ExprT::context;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = ExprT::imorder;
     static const bool imIsPoly = ExprT::imIsPoly;
@@ -578,6 +580,7 @@ class SumTExpr
 public:
 
     static const size_type context = ExprT::context;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = ExprT::imorder;
     static const bool imIsPoly = ExprT::imIsPoly;
@@ -850,6 +853,7 @@ class FaceExprV
 public:
 
     static const size_type context = ExprT::context;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = ExprT::imorder;
     static const bool imIsPoly = ExprT::imIsPoly;

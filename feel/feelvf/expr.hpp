@@ -73,7 +73,7 @@ class ComponentsExpr
 public:
 
     static const size_type context = ExprT::context;
-
+    static const bool is_terminal = false;
     //integration order
     static const uint16_type imorder = ExprT::imorder;
     //the expression is a polynomial type?
@@ -247,6 +247,7 @@ class Expr
 public:
 
     static const size_type context = ExprT::context;
+    static const bool is_terminal = ExprT::is_terminal;
 
     //integration order
     static const uint16_type imorder = ExprT::imorder;
@@ -367,6 +368,11 @@ public:
             return M_tensor_expr.evalij( i, j );
         }
 
+        Eigen::Matrix<value_type, shape::M, shape::N> const&
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
+        {
+            return M_tensor_expr.evalijq( i, j, q );
+        }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -542,6 +548,7 @@ class PrintExpr
 public:
 
     static const size_type context = PrintExprT::context;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = PrintExprT::imorder;
     static const bool imIsPoly = PrintExprT::imIsPoly;
@@ -790,6 +797,7 @@ class Trans
 public:
 
     static const size_type context = ExprT::context;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = ExprT::imorder;
     static const bool imIsPoly = ExprT::imIsPoly;
@@ -970,6 +978,7 @@ public:
     //BOOST_STATIC_ASSERT( ::boost::is_arithmetic<T>::value );
 
     static const size_type context = vm::JACOBIAN;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = 0;
     static const bool imIsPoly = true;
@@ -1147,6 +1156,7 @@ class One
 {
 public:
     static const size_type context = 0;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = 0;
     static const bool imIsPoly = true;
@@ -1331,6 +1341,7 @@ class UnaryPlus
 public:
 
     static const size_type context = ExprT::context;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = ExprT::imorder;
     static const bool imIsPoly = ExprT::imIsPoly;
@@ -1462,6 +1473,7 @@ class UnaryMinus
 public:
 
     static const size_type context = ExprT::context;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = ExprT::imorder;
     static const bool imIsPoly = ExprT::imIsPoly;
@@ -1588,6 +1600,7 @@ class OpMax
 {
 public:
     static const size_type context = ExprT1::context | ExprT2::context;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = (ExprT1::imorder<ExprT2::imorder)*ExprT2::imorder + (ExprT1::imorder>=ExprT2::imorder)*ExprT1::imorder;
     static const bool imIsPoly = ExprT1::imIsPoly && ExprT2::imIsPoly;
@@ -1771,6 +1784,7 @@ class OpMin
 {
 public:
     static const size_type context = ExprT1::context | ExprT2::context;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = (ExprT1::imorder<ExprT2::imorder)*ExprT2::imorder + (ExprT1::imorder>=ExprT2::imorder)*ExprT1::imorder;
     static const bool imIsPoly = ExprT1::imIsPoly && ExprT2::imIsPoly;
@@ -1954,6 +1968,7 @@ class Pow
 public:
 
     static const size_type context = ExprT1::context|ExprT2::context;
+    static const bool is_terminal = false;
 
     /**
      * \warning the Pow order computation is wrong here, we actually need the
@@ -2216,6 +2231,7 @@ class EvalFace
 public:
 
     static const size_type context = ExprT::context;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = ExprT::imorder;
     static const bool imIsPoly = ExprT::imIsPoly;
@@ -2366,6 +2382,7 @@ class GElem
 public:
 
     static const size_type context = vm::JACOBIAN |vm::POINT;
+    static const bool is_terminal = false;
 
     typedef Element element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;

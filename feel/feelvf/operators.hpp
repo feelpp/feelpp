@@ -54,17 +54,18 @@ namespace vf
 {
 /// \cond detail
 # /* Accessors for the operator datatype. */
-# define VF_OPERATOR_NAME(O)           BOOST_PP_TUPLE_ELEM(10, 0, O)
-# define VF_OPERATOR_SYMBOL(O)         BOOST_PP_TUPLE_ELEM(10, 1, O)
-# define VF_OPERATOR_TERM(O)           BOOST_PP_TUPLE_ELEM(10, 2, O)
+# define VF_OPERATOR_NAME(O)           BOOST_PP_TUPLE_ELEM(11, 0, O)
+# define VF_OPERATOR_SYMBOL(O)         BOOST_PP_TUPLE_ELEM(11, 1, O)
+# define VF_OPERATOR_TERM(O)           BOOST_PP_TUPLE_ELEM(11, 2, O)
 # // 0 means any rank, 1 or more is the rank for which the operator is defined
-# define VF_OPERATOR_TYPE_RANK_DEF(O)  BOOST_PP_TUPLE_ELEM(10, 3, O)
-# define VF_OPERATOR_TYPE_IS_COMP(O)   BOOST_PP_TUPLE_ELEM(10, 4, O)
-# define VF_OPERATOR_TYPE_COMP(O)      BOOST_PP_TUPLE_ELEM(10, 5, O)
-# define VF_OPERATOR_CONTEXT(O)        BOOST_PP_TUPLE_ELEM(10, 6, O)
-# define VF_OPERATOR_RANK(O)           BOOST_PP_TUPLE_ELEM(10, 7, O)
-# define VF_OPERATOR_TRANSPOSE(O)      BOOST_PP_TUPLE_ELEM(10, 8, O)
-# define VF_OPERATOR_DIFFORDERIM(O)    BOOST_PP_TUPLE_ELEM(10, 9, O)
+# define VF_OPERATOR_TYPE_RANK_DEF(O)  BOOST_PP_TUPLE_ELEM(11, 3, O)
+# define VF_OPERATOR_TYPE_IS_COMP(O)   BOOST_PP_TUPLE_ELEM(11, 4, O)
+# define VF_OPERATOR_TYPE_COMP(O)      BOOST_PP_TUPLE_ELEM(11, 5, O)
+# define VF_OPERATOR_CONTEXT(O)        BOOST_PP_TUPLE_ELEM(11, 6, O)
+# define VF_OPERATOR_RANK(O)           BOOST_PP_TUPLE_ELEM(11, 7, O)
+# define VF_OPERATOR_TRANSPOSE(O)      BOOST_PP_TUPLE_ELEM(11, 8, O)
+# define VF_OPERATOR_DIFFORDERIM(O)    BOOST_PP_TUPLE_ELEM(11, 9, O)
+# define VF_OPERATOR_TERMINAL(O)       BOOST_PP_TUPLE_ELEM(11,10, O)
 
 const size_type jk = vm::JACOBIAN|vm::KB;
 const size_type jkd = jkd|vm::FIRST_DERIVATIVE;
@@ -78,18 +79,18 @@ const size_type jkh = jkd|vm::HESSIAN;
    BOOST_PP_TUPLE_TO_LIST( \
       12, \
       (                                                                 \
-       ( OpId   , id   , id   , 0, 0, 0, vm::JACOBIAN          , RankSame,false, 0 ), \
-       ( OpDx   , dx   , dx   , 0, 1, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1 ), \
-       ( OpDy   , dy   , dy   , 0, 1, 1, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1 ), \
-       ( OpDz   , dz   , dz   , 0, 1, 2, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1 ), \
-       ( OpDn   , dn   , dn   , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::NORMAL|vm::FIRST_DERIVATIVE|vm::FIRST_DERIVATIVE_NORMAL , RankSame,false,-1 ), \
-       ( OpGrad , grad , grad , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankUp,true,-1 ), \
-       ( OpDiv  , div  , div  , 1, 0, 0, vm::DIV|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1 ), \
-       ( OpCurl , curl , curl , 1, 0, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankSame,false,-1 ), \
-       ( OpCurlX, curlx, curlx, 1, 1, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1 ), \
-       ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1 ), \
-       ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1 ), \
-       ( OpHess , hess , hess,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2 ) \
+          ( OpId   , id   , id   , 0, 0, 0, vm::JACOBIAN          , RankSame,false, 0, 1 ), \
+          ( OpDx   , dx   , dx   , 0, 1, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
+          ( OpDy   , dy   , dy   , 0, 1, 1, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
+          ( OpDz   , dz   , dz   , 0, 1, 2, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
+          ( OpDn   , dn   , dn   , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::NORMAL|vm::FIRST_DERIVATIVE|vm::FIRST_DERIVATIVE_NORMAL , RankSame,false,-1,1 ), \
+          ( OpGrad , grad , grad , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankUp,true,-1,1 ), \
+          ( OpDiv  , div  , div  , 1, 0, 0, vm::DIV|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
+          ( OpCurl , curl , curl , 1, 0, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankSame,false,-1,1 ), \
+          ( OpCurlX, curlx, curlx, 1, 1, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,0 ), \
+          ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,0 ), \
+          ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,0 ), \
+          ( OpHess , hess , hess,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ) \
       ) \
    ) \
    /**/
@@ -220,6 +221,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             static const uint16_type rank = fe_type::rank;              \
             static const uint16_type nComponents1 = fe_type::nComponents1; \
             static const uint16_type nComponents2 = fe_type::nComponents2; \
+            static const bool is_terminal = VF_OPERATOR_TERMINAL(O);    \
                                                                         \
             static const uint16_type imorder = element_type::functionspace_type::basis_type::nOrder + VF_OPERATOR_DIFFORDERIM(O); \
             static const bool imIsPoly = true;                          \
@@ -295,6 +297,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type; \
                 typedef boost::shared_ptr<ctx_type> ctx_ptrtype;        \
                 typedef Eigen::Matrix<value_type,shape::M,shape::N> loc_type; \
+                typedef Eigen::Matrix<value_type,shape::M,shape::N> ret_type; \
                 typedef boost::multi_array<loc_type,1> array_type;    \
                                                                         \
                                                                         \
@@ -328,6 +331,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_pcf(),                                            \
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), (new ctx_type( M_expr.e().functionSpace()->fe(), M_geot, (pc_ptrtype const&)M_pc ) ) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), M_expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*M_geot) ) ), \
+                    M_zero( ret_type::Zero() ),                         \
                     M_did_init( t.M_did_init ),                         \
                     M_same_mesh( t.M_same_mesh )                        \
                         {                                               \
@@ -350,6 +354,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
                                                 ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
+                    M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
                     M_same_mesh( dynamic_cast<void*>(const_cast<MeshBase*>( fusion::at_key<key_type>( geom )->element().mesh())) \
                                  == dynamic_cast<void*>(expr.e().functionSpace()->mesh().get()) ) \
@@ -372,6 +377,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
                                                 ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
+                    M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
                     M_same_mesh( dynamic_cast<void*>(const_cast<MeshBase*>( fusion::at_key<key_type>( geom )->element().mesh())) \
                                  == dynamic_cast<void*>(expr.e().functionSpace()->mesh().get()) ) \
@@ -391,6 +397,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
                                                     ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
+                    M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
                     M_same_mesh( dynamic_cast<void*>(const_cast<MeshBase*>( fusion::at_key<key_type>( geom )->element().mesh())) \
                                  == dynamic_cast<void*>(expr.e().functionSpace()->mesh().get()) ) \
@@ -511,10 +518,18 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     /*std::cout << "\n idv no interp \n";*/             \
                     Feel::detail::ignore_unused_variable_warning(geom); \
                 }                                                       \
-                              \
-                    result_type                                         \
-                    evalijq( uint16_type i,                           \
+                                                                        \
+                ret_type const&                                         \
+                    evalijq( uint16_type i,                             \
                              uint16_type VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), j ), \
+                             uint16_type q  ) const                     \
+                {                                                       \
+                    Feel::detail::ignore_unused_variable_warning(i);    \
+                    return evaliq( VF_OP_SWITCH( BOOST_PP_NOT( VF_OP_TYPE_IS_TRIAL( T ) ),i,j), q ); \
+                }                                                       \
+                    result_type                                         \
+                        evalijq( uint16_type i,                         \
+                                 uint16_type VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), j ), \
                              uint16_type c1, uint16_type c2, uint16_type q  ) const \
                 {                                                       \
                     Feel::detail::ignore_unused_variable_warning(i);    \
@@ -530,8 +545,13 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 {                                                       \
                     return evalijq( i, j, c1, c2, q );                  \
                 }                                                       \
-                                               \
-                    result_type                                         \
+                                                                        \
+                ret_type const&                                         \
+                    evaliq( uint16_type i, uint16_type q  ) const       \
+                {                                                       \
+                    return evaliq_( i, q, mpl::bool_<dim_ok && fe_ok>() ); \
+                }                                                       \
+                result_type                                             \
                     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q  ) const \
                 {                                                       \
                     return evaliq_( i, c1, c2, q, mpl::bool_<dim_ok && fe_ok>() ); \
@@ -552,20 +572,43 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 {                                                       \
                     return 0;                                           \
                 }                                                       \
-                                               \
+                    ret_type const&                                            \
+                        evaliq_( uint16_type /*i*/,                     \
+                             int /*q*/,                                 \
+                             mpl::bool_<false> ) const                  \
+                {                                                       \
+                    return M_zero;                                      \
+                }                                                       \
+                                                                        \
+                    ret_type const&                                     \
+                        evaliq_( uint16_type i, uint16_type q, mpl::bool_<true> ) const \
+                    {                                                   \
+                        return evaliq__( i, q, mpl::bool_<true>(), mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
+                    }                                                   \
                     result_type                                         \
                     evaliq_( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true> ) const \
                 {                                                       \
                     return evaliq__( i, c1, c2, q, mpl::bool_<true>(), mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
                 }                                                       \
                                                                         \
+                    ret_type  const&                                    \
+                        evaliq__( uint16_type /*i*/,  uint16_type q,    \
+                                  mpl::bool_<true>, mpl::bool_<true> ) const \
+                    {                                                   \
+                        return M_loc[q];                                \
+                    }                                                   \
                     result_type                                         \
                     evaliq__( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q, \
                               mpl::bool_<true>, mpl::bool_<true> ) const \
                 {                                                       \
                     return evalq( c1, c2, q, mpl::int_<shape::rank>() ); \
                 }                                                       \
-                                               \
+                                                                        \
+                    ret_type const&                                         \
+                        evaliq__( uint16_type i, uint16_type q, mpl::bool_<true>, mpl::bool_<false> ) const \
+                    {                                                   \
+                        return M_fec->VF_OPERATOR_TERM( O )( i, q ); \
+                    }                                                   \
                     result_type                                         \
                     evaliq__( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<false> ) const \
                     {                                                   \
@@ -646,6 +689,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 std::vector<std::map<uint16_type, pc_ptrtype> > M_pcf; \
                 ctx_ptrtype M_ctx;                                      \
                 array_type M_loc;                                      \
+                ret_type M_zero;                                        \
                 /*typename element_type::BOOST_PP_CAT( VF_OPERATOR_TERM( O ), _type) M_loc;*/ \
                 bool M_did_init;                                        \
                 bool M_same_mesh;                                      \
