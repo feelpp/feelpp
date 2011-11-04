@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -159,6 +159,7 @@ public:
                 start_j=0;
                 for (uint j=0;j<NC;++j)
                     {
+                        v[i*NC+j]->close();
                         this->mergeBlockGraph(graph,v[i*NC+j],start_i,start_j);
 
                         start_j += v[i*NC+j]->size2();
