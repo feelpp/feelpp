@@ -149,7 +149,7 @@ void MatrixPetsc<T>::init (const size_type m,
     //CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
-    ierr = MatSetOption (_M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+    //ierr = MatSetOption (_M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
     CHKERRABORT(this->comm(),ierr);
 #endif // 0
 
@@ -283,7 +283,7 @@ void MatrixPetsc<T>::init (const size_type m,
     CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
-    ierr = MatSetOption (_M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+    //ierr = MatSetOption (_M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
     CHKERRABORT(this->comm(),ierr);
 #endif
 
