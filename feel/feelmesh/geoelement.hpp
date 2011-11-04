@@ -299,6 +299,11 @@ public:
     MeshBase const* mesh() const { return super::mesh(); }
 
     /**
+     * \return id
+     */
+    size_type id() const { return super::id(); }
+
+    /**
      * \return process id
      */
     uint16_type processId() const { return super::processId(); }

@@ -72,7 +72,18 @@ public:
                                                face_type,
                                                multi_index::indexed_by<
                                                // sort by employee::operator<
+#if 1
                                                multi_index::ordered_unique<multi_index::identity<face_type> >,
+#else
+                                                   multi_index::ordered_unique<
+                                                       multi_index::composite_key<face_type,
+                                                                                  multi_index::const_mem_fun<face_type,
+                                                                                                             uint16_type,
+                                                                                                             &face_type::processId>,
+                                                                                  multi_index::const_mem_fun<face_type,
+                                                                                                             size_type,
+                                                                                                             &face_type::id> > >,
+#endif
 
                                                // sort by less<int> on marker
                                                multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
@@ -81,6 +92,26 @@ public:
                                                    multi_index::const_mem_fun<face_type,
                                                                               Marker1 const&,
                                                                               &face_type::marker>,
+                                                   multi_index::const_mem_fun<face_type,
+                                                                              uint16_type,
+                                                                              &face_type::processId>
+                                                   > >,
+                                               multi_index::ordered_non_unique<multi_index::tag<detail::by_marker2>,
+                                                                               multi_index::composite_key<
+                                                   face_type,
+                                                   multi_index::const_mem_fun<face_type,
+                                                                              Marker2 const&,
+                                                                              &face_type::marker2>,
+                                                   multi_index::const_mem_fun<face_type,
+                                                                              uint16_type,
+                                                                              &face_type::processId>
+                                                   > >,
+                                               multi_index::ordered_non_unique<multi_index::tag<detail::by_marker3>,
+                                                                               multi_index::composite_key<
+                                                   face_type,
+                                                   multi_index::const_mem_fun<face_type,
+                                                                              Marker3 const&,
+                                                                              &face_type::marker3>,
                                                    multi_index::const_mem_fun<face_type,
                                                                               uint16_type,
                                                                               &face_type::processId>
@@ -122,9 +153,15 @@ public:
     typedef typename faces_type::iterator face_iterator;
     typedef typename faces_type::const_iterator face_const_iterator;
     typedef typename faces_type::template index<detail::by_marker>::type marker_faces;
-
+    typedef typename faces_type::template index<detail::by_marker2>::type marker2_faces;
+    typedef typename faces_type::template index<detail::by_marker3>::type marker3_faces;
     typedef typename marker_faces::iterator marker_face_iterator;
     typedef typename marker_faces::const_iterator marker_face_const_iterator;
+    typedef typename marker2_faces::iterator marker2_face_iterator;
+    typedef typename marker2_faces::const_iterator marker2_face_const_iterator;
+    typedef typename marker3_faces::iterator marker3_face_iterator;
+    typedef typename marker3_faces::const_iterator marker3_face_const_iterator;
+
     typedef typename faces_type::template index<detail::by_location>::type location_faces;
     typedef typename location_faces::iterator location_face_iterator;
     typedef typename location_faces::const_iterator location_face_const_iterator;
@@ -256,6 +293,26 @@ public:
     marker_face_iterator endFaceWithMarker( size_type m ) { return _M_faces.template get<detail::by_marker>().upper_bound(Marker1(m)); }
     marker_face_const_iterator endFaceWithMarker( size_type m ) const { return _M_faces.template get<detail::by_marker>().upper_bound(Marker1(m)); }
 
+    marker2_face_iterator beginFaceWithMarker2() { return _M_faces.template get<detail::by_marker2>().begin(); }
+    marker2_face_const_iterator beginFaceWithMarker2() const { return _M_faces.template get<detail::by_marker2>().begin(); }
+    marker2_face_iterator endFaceWithMarker2() { return _M_faces.template get<detail::by_marker2>().end(); }
+    marker2_face_const_iterator endFaceWithMarker2() const { return _M_faces.template get<detail::by_marker2>().end(); }
+
+    marker2_face_iterator beginFaceWithMarker2( size_type m ) { return _M_faces.template get<detail::by_marker2>().lower_bound(Marker2(m)); }
+    marker2_face_const_iterator beginFaceWithMarker2( size_type m ) const { return _M_faces.template get<detail::by_marker2>().lower_bound(Marker2(m)); }
+    marker2_face_iterator endFaceWithMarker2( size_type m ) { return _M_faces.template get<detail::by_marker2>().upper_bound(Marker2(m)); }
+    marker2_face_const_iterator endFaceWithMarker2( size_type m ) const { return _M_faces.template get<detail::by_marker2>().upper_bound(Marker2(m)); }
+
+    marker3_face_iterator beginFaceWithMarker3() { return _M_faces.template get<detail::by_marker3>().begin(); }
+    marker3_face_const_iterator beginFaceWithMarker3() const { return _M_faces.template get<detail::by_marker3>().begin(); }
+    marker3_face_iterator endFaceWithMarker3() { return _M_faces.template get<detail::by_marker3>().end(); }
+    marker3_face_const_iterator endFaceWithMarker3() const { return _M_faces.template get<detail::by_marker3>().end(); }
+
+    marker3_face_iterator beginFaceWithMarker3( size_type m ) { return _M_faces.template get<detail::by_marker3>().lower_bound(Marker3(m)); }
+    marker3_face_const_iterator beginFaceWithMarker3( size_type m ) const { return _M_faces.template get<detail::by_marker3>().lower_bound(Marker3(m)); }
+    marker3_face_iterator endFaceWithMarker3( size_type m ) { return _M_faces.template get<detail::by_marker3>().upper_bound(Marker3(m)); }
+    marker3_face_const_iterator endFaceWithMarker3( size_type m ) const { return _M_faces.template get<detail::by_marker3>().upper_bound(Marker3(m)); }
+
     face_iterator beginFaceWithId( size_type m ) { return _M_faces.lower_bound( face_type(m) ); }
     face_const_iterator beginFaceWithId( size_type m ) const { return _M_faces.lower_bound( face_type(m) ); }
     face_iterator endFaceWithId( size_type m ) { return _M_faces.upper_bound( face_type(m) ); }
@@ -268,6 +325,14 @@ public:
     std::pair<marker_face_iterator, marker_face_iterator>
     facesWithMarker( size_type m, size_type p ) const
     { return _M_faces.template get<detail::by_marker>().equal_range(boost::make_tuple( Marker1(m), p )); }
+
+    std::pair<marker2_face_iterator, marker2_face_iterator>
+    facesWithMarker2( size_type m, size_type p ) const
+    { return _M_faces.template get<detail::by_marker2>().equal_range(boost::make_tuple( Marker2(m), p )); }
+
+    std::pair<marker3_face_iterator, marker3_face_iterator>
+    facesWithMarker3( size_type m, size_type p ) const
+    { return _M_faces.template get<detail::by_marker3>().equal_range(boost::make_tuple( Marker3(m), p )); }
 
 
     /**
@@ -316,9 +381,11 @@ public:
      * \return the range of iterator \c (begin,end) over the elements
      * on processor \p p
      */
-    std::pair<pid_face_iterator, pid_face_iterator>
-    facesWithProcessId( ) const
-        { return _M_faces.template get<detail::by_pid>().equal_range( M_comm.rank() ); }
+    //std::pair<pid_face_iterator, pid_face_iterator>
+    std::pair<face_iterator, face_iterator>
+    facesWithProcessId( size_type p ) const
+    //{ return _M_faces.template get<detail::by_pid>().equal_range( boost::make_tuple(/*M_comm.rank()*/p) ); }
+    { return _M_faces.template get<0>().equal_range( boost::make_tuple(/*M_comm.rank()*/p) ); }
 
     /**
      * get the faces container by id
@@ -367,6 +434,56 @@ public:
         {
             return _M_faces.template get<detail::by_marker>();
         }
+
+    /**
+     * get the faces container using the marker view
+     *
+     *
+     * @return the face container using marker view
+     */
+    marker2_faces &
+    facesByMarker2()
+        {
+            return _M_faces.template get<detail::by_marker2>();
+        }
+
+    /**
+     * get the faces container using the marker view
+     *
+     *
+     * @return the face container using marker view
+     */
+    marker2_faces const&
+    facesByMarker2() const
+        {
+            return _M_faces.template get<detail::by_marker2>();
+        }
+
+    /**
+     * get the faces container using the marker view
+     *
+     *
+     * @return the face container using marker view
+     */
+    marker3_faces &
+    facesByMarker3()
+        {
+            return _M_faces.template get<detail::by_marker3>();
+        }
+
+    /**
+     * get the faces container using the marker view
+     *
+     *
+     * @return the face container using marker view
+     */
+    marker3_faces const&
+    facesByMarker3() const
+        {
+            return _M_faces.template get<detail::by_marker3>();
+        }
+
+
     /**
      * get the faces container using the location view
      *
@@ -513,18 +630,22 @@ public:
      */
     void updateMarkersFromElements()
     {
-        face_iterator it;
-        face_iterator en;
-        boost::tie( it, en ) = facesWithProcessId( M_comm.rank() );
+        //pid_face_iterator it;
+        //pid_face_iterator en
+        //face_iterator it;
+        //face_iterator en;
+        //boost::tie( it, en ) = facesWithProcessId( M_comm.rank() );
+
+        auto it = beginFace(), en = endFace();
 
         for(  ; it != en; ++it )
             _M_faces.modify( it,
                              []( face_type& e )
                              {
-                                 int tag2_0 = e.isConnectedTo0()?e.element0().marker2():-1;
-                                 int tag2_1 = e.isConnectedTo1()?e.element1().marker2():-1;
-                                 int tag3_0 = e.isConnectedTo0()?e.element0().marker3():-1;
-                                 int tag3_1 = e.isConnectedTo1()?e.element1().marker3():-1;
+                                 int tag2_0 = e.isConnectedTo0()?e.element0().marker2().value():-1;
+                                 int tag2_1 = e.isConnectedTo1()?e.element1().marker2().value():-1;
+                                 int tag3_0 = e.isConnectedTo0()?e.element0().marker3().value():-1;
+                                 int tag3_1 = e.isConnectedTo1()?e.element1().marker3().value():-1;
                                  if ( (tag2_0 != -1 && tag2_0 == tag2_1) || e.isOnBoundary() )
                                      e.setMarker2( tag2_0 );
                                  else
@@ -534,6 +655,7 @@ public:
                                  else
                                      e.setMarker3( 0 );
                              } );
+
     }
 
     //@}

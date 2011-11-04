@@ -80,6 +80,12 @@ struct MeshTraits
     typedef typename mesh_type::marker_face_iterator marker_face_iterator;
     typedef typename mesh_type::marker_face_const_iterator marker_face_const_iterator;
 
+    typedef typename mesh_type::marker2_face_iterator marker2_face_iterator;
+    typedef typename mesh_type::marker2_face_const_iterator marker2_face_const_iterator;
+
+    typedef typename mesh_type::marker3_face_iterator marker3_face_iterator;
+    typedef typename mesh_type::marker3_face_const_iterator marker3_face_const_iterator;
+
     typedef typename mesh_type::location_face_iterator location_face_iterator;
     typedef typename mesh_type::location_face_const_iterator location_face_const_iterator;
 
