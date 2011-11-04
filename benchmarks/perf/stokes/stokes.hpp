@@ -248,7 +248,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "   o time for rhs force terms: " << subt.elapsed() << "\n";subt.restart();
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=-trans(u_exact)*SigmaN) );
+        form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=-trans(u_exact)*SigmaN);
         M_stats.put("t.assembly.vector.dirichletup",subt.elapsed());subt.restart();
         form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*inner(u_exact,id(v))/hFace() );
         M_stats.put("t.assembly.vector.dirichletp",subt.elapsed());
@@ -279,6 +279,9 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     M_stats.put("t.assembly.matrix.diffusion3",subt.elapsed());subt.restart();
     form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(dxt(u),dx(v))+inner(dyt(u),dy(v))));
     M_stats.put("t.assembly.matrix.diffusion4",subt.elapsed());subt.restart();
+
+    t.restart();
+
     form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(gradt(u),grad(v))));
     M_stats.put("t.assembly.matrix.diffusion",subt.elapsed());
     Log() << "   o time for diffusion terms: " << subt.elapsed() << "\n";subt.restart();
