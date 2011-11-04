@@ -41,7 +41,7 @@ endif()
 
 # IFP project
 if ( EXISTS ${FEEL_SOURCE_DIR}/research/ifp )
-  add_subdirectory( ifp )
+#  add_subdirectory( ifp )
 endif()
 
 # Darcy project
