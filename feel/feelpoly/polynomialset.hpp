@@ -1006,6 +1006,10 @@ public:
         typedef Eigen::Matrix<value_type,1,1> div_type;
         typedef Eigen::Matrix<value_type,nComponents1,1> dn_type;
         typedef Eigen::Matrix<value_type,3,1> curl_type;
+        typedef Eigen::Matrix<value_type,nComponents1,1> dx_type;
+        typedef Eigen::Matrix<value_type,nComponents1,1> dy_type;
+        typedef Eigen::Matrix<value_type,nComponents1,1> dz_type;
+
 #if 0
         typedef boost::multi_array<id_type,2> functionvalue_type;
         typedef boost::multi_array<g_type,2> grad_type;
@@ -1206,42 +1210,35 @@ public:
             _M_phi( __pc->phi() ),
             _M_gradphi( __pc->grad() ),
             _M_dn(),
-            _M_grad()
+            _M_grad(),
+            _M_dx(),
+            _M_dy(),
+            _M_dz()
         {
-            if ( rank == 0 )
+            if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+            {
+                const int ntdof = nDof*nComponents1;
+                _M_grad.resize( boost::extents[ntdof][_M_npoints] );
+                _M_dx.resize( boost::extents[ntdof][_M_npoints] );
+                _M_dy.resize( boost::extents[ntdof][_M_npoints] );
+                _M_dz.resize( boost::extents[ntdof][_M_npoints] );
+                if ( vm::has_first_derivative_normal<context>::value )
                 {
-                    if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
-                        {
-                            _M_grad.resize( boost::extents[nDof][_M_npoints] );
-                            if ( vm::has_first_derivative_normal<context>::value )
-                                {
-                                    _M_dn.resize( boost::extents[nDof][_M_npoints] );
-                                }
-                            if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
-                                {
-                                    _M_hessian.resize( boost::extents[nDof][_M_npoints] );
-                                }
-                        }
+                    _M_dn.resize( boost::extents[ntdof][_M_npoints] );
                 }
-            else if ( rank == 1 )
+                if ( vm::has_div<context>::value )
                 {
-                    _M_grad.resize( boost::extents[nDof*nComponents1][_M_npoints] );
-                    if ( vm::has_div<context>::value )
-                        {
-                            _M_div.resize( boost::extents[nDof*nComponents1][_M_npoints] );
-                        }
-                    if ( vm::has_curl<context>::value )
-                        {
-                            _M_curl.resize( boost::extents[nDof*nComponents1][_M_npoints] );
-                        }
-                    if ( vm::has_first_derivative_normal<context>::value )
-                        {
-                            _M_dn.resize( boost::extents[nDof*nComponents1][_M_npoints] );
-                        }
+                    _M_div.resize( boost::extents[ntdof][_M_npoints] );
                 }
-
-
-
+                if ( vm::has_curl<context>::value )
+                {
+                    _M_curl.resize( boost::extents[ntdof][_M_npoints] );
+                }
+                if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
+                {
+                    _M_hessian.resize( boost::extents[ntdof][_M_npoints] );
+                }
+            }
             update( __gmc );
         }
 
@@ -1291,43 +1288,34 @@ public:
                     std::cout << "gmc->npoints = "  << _M_gmc->nPoints() << "\n";
                     _M_npoints = __pc->nPoints();
 
-                    if ( rank == 0 )
+                    const int ntdof = nDof*nComponents1;
+                    _M_phi.resize( boost::extents[ntdof][_M_npoints] );
+                    _M_gradphi.resize( boost::extents[ntdof][_M_npoints] );
+                    if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+                    {
+                        _M_grad.resize( boost::extents[ntdof][_M_npoints] );
+                        _M_dx.resize( boost::extents[ntdof][_M_npoints] );
+                        _M_dy.resize( boost::extents[ntdof][_M_npoints] );
+                        _M_dz.resize( boost::extents[ntdof][_M_npoints] );
+                        if ( vm::has_div<context>::value )
                         {
-                            _M_phi.resize( boost::extents[nDof][_M_npoints] );
-                            _M_gradphi.resize( boost::extents[nDof][_M_npoints] );
-                            if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
-                                {
-                                    _M_grad.resize( boost::extents[nDof][_M_npoints] );
-                                    if ( vm::has_first_derivative_normal<context>::value )
-                                        {
-                                            _M_dn.resize( boost::extents[nDof][_M_npoints] );
-                                        }
-                                    if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
-                                        {
-                                            _M_hessian.resize( boost::extents[nDof][_M_npoints] );
-                                        }
-                                }
+                            _M_div.resize( boost::extents[ntdof][_M_npoints] );
                         }
-                    else if ( rank == 1 )
+                        if ( vm::has_curl<context>::value )
                         {
-                            _M_phi.resize( boost::extents[nDof*nComponents1][_M_npoints] );
-                            _M_gradphi.resize( boost::extents[nDof*nComponents1][_M_npoints] );
-                            _M_grad.resize( boost::extents[nDof*nComponents1][_M_npoints] );
-                            if ( vm::has_div<context>::value )
-                                {
-                                    _M_div.resize( boost::extents[nDof*nComponents1][_M_npoints] );
-                                }
-                            if ( vm::has_curl<context>::value )
-                                {
-                                    _M_curl.resize( boost::extents[nDof*nComponents1][_M_npoints] );
-                                }
-                            if ( vm::has_first_derivative_normal<context>::value )
-                                {
-                                    _M_dn.resize( boost::extents[nDof*nComponents1][_M_npoints] );
-                                }
+                            _M_curl.resize( boost::extents[ntdof][_M_npoints] );
                         }
-                }
 
+                        if ( vm::has_first_derivative_normal<context>::value )
+                        {
+                            _M_dn.resize( boost::extents[ntdof][_M_npoints] );
+                        }
+                        if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
+                        {
+                            _M_hessian.resize( boost::extents[ntdof][_M_npoints] );
+                        }
+                    }
+                }
                 _M_phi = _M_pc.get()->phi();
                 _M_gradphi = _M_pc.get()->grad();
 
@@ -1370,6 +1358,13 @@ public:
                             for ( uint16_type q = 0; q < Q; ++q )
                             {
                                 _M_grad[i][q] = grad_real;
+                                _M_dx[i][q] = _M_grad[i][q].col(0);
+                                if ( NDim == 2 )
+                                    _M_dy[i][q] = _M_grad[i][q].col(1);
+                                if ( NDim == 3 )
+                                    _M_dz[i][q] = _M_grad[i][q].col(2);
+
+
                             }
                         }
                     // we need the normal derivative
@@ -1448,6 +1443,11 @@ public:
                             {
                                 matrix_eigen_ublas_NP_type Bt ( thegmc->B( q ).data().begin() );
                                 _M_grad[i][q] = _M_gradphi[i][q]*Bt.transpose();
+                                _M_dx[i][q] = _M_grad[i][q].col(0);
+                                if ( NDim == 2 )
+                                    _M_dy[i][q] = _M_grad[i][q].col(1);
+                                if ( NDim == 3 )
+                                    _M_dz[i][q] = _M_grad[i][q].col(2);
                             }
                         }
                     // we need the normal derivative
@@ -1531,6 +1531,11 @@ public:
                                 matrix_eigen_ublas_NP_type Bt ( thegmc->B( q ).data().begin() );
                                 //matrix_type const& Bq = thegmc->B( q );
                                 _M_grad[i][q] = _M_gradphi[i][q]*Bt.transpose();
+                                _M_dx[i][q] = _M_grad[i][q].col(0);
+                                if ( NDim == 2 )
+                                    _M_dy[i][q] = _M_grad[i][q].col(1);
+                                if ( NDim == 3 )
+                                    _M_dz[i][q] = _M_grad[i][q].col(2);
                                 // update divergence if needed
                                 if ( vm::has_div<context>::value )
                                 {
@@ -1601,7 +1606,11 @@ public:
                             for ( uint16_type q = 0; q < Q; ++q )
                             {
                                 _M_grad[i][q] = grad_real;
-
+                                _M_dx[i][q] = _M_grad[i][q].col(0);
+                                if ( NDim == 2 )
+                                    _M_dy[i][q] = _M_grad[i][q].col(1);
+                                if ( NDim == 3 )
+                                    _M_dz[i][q] = _M_grad[i][q].col(2);
                                 // update divergence if needed
                                 if ( vm::has_div<context>::value )
                                 {
@@ -1786,9 +1795,9 @@ public:
         }
 
         grad_type const& grad( uint16_type i, uint32_type q ) const { return _M_grad[i][q]; }
-        typename grad_type::ColXpr const& dx( uint16_type i, uint32_type q ) const { return _M_grad[i][q].row(0); }
-        typename grad_type::ColXpr const& dy( uint16_type i, uint32_type q ) const { return _M_grad[i][q].row(1); }
-        typename grad_type::ColXpr const& dz( uint16_type i, uint32_type q ) const { return _M_grad[i][q].row(2); }
+        dx_type const& dx( uint16_type i, uint32_type q ) const { return _M_dx[i][q]; }
+        dy_type const& dy( uint16_type i, uint32_type q ) const { return _M_dy[i][q]; }
+        dz_type const& dz( uint16_type i, uint32_type q ) const { return _M_dz[i][q]; }
 
         /**
          * divergence of the basis function at the q-th point.
@@ -1914,6 +1923,9 @@ public:
         boost::multi_array<hess_type,2> _M_hessphi;
         boost::multi_array<dn_type,2> _M_dn;
         boost::multi_array<grad_type,2> _M_grad;
+        boost::multi_array<dx_type,2> _M_dx;
+        boost::multi_array<dy_type,2> _M_dy;
+        boost::multi_array<dz_type,2> _M_dz;
         boost::multi_array<div_type,2> _M_div;
         boost::multi_array<curl_type,2> _M_curl;
         boost::multi_array<hess_type,2> _M_hessian;
