@@ -155,6 +155,7 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
     public:                                                             \
                                                                         \
         static const size_type context = VF_GD_CONTEXT( O );            \
+        static const bool is_terminal = true;                           \
                                                                         \
         static const uint16_type imorder = VF_GD_IMORDER(O);            \
         static const bool imIsPoly = true;                              \

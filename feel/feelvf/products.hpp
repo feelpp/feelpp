@@ -49,6 +49,7 @@ class Product
 public:
 
     static const size_type context = ExprL::context |  ExprR::context;
+    static const bool is_terminal = false;
     static const int product_type = Type;
 
     static const uint16_type imorder = ExprL::imorder+ExprR::imorder;
@@ -144,7 +145,8 @@ public:
         typedef typename l_tensor_expr_type::shape left_shape;
         typedef typename r_tensor_expr_type::shape right_shape;
         typedef Shape<left_shape::nDim,Scalar,false,false> shape;
-
+        static const bool l_is_terminal = left_expression_type::is_terminal;
+        static const bool r_is_terminal = right_expression_type::is_terminal;
         template <class Args> struct sig { typedef value_type type; };
 
         struct is_zero { static const bool value = l_tensor_expr_type::is_zero::value || r_tensor_expr_type::is_zero::value; };
@@ -202,6 +204,11 @@ public:
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q ) const
             {
+                return evalijq( i, j, cc1, cc2, q, typename mpl::and_<mpl::bool_<l_is_terminal>,mpl::bool_<l_is_terminal> >::type() );
+            }
+        value_type
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<0> ) const
+            {
                 if ( Type == 1 )
                 {
                     for( int c2 = 0; c2 < left_shape::N; ++ c2 )
@@ -211,6 +218,14 @@ public:
                             M2(c1, c2)=M_r_tensor_expr.evalijq( i, j, c1, c2, q );
                         }
                     return (M1.adjoint()*M2).trace();
+                }
+            }
+        value_type
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<1> ) const
+            {
+                //if ( Type == 1 )
+                {
+                    return (M_l_tensor_expr.evalijq(i,j,q).adjoint()*M_r_tensor_expr.evalijq(i,j,q)).trace();
                 }
             }
         value_type

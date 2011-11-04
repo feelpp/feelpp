@@ -363,6 +363,7 @@
                                                                         \
         static const uint16_type imorder = VF_IM_ORDER(O,L,R) ;         \
         static const bool imIsPoly = L_type::imIsPoly && R_type::imIsPoly; \
+        static const bool is_terminal = false;                           \
                                                                         \
         template<typename Func>                                         \
             struct HasTestFunction                                      \
