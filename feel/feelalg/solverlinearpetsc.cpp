@@ -621,7 +621,9 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
       ierr = PCSetType (_M_pc, (char*) PCSHELL);     CHKERRABORT(M_comm,ierr); return;
 
     case FIELDSPLIT_PRECOND:
-        ierr = PCSetType(_M_pc,(char*) PCFIELDSPLIT);         CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType(_M_pc,(char*) PCFIELDSPLIT);         CHKERRABORT(M_comm,ierr);
+        ierr = PCFieldSplitSetType(_M_pc,PC_COMPOSITE_SCHUR);         CHKERRABORT(M_comm,ierr);
+        return;
 
     default:
       std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
