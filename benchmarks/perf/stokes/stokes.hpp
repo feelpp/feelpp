@@ -112,6 +112,7 @@ public:
         penalbc = this->vm()["bccoeff"].template as<value_type>();
     }
 
+
     std::string name() const { return M_basis_name; }
 
     /**
@@ -168,7 +169,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
                                                       _dim=Dim,
                                                       _h=M_meshSize,
                                                       _xmin=-1.,_xmax=1.,
-                                                      _ymin=-1.,_ymax=1. ) );
+                                                      _ymin=-1.,_ymax=1.,
+                                                      _zmin=-1.,_zmax=1.) );
 
     M_stats.put("t.init.mesh",t.elapsed());t.restart();
     /*
@@ -223,7 +225,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     // u exact solution
     //auto u_exact = vec(cos(Px())*cos(Py()), sin(Px())*sin(Py()));
-    auto u_exact = val(vec(-exp(Px())*(Py()*cos(Py())+sin(Py())), exp(Px())*Py()*sin(Py())));
+    auto u_exact = val(-exp(Px())*(Py()*cos(Py())+sin(Py()))*unitX()+ exp(Px())*Py()*sin(Py())*unitY()+ Pz()*unitZ() );
+
 
     // this is the exact solution which has zero mean : the mean of
     // cos(x)*sin(y) is sin(1)*(1-cos(1))) on [0,1]^2
@@ -245,7 +248,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "   o time for rhs force terms: " << subt.elapsed() << "\n";subt.restart();
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=-inner(u_exact,SigmaN) );
+        form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=-trans(u_exact)*SigmaN) );
         M_stats.put("t.assembly.vector.dirichletup",subt.elapsed());subt.restart();
         form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*inner(u_exact,id(v))/hFace() );
         M_stats.put("t.assembly.vector.dirichletp",subt.elapsed());
@@ -265,7 +268,18 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     subt.restart();
+    //form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(dxt(u),dx(v))+inner(dyt(u),dy(v))));
+    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(trans(dxt(u))*dx(v)+trans(dyt(u))*dy(v)));
+    M_stats.put("t.assembly.matrix.diffusion0",subt.elapsed());subt.restart();
+    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*trace(trans(gradt(u))*grad(v)));
+    M_stats.put("t.assembly.matrix.diffusion1",subt.elapsed());subt.restart();
+    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=inner(mu*gradt(u),grad(v)));
+    M_stats.put("t.assembly.matrix.diffusion2",subt.elapsed());subt.restart();
+    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=inner(mu*dxt(u),dx(v))+inner(mu*dyt(u),dy(v)));
+    M_stats.put("t.assembly.matrix.diffusion3",subt.elapsed());subt.restart();
     form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(dxt(u),dx(v))+inner(dyt(u),dy(v))));
+    M_stats.put("t.assembly.matrix.diffusion4",subt.elapsed());subt.restart();
+    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(gradt(u),grad(v))));
     M_stats.put("t.assembly.matrix.diffusion",subt.elapsed());
     Log() << "   o time for diffusion terms: " << subt.elapsed() << "\n";subt.restart();
 
@@ -276,9 +290,9 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-inner(SigmaNt,id(v)) );
+        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
         M_stats.put("t.assembly.matrix.dirichlet1",subt.elapsed());subt.restart();
-        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-inner(SigmaN,idt(u)) );
+        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(u) );
         M_stats.put("t.assembly.matrix.dirichlet2",subt.elapsed());subt.restart();
         form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*inner(idt(u),id(v))/hFace() );
         M_stats.put("t.assembly.matrix.dirichlet3",subt.elapsed());subt.restart();
@@ -298,9 +312,10 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
 
-    t.restart();
 
-    M_backend->solve( _matrix=D, _solution=U, _rhs=F, _constant_null_space=true );
+    t.restart();
+    if ( !this->vm().count("no-solve") )
+        M_backend->solve( _matrix=D, _solution=U, _rhs=F, _constant_null_space=true );
     M_stats.put("t.solver.total",t.elapsed());
     Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";
 
