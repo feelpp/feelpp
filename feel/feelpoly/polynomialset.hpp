@@ -1282,10 +1282,10 @@ public:
                  ( _M_npoints != __pc->nPoints()) ||
                  ( _M_npoints != _M_phi.shape()[1] ) )
                 {
-                    std::cout << "_M_npoints = "  << _M_npoints << "\n";
-                    std::cout << "pc->npoints = "  << __pc->nPoints() << "\n";
-                    std::cout << "phi->npoints = "  << _M_phi.shape()[1] << "\n";
-                    std::cout << "gmc->npoints = "  << _M_gmc->nPoints() << "\n";
+                    //std::cout << "_M_npoints = "  << _M_npoints << "\n";
+                    //std::cout << "pc->npoints = "  << __pc->nPoints() << "\n";
+                    //std::cout << "phi->npoints = "  << _M_phi.shape()[1] << "\n";
+                    //std::cout << "gmc->npoints = "  << _M_gmc->nPoints() << "\n";
                     _M_npoints = __pc->nPoints();
 
                     const int ntdof = nDof*nComponents1;
