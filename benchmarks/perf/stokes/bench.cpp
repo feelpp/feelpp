@@ -50,6 +50,7 @@ makeOptions()
         ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
         ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
         ("export-matlab", "export matrix and vectors in matlab" )
+        ("no-solve", "dont solve the system" )
         ;
     return stokesoptions.add( Feel::feel_options() )
         .add( Feel::benchmark_options( "P3P2" ) )
@@ -83,10 +84,13 @@ makeAbout()
 namespace Feel
 {
 extern template class Stokes<2, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Simplex>;
+extern template class Stokes<3, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Simplex>;
 extern template class Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>;
 extern template class Stokes<2, Lagrange<3, Vectorial>,Lagrange<2, Scalar>, Simplex>;
 extern template class Stokes<2, Lagrange<4, Vectorial>,Lagrange<3, Scalar>, Simplex>;
 extern template class Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>;
+extern template class Stokes<3, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>;
+
 }
 
 int main( int argc, char** argv )
@@ -99,11 +103,16 @@ int main( int argc, char** argv )
         std::cout << benchmark.optionsDescription() << "\n";
         return 0;
     }
-    benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "CR1P0", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "2D-CR1P0", benchmark.vm(), benchmark.about() ) );
+    //benchmark.add( new Stokes<3, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "3D-CR1P0", benchmark.vm(), benchmark.about() ) );
+#if 0
     benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "P2P1", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Stokes<2, Lagrange<3, Vectorial>,Lagrange<2, Scalar>, Simplex>( "P3P2", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Stokes<2, Lagrange<4, Vectorial>,Lagrange<3, Scalar>, Simplex>( "P4P3", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>( "P5P4", benchmark.vm(), benchmark.about() ) );
+#endif
+    benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>( "2D-P5P4", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Stokes<3, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>( "3D-P5P4", benchmark.vm(), benchmark.about() ) );
+
     benchmark.run();
     benchmark.printStats( std::cout, boost::assign::list_of( "e.l2")("n.space")("t.init")("t.assembly.vector")("t.assembly.matrix" )("t.solver") );
 }
