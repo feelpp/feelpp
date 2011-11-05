@@ -1248,6 +1248,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     form2_context_ptrtype form2;
     form21_context_ptrtype form21;
 
+    bool isInitConnectionTo1=false;
     // true if connected to another element, false otherwise
     if ( it->isConnectedTo1() )
     {
@@ -1262,6 +1263,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
         form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmc2, mapgmc2, mapgmc2, expression(), face_ims[__face_id_in_elt_0], this->im(), mpl::int_<2>() ) );
         form21 = form21_context_ptrtype( new form21_context_type( __form, mapgmc21, mapgmc21, mapgmc21, expression(), face_ims2[__face_id_in_elt_0], this->im2(), mpl::int_<2>() ) );
+        isInitConnectionTo1=true;
     }
     else
     {
@@ -1283,6 +1285,21 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         {
             if ( it->isConnectedTo1())
                 {
+                    if (!isInitConnectionTo1)
+                        {
+                            uint16_type __face_id_in_elt_1 = it->pos_second();
+
+                            __c1 = gmc_ptrtype( new gmc_type( __gm, it->element( 1 ), __geopc, __face_id_in_elt_1 ) );
+                            __c11 = gmc1_ptrtype( new gmc1_type( __gm1, it->element( 1 ), __geopc1, __face_id_in_elt_1 ) );
+                            map2_gmc_type mapgmc2( fusion::make_pair<detail::gmc<0> >( __c0 ),
+                                                   fusion::make_pair<detail::gmc<1> >( __c1 ) );
+                            map21_gmc_type mapgmc21( fusion::make_pair<detail::gmc<0> >( __c01 ),
+                                                     fusion::make_pair<detail::gmc<1> >( __c11 ) );
+
+                            form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmc2, mapgmc2, mapgmc2, expression(), face_ims[__face_id_in_elt_0], this->im(), mpl::int_<2>() ) );
+                            form21 = form21_context_ptrtype( new form21_context_type( __form, mapgmc21, mapgmc21, mapgmc21, expression(), face_ims2[__face_id_in_elt_0], this->im2(), mpl::int_<2>() ) );
+                            isInitConnectionTo1=true;
+                        }
                     switch( M_gt )
                     {
                     default:
