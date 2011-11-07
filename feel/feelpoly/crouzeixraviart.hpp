@@ -6,6 +6,7 @@
        Date: 2006-01-12
 
   Copyright (C) 2006 EPFL
+  Copyright (C) 2011 Universite Joseph Fourier
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
