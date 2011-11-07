@@ -60,7 +60,8 @@ GraphCSR::GraphCSR( GraphCSR const & g )
     M_n_total_nz( g.M_n_total_nz ),
     M_n_nz( g.M_n_nz ),
     M_n_oz( g.M_n_oz ),
-    M_storage( g.M_storage )
+    M_storage( g.M_storage ),
+    M_graphT( g.M_graphT)
 {
 }
 
@@ -83,8 +84,48 @@ GraphCSR::operator=( GraphCSR const& g )
             M_n_nz = g.M_n_nz;
             M_n_oz = g.M_n_oz;
             M_storage = g.M_storage;
+            M_graphT = g.M_graphT;
         }
     return *this;
+}
+
+
+
+GraphCSR::self_ptrtype
+GraphCSR::transpose()
+{
+    if (M_graphT) return M_graphT;
+
+    M_graphT = self_ptrtype(new self_type( M_n_total_nz.size(),
+                                           M_first_col_entry_on_proc,
+                                           M_last_col_entry_on_proc,
+                                           M_first_row_entry_on_proc,
+                                           M_last_row_entry_on_proc ) );
+
+    for( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
+        {
+            // Get the row of the sparsity pattern
+            row_type const& irow = it->second;
+            if ( boost::get<0>( irow ) == M_comm.rank() )
+                {
+                    // num line
+                    size_type globalindex = it->first;
+
+                    size_type localindex = boost::get<1>( irow );
+                    for ( auto colit = boost::get<2>( irow ).begin(), colen=boost::get<2>( irow ).end() ; colit!=colen ; ++colit )
+                        {
+                            self_type::row_type& row = M_graphT->row(*colit);
+                            row.get<0>()=irow.get<0>();
+                            // Warning : wrong in parallele
+                            row.get<1>()=globalindex;
+                            row.get<2>().insert(globalindex);
+                        }
+                }
+        }
+
+    M_graphT->close();
+
+    return M_graphT;
 }
 
 
