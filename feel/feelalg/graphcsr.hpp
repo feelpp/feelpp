@@ -60,6 +60,9 @@ public:
      */
     //@{
 
+    typedef GraphCSR self_type;
+    typedef boost::shared_ptr<self_type> self_ptrtype;
+
     typedef std::vector<size_type> nz_type;
     typedef boost::shared_ptr<nz_type> nz_ptrtype;
 
@@ -262,6 +265,9 @@ public:
      */
     void close();
 
+
+    self_ptrtype transpose();
+
     //@}
 
 
@@ -283,6 +289,8 @@ private:
     storage_type M_storage;
     nz_type M_ia, M_ja;
     std::vector<double> M_a;
+
+    self_ptrtype M_graphT;
 };
 
 } // Feel

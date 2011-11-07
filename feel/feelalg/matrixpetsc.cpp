@@ -946,9 +946,11 @@ template<typename T>
 void
 MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
 {
-    MatrixPetsc<T>* Atrans = dynamic_cast<MatrixPetsc<T>*> (&Mt);
-    MatDestroy( Atrans->_M_mat );
+    this->close();
 
+    MatrixPetsc<T>* Atrans = dynamic_cast<MatrixPetsc<T>*> (&Mt);
+
+    MatDestroy( Atrans->_M_mat );
 
 #if (PETSC_VERSION_MAJOR >= 3)
     int ierr = MatTranspose( _M_mat, MAT_INITIAL_MATRIX,&Atrans->_M_mat );
@@ -969,6 +971,9 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
     } else {
         Debug(7013) << "[MatrixPETSc::transpose] Petsc matrix is non-symmetric \n";
     }
+
+    Mt.setGraph(this->graph()->transpose());
+
 }
 
 template<typename T>
