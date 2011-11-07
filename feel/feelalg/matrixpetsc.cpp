@@ -960,18 +960,20 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
 
     CHKERRABORT(this->comm(),ierr);
 
-    PetscTruth isSymmetric;
-    MatEqual( _M_mat, Atrans->_M_mat, &isSymmetric);
-    if (isSymmetric) {
+    if (this->size1()==this->size2())
+        {
+            PetscTruth isSymmetric;
+            MatEqual( _M_mat, Atrans->_M_mat, &isSymmetric);
+            if (isSymmetric) {
 #if (PETSC_VERSION_MAJOR >= 3)
-    MatSetOption(_M_mat,MAT_SYMMETRIC,PETSC_TRUE);
+                MatSetOption(_M_mat,MAT_SYMMETRIC,PETSC_TRUE);
 #else
-    MatSetOption(_M_mat,MAT_SYMMETRIC );
+                MatSetOption(_M_mat,MAT_SYMMETRIC );
 #endif
-    } else {
-        Debug(7013) << "[MatrixPETSc::transpose] Petsc matrix is non-symmetric \n";
-    }
-
+            } else {
+                Debug(7013) << "[MatrixPETSc::transpose] Petsc matrix is non-symmetric \n";
+            }
+        }
     Mt.setGraph(this->graph()->transpose());
 
 }
