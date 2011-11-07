@@ -50,6 +50,9 @@ namespace parameter = boost::parameter;
 BOOST_PARAMETER_NAME(vm)    // Note: no semicolon
 BOOST_PARAMETER_NAME(prefix)
 
+BOOST_PARAMETER_NAME(verbose)
+
+
 BOOST_PARAMETER_NAME(matrix)
 BOOST_PARAMETER_NAME(matrixA)
 BOOST_PARAMETER_NAME(matrixB)
