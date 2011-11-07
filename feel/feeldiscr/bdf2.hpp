@@ -374,8 +374,38 @@ public:
 
         //M_time_values_map.insert( std::make_pair( M_iteration, this->time() ) );
         M_time_values_map.push_back( this->time() );
+        //update();
     }
+    virtual void update()
+        {
+            double tn = M_time_values_map[M_iteration];
+            double tn1 = M_time_values_map[M_iteration-1];
+            double tn2= 0;
+            double tn3= 0;
+            if ( M_iteration >= 2 )
+                tn2 = M_time_values_map[M_iteration-2];
+            if ( M_iteration >= 3 )
+                tn3 = M_time_values_map[M_iteration-3];
 
+            for ( int i = 0; i < BDF_MAX_ORDER; ++i )
+            {
+                if (  i == 0 ) // BDF_ORDER_ONE:
+                {
+                    M_alpha[i][ 0 ] = 1./(tn-tn1); // Backward Euler
+                    M_alpha[i][ 1 ] = 1./(tn-tn1);
+                    M_beta[i][ 0 ] = 1.; // u^{n+1} \approx u^n
+                }
+                if (  i == 1 ) // BDF_ORDER_TWO:
+                {
+                    double denom = (tn-tn1)*(tn1-tn2);
+                    M_alpha[i][ 0 ] = 0.5*(tn1-2*tn2+tn)/denom;
+                    M_alpha[i][ 1 ] = (tn2-tn)/denom;
+                    M_alpha[i][ 2 ] = 0.5/(tn1-tn2);
+                    M_beta[i][ 0 ] = 1+denom;
+                    M_beta[i][ 1 ] = denom;
+                }
+            }
+        }
     //! return the state of the BDF
     BDFState state() const { return M_state; }
 
