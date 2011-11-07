@@ -2529,19 +2529,21 @@ BOOST_PARAMETER_FUNCTION(
      (use_tbb,   (bool), false )
      (grainsize,   (int), 100 )
      (partitioner,   *, "auto" )
+     (verbose,   (bool), false )
      )
     )
 {
-#if 0
-    int status;
-    std::cout << "Integral " << "\n";
-    std::cout << "  -- domain: " << abi::__cxa_demangle(typeid(range).name(),0,0,&status) <<"\n";
-    std::cout << "  -- expression: " << abi::__cxa_demangle(typeid(expr).name(),0,0,&status) <<"\n";
-    std::cout << "  -- quad: " << abi::__cxa_demangle(typeid(quad).name(),0,0,&status) <<"\n";
-    std::cout << "  -- quad1: " << abi::__cxa_demangle(typeid(quad1).name(),0,0,&status) <<"\n";
-    std::cout << "  -- geomap : " << (int)geomap << "\n";
-#endif
+
     auto ret =  integrate_impl( range, quad, expr, geomap, quad1, use_tbb, grainsize, partitioner );
+    if ( verbose )
+    {
+        std::cout << " -- integrate: size(range) = " << std::distance(ret.expression().beginElement(),
+                                                                      ret.expression().endElement() ) << "\n";
+        std::cout << " -- integrate: quad = " << ret.expression().im().nPoints() << "\n";
+        std::cout << " -- integrate: quad1 = " << ret.expression().im2().nPoints() << "\n";
+        //std::cout << " -- integrate: geomap = " << geomap << "\n";
+    }
+
     return ret;
 }
 
