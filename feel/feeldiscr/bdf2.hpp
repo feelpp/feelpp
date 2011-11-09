@@ -876,7 +876,8 @@ Bdf<SpaceType>::initialize( element_type const& u0 )
     std::ostringstream ostr;
     ostr << M_name << "-" << 0;
     //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
-    M_time_values_map.push_back( 0 );
+    //M_time_values_map.push_back( 0 );
+    M_time_values_map.push_back( M_Ti );
     std::for_each( M_unknowns.begin(), M_unknowns.end(), *boost::lambda::_1 = u0 );
     this->saveCurrent();
 }
@@ -889,7 +890,8 @@ Bdf<SpaceType>::initialize( unknowns_type const& uv0 )
     std::ostringstream ostr;
     ostr << M_name << "-" << 0;
     //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
-    M_time_values_map.push_back( 0);
+    //M_time_values_map.push_back( 0);
+    M_time_values_map.push_back( M_Ti );
 
     std::copy( uv0.begin(), uv0.end(), M_unknowns.begin() );
     this->saveCurrent();
