@@ -218,13 +218,12 @@ public :
 
     /**
      * input/output : MpdeSet (set of modes to add in the reduced basis)
+     * input : is_primal ( bool which indicates if the problem is the primal one or not )
      */
-    void pod(mode_set_type& ModeSet);
+    int pod(mode_set_type& ModeSet, bool is_primal);
 
     void exportMode(double time, element_ptrtype& mode);
 
-
-    void podWithSnapshotsMatrix( mode_set_type& ModeSet );
     void projectionOnPodSpace();
 
 private :
@@ -311,6 +310,7 @@ void POD<TruthModelType>::fillPodMatrix()
 
     bdfi->setRestart(true);
     bdfj->setRestart(true);
+
     for( bdfi->start(); !bdfi->isFinished(); bdfi->next() )
     {
         int i = bdfi->iteration()-1;
@@ -329,9 +329,11 @@ void POD<TruthModelType>::fillPodMatrix()
 }//fillPodMatrix
 
 
-
+//the bool is_primal is used to determine the max number of modes ( M_Nm ) whithout taking eigenvectors
+//associated with too small eigenvalues
+//Since we always use M_Nm = 1 or 2 (so we never have to modify M_Nm) we only correct M_Nm in the primal case
 template<typename TruthModelType>
-void POD<TruthModelType>::pod(mode_set_type& ModeSet)
+int POD<TruthModelType>::pod(mode_set_type& ModeSet, bool is_primal)
 {
     M_backend = backend_type::build( BACKEND_PETSC );
 
@@ -388,6 +390,8 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
     //we copy eigenvalues in a std::vector beacause it's easier to manipulate it
     std::vector<double> eigen_values(number_of_eigenvalues);
 
+    int too_small_index = -1;
+
     for(int i=0;i<number_of_eigenvalues;i++)
     {
         if( imag(eigen_solver.eigenvalues()[i])>1e-12)
@@ -395,10 +399,16 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
             throw std::logic_error( "[POD::pod] ERROR : complex eigenvalues were found" );
         }
         eigen_values[i]=real(eigen_solver.eigenvalues()[i]);
+
+        if( eigen_values[i] < 1e-11 ) too_small_index=i+1;
     }
 
     int position_of_largest_eigenvalue=number_of_eigenvalues-1;
 
+    int number_of_good_eigenvectors = number_of_eigenvalues - too_small_index;
+
+    if ( M_Nm > number_of_good_eigenvectors && number_of_good_eigenvectors>0 && is_primal)
+        M_Nm=number_of_good_eigenvectors;
 
     for(int i=0;i<M_Nm;i++)
     {
@@ -415,7 +425,6 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
             mode->add( 1 , M_bdf->unknown(0) );
             index++;
         }
-
         --position_of_largest_eigenvalue;
         ModeSet.push_back(*mode);
     }
@@ -457,6 +466,9 @@ void POD<TruthModelType>::pod(mode_set_type& ModeSet)
         }
 
     }
+
+    return M_Nm;
+
 }
 
 
