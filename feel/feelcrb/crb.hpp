@@ -631,6 +631,7 @@ private:
     bdf_ptrtype M_bdf_primal;
     bdf_ptrtype M_bdf_primal_save;
     bdf_ptrtype M_bdf_dual;
+    bdf_ptrtype M_bdf_dual_save;
 
     // left hand side
     std::vector<matrixN_type> M_Aq_pr;
@@ -734,6 +735,7 @@ void
 CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
 {
 
+
     parameter_type mu( M_Dmu );
 
     double relative_error = 1e30;
@@ -783,7 +785,11 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
     sampling_ptrtype Sampling;
     Sampling = sampling_ptrtype( new sampling_type( M_Dmu ) );
 
+
     int sampling_size = M_iter_max / M_Nm ;
+
+    if( M_iter_max < M_Nm ) sampling_size = 1;
+
     Sampling->logEquidistribute( sampling_size );
     Log() << "[CRB::offlineNoErrorEstimation] sampling parameter space with "<< sampling_size <<"elements done\n";
 
@@ -794,12 +800,14 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
 
     for( size_type index = 0; index < Sampling->size(); ++index )
     {
+
         parameter_type const& mu = M_Xi->at( index );
 
         Log() <<"========================================"<<"\n";
         std::cout << "============================================================\n";
         std::cout << "N=" << M_N << "\n";
         Log() << "N=" << M_N << "\n";
+
 
         backend_ptrtype backend_primal_problem = backend_type::build( BACKEND_PETSC );
         backend_ptrtype backend_dual_problem = backend_type::build( BACKEND_PETSC );
@@ -834,6 +842,7 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         M_bdf_primal->start();
         M_bdf_primal_save->start();
 
+
         //initialization of unknown
         //double initialization_field=M_model->initializationField();
         M_model->initializationField( u );
@@ -850,6 +859,7 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
               !M_bdf_primal->isFinished() && !M_bdf_primal_save->isFinished() ;
               M_bdf_primal->next() , M_bdf_primal_save->next() )
         {
+
             auto bdf_poly = M_bdf_primal->polyDeriv();
             boost::tie( M, A, F ) = M_model->update( mu , M_bdf_primal->time() );
 
@@ -871,6 +881,7 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
                 Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
             }
 
+
             M_bdf_primal->shiftRight( *u );
 
             if ( !M_model->isSteady() )
@@ -888,11 +899,13 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         //dual problem
 
         M_bdf_dual = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_dual" );
+        M_bdf_dual_save = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_dual_save" );
 
         //set parameters for time discretization
         if( M_model->isSteady() )
         {
             M_bdf_dual->setSteady();
+            M_bdf_dual_save->setSteady();
         }
         else
         {
@@ -900,9 +913,15 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
             M_bdf_dual->setTimeStep( -M_model->timeStep() );
             M_bdf_dual->setTimeFinal( M_model->timeInitial() );
             M_bdf_dual->setOrder( M_model->timeOrder() );
+
+            M_bdf_dual_save->setTimeInitial( M_model->timeFinal() );
+            M_bdf_dual_save->setTimeStep( -M_model->timeStep() );
+            M_bdf_dual_save->setTimeFinal( M_model->timeInitial() );
+            M_bdf_dual_save->setOrder( M_model->timeOrder() );
         }
 
         M_bdf_dual->start();
+        M_bdf_dual_save->start();
 
         Adu = M_model->newMatrix();
 
@@ -910,10 +929,13 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         *udu = *u;
         M_bdf_dual->initialize(*udu);
 
-#if 0
+#if 1
 
         bdf_coeff = M_bdf_dual->polyDerivCoefficient(0);
-        for ( M_bdf_dual->start(); !M_bdf_dual->isFinished(); M_bdf_dual->next() )
+        for ( M_bdf_dual->start() , M_bdf_dual_save->start() ;
+              !M_bdf_dual->isFinished() && !M_bdf_dual_save->isFinished() ;
+              M_bdf_dual->next() , M_bdf_dual_save->next() )
+
         {
 
             auto bdf_poly = M_bdf_dual->polyDeriv();
@@ -939,15 +961,18 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
                 Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
             }
 
+
+            M_bdf_dual->shiftRight( *udu );
+
             if ( !M_model->isSteady() )
             {
                 element_ptrtype projection( new element_type( M_model->functionSpace() ) );
                 projectionOnPodSpace( udu , projection, "dual" );
                 *uproj = *udu;
                 uproj->add( -1 , *projection );
+                M_bdf_dual_save->shiftRight( *uproj );
             }
 
-            M_bdf_dual->shiftRight( *udu );
         }
         std::cout<<"dual problem solved"<<std::endl;
 
@@ -961,6 +986,10 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         M_WNmu->push_back( mu, index );
         M_WNmu_complement = M_WNmu->complement();
 
+
+        bool norm_zero = false;
+
+
         if( M_model->isSteady() )
         {
             M_WN.push_back( *u );
@@ -968,6 +997,30 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         }//end of steady case
         else
         {
+            if( M_N == 0 && orthonormalize_primal==false)
+            {
+                //add initial solution as element in the reduced basis if it's not zero
+                //else there will be problems during orthonormalization step
+                //note : at this step *u contains solution of primal probleme at final time
+                //so it's the initial solution of the dual problem
+                //in the case where orthonormalize_primal==true, even with initial solution in
+                //the reduced basis we will commit an approximation in the online part
+                //when initializing uN.
+                //if initial solution is zero then the system the matrix used in online will be singular
+                element_ptrtype initial_field ( new element_type ( M_model->functionSpace() ) );
+                M_model->initializationField( initial_field ); //fill initial_field
+                int norm_ini = M_model->scalarProduct( *initial_field, *initial_field );
+                if ( norm_ini != 0 )
+                {
+                    M_WN.push_back( *initial_field );
+                    M_WNdu.push_back( *u );
+                }
+                else
+                {
+                    norm_zero=true;
+                }
+            } // end of if ( M_N == 0 )
+
             //POD in time
             Log()<<"[CRB::offlineNoErrorEstimation] start of POD \n";
 
@@ -977,7 +1030,13 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
             POD->setBdf( M_bdf_primal_save );
             POD->setModel(M_model);
             mode_set_type ModeSet;
-            POD->pod(ModeSet);
+            int number_max_of_mode = POD->pod(ModeSet,true);
+            if( number_max_of_mode < M_Nm )
+            {
+                std::cout<<"With crb.Nm = "<<M_Nm<<" there was too much too small eigenvalues so the value";
+                std::cout<<" of crb.Nm as been changed to "<<number_max_of_mode<<std::endl;
+                M_Nm = number_max_of_mode;
+            }
 
             //now : loop over number modes per mu
             for(int i=0;i<M_Nm;i++)
@@ -986,29 +1045,28 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
             }
 
             //and now the dual
-            //POD->setBdf( M_bdf_dual );
-            //mode_set_type ModeSetdu;
-            //POD->pod(ModeSetdu);
-            element_ptrtype mode_zero ( new element_type( M_model->functionSpace() ) );
+            POD->setBdf( M_bdf_dual );
+            mode_set_type ModeSetdu;
+            POD->pod(ModeSetdu,false);
 
             for(int i=0;i<M_Nm;i++)
             {
-                //M_WNdu.push_back( ModeSetdu[i] ) ;
-                M_WNdu.push_back( *mode_zero ) ;
+                M_WNdu.push_back( ModeSetdu[i] ) ;
             }
         }//end of transient case
 
-        M_N+=M_Nm;
+        int number_of_added_elements = M_Nm + (M_N==0 && orthonormalize_primal==false && norm_zero==false);
+        M_N+=number_of_added_elements;
 
         if(orthonormalize_primal)
         {
-            orthonormalize( M_N, M_WN, M_Nm );
-            orthonormalize( M_N, M_WN, M_Nm );
+            orthonormalize( M_N, M_WN, number_of_added_elements );
+            orthonormalize( M_N, M_WN, number_of_added_elements );
         }
         if( orthonormalize_dual )
         {
-            orthonormalize( M_N, M_WNdu, M_Nm );
-            orthonormalize( M_N, M_WNdu, M_Nm );
+            orthonormalize( M_N, M_WNdu, number_of_added_elements );
+            orthonormalize( M_N, M_WNdu, number_of_added_elements );
         }
 
 
@@ -1020,7 +1078,7 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
             M_Aq_pr_du[q].conservativeResize( M_N, M_N );
 
             // only compute the last line and last column of reduced matrices
-            for(int i = M_N-M_Nm; i < M_N; i++ )
+            for(int i = M_N-number_of_added_elements; i < M_N; i++ )
             {
                 for( int j = 0; j < M_N; ++j )
                 {
@@ -1029,7 +1087,7 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
                     M_Aq_pr_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WN[j] );
                 }
             }
-            for(int j=M_N-M_Nm; j < M_N; j++ )
+            for(int j=M_N-number_of_added_elements; j < M_N; j++ )
             {
                 for( int i = 0; i < M_N; ++i )
                 {
@@ -1047,7 +1105,7 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
             M_Mq_pr_du[q].conservativeResize( M_N, M_N );
 
             // only compute the last line and last column of reduced matrices
-            for( int i=M_N-M_Nm ; i < M_N; i++ )
+            for( int i=M_N-number_of_added_elements ; i < M_N; i++ )
             {
                 for( int j = 0; j < M_N; ++j )
                 {
@@ -1056,7 +1114,7 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
                     M_Mq_pr_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WN[j] );
                 }
             }
-            for(int j = M_N-M_Nm; j < M_N ; j++ )
+            for(int j = M_N-number_of_added_elements; j < M_N ; j++ )
             {
                 for( int i = 0; i < M_N; ++i )
                 {
@@ -1072,7 +1130,7 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         {
             M_Fq_pr[q].conservativeResize( M_N );
             M_Fq_du[q].conservativeResize( M_N );
-            for( int l = 1; l <= M_Nm; ++l )
+            for( int l = 1; l <=number_of_added_elements; ++l )
             {
                 int index = M_N-l;
                 M_Fq_pr[q]( index ) = M_model->Fq( 0, q, M_WN[index] );
@@ -1084,7 +1142,7 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
         {
             M_Lq_pr[q].conservativeResize( M_N );
             M_Lq_du[q].conservativeResize( M_N );
-            for( int l = 1; l <= M_Nm; ++l )
+            for( int l = 1; l <=number_of_added_elements; ++l )
             {
                 int index = M_N-l;
                 M_Lq_pr[q]( index ) = M_model->Fq( M_output_index, q, M_WN[index] );
@@ -1348,9 +1406,12 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
     // start with M_C = { arg min mu, mu \in Xi }
     size_type index;
-    boost::tie( mu, index ) = M_Xi->max();
+    boost::tie( mu, index ) = M_Xi->min();
 
-    std::cout << "  -- start with mu = " << mu << "\n";
+    std::cout << "  -- start with mu = [ ";
+    int size = mu.size();
+    for(int i=0;i<size-1;i++) std::cout<<mu(i)<<" ";
+    std::cout<<mu( size-1 )<<" ]"<<std::endl;
     //std::cout << " -- WN size :  " << M_WNmu->size() << "\n";
 
     sparse_matrix_ptrtype M,A,Adu,At;
@@ -1412,7 +1473,6 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         std::cout << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << maxerror << " / "  << M_tolerance << "\n";
         Log() << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << maxerror << " / "  << M_tolerance << "\n";
 
-
         backend_ptrtype backend_primal_problem = backend_type::build( BACKEND_PETSC );
         backend_ptrtype backend_dual_problem = backend_type::build( BACKEND_PETSC );
 
@@ -1437,10 +1497,10 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             *Rhs = *F[M_output_index];
             Rhs->scale( -1 );
             backend_dual_problem->solve( _matrix=At,  _solution=udu, _rhs=Rhs, _prec=At );
+
         }
         else
         {
-
             M_bdf_primal = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal");
             M_bdf_primal_save = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal_save");
 
@@ -1452,6 +1512,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             }
             else
             {
+
                M_bdf_primal->setTimeInitial( M_model->timeInitial() );
                M_bdf_primal->setTimeStep( M_model->timeStep() );
                M_bdf_primal->setTimeFinal( M_model->timeFinal() );
@@ -1517,7 +1578,6 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                 Log() << "u^T Rhs "<< inner_product( *u, *Rhs ) <<  " at time : "<<M_bdf_primal->time()<<"\n";
                 for( int l = 0; l < M_model->Nl(); ++l )
                     Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << " at time : "<<M_bdf_primal->time()<<"\n";
-
                 Log() << "[CRB::offlineWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
             }
 
@@ -1526,12 +1586,14 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             //dual problem
 
             M_bdf_dual = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_dual" );
+            M_bdf_dual_save = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_dual_save" );
 
-#if 0
+#if 1
             //set parameters for time discretization
-            if( M_model->isSteady() )
+            if(  M_model->isSteady() )
             {
-                M_bdf_primal->setSteady();
+                M_bdf_dual->setSteady();
+                M_bdf_dual_save->setSteady();
             }
             else
             {
@@ -1539,19 +1601,30 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                 M_bdf_dual->setTimeStep( -M_model->timeStep() );
                 M_bdf_dual->setTimeFinal( M_model->timeInitial() );
                 M_bdf_dual->setOrder( M_model->timeOrder() );
+
+                M_bdf_dual_save->setTimeInitial( M_model->timeFinal() );
+                M_bdf_dual_save->setTimeStep( -M_model->timeStep() );
+                M_bdf_dual_save->setTimeFinal( M_model->timeInitial() );
+                M_bdf_dual_save->setOrder( M_model->timeOrder() );
+
             }
 
             Adu = M_model->newMatrix();
             M_bdf_dual->start();
+            M_bdf_dual_save->start();
 
             //initialization
             *udu = *u;
             M_bdf_dual->initialize(*udu);
+            M_bdf_dual_save->initialize(*udu);
 
             bdf_coeff = M_bdf_dual->polyDerivCoefficient(0);
-            for ( M_bdf_dual->start(); !M_bdf_dual->isFinished(); M_bdf_dual->next() )
+            for ( M_bdf_dual->start(),M_bdf_dual_save->start();
+                  !M_bdf_dual->isFinished() , !M_bdf_dual_save->isFinished();
+                  M_bdf_dual->next() , M_bdf_dual_save->next() )
             {
                 auto bdf_poly = M_bdf_dual->polyDeriv();
+
                 boost::tie(M, A, F ) = M_model->update( mu , M_bdf_dual->time() );
                 A->addMatrix( bdf_coeff, M);
                 A->transpose( Adu );
@@ -1573,16 +1646,17 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                         Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
                 }
 
+                M_bdf_dual->shiftRight( *udu );
+
                 if( ! M_model->isSteady() )
                 {
                     element_ptrtype projection ( new element_type (M_model->functionSpace() ) );
                     projectionOnPodSpace ( udu , projection, "dual" );
                     *uproj=*udu;
-                    M_bdf_primal_save->shiftRight( *uproj );
+                    M_bdf_dual_save->shiftRight( *uproj );
                 }
 
 
-                M_bdf_dual->shiftRight( *udu );
             }
             std::cout<<"dual problem solved"<<std::endl;
 
@@ -1593,11 +1667,12 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         for( int l = 0; l < M_model->Nl(); ++l )
             Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
 
-
         Log() << "[CRB::offlineNWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
 
         M_WNmu->push_back( mu, index );
         M_WNmu_complement = M_WNmu->complement();
+
+        bool norm_zero = false;
 
         if( M_model->isSteady() )
         {
@@ -1606,6 +1681,30 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         }//end of steady case
         else
         {
+            if( M_N == 0 && orthonormalize_primal==false)
+            {
+                //add initial solution as element in the reduced basis if it's not zero
+                //else there will be problems during orthonormalization step
+                //note : at this step *u contains solution of primal probleme at final time
+                //so it's the initial solution of the dual problem
+                //in the case where orthonormalize_primal==true, even with initial solution in
+                //the reduced basis we will commit an approximation in the online part
+                //when initializing uN.
+                //if initial solution is zero then the system the matrix used in online will be singular
+                element_ptrtype initial_field ( new element_type ( M_model->functionSpace() ) );
+                M_model->initializationField( initial_field ); //fill initial_field
+                int norm_ini = M_model->scalarProduct( *initial_field, *initial_field );
+                if ( norm_ini != 0 )
+                {
+                    M_WN.push_back( *initial_field );
+                    M_WNdu.push_back( *u );
+                }
+                else
+                {
+                    norm_zero=true;
+                }
+            } // end of if ( M_N == 0 )
+
             //POD in time
             Log()<<"[CRB::offlineNoErrorEstimation] start of POD \n";
 
@@ -1615,40 +1714,44 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             POD->setBdf( M_bdf_primal_save );
             POD->setModel(M_model);
             mode_set_type ModeSet;
-            POD->pod(ModeSet);
+            int number_max_of_mode = POD->pod(ModeSet,true);
+            if( number_max_of_mode < M_Nm )
+            {
+                std::cout<<"With crb.Nm = "<<M_Nm<<" there was too much too small eigenvalues so the value";
+                std::cout<<" of crb.Nm as been changed to "<<number_max_of_mode<<std::endl;
+                M_Nm = number_max_of_mode;
+            }
+
             //now : loop over number modes per mu
             for(int i=0;i<M_Nm;i++)
             {
                 M_WN.push_back( ModeSet[i] );
             }
 
-
             //and now the dual
-            //POD->setBdf( M_bdf_dual );
-            //mode_set_type ModeSetdu;
-            //POD->pod(ModeSetdu);
-            element_ptrtype mode_zero ( new element_type( M_model->functionSpace() ) );
-
+            POD->setBdf( M_bdf_dual );
+            mode_set_type ModeSetdu;
+            POD->pod(ModeSetdu,false);
             for(int i=0;i<M_Nm;i++)
             {
-                //M_WNdu.push_back( ModeSetdu[i] ) ;
-                M_WNdu.push_back( *mode_zero ) ;
+                M_WNdu.push_back( ModeSetdu[i] ) ;
             }
+
 
         }//end of transient case
 
-        M_N+=M_Nm;
-
+        int number_of_added_elements = M_Nm + (M_N==0 && orthonormalize_primal==false && norm_zero==false);
+        M_N+=number_of_added_elements;
 
         if(orthonormalize_primal)
         {
-            orthonormalize( M_N, M_WN, M_Nm );
-            orthonormalize( M_N, M_WN, M_Nm );
+            orthonormalize( M_N, M_WN, number_of_added_elements );
+            orthonormalize( M_N, M_WN, number_of_added_elements );
         }
         if(orthonormalize_dual)
         {
-            orthonormalize( M_N, M_WNdu, M_Nm );
-            orthonormalize( M_N, M_WNdu, M_Nm );
+            orthonormalize( M_N, M_WNdu, number_of_added_elements );
+            orthonormalize( M_N, M_WNdu, number_of_added_elements );
         }
 
         Log() << "[CRB::offlineWithErrorEstimation] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
@@ -1659,7 +1762,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             M_Aq_pr_du[q].conservativeResize( M_N, M_N );
 
             // only compute the last line and last column of reduced matrices
-            for(int i = M_N-M_Nm; i < M_N; i++ )
+            for(int i = M_N-number_of_added_elements; i < M_N; i++ )
             {
                 for( int j = 0; j < M_N; ++j )
                 {
@@ -1668,7 +1771,8 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                     M_Aq_pr_du[q]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WN[j] );
                 }
             }
-            for(int j=M_N-M_Nm; j < M_N; j++ )
+
+            for(int j=M_N-number_of_added_elements; j < M_N; j++ )
             {
                 for( int i = 0; i < M_N; ++i )
                 {
@@ -1678,6 +1782,8 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                 }
             }
         }
+
+
         Log() << "[CRB::offlineWithErrorEstimation] compute Mq_pr, Mq_du, Mq_pr_du" << "\n";
         for( int q = 0; q < M_model->Qm(); ++q )
         {
@@ -1686,7 +1792,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             M_Mq_pr_du[q].conservativeResize( M_N, M_N );
 
             // only compute the last line and last column of reduced matrices
-            for( int i=M_N-M_Nm ; i < M_N; i++ )
+            for( int i=M_N-number_of_added_elements ; i < M_N; i++ )
             {
                 for( int j = 0; j < M_N; ++j )
                 {
@@ -1695,7 +1801,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
                     M_Mq_pr_du[q]( i, j ) = Mq[q]->energy( M_WNdu[i], M_WN[j] );
                 }
             }
-            for(int j = M_N-M_Nm; j < M_N ; j++ )
+            for(int j = M_N-number_of_added_elements; j < M_N ; j++ )
             {
                 for( int i = 0; i < M_N; ++i )
                 {
@@ -1711,7 +1817,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         {
             M_Fq_pr[q].conservativeResize( M_N );
             M_Fq_du[q].conservativeResize( M_N );
-            for( int l = 1; l <= M_Nm; ++l )
+            for( int l = 1; l <= number_of_added_elements; ++l )
             {
                 int index = M_N-l;
                 M_Fq_pr[q]( index ) = M_model->Fq( 0, q, M_WN[index] );
@@ -1723,7 +1829,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         {
             M_Lq_pr[q].conservativeResize( M_N );
             M_Lq_du[q].conservativeResize( M_N );
-            for( int l = 1; l <= M_Nm; ++l )
+            for( int l = 1; l <= number_of_added_elements; ++l )
             {
                 int index = M_N-l;
                 M_Lq_pr[q]( index ) = M_model->Fq( M_output_index, q, M_WN[index] );
@@ -1731,8 +1837,6 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
             }
 
         }
-
-
         timer2.restart();
         if(M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM)
             {
@@ -1754,7 +1858,6 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
 
         if ( this->vm()["crb.check.rb"].template as<int>() == 1 )std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n"; timer2.restart();
-
         std::cout << "time: " << timer.elapsed() << "\n";
         Log() << "time: " << timer.elapsed() << "\n";
         std::cout << "============================================================\n";
@@ -2119,13 +2222,11 @@ typename CRB<TruthModelType>::value_type
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & uN, vectorN_type & uNdu, mpl::bool_<true> , int K  ) const
 {
 
-
     //if K>0 then the time at which we want to evaluate output is defined by
     //time_for_output = K * time_step
     //else it's the default value and in this case we take final time
     double time_for_output;
     double time_step=M_model->timeStep();
-
 
     if( K > 0)
     {
@@ -2165,17 +2266,18 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
 
     if( orthonormalize_primal)
     {
-        BOOST_FOREACH( auto pr, M_WN )
+        //BOOST_FOREACH( auto pr, M_WN )
+        for(int pr=0; pr<N; pr++ )
         {
-            double k =  M_model->scalarProduct(*initial_field, pr);
+            double k =  M_model->scalarProduct(*initial_field, M_WN[pr]);
             coeffs.push_back(k);
         }
     }
     else
     {
-        matrixN_type MN ( (int)M_N, (int)M_N ) ;
-        vectorN_type FN ( (int)M_N );
-        for(int i=0; i<M_N; i++)
+        matrixN_type MN ( (int)N, (int)N ) ;
+        vectorN_type FN ( (int)N );
+        for(int i=0; i<N; i++)
         {
             for(int j=0; j<i; j++)
             {
@@ -2185,13 +2287,15 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
             MN(i,i) = M_model->scalarProduct( M_WN[i] , M_WN[i] );
             FN(i) = M_model->scalarProduct(*initial_field,M_WN[i]);
         }
-        vectorN_type projectionN ((int) M_N);
+
+        vectorN_type projectionN ((int) N);
         projectionN = MN.lu().solve( FN );
 
         for(int i=0;i <projectionN.size(); i++)
         {
             coeffs.push_back(projectionN(i));
         }
+
     }
 
     int index=0;
@@ -2216,7 +2320,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
     }
 
     //vector containing oututs from time=time_step until time=time_for_output
-    std::vector<double>output_vector;
+    std::vector<double>output_time_vector;
     double output;
     for(double time=time_step; time<=time_for_output; time+=time_step)
     {
@@ -2251,7 +2355,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & u
         }
 
         output = L.dot( uN );
-        output_vector.push_back(output);
+        output_time_vector.push_back(output);
 
     }
 
@@ -2376,9 +2480,10 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
     y_type err( M_Xi->size() );
 
+
     if( M_error_type == CRB_EMPIRICAL )
     {
-      if(N==M_Nm)
+      if(M_WNmu->size()==1)
       {
           parameter_type mu (M_Dmu);
           size_type id;
@@ -2397,6 +2502,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
           double maxerr = err1.array().abs().maxCoeff( &index );
           Log() << "[maxErrorBounds] WNmu_complement N=" << N << " max Error = " << maxerr << " at index = " << index << "\n";
           parameter_type  mu = M_WNmu_complement->at( index );
+
           return boost::make_tuple( maxerr, mu, M_WNmu_complement->indexInSuperSampling( index ) );
       }
 
@@ -2498,11 +2604,13 @@ CRB<TruthModelType>::empiricalErrorEstimation ( int Nwn, parameter_type const& m
   vectorN_type Un( Nwn );
   vectorN_type Undu( Nwn );
   double sn = lb( Nwn, mu, Un, Undu  );
-
   int nb_element = Nwn/M_factor*(M_factor>0) + (Nwn+M_factor)*(M_factor<0 && Nwn>(-M_factor)) +1*(M_factor<0 && Nwn<=(-M_factor));
+
   vectorN_type Un2( nb_element );
   vectorN_type Undu2( nb_element );
+
   double output_smaller_basis = lb(nb_element, mu, Un2, Undu2);
+
   double error_estimation = math::abs(sn-output_smaller_basis);
 
   return error_estimation;
@@ -3424,7 +3532,7 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_ptrtype & u , element_p
                 projection->add( 1 , e );
             }
         }//end of if orthonormalize_primal
-        else
+       else
        {
            matrixN_type MN ( (int)M_N, (int)M_N ) ;
            vectorN_type FN ( (int)M_N );
