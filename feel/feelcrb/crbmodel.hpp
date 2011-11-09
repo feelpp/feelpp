@@ -637,10 +637,6 @@ public:
     {
         return M_model->initializationField(initial_field);
     }
-    sparse_matrix_ptrtype& scalarProductMatrix()
-    {
-        return M_model->scalarProductMatrix();
-    }
 
     //@}
 
