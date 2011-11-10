@@ -705,7 +705,7 @@ class FunctionSpace
 public:
     typedef typename functionspace_signature::bind<A0,A1,A2,A3,A4>::type args;
 
-    typedef typename parameter::binding<args, tag::mesh_type>::type mesh_type;
+    typedef typename parameter::binding<args, tag::mesh_type>::type meshes_list;
     typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
     typedef typename parameter::binding<args, tag::periodicity_type, NoPeriodicity>::type periodicity_type;
     typedef typename parameter::binding<args, tag::bases_list, bases<Lagrange<1,Scalar> > >::type bases_list;
@@ -713,10 +713,18 @@ public:
     BOOST_MPL_ASSERT_NOT( ( boost::is_same<mpl::at<bases_list,mpl::int_<0> >, mpl::void_> ) );
 
 private:
+
+    template<typename MeshType,typename BasisType>
+    struct ChangeMesh
+    {
+        typedef boost::shared_ptr<FunctionSpace<MeshType,bases<BasisType>,value_type, periodicity_type> > type;
+    };
     template<typename BasisType>
     struct ChangeBasis
     {
-        typedef boost::shared_ptr<FunctionSpace<mesh_type,bases<BasisType>,value_type, periodicity_type> > type;
+        typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                                  mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,bases<BasisType>,value_type, periodicity_type> > >,
+                                  mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,BasisType>, mpl::back_inserter<fusion::vector<> > > > >::type::type type;
     };
     typedef typename mpl::transform<bases_list, ChangeBasis<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type functionspace_vector_type;
 
@@ -724,7 +732,9 @@ private:
     struct ChangeBasisToComponentBasis
     {
         typedef typename BasisType::component_basis_type component_basis_type;
-        typedef boost::shared_ptr<FunctionSpace<mesh_type,bases<component_basis_type>,value_type,periodicity_type> > type;
+        typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                                  mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,bases<component_basis_type>,value_type, periodicity_type> > >,
+                                  mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,component_basis_type>, mpl::back_inserter<fusion::vector<> > > > >::type::type type;
     };
 
     typedef typename mpl::transform<bases_list,
@@ -741,6 +751,33 @@ private:
                                     GetComponentBasis<mpl::_1>,
                                     mpl::back_inserter<fusion::vector<> > >::type component_basis_vector_type;
 
+
+
+public:
+
+    /** @name Constants
+     */
+    //@{
+    static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
+
+    template<int N>
+    struct GetMesh
+    {
+        typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                                  mpl::identity<mpl::identity<meshes_list> >,
+                                  mpl::identity<mpl::at_c<meshes_list,N> > >::type::type::type type;
+    };
+    // mesh
+    typedef meshes_list MeshesListType;
+    typedef typename GetMesh<0>::type mesh_0_type;
+    typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                              mpl::identity<meshes_list>,
+                              mpl::identity<mesh_0_type> >::type::type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                              mpl::identity<typename mesh_type::element_type>,
+                              mpl::identity<mpl::void_> >::type::type convex_type;
+
     template<typename BasisType>
     struct GetNComponents
     {
@@ -750,21 +787,21 @@ private:
                                                     value_type,
                                                     typename mesh_type::element_type>::type::nComponents> type;
     };
-public:
 
-    /** @name Constants
-     */
-    //@{
+    static const uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                                             mpl::identity<mpl::int_<meshes_list::nDim> >,
+                                             mpl::identity<mpl::int_<-1> > >::type::type::value;
+    static const uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                                             mpl::identity<mpl::int_<meshes_list::nRealDim> >,
+                                             mpl::identity<mpl::int_<-1> > >::type::type::value;
 
-    static const uint16_type nDim = mesh_type::nDim;
-    static const uint16_type nRealDim = mesh_type::nRealDim;
 
-    static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
+
     //typedef typename mpl::at_c<bases_list,0>::type::template apply<mesh_type::nDim,value_type,typename mesh_type::element_type>::type basis_0_type;
-    typedef typename mpl::at_c<bases_list,0>::type::template apply<mesh_type::nDim,
-                                                                   mesh_type::nRealDim,
+    typedef typename mpl::at_c<bases_list,0>::type::template apply<GetMesh<0>::type::nDim,
+                                                                   GetMesh<0>::type::nRealDim,
                                                                    value_type,
-                                                                   typename mesh_type::element_type>::type basis_0_type;
+                                                                   typename GetMesh<0>::type::element_type>::type basis_0_type;
 
     static const uint16_type rank = ( is_composite? invalid_uint16_type_value : basis_0_type::rank );
     static const bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
@@ -799,12 +836,9 @@ public:
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef boost::shared_ptr<functionspace_type> pointer_type;
 
-    typedef FunctionSpace<mesh_type, component_basis_vector_type, value_type, periodicity_type> component_functionspace_type;
+    typedef FunctionSpace<meshes_list, component_basis_vector_type, value_type, periodicity_type> component_functionspace_type;
     typedef boost::shared_ptr<component_functionspace_type> component_functionspace_ptrtype;
 
-    // mesh
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef typename mesh_type::element_type convex_type;
 
     // basis
     typedef bases_list BasisType;
@@ -816,6 +850,8 @@ public:
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<bases_list>,
                               mpl::identity<basis_0_type> >::type::type basis_type;
+
+
     typedef boost::shared_ptr<basis_type> basis_ptrtype;
     typedef basis_type reference_element_type;
     typedef boost::shared_ptr<reference_element_type> reference_element_ptrtype;
@@ -859,15 +895,16 @@ public:
 #endif
 
     // geomap
-    typedef typename mesh_type::gm_type gm_type;
-    typedef typename mesh_type::gm1_type gm1_type;
-    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::gm_type>, mpl::identity<mpl::void_> >::type::type gm_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::gm1_type>, mpl::identity<mpl::void_> >::type::type gm1_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::element_type>, mpl::identity<mpl::void_> >::type::type geoelement_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
     typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
-    typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> gmc_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> >,
+                              mpl::identity<mpl::void_> >::type::type gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-    typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
-    typedef typename gm_type::precompute_type geopc_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_ptrtype>, mpl::identity<mpl::void_> >::type::type geopc_ptrtype;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_type>, mpl::identity<mpl::void_> >::type::type geopc_type;
 
     // dof
     typedef typename mpl::if_<mpl::bool_<is_composite>,
