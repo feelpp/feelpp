@@ -111,7 +111,7 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY
 
 if ( NOT FEEL_MINIMAL_CONFIGURATION )
 
-foreach( docex  myintegrals mymesh geotool myfunctionspace laplacian loadmesh residualestimator stokes bratu nonlinearpow )
+foreach( docex  grid myintegrals mymesh geotool myfunctionspace laplacian loadmesh residualestimator stokes bratu nonlinearpow )
   add_docex( ${docex} )
 endforeach()
 
