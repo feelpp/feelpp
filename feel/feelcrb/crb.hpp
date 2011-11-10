@@ -1055,7 +1055,7 @@ CRB<TruthModelType>::offlineNoErrorEstimation(mpl::bool_<true>)
             }
         }//end of transient case
 
-        int number_of_added_elements = M_Nm + (M_N==0 && orthonormalize_primal==false && norm_zero==false);
+        int number_of_added_elements = M_Nm + (M_N==0 && orthonormalize_primal==false && norm_zero==false && !M_model->isSteady());
         M_N+=number_of_added_elements;
 
         if(orthonormalize_primal)
@@ -1740,7 +1740,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
         }//end of transient case
 
-        int number_of_added_elements = M_Nm + (M_N==0 && orthonormalize_primal==false && norm_zero==false);
+        int number_of_added_elements = M_Nm + (M_N==0 && orthonormalize_primal==false && norm_zero==false && !M_model->isSteady() );
         M_N+=number_of_added_elements;
 
         if(orthonormalize_primal)
