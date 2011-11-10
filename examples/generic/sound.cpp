@@ -297,9 +297,13 @@ Sound<Dim, Order, Entity>::run()
     modes=
         eigs( _matrixA=S,
               _matrixB=M,
+              // this is a generalized Hermitian Eigenvalue Problem
+              _problem=(EigenProblemType)GHEP,
               _nev=nev,
               _ncv=ncv,
-              _spectrum=SMALLEST_MAGNITUDE );
+              _maxit=maxit,
+              _tolerance=tol,
+              _spectrum=this->vm()["solvereigen-position"].template as<int>());
     element_type mode( Xh, "mode" );
     if ( !modes.empty() )
     {
@@ -349,7 +353,7 @@ main( int argc, char** argv )
     using namespace Feel;
 
     /* change parameters below */
-    const int nDim = 3; // 2 or 3
+    const int nDim = 2; // 2 or 3
     const int nOrder = 1;
 
     typedef Feel::Sound<nDim, nOrder, Simplex> sound_type;
