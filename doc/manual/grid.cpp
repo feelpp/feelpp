@@ -158,12 +158,12 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     using namespace Feel::vf;
 
-    auto A = M_backend->newMatrix( Xhb, Xhb ) ;
-    form2( Xhb, Xhb, A, _init=true ) =
-        integrate( elements(meshb), kappa*gradt(u)*trans(grad(v)) + nu*idt(u)*id(v) );
+    auto A = M_backend->newMatrix( Xh, Xh ) ;
+    form2( Xh, Xh, A, _init=true ) =
+        integrate( elements(mesh), kappa*gradt(u)*trans(grad(v)) + nu*idt(u)*id(v) );
 
-    auto B = M_backend->newMatrix( Xhb, Xhb ) ;
-    form2( Xhb, Xhb, B, _init=true ) =
+    auto B = M_backend->newMatrix( Xh, Xh ) ;
+    form2( Xh, Xh, B, _init=true ) =
         integrate( markedfaces(mesh,"Paroi"), kappa*idt(u)*id(v) );
 
 
