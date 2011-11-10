@@ -61,7 +61,7 @@ extern "C"
 #include <petsc.h>
 #include <petscerror.h>
 }
-#if defined( FEEL_HAVE_SLEPC_H )
+#if defined( FEEL_HAVE_SLEPC )
 # include <slepc.h>
 #endif /* HAVE_SLEPC */
 
@@ -110,7 +110,7 @@ Application::initPETSc()
             PETSC_COMM_WORLD = COMM_WORLD;
             int __argc = this->unknownArgc();
             char** __argv = this->unknownArgv();
-#if defined( HAVE_SLEPC )
+#if defined( FEEL_HAVE_SLEPC )
             int ierr = SlepcInitialize(&__argc,&__argv, PETSC_NULL, PETSC_NULL );
 #else
             int ierr = PetscInitialize( &__argc, &__argv, PETSC_NULL, PETSC_NULL );
@@ -432,11 +432,11 @@ Application::~Application()
     PetscInitialized( &is_petsc_initialized );
     if ( is_petsc_initialized )
     {
-#if defined( HAVE_SLEPC )
+#if defined( FEEL_HAVE_SLEPC )
         SlepcFinalize();
 #else
         PetscFinalize();
-#endif // HAVE_SLEPC
+#endif // FEEL_HAVE_SLEPC
     }
 #endif // HAVE_PETSC_H
 
