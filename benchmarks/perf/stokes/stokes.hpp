@@ -269,24 +269,26 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     subt.restart();
-    //form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(dxt(u),dx(v))+inner(dyt(u),dy(v))));
-    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=trans(gradt(u)*idv(u))*id(v));
-    M_stats.put("t.assembly.matrix.convection1",subt.elapsed());subt.restart();
-    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=inner(gradt(u)*idv(u),id(v)));
-    M_stats.put("t.assembly.matrix.convection2",subt.elapsed());subt.restart();
-    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=trans(dxt(u)*idv(u)(0)+dyt(u)*idv(u)(1)+dzt(u)*idv(u)(2))*id(v));
-    M_stats.put("t.assembly.matrix.convection3",subt.elapsed());subt.restart();
-    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(trans(dxt(u))*dx(v)+trans(dyt(u))*dy(v)+trans(dzt(u))*dz(v)));
-    M_stats.put("t.assembly.matrix.diffusion0",subt.elapsed());subt.restart();
-    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*trace(trans(gradt(u))*grad(v)));
-    M_stats.put("t.assembly.matrix.diffusion1",subt.elapsed());subt.restart();
-    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=inner(mu*gradt(u),grad(v)));
-    M_stats.put("t.assembly.matrix.diffusion2",subt.elapsed());subt.restart();
-    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=inner(mu*dxt(u),dx(v))+inner(mu*dyt(u),dy(v))+inner(mu*dzt(u),dz(v)));
-    M_stats.put("t.assembly.matrix.diffusion3",subt.elapsed());subt.restart();
-    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(dxt(u),dx(v))+inner(dyt(u),dy(v))+inner(dzt(u),dz(v))));
-    M_stats.put("t.assembly.matrix.diffusion4",subt.elapsed());subt.restart();
-
+    if (  this->vm().count( "extra-terms" ) )
+    {
+        //form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(dxt(u),dx(v))+inner(dyt(u),dy(v))));
+        form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=trans(gradt(u)*idv(u))*id(v));
+        M_stats.put("t.assembly.matrix.convection1",subt.elapsed());subt.restart();
+        form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=inner(gradt(u)*idv(u),id(v)));
+        M_stats.put("t.assembly.matrix.convection2",subt.elapsed());subt.restart();
+        form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=trans(dxt(u)*idv(u)(0)+dyt(u)*idv(u)(1)+dzt(u)*idv(u)(2))*id(v));
+        M_stats.put("t.assembly.matrix.convection3",subt.elapsed());subt.restart();
+        form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(trans(dxt(u))*dx(v)+trans(dyt(u))*dy(v)+trans(dzt(u))*dz(v)));
+        M_stats.put("t.assembly.matrix.diffusion0",subt.elapsed());subt.restart();
+        form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*trace(trans(gradt(u))*grad(v)));
+        M_stats.put("t.assembly.matrix.diffusion1",subt.elapsed());subt.restart();
+        form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=inner(mu*gradt(u),grad(v)));
+        M_stats.put("t.assembly.matrix.diffusion2",subt.elapsed());subt.restart();
+        form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=inner(mu*dxt(u),dx(v))+inner(mu*dyt(u),dy(v))+inner(mu*dzt(u),dz(v)));
+        M_stats.put("t.assembly.matrix.diffusion3",subt.elapsed());subt.restart();
+        form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(dxt(u),dx(v))+inner(dyt(u),dy(v))+inner(dzt(u),dz(v))));
+        M_stats.put("t.assembly.matrix.diffusion4",subt.elapsed());subt.restart();
+    }
     t.restart();
 
     form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(gradt(u),grad(v))));
@@ -300,19 +302,28 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        //form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
-        ProfilerStart("/tmp/bfaces");
-        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=idt(p)*(trans(N())*id(v)) );
-        ProfilerStop();
-        M_stats.put("t.assembly.matrix.dirichlet_pn*v",subt.elapsed());subt.restart();
-        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(dnt(u))*id(v) );
-        M_stats.put("t.assembly.matrix.dirichlet_dnt(u)*v",subt.elapsed());subt.restart();
-        //form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(u) );
-        //form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=id(p)*(trans(N())*idt(u)) );
-        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=(idt(u)(0)*Nx()+idt(u)(1)*Ny()+idt(u)(2)*Nz())*id(p), _verbose=true );
-        M_stats.put("t.assembly.matrix.dirichlet_pN*u",subt.elapsed());subt.restart();
-        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(dn(u))*idt(u) );
-        M_stats.put("t.assembly.matrix.dirichlet_dn(v)*u",subt.elapsed());subt.restart();
+        if (  !this->vm().count( "extra-terms" ) )
+        {
+            form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
+            M_stats.put("t.assembly.matrix.dirichlet1",subt.elapsed());subt.restart();
+            form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(v) );
+            M_stats.put("t.assembly.matrix.dirichlet2",subt.elapsed());subt.restart();
+        }
+        else
+        {
+            ProfilerStart("/tmp/bfaces");
+            form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=idt(p)*(trans(N())*id(v)) );
+            ProfilerStop();
+            M_stats.put("t.assembly.matrix.dirichlet_pn*v",subt.elapsed());subt.restart();
+            form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(dnt(u))*id(v) );
+            M_stats.put("t.assembly.matrix.dirichlet_dnt(u)*v",subt.elapsed());subt.restart();
+            //form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(u) );
+            form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=id(p)*(trans(N())*idt(u)) );
+            //form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=(idt(u)(0)*Nx()+idt(u)(1)*Ny()+idt(u)(2)*Nz())*id(p), _verbose=true );
+            M_stats.put("t.assembly.matrix.dirichlet_pN*u",subt.elapsed());subt.restart();
+            form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(dn(u))*idt(u) );
+            M_stats.put("t.assembly.matrix.dirichlet_dn(v)*u",subt.elapsed());subt.restart();
+        }
         form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*inner(idt(u),id(v))/hFace() );
         M_stats.put("t.assembly.matrix.dirichlet_u*u",subt.elapsed());subt.restart();
         Log() << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
