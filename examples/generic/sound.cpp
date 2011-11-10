@@ -44,15 +44,15 @@
 
 #include <feel/feelvf/vf.hpp>
 
-std::pair<std::string,std::string> createRoom( int Dim, double meshSize );
-
-
+namespace Feel
+{
+gmsh_ptrtype createRoom( int Dim, double meshSize );
 
 inline
-Feel::po::options_description
+po::options_description
 makeOptions()
 {
-    Feel::po::options_description soundoptions("Sound options");
+    po::options_description soundoptions("Sound options");
     soundoptions.add_options()
         ("kc2", Feel::po::value<double>()->default_value( 1 ), "k/c parameter")
         ("sigma", Feel::po::value<double>()->default_value( 20 ), "shift parameter for the eigenvalue problem")
@@ -65,38 +65,33 @@ makeOptions()
     return soundoptions.add( Feel::feel_options() );
 }
 inline
-Feel::AboutData
+AboutData
 makeAbout()
 {
-    Feel::AboutData about( "sound" ,
-                            "sound" ,
-                            "0.2",
-                            "nD(n=1,2,3) acoustics in an amphitheater",
-                            Feel::AboutData::License_GPL,
-                            "Copyright (c) 2007-2011 Universite Joseph Fourier");
+    AboutData about( "sound" ,
+                     "sound" ,
+                     "0.2",
+                     "nD(n=1,2,3) acoustics in an amphitheater",
+                     Feel::AboutData::License_GPL,
+                     "Copyright (c) 2007-2011 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
 
 }
 
-
-namespace Feel
-{
 using namespace vf;
 /**
  * Sound Solver using discontinous approximation spaces
  *
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  */
-template<int Dim,
-         int Order,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order>
 class Sound
     :
-    public Application
+    public Simget
 {
-    typedef Application super;
+    typedef Simget super;
 public:
 
     // -- TYPEDEFS --
@@ -115,171 +110,126 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     /*mesh*/
-    typedef Entity<Dim,1,Dim> entity_type;
+    typedef Simplex<Dim,1,Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptr_type;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >,Discontinuous> p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >,Discontinuous> p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
     /*basis*/
-    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef typename element_type::template sub_element<0>::type element_0_type;
-    typedef typename element_type::template sub_element<1>::type element_1_type;
-
-    /*quadrature*/
-    //typedef IM_PK<Dim, imOrder, value_type> im_type;
-    typedef IM<Dim, imOrder, value_type, Entity> im_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
 
-    Sound( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    Sound( std::string const& name, po::variables_map const& vm, AboutData const& ad )
         :
-        super( argc, argv, ad, od ),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        eigen( SolverEigen<value_type>::build( this->vm() ) ),
-        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
-        timers(),
-        stats()
+        super( vm, ad ),
+        M_name( name )
     {
-        Log() << "[Sound] hsize = " << meshSize << "\n";
-        Log() << "[Sound] export = " << this->vm().count("export") << "\n";
     }
 
-    /**
-     * create the mesh using mesh size \c meshSize
-     */
-    mesh_ptr_type createMesh( double meshSize );
+    std::string name() const { return M_name; }
 
     /**
      * run the convergence test
      */
     void run();
 
+    //! must be redefined, not used
+    void run(const double*, long unsigned int, double*, long unsigned int) {};
 private:
-
-    /**
-     * export results to ensight format (enabled by  --export cmd line options)
-     */
-    void exportResults( element_type& u, element_type& mode0 );
-
-private:
-
-    backend_ptrtype M_backend;
-    double meshSize;
-    boost::shared_ptr<SolverEigen<value_type> > eigen;
-
-
-    boost::shared_ptr<export_type> exporter;
-
-    std::map<std::string,std::pair<boost::timer,double> > timers;
-    std::map<std::string,double> stats;
+    std::string M_name;
 }; // Sound
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-typename Sound<Dim,Order,Entity>::mesh_ptr_type
-Sound<Dim,Order,Entity>::createMesh( double meshSize )
-{
-    timers["mesh"].first.restart();
-    mesh_ptr_type mesh( new mesh_type );
-    //mesh->setRenumber( false );
 
-    Gmsh gmsh;
-    gmsh.setOrder( GMSH_ORDER_ONE );
-    std::string mesh_name, mesh_desc;
-    boost::tie( mesh_name, mesh_desc ) = ::createRoom(Dim,meshSize);
-    std::string fname = gmsh.generate( mesh_name, mesh_desc );
-
-    ImporterGmsh<mesh_type> import( fname );
-    //mesh->setRenumber( false );
-    mesh->accept( import );
-
-    timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
-    return mesh;
-} // Sound::createMesh
-
-
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order>
 void
-Sound<Dim, Order, Entity>::run()
+Sound<Dim, Order>::run()
 {
-    if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
-
-    //    int maxIter = 10.0/meshSize;
     using namespace Feel::vf;
-
-
+    Log() << "[Sound] hsize = " << this->meshSize() << "\n";
     this->changeRepository( boost::format( "%1%/%2%/P%3%/%4%/" )
                             % this->about().appName()
                             % entity_type::name()
                             % Order
                             % this->vm()["hsize"].template as<double>()
                             );
-    this->setLogs();
+    //! backend
+    auto backend = backend_type::build( this->vm() );
+
+    //! eigen solver
+    auto eigen = SolverEigen<value_type>::build( this->vm() );
+
+    //! exporter to paraview or gmsh
+    auto exporter = Exporter<mesh_type>::New( this->vm(), this->about().appName() );
+
+    boost::timer t;
 
     /*
      * First we create the mesh
      */
-    auto mesh = createMesh( meshSize );
-    stats["nelt"] = mesh->elements().size();
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _desc = createRoom(Dim,this->meshSize()) );
+
+    M_stats.put("h",this->meshSize());
+    M_stats.put("n.space.nelts",mesh->numElements());
+    M_stats.put("t.init.mesh",t.elapsed());t.restart();
 
     /*
      * The function space and some associate elements are then defined
      */
-    timers["init"].first.restart();
     auto Xh = space_type::New( mesh );
     auto u = Xh->element();
     auto v = Xh->element();
-    timers["init"].second = timers["init"].first.elapsed();
-    stats["ndof"] = Xh->nDof();
 
-    auto F = M_backend->newVector( Xh );
-    timers["assembly"].first.restart();
+    M_stats.put("n.space.ndof",Xh->nLocalDof());
+    M_stats.put("t.init.space",t.elapsed());t.restart();
+
+    auto F = backend->newVector( Xh );
 
     if ( Dim == 2 )
         form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces(mesh,2), _expr=val(Py()*(1-Py()))*id(v) );
     else
         form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces(mesh,51),  _expr=val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) );
 
-    timers["assembly"].second = timers["assembly"].first.elapsed();
+    M_stats.put("t.assembly.vector.total",t.elapsed());t.restart();
 
     /*
      * Construction of the left hand side
      */
-    auto D = M_backend->newMatrix( Xh, Xh );
+    auto D = backend->newMatrix( Xh, Xh );
 
     double kc2 = this->vm()["kc2"].template as<double>();
-
-    timers["assembly"].first.restart();
 
     form2( _test=Xh, _trial=Xh, _matrix=D,_init=true ) = integrate( _range=elements(mesh),  _expr=( kc2*idt(u)*id(v)-gradt(u)*trans(grad(v))) );
     D->close();
 
-    timers["assembly"].second += timers["assembly"].first.elapsed();
+    M_stats.put("t.assembly.matrix.total",t.elapsed());
 
-    M_backend->solve( _matrix=D, _solution=u, _rhs=F );
+    t.restart();
+
+    backend->solve( _matrix=D, _solution=u, _rhs=F );
+
+    M_stats.put("t.solver.total",t.elapsed());t.restart();
 
     // eigen modes
     double sigma = this->vm()["sigma"].template as<double>();
-    auto S = M_backend->newMatrix( Xh, Xh );
+    auto S = backend->newMatrix( Xh, Xh );
     form2( _test=Xh, _trial=Xh, _matrix=S, _init=true ) = integrate( _range=elements(mesh),  _expr=gradt(u)*trans(grad(v)) );
-    S->close();
 
-    auto M = M_backend->newMatrix( Xh, Xh );
+    M_stats.put("t.assembly.matrix.A",t.elapsed());t.restart();
+
+    auto M = backend->newMatrix( Xh, Xh );
     form2( _test=Xh, _trial=Xh, _matrix=M, _init=true ) = integrate( _range=elements(mesh),  _expr=idt(u)*id(v));
-    M->close();
+    M_stats.put("t.assembly.matrix.B",t.elapsed());t.restart();
+
 
     int maxit = this->vm()["solvereigen-maxiter"].template as<int>();
     int tol = this->vm()["solvereigen-tol"].template as<double>();
@@ -290,7 +240,7 @@ Sound<Dim, Order, Entity>::run()
 
     double eigen_real, eigen_imag;
 
-    vector_ptrtype modepetsc( M_backend->newVector( Xh ) );
+    vector_ptrtype modepetsc( backend->newVector( Xh ) );
     int nconv;
     //boost::tie( nconv, eigen_real, eigen_imag, modepetsc )  =
     SolverEigen<double>::eigenmodes_type modes;
@@ -303,45 +253,26 @@ Sound<Dim, Order, Entity>::run()
               _ncv=ncv,
               _maxit=maxit,
               _tolerance=tol,
-              _spectrum=this->vm()["solvereigen-position"].template as<int>());
+              _spectrum=(PositionOfSpectrum)this->vm()["solvereigen-position"].template as<int>());
     element_type mode( Xh, "mode" );
     if ( !modes.empty() )
     {
         Log() << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
         std::cout << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>()
                   << "," <<  modes.begin()->second.get<1>() << ")\n";
-        //Log() << "eigenvalue " << 0 << " relative error = " << eigen->relativeError( 0 ) << "\n";
 
         mode = *modes.begin()->second.get<2>();
-
     }
-    this->exportResults( u, mode );
-    Log() << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
-    Log() << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
+    M_stats.put("t.eigensolver.total",t.elapsed());t.restart();
 
-} // Sound::run
-
-
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-void
-Sound<Dim, Order, Entity>::exportResults( element_type& U, element_type& Mode )
-{
-    timers["export"].first.restart();
-
-    Log() << "exportResults starts\n";
-    exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
-    //exporter->step(1.)->setMesh( this->createMesh( meshSize/2, 0.5, 1 ) );
-    //exporter->step(1.)->setMesh( this->createMesh( meshSize/Order, 0, 1 ) );
-    //exporter->step(1.)->setMesh( this->createMesh( meshSize ) );
+    exporter->step(0.)->setMesh( u.functionSpace()->mesh() );
     if ( !this->vm().count( "export-mesh-only" ) )
     {
-        exporter->step(1.)->add( "p", U );
-        exporter->step(1.)->add( "mode", Mode );
+        exporter->step(0.)->add( "p", u );
+        exporter->step(0.)->add( "mode", mode );
     }
     exporter->save();
-    timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
-} // Sound::export
+} // Sound::run
 } // Feel
 
 
@@ -352,19 +283,19 @@ main( int argc, char** argv )
 {
     using namespace Feel;
 
-    /* change parameters below */
-    const int nDim = 2; // 2 or 3
-    const int nOrder = 1;
-
-    typedef Feel::Sound<nDim, nOrder, Simplex> sound_type;
-
     /* assertions handling */
     Feel::Assert::setLog( "sound.assert");
 
-    /* define and run application */
-    sound_type sound( argc, argv, makeAbout(), makeOptions() );
-
+    Application sound( argc, argv, makeAbout(), makeOptions() );
+    if ( sound.vm().count( "help" ) )
+    {
+        std::cout << sound.optionsDescription() << "\n";
+        return 0;
+    }
+    sound.add( new Sound<2, 1>( "2D-P1", sound.vm(), sound.about() ) );
+    sound.add( new Sound<3, 1>( "3D-P1", sound.vm(), sound.about() ) );
     sound.run();
+    sound.printStats( std::cout, boost::assign::list_of("n.space")("t.init")("t.assembly.vector")("t.assembly.matrix" )("t.solver")("t.eigensolver") );
 }
 
 
