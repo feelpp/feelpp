@@ -30,9 +30,11 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <feel/feelfilters/gmsh.hpp>
 
-
-std::pair<std::string,std::string>
+namespace Feel
+{
+gmsh_ptrtype
 createRoom( int Dim, double meshSize )
 {
     std::ostringstream ostr;
@@ -96,5 +98,9 @@ createRoom( int Dim, double meshSize )
         os << "invalid dimension: " << Dim;
         throw std::logic_error( os.str() );
     }
-    return std::make_pair( nameStr.str(), ostr.str() );
+    gmsh_ptrtype gmshp( new Gmsh );
+    gmshp->setPrefix( nameStr.str() );
+    gmshp->setDescription( ostr.str() );
+    return gmshp;
 }
+} // Feel
