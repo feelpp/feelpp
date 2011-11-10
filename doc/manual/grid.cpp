@@ -10,6 +10,7 @@
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/geotool.hpp>
 /** use Feel namespace */
 using namespace Feel;
 using namespace Feel::vf;
@@ -124,6 +125,14 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                        % Order
                                        % meshSize );
 
+    GeoTool::Node x1(0,0);
+    GeoTool::Node x2(1,1);
+    GeoTool::Rectangle Omega(meshSize,"Omega",x1,x2);
+    Omega.setMarker(_type="line",_name="Paroi",_markerAll=true);
+    Omega.setMarker(_type="surface",_name="Omega",_markerAll=true);
+
+    auto mesh = Omega.createMesh<mesh_type>( "omega_"+ mesh_type::shape_type::name() );
+#if 0
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
                                               _usenames=true,
@@ -134,29 +143,29 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                               _xmax=1.,
                                               _ymin=0.,
                                               _ymax=1. ) );
-
+#endif
+    auto meshb = createSubmesh(mesh,boundaryelements(mesh));
     auto Xh = space_type::New( mesh );
     auto u = Xh->element();
     auto v = Xh->element();
+
+    auto Xhb = space_type::New( meshb );
+    auto ub = Xhb->element();
+    auto vb = Xhb->element();
 
     value_type kappa = this->vm()["kappa"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
 
     using namespace Feel::vf;
 
-    auto A = M_backend->newMatrix( Xh, Xh ) ;
+    auto A = M_backend->newMatrix( Xhb, Xhb ) ;
+    form2( Xhb, Xhb, A, _init=true ) =
+        integrate( elements(meshb), kappa*gradt(u)*trans(grad(v)) + nu*idt(u)*id(v) );
 
-    form2( Xh, Xh, A, _init=true ) =
-        integrate( elements(mesh), kappa*gradt(u)*trans(grad(v)) + nu*idt(u)*id(v) );
+    auto B = M_backend->newMatrix( Xhb, Xhb ) ;
+    form2( Xhb, Xhb, B, _init=true ) =
+        integrate( markedfaces(mesh,"Paroi"), kappa*idt(u)*id(v) );
 
-    A->close();
-
-    auto B = M_backend->newMatrix( Xh, Xh ) ;
-
-    form2( Xh, Xh, B, _init=true ) =
-        integrate( boundaryfaces(mesh), kappa*idt(u)*id(v) );
-
-    B->close();
 
     int maxit = this->vm()["solvereigen-maxiter"].template as<int>();
     int tol = this->vm()["solvereigen-tol"].template as<double>();
@@ -178,7 +187,7 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
               _spectrum=SMALLEST_MAGNITUDE );
     std::cout <<"pass"<< std::endl;
 
-    auto mode = Xh->element() ;
+    auto mode = Xhb->element() ;
 
     if ( !modes.empty() )
     {
@@ -199,9 +208,9 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( mesh );
+        exporter->step(0)->setMesh( meshb );
 
-        exporter->step(0)->add( "u", u );
+        //exporter->step(0)->add( "u", u );
         exporter->step(0)->add( "mode", mode );
 
         exporter->save();
