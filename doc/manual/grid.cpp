@@ -185,19 +185,21 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
               _nev=nev,
               _ncv=ncv,
               _transform=SINVERT,
-              _spectrum=SMALLEST_MAGNITUDE );
+              _spectrum=SMALLEST_MAGNITUDE,
+              _verbose = true );
     std::cout <<"pass"<< std::endl;
 
-    auto femodes = std::vector<decltype(Xh->element())>( modes.size() ) ;
+    auto femodes = std::vector<decltype(Xh->element())>( modes.size(), Xh->element() );
 
     if ( !modes.empty() )
     {
         Log() << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
-        std::cout << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>()
-                  << "," <<  modes.begin()->second.get<1>() << ")\n";
+
+        int i = 0;
         BOOST_FOREACH( auto mode, modes )
         {
-            femodes.push_back( *mode->second.get<2>() );
+            std::cout << " -- eigenvalue " << i << " = (" << mode.second.get<0>() << "," <<  mode.second.get<1>() << ")\n";
+            femodes[i++] = *mode.second.get<2>();
         }
     }
 
@@ -214,11 +216,10 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         exporter->step(0)->setMesh( mesh );
 
         //exporter->step(0)->add( "u", u );
-        std::for_each( modes.begin(), modes.end(), [&femodes]( auto e ) { femodes.push_back( e->second.get<1>() ); } );
         int i = 0;
         BOOST_FOREACH( auto mode, femodes )
         {
-            exporter->step(0)->add( boost::format( "mode-%1%" ) % i, mode );
+            exporter->step(0)->add( (boost::format( "mode-%1%" ) % i++).str(), mode );
         }
 
         exporter->save();
