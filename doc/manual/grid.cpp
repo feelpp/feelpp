@@ -188,15 +188,17 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
               _spectrum=SMALLEST_MAGNITUDE );
     std::cout <<"pass"<< std::endl;
 
-    auto mode = Xh->element() ;
+    auto femodes = std::vector<decltype(Xh->element())>( modes.size() ) ;
 
     if ( !modes.empty() )
     {
         Log() << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
         std::cout << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>()
                   << "," <<  modes.begin()->second.get<1>() << ")\n";
-
-        mode = *modes.begin()->second.get<2>();
+        BOOST_FOREACH( auto mode, modes )
+        {
+            femodes.push_back( *mode->second.get<2>() );
+        }
     }
 
     auto exporter =  export_type::New( this->vm(),
@@ -212,7 +214,12 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         exporter->step(0)->setMesh( mesh );
 
         //exporter->step(0)->add( "u", u );
-        exporter->step(0)->add( "mode", mode );
+        std::for_each( modes.begin(), modes.end(), [&femodes]( auto e ) { femodes.push_back( e->second.get<1>() ); } );
+        int i = 0;
+        BOOST_FOREACH( auto mode, femodes )
+        {
+            exporter->step(0)->add( boost::format( "mode-%1%" ) % i, mode );
+        }
 
         exporter->save();
         Log() << "exportResults done\n";
