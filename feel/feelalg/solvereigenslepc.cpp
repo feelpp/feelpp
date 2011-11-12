@@ -250,15 +250,15 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     ierr = MatGetVecs(matrix_A->mat(),PETSC_NULL,&M_mode);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
-    error = 1;
+    std::vector<double> ret_error( nconv );
     if ( nconv >= 1 )
     {
-            ierr = EPSComputeRelativeError(M_eps, 1, &error);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = EPSComputeRelativeError(M_eps, nconv, ret_error.data());
+        CHKERRABORT(PETSC_COMM_WORLD,ierr);
     }
     // return the number of converged eigenpairs
     // and the number of iterations
-    return boost::make_tuple(nconv, its, (value_type)error );
+    return boost::make_tuple(nconv, its, ret_error );
 }
 
 template <typename T>
@@ -421,16 +421,20 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     ierr = MatGetVecs(matrix_A->mat(),PETSC_NULL,&M_mode);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
-    error = 1;
+
+    std::vector<double> ret_error( nconv );
     if ( nconv >= 1 )
+    {
+        for( int i = 0; i < nconv; ++i )
         {
-            ierr = EPSComputeRelativeError(M_eps, 0, &error);
+            ierr = EPSComputeRelativeError(M_eps, i, &ret_error[i]);
             CHKERRABORT(PETSC_COMM_WORLD,ierr);
         }
+    }
+    //std::for_each( ret_error.begin(), ret_error.end(), []( double e ) { std::cout << " -- ||A x - lambda B x ||/||x|| = " << e << "\n"; } );
     // return the number of converged eigenpairs
     // and the number of iterations
-    return boost::make_tuple(nconv, its, (value_type)error );
-
+    return boost::make_tuple(nconv, its, ret_error );
 }
 
 
@@ -587,9 +591,9 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
     // real and imaginary part of the ith eigenvalue.
     PetscScalar kr, ki;
 
-
+    int s;
+    VecGetSize(M_mode,&s);
     ierr = EPSGetEigenpair(M_eps, i, &kr, &ki, M_mode, PETSC_NULL);
-
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 #ifdef USE_COMPLEX_NUMBERS
@@ -600,9 +604,15 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
     im = ki;
 #endif
 
-    vector_ptrtype solution( new VectorPetsc<value_type>( M_mode ) );
+    vector_ptrtype solution( new VectorPetsc<value_type>( s, s ) );
+    double* a;
+    VecGetArray( M_mode, &a );
+    for( int i = 0;i < s; ++i )
+    {
+        solution->set( i, a[i] );
+    }
     solution->close();
-
+    VecRestoreArray( M_mode, &a );
     return boost::make_tuple( re, im, solution );
 }
 
