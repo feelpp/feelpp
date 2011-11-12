@@ -184,10 +184,11 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
               _matrixB=B,
               _nev=nev,
               _ncv=ncv,
+              _transform=SINVERT,
               _spectrum=SMALLEST_MAGNITUDE );
     std::cout <<"pass"<< std::endl;
 
-    auto mode = Xhb->element() ;
+    auto mode = Xh->element() ;
 
     if ( !modes.empty() )
     {
@@ -208,7 +209,7 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( meshb );
+        exporter->step(0)->setMesh( mesh );
 
         //exporter->step(0)->add( "u", u );
         exporter->step(0)->add( "mode", mode );
