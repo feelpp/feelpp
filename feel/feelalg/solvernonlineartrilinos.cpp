@@ -27,6 +27,8 @@
    \date 2009-05-25
  */
 
+#include <NOX.H>
+#include <NOX_Epetra.H>   
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/solvernonlineartrilinos.hpp>
 
