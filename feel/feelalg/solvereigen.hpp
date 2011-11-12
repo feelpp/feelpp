@@ -62,7 +62,7 @@ public:
     typedef SolverEigen<value_type> solvereigen_type;
     typedef boost::shared_ptr<solvereigen_type> solvereigen_ptrtype;
 
-    typedef boost::tuple<size_type, size_type, value_type> solve_return_type;
+    typedef boost::tuple<size_type, size_type, std::vector<double> > solve_return_type;
 
 
     typedef Vector<value_type> vector_type;
@@ -421,6 +421,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION((typename SolverEigen<double>::eigenmodes_type),
                                  (spectrum,(PositionOfSpectrum), LARGEST_MAGNITUDE )
                                  (maxit,(size_type), 1000 )
                                  (tolerance,(double), 1e-11)
+                                 (verbose,(bool), false)
                                     )
     )
 {
@@ -442,10 +443,15 @@ BOOST_PARAMETER_MEMBER_FUNCTION((typename SolverEigen<double>::eigenmodes_type),
     Log() << "eigenvalue tolerance = " << tolerance << "\n";
 
     unsigned int nconv, nits;
-    boost::tie( nconv, nits, boost::tuples::ignore)  = eigen->solve( _matrixA=matrixA,
-                                                                     _matrixB=matrixB,
-                                                                     _maxit=maxit,
-                                                                     _tolerance=tolerance );
+    std::vector<double> err( ncv );
+    boost::tie( nconv, nits, err )  = eigen->solve( _matrixA=matrixA,
+                                                    _matrixB=matrixB,
+                                                    _maxit=maxit,
+                                                    _tolerance=tolerance );
+    if ( verbose )
+    {
+        std::for_each( err.begin(), err.end(), []( double e ) { std::cout << "||A x - lambda B x ||/||x|| = " << e << "\n"; } );
+    }
 
     return eigen->eigenModes();
 }
