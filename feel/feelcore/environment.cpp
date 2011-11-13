@@ -39,20 +39,9 @@
 
 #include <feel/feelcore/environment.hpp>
 
-#if defined( HAVE_PETSC_H )
-extern "C"
-{
-#include <petsc.h>
-#include <petscerror.h>
-}
-#if defined( FEEL_HAVE_SLEPC )
-# include <slepc.h>
-#endif /* HAVE_SLEPC */
+#include <feel/feelcore/feelpetsc.hpp>
 
-#endif /* HAVE_PETSC_H */
-#if defined( HAVE_MADLIB_H )
 
-#endif
 namespace Feel
 {
 Environment::Environment()
@@ -104,7 +93,7 @@ Environment::Environment( int& argc, char**& argv )
     if ( !is_petsc_initialized )
     {
         i_initialized = true;
-#if defined( HAVE_SLEPC )
+#if defined( FEEL_HAVE_SLEPC )
         int ierr = SlepcInitialize(&argc,&argv, PETSC_NULL, PETSC_NULL );
 #else
         int ierr = PetscInitialize( &argc, &argv, PETSC_NULL, PETSC_NULL );
@@ -117,10 +106,6 @@ Environment::Environment( int& argc, char**& argv )
     PetscPopSignalHandler();
 #endif // HAVE_PETSC_H
 
-#if defined( HAVE_MADLIB_H )
-    // \warning Madlib initializes MPI too (may generate warnings)
-    //MAdLibInitialize( &argc, &argv );
-#endif // HAVE_MADLIB_H
 
     if ( argc >= 1 )
     {
@@ -139,7 +124,7 @@ Environment::~Environment()
         PetscInitialized( &is_petsc_initialized );
         if ( is_petsc_initialized )
         {
-#if defined( HAVE_SLEPC )
+#if defined( FEEL_HAVE_SLEPC )
             SlepcFinalize();
 #else
             PetscFinalize();
@@ -148,9 +133,7 @@ Environment::~Environment()
 #endif // HAVE_PETSC_H
     }
 
-#if defined( HAVE_MADLIB_H )
-    //MAdLibFinalize();
-#endif // HAVE_MADLIB_H
+
 }
 
 

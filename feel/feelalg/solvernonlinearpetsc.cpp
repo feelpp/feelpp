@@ -29,8 +29,9 @@
 #include <feel/feelcore/feel.hpp>
 
 
-#if defined( HAVE_PETSC_H )
 
+#if defined( HAVE_PETSC_H )
+#include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
@@ -273,7 +274,7 @@ void SolverNonLinearPetsc<T>::clear ()
 
             int ierr=0;
 
-            ierr = SNESDestroy(M_snes);
+            ierr = PETSc::SNESDestroy(M_snes);
             CHKERRABORT(PETSC_COMM_WORLD,ierr);
         }
 }
@@ -615,9 +616,9 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
 
     VecRestoreArray( petsc_x , &a );
 
-    VecDestroy( petsc_x );
-    VecDestroy( petsc_r );
-    MatDestroy( petsc_j );
+    PETSc::VecDestroy( petsc_x );
+    PETSc::VecDestroy( petsc_r );
+    PETSc::MatDestroy( petsc_j );
 
     SNESConvergedReason reason;
     SNESGetConvergedReason(M_snes,&reason);
@@ -699,19 +700,6 @@ SolverNonLinearPetsc<T>::setPetscPreconditionerType()
 {
 
   int ierr = 0;
-#if 0
-#if (PETSC_VERSION_MAJOR >= 3)
-  ierr = PCFactorSetMatSolverPackage(M_pc,MAT_SOLVER_UMFPACK);
-  if ( ierr )
-  {
-      ierr = PCFactorSetMatSolverPackage(M_pc,MAT_SOLVER_SUPERLU );
-      if ( ierr )
-      {
-          ierr = PCFactorSetMatSolverPackage(M_pc,MAT_SOLVER_PETSC );
-      }
-  }
-#endif
-#endif
 
   switch (this->preconditionerType())
     {
