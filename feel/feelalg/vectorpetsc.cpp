@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-02
 
-  Copyright (C) 2007, 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,7 @@
    \date 2007-07-02
  */
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 
@@ -62,7 +63,7 @@ VectorPetsc<T>::clear ()
     {
         int ierr=0;
 
-        ierr = VecDestroy(_M_vec);
+        ierr = PETSc::VecDestroy( _M_vec );
         CHKERRABORT(M_comm,ierr);
     }
 
@@ -278,7 +279,11 @@ VectorPetsc<T>::localize (Vector<T>& v_local_in) const
     std::vector<int> idx(n); Feel::iota (idx.begin(), idx.end(), 0);
 
     // Create the index set & scatter object
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISCreateGeneral(M_comm, n, &idx[0], PETSC_COPY_VALUES, &is);
+#else
     ierr = ISCreateGeneral(M_comm, n, &idx[0], &is);
+#endif
     CHKERRABORT(M_comm,ierr);
 
     ierr = VecScatterCreate(const_cast<Vec>(this->_M_vec), is,
@@ -307,10 +312,10 @@ VectorPetsc<T>::localize (Vector<T>& v_local_in) const
     CHKERRABORT(M_comm,ierr);
 
     // Clean up
-    ierr = ISDestroy (is);
+    ierr = PETSc::ISDestroy (is);
     CHKERRABORT(M_comm,ierr);
 
-    ierr = VecScatterDestroy(scatter);
+    ierr = PETSc::VecScatterDestroy(scatter);
     CHKERRABORT(M_comm,ierr);
 }
 
@@ -337,8 +342,12 @@ void VectorPetsc<T>::localize (Vector<T>& v_local_in,
     for (int i=0; i<n_sl; i++)
         idx[i] = static_cast<int>(send_list[i]);
 
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISCreateGeneral(M_comm, n_sl, &idx[0], PETSC_COPY_VALUES, &is);
+#else
     // Create the index set & scatter object
     ierr = ISCreateGeneral(M_comm, n_sl, &idx[0], &is);
+#endif
     CHKERRABORT(M_comm,ierr);
 
     ierr = VecScatterCreate(const_cast<Vec>(_M_vec),          is,
@@ -364,10 +373,10 @@ void VectorPetsc<T>::localize (Vector<T>& v_local_in,
     CHKERRABORT(M_comm,ierr);
 
     // Clean up
-    ierr = ISDestroy (is);
+    ierr = PETSc::ISDestroy (is);
     CHKERRABORT(M_comm,ierr);
 
-    ierr = VecScatterDestroy(scatter);
+    ierr = PETSc::VecScatterDestroy(scatter);
     CHKERRABORT(M_comm,ierr);
 }
 
@@ -410,7 +419,11 @@ void VectorPetsc<T>::localize (const size_type first_local_idx,
         Feel::iota (idx.begin(), idx.end(), first_local_idx);
 
         // Create the index set & scatter object
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISCreateGeneral(M_comm, local_size, &idx[0], PETSC_COPY_VALUES, &is);
+#else
         ierr = ISCreateGeneral(M_comm, local_size, &idx[0], &is);
+#endif
         CHKERRABORT(M_comm,ierr);
 
         ierr = VecScatterCreate(_M_vec,              is,
@@ -434,10 +447,10 @@ void VectorPetsc<T>::localize (const size_type first_local_idx,
         CHKERRABORT(M_comm,ierr);
 
         // Clean up
-        ierr = ISDestroy (is);
+        ierr = PETSc::ISDestroy (is);
         CHKERRABORT(M_comm,ierr);
 
-        ierr = VecScatterDestroy(scatter);
+        ierr = PETSc::VecScatterDestroy(scatter);
         CHKERRABORT(M_comm,ierr);
     }
 
@@ -683,7 +696,7 @@ void VectorPetsc<T>::printMatlab (const std::string name) const
     /**
      * Destroy the viewer.
      */
-    ierr = PetscViewerDestroy (petsc_viewer);
+    ierr = PETSc::PetscViewerDestroy (petsc_viewer);
     CHKERRABORT(M_comm,ierr);
 }
 

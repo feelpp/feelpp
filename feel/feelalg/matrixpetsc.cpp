@@ -28,7 +28,7 @@
    \date 2008-01-03
  */
 #include <boost/timer.hpp>
-
+#include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 
@@ -179,16 +179,16 @@ void MatrixPetsc<T>::init (const size_type m,
 
     MPI_Comm_rank (this->comm(), &proc_id);
 
-    Debug( 7013 ) << "[MatrixPetsc::init()] m   = " << m << "\n";
-    Debug( 7013 ) << "[MatrixPetsc::init()] n   = " << n << "\n";
-    Debug( 7013 ) << "[MatrixPetsc::init()] m_l = " << m_l << "\n";
-    Debug( 7013 ) << "[MatrixPetsc::init()] n_l = " << n_l << "\n";
+    Debug( 7013 ) << "[MatrixPETSc::init()] m   = " << m << "\n";
+    Debug( 7013 ) << "[MatrixPETSc::init()] n   = " << n << "\n";
+    Debug( 7013 ) << "[MatrixPETSc::init()] m_l = " << m_l << "\n";
+    Debug( 7013 ) << "[MatrixPETSc::init()] n_l = " << n_l << "\n";
 
     // Make sure the sparsity pattern isn't empty
     FEEL_ASSERT (this->graph()->size() == n_l)( this->graph()->size() )( n_l ).warn( "incompatible diagonal non zero pattern" );
-    Debug( 7013 ) << "[MatrixPetsc::init()] graph size   = " << this->graph()->size() << "\n";
-    Debug( 7013 ) << "[MatrixPetsc::init()] graph first row entry on proc   = " << this->graph()->firstRowEntryOnProc() << "\n";
-    Debug( 7013 ) << "[MatrixPetsc::init()] graph last row entry on proc   = " << this->graph()->lastRowEntryOnProc() << "\n";
+    Debug( 7013 ) << "[MatrixPETSc::init()] graph size   = " << this->graph()->size() << "\n";
+    Debug( 7013 ) << "[MatrixPETSc::init()] graph first row entry on proc   = " << this->graph()->firstRowEntryOnProc() << "\n";
+    Debug( 7013 ) << "[MatrixPETSc::init()] graph last row entry on proc   = " << this->graph()->lastRowEntryOnProc() << "\n";
 
     if (m==0)
         return;
@@ -308,7 +308,11 @@ void MatrixPetsc<T>::setIndexSplit(std::vector< std::vector<int> > const &indexS
     for (uint i = 0 ; i < indexSplit.size(); ++i)
         {
             PetscInt nDofForThisField = indexSplit[i].size();
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+            ierr = ISCreateGeneral(this->comm(),nDofForThisField,indexSplit[i].data(),PETSC_COPY_VALUES,&_M_petscIS[i] );
+#else
             ierr = ISCreateGeneral(this->comm(),nDofForThisField,indexSplit[i].data(),&_M_petscIS[i] );
+#endif
             CHKERRABORT(this->comm(),ierr);
         }
 }
@@ -335,7 +339,11 @@ void MatrixPetsc<T>::updatePCFieldSplit(PC & pc)
                     _M_mapPC[&pc]=true;
                     for (uint i = 0 ; i < _M_petscIS.size(); ++i)
                         {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+                            ierr=PCFieldSplitSetIS(pc,PETSC_NULL,_M_petscIS[i]);
+#else
                             ierr=PCFieldSplitSetIS(pc,_M_petscIS[i]);
+#endif
                             CHKERRABORT(this->comm(),ierr);
                         }
                 }
@@ -352,7 +360,11 @@ void MatrixPetsc<T>::updatePCFieldSplit(PC & pc)
             //std::cout << "\n updatePCFieldSplit \n";
             for (uint i = 0 ; i < _M_petscIS.size(); ++i)
                 {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+                    ierr=PCFieldSplitSetIS(pc,PETSC_NULL,_M_petscIS[i]);
+#else
                     ierr=PCFieldSplitSetIS(pc,_M_petscIS[i]);
+#endif
                     CHKERRABORT(this->comm(),ierr);
                 }
         }
@@ -396,7 +408,7 @@ void MatrixPetsc<T>::clear ()
 
     if ((this->isInitialized()) && (this->_M_destroy_mat_on_exit))
     {
-        ierr = MatDestroy (_M_mat);
+        ierr = PETSc::MatDestroy (_M_mat);
         CHKERRABORT(this->comm(),ierr);
 
         this->setInitialized( false );
@@ -670,7 +682,7 @@ MatrixPetsc<T>::printMatlab (const std::string name) const
     /**
      * Destroy the viewer.
      */
-    ierr = PetscViewerDestroy (petsc_viewer);
+    ierr = PETSc::PetscViewerDestroy (petsc_viewer);
     CHKERRABORT(this->comm(),ierr);
 }
 
@@ -860,7 +872,14 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> 
         {
             VectorPetsc<value_type> diag( this->size1(), stop-start );
             MatGetDiagonal( _M_mat, diag.vec() );
+            // in Petsc 3.2, we might want to look at the new interface so that
+            // right hand side is automatically changed wrt to zeroing out the
+            // matrix entries
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
+            MatZeroRows( _M_mat, rows.size(), rows.data(), 1.0,PETSC_NULL,PETSC_NULL);
+#else
             MatZeroRows( _M_mat, rows.size(), rows.data(), 1.0);
+#endif
             MatDiagonalSet( _M_mat, diag.vec(), INSERT_VALUES );
             for( size_type i = 0; i < rows.size(); ++i )
                 {
@@ -878,8 +897,11 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> 
 
 
 
-
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
+            MatZeroRows( _M_mat, rows.size(), rows.data(), 1.0,PETSC_NULL,PETSC_NULL);
+#else
             MatZeroRows( _M_mat, rows.size(), rows.data(), 1.0);
+#endif
             for( size_type i = 0; i < rows.size(); ++i )
                 {
                     // eliminate column
@@ -950,7 +972,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
 
     MatrixPetsc<T>* Atrans = dynamic_cast<MatrixPetsc<T>*> (&Mt);
 
-    MatDestroy( Atrans->_M_mat );
+    PETSc::MatDestroy( Atrans->_M_mat );
 
 #if (PETSC_VERSION_MAJOR >= 3)
     int ierr = MatTranspose( _M_mat, MAT_INITIAL_MATRIX,&Atrans->_M_mat );
@@ -995,7 +1017,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 #endif
     PetscTruth isSymmetric;
     MatEqual( _M_mat, Atrans, &isSymmetric);
-    MatDestroy( Atrans );
+    PETSc::MatDestroy( Atrans );
 
     if (isSymmetric) {
         Log() << "[MatrixPetsc<T>::symmetricPart] Matrix is already symmetric, don't do anything\n";
@@ -1078,7 +1100,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
     } else {
         PetscPrintf(PETSC_COMM_WORLD,"Warning: Petsc matrix is non-symmetric \n");
     }
-    ierr = MatDestroy (Btrans);
+    ierr = PETSc::MatDestroy (Btrans);
     CHKERRABORT(this->comm(),ierr);
 }
 

@@ -76,7 +76,7 @@ SolverLinearPetsc<T>::clear ()
 // 2.2.0 & newer style
 #else
 
-        ierr = KSPDestroy(_M_ksp);
+        ierr = PETSc::KSPDestroy(_M_ksp);
         CHKERRABORT(M_comm,ierr);
 #endif
 
@@ -498,7 +498,7 @@ SolverLinearPetsc<T>::setPetscConstantNullSpace()
 
         MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_NULL, &nullsp);
         KSPSetNullSpace(_M_ksp, nullsp);
-        MatNullSpaceDestroy(nullsp);
+        PETSc::MatNullSpaceDestroy(nullsp);
     }
 
 }
@@ -568,7 +568,17 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
 {
 
   int ierr = 0;
-#if (PETSC_VERSION_MAJOR >= 3)
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+  ierr = PCFactorSetMatSolverPackage(_M_pc,MATSOLVERUMFPACK);
+  if ( ierr )
+  {
+      ierr = PCFactorSetMatSolverPackage(_M_pc,MATSOLVERSUPERLU );
+      if ( ierr )
+      {
+          ierr = PCFactorSetMatSolverPackage(_M_pc,MATSOLVERPETSC );
+      }
+  }
+#elif (PETSC_VERSION_MAJOR >= 3)
   ierr = PCFactorSetMatSolverPackage(_M_pc,MAT_SOLVER_UMFPACK);
   if ( ierr )
   {

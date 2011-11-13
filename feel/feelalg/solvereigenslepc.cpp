@@ -27,6 +27,7 @@
    \date 2007-07-04
  */
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/feelslepc.hpp>
 #include <feel/feelalg/solvereigenslepc.hpp>
 
 namespace Feel
@@ -71,7 +72,7 @@ SolverEigenSlepc<T>::clear ()
 
             int ierr=0;
 
-            ierr = EPSDestroy(M_eps);
+            ierr = SLEPc::EPSDestroy(M_eps);
             CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
             // SLEPc default eigenproblem solver
@@ -108,11 +109,17 @@ SolverEigenSlepc<T>::init ()
             ierr = EPSGetOrthogonalization (M_eps, PETSC_NULL, &refinement, &eta);
             ierr = EPSSetOrthogonalization (M_eps, EPS_MGS_ORTH, refinement, eta);
 #else
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 2)
+            IPOrthogRefineType refinement;
+            ierr = IPGetOrthogonalization (M_ip, PETSC_NULL, &refinement, &eta);
+            ierr = IPSetOrthogonalization (M_ip, IP_ORTHOG_MGS, refinement, eta);
+#elif (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 1)
             IPOrthogonalizationRefinementType refinement;
             ierr = IPGetOrthogonalization (M_ip, PETSC_NULL, &refinement, &eta);
-#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 1)
             ierr = IPSetOrthogonalization (M_ip, IP_ORTH_MGS, refinement, eta);
 #else
+            IPOrthogonalizationRefinementType refinement;
+            ierr = IPGetOrthogonalization (M_ip, PETSC_NULL, &refinement, &eta);
             ierr = IPSetOrthogonalization (M_ip, IP_MGS_ORTH, refinement, eta);
 #endif //
 #endif // 0

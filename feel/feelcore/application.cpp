@@ -55,18 +55,7 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>
 
-#if defined( HAVE_PETSC_H )
-extern "C"
-{
-#include <petsc.h>
-#include <petscerror.h>
-}
-#if defined( FEEL_HAVE_SLEPC )
-# include <slepc.h>
-#endif /* HAVE_SLEPC */
-
-#endif /* HAVE_PETSC_H */
-
+#include <feel/feelcore/feelpetsc.hpp>
 
 #if defined(HAVE_TRILINOS_EPETRA)
 #if defined(HAVE_MPI_H)

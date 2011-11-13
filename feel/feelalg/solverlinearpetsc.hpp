@@ -61,6 +61,7 @@
  * Petsc include files.
  */
 #ifdef HAVE_PETSC_H
+#include <feel/feelcore/feelpetsc.hpp>
 
 #ifndef USE_COMPLEX_NUMBERS
 extern "C" {
