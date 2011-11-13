@@ -41,7 +41,14 @@ find_path (SLEPC_DIR include/slepc.h
 
 SET(SLEPC_INCLUDE_DIR "${SLEPC_DIR}/include/")
 CHECK_INCLUDE_FILE( ${SLEPC_INCLUDE_DIR}/slepc.h FEEL_HAVE_SLEPC_H )
-FIND_LIBRARY(SLEPC_LIB_SLEPC     slepc HINTS ${SLEPC_DIR}/linux-gnu-c-opt/lib )
+CHECK_INCLUDE_FILE( ${SLEPC_DIR}/${PETSC_ARCH}/include/slepcconf.h FEEL_HAVE_SLEPCCONF_H )
+if (FEEL_HAVE_SLEPCCONF_H)
+  SET(SLEPC_INCLUDE_DIR ${SLEPC_DIR}/${PETSC_ARCH}/include ${SLEPC_INCLUDE_DIR})
+endif()
+FIND_LIBRARY(SLEPC_LIB_SLEPC slepc
+  HINTS
+  ${SLEPC_DIR}/${PETSC_ARCH}/lib
+  ${SLEPC_DIR}/lib )
 SET(SLEPC_LIBRARIES ${SLEPC_LIB_SLEPC} CACHE STRING "SLEPc libraries" FORCE)
 # handle the QUIETLY and REQUIRED arguments and set Madlib_FOUND to TRUE if
 # all listed variables are TRUE
