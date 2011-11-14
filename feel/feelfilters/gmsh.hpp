@@ -784,11 +784,17 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptrtype gmsh_ptr( new Gmsh( dim, order ) );
 
     gmsh_ptr->setCharacteristicLength( h );
+#if BOOST_FILESYSTEM_VERSION == 3
+    gmsh_ptr->setPrefix( fs::path(filename).stem().string() );
+#elif BOOST_FILESYSTEM_VERSION == 2
     gmsh_ptr->setPrefix( fs::path(filename).stem() );
+#endif
 
+    fs::path cp;
+    fs::current_path(cp);
     // first try in the current path
-    if ( fs::exists( fs::current_path() / filename ) )
-        gmsh_ptr->setDescription(gmsh_ptr->getDescriptionFromFile((fs::current_path()/filename).string()));
+    if ( fs::exists( cp / filename ) )
+        gmsh_ptr->setDescription(gmsh_ptr->getDescriptionFromFile((cp/filename).string()));
     else if ( fs::exists( fs::path(Environment::localGeoRepository()) / filename ) )
         gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::localGeoRepository()) / filename).string()) );
     else if ( Environment::systemGeoRepository().template get<1>()  &&
@@ -824,8 +830,11 @@ BOOST_PARAMETER_FUNCTION(
      (order,          *(boost::is_integral<mpl::_>), 1)))
 {
     gmsh_ptrtype gmsh_ptr( new Gmsh( dim, order ) );
-
+#if BOOST_FILESYSTEM_VERSION == 3
+    gmsh_ptr->setPrefix( fs::path(filename).stem().string() );
+#elif BOOST_FILESYSTEM_VERSION == 2
     gmsh_ptr->setPrefix( fs::path(filename).stem() );
+#endif
 
     // first try in the current path
     if ( fs::exists( filename ) )
