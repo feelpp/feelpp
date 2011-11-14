@@ -53,9 +53,9 @@ makeOptions()
 {
     po::options_description relaxationoptions("relaxation options");
     relaxationoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.1 ), "mesh size")
+        ("hsize", po::value<double>()->default_value( 0.04 ), "mesh size")
         ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ("maxIterations", po::value<double>()->default_value( 50 ), "maximal number of iterations")
+        ("maxIterations", po::value<double>()->default_value( 10 ), "maximal number of iterations")
         ("additive", po::value<int>()->default_value( 0 ), "use additive method" )
         ("tolerance", Feel::po::value<double>()->default_value( 1e-08 ),  " tolerance ")
         ;
