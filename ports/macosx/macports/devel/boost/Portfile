@@ -148,23 +148,23 @@ foreach s ${pythons_suffixes} {
     set c [lreplace ${pythons_ports} ${i} ${i}]
     eval [subst {
         variant ${p} description "Build Boost.Python for Python ${v}" conflicts ${c} {
-            
+
             # There is a conflict with python and debug support, so we should really change the 'variant' line above
             # to end with "conflicts ${c} debug" above. However, we leave it enabled for those who want to try it.
             # The issue has been reported to both the MacPorts team and the boost team, as per:
             # <http://trac.macports.org/ticket/23667> and <https://svn.boost.org/trac/boost/ticket/4461>
-            
+
             depends_lib-append      port:${p}
             configure.args-delete   --without-libraries=python
             configure.args-append   --with-python=${prefix}/bin/python${v}
-            
+
             patchfiles-append   patch-tools-build-v2-tools-python.jam.diff \
                                 patch-tools-build-v2-tools-python-2.jam.diff
-            
+
             post-patch {
                 reinplace s|@PREFIX@|${prefix}| ${worksrcpath}/tools/build/v2/tools/python.jam
             }
-            
+
         }
     }]
 }
@@ -184,17 +184,17 @@ variant no_single description {Disable building single-threaded libraries} {
     build.args-append   threading=multi
 }
 variant gcc45 description {Build with gcc45} {
-    
+
     depends_lib-append      port:gcc45
     build.args-append   pch=off
     build.args-delete   architecture=x86
     configure.cxx /opt/local/bin/g++-mp-4.5
     post-configure {
-        #write_jam "using darwin : : /opt/local/bin/g++-mp-4.5 ;" 
+        #write_jam "using darwin : : /opt/local/bin/g++-mp-4.5 ;"
     }
 }
 variant openmpi description {Build Boost.MPI} {
-    
+
     # There is a conflict with python and debug support, so we should really change the 'variant' line above
     # to end with "conflicts debug" above. However, we leave it enabled for those who want to try it.
     # The issue has been reported to both the MacPorts team and the boost team, as per:
@@ -204,26 +204,27 @@ variant openmpi description {Build Boost.MPI} {
     configure.args-delete   --without-libraries=mpi
 
     post-configure {
-        write_jam "using mpi : ${prefix}/bin/openmpic++ : : ${prefix}/bin/openmpirun ;"
+        #write_jam "using mpi : ${prefix}/bin/g++-mp-4.5: : ${prefix}/lib/openmpi/bin/mpirun ;"
+        write_jam "using mpi : ${prefix}/bin/g++-mp-4.5: : ;"
     }
 
     if {![catch python_dir]} {
-        
+
         patchfiles-append patch-libs-mpi-build-Jamfile.v2.diff
-    
+
         post-destroot {
             set site_packages [python_dir]
             xinstall -d ${destroot}${site_packages}/boost
             xinstall -m 644 ${worksrcpath}/libs/mpi/build/__init__.py \
                 ${destroot}${site_packages}/boost
-    
+
             set l ${site_packages}/boost/mpi.so
             move ${destroot}${prefix}/lib/mpi.so ${destroot}${l}
             system "install_name_tool -id ${l} ${destroot}${l}"
         }
 
     }
-    
+
 }
 
 variant regex_match_extra description \
