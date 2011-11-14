@@ -47,7 +47,7 @@ Mesh<Shape, T>::Mesh( std::string partitioner )
     _M_gm1( new gm1_type ),
     M_meas( 0 ),
     M_measbdy( 0 ),
-    M_part(),
+    //M_part(),
     M_tool_localization(new Localization())
 {
     Debug( 4015 ) << "[Mesh::Mesh] setting partitioner to " << partitioner << "\n";
@@ -58,7 +58,7 @@ template<typename Shape, typename T>
 void
 Mesh<Shape, T>::partition ( const uint16_type n_parts )
 {
-    M_part->partition( *this, n_parts );
+    //M_part->partition( *this, n_parts );
 }
 
 template<typename Shape, typename T>
@@ -1655,6 +1655,46 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m,
 
 
 
+#if defined( FEEL_INSTANTIATION_MODE )
+
+# define DIMS1 BOOST_PP_TUPLE_TO_LIST(1,(1))
+# define RDIMS1 BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
+# define ORDERS1 BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
+
+# define DIMS2 BOOST_PP_TUPLE_TO_LIST(1,(2))
+# define RDIMS2 BOOST_PP_TUPLE_TO_LIST(2,(2,3))
+# define ORDERS2 BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
+
+# define DIMS3 BOOST_PP_TUPLE_TO_LIST(1,(3))
+# define RDIMS3 BOOST_PP_TUPLE_TO_LIST(1,(3))
+# define ORDERS3 BOOST_PP_TUPLE_TO_LIST(4,(1,2,3,4))
+
+# define FACTORY_SIMPLEX(LDIM,LORDER,RDIM) template class Mesh<Simplex<LDIM, LORDER, RDIM> >;
+# define FACTORY_HYPERCUBE(LDIM,LORDER,RDIM) template class Mesh<Hypercube<LDIM, LORDER, RDIM> >;
+
+# define FACTORY_SIMPLEX_OP(_, GDO) FACTORY_SIMPLEX GDO
+# define FACTORY_HYPERCUBE_OP(_, GDO) FACTORY_HYPERCUBE GDO
+
+
+# define FACTORY_SIMPLEX_E(LDIM,LORDER,RDIM) extern template class Mesh<Simplex<LDIM, LORDER, RDIM> >;
+# define FACTORY_HYPERCUBE_E(LDIM,LORDER,RDIM) extern template class Mesh<Hypercube<LDIM, LORDER, RDIM> >;
+
+# define FACTORY_SIMPLEX_OP_E(_, GDO) FACTORY_HYPERCUBE GDO
+# define FACTORY_HYPERCUBE_OP_E(_, GDO) FACTORY_HYPERCUBE_E GDO
+
+#if !defined( FEEL_MESH_IMPL_NOEXTERN )
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_SIMPLEX_OP_E, 3, (DIMS1, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS1), RDIMS1))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_HYPERCUBE_OP_E, 3, (DIMS1, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS1), RDIMS1))
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_SIMPLEX_OP_E, 3, (DIMS2, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS2), RDIMS2))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_HYPERCUBE_OP_E, 3, (DIMS2, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS2), RDIMS2))
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_SIMPLEX_OP_E, 3, (DIMS3, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS3), RDIMS3))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_HYPERCUBE_OP_E, 3, (DIMS3, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS3), RDIMS3))
+
+#endif // FEEL_MESH_IMPL_NOEXTERN
+#endif // FEEL_INSTANTIATION_MODE
 
 } // namespace Feel
 
