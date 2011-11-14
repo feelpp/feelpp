@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-07-07
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2009-07-07
  */
+#define FEEL_MESH_IMPL_NOEXTERN 1
 #include <feel/feeldiscr/meshimpl.hpp>
 
 namespace Feel
@@ -36,20 +37,8 @@ namespace Feel
 #if defined( FEEL_INSTANTIATION_MODE )
 
 
-template class Mesh<Hypercube<3, 1, 3> >;
-template class Mesh<Hypercube<3, 2, 3> >;
-
-# define DIMS BOOST_PP_TUPLE_TO_LIST(1,(3))
-//# define RDIMS BOOST_PP_TUPLE_TO_LIST(2,(1,2))
-# define RDIMS BOOST_PP_TUPLE_TO_LIST(1,(3))
-# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
-
-# define FACTORY(LDIM,LORDER,RDIM) template class Mesh<Simplex<LDIM, LORDER, RDIM> >;
-
-# define FACTORY_OP(_, GDO) FACTORY GDO
-
-// only up to 4 for mesh data structure nit supported for higher order in Gmsh
-BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_OP, 3, (DIMS, BOOST_PP_LIST_FIRST_N(BOOST_PP_MIN(4,FEEL_MESH_MAX_ORDER), ORDERS), RDIMS))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_SIMPLEX_OP, 3, (DIMS3, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS3), RDIMS3))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_HYPERCUBE_OP, 3, (DIMS3, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS3), RDIMS3))
 
 
 

@@ -26,6 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2009-07-07
  */
+#define FEEL_MESH_IMPL_NOEXTERN 1
 #include <feel/feeldiscr/meshimpl.hpp>
 
 namespace Feel
@@ -35,19 +36,11 @@ namespace Feel
 //
 #if defined( FEEL_INSTANTIATION_MODE )
 
-# define DIMS BOOST_PP_TUPLE_TO_LIST(1,(1))
-//# define RDIMS BOOST_PP_TUPLE_TO_LIST(2,(1,2))
-# define RDIMS BOOST_PP_TUPLE_TO_LIST(1,(1))
-# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
 
-# define FACTORY(LDIM,LORDER,RDIM) template class Mesh<Simplex<LDIM, LORDER, RDIM> >;
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_SIMPLEX_OP, 3, (DIMS1, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS1), RDIMS1))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_HYPERCUBE_OP, 3, (DIMS1, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS1), RDIMS1))
 
-# define FACTORY_OP(_, GDO) FACTORY GDO
-BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_OP, 3, (DIMS, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS), RDIMS))
 
-template class Mesh<Hypercube<1, 1, 1> >;
-template class Mesh<Hypercube<1, 1, 2> >;
-template class Mesh<Simplex<1, 1, 2> >;
 
 #endif // FEEL_INSTANTIATION_MODE
 

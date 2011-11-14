@@ -168,8 +168,8 @@ public:
 
     typedef typename element_type::template reference_convex<T>::type reference_convex_type;
 
-    typedef Partitioner<self_type> partitioner_type;
-    typedef boost::shared_ptr<partitioner_type> partitioner_ptrtype;
+    //typedef Partitioner<self_type> partitioner_type;
+    //typedef boost::shared_ptr<partitioner_type> partitioner_ptrtype;
 
     typedef typename super::face_processor_type face_processor_type;
     typedef typename super::face_processor_type element_edge_type;
@@ -260,7 +260,7 @@ public:
      */
     void setPartitioner( std::string partitioner )
     {
-        M_part = partitioner_ptrtype( partitioner_type::New( partitioner ) );
+        //M_part = partitioner_ptrtype( partitioner_type::New( partitioner ) );
     }
 
     /**
@@ -755,7 +755,7 @@ private:
      */
     std::vector<uint16_type> _M_neighboring_processors;
 
-    partitioner_ptrtype M_part;
+    //partitioner_ptrtype M_part;
 
     /**
      * Arrays containing the global ids of Faces of each element
