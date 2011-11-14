@@ -22,7 +22,7 @@ makeOptions()
 {
     po::options_description gridoptions("Grid options");
     gridoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
+        ("hsize", po::value<double>()->default_value( 0.1 ), "mesh size")
         ("kappa", po::value<double>()->default_value( 1 ), "coefficient")
         ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
         ("nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
@@ -41,6 +41,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2008-2009 Universite Joseph Fourier");
 
+    about.addAuthor("Abdoulaye Samake", "developer", "Abdoulaye.Samake@imag.fr", "");
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
 
@@ -90,6 +91,7 @@ private:
     backend_ptrtype M_backend;
     double meshSize;
     std::string shape;
+    std::vector<int> flags;
     boost::shared_ptr<SolverEigen<value_type> > eigen;
 }; // Grid
 
@@ -124,7 +126,7 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                        % Dim
                                        % Order
                                        % meshSize );
-
+#if 0
     GeoTool::Node x1(0,0);
     GeoTool::Node x2(1,1);
     GeoTool::Rectangle Omega(meshSize,"Omega",x1,x2);
@@ -132,26 +134,43 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     Omega.setMarker(_type="surface",_name="Omega",_markerAll=true);
 
     auto mesh = Omega.createMesh<mesh_type>( "omega_"+ mesh_type::shape_type::name() );
-#if 0
+#endif
+
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                              _usenames=true,
+                                              _addmidpoint=false,
+                                              _usenames=false,
                                               _shape=shape,
                                               _dim=Dim,
                                               _h=X[0],
                                               _xmin=0.,
                                               _xmax=1.,
                                               _ymin=0.,
-                                              _ymax=1. ) );
-#endif
-    auto meshb = createSubmesh(mesh,boundaryelements(mesh));
+                                              _ymax=1.,
+                                              _zmin=0.,
+                                              _zmax=1. ) );
+
+
     auto Xh = space_type::New( mesh );
     auto u = Xh->element();
     auto v = Xh->element();
 
-    auto Xhb = space_type::New( meshb );
-    auto ub = Xhb->element();
-    auto vb = Xhb->element();
+
+    if ( Dim == 1 )
+    {
+        using namespace boost::assign;
+        flags += 1,3;
+    }
+    else if ( Dim == 2 )
+    {
+        using namespace boost::assign;
+        flags += 1,2,3,4;
+    }
+    else if( Dim == 3 )
+    {
+        using namespace boost::assign;
+        flags += 6,15,19,23,27,28;
+    }
 
     value_type kappa = this->vm()["kappa"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
@@ -159,13 +178,16 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     using namespace Feel::vf;
 
     auto A = M_backend->newMatrix( Xh, Xh ) ;
-    form2( Xh, Xh, A, _init=true ) =
+    form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
         integrate( elements(mesh), kappa*gradt(u)*trans(grad(v)) + nu*idt(u)*id(v) );
 
     auto B = M_backend->newMatrix( Xh, Xh ) ;
-    form2( Xh, Xh, B, _init=true ) =
-        integrate( markedfaces(mesh,"Paroi"), kappa*idt(u)*id(v) );
-
+    form2( _test=Xh, _trial=Xh, _matrix=B, _init=true );
+    BOOST_FOREACH( int marker, flags )
+    {
+        form2( Xh, Xh, B ) +=
+            integrate( markedfaces(mesh,marker), kappa*idt(u)*id(v) );
+    }
 
     int maxit = this->vm()["solvereigen-maxiter"].template as<int>();
     int tol = this->vm()["solvereigen-tol"].template as<double>();
@@ -178,6 +200,8 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     SolverEigen<double>::eigenmodes_type modes;
 
+    std::cout << "nev= " << nev <<std::endl;
+    std::cout << "ncv= " << ncv <<std::endl;
 
     modes=
         eigs( _matrixA=A,
@@ -187,7 +211,6 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
               _transform=SINVERT,
               _spectrum=SMALLEST_MAGNITUDE,
               _verbose = true );
-    std::cout <<"pass"<< std::endl;
 
     auto femodes = std::vector<decltype(Xh->element())>( modes.size(), Xh->element() );
 
@@ -215,7 +238,6 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
         exporter->step(0)->setMesh( mesh );
 
-        //exporter->step(0)->add( "u", u );
         int i = 0;
         BOOST_FOREACH( auto mode, femodes )
         {
@@ -226,7 +248,6 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         Log() << "exportResults done\n";
     }
 }
-
 
 int
 main( int argc, char** argv )
@@ -240,7 +261,7 @@ main( int argc, char** argv )
         return 0;
     }
 
-    app.add( new Grid<2>( app.vm(), app.about() ) );
+    app.add( new Grid<1>( app.vm(), app.about() ) );
     app.run();
 }
 
