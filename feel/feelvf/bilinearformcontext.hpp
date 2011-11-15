@@ -297,11 +297,28 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
 
-    for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-        for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+    if (_M_form.isPatternCoupled())
         {
-            _M_rep(i, j ) = M_integrator( *_M_eval_expr00, i, j, 0, 0 );
+            for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+                for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+                    {
+                        _M_rep(i, j ) = M_integrator( *_M_eval_expr00, i, j, 0, 0 );
+                    }
         }
+    else if (_M_form.isPatternDefault() && boost::is_same<trial_dof_type,test_dof_type>::value &&
+             trial_dof_type::is_product)
+        {
+            for( uint16_type c = 0; c < trial_dof_type::nComponents1; ++c )
+                for( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
+                    for( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
+                        {
+                            uint16_type testLocalDofIndex = i+c*test_dof_type::fe_type::nLocalDof;
+                            uint16_type trialLocalDofIndex = j+c*trial_dof_type::fe_type::nLocalDof;
+                            _M_rep(testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *_M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
+                        }
+        }
+
+
 }
 template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
