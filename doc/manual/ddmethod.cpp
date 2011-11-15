@@ -201,7 +201,7 @@ ddmethod<Dim>::localProblem(element_type& u,
     backend_type::build()->solve( _matrix=A, _solution=u, _rhs=B, _reuse_prec=true );
     timers["solver"].second = timers["solver"].first.elapsed();
     // std::cout << "[timer] solve: " << timers["solver"].second << "\n";
-    std::cout << "solve done" << std::endl;
+    // std::cout << "solve done" << std::endl;
     Log() << "[timer] run():  assembly: " << timers["assembly"].second << "\n";
     Log() << "[timer] run():    o A : " << timers["assembly_A"].second << "\n";
     Log() << "[timer] run():    o B : " << timers["assembly_B"].second << "\n";
@@ -302,15 +302,22 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     value_type tolerance = this->vm()["tolerance"].template as<double>();
     value_type maxIterations = this->vm()["maxIterations"].template as<double>();
 
-    Environment::changeRepository( boost::format( "%1%/%2%-%3%/P%4%/h_%5%/" )
+    Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
                                    %this->shape
                                    % Dim
                                    % Order
                                    %this->meshSize );
-
-    mesh1 = GeoTool::createMeshFromGeoFile<mesh_type>( "/home/asamake/feel/geo/leftgeo.geo","leftgeo", meshSize);
-    mesh2 = GeoTool::createMeshFromGeoFile<mesh_type>( "/home/asamake/feel/geo/rightgeo.geo","rightgeo", meshSize/2);
+    if ( Dim == 2 )
+    {
+        mesh1 = GeoTool::createMeshFromGeoFile<mesh_type>( "/home/asamake/feel/geo/leftgeo.geo","leftgeo", meshSize);
+        mesh2 = GeoTool::createMeshFromGeoFile<mesh_type>( "/home/asamake/feel/geo/rightgeo.geo","rightgeo", meshSize/2);
+    }
+    else if( Dim == 3 )
+    {
+        mesh1 = GeoTool::createMeshFromGeoFile<mesh_type>( "/home/asamake/feel/geo/leftgeo3d.geo","leftgeo3d", meshSize);
+        mesh2 = GeoTool::createMeshFromGeoFile<mesh_type>( "/home/asamake/feel/geo/rightgeo3d.geo","rightgeo3d", meshSize);
+    }
 
     if ( Dim == 2 )
     {
@@ -323,10 +330,10 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     else if( Dim == 3 )
     {
         using namespace boost::assign;
-        dirichletFlags1+= 6,15,19,23,28;
-        dirichletFlags2+= 6,15,23,27,28;
-        interfaceFlags1+= 27;
-        interfaceFlags2+= 19;
+        dirichletFlags1+= 1,2,3,4,6,7,8;
+        dirichletFlags2+= 1,2,3,4,5;
+        interfaceFlags1+= 5;
+        interfaceFlags2+= 6;
     }
 
     auto Xh1 = space_type::New( mesh1 );
@@ -360,11 +367,11 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
         if( additive )
         {
-            if(maxIterations==1) std::cout << " new relaxation additive method" << std::endl;
+            if(cpt==0) std::cout << " additive method" << std::endl;
         }
         else
         {
-            if(maxIterations==1) std::cout << " new relaxation multiplicative method" << std::endl;
+            if(cpt==0) std::cout << " multiplicative method" << std::endl;
         }
         localProblem(u1,
                      dirichletFlags1, g,
