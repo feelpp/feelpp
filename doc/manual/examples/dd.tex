@@ -5,9 +5,126 @@
 
 \section{A Really Short Introduction}
 \label{sec:really-short-intr}
-
+In mathematics, numerical analysis, and numerical partial differential equations, domain decomposition methods solve
+a boundary value problem by splitting it into smaller boundary value problems on subdomains and iterating to coordinate
+the solution between the adjacent subdomains. A corse problem with one or fiew unknows per subdomain is used to further
+coordinate the solution between the subdomains globally.
 \section{A 1D model}
 \label{sec:1d-mode}
+We consider the following laplacian boundary value problem
+\begin{equation}
+  \left \{
+    \begin{aligned}
+      & -u"(x) = f(x) \quad \text{in} \quad  ]0,1[ \\
+      & u(0) =\alpha, ~ u(1) = \beta
+    \end{aligned}
+  \right.
+\label{eq:30}
+\end{equation}
+where $\alpha, \beta \in \mathbb R.$
+\subsection{Schwartz algorithms}
+\label{sec:schwartz-algorithms}
+The schwartz overlapping multiplicative algorithm with dirichlet interface conditions for this problem at $n^{th}$ iteration is given by
+\begin{equation}
+  \label{eq:31}
+  \left \{
+    \begin{aligned}
+      -u_1"^n(x) & =  f(x) \quad  \text{in}  \quad  ]0,b[  \\
+       u_1^n(0) & =  \alpha \\
+       u_1^n(b)  & = u_2^{n-1}(b)
+    \end{aligned}
+  \right.
+\qquad \text{and} \qquad
+  \left \{
+    \begin{aligned}
+      -u_2"^n(x) & =  f(x) \quad  \text{in}  \quad  ]a,1[  \\
+      u_2^n(1) & =  \beta \\
+      u_2^n(a)  & = u_1^n(a)
+    \end{aligned}
+  \right.
+\end{equation}
+where $ n \in \mathbb N^*, a, b \in \mathbb R $ and $a < b$. \\
+Let $e_i^n = u_i^n-u~(i=1,2)$, the error at $n^{th}$ iteration relative to the exact solution, the convergence rate is given by
+\begin{equation}
+  \rho = \frac{\vert e_1^n  \vert}{\vert e_1^{n-1}  \vert} = \frac{a}{b}\frac{1-b}{1-a} = \frac{\vert e_2^n  \vert}{\vert e_2^{n-1}  \vert} .
+  \label{eq:32}
+\end{equation}
+
+\subsection{Variational formulations}
+\label{sec:vari-form-1}
+find $u$ such that
+\begin{equation*}
+  \int_0^b u_1'v' = \int_0^b fv \quad \forall v \qquad \text{in the first subdomain} ~\Omega_1 = ]0,b[
+\end{equation*}
+
+\begin{equation*}
+  \int_a^1 u_2'v' = \int_a^1 fv \quad \forall v \qquad \text{in the second subdomain} ~ \Omega_2 = ]a,1[
+\end{equation*}
+
+% \begin{lstlisting}
+% /*
+% Assembly in the first subdomain $\Omega_1$
+% */
+%   auto F$_1$ = M_backend->newVector(Xh$_1$);
+%   form1( _test=Xh$_1$,_vector=F$_1$, _init=true ) =
+%          integrate( elements(mesh$_1$), f*id(v) );
+%   F$_1$->close();
+%   auto A$_1$ = M_backend->newMatrix( Xh$_1$, Xh$_1$ );
+%   form2( _test=Xh$_1$, _trial=Xh$_1$, _matrix=A$_1$, _init=true ) =
+%          integrate( elements(mesh$_1$), gradt(u$_1$)*trans(grad(v)) );
+%   A$_1$->close();
+%   form2( Xh$_1$, Xh$_1$, A$_1$ ) +=
+%          on( markedfaces(mesh$_1$, "Dirichlet") ,u$_1$,F$_1$,g)
+%          + on( markedfaces(mesh$_1$, "Interface") ,u$_1$,F$_1$,idv(u$_2$));
+% /*
+% Assembly in the second subdomain $\Omega_2$
+% */
+%   auto F$_2$ = M_backend->newVector(Xh$_2$);
+%   form1( _test=Xh$_2$,_vector=F$_2$, _init=true ) =
+%          integrate( elements(mesh$_2$), f*id(v) );
+%   F$_2$->close();
+%   auto A$_2$ = M_backend->newMatrix( Xh$_2$, Xh$_2$ );
+%   form2( _test=Xh$_2$, _trial=Xh$_2$, _matrix=A$_2$, _init=true ) =
+%          integrate( elements(mesh$_2$), gradt(u$_2$)*trans(grad(v)) );
+%   A$_2$->close();
+%   form2( Xh$_2$, Xh$_2$, A$_2$ ) +=
+%          on( markedfaces(mesh$_2$, "Dirichlet") ,u$_2$,F$_2$,g)
+%          + on( markedfaces(mesh$_2$, "Interface") ,u$_2$,F$_2$,idv(u$_1$));
+
+% \end{lstlisting}
+
+\begin{lstlisting}
+template<Expr>
+localProblem(element_type& u, Expr expr)
+{
+  /*
+  Assembly of the right hand side $\int_\Omega f(x)v(x)\, \mathrm dx$
+  */
+  auto F = M_backend->newVector(Xh);
+  form1( _test=Xh,_vector=F, _init=true ) =
+         integrate( elements(mesh), f*id(v) );
+  F->close();
+  /*
+  Assembly of the left hand side $\int_\Omega u'(x)v'(x)\,\mathrm dx$
+  */
+  auto A = M_backend->newMatrix( Xh, Xh );
+  form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
+         integrate( elements(mesh), gradt(u)*trans(grad(v)) );
+  A->close();
+  /*
+  Apply the dirichlet boundary conditions
+  */
+  form2( Xh, Xh, A ) +=
+         on( markedfaces(mesh, "Dirichlet") ,u,F,g);
+  /*
+  Apply the dirichlet interface conditions
+  */
+  form2( Xh, Xh, A ) +=
+         on( markedfaces(mesh, "Interface") ,u,F,expr);
+
+}
+\end{lstlisting}
+
 
 \section{A 2 domain overlapping Schwartz method in 2D and 3D}
 \label{sec:2-doma-overl}
