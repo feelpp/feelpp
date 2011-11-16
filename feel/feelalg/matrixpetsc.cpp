@@ -384,6 +384,7 @@ void MatrixPetsc<T>::zero ()
     CHKERRABORT(this->comm(),ierr);
 
     this->zeroEntriesDiagonal();
+
 }
 
 template <typename T>
@@ -716,10 +717,11 @@ MatrixPetsc<T>::addMatrix (const T a_in, MatrixSparse<T> &X_in)
 
 // 2.3.x & newer
 #else
-
-    //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SAME_NONZERO_PATTERN);
+    this->close();
+    ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SAME_NONZERO_PATTERN);
     //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SUBSET_NONZERO_PATTERN );
-    ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)DIFFERENT_NONZERO_PATTERN);
+    //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)DIFFERENT_NONZERO_PATTERN);
+    //ierr = MatDuplicate(X->mat(),MAT_COPY_VALUES,&_M_mat);
     CHKERRABORT(this->comm(),ierr);
 
 #endif
@@ -1207,6 +1209,7 @@ void MatrixPetsc<T>::zeroEntriesDiagonal()
     ierr = MatDiagonalSet( _M_mat, diag.vec(), INSERT_VALUES );
     CHKERRABORT(this->comm(),ierr);
 #else
+    //std::cout << "\n this->size1(),this->size2() " << this->size1() << " " << this->size2() << std::endl;
     for (uint i = 0;i <std::min(this->size1(),this->size2());++i)
         this->set(i,i,0.);
 #endif
