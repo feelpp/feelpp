@@ -94,6 +94,9 @@ find $u$ such that
 % \end{lstlisting}
 
 \begin{lstlisting}
+/*
+  Implementation of the local problem
+*/
 template<Expr>
 localProblem(element_type& u, Expr expr)
 {
@@ -121,8 +124,29 @@ localProblem(element_type& u, Expr expr)
   */
   form2( Xh, Xh, A ) +=
          on( markedfaces(mesh, "Interface") ,u,F,expr);
-
 }
+
+  unsigned int cpt = 0;
+  double tolerance = $1e-8$;
+  double maxIterations = 20;
+  double l2erroru$_1$ = 1.;
+  double l2erroru$_2$ = 1;
+  /*
+  Iteration loop
+  */
+  while( (l2erroru$_1$ +l2erroru$_2$) > tolerance && cpt <= maxIterations)
+  {
+    // call the localProblem on the first subdomain $\Omega_1$
+       localProblem(u$_1$, idv(u$_2$));
+    // call the localProblem on the first subdomain $\Omega_2$
+       localProblem(u$_2$, idv(u$_1$));
+    // compute L2 errors on each subdomain
+       L2erroru$_1$ = l2Error(u$_1$);
+       L2erroru$_2$ = l2Error(u$_2$);
+     // increment the cunter
+        ++cpt;
+  }
+
 \end{lstlisting}
 
 
