@@ -793,9 +793,9 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
 
     bool reuse_prec = this->vm()["crb.reuse_prec"].template as<bool>() ;
 
-    index = 0;
+    int no_residual_index = 0;
     sampling_ptrtype Sampling;
-    int sampling_size=index+1;
+    int sampling_size=no_residual_index+1;
 
     if( M_error_type == CRB_NO_RESIDUAL )
     {
@@ -811,10 +811,10 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
     Log() << "[CRB::offlineWithErrorEstimation] strategy "<< M_error_type <<"\n";
     std::cout << "[CRB::offlineWithErrorEstimation] strategy "<< M_error_type <<"\n";
 
-    while ( maxerror > M_tolerance && M_N < M_iter_max && index<sampling_size)
+    while ( maxerror > M_tolerance && M_N < M_iter_max && no_residual_index<sampling_size)
     {
 
-       if( M_error_type == CRB_NO_RESIDUAL )  mu = M_Xi->at( index );
+       if( M_error_type == CRB_NO_RESIDUAL )  mu = M_Xi->at( no_residual_index );
 
         boost::timer timer, timer2;
         Log() <<"========================================"<<"\n";
@@ -1213,7 +1213,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<true>)
         if( M_error_type == CRB_NO_RESIDUAL )
             {
                 maxerror=M_iter_max-M_N;
-                index++;
+                no_residual_index++;
             }
         else
             {
@@ -1301,9 +1301,9 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<false>)
     Log() << "[CRB::offlineNoErrorEstimation] strategy "<< M_error_type <<"\n";
     std::cout << "[CRB::offlineNoErrorEstimation] strategy "<< M_error_type <<"\n";
 
-    index = 0;
+    int no_residual_index = 0;
     sampling_ptrtype Sampling;
-    int sampling_size=index+1;
+    int sampling_size=no_residual_index+1;
 
     if( M_error_type == CRB_NO_RESIDUAL )
     {
@@ -1319,10 +1319,10 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<false>)
     Log() << "[CRB] strategy "<< M_error_type <<"\n";
     std::cout << "[CRB] strategy "<< M_error_type <<"\n";
 
-    while ( maxerror > M_tolerance && M_N < M_iter_max && index<sampling_size)
+    while ( maxerror > M_tolerance && M_N < M_iter_max && no_residual_index<sampling_size)
     {
 
-       if( M_error_type == CRB_NO_RESIDUAL )  mu = M_Xi->at( index );
+       if( M_error_type == CRB_NO_RESIDUAL )  mu = M_Xi->at( no_residual_index );
 
         boost::timer timer, timer2;
         Log() <<"========================================"<<"\n";
@@ -1497,7 +1497,7 @@ CRB<TruthModelType>::offlineWithErrorEstimation(mpl::bool_<false>)
         if( M_error_type == CRB_NO_RESIDUAL )
             {
                 maxerror=M_iter_max-M_N;
-                index++;
+                no_residual_index++;
             }
         else
             {
