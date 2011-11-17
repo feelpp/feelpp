@@ -188,6 +188,11 @@ public:
     virtual sparse_matrix_ptrtype newMatrix( DataMap const& dm1, DataMap const& dm2, size_type prop = NON_HERMITIAN  ) = 0;
 
     /**
+     * instantiate a new sparse vector
+     */
+    virtual sparse_matrix_ptrtype newZeroMatrix( DataMap const& dm1, DataMap const& dm2 ) = 0;
+
+    /**
      * helper function
      */
     template<typename DomainSpace, typename ImageSpace>
@@ -229,6 +234,16 @@ public:
         //return mb;
         boost::shared_ptr< MatrixBlock<NR,NC,T> > mb(new MatrixBlock<NR,NC,T>( b,*this ));
         return mb->getSparseMatrix();
+    }
+
+
+    /**
+     * instantiate a new zero matrix
+     */
+    template<typename DomainSpace, typename ImageSpace>
+    sparse_matrix_ptrtype newZeroMatrix( DomainSpace const& dm, ImageSpace const& im )
+    {
+        return this->newZeroMatrix( dm->map(), im->map() );
     }
 
     /**
