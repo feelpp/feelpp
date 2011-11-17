@@ -145,6 +145,14 @@ public:
         return A;
     }
 
+    sparse_matrix_ptrtype
+    newZeroMatrix( DataMap const& d1, DataMap const& d2 )
+    {
+        auto A = sparse_matrix_ptrtype( new gmm_sparse_matrix_type( d1.nGlobalElements(), d2.nGlobalElements() ) );
+        //A->setMatrixProperties( matrix_properties );
+        return A;
+    }
+
     template<typename SpaceT>
     static vector_ptrtype newVector( boost::shared_ptr<SpaceT> const& space )
     {

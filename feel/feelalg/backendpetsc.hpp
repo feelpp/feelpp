@@ -69,6 +69,9 @@ public:
     typedef MatrixPetsc<value_type> petsc_sparse_matrix_type;
     typedef boost::shared_ptr<sparse_matrix_type> petsc_sparse_matrix_ptrtype;
 
+    typedef typename sparse_matrix_type::graph_type graph_type;
+    typedef typename sparse_matrix_type::graph_ptrtype graph_ptrtype;
+
     /* vector */
     typedef typename super::vector_type vector_type;
     typedef typename super::vector_ptrtype vector_ptrtype;
@@ -147,6 +150,34 @@ public:
         m->setMatrixProperties( matrix_properties );
         m->init( imagemap.nGlobalElements(), domainmap.nGlobalElements(),
                  imagemap.nMyElements(), domainmap.nMyElements() );
+        return m;
+    }
+
+    sparse_matrix_ptrtype
+    newZeroMatrix( DataMap const& domainmap,
+                   DataMap const& imagemap )
+    {
+        graph_ptrtype sparsity_graph( new graph_type( domainmap.nDof(),
+                                                      domainmap.firstDof(), domainmap.lastDof(),
+                                                      imagemap.firstDof(), imagemap.lastDof() ) );
+        for (size_type i=0;i<domainmap.nDof() ; ++i)
+            {
+                //sparsity_graph->row(i);
+                typename graph_type::row_type& row = sparsity_graph->row(i);
+                row.get<0>() = 0;//proc
+                row.get<1>() = i; //local index : warning false in parallel!!!!
+                row.get<2>().clear(); //all is zero
+            }
+
+        sparsity_graph->close();
+
+        sparse_matrix_ptrtype  m ( new petsc_sparse_matrix_type );
+        //m->setMatrixProperties( matrix_properties );
+
+        m->init( domainmap.nGlobalElements(), imagemap.nGlobalElements(),
+                 domainmap.nMyElements(), imagemap.nMyElements(),
+                 sparsity_graph );
+
         return m;
     }
 

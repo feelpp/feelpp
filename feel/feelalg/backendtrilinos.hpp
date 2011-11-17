@@ -188,6 +188,18 @@ public:
             }
         }
 
+    sparse_matrix_ptrtype
+    newZeroMatrix( DataMap const& domainmap, DataMap const& imagemap )
+    {
+        Epetra_Map erowmap = BackendTrilinos::epetraMap( imagemap );
+        Epetra_Map ecolmap = BackendTrilinos::epetraMapStatic( domainmap );
+
+        auto A= sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap ) );
+        //A->setMatrixProperties( matrix_properties );
+        return A;
+    }
+
+
     template<typename SpaceT>
     vector_ptrtype newVector( SpaceT const& space )
         {
