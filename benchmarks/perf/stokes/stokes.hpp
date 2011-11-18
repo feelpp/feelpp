@@ -163,15 +163,16 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     /*
      * First we create the mesh
      */
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1).str() ,
-                                                      _shape="hypercube",
-                                                      _dim=Dim,
-                                                      _h=M_meshSize,
-                                                      _xmin=-1.,_xmax=1.,
-                                                      _ymin=-1.,_ymax=1.,
-                                                      _zmin=-1.,_zmax=1.) );
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1).str() ,
+                                              _shape="hypercube",
+                                              _usenames=true,
+                                              //_convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
+                                              _dim=Dim,
+                                              _h=M_meshSize,
+                                              _xmin=-0.5,_xmax=1.5,
+                                              _ymin=   0,_ymax=2 ) );
 
     M_stats.put("t.init.mesh",t.elapsed());t.restart();
     /*
@@ -224,6 +225,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto SigmaN = -id(p)*N()+mu*dn(u);
     //# endmarker6 #
 
+#if 0
     // u exact solution
     //auto u_exact = vec(cos(Px())*cos(Py()), sin(Px())*sin(Py()));
     auto u_exact = val(-exp(Px())*(Py()*cos(Py())+sin(Py()))*unitX()+ exp(Px())*Py()*sin(Py())*unitY()+ Pz()*unitZ() );
@@ -238,20 +240,66 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     //auto f = vec( (2*cos(Px())*cos(Py())-sin(Px())*sin(Py())),
     //              2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) );
     auto f = val(vec(cst(0.),cst(0.)));
+#else
+    //
+    // the Kovasznay flow (2D)
+    //
+    double pi = M_PI;
+    double mu = this->vm()["mu"].template as<value_type>();
+    double lambda = 1./(2.*mu) - math::sqrt( 1./(4.*mu*mu) + 4.*pi*pi);
+    double penalbc = this->vm()["bccoeff"].template as<value_type>();
+    double betacoeff = this->vm()["beta"].template as<value_type>();
+    bool add_convection = ( math::abs( betacoeff  ) > 1e-10 );
+    // total stress tensor (test)
+    auto u1 = 1. - exp( lambda * Px() ) * cos(2.*pi*Py());
+    auto u2 = (lambda/(2.*pi)) * exp( lambda * Px() ) * sin(2.*pi*Py());
+    auto u_exact = val(vec(u1,u2));
+
+    auto du_dx = (-lambda*exp( lambda * Px() )*cos(2.*pi*Py()));
+    auto du_dy = (2*pi*exp( lambda * Px() )*sin(2.*pi*Py()));
+    auto dv_dx = ((lambda*lambda/(2*pi))*exp( lambda * Px() )*sin(2.*pi*Py()));
+    auto dv_dy = (lambda*exp( lambda * Px() )*cos(2.*pi*Py()));
+    auto grad_exact = val(mat<2,2>(du_dx, du_dy, dv_dx, dv_dy));
+    auto div_exact = val(du_dx + dv_dy);
+
+    auto beta = vec(cst(betacoeff),cst(betacoeff));
+    auto convection = val(grad_exact*beta);
+
+    auto p_exact = val((-exp(2.*lambda*Px()))/2.0-0.125*(exp(-1.0*lambda)-1.0*exp(3.0*lambda))/lambda);
+
+    //auto f1 = (exp( lambda * Px() )*((lambda*lambda - 4.*pi*pi)*mu*cos(2.*pi*Py()) - lambda*exp( lambda * Px() )));
+    auto f1 = (-mu*(-lambda*lambda*exp(lambda*Px())*cos(2.0*pi*Py())+4.0*exp(lambda*Px())*cos(2.0*pi*Py())*pi*pi)-lambda*exp(2.0*lambda*Px()));
+
+    //auto f2 = (exp( lambda * Px() )*mu*(lambda/(2.*pi))*sin(2.*pi*Py())*(-lambda*lambda +4*pi*pi));
+    auto f2 = (-mu*(lambda*lambda*lambda*exp(lambda*Px())*sin(2.0*pi*Py())/pi/2.0-2.0*lambda*exp(lambda*Px())*sin(2.0*pi*Py())*pi));
+
+    auto f = val(vec(f1,f2));//+ convection;
+
+    //double pmean = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/mesh->measure();
+    double pmean = -0.125*(math::exp(-1.0*lambda)-1.0*math::exp(3.0*lambda))/lambda;
+
+#endif
     boost::timer subt;
     // right hand side
     auto F = M_backend->newVector( Xh );
     form1( Xh, F, _init=true );
     M_stats.put("t.init.vector",t.elapsed());
     Log() << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
-    //form1( Xh, F ) = integrate( elements(mesh), trans(f)*id(v) );
-    //M_stats.put("t.assembly.vector.source",subt.elapsed());
-    Log() << "   o time for rhs force terms: " << subt.elapsed() << "\n";subt.restart();
+    form1( Xh, F ) = integrate( elements(mesh), trans(f)*id(v) );
+    M_stats.put("t.assembly.vector.source",subt.elapsed());subt.restart();
+    if ( add_convection )
+    {
+        form1( Xh, F ) += integrate( elements(mesh), trans(convection)*id(v) );
+        M_stats.put("t.assembly.vector.convection",subt.elapsed());subt.restart();
+    }
+
+
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
         form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=-trans(u_exact)*SigmaN);
         M_stats.put("t.assembly.vector.dirichletup",subt.elapsed());subt.restart();
         form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*inner(u_exact,id(v))/hFace() );
+        //form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*max(betacoeff,mu/hFace())*(trans(id(v))*N())*N());
         M_stats.put("t.assembly.vector.dirichletp",subt.elapsed());
         Log() << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
@@ -261,6 +309,9 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     /*
      * Construction of the left hand side
      */
+    size_type pattern = (size_type)DOF_PATTERN_COUPLED;
+    if ( this->vm()[ "faster" ].template as<int>() )
+        pattern = (size_type)DOF_PATTERN_DEFAULT;
     //# marker7 #
     t.restart();
     auto D = M_backend->newMatrix( Xh, Xh );
@@ -269,11 +320,14 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     subt.restart();
+#if 0
     if (  this->vm().count( "extra-terms" ) )
     {
         //form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(dxt(u),dx(v))+inner(dyt(u),dy(v))));
         form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=trans(gradt(u)*idv(u))*id(v));
         M_stats.put("t.assembly.matrix.convection1",subt.elapsed());subt.restart();
+        form2( Xh, Xh, D, _pattern=pattern ) =integrate( _range=elements(mesh),_expr=trans(gradt(u)*idv(u))*id(v));
+        M_stats.put("t.assembly.matrix.convection11",subt.elapsed());subt.restart();
         form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=inner(gradt(u)*idv(u),id(v)));
         M_stats.put("t.assembly.matrix.convection2",subt.elapsed());subt.restart();
         form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=trans(dxt(u)*idv(u)(0)+dyt(u)*idv(u)(1)+dzt(u)*idv(u)(2))*id(v));
@@ -288,12 +342,23 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
         M_stats.put("t.assembly.matrix.diffusion3",subt.elapsed());subt.restart();
         form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(dxt(u),dx(v))+inner(dyt(u),dy(v))+inner(dzt(u),dz(v))));
         M_stats.put("t.assembly.matrix.diffusion4",subt.elapsed());subt.restart();
+        form2( Xh, Xh, D, _pattern=pattern ) =integrate( _range=elements(mesh),_expr=mu*(inner(gradt(u),grad(v))));
+        M_stats.put("t.assembly.matrix.diffusionfast",subt.elapsed());subt.restart();
+
     }
+#endif
     t.restart();
 
-    form2( Xh, Xh, D ) =integrate( _range=elements(mesh),_expr=mu*(inner(gradt(u),grad(v))));
+    form2( Xh, Xh, D, _pattern=pattern ) =integrate( _range=elements(mesh),_expr=mu*(inner(gradt(u),grad(v))));
     M_stats.put("t.assembly.matrix.diffusion",subt.elapsed());
     Log() << "   o time for diffusion terms: " << subt.elapsed() << "\n";subt.restart();
+
+    if ( add_convection )
+    {
+        form2( Xh, Xh, D, _pattern=pattern ) =integrate( _range=elements(mesh),_expr=trans(gradt(u)*beta)*id(v) );
+        M_stats.put("t.assembly.matrix.convection",subt.elapsed());
+        Log() << "   o time for convection terms: " << subt.elapsed() << "\n";subt.restart();
+    }
 
     form2( Xh, Xh, D )+=integrate( _range=elements(mesh),_expr=-div(v)*idt(p));
     form2( Xh, Xh, D )+=integrate( _range=elements(mesh),_expr=divt(u)*id(q) );
@@ -304,13 +369,14 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     {
         if (  !this->vm().count( "extra-terms" ) )
         {
-            form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
+            form2( Xh, Xh, D, _pattern=pattern )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
             M_stats.put("t.assembly.matrix.dirichlet1",subt.elapsed());subt.restart();
-            form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(v) );
+            form2( Xh, Xh, D, _pattern=pattern )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(v) );
             M_stats.put("t.assembly.matrix.dirichlet2",subt.elapsed());subt.restart();
         }
         else
         {
+#if 0
             ProfilerStart("/tmp/bfaces");
             form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=idt(p)*(trans(N())*id(v)) );
             ProfilerStop();
@@ -323,8 +389,10 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
             M_stats.put("t.assembly.matrix.dirichlet_pN*u",subt.elapsed());subt.restart();
             form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(dn(u))*idt(u) );
             M_stats.put("t.assembly.matrix.dirichlet_dn(v)*u",subt.elapsed());subt.restart();
+#endif
         }
-        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*inner(idt(u),id(v))/hFace() );
+        form2( Xh, Xh, D, _pattern=pattern )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*inner(idt(u),id(v))/hFace() );
+        //form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*(trans(idt(u))*N())*(trans(id(v))*N())*max(betacoeff,mu/hFace()) );
         M_stats.put("t.assembly.matrix.dirichlet_u*u",subt.elapsed());subt.restart();
         Log() << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
@@ -360,7 +428,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     // get the zero mean pressure
     p.add( - mean_p );
-
+    double mean_pexact = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/meas;
+    std::cout << "[stokes] mean(pexact)=" << mean_pexact << "\n";
     size_type nnz = 0 ;
     auto nNz = D->graph()->nNz() ;
     for(auto iter = nNz.begin();iter!=nNz.end();++iter)
@@ -372,7 +441,13 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     Log() << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
     M_stats.put("e.l2.u",math::sqrt( u_errorL2 ));
 
-    double p_errorL2 = integrate( _range=elements(mesh), _expr=(idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
+    double u_errorsemiH1 = integrate( _range=elements(mesh),
+                                      _expr=trace((gradv(u)-grad_exact)*trans(gradv(u)-grad_exact))).evaluate()( 0, 0 );
+    double u_error_H1 = math::sqrt( u_errorL2+u_errorsemiH1 );
+    std::cout << "||u_error||_1= " << u_error_H1 << "\n";
+    M_stats.put("e.h1.u",u_error_H1);
+
+    double p_errorL2 = integrate( _range=elements(mesh), _expr=(idv(p)-(p_exact-mean_pexact))*(idv(p)-(p_exact-mean_pexact)) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
     Log() << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
     M_stats.put("e.l2.p",math::sqrt( p_errorL2 ));
@@ -381,6 +456,10 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     double mean_div_u = integrate( elements(mesh), divv(u) ).evaluate()( 0, 0 );
     Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+
+    double mean_div_uexact = integrate( elements(mesh), div_exact ).evaluate()( 0, 0 );
+    Log() << "[stokes] mean_div(uexact)=" << mean_div_uexact << "\n";
+    std::cout << "[stokes] mean_div(uexact)=" << mean_div_uexact << "\n";
 
     double div_u_error_L2 = integrate( elements(mesh), divv(u)*divv(u) ).evaluate()( 0, 0 );
     M_stats.put("e.l2.div_u",math::sqrt( div_u_error_L2 ));
