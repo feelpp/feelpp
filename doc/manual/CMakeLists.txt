@@ -174,3 +174,6 @@ add_dependencies(doc octave)
 
 
 ENDIF( OCTAVE_FOUND )
+
+
+add_subdirectory(mcs)
