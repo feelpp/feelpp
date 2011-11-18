@@ -1,0 +1,23 @@
+These are installation instructions for Feel APEE compilation
+(these instructions are usable for the other Feel research projects)
+
+1. 'cd' to the directory containing the sources of Feel
+
+2. Take the sources of the concerned project (here APEE) on the forge :
+ - for users : 
+svn checkout svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life-apee/trunk/trunk <top level feel directory>/research/apee
+
+ - for developpers (require forge login) : 
+svn checkout svn+ssh://<forge_login>@scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life-apee/trunk/trunk <top level feel directory>/research/apee
+
+A new directory ./research/apee have normally been created, containing the source of APEE project.
+
+Remark : call this repertory "apee" is really important, according to CMakeLists.txt, which can't configure compilation of APEE project if you gave it an other name. For the other research projects, please check the associated name is CMakeLists.txt.
+
+3. 'cd' to the directory built for Feel++ compilation. (<top level feel directory> for in-source compilation, 
+<top level feel directory>/opt for out-source compilation)
+
+4. Type cmake <top level feel directory> to configure compilation (APEE project will now been taken into account)
+
+5. Type make to compile the source (Sources for APEE will be compiled)
+
