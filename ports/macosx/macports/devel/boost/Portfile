@@ -204,8 +204,8 @@ variant openmpi description {Build Boost.MPI} {
     configure.args-delete   --without-libraries=mpi
 
     post-configure {
-        #write_jam "using mpi : ${prefix}/bin/g++-mp-4.5: : ${prefix}/lib/openmpi/bin/mpirun ;"
-        write_jam "using mpi : ${prefix}/bin/g++-mp-4.5: : ;"
+        write_jam "using mpi : : : ${prefix}/lib/openmpi/bin/mpirun ;"
+        #write_jam "using mpi : ${prefix}/bin/g++-mp-4.5: : ;"
     }
 
     if {![catch python_dir]} {
