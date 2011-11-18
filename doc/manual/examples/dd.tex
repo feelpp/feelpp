@@ -56,74 +56,92 @@ find $u$ such that
 \begin{equation*}
   \int_0^b u_1'v' = \int_0^b fv \quad \forall v \qquad \text{in the first subdomain} ~\Omega_1 = ]0,b[
 \end{equation*}
-
+\vspace{-5pt}
 \begin{equation*}
   \int_a^1 u_2'v' = \int_a^1 fv \quad \forall v \qquad \text{in the second subdomain} ~ \Omega_2 = ]a,1[
 \end{equation*}
 
-% \begin{lstlisting}
-% /*
-% Assembly in the first subdomain $\Omega_1$
-% */
-%   auto F$_1$ = M_backend->newVector(Xh$_1$);
-%   form1( _test=Xh$_1$,_vector=F$_1$, _init=true ) =
-%          integrate( elements(mesh$_1$), f*id(v) );
-%   F$_1$->close();
-%   auto A$_1$ = M_backend->newMatrix( Xh$_1$, Xh$_1$ );
-%   form2( _test=Xh$_1$, _trial=Xh$_1$, _matrix=A$_1$, _init=true ) =
-%          integrate( elements(mesh$_1$), gradt(u$_1$)*trans(grad(v)) );
-%   A$_1$->close();
-%   form2( Xh$_1$, Xh$_1$, A$_1$ ) +=
-%          on( markedfaces(mesh$_1$, "Dirichlet") ,u$_1$,F$_1$,g)
-%          + on( markedfaces(mesh$_1$, "Interface") ,u$_1$,F$_1$,idv(u$_2$));
-% /*
-% Assembly in the second subdomain $\Omega_2$
-% */
-%   auto F$_2$ = M_backend->newVector(Xh$_2$);
-%   form1( _test=Xh$_2$,_vector=F$_2$, _init=true ) =
-%          integrate( elements(mesh$_2$), f*id(v) );
-%   F$_2$->close();
-%   auto A$_2$ = M_backend->newMatrix( Xh$_2$, Xh$_2$ );
-%   form2( _test=Xh$_2$, _trial=Xh$_2$, _matrix=A$_2$, _init=true ) =
-%          integrate( elements(mesh$_2$), gradt(u$_2$)*trans(grad(v)) );
-%   A$_2$->close();
-%   form2( Xh$_2$, Xh$_2$, A$_2$ ) +=
-%          on( markedfaces(mesh$_2$, "Dirichlet") ,u$_2$,F$_2$,g)
-%          + on( markedfaces(mesh$_2$, "Interface") ,u$_2$,F$_2$,idv(u$_1$));
+\section{A 2 domain overlapping Schwartz method in 2D and 3D}
+\label{sec:2-doma-overl}
 
-% \end{lstlisting}
+We consider the following laplacian boundary value  problem
+\begin{equation}
+  \left \{
+    \begin{aligned}
+      -\Delta u & = f \quad \text{in} \quad  \Omega \\
+      u & = g \quad \text{on} \quad  \partial\Omega
+    \end{aligned}
+  \right.
+ \label{eq:33}
+\end{equation}
+where $\Omega \subset \mathbb R^d, d=2,3$ and $g$ is the dirichlet boundary value.
 
+\subsection{Schwartz algorithms}
+\label{sec:schwartz-algorithms-1}
+The schwartz overlapping multiplicative algorithm with dirichlet interface conditions for this problem on two subdomains $\Omega_1$
+and $\Omega_2$ at $n^{th}$ iteration is given by
+\begin{equation}
+  \label{eq:31}
+  \left \{
+    \begin{aligned}
+      -\Delta u_1^n & =  f \quad \qquad  \text{in}  \quad  \Omega_1  \\
+       u_1^n  & =  g \quad \qquad  \text{on} \quad \partial \Omega_1^{ext}\\
+       u_1^n  & = u_2^{n-1} \quad ~~  \text{on} \quad \Gamma_1
+    \end{aligned}
+  \right.
+\qquad \text{and} \qquad
+  \left \{
+    \begin{aligned}
+      - \Delta u_2^n & =  f \quad \qquad  \text{in}  \quad  \Omega_2  \\
+      u_2^n  & =  g  \quad \qquad  \text{on} \quad \partial \Omega_2^{ext}\\
+      u_2^n  & = u_1^n \qquad~~  \text{on} \quad \Gamma_2
+    \end{aligned}
+  \right.
+\end{equation}
+
+\subsection{Variational formulations}
+\label{sec:vari-form-2}
+
+\begin{equation*}
+  \begin{aligned}
+    \int_{\Omega_i} \nabla u_i \cdot \nabla v = \int_{\Omega_i} fv   \quad \forall~ v,~i=1,2.
+  \end{aligned}
+\end{equation*}
+
+\subsubsection{\FEEL implementation}
+\label{sec:feel-implementation}
 \begin{lstlisting}
 /*
   Implementation of the local problem
 */
 template<Expr>
+void
 localProblem(element_type& u, Expr expr)
 {
-  /*
-  Assembly of the right hand side $\int_\Omega f(x)v(x)\, \mathrm dx$
-  */
-  auto F = M_backend->newVector(Xh);
-  form1( _test=Xh,_vector=F, _init=true ) =
-         integrate( elements(mesh), f*id(v) );
-  F->close();
-  /*
-  Assembly of the left hand side $\int_\Omega u'(x)v'(x)\,\mathrm dx$
-  */
-  auto A = M_backend->newMatrix( Xh, Xh );
-  form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
-         integrate( elements(mesh), gradt(u)*trans(grad(v)) );
-  A->close();
-  /*
-  Apply the dirichlet boundary conditions
-  */
-  form2( Xh, Xh, A ) +=
-         on( markedfaces(mesh, "Dirichlet") ,u,F,g);
-  /*
-  Apply the dirichlet interface conditions
-  */
-  form2( Xh, Xh, A ) +=
-         on( markedfaces(mesh, "Interface") ,u,F,expr);
+
+ // Assembly of the right hand side $ \int_\Omega fv $
+    auto F = M_backend->newVector(Xh);
+    form1( _test=Xh,_vector=F, _init=true ) =
+           integrate( elements(mesh), f*id(v) );
+    F->close();
+
+ // Assembly of the left hand side $\int_\Omega \nabla u \cdot  \nabla v$
+    auto A = M_backend->newMatrix( Xh, Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
+           integrate( elements(mesh), gradt(u)*trans(grad(v)) );
+    A->close();
+
+ // Apply the dirichlet boundary conditions
+    form2( Xh, Xh, A ) +=
+           on( markedfaces(mesh, "Dirichlet") ,u,F,g);
+
+ // Apply the dirichlet interface conditions
+    form2( Xh, Xh, A ) +=
+           on( markedfaces(mesh, "Interface") ,u,F,expr);
+
+ // solve the linear system $ A \mathrm u = F $
+    M_backend->solve(_matrix=A, _solution=u, _rhs=F );
+
 }
 
   unsigned int cpt = 0;
@@ -136,22 +154,88 @@ localProblem(element_type& u, Expr expr)
   */
   while( (l2erroru$_1$ +l2erroru$_2$) > tolerance && cpt <= maxIterations)
   {
+
     // call the localProblem on the first subdomain $\Omega_1$
        localProblem(u$_1$, idv(u$_2$));
+
     // call the localProblem on the first subdomain $\Omega_2$
        localProblem(u$_2$, idv(u$_1$));
+
     // compute L2 errors on each subdomain
        L2erroru$_1$ = l2Error(u$_1$);
        L2erroru$_2$ = l2Error(u$_2$);
-     // increment the cunter
+
+    // increment the cunter
         ++cpt;
   }
 
 \end{lstlisting}
 
+\subsection{Numerical results in 2D case}
+\label{sec:numerical-results-1}
+The numerical results presented in the following table correspond to the partition of the global domain $\Omega$ in two subdomains $\Omega_1$ and $\Omega_2$~(see figure \ref{fig:original}) and the following configuration:
+\begin{enumerate}
+\item $ g(x,y) = \sin(\pi x)\cos(\pi y)$~:~ the exact solution
+\item $f(x,y) = 2\pi^2g$~:~ the right hand side of the equation
+\item $\mathbb P_2$ approximation~:~ the lagrange polynomial order
+\item hsize $= 0.02$~:~ the mesh size
+\item tol $=1e-9$~:~ the tolerance
+\end{enumerate}
 
-\section{A 2 domain overlapping Schwartz method in 2D and 3D}
-\label{sec:2-doma-overl}
+\begin{figure}[htbp]
+  \centering
+  \subfigure[Two overlapping subdomains]{\includegraphics[width=.40\linewidth]{dd2dgeometry.pdf}}
+  \hspace{0.25cm}
+  \subfigure[Two overlapping meshes]{\includegraphics[width=.38\linewidth]{dd2dmesh.pdf}}
+  \caption{geometry}
+  \label{fig:original}
+\end{figure}
+
+\vspace{0.3cm}
+\begin{center}
+  \begin{tabular}{|c|c|c|}
+  \hline
+   \textbf{Nomber of iterations} & $\mathbf {\| u_1-u_{ex}\|_{L_2} }$ & $\mathbf{\| u_2-u_{ex}\|_{L_2}}$ \\
+   \hline
+    11 & 2.52e-8 & 2.16e-8 \\
+   \hline
+ \end{tabular}
+\end{center}
+% \begin{center}
+% \begin{tabular}{|c|c|c|c|}
+%   \hline
+%   \textbf{Overlap} & \textbf{Nomber of iterations} & $\mathbf {\| u_1-u_{ex}\|_{L_2} }$ & $\mathbf{\| u_2-u_{ex}\|_{L_2}}$ \\
+%   \hline
+%    0 & -  & - & - \\
+%   \hline
+%   0.25 & 11 & 2.52e-8 & 2.16e-8 \\
+%   \hline
+%   0.50 & 8 & 2.34e-8 & 2.34e-8 \\
+%   \hline
+%   0.75 & 5 & 2.16e-8 & 2.31e-8 \\
+%   \hline
+%   1 & 2 & 2.11e-8 & 2.09e-8 \\
+%   \hline
+% \end{tabular}
+% \end{center}
+\vspace{0.2cm}
+\subsection{Numerical solutions in 2D case}
+\label{sec:numerical-solutions}
+%$\Big \Omega_1$
+% \begin{figure}[htbp]
+% \centering
+% \includegraphics[width=.5\linewidth]{dd2d.pdf}
+%   \caption{The two overlapping meshes }
+%   \label{fig:14}
+% \end{figure}
+\begin{figure}[htbp]
+  \centering
+  \subfigure[first iteration]{\includegraphics[width=.48\linewidth]{iter_1.png}}
+  \subfigure[$10^{th}$ iteration]{\includegraphics[width=.48\linewidth]{iter_10.png}}
+  \caption{solution in 2D}
+  \label{fig:original}
+\end{figure}
+
 
 \section{Computing the eigenmodes of the Dirichlet to Neumann operator}
 \label{sec:comp-eigenm-dirichl}
