@@ -487,15 +487,24 @@ public:
         typedef typename FE2::dof_type trial_dof_type;
         static const int nDofPerElementTest = FE1::dof_type::nDofPerElement;
         static const int nDofPerElementTrial = FE2::dof_type::nDofPerElement;
+        static const int nDofPerComponentTest = FE1::dof_type::fe_type::nLocalDof;
+        static const int nDofPerComponentTrial = FE2::dof_type::fe_type::nLocalDof;
         static const int local_mat_traits = mpl::if_<mpl::equal_to<mpl::int_<nDofPerElementTrial>,mpl::int_<1> >,
                                                      mpl::int_<Eigen::ColMajor>,
                                                      mpl::int_<Eigen::RowMajor> >::type::value;
         typedef Eigen::Matrix<value_type, nDofPerElementTest, nDofPerElementTrial,local_mat_traits> local_matrix_type;
         typedef Eigen::Matrix<value_type, 2*nDofPerElementTest, 2*nDofPerElementTrial,Eigen::RowMajor> local2_matrix_type;
+        typedef Eigen::Matrix<value_type, nDofPerComponentTest, nDofPerComponentTrial,local_mat_traits> c_local_matrix_type;
+        typedef Eigen::Matrix<value_type, 2*nDofPerComponentTest, 2*nDofPerComponentTrial,Eigen::RowMajor> c_local2_matrix_type;
         typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
         typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
         typedef Eigen::Matrix<int, nDofPerElementTrial, 1> local_col_type;
         typedef Eigen::Matrix<int, 2*nDofPerElementTrial, 1> local2_col_type;
+
+        typedef Eigen::Matrix<int, nDofPerComponentTest, 1> c_local_row_type;
+        typedef Eigen::Matrix<int, 2*nDofPerComponentTest, 1> c_local2_row_type;
+        typedef Eigen::Matrix<int, nDofPerComponentTrial, 1> c_local_col_type;
+        typedef Eigen::Matrix<int, 2*nDofPerComponentTrial, 1> c_local2_col_type;
 
 
     public:
@@ -814,6 +823,17 @@ public:
         local_col_type M_local_colsigns;
         local2_col_type M_local_colsigns_2;
 
+        c_local_matrix_type M_c_rep;
+        c_local2_matrix_type M_c_rep_2;
+        c_local_row_type M_c_local_rows;
+        c_local2_row_type M_c_local_rows_2;
+        c_local_col_type M_c_local_cols;
+        c_local2_col_type M_c_local_cols_2;
+        c_local_row_type M_c_local_rowsigns;
+        c_local2_row_type M_c_local_rowsigns_2;
+        c_local_col_type M_c_local_colsigns;
+        c_local2_col_type M_c_local_colsigns_2;
+
         eval00_expr_ptrtype _M_eval_expr00;
         eval01_expr_ptrtype _M_eval_expr01;
         eval10_expr_ptrtype _M_eval_expr10;
@@ -924,6 +944,11 @@ public:
     //@{
 
     /**
+     * return the pattern
+     */
+    size_type pattern() const { return M_pattern; }
+
+    /**
      * \return true if the pattern is coupled with respect to the components,
      * false otherwise
      */
@@ -980,9 +1005,19 @@ public:
     list_block_type const& blockList() const { return _M_lb; }
 
     /**
+     * \return the threshold
+     */
+    value_type threshold() const { return _M_threshold; }
+
+    /**
      * \return \c true if threshold applies, false otherwise
      */
     bool doThreshold( value_type const& v ) const { return ( math::abs( v ) > _M_threshold ); }
+
+    /**
+     * return true if do threshold. false otherwise
+     */
+    bool doThreshold() const { return _M_do_threshold; }
 
     //@}
 
@@ -2007,7 +2042,7 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
         trial_space_type,
         ublas::vector_range<ublas::vector<double> > > bf_type;
 
-    bf_type bf( _M_test,trial, _M_bf.matrix(), list_block );
+    bf_type bf( _M_test,trial, _M_bf.matrix(), list_block, _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern()  );
 
     bf += _M_expr;
 
@@ -2049,7 +2084,7 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
         trial_space_type,
         ublas::vector_range<ublas::vector<double> > > bf_type;
 
-    bf_type bf( test, _M_trial, _M_bf.matrix(), list_block );
+    bf_type bf( test, _M_trial, _M_bf.matrix(), list_block, _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern() );
 
     bf += _M_expr;
 

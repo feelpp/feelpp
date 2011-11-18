@@ -297,28 +297,27 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
 
-    if (_M_form.isPatternCoupled())
-        {
-            for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
-                    {
-                        _M_rep(i, j ) = M_integrator( *_M_eval_expr00, i, j, 0, 0 );
-                    }
-        }
-    else if (_M_form.isPatternDefault() && boost::is_same<trial_dof_type,test_dof_type>::value &&
-             trial_dof_type::is_product)
-        {
-            for( uint16_type c = 0; c < trial_dof_type::nComponents1; ++c )
-                for( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
-                    for( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
-                        {
-                            uint16_type testLocalDofIndex = i+c*test_dof_type::fe_type::nLocalDof;
-                            uint16_type trialLocalDofIndex = j+c*trial_dof_type::fe_type::nLocalDof;
-                            _M_rep(testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *_M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
-                        }
-        }
-
-
+    if (_M_form.isPatternDefault() && boost::is_same<trial_dof_type,test_dof_type>::value &&
+        trial_dof_type::is_product)
+    {
+        _M_rep = local_matrix_type::Zero();
+        for( uint16_type c = 0; c < trial_dof_type::nComponents1; ++c )
+            for( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
+                for( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
+                {
+                    uint16_type testLocalDofIndex = i+c*test_dof_type::fe_type::nLocalDof;
+                    uint16_type trialLocalDofIndex = j+c*trial_dof_type::fe_type::nLocalDof;
+                    _M_rep(testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *_M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
+                }
+    }
+    else
+    {
+        for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+            for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+            {
+                _M_rep(i, j ) = M_integrator( *_M_eval_expr00, i, j, 0, 0 );
+            }
+    }
 }
 template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
@@ -403,23 +402,51 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     Debug( 5050 ) << "[BilinearForm::assemble] row start " << row_start << "\n";
     Debug( 5050 ) << "[BilinearForm::assemble] col start " << col_start << "\n";
 #endif /* NDEBUG */
-    M_local_rows.array() = _M_test_dof->localToGlobalIndices(elt_0).array() + row_start;
-    M_local_cols.array() = _M_trial_dof->localToGlobalIndices(elt_0).array() + col_start;
-
     bool do_less = ( ( _M_form.isPatternDefault() &&
                        ( _M_test_dof->nComponents == _M_trial_dof->nComponents ) ) &&
                      !_M_form.isPatternCoupled() );
 
-    if ( test_dof_type::is_modal || trial_dof_type::is_modal )
+    if ( do_less )
+        //if ( 0 )
     {
-        M_local_rowsigns = _M_test_dof->localToGlobalSigns(elt_0);
-        M_local_colsigns = _M_trial_dof->localToGlobalSigns(elt_0);
-        _M_rep.array() *= (M_local_rowsigns*M_local_colsigns.transpose()).array().template cast<value_type>();
-    }
+        for( uint16_type c = 0; c < trial_dof_type::nComponents1; ++c )
+        {
+            M_c_rep = _M_rep.block( c*test_dof_type::fe_type::nLocalDof, c*trial_dof_type::fe_type::nLocalDof,
+                                    test_dof_type::fe_type::nLocalDof, trial_dof_type::fe_type::nLocalDof );
+            M_c_local_rows.array() = _M_test_dof->localToGlobalIndices(elt_0).array().segment(c*test_dof_type::fe_type::nLocalDof,
+                                                                                              test_dof_type::fe_type::nLocalDof) + row_start;
+            M_c_local_cols.array() = _M_trial_dof->localToGlobalIndices(elt_0).array().segment(c*trial_dof_type::fe_type::nLocalDof,
+                                                                                               trial_dof_type::fe_type::nLocalDof) + col_start;
 
-    _M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
-                       M_local_cols.data(), M_local_cols.size(),
-                       _M_rep.data() );
+            if ( test_dof_type::is_modal || trial_dof_type::is_modal )
+            {
+                M_c_local_rowsigns = _M_test_dof->localToGlobalSigns(elt_0).segment(c*test_dof_type::fe_type::nLocalDof,test_dof_type::fe_type::nLocalDof);
+                M_c_local_colsigns = _M_trial_dof->localToGlobalSigns(elt_0).segment(c*trial_dof_type::fe_type::nLocalDof,trial_dof_type::fe_type::nLocalDof);
+                M_c_rep.array() *= (M_c_local_rowsigns*M_c_local_colsigns.transpose()).array().template cast<value_type>();
+            }
+
+            _M_form.addMatrix( M_c_local_rows.data(), M_c_local_rows.size(),
+                               M_c_local_cols.data(), M_c_local_cols.size(),
+                               M_c_rep.data() );
+        }
+    }
+    else
+    {
+        M_local_rows.array() = _M_test_dof->localToGlobalIndices(elt_0).array() + row_start;
+        M_local_cols.array() = _M_trial_dof->localToGlobalIndices(elt_0).array() + col_start;
+
+
+        if ( test_dof_type::is_modal || trial_dof_type::is_modal )
+        {
+            M_local_rowsigns = _M_test_dof->localToGlobalSigns(elt_0);
+            M_local_colsigns = _M_trial_dof->localToGlobalSigns(elt_0);
+            _M_rep.array() *= (M_local_rowsigns*M_local_colsigns.transpose()).array().template cast<value_type>();
+        }
+
+        _M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
+                           M_local_cols.data(), M_local_cols.size(),
+                           _M_rep.data() );
+    }
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
