@@ -81,7 +81,7 @@ where $\Omega \subset \mathbb R^d, d=2,3$ and $g$ is the dirichlet boundary valu
 The schwartz overlapping multiplicative algorithm with dirichlet interface conditions for this problem on two subdomains $\Omega_1$
 and $\Omega_2$ at $n^{th}$ iteration is given by
 \begin{equation}
-  \label{eq:31}
+  \label{eq:34}
   \left \{
     \begin{aligned}
       -\Delta u_1^n & =  f \quad \qquad  \text{in}  \quad  \Omega_1  \\
@@ -118,14 +118,13 @@ template<Expr>
 void
 localProblem(element_type& u, Expr expr)
 {
-
- // Assembly of the right hand side $ \int_\Omega fv $
+ // Assembly of the right hand side $ \mathlarger \int_\Omega fv $
     auto F = M_backend->newVector(Xh);
     form1( _test=Xh,_vector=F, _init=true ) =
            integrate( elements(mesh), f*id(v) );
     F->close();
 
- // Assembly of the left hand side $\int_\Omega \nabla u \cdot  \nabla v$
+ // Assembly of the left hand side $ \mathlarger \int_\Omega \nabla u \cdot  \nabla v$
     auto A = M_backend->newMatrix( Xh, Xh );
     form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
            integrate( elements(mesh), gradt(u)*trans(grad(v)) );
@@ -139,9 +138,8 @@ localProblem(element_type& u, Expr expr)
     form2( Xh, Xh, A ) +=
            on( markedfaces(mesh, "Interface") ,u,F,expr);
 
- // solve the linear system $ A \mathrm u = F $
+ // solve the linear system $ A u = F $
     M_backend->solve(_matrix=A, _solution=u, _rhs=F );
-
 }
 
   unsigned int cpt = 0;
@@ -232,7 +230,7 @@ The numerical results presented in the following table correspond to the partiti
   \centering
   \subfigure[first iteration]{\includegraphics[width=.48\linewidth]{iter_1.png}}
   \subfigure[$10^{th}$ iteration]{\includegraphics[width=.48\linewidth]{iter_10.png}}
-  \caption{solution in 2D}
+  \caption{isovalues of solution in 2D}
   \label{fig:original}
 \end{figure}
 
@@ -240,10 +238,124 @@ The numerical results presented in the following table correspond to the partiti
 \section{Computing the eigenmodes of the Dirichlet to Neumann operator}
 \label{sec:comp-eigenm-dirichl}
 
+\subsection{Problem description and variational formulation}
+\label{sec:probl-descr-vari}
 
+We consider at the continuous level the Dirichlet-to-Neumann(DtN) map on $\Omega$, denoted by DtN$_{\Omega}$.
 
+Let $u: \Gamma \longmapsto \mathbb R, $
+\begin{equation*}
+  \label{eq:35}
+\text{DtN}_{\Omega}(u) = \kappa \frac{\partial v}{ n} \Big |_{\Gamma}
+\end{equation*}
+where $v$ satisfies
+\begin{equation}
+  \label{eq:36}
+\left\{
+  \begin{aligned}
+    & \mathcal L(v):= (\eta - \text{div}(\kappa \nabla))v = 0 & \text{dans} \quad \Omega,\\
+    & v = u & \text{sur} \quad \Gamma
+  \end{aligned}
+\right.
+\end{equation}
 
+where $\Omega$ is a bounded domain of $\mathbb R^d$ (d=2 or 3), and $\Gamma$ it border, $\kappa$ is a positive
+diffusion function which can be discontinuous, and $\eta \geq 0$. The eigenmodes of the Dirichlet-to-Neumann
+operator are solutions of the following eigenvalues problem
+\begin{equation}
+  \label{eq:37}
+  \text{DtN}_{\Omega}(u) = \lambda \kappa u
+\end{equation}
+To obtain the discrete form of the DtN map, we consider the variational form of (\ref{eq:36}). let's define the
+bilinear form $a~:~H^1(\Omega) \times H^1(\Omega) \longrightarrow \mathbb R $,
+\begin{equation*}
+  \label{eq:41}
+  a(w,v) := \int_\Omega \eta w v + \kappa \nabla w \cdot \nabla v .
+\end{equation*}
+With a finite element basis $\{ \phi_k \}$, the coefficient matrix of a Neumann boundary value problem in $\Omega$ is
+\begin{equation*}
+\label{eq:42}
+  A_{kl} := \int_\Omega \eta \phi_k \phi_l + \kappa \nabla \phi_k \cdot \nabla \phi_l .
+\end{equation*}
+A variational formulation of the flux reads
+\begin{equation*}
+  \label{eq:43}
+\int_\Gamma \kappa \dfrac{\partial v}{\partial n} \phi_k = \int_\Omega \eta v \phi_k + \kappa \nabla v \cdot \nabla \phi_k \quad \forall~ \phi_k.
+\end{equation*}
+So the variational formulation of the eigenvalue problem (\ref{eq:37}) reads
+\begin{equation}
+\label{eq:40}
+ \int_\Omega \eta v \phi_k + \kappa \nabla v \cdot \nabla \phi_k = \lambda \int_\Gamma \kappa v \phi_k  \quad \forall~ \phi_k.
+\end{equation}
+Let $B$ be the weighted mass matrix
+\begin{equation*}
+  \label{eq:44}
+  (B)_{kl} = \int_\Gamma \kappa \phi_k \phi_l
+\end{equation*}
+The compact form of (\ref{eq:40}) is
+\begin{equation}
+  \label{eq:45}
+  Av = \lambda B v
+\end{equation}
 
+\subsubsection{\FEEL implementation}
+\label{sec:feel-implementation-1}
+
+\begin{lstlisting}
+
+// Assembly of the right hand side $ B = \mathlarger \int_\Gamma \kappa v w $
+ auto B = M_backend->newMatrix( Xh, Xh ) ;
+ form2( _test=Xh, _trial=Xh, _matrix=B, _init=true );
+ BOOST_FOREACH( int marker, flags )
+ {
+   form2( Xh, Xh, B ) +=
+   integrate( markedfaces(mesh,marker), kappa*idt(u)*id(v) );
+ }
+ B->close();
+// Assembly of the left hand side $ A = \mathlarger \int_\Omega \eta v w + \kappa \nabla v \cdot \nabla w $
+ auto A = M_backend->newMatrix( Xh, Xh ) ;
+ form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
+ integrate( elements(mesh), kappa*gradt(u)*trans(grad(v)) + nu*idt(u)*id(v) );
+ A->close();
+
+// eigenvalue solver options
+ int nev = this->vm()["solvereigen-nev"].template as<int>();
+ int ncv = this->vm()["solvereigen-ncv"].template as<int>();;
+// definition of the eigenmodes
+ SolverEigen<double>::eigenmodes_type modes;
+// solve the eigenvalue problem $ Av =  \lambda B v $
+ modes=
+       eigs( _matrixA=A,
+             _matrixB=B,
+             _nev=nev,
+             _ncv=ncv,
+             _transform=SINVERT,
+             _spectrum=SMALLEST_MAGNITUDE,
+             _verbose = true );
+
+}
+
+\end{lstlisting}
+
+\subsection{Numerical solutions}
+\label{sec:numerical-solutions-1}
+\vspace{-17pt}
+\begin{figure}[htbp]
+  \centering
+  \subfigure[first mode]{\includegraphics[width=.24\linewidth]{mode-0}}
+  \hspace{0.3cm}
+  \subfigure[second mode]{\includegraphics[width=.24\linewidth]{mode-1}}
+  \hspace{0.3cm}
+  \subfigure[third mode]{\includegraphics[width=.24\linewidth]{mode-2}}
+  \caption{three eigenmodes}
+\label{fig:eigenvalues}
+\end{figure}
+These numerical solutions correspond to the following configuration :
+\begin{enumerate}
+\item $\mathbb P_2$ approximation~:~ the lagrange polynomial order
+\item hsize $= 0.02$~:~ the mesh size
+\item $\mu = \kappa = 1.$
+\end{enumerate}
 %%% Local Variables:
 %%% coding: utf-8
 %%% mode: latex
