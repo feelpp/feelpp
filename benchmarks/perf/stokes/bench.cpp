@@ -49,7 +49,7 @@ makeOptions()
         ("f", Feel::po::value<double>()->default_value( 0 ), "forcing term")
         ("mu", Feel::po::value<double>()->default_value( 1.0/40 ), "reaction coefficient component")
         ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
+        ("bccoeff", Feel::po::value<double>()->default_value( 400.0 ), "coeff for weak Dirichlet conditions")
         ("beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient")
         ("export-matlab", "export matrix and vectors in matlab" )
         ("no-solve", "dont solve the system" )
@@ -118,8 +118,8 @@ int main( int argc, char** argv )
     //benchmark.add( new Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "3D-P2P1", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Stokes<2, Lagrange<3, Vectorial>,Lagrange<2, Scalar>, Simplex>( "2D-P3P2", benchmark.vm(), benchmark.about() ) );
     //benchmark.add( new Stokes<3, Lagrange<3, Vectorial>,Lagrange<2, Scalar>, Simplex>( "3D-P3P2", benchmark.vm(), benchmark.about() ) );
-    //benchmark.add( new Stokes<2, Lagrange<4, Vectorial>,Lagrange<3, Scalar>, Simplex>( "2D-P4P3", benchmark.vm(), benchmark.about() ) );
-    //benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>( "2D-P5P4", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Stokes<2, Lagrange<4, Vectorial>,Lagrange<3, Scalar>, Simplex>( "2D-P4P3", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>( "2D-P5P4", benchmark.vm(), benchmark.about() ) );
     //benchmark.add( new Stokes<3, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>( "3D-P5P4", benchmark.vm(), benchmark.about() ) );
 
 
