@@ -307,7 +307,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
     timers["assembly"].first.restart();
 
-    size_type pattern = (Cont::is_continuous?DOF_PATTERN_COUPLED:DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR );
+    size_type pattern = (Cont::is_continuous?Pattern::COUPLED:Pattern::COUPLED|Pattern::EXTENDED );
     form2( Xh, Xh, Mt, _init=true, _pattern=pattern ) =
         integrate( elements(mesh),
                    idt(u)*id(v)/dt );

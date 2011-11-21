@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -106,7 +106,7 @@ Pbeq::getPBMatrix(sparse_matrix_ptrtype& PB,
 
     im_type im;
 
-    size_type pattern = DOF_PATTERN_COUPLED;
+    size_type pattern = Pattern::COUPLED;
     form2( M_pbeqspace.Xh(), M_pbeqspace.Xh(), PB, _init=true, _pattern=pattern ) =
         integrate( elements(*M_pbeqspace.mesh()), im,
                    Epsilon*( M_jacInvStr2[0] * dxt(u) * dx(v) +

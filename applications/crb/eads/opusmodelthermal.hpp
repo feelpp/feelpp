@@ -228,7 +228,7 @@ OpusModelThermal<SpaceType>::update( double time,
     markers.push_back( "Gamma_4_AIR4" );
     markers.push_back( "Gamma_4_PCB" );
 
-    size_type pattern = DOF_PATTERN_COUPLED | DOF_PATTERN_NEIGHBOR;
+    size_type pattern = Pattern::COUPLED | Pattern::EXTENDED;
     if ( do_init )
     //if ( 1 )
     {

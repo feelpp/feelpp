@@ -779,7 +779,7 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu, mpl::bool_<tru
     int first_nnz_A  = A->graph()->nNz()[0];
     if(first_nnz_Aq > first_nnz_A)
     {
-        size_type pattern = Feel::vf::DOF_PATTERN_COUPLED | Feel::vf::DOF_PATTERN_NEIGHBOR;
+        size_type pattern = Feel::vf::Pattern::COUPLED | Feel::vf::Pattern::EXTENDED;
         form2( M_model->functionSpace() , M_model->functionSpace() , A, _init=true, _pattern=pattern)
            =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
         form2( M_model->functionSpace() , M_model->functionSpace() , M, _init=true, _pattern=pattern)
@@ -841,7 +841,7 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu, mpl::bool_<fal
     int first_nnz_A  = A->graph()->nNz()[0];
     if(first_nnz_Aq > first_nnz_A)
     {
-        size_type pattern = Feel::vf::DOF_PATTERN_COUPLED | Feel::vf::DOF_PATTERN_NEIGHBOR;
+        size_type pattern = Feel::vf::Pattern::COUPLED | Feel::vf::Pattern::EXTENDED;
         form2( M_model->functionSpace() , M_model->functionSpace() , A, _init=true, _pattern=pattern)
            =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
     }

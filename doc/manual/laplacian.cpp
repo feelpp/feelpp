@@ -300,10 +300,12 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
     /** \endcode */
 
+    const size_type pattern = Pattern::DEFAULT|Pattern::SYMMETRIC;
+    form2( Xh, Xh, D, _init=true, _pattern=pattern );
     //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
     /** \code */
-    form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), nu*gradt(u)*trans(grad(v)) );
+
+    form2( Xh, Xh, D, _pattern=pattern ) = integrate( elements(mesh), nu*gradt(u)*trans(grad(v)) );
     /** \endcode */
     //# endmarker3 #
 
@@ -316,7 +318,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
              */
             /** \code */
             //# marker10 #
-            form2( Xh, Xh, D ) +=
+            form2( Xh, Xh, D, _pattern=pattern ) +=
                 integrate( markedfaces(mesh,"Dirichlet"),
                            -(gradt(u)*vf::N())*id(v)
                            -(grad(v)*vf::N())*idt(u)

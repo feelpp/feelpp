@@ -299,8 +299,8 @@ Advection<Dim, Order, Cont, Entity>::run()
     }
 
     auto D = backend->newMatrix( Xh, Xh );
-    //size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
-    size_type pattern = DOF_PATTERN_COUPLED;
+    //size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
+    size_type pattern = Pattern::COUPLED;
     form2( _test=Xh, _trial=Xh, _matrix=D, _init=true, _pattern=pattern ) =
         integrate( _range=elements(mesh), _quad=_Q<2*Order>(),
                    // -(u,beta*grad(v))+(mu*u,v)-(u,div(beta)*v)

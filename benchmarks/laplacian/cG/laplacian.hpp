@@ -325,7 +325,7 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
     auto D = backend->newMatrix( Xh, Xh );
 
 
-    size_type pattern = (ContinuityType::is_continuous?DOF_PATTERN_COUPLED:DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR );
+    size_type pattern = (ContinuityType::is_continuous?Pattern::COUPLED:Pattern::COUPLED|Pattern::EXTENDED );
     form2( _trial=Xh, _test=Xh, _matrix=D, _init=true, _pattern=pattern );
     Log() << "D initialized in " << t1.elapsed() << "s\n";t1.restart();
 

@@ -301,22 +301,49 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         trial_dof_type::is_product)
     {
         _M_rep = local_matrix_type::Zero();
-        for( uint16_type c = 0; c < trial_dof_type::nComponents1; ++c )
-            for( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
-                for( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
-                {
-                    uint16_type testLocalDofIndex = i+c*test_dof_type::fe_type::nLocalDof;
-                    uint16_type trialLocalDofIndex = j+c*trial_dof_type::fe_type::nLocalDof;
-                    _M_rep(testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *_M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
-                }
+        if ( _M_form.isPatternSymmetric() )
+        {
+            for( uint16_type c = 0; c < trial_dof_type::nComponents1; ++c )
+                for( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
+                    for( uint16_type i = 0; i <= j; ++i )
+                    {
+                        uint16_type testLocalDofIndex = i+c*test_dof_type::fe_type::nLocalDof;
+                        uint16_type trialLocalDofIndex = j+c*trial_dof_type::fe_type::nLocalDof;
+                        _M_rep(testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *_M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
+                        _M_rep(trialLocalDofIndex, testLocalDofIndex ) = _M_rep(testLocalDofIndex, trialLocalDofIndex );
+                    }
+        }
+        else
+        {
+            for( uint16_type c = 0; c < trial_dof_type::nComponents1; ++c )
+                for( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
+                    for( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
+                    {
+                        uint16_type testLocalDofIndex = i+c*test_dof_type::fe_type::nLocalDof;
+                        uint16_type trialLocalDofIndex = j+c*trial_dof_type::fe_type::nLocalDof;
+                        _M_rep(testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *_M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
+                    }
+        }
     }
     else
     {
-        for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-            for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
-            {
-                _M_rep(i, j ) = M_integrator( *_M_eval_expr00, i, j, 0, 0 );
-            }
+        if ( boost::is_same<trial_dof_type,test_dof_type>::value && _M_form.isPatternSymmetric()  )
+        {
+            for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+                for( uint16_type i = 0; i <= j; ++i )
+                {
+                    _M_rep(i, j ) = M_integrator( *_M_eval_expr00, i, j, 0, 0 );
+                    _M_rep(j,i)=_M_rep(i,j);
+                }
+        }
+        else
+        {
+            for( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+                for( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+                {
+                    _M_rep(i, j ) = M_integrator( *_M_eval_expr00, i, j, 0, 0 );
+                }
+        }
     }
 }
 template<typename FE1,  typename FE2, typename ElemContType>

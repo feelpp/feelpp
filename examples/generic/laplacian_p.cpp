@@ -397,7 +397,7 @@ Laplacian<Order>::run()
     sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
 
     timers["assembly"].first.restart();
-    size_type pattern = (DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR );
+    size_type pattern = (Pattern::COUPLED|Pattern::EXTENDED );
     form2( Xh, Xh, D, _init=true, _pattern=pattern ) = integrate( _range=elements(mesh), _expr=( diff*gradt(u)*trans(grad(v))),_quad=im );
     timers["assembly_D_elements"].second += timers["assembly"].first.elapsed();
     timers["assembly"].first.restart();
@@ -436,7 +436,7 @@ Laplacian<Order>::run()
     if ( delta > 0 )
         {
             Mdelta = sparse_matrix_ptrtype( M_backend->newMatrix( Xh, Xh ) );
-            size_type pattern = (DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR );
+            size_type pattern = (Pattern::COUPLED|Pattern::EXTENDED );
             form2( Xh, Xh, Mdelta, _init=true, _pattern=pattern );
 
             vectorial_space_ptrtype Wh( vectorial_space_type::New( mesh ) );

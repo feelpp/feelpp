@@ -309,9 +309,23 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     /*
      * Construction of the left hand side
      */
-    size_type pattern = (size_type)DOF_PATTERN_COUPLED;
-    if ( this->vm()[ "faster" ].template as<int>() )
-        pattern = (size_type)DOF_PATTERN_DEFAULT;
+    size_type pattern = Pattern::COUPLED;
+    size_type patternsym = Pattern::COUPLED;
+    if ( this->vm()[ "faster" ].template as<int>() == 1 )
+    {
+        pattern = Pattern::COUPLED;
+        patternsym = Pattern::COUPLED|Pattern::SYMMETRIC;
+    }
+    if ( this->vm()[ "faster" ].template as<int>() == 2 )
+    {
+        pattern = Pattern::DEFAULT;
+        patternsym = Pattern::DEFAULT;
+    }
+    if ( this->vm()[ "faster" ].template as<int>() == 3 )
+    {
+        pattern = Pattern::DEFAULT;
+        patternsym = Pattern::DEFAULT|Pattern::SYMMETRIC;
+    }
     //# marker7 #
     t.restart();
     auto D = M_backend->newMatrix( Xh, Xh );
@@ -349,13 +363,13 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 #endif
     t.restart();
 
-    form2( Xh, Xh, D, _pattern=pattern ) =integrate( _range=elements(mesh),_expr=mu*(inner(gradt(u),grad(v))));
+    form2( Xh, Xh, D, _pattern=patternsym ) =integrate( _range=elements(mesh),_expr=mu*(inner(gradt(u),grad(v))));
     M_stats.put("t.assembly.matrix.diffusion",subt.elapsed());
     Log() << "   o time for diffusion terms: " << subt.elapsed() << "\n";subt.restart();
 
     if ( add_convection )
     {
-        form2( Xh, Xh, D, _pattern=pattern ) =integrate( _range=elements(mesh),_expr=trans(gradt(u)*beta)*id(v) );
+        form2( Xh, Xh, D, _pattern=pattern ) +=integrate( _range=elements(mesh),_expr=trans(gradt(u)*beta)*id(v) );
         M_stats.put("t.assembly.matrix.convection",subt.elapsed());
         Log() << "   o time for convection terms: " << subt.elapsed() << "\n";subt.restart();
     }
@@ -369,9 +383,9 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     {
         if (  !this->vm().count( "extra-terms" ) )
         {
-            form2( Xh, Xh, D, _pattern=pattern )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
+            form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
             M_stats.put("t.assembly.matrix.dirichlet1",subt.elapsed());subt.restart();
-            form2( Xh, Xh, D, _pattern=pattern )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(v) );
+            form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(v) );
             M_stats.put("t.assembly.matrix.dirichlet2",subt.elapsed());subt.restart();
         }
         else
@@ -391,7 +405,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
             M_stats.put("t.assembly.matrix.dirichlet_dn(v)*u",subt.elapsed());subt.restart();
 #endif
         }
-        form2( Xh, Xh, D, _pattern=pattern )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*inner(idt(u),id(v))/hFace() );
+        form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*inner(idt(u),id(v))/hFace() );
         //form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*(trans(idt(u))*N())*(trans(id(v))*N())*max(betacoeff,mu/hFace()) );
         M_stats.put("t.assembly.matrix.dirichlet_u*u",subt.elapsed());subt.restart();
         Log() << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();

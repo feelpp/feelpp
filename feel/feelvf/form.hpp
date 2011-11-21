@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-05-30
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -52,7 +52,7 @@ form( boost::shared_ptr<X1> const& __X1,
       bool init = false,
       bool do_threshold = false,
       typename X1::value_type threshold = type_traits<double>::epsilon(),
-      size_type pattern  = vf::DOF_PATTERN_COUPLED )
+      size_type pattern  = vf::Pattern::COUPLED )
 {
     return vf::detail::BilinearForm<X1, X2>( __X1, __X2, __M, init, do_threshold, threshold, pattern );
 }
@@ -197,7 +197,7 @@ BOOST_PARAMETER_FUNCTION(
                           (init,             *(boost::is_integral<mpl::_>), false )
                           (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
                           (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
-                          (pattern,          *(boost::is_integral<mpl::_>), size_type(vf::DOF_PATTERN_COUPLED) )
+                          (pattern,          *(boost::is_integral<mpl::_>), size_type(vf::Pattern::COUPLED) )
                           (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
                           (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
                           )
@@ -220,7 +220,7 @@ BOOST_PARAMETER_FUNCTION((typename compute_form2_return<Args,mpl::bool_<boost::i
                           ) // required
                          (optional                                   //    four optional parameters, with defaults
                           (init,             *(boost::is_integral<mpl::_>), false )
-                          (pattern,          *(boost::is_integral<mpl::_>), size_type(vf::DOF_PATTERN_COUPLED) )
+                          (pattern,          *(boost::is_integral<mpl::_>), size_type(vf::Pattern::COUPLED) )
                           ) // optional
                          )
 {
@@ -248,7 +248,7 @@ BOOST_PARAMETER_FUNCTION(
                           (init,             *(boost::is_integral<mpl::_>), false )
                           (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
                           (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
-                          (pattern,          *(boost::is_integral<mpl::_>), size_type(vf::DOF_PATTERN_COUPLED) )
+                          (pattern,          *(boost::is_integral<mpl::_>), size_type(vf::Pattern::COUPLED) )
                           )
                          )
 {
