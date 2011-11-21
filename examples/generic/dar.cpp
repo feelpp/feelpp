@@ -328,8 +328,8 @@ Dar<Dim, Order, Cont, Entity>::run()
     sparse_matrix_ptrtype D( backend->newMatrix( Xh->map(), Xh->map() ) );
     timers["assembly"].first.restart();
 
-    //size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
-    size_type pattern = DOF_PATTERN_COUPLED;
+    //size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
+    size_type pattern = Pattern::COUPLED;
     form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
         integrate( _range=elements(mesh),
                    _expr=epsilon*gradt(u)*trans(grad(v)) +(gradt(u)*beta)*id(v) + mu*idt(u)*id(v)

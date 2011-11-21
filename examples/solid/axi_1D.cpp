@@ -302,7 +302,7 @@ Elaxi<Order, Entity>::run()
 
 
     Log() << "Data Summary:\n";
-    size_type pattern = DOF_PATTERN_COUPLED;
+    size_type pattern = Pattern::COUPLED;
 
     timers["assembly"].first.restart();
     sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
@@ -324,7 +324,7 @@ Elaxi<Order, Entity>::run()
 
         timers["assembly"].first.restart();
 
-        //size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
+        //size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
         form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
             integrate( elements(mesh), 2.0*(
                            //idt(u1)*id(v1)/Py()

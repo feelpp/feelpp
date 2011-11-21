@@ -405,7 +405,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
     //
     // left hand side terms
     //
-    size_type pattern = DOF_PATTERN_COUPLED | DOF_PATTERN_NEIGHBOR;
+    size_type pattern = Pattern::COUPLED | Pattern::EXTENDED;
     // matrix to merge all Aq
     form2( M_Th, M_Th, D, _init=true, _pattern=pattern ) =
         integrate( elements(M_mesh), 0*idt(u)*id(v) )+

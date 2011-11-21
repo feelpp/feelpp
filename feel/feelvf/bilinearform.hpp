@@ -58,11 +58,12 @@ namespace parameter = boost::parameter;
 namespace fusion = boost::fusion;
 namespace vf
 {
-enum DofGraph
+enum  Pattern
     {
-        DOF_PATTERN_DEFAULT  = 1 << 0,
-        DOF_PATTERN_COUPLED  = 1 << 1,
-        DOF_PATTERN_NEIGHBOR = 1 << 2
+        DEFAULT   = 1 << 0,
+        EXTENDED  = 1 << 1,
+        COUPLED   = 1 << 2,
+        SYMMETRIC = 1 << 3
     };
 
 /// \cond detail
@@ -858,7 +859,7 @@ public:
                   bool build = true,
                   bool do_threshold = false,
                   value_type threshold = type_traits<value_type>::epsilon(),
-                  size_type graph_hints = DOF_PATTERN_COUPLED );
+                  size_type graph_hints = Pattern::COUPLED );
 
     BilinearForm( space_1_ptrtype const& __X1,
                   space_2_ptrtype const& __X2,
@@ -866,7 +867,7 @@ public:
                   list_block_type const& __lb,
                   bool do_threshold = false,
                   value_type threshold = type_traits<value_type>::epsilon(),
-                  size_type graph_hints = DOF_PATTERN_COUPLED );
+                  size_type graph_hints = Pattern::COUPLED );
 
     BilinearForm( BilinearForm const& __vf )
         :
@@ -952,17 +953,20 @@ public:
      * \return true if the pattern is coupled with respect to the components,
      * false otherwise
      */
-    bool isPatternCoupled() const { Feel::Context ctx( M_pattern ); return ctx.test( DOF_PATTERN_COUPLED ); }
+    bool isPatternCoupled() const { Feel::Context ctx( M_pattern ); return ctx.test( Pattern::COUPLED ); }
 
     /**
      * \return true if the pattern is the default one, false otherwise
      */
-    bool isPatternDefault() const { Feel::Context ctx( M_pattern ); return ctx.test( DOF_PATTERN_DEFAULT ); }
+    bool isPatternDefault() const { Feel::Context ctx( M_pattern ); return ctx.test( Pattern::DEFAULT ); }
 
     /**
      * \return true if the pattern adds the neighboring elements, false otherwise
      */
-    bool isPatternNeighbor() const { Feel::Context ctx( M_pattern ); return ctx.test( DOF_PATTERN_NEIGHBOR ); }
+    bool isPatternNeighbor() const { Feel::Context ctx( M_pattern ); return ctx.test( Pattern::EXTENDED ); }
+    bool isPatternExtended() const { Feel::Context ctx( M_pattern ); return ctx.test( Pattern::EXTENDED ); }
+
+    bool isPatternSymmetric() const { Feel::Context ctx( M_pattern ); return ctx.test( Pattern::SYMMETRIC ); }
 
     /**
      * \return the trial function space
@@ -1491,17 +1495,17 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
     // then all the DOFS are coupled to each other.  Furthermore,
     // we can take a shortcut and do this more quickly here.  So
     // we use an if-test.
-    Debug( 5050 ) << "[computeGraph] test : " << ( graph.test ( DOF_PATTERN_COUPLED ) || graph.test ( DOF_PATTERN_NEIGHBOR ) ) << "\n";
-    Debug( 5050 ) << "[computeGraph]  : graph.test ( DOF_PATTERN_COUPLED )=" <<  graph.test ( DOF_PATTERN_COUPLED ) << "\n";
-    Debug( 5050 ) << "[computeGraph]  : graph.test ( DOF_PATTERN_NEIGHBOR)=" <<  graph.test ( DOF_PATTERN_NEIGHBOR ) << "\n";
+    Debug( 5050 ) << "[computeGraph] test : " << ( graph.test ( Pattern::COUPLED ) || graph.test ( Pattern::EXTENDED ) ) << "\n";
+    Debug( 5050 ) << "[computeGraph]  : graph.test ( Pattern::COUPLED )=" <<  graph.test ( Pattern::COUPLED ) << "\n";
+    Debug( 5050 ) << "[computeGraph]  : graph.test ( Pattern::EXTENDED)=" <<  graph.test ( Pattern::EXTENDED ) << "\n";
 #if 0
-    if ( graph.test ( DOF_PATTERN_COUPLED ) ||
-         graph.test ( DOF_PATTERN_NEIGHBOR ) )
+    if ( graph.test ( Pattern::COUPLED ) ||
+         graph.test ( Pattern::EXTENDED ) )
 #else
         if (1)
 #endif
         {
-            Debug( 5050 ) << "[computeGraph] test (DOF_PATTERN_COUPLED || DOF_PATTERN_NEIGHBOR) ok\n";
+            Debug( 5050 ) << "[computeGraph] test (Pattern::COUPLED || Pattern::EXTENDED) ok\n";
             std::vector<size_type>
                 element_dof1,
                 element_dof2,
@@ -1615,7 +1619,7 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
                                         }
 
                                     // Now (possibly) add dof from neighboring elements
-                                    //if ( graph.test( DOF_PATTERN_NEIGHBOR ) )
+                                    //if ( graph.test( Pattern::EXTENDED ) )
                                         for (uint16_type ms=0; ms < elem.nNeighbors(); ms++)
                                             {
                                                 mesh_element_type const* neighbor = NULL;
@@ -1661,7 +1665,7 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
                                                                 // Insert jg if it wasn't found
                                                                 //if (posig.first != posig.second)
                                                                 if ( posig != neighbor_dof.end() ||
-                                                                     graph.test ( DOF_PATTERN_NEIGHBOR ) )
+                                                                     graph.test ( Pattern::EXTENDED ) )
 
                                                                     {
                                                                         //Debug() << "found element in proc " << neighbor_process_id << " that shares dof\n";
@@ -1743,13 +1747,13 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
     // then all the DOFS are coupled to each other.  Furthermore,
     // we can take a shortcut and do this more quickly here.  So
     // we use an if-test.
-    Debug( 5050 ) << "[computeGraph]  : graph.test ( DOF_PATTERN_DEFAULT )=" <<  graph.test ( DOF_PATTERN_DEFAULT ) << "\n";
-    Debug( 5050 ) << "[computeGraph]  : graph.test ( DOF_PATTERN_COUPLED )=" <<  graph.test ( DOF_PATTERN_COUPLED ) << "\n";
-    Debug( 5050 ) << "[computeGraph]  : graph.test ( DOF_PATTERN_NEIGHBOR)=" <<  graph.test ( DOF_PATTERN_NEIGHBOR ) << "\n";
-    bool do_less =  ( ( graph.test( DOF_PATTERN_DEFAULT ) &&
+    Debug( 5050 ) << "[computeGraph]  : graph.test ( Pattern::DEFAULT )=" <<  graph.test ( Pattern::DEFAULT ) << "\n";
+    Debug( 5050 ) << "[computeGraph]  : graph.test ( Pattern::COUPLED )=" <<  graph.test ( Pattern::COUPLED ) << "\n";
+    Debug( 5050 ) << "[computeGraph]  : graph.test ( Pattern::EXTENDED)=" <<  graph.test ( Pattern::EXTENDED ) << "\n";
+    bool do_less =  ( ( graph.test( Pattern::DEFAULT ) &&
                         ( _M_X1->dof()->nComponents ==
                           _M_X2->dof()->nComponents ) ) &&
-                      !graph.test( DOF_PATTERN_COUPLED ) );
+                      !graph.test( Pattern::COUPLED ) );
     std::vector<size_type>
         element_dof2(_M_X2->dof()->getIndicesSize()),
         neighbor_dof;
@@ -1817,7 +1821,7 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<tr
                     row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
                 }
                 // Now (possibly) add dof from neighboring elements
-                if ( graph.test( DOF_PATTERN_NEIGHBOR ) )
+                if ( graph.test( Pattern::EXTENDED ) )
                 {
                     for (uint16_type ms=0; ms < elem.nNeighbors(); ms++)
                     {

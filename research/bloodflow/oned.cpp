@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-11-08
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -392,8 +392,8 @@ OneD::run()
 
             timers["assembly"].first.restart();
 
-            //size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
-            size_type pattern = DOF_PATTERN_COUPLED;
+            //size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
+            size_type pattern = Pattern::COUPLED;
             form2( Xh, Xh, MA, _init=true, _pattern=pattern ) =
                 integrate( elements(*mesh),
                            idt(Qn)*id(Qn)

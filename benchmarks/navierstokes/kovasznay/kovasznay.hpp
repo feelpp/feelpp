@@ -322,7 +322,7 @@ Kovasznay<_OrderU, _OrderP, Entity>::addPressureStabilisation( element_1_type& p
         boost::timer t;
         Log() << "[assembly] add stabilisation terms for equal order approximation ( orderU="
               << OrderU << ", orderP=" << OrderP << " )\n";
-        size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
+        size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
         form2( Xh, Xh, D, _pattern=pattern )  +=
             integrate( internalfaces(mesh),
                        (p_stabexpr)*(trans(jumpt(gradt(p)))*jump(grad(q))),
@@ -345,7 +345,7 @@ Kovasznay<_OrderU, _OrderP, Entity>::addDivergenceStabilisation( element_0_type&
         boost::timer t;
         Log() << "[assembly] add stabilisation terms for divergence ( orderU="
               << OrderU << ", orderP=" << OrderP << " )\n";
-        size_type pattern = DOF_PATTERN_COUPLED|DOF_PATTERN_NEIGHBOR;
+        size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
         form2( Xh, Xh, D, _pattern=pattern )  +=
             integrate( internalfaces(mesh),
                        (d_stabexpr)*(trans(jumpt(divt(u)))*jump(div(v))) );
@@ -466,16 +466,16 @@ Kovasznay<_OrderU, _OrderP, Entity>::buildLhs()
 
     auto f = vec(f1,f2)+ convection;
 
-    size_type pattern = DOF_PATTERN_COUPLED;
+    size_type pattern = Pattern::COUPLED;
     if ( (is_equal_order &&
           this->vm()["stab-p"].template as<bool>()) ||
          this->vm()["stab-div"].template as<bool>())
-        pattern |= DOF_PATTERN_NEIGHBOR;
+        pattern |= Pattern::EXTENDED;
     Feel::Context graph( pattern );
-    Log() << "[stokes] test : " << ( graph.test ( DOF_PATTERN_DEFAULT ) || graph.test ( DOF_PATTERN_NEIGHBOR ) ) << "\n";
-    Log() << "[stokes]  : graph.test ( DOF_PATTERN_DEFAULT )=" <<  graph.test ( DOF_PATTERN_DEFAULT ) << "\n";
-    Log() << "[stokes]  : graph.test ( DOF_PATTERN_COUPLED )=" <<  graph.test ( DOF_PATTERN_COUPLED ) << "\n";
-    Log() << "[stokes]  : graph.test ( DOF_PATTERN_NEIGHBOR)=" <<  graph.test ( DOF_PATTERN_NEIGHBOR ) << "\n";
+    Log() << "[stokes] test : " << ( graph.test ( Pattern::DEFAULT ) || graph.test ( Pattern::EXTENDED ) ) << "\n";
+    Log() << "[stokes]  : graph.test ( Pattern::DEFAULT )=" <<  graph.test ( Pattern::DEFAULT ) << "\n";
+    Log() << "[stokes]  : graph.test ( Pattern::COUPLED )=" <<  graph.test ( Pattern::COUPLED ) << "\n";
+    Log() << "[stokes]  : graph.test ( Pattern::EXTENDED)=" <<  graph.test ( Pattern::EXTENDED ) << "\n";
     Log() << "[assembly] add diffusion terms\n";
     form2( Xh, Xh, D, _init=true, _pattern=pattern );
     Log() << "[assembly] form2 D init in " << t.elapsed() << "s\n"; t.restart();

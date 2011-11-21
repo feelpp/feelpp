@@ -57,7 +57,7 @@ ALE<Convex>::ALE( interval_type const& intX,
     p1_element_type v( p1_fspace, "v" );
 
     M_timer.restart();
-    size_type pattern = DOF_PATTERN_COUPLED;
+    size_type pattern = Pattern::COUPLED;
     form2( p1_fspace, p1_fspace, harmonic, _init=true, _pattern = pattern ) =
         integrate( elements(reference_mesh),
                    trace( trans(gradt(u))*grad(v) ) );
