@@ -28,4 +28,5 @@ macro( add_mcs_doc target )
 endmacro()
 
 add_mcs_doc(mcs_example)
+add_mcs_doc(manteaux_sidibe)
 
