@@ -196,12 +196,10 @@ ddmethod<Dim>::localProblem(element_type& u,
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_A"].second = timers["assembly"].first.elapsed();
 
-    // std::cout << "solve starts" << std::endl;
     timers["solver"].first.restart();
     backend_type::build()->solve( _matrix=A, _solution=u, _rhs=B, _reuse_prec=true );
     timers["solver"].second = timers["solver"].first.elapsed();
-    // std::cout << "[timer] solve: " << timers["solver"].second << "\n";
-    // std::cout << "solve done" << std::endl;
+
     Log() << "[timer] run():  assembly: " << timers["assembly"].second << "\n";
     Log() << "[timer] run():    o A : " << timers["assembly_A"].second << "\n";
     Log() << "[timer] run():    o B : " << timers["assembly_B"].second << "\n";
@@ -243,7 +241,6 @@ template<int Dim>
 void
 ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time)
 {
-    // std::cout << "exportResults starts" << std::endl;
     timers["export"].first.restart();
 
     M_firstExporter->step(time)->setMesh( u.functionSpace()->mesh() );
@@ -273,7 +270,6 @@ ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time)
     }
     std::cout << "exportResults done" << std::endl;
     timers["export"].second = timers["export"].first.elapsed();
-    // std::cout << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // ddmethod::export
 
 
@@ -310,13 +306,23 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
                                    %this->meshSize );
     if ( Dim == 2 )
     {
-        mesh1 = GeoTool::createMeshFromGeoFile<mesh_type>( "/home/asamake/feel/geo/leftgeo.geo","leftgeo", meshSize);
-        mesh2 = GeoTool::createMeshFromGeoFile<mesh_type>( "/home/asamake/feel/geo/rightgeo.geo","rightgeo", meshSize/2);
+        // mesh1 = GeoTool::createMeshFromGeoFile<mesh_type>( "geos/leftgeo.geo","leftgeo", meshSize);
+        // mesh2 = GeoTool::createMeshFromGeoFile<mesh_type>( "geos/rightgeo.geo","rightgeo", meshSize);
+
+        mesh1 = createGMSHMesh( _mesh=new mesh_type,
+                                _desc=geo( _filename="leftgeo.geo",_dim=2),
+                                _physical_are_elementary_regions=true,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+
+        mesh2 = createGMSHMesh( _mesh=new mesh_type,
+                                _desc=geo( _filename="rightgeo.geo",_dim=2),
+                                _physical_are_elementary_regions=true,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
     }
     else if( Dim == 3 )
     {
-        mesh1 = GeoTool::createMeshFromGeoFile<mesh_type>( "/home/asamake/feel/geo/leftgeo3d.geo","leftgeo3d", meshSize);
-        mesh2 = GeoTool::createMeshFromGeoFile<mesh_type>( "/home/asamake/feel/geo/rightgeo3d.geo","rightgeo3d", meshSize);
+        mesh1 = GeoTool::createMeshFromGeoFile<mesh_type>( "geos/leftgeo3d.geo","leftgeo3d", meshSize);
+        mesh2 = GeoTool::createMeshFromGeoFile<mesh_type>( "geos/rightgeo3d.geo","rightgeo3d", meshSize);
     }
 
     if ( Dim == 2 )
@@ -330,9 +336,9 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     else if( Dim == 3 )
     {
         using namespace boost::assign;
-        dirichletFlags1+= 1,2,3,4,6,7,8;
+        dirichletFlags1+= 2,3,4,5,6,7,8;
         dirichletFlags2+= 1,2,3,4,5;
-        interfaceFlags1+= 5;
+        interfaceFlags1+= 1;
         interfaceFlags2+= 6;
     }
 
@@ -341,7 +347,6 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     auto u1 = Xh1->element();
     auto u2 = Xh2->element();
     auto u1old = Xh1->element();
-    auto u2old = Xh2->element();
     auto uu = Xh1->element();
     auto vv = Xh2->element();
     value_type pi = M_PI;
