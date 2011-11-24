@@ -83,18 +83,18 @@ public:
     /**
      * constructor with a \c variables_map
      */
-    Simget( po::variables_map const& vm );
+    Simget( po::variables_map const& _vm );
 
     /**
      * constructor with an \c AboutData that describes the simget
      */
-    Simget( AboutData const& about ) : M_vm(), M_about( about ) {}
+    Simget( AboutData const& _about ) : M_vm(), M_about( _about ) {}
 
     /**
      * constructor with a \c variables_map and an \c AboutData that describes
      * the top application
      */
-    Simget( po::variables_map const& vm, AboutData const& about ) : M_vm( vm ), M_about( about ) {}
+    Simget( po::variables_map const& _vm, AboutData const& _about ) : M_vm( _vm ), M_about( _about ) {}
 
     //! destructor
     virtual ~Simget() {}

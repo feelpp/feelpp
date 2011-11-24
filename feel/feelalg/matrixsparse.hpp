@@ -160,7 +160,7 @@ public:
     /**
      *
      */
-    virtual void setIndexSplit(std::vector< std::vector<int> > const &indexSplit ) { M_IndexSplit=indexSplit;}
+    virtual void setIndexSplit(std::vector< std::vector<int> > const &_indexSplit ) { M_IndexSplit=_indexSplit;}
 
     /**
      *
@@ -461,9 +461,9 @@ public:
      */
     virtual real_type energy ( vector_ptrtype const& v,
                                vector_ptrtype const& u,
-                               bool transpose = false ) const
+                               bool _transpose = false ) const
     {
-        return this->energy( *v, *u, transpose );
+        return this->energy( *v, *u, _transpose );
     }
 
     /**
@@ -579,9 +579,9 @@ public:
     /**
      * set initialized only for subclasses
      */
-    void setInitialized( bool init )
+    void setInitialized( bool _init )
     {
-        _M_is_initialized = init;
+        _M_is_initialized = _init;
     }
 protected:
     /**

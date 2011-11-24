@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -82,10 +82,10 @@ public:
      * @param filename mesh filename to import
      * @param format format of the file
      */
-    Importer( std::string const& filename,  MeshFormat const& format = GMSH )
+    Importer( std::string const& _filename,  MeshFormat const& _format = GMSH )
         :
-        _M_filename( filename ),
-        _M_format( format )
+        _M_filename( _filename ),
+        _M_format( _format )
         {}
 
     virtual ~Importer()

@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-05-22
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -58,13 +58,13 @@ public:
     //@{
 
     MatrixTriplet( int nr, int nc,
-                   std::vector<int> const& Ti, std::vector<int> const& Tj, std::vector<double> const& Tx )
+                   std::vector<int> const& _Ti, std::vector<int> const& _Tj, std::vector<double> const& _Tx )
         :
         M_nr( nr ),
         M_nc( nc ),
-        M_Ti( Ti ),
-        M_Tj( Tj ),
-        M_Tx( Tx )
+        M_Ti( _Ti ),
+        M_Tj( _Tj ),
+        M_Tx( _Tx )
     {}
 
     MatrixTriplet( MatrixTriplet const & mt )
