@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -339,18 +339,18 @@ private:
 
 template<class type>
 Assert &
-Assert::printCurrentValue( const type & val, const char * msg)
+Assert::printCurrentValue( const type & _val, const char * _msg)
 {
     std::ostringstream out;
 
     Private::isNullFinder< type> f;
-    bool bIsNull = f.is( val);
+    bool bIsNull = f.is( _val);
     if ( !bIsNull)
-        out << val;
+        out << _val;
     else
         // null string
         out << "null";
-    _M_context.add_val( out.str(), msg);
+    _M_context.add_val( out.str(), _msg);
     return *this;
 }
 

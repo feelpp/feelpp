@@ -141,13 +141,13 @@ public:
 
         auto v = blockSet.getSetOfBlocks();
 
-        size_type size2 = 0;
+        size_type _size2 = 0;
         for (uint i=0;i<NC;++i)
-            size2 += v[i]->size2();
+            _size2 += v[i]->size2();
 
-        size_type size1 =0;
+        size_type _size1 =0;
         for (uint i=0;i<NR;++i)
-            size1 += v[i*NC]->size1();
+            _size1 += v[i*NC]->size1();
 
 
         graph_ptrtype graph;//( new graph_type( ) );
@@ -169,8 +169,8 @@ public:
 
         graph->close();
 
-        M_mat = backend.newMatrix(size1,size2,size1,size2);
-        M_mat->init(size1,size2,size1,size2,graph);
+        M_mat = backend.newMatrix(_size1,_size2,_size1,_size2);
+        M_mat->init(_size1,_size2,_size1,_size2,graph);
         M_mat->zero();
 
         /*size_type*/ start_i=0;

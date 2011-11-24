@@ -215,9 +215,9 @@ template <int NR, int NC,typename T>
 typename MatrixBlock<NR,NC,T>::value_type
 MatrixBlock<NR,NC,T>::energy( Vector<value_type> const& __v,
                               Vector<value_type> const& __u,
-                              bool transpose ) const
+                              bool _transpose ) const
 {
-    return M_mat->energy(__v,__u,transpose);
+    return M_mat->energy(__v,__u,_transpose);
 }
 
 template <int NR, int NC,typename T>

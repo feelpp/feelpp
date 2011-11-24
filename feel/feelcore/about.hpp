@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -72,15 +72,15 @@ public:
      *
      * @param webAddress Home page of the person.
      */
-    AboutPerson( std::string name,
-                 std::string task,
-                 std::string emailAddress,
-                 std::string webAddress )
+    AboutPerson( std::string _name,
+                 std::string _task,
+                 std::string _emailAddress,
+                 std::string _webAddress )
         :
-        _M_Name( name ),
-        _M_Task( task ),
-        _M_EmailAddress( emailAddress ),
-        _M_WebAddress( webAddress )
+        _M_Name( _name ),
+        _M_Task( _task ),
+        _M_EmailAddress( _emailAddress ),
+        _M_WebAddress( _webAddress )
     {
     }
     /**

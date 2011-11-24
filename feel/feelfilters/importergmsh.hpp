@@ -124,10 +124,10 @@ public:
             //showMe();
         }
 
-    explicit ImporterGmsh( std::string const& fname, std::string version = FEEL_GMSH_FORMAT_VERSION )
+    explicit ImporterGmsh( std::string const& _fname, std::string _version = FEEL_GMSH_FORMAT_VERSION )
         :
-        super( fname, GMSH ),
-        _M_version( version ),
+        super( _fname, GMSH ),
+        _M_version( _version ),
         M_use_elementary_region_as_physical_region( false )
         {
             //showMe();

@@ -139,7 +139,6 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
     Debug( 5005 ) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename mesh_type::element_type element_type;
-    typedef typename mesh_type::gm_type gm_type;
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
     typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
 
