@@ -61,7 +61,8 @@ endforeach()
 
 
 #add_executable(feel_perf_stokes  ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_stokes_cr1p0.cpp ${taylor_hood}  bench.cpp)
-add_executable(feel_perf_stokes  ${taylor_hood} ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_stokes_cr1p0.cpp  bench.cpp)
+#add_executable(feel_perf_stokes  ${taylor_hood} ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_stokes_cr1p0.cpp  bench.cpp)
+add_executable(feel_perf_stokes  ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_stokes_cr1p0.cpp  bench.cpp)
 #add_executable(feel_perf_stokes  ${taylor_hood}   bench.cpp)
 add_dependencies(feel_perf_stokes gentoto)
 #add_executable(feel_perf_stokes  ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_stokes_cr1p0.cpp  bench.cpp)

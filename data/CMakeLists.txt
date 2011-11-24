@@ -21,28 +21,22 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-add_custom_target(feel_mesh_data)
+add_custom_target(feel_mesh_data ALL)
 
-macro(feel_geo files)
 if (EXISTS $ENV{HOME})
   # create $ENV{HOME}/feel/geo if it does not exist already: this is the geometry
   # files repository
   file(MAKE_DIRECTORY $ENV{HOME}/feel/geo)
 
-  FILE(GLOB meditfiles "${CMAKE_CURRENT_SOURCE_DIR}/medit/*.[geomesh]")
-  FILE(GLOB gmshfiles "${CMAKE_CURRENT_SOURCE_DIR}/gmsh/*.[geomeshstl]")
-  message(STATUS "copying mesh files: ${meditfiles} ${gmshfiles}")
-  foreach(file ${meditfiles} ${gmshfiles})
-    get_filename_component(filename ${file} NAME )
-    add_custom_target(copy_mesh_data_${filename}
-      ALL
-      COMMAND ${CMAKE_COMMAND} -E copy  ${file} $ENV{HOME}/feel/geo )
-    add_dependencies(feel_mesh_data copy_mesh_data_${filename} )
+  foreach(exp "medit/*.geo" "medit/*.mesh" "gmsh/*.geo" "gmsh/*.stl" )
+    FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/${exp}")
+    message(STATUS ${files})
+    foreach(file ${files})
+      get_filename_component(filename ${file} NAME )
+      add_custom_command(TARGET feel_mesh_data
+        COMMAND ${CMAKE_COMMAND} -E copy  ${file} $ENV{HOME}/feel/geo )
+      add_dependencies(feel_mesh_data copy_mesh_data_${filename} )
+    endforeach()
   endforeach()
 endif(EXISTS $ENV{HOME})
-endmacro(feel_geo)
 
-FILE(GLOB meditfiles "medit/*.[geomesh]")
-feel_geo(meditfiles)
-FILE(GLOB gmshfiles "gmsh/*.[geomeshstl]")
-feel_geo(gmshfiles)
