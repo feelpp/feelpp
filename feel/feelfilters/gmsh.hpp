@@ -791,7 +791,14 @@ BOOST_PARAMETER_FUNCTION(
 #endif
 
     fs::path cp;
-    fs::current_path(cp);
+    try
+    {
+        fs::current_path(cp);
+    }
+    catch(...)
+    {
+
+    }
     // first try in the current path
     if ( fs::exists( cp / filename ) )
         gmsh_ptr->setDescription(gmsh_ptr->getDescriptionFromFile((cp/filename).string()));
