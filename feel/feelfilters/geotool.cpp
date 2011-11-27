@@ -59,7 +59,8 @@ namespace GeoTool {
 
             if ( __typeOp==1 && this->dim()==1)
                 {
-                    __geoTool._M_ligneList.reset(new surface_name_type(*(this->_M_ligneList)));
+                    //__geoTool._M_ligneList.reset(new surface_name_type(*(this->_M_ligneList)));
+                    __geoTool._M_ligneList.reset(new ligne_name_type(*(this->_M_ligneList)));
                     ligne_name_const_iterator_type itLine = m._M_ligneList->begin();
                     ligne_name_const_iterator_type itLine_end = m._M_ligneList->end();
                     for ( ; itLine != itLine_end; ++itLine)
@@ -272,10 +273,13 @@ namespace GeoTool {
             std::vector<std::map<std::string,std::map<std::string, std::map<uint,std::string> > > > __dataMemGlobSurf2(2);
             std::vector<std::map<std::string,std::map<std::string, std::map<uint,bool> > > > __dataMemGlobIsRuled(1);
             std::vector<std::map<std::string,std::map<std::string, std::map<uint,std::list<uint> > > > > __dataMemGlobPtsInSurf(1);
+            // type -> name -> num surfLoop -> list de surfLoop
+            std::map<std::string,std::map<std::string, std::map<int,std::list<int> > > > __dataMemGlobSurfaceLoop; __dataMemGlobSurfaceLoop.clear();
 
             //construction list ordonne d'objet a construire
             std::list<boost::tuple<std::string,std::string,double> > listPPP;
 
+            std::set<boost::tuple<std::string,std::string,double> > setPPP;
 
             if (this->dim()==1)
                 {
@@ -290,7 +294,8 @@ namespace GeoTool {
                                     std::string Qshape = boost::get<0>(*itLigne2);
                                     std::string Qname = boost::get<1>(*itLigne2);
                                     double QmeshSize=boost::get<3>(*itLigne2);
-                                    listPPP.push_back(boost::make_tuple(Qshape,Qname,QmeshSize));
+                                    //listPPP.push_back(boost::make_tuple(Qshape,Qname,QmeshSize));
+                                    setPPP.insert(boost::make_tuple(Qshape,Qname,QmeshSize));
                                 }
                         }
                 }
@@ -309,7 +314,8 @@ namespace GeoTool {
                                     std::string Qshape = boost::get<0>(*itSurfff2);
                                     std::string Qname = boost::get<1>(*itSurfff2);
                                     double QmeshSize=boost::get<3>(*itSurfff2);
-                                    listPPP.push_back(boost::make_tuple(Qshape,Qname,QmeshSize));
+                                    //listPPP.push_back(boost::make_tuple(Qshape,Qname,QmeshSize));
+                                    setPPP.insert(boost::make_tuple(Qshape,Qname,QmeshSize));
                                 }
                         }
                 }
@@ -327,20 +333,28 @@ namespace GeoTool {
                                     std::string Qshape = boost::get<0>(*itSurfff2);
                                     std::string Qname = boost::get<1>(*itSurfff2);
                                     double QmeshSize=boost::get<3>(*itSurfff2);
-                                    listPPP.push_back(boost::make_tuple(Qshape,Qname,QmeshSize));
+                                    //listPPP.push_back(boost::make_tuple(Qshape,Qname,QmeshSize));
+                                    setPPP.insert(boost::make_tuple(Qshape,Qname,QmeshSize));
                                 }
                         }
 
 
                 }
 
+#if 0
             auto itList = listPPP.begin();
             auto itList_end = listPPP.end();
+#else
+            auto itList = setPPP.begin();
+            auto itList_end = setPPP.end();
+#endif
             for ( ; itList!=itList_end; ++itList )
                 {
+
+
                     std::string Qshape = boost::get<0>(*itList);
                     std::string Qname = boost::get<1>(*itList);
-                    //std::cout << "\n Qshape="<<Qshape <<" Qname="<<Qname<<"\n";
+                    //std::cout << "\n Qshape="<<Qshape <<" Qname="<<Qname<<std::endl;
 
                     *_M_ostr << "h=" << boost::get<2>(*itList) << ";\n";
                     //data memory
@@ -349,6 +363,8 @@ namespace GeoTool {
                     vec_map_data_surf2_ptrtype __dataMemSurf2(new vec_map_data_surf2_type(2));
                     vec_map_data_surf1_ptrtype __dataMemIsRuled(new vec_map_data_surf1_type(1));
                     vec_map_data_ptsinsurf_ptrtype __dataMemPtsInSurf(new vec_map_data_ptsinsurf_type(1));
+
+                    map_surfaceLoop_type __dataMemLocSurfaceLoop;__dataMemLocSurfaceLoop.clear();
 
                     GeoGMSHTool_ptrtype __geoTool(new GeoGMSHTool(this->dim()));
                     __geoTool->updateData(*this);
@@ -361,7 +377,8 @@ namespace GeoTool {
                                                                                                            __dataMemSurf1,
                                                                                                            __dataMemSurf2,
                                                                                                            __dataMemIsRuled,
-                                                                                                           __dataMemPtsInSurf
+                                                                                                           __dataMemPtsInSurf,
+                                                                                                           __dataMemLocSurfaceLoop
                                                                                                            )));
 
                     // generate the code for the geometry
@@ -378,8 +395,10 @@ namespace GeoTool {
                     __dataMemGlobSurf2[0][Qshape][Qname] = (*(boost::get<5>(*__data_geoTool)))[0];// string : surface name tab :
                     __dataMemGlobSurf1[1][Qshape][Qname] = (*(boost::get<4>(*__data_geoTool)))[1];// bool : volume is tab gmsh
                     __dataMemGlobSurf2[1][Qshape][Qname] = (*(boost::get<5>(*__data_geoTool)))[1];// string : volume name tab :
-                    __dataMemGlobIsRuled[0][Qshape][Qname] = (*(boost::get<6>(*__data_geoTool)))[0];// bool : surface is tab gmsh
+                    __dataMemGlobIsRuled[0][Qshape][Qname] = (*(boost::get<6>(*__data_geoTool)))[0];// bool : surface is ruled
                     __dataMemGlobPtsInSurf[0][Qshape][Qname] = (*(boost::get<7>(*__data_geoTool)))[0];// list of uint : pts in surface
+
+                    __dataMemGlobSurfaceLoop[Qshape][Qname] = __data_geoTool->get<8>();
 
                     // get infos
                     this->updateData( *boost::get<0>(*__data_geoTool));
@@ -387,7 +406,9 @@ namespace GeoTool {
 
                 }
 
-
+            
+            std::map<int,int> mapSurfaceRenumbering;
+            
 
             //Write the planes surfaces
             //Fait ici a cause des opertateurs (+,-)
@@ -408,30 +429,35 @@ namespace GeoTool {
                     else if (__dataSurfacePostCpt[boost::get<0>(*itSurf2)].find(boost::get<1>(*itSurf2)) == __dataSurfacePostCpt[boost::get<0>(*itSurf2)].end())
                         __dataSurfacePostCpt[boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)]=1;
                     else
-                        ++__dataSurfacePostCpt[boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)];
+                        ++__dataSurfacePostCpt[itSurf2->get<0>()][itSurf2->get<1>()];
 
-                    __dataSurfacePost[boost::get<0>(*itSurf2)]
-                        [boost::get<1>(*itSurf2)]
-                        [__dataSurfacePostCpt[boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)]]=__surfnumber;
+                    __dataSurfacePost[itSurf2->get<0>()][itSurf2->get<1>()]
+                        [__dataSurfacePostCpt[itSurf2->get<0>()][itSurf2->get<1>()]]=__surfnumber;
 
                     // si la surface est issue d'un extrude => stoker dans un tab gmsh
-                    if (! __dataMemGlobSurf1[0][boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)][__surfnumber] )
+                    if (! __dataMemGlobSurf1[0][itSurf2->get<0>()][itSurf2->get<1>()][__surfnumber] )
                         {
                             //Attention : On fait a cause des op - : sinon les markers surfaces sont incorrectes(l'idee est de marquer la 1ere sous-surface)
                             //__dataMemGlob[3][boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)][__surfnumber]=__surfnumber;
 
                             surface_type_const_iterator_type itSurf2_end = --itSurf->end();
-                            if (! __dataMemGlobIsRuled[0][boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)][__surfnumber] )
+                            if (! __dataMemGlobIsRuled[0][itSurf2->get<0>()][itSurf2->get<1>()][__surfnumber] )
                                 __surface_str << "Plane Surface(" << __surfnumber << ") = {" ;
                             else
                                 __surface_str << "Ruled Surface(" << __surfnumber << ") = {" ;
 
                             for ( ; itSurf2 != itSurf2_end; ++itSurf2)
                                 {
-                                    __surface_str << boost::get<2>(*itSurf2) << ",";
+                                    //std::cout << "\n num Glob SURF " << itSurf2->get<2>().first << " __surfnumber " << __surfnumber << std::endl;
+                                    //__surface_str << boost::get<2>(*itSurf2) << ",";
+                                    __surface_str << itSurf2->get<2>().second << ","; //!!!!!!!!!!!!!!!!!!!!!!!
                                 }
+                            // ATTTENTION : FAIT ICI CAR 1 SEUL!!!!!!!!!!!!!!!!!!
+                            mapSurfaceRenumbering[itSurf2->get<2>().first] = __surfnumber;
+                            //std::cout << "\n num Glob SURF " << itSurf2->get<2>().first << " __surfnumber " << __surfnumber << std::endl;
 
-                            __surface_str << boost::get<2>(*itSurf2);
+                            //__surface_str << boost::get<2>(*itSurf2);
+                            __surface_str << itSurf2->get<2>().second;//!!!!!!!!!!!!!!!!!!!!!!!
 
                             __surface_str << "};\n";
 
@@ -453,8 +479,54 @@ namespace GeoTool {
             //Write the extrude surfaces
             this->updateOstr(_M_ostrExtrude->str());
 
+            
+#if 0
             //Write the surfaces loops
             this->updateOstr(_M_ostrSurfaceLoop->str());
+#else
+            int __nSurfaceLoop=1;
+            std::ostringstream __ostrSurfaceLoop;
+            auto surfaceLoop_it = this->_M_surfaceLoopList->begin();
+            auto surfaceLoop_en = this->_M_surfaceLoopList->end();
+            for ( ; surfaceLoop_it!=surfaceLoop_en ; ++surfaceLoop_it)
+                {
+                    auto surfaceLoop2_it =surfaceLoop_it->begin();
+                    auto surfaceLoop2_en =surfaceLoop_it->end();
+                    for ( ; surfaceLoop2_it!=surfaceLoop2_en ; ++surfaceLoop2_it)
+                        {
+                            /*std::cout << "\n SurfaceLoop shape : " << surfaceLoop2_it->get<0>()
+                                      << " name " << surfaceLoop2_it->get<1>()
+                                      << " size " << surfaceLoop2_it->get<2>().size()
+                                      << std::endl;*/
+
+                            auto surfaceLoop3_it =surfaceLoop2_it->get<2>().begin();
+                            auto surfaceLoop3_en =surfaceLoop2_it->get<2>().end();
+                            for ( ; surfaceLoop3_it!=surfaceLoop3_en ; ++surfaceLoop3_it)
+                                {
+                                    //numLoc = surfaceLoop3_it->first
+                                    __ostrSurfaceLoop << "Surface Loop(" << __nSurfaceLoop
+                                                      << ") = {" ;
+                                    auto surfaceLoop4_it =surfaceLoop3_it->second.begin();
+                                    auto surfaceLoop4_en =--surfaceLoop3_it->second.end();
+                                    for ( ; surfaceLoop4_it!=surfaceLoop4_en ; ++surfaceLoop4_it)
+                                        {
+                                            //std::cout << "\n HOLA " << *surfaceLoop4_it << std::endl;
+                                            __ostrSurfaceLoop << *surfaceLoop4_it << ",";
+                                        }
+                                    __ostrSurfaceLoop << *surfaceLoop4_it <<"};\n";
+
+                                    ++__nSurfaceLoop;
+
+                                } // surfaceLoop
+                        } // name
+                } // shape
+
+            this->updateOstr(__ostrSurfaceLoop.str());
+
+
+
+#endif
+            
 
 
             //Write the volumes
@@ -514,10 +586,11 @@ namespace GeoTool {
 
                             for ( ; itVol2 != itVol2_end; ++itVol2)
                                 {
-                                    __volume_str << boost::get<2>(*itVol2) << ",";
+                                    //__volume_str << boost::get<2>(*itVol2) << ",";
+                                    __volume_str << itVol2->get<2>().second << ","; //!!!!!!!!!!!!!!!!!!!!!!!
                                 }
-                            __volume_str << boost::get<2>(*itVol2);
-
+                            //__volume_str << boost::get<2>(*itVol2);
+                            __volume_str << itVol2->get<2>().second;
                             __volume_str << "};\n";
                         }
                     ++__volnumber;
@@ -747,6 +820,8 @@ namespace GeoTool {
             //}
 
 
+
+            //std::cout << "\n HOLA "<< _M_ostr->str()<<std::endl;
             //return _M_ostr->str();
 
         }
@@ -927,7 +1002,7 @@ namespace GeoTool {
         void
         writePlaneSurface(uint __numLoc, data_geo_ptrtype __dg , uint __ind)
         {
-            (*(boost::get<1>(*__dg)))[3][__numLoc] = boost::get<0>(*__dg)->cptSurface();
+            (*(boost::get<1>(*__dg)))[3][__numLoc] = boost::get<0>(*__dg)->cptSurface(); //num local to global
             (*(boost::get<4>(*__dg)))[0][(*(boost::get<1>(*__dg)))[3][__numLoc]] = false;//is tab gmsh
             (*(boost::get<5>(*__dg)))[0][(*(boost::get<1>(*__dg)))[3][__numLoc]] = "";//name of tab
             (*(boost::get<6>(*__dg)))[0][(*(boost::get<1>(*__dg)))[3][__numLoc]] = false;//isRuled
@@ -942,14 +1017,15 @@ namespace GeoTool {
                     GeoGMSHTool::surface_type_type::iterator itSurf2_end = itSurf->end();
                     while (itSurf2 !=itSurf2_end)
                         {
-                            if (boost::get<0>(*itSurf2) == boost::get<2>(*__dg))
+                            if (boost::get<0>(*itSurf2) == boost::get<2>(*__dg)) // same shape
                                 {
-                                    if (boost::get<1>(*itSurf2) == boost::get<3>(*__dg))
+                                    if (boost::get<1>(*itSurf2) == boost::get<3>(*__dg)) // same name
                                         {
                                             //on cherche la 1ere surface non init
-                                            if (boost::get<2>(*itSurf2) == 0 && !__find)
+                                            if (itSurf2->get<2>().second == 0 && !__find)
                                                 {
-                                                    boost::get<2>(*itSurf2) = (*(boost::get<1>(*__dg)))[2][__ind];
+                                                    itSurf2->get<2>().first = __dg->get<0>()->cptSurface();
+                                                    itSurf2->get<2>().second = (*(boost::get<1>(*__dg)))[2][__ind];// get the lineloop
                                                     __find=true;
                                                 }
                                         }
@@ -957,7 +1033,7 @@ namespace GeoTool {
                             ++itSurf2;
                         }
                 }
-            ++boost::get<0>(*__dg)->_M_cptSurface;
+            ++boost::get<0>(*__dg)->_M_cptSurface; //update counter
         }
 
         //ici on n'ecrit pas, on memorise cause des operations de difference
@@ -965,10 +1041,10 @@ namespace GeoTool {
         void
         writeRuledSurface(uint __numLoc, data_geo_ptrtype __dg , uint __ind)
         {
-            (*(boost::get<1>(*__dg)))[3][__numLoc] = boost::get<0>(*__dg)->cptSurface();
-            (*(boost::get<4>(*__dg)))[0][(*(boost::get<1>(*__dg)))[3][__numLoc]] = false;
-            (*(boost::get<5>(*__dg)))[0][(*(boost::get<1>(*__dg)))[3][__numLoc]] = "";
-            (*(boost::get<6>(*__dg)))[0][(*(boost::get<1>(*__dg)))[3][__numLoc]] = true;
+            (*(boost::get<1>(*__dg)))[3][__numLoc] = boost::get<0>(*__dg)->cptSurface();//num local to global
+            (*(boost::get<4>(*__dg)))[0][(*(boost::get<1>(*__dg)))[3][__numLoc]] = false;//is tab gmsh
+            (*(boost::get<5>(*__dg)))[0][(*(boost::get<1>(*__dg)))[3][__numLoc]] = "";//name of tab
+            (*(boost::get<6>(*__dg)))[0][(*(boost::get<1>(*__dg)))[3][__numLoc]] = true;//isRuled
 
             bool __find=false;
             //Memorize in surfaceList
@@ -985,9 +1061,10 @@ namespace GeoTool {
                                     if (boost::get<1>(*itSurf2) == boost::get<3>(*__dg))
                                         {
                                             //on cherche la 1ere surface non init
-                                            if (boost::get<2>(*itSurf2) == 0 && !__find)
+                                            if (itSurf2->get<2>().second == 0 && !__find)
                                                 {
-                                                    boost::get<2>(*itSurf2) = (*(boost::get<1>(*__dg)))[2][__ind];
+                                                    itSurf2->get<2>().first = __dg->get<0>()->cptSurface();
+                                                    itSurf2->get<2>().second = (*(boost::get<1>(*__dg)))[2][__ind];
                                                     __find=true;
                                                 }
                                         }
@@ -1047,6 +1124,7 @@ namespace GeoTool {
         void
         writeSurfaceLoop(uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop )
         {
+#if 0
             (*(boost::get<1>(*__dg)))[4][__numLoc] = boost::get<0>(*__dg)->cptSurfaceLoop();
             std::ostringstream __ostr;
             __ostr << "Surface Loop(" << boost::get<0>(*__dg)->cptSurfaceLoop()
@@ -1099,6 +1177,35 @@ namespace GeoTool {
             *(boost::get<0>(*__dg)->_M_ostrSurfaceLoop) << __ostr.str();
 
             ++boost::get<0>(*__dg)->_M_cptSurfaceLoop;
+
+#else
+            (*(boost::get<1>(*__dg)))[4][__numLoc] = __dg->get<0>()->cptSurfaceLoop(); // num local to global
+
+                auto surfaceLoop_it = __dg->get<0>()->_M_surfaceLoopList->begin();
+                auto surfaceLoop_en =  __dg->get<0>()->_M_surfaceLoopList->end();
+                for ( ; surfaceLoop_it!=surfaceLoop_en ; ++surfaceLoop_it)
+                    {
+                        auto surfaceLoop2_it =surfaceLoop_it->begin();
+                        auto surfaceLoop2_en =surfaceLoop_it->end();
+                        for ( ; surfaceLoop2_it!=surfaceLoop2_en ; ++surfaceLoop2_it)
+                            {
+                                if ( (surfaceLoop2_it->get<0>() == __dg->get<2>() ) &&
+                                     (surfaceLoop2_it->get<1>() == __dg->get<3>() ) ) // search shape and name
+                                    {
+                                        surfaceLoop2_it->get<2>()[__dg->get<0>()->cptSurfaceLoop()].clear();
+                                        auto loop_it= __loop.begin();
+                                        auto loop_en= __loop.end();
+                                        for ( ; loop_it!=loop_en ; ++loop_it )
+                                            surfaceLoop2_it->get<2>()[__dg->get<0>()->cptSurfaceLoop()].push_back(*loop_it);
+                                    }
+
+                            }
+
+                    }
+
+            ++boost::get<0>(*__dg)->_M_cptSurfaceLoop;
+
+#endif
         }
 
         //ici on n'ecrit pas, on memorise cause des operations de difference
@@ -1106,7 +1213,7 @@ namespace GeoTool {
         void
         writeVolume(uint __numLoc, data_geo_ptrtype __dg , uint __ind)
         {
-            (*(boost::get<1>(*__dg)))[5][__numLoc] = boost::get<0>(*__dg)->cptVolume();
+            (*(boost::get<1>(*__dg)))[5][__numLoc] = boost::get<0>(*__dg)->cptVolume();//num local to global
 
             bool __find=false;
             //Memorize in volumeList
@@ -1118,14 +1225,17 @@ namespace GeoTool {
                     GeoGMSHTool::volume_type_type::iterator itSurf2_end = itSurf->end();
                     while (itSurf2 !=itSurf2_end)
                         {
-                            if (boost::get<0>(*itSurf2) == boost::get<2>(*__dg))
+                            if (boost::get<0>(*itSurf2) == boost::get<2>(*__dg)) // same shape
                                 {
-                                    if (boost::get<1>(*itSurf2) == boost::get<3>(*__dg))
+                                    if (boost::get<1>(*itSurf2) == boost::get<3>(*__dg)) // same name
                                         {
                                             //on cherche la 1ere surface non init
-                                            if (boost::get<2>(*itSurf2) == 0 && !__find)
+                                            if (itSurf2->get<2>().second == 0 && !__find)
                                                 {
-                                                    boost::get<2>(*itSurf2) = (*(boost::get<1>(*__dg)))[4][__ind];
+                                                    itSurf2->get<2>().first = __dg->get<0>()->cptVolume();
+                                                    itSurf2->get<2>().second = (*(boost::get<1>(*__dg)))[4][__ind];
+
+                                                    //boost::get<2>(*itSurf2) = (*(boost::get<1>(*__dg)))[4][__ind];
                                                     __find=true;
                                                 }
                                         }
@@ -1133,7 +1243,7 @@ namespace GeoTool {
                             ++itSurf2;
                         }
                 }
-            ++boost::get<0>(*__dg)->_M_cptVolume;
+            ++boost::get<0>(*__dg)->_M_cptVolume; //update counter
         }
 
         /*_________________________________________________*/
@@ -1484,7 +1594,7 @@ namespace GeoTool {
             Node a3( 6.0, yh+0.7);
             Node a4( 7.3, yh-0.5);
             Node a5( 8.5, yh);
-            Node a6(11.0, yh);
+            Node a6(/*11.0*/16.0, yh);
             double ep=0.3;
             //_______________________________________________//
             writePoint( 1, dg , a1(0), a1(1) );
@@ -1989,18 +2099,55 @@ namespace GeoTool {
             writeLineLoop(17, dg, Loop()>>26>>-13>>-25>>1);
             writeLineLoop(18, dg, Loop()>>25>>-16>>-28>>4);
 
-            writePlaneSurface(11,dg,11);
-            writePlaneSurface(12,dg,12);
-            writePlaneSurface(13,dg,13);
-            writePlaneSurface(14,dg,14);
-            writePlaneSurface(15,dg,15);
-            writePlaneSurface(16,dg,16);
-            writePlaneSurface(17,dg,17);
-            writePlaneSurface(18,dg,18);
+            // internal surface
+            writeLineLoop(19 ,dg, Loop()>>23>>-29>>-11>>25);
+            writeLineLoop(20 ,dg, Loop()>>10>>32>>-22>>-28);
+            writeLineLoop(21 ,dg, Loop()>>9>>31>>-21>>-27);
+            writeLineLoop(22 ,dg, Loop()>>24>>-26>>-12>>30);
+
+            // internal surface
+            writePlaneSurface(19,dg,19);
+            writeRuledSurface(20,dg,20);
+            writePlaneSurface(21,dg,21);
+            writePlaneSurface(22,dg,22);
+
+            // Inlet or outlet?
+            writeRuledSurface(11,dg,11);
+            writeRuledSurface(12,dg,12);
+            writeRuledSurface(13,dg,13);
+            writeRuledSurface(14,dg,14);
+
+            // Inlet or outlet?
+            writeRuledSurface(15,dg,15);
+            writeRuledSurface(16,dg,16);
+            writeRuledSurface(17,dg,17);
+            writeRuledSurface(18,dg,18);
 
 
-            writeSurfaceLoop(1, dg, Loop()>>3>>4>>5>>6>>7>>8>>9>>10>>11>>12>>13>>14>>15>>16>>17>>18);
-            writeVolume(1, dg, 1);
+
+            //writeSurfaceLoop(1, dg, Loop()>>3>>4>>5>>6>>7>>8>>9>>10>>11>>12>>13>>14>>15>>16>>17>>18);
+            //writeSurfaceLoop(1, dg, Loop()>>3>>4>>5>>6>>7>>8>>9>>10>>11>>12>>13>>14>>15>>16>>17>>18>>19>>20>>21>>22);
+            //writeVolume(1, dg, 1);
+#if 0
+            writeSurfaceLoop(1, dg, Loop()>>6>>9>>2>>13>>18>>19);
+            writeVolume(1,dg,1);
+            writeSurfaceLoop(2, dg, Loop()>>18>>7>>10>>3>>16>>17);
+            writeVolume(2,dg,2);
+            writeSurfaceLoop(37, dg, Loop()>>20>>12>>4>>15>>8>>17);
+            writeVolume(3,dg,3);
+            writeSurfaceLoop(4, dg, Loop()>>11>>1>>14>>5>>19>>20);
+            writeVolume(4,dg,4);
+#else
+            writeSurfaceLoop(1, dg, Loop()>>4>>16>>8>>19>>12>>9);
+            writeVolume(1,dg,1);
+            writeSurfaceLoop(2, dg, Loop()>>5>>15>>1>>18>>11>>12);
+            writeVolume(2,dg,2);
+            writeSurfaceLoop(3, dg, Loop()>>6>>13>>2>>17>>11>>10);
+            writeVolume(3,dg,3);
+            writeSurfaceLoop(4, dg, Loop()>>10>>7>>14>>3>>20>>9);
+            writeVolume(4,dg,4);
+#endif
+
 
         }
 
