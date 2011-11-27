@@ -289,8 +289,10 @@ void MatrixPetsc<T>::init (const size_type m,
 
     //MatShift( _M_mat, 1 );
     //printMatlab( "shift.m" );
-
+    //this->close();
     //this->zero();
+    //this->close();
+
     //this->zeroEntriesDiagonal();
 }
 
@@ -1163,9 +1165,10 @@ MatrixPetsc<T>::updateBlockMat(boost::shared_ptr<MatrixSparse<T> > m, size_type 
         auto nbRowInBlock = blockMatrix->size1();
 
         int ierr = 0;
-
+#if 1
         for (size_type ii = 0 ; ii < nbRowInBlock ; ++ii)
             {
+
                 PetscInt row = ii;
                 PetscInt ncols;
                 const PetscInt *cols;
@@ -1183,6 +1186,84 @@ MatrixPetsc<T>::updateBlockMat(boost::shared_ptr<MatrixSparse<T> > m, size_type 
                 CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
             }
+
+#else
+
+                int row = ii;
+                int ncols;
+                const int *cols;
+                const double *vals;
+
+                ierr = MatGetRow(blockMatrix->mat(), row, &ncols, &cols, &vals);
+                CHKERRABORT(PETSC_COMM_WORLD,ierr);
+
+                //PetscScalar petsc_value = static_cast<PetscScalar>(value);
+
+                int *aaa = new int[nbRowInBlock];
+                for (size_type ii = 0 ; ii < nbRowInBlock ; ++ii) aaa[start_i+ii];
+                int bbb=nbRowInBlock;
+
+                //int *aaa = new int[1];aaa[0]=start_i+row;
+                //int bbb=1;
+
+                //this->addMatrix ( aaa, 1,
+                //                  cols, ncols,
+                //                  vals );
+                ierr = MatSetValues(_M_mat,
+                                    bbb, aaa/*(int*) rows*/,
+                                    ncols, /*(int*)*/ cols,
+                                    /*(PetscScalar*) data*/vals,
+                                    INSERT_VALUES/*ADD_VALUES*/);
+
+                ierr = MatRestoreRow(blockMatrix->mat(),row,&ncols,&cols,&vals);
+                CHKERRABORT(PETSC_COMM_WORLD,ierr);
+
+
+#endif
+
+#if 0
+
+
+
+
+        PetscInt shift=0;
+        PetscBool symmetric = PETSC_FALSE;
+        PetscBool inodecompressed = PETSC_FALSE;
+        PetscInt n;
+        PetscInt* ia;
+        PetscInt* ja;
+        PetscBool done;
+        ierr = MatGetRowIJ(blockMatrix->mat(),
+                           shift,
+                           symmetric,
+                           inodecompressed,
+                           &n,&ia,&ja,
+                           &done);
+
+
+        this->addMatrix ( int* rows, int nrows,
+                          int* cols, int ncols,
+                          value_type* data )
+
+                    this->set(start_i+row,
+                              start_j+cols[jj],
+                              vals[jj]);
+
+
+        ierr = MatRestoreRowIJ(blockMatrix->mat(),
+                               shift,
+                               symmetric,
+                               inodecompressed,
+                               &n,&ia,&ja,
+                               &done );
+
+
+#endif
+
+
+
+
+
 }
 
 template <typename T>
