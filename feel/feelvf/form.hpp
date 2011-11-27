@@ -49,12 +49,14 @@ vf::detail::BilinearForm<X1, X2>
 form( boost::shared_ptr<X1> const& __X1,
       boost::shared_ptr<X2> const& __X2,
       MatrixSparse<double>& __M,
+      size_type rowstart = 0,
+      size_type colstart = 0,
       bool init = false,
       bool do_threshold = false,
       typename X1::value_type threshold = type_traits<double>::epsilon(),
       size_type pattern  = vf::Pattern::COUPLED )
 {
-    return vf::detail::BilinearForm<X1, X2>( __X1, __X2, __M, init, do_threshold, threshold, pattern );
+    return vf::detail::BilinearForm<X1, X2>( __X1, __X2, __M, rowstart, colstart, init, do_threshold, threshold, pattern );
 }
 
 template<typename X1, typename RepType>
@@ -62,11 +64,12 @@ inline
 vf::detail::LinearForm<X1, RepType, RepType>
 form( boost::shared_ptr<X1> const& __X1,
       RepType& __M,
+      size_type rowstart = 0,
       bool init = false,
       bool do_threshold = false,
       typename X1::value_type threshold = type_traits<typename RepType::value_type>::epsilon() )
 {
-    return vf::detail::LinearForm<X1, RepType, RepType>( __X1, __M, init, do_threshold, threshold );
+    return vf::detail::LinearForm<X1, RepType, RepType>( __X1, __M, rowstart, init, do_threshold, threshold );
 }
 
 
@@ -132,13 +135,14 @@ BOOST_PARAMETER_FUNCTION(
                           (init,             *(boost::is_integral<mpl::_>), false )
                           (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
                           (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
+                          (rowstart,         *(boost::is_integral<mpl::_>), 0 )
                           )
                          )
 {
     //Feel::detail::ignore_unused_variable_warning(boost_parameter_enabler_argument);
     Feel::detail::ignore_unused_variable_warning(args);
     //return form( test, *vector, init, false, 1e-16 );
-    return form( test, *vector, init, do_threshold, threshold );
+    return form( test, *vector, rowstart, init, do_threshold, threshold );
 } // form
 
 BOOST_PARAMETER_FUNCTION(
@@ -152,11 +156,12 @@ BOOST_PARAMETER_FUNCTION(
                           (init,             *(boost::is_integral<mpl::_>), false )
                           (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
                           (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
+                          (rowstart,         *(boost::is_integral<mpl::_>), 0 )
                           )
                          )
 {
     //return form( test, *vector, init, false, 1e-16 );
-    return form( test, *vector, init, do_threshold, threshold );
+    return form( test, *vector, rowstart, init, do_threshold, threshold );
 } // form
 
 /// \cond detail
@@ -221,6 +226,8 @@ BOOST_PARAMETER_FUNCTION((typename compute_form2_return<Args,mpl::bool_<boost::i
                          (optional                                   //    four optional parameters, with defaults
                           (init,             *(boost::is_integral<mpl::_>), false )
                           (pattern,          *(boost::is_integral<mpl::_>), size_type(vf::Pattern::COUPLED) )
+                          (rowstart,         *(boost::is_integral<mpl::_>), 0 )
+                          (colstart,         *(boost::is_integral<mpl::_>), 0 )
                           ) // optional
                          )
 {
@@ -228,7 +235,7 @@ BOOST_PARAMETER_FUNCTION((typename compute_form2_return<Args,mpl::bool_<boost::i
     //return form( test, trial, *matrix, init, false, 1e-16, pattern );
     bool do_threshold = false;
     double threshold = 1e-16;
-    return form( test, trial, *matrix, init, do_threshold, threshold, pattern );
+    return form( test, trial, *matrix, rowstart, colstart, init, do_threshold, threshold, pattern );
     //return form( test, trial, *matrix, init, false, threshold, pattern );
     //return form( test, trial, *matrix, init, false, threshold, 0 );
 } //

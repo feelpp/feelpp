@@ -856,6 +856,8 @@ public:
     BilinearForm( space_1_ptrtype const& __X1,
                   space_2_ptrtype const& __X2,
                   matrix_type& __M,
+                  size_type rowstart = 0,
+                  size_type colstart = 0,
                   bool build = true,
                   bool do_threshold = false,
                   value_type threshold = type_traits<value_type>::epsilon(),
@@ -865,6 +867,8 @@ public:
                   space_2_ptrtype const& __X2,
                   matrix_type& __M,
                   list_block_type const& __lb,
+                  size_type rowstart = 0,
+                  size_type colstart = 0,
                   bool do_threshold = false,
                   value_type threshold = type_traits<value_type>::epsilon(),
                   size_type graph_hints = Pattern::COUPLED );
@@ -875,6 +879,8 @@ public:
         _M_X1( __vf._M_X1 ),
         _M_X2( __vf._M_X2 ),
         _M_matrix( __vf._M_matrix ),
+        _M_row_startInMatrix( __vf._M_row_startInMatrix),
+        _M_col_startInMatrix( __vf._M_col_startInMatrix),
         _M_lb( __vf._M_lb ),
         _M_do_threshold( __vf._M_do_threshold ),
         _M_threshold( __vf._M_threshold ),
@@ -904,6 +910,8 @@ public:
             _M_X1 = form._M_X1;
             _M_X2 = form._M_X2;
             _M_matrix = form._M_matrix;
+            _M_row_startInMatrix = form._M_row_startInMatrix;
+            _M_col_startInMatrix = form._M_col_startInMatrix;
             _M_lb = form._M_lb;
             M_graph = form.M_graph;
         }
@@ -1008,6 +1016,10 @@ public:
 
     list_block_type const& blockList() const { return _M_lb; }
 
+    size_type rowStartInMatrix() const { return _M_row_startInMatrix; }
+
+    size_type colStartInMatrix() const { return _M_col_startInMatrix; }
+
     /**
      * \return the threshold
      */
@@ -1074,10 +1086,14 @@ public:
         if ( _M_do_threshold )
             {
                 if ( doThreshold( v ) )
-                    _M_matrix.add( i, j, v );
+                    _M_matrix.add( i+this->rowStartInMatrix(),
+                                   j+this->colStartInMatrix(),
+                                   v );
             }
         else
-            _M_matrix.add( i, j, v );
+            _M_matrix.add( i+this->rowStartInMatrix(),
+                           j+this->colStartInMatrix(),
+                           v );
 
     }
     /**
@@ -1088,6 +1104,13 @@ public:
                     int* cols, int ncols,
                     value_type* data )
         {
+            if (this->rowStartInMatrix()!=0)
+                for (uint i=0;i<nrows;++i)
+                    rows[i]+=this->rowStartInMatrix();
+            if (this->colStartInMatrix()!=0)
+                for (uint i=0;i<ncols;++i)
+                    cols[i]+=this->colStartInMatrix();
+
             _M_matrix.addMatrix( rows, nrows, cols, ncols, data );
         }
 
@@ -1107,13 +1130,17 @@ public:
 
     graph_ptrtype computeGraph( size_type hints, mpl::bool_<true> );
     graph_ptrtype computeGraph( size_type hints, mpl::bool_<false> );
-    void mergeGraph( int row, int col, graph_ptrtype g );
+    graph_ptrtype computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<true> );
+    graph_ptrtype computeGraph( size_type hints, mpl::bool_<false>, mpl::bool_<true> );
+    graph_ptrtype computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<false> );
 
     graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> );
     graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> );
     graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> );
     graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> );
     graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> );
+
+    void mergeGraph( int row, int col, graph_ptrtype g );
 
     //@}
 
@@ -1141,7 +1168,7 @@ private:
     bool _M_do_build;
 
     list_block_type _M_lb;
-
+    size_type _M_row_startInMatrix,_M_col_startInMatrix;
 
     bool _M_do_threshold;
     value_type _M_threshold;
@@ -1155,17 +1182,20 @@ template<typename FE1,  typename FE2, typename ElemContType>
 BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
                                                     space_2_ptrtype const& Yh,
                                                     matrix_type& __M,
+                                                    size_type rowstart,
+                                                    size_type colstart,
                                                     bool build,
                                                     bool do_threshold,
                                                     value_type threshold,
-                                                    size_type graph_hints
-                                                    )
+                                                    size_type graph_hints)
     :
     M_pattern( graph_hints ),
     _M_X1( Xh ),
     _M_X2( Yh ),
     _M_matrix( __M ),
     _M_do_build( build ),
+    _M_row_startInMatrix(rowstart),
+    _M_col_startInMatrix(colstart),
     _M_lb(),
     _M_do_threshold( do_threshold ),
     _M_threshold( threshold ),
@@ -1217,6 +1247,8 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
                                                     space_2_ptrtype const& Yh,
                                                     matrix_type& __M,
                                                     list_block_type const& __lb,
+                                                    size_type rowstart,
+                                                    size_type colstart,
                                                     bool do_threshold ,
                                                     value_type threshold,
                                                     size_type graph_hints )
@@ -1226,6 +1258,8 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     _M_X2( Yh ),
     _M_matrix( __M ),
     _M_do_build( false ),
+    _M_row_startInMatrix(rowstart),
+    _M_col_startInMatrix(colstart),
     _M_lb( __lb ),
     _M_do_threshold( do_threshold ),
     _M_threshold( threshold ),
@@ -1251,8 +1285,8 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
             typename list_block_type::const_iterator __ben = _M_lb.end();
             for ( ; __bit != __ben; ++__bit )
                 {
-                    size_type g_ic_start = __bit->globalRowStart();
-                    size_type g_jc_start = __bit->globalColumnStart();
+                    size_type g_ic_start = _M_row_startInMatrix + __bit->globalRowStart();
+                    size_type g_jc_start = _M_col_startInMatrix + __bit->globalColumnStart();
                     _M_matrix.zero( g_ic_start, g_ic_start + _M_X1->nDof(),
                                     g_jc_start, g_jc_start + _M_X2->nDof() );
                 }
@@ -1437,6 +1471,54 @@ BilinearForm<FE1,FE2,ElemContType>::mergeGraph( int row, int col, graph_ptrtype 
     Debug( 5050 ) << " -- merge_graph (" << row << "," << col << ") in " << tim.elapsed() << "\n";
     Debug( 5050 ) << "merge graph for composite bilinear form done\n";
 }
+
+
+
+
+template<typename FE1,  typename FE2, typename ElemContType>
+typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
+BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<false> )
+{
+    boost::timer t;
+    Debug( 5050 ) << "compute graph for composite bilinear form with interpolation\n";
+
+    auto graph = computeGraph( hints, mpl::bool_< ( FE1::nSpaces > 1)>(), mpl::bool_< ( FE2::nSpaces > 1)>() );
+
+    Debug( 5050 ) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n"; t.restart();
+    graph->close();
+    Debug( 5050 ) << "compute graph for composite bilinear form done in " << t.elapsed() << "s\n";
+
+    return graph;
+}
+
+template<typename FE1,  typename FE2, typename ElemContType>
+typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
+BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
+{
+    fusion::for_each( _M_X1->functionSpaces(), compute_graph1<self_type>( *this, hints ) );
+
+    return M_graph;
+}
+
+template<typename FE1,  typename FE2, typename ElemContType>
+typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
+BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
+{
+    fusion::for_each( _M_X1->functionSpaces(),
+                      compute_graph3<self_type,space_2_type>( *this, _M_X2, 0, hints ) );
+    return M_graph;
+}
+
+template<typename FE1,  typename FE2, typename ElemContType>
+typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
+BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
+{
+    fusion::for_each( _M_X2->functionSpaces(),
+                      compute_graph2<self_type,space_1_type>( *this, _M_X1, 0, hints ) );
+    return M_graph;
+}
+
+#if 0 //vincent
 template<typename FE1,  typename FE2, typename ElemContType>
 typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
 BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<false> )
@@ -1462,6 +1544,8 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraph( size_type hints, mpl::bool_<fa
 
     return M_graph;
 }
+#endif
+
 #if 0
 template<typename FE1,  typename FE2, typename ElemContType>
 typename BilinearForm<FE1,FE2,ElemContType>::graph_ptrtype
@@ -1939,6 +2023,7 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraphInCaseOfInterpolate( size_type h
     auto locTool = _M_X2->mesh()->tool_localization();
     locTool->updateForUse();
     locTool->setExtrapolation(false);
+    //locTool->kdtree()->nbNearNeighbor(_M_X2->mesh()->numElements() );
 
     std::vector<size_type>
         element_dof1,
@@ -1963,13 +2048,15 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraphInCaseOfInterpolate( size_type h
 
                 auto ptRealDof = boost::get<0>(_M_X1->dof()->dofPoint(ig1));
 
-                //std::cout << "\n Pt dof " << ptRealDof;
+                //std::cout << "Pt dof " << ptRealDof<<std::endl;
 
                 auto res = locTool->searchElements(ptRealDof);
                 auto hasFind = res.get<0>();
 
                 if ( hasFind )
                     {
+                        //std::cout << "\n  find"<<std::endl;
+
                         auto res_it = res.get<1>().begin();
                         auto res_en = res.get<1>().end();
                         for ( ; res_it != res_en ; ++res_it)
@@ -1986,16 +2073,57 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraphInCaseOfInterpolate( size_type h
                                 row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
 
 
-                            }
+                                auto elem = _M_X2->mesh()->element(res_it->get<0>());
+                                if ( /*graph.test( DOF_PATTERN_NEIGHBOR )*/false )
+                                    {
+                                        for (uint16_type ms=0; ms < elem.nNeighbors(); ms++)
+                                            {
+                                                mesh_element_2_type const* neighbor = NULL;
+                                                size_type neighbor_id = elem.neighbor(ms).first;
+                                                size_type neighbor_process_id = elem.neighbor(ms).second;
+                                                if ( neighbor_id != invalid_size_type_value )
+                                                    //&& neighbor_process_id != proc_id )
+                                                    {
+                                                        neighbor = boost::addressof( _M_X2->mesh()->element( neighbor_id,
+                                                                                                             neighbor_process_id ) );
+                                                        if ( neighbor_id == neighbor->id()  )
+                                                            {
+                                                                auto neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
+#if 0
+                                                                if ( do_less )
+                                                                    {
+                                                                        if ( ncomp1 == (_M_X2->dof()->nComponents-1) )
+                                                                            row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
+                                                                                                 neighbor_dof.end() );
+                                                                        else
+                                                                            row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
+                                                                                                 neighbor_dof.begin()+(ncomp1+1)*ndofpercomponent2 );
+                                                                    }
+                                                                else
+                                                                    {
+#endif
+                                                                        row.get<2>().insert( neighbor_dof.begin(), neighbor_dof.end() );
+                                                                        //}
+
+                                                            } // neighbor_id
+                                                    } // neighbor_id
+
+                                            } // ms
+                                    } // true
+
+
+                            } // res
 
                     } // if (hasFind)
                 else
                     {
+                        //std::cout << "\n not find"<<std::endl;
                         // row empty
                         graph_type::row_type& row = sparsity_graph->row(ig1);
                         bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
                         row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
                         row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                        row.get<2>().clear();
                     }
 
             } // for (size_type i=0; i<n1_dof_on_element; i++)
@@ -2005,6 +2133,7 @@ BilinearForm<FE1,FE2,ElemContType>::computeGraphInCaseOfInterpolate( size_type h
     } // for ( ; elem_it ... )
 
     locTool->setExtrapolation(true);
+    //locTool->kdtree()->nbNearNeighbor( 15 );
 
     sparsity_graph->close();
 
@@ -2046,7 +2175,7 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
         trial_space_type,
         ublas::vector_range<ublas::vector<double> > > bf_type;
 
-    bf_type bf( _M_test,trial, _M_bf.matrix(), list_block, _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern()  );
+    bf_type bf( _M_test,trial, _M_bf.matrix(), list_block,  _M_bf.rowStartInMatrix(), _M_bf.colStartInMatrix(), _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern()  );
 
     bf += _M_expr;
 
@@ -2088,7 +2217,7 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
         trial_space_type,
         ublas::vector_range<ublas::vector<double> > > bf_type;
 
-    bf_type bf( test, _M_trial, _M_bf.matrix(), list_block, _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern() );
+    bf_type bf( test, _M_trial, _M_bf.matrix(), list_block, _M_bf.rowStartInMatrix(), _M_bf.colStartInMatrix(), _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern() );
 
     bf += _M_expr;
 
@@ -2120,7 +2249,7 @@ compute_graph2<BFType,TestSpaceType>::operator()( boost::shared_ptr<SpaceType> c
         ublas::vector_range<ublas::vector<double> > > bf_type;
 
 
-    bf_type bf( M_space1, trial, M_bf.matrix(), list_block );
+    bf_type bf( M_space1, trial, M_bf.matrix(), list_block, M_bf.rowStartInMatrix(), M_bf.colStartInMatrix() );
 
     typename bf_type::graph_ptrtype graph;
 
@@ -2175,7 +2304,7 @@ compute_graph3<BFType,TrialSpaceType>::operator()( boost::shared_ptr<SpaceType> 
         ublas::vector_range<ublas::vector<double> > > bf_type;
 
 
-    bf_type bf( test, M_space1, M_bf.matrix(), list_block );
+    bf_type bf( test, M_space1, M_bf.matrix(), list_block, M_bf.rowStartInMatrix(), M_bf.colStartInMatrix() );
 
     typename bf_type::graph_ptrtype graph;
 

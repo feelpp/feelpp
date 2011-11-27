@@ -463,12 +463,14 @@ public:
 
     LinearForm( space_ptrtype const& __X,
                 vector_type& __F,
+                size_type rowstart = 0,
                 bool init = true,
                 bool do_threshold = false,
                 value_type threshold = type_traits<value_type>::epsilon() );
     LinearForm( space_ptrtype const& __X,
                 vector_type& __F,
                 list_block_type const& __lb,
+                size_type rowstart = 0,
                 bool init = true,
                 bool do_threshold = false,
                 value_type threshold = type_traits<value_type>::epsilon()  );
@@ -575,6 +577,9 @@ public:
 
     list_block_type const& blockList() const { return _M_lb; }
 
+    size_type rowStartInVector() const { return _M_row_startInVector; }
+
+
     /**
      * \return \c true if threshold applies, false otherwise
      */
@@ -643,10 +648,10 @@ public:
         if ( _M_do_threshold )
             {
                 if ( doThreshold( v ) )
-                    _M_F.add( i, v );
+                    _M_F.add( i+this->rowStartInVector(), v );
             }
         else
-            _M_F.add( i, v );
+            _M_F.add( i+this->rowStartInVector(), v );
     }
 
     /**
@@ -655,6 +660,10 @@ public:
      */
     void addVector( int* i, int n,  value_type* v )
     {
+        if (this->rowStartInVector()!=0)
+            for (int k = 0; k< n ; ++k)
+                i[k]+=this->rowStartInVector();
+
         _M_F.addVector( i, n, v );
     }
 
@@ -682,6 +691,8 @@ private:
 
     list_block_type _M_lb;
 
+    size_type _M_row_startInVector;
+
     test_precompute_ptrtype _M_test_pc;
 
     std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > _M_test_pc_face;
@@ -696,6 +707,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
     _M_X( __vf._M_X ),
     _M_F( __vf._M_F ),
     _M_lb( __vf._M_lb ),
+    _M_row_startInVector(__vf._M_row_startInVector),
     _M_test_pc(),
     _M_test_pc_face(),
     _M_do_threshold( __vf._M_do_threshold ),
@@ -711,6 +723,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const& __X,
                                                              vector_type& __F,
+                                                             size_type rowstart,
                                                              bool init,
                                                              bool do_threshold,
                                                              value_type threshold  )
@@ -718,6 +731,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
     _M_X( __X ),
     _M_F( __F ),
     _M_lb(),
+    _M_row_startInVector(rowstart),
     _M_do_threshold( do_threshold ),
     _M_threshold( threshold )
 {
@@ -739,6 +753,7 @@ template<typename SpaceType, typename VectorType,  typename ElemContType>
 LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const& __X,
                                                              vector_type& __F,
                                                              list_block_type const& __lb,
+                                                             size_type rowstart,
                                                              bool init,
                                                              bool do_threshold,
                                                              value_type threshold )
@@ -746,6 +761,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
     _M_X( __X ),
     _M_F( __F ),
     _M_lb( __lb ),
+    _M_row_startInVector(rowstart),
     _M_do_threshold( do_threshold ),
     _M_threshold( threshold )
 {
@@ -789,6 +805,7 @@ struct LFAssign
         LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
                                                                                               _M_lf.representation(),
                                                                                               __list_block,
+                                                                                              _M_lf.rowStartInVector(),
                                                                                               false );
         //
         // in composite integration, make sure that if _M_init is \p
