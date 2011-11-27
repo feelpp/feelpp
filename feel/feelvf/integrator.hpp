@@ -1248,6 +1248,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     form2_context_ptrtype form2;
     form21_context_ptrtype form21;
 
+    bool isInitConnectionTo0=false;
     bool isInitConnectionTo1=false;
     // true if connected to another element, false otherwise
     if ( it->isConnectedTo1() )
@@ -1269,6 +1270,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     {
         form = form_context_ptrtype( new form_context_type( __form, mapgmc, mapgmc, mapgmc, expression(), face_ims[__face_id_in_elt_0], this->im() ) );
         form1 = form1_context_ptrtype( new form1_context_type( __form, mapgmc1, mapgmc1, mapgmc1, expression(), face_ims2[__face_id_in_elt_0], this->im2() ) );
+        isInitConnectionTo0=true;
     }
 
     boost::timer ti0,ti1, ti2, ti3;
@@ -1365,8 +1367,16 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             else
             {
 #if 1
-                //ti0.restart();
                 uint16_type __face_id_in_elt_0 = it->pos_first();
+
+                if (!isInitConnectionTo0)
+                    {
+                        form = form_context_ptrtype( new form_context_type( __form, mapgmc, mapgmc, mapgmc, expression(), face_ims[__face_id_in_elt_0], this->im() ) );
+                        form1 = form1_context_ptrtype( new form1_context_type( __form, mapgmc1, mapgmc1, mapgmc1, expression(), face_ims2[__face_id_in_elt_0], this->im2() ) );
+                        isInitConnectionTo0=true;
+                    }
+
+                //ti0.restart();
                 __c0->update( it->element(0),__face_id_in_elt_0 );
                 //t0 += ti0.elapsed();
 
