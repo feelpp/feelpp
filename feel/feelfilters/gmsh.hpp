@@ -614,9 +614,12 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename detail::mesh<Args>::type _mesh_type;
     typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
+#if BOOST_FILESYSTEM_VERSION == 3
+    ExporterGmsh<_mesh_type,1> exporter( fs::path(filename).stem().string() );
+#elif BOOST_FILESYSTEM_VERSION == 2
     ExporterGmsh<_mesh_type,1> exporter( fs::path(filename).stem() );
+#endif
     exporter.saveMesh( filename, mesh, parametricnodes );
-
 }
 
 /**
