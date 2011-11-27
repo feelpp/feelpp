@@ -82,6 +82,9 @@ public:
     typedef super::vector_type vector_type;
     typedef super::sparse_matrix_type sparse_matrix_type;
 
+    typedef sparse_matrix_type::graph_type graph_type;
+    typedef sparse_matrix_type::graph_ptrtype graph_ptrtype;
+
     typedef MatrixEpetra epetra_sparse_matrix_type;
     typedef VectorEpetra<value_type> epetra_vector_type;
     typedef Epetra_Operator operator_type;
@@ -158,6 +161,19 @@ public:
             return mat;
         }
 
+    sparse_matrix_ptrtype
+    newMatrix(const size_type m,
+              const size_type n,
+              const size_type m_l,
+              const size_type n_l,
+              graph_ptrtype const & graph,
+              size_type matrix_properties = NON_HERMITIAN)
+    {
+            sparse_matrix_ptrtype  mat( new epetra_sparse_matrix_type(m,n,m_l,n_l,30,10) );
+            mat->setMatrixProperties( matrix_properties );
+            return mat;
+    }
+
     sparse_matrix_ptrtype newMatrix( DataMap const& domainmap,
                                      DataMap const& imagemap,
                                      size_type matrix_properties = NON_HERMITIAN )
@@ -188,6 +204,16 @@ public:
             }
         }
 
+    sparse_matrix_ptrtype
+    newZeroMatrix( const size_type m,
+                   const size_type n,
+                   const size_type m_l,
+                   const size_type n_l )
+    {
+        sparse_matrix_ptrtype  mat( new epetra_sparse_matrix_type(m,n,m_l,n_l,0,0) );
+        return mat;
+
+    }
     sparse_matrix_ptrtype
     newZeroMatrix( DataMap const& domainmap, DataMap const& imagemap )
     {
