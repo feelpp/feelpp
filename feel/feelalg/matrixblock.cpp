@@ -35,6 +35,143 @@ namespace Feel
 {
 
 
+template <int NR, int NC,typename T>
+MatrixBlock<NR,NC,T>::MatrixBlock( Blocks<NR,NC,value_type> const & blockSet,
+                                   backend_type &backend,
+                                   bool _doAssemble)
+    :
+    super(),
+    //M_v( v ),
+    M_mat()
+{
+
+    auto v = blockSet.getSetOfBlocks();
+
+    //std::cout << "[MatrixBlock::MatrixBlock] compute size1 size2" << std::endl;
+    size_type _size2 = 0;
+    for (uint i=0;i<NC;++i)
+        _size2 += v[i]->size2();
+
+    size_type _size1 =0;
+    for (uint i=0;i<NR;++i)
+        _size1 += v[i*NC]->size1();
+
+    //std::cout << "[MatrixBlock::MatrixBlock] build graph" << std::endl;
+    graph_ptrtype graph(new graph_type(0,0,_size1-1,0,_size2-1));//( new graph_type( ) );
+    size_type start_i=0;
+    size_type start_j=0;
+    for (uint i=0;i<NR;++i)
+        {
+            start_j=0;
+            for (uint j=0;j<NC;++j)
+                {
+                    v[i*NC+j]->close();
+                    this->mergeBlockGraph(graph,v[i*NC+j],start_i,start_j);
+
+                    start_j += v[i*NC+j]->size2();
+                }
+            start_i += v[i*NC]->size1();
+        }
+
+    graph->close();
+
+    // std::cout << "[MatrixBlock::MatrixBlock] build Matrix" << std::endl;
+    M_mat = backend.newMatrix(_size1,_size2,_size1,_size2,graph);
+    M_mat->zero();
+
+    if (_doAssemble)
+        {
+            start_i=0;
+            start_j=0;
+            for (uint i=0;i<NR;++i)
+                {
+                    start_j=0;
+                    for (uint j=0;j<NC;++j)
+                        {
+                            this->updateBlockMat(v[i*NC+j],start_i,start_j);
+
+                            start_j += v[i*NC+j]->size2();
+                        }
+                    start_i += v[i*NC]->size1();
+                }
+        }
+
+
+    //std::cout << "[MatrixBlock::MatrixBlock] build FieldSplit index" << std::endl;
+    // index container for field split preconditioner
+    std::vector < std::vector<int> > indexSplit(NR);
+    uint16_type startIS = 0;
+    for (uint i=0;i<NR;++i)
+        {
+            auto Loc_nDof = v[i*NC]->size1();
+            indexSplit[i].resize(Loc_nDof);
+            for (uint l = 0; l< Loc_nDof ; ++l )
+                {
+                    indexSplit[i][l] = startIS + l;
+                }
+            startIS += Loc_nDof;
+        }
+    // update
+    M_mat->setIndexSplit(indexSplit);
+
+}
+
+
+template <int NR, int NC,typename T>
+void
+MatrixBlock<NR,NC,T>::mergeBlockGraph(graph_ptrtype & globGraph,
+                                      boost::shared_ptr<MatrixSparse<value_type> > m,
+                                      size_type start_i, size_type start_j)
+{
+
+    //FEEL_ASSERT(m->hasGraph()).error("sub matrix doesn t have a graph");
+
+    auto g = m->graph();
+
+    auto it = g->begin();
+    auto en = g->end();
+    for( ; it != en; ++it )
+        {
+            int theglobalrow = start_i + it->first;
+            typename graph_type::row_type & row = globGraph->row(theglobalrow);
+
+            //globGraph->row(theglobalrow).template get<0>() = it->second.template get<0>();//rank
+            row.template get<0>() = it->second.template get<0>();//rank
+
+            int thelocalrow = start_i + it->second.template get<1>();
+            //globGraph->row(theglobalrow).template get<1>() = thelocalrow;
+            row.template get<1>() = thelocalrow;
+
+            auto nbDof = it->second.template get<2>().size();
+            if (nbDof>0)
+                {
+                    // Get the row of the sparsity pattern
+#if 0
+                    std::vector<size_type> ivec(  it->second.template get<2>().begin(),  it->second.template get<2>().end() );
+                    std::for_each( ivec.begin(), ivec.end(), boost::phoenix::arg_names::arg1 += start_j );
+#else
+
+                    std::vector<size_type> ivec(nbDof);
+                    auto itDof=it->second.template get<2>().begin();
+                    for ( int i=0;
+                          i<nbDof;
+                          ++i,++itDof) ivec[i]=*itDof+start_j;
+#endif
+                    //std::set<size_type> iout( ivec.size()+ M_graph->row(theglobalrow).template get<2>().size() );
+                    //std::set<size_type> iout( ivec.begin(), ivec.end() );
+                    //iout.insert( globGraph->row(theglobalrow).template get<2>().begin(),
+                    //             globGraph->row(theglobalrow).template get<2>().end() );
+                    //globGraph->row(theglobalrow).template get<2>() = iout;
+                    //globGraph->row(theglobalrow).template get<2>().insert(ivec.begin(), ivec.end());
+                    row.template get<2>().insert(ivec.begin(), ivec.end());
+                }
+
+        }
+
+
+}
+
+
 
 template <int NR, int NC,typename T>
 void

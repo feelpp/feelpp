@@ -51,14 +51,32 @@ struct Blocks
     typedef MatrixSparse<T> matrix_type;
     typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
 
-    Blocks() { M_vec.clear(); }
-    Blocks(Blocks<NR,NC,T> const & b) : M_vec(b.M_vec) {}
+    Blocks()
+        :
+        M_vec(NR*NC),
+        M_cptToBuild(0)
+    {
+        //M_vec.clear();
+    }
+    Blocks(Blocks<NR,NC,T> const & b)
+        :
+        M_vec(b.M_vec),
+        M_cptToBuild(b.M_cptToBuild)
+    {}
 
     Blocks<NR,NC,T>
     operator<<(matrix_ptrtype m)
     {
-        M_vec.push_back(m);
+        //M_vec.push_back(m);
+        M_vec[M_cptToBuild]=m;
+        ++M_cptToBuild;
         return *this;
+    }
+
+    matrix_ptrtype
+    operator()(int16_type c1,int16_type c2)
+    {
+        return M_vec[c1*NBLOCKCOLS+c2];
     }
 
     std::vector<matrix_ptrtype>
@@ -66,7 +84,7 @@ struct Blocks
 
 private :
     std::vector<matrix_ptrtype> M_vec;
-
+    int16_type M_cptToBuild;
 };
 
 
@@ -132,122 +150,10 @@ public:
      */
     //@{
 
-    MatrixBlock( Blocks<NR,NC,value_type> const & blockSet,backend_type &backend )
-        :
-        super(),
-        //M_v( v ),
-        M_mat()
-    {
-
-        auto v = blockSet.getSetOfBlocks();
-
-        size_type _size2 = 0;
-        for (uint i=0;i<NC;++i)
-            _size2 += v[i]->size2();
-
-        size_type _size1 =0;
-        for (uint i=0;i<NR;++i)
-            _size1 += v[i*NC]->size1();
-
-
-        graph_ptrtype graph;//( new graph_type( ) );
-
-        size_type start_i=0;
-        size_type start_j=0;
-        for (uint i=0;i<NR;++i)
-            {
-                start_j=0;
-                for (uint j=0;j<NC;++j)
-                    {
-                        v[i*NC+j]->close();
-                        this->mergeBlockGraph(graph,v[i*NC+j],start_i,start_j);
-
-                        start_j += v[i*NC+j]->size2();
-                    }
-                start_i += v[i*NC]->size1();
-            }
-
-        graph->close();
-
-        M_mat = backend.newMatrix(_size1,_size2,_size1,_size2);
-        M_mat->init(_size1,_size2,_size1,_size2,graph);
-        M_mat->zero();
-
-        /*size_type*/ start_i=0;
-        /*size_type*/ start_j=0;
-        for (uint i=0;i<NR;++i)
-            {
-                start_j=0;
-                for (uint j=0;j<NC;++j)
-                    {
-                        this->updateBlockMat(v[i*NC+j],start_i,start_j);
-
-                        start_j += v[i*NC+j]->size2();
-                    }
-                start_i += v[i*NC]->size1();
-            }
-
-        // index container for field split preconditioner
-        std::vector < std::vector<int> > indexSplit(NR);
-        uint16_type startIS = 0;
-        for (uint i=0;i<NR;++i)
-            {
-                auto Loc_nDof = v[i*NC]->size1();
-                indexSplit[i].resize(Loc_nDof);
-                for (uint l = 0; l< Loc_nDof ; ++l )
-                    {
-                        indexSplit[i][l] = startIS + l;
-                    }
-                startIS += Loc_nDof;
-            }
-        // update
-        M_mat->setIndexSplit(indexSplit);
-
-    }
+    MatrixBlock( Blocks<NR,NC,value_type> const & blockSet,backend_type &backend, bool doAssemble=true );
 
     void mergeBlockGraph(graph_ptrtype & globGraph,boost::shared_ptr<MatrixSparse<value_type> > m,
-                         size_type start_i, size_type start_j)
-    {
-
-        //FEEL_ASSERT(m->hasGraph()).error("sub matrix doesn t have a graph");
-        //if ( !m->graph() )  std::cout << "\n Pas de graph \n";
-
-        // nothing yet in store
-        if ( !globGraph || globGraph->empty() )
-            {
-                //std::cout << "\n graph empty or no build\n";
-                globGraph.reset( new graph_type( *m->graph()));
-            }
-        else
-            {
-                auto g = m->graph();
-                globGraph->setLastRowEntryOnProc( start_i + g->lastRowEntryOnProc() );
-                globGraph->setLastColEntryOnProc( start_j + g->lastColEntryOnProc() );
-
-                auto it = g->begin();
-                auto en = g->end();
-                for( ; it != en; ++it )
-                    {
-                        int theglobalrow = start_i + it->first;
-                        int thelocalrow = start_i + boost::get<1>( it->second );
-
-                        globGraph->row(theglobalrow).template get<1>() = thelocalrow;
-
-                        // Get the row of the sparsity pattern
-                        std::vector<size_type> ivec( boost::get<2>( it->second ).begin(), boost::get<2>( it->second ).end() );
-                        std::for_each( ivec.begin(), ivec.end(), boost::phoenix::arg_names::arg1 += start_j );
-                        //std::set<size_type> iout( ivec.size()+ M_graph->row(theglobalrow).template get<2>().size() );
-                        std::set<size_type> iout( ivec.begin(), ivec.end() );
-
-                        iout.insert( globGraph->row(theglobalrow).template get<2>().begin(),
-                                     globGraph->row(theglobalrow).template get<2>().end() );
-
-                        globGraph->row(theglobalrow).template get<2>() = iout;
-
-                    }
-
-            }
-    }
+                         size_type start_i, size_type start_j);
 
     MatrixBlock( MatrixBlock const & mb )
         :
