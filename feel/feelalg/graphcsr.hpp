@@ -265,8 +265,15 @@ public:
      */
     void close();
 
-
+    /**
+     * transpose graph
+     */
     self_ptrtype transpose();
+
+    /**
+     * showMe
+     */
+    void showMe( std::ostream& __out = std::cout ) const;
 
     //@}
 
