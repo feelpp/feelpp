@@ -65,7 +65,7 @@
             ( Cube          , 3, 6, 1, "cube"         , 2, CUBE  ), \
             ( Cylindre      , 3, 6, 1, "cylindre"     , 4, CYLINDRE  ), \
             ( Sphere        , 3, 8, 1, "sphere"       , 2, SPHERE  ),   \
-            ( Tube          , 3, 16, 1, "tube"         , 5, TUBE  )    \
+            ( Tube          , 3, 20, 4, "tube"         , 5, TUBE  )     \
             )                                                           \
       )                                                                 \
     /**/
@@ -324,15 +324,16 @@
       )                                         \
     /**/
 # define GEOTOOL_MARKER_SURFACE_TUBE            \
-    ( 4, ( ( 1, 4, ( 1,2,3,4 ) ),                \
+    ( 5, ( ( 1, 4, ( 1,2,3,4 ) ),                \
            ( 2, 4, ( 5,6,7,8 ) ),                \
            ( 3, 4, ( 9,10,11,12 ) ),\
-           ( 4, 4, ( 13,14,15,16 ) )             \
+           ( 4, 4, ( 13,14,15,16 ) ),           \
+           ( 5, 4, ( 17,18,19,20 ) )            \
            )                                    \
       )                                         \
     /**/
 # define GEOTOOL_MARKER_VOLUME_TUBE         \
-    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+    ( 1, ( ( 1, 4, ( 1,2,3,4 ) ) )              \
       )                                         \
     /**/
 /*_________________________________________________*/
@@ -519,6 +520,9 @@ namespace Feel {
         typedef std::vector<std::map<uint,std::list<uint> > > vec_map_data_ptsinsurf_type;
         typedef boost::shared_ptr<vec_map_data_ptsinsurf_type> vec_map_data_ptsinsurf_ptrtype;
 
+        typedef std::map<int,std::list<int> > map_surfaceLoop_type;
+        //typedef boost::shared_ptr<map_surfaceLoop_type> map_surfaceLoop_ptrtype;
+
 
         typedef boost::tuple< GeoGMSHTool_ptrtype,
                               vec_map_data_ptrtype,
@@ -527,7 +531,8 @@ namespace Feel {
                               vec_map_data_surf1_ptrtype,
                               vec_map_data_surf2_ptrtype,
                               vec_map_data_surf1_ptrtype,
-                              vec_map_data_ptsinsurf_ptrtype > data_geo_type;
+                              vec_map_data_ptsinsurf_ptrtype,
+                              map_surfaceLoop_type > data_geo_type;
         typedef boost::shared_ptr<data_geo_type> data_geo_ptrtype;
 
 
@@ -707,19 +712,27 @@ namespace Feel {
             typedef ligne_type_type::const_iterator ligne_type_const_iterator_type;
             typedef ligne_name_type::const_iterator ligne_name_const_iterator_type;
 
-            // gestion des surfaces : shape,name,value,meshSize
-            typedef boost::tuple<std::string,std::string,uint,double > surface_type;
+            // gestion des surfaces : shape,name,(numGlobSurface,value),meshSize
+            typedef boost::tuple<std::string,std::string,std::pair<int,int>,double > surface_type;
             typedef std::list< surface_type > surface_type_type;
             typedef std::list< surface_type_type > surface_name_type;
             typedef surface_type_type::const_iterator surface_type_const_iterator_type;
             typedef surface_name_type::const_iterator surface_name_const_iterator_type;
 
-            // gestion des volumes : shape,name,value,meshSize
-            typedef boost::tuple<std::string,std::string, uint,double > volume_type;
+            // gestion des volumes : shape,name,(numGlobVolume,value),meshSize
+            typedef boost::tuple<std::string,std::string, std::pair<int,int>,double > volume_type;
             typedef std::list< volume_type > volume_type_type;
             typedef std::list< volume_type_type > volume_name_type;
             typedef volume_type_type::const_iterator volume_type_const_iterator_type;
             typedef volume_name_type::const_iterator volume_name_const_iterator_type;
+
+            // gestion des surfaceLoop : shape,name, numLoopLoc->list<value>
+            typedef boost::tuple<std::string,std::string, std::map< int, std::list<int> > > surfaceloop_type;
+            typedef std::list< surfaceloop_type > surfaceloop_type_type;
+            typedef std::list< surfaceloop_type_type > surfaceloop_name_type;
+            typedef surfaceloop_type_type::const_iterator surfaceloop_type_const_iterator_type;
+            typedef surfaceloop_name_type::const_iterator surfaceloop_name_const_iterator_type;
+
 
             GeoGMSHTool(uint __dim, std::string __shape="NO_SHAPE", std::string __name="NO_NAME", double __meshSize=0.1)
                 :
@@ -734,6 +747,7 @@ namespace Feel {
                 _M_ligneList(new ligne_name_type()),
                 _M_surfaceList(new surface_name_type()),
                 _M_volumeList(new volume_name_type()),
+                _M_surfaceLoopList(new surfaceloop_name_type()),
                 _M_ostrExtrude( new std::ostringstream()),
                 _M_ostrSurfaceLoop( new std::ostringstream()),
                 _M_paramShape( new parameter_shape_type()),
@@ -755,6 +769,7 @@ namespace Feel {
                 _M_ligneList(new ligne_name_type(*(m._M_ligneList))),
                 _M_surfaceList(new surface_name_type(*(m._M_surfaceList))),
                 _M_volumeList(new volume_name_type(*(m._M_volumeList))),
+                _M_surfaceLoopList(new surfaceloop_name_type(*m._M_surfaceLoopList)),
                 _M_ostrExtrude(new std::ostringstream()),
                 _M_ostrSurfaceLoop(new std::ostringstream()),
                 _M_paramShape(new parameter_shape_type(*(m._M_paramShape))),
@@ -790,35 +805,46 @@ namespace Feel {
                     }
 
 
-                surface_name_type::iterator itSurf = this->_M_surfaceList->begin();
-                surface_name_type::iterator itSurf_end = this->_M_surfaceList->end();
+                auto itSurf = this->_M_surfaceList->begin();
+                auto itSurf_end = this->_M_surfaceList->end();
                 for ( ; itSurf != itSurf_end; ++itSurf)
                     {
-                        surface_type_type::iterator itSurf2 = itSurf->begin();
-                        surface_type_type::iterator itSurf2_end = itSurf->end();
+                        auto itSurf2 = itSurf->begin();
+                        auto itSurf2_end = itSurf->end();
                         for ( ; itSurf2 != itSurf2_end; ++itSurf2)
                             {
-                                boost::get<2>(*itSurf2)=0;
+                                itSurf2->get<2>() = std::make_pair(0,0);//.clear();
+                                //boost::get<2>(*itSurf2)=0;
                             }
                     }
 
                 _M_ostrExtrude.reset(new std::ostringstream());
                 _M_ostrSurfaceLoop.reset(new std::ostringstream());
 
-                volume_name_type::iterator itVol = this->_M_volumeList->begin();
-                volume_name_type::iterator itVol_end = this->_M_volumeList->end();
+                auto itVol = this->_M_volumeList->begin();
+                auto itVol_end = this->_M_volumeList->end();
                 for ( ; itVol != itVol_end; ++itVol)
                     {
-                        volume_type_type::iterator itVol2 = itVol->begin();
-                        volume_type_type::iterator itVol2_end = itVol->end();
+                        auto itVol2 = itVol->begin();
+                        auto itVol2_end = itVol->end();
                         for ( ; itVol2 != itVol2_end; ++itVol2)
                             {
-                                boost::get<2>(*itVol2)=0;
+                                itVol2->get<2>() = std::make_pair(0,0);//.clear();
+                                //boost::get<2>(*itVol2)=0;
                             }
                     }
 
+                auto surfaceLoop_it = this->_M_surfaceLoopList->begin();
+                auto surfaceLoop_en = this->_M_surfaceLoopList->end();
+                for ( ; surfaceLoop_it!=surfaceLoop_en ; ++surfaceLoop_it)
+                    {
+                        auto surfaceLoop2_it =surfaceLoop_it->begin();
+                        auto surfaceLoop2_en =surfaceLoop_it->end();
+                        for ( ; surfaceLoop2_it!=surfaceLoop2_en ; ++surfaceLoop2_it)
+                            surfaceLoop2_it->get<2>().clear();
+                    }
 
-            }
+            } // end zeroCpt
 
             void
             operator=( GeoGMSHTool const & m )
@@ -835,6 +861,7 @@ namespace Feel {
                 _M_ligneList.reset(new ligne_name_type(*(m._M_ligneList)));
                 _M_surfaceList.reset(new surface_name_type(*(m._M_surfaceList)));
                 _M_volumeList.reset(new volume_name_type(*(m._M_volumeList)));
+                _M_surfaceLoopList.reset(new surfaceloop_name_type(*m._M_surfaceLoopList)),
 
                 _M_ostrExtrude.reset(new std::ostringstream());
                 *_M_ostrExtrude << (m._M_ostrExtrude)->str();
@@ -895,6 +922,7 @@ namespace Feel {
 
                 if (dim>=2)
                     {
+#if 0
                         //Attention 0 par defaut pour dire que ce n'est pas initialiser
                         for(uint n=0;n<__nbsurface;++n)
                             {
@@ -903,16 +931,47 @@ namespace Feel {
                                 __listTemp.push_back( boost::make_tuple(__shape,__name,0,__meshSize));
                                 _M_surfaceList->push_back( __listTemp);
                             }
+#else
+                        for(uint n=0;n<__nbsurface;++n)
+                            {
+                                //std::pair<int,int> listEmpty;listEmpty.clear();
+                                std::pair<int,int> listEmpty = std::make_pair(0,0);
+                                surface_type_type __listTemp;
+                                __listTemp.push_back( boost::make_tuple(__shape,__name,listEmpty,__meshSize));
+                                _M_surfaceList->push_back( __listTemp);
+                            }
+#endif
+
+
                     }
                 if (dim==3)
                     {
                         //Attention 0 par defaut pour dire que ce n'est pas initialiser
                         for(uint n=0;n<__nbvolume;++n)
                             {
+#if 0
+                                //std::ostringstream ostr;ostr<< n;
                                 volume_type_type __listTemp;__listTemp.clear();
-                                __listTemp.push_back( boost::make_tuple(__shape,__name,0,__meshSize));
+                                __listTemp.push_back( boost::make_tuple(__shape,__name/*+ostr.str()*/,0,__meshSize));
+#else
+                                std::pair<int,int> listEmpty = std::make_pair(0,0);
+                                surface_type_type __listTemp;
+                                __listTemp.push_back( boost::make_tuple(__shape,__name,listEmpty,__meshSize));
+#endif
                                 _M_volumeList->push_back( __listTemp);
                             }
+
+                        std::map<int,std::list<int> > listEmpty;listEmpty.clear();
+                        //for(uint n=0;n<__nbvolume;++n)
+                        //    {
+                        //        listEmpty.clear();
+                        //    }
+                        surfaceloop_type_type __listTemp;__listTemp.clear();
+                        __listTemp.push_back( boost::make_tuple(__shape,__name,listEmpty));
+                        _M_surfaceLoopList->push_back(__listTemp);
+
+
+
 
                     }
 
@@ -939,6 +998,7 @@ namespace Feel {
                 _M_ligneList.reset(new ligne_name_type(*(m._M_ligneList)));
                 _M_surfaceList.reset(new surface_name_type(*(m._M_surfaceList)));
                 _M_volumeList.reset(new volume_name_type(*(m._M_volumeList)));
+                _M_surfaceLoopList.reset(new surfaceloop_name_type(*m._M_surfaceLoopList));
 
                 _M_ostrExtrude.reset(new std::ostringstream());
                 *_M_ostrExtrude << (m._M_ostrExtrude)->str();
@@ -1195,6 +1255,7 @@ namespace Feel {
             boost::shared_ptr<ligne_name_type> _M_ligneList;
             boost::shared_ptr<surface_name_type> _M_surfaceList;
             boost::shared_ptr<volume_name_type> _M_volumeList;
+            boost::shared_ptr<surfaceloop_name_type> _M_surfaceLoopList;
 
             boost::shared_ptr<std::ostringstream> _M_ostrExtrude;
             boost::shared_ptr<std::ostringstream> _M_ostrSurfaceLoop;
