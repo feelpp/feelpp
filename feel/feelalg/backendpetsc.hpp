@@ -154,13 +154,36 @@ public:
     }
 
     sparse_matrix_ptrtype
+    newMatrix(const size_type m,
+              const size_type n,
+              const size_type m_l,
+              const size_type n_l,
+              graph_ptrtype const & graph,
+              size_type matrix_properties = NON_HERMITIAN)
+    {
+        sparse_matrix_ptrtype mat( new petsc_sparse_matrix_type );
+        mat->setMatrixProperties( matrix_properties );
+        mat->init(m,n,m_l,n_l,graph);
+        return mat;
+    }
+
+    sparse_matrix_ptrtype
     newZeroMatrix( DataMap const& domainmap,
                    DataMap const& imagemap )
     {
-        graph_ptrtype sparsity_graph( new graph_type( domainmap.nDof(),
-                                                      domainmap.firstDof(), domainmap.lastDof(),
-                                                      imagemap.firstDof(), imagemap.lastDof() ) );
-        for (size_type i=0;i<domainmap.nDof() ; ++i)
+        return newZeroMatrix(imagemap.nDof(), domainmap.nDof(),
+                             imagemap.nDof(), domainmap.nDof() );
+    }
+
+    sparse_matrix_ptrtype
+    newZeroMatrix( const size_type m,
+                   const size_type n,
+                   const size_type m_l,
+                   const size_type n_l )
+    {
+        graph_ptrtype sparsity_graph( new graph_type( 0,0,m_l-1,0,n_l-1) );
+
+        for (size_type i=0 ; i<m_l ; ++i)
             {
                 //sparsity_graph->row(i);
                 typename graph_type::row_type& row = sparsity_graph->row(i);
@@ -171,14 +194,11 @@ public:
 
         sparsity_graph->close();
 
-        sparse_matrix_ptrtype  m ( new petsc_sparse_matrix_type );
-        //m->setMatrixProperties( matrix_properties );
+        sparse_matrix_ptrtype  mat( new petsc_sparse_matrix_type );
+        //mat->setMatrixProperties( matrix_properties );
+        mat->init( m, n, m_l, n_l, sparsity_graph );
 
-        m->init( domainmap.nGlobalElements(), imagemap.nGlobalElements(),
-                 domainmap.nMyElements(), imagemap.nMyElements(),
-                 sparsity_graph );
-
-        return m;
+        return mat;
     }
 
     template<typename SpaceT>

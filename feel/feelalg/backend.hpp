@@ -134,6 +134,9 @@ public:
     typedef MatrixSparse<value_type> sparse_matrix_type;
     typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
 
+    typedef typename sparse_matrix_type::graph_type graph_type;
+    typedef typename sparse_matrix_type::graph_ptrtype graph_ptrtype;
+
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
@@ -185,11 +188,28 @@ public:
     /**
      * instantiate a new sparse vector
      */
+    virtual sparse_matrix_ptrtype newMatrix(const size_type m,
+                                            const size_type n,
+                                            const size_type m_l,
+                                            const size_type n_l,
+                                            graph_ptrtype const & graph,
+                                            size_type matrix_properties = NON_HERMITIAN) = 0;
+
+    /**
+     * instantiate a new sparse vector
+     */
     virtual sparse_matrix_ptrtype newMatrix( DataMap const& dm1, DataMap const& dm2, size_type prop = NON_HERMITIAN  ) = 0;
 
     /**
      * instantiate a new sparse vector
      */
+    virtual
+    sparse_matrix_ptrtype
+    newZeroMatrix( const size_type m,
+                   const size_type n,
+                   const size_type m_l,
+                   const size_type n_l ) =0;
+
     virtual sparse_matrix_ptrtype newZeroMatrix( DataMap const& dm1, DataMap const& dm2 ) = 0;
 
     /**
@@ -228,11 +248,11 @@ public:
      * instantiate a new block matrix sparse
      */
     template <int NR, int NC>
-    sparse_matrix_ptrtype newBlockMatrix( Blocks<NR,NC,T> const & b )
+    sparse_matrix_ptrtype newBlockMatrix( Blocks<NR,NC,T> const & b, bool doAssemble=true )
     {
         //sparse_matrix_ptrtype mb(new MatrixBlock<NR,NC,T>( b,*this ));
         //return mb;
-        boost::shared_ptr< MatrixBlock<NR,NC,T> > mb(new MatrixBlock<NR,NC,T>( b,*this ));
+        boost::shared_ptr< MatrixBlock<NR,NC,T> > mb(new MatrixBlock<NR,NC,T>( b, *this, doAssemble ));
         return mb->getSparseMatrix();
     }
 

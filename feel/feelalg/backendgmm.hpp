@@ -98,6 +98,9 @@ public:
     typedef MatrixGmm<value_type, gmm::row_major> gmm_sparse_matrix_type;
     typedef boost::shared_ptr<gmm_sparse_matrix_type> gmm_sparse_matrix_ptrtype;
 
+    typedef typename sparse_matrix_type::graph_type graph_type;
+    typedef typename sparse_matrix_type::graph_ptrtype graph_ptrtype;
+
     /* vector */
     typedef typename super::vector_type vector_type;
     typedef typename super::vector_ptrtype vector_ptrtype;
@@ -138,12 +141,37 @@ public:
     }
 
     sparse_matrix_ptrtype
+    newMatrix(const size_type m,
+              const size_type n,
+              const size_type m_l,
+              const size_type n_l,
+              graph_ptrtype const & graph,
+              size_type matrix_properties = NON_HERMITIAN)
+    {
+        sparse_matrix_ptrtype mat( new gmm_sparse_matrix_type(m,n) );
+        mat->setMatrixProperties( matrix_properties );
+        return mat;
+    }
+
+    sparse_matrix_ptrtype
     newMatrix( DataMap const& d1, DataMap const& d2, size_type matrix_properties = NON_HERMITIAN )
     {
         auto A = sparse_matrix_ptrtype( new gmm_sparse_matrix_type( d1.nGlobalElements(), d2.nGlobalElements() ) );
         A->setMatrixProperties( matrix_properties );
         return A;
     }
+
+    sparse_matrix_ptrtype
+    newZeroMatrix( const size_type m,
+                   const size_type n,
+                   const size_type m_l,
+                   const size_type n_l )
+    {
+        auto A = sparse_matrix_ptrtype( new gmm_sparse_matrix_type( m, n ) );
+        //A->setMatrixProperties( matrix_properties );
+        return A;
+    }
+
 
     sparse_matrix_ptrtype
     newZeroMatrix( DataMap const& d1, DataMap const& d2 )
