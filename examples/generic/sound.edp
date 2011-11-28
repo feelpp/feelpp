@@ -1,7 +1,7 @@
 real kc2=1;
-int size=30;
+int size=20; //changer  .... 30
 func g=4*y*(1-y);
-/*
+
 border a0(t=0,1) { x= 5; y= 1+2*t ;}
 border a1(t=0,1) { x=5-2*t; y= 3 ;}
 border a2(t=0,1) { x= 3-2*t; y=3-2*t ;}
@@ -11,18 +11,19 @@ border a5(t=0,1) { x= t; y= 0 ;}
 border a6(t=0,1) { x= 1+4*t; y= t ;}
 mesh Th=buildmesh( a0(size) + a1(size) + a2(size)
         + a3(size) + a4(size) + a5(size) + a6(size));
-*/
+
 /*
 border a0(t=0,1) { x= t; y= 0 ;}
 border a1(t=0,1) { x= 1; y= t ;}
 border a2(t=0,1) { x= 1-t; y= 1 ;}
 border a4(t=0,1) { x= 0; y= 1-t ;}
 mesh Th=buildmesh( a0(size) + a1(size) + a2(size) + a4(size));
-*/
+
 
 border a0(t=0,pi) { x= cos(t); y= sin(t) ;}
 border a4(t=pi,2*pi) { x= cos(t); y= sin(t) ;}
 mesh Th=buildmesh( a0(size) + a4(size));
+*/
 
 fespace Vh(Th,P1);
 
@@ -39,7 +40,7 @@ varf b([u1],[u2]) = int2d(Th)( u1*u2 ) ;           //    no Boundary condition
 matrix OP= op(Vh,Vh,solver=Crout,factorize=1);
 //matrix OP= op(Vh,Vh,solver=CG,eps=1e-20);
 matrix B= b(Vh,Vh,solver=CG,eps=1e-20);
-int nev=50;                     //   number of requested eigenvalues near sigma
+int nev=2; // changer ... 50                    //   number of requested eigenvalues near sigma
 real[int] ev(nev);                            //   to store the nev eigenvalue
 Vh[int] eV(nev);                             //   to store the nev eigenvector
 int k=EigenValue(OP,B,sym=true,sigma=sigma,value=ev,vector=eV,
