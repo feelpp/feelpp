@@ -29,4 +29,4 @@ endmacro()
 
 add_mcs_doc(mcs_example)
 add_mcs_doc(manteaux_sidibe)
-
+add_mcs_doc(MCS_heat)
