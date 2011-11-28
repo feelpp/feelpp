@@ -11,4 +11,5 @@ foreach( EXAMPLE ${EXAMPLES} )
 endforeach()
 
 feel_add_example( sound sound.cpp room.cpp LINK_LIBRARIES ${FEEL_LIBRARIES} )
+feel_add_example( soundTime soundTime.cpp room.cpp LINK_LIBRARIES ${FEEL_LIBRARIES} )
 

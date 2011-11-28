@@ -185,6 +185,8 @@ Sound<Dim, Order>::run()
     /*
      * The function space and some associate elements are then defined
      */
+    
+    
     auto Xh = space_type::New( mesh );
     auto u = Xh->element();
     auto v = Xh->element();
@@ -194,10 +196,34 @@ Sound<Dim, Order>::run()
 
     auto F = backend->newVector( Xh );
 
-    if ( Dim == 2 )
-        form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces(mesh,2), _expr=val(Py()*(1-Py()))*id(v) );
-    else
-        form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces(mesh,51),  _expr=val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) );
+
+    // Definition de dt et ft :
+    value_type dt = this->vm()["dt"].template as<value_type>();
+    value_type ft = this->vm()["ft"].template as<value_type>();
+    double factor = 1./(dt*dt);
+    
+    // Definition des termes du schéma centré : factor*(un1-2*un+un2)
+    element_type un2( Xh, "un2" );
+    element_type un1( Xh, "un1" );
+    element_type un( Xh, "un" );
+    element_type vn( Xh, "un" );
+    // Initialisation des termes :    
+    un2.zero();
+    un1.zero();
+    un.zero();    
+
+    // boucle sur le temps :
+    for( double time = dt; time <= ft; time += dt )
+    {
+
+    if ( Dim == 2 ){
+        //on ajoute le terme portant sur le temps : factor*(2.*idv(un)-idv(un1)) :
+        form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces(mesh,2), _expr=val(Py()*(1-Py()))*id(v) + factor*(2.*idv(un)-idv(un1))*id(v) );
+        F->close();}
+    else {
+            //on ajoute le terme portant sur le temps : factor*(2.*idv(un)-idv(un1)) :
+            form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces(mesh,51),  _expr=val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) + factor*(2.*idv(un)-idv(un1))*id(v) );
+            F->close();}
 
     M_stats.put("t.assembly.vector.total",t.elapsed());t.restart();
 
@@ -222,7 +248,9 @@ Sound<Dim, Order>::run()
     // eigen modes
     double sigma = this->vm()["sigma"].template as<double>();
     auto S = backend->newMatrix( Xh, Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=S, _init=true ) = integrate( _range=elements(mesh),  _expr=gradt(u)*trans(grad(v)) );
+    //on ajoute le terme portant sur le temps : factor*idv(un2)
+    form2( _test=Xh, _trial=Xh, _matrix=D,_init=true ) = integrate( _range=elements(mesh),  _expr=( kc2*idt(u)*id(v)-gradt(u)*trans(grad(v))) + factor*idv(un2)*id(v) );
+    D->close();
 
     M_stats.put("t.assembly.matrix.A",t.elapsed());t.restart();
 
@@ -272,13 +300,21 @@ Sound<Dim, Order>::run()
 //    Log() << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
     M_stats.put("t.eigensolver.total",t.elapsed());t.restart();
 
-    exporter->step(0.)->setMesh( u.functionSpace()->mesh() );
+    exporter->step(time)->setMesh( u.functionSpace()->mesh() );
     if ( !this->vm().count( "export-mesh-only" ) )
     {
-        exporter->step(0.)->add( "p", u );
-        exporter->step(0.)->add( "mode", mode );
+        exporter->step(time)->add( "p", u );
+        exporter->step(time)->add( "mode", mode );
     }
     exporter->save();
+
+    // on met à jour les solutions :
+    un2 = un1;
+    un1 = un;
+    un = u;
+    
+}//fin boucle sur le temps.
+
 } // Sound::run
 } // Feel
 
