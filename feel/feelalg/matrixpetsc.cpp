@@ -175,6 +175,20 @@ void MatrixPetsc<T>::init (const size_type m,
     }
 
 
+    // check graph for petsc : all diag must non zero
+    bool graphHasChanged=false;
+    for ( auto it=graph->begin(), en=graph->end() ; it!=en ; ++it )
+        {
+            if (it->second.get<2>().find(it->first)==it->second.get<2>().end())
+                {
+                    it->second.get<2>().insert(it->first);
+                    graphHasChanged=true;
+                }
+
+        }
+
+    if (graphHasChanged) graph->close();
+
     int proc_id = 0;
 
     MPI_Comm_rank (this->comm(), &proc_id);
@@ -719,7 +733,7 @@ MatrixPetsc<T>::addMatrix (const T a_in, MatrixSparse<T> &X_in)
 
 // 2.3.x & newer
 #else
-    this->close();
+    //this->close();
     //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SAME_NONZERO_PATTERN);
     //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SUBSET_NONZERO_PATTERN );
     ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)DIFFERENT_NONZERO_PATTERN);
