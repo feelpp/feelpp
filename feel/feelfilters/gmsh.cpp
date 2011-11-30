@@ -73,7 +73,8 @@ Gmsh::Gmsh( int nDim, int nOrder )
     M_usePhysicalNames( false ),
     M_partitioner( GMSH_PARTITIONER_CHACO ),
     M_partitions( 1 ),
-    M_partition_file( 0 )
+    M_partition_file( 0 ),
+    M_shear( 0 )
 {
     this->setReferenceDomain();
 }
@@ -88,7 +89,8 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_usePhysicalNames( __g.M_usePhysicalNames ),
     M_partitioner( __g.M_partitioner ),
     M_partitions( __g.M_partitions ),
-    M_partition_file( __g.M_partition_file )
+    M_partition_file( __g.M_partition_file ),
+    M_shear( __g.M_shear )
 {}
 Gmsh::~Gmsh()
 {}
@@ -329,17 +331,24 @@ Gmsh::preamble() const
          << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
          << "Mesh.CharacteristicLengthFromPoints=1;\n"
          << "Mesh.ElementOrder=" << M_order << ";\n"
-         << "Mesh.SecondOrderIncomplete = 0;\n"
-         << "Mesh.Algorithm = 6;\n"
-         << "Mesh.OptimizeNetgen=1;\n"
+         << "Mesh.SecondOrderIncomplete = 0;\n";
+    if ( M_recombine )
+        ostr << "Mesh.Algorithm = 5;\n";
+    else
+        ostr << "Mesh.Algorithm = 6;\n";
+    ostr << "Mesh.OptimizeNetgen=1;\n"
          << "// partitioning data\n"
          << "Mesh.Partitioner=" << M_partitioner << ";\n"
          << "Mesh.NbPartitions=" << M_partitions << ";\n"
          << "Mesh.MshFilePartitioned=" << M_partition_file << ";\n"
-
-        //<< "Mesh.Optimize=1;\n"
-        //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
+                //<< "Mesh.Optimize=1;\n"
+                //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
          << "h=" << M_h << ";\n";
+    if ( M_recombine )
+    {
+        ostr << "Mesh.RecombinationAlgorithm=1;//blossom\n"
+             << "Mesh.RecombineAll=1; //all\n";
+    }
     return ostr.str();
 }
 
