@@ -127,7 +127,7 @@ public:
     _M_points_face( nFacesInConvex ),
     _M_fset( primal )
 {
-#if 1
+#if 0
     std::cout << "Lagrange finite element: \n";
     std::cout << " o- dim   = " << nDim << "\n";
     std::cout << " o- order = " << nOrder << "\n";
@@ -151,7 +151,7 @@ public:
             ublas::subrange( _M_pts, 0, nDim, p, p+_M_points_face[e].size2() ) = _M_points_face[e];
             p+=_M_points_face[e].size2();
         }
-     std::cout << "[CrouzeixRaviartDual] points= " << _M_pts << "\n";
+    //std::cout << "[CrouzeixRaviartDual] points= " << _M_pts << "\n";
     setFset( primal, _M_pts, mpl::bool_<primal_space_type::is_scalar>() );
 
 
