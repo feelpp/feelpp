@@ -3,9 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2009-07-02
+       Date: 2010-05-09
 
-  Copyright (C) 2009-2011 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,17 +22,17 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file crouzeixraviart2d.cpp
+   \file nedelec2d.cpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-   \date 2009-07-02
+   \date 2010-05-09
  */
-#include "crouzeixraviart.hpp"
+#include "nedelec.hpp"
 
 namespace Feel
 {
 namespace detail
 {
-BOOST_PP_LIST_FOR_EACH_PRODUCT(CROUZEIXRAVIART_FACTORY_OP, 3, (DIM2, ORDER1, CONVEX))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(NEDELEC_FACTORY_OP, 3, (DIM2, ORDER0123, SIMPLEX))
 }
 }
 

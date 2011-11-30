@@ -3,9 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2009-07-02
+       Date: 2010-05-09
 
-  Copyright (C) 2009-2011 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,19 +22,43 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file crouzeixraviart2d.cpp
+   \file nedelec.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-   \date 2009-07-02
+   \date 2010-05-09
  */
-#include "crouzeixraviart.hpp"
+#ifndef __pnedelec_H
+#define __pnedelec_H 1
+
+#include "basisgen.hpp"
+#include <feel/feelpoly/nedelec.hpp>
 
 namespace Feel
 {
 namespace detail
 {
-BOOST_PP_LIST_FOR_EACH_PRODUCT(CROUZEIXRAVIART_FACTORY_OP, 3, (DIM2, ORDER1, CONVEX))
+template<typename Convex, uint16_type Order>
+PolyvisBase*
+createNedelec()
+{
+    std::cout << "Creating Nedelec(" << Convex::nDim << "," << Order << ")\n";
+    return new Polyvis<basis_type<Nedelec<Order> >,convex_type<Convex> >;
 }
-}
+# /* Generates code for all dim and order. */
+# define NEDELEC_FACTORY_OP(_, GDO)           \
+    NEDELEC_FACTORY GDO                        \
+    /**/
+#
+# define GEN_NEDELEC(LDIM,LORDER,CONVEX)              \
+    "nedelec(" #LDIM "," #LORDER "," #CONVEX ")"       \
+    /**/
+#
+#
+#define NEDELEC_FACTORY(LDIM,LORDER,CONVEX)                     \
+    const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT(lag, CONVEX), LDIM), LORDER ) = \
+        PolyvisBase::factory_type::instance()                           \
+        .registerProduct( GEN_NEDELEC(LDIM,LORDER,CONVEX), &createNedelec<CONVEX< LDIM >,LORDER> );
 
-
+} // detail
+} // Feel
+#endif /* __nedelec_H */
 
