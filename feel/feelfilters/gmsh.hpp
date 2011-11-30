@@ -153,6 +153,7 @@ public:
                 M_version = __g.M_version;
                 M_addmidpoint = __g.M_addmidpoint;
                 M_usePhysicalNames = __g.M_usePhysicalNames;
+                M_shear = __g.M_shear;
             }
             return *this;
         }
@@ -226,6 +227,12 @@ public:
 
     //! \return the partitioner
     GMSH_PARTITIONER partitioner() const { return M_partitioner; }
+
+    //! get the shear
+    double shear() const { return M_shear; }
+
+    //! return true if recombine, false otherwise
+    bool recombine() const { return M_recombine; }
 
     //@}
 
@@ -343,6 +350,12 @@ public:
     //! set the partitioner
     void setPartitioner( GMSH_PARTITIONER const& p ) {  M_partitioner = p; }
 
+    //! shear the domain
+    void setShear( double _shear ) { M_shear = _shear; }
+
+    //! recombine simplices into quads
+    void setRecombine( bool _recombine ) { M_recombine = _recombine; }
+
     //@}
 
     /** \name  Methods
@@ -439,6 +452,10 @@ protected:
     int M_partitions;
     //! save msh file by partition
     bool M_partition_file;
+    //! shear
+    double M_shear;
+    //! recombine simplices into hypercubes
+    bool M_recombine;
 };
 
 ///! \typedef gmsh_type Gmsh
@@ -669,6 +686,7 @@ BOOST_PARAMETER_FUNCTION(
     desc->setNumberOfPartitions( partitions );
     desc->setPartitioner( partitioner );
     desc->setMshFileByPartition( partition_file );
+
     std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
 
 
@@ -739,6 +757,8 @@ BOOST_PARAMETER_FUNCTION(
     (optional
      (dim,            *(boost::is_integral<mpl::_>)      , 2)
      (order,          *(boost::is_integral<mpl::_>)      , 1)
+     (shear,          *(boost::is_arithmetic<mpl::_>)    , 0)
+     (recombine,      *(boost::is_integral<mpl::_>)    , 0)
      (h,              *(boost::is_arithmetic<mpl::_>), double(0.1) )
      (convex,         *(boost::is_convertible<mpl::_,std::string>), "Simplex")
      (addmidpoint,    *(boost::is_integral<mpl::_>), true )
@@ -756,6 +776,8 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setCharacteristicLength( h );
     gmsh_ptr->setAddMidPoint( addmidpoint );
     gmsh_ptr->usePhysicalNames( usenames );
+    gmsh_ptr->setShear( shear );
+    gmsh_ptr->setRecombine( recombine );
     gmsh_ptr->setX( std::make_pair( xmin, xmax ) );
     if ( dim >= 2 )
         gmsh_ptr->setY( std::make_pair( ymin, ymax ) );

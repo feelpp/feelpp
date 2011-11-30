@@ -106,6 +106,8 @@ BOOST_PARAMETER_NAME(filename)
 BOOST_PARAMETER_NAME(physical_are_elementary_regions)
 BOOST_PARAMETER_NAME(parametricnodes)
 BOOST_PARAMETER_NAME(force_rebuild)
+BOOST_PARAMETER_NAME(shear)
+BOOST_PARAMETER_NAME(recombine)
 // parameter for adapt
 BOOST_PARAMETER_NAME(model)
 BOOST_PARAMETER_NAME(geotracking)
