@@ -857,19 +857,29 @@ printTime( std::ostream& out, std::vector<ptree::ptree> const& stats, std::strin
         << std::setw(10) << std::right << "h";
     BOOST_FOREACH(auto v, stats.front().get_child(key))
         {
-            out << std::setw(15) << std::right << v.first;
+            int len1 = std::max(15,(int)v.first.size());
+            int len2 = std::max(7,(int)(std::string("(normalized)").size()));
+            out << std::setw(len1) << std::right << v.first
+                << std::setw(len2) << std::left << std::string("(normalized)");
         }
     out << "\n";
     int l=1;
-    for( auto it = stats.begin(), en =stats.end(); it!=en; ++it,++l )
+    std::map<std::string,double> t0;
+    for( auto it = stats.begin(), first=stats.begin(), en =stats.end(); it!=en; ++it,++l )
     {
         double h  = it->get<double>("h");
         out << std::right << std::setw(10) << l
             << std::right << std::setw(10) << std::fixed  << std::setprecision( 4 ) << h;
         BOOST_FOREACH(auto v, it->get_child(key))
         {
-            double u  = it->get<double>( key+"."+v.first );
-            out << std::right << std::setw(15) << std::scientific << std::setprecision( 2 ) << u;
+            std::string thekey = key+"."+v.first;
+            int len1 = std::max(15,(int)v.first.size());
+            int len2 = std::string("(normalized)").size()-2;
+            double u  = it->get<double>( thekey );
+            if ( l == 1 )
+                t0[thekey] = u;
+            out << std::right << std::setw(len1) << std::scientific << std::setprecision( 2 ) << u
+                << "(" << std::right << std::setw(len2) << std::scientific << std::setprecision( 2 ) << u/t0[thekey] << ")";
         }
         out << "\n";
     }
