@@ -270,33 +270,10 @@ Laplacian<Dim, BasisU, BasisP, Entity>::run()
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        if (  !this->vm().count( "extra-terms" ) )
-        {
-            form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(dnt(u))*id(v) );
-            M_stats.put("t.assembly.matrix.dirichlet1",subt.elapsed());subt.restart();
-            form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(dn(u))*idt(v) );
-            M_stats.put("t.assembly.matrix.dirichlet2",subt.elapsed());subt.restart();
-        }
-        else
-        {
-#if 0
-            ProfilerStart("/tmp/bfaces");
-            form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=idt(p)*(trans(N())*id(v)) );
-            ProfilerStop();
-            M_stats.put("t.assembly.matrix.dirichlet_pn*v",subt.elapsed());subt.restart();
-            form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(dnt(u))*id(v) );
-            M_stats.put("t.assembly.matrix.dirichlet_dnt(u)*v",subt.elapsed());subt.restart();
-            //form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(u) );
-            form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=id(p)*(trans(N())*idt(u)) );
-            //form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=(idt(u)(0)*Nx()+idt(u)(1)*Ny()+idt(u)(2)*Nz())*id(p), _verbose=true );
-            M_stats.put("t.assembly.matrix.dirichlet_pN*u",subt.elapsed());subt.restart();
-            form2( Xh, Xh, D )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(dn(u))*idt(u) );
-            M_stats.put("t.assembly.matrix.dirichlet_dn(v)*u",subt.elapsed());subt.restart();
-#endif
-        }
+        form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(dnt(u))*id(v)-trans(dn(u))*idt(v) );
+        M_stats.put("t.assembly.matrix.dirichlet1",subt.elapsed());subt.restart();
         form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*inner(idt(u),id(v))/hFace() );
-        //form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*(trans(idt(u))*N())*(trans(id(v))*N())*max(betacoeff,mu/hFace()) );
-        M_stats.put("t.assembly.matrix.dirichlet_u*u",subt.elapsed());subt.restart();
+        M_stats.put("t.assembly.matrix.dirichlet2",subt.elapsed());subt.restart();
         Log() << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
 
@@ -325,17 +302,17 @@ Laplacian<Dim, BasisU, BasisP, Entity>::run()
     Log() << "[laplacian] measure(Omega)=" << meas << " (should be equal to 4)\n";
     std::cout << "[laplacian] measure(Omega)=" << meas << " (should be equal to 4)\n";
 
-    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/meas;
-    Log() << "[laplacian] mean(p)=" << mean_p << "\n";
-    std::cout << "[laplacian] mean(p)=" << mean_p << "\n";
+    double mean_u = integrate( elements(mesh), idv(u) ).evaluate()( 0, 0 )/meas;
+    Log() << "[laplacian] mean(u)=" << mean_u << "\n";
+    std::cout << "[laplacian] mean(u)=" << mean_u << "\n";
 
     // get the zero mean pressure
-    p.add( - mean_p );
-    mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/meas;
-    Log() << "[laplacian] mean(p-mean(p))=" << mean_p << "\n";
-    std::cout << "[laplacian] mean(p-mean(p))=" << mean_p << "\n";
-    double mean_pexact = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/meas;
-    std::cout << "[laplacian] mean(pexact)=" << mean_pexact << "\n";
+    u.add( - mean_u );
+    mean_u = integrate( elements(mesh), idv(u) ).evaluate()( 0, 0 )/meas;
+    Log() << "[laplacian] mean(u-mean(u))=" << mean_u << "\n";
+    std::cout << "[laplacian] mean(u-mean(u))=" << mean_u << "\n";
+    double mean_uexact = integrate( elements(mesh), u_exact ).evaluate()( 0, 0 )/meas;
+    std::cout << "[laplacian] mean(uexact)=" << mean_uexact << "\n";
     size_type nnz = 0 ;
     auto nNz = D->graph()->nNz() ;
     for(auto iter = nNz.begin();iter!=nNz.end();++iter)
@@ -356,30 +333,9 @@ Laplacian<Dim, BasisU, BasisP, Entity>::run()
     std::cout << "||u_error||_1= " << u_error_H1 << "\n";
     M_stats.put("e.h1.u",u_error_H1);
 
-    double p_errorL2 = integrate( _range=elements(mesh), _expr=(idv(p)-(p_exact-mean_pexact))*(idv(p)-(p_exact-mean_pexact)) ).evaluate()( 0, 0 );
-    double p_exactL2 = integrate( _range=elements(mesh), _expr=(p_exact-mean_pexact)*(p_exact-mean_pexact) ).evaluate()( 0, 0 );
-    std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2/p_exactL2 ) << "\n";;
-    Log() << "||p_error||_2 = " << math::sqrt( p_errorL2/p_exactL2 ) << "\n";;
-    M_stats.put("e.l2.p",math::sqrt( p_errorL2/p_exactL2 ));
-    Log() << "[laplacian] solve for D done\n";
-
-    double mean_div_u = integrate( elements(mesh), divv(u) ).evaluate()( 0, 0 );
-    Log() << "[laplacian] mean_div(u)=" << mean_div_u << "\n";
-    std::cout << "[laplacian] mean_div(u)=" << mean_div_u << "\n";
-
-    double mean_div_uexact = integrate( elements(mesh), div_exact ).evaluate()( 0, 0 );
-    Log() << "[laplacian] mean_div(uexact)=" << mean_div_uexact << "\n";
-    std::cout << "[laplacian] mean_div(uexact)=" << mean_div_uexact << "\n";
-
-    double div_u_error_L2 = integrate( elements(mesh), divv(u)*divv(u) ).evaluate()( 0, 0 );
-    M_stats.put("e.l2.div_u",math::sqrt( div_u_error_L2 ));
-    Log() << "[laplacian] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
-    std::cout << "[laplacian] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
-
     v = vf::project( Xh->template functionSpace<0>(), elements( Xh->mesh() ), u_exact );
-    q = vf::project( Xh->template functionSpace<1>(), elements( Xh->mesh() ), p_exact );
 
-    this->exportResults( U, V );
+    this->exportResults( u, v );
 
 } // Laplacian::run
 
