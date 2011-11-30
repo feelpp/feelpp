@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -101,6 +101,7 @@ public:
         M_vertices( nRealDim, numVertices ),
         M_points( nRealDim, numPoints ),
         M_normals( numNormals ),
+        M_tangents( numNormals ),
         M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_meas( 0 )
@@ -144,6 +145,8 @@ public:
             }
             //std::cout << "P = " << M_points << "\n";
             make_normals();
+            if ( nDim == 2 )
+                make_tangents();
             computeBarycenters();
             computeMeasure();
         }
@@ -155,6 +158,7 @@ public:
         M_vertices( nRealDim, numVertices ),
         M_points( nRealDim, numPoints ),
         M_normals( numNormals ),
+        M_tangents( numNormals ),
         M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_meas(0)
@@ -193,6 +197,7 @@ public:
         M_vertices( r.M_vertices ),
         M_points( r.M_points ),
         M_normals( r.M_normals ),
+        M_tangents( r.M_tangents ),
         M_barycenter( r.M_barycenter ),
         M_barycenterfaces( r.M_barycenterfaces ),
         M_meas( r.M_meas )
@@ -216,6 +221,7 @@ public:
                 M_vertices = r.M_vertices;
                 M_points = r.M_points;
                 M_normals = r.M_normals;
+                M_tangents = r.M_tangents;
                 M_barycenter = r.M_barycenter;
                 M_barycenterfaces = r.M_barycenterfaces;
                 M_meas = r.M_meas;
@@ -312,6 +318,15 @@ public:
      * @return the n-th normal of the triangle
      */
     node_type const& normal( uint16_type __n ) const { return M_normals[__n]; }
+
+    /**
+     * get the n-th unit tangent
+     *
+     * @param __n the index of the normal
+     *
+     * @return the n-th normal of the triangle
+     */
+    node_type const& tangent( uint16_type __n ) const { return M_tangents[__n]; }
 
     /**
      * the first iterator of the normal vector
@@ -743,6 +758,23 @@ private:
         mapping_type mapping;
     };
 
+    void make_tangents()
+        {
+            uint16_type reindex1[][4] = { { 1, 0, 0, 0},
+                                          { 0, 1, 2, 0},
+                                          { 0, 1, 2, 3} };
+            for ( uint16_type __n = 0;__n < numNormals; ++__n )
+            {
+                const int ind_normal = reindex1[nDim-1][__n];
+                M_tangents[ind_normal].resize( nDim );
+            }
+            M_tangents[0][0]=-1/math::sqrt(2.);
+            M_tangents[0][1]= 1/math::sqrt(2.);
+            M_tangents[1][0]= 0;
+            M_tangents[1][1]=-1;
+            M_tangents[2][0]= 1;
+            M_tangents[2][1]= 0;
+        }
     void make_normals()
         {
             /*uint16_type reindex[][4] = { { 1, 0, 0, 0},
@@ -794,6 +826,7 @@ private:
     points_type M_points;
 
     normals_type M_normals;
+    normals_type M_tangents;
 
     node_type M_barycenter;
 
