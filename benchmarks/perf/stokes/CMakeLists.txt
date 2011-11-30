@@ -72,7 +72,8 @@ add_executable(feel_perf_stokes  ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_stokes_Hy
 #add_executable(feel_perf_stokes  ${taylor_hood}   bench.cpp)
 add_dependencies(feel_perf_stokes gentoto)
 #add_executable(feel_perf_stokes  ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_stokes_cr1p0.cpp  bench.cpp)
-target_link_libraries(feel_perf_stokes ${FEEL_LIBRARIES} /opt/local/lib/libprofiler.dylib)
+#target_link_libraries(feel_perf_stokes ${FEEL_LIBRARIES} /opt/local/lib/libprofiler.dylib)
+target_link_libraries(feel_perf_stokes ${FEEL_LIBRARIES})
 
 
 configure_file(stokes.cfg stokes.cfg)
