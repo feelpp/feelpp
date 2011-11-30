@@ -54,9 +54,9 @@ endforeach()
 endforeach()
 
 
-add_executable(feel_perf_laplacian  ${lagrange} bench.cpp)
-add_dependencies(feel_perf_laplacian genPerfLaplacian)
-target_link_libraries(feel_perf_laplacian ${FEEL_LIBRARIES})
+#add_executable(feel_perf_laplacian  ${lagrange} bench.cpp)
+#add_dependencies(feel_perf_laplacian genPerfLaplacian)
+#target_link_libraries(feel_perf_laplacian ${FEEL_LIBRARIES})
 
 
 configure_file(laplacian.cfg laplacian.cfg)
