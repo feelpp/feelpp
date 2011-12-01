@@ -1,5 +1,5 @@
 #! -*- mode: org -*-
-#+AUTHORS: C. Daversin, C. Prud'homme
+#+AUTHOR: C. Daversin and C. Prud'homme
 #+EMAIL:
 
 These are installation instructions for Feel research project compilation
@@ -52,4 +52,4 @@ is CMakeLists.txt.
  - CABINE: Airplane cabin
    - Feel++ research directory: cabine
    - svn repository :
-     svn+ssh://forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/cabine/trunk/trunk
+     svn+ssh://forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/cabine/trunk/
