@@ -1,23 +1,55 @@
-These are installation instructions for Feel APEE compilation
-(these instructions are usable for the other Feel research projects)
+#! -*- mode: org -*-
+#+AUTHORS: C. Daversin, C. Prud'homme
+#+EMAIL:
+
+These are installation instructions for Feel research project compilation
+(these instructions are usable for the all Feel research projects)
+
+In these explanations we use the projet APEE as an example. You should replace
+the project name and svn repository and feel++ research directory name where it
+applies
+
+* Checkout Steps
 
 1. 'cd' to the directory containing the sources of Feel
 
-2. Take the sources of the concerned project (here APEE) on the forge :
- - for users : 
-svn checkout svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life-apee/trunk/trunk <top level feel directory>/research/apee
+2. Take the sources of the concerned project (e.g. APEE) on the forge :
+ - for users :
+#+begin_SRC:
+svn checkout svn://forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/<projectname : life-apee>/trunk/trunk <top level feel directory>/research/apee
+#+end_SRC
 
- - for developpers (require forge login) : 
-svn checkout svn+ssh://<forge_login>@scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life-apee/trunk/trunk <top level feel directory>/research/apee
-
+ - for developpers (require forge login) :
+#+begin_SRC:
+svn checkout svn+ssh://<forge_login>@forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life-apee/trunk/trunk <top level feel directory>/research/apee
+#+end_SRC
 A new directory ./research/apee have normally been created, containing the source of APEE project.
 
-Remark : call this repertory "apee" is really important, according to CMakeLists.txt, which can't configure compilation of APEE project if you gave it an other name. For the other research projects, please check the associated name is CMakeLists.txt.
+**** Remark :
+call this directory "apee" is really important, according to
+CMakeLists.txt, which can't configure compilation of APEE project if you gave it
+an other name. For the other research projects, please check the associated name
+is CMakeLists.txt.
 
-3. 'cd' to the directory built for Feel++ compilation. (<top level feel directory> for in-source compilation, 
+3. 'cd' to the directory built for Feel++ compilation. (<top level feel directory> for in-source compilation,
 <top level feel directory>/opt for out-source compilation)
 
 4. Type cmake <top level feel directory> to configure compilation (APEE project will now been taken into account)
 
 5. Type make to compile the source (Sources for APEE will be compiled)
 
+
+* Research projects:
+
+ - APEE : A Posteriori Error Estimation
+   - Feel++ research directory : apee
+   - svn repository :
+     svn+ssh://forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life-apee/trunk/trunk
+ - FSI: Fluid Structure Interaction
+   - Feel++ research directory: fsi
+   - svn repository :
+     svn+ssh://forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life-fsi/trunk/life-fsi/trunk
+ - CABINE: Airplane cabin
+   - Feel++ research directory: cabine
+   - svn repository :
+     svn+ssh://forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/cabine/trunk/trunk
