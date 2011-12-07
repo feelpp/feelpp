@@ -55,19 +55,25 @@
 #include <feel/feelpoly/lagrange.hpp>
 //#include <feel/feelpoly/raviartthomas.hpp>
 
-
-
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <feel/feelvf/vf.hpp>
 
 #include "polyvisbase.hpp"
 
+using namespace Feel;
 namespace Feel
 {
 typedef parameter::parameters<
     parameter::required<tag::convex_type, boost::is_base_and_derived<ConvexBase,_> >,
     parameter::required<tag::basis_type, boost::is_class<_> >
     > polyvis_signature;
+
+//Generates one-element mesh for reference element (works independently from gmsh version)
+gmsh_ptrtype oneelement_geometry_ref(); 
+
+//Generates one-element mesh (!= reference) (works independently from gmsh version)
+// This element corresponds to apply an homothetic transformation (ratio=2, center=(0,0) )
+gmsh_ptrtype oneelement_geometry_real();
 
 
 /**
@@ -191,15 +197,23 @@ void
 Polyvis<A0,A1,A2,A3,A4>::run()
 {
     // First we create the mesh with one element
-    mesh_ptrtype oneelement_mesh = createGMSHMesh( _mesh=new mesh_type,
-                                                   _desc=domain( _name="one-elt",
-                                                                 _shape="simplex",
-                                                                 _dim=Dim,
-                                                                 _h=2.0,
-                                                                 _addmidpoint=false,
-                                                                 _xmin=this->vm()["xmin"].template as<double>(),
-                                                                 _ymin=this->vm()["ymin"].template as<double>(),
-                                                                 _zmin=this->vm()["zmin"].template as<double>() ) );
+    // mesh_ptrtype oneelement_mesh = createGMSHMesh( _mesh=new mesh_type,
+    //                                                _desc=domain( _name="one-elt",
+    //                                                              _shape="simplex",
+    //                                                              _dim=Dim,
+    //                                                              _h=2.0,
+    //                                                              _addmidpoint=false,
+    //                                                              _xmin=this->vm()["xmin"].template as<double>(),
+    //                                                              _ymin=this->vm()["ymin"].template as<double>(),
+    //                                                              _zmin=this->vm()["zmin"].template as<double>() ) );
+
+
+    mesh_ptrtype oneelement_mesh_ref = createGMSHMesh( _mesh=new mesh_type,
+                                                   _desc = oneelement_geometry_ref());
+
+    mesh_ptrtype oneelement_mesh_real = createGMSHMesh( _mesh=new mesh_type,
+                                                   _desc = oneelement_geometry_real());
+
     // then a fine mesh which we use to export the basis function to
     // visualize them
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -212,36 +226,90 @@ Polyvis<A0,A1,A2,A3,A4>::run()
                                                       _zmin=this->vm()["zmin"].template as<double>() ) );
     /** \endcode */
 
+    using namespace Feel::vf;
+
     /**
      * The function space and some associated elements(functions) are
      * then defined
      */
-    space_ptrtype Xh = space_type::New( oneelement_mesh );
-    std::cout << "Family = " << Xh->basis()->familyName() << "\n"
-              << "Dim    = " << Xh->basis()->nDim << "\n"
-              << "Order  = " << Xh->basis()->nOrder << "\n"
-              << "NDof   = " << Xh->nLocalDof() << "\n";
-    element_type U( Xh, "U" );
+    space_ptrtype Xh_ref = space_type::New( oneelement_mesh_ref ); // space associated with reference element
+    space_ptrtype Xh_real = space_type::New( oneelement_mesh_real ); // space associated with real element
+
+    std::cout << "Family = " << Xh_ref->basis()->familyName() << "\n"
+              << "Dim    = " << Xh_ref->basis()->nDim << "\n"
+              << "Order  = " << Xh_ref->basis()->nOrder << "\n"
+              << "NDof   = " << Xh_ref->nLocalDof() << "\n";
+
+    // U = shape function on current dof (on reference element)
+    element_type U( Xh_ref, "U" );
+
+    // To store the shape functions
+    // 0 : hypothenuse edge, 1 : vertical edge, 2 : horizontal edge
+    std::vector<element_type> u_vec(3);
 
     // set the mesh of the exporter, we use the fine mesh and the
     // exporter does all the interpolation
     exporter->step(0)->setMesh( mesh );
 
-    for( size_type i = 0;i < Xh->nLocalDof(); ++i )
+    for( size_type i = 0;i < Xh_ref->nLocalDof(); ++i )
         {
             U.zero();
             U( i ) = 1;
 #if 0 // for rtk
             using namespace vf;
-            std::cout << "flux " << i << " = " << integrate( boundaryfaces(oneelement_mesh),
+            std::cout << "flux " << i << " = " << integrate( boundaryfaces(oneelement_mesh_ref),
                                                              trans(idv(U))*N(), _Q<4>() ).evaluate()( 0, 0 ) << "\n";;
-            std::cout << "div " << i << " = " << integrate( elements(oneelement_mesh),
+            std::cout << "div " << i << " = " << integrate( elements(oneelement_mesh_ref),
                                                             divv(U), _Q<4>() ).evaluate()( 0, 0 ) << "\n";
 #endif
             std::ostringstream ostr;
-            ostr << Xh->basis()->familyName() << "-" << i;
+            ostr << Xh_ref->basis()->familyName() << "-" << i;
             exporter->step(0)->add( ostr.str(), U );
+            u_vec[i] = U;
         }
+
+    // Shape functions test (reference element)
+    auto alpha0_N0_ref = integrate( markedfaces(oneelement_mesh_ref, "hypo"), trans( vec(-1.0/sqrt(2.0), 1.0/sqrt(2.0)) )*idv(u_vec[0])).evaluate();
+    auto alpha1_N0_ref = integrate( markedfaces(oneelement_mesh_ref, "vert"), trans( vec(cst(0.0), cst(-1.0) ) )*idv(u_vec[0])).evaluate();
+    auto alpha2_N0_ref = integrate( markedfaces(oneelement_mesh_ref, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*idv(u_vec[0])).evaluate();
+
+    auto alpha0_N1_ref = integrate( markedfaces(oneelement_mesh_ref, "hypo"), trans( vec(-1.0/sqrt(2.0), 1.0/sqrt(2.0)) )*idv(u_vec[1])).evaluate();
+    auto alpha1_N1_ref = integrate( markedfaces(oneelement_mesh_ref, "vert"), trans( vec(cst(0.0), cst(-1.0) ) )*idv(u_vec[1])).evaluate();
+    auto alpha2_N1_ref = integrate( markedfaces(oneelement_mesh_ref, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*idv(u_vec[1])).evaluate();
+
+    auto alpha0_N2_ref = integrate( markedfaces(oneelement_mesh_ref, "hypo"), trans( vec(-1.0/sqrt(2.0), 1.0/sqrt(2.0)) )*idv(u_vec[2])).evaluate();
+    auto alpha1_N2_ref = integrate( markedfaces(oneelement_mesh_ref, "vert"), trans( vec(cst(0.0), cst(-1.0) ) )*idv(u_vec[2])).evaluate();
+    auto alpha2_N2_ref = integrate( markedfaces(oneelement_mesh_ref, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*idv(u_vec[2])).evaluate();
+
+    std::cout << " ********** Test for shape functions (on reference element hat{K}) ********** \n"
+              << "\n"
+              << " *** dof N_0 (associated with hypotenuse edge) *** \n"
+              << "alpha_0(N_0) = " << alpha0_N0_ref << "\n"
+              << "alpha_1(N_0) = " << alpha1_N0_ref << "\n"
+              << "alpha_2(N_0) = " << alpha2_N0_ref << "\n"
+              << "*********************************************** \n"
+              << std::endl;
+
+    std::cout << " *** dof N_1 (associated with vertical edge) *** \n"
+              << "alpha_0(N_1) = " << alpha0_N1_ref << "\n"
+              << "alpha_1(N_1) = " << alpha1_N1_ref << "\n"
+              << "alpha_2(N_1) = " << alpha2_N1_ref << "\n"
+              << "*********************************************** \n"
+              << std::endl;
+
+    std::cout << " *** dof N_2 (associated with horizontal edge) *** \n"
+              << "alpha_0(N_2) = " << alpha0_N2_ref << "\n"
+              << "alpha_1(N_2) = " << alpha1_N2_ref << "\n"
+              << "alpha_2(N_2) = " << alpha2_N2_ref << "\n"
+              << "*********************************************** \n"
+              << std::endl;
+
+    // Shape functions test (reference element)
+    auto alpha0_N0_real = integrate( markedfaces(oneelement_mesh_real, "hypo"), trans( vec(-1.0/sqrt(2.0), 1.0/sqrt(2.0)) )*trans(J())*idv(u_vec[0])).evaluate()(0,0);
+    auto alpha1_N0_real = integrate( markedfaces(oneelement_mesh_real, "vert"), trans( vec(cst(-1.0), cst(0.0) ) )*trans(J())*idv(u_vec[0])).evaluate()(0,0);
+    std::cout << "alpha0_N0 = " << alpha0_N0_real << std::endl;
+    std::cout << "alpha1_N0 = " << alpha1_N0_real << std::endl;
+
 
     exporter->save();
 
@@ -253,6 +321,89 @@ template<
     typename A3,
     typename A4>
 const uint16_type Polyvis<A0,A1,A2,A3,A4>::Dim;
+
+
+gmsh_ptrtype
+oneelement_geometry_ref()
+  {
+      std::ostringstream costr;
+      costr <<"Mesh.MshFileVersion = 2.2;\n"
+            <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
+            <<"Mesh.CharacteristicLengthFromPoints=1;\n"
+            <<"Mesh.ElementOrder=1;\n"
+            <<"Mesh.SecondOrderIncomplete = 0;\n"
+            <<"Mesh.Algorithm = 6;\n"
+            <<"Mesh.OptimizeNetgen=1;\n"
+            <<"// partitioning data\n"
+            <<"Mesh.Partitioner=1;\n"
+            <<"Mesh.NbPartitions=1;\n"
+            <<"Mesh.MshFilePartitioned=0;\n"
+            <<"h=2;\n"
+            <<"Point(1) = {-1,-1,0,h};\n"
+            <<"Point(2) = {1,-1,0,h};\n"
+            <<"Point(3) = {-1,1,0,h};\n"
+            <<"Line(1) = {1,2};\n"
+            <<"Line(2) = {2,3};\n"
+            <<"Line(3) = {3,1};\n"
+            <<"Transfinite Line{1} = 1;\n"
+            <<"Transfinite Line{2} = 1;\n"
+            <<"Transfinite Line{3} = 1;\n"
+            <<"Line Loop(4) = {3,1,2};\n"
+            <<"Plane Surface(5) = {4};\n"
+            <<"Physical Line(\"hor\") = {1};\n"
+            <<"Physical Line(\"hypo\") = {2};\n"
+            <<"Physical Line(\"vert\") = {3};\n"
+            <<"Physical Surface(9) = {5};\n";
+
+    std::ostringstream nameStr;
+    nameStr << "one-elt-ref";
+    gmsh_ptrtype gmshp( new Gmsh );
+    gmshp->setPrefix( nameStr.str() );
+    gmshp->setDescription( costr.str() );
+    return gmshp;
+  }
+
+
+gmsh_ptrtype
+oneelement_geometry_real()
+  {
+      std::ostringstream costr;
+      costr <<"Mesh.MshFileVersion = 2.2;\n"
+            <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
+            <<"Mesh.CharacteristicLengthFromPoints=1;\n"
+            <<"Mesh.ElementOrder=1;\n"
+            <<"Mesh.SecondOrderIncomplete = 0;\n"
+            <<"Mesh.Algorithm = 6;\n"
+            <<"Mesh.OptimizeNetgen=1;\n"
+            <<"// partitioning data\n"
+            <<"Mesh.Partitioner=1;\n"
+            <<"Mesh.NbPartitions=1;\n"
+            <<"Mesh.MshFilePartitioned=0;\n"
+            <<"h=2;\n"
+            <<"Point(1) = {-2,-2,0,h};\n"
+            <<"Point(2) = {2,-2,0,h};\n"
+            <<"Point(3) = {-2,2,0,h};\n"
+            <<"Line(1) = {1,2};\n"
+            <<"Line(2) = {2,3};\n"
+            <<"Line(3) = {3,1};\n"
+            <<"Transfinite Line{1} = 1;\n"
+            <<"Transfinite Line{2} = 1;\n"
+            <<"Transfinite Line{3} = 1;\n"
+            <<"Line Loop(4) = {3,1,2};\n"
+            <<"Plane Surface(5) = {4};\n"
+            <<"Physical Line(\"hor\") = {1};\n"
+            <<"Physical Line(\"hypo\") = {2};\n"
+            <<"Physical Line(\"vert\") = {3};\n"
+            <<"Physical Surface(9) = {5};\n";
+
+    std::ostringstream nameStr;
+    nameStr << "one-elt-real";
+    gmsh_ptrtype gmshp( new Gmsh );
+    gmshp->setPrefix( nameStr.str() );
+    gmshp->setDescription( costr.str() );
+    return gmshp;
+  }
+
 }
 
 #endif // Polyvis_HPP
