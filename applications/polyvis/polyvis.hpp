@@ -58,6 +58,9 @@
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <feel/feelvf/vf.hpp>
 
+/** include linear algebra backend */
+#include <feel/feelalg/backend.hpp>
+
 #include "polyvisbase.hpp"
 
 using namespace Feel;
@@ -99,7 +102,13 @@ public:
 
     typedef typename polyvis_signature::bind<A0,A1,A2,A3,A4>::type args;
 
+    //! numerical type is double
+    typedef double value_type;
 
+    //! linear algebra backend factory
+    typedef Backend<value_type> backend_type;
+    //! linear algebra backend factory shared_ptr<> type
+    typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
 
 
     //! geometry entities type composing the mesh, here Simplex in
@@ -115,8 +124,8 @@ public:
     //! Polynomial order \f$P_2\f$
     static const uint16_type Order = basis_type::nOrder;
 
-    //! numerical type is double
-    typedef double value_type;
+    // //! numerical type is double
+    // typedef double value_type;
 
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
@@ -170,6 +179,9 @@ public:
     void run();
 
 private:
+
+    //! linear algebra backend
+    backend_ptrtype M_backend;
 
     //! mesh characteristic size
     double meshSize;
@@ -243,10 +255,6 @@ Polyvis<A0,A1,A2,A3,A4>::run()
     // U = shape function on current dof (on reference element)
     element_type U( Xh_ref, "U" );
 
-    // To store the shape functions
-    // 0 : hypothenuse edge, 1 : vertical edge, 2 : horizontal edge
-    std::vector<element_type> u_vec(3);
-
     // set the mesh of the exporter, we use the fine mesh and the
     // exporter does all the interpolation
     exporter->step(0)->setMesh( mesh );
@@ -265,51 +273,7 @@ Polyvis<A0,A1,A2,A3,A4>::run()
             std::ostringstream ostr;
             ostr << Xh_ref->basis()->familyName() << "-" << i;
             exporter->step(0)->add( ostr.str(), U );
-            u_vec[i] = U;
         }
-
-    // Shape functions test (reference element)
-    auto alpha0_N0_ref = integrate( markedfaces(oneelement_mesh_ref, "hypo"), trans( vec(-1.0/sqrt(2.0), 1.0/sqrt(2.0)) )*idv(u_vec[0])).evaluate();
-    auto alpha1_N0_ref = integrate( markedfaces(oneelement_mesh_ref, "vert"), trans( vec(cst(0.0), cst(-1.0) ) )*idv(u_vec[0])).evaluate();
-    auto alpha2_N0_ref = integrate( markedfaces(oneelement_mesh_ref, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*idv(u_vec[0])).evaluate();
-
-    auto alpha0_N1_ref = integrate( markedfaces(oneelement_mesh_ref, "hypo"), trans( vec(-1.0/sqrt(2.0), 1.0/sqrt(2.0)) )*idv(u_vec[1])).evaluate();
-    auto alpha1_N1_ref = integrate( markedfaces(oneelement_mesh_ref, "vert"), trans( vec(cst(0.0), cst(-1.0) ) )*idv(u_vec[1])).evaluate();
-    auto alpha2_N1_ref = integrate( markedfaces(oneelement_mesh_ref, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*idv(u_vec[1])).evaluate();
-
-    auto alpha0_N2_ref = integrate( markedfaces(oneelement_mesh_ref, "hypo"), trans( vec(-1.0/sqrt(2.0), 1.0/sqrt(2.0)) )*idv(u_vec[2])).evaluate();
-    auto alpha1_N2_ref = integrate( markedfaces(oneelement_mesh_ref, "vert"), trans( vec(cst(0.0), cst(-1.0) ) )*idv(u_vec[2])).evaluate();
-    auto alpha2_N2_ref = integrate( markedfaces(oneelement_mesh_ref, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*idv(u_vec[2])).evaluate();
-
-    std::cout << " ********** Test for shape functions (on reference element hat{K}) ********** \n"
-              << "\n"
-              << " *** dof N_0 (associated with hypotenuse edge) *** \n"
-              << "alpha_0(N_0) = " << alpha0_N0_ref << "\n"
-              << "alpha_1(N_0) = " << alpha1_N0_ref << "\n"
-              << "alpha_2(N_0) = " << alpha2_N0_ref << "\n"
-              << "*********************************************** \n"
-              << std::endl;
-
-    std::cout << " *** dof N_1 (associated with vertical edge) *** \n"
-              << "alpha_0(N_1) = " << alpha0_N1_ref << "\n"
-              << "alpha_1(N_1) = " << alpha1_N1_ref << "\n"
-              << "alpha_2(N_1) = " << alpha2_N1_ref << "\n"
-              << "*********************************************** \n"
-              << std::endl;
-
-    std::cout << " *** dof N_2 (associated with horizontal edge) *** \n"
-              << "alpha_0(N_2) = " << alpha0_N2_ref << "\n"
-              << "alpha_1(N_2) = " << alpha1_N2_ref << "\n"
-              << "alpha_2(N_2) = " << alpha2_N2_ref << "\n"
-              << "*********************************************** \n"
-              << std::endl;
-
-    // Shape functions test (reference element)
-    auto alpha0_N0_real = integrate( markedfaces(oneelement_mesh_real, "hypo"), trans( vec(-1.0/sqrt(2.0), 1.0/sqrt(2.0)) )*trans(J())*idv(u_vec[0])).evaluate()(0,0);
-    auto alpha1_N0_real = integrate( markedfaces(oneelement_mesh_real, "vert"), trans( vec(cst(-1.0), cst(0.0) ) )*trans(J())*idv(u_vec[0])).evaluate()(0,0);
-    std::cout << "alpha0_N0 = " << alpha0_N0_real << std::endl;
-    std::cout << "alpha1_N0 = " << alpha1_N0_real << std::endl;
-
 
     exporter->save();
 
