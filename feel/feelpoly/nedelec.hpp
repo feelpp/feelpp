@@ -419,7 +419,8 @@ private:
 template<uint16_type N,
          uint16_type O,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
+         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+         uint16_type TheTAG = 0 >
 class Nedelec
     :
         public FiniteElement<NedelecPolynomialSet<N, O, T, Convex>,
@@ -443,6 +444,7 @@ public:
     static const bool isTransformationEquivalent = true;
     static const bool isContinuous = true;
     typedef Continuous continuity_type;
+    static const uint16_type TAG = TheTAG;
 
     //static const polynomial_transformation_type transformation = POLYNOMIAL_CONTEXT_NEEDS_1ST_PIOLA_TRANSFORMATION;
     typedef typename super::value_type value_type;
@@ -691,21 +693,25 @@ private:
 template<uint16_type N,
          uint16_type O,
          typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex>
-const uint16_type Nedelec<N,O,T,Convex>::nDim;
+         template<uint16_type, uint16_type, uint16_type> class Convex,
+         uint16_type TheTAG >
+const uint16_type Nedelec<N,O,T,Convex,TheTAG>::nDim;
 template<uint16_type N,
          uint16_type O,
          typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex>
-const uint16_type Nedelec<N,O,T,Convex>::nOrder;
+         template<uint16_type, uint16_type, uint16_type> class Convex,
+         uint16_type TheTAG >
+const uint16_type Nedelec<N,O,T,Convex,TheTAG>::nOrder;
 template<uint16_type N,
          uint16_type O,
          typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex>
-const uint16_type Nedelec<N,O,T,Convex>::nLocalDof;
+         template<uint16_type, uint16_type, uint16_type> class Convex,
+         uint16_type TheTAG >
+const uint16_type Nedelec<N,O,T,Convex,TheTAG>::nLocalDof;
 
 } // fem
-template<uint16_type Order>
+template<uint16_type Order,
+         uint16_type TheTAG=0>
 class Nedelec
 {
 public:
@@ -716,12 +722,20 @@ public:
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<fem::Nedelec<N,Order,T,Simplex> >,
-                                  mpl::identity<fem::Nedelec<N,Order,T,Hypercube> > >::type::type result_type;
+                                  mpl::identity<fem::Nedelec<N,Order,T,Simplex,TheTAG> >,
+                                  mpl::identity<fem::Nedelec<N,Order,T,Hypercube,TheTAG> > >::type::type result_type;
         typedef result_type type;
     };
 
+    template<uint16_type TheNewTAG>
+    struct ChangeTag
+    {
+        typedef Nedelec<Order,TheNewTAG> type;
+    };
+
     typedef Lagrange<Order,Scalar> component_basis_type;
+
+    static const uint16_type TAG = TheTAG;
 };
 
 } // Feel
