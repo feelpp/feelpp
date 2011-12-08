@@ -85,9 +85,9 @@ public:
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_mixed_type;
     typedef FunctionSpace<mesh_type, basis_mixed_type> space_mixed_type;
     BOOST_MPL_ASSERT( ( boost::is_same< space_mixed_type::bases_list, basis_mixed_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<0> >::type, basis_u_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<1> >::type, basis_p_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<2> >::type, basis_l_type> ) );
+    BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<0> >::type, basis_u_type::ChangeTag<0>::type> ) );
+    BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<1> >::type, basis_p_type::ChangeTag<1>::type> ) );
+    BOOST_MPL_ASSERT( ( boost::is_same< mpl::at< space_mixed_type::bases_list,mpl::int_<2> >::type, basis_l_type::ChangeTag<2>::type> ) );
     typedef boost::shared_ptr<space_mixed_type> space_mixed_ptrtype;
     // functions
     typedef space_mixed_type::element_type element_mixed_type;
