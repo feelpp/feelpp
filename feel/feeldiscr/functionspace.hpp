@@ -708,7 +708,7 @@ public:
     typedef typename parameter::binding<args, tag::mesh_type>::type meshes_list;
     typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
     typedef typename parameter::binding<args, tag::periodicity_type, NoPeriodicity>::type periodicity_type;
-    typedef typename parameter::binding<args, tag::bases_list, bases<Lagrange<1,Scalar> > >::type bases_list;
+    typedef typename parameter::binding<args, tag::bases_list, detail::bases<Lagrange<1,Scalar> > >::type bases_list;
 
     BOOST_MPL_ASSERT_NOT( ( boost::is_same<mpl::at<bases_list,mpl::int_<0> >, mpl::void_> ) );
 
@@ -717,13 +717,13 @@ private:
     template<typename MeshType,typename BasisType>
     struct ChangeMesh
     {
-        typedef boost::shared_ptr<FunctionSpace<MeshType,bases<BasisType>,value_type, periodicity_type> > type;
+        typedef boost::shared_ptr<FunctionSpace<MeshType,detail::bases<BasisType>,value_type, periodicity_type> > type;
     };
     template<typename BasisType>
     struct ChangeBasis
     {
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,bases<BasisType>,value_type, periodicity_type> > >,
+                                  mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<BasisType>,value_type, periodicity_type> > >,
                                   mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,BasisType>, mpl::back_inserter<fusion::vector<> > > > >::type::type type;
     };
     typedef typename mpl::transform<bases_list, ChangeBasis<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type functionspace_vector_type;
@@ -733,7 +733,7 @@ private:
     {
         typedef typename BasisType::component_basis_type component_basis_type;
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,bases<component_basis_type>,value_type, periodicity_type> > >,
+                                  mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<component_basis_type>,value_type, periodicity_type> > >,
                                   mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,component_basis_type>, mpl::back_inserter<fusion::vector<> > > > >::type::type type;
     };
 
@@ -946,7 +946,7 @@ public:
         struct ChangeElement
         {
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
-            typedef FunctionSpace<mesh_type,bases<BasisType>,value_type,periodicity_type> fs_type;
+            typedef FunctionSpace<mesh_type,detail::bases<BasisType>,value_type,periodicity_type> fs_type;
             typedef typename fs_type::template Element<value_type, typename VectorUblas<T>::range::type > element_type;
             typedef element_type type;
         };
