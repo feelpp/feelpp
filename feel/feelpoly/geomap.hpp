@@ -77,7 +77,8 @@ struct GeomapInverse
 template<uint16_type O,
          template<uint16_type Dim> class PolySetType,
          typename ContinuityType,
-         template<class, uint16_type, class> class Pts> class Lagrange;
+         template<class, uint16_type, class> class Pts,
+         uint16_type TheTag > class Lagrange;
 
 
 /**
@@ -95,15 +96,15 @@ template<uint16_type Dim,
          typename T = double,
          template<uint16_type, uint16_type, uint16_type> class Entity = Simplex,
          template<uint16_type, template<uint16_type RealDim> class PolySetType, typename ContinuityType,
-                  template<class, uint16_type, class> class Pts> class PP = Lagrange>
+                  template<class, uint16_type, class> class Pts, uint16_type > class PP = Lagrange>
 class GeoMap
     :
-    public PP<Order,Scalar, Continuous,PointSetEquiSpaced>::template apply<Dim,RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type,
+        public PP<Order,Scalar, Continuous,PointSetEquiSpaced, 0>::template apply<Dim,RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type,
     public boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
 //public PP<Order,Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
 {
     //typedef typename PP<Order, Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
-    typedef typename PP<Order, Scalar, Continuous, PointSetEquiSpaced>::template apply<Dim, RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type super;
+    typedef typename PP<Order, Scalar, Continuous, PointSetEquiSpaced, 0>::template apply<Dim, RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type super;
 
     static const uint16_type nRealDimCheck2d = mpl::if_< mpl::less_equal<mpl::int_<2>,mpl::int_<RealDim> >,
                                                          mpl::int_<RealDim>,

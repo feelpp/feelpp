@@ -202,7 +202,8 @@ template<uint16_type N,
          uint16_type RealDim,
          template<uint16_type Dim> class PolySetType,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
+         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+         uint16_type TheTAG=0 >
 class CrouzeixRaviart
     :
     public FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, Convex>,
@@ -229,6 +230,7 @@ public:
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
     typedef Continuous continuity_type;
+    static const uint16_type TAG = TheTAG;
 
     /**
      * Polynomial Set type: scalar or vectorial
@@ -333,20 +335,23 @@ template<uint16_type N,
          uint16_type RealDim,
          template<uint16_type Dim> class PolySetType,
          typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex>
-const uint16_type CrouzeixRaviart<N,RealDim,PolySetType,T,Convex>::nDim;
+         template<uint16_type, uint16_type, uint16_type> class Convex,
+         uint16_type TheTAG >
+const uint16_type CrouzeixRaviart<N,RealDim,PolySetType,T,Convex,TheTAG>::nDim;
 template<uint16_type N,
          uint16_type RealDim,
          template<uint16_type Dim> class PolySetType,
          typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex>
-const uint16_type CrouzeixRaviart<N,RealDim,PolySetType,T,Convex>::nOrder;
+         template<uint16_type, uint16_type, uint16_type> class Convex,
+         uint16_type TheTAG >
+const uint16_type CrouzeixRaviart<N,RealDim,PolySetType,T,Convex,TheTAG>::nOrder;
 
 } // fem
 
 template<uint16_type Order,
          template<uint16_type Dim> class PolySetType = Scalar,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         uint16_type TheTAG=0 >
 class CrouzeixRaviart
 {
 public:
@@ -357,19 +362,29 @@ public:
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Simplex> >,
-                                  mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Hypercube> > >::type::type result_type;
+                                  mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Simplex,TheTAG> >,
+                                  mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Hypercube,TheTAG> > >::type::type result_type;
         typedef result_type type;
     };
 
+    template<uint16_type TheNewTAG>
+    struct ChangeTag
+    {
+        typedef CrouzeixRaviart<Order,PolySetType,Pts,TheNewTAG> type;
+    };
+
     typedef CrouzeixRaviart<Order,Scalar,Pts> component_basis_type;
+
     static const uint16_type nOrder =  Order;
+    static const uint16_type TAG = TheTAG;
+
 };
 
 template<uint16_type Order,
          template<uint16_type Dim> class PolySetType,
-         template<class, uint16_type, class> class Pts>
-const uint16_type CrouzeixRaviart<Order,PolySetType,Pts>::nOrder;
+         template<class, uint16_type, class> class Pts,
+         uint16_type TheTAG >
+const uint16_type CrouzeixRaviart<Order,PolySetType,Pts,TheTAG>::nOrder;
 
 
 } // Feel
