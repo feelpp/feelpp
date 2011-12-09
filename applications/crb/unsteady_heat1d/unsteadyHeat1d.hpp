@@ -408,7 +408,7 @@ public:
     double timeInitial() { return M_bdf->timeInitial(); }
     int timeOrder() { return M_bdf->timeOrder();  }
     bool isSteady() {return M_is_steady;}
-    double initializationField(){return 0;}
+    void initializationField( element_ptrtype& initial_field);
 
     /**
      * solve for a given parameter \p mu
@@ -590,8 +590,11 @@ UnsteadyHeat1D::init()
     A_du = backend->newMatrix( Xh, Xh );
     F_du = backend->newVector( Xh );
 
+
     using namespace Feel::vf;
     static const int N = 2;
+
+
     Feel::ParameterSpace<4>::Element mu_min( M_Dmu );
     mu_min << 0.2, 0.2, 0.01, 0.1;
     M_Dmu->setMin( mu_min );
@@ -603,18 +606,17 @@ UnsteadyHeat1D::init()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    M = backend->newMatrix( Xh, Xh );
+    /*    M = backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, M, _init=true ) =
         integrate( elements(mesh), id(u)*idt(v) );
     M->close();
+*/
 
-
-    /*
     M = backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, M, _init=true ) =
         integrate( elements(mesh), id(u)*idt(v) + grad(v)*trans(gradt(u)) );
     M->close();
-    */
+
 
     Log() << "Number of dof " << Xh->nLocalDof() << "\n";
 
@@ -632,6 +634,13 @@ UnsteadyHeat1D::computeNumberOfSnapshots()
 {
     M_Nsnap = M_bdf->timeFinal()/M_bdf->timeStep();
     return  M_Nsnap;
+}
+
+
+void
+UnsteadyHeat1D::initializationField( element_ptrtype& initial_field)
+{
+    initial_field->zero();
 }
 
 
