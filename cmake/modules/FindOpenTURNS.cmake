@@ -23,9 +23,6 @@
 include (CheckIncludeFileCXX)
 include (FindPackageHandleStandardArgs)
 
-# check dependencies
-find_package(LibXml2 2.6.27)
-find_package(PythonLibs 2.5)
 
 # test if variables are not already in cache
 if (NOT (OpenTURNS_INCLUDE_DIR
