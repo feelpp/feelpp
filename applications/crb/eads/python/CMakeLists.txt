@@ -27,13 +27,14 @@ include_directories(
   )
 
 #files(GLOB pyfiles "*.py")
-opus_add_python_module( opuseadsmfem opuseadsmfem_wrapper.cpp LINK_LIBRARIES feel++_opus_models SCRIPTS opuseadsmfemtest.py )
-opus_add_python_module( opuseadspfem opuseadspfem_wrapper.cpp LINK_LIBRARIES feel++_opus_models SCRIPTS opuseadspfemtest.py )
-#opus_add_python_module( opuseadscrb opuseadscrb_wrapper.cpp LINK_LIBRARIES feel++_opus_models SCRIPTS opuseadscrbtest.py )
-opus_add_python_module( opuseadscrb opuseadscrb_wrapper.cpp LINK_LIBRARIES feel++_opus_models  )
+if ( FEELPP_ENABLE_OPENTURNS )
+ opus_add_python_module( opuseadsmfem opuseadsmfem_wrapper.cpp LINK_LIBRARIES feel++_opus_models SCRIPTS opuseadsmfemtest.py )
+ opus_add_python_module( opuseadspfem opuseadspfem_wrapper.cpp LINK_LIBRARIES feel++_opus_models SCRIPTS opuseadspfemtest.py )
+ #opus_add_python_module( opuseadscrb opuseadscrb_wrapper.cpp LINK_LIBRARIES feel++_opus_models SCRIPTS opuseadscrbtest.py )
+ opus_add_python_module( opuseadscrb opuseadscrb_wrapper.cpp LINK_LIBRARIES feel++_opus_models  )
 
-configure_file(ct_thermique.py ct_thermique.py)
+ configure_file(ct_thermique.py ct_thermique.py)
 
-FILE(GLOB pyprogs "${CMAKE_CURRENT_SOURCE_DIR}/*.py" )
-install(FILES ${pyprogs} DESTINATION share/doc/feel++-opus/eads/python COMPONENT Bin)
-
+ FILE(GLOB pyprogs "${CMAKE_CURRENT_SOURCE_DIR}/*.py" )
+ install(FILES ${pyprogs} DESTINATION share/doc/feel++-opus/eads/python COMPONENT Bin)
+endif()
