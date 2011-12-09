@@ -22,6 +22,13 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 FIND_PACKAGE(EXPAT)
+FIND_PACKAGE(PythonLibs)
+if ( PYTHONLIBS_FOUND )
+   message(STATUS "PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
+   include_directories(${PYTHON_INCLUDE_DIRS}) 
+   SET(FEEL_LIBRARIES ${PYTHON_LIBRARIES} ${FEEL_LIBRARIES})
+   SET(FEEL_ENABLED_OPTIONS "${FEEL_ENABLED_OPTIONS} Python" )
+endif()
 
 FIND_PATH(TRILINOS_INCLUDE_DIR
     Teuchos_Utils.hpp
