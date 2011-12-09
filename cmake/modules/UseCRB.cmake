@@ -23,7 +23,7 @@ macro(opus_add_octave_module)
   set_target_properties( ${octname} PROPERTIES PREFIX "" )
   set_target_properties( ${octname} PROPERTIES SUFFIX "" )
   set_property(TARGET ${octname} PROPERTY LABELS opus)
-  INSTALL(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${octname} DESTINATION ${FEELPP_OPUS_OCT_DIR})
+  INSTALL(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${octname} DESTINATION ${FEELPP_OCT_DIR})
 
   add_dependencies(opus ${octname})
   if ( OCTAVE_MODULE_SCRIPTS )
@@ -33,7 +33,7 @@ macro(opus_add_octave_module)
       #set_property(TEST ${script} PROPERTY LABELS opus)
 
     endforeach()
-    INSTALL(FILES ${OCTAVE_MODULE_SCRIPTS}  DESTINATION ${FEELPP_OPUS_M_DIR})
+    INSTALL(FILES ${OCTAVE_MODULE_SCRIPTS}  DESTINATION ${FEELPP_M_DIR})
 
   endif()
   if ( OCTAVE_MODULE_CFG )
@@ -178,8 +178,8 @@ int main( int argc, char** argv )
     set(xml "${OPUS_MODEL_SHORT_NAME}${wrapper}.xml")
     set(OPUS_MODEL_WRAPPER_NAME "opus${OPUS_MODEL_SHORT_NAME}${wrapper}")
     set(OPUS_MODEL_WRAPPER_TYPE "\"${wrapper}\"")
-    configure_file(${FEELPP_OPUS_SOURCE_DIR}/feel/feelmodels/templates/python_wrapper.cpp ${pycpp})
-    configure_file(${FEELPP_OPUS_SOURCE_DIR}/feel/feelmodels/templates/octave_wrapper.cpp ${octcpp})
+    configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/python_wrapper.cpp ${pycpp})
+    configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/octave_wrapper.cpp ${octcpp})
     configure_file(${OPUS_MODEL_SHORT_NAME}.xml.in ${xml})
 
     opus_add_python_module(opus${OPUS_MODEL_SHORT_NAME}${wrapper} ${pycpp}
