@@ -35,7 +35,7 @@ opus_add_octave_module( opuseadspfem opuseadspfem.cpp
   SCRIPTS opuseadspfemtest.m )
 
 
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/opuseadspfemtest.m ${CMAKE_CURRENT_BINARY_DIR}/opuseadsmfemtest.m DESTINATION ${FEELPP_OPUS_M_DIR})
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/opuseadspfemtest.m ${CMAKE_CURRENT_BINARY_DIR}/opuseadsmfemtest.m DESTINATION ${FEELPP_M_DIR})
 
 # add_custom_target(  opuseadsmfemoct DEPENDS  opuseadsmfem.oct )
 # add_custom_command(
