@@ -168,7 +168,8 @@ public:
      */
     void shape_functions();
     gmsh_ptrtype oneelement_geometry_ref();
-    gmsh_ptrtype oneelement_geometry_real();
+    gmsh_ptrtype oneelement_geometry_real_1();
+    gmsh_ptrtype oneelement_geometry_real_2();
 
 private:
     //! linear algebra backend
@@ -190,8 +191,11 @@ Test_Hcurl::shape_functions()
     mesh_ptrtype oneelement_mesh_ref = createGMSHMesh( _mesh=new mesh_type,
                                                        _desc = oneelement_geometry_ref());
 
-    mesh_ptrtype oneelement_mesh_real = createGMSHMesh( _mesh=new mesh_type,
-                                                        _desc = oneelement_geometry_real());
+    mesh_ptrtype oneelement_mesh_real_1 = createGMSHMesh( _mesh=new mesh_type,
+                                                        _desc = oneelement_geometry_real_1());
+
+    mesh_ptrtype oneelement_mesh_real_2 = createGMSHMesh( _mesh=new mesh_type,
+                                                        _desc = oneelement_geometry_real_2());
 
     // then a fine mesh which we use to export the basis function to
     // visualize them
@@ -205,7 +209,8 @@ Test_Hcurl::shape_functions()
                                                       _zmin=this->vm()["zmin"].as<double>() ) );
 
     space_ptrtype Xh_ref = space_type::New( oneelement_mesh_ref ); // space associated with reference element
-    space_ptrtype Xh_real = space_type::New( oneelement_mesh_real ); // space associated with real element
+    space_ptrtype Xh_real = space_type::New( oneelement_mesh_real_1 ); // space associated with real element 1 (homothetic transfo)
+    space_ptrtype Xh_real2 = space_type::New( oneelement_mesh_real_2 ); // space associated with real element 2 (rotation)
 
     std::cout << "Family = " << Xh_ref->basis()->familyName() << "\n"
               << "Dim    = " << Xh_ref->basis()->nDim << "\n"
@@ -444,55 +449,55 @@ Test_Hcurl::shape_functions()
     std::cout << "Components of the integral in real element 1 (homothetic transformation) (idv keyword) \n" << std::endl;
 
     auto alpha0_N0_real_print = 
-        integrate( markedfaces(oneelement_mesh_real, "hypo"), 
+        integrate( markedfaces(oneelement_mesh_real_1, "hypo"), 
                    trans(vec(cst(-1.0/sqrt(2.0)), cst(1.0/sqrt(2.0))))*print(trans(J()), "jacobian transposed")*
                    print( idv(u_vec[0]), "N0 middle hypo"), _Q<0>()).evaluate();
     std::cout << "\n" << std::endl;
 
     auto alpha1_N0_real_print = 
-        integrate( markedfaces(oneelement_mesh_real, "vert"), 
+        integrate( markedfaces(oneelement_mesh_real_1, "vert"), 
                    trans( vec(cst(0.0), cst(-1.0) ) )*print(trans(J()), "jacobian transposed")*
                    print( idv(u_vec[0]), "N0 middle vert"), _Q<0>()).evaluate();
     std::cout << "\n" << std::endl;
 
     auto alpha2_N0_real_print =
-        integrate( markedfaces(oneelement_mesh_real, "hor"),
+        integrate( markedfaces(oneelement_mesh_real_1, "hor"),
                    trans( vec(cst(1.0), cst(0.0) ) )*print(trans(J()), "jacobian transposed")*
                    print(idv(u_vec[0]), "N0 middle hor"), _Q<0>()).evaluate();
     std::cout << "\n" << std::endl;
 
     auto alpha0_N1_real_print =
-        integrate( markedfaces(oneelement_mesh_real, "hypo"),
+        integrate( markedfaces(oneelement_mesh_real_1, "hypo"),
                    trans(vec(cst(-1.0/sqrt(2.0)), cst(1.0/sqrt(2.0))))*print(trans(J()), "jacobian transposed")*
                    print(idv(u_vec[1]),"N1 middle hypo"), _Q<0>()).evaluate();
    std::cout << "\n" << std::endl;
 
     auto alpha1_N1_real_print =
-        integrate( markedfaces(oneelement_mesh_real, "vert"),
+        integrate( markedfaces(oneelement_mesh_real_1, "vert"),
                    trans( vec(cst(0.0), cst(-1.0) ) )*print(trans(J()), "jacobian transposed")*
                    print(idv(u_vec[1]),"N1 middle vert"), _Q<0>()).evaluate();
     std::cout << "\n" << std::endl;
 
     auto alpha2_N1_real_print =
-        integrate( markedfaces(oneelement_mesh_real, "hor"),
+        integrate( markedfaces(oneelement_mesh_real_1, "hor"),
                    trans( vec(cst(1.0), cst(0.0) ) )*print(trans(J()), "jacobian transposed")*
                    print(idv(u_vec[1]),"N1 middle hor"), _Q<0>()).evaluate();
     std::cout << "\n" << std::endl;
 
     auto alpha0_N2_real_print =
-        integrate( markedfaces(oneelement_mesh_real, "hypo"),
+        integrate( markedfaces(oneelement_mesh_real_1, "hypo"),
                    trans(vec(cst(-1.0/sqrt(2.0)), cst(1.0/sqrt(2.0))))*print(trans(J()), "jacobian transposed")*
                    print(idv(u_vec[2]),"N2 middle hypo"), _Q<0>()).evaluate();
     std::cout << "\n" << std::endl;
 
     auto alpha1_N2_real_print =
-        integrate( markedfaces(oneelement_mesh_real, "vert"),
+        integrate( markedfaces(oneelement_mesh_real_1, "vert"),
                    trans( vec(cst(0.0), cst(-1.0) ) )*print(trans(J()), "jacobian transposed")*
                    print(idv(u_vec[2]),"N2 middle vert"), _Q<0>()).evaluate();
     std::cout << "\n" << std::endl;
 
     auto alpha2_N2_real_print =
-        integrate( markedfaces(oneelement_mesh_real, "hor"),
+        integrate( markedfaces(oneelement_mesh_real_1, "hor"),
                    trans( vec(cst(1.0), cst(0.0) ) )*print(trans(J()), "jacobian transposed")*
                    print(idv(u_vec[2]),"N2 middle hor"), _Q<0>()).evaluate();
     std::cout << "\n" << std::endl;
@@ -503,19 +508,19 @@ Test_Hcurl::shape_functions()
 
     //// *********** Check alpha_i(N_j) evaluations  on real element 1 (homothetic transformation) (with idv keyword) ************ ////
     auto alpha0_N0_real_idv = 
-        integrate( markedfaces(oneelement_mesh_real, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(1.0/sqrt(2.0))))*trans(J())*idv(u_vec[0])).evaluate();
-    auto alpha1_N0_real_idv = integrate( markedfaces(oneelement_mesh_real, "vert"), trans( vec(cst(0.0), cst(-1.0) ) )*trans(J())*idv(u_vec[0])).evaluate();
-    auto alpha2_N0_real_idv = integrate( markedfaces(oneelement_mesh_real, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*trans(J())*idv(u_vec[0])).evaluate();
+        integrate( markedfaces(oneelement_mesh_real_1, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(1.0/sqrt(2.0))))*trans(J())*idv(u_vec[0])).evaluate();
+    auto alpha1_N0_real_idv = integrate( markedfaces(oneelement_mesh_real_1, "vert"), trans( vec(cst(0.0), cst(-1.0) ) )*trans(J())*idv(u_vec[0])).evaluate();
+    auto alpha2_N0_real_idv = integrate( markedfaces(oneelement_mesh_real_1, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*trans(J())*idv(u_vec[0])).evaluate();
 
     auto alpha0_N1_real_idv = 
-        integrate( markedfaces(oneelement_mesh_real, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(1.0/sqrt(2.0))))*trans(J())*idv(u_vec[1])).evaluate();
-    auto alpha1_N1_real_idv = integrate( markedfaces(oneelement_mesh_real, "vert"), trans( vec(cst(0.0), cst(-1.0) ) )*trans(J())*idv(u_vec[1])).evaluate();
-    auto alpha2_N1_real_idv = integrate( markedfaces(oneelement_mesh_real, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*trans(J())*idv(u_vec[1])).evaluate();
+        integrate( markedfaces(oneelement_mesh_real_1, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(1.0/sqrt(2.0))))*trans(J())*idv(u_vec[1])).evaluate();
+    auto alpha1_N1_real_idv = integrate( markedfaces(oneelement_mesh_real_1, "vert"), trans( vec(cst(0.0), cst(-1.0) ) )*trans(J())*idv(u_vec[1])).evaluate();
+    auto alpha2_N1_real_idv = integrate( markedfaces(oneelement_mesh_real_1, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*trans(J())*idv(u_vec[1])).evaluate();
 
     auto alpha0_N2_real_idv = 
-        integrate( markedfaces(oneelement_mesh_real, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(1.0/sqrt(2.0))))*trans(J())*idv(u_vec[2])).evaluate();
-    auto alpha1_N2_real_idv = integrate( markedfaces(oneelement_mesh_real, "vert"), trans( vec(cst(0.0), cst(-1.0) ) )*trans(J())*idv(u_vec[2])).evaluate();
-    auto alpha2_N2_real_idv = integrate( markedfaces(oneelement_mesh_real, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*trans(J())*idv(u_vec[2])).evaluate();
+        integrate( markedfaces(oneelement_mesh_real_1, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(1.0/sqrt(2.0))))*trans(J())*idv(u_vec[2])).evaluate();
+    auto alpha1_N2_real_idv = integrate( markedfaces(oneelement_mesh_real_1, "vert"), trans( vec(cst(0.0), cst(-1.0) ) )*trans(J())*idv(u_vec[2])).evaluate();
+    auto alpha2_N2_real_idv = integrate( markedfaces(oneelement_mesh_real_1, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*trans(J())*idv(u_vec[2])).evaluate();
 
     std::cout << " ********** Values of alpha_i (N_j ) = delta_{i,j} (real element 1) ********** \n"
               << "\n"
@@ -550,23 +555,23 @@ Test_Hcurl::shape_functions()
 
         //shape function alpha0
     auto F_real_0_print = M_backend->newVector( Xh_real );
-    form1( _test = Xh_ref, _vector = F_real_0_print, _init=true) =
-        integrate( markedfaces(oneelement_mesh_real, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(1.0/sqrt(2.0))))*
+    form1( _test = Xh_real, _vector = F_real_0_print, _init=true) =
+        integrate( markedfaces(oneelement_mesh_real_1, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(1.0/sqrt(2.0))))*
                    trans(J())*print(id(V_ref), "Ni middle hypo"), _Q<0>() );
     F_real_0_print->close();
     std::cout << "\n" << std::endl;
 
     //shape function alpha1
     auto F_real_1_print = M_backend->newVector( Xh_real );
-    form1( _test = Xh_ref, _vector = F_real_1_print, _init=true) =
-        integrate( markedfaces(oneelement_mesh_real, "vert"), trans(vec(cst(0.0), cst(-1.0)))*trans(J())*print( id(V_ref), "Ni middle vert"), _Q<0>() );
+    form1( _test = Xh_real, _vector = F_real_1_print, _init=true) =
+        integrate( markedfaces(oneelement_mesh_real_1, "vert"), trans(vec(cst(0.0), cst(-1.0)))*trans(J())*print( id(V_ref), "Ni middle vert"), _Q<0>() );
     F_real_1_print->close();
    std::cout << "\n" << std::endl;
 
     //shape function alpha2
-    auto F_real_2_print = M_backend->newVector( Xh_real );
-    form1( _test = Xh_ref, _vector = F_real_2_print, _init=true) =
-        integrate( markedfaces(oneelement_mesh_real, "hor"), trans(vec(cst(1.0), cst(0.0)))*trans(J())*print( id(V_ref), "Ni middle hor"), _Q<0>() );
+    auto F_real_2_print = M_backend->newVector( Xh_real);
+    form1( _test = Xh_real, _vector = F_real_2_print, _init=true) =
+        integrate( markedfaces(oneelement_mesh_real_1, "hor"), trans(vec(cst(1.0), cst(0.0)))*trans(J())*print( id(V_ref), "Ni middle hor"), _Q<0>() );
     F_real_2_print->close();
    std::cout << "\n" << std::endl;
 
@@ -576,20 +581,20 @@ Test_Hcurl::shape_functions()
 
     //shape function alpha0
     auto F_real_0 = M_backend->newVector( Xh_real );
-    form1( _test = Xh_ref, _vector = F_real_0, _init=true) =
-        integrate( markedfaces(oneelement_mesh_real, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(1.0/sqrt(2.0))))*trans(J())*id(V_ref) );
+    form1( _test = Xh_real, _vector = F_real_0, _init=true) =
+        integrate( markedfaces(oneelement_mesh_real_1, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(1.0/sqrt(2.0))))*trans(J())*id(V_ref) );
     F_real_0->close();
 
     //shape function alpha1
     auto F_real_1 = M_backend->newVector( Xh_real );
-    form1( _test = Xh_ref, _vector = F_real_1, _init=true) =
-        integrate( markedfaces(oneelement_mesh_real, "vert"), trans(vec(cst(0.0), cst(-1.0)))*trans(J())*id(V_ref) );
+    form1( _test = Xh_real, _vector = F_real_1, _init=true) =
+        integrate( markedfaces(oneelement_mesh_real_1, "vert"), trans(vec(cst(0.0), cst(-1.0)))*trans(J())*id(V_ref) );
     F_real_1->close();
 
     //shape function alpha2
     auto F_real_2 = M_backend->newVector( Xh_real );
-    form1( _test = Xh_ref, _vector = F_real_2, _init=true) =
-        integrate( markedfaces(oneelement_mesh_real, "hor"), trans(vec(cst(1.0), cst(0.0)))*trans(J())*id(V_ref) );
+    form1( _test = Xh_real, _vector = F_real_2, _init=true) =
+        integrate( markedfaces(oneelement_mesh_real_1, "hor"), trans(vec(cst(1.0), cst(0.0)))*trans(J())*id(V_ref) );
     F_real_2->close();
 
     auto alpha0_N0_real_form1 = inner_product(u_vec[0], *F_real_0);
@@ -626,6 +631,204 @@ Test_Hcurl::shape_functions()
               << "alpha_0(N_2) = " << alpha0_N2_real_form1 << "\n"
               << "alpha_1(N_2) = " << alpha1_N2_real_form1 << "\n"
               << "alpha_2(N_2) = " << alpha2_N2_real_form1 << "\n"
+              << "*********************************************** \n"
+              << std::endl;
+
+    //// ************************************************************************************ ////
+
+    std::cout << " ********** Test for shape functions (on real element 2 (rotation pi/2 from hat{K} ) ********** \n"
+              << "\n"
+              << std::endl;
+
+    //// ************************************************************************************ ////
+
+    //// ********* Check components  in real element 2 (rotation pi/2) (idv keyword) *************** ////
+
+    std::cout << "Components of the integral in real element 2 (rotation pi/2) (idv keyword) \n" << std::endl;
+
+    auto alpha0_N0_real2_print =
+        integrate( markedfaces(oneelement_mesh_real_2, "hypo"),
+                   trans(vec(cst(-1.0/sqrt(2.0)), cst(-1.0/sqrt(2.0))))*print(trans(J()), "jacobian transposed")*
+                   print( idv(u_vec[0]), "N0 middle hypo"), _Q<0>()).evaluate();
+    std::cout << "\n" << std::endl;
+
+    auto alpha1_N0_real2_print = 
+        integrate( markedfaces(oneelement_mesh_real_2, "vert"), 
+                   trans( vec(cst(0.0), cst(1.0) ) )*print(trans(J()), "jacobian transposed")*
+                   print( idv(u_vec[0]), "N0 middle vert"), _Q<0>()).evaluate();
+    std::cout << "\n" << std::endl;
+
+    auto alpha2_N0_real2_print =
+        integrate( markedfaces(oneelement_mesh_real_2, "hor"),
+                   trans( vec(cst(1.0), cst(0.0) ) )*print(trans(J()), "jacobian transposed")*
+                   print(idv(u_vec[0]), "N0 middle hor"), _Q<0>()).evaluate();
+    std::cout << "\n" << std::endl;
+
+    auto alpha0_N1_real2_print =
+        integrate( markedfaces(oneelement_mesh_real_2, "hypo"),
+                   trans(vec(cst(-1.0/sqrt(2.0)), cst(-1.0/sqrt(2.0))))*print(trans(J()), "jacobian transposed")*
+                   print(idv(u_vec[1]),"N1 middle hypo"), _Q<0>()).evaluate();
+   std::cout << "\n" << std::endl;
+
+    auto alpha1_N1_real2_print =
+        integrate( markedfaces(oneelement_mesh_real_2, "vert"),
+                   trans( vec(cst(0.0), cst(1.0) ) )*print(trans(J()), "jacobian transposed")*
+                   print(idv(u_vec[1]),"N1 middle vert"), _Q<0>()).evaluate();
+    std::cout << "\n" << std::endl;
+
+    auto alpha2_N1_real2_print =
+        integrate( markedfaces(oneelement_mesh_real_2, "hor"),
+                   trans( vec(cst(1.0), cst(0.0) ) )*print(trans(J()), "jacobian transposed")*
+                   print(idv(u_vec[1]),"N1 middle hor"), _Q<0>()).evaluate();
+    std::cout << "\n" << std::endl;
+
+    auto alpha0_N2_real2_print =
+        integrate( markedfaces(oneelement_mesh_real_2, "hypo"),
+                   trans(vec(cst(-1.0/sqrt(2.0)), cst(-1.0/sqrt(2.0))))*print(trans(J()), "jacobian transposed")*
+                   print(idv(u_vec[2]),"N2 middle hypo"), _Q<0>()).evaluate();
+    std::cout << "\n" << std::endl;
+
+    auto alpha1_N2_real2_print =
+        integrate( markedfaces(oneelement_mesh_real_2, "vert"),
+                   trans( vec(cst(0.0), cst(1.0) ) )*print(trans(J()), "jacobian transposed")*
+                   print(idv(u_vec[2]),"N2 middle vert"), _Q<0>()).evaluate();
+    std::cout << "\n" << std::endl;
+
+    auto alpha2_N2_real2_print =
+        integrate( markedfaces(oneelement_mesh_real_2, "hor"),
+                   trans( vec(cst(1.0), cst(0.0) ) )*print(trans(J()), "jacobian transposed")*
+                   print(idv(u_vec[2]),"N2 middle hor"), _Q<0>()).evaluate();
+    std::cout << "\n" << std::endl;
+
+    //// ************************************************************************************ ////
+
+    std::cout << "\n" << std::endl;
+
+    //// *********** Check alpha_i(N_j) evaluations  on real element 2 (rotation pi/2) (with idv keyword) ************ ////
+    auto alpha0_N0_real2_idv = 
+        integrate( markedfaces(oneelement_mesh_real_2, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(-1.0/sqrt(2.0))))*trans(J())*idv(u_vec[0])).evaluate();
+    auto alpha1_N0_real2_idv = integrate( markedfaces(oneelement_mesh_real_2, "vert"), trans( vec(cst(0.0), cst(1.0) ) )*trans(J())*idv(u_vec[0])).evaluate();
+    auto alpha2_N0_real2_idv = integrate( markedfaces(oneelement_mesh_real_2, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*trans(J())*idv(u_vec[0])).evaluate();
+
+    auto alpha0_N1_real2_idv = 
+        integrate( markedfaces(oneelement_mesh_real_2, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(-1.0/sqrt(2.0))))*trans(J())*idv(u_vec[1])).evaluate();
+    auto alpha1_N1_real2_idv = integrate( markedfaces(oneelement_mesh_real_2, "vert"), trans( vec(cst(0.0), cst(1.0) ) )*trans(J())*idv(u_vec[1])).evaluate();
+    auto alpha2_N1_real2_idv = integrate( markedfaces(oneelement_mesh_real_2, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*trans(J())*idv(u_vec[1])).evaluate();
+
+    auto alpha0_N2_real2_idv = 
+        integrate( markedfaces(oneelement_mesh_real_2, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(-1.0/sqrt(2.0))))*trans(J())*idv(u_vec[2])).evaluate();
+    auto alpha1_N2_real2_idv = integrate( markedfaces(oneelement_mesh_real_2, "vert"), trans( vec(cst(0.0), cst(1.0) ) )*trans(J())*idv(u_vec[2])).evaluate();
+    auto alpha2_N2_real2_idv = integrate( markedfaces(oneelement_mesh_real_2, "hor"), trans( vec(cst(1.0), cst(0.0) ) )*trans(J())*idv(u_vec[2])).evaluate();
+
+    std::cout << " ********** Values of alpha_i (N_j ) = delta_{i,j} (real element 2) ********** \n"
+              << "\n"
+              << " ********** Using idv keyword ********************* "
+              << "\n"
+              << " *** dof N_0 (associated with hypotenuse edge) *** \n"
+              << "alpha_0(N_0) = " << alpha0_N0_real2_idv << "\n"
+              << "alpha_1(N_0) = " << alpha1_N0_real2_idv << "\n"
+              << "alpha_2(N_0) = " << alpha2_N0_real2_idv << "\n"
+              << "*********************************************** \n"
+              << std::endl;
+
+    std::cout << " *** dof N_1 (associated with vertical edge) *** \n"
+              << "alpha_0(N_1) = " << alpha0_N1_real2_idv << "\n"
+              << "alpha_1(N_1) = " << alpha1_N1_real2_idv << "\n"
+              << "alpha_2(N_1) = " << alpha2_N1_real2_idv << "\n"
+              << "*********************************************** \n"
+              << std::endl;
+
+    std::cout << " *** dof N_2 (associated with horizontal edge) *** \n"
+              << "alpha_0(N_2) = " << alpha0_N2_real2_idv << "\n"
+              << "alpha_1(N_2) = " << alpha1_N2_real2_idv << "\n"
+              << "alpha_2(N_2) = " << alpha2_N2_real2_idv << "\n"
+              << "*********************************************** \n"
+              << std::endl;
+
+    //// ************************************************************************************ ////
+
+     //// ********* Check components  in real element 2 (rotation pi/2) (form1 / id keywords) *************** ////
+
+    std::cout << "Components of the integral in real element 1 (rotation pi/2) (form1 / idv keyword) \n" << std::endl;
+
+        //shape function alpha0
+    auto F_real2_0_print = M_backend->newVector( Xh_real2 );
+    form1( _test = Xh_real2, _vector = F_real2_0_print, _init=true) =
+        integrate( markedfaces(oneelement_mesh_real_2, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(-1.0/sqrt(2.0))))*
+                   trans(J())*print(id(V_ref), "Ni middle hypo"), _Q<0>() );
+    F_real2_0_print->close();
+    std::cout << "\n" << std::endl;
+
+    //shape function alpha1
+    auto F_real2_1_print = M_backend->newVector( Xh_real2 );
+    form1( _test = Xh_real2, _vector = F_real2_1_print, _init=true) =
+        integrate( markedfaces(oneelement_mesh_real_2, "vert"), trans(vec(cst(0.0), cst(1.0)))*trans(J())*print( id(V_ref), "Ni middle vert"), _Q<0>() );
+    F_real2_1_print->close();
+   std::cout << "\n" << std::endl;
+
+    //shape function alpha2
+    auto F_real2_2_print = M_backend->newVector( Xh_real2 );
+    form1( _test = Xh_real2, _vector = F_real2_2_print, _init=true) =
+        integrate( markedfaces(oneelement_mesh_real_2, "hor"), trans(vec(cst(1.0), cst(0.0)))*trans(J())*print( id(V_ref), "Ni middle hor"), _Q<0>() );
+    F_real2_2_print->close();
+   std::cout << "\n" << std::endl;
+
+    //// ************************************************************************************ ////
+
+    //// *********** Check alpha_i(N_j) evaluations  on real element 2 (rotation pi/2) (with form1 / id keyword) ************ ////
+
+    //shape function alpha0
+    auto F_real2_0 = M_backend->newVector( Xh_real2 );
+    form1( _test = Xh_real2, _vector = F_real2_0, _init=true) =
+        integrate( markedfaces(oneelement_mesh_real_2, "hypo"), trans(vec(cst(-1.0/sqrt(2.0)), cst(-1.0/sqrt(2.0))))*trans(J())*id(V_ref) );
+    F_real2_0->close();
+
+    //shape function alpha1
+    auto F_real2_1 = M_backend->newVector( Xh_real2 );
+    form1( _test = Xh_real2, _vector = F_real2_1, _init=true) =
+        integrate( markedfaces(oneelement_mesh_real_2, "vert"), trans(vec(cst(0.0), cst(1.0)))*trans(J())*id(V_ref) );
+    F_real2_1->close();
+
+    //shape function alpha2
+    auto F_real2_2 = M_backend->newVector( Xh_real2 );
+    form1( _test = Xh_real2, _vector = F_real2_2, _init=true) =
+        integrate( markedfaces(oneelement_mesh_real_2, "hor"), trans(vec(cst(1.0), cst(0.0)))*trans(J())*id(V_ref) );
+    F_real2_2->close();
+
+    auto alpha0_N0_real2_form1 = inner_product(u_vec[0], *F_real2_0);
+    auto alpha1_N0_real2_form1 = inner_product(u_vec[0], *F_real2_1);
+    auto alpha2_N0_real2_form1 = inner_product(u_vec[0], *F_real2_2);
+
+    auto alpha0_N1_real2_form1 = inner_product(u_vec[1], *F_real2_0);
+    auto alpha1_N1_real2_form1 = inner_product(u_vec[1], *F_real2_1);
+    auto alpha2_N1_real2_form1 = inner_product(u_vec[1], *F_real2_2);
+
+    auto alpha0_N2_real2_form1 = inner_product(u_vec[2], *F_real2_0);
+    auto alpha1_N2_real2_form1 = inner_product(u_vec[2], *F_real2_1);
+    auto alpha2_N2_real2_form1 = inner_product(u_vec[2], *F_real2_2);
+
+    std::cout << " ********** Values of alpha_i (N_j ) = delta_{i,j} (real element 2) ********** \n"
+              << "\n"
+              << " ********** Using form1 keyword ********************* "
+              << "\n"
+              << " *** dof N_0 (associated with hypotenuse edge) *** \n"
+              << "alpha_0(N_0) = " << alpha0_N0_real2_form1 << "\n"
+              << "alpha_1(N_0) = " << alpha1_N0_real2_form1 << "\n"
+              << "alpha_2(N_0) = " << alpha2_N0_real2_form1 << "\n"
+              << "*********************************************** \n"
+              << std::endl;
+
+    std::cout << " *** dof N_1 (associated with vertical edge) *** \n"
+              << "alpha_0(N_1) = " << alpha0_N1_real2_form1 << "\n"
+              << "alpha_1(N_1) = " << alpha1_N1_real2_form1 << "\n"
+              << "alpha_2(N_1) = " << alpha2_N1_real2_form1 << "\n"
+              << "*********************************************** \n"
+              << std::endl;
+
+    std::cout << " *** dof N_2 (associated with horizontal edge) *** \n"
+              << "alpha_0(N_2) = " << alpha0_N2_real2_form1 << "\n"
+              << "alpha_1(N_2) = " << alpha1_N2_real2_form1 << "\n"
+              << "alpha_2(N_2) = " << alpha2_N2_real2_form1 << "\n"
               << "*********************************************** \n"
               << std::endl;
 
@@ -674,8 +877,9 @@ Test_Hcurl::oneelement_geometry_ref()
     return gmshp;
 }
 
+// homothetic transformation of reference element (center 0, rate 2)
 gmsh_ptrtype
-Test_Hcurl::oneelement_geometry_real()
+Test_Hcurl::oneelement_geometry_real_1()
 {
     std::ostringstream costr;
     costr <<"Mesh.MshFileVersion = 2.2;\n"
@@ -707,7 +911,48 @@ Test_Hcurl::oneelement_geometry_real()
           <<"Physical Surface(9) = {5};\n";
 
     std::ostringstream nameStr;
-    nameStr << "one-elt-real";
+    nameStr << "one-elt-real-homo";
+    gmsh_ptrtype gmshp( new Gmsh );
+    gmshp->setPrefix( nameStr.str() );
+    gmshp->setDescription( costr.str() );
+    return gmshp;
+}
+
+// Rotation of angle (pi/2)
+gmsh_ptrtype
+Test_Hcurl::oneelement_geometry_real_2()
+{
+    std::ostringstream costr;
+    costr <<"Mesh.MshFileVersion = 2.2;\n"
+          <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
+          <<"Mesh.CharacteristicLengthFromPoints=1;\n"
+          <<"Mesh.ElementOrder=1;\n"
+          <<"Mesh.SecondOrderIncomplete = 0;\n"
+          <<"Mesh.Algorithm = 6;\n"
+          <<"Mesh.OptimizeNetgen=1;\n"
+          <<"// partitioning data\n"
+          <<"Mesh.Partitioner=1;\n"
+          <<"Mesh.NbPartitions=1;\n"
+          <<"Mesh.MshFilePartitioned=0;\n"
+          <<"h=2;\n"
+          <<"Point(1) = {1,-1,0,h};\n"
+          <<"Point(2) = {1,1,0,h};\n"
+          <<"Point(3) = {-1,-1,0,h};\n"
+          <<"Line(1) = {1,2};\n"
+          <<"Line(2) = {2,3};\n"
+          <<"Line(3) = {3,1};\n"
+          <<"Transfinite Line{1} = 1;\n"
+          <<"Transfinite Line{2} = 1;\n"
+          <<"Transfinite Line{3} = 1;\n"
+          <<"Line Loop(4) = {3,1,2};\n"
+          <<"Plane Surface(5) = {4};\n"
+          <<"Physical Line(\"vert\") = {1};\n"
+          <<"Physical Line(\"hypo\") = {2};\n"
+          <<"Physical Line(\"hor\") = {3};\n"
+          <<"Physical Surface(9) = {5};\n";
+
+    std::ostringstream nameStr;
+    nameStr << "one-elt-real-rot";
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( costr.str() );
