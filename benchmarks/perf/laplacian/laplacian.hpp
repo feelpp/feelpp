@@ -134,9 +134,9 @@ private:
 }; // Laplacian
 
 
-template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, typename BasisU, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Laplacian<Dim, BasisU, BasisP, Entity>::run()
+Laplacian<Dim, BasisU, Entity>::run()
 {
     using namespace Feel::vf;
 
@@ -209,9 +209,12 @@ Laplacian<Dim, BasisU, BasisP, Entity>::run()
     Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     double penalbc = this->vm()["bccoeff"].template as<value_type>();
-    bool add_convection = ( math::abs( betacoeff  ) > 1e-10 );
     double mu = this->vm()["mu"].template as<value_type>();
 
+    auto pi = M_PI;
+    auto u_exact = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
+    auto grad_exact = pi*trans(cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()-sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()-sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ());
+    auto f = Dim*pi*pi*u_exact; // -Delta u_exact
 
     boost::timer subt;
     // right hand side
@@ -293,7 +296,7 @@ Laplacian<Dim, BasisU, BasisP, Entity>::run()
 
     t.restart();
     if ( !this->vm().count("no-solve") )
-        M_backend->solve( _matrix=D, _solution=U, _rhs=F, _constant_null_space=true );
+        M_backend->solve( _matrix=D, _solution=u, _rhs=F, _constant_null_space=true );
     M_stats.put("t.solver.total",t.elapsed());
     Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";
 
@@ -340,13 +343,13 @@ Laplacian<Dim, BasisU, BasisP, Entity>::run()
 } // Laplacian::run
 
 
-template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, typename BasisU, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Laplacian<Dim, BasisU, BasisP, Entity>::exportResults( element_type& u, element_type& v )
+Laplacian<Dim, BasisU, Entity>::exportResults( element_type& u, element_type& v )
 {
     if ( exporter->doExport() )
     {
-        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->setMesh( u.functionSpace()->mesh() );
         exporter->step( 0 )->add( "u", u );
         exporter->step( 0 )->add( "u_exact", v );
         exporter->save();
