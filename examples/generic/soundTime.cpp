@@ -57,7 +57,8 @@ makeOptions()
         ("kc2", Feel::po::value<double>()->default_value( 1 ), "k/c parameter")
         ("sigma", Feel::po::value<double>()->default_value( 20 ), "shift parameter for the eigenvalue problem")
         ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-
+        ("dt", Feel::po::value<double>()->default_value( 0.1 ), "dt")
+        ("ft", Feel::po::value<double>()->default_value( 2 ), "ft")
         ("export", "export results(ensight, data file(1D)")
         ("export-mesh-only", "export mesh only in ensight format")
         ("export-matlab", "export matrix and vectors in matlab" )
@@ -68,8 +69,8 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "sound" ,
-                     "sound" ,
+    AboutData about( "soundTime" ,
+                     "soundTime" ,
                      "0.2",
                      "nD(n=1,2,3) acoustics in an amphitheater",
                      Feel::AboutData::License_GPL,
@@ -168,7 +169,8 @@ Sound<Dim, Order>::run()
     auto eigen = SolverEigen<value_type>::build( this->vm() );
 
     //! exporter to paraview or gmsh
-    auto exporter = Exporter<mesh_type>::New( this->vm(), this->about().appName() );
+    auto exporter = Exporter<mesh_type>::New( this->vm(), "ExportEigen" );
+    auto exporterTime = Exporter<mesh_type>::New( this->vm(), "ExportTime" );
 
     boost::timer t;
 
@@ -200,6 +202,7 @@ Sound<Dim, Order>::run()
     // Definition de dt et ft :
     value_type dt = this->vm()["dt"].template as<value_type>();
     value_type ft = this->vm()["ft"].template as<value_type>();
+
     double factor = 1./(dt*dt);
     
     // Definition des termes du schéma centré : factor*(un1-2*un+un2)
@@ -212,32 +215,44 @@ Sound<Dim, Order>::run()
     un1.zero();
     un.zero();    
 
+    //compteur pour savoir si on est déjà passée dans la boucle du temps :
+    double compteur = 0.0;    
+
+  auto D = backend->newMatrix( Xh, Xh );
+
+
     // boucle sur le temps :
     for( double time = dt; time <= ft; time += dt )
     {
 
+          form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=elements(mesh), _expr= factor*(2.*idv(un)-idv(un1))*id(v) );
+
     if ( Dim == 2 ){
         //on ajoute le terme portant sur le temps : factor*(2.*idv(un)-idv(un1)) :
-        form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces(mesh,2), _expr=val(Py()*(1-Py()))*id(v) + factor*(2.*idv(un)-idv(un1))*id(v) );
-        F->close();}
+        form1( _test=Xh, _vector=F ) += integrate( _range=markedfaces(mesh,2), _expr=val(Py()*(1-Py()))*id(v) );
+       }
     else {
-            //on ajoute le terme portant sur le temps : factor*(2.*idv(un)-idv(un1)) :
-            form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces(mesh,51),  _expr=val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) + factor*(2.*idv(un)-idv(un1))*id(v) );
-            F->close();}
+           //on ajoute le terme portant sur le temps : factor*(2.*idv(un)-idv(un1)) :
+           form1( _test=Xh, _vector=F ) += integrate( _range=markedfaces(mesh,51), _expr= val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) );
+
+    }
+         
+     F->close();
+    
 
     M_stats.put("t.assembly.vector.total",t.elapsed());t.restart();
 
     /*
      * Construction of the left hand side
      */
-    auto D = backend->newMatrix( Xh, Xh );
-
+  
     double kc2 = this->vm()["kc2"].template as<double>();
 
-    form2( _test=Xh, _trial=Xh, _matrix=D,_init=true ) = integrate( _range=elements(mesh),  _expr=( kc2*idt(u)*id(v)-gradt(u)*trans(grad(v))) );
+    form2( _test=Xh, _trial=Xh, _matrix=D,_init=true ) = integrate( _range=elements(mesh),  _expr=( factor*idt(u)*id(v) + kc2*gradt(u)*trans(grad(v))) );
     D->close();
 
-    M_stats.put("t.assembly.matrix.total",t.elapsed());
+ 
+       M_stats.put("t.assembly.matrix.total",t.elapsed());
 
     t.restart();
 
@@ -245,12 +260,39 @@ Sound<Dim, Order>::run()
 
     M_stats.put("t.solver.total",t.elapsed());t.restart();
 
+
+    //Partie mise en dehors de la boucle sur le temps...
+    //solveur eigen
+
+    //on exporte les solutions a chaque pas de temps :
+    exporterTime->step(time)->setMesh( u.functionSpace()->mesh() );
+    if ( !this->vm().count( "export-mesh-only" ) )
+    {
+        exporterTime->step(time)->add( "pppp", u );
+    }
+    exporterTime->save();
+
+
+    // on met à jour les solutions :
+    un2 = un1;
+    un1 = un;
+    un = u;
+
+    //on met a jour le compteur :
+    compteur = compteur + 1.0;
+    
+}//fin boucle sur le temps.
+
+
+//Partie mise en dehors de la boucle sur le temps 
+
+
+
     // eigen modes
     double sigma = this->vm()["sigma"].template as<double>();
     auto S = backend->newMatrix( Xh, Xh );
-    //on ajoute le terme portant sur le temps : factor*idv(un2)
-    form2( _test=Xh, _trial=Xh, _matrix=D,_init=true ) = integrate( _range=elements(mesh),  _expr=( kc2*idt(u)*id(v)-gradt(u)*trans(grad(v))) + factor*idv(un2)*id(v) );
-    D->close();
+
+    form2( _test=Xh, _trial=Xh, _matrix=S,_init=true ) = integrate( _range=elements(mesh),  _expr=gradt(u)*trans(grad(v)) );
 
     M_stats.put("t.assembly.matrix.A",t.elapsed());t.restart();
 
@@ -298,22 +340,19 @@ Sound<Dim, Order>::run()
 //    this->exportResults( u, mode );
 //    Log() << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
 //    Log() << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
+
+
     M_stats.put("t.eigensolver.total",t.elapsed());t.restart();
 
-    exporter->step(time)->setMesh( u.functionSpace()->mesh() );
+    exporter->step(0.)->setMesh( u.functionSpace()->mesh() );
     if ( !this->vm().count( "export-mesh-only" ) )
     {
-        exporter->step(time)->add( "p", u );
-        exporter->step(time)->add( "mode", mode );
+        exporter->step(0.)->add( "mode", mode );
     }
     exporter->save();
 
-    // on met à jour les solutions :
-    un2 = un1;
-    un1 = un;
-    un = u;
-    
-}//fin boucle sur le temps.
+
+
 
 } // Sound::run
 } // Feel
