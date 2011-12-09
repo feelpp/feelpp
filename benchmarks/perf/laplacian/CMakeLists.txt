@@ -21,16 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-add_custom_target(genperflaplacian ALL COMMENT "Generate Feel Performance Laplacian files"   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
-macro(OVERWITE_IF_DIFFERENT filename var)
-  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/copy_${filename} ${var})
-  add_custom_command(TARGET genperflaplacian COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${CMAKE_CURRENT_BINARY_DIR}/copy_${filename} ${CMAKE_CURRENT_BINARY_DIR}/${filename}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-endmacro()
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-
+add_custom_target(gen_feel_perf_laplacian ALL )
 #foreach(N 2 3 4 5)
 #foreach(S "Simplex" "Hypercube")
 foreach(S "Hypercube")
@@ -42,16 +34,15 @@ namespace Feel {
   template class Laplacian<${D}, Lagrange<${N}>, ${S}>\\;
 }
 ")
-    OVERWITE_IF_DIFFERENT("feel_perf_laplacian_${S}_${D}D_p${N}.cpp" "${LAG}")
+    OVERWITE_IF_DIFFERENT(gen_feel_perf_laplacian "feel_perf_laplacian_${S}_${D}D_p${N}.cpp" "${LAG}" laplacian.hpp)
     set(lagrange "${CMAKE_CURRENT_BINARY_DIR}/feel_perf_laplacian_${S}_${D}D_p${N}.cpp;${lagrange}")
   endforeach()
 endforeach()
 endforeach()
 
 
-file( GLOB_RECURSE LAGRANGE ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_laplacian*.cpp )
-add_executable(feel_perf_laplacian  ${LAGRANGE} bench.cpp)
-add_dependencies(feel_perf_laplacian genperflaplacian)
+add_executable(feel_perf_laplacian  ${lagrange} bench.cpp)
+add_dependencies(feel_perf_laplacian gen_feel_perf_laplacian)
 target_link_libraries(feel_perf_laplacian ${FEEL_LIBRARIES})
 
 
