@@ -402,6 +402,9 @@ public:
     double timeStep() { return  M_bdf->timeStep(); }
     double timeInitial() {return M_bdf->timeInitial();}
     int timeOrder() {return M_bdf->timeOrder(); }
+    void initializationField( element_ptrtype& initial_field);
+    bool isSteady() {return M_is_steady;}
+
 
     /**
      * solve for a given parameter \p mu
@@ -493,7 +496,7 @@ private:
 
 	/* time management */
 	//bdf_ptrtype M_bdf;
-    bool steady;
+    bool M_is_steady ;
 
     boost::shared_ptr<export_type> exporter;
 
@@ -527,7 +530,7 @@ private:
 HeatSink2D::HeatSink2D()
     :
     backend( backend_type::build( BACKEND_PETSC ) ),
-    steady( false ),
+    M_is_steady( false ),
     meshSize( 1e-3 ),
     L_ref( 0.02 ),
     width( 5e-4 ),
@@ -549,7 +552,7 @@ HeatSink2D::HeatSink2D( po::variables_map const& vm )
     :
     M_vm( vm ),
     backend( backend_type::build( vm ) ),
-    steady( vm["steady"].as<bool>() ),
+    M_is_steady( vm["steady"].as<bool>() ),
     meshSize( vm["hsize"].as<double>() ),
     L_ref( vm["L_ref"].as<double>() ),
     width( vm["width"].as<double>() ),
@@ -625,6 +628,13 @@ HeatSink2D::makefin( double hsize, double width, double L_ref)
 }
 
 
+
+
+void HeatSink2D::initializationField( element_ptrtype& initial_field )
+{
+    initial_field->setOnes();
+    initial_field->scale(Tamb);
+}
 
 void HeatSink2D::init()
 {
@@ -971,7 +981,7 @@ void HeatSink2D::solve( parameter_type const& mu, element_ptrtype& T, int output
     int column_index=0;//usefull to fill the solution matrix
 
     M_bdf->initialize(*T);
-    if(steady)
+    if(M_is_steady)
     {
         M_bdf->setSteady();
     }
