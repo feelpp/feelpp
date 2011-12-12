@@ -44,7 +44,7 @@ makeOptions()
 {
     Feel::po::options_description stokesoptions("Stokes options");
     stokesoptions.add_options()
-        ("faster", Feel::po::value<int>()->default_value( 1 ), "use coupled(0) or default(1) pattern or default/symmetric(2) pattern")
+        ("faster", Feel::po::value<int>()->default_value( 2 ), "use coupled(0) or default(1) pattern or default/symmetric(2) pattern")
         ("penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
         ("f", Feel::po::value<double>()->default_value( 0 ), "forcing term")
         ("mu", Feel::po::value<double>()->default_value( 1.0/40 ), "reaction coefficient component")

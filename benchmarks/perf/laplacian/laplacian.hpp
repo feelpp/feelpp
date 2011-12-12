@@ -336,7 +336,7 @@ Laplacian<Dim, BasisU, Entity>::run()
     std::cout << "||u_error||_1= " << u_error_H1 << "\n";
     M_stats.put("e.h1.u",u_error_H1);
 
-    v = vf::project( Xh->template functionSpace<0>(), elements( Xh->mesh() ), u_exact );
+    v = vf::project( Xh, elements( Xh->mesh() ), u_exact );
 
     this->exportResults( u, v );
 
