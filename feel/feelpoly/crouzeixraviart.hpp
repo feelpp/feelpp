@@ -49,6 +49,7 @@
 #include <feel/feelpoly/dualbasis.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelpoly/functionalset.hpp>
+#include <feel/feelpoly/moment.hpp>
 
 namespace Feel
 {
@@ -56,6 +57,49 @@ namespace fem
 {
 namespace detail
 {
+template<uint16_type N,
+         template<uint16_type Dim> class PolySetType = Scalar,
+         typename T = double>
+class RannacherTurekPolynomialSet
+    :
+        public MomentPolynomialSet<N, 2, N, PolySetType, T, Hypercube>
+{
+    typedef MomentPolynomialSet<N, 2, N, PolySetType, T, Hypercube> super;
+
+public:
+
+    typedef RannacherTurekPolynomialSet<N, PolySetType, T> self_type;
+
+    typedef typename super::value_type value_type;
+    typedef typename super::convex_type convex_type;
+    typedef typename super::matrix_type matrix_type;
+    typedef typename super::points_type points_type;
+
+    static const uint16_type nDim = super::nDim;
+    static const uint16_type nOrder = super::nOrder;
+    static const uint16_type nComponents = super::nComponents;
+    static const bool is_product = true;
+
+    RannacherTurekPolynomialSet()
+        :
+        super()
+    {
+        Moment<2,2,Hypercube<2> > m;
+        // 1
+        this->insert( m.template pick<PolySetType>( 0 ).toSet(), true );
+        // x
+        this->insert( m.template pick<PolySetType>( 1 ).toSet() );
+        // y
+        this->insert( m.template pick<PolySetType>( 3 ).toSet() );
+        // x^2 - y^2
+        auto p  = m.template pick<PolySetType>( 2 ) - m.template pick<PolySetType>( 6 );
+        this->insert( p.toSet() );
+
+    }
+
+
+};
+
 template<typename Basis, template<class, uint16_type, class> class PointSetType>
 class CrouzeixRaviartDual
     :
@@ -65,7 +109,7 @@ class CrouzeixRaviartDual
 public:
 
     static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder= 1;
+    static const uint16_type nOrder= super::nOrder;
 
     typedef typename super::primal_space_type primal_space_type;
     typedef typename primal_space_type::value_type value_type;
@@ -206,11 +250,15 @@ template<uint16_type N,
          uint16_type TheTAG=0 >
 class CrouzeixRaviart
     :
-    public FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, Convex>,
+    public FiniteElement<typename mpl::if_<mpl::bool_<Convex<N,1,N>::is_simplex>,
+                                           mpl::identity<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, Convex> >,
+                                           mpl::identity<fem::detail::RannacherTurekPolynomialSet<N, PolySetType, T> > >::type::type,
                          detail::CrouzeixRaviartDual,
                          PointSetEquiSpaced >
 {
-    typedef FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, Convex>,
+    typedef FiniteElement<typename mpl::if_<mpl::bool_<Convex<N,1,N>::is_simplex>,
+                                            mpl::identity<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, Convex> >,
+                                            mpl::identity<fem::detail::RannacherTurekPolynomialSet<N, PolySetType, T> > >::type::type,
                           detail::CrouzeixRaviartDual,
                           PointSetEquiSpaced > super;
 public:
@@ -222,7 +270,7 @@ public:
     //@{
 
     static const uint16_type nDim = N;
-    static const uint16_type nOrder =  1;
+    static const uint16_type nOrder =  super::nOrder;
     static const bool isTransformationEquivalent = true;
     static const bool isContinuous = true;
 
