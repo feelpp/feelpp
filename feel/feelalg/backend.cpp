@@ -307,7 +307,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
     if ( ret.first < 0 )
     {
-        Feel::Log() << "\n[backend] linear solver fail"<< std::endl;
+        Feel::Log() << "\n[backend] linear solver fail";
         //exit(0);
     }
 
