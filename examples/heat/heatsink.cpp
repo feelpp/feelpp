@@ -339,6 +339,7 @@ HeatSink<Dim, Order>::run()
     form2( Xh, Xh, D) += integrate( _range= markedelements(mesh,"fin_mesh"), _expr= kappa_f*gradt(T)*trans(grad(v)) );
     form2 (Xh, Xh, D) += integrate( _range= markedfaces(mesh, "gamma1"), _expr= therm_coeff*idt(T)*id(v));
 
+    M_bdf->start();
 
     //from now if the option "steady" is set to true then M_bdf->setSteady will set time-step=time-final=1e30
     if (steady)
