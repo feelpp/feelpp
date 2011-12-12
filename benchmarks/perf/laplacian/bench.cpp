@@ -42,8 +42,8 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description stokesoptions("Stokes options");
-    stokesoptions.add_options()
+    Feel::po::options_description laplacianoptions("Laplacian options");
+    laplacianoptions.add_options()
         ("faster", Feel::po::value<int>()->default_value( 1 ), "use coupled(0) or default(1) pattern or default/symmetric(2) pattern")
         ("penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
         ("f", Feel::po::value<double>()->default_value( 0 ), "forcing term")
@@ -57,12 +57,8 @@ makeOptions()
         ("no-solve", "dont solve the system" )
         ("extra-terms", "dont solve the system" )
         ;
-    return stokesoptions.add( Feel::feel_options() )
-        .add( Feel::benchmark_options( "2D-CR1P0" ) ).add( Feel::benchmark_options( "3D-CR1P0" ) )
-        .add( Feel::benchmark_options( "2D-P2P1" ) ).add( Feel::benchmark_options( "3D-P2P1" ) )
-        .add( Feel::benchmark_options( "2D-P3P2" ) ).add( Feel::benchmark_options( "3D-P3P2" ) )
-        .add( Feel::benchmark_options( "2D-P4P3" ) ).add( Feel::benchmark_options( "3D-P4P3" ) )
-        .add( Feel::benchmark_options( "2D-P5P4" ) ).add( Feel::benchmark_options( "3D-P5P4" ) );
+    return laplacianoptions.add( Feel::feel_options() )
+        .add( Feel::benchmark_options( "2D-CR1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P2-Hypercube" ) );
 }
 
 
@@ -77,10 +73,10 @@ inline
 Feel::AboutData
 makeAbout()
 {
-    Feel::AboutData about( "stokes" ,
-                           "stokes" ,
+    Feel::AboutData about( "laplacian" ,
+                           "laplacian" ,
                            "0.1",
-                           "Stokes equation on simplices or simplex products",
+                           "Laplacian equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2009-2011 Universite de Grenoble 1 (Joseph Fourier)");
 
@@ -91,6 +87,8 @@ makeAbout()
 namespace Feel
 {
 extern template class Laplacian<2, Lagrange<1, Scalar>, Hypercube>;
+extern template class Laplacian<2, Lagrange<2, Scalar>, Hypercube>;
+extern template class Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>;
 extern template class Laplacian<3, Lagrange<1, Scalar>, Hypercube>;
 
 }
@@ -107,7 +105,9 @@ int main( int argc, char** argv )
     }
 
     benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Hypercube>( "2D-P1-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Hypercube>( "3D-P1-Hypercube", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Laplacian<2, Lagrange<2, Scalar>, Hypercube>( "2D-P2-Hypercube", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>( "2D-CR1-Hypercube", benchmark.vm(), benchmark.about() ) );
+    //benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Hypercube>( "3D-P1-Hypercube", benchmark.vm(), benchmark.about() ) );
 
 
     benchmark.run();
