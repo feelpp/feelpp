@@ -227,11 +227,16 @@ Sound<Dim, Order>::run()
 
           form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=elements(mesh), _expr= factor*(2.*idv(un)-idv(un1))*id(v) );
 
+    // En fonction de la dimension, on modifie form1    
+    if ( Dim == 1 ){
+        //on ajoute le terme portant sur le temps : factor*(2.*idv(un)-idv(un1)) :
+        form1( _test=Xh, _vector=F ) += integrate( _range=markedfaces(mesh,1), _expr= val(1) *id(v) );
+       }
     if ( Dim == 2 ){
         //on ajoute le terme portant sur le temps : factor*(2.*idv(un)-idv(un1)) :
         form1( _test=Xh, _vector=F ) += integrate( _range=markedfaces(mesh,2), _expr=val(Py()*(1-Py()))*id(v) );
        }
-    else {
+    if ( Dim == 3 ){
            //on ajoute le terme portant sur le temps : factor*(2.*idv(un)-idv(un1)) :
            form1( _test=Xh, _vector=F ) += integrate( _range=markedfaces(mesh,51), _expr= val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) );
 
@@ -374,6 +379,8 @@ main( int argc, char** argv )
         std::cout << sound.optionsDescription() << "\n";
         return 0;
     }
+    
+    sound.add( new Sound<1, 1>( "1D-P1", sound.vm(), sound.about() ) );
     sound.add( new Sound<2, 1>( "2D-P1", sound.vm(), sound.about() ) );
     sound.add( new Sound<3, 1>( "3D-P1", sound.vm(), sound.about() ) );
     sound.run();
