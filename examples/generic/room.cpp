@@ -41,6 +41,22 @@ createRoom( int Dim, double meshSize )
     std::ostringstream nameStr;
     //    std::string fname;//
     switch( Dim ) {
+    
+    // On rajoute le cas ou la dimension = 1
+    
+   case 1:
+     ostr << "h=" << meshSize << ";\n"
+          << "Point (1) = {0, 0, 0, h};\n"
+          << "Point (2) = {1, 0, 0, h};\n"
+          << "Line (1) = {1, 2};\n"
+          << "Physical Point (1) = {1};\n"
+          << "Physical Point (2) = {2};\n"
+          << "Physical Line (1) = {1};\n";
+
+     nameStr << "room." << meshSize;
+     break;
+
+
     case 2:
         ostr << "h=" << meshSize << ";\n"
              << "Point (1) = {0, 0, 0, h};\n"
