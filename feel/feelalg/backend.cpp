@@ -256,7 +256,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
     M_nlsolver->setPrecMatrixStructure( this->precMatrixStructure() );
 
-    std::cout << "[nlSolve] reusepc:" << reusePC << std::endl;
+    //std::cout << "[nlSolve] reusepc:" << reusePC << std::endl;
     if ( reusePC || reuseJac )
     {
         M_nlsolver->init();
@@ -277,7 +277,8 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     {
         std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
         Log() << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
-        //M_nlsolver->setPrecMatrixStructure( SAME_PRECONDITIONER );
+
+        M_nlsolver->init();
         M_nlsolver->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
 
         //M_nlsolver->setReuse( 1, -2 );
@@ -303,7 +304,12 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setPrecMatrixStructure( this->precMatrixStructure() );
     M_nlsolver->setReuse( 1, 1 );
 
-    M_nlsolver->solve( A, x, b, tol, its );
+    auto ret = M_nlsolver->solve( A, x, b, tol, its );
+    if ( ret.first < 0 )
+    {
+        Feel::Log() << "\n[backend] linear solver fail"<< std::endl;
+        //exit(0);
+    }
 
     return boost::make_tuple( true, its, tol );
 }
@@ -482,6 +488,9 @@ po::options_description backend_options( std::string const& prefix )
         (prefixvm(prefix,"export-matlab").c_str(), Feel::po::value<std::string>()->default_value( "" ), "export matrix/vector to matlab, default empty string means no export, other string is used as prefix")
 
         (prefixvm(prefix,"ksp-type").c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres")
+
+        (prefixvm(prefix,"snes-maxit").c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations")
+
 
         // preconditioner options
         (prefixvm(prefix,"pc-type").c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of preconditioners (lu, ilut, ilutp, diag, id,...)")
