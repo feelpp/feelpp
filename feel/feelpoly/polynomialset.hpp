@@ -626,7 +626,7 @@ public:
     /**
      * insert the polynomial set \p p at the end of the set
      */
-    void insert( PolynomialSet<Poly,PolySetType> const& p )
+    void insert( PolynomialSet<Poly,PolySetType> const& p, bool erase = false )
     {
         FEEL_ASSERT( p.coeff().size2() == coeff().size2() )( p.coeff().size2() )( coeff().size2() ).warn("invalid polynomial set");
 
@@ -634,7 +634,12 @@ public:
         std::cout << "coeff = " << _M_coeff << "\n"
                   << "p     = " << p.coeff() << "\n";
 #endif
-#if 1
+        if ( erase )
+        {
+            _M_coeff = p._M_coeff;
+            return;
+        }
+
         matrix_type oldcoeff = _M_coeff;
         _M_coeff.resize( _M_coeff.size1() + p.coeff().size1(), p.coeff().size2(), false );
 
@@ -648,9 +653,7 @@ public:
         ublas::project( _M_coeff,
                         ublas::range( oldcoeff.size1(), oldcoeff.size1()+p.coeff().size1() ),
                         ublas::range( 0, oldcoeff.size2() ) ) = p.coeff();
-#else
-        _M_coeff = p.coeff();
-#endif
+
 
     }
 
