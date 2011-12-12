@@ -742,6 +742,8 @@ public:
        start the bdf
     */
     double start();
+    double start(element_type const& u0);
+    double start(unknowns_type const& uv0);
 
     /**
        restart the bdf
@@ -908,13 +910,32 @@ Bdf<SpaceType>::start()
 
 template <typename SpaceType>
 double
+Bdf<SpaceType>::start(element_type const& u0)
+{
+    this->init();
+    auto res = super::start();
+    this->initialize(u0);
+    return res;
+}
+
+template <typename SpaceType>
+double
+Bdf<SpaceType>::start(unknowns_type const& uv0)
+{
+    this->init();
+    auto res = super::start();
+    this->initialize(uv0);
+    return res;
+}
+
+template <typename SpaceType>
+double
 Bdf<SpaceType>::restart()
 {
     this->init();
 
     return super::restart();
 }
-
 
 template <typename SpaceType>
 const
