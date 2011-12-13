@@ -59,3 +59,10 @@ endif()
 if (EXISTS ${FEEL_SOURCE_DIR}/research/maxwell)
   add_subdirectory(maxwell)
 endif()
+
+
+# cabine project
+if ( EXISTS ${FEEL_SOURCE_DIR}/research/cabine )
+  add_subdirectory( cabine )
+endif()
+
