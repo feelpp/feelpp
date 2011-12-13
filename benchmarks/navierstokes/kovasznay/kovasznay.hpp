@@ -108,8 +108,8 @@ public:
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     BOOST_MPL_ASSERT( ( boost::is_same<typename space_type::bases_list, basis_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<0> >::type, basis_u_type> ) );
-    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<1> >::type, basis_p_type> ) );
+    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<0> >::type, typename basis_u_type::template ChangeTag<0>::type> ) );
+    BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<1> >::type, typename basis_p_type::template ChangeTag<1>::type> ) );
     //BOOST_MPL_ASSERT( ( boost::is_same<typename mpl::at<typename space_type::bases_list,mpl::int_<2> >::type, basis_l_type> ) );
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
