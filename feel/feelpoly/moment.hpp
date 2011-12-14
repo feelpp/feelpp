@@ -355,14 +355,17 @@ public:
         }
 
     template<template<uint16_type> class PolySetType = Scalar>
-    Polynomial<self_type,PolySetType> pick( int i ) const
+    Polynomial<self_type,PolySetType> pick( int i, int c = 0 ) const
         {
             size_type dim_p = convex_type::polyDims( nDim );
-            int nComponents = 1;
+            int nComponents = PolySetType<Dim>::nComponents;
             matrix_type coeff( nComponents, dim_p );
             coeff = ublas::scalar_matrix<value_type>( coeff.size1(), coeff.size2(), 0. );
-            coeff( 0, i ) = 1;
-            return Polynomial<self_type, PolySetType> ( *this, coeff, true );
+            coeff( c, i ) = 1;
+            //std::cout << "pick.coeff(" << i << "," << c << ") = "  << coeff << "\n";
+            return Polynomial<self_type, PolySetType>( *this, coeff, true );
+            //std::cout << "p1.coeff(" << i << "," << c << ") = "  << p.coeff() << "\n";
+            //return p;
         }
 
     /**

@@ -146,6 +146,7 @@ public:
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_h( 1 ),
         M_h_face( numTopologicalFaces, 1 ),
+        M_h_edge( numLocalEdges, 1 ),
         M_measure( 1 ),
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
@@ -175,6 +176,7 @@ public:
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_h( 1 ),
         M_h_face( numTopologicalFaces, 1 ),
+        M_h_edge( numLocalEdges, 1 ),
         M_measure( 1 ),
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
@@ -198,6 +200,7 @@ public:
         M_barycenterfaces( e.M_barycenterfaces ),
         M_h( e.M_h ),
         M_h_face( e.M_h_face ),
+        M_h_edge( e.M_h_edge ),
         M_measure( e.M_measure ),
         M_measurefaces( numTopologicalFaces  ),
         M_normals( e.M_normals ),
@@ -285,6 +288,7 @@ public:
             M_barycenterfaces = G.M_barycenterfaces;
             M_h = G.M_h;
             M_h_face = G.M_h_face;
+            M_h_edge = G.M_h_edge;
 
             M_has_points = G.M_has_points;
 
@@ -517,6 +521,11 @@ public:
         return M_h_face[f];
     }
 
+    double hEdge( uint16_type f ) const
+    {
+        return M_h_edge[f];
+    }
+
     struct tt
     {
         static uint16_type fToP( uint16_type const _localFace, uint16_type const _point )
@@ -692,6 +701,7 @@ private:
 
     double M_h;
     std::vector<double> M_h_face;
+    std::vector<double> M_h_edge;
 
     double M_measure;
     std::vector<double> M_measurefaces;
@@ -808,8 +818,8 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
     {
         node_type const& __x1 = this->point( this->eToP( __e, 0 ) ).node();
         node_type const& __x2 = this->point( this->eToP( __e, 1 ) ).node();
-        double __l = ublas::norm_2( __x1-__x2 );
-        M_h = ( M_h > __l )?M_h:__l;
+        M_h_edge[__e] = ublas::norm_2( __x1-__x2 );
+        M_h = ( M_h > M_h_edge[__e] )?M_h:M_h_edge[__e];
     }
 
     auto M = glas::average( M_G );

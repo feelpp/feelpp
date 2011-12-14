@@ -85,15 +85,21 @@ public:
         super()
     {
         Moment<2,2,Hypercube<2> > m;
-        // 1
-        this->insert( m.template pick<PolySetType>( 0 ).toSet(), true );
-        // x
-        this->insert( m.template pick<PolySetType>( 1 ).toSet() );
-        // y
-        this->insert( m.template pick<PolySetType>( 3 ).toSet() );
-        // x^2 - y^2
-        auto p  = m.template pick<PolySetType>( 2 ) - m.template pick<PolySetType>( 6 );
-        this->insert( p.toSet() );
+        for( int c = 0; c < nComponents; ++c )
+        {
+            // 1
+            this->insert( m.template pick<PolySetType>( 0, c ).toSet(true), c==0 );
+            // x
+            this->insert( m.template pick<PolySetType>( 1, c ).toSet(true) );
+            // y
+            this->insert( m.template pick<PolySetType>( 3, c ).toSet(true) );
+            // x^2 - y^2
+            Polynomial<Moment<2,2,Hypercube<2> >, PolySetType> p(m);
+            p = m.template pick<PolySetType>( 2, c );
+            p -= m.template pick<PolySetType>( 6, c );
+            //std::cout << "x^2-y^2:" << p.coeff() << "\n";
+            this->insert( p.toSet(true) );
+        }
 
     }
 
@@ -171,7 +177,7 @@ public:
     _M_points_face( nFacesInConvex ),
     _M_fset( primal )
 {
-#if 0
+#if 1
     std::cout << "Lagrange finite element: \n";
     std::cout << " o- dim   = " << nDim << "\n";
     std::cout << " o- order = " << nOrder << "\n";
