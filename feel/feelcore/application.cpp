@@ -851,6 +851,49 @@ printNumbers( std::ostream& out, std::vector<ptree::ptree> const& stats, std::st
 }
 
 void
+printData( std::ostream& out, std::vector<ptree::ptree> const& stats, std::string const& key )
+{
+    out << std::setw(10) << std::right << "levels"
+        << std::setw(10) << std::right << "h";
+    BOOST_FOREACH(auto v, stats.front().get_child(key+".bool"))
+        {
+            out << std::setw(10) << std::right << v.first;
+        }
+    BOOST_FOREACH(auto v, stats.front().get_child(key+".int"))
+        {
+            out << std::setw(10) << std::right << v.first;
+        }
+    BOOST_FOREACH(auto v, stats.front().get_child(key+".double"))
+        {
+            out << std::setw(10) << std::right << v.first;
+        }
+    out << "\n";
+    int l=1;
+    for( auto it = stats.begin(), en =stats.end(); it!=en; ++it,++l )
+    {
+        double h  = it->get<double>("h");
+        out << std::right << std::setw(10) << l
+            << std::right << std::setw(10) << std::fixed  << std::setprecision( 4 ) << h;
+        BOOST_FOREACH(auto v, it->get_child(key+".bool"))
+        {
+            bool u  = it->get<bool>( key+".bool."+v.first );
+            out << std::right << std::setw(10)  << u;
+        }
+        BOOST_FOREACH(auto v, it->get_child(key+".int"))
+        {
+            size_type u  = it->get<size_type>( key+".int."+v.first );
+            out << std::right << std::setw(10)  << u;
+        }
+        BOOST_FOREACH(auto v, it->get_child(key+".double"))
+        {
+            double u  = it->get<double>( key+".double."+v.first );
+            out << std::right << std::setw(10) << std::scientific << std::setprecision( 2 ) << u;
+        }
+        out << "\n";
+    }
+}
+
+void
 printTime( std::ostream& out, std::vector<ptree::ptree> const& stats, std::string const& key )
 {
     out << std::setw(10) << std::right << "levels"
@@ -914,6 +957,11 @@ Application::printStats( std::ostream& out, std::vector<std::string> const& keys
             {
                 if ( M_stats.find(i->name()) != M_stats.end() )
                     printTime( out, M_stats.find(i->name())->second, key );
+            }
+            if ( key.find("d.") != std::string::npos )
+            {
+                if ( M_stats.find(i->name()) != M_stats.end() )
+                    printData( out, M_stats.find(i->name())->second, key );
             }
         }
     }
