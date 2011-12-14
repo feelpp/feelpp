@@ -90,8 +90,8 @@ makeAbout()
 }
 namespace Feel
 {
-extern template class Stokes<2, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Simplex>;
-extern template class Stokes<2, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Hypercube>;
+extern template class Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex>;
+extern template class Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Hypercube>;
 //extern template class Stokes<3, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Simplex>;
 extern template class Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>;
 extern template class Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>;
@@ -119,8 +119,8 @@ int main( int argc, char** argv )
         return 0;
     }
 #if 0
-    benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "2D-CR1P0-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "2D-CR1P0-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube", benchmark.vm(), benchmark.about() ) );
     //benchmark.add( new Stokes<3, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "3D-CR1P0", benchmark.vm(), benchmark.about() ) );
 
     benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "2D-P2P1-Simplex", benchmark.vm(), benchmark.about() ) );
@@ -135,10 +135,10 @@ int main( int argc, char** argv )
     benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Hypercube>( "2D-P5P4-Hypercube", benchmark.vm(), benchmark.about() ) );
     //benchmark.add( new Stokes<3, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>( "3D-P5P4", benchmark.vm(), benchmark.about() ) );
 #else
-    benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "2D-P2P1-Hypercube", benchmark.vm(), benchmark.about() ) );
 #endif
 
     benchmark.run();
-    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2")("e.h1")("n.space")("n.matrix")("t.init")("t.assembly.vector")("t.assembly.matrix" )("t.solver") );
+    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2")("e.h1")("n.space")("n.matrix")("t.init")("t.assembly.vector")("t.assembly.matrix" )("t.solver")("d.solver") );
 }
