@@ -55,3 +55,4 @@ target_link_libraries(feel_perf2 ${FEEL_LIBRARIES} )
 
 add_subdirectory(laplacian)
 add_subdirectory(stokes)
+add_subdirectory(mortar)
