@@ -661,6 +661,7 @@ main( int argc, char** argv )
      */
 
     app.add( new Mortar<2,2,2>( app.vm(), app.about() ) );
+    app.add( new Mortar<2,2,3>( app.vm(), app.about() ) );
 
     /**
      * run the application
@@ -669,6 +670,7 @@ main( int argc, char** argv )
     app.run();
 
 }
+
 
 
 
