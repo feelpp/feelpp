@@ -110,7 +110,7 @@ public:
         exporter()
     {
         mu = this->vm()["mu"].template as<value_type>();
-        penalbc = this->vm()["bccoeff"].template as<value_type>();
+        penalbc = this->vm()[prefixvm(name(),"bccoeff")].template as<value_type>();
     }
 
 
@@ -239,7 +239,6 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto SigmaN = -id(p)*N()+mu*dn(u);
     //# endmarker6 #
 
-    double penalbc = this->vm()["bccoeff"].template as<value_type>();
     double betacoeff = this->vm()["beta"].template as<value_type>();
     bool add_convection = ( math::abs( betacoeff  ) > 1e-10 );
     double mu = this->vm()["mu"].template as<value_type>();
@@ -318,9 +317,9 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     }
 
 
-    if ( this->vm()[ "bctype" ].template as<int>() == 1  )
+    if ( this->vm()[ prefixvm(name(),"bctype") ].template as<int>() == 1  )
     {
-        form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=+trans(u_exact)*SigmaN );
+        form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=-trans(u_exact)*SigmaN );
         M_stats.put("t.assembly.vector.dirichletup",subt.elapsed());subt.restart();
         form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*inner(u_exact,id(v))/hFace() );
         //form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*max(betacoeff,mu/hFace())*(trans(id(v))*N())*N());
@@ -403,14 +402,14 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     M_stats.put("t.assembly.matrix.up",subt.elapsed());
     Log() << "   o time for velocity/pressure terms: " << subt.elapsed() << "\n";subt.restart();
 
-    if ( this->vm()[ "bctype" ].template as<int>() == 1  )
+    if ( this->vm()[ prefixvm(name(),"bctype") ].template as<int>() == 1  )
     {
         if (  !this->vm().count( "extra-terms" ) )
         {
             //form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
             form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
             M_stats.put("t.assembly.matrix.dirichlet1",subt.elapsed());subt.restart();
-            form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=+trans(SigmaN)*idt(v));
+            form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(v));
             M_stats.put("t.assembly.matrix.dirichlet2",subt.elapsed());subt.restart();
         }
         else
@@ -442,7 +441,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     M_stats.put("t.assembly.matrix.total",t.elapsed());
     Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
-    if ( this->vm()[ "bctype" ].template as<int>() == 0  )
+    if ( this->vm()[ prefixvm(name(),"bctype") ].template as<int>() == 0  )
     {
         form2( Xh, Xh, D ) += on( boundaryfaces(mesh), u, F, u_exact );
         M_stats.put("t.assembly.matrix.dirichlet",subt.elapsed());
