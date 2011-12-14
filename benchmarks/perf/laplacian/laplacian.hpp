@@ -212,8 +212,8 @@ Laplacian<Dim, BasisU, Entity>::run()
     double mu = this->vm()["mu"].template as<value_type>();
 
     auto pi = M_PI;
-    auto u_exact = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
-    auto grad_exact = pi*trans(cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()-sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()-sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ());
+    auto u_exact = val(sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()));
+    auto grad_exact = val(pi*trans(cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()-sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()-sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ()));
     auto f = Dim*pi*pi*u_exact; // -Delta u_exact
 
     boost::timer subt;
@@ -303,7 +303,7 @@ Laplacian<Dim, BasisU, Entity>::run()
         M_stats.put("d.solver.double.residual",r.template get<2>());
     }
     M_stats.put("t.solver.total",t.elapsed());
-    Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";
+    Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";    t.restart();
 
 
     double meas = integrate( _range=elements(mesh), _expr=constant(1.0) ).evaluate()( 0, 0);
@@ -321,14 +321,18 @@ Laplacian<Dim, BasisU, Entity>::run()
     std::cout << "[laplacian] mean(u-mean(u))=" << mean_u << "\n";
     double mean_uexact = integrate( elements(mesh), u_exact ).evaluate()( 0, 0 )/meas;
     std::cout << "[laplacian] mean(uexact)=" << mean_uexact << "\n";
+    M_stats.put("t.integrate.mean",t.elapsed());
     size_type nnz = 0 ;
     auto nNz = D->graph()->nNz() ;
     for(auto iter = nNz.begin();iter!=nNz.end();++iter)
       nnz += (*iter) ;
     Log() << "[laplacian] matrix NNZ "<< nnz << "\n";
     M_stats.put("n.matrix.nnz",nnz);
+
+    t.restart();
     double u_errorL2 = integrate( _range=elements(mesh), _expr=trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
     double u_exactL2 = integrate( _range=elements(mesh), _expr=trans(u_exact)*(u_exact) ).evaluate()( 0, 0 );
+    M_stats.put("t.integrate.l2norm",t.elapsed());t.restart();
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
     Log() << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
     M_stats.put("e.l2.u",math::sqrt( u_errorL2/u_exactL2 ));
@@ -338,12 +342,14 @@ Laplacian<Dim, BasisU, Entity>::run()
     double u_exactsemiH1 = integrate( _range=elements(mesh),
                                       _expr=trace((grad_exact)*trans(grad_exact))).evaluate()( 0, 0 );
     double u_error_H1 = math::sqrt( (u_errorL2+u_errorsemiH1)/(u_exactL2+u_exactsemiH1) );
+    M_stats.put("t.integrate.h1norm",t.elapsed());t.restart();
     std::cout << "||u_error||_1= " << u_error_H1 << "\n";
     M_stats.put("e.h1.u",u_error_H1);
 
     v = vf::project( Xh, elements( Xh->mesh() ), u_exact );
-
+    M_stats.put("t.export.projection",t.elapsed());t.restart();
     this->exportResults( u, v );
+    M_stats.put("t.export.total",t.elapsed());t.restart();
 
 } // Laplacian::run
 
