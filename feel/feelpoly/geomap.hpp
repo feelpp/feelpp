@@ -111,6 +111,9 @@ class GeoMap
                                                          mpl::int_<Dim> >::type::value;
 
 
+    typedef mpl::vector<boost::none_t, boost::none_t, boost::none_t,
+                        GeoMap<1, Order, RealDim, T, Entity, PP> > geomap_edges_t;
+
     typedef mpl::vector<boost::none_t, boost::none_t,
                         GeoMap<1, Order, RealDim, T, Entity, PP>,
                         GeoMap<2, Order, nRealDimCheck2d/*RealDim*/, T, Entity, PP> > geomap_faces_t;
@@ -150,6 +153,16 @@ public:
     struct face_gm
     {
         typedef typename mpl::at<geomap_faces_t, mpl::int_<N> >::type type;
+    };
+
+
+    typedef typename mpl::at<geomap_edges_t, mpl::int_<nDim> >::type edge_gm_type;
+    typedef boost::shared_ptr<edge_gm_type> edge_gm_ptrtype;
+
+    template<int N>
+    struct edge_gm
+    {
+        typedef typename mpl::at<geomap_edges_t, mpl::int_<N> >::type type;
     };
 
 
@@ -555,7 +568,7 @@ public:
         static const bool is_linear = (trans == fem::LINEAR);
 
         static const bool condition = ((PDim==NDim)||((NDim>=1)&&(PDim==NDim-1)));
-        BOOST_MPL_ASSERT_MSG( condition, INVALID_DIM, (mpl::int_<NDim>, mpl::int_<PDim>, ElementType ) );
+        //BOOST_MPL_ASSERT_MSG( condition, INVALID_DIM, (mpl::int_<NDim>, mpl::int_<PDim>, ElementType ) );
         typedef typename mpl::if_<mpl::equal_to<mpl::int_<PDim>, mpl::int_<NDim> >,
                                   mpl::identity<GeoMap<Dim, Order, NDim, T, Entity, PP > >,
                                   typename mpl::if_<mpl::and_<mpl::greater_equal<mpl::int_<NDim>, mpl::int_<1> >,
@@ -563,7 +576,12 @@ public:
                                                     //typename mpl::if_<mpl::equal_to<mpl::int_<PDim>, mpl::int_<NDim-1> >,
                                                     // mpl::identity<typename GeoMap<Dim, Order, T, Entity, PP >::template face_gm<NDim>::type>,
                                                     mpl::identity<typename GeoMap<NDim, Order, NDim, T, Entity, PP >::face_gm_type>,
-                                                    mpl::identity<boost::none_t> >::type>::type::type gm_type;
+                                                    typename mpl::if_<mpl::and_<mpl::equal_to<mpl::int_<NDim>, mpl::int_<3> >,
+                                                                                mpl::equal_to<mpl::int_<PDim>, mpl::int_<NDim-2> > >,
+                                                                      //typename mpl::if_<mpl::equal_to<mpl::int_<PDim>, mpl::int_<NDim-1> >,
+                                                                      // mpl::identity<typename GeoMap<Dim, Order, T, Entity, PP >::template face_gm<NDim>::type>,
+                                                                      mpl::identity<typename GeoMap<NDim, Order, NDim, T, Entity, PP >::edge_gm_type>,
+                                                                      mpl::identity<boost::none_t> >::type>::type>::type::type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
 
     typedef typename gm_type::value_type value_type;
