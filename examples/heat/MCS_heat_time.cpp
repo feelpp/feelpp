@@ -221,6 +221,7 @@ template<int Dim>
 void
 BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
+    
     //if ( X[1] == 0 ) shape = "simplex";
     //if ( X[1] == 1 ) shape = "hypercube";
 
@@ -240,7 +241,13 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     /** \code */
     space_ptrtype Xh = space_type::New( mesh );
     element_type T( Xh, "T" );
+    element_type Tn( Xh, "Tn" );
     element_type v( Xh, "v" );
+
+   // Initialization of the terms :    
+   Tn.zero();
+    
+    
    
 
     /** \endcode */
@@ -260,7 +267,9 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     bool weakdir = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
-    //auto vp = 0.1;
+    value_type dt = 0.01;
+    value_type ft = 2;
+    double factor = 1./dt;
     using namespace Feel::vf;
 
     /**
@@ -272,8 +281,20 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     //# marker2 #
     auto F = M_backend->newVector( Xh );
 
+    export_ptrtype exporter( export_type::New( this->vm(),
+                                               (boost::format( "%1%-%2%-%3%" )
+                                                % this->about().appName()
+                                                % shape
+                                                % Dim).str() ) );
+    // Time loop :
+    for( double t= dt; t <= ft; t += dt )
+    {
+       std::cout<<"t =  "<<t<<std::endl;
+
+
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( markedfaces(mesh,11) ,0.1*id(v) );
+        integrate( markedfaces(mesh,11) ,0.1*id(v) )
+       +integrate( elements(mesh) ,factor*idv(Tn)*id(v) );
 
 
     //# endmarker2 #
@@ -293,8 +314,8 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
     /** \code */
     form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), nu*gradt(T)*(trans(grad(v)) ))
-        + integrate( elements(mesh), idt(T)*id(v) ) ;
+        integrate( elements(mesh), nu*gradt(T)*trans(grad(v)) )
+        + integrate( elements(mesh), factor*idt(T)*id(v));
     /** \endcode */
     //# endmarker3 #
 
@@ -319,23 +340,25 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 	//# endmarker6 #
     /** \endcode */
 
-    export_ptrtype exporter( export_type::New( this->vm(),
-                                               (boost::format( "%1%-%2%-%3%" )
-                                                % this->about().appName()
-                                                % shape
-                                                % Dim).str() ) );
     if ( exporter->doExport() )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( mesh );
+        exporter->step(t)->setMesh( mesh );
 
-        exporter->step(0)->add( "T", T );
+        exporter->step(t)->add( "T", T );
 
         exporter->save();
         Log() << "exportResults done\n";
     }
+
     /** \endcode */
+    //Update:
+    Tn=T;
+    std::cout<<"T =  "<<Tn<<std::endl;
+
+}
+
 } // BlocHeat::run
 
 /**

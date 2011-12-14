@@ -25,5 +25,6 @@ feel_add_example( thermalfin thermalfin.cpp fin.cpp LINK_LIBRARIES ${FEEL_LIBRAR
 feel_add_example( resistance resistance.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
 feel_add_example( heatsink heatsink.cpp fin_sink.cpp LINK_LIBRARIES ${FEEL_LIBRARIES} CFG heatsink.cfg)
 feel_add_example( MCS_heat MCS_heat.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
+feel_add_example( MCS_heat_time MCS_heat_time.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
 #feel_add_example( ground ground.cpp  LINK_LIBRARIES ${FEEL_LIBRARIES} CFG ground.cfg ground-realistic.cfg ) #ground1.cfg ground2.cfg ground3.cfg )
 #feel_geo(${CMAKE_CURRENT_SOURCE_DIR}/ground.geo)
