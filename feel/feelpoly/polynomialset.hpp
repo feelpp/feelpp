@@ -637,6 +637,7 @@ public:
         if ( erase )
         {
             _M_coeff = p._M_coeff;
+            //std::cout << "insert after erase ="  << _M_coeff << "\n";
             return;
         }
 
@@ -653,7 +654,7 @@ public:
         ublas::project( _M_coeff,
                         ublas::range( oldcoeff.size1(), oldcoeff.size1()+p.coeff().size1() ),
                         ublas::range( 0, oldcoeff.size2() ) ) = p.coeff();
-
+        //std::cout << "insert ="  << _M_coeff << "\n";
 
     }
 

@@ -377,6 +377,10 @@ public:
             }
             return __max;
         }
+    double h( int e ) const
+        {
+            return ublas::norm_2( edgeVertex( e, 1 ) - edgeVertex( e, 0 ) );
+        }
 
 
     double hFace( int /*__f*/ ) const
@@ -771,7 +775,7 @@ private:
             M_tangents[0][0]=-1/math::sqrt(2.);
             M_tangents[0][1]= 1/math::sqrt(2.);
             M_tangents[1][0]= 0;
-            M_tangents[1][1]=-1;
+            M_tangents[1][1]= 1;
             M_tangents[2][0]= 1;
             M_tangents[2][1]= 0;
         }

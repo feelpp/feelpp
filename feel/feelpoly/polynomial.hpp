@@ -6,6 +6,7 @@
        Date: 2005-10-06
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2011 Universite de Grenoble
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -195,6 +196,22 @@ public:
      */
     //@{
 
+    self_type const& operator=( self_type const& __p )
+    {
+        if ( this != &__p )
+            {
+                _M_basis = __p._M_basis;
+                _M_coeff = __p._M_coeff;
+            }
+        return *this;
+    }
+
+    self_type const& operator-=( self_type const& __p )
+    {
+        _M_coeff -= __p._M_coeff;
+        return *this;
+    }
+
     self_type const& operator()( self_type const& __p ) const
     {
         if ( this != &__p )
@@ -377,11 +394,14 @@ public:
     {
         return PolynomialSet<Poly,PolySetType>( Poly(), _M_coeff, asis );
     }
-
+#if 0
     Polynomial<Poly, PolySetType> operator-( Polynomial<Poly, PolySetType> const& p ) const
         {
-            return Polynomial<Poly, PolySetType>( Poly(), _M_coeff-p._M_coeff );
+            matrix_type c = _M_coeff-p._M_coeff;
+            std::cout << "c=" << c << "\n";
+            return Polynomial<Poly, PolySetType>( Poly(), c );
         }
+#endif
     //@}
 
 
@@ -392,6 +412,13 @@ private:
     basis_type _M_basis;
     container_type _M_coeff;
 };
+template<typename Poly, template<uint16_type> class PolySetType>
+Polynomial<Poly, PolySetType> operator-( Polynomial<Poly, PolySetType> const& p1,Polynomial<Poly, PolySetType> const& p2 )
+{
+    auto c = p1.coeff()-p2.coeff();
+    //std::cout << "operator- c=" << c << "\n";
+    return Polynomial<Poly, PolySetType>( Poly(), c );
+}
 
 template<typename Poly,template<uint16_type> class PolySetType, typename Container> const bool Polynomial<Poly,PolySetType,Container>::is_scalar;
 template<typename Poly,template<uint16_type> class PolySetType, typename Container> const bool Polynomial<Poly,PolySetType, Container>::is_vectorial;

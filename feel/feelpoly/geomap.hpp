@@ -602,6 +602,7 @@ public:
         _M_n_real( NDim ),
         _M_u_n_real( NDim ),
         _M_n_norm( 0 ),
+        _M_t_real( NDim ),
         _M_xrefq( PDim, nPoints() ),
         _M_xrealq( NDim, nPoints() ),
         _M_nrealq( NDim, nPoints() ),
@@ -664,6 +665,7 @@ public:
         _M_n_real( NDim ),
         _M_u_n_real( NDim ),
         _M_n_norm( 0 ),
+        _M_t_real( NDim ),
         _M_xrefq( PDim, nPoints() ),
         _M_xrealq( NDim, nPoints() ),
         _M_nrealq( NDim, nPoints() ),
@@ -721,6 +723,7 @@ public:
        _M_n_real( p->_M_n_real ),
        _M_u_n_real( p->_M_u_n_real ),
        _M_n_norm( p->_M_n_norm ),
+        _M_t_real( p->_M_t_real ),
        _M_xrefq( p->_M_xrefq ),
        _M_xrealq( p->_M_xrealq ),
        _M_nrealq( p->_M_nrealq ),
@@ -790,6 +793,7 @@ public:
         _M_perm = __e.permutation( _M_face_id );
 
         _M_h_face = __e.hFace( _M_face_id );
+        //_M_h_edge = __e.hEdge( _M_face_id );
 
         _M_pc = _M_pc_faces[__f][_M_perm];
         //_M_G = __e.G();
@@ -1190,6 +1194,11 @@ public:
             return _M_unrealq( n, q );
     }
 
+    node_t_type const& tangent() const
+    {
+        //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
+        return _M_t_real;
+    }
 #if 0
     //ublas::matrix_column<matrix_node_t_type const> unitNormal( int q ) const
     // node_t_type const& unitNormal( int q ) const
@@ -1499,11 +1508,18 @@ private:
                 _M_n_norm = ublas::norm_2( _M_n_real );
                 _M_u_n_real = _M_n_real/_M_n_norm;
 
-                if ( vm::has_tangent<context>::value )
-                    {
-
-                    }
             }
+        if ( vm::has_tangent<context>::value && (_M_face_id != invalid_uint16_type_value ) )
+        {
+            // t = |\hat{e}|*o_K*(K*t_ref)/|e| where o_K is the sign(e*x_K(\hat{e}))
+            ublas::axpy_prod( _M_K,
+                              _M_gm->referenceConvex().tangent( _M_face_id ),
+                              _M_t_real,
+                              true );
+
+            //_M_t_real *= _M_edge_orientation*_M_gm->referenceConvex().h( _M_face_id )/_M_h_face;
+        }
+
     }
 
     /**
@@ -1648,6 +1664,7 @@ private:
     node_t_type _M_n_real;
     node_t_type _M_u_n_real;
     value_type _M_n_norm;
+    node_t_type _M_t_real;
 
     //matrix_node_t_type const& _M_xrefq;
     matrix_node_t_type  _M_xrefq;
