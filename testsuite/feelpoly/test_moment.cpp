@@ -46,7 +46,9 @@ typedef boost::mpl::list<boost::mpl::int_<2> > test_types;
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_QK, T, test_types )
 {
     using namespace Feel;
+
     Moment<2,T::value,Hypercube<2> > m;
+#if 0
     std::cout << "1  :" << m.template pick<Scalar>( 0 ).evaluate( m.points() ) << "\n";
     std::cout << "x  :" << m.template pick<Scalar>( 1 ).evaluate( m.points() ) << "\n";
     std::cout << "x^2:" << m.template pick<Scalar>( 2 ).evaluate( m.points() ) << "\n";
@@ -87,5 +89,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_QK, T, test_types )
 
     fem::CrouzeixRaviart<2,2,Scalar,double,Hypercube> cr;
     std::cout << "cr :" << cr.evaluate( m.points() ) << "\n";
+
+    fem::detail::RannacherTurekPolynomialSet<2,Vectorial> RQv;
+    std::cout << "rqv :" << RQv.evaluate( m.points() ) << "\n";
+    std::cout << "d rqv/dx :" << RQv.derivate( 0, m.points() ) << "\n";
+    std::cout << "d rqv/dy :" << RQv.derivate( 1, m.points() ) << "\n";
+#endif
+    fem::CrouzeixRaviart<2,2,Scalar,double,Hypercube> cr;
+    std::cout << "cr :" << cr.evaluate( m.points() ) << "\n";
+    std::cout << "d cr/dx :" << cr.derivate( 0, m.points() ) << "\n";
+    std::cout << "d cr/dy :" << cr.derivate( 1, m.points() ) << "\n";
+
+    fem::CrouzeixRaviart<2,2,Vectorial,double,Hypercube> crv;
+    std::cout << "crv :" << crv.evaluate( m.points() ) << "\n";
+    std::cout << "d crv/dx :" << crv.derivate( 0, m.points() ) << "\n";
+    std::cout << "d crv/dy :" << crv.derivate( 1, m.points() ) << "\n";
 
 }
