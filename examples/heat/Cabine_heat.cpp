@@ -221,18 +221,19 @@ template<int Dim>
 void
 BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
+    
     //if ( X[1] == 0 ) shape = "simplex";
     //if ( X[1] == 1 ) shape = "hypercube";
 
     if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "MCS/heat/%1%/%2%-%3%/P%4%/h_%5%/" ) //chemin où seront générés les résultats
+        Environment::changeRepository( boost::format( "MCS/Cabine/heat/%1%/%2%-%3%/P%4%/h_%5%/" ) //chemin où seront générés les résultats
                                        % this->about().appName()
                                        % shape
                                        % Dim
                                        % Order
                                        % meshSize );
 
-    auto mesh = GeoTool::createMeshFromGeoFile<mesh_type>("/u/e/effeindm/feel.src/examples/heat/MCS_heat.geo", "nameExport",meshSize);
+    auto mesh = GeoTool::createMeshFromGeoFile<mesh_type>("/u/e/effeindm/feel.src/examples/heat/Cabine_heat.geo", "nameExport",meshSize);
 
     /**
      * The function space and some associated elements(functions) are then defined
@@ -240,7 +241,13 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     /** \code */
     space_ptrtype Xh = space_type::New( mesh );
     element_type T( Xh, "T" );
+    element_type Tn( Xh, "Tn" );
     element_type v( Xh, "v" );
+
+   // Initialization of the terms :    
+   Tn.zero();
+    
+    
    
 
     /** \endcode */
@@ -260,6 +267,10 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     bool weakdir = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
+    value_type dt = 0.01;
+    value_type ft = 2;
+    double factor = 1./dt;
+    auto vp = vec(cst(1.),cst(1.));
     using namespace Feel::vf;
 
     /**
@@ -271,8 +282,20 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     //# marker2 #
     auto F = M_backend->newVector( Xh );
 
+    export_ptrtype exporter( export_type::New( this->vm(),
+                                               (boost::format( "%1%-%2%-%3%" )
+                                                % this->about().appName()
+                                                % shape
+                                                % Dim).str() ) );
+    // Time loop :
+    for( double t= dt; t <= ft; t += dt )
+    {
+       std::cout<<"t =  "<<t<<std::endl;
+
+
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( markedfaces(mesh,11) ,0.1*id(v) );
+        integrate( markedfaces(mesh,12),id(v) )
+       +integrate( elements(mesh) ,factor*idv(Tn)*id(v) );
 
 
     //# endmarker2 #
@@ -292,8 +315,9 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
     /** \code */
     form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), nu*gradt(T)*(trans(grad(v)) ))
-        + integrate( elements(mesh), idt(T)*id(v) ) ;
+        integrate( elements(mesh), nu*gradt(T)*trans(grad(v)) )
+        + integrate( elements(mesh),trans(vp)*trans(gradt(T))*id(v))
+        + integrate( elements(mesh), factor*idt(T)*id(v));
     /** \endcode */
     //# endmarker3 #
 
@@ -305,7 +329,7 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     //# marker5 #
     D->close();
     form2( Xh, Xh, D ) +=
-        on( markedfaces(mesh,10), T, F, cst(1.) );
+        on( markedfaces(mesh,"dirichlet"), T, F, cst(10.) );
     //# endmarker5 #
     /** \endcode */
 
@@ -318,23 +342,25 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 	//# endmarker6 #
     /** \endcode */
 
-    export_ptrtype exporter( export_type::New( this->vm(),
-                                               (boost::format( "%1%-%2%-%3%" )
-                                                % this->about().appName()
-                                                % shape
-                                                % Dim).str() ) );
     if ( exporter->doExport() )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( mesh );
+        exporter->step(t)->setMesh( mesh );
 
-        exporter->step(0)->add( "T", T );
+        exporter->step(t)->add( "T", T );
 
         exporter->save();
         Log() << "exportResults done\n";
     }
+
     /** \endcode */
+    //Update:
+    Tn=T;
+    std::cout<<"T =  "<<Tn<<std::endl;
+
+}
+
 } // BlocHeat::run
 
 /**
