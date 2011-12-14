@@ -57,12 +57,19 @@ makeOptions()
         ("no-solve", "dont solve the system" )
         ("extra-terms", "dont solve the system" )
         ;
-    return stokesoptions.add( Feel::feel_options() )
-        .add( Feel::benchmark_options( "2D-CR1P0" ) ).add( Feel::benchmark_options( "3D-CR1P0" ) )
-        .add( Feel::benchmark_options( "2D-P2P1" ) ).add( Feel::benchmark_options( "3D-P2P1" ) )
-        .add( Feel::benchmark_options( "2D-P3P2" ) ).add( Feel::benchmark_options( "3D-P3P2" ) )
-        .add( Feel::benchmark_options( "2D-P4P3" ) ).add( Feel::benchmark_options( "3D-P4P3" ) )
-        .add( Feel::benchmark_options( "2D-P5P4" ) ).add( Feel::benchmark_options( "3D-P5P4" ) );
+    return stokesoptions.add( Feel::feel_options() );
+}
+
+inline
+Feel::po::options_description
+makeBenchmarkOptions(std::string const& bench)
+{
+    Feel::po::options_description benchoptions("Stokes benchmark options");
+    benchoptions.add_options()
+        (Feel::prefixvm(bench,"bctype").c_str(), Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
+        (Feel::prefixvm(bench,"bccoeff").c_str(), Feel::po::value<double>()->default_value( 400.0 ), "coeff for weak Dirichlet conditions")
+        ;
+    return benchoptions.add( Feel::benchmark_options( bench ) );
 }
 
 
@@ -112,32 +119,21 @@ int main( int argc, char** argv )
 {
 
     using namespace Feel;
-    Application benchmark( argc, argv, makeAbout(), makeOptions() );
+    std::vector<std::string> boptions = boost::assign::list_of("2D-CR1P0-Hypercube")("2D-P2P1-Hypercube");
+    auto cmdoptions = makeOptions();
+    BOOST_FOREACH( auto o, boptions )
+    {
+        cmdoptions.add( makeBenchmarkOptions( o ) );
+    }
+    Application benchmark( argc, argv, makeAbout(), cmdoptions );
     if ( benchmark.vm().count( "help" ) )
     {
         std::cout << benchmark.optionsDescription() << "\n";
         return 0;
     }
-#if 0
-    benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "2D-CR1P0-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube", benchmark.vm(), benchmark.about() ) );
-    //benchmark.add( new Stokes<3, CrouzeixRaviart<1, Vectorial,PointSetEquiSpaced>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "3D-CR1P0", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube",benchmark.vm(),benchmark.about() ) );
+    benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "2D-P2P1-Hypercube", benchmark.vm(), benchmark.about() ) );
 
-    benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "2D-P2P1-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "2D-P2P1-Hypercube", benchmark.vm(), benchmark.about() ) );
-    //benchmark.add( new Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "3D-P2P1", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, Lagrange<3, Vectorial>,Lagrange<2, Scalar>, Simplex>( "2D-P3P2-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, Lagrange<3, Vectorial>,Lagrange<2, Scalar>, Hypercube>( "2D-P3P2-Hypercube", benchmark.vm(), benchmark.about() ) );
-    //benchmark.add( new Stokes<3, Lagrange<3, Vectorial>,Lagrange<2, Scalar>, Simplex>( "3D-P3P2", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, Lagrange<4, Vectorial>,Lagrange<3, Scalar>, Simplex>( "2D-P4P3-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, Lagrange<4, Vectorial>,Lagrange<3, Scalar>, Hypercube>( "2D-P4P3-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>( "2D-P5P4-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Hypercube>( "2D-P5P4-Hypercube", benchmark.vm(), benchmark.about() ) );
-    //benchmark.add( new Stokes<3, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>( "3D-P5P4", benchmark.vm(), benchmark.about() ) );
-#else
-    benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "2D-P2P1-Hypercube", benchmark.vm(), benchmark.about() ) );
-#endif
 
     benchmark.run();
     benchmark.printStats( std::cout, boost::assign::list_of( "e.l2")("e.h1")("n.space")("n.matrix")("t.init")("t.assembly.vector")("t.assembly.matrix" )("t.solver")("d.solver") );
