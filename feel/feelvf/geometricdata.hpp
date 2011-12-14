@@ -78,10 +78,10 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
        ( Ny      , GDNy      , 1, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 1 ]  , 0), \
        ( Nz      , GDNz      , 2, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 2 ]  , 0), \
        ( Nref    , GDNref    , 0, 0, Vectorial, _M_gmc->refNormal( q )[ c1 ] , 0), \
-       ( T       , GDT       , 0, jn, Vectorial, _M_gmc->unitTangent( q )[ c1 ], 0), \
-       ( Tx      , GDTx      , 0, jn, Scalar   , _M_gmc->unitTangent( q )[ 0 ] , 0), \
-       ( Ty      , GDTy      , 1, jn, Scalar   , _M_gmc->unitTangent( q )[ 1 ] , 0), \
-       ( Tz      , GDTz      , 2, jn, Scalar   , _M_gmc->unitTangent( q )[ 2 ] , 0), \
+       ( T       , GDT       , 0, jt, Vectorial, _M_gmc->tangent( q )[ c1 ], 0), \
+       ( Tx      , GDTx      , 0, jt, Scalar   , _M_gmc->tangent( q )[ 0 ] , 0), \
+       ( Ty      , GDTy      , 1, jt, Scalar   , _M_gmc->tangent( q )[ 1 ] , 0), \
+       ( Tz      , GDTz      , 2, jt, Scalar   , _M_gmc->tangent( q )[ 2 ] , 0), \
        ( detJ    , GDDetJ    , 0, jp, Scalar   , _M_gmc->J( q )                , 0), \
        ( J       , GDJ       , 0, jkp,Tensor2  , _M_gmc->K( c1, c2, q )        , 0), \
        ( JinvT   , GDJinv    , 0, jkp,Tensor2  , _M_gmc->B( c1, c2, q )        , 0), \
