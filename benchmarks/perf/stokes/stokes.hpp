@@ -267,6 +267,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     //auto f = vec( (2*cos(Px())*cos(Py())-sin(Px())*sin(Py())),
     //              2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) );
     auto f = val(-2*exp(Px())*(mu-1.)*vec(sin(Py()),cos(Py())));
+
 #else
     //
     // the Kovasznay flow (2D)
@@ -319,7 +320,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=-trans(u_exact)*SigmaN);
+        form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=+trans(u_exact)*SigmaN );
         M_stats.put("t.assembly.vector.dirichletup",subt.elapsed());subt.restart();
         form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*inner(u_exact,id(v))/hFace() );
         //form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*max(betacoeff,mu/hFace())*(trans(id(v))*N())*N());
@@ -406,9 +407,10 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     {
         if (  !this->vm().count( "extra-terms" ) )
         {
+            //form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
             form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
             M_stats.put("t.assembly.matrix.dirichlet1",subt.elapsed());subt.restart();
-            form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaN)*idt(v) );
+            form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=+trans(SigmaN)*idt(v));
             M_stats.put("t.assembly.matrix.dirichlet2",subt.elapsed());subt.restart();
         }
         else
@@ -437,20 +439,26 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     //# endmarker7 #
     D->close();
     F->close();
+    M_stats.put("t.assembly.matrix.total",t.elapsed());
+    Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+
     if ( this->vm()[ "bctype" ].template as<int>() == 0  )
     {
         form2( Xh, Xh, D ) += on( boundaryfaces(mesh), u, F, u_exact );
         M_stats.put("t.assembly.matrix.dirichlet",subt.elapsed());
         Log() << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
-    M_stats.put("t.assembly.matrix.total",t.elapsed());
-    Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
 
 
     t.restart();
     if ( !this->vm().count("no-solve") )
-        M_backend->solve( _matrix=D, _solution=U, _rhs=F, _constant_null_space=true );
+    {
+        auto r = M_backend->solve( _matrix=D, _solution=U, _rhs=F, _constant_null_space=true );
+        M_stats.put("d.solver.bool.converged",r.template get<0>());
+        M_stats.put("d.solver.int.nit",r.template get<1>());
+        M_stats.put("d.solver.double.residual",r.template get<2>());
+    }
     M_stats.put("t.solver.total",t.elapsed());
     Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";
 
