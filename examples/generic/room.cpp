@@ -45,27 +45,27 @@ createRoom( int Dim, double meshSize )
     // On rajoute le cas ou la dimension = 1
     
    case 1:
-     ostr << "h=" << meshSize << ";\n"
-          << "Point (1) = {0, 0, 0, h};\n"
-          << "Point (2) = {1, 0, 0, h};\n"
+     ostr << "hTemp=" << meshSize << ";\n"
+          << "Point (1) = {0, 0, 0, hTemp};\n"
+          << "Point (2) = {1, 0, 0, hTemp};\n"
           << "Line (1) = {1, 2};\n"
           << "Physical Point (1) = {1};\n"
           << "Physical Point (2) = {2};\n"
-          << "Physical Line (1) = {1};\n";
+          << "Physical Line (10) = {1};\n";
 
      nameStr << "room." << meshSize;
      break;
 
 
     case 2:
-        ostr << "h=" << meshSize << ";\n"
-             << "Point (1) = {0, 0, 0, h};\n"
-             << "Point (2) = {1, 0, 0, h};\n"
-             << "Point (3) = {5, 1, 0, h};\n"
-             << "Point (4) = {5, 3, 0, h};\n"
-             << "Point (5) = {3, 3, 0, h};\n"
-             << "Point (6) = {1, 1, 0, h};\n"
-             << "Point (7) = {0, 1, 0, h};\n"
+        ostr << "hTemp=" << meshSize << ";\n"
+             << "Point (1) = {0, 0, 0, hTemp};\n"
+             << "Point (2) = {1, 0, 0, hTemp};\n"
+             << "Point (3) = {5, 1, 0, hTemp};\n"
+             << "Point (4) = {5, 3, 0, hTemp};\n"
+             << "Point (5) = {3, 3, 0, hTemp};\n"
+             << "Point (6) = {1, 1, 0, hTemp};\n"
+             << "Point (7) = {0, 1, 0, hTemp};\n"
              << "Line (1) = {1, 2};\n"
              << "Line (2) = {2, 3};\n"
              << "Line (3) = {3, 4};\n"
@@ -83,13 +83,13 @@ createRoom( int Dim, double meshSize )
         break;
     case 3:
         ostr << "h=" << meshSize << ";\n"
-             << "Point (1) = {0, 0, 0, h};\n"
-             << "Point (2) = {1, 0, 0, h};\n"
-             << "Point (3) = {5, 1, 0, h};\n"
-             << "Point (4) = {5, 3, 0, h};\n"
-             << "Point (5) = {3, 3, 0, h};\n"
-             << "Point (6) = {1, 1, 0, h};\n"
-             << "Point (7) = {0, 1, 0, h};\n"
+             << "Point (1) = {0, 0, 0, hTemp};\n"
+             << "Point (2) = {1, 0, 0, hTemp};\n"
+             << "Point (3) = {5, 1, 0, hTemp};\n"
+             << "Point (4) = {5, 3, 0, hTemp};\n"
+             << "Point (5) = {3, 3, 0, hTemp};\n"
+             << "Point (6) = {1, 1, 0, hTemp};\n"
+             << "Point (7) = {0, 1, 0, hTemp};\n"
              << "Line (1) = {1, 2};\n"
              << "Line (2) = {2, 3};\n"
              << "Line (3) = {3, 4};\n"

@@ -57,6 +57,7 @@ makeOptions()
         ("kc2", Feel::po::value<double>()->default_value( 1 ), "k/c parameter")
         ("sigma", Feel::po::value<double>()->default_value( 20 ), "shift parameter for the eigenvalue problem")
         ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("dim", Feel::po::value<int>()->default_value( 2 ), "dim")
         ("dt", Feel::po::value<double>()->default_value( 0.1 ), "dt")
         ("ft", Feel::po::value<double>()->default_value( 2 ), "ft")
         ("export", "export results(ensight, data file(1D)")
@@ -134,6 +135,7 @@ public:
         super( vm, ad ),
         M_name( name )
     {
+    this->M_meshSize=this->vm()["hsize"].template as<double>();
     }
 
     std::string name() const { return M_name; }
@@ -155,7 +157,9 @@ void
 Sound<Dim, Order>::run()
 {
     using namespace Feel::vf;
-    Log() << "[Sound] hsize = " << this->meshSize() << "\n";
+    double meshSize2 = this->vm()["hsize"].template as<double>();
+
+    Log() << "[Sound] hsize = " << meshSize2/*this->meshSize()*/ << "\n";
     this->changeRepository( boost::format( "%1%/%2%/P%3%/%4%/" )
                             % this->about().appName()
                             % entity_type::name()
@@ -178,9 +182,9 @@ Sound<Dim, Order>::run()
      * First we create the mesh
      */
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                _desc = createRoom(Dim,this->meshSize()) );
+                                _desc = createRoom(Dim,meshSize2/*this->meshSize()*/) );
 
-    M_stats.put("h",this->meshSize());
+    M_stats.put("h",meshSize2/*this->meshSize()*/);
     M_stats.put("n.space.nelts",mesh->numElements());
     M_stats.put("t.init.mesh",t.elapsed());t.restart();
 
@@ -203,6 +207,7 @@ Sound<Dim, Order>::run()
     value_type dt = this->vm()["dt"].template as<value_type>();
     value_type ft = this->vm()["ft"].template as<value_type>();
 
+    // Definition du pas de temps de discretisation :
     double factor = 1./(dt*dt);
     
     // Definition des termes du schéma centré : factor*(un1-2*un+un2)
@@ -214,9 +219,7 @@ Sound<Dim, Order>::run()
     un2.zero();
     un1.zero();
     un.zero();    
-
-    //compteur pour savoir si on est déjà passée dans la boucle du temps :
-    double compteur = 0.0;    
+   
 
   auto D = backend->newMatrix( Xh, Xh );
 
@@ -225,19 +228,17 @@ Sound<Dim, Order>::run()
     for( double time = dt; time <= ft; time += dt )
     {
 
+          // On initialise le vecteur F a chaque pas de temps
           form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=elements(mesh), _expr= factor*(2.*idv(un)-idv(un1))*id(v) );
 
-    // En fonction de la dimension, on modifie form1    
+    // En fonction de la dimension, on modifie form1 en ajoutant les integrales sur le bord   
     if ( Dim == 1 ){
-        //on ajoute le terme portant sur le temps : factor*(2.*idv(un)-idv(un1)) :
-        form1( _test=Xh, _vector=F ) += integrate( _range=markedfaces(mesh,1), _expr= val(1) *id(v) );
+        form1( _test=Xh, _vector=F ) += integrate( _range=markedfaces(mesh,1), _expr= val(1)*id(v) );
        }
     if ( Dim == 2 ){
-        //on ajoute le terme portant sur le temps : factor*(2.*idv(un)-idv(un1)) :
         form1( _test=Xh, _vector=F ) += integrate( _range=markedfaces(mesh,2), _expr=val(Py()*(1-Py()))*id(v) );
        }
     if ( Dim == 3 ){
-           //on ajoute le terme portant sur le temps : factor*(2.*idv(un)-idv(un1)) :
            form1( _test=Xh, _vector=F ) += integrate( _range=markedfaces(mesh,51), _expr= val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) );
 
     }
@@ -253,6 +254,7 @@ Sound<Dim, Order>::run()
   
     double kc2 = this->vm()["kc2"].template as<double>();
 
+    // La form2 ne change pas selon les dimensions, on multiplie seuleument idt(u)*idt(v) par factor :
     form2( _test=Xh, _trial=Xh, _matrix=D,_init=true ) = integrate( _range=elements(mesh),  _expr=( factor*idt(u)*id(v) + kc2*gradt(u)*trans(grad(v))) );
     D->close();
 
@@ -283,8 +285,6 @@ Sound<Dim, Order>::run()
     un1 = un;
     un = u;
 
-    //on met a jour le compteur :
-    compteur = compteur + 1.0;
     
 }//fin boucle sur le temps.
 
@@ -380,11 +380,22 @@ main( int argc, char** argv )
         return 0;
     }
     
+    // Selon la dimension passee en parametre, on resout lequation donde correspondant a cette dimension.
+    // Cela permet de faire un maillage adequat selon la dimension
+    // Par defaut la dimension est fixee a 2 :    
+    if ( ( sound.vm()["dim"].as<int>() ) == 1 ){
     sound.add( new Sound<1, 1>( "1D-P1", sound.vm(), sound.about() ) );
+    }
+    if ( sound.vm()["dim"].as<int>() == 2 ){
     sound.add( new Sound<2, 1>( "2D-P1", sound.vm(), sound.about() ) );
+    }
+    if ( sound.vm()["dim"].as<int>() == 3 ){
     sound.add( new Sound<3, 1>( "3D-P1", sound.vm(), sound.about() ) );
+    }
+
     sound.run();
     sound.printStats( std::cout, boost::assign::list_of("n.space")("t.init")("t.assembly.vector")("t.assembly.matrix" )("t.solver")("t.eigensolver") );
+
 }
 
 
