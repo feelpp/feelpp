@@ -294,7 +294,7 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( markedfaces(mesh,12),id(v) )
+        integrate( markedfaces(mesh,"neumann"),id(v) )
        +integrate( elements(mesh) ,factor*idv(Tn)*id(v) );
 
 

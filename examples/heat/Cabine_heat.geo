@@ -17,8 +17,8 @@ Plane Surface(3) = {1};
 
 Physical Line("dirichlet") = {4};
 
-Physical Line(12) = {2};
-Physical Line(13) = {1,3};
-Physical Surface(1) = {1,2,3,4};
+Physical Line("neumann") = {2};
+Physical Line("autre") = {1,3};
+Physical Surface("surface") = {3};
 
 
