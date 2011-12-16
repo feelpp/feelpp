@@ -32,14 +32,17 @@
 #include <feel/feelalg/backend.hpp>
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/region.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feelpoly/im.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 
+#include <feel/feelpoly/polynomialset.hpp>
 
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/geotool.hpp>
 
 inline
 Feel::po::options_description
@@ -49,11 +52,8 @@ makeOptions()
     burgeroptions.add_options()
         ("nu", Feel::po::value<double>()->default_value( 0.01 ), "value of viscosity")
         ("dt", Feel::po::value<double>()->default_value( 0.1 ), "step time")
-
         ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
         ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-
-        ("export-matlab", "export matrix and vectors in matlab" )
         ;
     return burgeroptions.add( Feel::feel_options() );
 }
@@ -159,9 +159,9 @@ namespace Feel
         // viscosity
         double M_nu;
         // velocity at previous step time
-        auto M_c;
+        //auto M_c;
         // step time
-        auto dt;
+        double dt;
 
         functionspace_ptrtype M_Xh;
 
@@ -202,7 +202,6 @@ namespace Feel
                                                           _h=meshSize ) );
 
         M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
-        M_c = sin(2*pi*Px());
         exporter = export_ptrtype( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
     }
 
@@ -215,13 +214,14 @@ namespace Feel
 
         element_type u( M_Xh, "u" );
         element_type v( M_Xh, "v" );
-        
+        value_type pi = M_PI;
+        auto M_c(sin(2*pi*Px()));
         value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
-        t = 0;
+        auto t = 0;
         auto f = 0;
         auto g = 0;
-        auto F = brackend->newVector(M_Xh);
-        auto D = brackend->newMatrix(M_Xh,M_Xh);        
+        auto F = M_backend->newVector(M_Xh);
+        auto D = M_backend->newMatrix(M_Xh,M_Xh);        
 
         for(;t<=100;t+=dt)
         {
@@ -232,26 +232,26 @@ namespace Feel
             form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
                                    ( - trans(id(v))*(gradt(u)*N())
                                      + M_c*trans(id(v))*(idt(u)*N())
-                                     + penalisation_bc*trans(idt(u)*id(v)/hFace()) );
+                                     + penalisation_bc*trans(idt(u)*id(v)/hFace()) ));
             D->close();
-            form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh,1), u, F, cst(0.) )
-            form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh,2), u, F, cst(0.) )
+            form2( M_Xh, M_Xh, D ) +=
+                on( markedfaces(mesh,1), u, F, cst(0.) );
+            form2( M_Xh, M_Xh, D ) +=
+                on( markedfaces(mesh,2), u, F, cst(0.) );
 
-            form1( Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+M_c*id(v)/dt);
+            form1( M_Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+M_c*id(v)/dt);
             // linear form (right hand side)
-            form1( Xh, F ) +=
+            form1( M_Xh, F ) +=
             integrate( boundaryfaces(mesh),
             -(grad(v)*N())*g // adjoint consistency
-            +gamma*id(v)*g/hFace()); // penalisation
+            /*+gamma*id(v)*g/hFace()*/); // penalisation
             F->close();
 
             
         backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
 
 
-            M_c = u;
+            M_c(u);
         }
         exportResults( u );  
     }
