@@ -154,7 +154,7 @@ namespace Feel
     private:
 
         backend_ptrtype M_backend;
-        // mesh's size
+        // mesh size
         double meshSize;
         // viscosity
         double M_nu;
@@ -202,7 +202,7 @@ namespace Feel
                                                           _h=meshSize ) );
 
         M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
-
+        M_c = sin(2*pi*Px());
         exporter = export_ptrtype( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
     }
 
@@ -217,7 +217,6 @@ namespace Feel
         element_type v( M_Xh, "v" );
         
         value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
-        M_c = sin(2*pi*Px());
         t = 0;
         auto f = 0;
         auto g = 0;
