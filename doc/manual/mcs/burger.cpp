@@ -168,8 +168,8 @@ namespace Feel
         export_ptrtype exporter;
     }; // Burger
 
-    template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-    Burger<Dim,Order,Entity>::Burger( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    template<int Dim, int Order>
+    Burger<Dim, Order>::Burger( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
         M_backend( backend_type::build( this->vm() ) ),
@@ -207,8 +207,8 @@ namespace Feel
     }
 
     
-    template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-    void Burger<Dim, Order, Entity>::run() 
+    template<int Dim, int Order>
+    void Burger<Dim, Order>::run() 
     {
         using namespace Feel::vf;
         mesh_ptrtype mesh = M_Xh->mesh();
@@ -256,8 +256,8 @@ namespace Feel
         exportResults( u );  
     }
 
-    template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-    void Burger<Dim, Order, Entity>::exportResults( element_type& U ) 
+    template<int Dim, int Order>
+    void Burger<Dim, Order>::exportResults( element_type& U ) 
     {
         if ( exporter->doExport() )
         {
@@ -275,7 +275,7 @@ int main( int argc, char** argv )
 
     /* change parameters below */
     const int nDim = 1;
-    const int nOrder = 2;
+    const int nOrder = 1;
     typedef Feel::Burger<nDim, nOrder> burger_app_type;
 
     /* instantiate application */
