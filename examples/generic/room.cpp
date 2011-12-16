@@ -82,7 +82,7 @@ createRoom( int Dim, double meshSize )
         nameStr << "room." << meshSize;
         break;
     case 3:
-        ostr << "h=" << meshSize << ";\n"
+        ostr << "hTemp=" << meshSize << ";\n"
              << "Point (1) = {0, 0, 0, hTemp};\n"
              << "Point (2) = {1, 0, 0, hTemp};\n"
              << "Point (3) = {5, 1, 0, hTemp};\n"
