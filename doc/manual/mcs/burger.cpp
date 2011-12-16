@@ -228,11 +228,11 @@ namespace Feel
 
             
             form2( _test=M_Xh, _trial=M_Xh, _matrix=D , _init=true) = integrate( elements( mesh ), M_nu*gradv(u)*trans(grad(v)) );
-            form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idv(u)/dt) + M_c*gradv(u) )*id(v) );
+            form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idv(u)/dt) + M_c*gradt(u) )*id(v) );
             form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
-                                   ( - trans(id(v))*(gradv(u)*N())
-                                     + M_c*trans(id(v))*(idv(u)*N())
-                                     + penalisation_bc*trans(idv   (u)*id(v)/hFace()) );
+                                   ( - trans(id(v))*(gradt(u)*N())
+                                     + M_c*trans(id(v))*(idt(u)*N())
+                                     + penalisation_bc*trans(idt(u)*id(v)/hFace()) );
             D->close();
             form2( Xh, Xh, D ) +=
                 on( markedfaces(mesh,1), u, F, cst(0.) )
