@@ -390,14 +390,14 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)())
         BOOST_FOREACH( std::string edge, edges )
         {
             // on ref element
-            auto v = integrate( markedfaces(oneelement_mesh, edge), trans(T())*trans(J())*idv(u_vec[i])).evaluate()(0,0);
+            auto v = integrate( markedfaces(oneelement_mesh, edge), trans(T())*(JinvT())*idv(u_vec[i])).evaluate()(0,0);
             if ( edgeid == i )
                 BOOST_CHECK_CLOSE( v, 1, 1e-14 );
             else
                 BOOST_CHECK_SMALL( v, 1e-14 );
             checkidv[3*i+edgeid] = v;
             form1( _test=Xh, _vector=F, _init=true) = integrate( markedfaces(oneelement_mesh, edge),
-                                                                         trans(T())*trans(J())*id(u_vec[i]));
+                                                                         trans(T())*(JinvT())*id(u_vec[i]));
             v = inner_product(u_vec[i], *F);
             if ( edgeid == i )
                 BOOST_CHECK_CLOSE( v, 1, 1e-14 );
