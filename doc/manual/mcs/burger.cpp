@@ -51,7 +51,7 @@ makeOptions()
     Feel::po::options_description burgeroptions("Burger problem options");
     burgeroptions.add_options()
         ("nu", Feel::po::value<double>()->default_value( 0.01 ), "value of viscosity")
-        ("dt", Feel::po::value<double>()->default_value( 0.1 ), "step time")
+        ("dt", Feel::po::value<double>()->default_value( 1.0 ), "step time")
         ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
         ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
         ;
@@ -214,8 +214,11 @@ namespace Feel
 
         element_type u( M_Xh, "u" );
         element_type v( M_Xh, "v" );
+        element_type vv( M_Xh, "vv" );
         value_type pi = M_PI;
-        auto M_c(sin(2*pi*Px()));
+        //auto M_c = M_backend->newVector(M_Xh);
+        //element_type M_c( M_Xh, "M_v" );
+        auto M_c = sin(2*pi*Px());
         value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
         auto t = 0;
         auto f = 0;
@@ -223,15 +226,39 @@ namespace Feel
         auto F = M_backend->newVector(M_Xh);
         auto D = M_backend->newMatrix(M_Xh,M_Xh);        
 
+        form2( _test=M_Xh, _trial=M_Xh, _matrix=D , _init=true) = integrate( elements( mesh ), M_nu*gradt(u)*trans(grad(v)) );
+        form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idt(u)/dt) + M_c*gradt(u) )*id(v) );
+        form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
+                               ( - trans(id(v))*(gradt(u)*N())
+                                 + M_c*trans(id(v))*(idt(u)*N())
+                                 + penalisation_bc*trans(idt(u)*id(v)/hFace()) ));
+        D->close();
+        form2( M_Xh, M_Xh, D ) +=
+            on( markedfaces(mesh,1), u, F, cst(0.) );
+        form2( M_Xh, M_Xh, D ) +=
+            on( markedfaces(mesh,2), u, F, cst(0.) );
+
+        form1( M_Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+M_c*id(v)/dt);
+        // linear form (right hand side)
+        form1( M_Xh, F ) +=
+        integrate( boundaryfaces(mesh),
+        -(grad(v)*N())*g // adjoint consistency
+        /*+gamma*id(v)*g/hFace()*/); // penalisation
+        F->close();
+
+        
+        backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+
+        t = dt;
+        vv = u;
+
         for(;t<=100;t+=dt)
         {
-
-            
-            form2( _test=M_Xh, _trial=M_Xh, _matrix=D , _init=true) = integrate( elements( mesh ), M_nu*gradv(u)*trans(grad(v)) );
-            form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idv(u)/dt) + M_c*gradt(u) )*id(v) );
+            form2( _test=M_Xh, _trial=M_Xh, _matrix=D , _init=true) = integrate( elements( mesh ), M_nu*gradt(u)*trans(grad(v)) );
+            form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idt(u)/dt) + id(vv)*gradt(u) )*id(v) );
             form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
                                    ( - trans(id(v))*(gradt(u)*N())
-                                     + M_c*trans(id(v))*(idt(u)*N())
+                                     + id(vv)*trans(id(v))*(idt(u)*N())
                                      + penalisation_bc*trans(idt(u)*id(v)/hFace()) ));
             D->close();
             form2( M_Xh, M_Xh, D ) +=
@@ -239,19 +266,13 @@ namespace Feel
             form2( M_Xh, M_Xh, D ) +=
                 on( markedfaces(mesh,2), u, F, cst(0.) );
 
-            form1( M_Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+M_c*id(v)/dt);
-            // linear form (right hand side)
+            form1( M_Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+id(vv)*id(v)/dt);
             form1( M_Xh, F ) +=
-            integrate( boundaryfaces(mesh),
-            -(grad(v)*N())*g // adjoint consistency
-            /*+gamma*id(v)*g/hFace()*/); // penalisation
+            integrate( boundaryfaces(mesh), -(grad(v)*N())*g );
             F->close();
-
-            
-        backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
-
-
-            M_c(u);
+            backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+            vv = u;
+            Log() << "t=" << t << "\n";
         }
         exportResults( u );  
     }
