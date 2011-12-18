@@ -90,7 +90,7 @@ namespace Feel
 {
 /// Geometry for one-element meshes
 gmsh_ptrtype
-oneelement_geometry_ref()
+oneelement_geometry_ref( double h = 2)
 {
     std::ostringstream costr;
     costr <<"Mesh.MshFileVersion = 2.2;\n"
@@ -104,7 +104,7 @@ oneelement_geometry_ref()
           <<"Mesh.Partitioner=1;\n"
           <<"Mesh.NbPartitions=1;\n"
           <<"Mesh.MshFilePartitioned=0;\n"
-          <<"h=2;\n"
+          <<"h=" << h << ";\n"
           <<"Point(1) = {-1,-1,0,h};\n"
           <<"Point(2) = {1,-1,0,h};\n"
           <<"Point(3) = {-1,1,0,h};\n"
@@ -122,7 +122,10 @@ oneelement_geometry_ref()
           <<"Physical Surface(9) = {5};\n";
 
     std::ostringstream nameStr;
-    nameStr << "one-elt-ref";
+    if ( std::abs( h - 2 ) < 1e-10 )
+        nameStr << "one-elt-ref";
+    else
+        nameStr << "one-elt-mesh-ref";
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( costr.str() );
@@ -131,7 +134,7 @@ oneelement_geometry_ref()
 
 // homothetic transformation of reference element (center 0, rate 2)
 gmsh_ptrtype
-oneelement_geometry_real_1()
+oneelement_geometry_real_1(double h = 2)
 {
     std::ostringstream costr;
     costr <<"Mesh.MshFileVersion = 2.2;\n"
@@ -145,7 +148,7 @@ oneelement_geometry_real_1()
           <<"Mesh.Partitioner=1;\n"
           <<"Mesh.NbPartitions=1;\n"
           <<"Mesh.MshFilePartitioned=0;\n"
-          <<"h=2;\n"
+          <<"h=" << h << ";\n"
           <<"Point(1) = {-2,-2,0,h};\n"
           <<"Point(2) = {2,-2,0,h};\n"
           <<"Point(3) = {-2,2,0,h};\n"
@@ -163,7 +166,10 @@ oneelement_geometry_real_1()
           <<"Physical Surface(9) = {5};\n";
 
     std::ostringstream nameStr;
-    nameStr << "one-elt-real-homo";
+    if ( std::abs( h - 2 ) < 1e-10 )
+        nameStr << "one-elt-real-homo";
+    else
+        nameStr << "one-elt-mesh-homo";
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( costr.str() );
@@ -172,7 +178,7 @@ oneelement_geometry_real_1()
 
 // Rotation of angle (pi/2)
 gmsh_ptrtype
-oneelement_geometry_real_2()
+oneelement_geometry_real_2(double h = 2)
 {
     std::ostringstream costr;
     costr <<"Mesh.MshFileVersion = 2.2;\n"
@@ -186,7 +192,7 @@ oneelement_geometry_real_2()
           <<"Mesh.Partitioner=1;\n"
           <<"Mesh.NbPartitions=1;\n"
           <<"Mesh.MshFilePartitioned=0;\n"
-          <<"h=2;\n"
+          <<"h=" << h << ";\n"
           <<"Point(1) = {1,-1,0,h};\n"
           <<"Point(2) = {1,1,0,h};\n"
           <<"Point(3) = {-1,-1,0,h};\n"
@@ -204,7 +210,10 @@ oneelement_geometry_real_2()
           <<"Physical Surface(9) = {5};\n";
 
     std::ostringstream nameStr;
-    nameStr << "one-elt-real-rot";
+    if ( std::abs( h - 2 ) < 1e-10 )
+        nameStr << "one-elt-real-rot";
+    else
+        nameStr << "one-elt-mesh-rot";
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( costr.str() );
@@ -308,7 +317,7 @@ public:
     /**
      * run the application
      */
-    void shape_functions(gmsh_ptrtype (*one_element_mesh)());
+    void shape_functions(gmsh_ptrtype (*one_element_mesh)(double));
 
 private:
     //! linear algebra backend
@@ -323,23 +332,17 @@ private:
 }; //TestHCurl
 
 void
-TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)())
+TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
 {
     using namespace Feel::vf;
 
     mesh_ptrtype oneelement_mesh = createGMSHMesh( _mesh=new mesh_type,
-                                                   _desc = one_element_mesh_desc_fun() );
+                                                   _desc = one_element_mesh_desc_fun(2) );
 
     // then a fine mesh which we use to export the basis function to
     // visualize them
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name="fine",
-                                                      _shape="simplex",
-                                                      _dim=2,
-                                                      _h=meshSize,
-                                                      _xmin=this->vm()["xmin"].as<double>(),
-                                                      _ymin=this->vm()["ymin"].as<double>(),
-                                                      _zmin=this->vm()["zmin"].as<double>() ) );
+                                        _desc=one_element_mesh_desc_fun(meshSize) );
 
     space_ptrtype Xh = space_type::New( oneelement_mesh ); // space associated with reference element
 
@@ -357,8 +360,9 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)())
 
     std::string shape_name = "shape_functions";
     export_ptrtype exporter_shape( export_type::New( this->vm(),
-                                                     (boost::format( "%1%-%2%" )
+                                                     (boost::format( "%1%-%2%-%3%" )
                                                       % this->about().appName()
+                                                      % one_element_mesh_desc_fun(2)->prefix()
                                                       % shape_name).str() ) );
 
     exporter_shape->step(0)->setMesh( mesh );
@@ -372,7 +376,7 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)())
             u_vec[i] = U_ref;
 
             std::ostringstream ostr;
-            ostr << Xh->basis()->familyName() << "-" << i;
+            ostr <<  one_element_mesh_desc_fun(2)->prefix()<< "-" << Xh->basis()->familyName() << "-" << i;
             exporter_shape->step(0)->add( ostr.str(), U_ref );
         }
 
@@ -449,6 +453,16 @@ BOOST_AUTO_TEST_CASE( test_hcurl_N0_real )
                       boost::unit_test::framework::master_test_suite().argv,
                       Feel::makeAbout(), Feel::makeOptions() );
     t.shape_functions(&Feel::oneelement_geometry_real_1);
+    BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
+}
+
+BOOST_AUTO_TEST_CASE( test_hcurl_N0_real_2 )
+{
+    BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
+    Feel::TestHCurl t(boost::unit_test::framework::master_test_suite().argc,
+                      boost::unit_test::framework::master_test_suite().argv,
+                      Feel::makeAbout(), Feel::makeOptions() );
+    t.shape_functions(&Feel::oneelement_geometry_real_2);
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
 }
 BOOST_AUTO_TEST_SUITE_END()
