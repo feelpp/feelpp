@@ -212,8 +212,8 @@ Laplacian<Dim, BasisU, Entity>::run()
     double mu = this->vm()["mu"].template as<value_type>();
 
     auto pi = M_PI;
-    auto u_exact = val(sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()));
-    auto grad_exact = val(pi*trans(cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()-sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()-sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ()));
+    auto u_exact = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
+    auto grad_exact = pi*trans(cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()-sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()-sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ());
     auto f = Dim*pi*pi*u_exact; // -Delta u_exact
 
     boost::timer subt;

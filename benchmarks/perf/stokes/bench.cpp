@@ -119,7 +119,7 @@ int main( int argc, char** argv )
 {
 
     using namespace Feel;
-    std::vector<std::string> boptions = boost::assign::list_of("2D-CR1P0-Hypercube")("2D-P2P1-Hypercube");
+    std::vector<std::string> boptions = boost::assign::list_of("2D-CR1P0-Simplex")("2D-CR1P0-Hypercube")("2D-P2P1-Simplex")("2D-P2P1-Hypercube");
     auto cmdoptions = makeOptions();
     BOOST_FOREACH( auto o, boptions )
     {
@@ -131,8 +131,11 @@ int main( int argc, char** argv )
         std::cout << benchmark.optionsDescription() << "\n";
         return 0;
     }
+    benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "2D-CR1P0-Simplex",benchmark.vm(),benchmark.about() ) );
     benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube",benchmark.vm(),benchmark.about() ) );
+    benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "2D-P2P1-Simplex", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "2D-P2P1-Hypercube", benchmark.vm(), benchmark.about() ) );
+
 
 
     benchmark.run();
