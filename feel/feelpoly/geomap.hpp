@@ -1217,29 +1217,29 @@ public:
         //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
         return _M_t_real;
     }
-#if 0
     //ublas::matrix_column<matrix_node_t_type const> unitNormal( int q ) const
     // node_t_type const& unitNormal( int q ) const
-    node_t_type unitTangent( int q ) const
+    node_t_type tangent( int q ) const
     {
         //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
         if ( is_linear )
-            return _M_u_t_real;
-        else
-            return ublas::column( _M_utrealq, q );
+            return _M_t_real;
+        //else
+        //return ublas::column( _M_utrealq, q );
     }
 
 
     value_type const& unitTangent( int n, int q ) const
     {
         //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
-
+#if 0
         if ( is_linear )
-            return _M_u_t_real( n );
+            return _M_t_real( n );
         else
             return _M_utrealq( n, q );
-    }
 #endif
+    }
+
     /**
      * get the id of the element
      *
@@ -1534,8 +1534,9 @@ private:
                               _M_gm->referenceConvex().tangent( _M_face_id ),
                               _M_t_real,
                               true );
+            double ratio = _M_gm->referenceConvex().h( _M_face_id )/_M_h_face;
 
-            //_M_t_real *= _M_edge_orientation*_M_gm->referenceConvex().h( _M_face_id )/_M_h_face;
+            _M_t_real *= ratio;
         }
 
     }
