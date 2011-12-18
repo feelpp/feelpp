@@ -35,8 +35,19 @@
 namespace Feel
 {
 
-    enum ProjectorType{L2=0, H1=1, DIFF=2};
+enum ProjectorType{L2=0, H1=1, DIFF=2,DIV=3,CURL=4};
+namespace detail
+{
+template<typename Args>
+struct projector_type
+{
+    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type domain_type;
+    typedef typename vf::detail::clean_type<Args,tag::imageSpace>::type image_type;
+    typedef typename vf::detail::clean_type<Args,tag::type>::type type;
+    typedef typename vf::detail::clean_type<Args,tag::backend>::backend_type backend_type;
+};
 
+} // detail
 /**
  * \class Projector
  * \brief Projection made easy
@@ -85,7 +96,7 @@ public :
               ProjectorType proj_type=L2,
               double epsilon = 0.01,
               double gamma = 0.5
-                )
+        )
         :
         ol_type(domainSpace, dualImageSpace, backend),
         M_backend(backend),
@@ -133,13 +144,13 @@ public :
 
             //weak boundary conditions
             if (M_proj_type == DIFF)
-                {
-                    form1(_test=this->dualImageSpace(), _vector=ie) +=
-                        integrate(_range=boundaryfaces(this->domainSpace()->mesh()),
-                                  _expr=expr*M_epsilon*(-grad(this->domainSpace()->element() )*vf::N() +
-                                                        M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
-                                  _quad=quad );
-                }
+            {
+                form1(_test=this->dualImageSpace(), _vector=ie) +=
+                    integrate(_range=boundaryfaces(this->domainSpace()->mesh()),
+                              _expr=expr*M_epsilon*(-grad(this->domainSpace()->element() )*vf::N() +
+                                                    M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
+                              _quad=quad );
+            }
 
             M_backend->solve(M_matrix, de, ie);
 
@@ -202,43 +213,72 @@ private :
                             _test=this->dualImageSpace(),
                             _matrix=M_matrix,
                             _init=true);
-            if (M_proj_type == L2)
-                {
-                    a = integrate(elements(this->domainSpace()->mesh()),
-                                  trans(idt( this->domainSpace()->element() )) /*trial*/
-                                  *id( this->domainSpace()->element() ) /*test*/
-                                  );
-                }
-            else if (M_proj_type == H1)
-                {
-                    a = integrate(elements(this->domainSpace()->mesh()),
-                                  trans(idt( this->domainSpace()->element() )) /*trial*/
-                                  *id( this->domainSpace()->element() ) /*test*/
-                                  +
-                                  trace( gradt(this->domainSpace()->element())
-                                         * trans(grad(this->domainSpace()->element())))
-                        );
-                }
-            else if (M_proj_type == DIFF)
-                {
-                    a = integrate(elements(this->domainSpace()->mesh()),
-                                  trans(idt( this->domainSpace()->element() )) /*trial*/
-                                  *id( this->domainSpace()->element() ) /*test*/
-                                  +
-                                  M_epsilon *
-                                  trace( gradt(this->domainSpace()->element())
-                                         * trans(grad(this->domainSpace()->element())))
-                                  );
-                    //weak boundary conditions
-                    a += integrate( boundaryfaces(this->domainSpace()->mesh()),
-                                    M_epsilon*(-trans(id(this->domainSpace()->element() ))*gradt(this->domainSpace()->element())*vf::N() ));
-                    a += integrate( boundaryfaces(this->domainSpace()->mesh()),
-                                    M_epsilon*(-trans(idt(this->domainSpace()->element() ))* grad(this->domainSpace()->element())*vf::N()));
-                    a += integrate( boundaryfaces(this->domainSpace()->mesh()),
-                                    M_epsilon*(M_gamma * trans(idt( this->domainSpace()->element() )) /*trial*/
-                                               *id( this->domainSpace()->element() ) / vf::hFace()   /*test*/
-                                        ));
-                }
+            switch (M_proj_type)
+            {
+            case L2:
+            {
+                a = integrate(elements(this->domainSpace()->mesh()),
+                              trans(idt( this->domainSpace()->element() )) /*trial*/
+                              *id( this->domainSpace()->element() ) /*test*/
+                    );
+            }
+            break;
+            case H1:
+            {
+                a = integrate(elements(this->domainSpace()->mesh()),
+                              trans(idt( this->domainSpace()->element() )) /*trial*/
+                              *id( this->domainSpace()->element() ) /*test*/
+                              +
+                              trace( gradt(this->domainSpace()->element())
+                                     * trans(grad(this->domainSpace()->element())))
+                    );
+            }
+            break;
+            case DIFF:
+            {
+                a = integrate(elements(this->domainSpace()->mesh()),
+                              trans(idt( this->domainSpace()->element() )) /*trial*/
+                              *id( this->domainSpace()->element() ) /*test*/
+                              +
+                              M_epsilon *
+                              trace( gradt(this->domainSpace()->element())
+                                     * trans(grad(this->domainSpace()->element())))
+                    );
+                //weak boundary conditions
+                a += integrate( boundaryfaces(this->domainSpace()->mesh()),
+                                M_epsilon*(-trans(id(this->domainSpace()->element() ))*gradt(this->domainSpace()->element())*vf::N() ));
+                a += integrate( boundaryfaces(this->domainSpace()->mesh()),
+                                M_epsilon*(-trans(idt(this->domainSpace()->element() ))* grad(this->domainSpace()->element())*vf::N()));
+                a += integrate( boundaryfaces(this->domainSpace()->mesh()),
+                                M_epsilon*(M_gamma * trans(idt( this->domainSpace()->element() )) /*trial*/
+                                           *id( this->domainSpace()->element() ) / vf::hFace()   /*test*/
+                                    ));
+            }
+            break;
+            case DIV:
+            {
+                a = integrate(elements(this->domainSpace()->mesh()),
+                              trans(idt( this->domainSpace()->element() )) /*trial*/
+                              *id( this->domainSpace()->element() ) /*test*/
+                              +
+                              ( divt(this->domainSpace()->element()) *
+                                div(this->domainSpace()->element()))
+                    );
+            }
+            break;
+            case CURL:
+            {
+                a = integrate(elements(this->domainSpace()->mesh()),
+                              trans(idt( this->domainSpace()->element() )) /*trial*/
+                              *id( this->domainSpace()->element() ) /*test*/
+                              +
+                              // only for 2D, need to specialize this for 3D
+                              curlzt(this->domainSpace()->element())
+                              * curlz(this->domainSpace()->element())
+                    );
+            }
+            break;
+            }
 
             M_matrix->close();
         }
@@ -263,15 +303,29 @@ private :
 template<typename TDomainSpace, typename TDualImageSpace>
 boost::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
 projector( boost::shared_ptr<TDomainSpace> const& domainspace,
-             boost::shared_ptr<TDualImageSpace> const& imagespace,
-             typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend = Backend<double>::build(BACKEND_PETSC),
+           boost::shared_ptr<TDualImageSpace> const& imagespace,
+           typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend = Backend<double>::build(BACKEND_PETSC),
            ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 0.5)
 {
     typedef Projector<TDomainSpace, TDualImageSpace> Proj_type;
     boost::shared_ptr<Proj_type> proj( new Proj_type(domainspace, imagespace, backend, proj_type, epsilon, gamma) );
     return proj;
 }
-
+#if 0
+BOOST_PARAMETER_MEMBER_FUNCTION((boost::shared_ptr<Projector<typename projector_type<Args>::domain_type,typename projector_type<Args>::image_type > > ),
+                                opProjection,
+                                tag,
+                                (required
+                                 (domainSpace,   *))
+                                (optional
+                                 (imageSpace,   *, domainSpace)
+                                 (type, *, L2)
+                                 (backend, *, Backend<double>::build(BACKEND_PETSC) )
+                                    ))
+{
+    return projector<domainSpace,imageSpace>
+}
+#endif
 #endif
 
 
