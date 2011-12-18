@@ -84,6 +84,7 @@ Backend<T>::Backend( Backend const& backend )
 template <typename T>
 Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     :
+    M_vm( vm ),
     M_prefix( prefix ),
     M_nlsolver( solvernonlinear_type::build( vm ) ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
@@ -488,6 +489,7 @@ po::options_description backend_options( std::string const& prefix )
         (prefixvm(prefix,"export-matlab").c_str(), Feel::po::value<std::string>()->default_value( "" ), "export matrix/vector to matlab, default empty string means no export, other string is used as prefix")
 
         (prefixvm(prefix,"ksp-type").c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres")
+        (prefixvm(prefix,"ksp-monitor").c_str() , "monitor ksp")
 
         (prefixvm(prefix,"snes-maxit").c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations")
 
@@ -500,6 +502,8 @@ po::options_description backend_options( std::string const& prefix )
 
         (prefixvm(prefix,"ilu-threshold").c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "threshold value for preconditioners")
         (prefixvm(prefix,"ilu-fillin").c_str(), Feel::po::value<int>()->default_value( 2 ), "fill-in level value for preconditioners")
+        (prefixvm(prefix,"pc-factor-levels").c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu")
+        (prefixvm(prefix,"pc-factor-fill").c_str(), Feel::po::value<double>()->default_value( 6 ), "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix.")
 
         // solver control options
         (prefixvm(prefix,"gmres-restart").c_str(), Feel::po::value<int>()->default_value( 20 ), "number of iterations before solver restarts (gmres)")

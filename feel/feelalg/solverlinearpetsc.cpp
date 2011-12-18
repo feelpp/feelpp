@@ -156,6 +156,7 @@ void SolverLinearPetsc<T>::init ()
         // sets the software that is used to perform the factorization
         PetscPCFactorSetMatSolverPackage(_M_pc,this->matSolverPackageType());
 
+
         // Set the options from user-input
         // Set runtime options, e.g.,
         //      -ksp_type <type> -pc_type <type> -ksp_monitor -ksp_rtol <rtol>
@@ -227,19 +228,18 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     rhs->close ();
 
 
-
-    matrix->updatePCFieldSplit(_M_pc);
-
+    if ( this->preconditionerType() == FIELDSPLIT_PRECOND )
+        matrix->updatePCFieldSplit(_M_pc);
 
 #if 0
     std::cout << "\n HOLA \n";
     auto indexSplit = matrix->indexSplit();
     for (uint i = 0 ; i < indexSplit.size(); ++i)
-        {
-            std::cout << "\nSIZE : "<< indexSplit[i].size() << "\n";
-            for (uint j = 0 ; j < indexSplit[i].size(); ++j)
-                std::cout << " "<< indexSplit[i][j];
-        }
+    {
+        std::cout << "\nSIZE : "<< indexSplit[i].size() << "\n";
+        for (uint j = 0 ; j < indexSplit[i].size(); ++j)
+            std::cout << " "<< indexSplit[i][j];
+    }
     std::cout << "\n HOLE \n";
 #endif
 #if 0
@@ -251,18 +251,18 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     std::vector<IS> petscIS(indexSplit.size());
 
     if ( std::string( PCFIELDSPLIT ) == std::string(ThePc) )
+    {
+        for (uint i = 0 ; i < indexSplit.size(); ++i)
         {
-            for (uint i = 0 ; i < indexSplit.size(); ++i)
-                {
 
-                    PetscInt nDofForThisField = indexSplit[i].size();
-                    ierr = ISCreateGeneral(M_comm,nDofForThisField,indexSplit[i].data(),&petscIS[i] );
-                    CHKERRABORT(M_comm,ierr);
+            PetscInt nDofForThisField = indexSplit[i].size();
+            ierr = ISCreateGeneral(M_comm,nDofForThisField,indexSplit[i].data(),&petscIS[i] );
+            CHKERRABORT(M_comm,ierr);
 
-                    ierr=PCFieldSplitSetIS(_M_pc,petscIS[i]);
-                    CHKERRABORT(M_comm,ierr);
-                }
+            ierr=PCFieldSplitSetIS(_M_pc,petscIS[i]);
+            CHKERRABORT(M_comm,ierr);
         }
+    }
 #endif
 //   // If matrix != precond, then this means we have specified a
 //   // special preconditioner, so reset preconditioner type to PCMAT.
@@ -416,7 +416,7 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     else hasConverged=false;
 
 #endif
- // return the # of its. and the final residual norm.
+    // return the # of its. and the final residual norm.
     //return std::make_pair(its, final_resid);
     return boost::make_tuple(hasConverged, its, final_resid);
 
@@ -429,30 +429,30 @@ template <typename T>
 void
 SolverLinearPetsc<T>::getResidualHistory(std::vector<double>& hist)
 {
-  int ierr = 0;
-  int its  = 0;
+    int ierr = 0;
+    int its  = 0;
 
-  // Fill the residual history vector with the residual norms
-  // Note that GetResidualHistory() does not copy any values, it
-  // simply sets the pointer p.  Note that for some Krylov subspace
-  // methods, the number of residuals returned in the history
-  // vector may be different from what you are expecting.  For
-  // example, TFQMR returns two residual values per iteration step.
-  double* p;
-  ierr = KSPGetResidualHistory(_M_ksp, &p, &its);
-  CHKERRABORT(M_comm,ierr);
+    // Fill the residual history vector with the residual norms
+    // Note that GetResidualHistory() does not copy any values, it
+    // simply sets the pointer p.  Note that for some Krylov subspace
+    // methods, the number of residuals returned in the history
+    // vector may be different from what you are expecting.  For
+    // example, TFQMR returns two residual values per iteration step.
+    double* p;
+    ierr = KSPGetResidualHistory(_M_ksp, &p, &its);
+    CHKERRABORT(M_comm,ierr);
 
-  // Check for early return
-  if (its == 0) return;
+    // Check for early return
+    if (its == 0) return;
 
-  // Create space to store the result
-  hist.resize(its);
+    // Create space to store the result
+    hist.resize(its);
 
-  // Copy history into the vector provided by the user.
-  for (int i=0; i<its; ++i)
+    // Copy history into the vector provided by the user.
+    for (int i=0; i<its; ++i)
     {
-      hist[i] = *p;
-      p++;
+        hist[i] = *p;
+        p++;
     }
 }
 
@@ -463,28 +463,28 @@ template <typename T>
 typename SolverLinearPetsc<T>::real_type
 SolverLinearPetsc<T>::getInitialResidual()
 {
-  int ierr = 0;
-  int its  = 0;
+    int ierr = 0;
+    int its  = 0;
 
-  // Fill the residual history vector with the residual norms
-  // Note that GetResidualHistory() does not copy any values, it
-  // simply sets the pointer p.  Note that for some Krylov subspace
-  // methods, the number of residuals returned in the history
-  // vector may be different from what you are expecting.  For
-  // example, TFQMR returns two residual values per iteration step.
-  double* p;
-  ierr = KSPGetResidualHistory(_M_ksp, &p, &its);
-  CHKERRABORT(M_comm,ierr);
+    // Fill the residual history vector with the residual norms
+    // Note that GetResidualHistory() does not copy any values, it
+    // simply sets the pointer p.  Note that for some Krylov subspace
+    // methods, the number of residuals returned in the history
+    // vector may be different from what you are expecting.  For
+    // example, TFQMR returns two residual values per iteration step.
+    double* p;
+    ierr = KSPGetResidualHistory(_M_ksp, &p, &its);
+    CHKERRABORT(M_comm,ierr);
 
-  // Check no residual history
-  if (its == 0)
+    // Check no residual history
+    if (its == 0)
     {
-      std::cerr << "No iterations have been performed, returning 0." << std::endl;
-      return 0.;
+        std::cerr << "No iterations have been performed, returning 0." << std::endl;
+        return 0.;
     }
 
-  // Otherwise, return the value pointed to by p.
-  return *p;
+    // Otherwise, return the value pointed to by p.
+    return *p;
 }
 
 
@@ -507,52 +507,58 @@ template <typename T>
 void
 SolverLinearPetsc<T>::setPetscSolverType()
 {
-  int ierr = 0;
-  Debug(7010) << "[SolverLinearPetsc] solver type:  " << this->solverType() << "\n";
-  switch (this->solverType())
+    int ierr = 0;
+    Debug(7010) << "[SolverLinearPetsc] solver type:  " << this->solverType() << "\n";
+    switch (this->solverType())
     {
 
     case CG:
-      ierr = KSPSetType (_M_ksp, (char*) KSPCG);         CHKERRABORT(M_comm,ierr); return;
+        ierr = KSPSetType (_M_ksp, (char*) KSPCG);         CHKERRABORT(M_comm,ierr); return;
 
     case CR:
-      ierr = KSPSetType (_M_ksp, (char*) KSPCR);         CHKERRABORT(M_comm,ierr); return;
+        ierr = KSPSetType (_M_ksp, (char*) KSPCR);         CHKERRABORT(M_comm,ierr); return;
 
     case CGS:
-      ierr = KSPSetType (_M_ksp, (char*) KSPCGS);        CHKERRABORT(M_comm,ierr); return;
+        ierr = KSPSetType (_M_ksp, (char*) KSPCGS);        CHKERRABORT(M_comm,ierr); return;
 
     case BICG:
-      ierr = KSPSetType (_M_ksp, (char*) KSPBICG);       CHKERRABORT(M_comm,ierr); return;
+        ierr = KSPSetType (_M_ksp, (char*) KSPBICG);       CHKERRABORT(M_comm,ierr); return;
 
     case TCQMR:
-      ierr = KSPSetType (_M_ksp, (char*) KSPTCQMR);      CHKERRABORT(M_comm,ierr); return;
+        ierr = KSPSetType (_M_ksp, (char*) KSPTCQMR);      CHKERRABORT(M_comm,ierr); return;
 
     case TFQMR:
-      ierr = KSPSetType (_M_ksp, (char*) KSPTFQMR);      CHKERRABORT(M_comm,ierr); return;
+        ierr = KSPSetType (_M_ksp, (char*) KSPTFQMR);      CHKERRABORT(M_comm,ierr); return;
 
     case LSQR:
-      ierr = KSPSetType (_M_ksp, (char*) KSPLSQR);       CHKERRABORT(M_comm,ierr); return;
+        ierr = KSPSetType (_M_ksp, (char*) KSPLSQR);       CHKERRABORT(M_comm,ierr); return;
 
     case BICGSTAB:
-      ierr = KSPSetType (_M_ksp, (char*) KSPBCGS);       CHKERRABORT(M_comm,ierr); return;
+        ierr = KSPSetType (_M_ksp, (char*) KSPBCGS);       CHKERRABORT(M_comm,ierr); return;
 
     case MINRES:
-      ierr = KSPSetType (_M_ksp, (char*) KSPMINRES);     CHKERRABORT(M_comm,ierr); return;
+        ierr = KSPSetType (_M_ksp, (char*) KSPMINRES);     CHKERRABORT(M_comm,ierr); return;
 
     case GMRES:
-      ierr = KSPSetType (_M_ksp, (char*) KSPGMRES);      CHKERRABORT(M_comm,ierr); return;
+        ierr = KSPSetType (_M_ksp, (char*) KSPGMRES);      CHKERRABORT(M_comm,ierr); return;
 
     case RICHARDSON:
-      ierr = KSPSetType (_M_ksp, (char*) KSPRICHARDSON); CHKERRABORT(M_comm,ierr); return;
+        ierr = KSPSetType (_M_ksp, (char*) KSPRICHARDSON); CHKERRABORT(M_comm,ierr); return;
 
     case CHEBYSHEV:
-      ierr = KSPSetType (_M_ksp, (char*) KSPCHEBYCHEV);  CHKERRABORT(M_comm,ierr); return;
+        ierr = KSPSetType (_M_ksp, (char*) KSPCHEBYCHEV);  CHKERRABORT(M_comm,ierr); return;
 
     default:
-      std::cerr << "ERROR:  Unsupported PETSC Solver: "
-		<< this->solverType()               << std::endl
-		<< "Continuing with PETSC defaults" << std::endl;
+        std::cerr << "ERROR:  Unsupported PETSC Solver: "
+                  << this->solverType()               << std::endl
+                  << "Continuing with PETSC defaults" << std::endl;
     }
+    if ( this->vm().count( "ksp-monitor" ) )
+    {
+        KSPMonitorSet(_M_ksp,KSPMonitorDefault,PETSC_NULL,0);
+    }
+
+
 }
 
 
@@ -567,68 +573,81 @@ void
 SolverLinearPetsc<T>::setPetscPreconditionerType()
 {
 
-  int ierr = 0;
+    int ierr = 0;
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-  ierr = PCFactorSetMatSolverPackage(_M_pc,MATSOLVERUMFPACK);
-  if ( ierr )
-  {
-      ierr = PCFactorSetMatSolverPackage(_M_pc,MATSOLVERSUPERLU );
-      if ( ierr )
-      {
-          ierr = PCFactorSetMatSolverPackage(_M_pc,MATSOLVERPETSC );
-      }
-  }
+    ierr = PCFactorSetMatSolverPackage(_M_pc,MATSOLVERUMFPACK);
+    if ( ierr )
+    {
+        ierr = PCFactorSetMatSolverPackage(_M_pc,MATSOLVERSUPERLU );
+        if ( ierr )
+        {
+            ierr = PCFactorSetMatSolverPackage(_M_pc,MATSOLVERPETSC );
+        }
+    }
 #elif (PETSC_VERSION_MAJOR >= 3)
-  ierr = PCFactorSetMatSolverPackage(_M_pc,MAT_SOLVER_UMFPACK);
-  if ( ierr )
-  {
-      ierr = PCFactorSetMatSolverPackage(_M_pc,MAT_SOLVER_SUPERLU );
-      if ( ierr )
-      {
-          ierr = PCFactorSetMatSolverPackage(_M_pc,MAT_SOLVER_PETSC );
-      }
-  }
+    ierr = PCFactorSetMatSolverPackage(_M_pc,MAT_SOLVER_UMFPACK);
+    if ( ierr )
+    {
+        ierr = PCFactorSetMatSolverPackage(_M_pc,MAT_SOLVER_SUPERLU );
+        if ( ierr )
+        {
+            ierr = PCFactorSetMatSolverPackage(_M_pc,MAT_SOLVER_PETSC );
+        }
+    }
 #endif
-  Debug(7010) << "[SolverLinearPetsc] preconditioner type:  " << this->preconditionerType() << "\n";
-  switch (this->preconditionerType())
+    Debug(7010) << "[SolverLinearPetsc] preconditioner type:  " << this->preconditionerType() << "\n";
+    switch (this->preconditionerType())
     {
     case IDENTITY_PRECOND:
-      ierr = PCSetType (_M_pc, (char*) PCNONE);      CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType (_M_pc, (char*) PCNONE);      CHKERRABORT(M_comm,ierr); return;
 
     case CHOLESKY_PRECOND:
-      ierr = PCSetType (_M_pc, (char*) PCCHOLESKY);  CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType (_M_pc, (char*) PCCHOLESKY);  CHKERRABORT(M_comm,ierr); return;
 
     case ICC_PRECOND:
-      ierr = PCSetType (_M_pc, (char*) PCICC);       CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType (_M_pc, (char*) PCICC);       CHKERRABORT(M_comm,ierr); return;
 
     case ILU_PRECOND:
-      ierr = PCSetType (_M_pc, (char*) PCILU);       CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType (_M_pc, (char*) PCILU);       CHKERRABORT(M_comm,ierr);
+        if ( this->vm().count( "pc-factor-levels" ) )
+        {
+            PCFactorSetLevels(_M_pc,this->vm()["pc-factor-levels"].template as<int>());
+        }
+        else
+            PCFactorSetLevels(_M_pc,3);
+        if ( this->vm().count( "pc-factor-fill" ) )
+        {
+            PCFactorSetFill(_M_pc,this->vm()["pc-factor-fill"].template as<double>());
+        }
+        else
+            PCFactorSetFill(_M_pc,40);
+        return;
 
     case LU_PRECOND:
-      ierr = PCSetType (_M_pc, (char*) PCLU);        CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType (_M_pc, (char*) PCLU);        CHKERRABORT(M_comm,ierr); return;
 
     case ASM_PRECOND:
-      ierr = PCSetType (_M_pc, (char*) PCASM);       CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType (_M_pc, (char*) PCASM);       CHKERRABORT(M_comm,ierr); return;
 
     case JACOBI_PRECOND:
-      ierr = PCSetType (_M_pc, (char*) PCJACOBI);    CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType (_M_pc, (char*) PCJACOBI);    CHKERRABORT(M_comm,ierr); return;
 
     case BLOCK_JACOBI_PRECOND:
-      ierr = PCSetType (_M_pc, (char*) PCBJACOBI);   CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType (_M_pc, (char*) PCBJACOBI);   CHKERRABORT(M_comm,ierr); return;
 
     case SOR_PRECOND:
-      ierr = PCSetType (_M_pc, (char*) PCSOR);       CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType (_M_pc, (char*) PCSOR);       CHKERRABORT(M_comm,ierr); return;
 
     case EISENSTAT_PRECOND:
-      ierr = PCSetType (_M_pc, (char*) PCEISENSTAT); CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType (_M_pc, (char*) PCEISENSTAT); CHKERRABORT(M_comm,ierr); return;
 
 #if !((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1) && (PETSC_VERSION_SUBMINOR <= 1))
     case USER_PRECOND:
-      ierr = PCSetType (_M_pc, (char*) PCMAT);       CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType (_M_pc, (char*) PCMAT);       CHKERRABORT(M_comm,ierr); return;
 #endif
 
     case SHELL_PRECOND:
-      ierr = PCSetType (_M_pc, (char*) PCSHELL);     CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType (_M_pc, (char*) PCSHELL);     CHKERRABORT(M_comm,ierr); return;
 
     case FIELDSPLIT_PRECOND:
         ierr = PCSetType(_M_pc,(char*) PCFIELDSPLIT);         CHKERRABORT(M_comm,ierr);
@@ -636,9 +655,9 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
         return;
 
     default:
-      std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
-		<< this->preconditionerType()       << std::endl
-		<< "Continuing with PETSC defaults" << std::endl;
+        std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
+                  << this->preconditionerType()       << std::endl
+                  << "Continuing with PETSC defaults" << std::endl;
     }
 
 }

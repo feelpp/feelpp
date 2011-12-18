@@ -671,7 +671,7 @@ private:
     void reset();
 
 private:
-
+    po::variables_map M_vm;
     mpi::communicator M_comm;
 
     BackendType M_backend;

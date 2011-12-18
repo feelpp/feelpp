@@ -58,6 +58,11 @@ public:
     SolverLinear ();
 
     /**
+     *  Constructor. Initializes Solver data structures
+     */
+    SolverLinear (po::variables_map const& vm);
+
+    /**
      * Destructor.
      */
     virtual ~SolverLinear ();
@@ -78,6 +83,11 @@ public:
      * Initialize data structures if not done so already.
      */
     virtual void init () = 0;
+
+    /**
+     * return variables_map
+     */
+    po::variables_map vm() const { return M_vm; }
 
     /**
      * \return the relative tolerance
@@ -233,6 +243,9 @@ protected:
 
 protected:
 
+    ///
+    po::variables_map M_vm;
+
     /// relative tolerance
     double M_rtolerance;
 
@@ -284,6 +297,17 @@ template <typename T>
 inline
 SolverLinear<T>::SolverLinear () :
 
+    _M_solver_type         (GMRES),
+    _M_preconditioner_type (LU_PRECOND),
+    _M_is_initialized      (false),
+    M_prec_matrix_structure( SAME_NONZERO_PATTERN )
+{
+}
+
+template <typename T>
+inline
+SolverLinear<T>::SolverLinear ( po::variables_map const& vm ) :
+    M_vm( vm ),
     _M_solver_type         (GMRES),
     _M_preconditioner_type (LU_PRECOND),
     _M_is_initialized      (false),

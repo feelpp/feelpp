@@ -89,7 +89,8 @@ public:
 
     BackendPetsc( po::variables_map const& vm, std::string const& prefix = "" )
         :
-        super( vm, prefix )
+        super( vm, prefix ),
+        M_solver_petsc( vm )
     {
         std::string _prefix = prefix;
         if ( !_prefix.empty() )
