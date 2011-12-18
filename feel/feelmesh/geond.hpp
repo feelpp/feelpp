@@ -856,9 +856,20 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_t
             M_h_face[__f] = 0;
             for( uint16_type e =  0;  e < nEdges; ++e )
             {
-                node_type const& __x1 = this->point( this->eToP( this->f2e( __f, e ), 0 ) ).node();
-                node_type const& __x2 = this->point( this->eToP( this->f2e( __f, e ), 1 ) ).node();
-                double __l = ublas::norm_2( __x1-__x2 );
+                double __l = 0;
+                if ( Dim == 2 )
+                {
+                    node_type const& __x1 = this->point( this->eToP( this->f2e( __f, __f ), 0 ) ).node();
+                    node_type const& __x2 = this->point( this->eToP( this->f2e( __f, __f ), 1 ) ).node();
+                    __l = ublas::norm_2( __x1-__x2 );
+                }
+                else
+                {
+                    node_type const& __x1 = this->point( this->eToP( this->f2e( __f, e ), 0 ) ).node();
+                    node_type const& __x2 = this->point( this->eToP( this->f2e( __f, e ), 1 ) ).node();
+                    __l = ublas::norm_2( __x1-__x2 );
+                }
+                //std::cout << "face " << __f << " edge "  << e << "  edge " << this->f2e( __f, __f ) << " length "  << __l << std::endl;
                 M_h_face[__f] = ( M_h_face[__f] > __l )?M_h_face[__f]:__l;
             }
         }
