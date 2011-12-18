@@ -110,6 +110,11 @@ public:
     SolverLinearPetsc ();
 
     /**
+     *  Constructor. Initializes Petsc data structures
+     */
+    SolverLinearPetsc ( po::variables_map const& vm);
+
+    /**
      * Destructor.
      */
     ~SolverLinearPetsc ();
@@ -262,6 +267,15 @@ SolverLinearPetsc<T>::SolverLinearPetsc ()
     this->setPreconditionerType(  LU_PRECOND );
   else
     this->setPreconditionerType( BLOCK_JACOBI_PRECOND );
+}
+
+template <typename T>
+inline
+SolverLinearPetsc<T>::SolverLinearPetsc ( po::variables_map const& vm )
+    :
+    super( vm ),
+    M_constant_null_space(false)
+{
 }
 
 
