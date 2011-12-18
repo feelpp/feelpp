@@ -83,7 +83,7 @@ public:
 
     SolverLinearTrilinos( po::variables_map const& vm )
         :
-        M_vm( vm )
+        super( vm )
     {
     }
 
