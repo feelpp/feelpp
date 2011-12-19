@@ -164,6 +164,23 @@ public:
         ie.container() = *_v2;
     }
 
+    double
+    energy( const typename domain_space_type::element_type & de,
+            const typename dual_image_space_type::element_type & ie) const
+    {
+        if ( ! M_matrix->closed() )
+        {
+            M_matrix->close();
+        }
+        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        *_v1 = de;
+        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        *_v2 = ie;
+        vector_ptrtype _v3( M_backend->newVector( ie.map() ) );
+        M_backend->prod( M_matrix, _v1, _v3 );
+        return inner_product( _v2, _v3 );
+    }
+
 
     void
     apply(const typename domain_space_type::element_type & de,
