@@ -284,10 +284,13 @@ public:
 
     //! the basis type of our approximation space
     typedef bases<Nedelec<0> > basis_type;
+    typedef bases<Lagrange<1,Vectorial> > lagrange_basis_type;
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
+    typedef FunctionSpace<mesh_type, lagrange_basis_type> lagrange_space_type;
     //! the approximation function space type (shared_ptr<> type)
     typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef boost::shared_ptr<lagrange_space_type> lagrange_space_ptrtype;
     //! an element type of the approximation function space
     typedef typename space_type::element_type element_type;
 
@@ -332,6 +335,8 @@ public:
     void shape_functions(gmsh_ptrtype (*one_element_mesh)(double));
     void shape_functions();
 
+    void testProjector();
+
 private:
     //! linear algebra backend
     backend_ptrtype M_backend;
@@ -349,6 +354,66 @@ private:
 
 }; //TestHCurl
 
+void
+TestHCurl::testProjector()
+{
+    using namespace Feel::vf;
+    // then a fine mesh which we use to export the basis function to
+    // visualize them
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1).str() ,
+                                                      _shape="hypercube",
+                                                      _usenames=true,
+                                                      _dim=2,
+                                                      _h=meshSize,
+                                                      _xmin=-1,_xmax=1,
+                                                      _ymin=-1,_ymax=1));
+
+    space_ptrtype Xh = space_type::New( mesh );
+    lagrange_space_ptrtype Yh = lagrange_space_type::New( mesh );
+
+    auto E_exact = M_PI*(cos(M_PI*Px())*sin(M_PI*Py())*unitX()-sin(M_PI*Px())*cos(M_PI*Py())*unitY());
+    auto curl_E_exact = -2.*cos(M_PI*Px())*cos(M_PI*Py()); // -> z
+    auto f = (2*M_PI*M_PI+1)*M_PI*(cos(M_PI*Px())*sin(M_PI*Py())*unitX()-sin(M_PI*Px())*cos(M_PI*Py())*unitY() );
+
+    auto l2 = opProjection( _domainSpace=Yh, _imageSpace=Yh, _type=L2 );
+    auto u_l2 = l2->project( _expr=trans(f) );
+    auto E_l2 = l2->project( _expr=trans(E_exact) );
+    auto error_l2 = l2->project( _expr=trans(E_exact-idv(u_l2)) );
+
+    auto h1 = opProjection( _domainSpace=Yh, _imageSpace=Yh, _type=H1 );
+    auto u_h1 = h1->project( _expr=trans(f) );
+    auto E_h1 = h1->project( _expr=trans(E_exact) );
+    auto error_h1 = h1->project( _expr=trans(E_exact-idv(u_h1)) );
+
+    auto hcurl = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=HCURL );
+    auto u_hcurl = hcurl->project( _expr=trans(f) );
+    auto E_hcurl = hcurl->project( _expr=trans(E_exact) );
+    auto error_hcurl = hcurl->project( _expr=trans(E_exact-idv(u_hcurl)) );
+
+    std::cout << "error L2: " << math::sqrt( l2->energy( error_l2, error_l2 ) ) << "\n";
+    std::cout << "error H1: " << math::sqrt( h1->energy( error_h1, error_h1 ) ) << "\n";
+    std::cout << "error Hcurl: " << math::sqrt( hcurl->energy( error_hcurl, error_hcurl ) ) << "\n";
+
+    std::string shape_name = "shape_functions";
+    export_ptrtype exporter_shape( export_type::New( this->vm(),
+                                                     (boost::format( "%1%-%2%-%3%" )
+                                                      % this->about().appName()
+                                                      % (boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1).str()
+                                                      % shape_name).str() ) );
+
+    exporter_shape->step(0)->setMesh( mesh );
+    exporter_shape->step(0)->add( "proj_L2_u", u_l2 );
+    exporter_shape->step(0)->add( "proj_L2_E", E_l2 );
+    exporter_shape->step(0)->add( "proj_L2_error", error_l2 );
+    exporter_shape->step(0)->add( "proj_H1_u", u_h1 );
+    exporter_shape->step(0)->add( "proj_H1_E", E_h1 );
+    exporter_shape->step(0)->add( "proj_H1_error", error_h1 );
+    exporter_shape->step(0)->add( "proj_Hcurl_u", u_hcurl );
+    exporter_shape->step(0)->add( "proj_Hcurl_E", E_hcurl );
+    exporter_shape->step(0)->add( "proj_Hcurl_error", error_hcurl );
+    exporter_shape->save();
+}
 void
 TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
 {
@@ -371,8 +436,6 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
 
     element_type U_ref( Xh, "U" );
     element_type V_ref(Xh, "V");
-    auto hcurl = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=HCURL );
-    auto u = hcurl->project( _expr=trans(sin(M_PI*Px())*unitX()-cos(M_PI*Px())*unitY() ) );
 
     // To store the shape functions
     // 0 : hypothenuse edge, 1 : vertical edge, 2 : horizontal edge
@@ -399,7 +462,6 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
             ostr <<  one_element_mesh_desc_fun(2)->prefix()<< "-" << Xh->basis()->familyName() << "-" << i;
             exporter_shape->step(0)->add( ostr.str(), U_ref );
         }
-    exporter_shape->step(0)->add( "proj_Hcurl_u", u );
     exporter_shape->save();
 
     auto F = M_backend->newVector( Xh );
@@ -413,27 +475,43 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
         {
+            BOOST_TEST_MESSAGE( "check integral evaluation on edges\n" );
             // on ref element
-            auto v = integrate( markedfaces(oneelement_mesh, edge), trans(T())*(JinvT())*idv(u_vec[i])).evaluate()(0,0);
+            auto int_u_t = integrate( markedfaces(oneelement_mesh, edge), trans(T())*(JinvT())*idv(u_vec[i])).evaluate()(0,0);
             if ( edgeid == i )
-                BOOST_CHECK_CLOSE( v, 1, 1e-13 );
+                BOOST_CHECK_CLOSE( int_u_t, 1, 1e-14 );
             else
-                BOOST_CHECK_SMALL( v, 1e-13 );
-            checkidv[3*i+edgeid] = v;
-            // form1( _test=Xh, _vector=F, _init=true) = integrate( markedfaces(oneelement_mesh, edge),
-            //                                                              trans(T())*(JinvT())*id(u_vec[i]));
-            form1( _test=Xh, _vector=F, _init=true) = integrate( markedfaces(oneelement_mesh, edge),
-                                                                         trans(T())*(JinvT())*id(V_ref));
-            v = inner_product(u_vec[i], *F);
-            if ( edgeid == i )
-                BOOST_CHECK_CLOSE( v, 1, 1e-13 );
-            else
-                BOOST_CHECK_SMALL( v, 1e-13 );
-            checkform1[3*i+edgeid] = v;
+                BOOST_CHECK_SMALL( int_u_t, 1e-14 );
+            checkidv[3*i+edgeid] = int_u_t;
 
+            BOOST_TEST_MESSAGE( "check linear form on edges\n" );
+            form1( _test=Xh, _vector=F, _init=true) = integrate( markedfaces(oneelement_mesh, edge),
+                                                                 trans(T())*(JinvT())*id(u_vec[i]));
+            auto form_v_t = inner_product(u_vec[i], *F);
+            if ( edgeid == i )
+                BOOST_CHECK_CLOSE( form_v_t, 1, 1e-14 );
+            else
+                BOOST_CHECK_SMALL( form_v_t, 1e-14 );
+            checkform1[3*i+edgeid] = form_v_t;
 
             ++edgeid;
+            BOOST_TEST_MESSAGE( "check done.\n" );
         }
+        BOOST_TEST_MESSAGE( "check integral evaluation on element using Stokes theorem\n" );
+        // check the curl (should be either 1 or 0)
+        auto int_curlx_v = integrate( elements(oneelement_mesh), curlxv(u_vec[i])/detJ()).evaluate()(0,0);
+        auto int_v_t = integrate( boundaryfaces(oneelement_mesh), trans(T())*(JinvT())*idv(u_vec[i])).evaluate()(0,0);
+        BOOST_CHECK_CLOSE( int_v_t, 1, 1e-13 );
+        BOOST_CHECK_CLOSE( int_curlx_v, int_v_t, 1e-13 );
+
+        BOOST_TEST_MESSAGE( "check linear form on element using Stokes theorem\n" );
+        form1( _test=Xh, _vector=F, _init=true) = integrate( elements(oneelement_mesh),curlx(u_vec[i])/detJ());
+        auto form_curlx_v = inner_product(u_vec[i], *F);
+        form1( _test=Xh, _vector=F, _init=true) = integrate( boundaryfaces(oneelement_mesh),trans(T())*(JinvT())*id(u_vec[i]));
+        auto form_v_t = inner_product(u_vec[i], *F);
+        BOOST_CHECK_CLOSE( form_v_t, 1, 1e-13 );
+        BOOST_CHECK_CLOSE( form_curlx_v, form_v_t, 1e-13 );
+
 
     }
     BOOST_TEST_MESSAGE( " ********** Values of alpha_i (N_j ) = delta_{i,j}  ********** \n"
@@ -502,6 +580,16 @@ BOOST_AUTO_TEST_CASE( test_hcurl_N0_real_2 )
                       boost::unit_test::framework::master_test_suite().argv,
                       Feel::makeAbout(), Feel::makeOptions() );
     t.shape_functions(&Feel::oneelement_geometry_real_2);
+    BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
+}
+
+BOOST_AUTO_TEST_CASE( test_hcurl_projection )
+{
+    BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
+    Feel::TestHCurl t(boost::unit_test::framework::master_test_suite().argc,
+                      boost::unit_test::framework::master_test_suite().argv,
+                      Feel::makeAbout(), Feel::makeOptions() );
+    t.testProjector();
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
 }
 
