@@ -1550,13 +1550,13 @@ public:
                                 {
                                     if ( NDim == 2 )
                                     {
-                                        _M_curl[i][q](2) +=  _M_grad[i][q](1,0) - _M_grad[i][q](0,1);
+                                        _M_curl[i][q](2) =  _M_grad[i][q](1,0) - _M_grad[i][q](0,1);
                                     }
                                     else if ( NDim == 3 )
                                     {
-                                        _M_curl[i][q](0) +=  _M_grad[i][q](2,1) - _M_grad[i][q](1,2);
-                                        _M_curl[i][q](1) +=  _M_grad[i][q](0,2) - _M_grad[i][q](2,0);
-                                        _M_curl[i][q](2) +=  _M_grad[i][q](1,0) - _M_grad[i][q](0,1);
+                                        _M_curl[i][q](0) =  _M_grad[i][q](2,1) - _M_grad[i][q](1,2);
+                                        _M_curl[i][q](1) =  _M_grad[i][q](0,2) - _M_grad[i][q](2,0);
+                                        _M_curl[i][q](2) =  _M_grad[i][q](1,0) - _M_grad[i][q](0,1);
                                     }
                                 }
                             }
@@ -1625,13 +1625,20 @@ public:
                                 {
                                     if ( NDim == 2 )
                                     {
-                                        _M_curl[i][q](2) +=  _M_grad[i][q](1,0) - _M_grad[i][q](0,1);
+#if 0
+                                        _M_curl[i][q](0) = 0;
+                                        _M_curl[i][q](1) = 0;
+#else
+                                        _M_curl[i][q](0) = _M_grad[i][q](1,0) - _M_grad[i][q](0,1);
+                                        _M_curl[i][q](1) = _M_grad[i][q](1,0) - _M_grad[i][q](0,1);
+#endif
+                                        _M_curl[i][q](2) =  _M_grad[i][q](1,0) - _M_grad[i][q](0,1);
                                     }
                                     else if ( NDim == 3 )
                                         {
-                                            _M_curl[i][q](0) +=  _M_grad[i][q](2,1) - _M_grad[i][q](1,2);
-                                            _M_curl[i][q](1) +=  _M_grad[i][q](0,2) - _M_grad[i][q](2,0);
-                                            _M_curl[i][q](2) +=  _M_grad[i][q](1,0) - _M_grad[i][q](0,1);
+                                            _M_curl[i][q](0) =  _M_grad[i][q](2,1) - _M_grad[i][q](1,2);
+                                            _M_curl[i][q](1) =  _M_grad[i][q](0,2) - _M_grad[i][q](2,0);
+                                            _M_curl[i][q](2) =  _M_grad[i][q](1,0) - _M_grad[i][q](0,1);
                                         }
                                 }
                             } // q
@@ -1810,15 +1817,15 @@ public:
          * \param i index containing current function and component indices
          * \return divergence of the basis function at the q-th point
          */
-        template<typename IndexI>
-        value_type div( IndexI const& i, uint16_type c1, uint16_type c2, uint32_type q ) const
+
+        value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
             detail::ignore_unused_variable_warning(c1);
             detail::ignore_unused_variable_warning(c2);
             return div( i, c1, c2, q, mpl::int_<rank>() );
         }
-        template<typename IndexI>
-        value_type div( IndexI const& i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
+
+        value_type div( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
             detail::ignore_unused_variable_warning(i);
             detail::ignore_unused_variable_warning(q);
@@ -1830,8 +1837,8 @@ public:
             FEEL_ASSERT( 0 ).error( "divergence of a scalar function is undefined.");
             return 0;
         }
-        template<typename IndexI>
-        value_type div( IndexI const& i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
+
+        value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
         {
             detail::ignore_unused_variable_warning(c1);
             detail::ignore_unused_variable_warning(c2);
@@ -1851,48 +1858,60 @@ public:
          * \param i index containing current function and component indices
          * \return curl of the basis function at the q-th point
          */
-        template<typename IndexI>
-        value_type curl( IndexI const& i, uint16_type c1, uint16_type c2, uint32_type q ) const
+
+        value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
             detail::ignore_unused_variable_warning(c1);
             detail::ignore_unused_variable_warning(c2);
             return curl( i, c1, c2, q, mpl::int_<rank>() );
         }
-        template<typename IndexI>
-        value_type curl( IndexI const& i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
+
+        value_type curl( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
             detail::ignore_unused_variable_warning(i);
             detail::ignore_unused_variable_warning(q);
             detail::ignore_unused_variable_warning(c1);
             detail::ignore_unused_variable_warning(c2);
-            /**
-             * curlergence of a scalar function is undefined.
-             */
-            FEEL_ASSERT( 0 ).error( "curl of a scalar function is undefined.");
+            throw std::logic_error("invalid use of curl operator, field must be vectorial");
             return 0;
         }
-        template<typename IndexI>
-        value_type curl( IndexI const& i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
+
+        value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
         {
             detail::ignore_unused_variable_warning(c2);
             return _M_curl[i][q](c1);
         }
-        template<typename IndexI>
-        value_type curlx( IndexI const& i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
+        value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
+        {
+            detail::ignore_unused_variable_warning(c1);
+            detail::ignore_unused_variable_warning(c2);
+            return curlx( i, c1, c2, q, mpl::int_<rank>() );
+        }
+        value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
         {
             detail::ignore_unused_variable_warning(c1);
             detail::ignore_unused_variable_warning(c2);
             return _M_curl[i][q](0);
         }
-        template<typename IndexI>
-        value_type curly( IndexI const& i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
+        value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
+        {
+            detail::ignore_unused_variable_warning(c1);
+            detail::ignore_unused_variable_warning(c2);
+            return curly( i, c1, c2, q, mpl::int_<rank>() );
+        }
+        value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
         {
             detail::ignore_unused_variable_warning(c1);
             detail::ignore_unused_variable_warning(c2);
             return _M_curl[i][q](1);
         }
-        template<typename IndexI>
-        value_type curlz( IndexI const& i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
+        value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
+        {
+            detail::ignore_unused_variable_warning(c1);
+            detail::ignore_unused_variable_warning(c2);
+            return curlz( i, c1, c2, q, mpl::int_<rank>() );
+        }
+        value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
         {
             detail::ignore_unused_variable_warning(c1);
             detail::ignore_unused_variable_warning(c2);
