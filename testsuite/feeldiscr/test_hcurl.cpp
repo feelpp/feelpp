@@ -333,9 +333,10 @@ public:
      * run the application
      */
     void shape_functions(gmsh_ptrtype (*one_element_mesh)(double));
-    void shape_functions();
+    void projection(gmsh_ptrtype (*one_element_mesh_desc_fun)(double));
 
     void testProjector();
+    void exampleProblem1();
 
 private:
     //! linear algebra backend
@@ -355,6 +356,48 @@ private:
 }; //TestHCurl
 
 void
+TestHCurl::exampleProblem1()
+{
+    using namespace Feel::vf;
+    // then a fine mesh which we use to export the basis function to
+    // visualize them
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1).str() ,
+                                                      _shape="hypercube",
+                                                      _usenames=true,
+                                                      _dim=2,
+                                                      _h=meshSize,
+                                                      _xmin=-1,_xmax=1,
+                                                      _ymin=-1,_ymax=1));
+
+    space_ptrtype Xh = space_type::New( mesh );
+
+    auto u_exact = (1-Py()*Py())*unitX() + (1-Px()*Px())*unitY();
+    auto f = (3-Py()*Py())*unitX() + (3-Px()*Px())*unitY();
+
+    auto hcurl = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=HCURL );
+    auto u_hcurl = hcurl->project( _expr=trans(f) );
+    auto u_exact_hcurl = hcurl->project( _expr=trans(u_exact) );
+    auto error_hcurl = hcurl->project( _expr=trans(u_exact-idv(u_hcurl)) );
+
+    std::cout << "error Hcurl: " << math::sqrt( hcurl->energy( error_hcurl, error_hcurl ) ) << "\n";
+
+    std::string pro1_name = "problem1";
+    export_ptrtype exporter_pro1( export_type::New( this->vm(),
+                                                     (boost::format( "%1%-%2%-%3%" )
+                                                      % this->about().appName()
+                                                      % (boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1).str()
+                                                      % pro1_name).str() ) );
+
+    exporter_pro1->step(0)->setMesh( mesh );
+    exporter_pro1->step(0)->add( "proj_hcurl_u_exact", u_exact_hcurl );
+    exporter_pro1->step(0)->add( "proj_hcurl_u", u_hcurl );
+    exporter_pro1->step(0)->add( "error", error_hcurl);
+    exporter_pro1->save();
+
+}
+
+void
 TestHCurl::testProjector()
 {
     using namespace Feel::vf;
@@ -372,9 +415,9 @@ TestHCurl::testProjector()
     space_ptrtype Xh = space_type::New( mesh );
     lagrange_space_ptrtype Yh = lagrange_space_type::New( mesh );
 
-    auto E_exact = M_PI*(cos(M_PI*Px())*sin(M_PI*Py())*unitX()-sin(M_PI*Px())*cos(M_PI*Py())*unitY());
-    auto curl_E_exact = -2.*cos(M_PI*Px())*cos(M_PI*Py()); // -> z
-    auto f = (2*M_PI*M_PI+1)*M_PI*(cos(M_PI*Px())*sin(M_PI*Py())*unitX()-sin(M_PI*Px())*cos(M_PI*Py())*unitY() );
+    auto E_exact = (cos(M_PI*Px())*sin(M_PI*Py())*unitX()-sin(M_PI*Px())*cos(M_PI*Py())*unitY());
+    auto curl_E_exact = -2.*M_PI*cos(M_PI*Px())*cos(M_PI*Py()); // -> z
+    auto f = (2*M_PI*M_PI+1)*(cos(M_PI*Px())*sin(M_PI*Py())*unitX()-sin(M_PI*Px())*cos(M_PI*Py())*unitY() );
 
     auto l2 = opProjection( _domainSpace=Yh, _imageSpace=Yh, _type=L2 );
     auto u_l2 = l2->project( _expr=trans(f) );
@@ -395,24 +438,24 @@ TestHCurl::testProjector()
     std::cout << "error H1: " << math::sqrt( h1->energy( error_h1, error_h1 ) ) << "\n";
     std::cout << "error Hcurl: " << math::sqrt( hcurl->energy( error_hcurl, error_hcurl ) ) << "\n";
 
-    std::string shape_name = "shape_functions";
-    export_ptrtype exporter_shape( export_type::New( this->vm(),
+    std::string proj_name = "projection";
+    export_ptrtype exporter_proj( export_type::New( this->vm(),
                                                      (boost::format( "%1%-%2%-%3%" )
                                                       % this->about().appName()
                                                       % (boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1).str()
-                                                      % shape_name).str() ) );
+                                                      % proj_name).str() ) );
 
-    exporter_shape->step(0)->setMesh( mesh );
-    exporter_shape->step(0)->add( "proj_L2_u", u_l2 );
-    exporter_shape->step(0)->add( "proj_L2_E", E_l2 );
-    exporter_shape->step(0)->add( "proj_L2_error", error_l2 );
-    exporter_shape->step(0)->add( "proj_H1_u", u_h1 );
-    exporter_shape->step(0)->add( "proj_H1_E", E_h1 );
-    exporter_shape->step(0)->add( "proj_H1_error", error_h1 );
-    exporter_shape->step(0)->add( "proj_Hcurl_u", u_hcurl );
-    exporter_shape->step(0)->add( "proj_Hcurl_E", E_hcurl );
-    exporter_shape->step(0)->add( "proj_Hcurl_error", error_hcurl );
-    exporter_shape->save();
+    exporter_proj->step(0)->setMesh( mesh );
+    exporter_proj->step(0)->add( "proj_L2_u", u_l2 );
+    exporter_proj->step(0)->add( "proj_L2_E", E_l2 );
+    exporter_proj->step(0)->add( "proj_L2_error", error_l2 );
+    exporter_proj->step(0)->add( "proj_H1_u", u_h1 );
+    exporter_proj->step(0)->add( "proj_H1_E", E_h1 );
+    exporter_proj->step(0)->add( "proj_H1_error", error_h1 );
+    exporter_proj->step(0)->add( "proj_Hcurl_u", u_hcurl );
+    exporter_proj->step(0)->add( "proj_Hcurl_E", E_hcurl );
+    exporter_proj->step(0)->add( "proj_Hcurl_error", error_hcurl );
+    exporter_proj->save();
 }
 void
 TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
@@ -427,7 +470,7 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=one_element_mesh_desc_fun(meshSize) );
 
-    space_ptrtype Xh = space_type::New( oneelement_mesh ); // space associated with reference element
+    space_ptrtype Xh = space_type::New( oneelement_mesh ); 
 
     std::cout << "Family = " << Xh->basis()->familyName() << "\n"
               << "Dim    = " << Xh->basis()->nDim << "\n"
@@ -486,7 +529,7 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
 
             BOOST_TEST_MESSAGE( "check linear form on edges\n" );
             form1( _test=Xh, _vector=F, _init=true) = integrate( markedfaces(oneelement_mesh, edge),
-                                                                 trans(T())*(JinvT())*id(u_vec[i]));
+                                                                 trans(T())*(JinvT())*id(V_ref));
             auto form_v_t = inner_product(u_vec[i], *F);
             if ( edgeid == i )
                 BOOST_CHECK_CLOSE( form_v_t, 1, 1e-14 );
@@ -505,9 +548,9 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
         BOOST_CHECK_CLOSE( int_curlx_v, int_v_t, 1e-13 );
 
         BOOST_TEST_MESSAGE( "check linear form on element using Stokes theorem\n" );
-        form1( _test=Xh, _vector=F, _init=true) = integrate( elements(oneelement_mesh),curlx(u_vec[i])/detJ());
+        form1( _test=Xh, _vector=F, _init=true) = integrate( elements(oneelement_mesh),curlx(V_ref)/detJ());
         auto form_curlx_v = inner_product(u_vec[i], *F);
-        form1( _test=Xh, _vector=F, _init=true) = integrate( boundaryfaces(oneelement_mesh),trans(T())*(JinvT())*id(u_vec[i]));
+        form1( _test=Xh, _vector=F, _init=true) = integrate( boundaryfaces(oneelement_mesh),trans(T())*(JinvT())*id(V_ref));
         auto form_v_t = inner_product(u_vec[i], *F);
         BOOST_CHECK_CLOSE( form_v_t, 1, 1e-13 );
         BOOST_CHECK_CLOSE( form_curlx_v, form_v_t, 1e-13 );
@@ -523,7 +566,7 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
         {
-            BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << edgeid << " edge) *** \n"
+            BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << edge << " edge) *** \n"
                                 << "alpha_"<< edge << "(N_"<<i<<") = " << checkidv[3*i+edgeid] << "\n" );
             ++edgeid;
         }
@@ -539,7 +582,7 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
         {
-            BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << edgeid << " edge) *** \n"
+            BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << edge << " edge) *** \n"
                                 << "alpha_"<< edge << "(N_"<<i<<") = " << checkform1[3*i+edgeid] << "\n" );
             ++edgeid;
         }
@@ -547,7 +590,6 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
     }
     //// ************************************************************************************ ////
 }
-
 
 }
 #if USE_BOOST_TEST
@@ -591,6 +633,16 @@ BOOST_AUTO_TEST_CASE( test_hcurl_projection )
                       Feel::makeAbout(), Feel::makeOptions() );
     t.testProjector();
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
+}
+
+BOOST_AUTO_TEST_CASE( test_hcurl_example_1 )
+{
+    BOOST_TEST_MESSAGE( "test_hcurl on example 1" );
+    Feel::TestHCurl t(boost::unit_test::framework::master_test_suite().argc,
+                      boost::unit_test::framework::master_test_suite().argv,
+                      Feel::makeAbout(), Feel::makeOptions() );
+    t.exampleProblem1();
+    BOOST_TEST_MESSAGE( "test_hcurl_N0 on example 1 done" );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
