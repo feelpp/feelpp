@@ -77,13 +77,9 @@ using boost::unit_test::test_suite;
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <feel/feelvf/vf.hpp>
 
-#include <vector>
-#include <boost/shared_ptr.hpp>
-#include <boost/numeric/ublas/vector.hpp>
+#include <feel/feeldiscr/projector.hpp>
 
-#include <feel/feelcore/traits.hpp>
 
-#include <feel/feelalg/datamap.hpp>
 
 namespace Feel
 {
@@ -375,6 +371,8 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
 
     element_type U_ref( Xh, "U" );
     element_type V_ref(Xh, "V");
+    auto hcurl = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=HCURL );
+    auto u = hcurl->project( _expr=trans(sin(M_PI*Px())*unitX()-cos(M_PI*Px())*unitY() ) );
 
     // To store the shape functions
     // 0 : hypothenuse edge, 1 : vertical edge, 2 : horizontal edge
@@ -401,7 +399,7 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
             ostr <<  one_element_mesh_desc_fun(2)->prefix()<< "-" << Xh->basis()->familyName() << "-" << i;
             exporter_shape->step(0)->add( ostr.str(), U_ref );
         }
-
+    exporter_shape->step(0)->add( "proj_Hcurl_u", u );
     exporter_shape->save();
 
     auto F = M_backend->newVector( Xh );
@@ -432,6 +430,7 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
             else
                 BOOST_CHECK_SMALL( v, 1e-13 );
             checkform1[3*i+edgeid] = v;
+
 
             ++edgeid;
         }
@@ -505,6 +504,7 @@ BOOST_AUTO_TEST_CASE( test_hcurl_N0_real_2 )
     t.shape_functions(&Feel::oneelement_geometry_real_2);
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
 }
+
 BOOST_AUTO_TEST_SUITE_END()
 #else
 
