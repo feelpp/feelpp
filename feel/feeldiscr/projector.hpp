@@ -29,22 +29,26 @@
 #ifndef _PROJECTOR_HPP_
 #define _PROJECTOR_HPP_
 
+#include <feel/feelcore/parameter.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feelvf/vf.hpp>
 
 namespace Feel
 {
-
-enum ProjectorType{L2=0, H1=1, DIFF=2,DIV=3,CURL=4};
+template<class DomainSpace, class DualImageSpace> class Projector;
+enum ProjectorType{L2=0, H1=1, DIFF=2,HDIV=3,HCURL=4};
 namespace detail
 {
 template<typename Args>
-struct projector_type
+struct projector_args
 {
-    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type domain_type;
-    typedef typename vf::detail::clean_type<Args,tag::imageSpace>::type image_type;
-    typedef typename vf::detail::clean_type<Args,tag::type>::type type;
-    typedef typename vf::detail::clean_type<Args,tag::backend>::backend_type backend_type;
+    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::value_type domain_type;
+    typedef typename vf::detail::clean_type<Args,tag::imageSpace>::type::value_type image_type;
+    //typedef typename vf::detail::clean_type<Args,tag::type>::type type;
+    //typedef typename vf::detail::clean_type<Args,tag::backend>::backend_type backend_type;
+
+    typedef boost::shared_ptr<Projector<domain_type,image_type> > return_type;
+    typedef Projector<domain_type,image_type> projector_type;
 };
 
 } // detail
@@ -255,7 +259,7 @@ private :
                                     ));
             }
             break;
-            case DIV:
+            case HDIV:
             {
                 a = integrate(elements(this->domainSpace()->mesh()),
                               trans(idt( this->domainSpace()->element() )) /*trial*/
@@ -266,7 +270,7 @@ private :
                     );
             }
             break;
-            case CURL:
+            case HCURL:
             {
                 a = integrate(elements(this->domainSpace()->mesh()),
                               trans(idt( this->domainSpace()->element() )) /*trial*/
@@ -311,21 +315,22 @@ projector( boost::shared_ptr<TDomainSpace> const& domainspace,
     boost::shared_ptr<Proj_type> proj( new Proj_type(domainspace, imagespace, backend, proj_type, epsilon, gamma) );
     return proj;
 }
-#if 0
-BOOST_PARAMETER_MEMBER_FUNCTION((boost::shared_ptr<Projector<typename projector_type<Args>::domain_type,typename projector_type<Args>::image_type > > ),
-                                opProjection,
-                                tag,
-                                (required
-                                 (domainSpace,   *))
-                                (optional
-                                 (imageSpace,   *, domainSpace)
-                                 (type, *, L2)
-                                 (backend, *, Backend<double>::build(BACKEND_PETSC) )
-                                    ))
+
+BOOST_PARAMETER_FUNCTION((typename detail::projector_args<Args>::return_type),
+                         opProjection,
+                         tag,
+                         (required
+                          (domainSpace,   *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
+                          (imageSpace,   *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
+                             )
+                         (optional
+                          (type, *, L2)
+                          (backend, *, Backend<double>::build(BACKEND_PETSC) )
+                             ))
 {
-    return projector<domainSpace,imageSpace>
+    return projector(domainSpace,imageSpace, backend, type );
 }
-#endif
+
 #endif
 
 
