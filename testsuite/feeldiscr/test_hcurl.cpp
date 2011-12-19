@@ -52,7 +52,6 @@ using boost::unit_test::test_suite;
 /** include linear algebra backend */
 #include <feel/feelalg/backend.hpp>
 
-/** include linear algebra backend */
 #include <feel/feelalg/vector.hpp>
 
 /** include function space class */
@@ -208,9 +207,9 @@ oneelement_geometry_real_2(double h = 2)
               <<"Transfinite Line{3} = 1;\n";
     costr <<"Line Loop(4) = {3,1,2};\n"
           <<"Plane Surface(5) = {4};\n"
-          <<"Physical Line(\"vert\") = {1};\n"
+          <<"Physical Line(\"vert\") = {3};\n"
           <<"Physical Line(\"hypo\") = {2};\n"
-          <<"Physical Line(\"hor\") = {3};\n"
+          <<"Physical Line(\"hor\") = {1};\n"
           <<"Physical Surface(9) = {5};\n";
 
     std::ostringstream nameStr;
@@ -262,6 +261,7 @@ makeAbout()
 
 }
 
+using namespace Feel;
 
 class TestHCurl
     :
@@ -316,12 +316,25 @@ public:
                                 % this->about().appName()
                                 % this->vm()["hsize"].as<double>()
                                 );
+
+        oneelement_mesh_ref = createGMSHMesh( _mesh=new mesh_type,
+                                              _desc = oneelement_geometry_ref());
+
+        // Homothetic transformation of reference element mesh (rate=2, center=(0;0) )
+        oneelement_mesh_real_1 = createGMSHMesh( _mesh=new mesh_type,
+                                                 _desc = oneelement_geometry_real_1());
+
+        // Rotation of reference element mesh (angle=pi/2)
+        oneelement_mesh_real_2 = createGMSHMesh( _mesh=new mesh_type,
+                                                 _desc = oneelement_geometry_real_2());
+
     }
 
     /**
      * run the application
      */
     void shape_functions(gmsh_ptrtype (*one_element_mesh)(double));
+    void shape_functions();
 
 private:
     //! linear algebra backend
@@ -332,6 +345,11 @@ private:
 
     //! exporter factory
     export_ptrtype exporter;
+
+    //! meshes
+    mesh_ptrtype oneelement_mesh_ref;
+    mesh_ptrtype oneelement_mesh_real_1;
+    mesh_ptrtype oneelement_mesh_real_2;
 
 }; //TestHCurl
 
@@ -400,34 +418,52 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
             // on ref element
             auto v = integrate( markedfaces(oneelement_mesh, edge), trans(T())*(JinvT())*idv(u_vec[i])).evaluate()(0,0);
             if ( edgeid == i )
-                BOOST_CHECK_CLOSE( v, 1, 1e-14 );
+                BOOST_CHECK_CLOSE( v, 1, 1e-13 );
             else
-                BOOST_CHECK_SMALL( v, 1e-14 );
+                BOOST_CHECK_SMALL( v, 1e-13 );
             checkidv[3*i+edgeid] = v;
+            // form1( _test=Xh, _vector=F, _init=true) = integrate( markedfaces(oneelement_mesh, edge),
+            //                                                              trans(T())*(JinvT())*id(u_vec[i]));
             form1( _test=Xh, _vector=F, _init=true) = integrate( markedfaces(oneelement_mesh, edge),
-                                                                         trans(T())*(JinvT())*id(u_vec[i]));
+                                                                         trans(T())*(JinvT())*id(V_ref));
             v = inner_product(u_vec[i], *F);
             if ( edgeid == i )
-                BOOST_CHECK_CLOSE( v, 1, 1e-14 );
+                BOOST_CHECK_CLOSE( v, 1, 1e-13 );
             else
-                BOOST_CHECK_SMALL( v, 1e-14 );
+                BOOST_CHECK_SMALL( v, 1e-13 );
             checkform1[3*i+edgeid] = v;
 
             ++edgeid;
         }
 
     }
-    BOOST_TEST_MESSAGE( " ********** Values of alpha_i (N_j ) = delta_{i,j} (reference element) ********** \n"
+    BOOST_TEST_MESSAGE( " ********** Values of alpha_i (N_j ) = delta_{i,j}  ********** \n"
                         << "\n"
                         << " ********** Using idv keyword ********************* "
                         << "\n");
-        for( int i = 0;i < 3; ++i )
+    for( int i = 0;i < 3; ++i )
     {
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
         {
             BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << edgeid << " edge) *** \n"
                                 << "alpha_"<< edge << "(N_"<<i<<") = " << checkidv[3*i+edgeid] << "\n" );
+            ++edgeid;
+        }
+        BOOST_TEST_MESSAGE( "*********************************************** \n" );
+    }
+
+    BOOST_TEST_MESSAGE( " ********** Values of alpha_i (N_j ) = delta_{i,j}  ********** \n"
+                        << "\n"
+                        << " ********** Using form1 keyword ********************* "
+                        << "\n");
+    for( int i = 0;i < 3; ++i )
+    {
+        int edgeid = 0;
+        BOOST_FOREACH( std::string edge, edges )
+        {
+            BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << edgeid << " edge) *** \n"
+                                << "alpha_"<< edge << "(N_"<<i<<") = " << checkform1[3*i+edgeid] << "\n" );
             ++edgeid;
         }
         BOOST_TEST_MESSAGE( "*********************************************** \n" );
@@ -477,7 +513,11 @@ main( int argc, char* argv[] )
 {
 
     Feel::TestHCurl app_hcurl( argc, argv, Feel::makeAbout(), Feel::makeOptions() );
+
+    // app_hcurl.tangent_operators();
     app_hcurl.shape_functions();
+    // app_hcurl.matrix_assembly();
+    // app_hcurl.example_problem();
 }
 
 #endif
