@@ -42,7 +42,7 @@ namespace Feel
 template<class DomainSpace, class DualImageSpace>
 class OperatorLinear : public Operator<DomainSpace, DualImageSpace>
 {
-    typedef OperatorLinear<DomainSpace,DualImageSpace> super;
+    typedef Operator<DomainSpace,DualImageSpace> super;
 public:
 
     // -- TYPEDEFS --
