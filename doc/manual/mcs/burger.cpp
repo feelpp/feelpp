@@ -192,7 +192,7 @@ namespace Feel
                                 % this->vm()["hsize"].template as<double>()
                                 % this->vm()["nu"].template as<double>()
                                 );
-
+        //creation of the mesh
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                             _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "simplex" % Dim % 1).str() ,
@@ -210,8 +210,9 @@ namespace Feel
     void Burger<Dim, Order, Entity>::run() 
     {
         using namespace Feel::vf;
+        \\mesh
         mesh_ptrtype mesh = M_Xh->mesh();
-
+        \\creation of vector and matrix
         element_type u( M_Xh, "u" );
         element_type v( M_Xh, "v" );
         element_type vv( M_Xh, "vv" );
@@ -251,9 +252,10 @@ namespace Feel
 
         t = dt;
         vv = u;
-
+        //time loop
         for(;t<=100;t+=dt)
         {
+            //creation of the matrix D      
             form2( _test=M_Xh, _trial=M_Xh, _matrix=D , _init=true) = integrate( elements( mesh ), M_nu*gradt(u)*trans(grad(v)) );
             form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idt(u)/dt) + id(vv)*gradt(u) )*id(v) );
             form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
@@ -261,19 +263,23 @@ namespace Feel
                                      + id(vv)*trans(id(v))*(idt(u)*N())
                                      + penalisation_bc*trans(idt(u)*id(v)/hFace()) ));
             D->close();
+            //bondary conditions
             form2( M_Xh, M_Xh, D ) +=
                 on( markedfaces(mesh,1), u, F, cst(0.) );
             form2( M_Xh, M_Xh, D ) +=
                 on( markedfaces(mesh,2), u, F, cst(0.) );
-
+            //creation of th risidual vector
             form1( M_Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+id(vv)*id(v)/dt);
             form1( M_Xh, F ) +=
             integrate( boundaryfaces(mesh), -(grad(v)*N())*g );
             F->close();
+            //resolution 
             backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+            //we save the u^n-1
             vv = u;
             Log() << "t=" << t << "\n";
         }
+        
         exportResults( u );  
     }
 
