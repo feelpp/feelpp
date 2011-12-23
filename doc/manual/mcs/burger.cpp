@@ -44,6 +44,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/geotool.hpp>
 
+
 inline
 Feel::po::options_description
 makeOptions()
@@ -210,9 +211,9 @@ namespace Feel
     void Burger<Dim, Order, Entity>::run() 
     {
         using namespace Feel::vf;
-        \\mesh
+        //mesh
         mesh_ptrtype mesh = M_Xh->mesh();
-        \\creation of vector and matrix
+        //creation of vector and matrix
         element_type u( M_Xh, "u" );
         element_type v( M_Xh, "v" );
         element_type vv( M_Xh, "vv" );
@@ -237,7 +238,7 @@ namespace Feel
         form2( M_Xh, M_Xh, D ) +=
             on( markedfaces(mesh,1), u, F, cst(0.) );
         form2( M_Xh, M_Xh, D ) +=
-            on( markedfaces(mesh,2), u, F, cst(0.) );
+            on( markedfaces(mesh,3), u, F, cst(0.) );
 
         form1( M_Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+M_c*id(v)/dt);
         // linear form (right hand side)
@@ -255,21 +256,22 @@ namespace Feel
         //time loop
         for(;t<=100;t+=dt)
         {
+            exportResults( u );
             //creation of the matrix D      
             form2( _test=M_Xh, _trial=M_Xh, _matrix=D , _init=true) = integrate( elements( mesh ), M_nu*gradt(u)*trans(grad(v)) );
-            form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idt(u)/dt) + id(vv)*gradt(u) )*id(v) );
+            form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idt(u)/dt) + idv(vv)*gradt(u) )*id(v) );
             form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
                                    ( - trans(id(v))*(gradt(u)*N())
-                                     + id(vv)*trans(id(v))*(idt(u)*N())
+                                     + idv(vv)*trans(id(v))*(idt(u)*N())
                                      + penalisation_bc*trans(idt(u)*id(v)/hFace()) ));
             D->close();
             //bondary conditions
             form2( M_Xh, M_Xh, D ) +=
                 on( markedfaces(mesh,1), u, F, cst(0.) );
             form2( M_Xh, M_Xh, D ) +=
-                on( markedfaces(mesh,2), u, F, cst(0.) );
+                on( markedfaces(mesh,3), u, F, cst(0.) );
             //creation of th risidual vector
-            form1( M_Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+id(vv)*id(v)/dt);
+            form1( M_Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+idv(vv)*id(v)/dt);
             form1( M_Xh, F ) +=
             integrate( boundaryfaces(mesh), -(grad(v)*N())*g );
             F->close();
@@ -299,7 +301,7 @@ namespace Feel
 int main( int argc, char** argv )
 {
     using namespace Feel;
-
+    
     /* change parameters below */
     const int nDim = 1;
     const int nOrder = 1;
