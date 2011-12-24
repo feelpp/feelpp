@@ -218,8 +218,6 @@ namespace Feel
         element_type v( M_Xh, "v" );
         element_type vv( M_Xh, "vv" );
         value_type pi = M_PI;
-        //auto M_c = M_backend->newVector(M_Xh);
-        //element_type M_c( M_Xh, "M_v" );
         auto M_c = sin(2*pi*Px());
         value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
         auto t = 0;
@@ -247,12 +245,11 @@ namespace Feel
         -(grad(v)*N())*g // adjoint consistency
         /*+gamma*id(v)*g/hFace()*/); // penalisation
         F->close();
-
-        
         backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
 
-        t = dt;
+        t = 2*dt;
         vv = u;
+        exportResults( u ); 
         //time loop
         for(;t<=100;t+=dt)
         {
@@ -279,10 +276,8 @@ namespace Feel
             backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
             //we save the u^n-1
             vv = u;
-            Log() << "t=" << t << "\n";
-        }
-        
-        exportResults( u );  
+            exportResults( u ); 
+        } 
     }
 
     template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
