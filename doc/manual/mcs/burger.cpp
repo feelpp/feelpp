@@ -54,7 +54,7 @@ makeOptions()
         ("nu", Feel::po::value<double>()->default_value( 0.01 ), "value of viscosity")
         ("dt", Feel::po::value<double>()->default_value( 1.0 ), "step time")
         ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("hsize", Feel::po::value<double>()->default_value( 0.05 ), "first h value to start convergence")
         ;
     return burgeroptions.add( Feel::feel_options() );
 }
@@ -150,7 +150,7 @@ namespace Feel
         /**
          * export results to ensight format (enabled by  --export cmd line options)
          */
-        void exportResults( element_type& u );
+        void exportResults( element_type& u, double t );
 
     private:
 
@@ -159,8 +159,6 @@ namespace Feel
         double meshSize;
         // viscosity
         double M_nu;
-        // velocity at previous step time
-        //auto M_c;
         // step time
         double dt;
 
@@ -220,18 +218,19 @@ namespace Feel
         value_type pi = M_PI;
         auto M_c = sin(2*pi*Px());
         value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
-        auto t = 0;
+        auto t = 0.0;
         auto f = 0;
         auto g = 0;
         auto F = M_backend->newVector(M_Xh);
         auto D = M_backend->newMatrix(M_Xh,M_Xh);        
-
+        
+        t=dt;
         form2( _test=M_Xh, _trial=M_Xh, _matrix=D , _init=true) = integrate( elements( mesh ), M_nu*gradt(u)*trans(grad(v)) );
         form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idt(u)/dt) + M_c*gradt(u) )*id(v) );
         form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
-                               ( - trans(id(v))*(gradt(u)*N())
-                                 + M_c*trans(id(v))*(idt(u)*N())
-                                 + penalisation_bc*trans(idt(u)*id(v)/hFace()) ));
+                               ( - trans(id(v))*(gradt(u)*N())));
+                                 //+ M_c*trans(id(v))*(idt(u)*N())));
+                                // + penalisation_bc*trans(idt(u)*id(v)/hFace()) ));
         D->close();
         form2( M_Xh, M_Xh, D ) +=
             on( markedfaces(mesh,1), u, F, cst(0.) );
@@ -246,21 +245,20 @@ namespace Feel
         /*+gamma*id(v)*g/hFace()*/); // penalisation
         F->close();
         backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+        exportResults( u, t); 
 
         t = 2*dt;
         vv = u;
-        exportResults( u ); 
         //time loop
-        for(;t<=100;t+=dt)
+        for(;t<=100.0;t+=dt)
         {
-            exportResults( u );
             //creation of the matrix D      
             form2( _test=M_Xh, _trial=M_Xh, _matrix=D , _init=true) = integrate( elements( mesh ), M_nu*gradt(u)*trans(grad(v)) );
             form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idt(u)/dt) + idv(vv)*gradt(u) )*id(v) );
             form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
-                                   ( - trans(id(v))*(gradt(u)*N())
-                                     + idv(vv)*trans(id(v))*(idt(u)*N())
-                                     + penalisation_bc*trans(idt(u)*id(v)/hFace()) ));
+                                   ( - trans(id(v))*(gradt(u)*N())));
+                                    // + idv(vv)*trans(id(v))*(idt(u)*N()) ));
+                                     //+ penalisation_bc*trans(idt(u)*id(v)/hFace()) ));
             D->close();
             //bondary conditions
             form2( M_Xh, M_Xh, D ) +=
@@ -276,18 +274,18 @@ namespace Feel
             backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
             //we save the u^n-1
             vv = u;
-            exportResults( u ); 
+            exportResults( u, t); 
         } 
     }
 
     template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-    void Burger<Dim, Order, Entity>::exportResults( element_type& U ) 
+    void Burger<Dim, Order, Entity>::exportResults( element_type& U, double t) 
     {
         if ( exporter->doExport() )
         {
             Log() << "exportResults starts\n";
-            exporter->step(0)->setMesh( U.functionSpace()->mesh() );
-            exporter->step(0)->add( "u", U );
+            exporter->step(t)->setMesh( U.functionSpace()->mesh() );
+            exporter->step(t)->add( "u", U );
             exporter->save();
         }
     }
