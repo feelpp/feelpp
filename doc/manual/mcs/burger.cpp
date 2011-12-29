@@ -191,13 +191,16 @@ namespace Feel
                                 % this->vm()["hsize"].template as<double>()
                                 % this->vm()["nu"].template as<double>()
                                 );
-        //creation of the mesh
+        //creation of the mesh        
+        value_type pi = M_PI;
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                             _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "simplex" % Dim % 1).str() ,
                                                           _shape="simplex",
                                                           _dim=Dim,
                                                           _order=1,
+                                                          _xmin=0.0,
+                                                          _xmax=2*pi,
                                                           _h=meshSize ) );
 
         M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
@@ -216,7 +219,7 @@ namespace Feel
         element_type v( M_Xh, "v" );
         element_type vv( M_Xh, "vv" );
         value_type pi = M_PI;
-        auto M_c = sin(2*pi*Px());
+        auto M_c = sin(Px());
         value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
         auto t = 0.0;
         auto f = 0;
@@ -229,8 +232,6 @@ namespace Feel
         form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idt(u)/dt) + M_c*gradt(u) )*id(v) );
         form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
                                ( - trans(id(v))*(gradt(u)*N())));
-                                 //+ M_c*trans(id(v))*(idt(u)*N())));
-                                // + penalisation_bc*trans(idt(u)*id(v)/hFace()) ));
         D->close();
         form2( M_Xh, M_Xh, D ) +=
             on( markedfaces(mesh,1), u, F, cst(0.) );
@@ -239,10 +240,6 @@ namespace Feel
 
         form1( M_Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+M_c*id(v)/dt);
         // linear form (right hand side)
-        form1( M_Xh, F ) +=
-        integrate( boundaryfaces(mesh),
-        -(grad(v)*N())*g // adjoint consistency
-        /*+gamma*id(v)*g/hFace()*/); // penalisation
         F->close();
         backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
         exportResults( u, t); 
@@ -257,8 +254,6 @@ namespace Feel
             form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idt(u)/dt) + idv(vv)*gradt(u) )*id(v) );
             form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
                                    ( - trans(id(v))*(gradt(u)*N())));
-                                    // + idv(vv)*trans(id(v))*(idt(u)*N()) ));
-                                     //+ penalisation_bc*trans(idt(u)*id(v)/hFace()) ));
             D->close();
             //bondary conditions
             form2( M_Xh, M_Xh, D ) +=
