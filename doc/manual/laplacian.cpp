@@ -280,13 +280,13 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 				  nu*gradv(gproj)*vf::N()*id(v) );
     //# endmarker2 #
     if ( this->comm().size() != 1 || weakdir )
-        {
-            //# marker41 #
-            form1( _test=Xh, _vector=F ) +=
-                integrate( markedfaces(mesh,"Dirichlet"),
-						  g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
-            //# endmarker41 #
-        }
+    {
+        //# marker41 #
+        form1( _test=Xh, _vector=F ) +=
+            integrate( markedfaces(mesh,"Dirichlet"),
+					  g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
+        //# endmarker41 #
+    }
     F->close();
 
     /** \endcode */
