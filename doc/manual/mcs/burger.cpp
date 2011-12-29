@@ -44,7 +44,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/geotool.hpp>
 
-
+// here we define all parameter that we can to re-define when we execute this application
 inline
 Feel::po::options_description
 makeOptions()
@@ -58,6 +58,7 @@ makeOptions()
         ;
     return burgeroptions.add( Feel::feel_options() );
 }
+// information about this class
 inline
 Feel::AboutData
 makeAbout()
@@ -218,36 +219,48 @@ namespace Feel
         element_type u( M_Xh, "u" );
         element_type v( M_Xh, "v" );
         element_type vv( M_Xh, "vv" );
-        value_type pi = M_PI;
+        
+        // u0's value
         auto M_c = sin(Px());
+
         value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
         auto t = 0.0;
         auto f = 0;
         auto g = 0;
+
+        // definition of our vector and matrix that we use in our 
         auto F = M_backend->newVector(M_Xh);
-        auto D = M_backend->newMatrix(M_Xh,M_Xh);        
-        
+        auto D = M_backend->newMatrix(M_Xh,M_Xh); 
+       
+        // we begin resolution with t=dt
         t=dt;
+
+        // bilinear part in our variationnal form
         form2( _test=M_Xh, _trial=M_Xh, _matrix=D , _init=true) = integrate( elements( mesh ), M_nu*gradt(u)*trans(grad(v)) );
         form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idt(u)/dt) + M_c*gradt(u) )*id(v) );
         form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
                                ( - trans(id(v))*(gradt(u)*N())));
         D->close();
+
+        // strong limits conditions
         form2( M_Xh, M_Xh, D ) +=
             on( markedfaces(mesh,1), u, F, cst(0.) );
         form2( M_Xh, M_Xh, D ) +=
             on( markedfaces(mesh,3), u, F, cst(0.) );
 
-        form1( M_Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+M_c*id(v)/dt);
         // linear form (right hand side)
+        form1( M_Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+M_c*id(v)/dt);
         F->close();
+        
+        // we solve our linear system
         backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+        
+        // we export u at t 
         exportResults( u, t); 
-
-        t = 2*dt;
+        
         vv = u;
         //time loop
-        for(;t<=100.0;t+=dt)
+        for(t = 2*dt;t<=100.0;t+=dt)
         {
             //creation of the matrix D      
             form2( _test=M_Xh, _trial=M_Xh, _matrix=D , _init=true) = integrate( elements( mesh ), M_nu*gradt(u)*trans(grad(v)) );
@@ -255,18 +268,22 @@ namespace Feel
             form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
                                    ( - trans(id(v))*(gradt(u)*N())));
             D->close();
+
             //bondary conditions
             form2( M_Xh, M_Xh, D ) +=
                 on( markedfaces(mesh,1), u, F, cst(0.) );
             form2( M_Xh, M_Xh, D ) +=
                 on( markedfaces(mesh,3), u, F, cst(0.) );
+
             //creation of th risidual vector
             form1( M_Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+idv(vv)*id(v)/dt);
             form1( M_Xh, F ) +=
             integrate( boundaryfaces(mesh), -(grad(v)*N())*g );
             F->close();
+
             //resolution 
             backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+
             //we save the u^n-1
             vv = u;
             exportResults( u, t); 
