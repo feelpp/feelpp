@@ -139,7 +139,7 @@ public:
             const size_type n1_dof_on_proc = _M_X1->nLocalDof();
 
             boost::timer t;
-            std::cout << "compute graph\n";
+            //std::cout << "compute graph\n";
 
             if ( dynamic_cast<void*>( _M_X1->mesh().get()) == dynamic_cast<void*>( _M_X2->mesh().get()) )
                 M_graph = computeGraph( graph_hints, mpl::bool_<mpl::and_< mpl::bool_< (test_space_type::nSpaces == 1)>,
@@ -148,7 +148,7 @@ public:
                 M_graph = computeGraphInCaseOfInterpolate( graph_hints, mpl::bool_<mpl::and_< mpl::bool_< (test_space_type::nSpaces == 1)>,
                                                                                             mpl::bool_< (trial_space_type::nSpaces == 1)> >::type::value >() );
             M_graph->close();
-            std::cout << "computed graph in " << t.elapsed() << "s\n"; t.restart();
+            //std::cout << "computed graph in " << t.elapsed() << "s\n"; t.restart();
         }
     Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh, size_type graph_hints, graph_ptrtype g )
         :
@@ -261,13 +261,13 @@ BOOST_PARAMETER_FUNCTION(
     auto git = StencilManager::instance().find( boost::make_tuple( trial, test, pattern ) );
     if (  git != StencilManager::instance().end() )
     {
-        std::cout << "Found a  stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
+        //std::cout << "Found a  stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
         auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, git->second ) );
         return s;
     }
     else
     {
-        std::cout << "Creating a new stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
+        //std::cout << "Creating a new stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
         auto s = stencil_ptrtype( new stencil_type( test, trial, pattern ) );
         StencilManager::instance().operator[](boost::make_tuple( trial, test, pattern )) = s->graph();
         return s;
