@@ -297,11 +297,10 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
      */
     //# marker3 #
     /** \code */
-    sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
+    sparse_matrix_ptrtype D( M_backend->newMatrix( _test=Xh, _trial=Xh  ) );
     /** \endcode */
 
     const size_type pattern = Pattern::DEFAULT|Pattern::SYMMETRIC;
-    form2( Xh, Xh, D, _init=true, _pattern=pattern );
     //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
     /** \code */
 
@@ -336,8 +335,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
             /** \code */
             //# marker5 #
             D->close();
-            form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, "Dirichlet"), u, F, g );
+            form2( Xh, Xh, D ) +=on( _range=markedfaces(mesh, "Dirichlet"), _element=u, _rhs=F, _expr=g );
             //# endmarker5 #
             /** \endcode */
 
