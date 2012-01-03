@@ -92,7 +92,11 @@ template<int Dim>struct ExactSolution{};
 template<>
 struct ExactSolution<1>
 {
+#if FEEL_GNUC_AT_LEAST(4,6)
     static constexpr double pi = M_PI;
+#else
+    static const double pi = M_PI;
+#endif
     typedef __typeof__( sin(pi*Px()) ) type;
     typedef __typeof__( pi*pi*sin(pi*Px()) ) wave_type;
 };
@@ -100,7 +104,11 @@ struct ExactSolution<1>
 template<>
 struct ExactSolution<2>
 {
+#if FEEL_GNUC_AT_LEAST(4,6)
     static constexpr double pi = M_PI;
+#else
+    static const double pi = M_PI;
+#endif
     typedef __typeof__( sin(pi*Px())*cos(pi*Py()) ) type;
     typedef __typeof__( 2*pi*pi*sin(pi*Px())*cos(pi*Py()) ) wave_type;
 };
@@ -108,7 +116,11 @@ struct ExactSolution<2>
 template<>
 struct ExactSolution<3>
 {
+#if FEEL_GNUC_AT_LEAST(4,6)
     static constexpr double pi = M_PI;
+#else
+    static const double pi = M_PI;
+#endif
     typedef __typeof__( sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) ) type;
     typedef __typeof__( 3*pi*pi*sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) ) wave_type;
 };
