@@ -218,6 +218,7 @@ void MatrixPetsc<T>::init (const size_type m,
     if ((m_l == m) && (n_l == n))
     {
 #if 0
+#if 0
         PetscInt nrows = m_local;
         PetscInt ncols = n_local;
         PetscInt *dnz;
@@ -242,7 +243,7 @@ void MatrixPetsc<T>::init (const size_type m,
         std::copy( this->graph()->nNzOnProc().begin(),
                    this->graph()->nNzOnProc().end(),
                    dnz );
-        //std::copy( dnz, dnz+this->graph()->nNzOnProc().size(), std::ostream_iterator<PetscInt>( std::cout, "\n" ) );
+        std::copy( dnz, dnz+this->graph()->nNzOnProc().size(), std::ostream_iterator<PetscInt>( std::cout, "\n" ) );
         ierr = MatCreateSeqAIJ (this->comm(), m_global, n_global,
                                 0,
                                 dnz,
@@ -251,15 +252,16 @@ void MatrixPetsc<T>::init (const size_type m,
         CHKERRABORT(this->comm(),ierr);
 
         //ierr = MatSeqAIJSetPreallocation( _M_mat, 0, (int*)this->graph()->nNzOnProc().data() );
-#if 1
+#if 0
         ierr = MatSeqAIJSetPreallocation( _M_mat, 0, dnz );
 #else
         this->graph()->close();
-        //std::cout << "sizes:" << this->graph()->ia().size() << "," << this->graph()->ja().size()  << std::endl;
-        std::vector<PetscInt> ia( this->graph()->ia().size() ), ja( this->graph()->ja().size() );
+        std::cout << "sizes:" << this->graph()->ia().size() << "," << this->graph()->ja().size()  << std::endl;
+        ia.resize( this->graph()->ia().size() );
+        ja.resize( this->graph()->ja().size() );
         std::copy( this->graph()->ia().begin(), this->graph()->ia().end(), ia.begin() );
         std::copy( this->graph()->ja().begin(), this->graph()->ja().end(), ja.begin() );
-        //std::for_each( ia.begin(), ia.end(), [](const int& i ){ std::cout << i << std::endl; } );
+        std::for_each( ia.begin(), ia.end(), [](const int& i ){ std::cout << i << std::endl; } );
 #if 1
         ierr = MatSeqAIJSetPreallocationCSR( _M_mat,
                                              ia.data(), ja.data(),
@@ -267,6 +269,22 @@ void MatrixPetsc<T>::init (const size_type m,
 #endif
 #endif
         CHKERRABORT(this->comm(),ierr);
+#else
+        //std::cout << "matrix csr creating...\n" << std::endl;
+        this->graph()->close();
+        //std::cout << "sizes:" << this->graph()->ia().size() << "," << this->graph()->ja().size()  << std::endl;
+        ia.resize( this->graph()->ia().size() );
+        ja.resize( this->graph()->ja().size() );
+        std::copy( this->graph()->ia().begin(), this->graph()->ia().end(), ia.begin() );
+        std::copy( this->graph()->ja().begin(), this->graph()->ja().end(), ja.begin() );
+        //std::for_each( ia.begin(), ia.end(), [](const int& i ){ std::cout << i << std::endl; } );
+
+        ierr = MatCreateSeqAIJWithArrays( this->comm(),
+                                          m_global, n_global,
+                                          ia.data(), ja.data(), this->graph()->a().data(), &_M_mat );
+        CHKERRABORT(this->comm(),ierr);
+        //std::cout << "matrix csr created\n" << std::endl;
+#endif
     }
 
     else
