@@ -220,6 +220,13 @@ public:
     {
 #if 1
         auto mat = this->newMatrix( dm->map(), im->map(), prop );
+        // we look into the spaces dictionary for existing graph
+#if 0
+        if ( M_graph_dict.find( std::make_pair( dm, im ) ) != M_graph_dict.end() )
+        {
+
+        }
+#endif
 
         auto nSpace = DomainSpace::element_type::nSpaces;
         if (nSpace>1)
@@ -243,7 +250,13 @@ public:
         return this->newMatrix( dm->map(), im->map(), prop );
 #endif
     }
-
+    template<typename DomainSpace, typename ImageSpace>
+    sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im, sparse_matrix_ptrtype const& M, size_type prop = NON_HERMITIAN  )
+    {
+        sparse_matrix_ptrtype m = newMatrix( dm, im, prop  );
+        m->init( im->nDof(), dm->nDof(), im->nLocalDof(), dm->nLocalDof(), M->graph() );
+        return m;
+    }
     /**
      * instantiate a new block matrix sparse
      */
