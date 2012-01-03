@@ -124,8 +124,6 @@ public:
     Mortar( std::string const& basis_name, Feel::po::variables_map const& vm, AboutData const& ad )
         :
         super( vm, ad ),
-        // timers(),
-        M_backend(),
         M_basis_name( basis_name )
     {}
 
@@ -139,8 +137,6 @@ private:
 
     std::string M_basis_name;
     //! linear algebra backend
-    backend_ptrtype M_backend;
-    // std::map<std::string, std::pair<boost::timer, double> > timers;
     // flags for outsides
     // std::vector<int> outside1;
     // std::vector<int> outside2;
@@ -164,7 +160,7 @@ Mortar<Dim, Order1, Order2>::run()
                                 % meshSize() );
     }
 
-    M_backend =  backend_type::build( this->vm() ) ;
+    backend_ptrtype backend =  backend_type::build( this->vm() ) ;
 
 #if defined(KOVASZNAY)
     double x1min = -0.5, x1max=1;
@@ -181,7 +177,7 @@ Mortar<Dim, Order1, Order2>::run()
     double shear = this->vm()["shear"].template as<value_type>();
     bool recombine = this->vm()["recombine"].template as<bool>();
 
-    //  boost::timer t;
+    boost::timer t;
 
 
     auto mesh1 = createGMSHMesh( _mesh=new mesh_type,
@@ -215,14 +211,12 @@ Mortar<Dim, Order1, Order2>::run()
                                                _zmin=zmin,_zmax=zmax ) );
 
 
-    //M_stats.put("t.init.mesh",t.elapsed());t.restart();
+    M_stats.put("t.init.mesh",t.elapsed());t.restart();
 
      std::vector<int> outside1;
      std::vector<int> outside2;
      int gamma1;
      int gamma2;
-
-     std::map<std::string, std::pair<boost::timer, double> > timers;
 
     if ( Dim == 2 )
     {
@@ -254,6 +248,11 @@ Mortar<Dim, Order1, Order2>::run()
     auto u2 = Xh2->element();
     auto v2 = Xh2->element();
 
+    M_stats.put("h",M_meshSize);
+    M_stats.put("n.space.Xh1",Xh1->nLocalDof());
+    M_stats.put("n.space.Xh2",Xh2->nLocalDof());
+    M_stats.put("n.space.Th",Lh1->nLocalDof());
+
     value_type pi = M_PI;
     auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
 
@@ -267,7 +266,7 @@ Mortar<Dim, Order1, Order2>::run()
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type coeff = this->vm()["coeff"].template as<double>();
 
-    auto F1 = M_backend->newVector( Xh1 );
+    auto F1 = backend->newVector( Xh1 );
     form1( _test=Xh1, _vector=F1, _init=true ) =
         integrate( elements(mesh1), f*id(v1) );
 
@@ -280,7 +279,7 @@ Mortar<Dim, Order1, Order2>::run()
 
     F1->close();
 
-    auto D1 = M_backend->newMatrix( Xh1, Xh1 );
+    auto D1 = backend->newMatrix( Xh1, Xh1 );
 
     form2( _trial=Xh1, _test=Xh1, _matrix=D1, _init=true ) =
         integrate( elements(mesh1), coeff*gradt(u1)*trans(grad(v1)) );
@@ -296,22 +295,23 @@ Mortar<Dim, Order1, Order2>::run()
 
     D1->close();
 
-    auto B1 = M_backend->newMatrix( Xh1, Lh1 );
+    auto B1 = backend->newMatrix( Xh1, Lh1 );
 
     Log() << "init_B1 starts\n";
-    timers["init_B1"].first.restart();
+    t.restart();
 
     form2( _trial=Xh1, _test=Lh1, _matrix=B1, _init=true );
+    Log() << "init_B1 done in " << t.elapsed() << "s\n";
+    M_stats.put("t.init.B1",t.elapsed());t.restart();
 
-    timers["init_B1"].second = timers["init_B1"].first.elapsed();
-    Log() << "init_B1 done in " << timers["init_B1"].second << "s\n";
 
     form2( _trial=Xh1, _test=Lh1, _matrix=B1 ) +=
         integrate( markedfaces(mesh1,gamma1), idt(u1)*id(nu) );
 
     B1->close();
+    M_stats.put("t.assembly.B1",t.elapsed());t.restart();
 
-    auto F2 = M_backend->newVector( Xh2 );
+    auto F2 = backend->newVector( Xh2 );
     form1( _test=Xh2, _vector=F2, _init=true ) =
         integrate( elements(mesh2), f*id(v2) );
 
@@ -323,8 +323,9 @@ Mortar<Dim, Order1, Order2>::run()
     }
 
     F2->close();
+    M_stats.put("t.assembly.F2",t.elapsed());t.restart();
 
-    auto D2 = M_backend->newMatrix( Xh2, Xh2 );
+    auto D2 = backend->newMatrix( Xh2, Xh2 );
 
     form2( _trial=Xh2, _test=Xh2, _matrix=D2, _init=true ) =
         integrate( elements(mesh2), coeff*gradt(u2)*trans(grad(v2)) );
@@ -339,92 +340,56 @@ Mortar<Dim, Order1, Order2>::run()
     }
 
     D2->close();
-
-    auto B2 = M_backend->newMatrix( Xh2, Lh1 );
-
-    Log() << "init_B2 starts\n";
-    timers["init_B2"].first.restart();
-
+    M_stats.put("t.assembly.D2",t.elapsed());t.restart();
+    auto B2 = backend->newMatrix( Xh2, Lh1 );
     form2( _trial=Xh2, _test=Lh1, _matrix=B2, _init=true );
-
-    timers["init_B2"].second = timers["init_B2"].first.elapsed();
-    Log() << "init_B2 done in " << timers["init_B2"].second << "s\n";
+    M_stats.put("t.init.B2",t.elapsed());t.restart();
 
     form2( _trial=Xh2, _test=Lh1, _matrix=B2 ) +=
         integrate( markedfaces(mesh1,gamma1), -idt(u2)*id(nu) );
-
     B2->close();
+    M_stats.put("t.assembly.B2",t.elapsed());t.restart();
 
-    auto B12 = M_backend->newMatrix( Xh2, Xh1 );
+    auto B12 = backend->newMatrix( Xh2, Xh1 );
 
-    Log() << "init_B12 starts\n";
-    timers["init_B12"].first.restart();
 
     form2( _trial=Xh2, _test=Xh1, _matrix=B12, _init=true );
-
-    timers["init_B12"].second = timers["init_B12"].first.elapsed();
-    Log() << "init_B12 done in " << timers["init_B12"].second << "s\n";
-
     B12->close();
+    M_stats.put("t.init.B12",t.elapsed());t.restart();
 
-    auto B21 = M_backend->newMatrix( Xh1, Xh2 );
-
-    Log() << "init_B21 starts\n";
-    timers["init_B21"].first.restart();
-
+    auto B21 = backend->newMatrix( Xh1, Xh2 );
     form2( _trial=Xh1, _test=Xh2, _matrix=B21, _init=true );
-
-    timers["init_B21"].second = timers["init_B21"].first.elapsed();
-    Log() << "init_B21 done in " << timers["init_B21"].second << "s\n";
-
     B21->close();
+    M_stats.put("t.init.B21",t.elapsed());t.restart();
 
-    auto FL = M_backend->newVector( Lh1 );
-
+    auto FL = backend->newVector( Lh1 );
     form1( _test=Lh1, _vector=FL, _init=true );
+    M_stats.put("t.init.FL",t.elapsed());t.restart();
 
-    FL->close();
-
-
-    auto BLL = M_backend->newMatrix( Lh1, Lh1 );
-
-    form2( _trial=Lh1, _test=Lh1, _matrix=BLL, _init=true );
-
-    BLL->close();
-
-    auto B1t = M_backend->newMatrix( Lh1, Xh1 );
-    Log() << "init_B1t starts\n";
-    timers["init_B1t"].first.restart();
-
+    auto BLL = backend->newZeroMatrix( Lh1, Lh1 );
+    M_stats.put("t.init.BLL",t.elapsed());t.restart();
+    auto B1t = backend->newMatrix( Lh1, Xh1 );
     form2( _trial=Lh1, _test=Xh1, _matrix=B1t, _init=true );
-
+    M_stats.put("t.init.B1t",t.elapsed());t.restart();
     B1->transpose(B1t);
+    M_stats.put("t.transpose.B1t",t.elapsed());t.restart();
 
-    timers["init_B1t"].second = timers["init_B1t"].first.elapsed();
-    Log() << "init_B1t done in " << timers["init_B1t"].second << "s\n";
-
-    auto B2t = M_backend->newMatrix( Lh1, Xh2 );
-    Log() << "init_B2t starts\n";
-    timers["init_B2t"].first.restart();
-
+    auto B2t = backend->newMatrix( Lh1, Xh2 );
     form2( _trial=Lh1, _test=Xh2, _matrix=B2t, _init=true );
-
-    // std::cout <<"arrived\n";
+    M_stats.put("t.init.B2t",t.elapsed());t.restart();
     B2->transpose(B2t);
-    // std::cout <<"pass\n";
-
-    timers["init_B2t"].second = timers["init_B2t"].first.elapsed();
-    Log() << "init_B2t done in " << timers["init_B2t"].second << "s\n";
+    M_stats.put("t.transpose.B2t",t.elapsed());t.restart();
 
     auto myb = Blocks<3,3,double>()<< D1 << B12 << B1t
                                    << B21 << D2 << B2t
                                    << B1 << B2  << BLL ;
 
-    auto AbB = M_backend->newBlockMatrix(myb);
+    auto AbB = backend->newBlockMatrix(myb);
     AbB->close();
+    M_stats.put("t.assembly.A",t.elapsed());t.restart();
 
-    auto FbB = M_backend->newVector( F1->size()+F2->size()+FL->size(),F1->size()+F2->size()+FL->size() );
-    auto UbB = M_backend->newVector( F1->size()+F2->size()+FL->size(),F1->size()+F2->size()+FL->size() );
+    auto FbB = backend->newVector( F1->size()+F2->size()+FL->size(),F1->size()+F2->size()+FL->size() );
+    auto UbB = backend->newVector( F1->size()+F2->size()+FL->size(),F1->size()+F2->size()+FL->size() );
 
     for (size_type i = 0 ; i < F1->size(); ++ i)
         FbB->set(i, (*F1)(i) );
@@ -434,6 +399,7 @@ Mortar<Dim, Order1, Order2>::run()
 
     for (size_type i = 0 ; i < FL->size(); ++ i)
         FbB->set(F1->size()+F2->size()+i, (*FL)(i) );
+    M_stats.put("t.assembly.F",t.elapsed());t.restart();
 
     Log() << "number of dof(u1): " << Xh1->nDof() << "\n";
     Log() << "number of dof(u2): " << Xh2->nDof() << "\n";
@@ -441,15 +407,16 @@ Mortar<Dim, Order1, Order2>::run()
     Log() << "size of linear system: " << FbB->size() << "\n";
 
     Log() << "solve starts\n";
-    timers["solve"].first.restart();
 
-    M_backend->solve(_matrix=AbB,
-                     _solution=UbB,
-                     _rhs=FbB,
-                     _pcfactormatsolverpackage="umfpack");
 
-    timers["solve"].second = timers["solve"].first.elapsed();
-    Log() << "solve done in " << timers["solve"].second << "s\n";
+
+    backend->solve(_matrix=AbB,
+                   _solution=UbB,
+                   _rhs=FbB,
+                   _pcfactormatsolverpackage="umfpack");
+
+    M_stats.put("t.solver.solve",t.elapsed());t.restart();
+
 
     for (size_type i = 0 ; i < u1.size(); ++ i)
         u1.set(i, (*UbB)(i) );
@@ -463,11 +430,11 @@ Mortar<Dim, Order1, Order2>::run()
     double L2error12 =integrate(elements(mesh1),
                                 (idv(u1)-g)*(idv(u1)-g) ).evaluate()(0,0);
     double L2error1 =   math::sqrt( L2error12 );
-
+    M_stats.put("e.l2.u1",L2error1);
     double L2error22 =integrate(elements(mesh2),
                                (idv(u2)-g)*(idv(u2)-g) ).evaluate()(0,0);
     double L2error2 =   math::sqrt( L2error22 );
-
+    M_stats.put("e.l2.u2",L2error2);
     double semi_H1error1 =integrate(elements(mesh1),
                                    ( gradv(u1)-gradg )*trans( (gradv(u1)-gradg) ) ).evaluate()(0,0);
 
@@ -475,14 +442,14 @@ Mortar<Dim, Order1, Order2>::run()
                                    ( gradv(u2)-gradg )*trans( (gradv(u2)-gradg) ) ).evaluate()(0,0);
 
     double H1error1 = math::sqrt( L2error12 + semi_H1error1 );
-
+    M_stats.put("e.h1.u1",H1error1);
     double H1error2 = math::sqrt( L2error22 + semi_H1error2 );
-
+    M_stats.put("e.h1.u2",H1error2);
     double error =integrate(elements(trace_mesh),
                             (idv(u1)-idv(u2))*(idv(u1)-idv(u2)) ).evaluate()(0,0);
 
     double global_error = math::sqrt(L2error12 + L2error22 + semi_H1error1 + semi_H1error2);
-
+    M_stats.put("e.l2.global",global_error);
     std::cout << "----------L2 errors---------- \n" ;
     std::cout << "||u1_error||_L2=" << L2error1 << "\n";
     std::cout << "||u2_error||_L2=" << L2error2 << "\n";

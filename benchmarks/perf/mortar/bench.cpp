@@ -104,5 +104,5 @@ int main( int argc, char** argv )
     benchmark.add( new Mortar<3,3,3>("3D-P3-P3", benchmark.vm(), benchmark.about() ) );
 #endif
     benchmark.run();
-    // benchmark.printStats( std::cout, boost::assign::list_of("t.init"));
+    benchmark.printStats( std::cout, boost::assign::list_of("e.l2")("e.h1")("t.init")("t.assembly")("t.solver"));
 }
