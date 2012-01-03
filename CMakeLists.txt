@@ -377,7 +377,9 @@ IF(FEEL_ENABLE_TESTS )
 endif()
 
 # generate configuration header
-list(SORT CONFIG_OPTIONS)
+if ( CONFIG_OPTIONS )
+  list(SORT CONFIG_OPTIONS)
+endif()
 set(FEEL_CONFIG_OPTIONS "")
 foreach(OPT ${CONFIG_OPTIONS})
   set(FEEL_CONFIG_OPTIONS "${FEEL_CONFIG_OPTIONS} ${OPT}")
