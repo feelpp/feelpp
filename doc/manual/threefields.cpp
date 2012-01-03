@@ -826,7 +826,7 @@ main( int argc, char** argv )
         return 0;
     }
 
-    app.add( new ThreeFields<3,2,2,3>( app.vm(), app.about() ) );
+    app.add( new ThreeFields<2,2,2,3>( app.vm(), app.about() ) );
 
     app.run();
 }
