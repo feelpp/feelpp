@@ -1,6 +1,10 @@
+/.DS_Store
+/INSTALL.pdf
+/INSTALL.tex
 /Makefile.in
 /aclocal.m4
 /apee
+/auto
 /autom4te.cache
 /configure
 /cookie_setting_error.html
