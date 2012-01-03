@@ -258,7 +258,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename detail::compute_stencil_type<Args>::type stencil_type;
 
     // we look into the spaces dictionary for existing graph
-    auto git = StencilManager::instance().find( boost::make_tuple( trial, test, pattern ) );
+    auto git = StencilManager::instance().find( boost::make_tuple( test, trial, pattern ) );
     if (  git != StencilManager::instance().end() )
     {
         //std::cout << "Found a  stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
@@ -267,10 +267,23 @@ BOOST_PARAMETER_FUNCTION(
     }
     else
     {
-        //std::cout << "Creating a new stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
-        auto s = stencil_ptrtype( new stencil_type( test, trial, pattern ) );
-        StencilManager::instance().operator[](boost::make_tuple( trial, test, pattern )) = s->graph();
-        return s;
+        // look for transposed stencil if it exist and transpose it to get the stencil
+        auto git_trans = StencilManager::instance().find( boost::make_tuple( trial, test, pattern ) );
+        if ( git_trans != StencilManager::instance().end() )
+        {
+            auto g = git_trans->second->transpose();
+            StencilManager::instance().operator[](boost::make_tuple( test, trial, pattern )) = g;
+            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, g ) );
+            //std::cout << "Found a  transposed stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
+            return s;
+        }
+        else
+        {
+            //std::cout << "Creating a new stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
+            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern ) );
+            StencilManager::instance().operator[](boost::make_tuple( test, trial, pattern )) = s->graph();
+            return s;
+        }
     }
 }
 
