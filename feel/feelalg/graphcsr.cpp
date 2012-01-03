@@ -47,8 +47,11 @@ GraphCSR::GraphCSR( size_type n,
     M_n_total_nz( n, 0 ),
     M_n_nz( n, 0 ),
     M_n_oz( n, 0 ),
-    M_storage()
-{}
+    M_storage(),
+    M_is_closed( false )
+{
+    //std::cout << "creating graph " << this << "\n";
+}
 
 GraphCSR::GraphCSR( GraphCSR const & g )
     :
@@ -61,7 +64,8 @@ GraphCSR::GraphCSR( GraphCSR const & g )
     M_n_nz( g.M_n_nz ),
     M_n_oz( g.M_n_oz ),
     M_storage( g.M_storage ),
-    M_graphT( g.M_graphT)
+    M_graphT( g.M_graphT),
+    M_is_closed( g.M_is_closed )
 {
 }
 
@@ -85,6 +89,7 @@ GraphCSR::operator=( GraphCSR const& g )
             M_n_oz = g.M_n_oz;
             M_storage = g.M_storage;
             M_graphT = g.M_graphT;
+            M_is_closed = g.M_is_closed;
         }
     return *this;
 }
@@ -132,6 +137,14 @@ GraphCSR::transpose()
 void
 GraphCSR::close()
 {
+    if ( M_is_closed )
+    {
+        std::cout << "already closed graph " << this << "...\n";
+        return ;
+    }
+    M_is_closed = true;
+
+    std::cout << "closing graph " << this << "...\n";
     boost::timer ti;
     Debug(5050) << "[close] nrows=" << this->size() << "\n";
     Debug(5050) << "[close] firstRowEntryOnProc()=" << this->firstRowEntryOnProc() << "\n";
@@ -209,7 +222,8 @@ GraphCSR::close()
 
 
         }
-#if 0
+#if 1
+    //std::cout << "sum_nz = " << sum_nz << "\n";
     M_ia.resize( M_storage.size()+1 );
     M_ja.resize( sum_nz );
     M_a.resize(  sum_nz, 0. );

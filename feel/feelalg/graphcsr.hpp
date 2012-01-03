@@ -237,6 +237,7 @@ public:
     nz_type const& ia() const { return M_ia; }
     nz_type const& ja() const { return M_ja; }
     std::vector<double> const& a() const { return M_a; }
+    std::vector<double>& a()  { return M_a; }
 
 
     //@}
@@ -282,7 +283,7 @@ public:
 protected:
 
 private:
-
+    bool M_is_closed;
     mpi::communicator M_comm;
 
     size_type M_first_row_entry_on_proc;

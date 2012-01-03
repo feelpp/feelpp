@@ -42,9 +42,17 @@
 #include <feel/feelalg/datamap.hpp>
 
 #include <feel/feelalg/solvernonlinear.hpp>
+#include <feel/feeldiscr/functionspacebase.hpp>
 
 namespace Feel
 {
+enum  Pattern
+{
+    DEFAULT   = 1 << 0,
+    EXTENDED  = 1 << 1,
+    COUPLED   = 1 << 2,
+    SYMMETRIC = 1 << 3
+};
 
 ///! \cond detail
 namespace detail
@@ -85,31 +93,37 @@ struct computeNDofForEachSpace
 {
     typedef boost::tuple< uint, uint > result_type;
 
-    computeNDofForEachSpace(std::vector < std::vector<int> > & vec) : M_is(vec) {}
+    //computeNDofForEachSpace(std::vector < std::vector<int> > & vec) : M_is(vec) {}
+
+    computeNDofForEachSpace() : M_is() {}
 
     //std::vector < std::vector<int> > getIS() const { return M_is;}
 
-    mutable std::vector < std::vector<int> > & M_is;
+    std::vector < std::vector<int> > is() const { return M_is; }
 
     template<typename T>
-    result_type operator()(result_type const & previousRes, T const& t) const
-    {
-        auto nDof = t->nDof();
+    result_type operator()(result_type const & previousRes, T const& t)
+        {
+            auto nDof = t->nDof();
 
-        auto cptSpaces = previousRes.get<0>();
-        auto start = previousRes.get<1>();
-        //std::cout << "\n Space " << cptSpaces << " with nDof : "<< nDof << "\n";
+            auto cptSpaces = previousRes.get<0>();
+            auto start = previousRes.get<1>();
+            //std::cout << "\n Space " << cptSpaces << " with nDof : "<< nDof << "\n";
 
-        M_is[cptSpaces].resize(nDof);
-        for (uint i=0;i<nDof;++i) { M_is[cptSpaces][i] = start+i; }
+            //M_is[cptSpaces].resize(nDof);
+            M_is.push_back( std::vector<int>( nDof ) );
+            for (uint i=0;i<nDof;++i) { M_is[cptSpaces][i] = start+i; }
 
-        return boost::make_tuple( ++cptSpaces, (start+nDof) );
-    }
+            return boost::make_tuple( ++cptSpaces, (start+nDof) );
+        }
+private:
+    std::vector < std::vector<int> > M_is;
 };
 
 
 }
 ///! \endcond detail
+
 /**
  * \class Backend
  * \brief base class for all linear algebra backends
@@ -146,6 +160,8 @@ public:
     typedef boost::tuple<bool, size_type, value_type> solve_return_type;
     typedef boost::tuple<bool, size_type, value_type> nl_solve_return_type;
 
+
+
     //@}
 
     /** @name Constructors, destructor
@@ -163,11 +179,11 @@ public:
      */
     static backend_ptrtype build(
 #if defined( HAVE_PETSC_H )
-                                 BackendType = BACKEND_PETSC
+        BackendType = BACKEND_PETSC
 #else
-                                 BackendType = BACKEND_GMM
+        BackendType = BACKEND_GMM
 #endif
-                                 );
+        );
 
     /**
      * Builds a \p Backend
@@ -215,21 +231,24 @@ public:
     /**
      * helper function
      */
-    template<typename DomainSpace, typename ImageSpace>
-    sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im, size_type prop = NON_HERMITIAN  )
-    {
-#if 1
-        auto mat = this->newMatrix( dm->map(), im->map(), prop );
-        // we look into the spaces dictionary for existing graph
-#if 0
-        if ( M_graph_dict.find( std::make_pair( dm, im ) ) != M_graph_dict.end() )
+    BOOST_PARAMETER_MEMBER_FUNCTION((sparse_matrix_ptrtype),
+                                    newMatrix,
+                                    tag,
+                                    (required
+                                     (test,*(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >)))
+                                    (optional
+                                     (trial,*(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >),test)
+                                     (pattern,(size_type),Pattern::COUPLED)
+                                     (properties,(size_type),NON_HERMITIAN)
+                                     (verbose,(int),0)
+                                        ))
         {
-
-        }
-#endif
-
-        auto nSpace = DomainSpace::element_type::nSpaces;
-        if (nSpace>1)
+            auto mat = this->newMatrix( trial->map(), test->map(), properties );
+            auto s = stencil( _test=test, _trial=trial, _pattern=pattern );
+            mat->init( test->nDof(), trial->nDof(), test->nLocalDof(), trial->nLocalDof(), s->graph() );
+            typedef typename boost::remove_reference<decltype(*trial)>::type trial_space_type;
+            auto nSpace = trial_space_type::element_type::nSpaces;
+            if (nSpace>1)
             {
                 //std::cout << "\n Debug : nSpace " << nSpace << "\n";
                 std::vector < std::vector<int> > is(nSpace);
@@ -237,37 +256,34 @@ public:
                 uint start=0;
                 auto result = boost::make_tuple(cptSpaces,start);
 
-                std::vector < std::vector<int> > indexSplit(nSpace);
+                //std::vector < std::vector<int> > indexSplit(nSpace);
                 //detail::computeNDofForEachSpace cndof(nSpace);
-                detail::computeNDofForEachSpace cndof(indexSplit);
-                boost::fusion::fold( dm->functionSpaces(), result,  cndof );
+                detail::computeNDofForEachSpace cndof;
+                boost::fusion::fold( trial->functionSpaces(), result,  cndof );
 
-                mat->setIndexSplit(indexSplit);
+                mat->setIndexSplit(cndof.is());
             }
 
-        return mat;
-#else
-        return this->newMatrix( dm->map(), im->map(), prop );
-#endif
-    }
+            return mat;
+        }
     template<typename DomainSpace, typename ImageSpace>
     sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im, sparse_matrix_ptrtype const& M, size_type prop = NON_HERMITIAN  )
-    {
-        sparse_matrix_ptrtype m = newMatrix( dm, im, prop  );
-        m->init( im->nDof(), dm->nDof(), im->nLocalDof(), dm->nLocalDof(), M->graph() );
-        return m;
-    }
+        {
+            sparse_matrix_ptrtype m = newMatrix( dm, im, prop  );
+            m->init( im->nDof(), dm->nDof(), im->nLocalDof(), dm->nLocalDof(), M->graph() );
+            return m;
+        }
     /**
      * instantiate a new block matrix sparse
      */
     template <int NR, int NC>
     sparse_matrix_ptrtype newBlockMatrix( Blocks<NR,NC,T> const & b, bool doAssemble=true )
-    {
-        //sparse_matrix_ptrtype mb(new MatrixBlock<NR,NC,T>( b,*this ));
-        //return mb;
-        boost::shared_ptr< MatrixBlock<NR,NC,T> > mb(new MatrixBlock<NR,NC,T>( b, *this, doAssemble ));
-        return mb->getSparseMatrix();
-    }
+        {
+            //sparse_matrix_ptrtype mb(new MatrixBlock<NR,NC,T>( b,*this ));
+            //return mb;
+            boost::shared_ptr< MatrixBlock<NR,NC,T> > mb(new MatrixBlock<NR,NC,T>( b, *this, doAssemble ));
+            return mb->getSparseMatrix();
+        }
 
 
     /**
@@ -275,9 +291,9 @@ public:
      */
     template<typename DomainSpace, typename ImageSpace>
     sparse_matrix_ptrtype newZeroMatrix( DomainSpace const& dm, ImageSpace const& im )
-    {
-        return this->newZeroMatrix( dm->map(), im->map() );
-    }
+        {
+            return this->newZeroMatrix( dm->map(), im->map() );
+        }
 
     /**
      * instantiate a new vector
@@ -294,9 +310,9 @@ public:
      */
     template<typename DomainSpace>
     vector_ptrtype newVector( DomainSpace const& dm  )
-    {
-        return this->newVector( dm->map() );
-    }
+        {
+            return this->newVector( dm->map() );
+        }
 
     //@}
 
@@ -433,7 +449,7 @@ public:
                                      (pc,      (std::string), "lu" )
                                      (constant_null_space,      (bool), false )
                                      (pcfactormatsolverpackage,  (std::string), "petsc" )
-                                     ) )
+                                        ) )
         {
             M_ksp = ksp;
             M_pc = pc;
@@ -474,9 +490,9 @@ public:
      * \return \f$ r = x^T * y \f$
      */
     real_type dot( vector_ptrtype const& x, vector_ptrtype const& y ) const
-    {
-        return this->dot( *x, *y );
-    }
+        {
+            return this->dot( *x, *y );
+        }
     /**
      * \return \f$ y = A * x \f$
      */
@@ -486,9 +502,9 @@ public:
      * \return \f$ y = A * x \f$
      */
     void prod( sparse_matrix_ptrtype const& A, vector_ptrtype const& x, vector_ptrtype& y ) const
-    {
-        this->prod( *A, *x, *y );
-    }
+        {
+            this->prod( *A, *x, *y );
+        }
 
     /**
      * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation
@@ -526,42 +542,42 @@ public:
                                      (pc,(std::string),M_pc/*"lu"*/)
                                      (ksp,(std::string),M_ksp/*"gmres"*/)
                                      (pcfactormatsolverpackage,(std::string), M_pcFactorMatSolverPackage)
-                                     )
-                                    )
-    {
-        this->setTolerances( _dtolerance=dtolerance,
-                             _rtolerance=rtolerance,
-                             _atolerance=atolerance,
-                             _maxit=maxit );
-
-        this->setSolverType( _pc=pc, _ksp=ksp,
-                             _constant_null_space=constant_null_space,
-                             _pcfactormatsolverpackage = pcfactormatsolverpackage);
-        // make sure matrix and rhs are closed
-        matrix->close();
-        rhs->close();
-
-        // print them in matlab format
-        if ( !M_export.empty() )
+                                        )
+        )
         {
-            matrix->printMatlab( M_export+"_A.m" );
-            rhs->printMatlab( M_export+"_b.m" );
-        }
-        vector_ptrtype _sol( this->newVector( detail::datamap(solution) ) );
-        // initialize
-        *_sol = detail::ref(solution);
-        this->setTranspose( transpose );
-        solve_return_type ret;
-        if ( reuse_prec == false )
+            this->setTolerances( _dtolerance=dtolerance,
+                                 _rtolerance=rtolerance,
+                                 _atolerance=atolerance,
+                                 _maxit=maxit );
+
+            this->setSolverType( _pc=pc, _ksp=ksp,
+                                 _constant_null_space=constant_null_space,
+                                 _pcfactormatsolverpackage = pcfactormatsolverpackage);
+            // make sure matrix and rhs are closed
+            matrix->close();
+            rhs->close();
+
+            // print them in matlab format
+            if ( !M_export.empty() )
+            {
+                matrix->printMatlab( M_export+"_A.m" );
+                rhs->printMatlab( M_export+"_b.m" );
+            }
+            vector_ptrtype _sol( this->newVector( detail::datamap(solution) ) );
+            // initialize
+            *_sol = detail::ref(solution);
+            this->setTranspose( transpose );
+            solve_return_type ret;
+            if ( reuse_prec == false )
             {
                 this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
                 ret = solve( matrix, prec, _sol, rhs );
             }
-        else
-            ret = solve( matrix, prec, _sol, rhs, reuse_prec );
-        detail::ref(solution) = *_sol;
-        return ret;
-    }
+            else
+                ret = solve( matrix, prec, _sol, rhs, reuse_prec );
+            detail::ref(solution) = *_sol;
+            return ret;
+        }
 
     /**
      * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation of
@@ -581,7 +597,7 @@ public:
                                      sparse_matrix_ptrtype const& P,
                                      vector_ptrtype& x,
                                      vector_ptrtype const& b
-                                     ) = 0;
+        ) = 0;
 
     /**
      * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation
@@ -603,7 +619,7 @@ public:
                              vector_ptrtype& x,
                              vector_ptrtype const& b,
                              bool reuse_prec
-                             );
+        );
 
     /**
      * solve for \f$P F(x)=0 b\f$
@@ -614,8 +630,8 @@ public:
                                     (required
                                      (jacobian,(sparse_matrix_ptrtype))
                                      (in_out(solution),*(mpl::or_<boost::is_convertible<mpl::_,vector_type&>,
-                                                         boost::is_convertible<mpl::_,vector_ptrtype> >))
-                                     (residual,(vector_ptrtype)))
+                                                                  boost::is_convertible<mpl::_,vector_ptrtype> >))
+                                    (residual,(vector_ptrtype)))
                                     (optional
                                      (prec,(sparse_matrix_ptrtype), jacobian )
                                      (maxit,(size_type), M_maxit/*1000*/ )
@@ -628,29 +644,29 @@ public:
                                      (pc,(std::string),M_pc/*"lu"*/)
                                      (ksp,(std::string),M_ksp/*"gmres"*/)
                                      (pcfactormatsolverpackage,(std::string), M_pcFactorMatSolverPackage)
-                                     )
-                                    )
-    {
-        this->setTolerances( _dtolerance=dtolerance,
-                             _rtolerance=rtolerance,
-                             _atolerance=atolerance,
-                             _maxit=maxit );
-        this->setSolverType( _pc=pc, _ksp=ksp,
-                             _pcfactormatsolverpackage = pcfactormatsolverpackage);
-        vector_ptrtype _sol( this->newVector( detail::datamap(solution) ) );
-        // initialize
-        *_sol = detail::ref(solution);
-        this->setTranspose( transpose );
-        solve_return_type ret;
-        this->nlSolver()->residual( _sol, residual );
-        this->nlSolver()->jacobian( _sol, jacobian );
-        if ( reuse_prec == false && reuse_jac == false )
-            ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
-        else
-            ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec, reuse_jac );
-        detail::ref(solution) = *_sol;
-        return ret;
-    }
+                                        )
+        )
+        {
+            this->setTolerances( _dtolerance=dtolerance,
+                                 _rtolerance=rtolerance,
+                                 _atolerance=atolerance,
+                                 _maxit=maxit );
+            this->setSolverType( _pc=pc, _ksp=ksp,
+                                 _pcfactormatsolverpackage = pcfactormatsolverpackage);
+            vector_ptrtype _sol( this->newVector( detail::datamap(solution) ) );
+            // initialize
+            *_sol = detail::ref(solution);
+            this->setTranspose( transpose );
+            solve_return_type ret;
+            this->nlSolver()->residual( _sol, residual );
+            this->nlSolver()->jacobian( _sol, jacobian );
+            if ( reuse_prec == false && reuse_jac == false )
+                ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
+            else
+                ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec, reuse_jac );
+            detail::ref(solution) = *_sol;
+            return ret;
+        }
 
     /**
      * solve for the nonlinear problem \f$F( u ) = 0\f$

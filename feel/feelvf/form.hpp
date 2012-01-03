@@ -32,6 +32,7 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelvf/bilinearform.hpp>
 #include <feel/feelvf/linearform.hpp>
@@ -54,7 +55,7 @@ form( boost::shared_ptr<X1> const& __X1,
       bool init = false,
       bool do_threshold = false,
       typename X1::value_type threshold = type_traits<double>::epsilon(),
-      size_type pattern  = vf::Pattern::COUPLED )
+      size_type pattern  = Pattern::COUPLED )
 {
     return vf::detail::BilinearForm<X1, X2>( __X1, __X2, __M, rowstart, colstart, init, do_threshold, threshold, pattern );
 }
@@ -202,7 +203,7 @@ BOOST_PARAMETER_FUNCTION(
                           (init,             *(boost::is_integral<mpl::_>), false )
                           (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
                           (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
-                          (pattern,          *(boost::is_integral<mpl::_>), size_type(vf::Pattern::COUPLED) )
+                          (pattern,          *(boost::is_integral<mpl::_>), size_type(Pattern::COUPLED) )
                           (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
                           (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
                           )
@@ -225,7 +226,7 @@ BOOST_PARAMETER_FUNCTION((typename compute_form2_return<Args,mpl::bool_<boost::i
                           ) // required
                          (optional                                   //    four optional parameters, with defaults
                           (init,             *(boost::is_integral<mpl::_>), false )
-                          (pattern,          *(boost::is_integral<mpl::_>), size_type(vf::Pattern::COUPLED) )
+                          (pattern,          *(boost::is_integral<mpl::_>), size_type(Pattern::COUPLED) )
                           (rowstart,         *(boost::is_integral<mpl::_>), 0 )
                           (colstart,         *(boost::is_integral<mpl::_>), 0 )
                           ) // optional
@@ -255,7 +256,7 @@ BOOST_PARAMETER_FUNCTION(
                           (init,             *(boost::is_integral<mpl::_>), false )
                           (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
                           (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
-                          (pattern,          *(boost::is_integral<mpl::_>), size_type(vf::Pattern::COUPLED) )
+                          (pattern,          *(boost::is_integral<mpl::_>), size_type(Pattern::COUPLED) )
                           )
                          )
 {
