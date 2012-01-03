@@ -111,7 +111,7 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY
 
 if ( NOT FEEL_MINIMAL_CONFIGURATION )
 
-foreach( docex  myintegrals mymesh geotool myfunctionspace laplacian loadmesh residualestimator stokes bratu nonlinearpow mortar grid ddmethod)
+foreach( docex  myintegrals mymesh geotool myfunctionspace laplacian loadmesh residualestimator stokes bratu nonlinearpow mortar grid threefields )
   add_docex( ${docex} )
 endforeach()
 
@@ -125,11 +125,21 @@ add_custom_target(
 )
 
 
-
 # Natural convection problem
 #include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 #add_executable( feel_doc_convection convection.hpp convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp )
 #target_link_libraries( feel_doc_convection ${FEEL_LIBRARIES} )
+
+# Overlapping schwartz domain decomposition method
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
+add_executable( feel_doc_overlapping overlapping_ddmethodgeo.cpp overlapping_ddmethod.cpp )
+target_link_libraries( feel_doc_overlapping ${FEEL_LIBRARIES} )
+
+# Non-overlapping schwartz domain decomposition method
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
+add_executable( feel_doc_nonoverlapping nonoverlappinggeo.cpp nonoverlapping.cpp )
+target_link_libraries( feel_doc_nonoverlapping ${FEEL_LIBRARIES} )
+
 
 endif ( NOT FEEL_MINIMAL_CONFIGURATION )
 
