@@ -285,7 +285,7 @@ Laplacian<Dim, BasisU, Entity>::run()
     F->close();
     if ( this->vm()[ "bctype" ].template as<int>() == 0  )
     {
-        form2( Xh, Xh, D ) += on( boundaryfaces(mesh), u, F, u_exact );
+        form2( Xh, Xh, D ) += on( _range=boundaryfaces(mesh), _element=u, _rhs=F, _expr=u_exact );
         M_stats.put("t.assembly.matrix.dirichlet",subt.elapsed());
         Log() << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
     }
