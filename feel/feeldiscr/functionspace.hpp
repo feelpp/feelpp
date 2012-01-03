@@ -2299,7 +2299,11 @@ public:
             std::vector<std::vector<int> > is;
             is.push_back( std::vector<int>( nLocalDof() ) );
             int index = 0;
-            for( int& i : is[0] ) { i = index++; }
+            //for( int& i : is[0] ) { i = index++; }
+            BOOST_FOREACH( auto& i, is[0] )
+            {
+               i = index++;
+            }
             return is;
 
         }
