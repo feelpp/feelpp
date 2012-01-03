@@ -278,15 +278,18 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
 
     //  initialisation de A1 et A2
     M_Aq.resize( Qa() );
-    for( int q = 0; q < Qa(); ++q )
+    M_Aq[0] = backend->newMatrix( M_Th, M_Th );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aq[0], _init=true );
+
+    for( int q = 1; q < Qa(); ++q )
     {
-        M_Aq[q] = backend->newMatrix( M_Th, M_Th );
+        M_Aq[q] = backend->newMatrix( M_Th, M_Th, M_Aq[0] );
     }
     // mass matrix
     M_Mq.resize( Qm() );
     for( int q = 0; q < Qm(); ++q )
     {
-        M_Mq[q] = backend->newMatrix( M_Th, M_Th );
+        M_Mq[q] = backend->newMatrix( M_Th, M_Th, M_Aq[0] );
     }
     // outputs
     M_L.resize(Nl());
