@@ -89,36 +89,6 @@ auto ref( T& t ) -> decltype( ref( t, detail::is_shared_ptr<T>() ) )
     return ref( t, detail::is_shared_ptr<T>() );
 }
 
-struct computeNDofForEachSpace
-{
-    typedef boost::tuple< uint, uint > result_type;
-
-    //computeNDofForEachSpace(std::vector < std::vector<int> > & vec) : M_is(vec) {}
-
-    computeNDofForEachSpace() : M_is() {}
-
-    //std::vector < std::vector<int> > getIS() const { return M_is;}
-
-    std::vector < std::vector<int> > is() const { return M_is; }
-
-    template<typename T>
-    result_type operator()(result_type const & previousRes, T const& t)
-        {
-            auto nDof = t->nDof();
-
-            auto cptSpaces = previousRes.get<0>();
-            auto start = previousRes.get<1>();
-            //std::cout << "\n Space " << cptSpaces << " with nDof : "<< nDof << "\n";
-
-            //M_is[cptSpaces].resize(nDof);
-            M_is.push_back( std::vector<int>( nDof ) );
-            for (uint i=0;i<nDof;++i) { M_is[cptSpaces][i] = start+i; }
-
-            return boost::make_tuple( ++cptSpaces, (start+nDof) );
-        }
-private:
-    std::vector < std::vector<int> > M_is;
-};
 
 
 }
@@ -246,24 +216,7 @@ public:
             auto mat = this->newMatrix( trial->map(), test->map(), properties );
             auto s = stencil( _test=test, _trial=trial, _pattern=pattern );
             mat->init( test->nDof(), trial->nDof(), test->nLocalDof(), trial->nLocalDof(), s->graph() );
-            typedef typename boost::remove_reference<decltype(*trial)>::type trial_space_type;
-            auto nSpace = trial_space_type::element_type::nSpaces;
-            if (nSpace>1)
-            {
-                //std::cout << "\n Debug : nSpace " << nSpace << "\n";
-                std::vector < std::vector<int> > is(nSpace);
-                uint cptSpaces=0;
-                uint start=0;
-                auto result = boost::make_tuple(cptSpaces,start);
-
-                //std::vector < std::vector<int> > indexSplit(nSpace);
-                //detail::computeNDofForEachSpace cndof(nSpace);
-                detail::computeNDofForEachSpace cndof;
-                boost::fusion::fold( trial->functionSpaces(), result,  cndof );
-
-                mat->setIndexSplit(cndof.is());
-            }
-
+            mat->setIndexSplit( trial->dofIndexSplit() );
             return mat;
         }
     template<typename DomainSpace, typename ImageSpace>
