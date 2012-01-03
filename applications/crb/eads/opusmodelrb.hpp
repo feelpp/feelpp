@@ -73,6 +73,16 @@ public:
      */
     //@{
     static const uint16_type Dim = 2;
+#if FEEL_GNUC_AT_LEAST(4,6)
+    static constexpr double kmin = 0.2;
+    static constexpr double kmax = 150.;
+
+    static constexpr double rmin = 0.1;
+    static constexpr double rmax = 100.;
+
+    static constexpr double Qmin = 0.;
+    static constexpr double Qmax = 1000000.;
+#else
     static const double kmin = 0.2;
     static const double kmax = 150;
 
@@ -81,6 +91,7 @@ public:
 
     static const double Qmin = 0;
     static const double Qmax = 1000000;
+#endif
     static const uint16_type ParameterSpaceDimension = 5;
 
     static const bool is_time_dependent = true;
@@ -498,6 +509,8 @@ private:
 
     bool M_is_steady;
 };
+
+#if !FEEL_GNUC_AT_LEAST(4,6)
 template<int OrderU, int OrderP, int OrderT>
 const double
 OpusModelRB<OrderU,OrderP,OrderT>::kmin;
@@ -520,7 +533,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::Qmin;
 template<int OrderU, int OrderP, int OrderT>
 const double
 OpusModelRB<OrderU,OrderP,OrderT>::Qmax;
-
+#endif
 
 typedef OpusModelRB<2,1,2> opusmodel212_type;
 }
