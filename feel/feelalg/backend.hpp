@@ -205,9 +205,9 @@ public:
                                     newMatrix,
                                     tag,
                                     (required
+                                     (trial,*(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
                                      (test,*(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >)))
                                     (optional
-                                     (trial,*(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >),test)
                                      (pattern,(size_type),Pattern::COUPLED)
                                      (properties,(size_type),NON_HERMITIAN)
                                      (verbose,(int),0)
