@@ -6,7 +6,7 @@
        Date: 2005-03-15
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -164,7 +164,7 @@ public:
 
     IntegratorOnExpr( ElementRange const& __elts,
                       element_type const& __u,
-                      rhs_element_type& __rhs,
+                      rhs_element_type const& __rhs,
                       expression_type const& __expr,
                       size_type __on )
         :
@@ -247,7 +247,7 @@ private:
     element_iterator _M_eltend;
 
     element_type const& _M_u;
-    mutable rhs_element_type& _M_rhs;
+    mutable rhs_element_type _M_rhs;
     expression_type _M_expr;
     Context _M_on_strategy;
 };
@@ -426,15 +426,70 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                                            !_M_on_strategy.test( ON_ELIMINATION ) )
                                     {
                                         __form.set( thedof, thedof, 1.0*1e30 );
-                                        _M_rhs.set( thedof, __value*1e30 );
+                                        _M_rhs->set( thedof, __value*1e30 );
                                     }
                             } // loop on space components
 
                 } // loop on face dof
         }
-    __form.zeroRows( dofs, values, _M_rhs, _M_on_strategy );
+    __form.zeroRows( dofs, values, *_M_rhs, _M_on_strategy );
 }
 
+#if 1
+
+namespace detail
+{
+template<typename Args>
+struct integratoron_type
+{
+    typedef typename clean_type<Args,tag::range>::type _range_type;
+    typedef typename clean_type<Args,tag::rhs>::type _rhs_type;
+    typedef typename clean_type<Args,tag::element>::type _element_type;
+    typedef typename clean_type<Args,tag::expr>::type _expr_type;
+
+
+    typedef IntegratorOnExpr<_range_type, _element_type, _rhs_type,
+                             typename mpl::if_<boost::is_arithmetic<_expr_type>,
+                                               mpl::identity<Expr<Cst<_expr_type> > >,
+                                               mpl::identity<_expr_type> >::type::type> type;
+    typedef Expr<type> expr_type;
+};
+
+}
+/**
+ *
+ * \brief projection/interpolation of an expresion onto a noal functionspace
+ *
+ * \arg space the function space to project onto
+ * \arg range the range of mesh elements to apply the projection (the remaining parts are set to 0)
+ * \arg expr the expression to project
+ * \arg geomap the type of geomap to use (make sense only using high order meshes)
+ * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
+ */
+BOOST_PARAMETER_FUNCTION(
+    (typename detail::integratoron_type<Args>::expr_type), // return type
+    on,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    (required
+     (range, *  )
+     (element, *  )
+     (rhs, *  )
+     (expr,   *)
+        ) // 4. one required parameter, and
+
+    (optional
+     (type,   (size_type), ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
+     (verbose,   (bool), false )
+     )
+    )
+{
+    typename detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type);
+    return typename detail::integratoron_type<Args>::expr_type( ion );
+}
+
+#else
 namespace detail{
 
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
@@ -469,7 +524,7 @@ on( ElementRange const& __r,
     size_type __on,
     mpl::bool_<true> )
 {
-    return on( __r, __u, *__rhs, __e, __on, mpl::bool_<false>() );
+    return on( __r, __u, __rhs, __e, __on, mpl::bool_<false>() );
 }
 
 } // detail namespace
@@ -513,14 +568,14 @@ Expr<IntegratorOnExpr<ElementRange, Elem,
                                         mpl::identity<OnExpr> >::type::type> >
 on( ElementRange const& __r,
     boost::shared_ptr<Elem>  __u,
-    RhsElem&  __rhs,
+    boost::shared_ptr<RhsElem>  __rhs,
     OnExpr const& __e,
     size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
 {
-    return detail::on( __r, *__u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
+    return detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
 
 }
-
+#endif // 0
 
 } // vf
 } // feel
