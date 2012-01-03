@@ -261,7 +261,7 @@ main( int argc, char** argv )
         return 0;
     }
 
-    app.add( new Grid<1>( app.vm(), app.about() ) );
+    app.add( new Grid<2>( app.vm(), app.about() ) );
     app.run();
 }
 
