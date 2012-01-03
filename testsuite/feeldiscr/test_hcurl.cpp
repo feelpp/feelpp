@@ -218,7 +218,51 @@ oneelement_geometry_real_2(double h = 2)
     gmshp->setDescription( costr.str() );
     return gmshp;
 }
-
+gmsh_ptrtype
+twoelement_geometry_(double h = 2)
+{
+    std::ostringstream costr;
+    costr <<"Mesh.MshFileVersion = 2.2;\n"
+          <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
+          <<"Mesh.CharacteristicLengthFromPoints=1;\n"
+          <<"Mesh.ElementOrder=1;\n"
+          <<"Mesh.SecondOrderIncomplete = 0;\n"
+          <<"Mesh.Algorithm = 6;\n"
+          <<"Mesh.OptimizeNetgen=1;\n"
+          <<"// partitioning data\n"
+          <<"Mesh.Partitioner=1;\n"
+          <<"Mesh.NbPartitions=1;\n"
+          <<"Mesh.MshFilePartitioned=0;\n"
+          << "    h=" << h << ";\n"
+          << "Point(1) = {0, 0, 0, h};\n"
+          << "Point(2) = {1, 0, 0, h};\n"
+          << "Point(3) = {1, 1, 0, h};\n"
+          << "Point(4) = {2, 0.5, 0, 1.0};\n"
+          << "Line(1) = {1, 2};\n"
+          << "Line(2) = {2, 3};\n"
+          << "Line(3) = {3, 1};\n"
+          << "Line(4) = {2, 4};\n"
+          << "Line(5) = {4, 3};\n"
+          << "Line Loop(6) = {3, 1, 2};\n"
+          << "Line Loop(8) = {5, -2, 4};\n";
+    if ( std::abs( h - 2 ) < 1e-10 )
+        costr << "Transfinite Line(1) = 1;\n"
+              << "Transfinite Line(2) = 1;\n"
+              << "Transfinite Line(3) = 1;\n"
+              << "Transfinite Line(4) = 1;\n"
+              << "Transfinite Line(5) = 1;\n";
+    costr << "Plane Surface(11) = {6};\n"
+          << "Plane Surface(12) = {8};\n";
+    std::ostringstream nameStr;
+    if ( std::abs( h - 2 ) < 1e-10 )
+        nameStr << "two-elt-mesh";
+    else
+        nameStr << "two-elt-mesh-fine";
+    gmsh_ptrtype gmshp( new Gmsh );
+    gmshp->setPrefix( nameStr.str() );
+    gmshp->setDescription( costr.str() );
+    return gmshp;
+}
 
 /**
  * This routine returns the list of options using the
@@ -470,7 +514,7 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=one_element_mesh_desc_fun(meshSize) );
 
-    space_ptrtype Xh = space_type::New( oneelement_mesh ); 
+    space_ptrtype Xh = space_type::New( oneelement_mesh );
 
     std::cout << "Family = " << Xh->basis()->familyName() << "\n"
               << "Dim    = " << Xh->basis()->nDim << "\n"
@@ -482,7 +526,7 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
 
     // To store the shape functions
     // 0 : hypothenuse edge, 1 : vertical edge, 2 : horizontal edge
-    std::vector<element_type> u_vec(3);
+    std::vector<element_type> u_vec(Xh->nLocalDof());
 
     std::string shape_name = "shape_functions";
     export_ptrtype exporter_shape( export_type::New( this->vm(),
@@ -510,10 +554,11 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
     auto F = M_backend->newVector( Xh );
 
     //// *********************** Check  alpha_i(N_j) evaluations  on reference element (with idv keyword) ********////
-    std::vector<double> checkidv(9);
-    std::vector<double> checkform1(9);
+    int check_size = Xh->nLocalDof()*Xh->nLocalDof();
+    std::vector<double> checkidv(check_size);
+    std::vector<double> checkform1(check_size);
     std::vector<std::string> edges = boost::assign::list_of("hypo")("vert")("hor");
-    for( int i = 0;i < 3; ++i )
+    for( int i = 0;i < Xh->nLocalDof(); ++i )
     {
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
