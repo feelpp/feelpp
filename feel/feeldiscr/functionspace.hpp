@@ -626,6 +626,26 @@ operator()(T const& fspace, map_type t ) const
 }
 };
 
+struct computeNDofForEachSpace
+{
+    typedef boost::tuple< uint, uint, std::vector<std::vector<int> > > result_type;
+
+    template<typename T>
+    result_type operator()(result_type const & previousRes, T const& t)
+        {
+            auto nDof = t->nDof();
+
+            auto cptSpaces = previousRes.get<0>();
+            auto start = previousRes.get<1>();
+            auto is = previousRes.get<2>();
+
+            is.push_back( std::vector<int>( nDof ) );
+            for (uint i=0;i<nDof;++i) { is[cptSpaces][i] = start+i; }
+
+            return boost::make_tuple( ++cptSpaces, (start+nDof), is );
+        }
+};
+
 
 } // detail
 
@@ -2263,6 +2283,26 @@ public:
     functionspace_vector_type const&
     functionSpaces() const { return _M_functionspaces; }
 
+    std::vector<std::vector<int> > dofIndexSplit()
+        {
+            if ( nSpaces > 1 )
+            {
+                uint cptSpaces=0;
+                uint start=0;
+                std::vector<std::vector<int> > is;
+                auto result = boost::make_tuple(cptSpaces,start,is);
+
+                boost::fusion::fold( functionSpaces(), result,  detail::computeNDofForEachSpace() );
+
+                return result.template get<2>();
+            }
+            std::vector<std::vector<int> > is;
+            is.push_back( std::vector<int>( nLocalDof() ) );
+            int index = 0;
+            for( int& i : is[0] ) { i = index++; }
+            return is;
+
+        }
     /**
      * \return an element of the function space
      */
