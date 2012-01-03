@@ -139,12 +139,12 @@ GraphCSR::close()
 {
     if ( M_is_closed )
     {
-        std::cout << "already closed graph " << this << "...\n";
+       //std::cout << "already closed graph " << this << "...\n";
         return ;
     }
     M_is_closed = true;
 
-    std::cout << "closing graph " << this << "...\n";
+    //std::cout << "closing graph " << this << "...\n";
     boost::timer ti;
     Debug(5050) << "[close] nrows=" << this->size() << "\n";
     Debug(5050) << "[close] firstRowEntryOnProc()=" << this->firstRowEntryOnProc() << "\n";
