@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-01-21
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009-2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -41,6 +41,7 @@ using boost::mpl::_;
 
 namespace detail {
   struct bases_base {};
+  struct meshes_base {};
 
 
 /**
@@ -96,6 +97,21 @@ struct bases
                                                                               typename A1::template ChangeTag<1>::type,
                                                                               typename A2::template ChangeTag<2>::type,
                                                                               typename A3::template ChangeTag<3>::type > >::type>::type>::type
+{
+};
+
+
+template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_>
+struct meshes
+    :
+    public detail::meshes_base,
+    public mpl::if_<boost::is_same<A1,mpl::void_>,
+                    boost::fusion::vector<A0>,
+                    typename mpl::if_<boost::is_same<A2,mpl::void_>,
+                                      boost::fusion::vector<A0,A1>,
+                                      typename mpl::if_<boost::is_same<A3,mpl::void_>,
+                                                        boost::fusion::vector<A0,A1,A2>,
+                                                        boost::fusion::vector<A0,A1,A2,A3> >::type>::type>::type
 {
 };
 
