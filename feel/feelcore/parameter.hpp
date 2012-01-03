@@ -75,6 +75,7 @@ BOOST_PARAMETER_NAME(test)
 BOOST_PARAMETER_NAME(trial)
 BOOST_PARAMETER_NAME(vector)
 BOOST_PARAMETER_NAME(pattern)
+BOOST_PARAMETER_NAME(properties)
 BOOST_PARAMETER_NAME(do_threshold)
 BOOST_PARAMETER_NAME(threshold)
 BOOST_PARAMETER_NAME(init)
@@ -168,6 +169,7 @@ BOOST_PARAMETER_NAME(image)
 BOOST_PARAMETER_NAME(domainSpace)
 BOOST_PARAMETER_NAME(imageSpace)
 BOOST_PARAMETER_NAME(range)
+BOOST_PARAMETER_NAME(element)
 
 
 BOOST_PARAMETER_NAME(partitions)
@@ -188,4 +190,35 @@ BOOST_PARAMETER_NAME(partitioner)
 BOOST_PARAMETER_NAME(save)
 
 }
+
+
+namespace Feel
+{
+namespace detail
+{
+template<typename TheArgs, typename Tag>
+struct remove_pointer_const_reference_type
+{
+    typedef typename boost::remove_pointer<
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<TheArgs, Tag>::type
+                >::type
+            >::type
+        >::type type;
+};
+template<typename TheArgs, typename Tag, typename Default>
+struct remove_pointer_const_reference_default_type
+{
+    typedef typename boost::remove_pointer<
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<TheArgs, Tag, Default>::type
+                >::type
+            >::type
+        >::type type;
+};
+} // detail
+} // Feel
+
 #endif /* __feelcore_parameter_H */
