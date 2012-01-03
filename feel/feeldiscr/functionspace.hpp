@@ -79,7 +79,7 @@
 #include <feel/feeldiscr/dofcomposite.hpp>
 #include <feel/feeldiscr/parameter.hpp>
 #include <feel/feeldiscr/bases.hpp>
-
+#include <feel/feeldiscr/functionspacebase.hpp>
 #include <feel/feelfilters/pointsettomesh.hpp>
 
 
@@ -659,14 +659,9 @@ struct Order
     static const bool is_subparametric = (PN > GN);
     static const bool is_surparametric = (PN < GN);
 };
-class FunctionSpaceBase
-{
-public:
-    virtual ~FunctionSpaceBase() {}
-};
-
 
 typedef parameter::parameters<
+//    parameter::required<tag::mesh_type, mpl::or_<boost::is_base_and_derived<MeshBase,_> >, mpl::or_<fusion::traits::is_sequence<_>, mpl::is_sequence<_> > >
     parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
 #if 1
     , parameter::optional<parameter::deduced<tag::bases_list>, mpl::or_<boost::is_base_and_derived<detail::bases_base,_>,
