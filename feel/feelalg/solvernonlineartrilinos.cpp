@@ -32,6 +32,7 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/solvernonlineartrilinos.hpp>
 
+#if defined( HAVE_TRILINOS )
 namespace Feel
 {
 
@@ -268,3 +269,4 @@ template class SolverNonLinearTrilinos<double>;
 
 
 } // namespace Feel
+#endif
