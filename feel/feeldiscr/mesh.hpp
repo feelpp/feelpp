@@ -613,6 +613,12 @@ public:
         container_search_iterator_type result_analysis_end() { return M_resultAnalysis.end();}
 
         /*---------------------------------------------------------------
+         * True if the node p is in mesh->element(id)
+         */
+        bool isIn(size_type _id, const node_type & _pt);
+        boost::tuple<uint16_type,std::vector<bool> > isIn(std::vector<size_type> _ids, const node_type & _pt);
+
+        /*---------------------------------------------------------------
          * Research only one element wich contains the node p
          */
         boost::tuple<bool, size_type,node_type> searchElement(const node_type & p);
