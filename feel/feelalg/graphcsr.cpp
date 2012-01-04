@@ -95,12 +95,27 @@ GraphCSR::operator=( GraphCSR const& g )
 }
 
 
+void
+GraphCSR::zero()
+{
+
+    auto nbDof = M_last_row_entry_on_proc-M_first_row_entry_on_proc+1;
+    for (size_type i=0 ; i<nbDof ; ++i)
+        {
+            row_type& row = this->row(i);
+            row.get<0>() = 0;//proc
+            row.get<1>() = i; //local index : warning false in parallel!!!!
+            row.get<2>().clear(); //all is zero
+        }
+
+}
 
 GraphCSR::self_ptrtype
 GraphCSR::transpose()
 {
-    if (M_graphT) return M_graphT;
 
+    if (M_graphT) return M_graphT;
+    this->close();
     M_graphT = self_ptrtype(new self_type( M_n_total_nz.size(),
                                            M_first_col_entry_on_proc,
                                            M_last_col_entry_on_proc,
@@ -153,9 +168,9 @@ GraphCSR::close()
     Debug(5050) << "[close] lastColEntryOnProc()=" << this->lastColEntryOnProc() << "\n";
     Debug(5050) << "[close] M_n_total_nz=" << M_n_total_nz.size() << "\n";
     Debug(5050) << "[close] M_storage size=" << M_storage.size() << "\n";
-    M_n_total_nz.resize( M_storage.size() );
-    M_n_nz.resize( M_storage.size() );
-    M_n_oz.resize( M_storage.size() );
+    M_n_total_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
+    M_n_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
+    M_n_oz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
 
     std::fill( M_n_nz.begin(), M_n_nz.end(), 0 );
     std::fill( M_n_oz.begin(), M_n_oz.end(), 0 );
@@ -222,8 +237,11 @@ GraphCSR::close()
 
 
         }
+
+
+
 #if 1
-    //std::cout << "sum_nz = " << sum_nz << "\n";
+#if 0
     M_ia.resize( M_storage.size()+1 );
     M_ja.resize( sum_nz );
     M_a.resize(  sum_nz, 0. );
@@ -238,6 +256,30 @@ GraphCSR::close()
         col_cursor+=boost::get<2>( irow ).size();
     }
     M_ia[M_storage.size()] = sum_nz;
+#else // vincent
+    M_ia.resize( M_last_row_entry_on_proc+2,0 );
+    M_ja.resize( sum_nz );
+    M_a.resize(  sum_nz, 0. );
+    size_type col_cursor = 0;
+    auto jait = M_ja.begin();
+    //for( auto it = M_storage.begin(), en = M_storage.end()  ; it != en; ++it )
+    for( int i = 0 ; i<(M_last_row_entry_on_proc+1); ++i )
+    {
+        if (M_storage.find(i)!=M_storage.end())
+            {
+                row_type const& irow = this->row(i);
+                size_type localindex = boost::get<1>( irow );
+                M_ia[localindex] = col_cursor;
+                jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
+                col_cursor+=boost::get<2>( irow ).size();
+            }
+        else
+            {
+                M_ia[i] = col_cursor;
+            }
+    }
+    M_ia[M_last_row_entry_on_proc+1] = sum_nz;
+#endif
 #endif // 0
 
 } // close
@@ -246,7 +288,6 @@ GraphCSR::close()
 void
 GraphCSR::showMe( std::ostream& __out ) const
 {
-
     __out << "first_row_entry_on_proc " << M_first_row_entry_on_proc << std::endl;
     __out << "last_row_entry_on_proc " << M_last_row_entry_on_proc << std::endl;
     __out << "first_col_entry_on_proc " << M_first_col_entry_on_proc << std::endl;
@@ -271,6 +312,39 @@ GraphCSR::showMe( std::ostream& __out ) const
                 __out << *it << " ";
 
             __out << std::endl;
+        }
+}
+
+void
+GraphCSR::printPython( std::string const& nameFile) const
+{
+    std::ofstream graphFile(nameFile, std::ios::out /*| std::ios::app*/);
+    //fileDisp << this->time();
+
+    /*    __out << "first_row_entry_on_proc " << M_first_row_entry_on_proc << std::endl;
+    __out << "last_row_entry_on_proc " << M_last_row_entry_on_proc << std::endl;
+    __out << "first_col_entry_on_proc " << M_first_col_entry_on_proc << std::endl;
+    __out << "last_col_entry_on_proc " << M_last_col_entry_on_proc << std::endl;
+    __out << "max_nnz " << M_max_nnz << std::endl;
+    */
+    for( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
+        {
+            // Get the row of the sparsity pattern
+            row_type const& row = it->second;
+
+            /*__out << " proc " << row.get<0>()
+                  << " globalindex " << it->first
+                  << " localindex " << row.get<1>()
+                  << "(nz " << M_n_nz[row.get<1>()]
+                  << " oz " << M_n_oz[row.get<1>()]
+                  << ") : ";*/
+            //size_type vec_size = boost::get<2>( irow ).size();
+            //size_type globalindex = it->first;
+            //size_type localindex = boost::get<1>( irow );
+            for (auto it2 = row.get<2>().begin(), en2= row.get<2>().end() ; it2!=en2 ; ++it2)
+                graphFile << it->first << " " << *it2 << " 1.0" << std::endl;
+
+            //__out << std::endl;
         }
 }
 
