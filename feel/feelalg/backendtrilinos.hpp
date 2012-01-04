@@ -142,7 +142,8 @@ public:
     template<typename DomainSpace, typename DualImageSpace>
     sparse_matrix_ptrtype newMatrix( DomainSpace const& Xh,
                                      DualImageSpace const& Yh,
-                                     size_type matrix_properties = NON_HERMITIAN )
+                                     size_type matrix_properties = NON_HERMITIAN,
+                                     bool init = true )
         {
             return newMatrix( Xh->map(), Yh->map(), matrix_properties );
         }
