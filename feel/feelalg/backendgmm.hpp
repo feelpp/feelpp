@@ -154,7 +154,7 @@ public:
     }
 
     sparse_matrix_ptrtype
-    newMatrix( DataMap const& d1, DataMap const& d2, size_type matrix_properties = NON_HERMITIAN )
+    newMatrix( DataMap const& d1, DataMap const& d2, size_type matrix_properties = NON_HERMITIAN, bool init = true)
     {
         auto A = sparse_matrix_ptrtype( new gmm_sparse_matrix_type( d1.nGlobalElements(), d2.nGlobalElements() ) );
         A->setMatrixProperties( matrix_properties );
