@@ -36,7 +36,7 @@ namespace Feel
 
 
 template <int NR, int NC,typename T>
-MatrixBlock<NR,NC,T>::MatrixBlock( Blocks<NR,NC,value_type> const & blockSet,
+MatrixBlock<NR,NC,T>::MatrixBlock( vf::Blocks<NR,NC,matrix_ptrtype> const & blockSet,
                                    backend_type &backend,
                                    bool _doAssemble)
     :
@@ -78,6 +78,7 @@ MatrixBlock<NR,NC,T>::MatrixBlock( Blocks<NR,NC,value_type> const & blockSet,
     // std::cout << "[MatrixBlock::MatrixBlock] build Matrix" << std::endl;
     M_mat = backend.newMatrix(_size1,_size2,_size1,_size2,graph);
     M_mat->zero();
+    //M_mat->graph()->showMe();
 
     if (_doAssemble)
         {
@@ -120,7 +121,7 @@ MatrixBlock<NR,NC,T>::MatrixBlock( Blocks<NR,NC,value_type> const & blockSet,
 template <int NR, int NC,typename T>
 void
 MatrixBlock<NR,NC,T>::mergeBlockGraph(graph_ptrtype & globGraph,
-                                      boost::shared_ptr<MatrixSparse<value_type> > m,
+                                      matrix_ptrtype m,
                                       size_type start_i, size_type start_j)
 {
 

@@ -36,56 +36,11 @@
 
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/backend.hpp>
+#include <feel/feelvf/block.hpp>
 
 
 namespace Feel
 {
-
-
-template <int NR, int NC,typename T=double>
-struct Blocks
-{
-    static const uint16_type NBLOCKROWS = NR;
-    static const uint16_type NBLOCKCOLS = NC;
-
-    typedef MatrixSparse<T> matrix_type;
-    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
-
-    Blocks()
-        :
-        M_vec(NR*NC),
-        M_cptToBuild(0)
-    {
-        //M_vec.clear();
-    }
-    Blocks(Blocks<NR,NC,T> const & b)
-        :
-        M_vec(b.M_vec),
-        M_cptToBuild(b.M_cptToBuild)
-    {}
-
-    Blocks<NR,NC,T>
-    operator<<(matrix_ptrtype m)
-    {
-        //M_vec.push_back(m);
-        M_vec[M_cptToBuild]=m;
-        ++M_cptToBuild;
-        return *this;
-    }
-
-    matrix_ptrtype
-    operator()(int16_type c1,int16_type c2)
-    {
-        return M_vec[c1*NBLOCKCOLS+c2];
-    }
-
-    std::vector<matrix_ptrtype>
-    getSetOfBlocks() const { return M_vec; }
-
-private :
-    std::vector<matrix_ptrtype> M_vec;
-    int16_type M_cptToBuild;
-};
 
 
 template<typename T> class Backend;
@@ -150,9 +105,9 @@ public:
      */
     //@{
 
-    MatrixBlock( Blocks<NR,NC,value_type> const & blockSet,backend_type &backend, bool doAssemble=true );
+    MatrixBlock( vf::Blocks<NR,NC,matrix_ptrtype > const & blockSet,backend_type &backend, bool doAssemble=true );
 
-    void mergeBlockGraph(graph_ptrtype & globGraph,boost::shared_ptr<MatrixSparse<value_type> > m,
+    void mergeBlockGraph(graph_ptrtype & globGraphb, matrix_ptrtype m,
                          size_type start_i, size_type start_j);
 
     MatrixBlock( MatrixBlock const & mb )
