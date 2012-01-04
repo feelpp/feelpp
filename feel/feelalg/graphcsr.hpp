@@ -194,6 +194,15 @@ public:
     }
 
     /**
+     * return storage
+     */
+    storage_type const& storage() const
+    {
+        return M_storage;
+    }
+
+
+    /**
      * \return the maximum number of non-zero entries per row
      */
     size_type maxNnz() const { return M_max_nnz; }
@@ -261,6 +270,11 @@ public:
     //@{
 
     /**
+     * graph has not entries
+     */
+    void zero();
+
+    /**
      * close the graph: compute some information per row (ie number of
      * non-zero entries per row )
      */
@@ -275,6 +289,8 @@ public:
      * showMe
      */
     void showMe( std::ostream& __out = std::cout ) const;
+
+    void printPython( std::string const& nameFile) const;
 
     //@}
 
