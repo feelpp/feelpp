@@ -113,7 +113,12 @@ public:
                     backend_ptrtype          backend ) :
         super_type( domainSpace, dualImageSpace ),
         M_backend( backend ),
+#if 0
         M_matrix( M_backend->newMatrix( domainSpace, dualImageSpace ) )
+#else
+        M_matrix( M_backend->newMatrix( dualImageSpace->nDof(),domainSpace->nDof() ,
+                                        dualImageSpace->nLocalDof(), domainSpace->nLocalDof() ) )
+#endif
     {
     }
 
@@ -127,8 +132,12 @@ public:
         this->setDomainSpace( domainSpace );
         this->setDualImageSpace( dualImageSpace );
         M_backend = backend;
+#if 0
         M_matrix = M_backend->newMatrix( domainSpace, dualImageSpace );
-
+#else
+        M_matrix = M_backend->newMatrix( dualImageSpace->nDof(),domainSpace->nDof() ,
+                                         dualImageSpace->nLocalDof(), domainSpace->nLocalDof() );
+#endif
 
     }
 
