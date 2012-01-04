@@ -54,6 +54,7 @@
 #include <vector>
 
 #include <boost/numeric/ublas/matrix.hpp>
+#include <boost/fusion/include/fold.hpp>
 
 #include <Eigen/Core>
 
@@ -157,6 +158,32 @@ public:
                         const size_type n_l,
                         graph_ptrtype const& graph ) = 0;
 
+#if 0
+    /**
+     *
+     */
+    template<typename DomainSpace, typename ImageSpace>
+    void initIndexSplit(DomainSpace const& dm, ImageSpace const& im)
+    {
+        auto nSpace = DomainSpace::element_type::nSpaces;
+        if (nSpace>1)
+            {
+                //std::cout << "\n Debug : nSpace " << nSpace << "\n";
+                std::vector < std::vector<int> > is(nSpace);
+                uint cptSpaces=0;
+                uint start=0;
+                auto result = boost::make_tuple(cptSpaces,start);
+
+                std::vector < std::vector<int> > indexSplit(nSpace);
+                //detail::computeNDofForEachSpace cndof(nSpace);
+                //detail::computeNDofForEachSpace cndof(indexSplit);
+                boost::fusion::fold( dm->functionSpaces(), result,  cndof );
+
+                this->setIndexSplit(indexSplit);
+            }
+
+    }
+#endif
     /**
      *
      */
@@ -583,6 +610,28 @@ public:
     {
         _M_is_initialized = _init;
     }
+#if 0
+    template<typename DomainSpace, typename ImageSpace>
+    void updateIndexSplit(DomainSpace const& dm, ImageSpace const& im)
+    {
+        auto nSpace = DomainSpace::element_type::nSpaces;
+        if (nSpace>1)
+            {
+                //std::cout << "\n Debug : nSpace " << nSpace << "\n";
+                std::vector < std::vector<int> > is(nSpace);
+                uint cptSpaces=0;
+                uint start=0;
+                auto result = boost::make_tuple(cptSpaces,start);
+
+                std::vector < std::vector<int> > indexSplit(nSpace);
+                //detail::computeNDofForEachSpace cndof(nSpace);
+                detail::computeNDofForEachSpace cndof(indexSplit);
+                boost::fusion::fold( dm->functionSpaces(), result,  cndof );
+
+                this->setIndexSplit(indexSplit);
+            }
+    }
+#endif
 protected:
     /**
      * Protected implementation of the create_submatrix and reinit_submatrix

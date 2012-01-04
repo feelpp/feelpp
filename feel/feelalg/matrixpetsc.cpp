@@ -86,6 +86,8 @@ void MatrixPetsc<T>::init (const size_type m,
                            const size_type nnz,
                            const size_type /*noz*/)
 {
+    //std::cout << "\n init without graph"<<std::endl;
+
     if ((m==0) || (n==0))
         return;
 
@@ -164,6 +166,7 @@ void MatrixPetsc<T>::init (const size_type m,
                            const size_type n_l,
                            graph_ptrtype const& graph )
 {
+    //std::cout << "\n init with graph"<<std::endl;
     this->setGraph( graph );
 
     {
@@ -177,7 +180,8 @@ void MatrixPetsc<T>::init (const size_type m,
 
     // check graph for petsc : all diag must non zero
     bool graphHasChanged=false;
-    for ( auto it=graph->begin(), en=graph->end() ; it!=en ; ++it )
+#if 0
+    for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
         {
             if (it->second.get<2>().find(it->first)==it->second.get<2>().end())
                 {
@@ -186,8 +190,29 @@ void MatrixPetsc<T>::init (const size_type m,
                 }
 
         }
+#else
+    //for ( auto it=graph->begin(), en=graph->end() ; it!=en ; ++it )
+        for ( size_type i = 0 ; i< std::min(m,n) ; ++i)
+        {
+            if (this->graph()->storage().find(i)!=graph->end())
+                {
+                    if (this->graph()->row(i).get<2>().find(i) == this->graph()->row(i).get<2>().end())
+                        {
+                            this->graph()->row(i).get<2>().insert(i);
+                            graphHasChanged=true;
+                        }
+                }
+            else
+                {
+                    this->graph()->row(i).get<0>() = 0;//rank
+                    this->graph()->row(i).get<1>() = i;//loc
+                    this->graph()->row(i).get<2>().insert(i);
+                    graphHasChanged=true;
+                }
 
-    if (graphHasChanged) graph->close();
+        }
+#endif
+        if (graphHasChanged) this->graph()->close();
 
     int proc_id = 0;
 
@@ -217,7 +242,7 @@ void MatrixPetsc<T>::init (const size_type m,
     // create a sequential matrix on one processor
     if ((m_l == m) && (n_l == n))
     {
-#if 0
+#if 1 // MatCreateSeqAIJ
 #if 0
         PetscInt nrows = m_local;
         PetscInt ncols = n_local;
@@ -243,7 +268,7 @@ void MatrixPetsc<T>::init (const size_type m,
         std::copy( this->graph()->nNzOnProc().begin(),
                    this->graph()->nNzOnProc().end(),
                    dnz );
-        std::copy( dnz, dnz+this->graph()->nNzOnProc().size(), std::ostream_iterator<PetscInt>( std::cout, "\n" ) );
+        //std::copy( dnz, dnz+this->graph()->nNzOnProc().size(), std::ostream_iterator<PetscInt>( std::cout, "\n" ) );
         ierr = MatCreateSeqAIJ (this->comm(), m_global, n_global,
                                 0,
                                 dnz,
@@ -252,24 +277,25 @@ void MatrixPetsc<T>::init (const size_type m,
         CHKERRABORT(this->comm(),ierr);
 
         //ierr = MatSeqAIJSetPreallocation( _M_mat, 0, (int*)this->graph()->nNzOnProc().data() );
-#if 0
+#if 1
         ierr = MatSeqAIJSetPreallocation( _M_mat, 0, dnz );
 #else
         this->graph()->close();
-        std::cout << "sizes:" << this->graph()->ia().size() << "," << this->graph()->ja().size()  << std::endl;
+        //std::cout << "sizes:" << this->graph()->ia().size() << "," << this->graph()->ja().size()  << std::endl;
         ia.resize( this->graph()->ia().size() );
         ja.resize( this->graph()->ja().size() );
         std::copy( this->graph()->ia().begin(), this->graph()->ia().end(), ia.begin() );
         std::copy( this->graph()->ja().begin(), this->graph()->ja().end(), ja.begin() );
-        std::for_each( ia.begin(), ia.end(), [](const int& i ){ std::cout << i << std::endl; } );
-#if 1
+        //std::for_each( ia.begin(), ia.end(), [](const int& i ){ std::cout << i << std::endl; } );
+
         ierr = MatSeqAIJSetPreallocationCSR( _M_mat,
                                              ia.data(), ja.data(),
                                              this->graph()->a().data() );
 #endif
-#endif
         CHKERRABORT(this->comm(),ierr);
-#else
+
+#else // MatCreateSeqAIJWithArrays
+
         //std::cout << "matrix csr creating...\n" << std::endl;
         this->graph()->close();
         //std::cout << "sizes:" << this->graph()->ia().size() << "," << this->graph()->ja().size()  << std::endl;
@@ -312,7 +338,7 @@ void MatrixPetsc<T>::init (const size_type m,
     // additional insertions will not be allowed if they generate
     // a new nonzero
     //ierr = MatSetOption (_M_mat, MAT_NO_NEW_NONZERO_LOCATIONS);
-    CHKERRABORT(this->comm(),ierr);
+    //CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
     //ierr = MatSetOption (_M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
@@ -354,7 +380,7 @@ void MatrixPetsc<T>::setIndexSplit(std::vector< std::vector<int> > const &indexS
 template <typename T>
 void MatrixPetsc<T>::updatePCFieldSplit(PC & pc)
 {
-#if 0
+#if 1
     int ierr=0;
     if (_M_mapPC.find(&pc)==_M_mapPC.end() )
         {
@@ -694,6 +720,7 @@ MatrixPetsc<T>::printMatlab (const std::string name) const
 
         ierr = PetscViewerSetFormat (petsc_viewer,
                                      PETSC_VIEWER_ASCII_MATLAB);
+                                     //PETSC_VIEWER_ASCII_PYTHON );
         CHKERRABORT(this->comm(),ierr);
 
         ierr = MatView (_M_mat, petsc_viewer);
@@ -1008,12 +1035,13 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
 
     MatrixPetsc<T>* Atrans = dynamic_cast<MatrixPetsc<T>*> (&Mt);
 
-    PETSc::MatDestroy( Atrans->_M_mat );
+    int ierr = PETSc::MatDestroy( Atrans->_M_mat );
+    CHKERRABORT(this->comm(),ierr);
 
 #if (PETSC_VERSION_MAJOR >= 3)
-    int ierr = MatTranspose( _M_mat, MAT_INITIAL_MATRIX,&Atrans->_M_mat );
+    ierr = MatTranspose( _M_mat, MAT_INITIAL_MATRIX,&Atrans->_M_mat );
 #else
-    int ierr = MatTranspose( _M_mat, &Atrans->_M_mat );
+    ierr = MatTranspose( _M_mat, &Atrans->_M_mat );
 #endif
 
     CHKERRABORT(this->comm(),ierr);
@@ -1192,6 +1220,7 @@ template<typename T>
 void
 MatrixPetsc<T>::updateBlockMat(boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j)
 {
+#if 1
         auto blockMatrix = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>(&*(m) ) );
 
         auto nbRowInBlock = blockMatrix->size1();
@@ -1210,9 +1239,12 @@ MatrixPetsc<T>::updateBlockMat(boost::shared_ptr<MatrixSparse<T> > m, size_type 
                 CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
                 for (size_type jj = 0 ; jj < ncols ; ++jj)
-                    this->set(start_i+row,
-                              start_j+cols[jj],
-                              vals[jj]);
+                    {
+                        //std::cout << "\n [updateBlockMat] i "<< start_i+row << " j " << start_j+cols[jj] << " val " << vals[jj] << std::endl;
+                        this->set(start_i+row,
+                                  start_j+cols[jj],
+                                  vals[jj]);
+                    }
 
                 ierr = MatRestoreRow(blockMatrix->mat(),row,&ncols,&cols,&vals);
                 CHKERRABORT(PETSC_COMM_WORLD,ierr);
@@ -1289,6 +1321,8 @@ MatrixPetsc<T>::updateBlockMat(boost::shared_ptr<MatrixSparse<T> > m, size_type 
                                &n,&ia,&ja,
                                &done );
 
+
+#endif
 
 #endif
 
