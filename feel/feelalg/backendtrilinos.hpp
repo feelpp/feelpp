@@ -177,7 +177,8 @@ public:
 
     sparse_matrix_ptrtype newMatrix( DataMap const& domainmap,
                                      DataMap const& imagemap,
-                                     size_type matrix_properties = NON_HERMITIAN )
+                                     size_type matrix_properties = NON_HERMITIAN,
+                                     bool init = true )
         {
             Epetra_Map erowmap = BackendTrilinos::epetraMap( imagemap );
             Epetra_Map ecolmap = BackendTrilinos::epetraMapStatic( domainmap );
