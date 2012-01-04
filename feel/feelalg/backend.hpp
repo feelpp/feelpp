@@ -44,16 +44,27 @@
 #include <feel/feelalg/solvernonlinear.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
 
+//#include <feel/feelvf/vf.hpp>
+//#include <boost/fusion/support/pair.hpp>
+//#include <boost/fusion/container.hpp>
+//#include <boost/fusion/sequence.hpp>
+//#include <boost/fusion/algorithm.hpp>
+
+//namespace fusion = boost::fusion;
+
+//#include <feel/feelvf/bilinearform.hpp>
+#include <feel/feelvf/pattern.hpp>
+
 namespace Feel
 {
-enum  Pattern
+    /*enum  Pattern
 {
     DEFAULT   = 1 << 0,
     EXTENDED  = 1 << 1,
     COUPLED   = 1 << 2,
     SYMMETRIC = 1 << 3
 };
-
+    */
 ///! \cond detail
 namespace detail
 {
@@ -88,7 +99,6 @@ auto ref( T& t ) -> decltype( ref( t, detail::is_shared_ptr<T>() ) )
 {
     return ref( t, detail::is_shared_ptr<T>() );
 }
-
 
 
 }
@@ -184,7 +194,27 @@ public:
     /**
      * instantiate a new sparse vector
      */
-    virtual sparse_matrix_ptrtype newMatrix( DataMap const& dm1, DataMap const& dm2, size_type prop = NON_HERMITIAN  ) = 0;
+    sparse_matrix_ptrtype newMatrix(const size_type m,
+                                    const size_type n,
+                                    const size_type m_l,
+                                    const size_type n_l,
+                                    graph_ptrtype const & graph,
+                                    std::vector < std::vector<int> > indexSplit,
+                                    size_type matrix_properties = NON_HERMITIAN)
+    {
+        auto mat = this->newMatrix(m,n,m_l,n_l,graph,matrix_properties);
+        mat->setIndexSplit(indexSplit);
+        return mat;
+    }
+
+
+    /**
+     * instantiate a new sparse vector
+     */
+    virtual sparse_matrix_ptrtype newMatrix( DataMap const& dm1,
+                                             DataMap const& dm2,
+                                             size_type prop = NON_HERMITIAN,
+                                             bool init = true ) = 0;
 
     /**
      * instantiate a new sparse vector
@@ -210,15 +240,32 @@ public:
                                     (optional
                                      (pattern,(size_type),Pattern::COUPLED)
                                      (properties,(size_type),NON_HERMITIAN)
+                                     (buildGraphWithTranspose, (bool),false )
+                                     (pattern_block,    *, (vf::Blocks<1,1,size_type>(size_type(Pattern::HAS_NO_BLOCK_PATTERN)) ) )
                                      (verbose,(int),0)
                                         ))
         {
             auto mat = this->newMatrix( trial->map(), test->map(), properties );
-            auto s = stencil( _test=test, _trial=trial, _pattern=pattern );
-            mat->init( test->nDof(), trial->nDof(), test->nLocalDof(), trial->nLocalDof(), s->graph() );
+
+            if(!buildGraphWithTranspose)
+                {
+                    auto s = stencil( _test=test, _trial=trial, _pattern=pattern,
+                                      _pattern_block=pattern_block.getSetOfBlocks() );
+                    mat->init( test->nDof(), trial->nDof(), test->nLocalDof(), trial->nLocalDof(),
+                               s->graph() );
+                }
+            else
+                {
+                    // need to build inverse of pattern_block : to fix!
+                    auto s = stencil( _test=trial, _trial=test, _pattern=pattern );
+                    mat->init( test->nDof(), trial->nDof(), test->nLocalDof(), trial->nLocalDof(),
+                               s->graph()->transpose() );
+                }
+
             mat->setIndexSplit( trial->dofIndexSplit() );
             return mat;
         }
+
     template<typename DomainSpace, typename ImageSpace>
     sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im, sparse_matrix_ptrtype const& M, size_type prop = NON_HERMITIAN  )
         {
@@ -226,27 +273,33 @@ public:
             m->init( im->nDof(), dm->nDof(), im->nLocalDof(), dm->nLocalDof(), M->graph() );
             return m;
         }
+
     /**
      * instantiate a new block matrix sparse
      */
-    template <int NR, int NC>
-    sparse_matrix_ptrtype newBlockMatrix( Blocks<NR,NC,T> const & b, bool doAssemble=true )
-        {
-            //sparse_matrix_ptrtype mb(new MatrixBlock<NR,NC,T>( b,*this ));
-            //return mb;
-            boost::shared_ptr< MatrixBlock<NR,NC,T> > mb(new MatrixBlock<NR,NC,T>( b, *this, doAssemble ));
-            return mb->getSparseMatrix();
-        }
-
+    template <int NR, int NC, typename BlockType=sparse_matrix_ptrtype >
+    sparse_matrix_ptrtype newBlockMatrix( vf::Blocks<NR,NC,BlockType> const & b, bool doAssemble=true )
+    {
+        typedef MatrixBlock<NR,NC,typename BlockType::element_type::value_type> matrix_block_type;
+        boost::shared_ptr<matrix_block_type> mb(new matrix_block_type( b, *this, doAssemble ));
+        return mb->getSparseMatrix();
+    }
 
     /**
      * instantiate a new zero matrix
      */
-    template<typename DomainSpace, typename ImageSpace>
-    sparse_matrix_ptrtype newZeroMatrix( DomainSpace const& dm, ImageSpace const& im )
-        {
-            return this->newZeroMatrix( dm->map(), im->map() );
-        }
+    BOOST_PARAMETER_MEMBER_FUNCTION((sparse_matrix_ptrtype),
+                                    newZeroMatrix,
+                                    tag,
+                                    (required
+                                     (test,*)
+                                     (trial,*)
+                                     )
+                                    )
+    {
+        //return this->newZeroMatrix( dm->map(), im->map() );
+        return this->newZeroMatrix( trial->map(), test->map() );
+    }
 
     /**
      * instantiate a new vector

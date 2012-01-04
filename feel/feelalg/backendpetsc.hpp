@@ -145,13 +145,29 @@ public:
     sparse_matrix_ptrtype
     newMatrix( DataMap const& domainmap,
                DataMap const& imagemap,
-               size_type matrix_properties = NON_HERMITIAN)
+               size_type matrix_properties = NON_HERMITIAN,
+               bool init = true)
     {
         sparse_matrix_ptrtype  m ( new petsc_sparse_matrix_type );
         m->setMatrixProperties( matrix_properties );
-        m->init( imagemap.nGlobalElements(), domainmap.nGlobalElements(),
-                 imagemap.nMyElements(), domainmap.nMyElements() );
+        if (init)
+            {
+                m->init( imagemap.nGlobalElements(), domainmap.nGlobalElements(),
+                         imagemap.nMyElements(), domainmap.nMyElements() );
+            }
         return m;
+    }
+
+    sparse_matrix_ptrtype
+    newMatrix( DataMap const& domainmap,
+               DataMap const& imagemap,
+               graph_ptrtype const & graph,
+               size_type matrix_properties = NON_HERMITIAN)
+    {
+        return this->newMatrix( imagemap.nGlobalElements(), domainmap.nGlobalElements(),
+                                imagemap.nMyElements(), domainmap.nMyElements(),
+                                graph,
+                                matrix_properties);
     }
 
     sparse_matrix_ptrtype
@@ -184,6 +200,7 @@ public:
     {
         graph_ptrtype sparsity_graph( new graph_type( 0,0,m_l-1,0,n_l-1) );
 
+#if 0
         for (size_type i=0 ; i<m_l ; ++i)
             {
                 //sparsity_graph->row(i);
@@ -192,7 +209,9 @@ public:
                 row.get<1>() = i; //local index : warning false in parallel!!!!
                 row.get<2>().clear(); //all is zero
             }
-
+#else
+        sparsity_graph->zero();
+#endif
         sparsity_graph->close();
 
         sparse_matrix_ptrtype  mat( new petsc_sparse_matrix_type );

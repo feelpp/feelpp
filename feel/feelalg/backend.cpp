@@ -257,6 +257,9 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
     M_nlsolver->setPrecMatrixStructure( this->precMatrixStructure() );
 
+    //vector_ptrtype x_save = x->clone();
+    //vector_ptrtype x_save = this->newVector(x->map());
+    //*x_save=*x;
     //std::cout << "[nlSolve] reusepc:" << reusePC << std::endl;
     if ( reusePC || reuseJac )
     {
@@ -280,12 +283,21 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         Log() << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
 
         M_nlsolver->init();
+        M_nlsolver->setPreconditionerType( this->pcEnumType() );
+        M_nlsolver->setKspSolverType( this->kspEnumType() );
         M_nlsolver->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
 
         //M_nlsolver->setReuse( 1, -2 );
         M_nlsolver->setReuse( 1, 1 );
-        auto ret = M_nlsolver->solve( A, x, b, tol, its );
-        return boost::make_tuple( ret.first, its, tol );
+        auto ret2 = M_nlsolver->solve( A, x, b, tol, its );
+
+        if ( ret2.first < 0 )
+            {
+                Feel::Log() << "\n[backend] non-linear solver fail";
+                exit(0);
+            }
+
+        return boost::make_tuple( ret2.first, its, tol );
     }
     return boost::make_tuple( ret.first, its, tol );
 }
@@ -308,7 +320,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
     if ( ret.first < 0 )
     {
-        Feel::Log() << "\n[backend] linear solver fail";
+        Feel::Log() << "\n[backend] non-linear solver fail";
         //exit(0);
     }
 
