@@ -48,7 +48,7 @@
 
 /** include  polynomialset header */
 #include <feel/feelpoly/polynomialset.hpp>
-
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <feel/feelvf/vf.hpp>
 
@@ -58,6 +58,8 @@
 /** use Feel namespace */
 using namespace Feel;
 using namespace Feel::vf;
+
+gmsh_ptrtype createRoom( int Dim, double meshSize );
 
 /**
  * This routine returns the list of options using the
@@ -233,7 +235,15 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
                                        % Order
                                        % meshSize );
 
-    auto mesh = GeoTool::createMeshFromGeoFile<mesh_type>("/u/e/effeindm/feel.src/examples/heat/Cabine_heat.geo", "nameExport",meshSize);
+//    auto mesh = GeoTool::createMeshFromGeoFile<mesh_type>("/u/e/effeindm/feel.src/examples/heat/Cabine_heat.geo", "nameExport",meshSize);
+
+    /*
+     * First we create the mesh
+     */
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _desc = createRoom(Dim,meshSize) );
+
+
 
     /**
      * The function space and some associated elements(functions) are then defined
@@ -294,7 +304,7 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( markedfaces(mesh,"neumann"),id(v) )
+        integrate( markedfaces(mesh,12),id(v) )
        +integrate( elements(mesh) ,factor*idv(Tn)*id(v) );
 
 
@@ -329,7 +339,7 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     //# marker5 #
     D->close();
     form2( Xh, Xh, D ) +=
-        on( markedfaces(mesh,"dirichlet"), T, F, cst(10.) );
+        on( markedfaces(mesh,11), T, F, cst(10.) );
     //# endmarker5 #
     /** \endcode */
 
