@@ -2222,6 +2222,13 @@ public:
         return start;
     }
 
+    uint16_type nSubFunctionSpace() const
+    {
+        uint16_type nbSpaces = mpl::int_< fusion::result_of::template size<functionspace_vector_type>::type::value>();
+        //uint16_type nbSpaces = fusion::::result_of::/*template*/ size<functionspace_vector_type>::type::value;
+        return nbSpaces;
+    }
+
     /**
      * \return the number of degrees of freedom per dim
      */
