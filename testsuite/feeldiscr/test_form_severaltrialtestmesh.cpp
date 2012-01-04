@@ -210,7 +210,7 @@ void run(Application_ptrtype & theApp)
     std::cout << "\n start create MatBlock" << std::endl;
     boost::timer time;
 
-    auto myb = Blocks<2,2,double>()<< A_uu << A_ul
+    auto myb = Blocks<2,2>()<< A_uu << A_ul
                                    << A_lu << A_ll;
     auto AbB = backend->newBlockMatrix(myb);
     AbB->close();
