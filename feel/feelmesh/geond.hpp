@@ -334,6 +334,14 @@ public:
         M_neighbors[n] = std::make_pair( neigh_id, proc_id );
     }
 
+    bool isNeighbor(self_type const& G) const
+    {
+        for (uint16_type i = 0; i< this->nNeighbors() ; ++i)
+            if (this->neighbor(i).first==G.id()) return true;
+
+        return false;
+    }
+
     /**
      * \return the barycenter of the element
      */
