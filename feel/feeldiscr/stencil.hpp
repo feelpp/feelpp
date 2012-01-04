@@ -46,9 +46,31 @@ struct compute_graph3
     template <typename Space2>
     void operator()( boost::shared_ptr<Space2> const& space2 ) const
         {
-            auto thestencil = stencil(_test=space2, _trial=M_space1, _pattern=M_hints );
 
-            M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thestencil->graph() );
+            if (M_stencil->isBlockPatternZero(M_test_index,M_trial_index))
+                {
+#if 1
+                    const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
+                    const size_type n1_dof_on_proc    = M_stencil->testSpace()->nLocalDof();
+                    const size_type first1_dof_on_proc = M_stencil->testSpace()->dof()->firstDof( proc_id );
+                    const size_type last1_dof_on_proc = M_stencil->testSpace()->dof()->lastDof( proc_id );
+                    const size_type first2_dof_on_proc = M_stencil->trialSpace()->dof()->firstDof( proc_id );
+                    const size_type last2_dof_on_proc = M_stencil->trialSpace()->dof()->lastDof( proc_id );
+                    typename BFType::graph_ptrtype thegraph( new typename BFType::graph_type( n1_dof_on_proc,
+                                                                                              first1_dof_on_proc, last1_dof_on_proc,
+                                                                                              first2_dof_on_proc, last2_dof_on_proc ) );
+                    thegraph->zero();
+                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thegraph );
+#endif
+                }
+            else
+                {
+                    auto thestencil = stencil(_test=space2, _trial=M_space1,
+                                              _pattern=M_hints,
+                                              _pattern_block=M_stencil->blockPattern() );
+
+                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thestencil->graph() );
+                }
 
             ++M_test_index;
         }
@@ -77,9 +99,30 @@ struct compute_graph2
     template <typename Space2>
     void operator()( boost::shared_ptr<Space2> const& space2 ) const
         {
-            auto thestencil = stencil(_test=M_space1, _trial=space2, _pattern=M_hints );
+            if (M_stencil->isBlockPatternZero(M_test_index,M_trial_index))
+                {
+#if 1
+                    const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
+                    const size_type n1_dof_on_proc    = M_stencil->testSpace()->nLocalDof();
+                    const size_type first1_dof_on_proc = M_stencil->testSpace()->dof()->firstDof( proc_id );
+                    const size_type last1_dof_on_proc = M_stencil->testSpace()->dof()->lastDof( proc_id );
+                    const size_type first2_dof_on_proc = M_stencil->trialSpace()->dof()->firstDof( proc_id );
+                    const size_type last2_dof_on_proc = M_stencil->trialSpace()->dof()->lastDof( proc_id );
+                    typename BFType::graph_ptrtype thegraph( new typename BFType::graph_type( n1_dof_on_proc,
+                                                                                              first1_dof_on_proc, last1_dof_on_proc,
+                                                                                              first2_dof_on_proc, last2_dof_on_proc ) );
+                    thegraph->zero();
+                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thegraph );
+#endif
+                }
+            else
+                {
+                    auto thestencil = stencil(_test=M_space1, _trial=space2,
+                                              _pattern=M_hints,
+                                              _pattern_block=M_stencil->blockPattern());
 
-            M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thestencil->graph() );
+                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thestencil->graph() );
+                }
 
             ++M_trial_index;
         }
@@ -128,14 +171,27 @@ public:
     typedef boost::shared_ptr<graph_type> graph_ptrtype;
     typedef Stencil<X1,X2> self_type;
 
-    Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh, size_type graph_hints  )
+    Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh,
+             size_type graph_hints,
+             std::vector<size_type> block_pattern=std::vector<size_type>(1,size_type(Pattern::HAS_NO_BLOCK_PATTERN)) )
         :
         _M_X1( Xh ),
         _M_X2( Yh ),
         M_graph( new graph_type( Xh->nLocalDof(),
                                  Xh->nDofStart(), Xh->nDofStart()+Xh->nLocalDof(),
-                                 Yh->nDofStart(), Yh->nDofStart()+Yh->nLocalDof() ) )
+                                 Yh->nDofStart(), Yh->nDofStart()+Yh->nLocalDof() ) ),
+        M_block_pattern(block_pattern)
         {
+            // new
+            uint16_type nbSubSpace1 = _M_X1->nSubFunctionSpace();
+            uint16_type nbSubSpace2 = _M_X2->nSubFunctionSpace();
+            if (this->isBlockPatternNoPattern(0,0))
+                {
+                    M_block_pattern.resize((nbSubSpace1*nbSubSpace2));
+                    for (auto it=M_block_pattern.begin(), en=M_block_pattern.end();it!=en;++it)  *it = graph_hints;
+                }
+
+
             const size_type n1_dof_on_proc = _M_X1->nLocalDof();
 
             boost::timer t;
@@ -156,6 +212,30 @@ public:
         _M_X2( Yh ),
         M_graph( g )
         {}
+
+
+    std::vector<size_type> blockPattern() const { return  M_block_pattern; }
+
+    size_type blockPattern(uint16_type i,uint16_type j) const
+    {
+        uint16_type nbSubSpace2 = _M_X2->nSubFunctionSpace();
+        return  M_block_pattern[i*nbSubSpace2+j];
+    }
+
+    bool isBlockPatternNoPattern(uint16_type i,uint16_type j) const
+    {
+        uint16_type nbSubSpace2 = _M_X2->nSubFunctionSpace();
+        Feel::Context ctx(M_block_pattern[i*nbSubSpace2+j]);
+        return ctx.test( HAS_NO_BLOCK_PATTERN);
+
+    }
+    bool isBlockPatternZero(uint16_type i,uint16_type j) const
+    {
+        uint16_type nbSubSpace2 = _M_X2->nSubFunctionSpace();
+        Feel::Context ctx(M_block_pattern[i*nbSubSpace2+j]);
+        return ctx.test( ZERO);
+    }
+
 
     graph_ptrtype computeGraph( size_type hints, mpl::bool_<true> );
     graph_ptrtype computeGraph( size_type hints, mpl::bool_<false> );
@@ -205,13 +285,15 @@ public:
     void mergeGraph( int row, int col, graph_ptrtype g );
 
     test_space_ptrtype testSpace() const { return _M_X1; }
-    trial_space_ptrtype trialSpace() const { return _M_X1; }
+    trial_space_ptrtype trialSpace() const { return _M_X2; }
     graph_ptrtype graph() const { return M_graph; }
     graph_ptrtype graph() { return M_graph; }
 private:
     test_space_ptrtype _M_X1;
     trial_space_ptrtype _M_X2;
     graph_ptrtype M_graph;
+    std::vector<size_type> M_block_pattern;
+
 };
 namespace detail
 {
@@ -228,12 +310,12 @@ struct compute_stencil_type
 }
 
 class StencilManagerImpl:
-    public std::map<boost::tuple<boost::shared_ptr<FunctionSpaceBase>,boost::shared_ptr<FunctionSpaceBase>,size_type>, boost::shared_ptr<GraphCSR> >,
+    public std::map<boost::tuple<boost::shared_ptr<FunctionSpaceBase>,boost::shared_ptr<FunctionSpaceBase>,size_type,std::vector<size_type> >, boost::shared_ptr<GraphCSR> >,
     public boost::noncopyable
 {
 public:
     typedef boost::shared_ptr<GraphCSR> graph_ptrtype;
-    typedef boost::tuple<boost::shared_ptr<FunctionSpaceBase>,boost::shared_ptr<FunctionSpaceBase>,size_type> key_type;
+    typedef boost::tuple<boost::shared_ptr<FunctionSpaceBase>,boost::shared_ptr<FunctionSpaceBase>,size_type,std::vector<size_type> > key_type;
     typedef std::map<key_type, graph_ptrtype> graph_manager_type;
 
 };
@@ -250,30 +332,33 @@ BOOST_PARAMETER_FUNCTION(
         )
     (optional                                   //    four optional parameters, with defaults
      (pattern,             *(boost::is_integral<mpl::_>), Pattern::COUPLED )
-        )
+     //(pattern_block,    *, (vf::Blocks<1,1,size_type>(size_type(Pattern::HAS_NO_BLOCK_PATTERN)) ) )
+     (pattern_block,    *, ( std::vector<size_type>(1,size_type(Pattern::HAS_NO_BLOCK_PATTERN)) ) )
+     )
     )
+//std::vector<size_type> block_pattern=std::vector<size_type>(1,size_type(Pattern::HAS_NO_BLOCK_PATTERN)) )
 {
     Feel::detail::ignore_unused_variable_warning(args);
     typedef typename detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
     typedef typename detail::compute_stencil_type<Args>::type stencil_type;
 
     // we look into the spaces dictionary for existing graph
-    auto git = StencilManager::instance().find( boost::make_tuple( test, trial, pattern ) );
+    auto git = StencilManager::instance().find( boost::make_tuple( test, trial, pattern, pattern_block/*.getSetOfBlocks()*/ ) );
     if (  git != StencilManager::instance().end() )
     {
-        //std::cout << "Found a  stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
+         //std::cout << "Found a  stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
         auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, git->second ) );
         return s;
     }
     else
     {
         // look for transposed stencil if it exist and transpose it to get the stencil
-        auto git_trans = StencilManager::instance().find( boost::make_tuple( trial, test, pattern ) );
+        auto git_trans = StencilManager::instance().find( boost::make_tuple( trial, test, pattern, pattern_block/*.getSetOfBlocks()*/ ) );
         //if ( git_trans != StencilManager::instance().end() )
         if ( 0 )
         {
             auto g = git_trans->second->transpose();
-            StencilManager::instance().operator[](boost::make_tuple( test, trial, pattern )) = g;
+            StencilManager::instance().operator[](boost::make_tuple( test, trial, pattern, pattern_block/*.getSetOfBlocks()*/ )) = g;
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, g ) );
             //std::cout << "Found a  transposed stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
             return s;
@@ -281,8 +366,8 @@ BOOST_PARAMETER_FUNCTION(
         else
         {
             //std::cout << "Creating a new stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
-            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern ) );
-            StencilManager::instance().operator[](boost::make_tuple( test, trial, pattern )) = s->graph();
+            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, pattern_block/*.getSetOfBlocks()*/ ) );
+            StencilManager::instance().operator[](boost::make_tuple( test, trial, pattern, pattern_block/*.getSetOfBlocks()*/ )) = s->graph();
             return s;
         }
     }
@@ -400,7 +485,13 @@ Stencil<X1,X2>::mergeGraph( int row, int col, graph_ptrtype g )
                 {
                     // if row is empty then no need to shift the dof in
                     // composite case since the merge in done block-row-wise
-                    row1_entries = row2_entries;
+                    //row1_entries = row2_entries;
+                    if (col==0) row1_entries = row2_entries;
+                    else
+                        {
+                            for (auto it = row2_entries.begin(), en = row2_entries.end() ;it!=en; ++it ) row1_entries.insert(*it+col);
+                        }
+
                 }
                 else
                 {
@@ -897,7 +988,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
 
 
 
-
+#if 0
 template<typename X1,  typename X2>
 typename Stencil<X1,X2>::graph_ptrtype
 Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> )
@@ -1039,6 +1130,410 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
     return sparsity_graph;
 }
 
+#else
+
+template<typename X1,  typename X2>
+typename Stencil<X1,X2>::graph_ptrtype
+Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> )
+{
+    //std::cout << "\n start graphInterp "<< std::endl;
+
+    typedef mpl::int_<50> order_1d_type;
+    typedef mpl::int_<20> order_2d_type;
+    typedef mpl::int_<10> order_3d_type;
+
+    typedef typename test_space_type::mesh_type test_mesh_type;
+    typedef typename trial_space_type::mesh_type trial_mesh_type;
+    typedef typename mpl::if_< mpl::equal_to<mpl::int_<test_mesh_type::nDim>,mpl::int_<1> >,
+                               order_1d_type,
+                               typename mpl::if_<mpl::equal_to<mpl::int_<test_mesh_type::nDim>,mpl::int_<2> >,
+                                                 order_2d_type,
+                                                 order_3d_type >::type>::type order_used_type;
+    typedef typename mpl::if_<mpl::bool_<test_mesh_type::element_type::is_simplex>,
+                              mpl::identity<typename _Q<order_used_type::value>::template apply<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Simplex>::type >,
+                              mpl::identity<typename _Q<order_used_type::value>::template apply<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Hypercube>::type >
+                              >::type::type theim_type;
+
+    typedef typename test_mesh_type::gm_type::precompute_type thepc_type;
+    typedef typename test_mesh_type::gm_type::precompute_ptrtype thepc_ptrtype;
+    typedef typename test_mesh_type::gm_type::template Context<vm::POINT, typename test_mesh_type::element_type> thegmc_type;
+    typedef boost::shared_ptr<thegmc_type> thegmc_ptrtype;
+
+    //-----------------------------------------------------------------------//
+
+    const size_type nprocs           = _M_X1->mesh()->comm().size();
+    const size_type proc_id           = _M_X1->mesh()->comm().rank();
+    const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
+    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
+    const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
+    const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
+    const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
+    const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
+
+    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
+                                                  first1_dof_on_proc, last1_dof_on_proc,
+                                                  first2_dof_on_proc, last2_dof_on_proc ) );
+
+    typedef typename test_mesh_type::element_const_iterator mesh_element_const_iterator;
+    mesh_element_const_iterator       elem_it  = _M_X1->mesh()->beginElementWithProcessId( proc_id );
+    const mesh_element_const_iterator elem_en  = _M_X1->mesh()->endElementWithProcessId( proc_id );
+
+    auto locToolForXh2 = _M_X2->mesh()->tool_localization();
+    locToolForXh2->updateForUse();
+    locToolForXh2->setExtrapolation(false);
+    //locTool->kdtree()->nbNearNeighbor(_M_X2->mesh()->numElements() );
+    auto locToolForXh1 = _M_X1->mesh()->tool_localization();
+    locToolForXh1->updateForUse();
+    locToolForXh1->setExtrapolation(false);
+
+
+#define FEEL_EXPORT_GRAPH 0
+#if FEEL_EXPORT_GRAPH
+#include <feel/feelfilters/exporter.hpp>
+#endif
+
+#if FEEL_EXPORT_GRAPH
+    std::map<size_type,std::list<size_type> > mapBetweenMeshes;
+#endif
+
+    std::vector<size_type>
+        element_dof1,
+        element_dof2;
+
+    std::set<size_type> neighLocalizedInXh1;
+
+    //-----------------------------------------------------------------------//
+
+    if (_M_X1->nDof()>1)
+        {
+            for ( ; elem_it != elem_en; ++elem_it)
+                {
+                    /*mesh_element_1_type*/auto const& elem = *elem_it;
+
+                    // Get the global indices of the DOFs with support on this element
+                    element_dof1 = _M_X1->dof()->getIndices( elem.id() );
+
+                    const uint16_type  n1_dof_on_element = element_dof1.size();
+                    //const uint16_type  n2_dof_on_element = element_dof2.size();
+
+                    std::vector<boost::tuple<bool,size_type> > hasFinds(n1_dof_on_element,boost::make_tuple(false,invalid_size_type_value));
+
+                    for (size_type i=0; i<n1_dof_on_element; i++)
+                        {
+                            const size_type ig1 = element_dof1[i];
+                            const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
+                            const int ncomp1 = i / ndofpercomponent1;
+                            //const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
+
+                            auto ptRealDof = boost::get<0>(_M_X1->dof()->dofPoint(ig1));
+                            //std::cout << "Pt dof " << ptRealDof<<std::endl;
+
+                            auto resTemp = locToolForXh2->searchElement(ptRealDof);
+                            bool hasFind = resTemp.get<0>();
+                            std::set<size_type > listTup;
+                            if ( hasFind )
+                                {
+                                    listTup.insert(resTemp.get<1>());
+                                    hasFinds[i] = boost::make_tuple(true,resTemp.get<1>());
+                                    // maybe is on boundary->more elts
+                                    size_type idElt1 = elem.id();
+                                    size_type idElt2 = resTemp.get<1>();
+                                    auto const& geoelt2 = _M_X2->mesh()->element(idElt2);
+                                    std::vector<size_type> neighbor_ids;//(geoelt2.nNeighbors());
+                                    for (uint16_type ms=0; ms < geoelt2.nNeighbors(); ms++)
+                                        {
+                                            size_type neighbor_id = geoelt2.neighbor(ms).first;
+                                            if (neighbor_id!=invalid_size_type_value)
+                                                neighbor_ids.push_back(neighbor_id);
+                                        }
+                                    auto resIsIn = locToolForXh2->isIn(neighbor_ids,ptRealDof);
+                                    uint16_type cpt=0;
+                                    for (auto it=resIsIn.get<1>().begin(),en=resIsIn.get<1>().end();it<en;++it,++cpt)
+                                        {
+                                            if(*it)
+                                                {
+                                                    listTup.insert(neighbor_ids[cpt]);
+                                                }
+                                        }
+                                    auto res_it = listTup.begin();
+                                    auto res_en = listTup.end();
+                                    for ( ; res_it != res_en ; ++res_it)
+                                        {
+#if FEEL_EXPORT_GRAPH
+                                            //mapBetweenMeshes[elem.id()].push_back(*res_it);
+                                            mapBetweenMeshes[*res_it].push_back(elem.id());
+#endif
+                                            element_dof2 = _M_X2->dof()->getIndices( *res_it );
+
+                                            graph_type::row_type& row = sparsity_graph->row(ig1);
+                                            bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
+                                            row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                                            row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                                            //if ( do_less ) {}
+                                            row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                                        }//res
+                                } // if (hasFind)
+                            else
+                                {
+                                            //std::cout << "\n not find"<<std::endl;
+                                            // row empty
+                                            graph_type::row_type& row = sparsity_graph->row(ig1);
+                                            bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
+                                            row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                                            row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                                            row.get<2>().clear();
+                                }
+                        } // for (size_type i=0; i<n1_dof_on_element; i++)
+
+                    uint16_type nbFind = hasFinds.size();
+                    bool doQ=false;
+                    size_type id1,id2;
+                    for( uint16_type nF = 0 ; nF<nbFind && !doQ ; ++nF )
+                        if (hasFinds[nF].get<0>())
+                            {
+                                id1=hasFinds[nF].get<1>();
+                                for( uint16_type nF2 = 0 ; nF2<nbFind && !doQ  ; ++nF2 )
+                                    {
+                                        if ( hasFinds[nF2].get<0>())
+                                            {
+                                                id2=hasFinds[nF2].get<1>();
+                                                if (id1!=id2)
+                                                    doQ=true; //if( !_M_X2->mesh()->element(id1).isNeighbor(_M_X2->mesh()->element(id2) ) )  doQ=true;
+                                            }
+                                    }
+                            }
+
+                    if (doQ)
+                        {
+                            theim_type theim;
+
+                            thepc_ptrtype geopc( new thepc_type( elem.gm(), theim.points() ) );
+                            thegmc_ptrtype gmc( new thegmc_type(elem.gm(), elem, geopc ) );
+                            for( int q = 0; q <  gmc->nPoints(); ++ q )
+                                {
+                                    auto resQuad = locToolForXh2->searchElement(gmc->xReal( q ));
+                                    if (resQuad.get<0>())
+                                        {
+#if FEEL_EXPORT_GRAPH
+                                            mapBetweenMeshes[resQuad.get<1>()].push_back(elem.id());
+#endif
+                                            element_dof2 = _M_X2->dof()->getIndices( resQuad.get<1>() );
+                                            for (size_type i=0; i<n1_dof_on_element; i++)
+                                                {
+                                                    const size_type ig1 = element_dof1[i];
+                                                    graph_type::row_type& row = sparsity_graph->row(ig1);
+                                                    bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
+                                                    row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                                                    row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                                                    //if ( do_less ) {}
+                                                    row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                                                }
+                                        }
+                                }
+                        } // if (doQ)
+                } // for ( ; elem_it ... )
+        } //Xh1->nof >1
+    else //case Xh1->nof == 1
+        {
+            for ( ; elem_it != elem_en; ++elem_it)
+                {
+                    /*mesh_element_1_type*/auto const& elem = *elem_it;
+
+                    // Get the global indices of the DOFs with support on this element
+                    element_dof1 = _M_X1->dof()->getIndices( elem.id() );
+
+                    const uint16_type nPtGeo = elem.G().size2();
+                    std::vector<boost::tuple<bool,size_type> > hasFinds(nPtGeo,boost::make_tuple(false,invalid_size_type_value));
+
+                    for (size_type i=0; i<nPtGeo; i++)
+                        {
+                            const size_type ig1 = element_dof1[0];
+                            //const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
+                            //const int ncomp1 = i / ndofpercomponent1;
+                            //const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
+
+                            typename matrix_node<typename test_mesh_type::value_type>::type ptReal(test_mesh_type::nRealDim , 1 );
+                            ublas::column( ptReal ,0 ) = ublas::column( elem.G(),i );
+
+                            //auto res = locTool->searchElements(ublas::column( elem.G(),i )/*ptReal*/);
+                            //auto hasFind = res.get<0>();
+
+                            auto resTemp = locToolForXh2->searchElement(ublas::column( elem.G(),i ));
+                            bool hasFind = resTemp.get<0>();
+                            std::set<size_type > listTup;
+
+                            if ( hasFind )
+                                {
+                                    listTup.insert(resTemp.get<1>());
+                                    hasFinds[i] = boost::make_tuple(true,resTemp.get<1>());
+                                    // maybe is on boundary->more elts
+                                    size_type idElt1 = elem.id();
+                                    size_type idElt2 = resTemp.get<1>();
+                                    auto const& geoelt2 = _M_X2->mesh()->element(idElt2);
+                                    std::vector<size_type> neighbor_ids(geoelt2.nNeighbors());//neighbor_ids.clear();//(geoelt2.nNeighbors());
+                                    for (uint16_type ms=0; ms < geoelt2.nNeighbors(); ms++)
+                                        {
+                                            size_type neighbor_id = geoelt2.neighbor(ms).first;
+                                            if (neighbor_id!=invalid_size_type_value) neighbor_ids.push_back(neighbor_id);
+                                            //neighbor_ids[ms]=neighbor_id;
+                                        }
+
+                                    auto resIsIn = locToolForXh2->isIn(neighbor_ids,ublas::column( elem.G(),i ));
+                                    uint16_type cpt=0;
+                                    for (auto it=resIsIn.get<1>().begin(),en=resIsIn.get<1>().end();it<en;++it,++cpt)
+                                        {
+                                            if(*it)
+                                                {
+                                                    listTup.insert(neighbor_ids[cpt]);
+                                                }
+                                            else if (test_mesh_type::nDim==trial_mesh_type::nDim) // pt n'est pas chez le voison, peut-etre les pts G()(si dim=dim!!!)
+                                                {
+                                                    for ( auto it_neigh = neighbor_ids.begin(), en_neigh = neighbor_ids.end() ; it_neigh != en_neigh ; ++it_neigh )
+                                                        {
+                                                            if ((sparsity_graph->row(ig1)).get<2>().find(*it_neigh)==(sparsity_graph->row(ig1)).get<2>().end())
+                                                                {
+                                                                    if (neighLocalizedInXh1.find(*it_neigh)==neighLocalizedInXh1.end())
+                                                                        {
+                                                                            neighLocalizedInXh1.insert(*it_neigh);
+                                                                            bool findNeih=false;
+                                                                            auto const& geoeltNEW = _M_X2->mesh()->element(*it_neigh);
+                                                                            const uint16_type nPtGeoBis = _M_X2->mesh()->element(*it_neigh).G().size2();
+                                                                            for (size_type iii=0; iii<nPtGeoBis && !findNeih ; iii++)
+                                                                                {
+                                                                                    auto  resBis = locToolForXh1->searchElement(ublas::column( geoeltNEW.G(),iii ));
+                                                                                    if (resBis.get<0>()) { listTup.insert(*it_neigh);findNeih=true;}
+                                                                                }
+                                                                        }
+                                                                }
+                                                        }
+                                                } //else
+                                        } // for (auto it=resIsIn...
+                                    auto res_it = listTup.begin();
+                                    auto res_en = listTup.end();
+                                    for ( ; res_it != res_en ; ++res_it)
+                                        {
+#if FEEL_EXPORT_GRAPH
+                                            //mapBetweenMeshes[elem.id()].push_back(*res_it);
+                                            mapBetweenMeshes[*res_it/*->get<0>()*/].push_back(elem.id());
+#endif
+
+
+                                            element_dof2 = _M_X2->dof()->getIndices( *res_it/*->get<0>()*/ );
+
+                                            graph_type::row_type& row = sparsity_graph->row(ig1);
+                                            bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
+                                            row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                                            row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                                            //if ( do_less ) {}
+                                            row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                                        }
+                                } // hasFind
+                        } // for (size_type i=0; i<nPtGeo; i++)
+
+                    uint16_type nbFind = hasFinds.size();
+                    bool doQ=false;
+                    size_type id1,id2;
+                    for( uint16_type nF = 0 ; nF<nbFind && !doQ ; ++nF )
+                        if (hasFinds[nF].get<0>())
+                            {
+                                id1=hasFinds[nF].get<1>();
+                                for( uint16_type nF2 = 0 ; nF2<nbFind && !doQ  ; ++nF2 )
+                                    {
+                                        if ( hasFinds[nF2].get<0>())
+                                            {
+                                                id2=hasFinds[nF2].get<1>();
+                                                if (id1!=id2)
+                                                    doQ=true; //if( !_M_X2->mesh()->element(id1).isNeighbor(_M_X2->mesh()->element(id2) ) )  doQ=true;
+                                            }
+                                    }
+                            }
+
+                    if (doQ)
+                        {
+                            theim_type theim;
+                            thepc_ptrtype geopc( new thepc_type( elem.gm(), theim.points() ) );
+                            thegmc_ptrtype gmc( new thegmc_type(elem.gm(), elem, geopc ) );
+                            for( int q = 0; q <  gmc->nPoints(); ++ q )
+                                {
+                                    auto resQuad = locToolForXh2->searchElement(gmc->xReal( q ));
+                                    if (resQuad.get<0>())
+                                        {
+#if FEEL_EXPORT_GRAPH
+                                            mapBetweenMeshes[resQuad.get<1>()].push_back(elem.id());
+#endif
+                                            element_dof2 = _M_X2->dof()->getIndices( resQuad.get<1>() );
+                                            //for (size_type i=0; i<n1_dof_on_element; i++)
+                                            //   {
+                                                    const size_type ig1 = element_dof1[0];
+                                                    graph_type::row_type& row = sparsity_graph->row(ig1);
+                                                    bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
+                                                    row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                                                    row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                                                    //if ( do_less ) {}
+                                                    row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                                                    //    }
+                                        }
+                                }
+                        } // if (doQ)
+
+
+                } //  for ( ; elem_it != elem_en; ++elem_it)
+        } // M_X1->nDof==1
+
+    locToolForXh1->setExtrapolation(true);
+    locToolForXh2->setExtrapolation(true);
+    //locTool->kdtree()->nbNearNeighbor( 15 );
+
+    sparsity_graph->close();
+
+#if FEEL_EXPORT_GRAPH
+#if 0
+    typedef mesh_1_type mesh_export_type;
+    typedef FunctionSpace<mesh_1_type, bases<Lagrange<0, Scalar,Discontinuous> > > space_disc_type;
+    auto spaceGraphProj = space_disc_type::New(_M_X1->mesh());
+    auto elem_itt  = _M_X1->mesh()->beginElementWithProcessId( proc_id );
+    auto elem_ent  = _M_X1->mesh()->endElementWithProcessId( proc_id );
+#else
+    typedef mesh_2_type mesh_export_type;
+    typedef FunctionSpace<mesh_2_type, bases<Lagrange<0, Scalar,Discontinuous> > > space_disc_type;
+    auto spaceGraphProj = space_disc_type::New(_M_X2->mesh());
+    auto elem_itt  = _M_X2->mesh()->beginElementWithProcessId( proc_id );
+    auto elem_ent  = _M_X2->mesh()->endElementWithProcessId( proc_id );
+#endif
+    auto graphProj = spaceGraphProj->element();graphProj.zero();
+
+    for ( ; elem_itt != elem_ent; ++elem_itt)
+        {
+            if (mapBetweenMeshes.find(elem_itt->id()) != mapBetweenMeshes.end() )
+                {
+                    if (mapBetweenMeshes.find(elem_itt->id())->second.size()>0)
+                        {
+                            element_dof1 = spaceGraphProj->dof()->getIndices( elem_itt->id() );
+                            const uint16_type n1_dof_on_element = element_dof1.size();
+                            for (uint16_type i=0; i<n1_dof_on_element; i++)
+                                {
+                                    const size_type ig1 = element_dof1[i];
+                                    //std::cout << "ig1 "<<ig1 << " graphProj.nDof() "<< graphProj.nDof() <<std::endl;
+                                    graphProj(ig1) = 1;//graphProj.set(0, 1. );
+                                }
+                        }
+                }
+        }
+
+    auto exporter = boost::shared_ptr<Feel::Exporter<mesh_export_type> >( Feel::Exporter<mesh_export_type>::New( "ensight", "ExportGraph" ) );
+    exporter->step(0)->setMesh(graphProj.mesh() );
+    exporter->step(0)->add( "graphProj", graphProj );
+    exporter->save();
+#endif
+    //std::cout << "\n finish graphInterp "<< std::endl;
+    return sparsity_graph;
+}
+
+
+
+
+
+#endif
 
 }
 #endif
