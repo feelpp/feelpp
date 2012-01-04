@@ -540,16 +540,6 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
     std::cout << "L2 norm of jump at interface  \n" ;
     std::cout << "||u1-u2||_L2=" << math::sqrt(error) << "\n";
 
-    Log() << "----------L2 errors---------- \n" ;
-    Log() << "||u1_error||_L2=" << L2error1 << "\n";
-    Log() << "||u2_error||_L2=" << L2error2 << "\n";
-    Log() << "----------H1 errors---------- \n" ;
-    Log() << "||u1_error||_H1=" << H1error1 << "\n";
-    Log() << "||u2_error||_H1=" << H1error2 << "\n";
-    Log() << "||u_error||_H1=" << global_error << "\n";
-    Log() << "L2 norm of jump at interface  \n" ;
-    Log() << "||u1-u2||_L2=" << math::sqrt(error) << "\n";
-
     this->exportResults(u1,u2,mu);
 
 } // Mortar::run
@@ -570,7 +560,7 @@ main( int argc, char** argv )
     }
 
     app.add( new Mortar<2,2,2>( app.vm(), app.about() ) );
-    // app.add( new Mortar<2,2,3>( app.vm(), app.about() ) );
+    app.add( new Mortar<2,2,3>( app.vm(), app.about() ) );
 
     app.run();
 }
