@@ -520,13 +520,11 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
     FL->close();
 
 
-    auto BLL = M_backend->newMatrix( Lh1, Lh1 );
+    auto BLL = M_backend->newZeroMatrix( _test=Lh1, _trial=Lh1 );
+    //form2( _trial=Lh1, _test=Lh1, _matrix=BLL, _init=true );
+    //BLL->close();
 
-    form2( _trial=Lh1, _test=Lh1, _matrix=BLL, _init=true );
-
-    BLL->close();
-
-    auto B1t = M_backend->newMatrix( Lh1, Xh1 );
+    auto B1t = M_backend->newMatrix( _test=Lh1, _trial=Xh1 );
     Log() << "init_B1t starts\n";
     timers["init_B1t"].first.restart();
 
@@ -541,7 +539,7 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
 
     B1t->close();
 
-    auto B2t = M_backend->newMatrix( Lh1, Xh2 );
+    auto B2t = M_backend->newMatrix( _trial=Lh1, _test=Xh2, _buildGraphWithTranspose=true );
     Log() << "init_B2t starts\n";
     timers["init_B2t"].first.restart();
 
@@ -555,11 +553,19 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
 
     B2t->close();
 
-    auto myb = Blocks<3,3,double>()<< D1 << B12 << B1t
-                                   << B21 << D2 << B2t
-                                   << B1 << B2  << BLL ;
-    auto AbB = M_backend->newBlockMatrix(myb);
+    auto myb = Blocks<3,3>()<< D1 << B12 << B1t
+                            << B21 << D2 << B2t
+                            << B1 << B2  << BLL ;
+    auto AbB = M_backend->newBlockMatrix(myb,false);
     AbB->close();
+
+#if 0
+    form2( _trial=Lh1, _test=Xh2, _matrix=AbB,
+           _rowstart= ..,
+           _colstart= .. ) +=
+        integrate( markedfaces(mesh1,gamma1), -id(v2)*idt(mu) );
+#endif
+
 
     auto FbB = M_backend->newVector( F1->size()+F2->size()+FL->size(),F1->size()+F2->size()+FL->size() );
     auto UbB = M_backend->newVector( F1->size()+F2->size()+FL->size(),F1->size()+F2->size()+FL->size() );
