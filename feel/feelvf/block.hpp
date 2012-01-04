@@ -34,6 +34,7 @@
 #include <list>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelalg/matrixsparse.hpp>
 
 namespace Feel
 {
@@ -178,6 +179,63 @@ operator<<( std::ostream& __os, Block const& __b )
     return __os;
 }
 /// \endcond
+
+
+template <int NR, int NC, typename T= boost::shared_ptr< MatrixSparse<double> > >
+struct Blocks
+{
+    static const uint16_type NBLOCKROWS = NR;
+    static const uint16_type NBLOCKCOLS = NC;
+
+    typedef T block_type;
+    //typedef boost::shared_ptr<block_type> block_ptrtype;
+    //typedef MatrixSparse<T> matrix_type;
+    //typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+
+    Blocks()
+        :
+        M_vec(NR*NC),
+        M_cptToBuild(0)
+    {
+        //M_vec.clear();
+    }
+
+    Blocks(block_type a)
+        :
+        M_vec(NR*NC, a),
+        M_cptToBuild(0)
+    {}
+
+    Blocks(Blocks<NR,NC,T> const & b)
+        :
+        M_vec(b.M_vec),
+        M_cptToBuild(b.M_cptToBuild)
+    {}
+
+    Blocks<NR,NC,T>
+    operator<<(block_type m)
+    {
+        //M_vec.push_back(m);
+        M_vec[M_cptToBuild]=m;
+        ++M_cptToBuild;
+        return *this;
+    }
+
+    block_type
+    operator()(int16_type c1,int16_type c2)
+    {
+        return M_vec[c1*NBLOCKCOLS+c2];
+    }
+
+    std::vector<block_type>
+    getSetOfBlocks() const { return M_vec; }
+
+private :
+    std::vector<block_type> M_vec;
+    int16_type M_cptToBuild;
+};
+
+
 } // vf
 } // feel
 #endif /* __Block_H */
