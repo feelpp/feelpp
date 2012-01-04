@@ -1189,6 +1189,97 @@ Mesh<Shape, T>::Localization::init()
 
 }
 
+
+
+template<typename Shape, typename T>
+bool
+Mesh<Shape, T>::Localization::isIn(size_type _id, const node_type & _pt)
+{
+    typedef typename self_type::gm_type::reference_convex_type ref_convex_type;
+    typedef typename self_type::gm1_type::reference_convex_type ref_convex1_type;
+
+    bool isin=false;
+    double dmin;
+    node_type __x_ref;
+
+    //get element with the id
+    auto const& elt = M_mesh->element(_id);
+
+    if ( elt.isOnBoundary() )
+        {
+            // get inverse geometric transformation
+            typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
+            //apply the inverse geometric transformation for the point p
+            gic.setXReal( _pt);
+            __x_ref=gic.xRef();
+            // the point is in the reference element ?
+            ref_convex_type refelem;
+            boost::tie( isin, dmin ) = refelem.isIn( gic.xRef() );
+        }
+    else
+        {
+            // get inverse geometric transformation
+            typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt, mpl::int_<1>() );
+            //apply the inverse geometric transformation for the point p
+            gic.setXReal( _pt);
+            __x_ref=gic.xRef();
+            // the point is in the reference element ?
+            ref_convex1_type refelem1;
+            boost::tie( isin, dmin ) = refelem1.isIn( gic.xRef() );
+        }
+    return isin;
+}
+
+template<typename Shape, typename T>
+boost::tuple<uint16_type,std::vector<bool> >
+Mesh<Shape, T>::Localization::isIn(std::vector<size_type> _ids, const node_type & _pt)
+{
+    typedef typename self_type::gm_type::reference_convex_type ref_convex_type;
+    typedef typename self_type::gm1_type::reference_convex_type ref_convex1_type;
+
+    uint16_type nbId = _ids.size();
+    std::vector<bool> isin(_ids.size(),false);
+    bool isin2=false;
+    double dmin;
+    node_type __x_ref;
+
+    uint16_type nbIsIn=0;
+
+    for ( uint16_type i = 0;i< nbId ;++i)
+        {
+           //get element with the id
+            auto const& elt = M_mesh->element(_ids[i]);
+
+            if ( elt.isOnBoundary() )
+                {
+                    // get inverse geometric transformation
+                    typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
+                    //apply the inverse geometric transformation for the point p
+                    gic.setXReal( _pt);
+                    __x_ref=gic.xRef();
+                    // the point is in the reference element ?
+                    ref_convex_type refelem;
+                    boost::tie( isin2, dmin ) = refelem.isIn( gic.xRef() );
+                    isin[i] = isin2;
+                }
+            else
+                {
+                    // get inverse geometric transformation
+                    typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt, mpl::int_<1>() );
+                    //apply the inverse geometric transformation for the point p
+                    gic.setXReal( _pt);
+                    __x_ref=gic.xRef();
+                    // the point is in the reference element ?
+                    ref_convex1_type refelem1;
+                    boost::tie( isin2, dmin ) = refelem1.isIn( gic.xRef() );
+                    isin[i] = isin2;
+                }
+            if (isin[i]) ++nbIsIn;
+        }
+    return boost::make_tuple(nbIsIn,isin);
+}
+
+
 template<typename Shape, typename T>
 boost::tuple<bool, size_type, typename Mesh<Shape, T>::node_type>
 Mesh<Shape, T>::Localization::searchElement(const node_type & p)
@@ -1348,7 +1439,9 @@ Mesh<Shape, T>::Localization::searchElements(const node_type & p)
     FEEL_ASSERT( IsInit == true )
         ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
-
+    
+    //this->kdtree()->nbNearNeighbor(this->mesh()->numElements());
+    
     std::list< std::pair<size_type, uint> > ListTri;
     searchInKdTree(p,ListTri);
 
@@ -1399,15 +1492,18 @@ Mesh<Shape, T>::Localization::searchElements(const node_type & p)
 
                     // the point is in the reference element ?
                     boost::tie( isin, dmin ) = refelem1.isIn( gic.xRef() );
+                    //std::cout << "gic.xRef()" << gic.xRef() << std::endl;
                 }
 
             if (isin) { newlistelts.push_back(boost::make_tuple(itLT->first,__x_ref) );find = true; }
+            //if (find) std::cout << elt.G() << std::endl;
+
             //if not inside, continue the research with an other element
             //if (!isin) ++itLT;
             ++itLT;
         }
 
-
+    if (!find) std::cout << "\n WARNING EXTRAPOLATION IN SEARCHELEMENTS!!!"<<std::endl;
 
     if (find)
         return boost::make_tuple(true,newlistelts);
