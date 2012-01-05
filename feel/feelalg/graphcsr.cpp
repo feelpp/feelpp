@@ -33,14 +33,12 @@
 
 namespace Feel
 {
-GraphCSR::GraphCSR( size_type n, size_type nc,
+GraphCSR::GraphCSR( size_type n,
                     size_type first_row_entry_on_proc,
                     size_type last_row_entry_on_proc,
                     size_type first_col_entry_on_proc,
                     size_type last_col_entry_on_proc )
     :
-    M_nrows( n ),
-    M_ncols( nc ),
     M_first_row_entry_on_proc( first_row_entry_on_proc ),
     M_last_row_entry_on_proc( last_row_entry_on_proc ),
     M_first_col_entry_on_proc( first_col_entry_on_proc ),
@@ -57,8 +55,6 @@ GraphCSR::GraphCSR( size_type n, size_type nc,
 
 GraphCSR::GraphCSR( GraphCSR const & g )
     :
-    M_nrows( g.M_nrows ),
-    M_ncols( g.M_ncols ),
     M_first_row_entry_on_proc( g.M_first_row_entry_on_proc ),
     M_last_row_entry_on_proc( g.M_last_row_entry_on_proc ),
     M_first_col_entry_on_proc( g.M_first_col_entry_on_proc ),
@@ -83,8 +79,6 @@ GraphCSR::operator=( GraphCSR const& g )
 {
     if ( this != &g )
         {
-            M_nrows = g.M_nrows;
-            M_ncols = g.M_ncols;
             M_first_row_entry_on_proc = g.M_first_row_entry_on_proc;
             M_last_row_entry_on_proc = g.M_last_row_entry_on_proc;
             M_first_col_entry_on_proc = g.M_first_col_entry_on_proc;
@@ -133,7 +127,7 @@ GraphCSR::transpose()
 
     if (M_graphT) return M_graphT;
     this->close();
-    M_graphT = self_ptrtype(new self_type( M_ncols, M_nrows,
+    M_graphT = self_ptrtype(new self_type( M_n_total_nz.size(),
                                            M_first_col_entry_on_proc,
                                            M_last_col_entry_on_proc,
                                            M_first_row_entry_on_proc,
@@ -147,52 +141,21 @@ GraphCSR::transpose()
                 {
                     // num line
                     size_type globalindex = it->first;
+
                     size_type localindex = boost::get<1>( irow );
-                    //std::cout << "index global: " << globalindex << " local :" << localindex << "\n";
                     for ( auto colit = boost::get<2>( irow ).begin(), colen=boost::get<2>( irow ).end() ; colit!=colen ; ++colit )
                         {
                             self_type::row_type& row = M_graphT->row(*colit);
-                            // processor rank
                             row.get<0>()=irow.get<0>();
-                            // Warning : wrong in parallel
-                            // local index  of the column
+                            // Warning : wrong in parallele
                             row.get<1>()=*colit;//globalindex;
                             row.get<2>().insert(globalindex);
-                            //std::cout << " row: " << row.get<1>() << " col: ";
-                            //for( auto r : row.get<2>() ) { std::cout << r << "  "; }
-                            //std::cout << std::endl;
                         }
-
                 }
         }
+
     M_graphT->close();
 
-#if 0
-    this->showMe();
-    M_graphT->showMe();
-
-    Debug(5050) << "sizes:" << M_ia.size() << "," << M_ja.size()  << std::endl;
-    std::cout << "ia:\n";
-    std::for_each( M_ia.begin(), M_ia.end(), [](const int& i ){ std::cout << i << " "; } );
-    std::cout << "\n" << std::endl;
-    std::cout << "ja:\n";
-    std::for_each( M_ja.begin(), M_ja.end(), [](const int& i ){ std::cout << i << " "; } );
-    std::cout << std::endl;
-    std::cout << "a:\n";
-    std::for_each( M_a.begin(), M_a.end(), [](const double& i ){ std::cout << i << " "; } );
-    std::cout << std::endl;
-
-    std::cout << "T sizes:" << M_graphT->ia().size() << "," << M_graphT->ja().size()  << std::endl;
-    std::cout << "T ia:\n";
-    std::for_each( M_graphT->ia().begin(), M_graphT->ia().end(), [](const int& i ){ std::cout << i << " "; } );
-    std::cout << "\n" << std::endl;
-    std::cout << "T ja:\n";
-    std::for_each( M_graphT->ja().begin(), M_graphT->ja().end(), [](const int& i ){ std::cout << i << " "; } );
-    std::cout << std::endl;
-    std::cout << "T a:\n";
-    std::for_each( M_graphT->a().begin(), M_graphT->a().end(), [](const double& i ){ std::cout << i << " "; } );
-    std::cout << std::endl;
-#endif
     return M_graphT;
 }
 
@@ -226,14 +189,13 @@ GraphCSR::close()
 {
     if ( M_is_closed )
     {
-       std::cout << "already closed graph " << this << "...\n";
+       //std::cout << "already closed graph " << this << "...\n";
         return ;
     }
     M_is_closed = true;
 
-    std::cout << "closing graph " << this << "...\n";
+    //std::cout << "closing graph " << this << "...\n";
     boost::timer ti;
-
     Debug(5050) << "[close] nrows=" << this->size() << "\n";
     Debug(5050) << "[close] firstRowEntryOnProc()=" << this->firstRowEntryOnProc() << "\n";
     Debug(5050) << "[close] lastRowEntryOnProc()=" << this->lastRowEntryOnProc() << "\n";
@@ -241,16 +203,12 @@ GraphCSR::close()
     Debug(5050) << "[close] lastColEntryOnProc()=" << this->lastColEntryOnProc() << "\n";
     Debug(5050) << "[close] M_n_total_nz=" << M_n_total_nz.size() << "\n";
     Debug(5050) << "[close] M_storage size=" << M_storage.size() << "\n";
-    if ( M_storage.size() > M_nrows )
-    {
-        std::cout << "Problem with storage:\n"
-                  << "GraphCSR::storage.size: " << M_storage.size() << "\n"
-                  << "GraphCSR::nrows: " << M_nrows << "\n";
-        //throw std::logic_error("invalid graph");
-    }
-    M_n_total_nz.resize( M_nrows, 0 );
-    M_n_nz.resize( M_nrows, 0);
-    M_n_oz.resize( M_nrows, 0);
+    M_n_total_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
+    M_n_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
+    M_n_oz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
+
+    std::fill( M_n_nz.begin(), M_n_nz.end(), 0 );
+    std::fill( M_n_oz.begin(), M_n_oz.end(), 0 );
 
     size_type sum_nz = 0;
     M_max_nnz = 0;
@@ -314,15 +272,13 @@ GraphCSR::close()
 
 
         }
-    // don't forget also matrixpetsc
+
+
+
+#if 1
 #if 0
-    std::cout << "building csr matrix ...\n" << std::endl;
-    std::cout << "  - nrows = " << M_nrows << "\n";
-    std::cout << "  - ncols = " << M_ncols << "\n";
-    std::cout << "  - sum_nz = " << sum_nz << "\n";
-    std::cout << "  - storage = " << M_storage.size() << "\n" << std::endl;
-    M_ia.resize( M_nrows+1,-1 );
-    M_ja.resize( sum_nz,-1 );
+    M_ia.resize( M_storage.size()+1 );
+    M_ja.resize( sum_nz );
     M_a.resize(  sum_nz, 0. );
     size_type col_cursor = 0;
     auto jait = M_ja.begin();
@@ -330,23 +286,35 @@ GraphCSR::close()
     {
         row_type const& irow = it->second;
         size_type localindex = boost::get<1>( irow );
-        std::cout << "row: " << localindex << " cursor " << col_cursor << std::endl;
         M_ia[localindex] = col_cursor;
         jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
         col_cursor+=boost::get<2>( irow ).size();
-        std::cout << "row: " << localindex << " cursor " << col_cursor << "done" << std::endl;
     }
-    M_ia[M_nrows] = sum_nz;
-    for( auto it = M_ia.rbegin(), en = M_ia.rend(); it != en; ++it )
+    M_ia[M_storage.size()] = sum_nz;
+#else // vincent
+    M_ia.resize( M_last_row_entry_on_proc+2,0 );
+    M_ja.resize( sum_nz );
+    M_a.resize(  sum_nz, 0. );
+    size_type col_cursor = 0;
+    auto jait = M_ja.begin();
+    //for( auto it = M_storage.begin(), en = M_storage.end()  ; it != en; ++it )
+    for( int i = 0 ; i<(M_last_row_entry_on_proc+1); ++i )
     {
-        if ( *it  == -1 )
-        {
-            *it = *boost::prior( it );
-        }
+        if (M_storage.find(i)!=M_storage.end())
+            {
+                row_type const& irow = this->row(i);
+                size_type localindex = boost::get<1>( irow );
+                M_ia[localindex] = col_cursor;
+                jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
+                col_cursor+=boost::get<2>( irow ).size();
+            }
+        else
+            {
+                M_ia[i] = col_cursor;
+            }
     }
-
-
-    std::cout << "building csr matrix done.\n" << std::endl;
+    M_ia[M_last_row_entry_on_proc+1] = sum_nz;
+#endif
 #endif // 0
 
 } // close
