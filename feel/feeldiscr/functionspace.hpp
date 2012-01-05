@@ -2216,7 +2216,7 @@ public:
     /**
      * \return the starting value of the global dof numbering
      */
-    size_type nDofStart( size_type i = invalid_size_type_value ) const
+    size_type nDofStart( size_type i = /*invalid_size_type_value*/0 ) const
     {
         size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), detail::NbDof( 0, i ) );
         return start;
