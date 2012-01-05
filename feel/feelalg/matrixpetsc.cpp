@@ -138,6 +138,7 @@ void MatrixPetsc<T>::init (const size_type m,
 
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
     ierr = MatSetOption(_M_mat,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);
+    MatSetOption(_M_mat,MAT_IGNORE_ZERO_ENTRIES,PETSC_FALSE);
 #elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
     ierr = MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
 #else
@@ -292,6 +293,7 @@ void MatrixPetsc<T>::init (const size_type m,
 
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
     MatSetOption(_M_mat,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);
+    MatSetOption(_M_mat,MAT_IGNORE_ZERO_ENTRIES,PETSC_FALSE);
 #elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
     MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
 #else
@@ -403,10 +405,29 @@ void MatrixPetsc<T>::zero ()
 
     int ierr=0;
 
-    ierr = MatZeroEntries(_M_mat);
-    CHKERRABORT(this->comm(),ierr);
+    PetscBool is_assembled;
+    MatAssembled( _M_mat, &is_assembled );
+    if ( is_assembled )
+    {
+        ierr = MatZeroEntries(_M_mat);
+        CHKERRABORT(this->comm(),ierr);
 
-    this->zeroEntriesDiagonal();
+        this->zeroEntriesDiagonal();
+    }
+    else
+    {
+        if ( this->graph() )
+        {
+            std::vector<PetscInt> cols( this->graph()->nCols(), 0 );
+            std::vector<PetscScalar> v( this->graph()->nCols(), 0. );
+            for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
+            {
+                PetscInt row = it->second.get<1>();
+                std::copy( it->second.get<2>().begin(), it->second.get<2>().end(), cols.begin() );
+                MatSetValues( _M_mat, 1, &row, it->second.get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
+            }
+        }
+    }
 
 }
 
@@ -417,11 +438,29 @@ void MatrixPetsc<T>::zero ( size_type /*start1*/, size_type /*stop1*/, size_type
 
     int ierr=0;
 
-    ierr = MatZeroEntries(_M_mat);
-    CHKERRABORT(this->comm(),ierr);
+    PetscBool is_assembled;
+    MatAssembled( _M_mat, &is_assembled );
+    if ( is_assembled )
+    {
+        ierr = MatZeroEntries(_M_mat);
+        CHKERRABORT(this->comm(),ierr);
 
-    //this->zeroEntriesDiagonal();
-
+        //this->zeroEntriesDiagonal();
+    }
+    else
+    {
+        if ( this->graph() )
+        {
+            std::vector<PetscInt> cols( this->graph()->nCols(), 0 );
+            std::vector<PetscScalar> v( this->graph()->nCols(), 0. );
+            for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
+            {
+                PetscInt row = it->second.get<1>();
+                std::copy( it->second.get<2>().begin(), it->second.get<2>().end(), cols.begin() );
+                MatSetValues( _M_mat, 1, &row, it->second.get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
+            }
+        }
+     }
 }
 
 
