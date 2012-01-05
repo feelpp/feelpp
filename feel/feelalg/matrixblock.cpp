@@ -58,7 +58,7 @@ MatrixBlock<NR,NC,T>::MatrixBlock( vf::Blocks<NR,NC,matrix_ptrtype> const & bloc
         _size1 += v[i*NC]->size1();
 
     //std::cout << "[MatrixBlock::MatrixBlock] build graph" << std::endl;
-    graph_ptrtype graph(new graph_type(0,0,_size1-1,0,_size2-1));//( new graph_type( ) );
+    graph_ptrtype graph(new graph_type(_size1, _size2,0,_size1-1,0,_size2-1));//( new graph_type( ) );
     size_type start_i=0;
     size_type start_j=0;
     for (uint i=0;i<NR;++i)
@@ -75,6 +75,7 @@ MatrixBlock<NR,NC,T>::MatrixBlock( vf::Blocks<NR,NC,matrix_ptrtype> const & bloc
         }
     if (diag_is_nonzero) graph->addMissingZeroEntriesDiagonal();
     graph->close();
+
 
     // std::cout << "[MatrixBlock::MatrixBlock] build Matrix" << std::endl;
     M_mat = backend.newMatrix(_size1,_size2,_size1,_size2,graph);
