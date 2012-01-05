@@ -107,14 +107,6 @@ public:
 
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
-    typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
-
-    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-
-    typedef typename backend_type::vector_type vector_type;
-
-    typedef typename backend_type::vector_ptrtype vector_ptrtype;
-
     typedef Simplex<Dim,1,Dim> convex_type;
 
     typedef Mesh<convex_type> mesh_type;
@@ -133,23 +125,16 @@ public:
 
     typedef FunctionSpace<mesh_type, basis2_type> space2_type;
 
-    typedef boost::shared_ptr<space1_type> space1_ptrtype;
-
-    typedef boost::shared_ptr<space2_type> space2_ptrtype;
-
     typedef typename space1_type::trace_functionspace_type trace1_space_type;
 
-    typedef typename boost::shared_ptr<trace1_space_type> trace1_space_ptrtype;
-
     typedef typename space2_type::trace_functionspace_type trace2_space_type;
-
-    typedef typename boost::shared_ptr<trace2_space_type> trace2_space_ptrtype;
 
     typedef typename space1_type::element_type element1_type;
 
     typedef typename space2_type::element_type element2_type;
 
     typedef typename trace1_space_type::element_type trace1_element_type;
+
     typedef typename trace2_space_type::element_type trace2_element_type;
 
     typedef Exporter<mesh_type> export_type;
@@ -206,11 +191,6 @@ public:
     trace_mesh_ptrtype createMesh( double meshSize, double interface );
 
     void exportResults( element1_type& u,element2_type& v, trace1_element_type& t1, trace2_element_type& t2 );
-
-    template<typename type1, typename type2>
-    sparse_matrix_ptrtype zeroMatrix(type1 Xh1,type2 Xh2);
-    template<typename type>
-    vector_ptrtype zeroVector(type Xh);
 
     void run();
 
@@ -377,28 +357,6 @@ ThreeFields<Dim, Order1, Order2, Order3>::exportResults( element1_type& u, eleme
 } // ThreeFields::export
 
 template<int Dim, int Order1, int Order2, int Order3>
-template< typename type1, typename type2>
-typename ThreeFields<Dim, Order1, Order2, Order3>::sparse_matrix_ptrtype
-ThreeFields<Dim, Order1, Order2, Order3>::zeroMatrix(type1 Xh1,type2 Xh2)
-{
-    sparse_matrix_ptrtype B = M_backend->newMatrix( Xh1, Xh2 );
-    form2( _trial=Xh1, _test=Xh2, _matrix=B, _init=true );
-    B->close();
-    return B;
-}
-
-template<int Dim, int Order1, int Order2, int Order3>
-template< typename type>
-typename ThreeFields<Dim, Order1, Order2, Order3>::vector_ptrtype
-ThreeFields<Dim, Order1, Order2, Order3>::zeroVector(type Xh)
-{
-    vector_ptrtype v = M_backend->newVector( Xh );
-    form1( _test=Xh, _vector=v, _init=true );
-    v->close();
-    return v;
-}
-
-template<int Dim, int Order1, int Order2, int Order3>
 void
 ThreeFields<Dim, Order1, Order2, Order3>::run()
 {
@@ -443,9 +401,6 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     trace_mesh_ptrtype interface_mesh = createMesh(mesh3Size,split);
 
-    // std::cout << "interface elts:" << std::distance( interface_mesh->beginElement(),
-    //                                                 interface_mesh->endElement() ) << "\n";
-
     std::cout << "create meshes done\n";
 
     if ( Dim == 2 )
@@ -464,32 +419,32 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
         gamma1 = 27;
         gamma2 = 19;
     }
-    /**
-     * The function space and some associated elements(functions) are then defined
-     */
-    std::cout << "construction of spaces starts\n";
-    space1_ptrtype Xh1 = space1_type::New( mesh1 );
+
+    auto Xh1 = space1_type::New( mesh1 );
     auto u1 = Xh1->element();
     auto v1 = Xh1->element();
 
-    space2_ptrtype Xh2 = space2_type::New( mesh2 );
+    auto Xh2 = space2_type::New( mesh2 );
     auto u2 = Xh2->element();
     auto v2 = Xh2->element();
 
-    // trace1_space_ptrtype Lh1 = trace1_space_type::New( trace_mesh1 );
-    trace1_space_ptrtype Lh1 = trace1_space_type::New( mesh1->trace( markedfaces(mesh1,gamma1) ) );
+    auto Lh1 = trace1_space_type::New( mesh1->trace( markedfaces(mesh1,gamma1) ) );
     auto mu1 = Lh1->element();
     auto nu1 = Lh1->element();
 
-    // trace2_space_ptrtype Lh2 = trace2_space_type::New( trace_mesh2 );
-    trace2_space_ptrtype Lh2 = trace2_space_type::New( mesh2->trace( markedfaces(mesh2,gamma2) ) );
+    auto Lh2 = trace2_space_type::New( mesh2->trace( markedfaces(mesh2,gamma2) ) );
     auto mu2 = Lh2->element();
     auto nu2 = Lh2->element();
 
-    interfaces_space_ptrtype Lh = interfaces_space_type::New( interface_mesh );
+    auto Lh = interfaces_space_type::New( interface_mesh );
     auto mu = Lh->element();
     auto nu = Lh->element();
-    std::cout << "construction of spaces done\n";
+
+    // buildGraphWithTranspose ask
+    bool buildGraphWithTrans1=false, buildGraphWithTrans2=false;
+    if(mu.size() > mu1.size()) buildGraphWithTrans1=true;
+    if(mu.size() > mu2.size()) buildGraphWithTrans2=true;
+
     value_type pi = M_PI;
     auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
 
@@ -502,7 +457,10 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     bool weakdir = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type coeff = this->vm()["coeff"].template as<double>();
-    std::cout << "vector F1 assembly starts\n";
+
+    std::cout << "assembly_F1 starts\n";
+    timers["assemby_F1"].first.restart();
+
     auto F1 = M_backend->newVector( Xh1 );
     form1( _test=Xh1, _vector=F1, _init=true ) =
         integrate( elements(mesh1), f*id(v1) );
@@ -514,9 +472,14 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
                        g*(-grad(v1)*vf::N()+penaldir*id(v1)/hFace()) );
     }
 
+    timers["assemby_F1"].second = timers["assemby_F1"].first.elapsed();
+    std::cout << "assemby_F1 done in " << timers["assemby_F1"].second << "s\n";
+
     F1->close();
-    std::cout << "vector F1 assembly done\n";
-    std::cout << "matrix D1 assembly starts\n";
+
+    std::cout << "assembly_D1 starts\n";
+    timers["assemby_D1"].first.restart();
+
     auto D1 = M_backend->newMatrix( Xh1, Xh1 );
 
     form2( _trial=Xh1, _test=Xh1, _matrix=D1, _init=true ) =
@@ -531,34 +494,47 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
                        +penaldir*id(v1)*idt(u1)/hFace());
     }
 
+    timers["assemby_D1"].second = timers["assemby_D1"].first.elapsed();
+    std::cout << "assemby_D1 done in " << timers["assemby_D1"].second << "s\n";
+
     D1->close();
-    std::cout << "matrix D1 assembly done\n";
 
     if ( this->vm().count( "export-matlab" ) )
         D1->printMatlab( "D1.m" );
 
-    std::cout << "matrix B1 assembly starts\n";
+    std::cout << "assembly_B1 starts\n";
+    timers["assemby_B1"].first.restart();
+
     auto B1 = M_backend->newMatrix( Xh1, Lh1 );
     form2( _trial=Xh1, _test=Lh1, _matrix=B1, _init=true ) +=
         integrate( elements(Lh->mesh()), -idt(u1)*id(nu1) );
 
+    timers["assemby_B1"].second = timers["assemby_B1"].first.elapsed();
+    std::cout << "assemby_B1 done in " << timers["assemby_B1"].second << "s\n";
+
     B1->close();
-    std::cout << "matrix B1 assembly done\n";
+
     if ( this->vm().count( "export-matlab" ) )
         B1->printMatlab( "B1.m" );
 
-    std::cout << "matrix C1 assembly starts\n";
-    auto C1 = M_backend->newMatrix( Lh, Lh1 );
+    std::cout << "assembly_C1 starts\n";
+    timers["assemby_C1"].first.restart();
+
+    auto C1 = M_backend->newMatrix( Lh, Lh1, _buildGraphWithTranspose=!buildGraphWithTrans1 );
     form2( _trial=Lh, _test=Lh1, _matrix=C1, _init=true ) +=
         integrate( elements(Lh->mesh()), idt(mu)*id(nu1) );
 
+    timers["assemby_C1"].second = timers["assemby_C1"].first.elapsed();
+    std::cout << "assemby_C1 done in " << timers["assemby_C1"].second << "s\n";
+
     C1->close();
-    std::cout << "matrix C1 assembly done\n";
 
     if ( this->vm().count( "export-matlab" ) )
         C1->printMatlab( "C1.m" );
 
-    std::cout << "vector F2 assembly starts\n";
+    std::cout << "assembly_F2 starts\n";
+    timers["assemby_F2"].first.restart();
+
     auto F2 = M_backend->newVector( Xh2 );
     form1( _test=Xh2, _vector=F2, _init=true ) =
         integrate( elements(mesh2), f*id(v2) );
@@ -570,9 +546,14 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
                        g*(-grad(v2)*vf::N()+penaldir*id(v2)/hFace()) );
     }
 
+    timers["assemby_F2"].second = timers["assemby_F2"].first.elapsed();
+    std::cout << "assemby_F2 done in " << timers["assemby_F2"].second << "s\n";
+
     F2->close();
-    std::cout << "vector F2 assembly done\n";
-    std::cout << "matrix D2 assembly starts\n";
+
+    std::cout << "assembly_D2 starts\n";
+    timers["assemby_D2"].first.restart();
+
     auto D2 = M_backend->newMatrix( Xh2, Xh2 );
 
     form2( _trial=Xh2, _test=Xh2, _matrix=D2, _init=true ) =
@@ -587,142 +568,151 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
                        +penaldir*id(v2)*idt(u2)/hFace());
     }
 
+    timers["assemby_D2"].second = timers["assemby_D2"].first.elapsed();
+    std::cout << "assemby_D2 done in " << timers["assemby_D2"].second << "s\n";
+
     D2->close();
     std::cout << "matrix D2 assembly done\n";
     if ( this->vm().count( "export-matlab" ) )
         D2->printMatlab( "D2.m" );
 
-    std::cout << "matrix B2 assembly starts\n";
+    std::cout << "assembly_B2 starts\n";
+    timers["assemby_B2"].first.restart();
+
     auto B2 = M_backend->newMatrix( Xh2, Lh2 );
     form2( _trial=Xh2, _test=Lh2, _matrix=B2, _init=true ) +=
         integrate( elements(Lh->mesh()), -idt(u2)*id(nu2) );
 
+    timers["assemby_B2"].second = timers["assemby_B2"].first.elapsed();
+    std::cout << "assemby_B2 done in " << timers["assemby_B2"].second << "s\n";
+
     B2->close();
-    std::cout << "matrix B2 assembly done\n";
+
 
     if ( this->vm().count( "export-matlab" ) )
         B2->printMatlab( "B2.m" );
-    std::cout << "matrix C2 assembly starts\n";
-    auto C2 = M_backend->newMatrix( Lh, Lh2 );
+
+    std::cout << "assembly_C2 starts\n";
+    timers["assemby_C2"].first.restart();
+
+    auto C2 = M_backend->newMatrix( Lh, Lh2,_buildGraphWithTranspose=!buildGraphWithTrans2 );
     form2( _trial=Lh, _test=Lh2, _matrix=C2, _init=true ) +=
         integrate( elements(Lh->mesh()), idt(mu)*id(nu2) );
 
+    timers["assemby_C2"].second = timers["assemby_C2"].first.elapsed();
+    std::cout << "assemby_C2 done in " << timers["assemby_C2"].second << "s\n";
+
     C2->close();
-    std::cout << "matrix C2 assembly done\n";
+
     if ( this->vm().count( "export-matlab" ) )
         C2->printMatlab( "C2.m" );
 
     // transposes
-    std::cout << "matrix B1t assembly starts\n";
-    auto B1t = M_backend->newMatrix( Lh1, Xh1 );
+    std::cout << "assembly_B1t starts\n";
+    timers["assemby_B1t"].first.restart();
 
-    // form2( _trial=Lh1, _test=Xh1, _matrix=B1t, _init=true );
+    auto B1t = M_backend->newMatrix( Lh1, Xh1, _buildGraphWithTranspose=true );
 
-    // B1->transpose(B1t);
+    B1->transpose(B1t);
 
-    form2( _trial=Lh1, _test=Xh1, _matrix=B1t, _init=true )+=
-        integrate( elements(Lh->mesh()), -id(v1)*idt(mu1) );
-
-    B1t->close();
-    std::cout << "matrix B1t assembly done\n";
+    timers["assemby_B1t"].second = timers["assemby_B1t"].first.elapsed();
+    std::cout << "assemby_B1t done in " << timers["assemby_B1t"].second << "s\n";
 
     if ( this->vm().count( "export-matlab" ) )
         B1t->printMatlab( "B1t.m" );
 
-    std::cout << "matrix B2t assembly starts\n";
-    auto B2t = M_backend->newMatrix( Lh2, Xh2 );
+    std::cout << "assembly_B2t starts\n";
+    timers["assemby_B2t"].first.restart();
 
-    form2( _trial=Lh2, _test=Xh2, _matrix=B2t, _init=true )+=
-        integrate( elements(Lh->mesh()), -id(v2)*idt(mu2) );
+    auto B2t = M_backend->newMatrix( Lh2, Xh2, _buildGraphWithTranspose=true );
 
-    // B2->transpose(B2t);
-    B2t->close();
-    std::cout << "matrix B2t assembly done\n";
+    B2->transpose(B2t);
+
+    timers["assemby_B2t"].second = timers["assemby_B2t"].first.elapsed();
+    std::cout << "assemby_B2t done in " << timers["assemby_B2t"].second << "s\n";
 
     if ( this->vm().count( "export-matlab" ) )
         B2t->printMatlab( "B2t.m" );
 
     std::cout << "matrix C1t assembly starts\n";
-    auto C1t = M_backend->newMatrix( Lh1, Lh );
 
-    // form2( _trial=Lh1, _test=Lh, _matrix=C1t, _init=true );
+    std::cout << "assemply_C1t starts\n";
+    timers["assemply_C1t"].first.restart();
 
-    // C1->transpose(C1t);
-    form2( _trial=Lh1, _test=Lh, _matrix=C1t, _init=true ) +=
-        integrate( elements(Lh->mesh()), idt(mu1)*id(nu) );
+    auto C1t = M_backend->newMatrix( Lh1, Lh, _buildGraphWithTranspose=buildGraphWithTrans1 );
 
-    C1t->close();
-    std::cout << "matrix C1t assembly done\n";
+    C1->transpose(C1t);
+
+    timers["assemply_C1t"].second = timers["assemply_C1t"].first.elapsed();
+    std::cout << "[timer] assemply_C1t: " << timers["assemply_C1t"].second << "\n";
+
     if ( this->vm().count( "export-matlab" ) )
         C1t->printMatlab( "C1t.m" );
 
-    std::cout << "matrix C2t assembly starts\n";
-    auto C2t = M_backend->newMatrix( Lh2, Lh );
+    std::cout << "assemply_C2t starts\n";
+    timers["assemply_C2t"].first.restart();
 
-    // form2( _trial=Lh2, _test=Lh, _matrix=C2t, _init=true );
+    auto C2t = M_backend->newMatrix( Lh2, Lh, _buildGraphWithTranspose=buildGraphWithTrans2 );
 
-    // C2->transpose(C2t);
-    form2( _trial=Lh2, _test=Lh, _matrix=C2t, _init=true ) +=
-        integrate( elements(Lh->mesh()), idt(mu2)*id(nu) );
+    C2->transpose(C2t);
 
-    C2t->close();
-    std::cout << "matrix C2t assembly done\n";
+    timers["assemply_C2t"].second = timers["assemply_C2t"].first.elapsed();
+    std::cout << "[timer] assemply_C2t: " << timers["assemply_C2t"].second << "\n";
+
     if ( this->vm().count( "export-matlab" ) )
         C2t->printMatlab( "C2t.m" );
 
     // zero matrices
-    std::cout << "zero matrices assembly starts\n";
-    auto zero31 = this->zeroMatrix( Lh, Xh1 );
-    auto zero41 = this->zeroMatrix( Lh2, Xh1 );
-    auto zero51 = this->zeroMatrix( Xh2, Xh1 );
-    auto zero22 = this->zeroMatrix( Lh1, Lh1 );
-    auto zero42 = this->zeroMatrix( Lh2, Lh1 );
-    auto zero52 = this->zeroMatrix( Xh2, Lh1 );
-    auto zero13 = this->zeroMatrix( Xh1, Lh  );
-    auto zero33 = this->zeroMatrix( Lh, Lh  );
-    auto zero53 = this->zeroMatrix( Xh2, Lh  );
-    auto zero14 = this->zeroMatrix( Xh1, Lh2 );
-    auto zero24 = this->zeroMatrix( Lh1, Lh2 );
-    auto zero44 = this->zeroMatrix( Lh2, Lh2 );
-    auto zero15 = this->zeroMatrix( Xh1, Xh2 );
-    auto zero25 = this->zeroMatrix( Lh1, Xh2 );
-    auto zero35 = this->zeroMatrix( Lh, Xh2 );
-    std::cout << "zero matrices assembly done\n";
 
-    std::cout << "block matrix assembly starts\n";
-    auto myb = Blocks<5,5,double>()<< D1 << B1t << zero31 << zero41 << zero51
+    auto zero31 = M_backend->newZeroMatrix( _trial=Lh, _test=Xh1 );
+    auto zero41 = M_backend->newZeroMatrix( _trial=Lh2, _test=Xh1 );
+    auto zero51 = M_backend->newZeroMatrix( _trial=Xh2, _test=Xh1 );
+    auto zero22 = M_backend->newZeroMatrix( _trial=Lh1, _test=Lh1 );
+    auto zero42 = M_backend->newZeroMatrix( _trial=Lh2, _test=Lh1 );
+    auto zero52 = M_backend->newZeroMatrix( _trial=Xh2, _test=Lh1 );
+    auto zero13 = M_backend->newZeroMatrix( _trial=Xh1, _test=Lh );
+    auto zero33 = M_backend->newZeroMatrix( _trial=Lh, _test=Lh  );
+    auto zero53 = M_backend->newZeroMatrix( _trial=Xh2, _test=Lh );
+    auto zero14 = M_backend->newZeroMatrix( _trial=Xh1, _test=Lh2 );
+    auto zero24 = M_backend->newZeroMatrix( _trial=Lh1, _test=Lh2 );
+    auto zero44 = M_backend->newZeroMatrix( _trial=Lh2, _test=Lh2 );
+    auto zero15 = M_backend->newZeroMatrix( _trial=Xh1, _test=Xh2 );
+    auto zero25 = M_backend->newZeroMatrix( _trial=Lh1, _test=Xh2 );
+    auto zero35 = M_backend->newZeroMatrix( _trial=Lh, _test=Xh2 );
+
+    std::cout << "assemply_Block starts\n";
+    timers["assemply_Block"].first.restart();
+
+    auto myb = Blocks<5,5>()<< D1 << B1t << zero31 << zero41 << zero51
                                    << B1 << zero22 << C1 << zero42 << zero52
                                    << zero13 << C1t << zero33 << C2t << zero53
                                    << zero14 << zero24 << C2 << zero44 << B2
                                    << zero15 << zero25 << zero35 << B2t << D2 ;
 
     auto AbB = M_backend->newBlockMatrix(myb);
+
+    timers["assemply_Block"].second = timers["assemply_Block"].first.elapsed();
+    std::cout << "[timer] assemply_Block: " << timers["assemply_Block"].second << "\n";
+
     AbB->close();
-    std::cout << "block matrix assembly done\n";
+
     std::cout <<"***********************************************\n";
-    std::cout << "matrix size1= " << AbB->size1() <<"\n";
-    std::cout << "matrix size2= " << AbB->size2() <<"\n";
+    std::cout << "full matrix size1= " << AbB->size1() <<"\n";
+    std::cout << "full matrix size2= " << AbB->size2() <<"\n";
     std::cout <<"***********************************************\n";
 
-    auto FL1 = this->zeroVector( Lh1 );
-    auto FL  = this->zeroVector( Lh );
-    auto FL2 = this->zeroVector( Lh2 );
+    auto FbB = M_backend->newVector( u1.size()+u2.size()+mu.size()+mu1.size()+mu2.size(),
+                                     u1.size()+u2.size()+mu.size()+mu1.size()+mu2.size() );
 
-    auto FbB = M_backend->newVector( F1->size()+F2->size()+FL->size()+FL1->size()+FL2->size(),
-                                     F1->size()+F2->size()+FL->size()+FL1->size()+FL2->size() );
-
-    auto UbB = M_backend->newVector( F1->size()+F2->size()+FL->size()+FL1->size()+FL2->size(),
-                                     F1->size()+F2->size()+FL->size()+FL1->size()+FL2->size() );
+    auto UbB = M_backend->newVector( u1.size()+u2.size()+mu.size()+mu1.size()+mu2.size(),
+                                     u1.size()+u2.size()+mu.size()+mu1.size()+mu2.size() );
 
 
     for (size_type i = 0 ; i < F1->size(); ++ i)
         FbB->set(i, (*F1)(i) );
 
-    for (size_type i = 0 ; i < FL1->size()+FL->size()+FL2->size(); ++ i)
-        FbB->set(F1->size()+i, double(0) );
-
     for (size_type i = 0 ; i < F2->size(); ++ i)
-        FbB->set(F1->size()+FL1->size()+FL->size()+FL2->size()+i, (*F2)(i) );
+        FbB->set(u1.size()+mu1.size()+mu.size()+mu2.size()+i, (*F2)(i) );
 
 
     std::cout <<"***********************************************\n";
@@ -739,12 +729,13 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     }
 
     std::cout << "solve starts\n";
+    timers["solve"].first.restart();
 
-    M_backend->solve(_matrix=AbB,
-                     _solution=UbB,
-                     _rhs=FbB );
+    M_backend->solve(_matrix=AbB,_solution=UbB, _rhs=FbB );
 
-    std::cout << "solve done\n";
+    timers["solve"].second = timers["solve"].first.elapsed();
+    std::cout << "[timer] solve: " << timers["solve"].second << "\n";
+
 
     for (size_type i = 0 ; i < u1.size(); ++ i)
         u1.set(i, (*UbB)(i) );
@@ -762,19 +753,17 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
         u2.set(i, (*UbB)(u1.size()+mu1.size()+mu.size()+mu2.size()+i) );
 
     // compute errors
-    double L2error12 =integrate(elements(mesh1),
-                               (idv(u1)-g)*(idv(u1)-g) ).evaluate()(0,0);
+    double L2error12 =integrate(elements(mesh1),(idv(u1)-g)*(idv(u1)-g) ).evaluate()(0,0);
     double L2error1 =   math::sqrt( L2error12 );
 
-    double L2error22 =integrate(elements(mesh2),
-                               (idv(u2)-g)*(idv(u2)-g) ).evaluate()(0,0);
+    double L2error22 =integrate(elements(mesh2),(idv(u2)-g)*(idv(u2)-g) ).evaluate()(0,0);
     double L2error2 =   math::sqrt( L2error22 );
 
     double semi_H1error1 =integrate(elements(mesh1),
-                                   ( gradv(u1)-gradg )*trans( (gradv(u1)-gradg) ) ).evaluate()(0,0);
+                                    ( gradv(u1)-gradg )*trans( (gradv(u1)-gradg) ) ).evaluate()(0,0);
 
     double semi_H1error2 =integrate(elements(mesh2),
-                                   ( gradv(u2)-gradg )*trans( (gradv(u2)-gradg) ) ).evaluate()(0,0);
+                                    ( gradv(u2)-gradg )*trans( (gradv(u2)-gradg) ) ).evaluate()(0,0);
 
     double H1error1 = math::sqrt( L2error12 + semi_H1error1 );
 
@@ -811,9 +800,6 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
 } // ThreeFields::run
 
-/**
- * main function: entry point of the program
- */
 int
 main( int argc, char** argv )
 {
