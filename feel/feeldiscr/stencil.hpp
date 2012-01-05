@@ -49,19 +49,17 @@ struct compute_graph3
 
             if (M_stencil->isBlockPatternZero(M_test_index,M_trial_index))
                 {
-#if 1
                     const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
-                    const size_type n1_dof_on_proc    = M_stencil->testSpace()->nLocalDof();
-                    const size_type first1_dof_on_proc = M_stencil->testSpace()->dof()->firstDof( proc_id );
-                    const size_type last1_dof_on_proc = M_stencil->testSpace()->dof()->lastDof( proc_id );
-                    const size_type first2_dof_on_proc = M_stencil->trialSpace()->dof()->firstDof( proc_id );
-                    const size_type last2_dof_on_proc = M_stencil->trialSpace()->dof()->lastDof( proc_id );
-                    typename BFType::graph_ptrtype thegraph( new typename BFType::graph_type( n1_dof_on_proc,
+                    const size_type n1_dof_on_proc    = space2->nLocalDof();
+                    const size_type first1_dof_on_proc = space2->dof()->firstDof( proc_id );
+                    const size_type last1_dof_on_proc = space2->dof()->lastDof( proc_id );
+                    const size_type first2_dof_on_proc = M_space1->dof()->firstDof( proc_id );
+                    const size_type last2_dof_on_proc = M_space1->dof()->lastDof( proc_id );
+                    typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( n1_dof_on_proc,
                                                                                               first1_dof_on_proc, last1_dof_on_proc,
                                                                                               first2_dof_on_proc, last2_dof_on_proc ) );
-                    thegraph->zero();
-                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thegraph );
-#endif
+                    zerograph->zero();
+                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , zerograph );
                 }
             else
                 {
@@ -101,19 +99,19 @@ struct compute_graph2
         {
             if (M_stencil->isBlockPatternZero(M_test_index,M_trial_index))
                 {
-#if 1
                     const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
-                    const size_type n1_dof_on_proc    = M_stencil->testSpace()->nLocalDof();
-                    const size_type first1_dof_on_proc = M_stencil->testSpace()->dof()->firstDof( proc_id );
-                    const size_type last1_dof_on_proc = M_stencil->testSpace()->dof()->lastDof( proc_id );
-                    const size_type first2_dof_on_proc = M_stencil->trialSpace()->dof()->firstDof( proc_id );
-                    const size_type last2_dof_on_proc = M_stencil->trialSpace()->dof()->lastDof( proc_id );
-                    typename BFType::graph_ptrtype thegraph( new typename BFType::graph_type( n1_dof_on_proc,
-                                                                                              first1_dof_on_proc, last1_dof_on_proc,
-                                                                                              first2_dof_on_proc, last2_dof_on_proc ) );
-                    thegraph->zero();
-                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thegraph );
-#endif
+                    const size_type n1_dof_on_proc    = M_space1->nLocalDof();
+                    const size_type first1_dof_on_proc = M_space1->dof()->firstDof( proc_id );
+                    const size_type last1_dof_on_proc = M_space1->dof()->lastDof( proc_id );
+                    const size_type first2_dof_on_proc = space2->dof()->firstDof( proc_id );
+                    const size_type last2_dof_on_proc = space2->dof()->lastDof( proc_id );
+                    typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( n1_dof_on_proc,
+                                                                                               first1_dof_on_proc, last1_dof_on_proc,
+                                                                                               first2_dof_on_proc, last2_dof_on_proc ) );
+                    zerograph->zero();
+                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
+                                           M_stencil->trialSpace()->nDofStart( M_trial_index ),
+                                           zerograph );
                 }
             else
                 {
@@ -121,7 +119,9 @@ struct compute_graph2
                                               _pattern=M_hints,
                                               _pattern_block=M_stencil->blockPattern());
 
-                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thestencil->graph() );
+                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
+                                           M_stencil->trialSpace()->nDofStart( M_trial_index ),
+                                           thestencil->graph() );
                 }
 
             ++M_trial_index;
@@ -173,16 +173,17 @@ public:
 
     Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh,
              size_type graph_hints,
-             std::vector<size_type> block_pattern=std::vector<size_type>(1,size_type(Pattern::HAS_NO_BLOCK_PATTERN)) )
+             std::vector<size_type> block_pattern=std::vector<size_type>(1,size_type(Pattern::HAS_NO_BLOCK_PATTERN)),
+             bool diag_is_nonzero=false )
         :
         _M_X1( Xh ),
         _M_X2( Yh ),
         M_graph( new graph_type( Xh->nLocalDof(),
-                                 Xh->nDofStart(), Xh->nDofStart()+Xh->nLocalDof(),
-                                 Yh->nDofStart(), Yh->nDofStart()+Yh->nLocalDof() ) ),
+                                 Xh->nDofStart(), Xh->nDofStart()+Xh->nLocalDof()-1,
+                                 Yh->nDofStart(), Yh->nDofStart()+Yh->nLocalDof()-1 ) ),
         M_block_pattern(block_pattern)
         {
-            // new
+            // init block_pattern if empty
             uint16_type nbSubSpace1 = _M_X1->nSubFunctionSpace();
             uint16_type nbSubSpace2 = _M_X2->nSubFunctionSpace();
             if (this->isBlockPatternNoPattern(0,0))
@@ -190,21 +191,15 @@ public:
                     M_block_pattern.resize((nbSubSpace1*nbSubSpace2));
                     for (auto it=M_block_pattern.begin(), en=M_block_pattern.end();it!=en;++it)  *it = graph_hints;
                 }
-
+            //else FEEL_ASSERT(M_block_pattern.size() == nbSubSpace1*nbSubSpace2 ).error ("invalid block pattern size");
 
             const size_type n1_dof_on_proc = _M_X1->nLocalDof();
 
-            boost::timer t;
-            //std::cout << "compute graph\n";
+            M_graph = this->computeGraph(graph_hints);
 
-            if ( dynamic_cast<void*>( _M_X1->mesh().get()) == dynamic_cast<void*>( _M_X2->mesh().get()) )
-                M_graph = computeGraph( graph_hints, mpl::bool_<mpl::and_< mpl::bool_< (test_space_type::nSpaces == 1)>,
-                                                                         mpl::bool_< (trial_space_type::nSpaces == 1)> >::type::value >() );
-            else
-                M_graph = computeGraphInCaseOfInterpolate( graph_hints, mpl::bool_<mpl::and_< mpl::bool_< (test_space_type::nSpaces == 1)>,
-                                                                                            mpl::bool_< (trial_space_type::nSpaces == 1)> >::type::value >() );
+            if (diag_is_nonzero) M_graph->addMissingZeroEntriesDiagonal();
+
             M_graph->close();
-            //std::cout << "computed graph in " << t.elapsed() << "s\n"; t.restart();
         }
     Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh, size_type graph_hints, graph_ptrtype g )
         :
@@ -236,7 +231,7 @@ public:
         return ctx.test( ZERO);
     }
 
-
+    graph_ptrtype computeGraph( size_type hints);
     graph_ptrtype computeGraph( size_type hints, mpl::bool_<true> );
     graph_ptrtype computeGraph( size_type hints, mpl::bool_<false> );
     graph_ptrtype computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<true> );
@@ -254,8 +249,6 @@ public:
             auto graph = computeGraphInCaseOfInterpolate( hints, mpl::bool_< ( test_space_type::nSpaces > 1)>(), mpl::bool_< ( trial_space_type::nSpaces > 1)>() );
 
             Debug( 5050 ) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n"; t.restart();
-            graph->close();
-            Debug( 5050 ) << "compute graph for composite bilinear form done in " << t.elapsed() << "s\n";
 
             return graph;
         }
@@ -310,12 +303,20 @@ struct compute_stencil_type
 }
 
 class StencilManagerImpl:
-    public std::map<boost::tuple<boost::shared_ptr<FunctionSpaceBase>,boost::shared_ptr<FunctionSpaceBase>,size_type,std::vector<size_type> >, boost::shared_ptr<GraphCSR> >,
+    public std::map<boost::tuple<boost::shared_ptr<FunctionSpaceBase>,
+                                 boost::shared_ptr<FunctionSpaceBase>,
+                                 size_type,
+                                 std::vector<size_type>,
+                                 bool >, boost::shared_ptr<GraphCSR> >,
     public boost::noncopyable
 {
 public:
     typedef boost::shared_ptr<GraphCSR> graph_ptrtype;
-    typedef boost::tuple<boost::shared_ptr<FunctionSpaceBase>,boost::shared_ptr<FunctionSpaceBase>,size_type,std::vector<size_type> > key_type;
+    typedef boost::tuple<boost::shared_ptr<FunctionSpaceBase>,
+                         boost::shared_ptr<FunctionSpaceBase>,
+                         size_type,
+                         std::vector<size_type>,
+                         bool > key_type;
     typedef std::map<key_type, graph_ptrtype> graph_manager_type;
 
 };
@@ -328,22 +329,21 @@ BOOST_PARAMETER_FUNCTION(
     tag,                                        // 3. namespace of tag types
     (required                                   // 4. one required parameter, and
      (test,             *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-     (trial,             *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
+     (trial,            *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
         )
     (optional                                   //    four optional parameters, with defaults
-     (pattern,             *(boost::is_integral<mpl::_>), Pattern::COUPLED )
-     //(pattern_block,    *, (vf::Blocks<1,1,size_type>(size_type(Pattern::HAS_NO_BLOCK_PATTERN)) ) )
+     (pattern,          *(boost::is_integral<mpl::_>), Pattern::COUPLED )
      (pattern_block,    *, ( std::vector<size_type>(1,size_type(Pattern::HAS_NO_BLOCK_PATTERN)) ) )
+     (diag_is_nonzero,  *(boost::is_integral<mpl::_>), false)
      )
     )
-//std::vector<size_type> block_pattern=std::vector<size_type>(1,size_type(Pattern::HAS_NO_BLOCK_PATTERN)) )
 {
     Feel::detail::ignore_unused_variable_warning(args);
     typedef typename detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
     typedef typename detail::compute_stencil_type<Args>::type stencil_type;
 
     // we look into the spaces dictionary for existing graph
-    auto git = StencilManager::instance().find( boost::make_tuple( test, trial, pattern, pattern_block/*.getSetOfBlocks()*/ ) );
+    auto git = StencilManager::instance().find( boost::make_tuple( test, trial, pattern, pattern_block, diag_is_nonzero ) );
     if (  git != StencilManager::instance().end() )
     {
          //std::cout << "Found a  stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
@@ -353,12 +353,12 @@ BOOST_PARAMETER_FUNCTION(
     else
     {
         // look for transposed stencil if it exist and transpose it to get the stencil
-        auto git_trans = StencilManager::instance().find( boost::make_tuple( trial, test, pattern, pattern_block/*.getSetOfBlocks()*/ ) );
+        auto git_trans = StencilManager::instance().find( boost::make_tuple( trial, test, pattern, pattern_block, diag_is_nonzero ) );
         //if ( git_trans != StencilManager::instance().end() )
         if ( 0 )
         {
             auto g = git_trans->second->transpose();
-            StencilManager::instance().operator[](boost::make_tuple( test, trial, pattern, pattern_block/*.getSetOfBlocks()*/ )) = g;
+            StencilManager::instance().operator[](boost::make_tuple( test, trial, pattern, pattern_block, diag_is_nonzero )) = g;
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, g ) );
             //std::cout << "Found a  transposed stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
             return s;
@@ -366,8 +366,8 @@ BOOST_PARAMETER_FUNCTION(
         else
         {
             //std::cout << "Creating a new stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
-            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, pattern_block/*.getSetOfBlocks()*/ ) );
-            StencilManager::instance().operator[](boost::make_tuple( test, trial, pattern, pattern_block/*.getSetOfBlocks()*/ )) = s->graph();
+            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, pattern_block, diag_is_nonzero ) );
+            StencilManager::instance().operator[](boost::make_tuple( test, trial, pattern, pattern_block, diag_is_nonzero )) = s->graph();
             return s;
         }
     }
@@ -464,8 +464,11 @@ Stencil<X1,X2>::mergeGraph( int row, int col, graph_ptrtype g )
         }
     else
         {
-            M_graph->setLastRowEntryOnProc( row + g->lastRowEntryOnProc() );
-            M_graph->setLastColEntryOnProc( col + g->lastColEntryOnProc() );
+            //std::cout << "\n _M_X1->nDofStart() " << _M_X1->nDofStart()<< std::endl;
+            //M_graph->setFirstRowEntryOnProc( _M_X1->nDofStart());
+            //M_graph->setFirstColEntryOnProc( _M_X2->nDofStart());
+            //M_graph->setLastRowEntryOnProc( _M_X1->nDofStart()+ _M_X1->nLocalDof() );
+            //M_graph->setLastColEntryOnProc( _M_X2->nDofStart()+ _M_X2->nLocalDof()  );
 
             Debug( 5050 ) << "[merge graph] already something in store\n";
             typename graph_type::const_iterator it = g->begin();
@@ -481,25 +484,29 @@ Stencil<X1,X2>::mergeGraph( int row, int col, graph_ptrtype g )
                 Debug( 5050 ) << "[mergeGraph] adding information to global row [" << theglobalrow << "], localrow=" << thelocalrow << "\n";
                 M_graph->row(theglobalrow).template get<1>() = thelocalrow;
 
-                if ( row1_entries.empty() )
-                {
-                    // if row is empty then no need to shift the dof in
-                    // composite case since the merge in done block-row-wise
-                    //row1_entries = row2_entries;
-                    if (col==0) row1_entries = row2_entries;
-                    else
-                        {
-                            for (auto it = row2_entries.begin(), en = row2_entries.end() ;it!=en; ++it ) row1_entries.insert(*it+col);
-                        }
+                if (!row2_entries.empty())
+                    {
 
-                }
-                else
-                {
-                    // ensure unique sorted ids
-                    auto itg = boost::prior(row1_entries.end());
-                    // shift dofs in case of composite spaces
-                    std::for_each( row2_entries.begin(), row2_entries.end(),[&]( size_type o ){ itg = row1_entries.insert( itg, o+col); });
-                }
+                        if ( row1_entries.empty() )
+                            {
+                                // if row is empty then no need to shift the dof in
+                                // composite case since the merge in done block-row-wise
+                                //row1_entries = row2_entries;
+                                if (col==0) row1_entries = row2_entries;
+                                else
+                                    {
+                                        for (auto it = row2_entries.begin(), en = row2_entries.end() ;it!=en; ++it ) row1_entries.insert(*it+col);
+                                    }
+
+                            }
+                        else
+                            {
+                                // ensure unique sorted ids
+                                auto itg = boost::prior(row1_entries.end());
+                                // shift dofs in case of composite spaces
+                                std::for_each( row2_entries.begin(), row2_entries.end(),[&]( size_type o ){ itg = row1_entries.insert( itg, o+col); });
+                            }
+                    }
             }
         }
     Debug( 5050 ) << " -- merge_graph (" << row << "," << col << ") in " << tim.elapsed() << "\n";
@@ -507,6 +514,17 @@ Stencil<X1,X2>::mergeGraph( int row, int col, graph_ptrtype g )
 }
 
 
+template<typename X1,  typename X2>
+typename Stencil<X1,X2>::graph_ptrtype
+Stencil<X1,X2>::computeGraph( size_type hints )
+{
+    if ( dynamic_cast<void*>( _M_X1->mesh().get()) == dynamic_cast<void*>( _M_X2->mesh().get()) )
+        return this->computeGraph( hints, mpl::bool_<mpl::and_< mpl::bool_< (test_space_type::nSpaces == 1)>,
+                                                                mpl::bool_< (trial_space_type::nSpaces == 1)> >::type::value >() );
+    else
+        return this->computeGraphInCaseOfInterpolate( hints, mpl::bool_<mpl::and_< mpl::bool_< (test_space_type::nSpaces == 1)>,
+                                                                                   mpl::bool_< (trial_space_type::nSpaces == 1)> >::type::value >() );
+}
 
 
 template<typename X1,  typename X2>
@@ -519,7 +537,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<false> )
     auto graph = computeGraph( hints, mpl::bool_< ( test_space_type::nSpaces > 1)>(), mpl::bool_< ( trial_space_type::nSpaces > 1)>() );
 
     Debug( 5050 ) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n"; t.restart();
-    graph->close();
+    //graph->close();
     Debug( 5050 ) << "compute graph for composite bilinear form done in " << t.elapsed() << "s\n";
 
     return graph;
@@ -572,7 +590,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<false> )
             std::cout << "\n";
         }
 #endif
-    M_graph->close();
+    //M_graph->close();
     Debug( 5050 ) << "compute graph for composite bilinear form done in " << t.elapsed() << "s\n";
 
 
@@ -827,7 +845,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
         {}
 
     Debug( 5050 ) << "[computeGraph<true>] before calling close in " << t.elapsed() << "s\n";
-    sparsity_graph->close();
+    //sparsity_graph->close();
     Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
     Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
     return sparsity_graph;
@@ -979,7 +997,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
         }// dof loop
     } // element iterator loop
     Debug( 5050 )<< "[computeGraph<true>] before calling close in " << t.elapsed() << "s\n";
-    sparsity_graph->close();
+    //sparsity_graph->close();
     Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
     Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
     return sparsity_graph;
@@ -1125,7 +1143,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
     locTool->setExtrapolation(true);
     //locTool->kdtree()->nbNearNeighbor( 15 );
 
-    sparsity_graph->close();
+    //sparsity_graph->close();
 
     return sparsity_graph;
 }
@@ -1484,7 +1502,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
     locToolForXh2->setExtrapolation(true);
     //locTool->kdtree()->nbNearNeighbor( 15 );
 
-    sparsity_graph->close();
+    //sparsity_graph->close();
 
 #if FEEL_EXPORT_GRAPH
 #if 0
