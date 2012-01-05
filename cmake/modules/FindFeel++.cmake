@@ -171,6 +171,23 @@ if ( PYTHONLIBS_FOUND )
    SET(FEEL_ENABLED_OPTIONS "${FEEL_ENABLED_OPTIONS} Python" )
 endif()
 
+FIND_LIBRARY(AMD_LIBRARY
+    NAMES
+    amd
+    PATHS
+    "/opt/local/lib/petsc/lib"
+)
+
+FIND_LIBRARY(UMFPACK_LIBRARY
+    NAMES
+    umfpack
+    PATHS
+    "/opt/local/lib/petsc/lib"
+)
+message(STATUS "Amd: ${AMD_LIBRARY}" )
+message(STATUS "Umfpack: ${UMFPACK_LIBRARY}" )
+SET(FEEL_LIBRARIES ${UMFPACK_LIBRARY} ${AMD_LIBRARY} ${FEEL_LIBRARIES})
+
 #
 # Petsc
 #
