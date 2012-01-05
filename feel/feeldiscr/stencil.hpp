@@ -355,8 +355,7 @@ BOOST_PARAMETER_FUNCTION(
     {
         // look for transposed stencil if it exist and transpose it to get the stencil
         auto git_trans = StencilManager::instance().find( boost::make_tuple( trial, test, pattern, pattern_block, diag_is_nonzero ) );
-        //if ( git_trans != StencilManager::instance().end() )
-        if ( 0 )
+        if ( git_trans != StencilManager::instance().end() )
         {
             //std::cout << "  - Found a  transposed stencil in manager (" << trial.get() << "," << test.get() << "," << pattern << "): "
             //<< git_trans->second.get() << "\n";
