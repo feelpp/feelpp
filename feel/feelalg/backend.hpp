@@ -268,7 +268,7 @@ public:
                     mat->init( test->nDof(), trial->nDof(), test->nLocalDof(), trial->nLocalDof(),
                                s->graph()->transpose() );
                 }
-
+            mat->zero();
             mat->setIndexSplit( trial->dofIndexSplit() );
             return mat;
         }
