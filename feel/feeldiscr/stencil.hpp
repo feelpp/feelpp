@@ -342,11 +342,12 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
     typedef typename detail::compute_stencil_type<Args>::type stencil_type;
 
+    std::cout << "Looking for a  stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
     // we look into the spaces dictionary for existing graph
     auto git = StencilManager::instance().find( boost::make_tuple( test, trial, pattern, pattern_block, diag_is_nonzero ) );
     if (  git != StencilManager::instance().end() )
     {
-         //std::cout << "Found a  stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
+        //std::cout << "  - Found a  stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")" << git->second.get() << "\n";
         auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, git->second ) );
         return s;
     }
@@ -357,10 +358,13 @@ BOOST_PARAMETER_FUNCTION(
         //if ( git_trans != StencilManager::instance().end() )
         if ( 0 )
         {
+            //std::cout << "  - Found a  transposed stencil in manager (" << trial.get() << "," << test.get() << "," << pattern << "): "
+            //<< git_trans->second.get() << "\n";
+            //std::cout << "     o transposing graph" << std::endl;
             auto g = git_trans->second->transpose();
             StencilManager::instance().operator[](boost::make_tuple( test, trial, pattern, pattern_block, diag_is_nonzero )) = g;
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, g ) );
-            //std::cout << "Found a  transposed stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
+            //std::cout << "     o prepare stencil " << std::endl;
             return s;
         }
         else
@@ -611,13 +615,13 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     const size_type nprocs           = _M_X1->mesh()->comm().size();
     const size_type proc_id           = _M_X1->mesh()->comm().rank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
-    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
+    const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
     const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
     const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
     const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
 
-    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
+    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc, n2_dof_on_proc,
                                                     first1_dof_on_proc, last1_dof_on_proc,
                                                     first2_dof_on_proc, last2_dof_on_proc ) );
 
@@ -863,13 +867,13 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     const size_type nprocs           = _M_X1->mesh()->comm().size();
     const size_type proc_id           = _M_X1->mesh()->comm().rank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
-    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
+    const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
     const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
     const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
     const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
 
-    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
+    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc, n2_dof_on_proc,
                                                   first1_dof_on_proc, last1_dof_on_proc,
                                                   first2_dof_on_proc, last2_dof_on_proc ) );
 
@@ -1015,13 +1019,13 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
     const size_type nprocs           = _M_X1->mesh()->comm().size();
     const size_type proc_id           = _M_X1->mesh()->comm().rank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
-    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
+    const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
     const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
     const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
     const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
 
-    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
+    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc, n2_dof_on_proc,
                                                   first1_dof_on_proc, last1_dof_on_proc,
                                                   first2_dof_on_proc, last2_dof_on_proc ) );
 
