@@ -1,5 +1,5 @@
 
-foreach(TEST petsc umfpack matrix ublas vector )
+foreach(TEST petsc umfpack matrix ublas vector graph)
 
   feel_add_test( ${TEST} )
 
