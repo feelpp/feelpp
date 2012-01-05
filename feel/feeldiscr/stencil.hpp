@@ -342,7 +342,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
     typedef typename detail::compute_stencil_type<Args>::type stencil_type;
 
-    std::cout << "Looking for a  stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
+    //std::cout << "Looking for a  stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
     // we look into the spaces dictionary for existing graph
     auto git = StencilManager::instance().find( boost::make_tuple( test, trial, pattern, pattern_block, diag_is_nonzero ) );
     if (  git != StencilManager::instance().end() )
