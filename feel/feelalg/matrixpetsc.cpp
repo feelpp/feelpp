@@ -177,43 +177,6 @@ void MatrixPetsc<T>::init (const size_type m,
         this->setInitialized(  true );
     }
 
-
-    // check graph for petsc : all diag must non zero
-    bool graphHasChanged=false;
-#if 0
-    for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
-        {
-            if (it->second.get<2>().find(it->first)==it->second.get<2>().end())
-                {
-                    it->second.get<2>().insert(it->first);
-                    graphHasChanged=true;
-                }
-
-        }
-#else
-    //for ( auto it=graph->begin(), en=graph->end() ; it!=en ; ++it )
-        for ( size_type i = 0 ; i< std::min(m,n) ; ++i)
-        {
-            if (this->graph()->storage().find(i)!=graph->end())
-                {
-                    if (this->graph()->row(i).get<2>().find(i) == this->graph()->row(i).get<2>().end())
-                        {
-                            this->graph()->row(i).get<2>().insert(i);
-                            graphHasChanged=true;
-                        }
-                }
-            else
-                {
-                    this->graph()->row(i).get<0>() = 0;//rank
-                    this->graph()->row(i).get<1>() = i;//loc
-                    this->graph()->row(i).get<2>().insert(i);
-                    graphHasChanged=true;
-                }
-
-        }
-#endif
-        if (graphHasChanged) this->graph()->close();
-
     int proc_id = 0;
 
     MPI_Comm_rank (this->comm(), &proc_id);
