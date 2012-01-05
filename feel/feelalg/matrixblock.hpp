@@ -105,7 +105,10 @@ public:
      */
     //@{
 
-    MatrixBlock( vf::Blocks<NR,NC,matrix_ptrtype > const & blockSet,backend_type &backend, bool doAssemble=true );
+    MatrixBlock( vf::Blocks<NR,NC,matrix_ptrtype > const & blockSet,
+                 backend_type &backend,
+                 bool copy_values=true,
+                 bool diag_is_nonzero=true );
 
     void mergeBlockGraph(graph_ptrtype & globGraphb, matrix_ptrtype m,
                          size_type start_i, size_type start_j);
