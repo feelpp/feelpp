@@ -38,7 +38,8 @@ namespace Feel
 template <int NR, int NC,typename T>
 MatrixBlock<NR,NC,T>::MatrixBlock( vf::Blocks<NR,NC,matrix_ptrtype> const & blockSet,
                                    backend_type &backend,
-                                   bool _doAssemble)
+                                   bool copy_values,
+                                   bool diag_is_nonzero)
     :
     super(),
     //M_v( v ),
@@ -72,7 +73,7 @@ MatrixBlock<NR,NC,T>::MatrixBlock( vf::Blocks<NR,NC,matrix_ptrtype> const & bloc
                 }
             start_i += v[i*NC]->size1();
         }
-
+    if (diag_is_nonzero) graph->addMissingZeroEntriesDiagonal();
     graph->close();
 
     // std::cout << "[MatrixBlock::MatrixBlock] build Matrix" << std::endl;
@@ -80,7 +81,7 @@ MatrixBlock<NR,NC,T>::MatrixBlock( vf::Blocks<NR,NC,matrix_ptrtype> const & bloc
     M_mat->zero();
     //M_mat->graph()->showMe();
 
-    if (_doAssemble)
+    if (copy_values)
         {
             start_i=0;
             start_j=0;
