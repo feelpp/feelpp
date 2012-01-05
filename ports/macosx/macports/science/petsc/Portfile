@@ -3,8 +3,7 @@
 PortSystem	1.0
 
 name		petsc
-version	    3.1-p7
-revision    1
+version	    3.2-p5
 categories  math science
 maintainers	mmoll
 description	Portable, Extensible Toolkit for Scientific Computation
@@ -19,51 +18,43 @@ notes       "Add the following line to your .bash_profile if you plan to use\
 
 platforms	darwin
 homepage	http://www.mcs.anl.gov/petsc/petsc-as/
-master_sites	ftp://ftp.mcs.anl.gov/pub/petsc/release-snapshots/
+master_sites	ftp://ftp.mcs.anl.gov/pub/petsc/release-snapshots/ \
+		http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/
 distname	${name}-lite-${version}
 worksrcdir	${name}-${version}
 universal_variant   no
-checksums           md5     c799040c5c731c74f7f9a80e0ba27fdb \
-                    sha1    69f92c56545c55ab4887664d41cf0761bf77348a \
-                    rmd160  e0eba6dcdf453f6778c781bdbb5b9ec4ea5a16ac
+checksums           md5     7e97388405616fcb89dadca58c1372aa \
+                    sha1    be32a26c1d49614f018392dca373dc547c6faf44 \
+                    rmd160  30ad392c5517b2826fd6bc34502fb8e0eda71e5b
 
-patchfiles          patch-shared.diff
-
-depends_lib-append  port:openmpi port:SuiteSparse
+depends_build-append  port:cmake
+depends_lib-append  port:openmpi
 
 configure.args  --with-python --with-debugging=0 \
 		--with-c-support=1 --with-c++-support=1 --with-pic=fPIC \
-		--with-shared=1 --with-dynamic=1 --PETSC_ARCH=darwin \
+		--with-shared-libraries=0 --with-mpi=1 --PETSC_ARCH=darwin \
 		--prefix=${destroot}${prefix}/lib/petsc \
 		--with-cc=${prefix}/bin/openmpicc \
-		--with-fc=0 --with-x11=0 \
 		--with-cxx=${prefix}/bin/openmpicxx \
-		--with-mpiexec=${prefix}/bin/openmpiexec\
-        --with-umfpack=1 --with-umfpack-include=${prefix}/include/ufsparse --with-umfpack-lib=\[${prefix}/lib/libumfpack.a,${prefix}/lib/libamd.a\]
+		--with-mpiexec=${prefix}/bin/openmpiexec \
+		--with-fc=${prefix}/bin/openmpif90 \
+		--LIBS=-lstdc++
 
-#        --with-umfpack=1 #--download-umfpack=/
-
-#        --with-parmetis=1 --download-parmetis=yes \
-#        --with-blacs=1 --download-blacs=yes \
-#        --with-scalapack=1 --download-scalapack=yes \
-#        --with-mumps=1 --download-mumps=yes
-
-
-
+destroot.destdir DESTDIR=${destroot}${prefix}/lib/petsc
 post-destroot {
-     reinplace "s|${destroot}${prefix}|${prefix}|g" ${destroot}${prefix}/lib/petsc/conf/RDict.db \
-                                                    ${destroot}${prefix}/lib/petsc/conf/petscrules \
-                                                    ${destroot}${prefix}/lib/petsc/conf/petscvariables \
-                                                    ${destroot}${prefix}/lib/petsc/conf/reconfigure-darwin.py \
-                                                    ${destroot}${prefix}/lib/petsc/conf/rules \
-                                                    ${destroot}${prefix}/lib/petsc/conf/test \
-                                                    ${destroot}${prefix}/lib/petsc/conf/variables \
-                                                    ${destroot}${prefix}/lib/petsc/include/petscconf.h
-    reinplace "s|${worksrcpath}|${prefix}/petsc|g" ${destroot}${prefix}/lib/petsc/include/petscconf.h \
-                                                    ${destroot}${prefix}/lib/petsc/include/petscmachineinfo.h \
-                                                    ${destroot}${prefix}/lib/petsc/conf/petscvariables \
-                                                    ${destroot}${prefix}/lib/petsc/conf/RDict.db
- }
+   reinplace "s|${destroot}${prefix}|${prefix}|g" ${destroot}${prefix}/lib/petsc/conf/RDict.db \
+                                                  ${destroot}${prefix}/lib/petsc/conf/petscrules \
+                                                  ${destroot}${prefix}/lib/petsc/conf/petscvariables \
+                                                  ${destroot}${prefix}/lib/petsc/conf/reconfigure-darwin.py \
+                                                  ${destroot}${prefix}/lib/petsc/conf/rules \
+                                                  ${destroot}${prefix}/lib/petsc/conf/test \
+                                                  ${destroot}${prefix}/lib/petsc/conf/variables \
+                                                  ${destroot}${prefix}/lib/petsc/include/petscconf.h
+   reinplace "s|${worksrcpath}|${prefix}/petsc|g" ${destroot}${prefix}/lib/petsc/include/petscconf.h \
+                                                  ${destroot}${prefix}/lib/petsc/include/petscmachineinfo.h \
+                                                  ${destroot}${prefix}/lib/petsc/conf/petscvariables \
+                                                  ${destroot}${prefix}/lib/petsc/conf/RDict.db
+}
 
 # disabled for now; no mpi support in fftw port yet
 # variant fftw description {build with fftw support} {
@@ -72,14 +63,8 @@ post-destroot {
 # }
 
 variant hdf5 description {build with support for HDF5 file format} {
-    configure.args-append   --with-hdf5=1 --with-hdf5-dir=${prefix} \
-                            --LIBS=-lsz
+    configure.args-append   --with-hdf5=1 --with-hdf5-dir=${prefix}
     depends_lib-append	port:hdf5-18
-}
-
-variant triangle description {build with support for Triangle library} {
-    configure.args-append   --with-triangle=1 --with-triangle-dir=${prefix}
-    depends_lib-append	port:triangle
 }
 
 variant debug description {build with debug support} {
