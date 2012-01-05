@@ -98,7 +98,7 @@ GraphCSR::operator=( GraphCSR const& g )
 void
 GraphCSR::zero()
 {
-
+#if 0
     auto nbDof = M_last_row_entry_on_proc-M_first_row_entry_on_proc+1;
     for (size_type i=0 ; i<nbDof ; ++i)
         {
@@ -107,7 +107,18 @@ GraphCSR::zero()
             row.get<1>() = i; //local index : warning false in parallel!!!!
             row.get<2>().clear(); //all is zero
         }
+#else
+    auto nbDof = M_last_row_entry_on_proc-M_first_row_entry_on_proc+1;
+    for (size_type i=M_first_row_entry_on_proc ; i<=M_last_row_entry_on_proc ; ++i)
+        {
+            row_type& row = this->row(i);
+            row.get<0>() = 0;//proc
+            row.get<1>() = i; //local index : warning false in parallel!!!!
+            //row.get<2>().insert(i);
+            row.get<2>().clear(); //all is zero
+        }
 
+#endif
 }
 
 GraphCSR::self_ptrtype
@@ -146,6 +157,30 @@ GraphCSR::transpose()
     M_graphT->close();
 
     return M_graphT;
+}
+
+void
+GraphCSR::addMissingZeroEntriesDiagonal()
+{
+    size_type m = this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1;
+    size_type n = this->lastColEntryOnProc()-this->firstColEntryOnProc()+1;
+
+    for ( size_type i = 0 ; i< std::min(m,n) ; ++i)
+        {
+            if (this->storage().find(i)!=this->end())
+                {
+                    if (this->row(i).get<2>().find(i) == this->row(i).get<2>().end())
+                        {
+                            this->row(i).get<2>().insert(i);
+                        }
+                }
+            else
+                {
+                    this->row(i).get<0>() = 0;//rank
+                    this->row(i).get<1>() = i;//loc
+                    this->row(i).get<2>().insert(i);
+                }
+        }
 }
 
 
@@ -319,34 +354,56 @@ void
 GraphCSR::printPython( std::string const& nameFile) const
 {
     std::ofstream graphFile(nameFile, std::ios::out /*| std::ios::app*/);
-    //fileDisp << this->time();
+#if 0
+    std::cout << "first_row_entry_on_proc " << M_first_row_entry_on_proc << std::endl;
+    std::cout << "last_row_entry_on_proc " << M_last_row_entry_on_proc << std::endl;
+    std::cout << "first_col_entry_on_proc " << M_first_col_entry_on_proc << std::endl;
+    std::cout << "last_col_entry_on_proc " << M_last_col_entry_on_proc << std::endl;
+    std::cout << "max_nnz " << M_max_nnz << std::endl;
+#endif
 
-    /*    __out << "first_row_entry_on_proc " << M_first_row_entry_on_proc << std::endl;
-    __out << "last_row_entry_on_proc " << M_last_row_entry_on_proc << std::endl;
-    __out << "first_col_entry_on_proc " << M_first_col_entry_on_proc << std::endl;
-    __out << "last_col_entry_on_proc " << M_last_col_entry_on_proc << std::endl;
-    __out << "max_nnz " << M_max_nnz << std::endl;
-    */
-    for( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
+    graphFile << "import numpy" << std::endl
+              << "from scipy.sparse import * " << std::endl
+              << "from scipy import * " << std::endl
+              << "from pylab import * " << std::endl;
+
+    graphFile << "nRow=" << M_last_row_entry_on_proc-M_first_row_entry_on_proc+1 << std::endl
+              << "nCol=" << M_last_col_entry_on_proc-M_first_col_entry_on_proc+1 << std::endl;
+
+    graphFile << "mattt = array([" << std::endl;
+    for( auto it = M_storage.begin(), en = --M_storage.end() ; it != en; ++it )
         {
-            // Get the row of the sparsity pattern
-            row_type const& row = it->second;
+            auto const& row = it->second;
 
-            /*__out << " proc " << row.get<0>()
-                  << " globalindex " << it->first
-                  << " localindex " << row.get<1>()
-                  << "(nz " << M_n_nz[row.get<1>()]
-                  << " oz " << M_n_oz[row.get<1>()]
-                  << ") : ";*/
-            //size_type vec_size = boost::get<2>( irow ).size();
-            //size_type globalindex = it->first;
-            //size_type localindex = boost::get<1>( irow );
             for (auto it2 = row.get<2>().begin(), en2= row.get<2>().end() ; it2!=en2 ; ++it2)
-                graphFile << it->first << " " << *it2 << " 1.0" << std::endl;
-
-            //__out << std::endl;
+                graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";// << std::endl;
         }
-}
+
+    auto it = --M_storage.end();
+    auto const& row = it->second;
+
+    if (row.get<2>().size()>0)
+        {
+            if (row.get<2>().size()>1)
+                {
+                    for (auto it2 = row.get<2>().begin(), en2= --row.get<2>().end() ; it2!=en2 ; ++it2)
+                        graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";
+                }
+            auto it2 = --row.get<2>().end();
+            graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ] ])" << std::endl;
+        }
+    else { /*???*/ }
+
+    graphFile << "row = array(mattt[:,0],dtype=int);" << std::endl
+              << "col = array(mattt[:,1],dtype=int);" << std::endl
+              << "data = array(mattt[:,2]);" << std::endl
+              << "A = csr_matrix( (data,(row,col)), shape=(nRow,nCol) );" << std::endl
+              << "fig = plt.figure();" << std::endl
+              << "matplotlib.pyplot.spy(A,precision=1e-8,aspect='equal');" << std::endl
+              << "plt.show();" << std::endl;
+
+
+} // printPython
 
 
 } // Feel

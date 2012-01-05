@@ -286,6 +286,11 @@ public:
     self_ptrtype transpose();
 
     /**
+     * add missing zero entries diagonal
+     */
+    void addMissingZeroEntriesDiagonal();
+
+    /**
      * showMe
      */
     void showMe( std::ostream& __out = std::cout ) const;
