@@ -83,7 +83,7 @@ public:
      * default constructor
      * \param n number of rows in the graph
      */
-    GraphCSR( size_type nr = 0, size_type nc = 0,
+    GraphCSR( size_type n = 0,
               size_type first_row_entry_on_proc = 0,
               size_type last_row_entry_on_proc = 0,
               size_type first_col_entry_on_proc = 0,
@@ -113,6 +113,9 @@ public:
     /** @name Accessors
      */
     //@{
+
+    size_type nRows() const { return M_last_row_entry_on_proc+1; }
+    size_type nCols() const { return M_last_col_entry_on_proc+1; }
 
     /**
      * \return the first entry index on proc
@@ -145,20 +148,6 @@ public:
         return M_last_col_entry_on_proc;
     }
 
-    /**
-     * return the number of rows
-     */
-    size_type nRows() const
-        {
-            return M_nrows;
-        }
-    /**
-     * return the number of columns
-     */
-    size_type nCols() const
-        {
-            return M_ncols;
-        }
     /**
      * \return the number of rows in the pattern
      */
@@ -321,7 +310,6 @@ private:
     bool M_is_closed;
     mpi::communicator M_comm;
 
-    size_type M_nrows, M_ncols;
     size_type M_first_row_entry_on_proc;
     size_type M_last_row_entry_on_proc;
     size_type M_first_col_entry_on_proc;
