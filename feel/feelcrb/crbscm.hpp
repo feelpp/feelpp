@@ -590,7 +590,7 @@ CRBSCM<TruthModelType>::offline(mpl::bool_<true>)
             M_C_complement = M_C->complement();
             for( int _i =0;_i < M_C_complement->size(); ++_i )
             {
-                std::cout << " -- mu complement [" << _i << "]=" << M_C_complement->at( _i ) << std::endl;
+                //std::cout << " -- mu complement [" << _i << "]=" << M_C_complement->at( _i ) << std::endl;
             }
 
         }
@@ -761,7 +761,7 @@ CRBSCM<TruthModelType>::offline(mpl::bool_<false>)
             M_C_complement = M_C->complement();
             for( int _i =0;_i < M_C_complement->size(); ++_i )
             {
-                std::cout << " -- mu complement [" << _i << "]=" << M_C_complement->at( _i ) << std::endl;
+                //std::cout << " -- mu complement [" << _i << "]=" << M_C_complement->at( _i ) << std::endl;
             }
 
         }
@@ -1015,7 +1015,6 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu, mpl::bool_<true> ,size_typ
         // update the theta_q associated with mup
         boost::tie(boost::tuples::ignore, theta_q, boost::tuples::ignore ) = M_model->computeThetaq( mup );
         //std::cout << "[CRBSCM::lb] thetaq = " << theta_q << "\n";
-        //std::cout << "[CRBSCM::lb] mup = \n"<<mup<<std::endl;
 
         //std::cout << "[CRBSCM::lb] row name : " << (boost::format( "c_%1%_%2%" ) % K % m).str() << "\n";
         glp_set_row_name(lp, m+1, (boost::format( "c_%1%_%2%" ) % K % m).str().c_str() );
@@ -1040,7 +1039,7 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu, mpl::bool_<true> ,size_typ
 
     }
 
-    std::cout << "[CRBSCM::lb] add rows associated with C_K done. nnz=" << nnz_index << "\n";
+    //std::cout << "[CRBSCM::lb] add rows associated with C_K done. nnz=" << nnz_index << "\n";
 
     // search the the Mplus closest points in Xi\C_K
     sampling_ptrtype Xi_C_neighbors =  M_C_complement->searchNearestNeighbors( mu, Mplus );
