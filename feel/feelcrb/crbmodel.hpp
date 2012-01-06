@@ -39,6 +39,7 @@
 
 #include <feel/feelcrb/parameterspace.hpp>
 
+
 namespace Feel
 {
 enum class CRBModelMode { PFEM = 0, SCM = 1, CRB = 2, SCM_ONLINE=3, CRB_ONLINE=4 };
@@ -279,7 +280,22 @@ public:
     size_type Qa() const { return M_model->Qa(); }
 
     //! return the number of \f$\mu\f$ independent terms for the bilinear form ( time dependent )
-    size_type Qm() const { return M_model->Qm(); }
+    //int Qm() const { return 1; }//return M_model->Qm(); }
+
+    size_type Qm() const
+        {
+            return Qm( mpl::bool_<model_type::is_time_dependent>() );
+        }
+    size_type Qm(mpl::bool_<true>) const
+        {
+            return M_model->Qm();
+        }
+    size_type Qm(mpl::bool_<false>) const
+        {
+            return 0;
+        }
+
+
 
     //! return the number of outputs
     size_type Nl() const { return M_model->Nl(); }
@@ -322,7 +338,7 @@ public:
     offline_merge_type update( parameter_type const& mu,  double time=0 )
     {
         M_model->computeThetaq( mu , time);
-        return offlineMerge( mu );
+	return offlineMerge( mu );
     }
 
     /**
@@ -522,6 +538,24 @@ public:
             return M_model->scalarProduct( X, Y );
         }
 
+
+    /**
+     * returns the scalar product used to assemble POD matrix of the vector x and vector y
+     */
+    double scalarProductForPod( vector_type const& X, vector_type const& Y )
+    {
+      return M_model->scalarProductForPod( X, Y );
+    }
+
+
+    /**
+     * returns the scalar product used to assemble POD matrix of the vector x and vector y
+     */
+    double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y )
+    {
+      return M_model->scalarProductForPod( X, Y );
+    }
+
     /**
      * solve the model for a given parameter \p mu
      */
@@ -633,10 +667,11 @@ public:
         return M_model->isSteady();
     }
 
-    void initializationField(element_ptrtype& initial_field)
+    void initializationField(element_ptrtype& initial_field,parameter_type const& mu)
     {
-        return M_model->initializationField(initial_field);
+        return M_model->initializationField(initial_field,mu);
     }
+
 
     //@}
 
@@ -752,12 +787,16 @@ template<typename TruthModelType>
 typename CRBModel<TruthModelType>::offline_merge_type
 CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu, mpl::bool_<true> )
 {
+
 #if 0
     sparse_matrix_ptrtype A( M_backend->newMatrix( M_model->functionSpace(),
                                                    M_model->functionSpace() ) );
+
 #else
+
     auto A = this->newMatrix();
     auto M = this->newMatrix();
+
 #endif
     std::vector<vector_ptrtype> F( Nl() );
 
@@ -770,7 +809,6 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu, mpl::bool_<tru
            =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
     form2( M_model->functionSpace() , M_model->functionSpace() , M, _init=true)
            =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
-
 
     //WARNING
     //idea of a better method : bring back the pattern from the model
@@ -786,13 +824,13 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu, mpl::bool_<tru
            =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
     }
 
-
     A->close();
     //A->zero();
     for( int q = 0; q < Qa(); ++q )
     {
         A->addMatrix( this->thetaAq( q ), M_Aq[q] );
     }
+
 
     M->close();
     //M->zero();
