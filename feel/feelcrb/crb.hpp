@@ -3096,4 +3096,19 @@ CRB<TruthModelType>::loadDB()
     return false;
 }
 } // Feel
+
+namespace boost {
+namespace serialization {
+    template< typename T>
+    struct version< Feel::CRB<T> >
+    {
+        // at the moment the version of the CRB DB is 0. if any changes is done
+        // to the format it is mandatory to increase the version number below
+        // and use the new version number of identify the new entries in the DB
+        typedef mpl::int_<0> type;
+        typedef mpl::integral_c_tag tag;
+        BOOST_STATIC_CONSTANT(unsigned int, value = version::type::value);
+    };
+}
+}
 #endif /* __CRB_H */
