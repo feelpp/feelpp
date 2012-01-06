@@ -89,6 +89,7 @@ if (NOT (ENABLE_Octave
       PATH_SUFFIXES
       octave
       octave-${OCTAVE_VERSION}
+      octave-${OCTAVE_VERSION}/octave
       DOC
       "Octave include directory"
       )
