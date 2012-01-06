@@ -34,6 +34,7 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/serialization/version.hpp>
 
 #include <feel/feelcore/feel.hpp>
 
