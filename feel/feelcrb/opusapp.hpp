@@ -32,7 +32,7 @@
 #include <boost/assign/std/vector.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
-
+#include <boost/serialization/version.hpp>
 
 namespace Feel
 {
@@ -199,7 +199,7 @@ public:
             std::map<CRBModelMode,std::vector<std::string> > hdrs;
             using namespace boost::assign;
             std::vector<std::string> pfemhdrs = boost::assign::list_of("FEM Output")("FEM Time");
-            std::vector<std::string> crbhdrs = boost::assign::list_of("FEM Output")("FEM Time")("RB Output")("Error Bounds")("CRB Time")("Relative error PFEM/CRB");
+            std::vector<std::string> crbhdrs = boost::assign::list_of("FEM Output")("FEM Time")("RB Output")("Error Bounds")("CRB Time")("Relative error PFEM/CRB")("Conditionning");
             std::vector<std::string> scmhdrs = boost::assign::list_of("Lb")("Lb Time")("Ub")("Ub Time")("FEM")("FEM Time");
             std::vector<std::string> crbonlinehdrs = boost::assign::list_of("RB Output")("Error Bounds")("CRB Time");
             std::vector<std::string> scmonlinehdrs = boost::assign::list_of("Lb")("Lb Time")("Ub")("Ub Time");
@@ -213,6 +213,7 @@ public:
             printParameterHdr(ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
             BOOST_FOREACH( auto mu, *Sampling )
             {
+
                 int size = mu.size();
                 std::cout << "mu = [ ";
                 for(int i=0;i<size-1;i++) std::cout<< mu[i] <<" , ";
@@ -240,12 +241,13 @@ public:
                     auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
 
                     double relative_error = std::abs( ofem[0]-o.get<0>() ) /ofem[0];
-
+                    double relative_estimated_error = o.get<1>() / ofem[0];
+                    double condition_number = o.get<3>();
 
                     if( crb->errorType()==2 )
                     {
 
-                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.get<0>() )( o.get<1>() )( ti.elapsed() )( relative_error );
+                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number );
                         std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions\n";
                         std::ofstream file_summary_of_simulations( (boost::format("summary_of_simulations_%d") % o.get<2>() ).str().c_str() ,std::ios::out | std::ios::app);
                         printEntry( file_summary_of_simulations, mu, v );
@@ -254,7 +256,7 @@ public:
                     }
                     else
                     {
-                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.get<0>() )( o.get<1>() )( ti.elapsed() ) ( relative_error ) ;
+                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number ) ;
                         std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions  (error estimation on this output : " << o.get<1>()<<") \n";
                         std::ofstream file_summary_of_simulations( (boost::format("summary_of_simulations_%d") % o.get<2>() ).str().c_str() ,std::ios::out | std::ios::app);
                         printEntry( file_summary_of_simulations, mu, v );
@@ -310,6 +312,7 @@ public:
     void run( const double * X, unsigned long N,
               double * Y, unsigned long P )
         {
+
             switch( M_mode )
             {
             case  CRBModelMode::PFEM:
