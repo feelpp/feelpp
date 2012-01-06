@@ -410,6 +410,17 @@ public:
      */
     double scalarProduct( vector_type const& x, vector_type const& y );
 
+    /**
+     * returns the scalar product used for POD of the boost::shared_ptr vector x and
+     * boost::shared_ptr vector y
+     */
+    double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y );
+
+    /**
+     * returns the scalar product used for POD of the vector x and vector y
+     */
+    double scalarProductForPod( vector_type const& x, vector_type const& y );
+
 
     /**
      * Given the output index \p output_index and the parameter \p mu, return
@@ -451,7 +462,7 @@ public:
     /**
      * return initialization filed used
      */
-    void initializationField(element_ptrtype& initial_field) ;
+    void initializationField(element_ptrtype& initial_field,parameter_type const& mu) ;
 
     //@}
 
@@ -492,7 +503,7 @@ private:
     boost::shared_ptr<export_type> M_exporter;
     export_type::timeset_ptrtype M_timeSet;
 
-    sparse_matrix_ptrtype D,M,Mass;
+  sparse_matrix_ptrtype D,M,Mass,Mpod;
     std::vector<vector_ptrtype> L;
     std::vector<sparse_matrix_ptrtype> M_Aq;
     std::vector<sparse_matrix_ptrtype> M_Mq;
