@@ -117,8 +117,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::initParametrization()
     mu_max << 150, 1e-2, 1e6, 1e2, 5e-2;
     M_Dmu->setMax( mu_max );
 
-
-
     std::cout << "  -- Dmu min : "  << M_Dmu->min() << "\n";
     std::cout << "  -- Dmu max : "  << M_Dmu->max() << "\n";
 
@@ -126,7 +124,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::initParametrization()
 
 template<int OrderU, int OrderP, int OrderT>
 void
-OpusModelRB<OrderU, OrderP, OrderT>::initializationField(element_ptrtype& initial_field)
+OpusModelRB<OrderU, OrderP, OrderT>::initializationField(element_ptrtype& initial_field,parameter_type const& mu)
 {
     initial_field->setOnes();
     initial_field->scale(M_T0);
@@ -703,7 +701,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
         integrate ( markedelements(M_mesh,"AIR4") , idv(rhoC)*idt(u)*id(w) ) ;
 
 
-#if 0
+
     //
     // H_1 scalar product
     //
@@ -715,20 +713,23 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
                    +grad(u)*trans(gradt(u))
             );
     M->close();
-#endif
+
+
+
 
     //
     // L_2 scalar product
     //
-    M = backendM->newMatrix( M_Th, M_Th );
+    Mpod = backendM->newMatrix( M_Th, M_Th );
 
-    form2( M_Th, M_Th, M, _init=true ) =
+    form2( M_Th, M_Th, Mpod, _init=true ) =
         integrate( elements(M_mesh),
                    id(u)*idt(v)
-            );
-    M->close();
+                   );
+    Mpod->close();
 
-    Log() << "   - M  done\n";
+
+    Log() << "   - M and Mpod  done\n";
     Log() << "OpusModelRB::init done\n";
 }
 
@@ -973,7 +974,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu )
 {
     element_ptrtype T( new element_type( M_Th ) );
 
-
     this->solve( mu, T );
     //this->exportResults( *T );
 
@@ -1014,13 +1014,16 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
         Log() << "[solve(mu)] : time = "<<M_temp_bdf->time()<<"\n";
         Log() << "[solve(mu)] update(mu) done in " << ti.elapsed() << "s\n";ti.restart();
         Log() << "[solve(mu)] start solve\n";
-        //backend->solve( _matrix=D,  _solution=*T, _rhs=L[0], _prec=D );
+        backend->solve( _matrix=D,  _solution=*T, _rhs=L[0], _prec=D );
+
+#if(0)
         auto ret = backend->solve( _matrix=D,  _solution=*T, _rhs=L[0], _reuse_prec=(M_temp_bdf->iteration() >=2));
 
         if ( !ret.get<0>() )
         {
             Log()<<"WARNING : we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
-        }
+	    }
+#endif
 
         Log() << "[solve(mu)] solve done in " << ti.elapsed() << "s\n";ti.restart();
         this->exportResults(M_temp_bdf->time(), *T );
@@ -1108,6 +1111,21 @@ OpusModelRB<OrderU,OrderP,OrderT>::scalarProduct( vector_type const& x, vector_t
     return M->energy( x, y );
 
 }
+
+template<int OrderU, int OrderP, int OrderT>
+double
+OpusModelRB<OrderU,OrderP,OrderT>::scalarProductForPod( vector_ptrtype const& x, vector_ptrtype const& y )
+{
+    return Mpod->energy( x, y );
+}
+template<int OrderU, int OrderP, int OrderT>
+double
+OpusModelRB<OrderU,OrderP,OrderT>::scalarProductForPod( vector_type const& x, vector_type const& y )
+{
+    return Mpod->energy( x, y );
+
+}
+
 template<int OrderU, int OrderP, int OrderT>
 double
 OpusModelRB<OrderU,OrderP,OrderT>::output( int output_index, parameter_type const& mu )
