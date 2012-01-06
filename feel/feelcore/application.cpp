@@ -524,11 +524,11 @@ Application::doOptions( int argc, char** argv )
     }
     catch( boost::program_options::unknown_option const& e )
     {
-        std::cout << "[Application::Application] unknown option:" << e.what() << "\n";
+        std::cout << "Application option parsing: unknown option:" << e.what() << " (the .cfg file or some options may not have been read properly)\n";
     }
     catch( ... )
     {
-        std::cout << "[Application::Application] unknown exception\n";
+        std::cout << "Application option parsing: unknown exception triggered  (the .cfg file or some options may not have been read properly)\n";
     }
 }
 char**
