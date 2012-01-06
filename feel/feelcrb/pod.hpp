@@ -321,10 +321,10 @@ void POD<TruthModelType>::fillPodMatrix()
             int j = bdfj->iteration()-1;
             bdfj->loadCurrent();
 
-            M_pod_matrix(i,j) = M_model->scalarProduct(bdfj->unknown(0), bdfi->unknown(0));
+            M_pod_matrix(i,j) = M_model->scalarProductForPod(bdfj->unknown(0), bdfi->unknown(0));
             M_pod_matrix(j,i) = M_pod_matrix(i,j);
         }
-        M_pod_matrix(i,i) = M_model->scalarProduct(bdfi->unknown(0), bdfi->unknown(0));
+        M_pod_matrix(i,i) = M_model->scalarProductForPod(bdfi->unknown(0), bdfi->unknown(0));
     }
 }//fillPodMatrix
 
