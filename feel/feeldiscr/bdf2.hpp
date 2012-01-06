@@ -184,7 +184,8 @@ public:
     double polyDerivCoefficient( int i ) const
     {
         FEEL_ASSERT( i >=0 && i < BDF_MAX_ORDER ).error( "[BDF] invalid index" );
-        return M_alpha[this->timeOrder()-1][i]/this->timeStep();
+        return M_alpha[this->timeOrder()-1][i]/math::abs(this->timeStep());
+        //return M_alpha[this->timeOrder()-1][i]/this->timeStep();
     }
 
     BdfBase& operator=( BdfBase const& b )
