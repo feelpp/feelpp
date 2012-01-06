@@ -94,7 +94,7 @@ macro(opus_add_python_module)
   CDR(PYTHON_SOURCES ${PYTHON_DEFAULT_ARGS})
 
   add_library( ${PYTHON_NAME} MODULE  ${PYTHON_SOURCES}  )
-  target_link_libraries( ${PYTHON_NAME} feel++_opus_models  )
+#  target_link_libraries( ${PYTHON_NAME} feel++_opus_models  )
   set_target_properties( ${PYTHON_NAME} PROPERTIES PREFIX "" )
   set_property(TARGET ${PYTHON_NAME} PROPERTY LABELS opus)
   #configure_file(${PYTHON_NAME}.xml.in ${PYTHON_NAME}.xml)
