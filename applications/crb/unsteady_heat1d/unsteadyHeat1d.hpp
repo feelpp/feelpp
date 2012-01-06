@@ -398,9 +398,9 @@ public:
      */
     void solve( parameter_type const& mu, element_ptrtype& T , int output_index=0);
 
-    eigen_matrix_type snapshotsMatrix(){return M_snapshots_matrix;}
-    eigen_matrix_type dualSnapshotsMatrix(){return Mdu_snapshots_matrix;}
-    void fillSnapshotsMatrix (parameter_type const& mu, int output);
+    //eigen_matrix_type snapshotsMatrix(){return M_snapshots_matrix;}
+    //eigen_matrix_type dualSnapshotsMatrix(){return Mdu_snapshots_matrix;}
+    //void fillSnapshotsMatrix (parameter_type const& mu, int output);
     void assemble();
     int computeNumberOfSnapshots();
     double timeStep() { return  M_bdf->timeStep(); }
@@ -408,7 +408,7 @@ public:
     double timeInitial() { return M_bdf->timeInitial(); }
     int timeOrder() { return M_bdf->timeOrder();  }
     bool isSteady() {return M_is_steady;}
-    void initializationField( element_ptrtype& initial_field);
+    void initializationField( element_ptrtype& initial_field,parameter_type const& mu);
 
     /**
      * solve for a given parameter \p mu
@@ -445,6 +445,17 @@ public:
      * returns the scalar product of the vector x and vector y
      */
     double scalarProduct( vector_type const& x, vector_type const& y );
+
+    /**
+     * returns the scalar product used for POD of the boost::shared_ptr vector x and
+     * boost::shared_ptr vector y
+     */
+    double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y );
+
+    /**
+     * returns the scalar product used for POD of the vector x and vector y
+     */
+    double scalarProductForPod( vector_type const& x, vector_type const& y );
 
     /**
      * specific interface for OpenTURNS
@@ -485,7 +496,7 @@ private:
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
-    sparse_matrix_ptrtype D,M,A_du;
+  sparse_matrix_ptrtype D,M,A_du,Mpod;
     vector_ptrtype F, F_du;
     element_ptrtype pT;
 
@@ -505,10 +516,7 @@ private:
 
 
 	bdf_ptrtype M_bdf;
-    bool M_fill_snapshots_matrix;
     int M_Nsnap;
-    matrixN_type M_snapshots_matrix;
-    matrixN_type Mdu_snapshots_matrix;
 
 };
 
@@ -543,12 +551,13 @@ void
 UnsteadyHeat1D::init()
 {
 
-    M_fill_snapshots_matrix = false;
+
     /*
      * First we create the mesh
      */
     mesh = createGMSHMesh( _mesh=new mesh_type,
                            _desc=createGeo(meshSize) );
+
 
 
     /*
@@ -606,22 +615,24 @@ UnsteadyHeat1D::init()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    /*    M = backend->newMatrix( Xh, Xh );
-    form2( Xh, Xh, M, _init=true ) =
-        integrate( elements(mesh), id(u)*idt(v) );
-    M->close();
-*/
+    Mpod = backend->newMatrix( Xh, Xh );
+    form2( Xh, Xh, Mpod, _init=true ) =
+      integrate( elements(mesh), id(u)*idt(v) );
+      //integrate( elements(mesh), id(u)*idt(v) + grad(v)*trans(gradt(u)) );
+    Mpod->close();
+
 
     M = backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, M, _init=true ) =
-        integrate( elements(mesh), id(u)*idt(v) + grad(v)*trans(gradt(u)) );
+          integrate( elements(mesh), id(u)*idt(v) + grad(v)*trans(gradt(u)) );
+      //integrate( elements(mesh), id(u)*idt(v) );
     M->close();
 
 
     Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    std::cout << "Number of dof " << Xh->nLocalDof() << "\n";
 
     assemble();
-
 
 } // UnsteadyHeat1d::init
 
@@ -638,7 +649,7 @@ UnsteadyHeat1D::computeNumberOfSnapshots()
 
 
 void
-UnsteadyHeat1D::initializationField( element_ptrtype& initial_field)
+UnsteadyHeat1D::initializationField( element_ptrtype& initial_field,parameter_type const& mu)
 {
     initial_field->zero();
 }
@@ -853,20 +864,6 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
 
 
 void
-UnsteadyHeat1D::fillSnapshotsMatrix (parameter_type const& mu, int output_index)
-{
-
-    M_fill_snapshots_matrix=true;
-
-    const int Ndof = Xh->nDof();//number of dofs used
-    M_snapshots_matrix.resize(Ndof,M_Nsnap);
-    Mdu_snapshots_matrix.resize(Ndof,M_Nsnap);
-
-    //note : we need output_index for the adjoint
-    solve(mu , pT, output_index);
-}
-
-void
 UnsteadyHeat1D::solve( parameter_type const& mu )
 {
     element_ptrtype T( new element_type( Xh ) );
@@ -906,6 +903,9 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
             Log()<<"WARNING : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
         }
 
+        //backend->solve( _matrix=D,  _solution=T, _rhs=F, _prec=D );
+
+
 #if( 0 )
         //this->exportResults(M_bdf->time(), *T );
         bool export_output=true;
@@ -913,59 +913,9 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
         if( s != 0 && output_index==1) this->exportResults1d(M_bdf->time(),*T,s);
 #endif
 
-        if( M_fill_snapshots_matrix )
-        {
-            element_type solution=*T;
-            for(int i=0;i<solution.size();i++)
-            {
-                M_snapshots_matrix(i,column_index)=solution[i];
-            }
-        }
-        column_index++;
         M_bdf->shiftRight( *T );
     }
 
-#if (1)
-    if( M_fill_snapshots_matrix )
-    {
-        //and now we compute dual ( z ) solution
-        // - alpha dz/dt - k /Delta z = - output
-        element_ptrtype Tdu( new element_type( Xh ) );
-        column_index=0;
-
-        double dt=-M_bdf->timeStep();
-        M_bdf->setTimeStep(dt);
-        M_bdf->setTimeInitial(M_bdf->timeFinal());
-        M_bdf->setTimeFinal(0);
-        std::cout<<"  -- solving dual "<<std::endl;
-        for ( M_bdf->start(); M_bdf->time()>=M_bdf->timeFinal(); M_bdf->next() )
-        {
-            element_type v( Xh, "v" );//test functions
-            auto bdf_poly = M_bdf->polyDeriv();
-
-            this->update( mu, bdf_coeff, bdf_poly, output_index );
-
-            auto ret = backend->solve( _matrix=A_du,  _solution=Tdu, _rhs=F_du, _prec=A_du , _reuse_prec=(M_bdf->iteration() >=2));
-            if ( !ret.get<0>() )
-            {
-                Log()<<"ADJOINT MODEL WARNING : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
-            }
-
-            //fill the matrix
-            element_type adjoint=*Tdu;
-            for(int i=0;i<adjoint.size();i++)
-            {
-                Mdu_snapshots_matrix(i,column_index)=adjoint[i];
-            }
-            column_index++;
-            M_bdf->shiftRight( *Tdu );
-        }
-        dt=-dt;
-        M_bdf->setTimeStep(dt);
-        M_bdf->setTimeFinal(M_bdf->timeInitial());
-        M_bdf->setTimeInitial(0);
-    }
-#endif
 }
 
 void
@@ -986,6 +936,18 @@ double
 UnsteadyHeat1D::scalarProduct( vector_type const& x, vector_type const& y )
 {
     return M->energy( x, y );
+}
+
+
+double
+UnsteadyHeat1D::scalarProductForPod( vector_ptrtype const& x, vector_ptrtype const& y )
+{
+    return Mpod->energy( x, y );
+}
+double
+UnsteadyHeat1D::scalarProductForPod( vector_type const& x, vector_type const& y )
+{
+    return Mpod->energy( x, y );
 }
 
 
