@@ -691,6 +691,56 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
                         ADD_VALUES);
     CHKERRABORT(this->comm(),ierr);
 }
+
+
+#if 0
+template <typename T>
+void
+MatrixPetsc<T>::printPython(const std::string name) const
+{
+    this->close();
+    auto nbRow = this->size1();
+
+    int ierr = 0;
+
+    std::ofstream graphFile(name, std::ios::out /*| std::ios::app*/);
+
+
+    for (size_type i = 0 ; i < nbRow ; ++i)
+        {
+            PetscInt row = i;
+            PetscInt ncols;
+            const PetscInt *cols;
+            const PetscScalar *vals;
+
+            PetscInt nrow2=1;
+            PetscInt *row2 = new PetscInt[1]; row2[0] = i;
+
+            ierr = MatGetRow(this->mat(), row, &ncols, &cols, &vals);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+
+            for (size_type jj = 0 ; jj < ncols ; ++jj)
+                {
+                    /*PetscInt *cols2 = new PetscInt[1];cols2[0]=cols[jj];
+                    const PetscScalar *vals3;
+                    ierr = MatGetValues(this->mat(), nrow2, row2, 1, cols2, vals3);
+                    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+                    */
+
+                    if(std::abs(vals[jj])>1.e-8 )graphFile << "[" << row <<","<< cols[jj] << "," << vals[jj] << "],";
+                    //std::cout << "\n [updateBlockMat] i "<< start_i+row << " j " << start_j+cols[jj] << " val " << vals[jj] << std::endl;
+                    //this->set(start_i+row,
+                    //      start_j+cols[jj],
+                    //      vals[jj]);
+                }
+
+            ierr = MatRestoreRow(this->mat(),row,&ncols,&cols,&vals);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        }
+    graphFile.close();
+}
+#endif
+
 // print
 template <typename T>
 void
@@ -1359,8 +1409,18 @@ void MatrixPetsc<T>::zeroEntriesDiagonal()
     CHKERRABORT(this->comm(),ierr);
 #else
     //std::cout << "\n this->size1(),this->size2() " << this->size1() << " " << this->size2() << std::endl;
+#if 0
     for (uint i = 0;i <std::min(this->size1(),this->size2());++i)
         this->set(i,i,0.);
+#else
+    for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
+        {
+            size_type index = it->first;
+            //if (!it->second.get<2>().empty())
+            if (it->second.get<2>().find(index)!=it->second.get<2>().end()  )
+                this->set(index,index,0.);
+        }
+#endif
 #endif
 #endif
 }
