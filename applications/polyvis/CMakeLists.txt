@@ -23,15 +23,15 @@
 #
 
 INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
-add_executable( feel_polyvis
+add_executable( feel_polyvis geom.cpp
   polyvisapp.cpp polyvisbase.cpp
   nedelec2d.cpp
-#  crouzeixraviart2d.cpp
+  crouzeixraviart2d.cpp
   #crouzeixraviart3d.cpp
   #hermite.cpp
-  #raviartthomas2d.cpp  raviartthomas3d.cpp
-  #lagrange1d.cpp lagrange2d.cpp lagrange3d.cpp
-  #orthonormalpset1d.cpp orthonormalpset2d.cpp orthonormalpset3d.cpp
+  raviartthomas2d.cpp  raviartthomas3d.cpp
+  lagrange1d.cpp lagrange2d.cpp lagrange3d.cpp
+  orthonormalpset1d.cpp orthonormalpset2d.cpp orthonormalpset3d.cpp
 )
 target_link_libraries(feel_polyvis ${FEEL_LIBRARIES} )
 

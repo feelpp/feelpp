@@ -72,7 +72,7 @@ typedef parameter::parameters<
     > polyvis_signature;
 
 //Generates one-element mesh for reference element (works independently from gmsh version)
-gmsh_ptrtype oneelement_geometry_ref(); 
+gmsh_ptrtype oneelement_geometry_ref();
 
 //Generates one-element mesh (!= reference) (works independently from gmsh version)
 // This element corresponds to apply an homothetic transformation (ratio=2, center=(0,0) )
@@ -209,23 +209,24 @@ void
 Polyvis<A0,A1,A2,A3,A4>::run()
 {
     // First we create the mesh with one element
-    // mesh_ptrtype oneelement_mesh = createGMSHMesh( _mesh=new mesh_type,
-    //                                                _desc=domain( _name="one-elt",
-    //                                                              _shape="simplex",
-    //                                                              _dim=Dim,
-    //                                                              _h=2.0,
-    //                                                              _addmidpoint=false,
-    //                                                              _xmin=this->vm()["xmin"].template as<double>(),
-    //                                                              _ymin=this->vm()["ymin"].template as<double>(),
-    //                                                              _zmin=this->vm()["zmin"].template as<double>() ) );
+    mesh_ptrtype oneelement_mesh = createGMSHMesh( _mesh=new mesh_type,
+                                                   _desc=domain( _name="one-elt",
+                                                                 _shape="simplex",
+                                                                 _dim=Dim,
+                                                                 _h=2.0,
+                                                                 _reference=true,
+                                                                 _addmidpoint=false,
+                                                                 _xmin=this->vm()["xmin"].template as<double>(),
+                                                                 _ymin=this->vm()["ymin"].template as<double>(),
+                                                                 _zmin=this->vm()["zmin"].template as<double>() ) );
 
-
+#if 0
     mesh_ptrtype oneelement_mesh_ref = createGMSHMesh( _mesh=new mesh_type,
                                                    _desc = oneelement_geometry_ref());
 
     mesh_ptrtype oneelement_mesh_real = createGMSHMesh( _mesh=new mesh_type,
                                                    _desc = oneelement_geometry_real());
-
+#endif
     // then a fine mesh which we use to export the basis function to
     // visualize them
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -244,8 +245,8 @@ Polyvis<A0,A1,A2,A3,A4>::run()
      * The function space and some associated elements(functions) are
      * then defined
      */
-    space_ptrtype Xh_ref = space_type::New( oneelement_mesh_ref ); // space associated with reference element
-    space_ptrtype Xh_real = space_type::New( oneelement_mesh_real ); // space associated with real element
+    space_ptrtype Xh_ref = space_type::New( oneelement_mesh ); // space associated with reference element
+    //space_ptrtype Xh_real = space_type::New( oneelement_mesh_real ); // space associated with real element
 
     std::cout << "Family = " << Xh_ref->basis()->familyName() << "\n"
               << "Dim    = " << Xh_ref->basis()->nDim << "\n"
@@ -287,86 +288,6 @@ template<
 const uint16_type Polyvis<A0,A1,A2,A3,A4>::Dim;
 
 
-gmsh_ptrtype
-oneelement_geometry_ref()
-  {
-      std::ostringstream costr;
-      costr <<"Mesh.MshFileVersion = 2.2;\n"
-            <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-            <<"Mesh.CharacteristicLengthFromPoints=1;\n"
-            <<"Mesh.ElementOrder=1;\n"
-            <<"Mesh.SecondOrderIncomplete = 0;\n"
-            <<"Mesh.Algorithm = 6;\n"
-            <<"Mesh.OptimizeNetgen=1;\n"
-            <<"// partitioning data\n"
-            <<"Mesh.Partitioner=1;\n"
-            <<"Mesh.NbPartitions=1;\n"
-            <<"Mesh.MshFilePartitioned=0;\n"
-            <<"h=2;\n"
-            <<"Point(1) = {-1,-1,0,h};\n"
-            <<"Point(2) = {1,-1,0,h};\n"
-            <<"Point(3) = {-1,1,0,h};\n"
-            <<"Line(1) = {1,2};\n"
-            <<"Line(2) = {2,3};\n"
-            <<"Line(3) = {3,1};\n"
-            <<"Transfinite Line{1} = 1;\n"
-            <<"Transfinite Line{2} = 1;\n"
-            <<"Transfinite Line{3} = 1;\n"
-            <<"Line Loop(4) = {3,1,2};\n"
-            <<"Plane Surface(5) = {4};\n"
-            <<"Physical Line(\"hor\") = {1};\n"
-            <<"Physical Line(\"hypo\") = {2};\n"
-            <<"Physical Line(\"vert\") = {3};\n"
-            <<"Physical Surface(9) = {5};\n";
-
-    std::ostringstream nameStr;
-    nameStr << "one-elt-ref";
-    gmsh_ptrtype gmshp( new Gmsh );
-    gmshp->setPrefix( nameStr.str() );
-    gmshp->setDescription( costr.str() );
-    return gmshp;
-  }
-
-
-gmsh_ptrtype
-oneelement_geometry_real()
-  {
-      std::ostringstream costr;
-      costr <<"Mesh.MshFileVersion = 2.2;\n"
-            <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-            <<"Mesh.CharacteristicLengthFromPoints=1;\n"
-            <<"Mesh.ElementOrder=1;\n"
-            <<"Mesh.SecondOrderIncomplete = 0;\n"
-            <<"Mesh.Algorithm = 6;\n"
-            <<"Mesh.OptimizeNetgen=1;\n"
-            <<"// partitioning data\n"
-            <<"Mesh.Partitioner=1;\n"
-            <<"Mesh.NbPartitions=1;\n"
-            <<"Mesh.MshFilePartitioned=0;\n"
-            <<"h=2;\n"
-            <<"Point(1) = {-2,-2,0,h};\n"
-            <<"Point(2) = {2,-2,0,h};\n"
-            <<"Point(3) = {-2,2,0,h};\n"
-            <<"Line(1) = {1,2};\n"
-            <<"Line(2) = {2,3};\n"
-            <<"Line(3) = {3,1};\n"
-            <<"Transfinite Line{1} = 1;\n"
-            <<"Transfinite Line{2} = 1;\n"
-            <<"Transfinite Line{3} = 1;\n"
-            <<"Line Loop(4) = {3,1,2};\n"
-            <<"Plane Surface(5) = {4};\n"
-            <<"Physical Line(\"hor\") = {1};\n"
-            <<"Physical Line(\"hypo\") = {2};\n"
-            <<"Physical Line(\"vert\") = {3};\n"
-            <<"Physical Surface(9) = {5};\n";
-
-    std::ostringstream nameStr;
-    nameStr << "one-elt-real";
-    gmsh_ptrtype gmshp( new Gmsh );
-    gmshp->setPrefix( nameStr.str() );
-    gmshp->setDescription( costr.str() );
-    return gmshp;
-  }
 
 }
 
