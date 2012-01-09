@@ -31,7 +31,7 @@ add_executable( feel_polyvis geom.cpp
   #hermite.cpp
   raviartthomas2d.cpp  raviartthomas3d.cpp
   lagrange1d.cpp lagrange2d.cpp lagrange3d.cpp
-  orthonormalpset1d.cpp orthonormalpset2d.cpp orthonormalpset3d.cpp
+  #orthonormalpset1d.cpp orthonormalpset2d.cpp orthonormalpset3d.cpp
 )
 target_link_libraries(feel_polyvis ${FEEL_LIBRARIES} )
 
