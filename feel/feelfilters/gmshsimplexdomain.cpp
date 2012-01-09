@@ -142,8 +142,13 @@ GmshSimplexDomain::getDescription2D() const
          << "Point(3) = {" << this->M_I[0].first << "," << this->M_I[1].second << ",0,h};\n"
          << "Line(1) = {1,2};\n"
          << "Line(2) = {2,3};\n"
-         << "Line(3) = {3,1};\n"
-         << "Line Loop(4) = {3,1,2};\n";
+         << "Line(3) = {3,1};\n";
+    //if ( this->isReference() )
+    if ( this->h() >= (this->M_I[0].second-this->M_I[0].first) )
+        ostr <<"Transfinite Line{1} = 1;\n"
+             <<"Transfinite Line{2} = 1;\n"
+             <<"Transfinite Line{3} = 1;\n";
+    ostr << "Line Loop(4) = {3,1,2};\n";
     if ( this->usePhysicalNames() == false )
     {
         ostr << "Plane Surface(5) = {4};\n"
@@ -184,8 +189,23 @@ GmshSimplexDomain::getDescription3D() const
          << "Line Loop(12) = {6, -5, 2};" << "\n"
          << "Plane Surface(13) = {12};" << "\n"
          << "Line Loop(14) = {4, -5, -1};" << "\n"
-         << "Plane Surface(15) = {14};" << "\n"
-         << "Surface Loop(20) = {11, 13, 15, 5};" << "\n"
+         << "Plane Surface(15) = {14};" << "\n";
+    //if ( this->isReference() )
+    if ( this->h() >= (this->M_I[0].second-this->M_I[0].first) )
+    {
+        ostr << "Transfinite Line(1) = 1;\n"
+             << "Transfinite Line(2) = 1;\n"
+             << "Transfinite Line(3) = 1;\n"
+             << "Transfinite Line(4) = 1;\n"
+             << "Transfinite Line(5) = 1;\n"
+             << "Transfinite Line(6) = 1;\n";
+
+        ostr << "Transfinite Surface(5)=1;\n"
+             << "Transfinite Surface(11)=1;\n"
+             << "Transfinite Surface(13)=1;\n"
+             << "Transfinite Surface(15)=1;\n";
+    }
+    ostr << "Surface Loop(20) = {11, 13, 15, 5};" << "\n"
          << "Volume(21) = {20};" << "\n"
          << "" << "\n";
     if ( this->usePhysicalNames() == false )
