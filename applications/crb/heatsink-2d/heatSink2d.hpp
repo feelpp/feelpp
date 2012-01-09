@@ -135,8 +135,8 @@ public:
     //@{
 
     static const uint16_type Order = 1;
-    static const uint16_type ParameterSpaceDimension = 3;
-    static const bool is_time_dependent = true;
+    static const uint16_type ParameterSpaceDimension = 4;
+    static const bool is_time_dependent = false;
     //@}
 
     /** @name Typedefs
@@ -197,7 +197,8 @@ public:
 
     typedef Eigen::VectorXd theta_vector_type;
 
-    typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
+    //typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
+    typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
     //@}
 
     /** @name Constructors, destructor
@@ -266,12 +267,14 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<theta_vector_type, theta_vector_type, std::vector<theta_vector_type> >
+//    boost::tuple<theta_vector_type, theta_vector_type, std::vector<theta_vector_type> >
+    boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
     computeThetaq( parameter_type const& mu , double time=0)
         {
             double kf         = mu( 0 );
             double ks         = mu( 1 );
             double L          = mu( 2 );
+            therm_coeff       = mu( 3 );
             double detJ = L/L_ref;
             double t = M_bdf->time();
 
@@ -297,7 +300,8 @@ public:
             M_thetaFq[2].resize( Ql(2) );
             M_thetaFq[2]( 0 ) = detJ;
 
-            return boost::make_tuple( M_thetaMq, M_thetaAq, M_thetaFq );
+            //return boost::make_tuple( M_thetaMq, M_thetaAq, M_thetaFq );
+            return boost::make_tuple( M_thetaAq, M_thetaFq );
         }
 
     /**
@@ -683,11 +687,11 @@ void HeatSink2D::init()
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
 
-    Feel::ParameterSpace<3>::Element mu_min( M_Dmu );
-    mu_min << /*k_f*/100, /*k_s*/100, /*L*/0.02;
+    Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
+    mu_min << /*k_f*/.1, /*k_s*/1, /*L*/0.02, /* Bi */ 0.01;
     M_Dmu->setMin( mu_min );
-    Feel::ParameterSpace<3>::Element mu_max( M_Dmu );
-    mu_max << /*k_f*/500, /*k_s*/500, /*L*/0.05;
+    Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_max( M_Dmu );
+    mu_max << /*k_f*/10, /*k_s*/1, /*L*/0.05, /* Bi */ 1;
     M_Dmu->setMax( mu_max );
 
 
@@ -787,7 +791,8 @@ HeatSink2D::newMatrix() const
 typename HeatSink2D::affine_decomposition_type
 HeatSink2D::computeAffineDecomposition()
 {
-    return boost::make_tuple(M_Mq, M_Aq, M_Fq );
+    //return boost::make_tuple(M_Mq, M_Aq, M_Fq );
+    return boost::make_tuple(M_Aq, M_Fq );
 }
 
 
@@ -804,7 +809,7 @@ void HeatSink2D::solve( sparse_matrix_ptrtype& D,
 
 void HeatSink2D::exportResults(double time, element_type& T )
 {
-    if ( M_do_export )
+    //if ( M_do_export )
     {
         Log() << "exportResults starts\n";
         exporter->step(time)->setMesh( T.functionSpace()->mesh() );
@@ -957,12 +962,12 @@ void HeatSink2D::run( const double * X, unsigned long N, double * Y, unsigned lo
 {
     std::cout<<"run is called"<<std::endl;
     using namespace vf;
-    Feel::ParameterSpace<3>::Element mu( M_Dmu );
-    mu << X[0], X[1], X[2];
+    Feel::ParameterSpace<ParameterSpaceDimension>::Element mu( M_Dmu );
+    mu << X[0], X[1], X[2], X[3];
     static int do_init = true;
     if ( do_init )
     {
-        meshSize = X[3];
+        meshSize = X[4];
         this->init();
         do_init = false;
     }
