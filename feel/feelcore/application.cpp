@@ -522,7 +522,25 @@ Application::doOptions( int argc, char** argv )
         po::notify(_M_vm);
 
     }
-    catch( boost::program_options::unknown_option const& e )
+    // catches program_options exceptions
+    catch( boost::program_options::multiple_occurrences const& e )
+    {
+        std::cout << "Command line or config file option parsing error: " << e.what() << "\n"
+                  << "  o faulty option: " << e.get_option_name() << "\n"
+                  << "Warning: the .cfg file or some options may not have been read properly\n";
+    }
+
+    catch( boost::program_options::ambiguous_option const& e )
+    {
+        std::cout << "Command line or config file option parsing error: " << e.what() << "\n"
+                  << "  o faulty option: " << e.get_option_name() << "\n"
+                  << "  o possible alternatives: " ;
+        std::for_each( e.alternatives().begin(), e.alternatives().end(), []( std::string const& s ) { std::cout << s << " ";});
+        std::cout << "\n"
+                  << "Warning: the .cfg file or some options may not have been read properly\n";
+    }
+    // catches program_options exceptions
+    catch( std::exception& e )
     {
         std::cout << "Application option parsing: unknown option:" << e.what() << " (the .cfg file or some options may not have been read properly)\n";
     }
