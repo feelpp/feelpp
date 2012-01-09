@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -433,7 +433,8 @@ public:
     //@{
 
     static const uint16_type nDim = N;
-    static const bool isTransformationEquivalent = false;
+    //static const bool isTransformationEquivalent = false;
+    static const bool isTransformationEquivalent = true;
     static const bool isContinuous = true;
     typedef Continuous continuity_type;
     static const uint16_type TAG = TheTAG;
@@ -582,6 +583,8 @@ public:
             // evaluate moments of the expression
         }
 #endif
+
+#if 0
     template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
     static void transform( boost::shared_ptr<GMContext> gmc,  boost::shared_ptr<PC> const& pc,
                            Phi& phi_t,
@@ -671,7 +674,7 @@ public:
                 }
             }
         }
-
+#endif
 
 //@}
 
