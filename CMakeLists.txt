@@ -458,15 +458,10 @@ SET(CPACK_SOURCE_OUTPUT_CONFIG_FILE "CPackSourceConfig.cmake")
 SET(CPACK_SYSTEM_NAME "${FEEL_OS}-${FEEL_SYSTEM_MACHINE}")
 
 OPTION(FEEL_ENABLE_CPACK_OPUS "Enable OPUS packaging (if available) in CPack along with Feel++" ON )
-if ( EXISTS ${FEEL_SOURCE_DIR}/applications/opus AND FEEL_ENABLE_CPACK_OPUS )
-  SET(CPACK_PACKAGE_NAME "feel++")
-  SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Feel++ (Finite Element method Embedded Library and language in C++)")
-#  SET(CPACK_SOURCE_PACKAGE_FILE_NAME "feel++-${FEEL_VERSION_MAJOR}.${FEEL_VERSION_MINOR}.${FEEL_VERSION_MICRO}${FEEL_VERSION_EXTRA}+opus-${OPUS_VERSION_MAJOR}.${OPUS_VERSION_MINOR}.${OPUS_VERSION_MICRO}${OPUS_VERSION_EXTRA}")
-#  SET(CPACK_PACKAGE_FILE_NAME "feel++-${FEEL_VERSION_MAJOR}.${FEEL_VERSION_MINOR}.${FEEL_VERSION_MICRO}${FEEL_VERSION_EXTRA}+opus-${OPUS_VERSION_MAJOR}.${OPUS_VERSION_MINOR}.${OPUS_VERSION_MICRO}${OPUS_VERSION_EXTRA}-${CPACK_SYSTEM_NAME}")
-#SET(CPACK_SOURCE_PACKAGE_FILE_NAME "feel++-${FEEL_VERSION_MAJOR}.${FEEL_VERSION_MINOR}.${FEEL_VERSION_MICRO}${FEEL_VERSION_EXTRA}")
-#else()
+SET(CPACK_PACKAGE_NAME "feel++")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Feel++ (Finite Element method Embedded Library and language in C++)")
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${FEEL_VERSION_MAJOR}.${FEEL_VERSION_MINOR}.${FEEL_VERSION_MICRO}${FEEL_VERSION_EXTRA}")
-endif()
+
 
 SET(CPACK_SOURCE_STRIP_FILES "")
 # The following components are regex's to match anywhere (unless anchored)
@@ -492,8 +487,9 @@ set(CPACK_SOURCE_IGNORE_FILES
   "/*.tar.gz;*.tar.bz2;*.deb;obj-x86_64-linux-gnu/;/opt/"
   "/TAGS;/#.*;/.*~;/.cvsignore;/.bzrignore"
   "*.aux;*.log;*.bbl;*.idx;*.ist;*.out;*.blg;OpusManualBenchmarkEADSUJF.pdf"
-  "${PROJECT_SOURCE_DIR}/applications/opus/debian/"
-  "${PROJECT_SOURCE_DIR}/applications/opus/debian/opus/"
+  "${PROJECT_SOURCE_DIR}/applications/opus.old"
+  "${PROJECT_SOURCE_DIR}/applications/opus/"
+   "${PROJECT_SOURCE_DIR}/applications/opus/debian/opus/"
   "${PROJECT_SOURCE_DIR}/applications/opus/debian/source/"
   "${PROJECT_SOURCE_DIR}/applications/opus/doc/"
   "${PROJECT_SOURCE_DIR}/applications/opus/scripts"
@@ -501,7 +497,7 @@ set(CPACK_SOURCE_IGNORE_FILES
 
 #if ( NOT EXISTS ${FEEL_SOURCE_DIR}/applications/opus/ )
 if ( EXISTS ${FEEL_SOURCE_DIR}/applications/opus/ AND NOT FEEL_ENABLE_CPACK_OPUS )
-  set(CPACK_SOURCE_IGNORE_FILES "${PROJECT_SOURCE_DIR}/applications/opus/;${CPACK_SOURCE_IGNORE_FILES}" )
+#  set(CPACK_SOURCE_IGNORE_FILES "${PROJECT_SOURCE_DIR}/applications/opus/;${CPACK_SOURCE_IGNORE_FILES}" )
 endif()
 
 include( CPack )
