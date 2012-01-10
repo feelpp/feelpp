@@ -3319,7 +3319,7 @@ CRB<TruthModelType>::generateN2Q2( int Ncur, mpl::bool_<false> , int number_of_a
 
     std::vector<sparse_matrix_ptrtype> Aq,Mq;
     std::vector<std::vector<vector_ptrtype> > Fq,Lq;
-    boost::tie( Aq, Fq ) = M_model->computeAffineDecomposition();
+    boost::tie(boost::tuples::ignore, Aq, Fq ) = M_model->computeAffineDecomposition();
     __X->zero();
     __X->add( 1.0 );
     //std::cout << "measure of domain= " << M_model->scalarProduct( __X, __X ) << "\n";
