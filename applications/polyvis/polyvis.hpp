@@ -214,7 +214,6 @@ Polyvis<A0,A1,A2,A3,A4>::run()
                                                                  _shape="simplex",
                                                                  _dim=Dim,
                                                                  _h=2.0,
-                                                                 _reference=true,
                                                                  _addmidpoint=false,
                                                                  _xmin=this->vm()["xmin"].template as<double>(),
                                                                  _ymin=this->vm()["ymin"].template as<double>(),
