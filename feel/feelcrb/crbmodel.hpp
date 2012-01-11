@@ -119,19 +119,12 @@ public:
 
     typedef Eigen::VectorXd theta_vector_type;
 
+    typedef typename boost::tuple<sparse_matrix_ptrtype, sparse_matrix_ptrtype, std::vector<vector_ptrtype> > offline_merge_type;
 
-    typedef typename mpl::if_<mpl::bool_<model_type::is_time_dependent> ,
-                              mpl::identity<boost::tuple<sparse_matrix_ptrtype, sparse_matrix_ptrtype, std::vector<vector_ptrtype> > >,
-                              mpl::identity<boost::tuple<sparse_matrix_ptrtype, std::vector<vector_ptrtype> > > >::type::type offline_merge_type;
 
-    typedef typename mpl::if_<mpl::bool_<model_type::is_time_dependent> ,
-                              mpl::identity<boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<sparse_matrix_ptrtype>, std::vector< std::vector<vector_ptrtype> > > >,
-                              mpl::identity<boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector< std::vector<vector_ptrtype> > > > >::type::type affine_decomposition_type;
+    typedef typename boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<sparse_matrix_ptrtype>, std::vector< std::vector<vector_ptrtype> > > affine_decomposition_type;
 
-    typedef typename mpl::if_<mpl::bool_<model_type::is_time_dependent> ,
-                              mpl::identity<boost::tuple<theta_vector_type,theta_vector_type,std::vector<theta_vector_type> > >,
-                              mpl::identity<boost::tuple<theta_vector_type,std::vector<theta_vector_type> > > >::type::type thetaq_type;
-
+    typedef typename boost::tuple<theta_vector_type,theta_vector_type,std::vector<theta_vector_type> > thetaq_type;
 
 
 
@@ -297,6 +290,7 @@ public:
 
 
 
+
     //! return the number of outputs
     size_type Nl() const { return M_model->Nl(); }
 
@@ -329,8 +323,25 @@ public:
      */
     thetaq_type computeThetaq( parameter_type const& mu , double time=0 )
     {
+      return computeThetaq( mu , mpl::bool_<model_type::is_time_dependent>(), time  );
+    }
+    thetaq_type computeThetaq( parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    {
         return M_model->computeThetaq( mu , time );
     }
+    thetaq_type computeThetaq( parameter_type const& mu , mpl::bool_<false>, double time=0 )
+    {
+      theta_vector_type theta_aq;
+      theta_vector_type theta_mq;
+      std::vector<theta_vector_type>  theta_fq;
+      boost::tuple<theta_vector_type, std::vector<theta_vector_type> > steady_theta;
+      steady_theta = M_model->computeThetaq( mu , time );
+      theta_aq = steady_theta.get<0>();
+      theta_fq = steady_theta.get<1>();
+      return boost::make_tuple( theta_mq, theta_aq, theta_fq );
+    }
+
+
 
     /**
      * \brief update the model wrt \p mu
@@ -338,7 +349,7 @@ public:
     offline_merge_type update( parameter_type const& mu,  double time=0 )
     {
         M_model->computeThetaq( mu , time);
-	return offlineMerge( mu );
+        return offlineMerge( mu );
     }
 
     /**
@@ -349,19 +360,20 @@ public:
      * forms.
      */
     affine_decomposition_type computeAffineDecomposition()
-        {
-            return computeAffineDecomposition( mpl::bool_<model_type::is_time_dependent>() );
-        }
+    {
+      return computeAffineDecomposition(mpl::bool_<model_type::is_time_dependent>());
+    }
     affine_decomposition_type computeAffineDecomposition(mpl::bool_<true>)
-        {
-            boost::tie( M_Mq, M_Aq, M_Fq ) = M_model->computeAffineDecomposition();
-            return boost::make_tuple(M_Mq, M_Aq, M_Fq );
-        }
+    {
+        boost::tie( M_Mq, M_Aq, M_Fq ) = M_model->computeAffineDecomposition();
+      return M_model->computeAffineDecomposition();
+    }
     affine_decomposition_type computeAffineDecomposition(mpl::bool_<false>)
-        {
-            boost::tie( M_Aq, M_Fq ) = M_model->computeAffineDecomposition();
-            return boost::make_tuple( M_Aq, M_Fq );
-        }
+    {
+      boost::tie( M_Aq, M_Fq ) = M_model->computeAffineDecomposition();
+      return boost::make_tuple( M_Mq, M_Aq, M_Fq );
+    }
+
 
     /**
      * \brief the inner product \f$h1(\xi_i, \xi_j) = \xi_j^T H_1 \xi_i\f$
@@ -461,7 +473,13 @@ public:
     /**
      * \brief Returns the vector coefficients
      */
-    theta_vector_type const& thetaMq() const { return M_model->thetaMq(); }
+    theta_vector_type const& thetaMq() const { return mpl::bool_<model_type::is_time_dependent>(); }
+    theta_vector_type const& thetaMq(mpl::bool_<true>) const { return M_model->thetaMq(); }
+    theta_vector_type const& thetaMq(mpl::bool_<false>) const
+    {
+        theta_vector_type vect;
+        return  vect;
+    }
 
     /**
      * \brief Returns the value of the \f$A_q\f$ coefficient at \f$\mu\f$
@@ -471,7 +489,9 @@ public:
     /**
      * \brief Returns the value of the \f$M_q\f$ coefficient at \f$\mu\f$
      */
-    value_type thetaMq( int q ) const { return M_model->thetaMq( q ); }
+    value_type thetaMq( int q ) const { return thetaMq(q,mpl::bool_<model_type::is_time_dependent>()); }
+    value_type thetaMq( int q, mpl::bool_<true> ) const { return M_model->thetaMq( q ); }
+    value_type thetaMq( int q, mpl::bool_<false> ) const { return 0; }
 
     /**
      * \brief Returns the vector coefficients
@@ -544,7 +564,15 @@ public:
      */
     double scalarProductForPod( vector_type const& X, vector_type const& Y )
     {
+        return scalarProductForPod( X, Y ,mpl::bool_<model_type::is_time_dependent>() );
+    }
+    double scalarProductForPod( vector_type const& X, vector_type const& Y , mpl::bool_<true> )
+    {
       return M_model->scalarProductForPod( X, Y );
+    }
+    double scalarProductForPod( vector_type const& X, vector_type const& Y , mpl::bool_<false> )
+    {
+        return 0;
     }
 
 
@@ -553,8 +581,17 @@ public:
      */
     double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y )
     {
+        return scalarProductForPod( X, Y , mpl::bool_<model_type::is_time_dependent>());
+    }
+    double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y , mpl::bool_<true>)
+    {
       return M_model->scalarProductForPod( X, Y );
     }
+    double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y , mpl::bool_<false>)
+    {
+        return 0;
+    }
+
 
     /**
      * solve the model for a given parameter \p mu
@@ -641,36 +678,64 @@ public:
         {
             return M_model->output( output_index, mu );
         }
+
     int computeNumberOfSnapshots()
+    {
+        return computeNumberOfSnapshots(mpl::bool_<model_type::is_time_dependent>());
+    }
+    int computeNumberOfSnapshots(mpl::bool_<true>)
     {
         return M_model->computeNumberOfSnapshots();
     }
-    double timeStep()
+    int computeNumberOfSnapshots(mpl::bool_<false>)
     {
-        return M_model->timeStep();
-    }
-    double timeInitial()
-    {
-        return M_model->timeInitial();
-    }
-    double timeFinal()
-    {
-        return M_model->timeFinal();
-    }
-    int timeOrder()
-    {
-        return M_model->timeOrder();
+        return 1;
     }
 
-    bool isSteady()
+
+    double timeStep() { return timeStep(mpl::bool_<model_type::is_time_dependent>());}
+    double timeStep(mpl::bool_<true>)
     {
-        return M_model->isSteady();
+        double timestep;
+        if ( M_model->isSteady() ) timestep=1e30;
+        else timestep = M_model->timeStep();
+        return timestep;
     }
+    double timeStep(mpl::bool_<false>){ return 1e30;}
+
+    double timeInitial() { return timeInitial(mpl::bool_<model_type::is_time_dependent>()); }
+    double timeInitial(mpl::bool_<true>) { return M_model->timeInitial(); }
+    double timeInitial(mpl::bool_<false>) { return 0; }
+
+    double timeFinal() {  return timeFinal(mpl::bool_<model_type::is_time_dependent>()); }
+    double timeFinal(mpl::bool_<true>)
+    {
+        double timefinal;
+        if ( M_model->isSteady() ) timefinal=1e30;
+        else timefinal = M_model->timeFinal();
+        return timefinal;
+    }
+    double timeFinal(mpl::bool_<false>) { return 1e30; }
+
+    int timeOrder() { return timeOrder(mpl::bool_<model_type::is_time_dependent>()); }
+    int timeOrder(mpl::bool_<true>) { return M_model->timeOrder(); }
+    int timeOrder(mpl::bool_<false>) { return 0; }
+
+
+    bool isSteady() { return isSteady(mpl::bool_<model_type::is_time_dependent>());}
+    bool isSteady(mpl::bool_<true>) { return M_model->isSteady(); }
+    bool isSteady(mpl::bool_<false>) { return true; }
+
 
     void initializationField(element_ptrtype& initial_field,parameter_type const& mu)
     {
+        return initializationField(initial_field,mu,mpl::bool_<model_type::is_time_dependent>());
+    }
+    void initializationField(element_ptrtype& initial_field,parameter_type const& mu,mpl::bool_<true>)
+    {
         return M_model->initializationField(initial_field,mu);
     }
+    void initializationField(element_ptrtype& initial_field,parameter_type const& mu,mpl::bool_<false>){};
 
 
     //@}
@@ -708,8 +773,6 @@ private:
      *
      */
     offline_merge_type offlineMerge( parameter_type const& mu );
-    offline_merge_type offlineMerge( parameter_type const& mu, mpl::bool_<true>);
-    offline_merge_type offlineMerge( parameter_type const& mu, mpl::bool_<false>);
 
     bool M_is_initialized;
 
@@ -775,17 +838,9 @@ CRBModel<TruthModelType>::initB()
     M_B->addMatrix( eigmin, M );
 }
 
-
-
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::offline_merge_type
 CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
-{
-    return offlineMerge( mu, mpl::bool_<model_type::is_time_dependent>() );
-}
-template<typename TruthModelType>
-typename CRBModel<TruthModelType>::offline_merge_type
-CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu, mpl::bool_<true> )
 {
 
 #if 0
@@ -800,32 +855,8 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu, mpl::bool_<tru
 #endif
     std::vector<vector_ptrtype> F( Nl() );
 
-    //when calling A->zero, PETSc wants to add new nonzero elements
-    //so to do the same thing define A as the mass matrix but with a zero coefficient
-
-    typename functionspace_type::element_type u( M_model->functionSpace() );
-
-    form2( M_model->functionSpace() , M_model->functionSpace() , A, _init=true)
-           =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
-    form2( M_model->functionSpace() , M_model->functionSpace() , M, _init=true)
-           =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
-
-    //WARNING
-    //idea of a better method : bring back the pattern from the model
-    //instead of comparate first_nnz_Aq and first_nnz_A
-    int first_nnz_Aq = M_Aq[0]->graph()->nNz()[0];
-    int first_nnz_A  = A->graph()->nNz()[0];
-    if(first_nnz_Aq > first_nnz_A)
-    {
-        size_type pattern = Feel::Pattern::COUPLED | Feel::Pattern::EXTENDED;
-        form2( M_model->functionSpace() , M_model->functionSpace() , A, _init=true, _pattern=pattern)
-           =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
-        form2( M_model->functionSpace() , M_model->functionSpace() , M, _init=true, _pattern=pattern)
-           =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
-    }
 
     A->close();
-    //A->zero();
     for( int q = 0; q < Qa(); ++q )
     {
         A->addMatrix( this->thetaAq( q ), M_Aq[q] );
@@ -833,11 +864,11 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu, mpl::bool_<tru
 
 
     M->close();
-    //M->zero();
     for( int q = 0; q < Qm(); ++q )
     {
         M->addMatrix( this->thetaMq( q ), M_Mq[q] );
     }
+
 
     for( int l = 0;l < Nl(); ++l )
     {
@@ -853,63 +884,6 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu, mpl::bool_<tru
 
     return boost::make_tuple( M, A, F );
 }
-
-template<typename TruthModelType>
-typename CRBModel<TruthModelType>::offline_merge_type
-CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu, mpl::bool_<false> )
-{
-#if 0
-    sparse_matrix_ptrtype A( M_backend->newMatrix( M_model->functionSpace(),
-                                                   M_model->functionSpace() ) );
-#else
-    auto A = this->newMatrix();
-#endif
-    std::vector<vector_ptrtype> F( Nl() );
-
-
-    typename functionspace_type::element_type u( M_model->functionSpace() );
-
-    form2( M_model->functionSpace() , M_model->functionSpace() , A, _init=true)
-           =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
-
-
-    //WARNING
-    //better method : bring back the pattern from the model instead of comparate first_nnz_Aq and first_nnz_A
-    int first_nnz_Aq = M_Aq[0]->graph()->nNz()[0];
-    int first_nnz_A  = A->graph()->nNz()[0];
-    if(first_nnz_Aq > first_nnz_A)
-    {
-        size_type pattern = Feel::Pattern::COUPLED | Feel::Pattern::EXTENDED;
-        form2( M_model->functionSpace() , M_model->functionSpace() , A, _init=true, _pattern=pattern)
-           =  integrate( elements( M_model->functionSpace()->mesh() ), 0*Feel::vf::id(u)*Feel::vf::idt(u) );
-    }
-
-
-    A->close();
-    //*A = *M_Aq[0];
-    //A->scale( this->thetaAq( 0 ) );
-    //A->zero();
-    for( int q = 0; q < Qa(); ++q )
-    {
-        A->addMatrix( this->thetaAq( q ), M_Aq[q] );
-    }
-
-    for( int l = 0;l < Nl(); ++l )
-    {
-        F[l] = M_backend->newVector( M_model->functionSpace() );
-        F[l]->close();
-        F[l]->zero();
-        for( int q = 0; q < Ql(l); ++q )
-        {
-            F[l]->add( this->thetaL( l, q ), M_Fq[l][q] );
-        }
-    }
-
-    return boost::make_tuple( A, F );
-}
-
-
-
 
 
 
