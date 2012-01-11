@@ -181,41 +181,41 @@ operator<<( std::ostream& __os, Block const& __b )
 /// \endcond
 
 
-template <int NR, int NC, typename T= boost::shared_ptr< MatrixSparse<double> > >
-struct Blocks
+template <typename T= boost::shared_ptr< MatrixSparse<double> > >
+struct BlocksBase
 {
-    static const uint16_type NBLOCKROWS = NR;
-    static const uint16_type NBLOCKCOLS = NC;
-
     typedef T block_type;
     //typedef boost::shared_ptr<block_type> block_ptrtype;
     //typedef MatrixSparse<T> matrix_type;
     //typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
 
-    Blocks()
+    BlocksBase(uint16_type nr,uint16_type nc)
         :
-        M_vec(NR*NC),
+        M_nRow(nr),
+        M_nCol(nc),
+        M_vec(nr*nc),
         M_cptToBuild(0)
     {
         //M_vec.clear();
     }
 
-    Blocks(block_type a)
+    BlocksBase(uint16_type nr,uint16_type nc,block_type const & a)
         :
-        M_vec(NR*NC, a),
+        M_vec(nr*nc, a),
         M_cptToBuild(0)
     {}
 
-    Blocks(Blocks<NR,NC,T> const & b)
+    BlocksBase(BlocksBase<T> const & b)
         :
+        M_nRow(b.M_nRow),
+        M_nCol(b.M_nCol),
         M_vec(b.M_vec),
         M_cptToBuild(b.M_cptToBuild)
     {}
 
-    Blocks<NR,NC,T>
+    BlocksBase<T>
     operator<<(block_type m)
     {
-        //M_vec.push_back(m);
         M_vec[M_cptToBuild]=m;
         ++M_cptToBuild;
         return *this;
@@ -224,16 +224,57 @@ struct Blocks
     block_type
     operator()(int16_type c1,int16_type c2)
     {
-        return M_vec[c1*NBLOCKCOLS+c2];
+        return M_vec[c1*M_nCol+c2];
     }
 
     std::vector<block_type>
     getSetOfBlocks() const { return M_vec; }
 
+    uint16_type nRow() const { return M_nRow; }
+    uint16_type nCol() const { return M_nCol; }
+
+
 private :
+    uint16_type M_nRow,M_nCol;
     std::vector<block_type> M_vec;
     int16_type M_cptToBuild;
 };
+
+
+
+template <int NR, int NC, typename T= boost::shared_ptr< MatrixSparse<double> > >
+struct Blocks : public BlocksBase<T>
+{
+    static const uint16_type NBLOCKROWS = NR;
+    static const uint16_type NBLOCKCOLS = NC;
+
+    typedef BlocksBase<T> super_type;
+    typedef T block_type;
+
+    Blocks()
+        :
+        super_type(NR,NC)
+    {}
+
+    Blocks(block_type a)
+        :
+        super_type(NR,NC, a)
+    {}
+
+    Blocks<NR,NC,T>
+    operator<<(block_type m)
+    {
+        super_type::operator<<(m);
+        return *this;
+    }
+
+};
+
+
+
+
+
+
 
 
 } // vf
