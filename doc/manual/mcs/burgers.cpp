@@ -22,7 +22,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file Burger.cpp
+   \file Burgers.cpp
    \author Mehdi DAOU, Mamadou BATHILY
    \date 2011-02-11
  */
@@ -49,24 +49,24 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description burgeroptions("Burger problem options");
-    burgeroptions.add_options()
+    Feel::po::options_description burgersoptions("Burgers problem options");
+    burgersoptions.add_options()
         ("nu", Feel::po::value<double>()->default_value( 0.01 ), "value of viscosity")
         ("dt", Feel::po::value<double>()->default_value( 1.0 ), "step time")
         ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
         ("hsize", Feel::po::value<double>()->default_value( 0.05 ), "first h value to start convergence")
         ;
-    return burgeroptions.add( Feel::feel_options() );
+    return burgersoptions.add( Feel::feel_options() );
 }
 // information about this class
 inline
 Feel::AboutData
 makeAbout()
 {
-    Feel::AboutData about( "burger" ,
-                           "burger" ,
+    Feel::AboutData about( "Burgers" ,
+                           "Burgers" ,
                            "0.1",
-                           "nD(n=1) burger problem",
+                           "nD(n=1) Burgers problem",
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2008-2009 Université Joseph Fourier");
 
@@ -79,14 +79,14 @@ namespace Feel
 {
     using namespace Feel::vf;
     /**
-     * Burger Problem
+     * Burgers Problem
      *
      * solve \f$\frac{\partial t}{\partial u}-\nu \Delta u + u*\nabla u = 0, u_I = 0\f$ on \f$ I \f$ , \f$ u_\Omega = \sin (x) \f$ on \f$\Omega\f$
      */
     template<int Dim,
              int Order = 1,
              template<uint16_type,uint16_type,uint16_type> class Entity = Simplex>
-    class Burger
+    class Burgers
         :
             public Application
     {
@@ -95,7 +95,7 @@ namespace Feel
         public:
 
             // -- TYPEDEFS --
-            typedef Burger<Dim,Order, Entity> self_type;
+            typedef Burgers<Dim,Order, Entity> self_type;
 
             typedef double value_type;
 
@@ -117,7 +117,7 @@ namespace Feel
             typedef bases<Lagrange<Order, Scalar> > basis_type;
 
             /* number of dofs per element */
-            static const uint16_type nLocalDof = 
+            static const uint16_type nLocalDof =
                                              boost::remove_reference<typename fusion::result_of::at<basis_type,mpl::int_<0> >::type>::type::nLocalDof;
 
             /*space*/
@@ -139,7 +139,7 @@ namespace Feel
             /**
              * Constructor
              */
-            Burger( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+            Burgers( int argc, char** argv, AboutData const& ad, po::options_description const& od );
 
             /**
              * run the convergence test
@@ -166,10 +166,10 @@ namespace Feel
         functionspace_ptrtype M_Xh;
 
         export_ptrtype exporter;
-    }; // Burger
+    }; // Burgers
 
     template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-    Burger<Dim,Order,Entity>::Burger( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    Burgers<Dim,Order,Entity>::Burgers( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
         M_backend( backend_type::build( this->vm() ) ),
@@ -192,7 +192,7 @@ namespace Feel
                                 % this->vm()["hsize"].template as<double>()
                                 % this->vm()["nu"].template as<double>()
                                 );
-        //creation of the mesh        
+        //creation of the mesh
         value_type pi = M_PI;
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
@@ -208,9 +208,9 @@ namespace Feel
         exporter = export_ptrtype( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
     }
 
-    
+
     template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-    void Burger<Dim, Order, Entity>::run() 
+    void Burgers<Dim, Order, Entity>::run()
     {
         using namespace Feel::vf;
         //mesh
@@ -219,50 +219,31 @@ namespace Feel
         element_type u( M_Xh, "u" );
         element_type v( M_Xh, "v" );
         element_type vv( M_Xh, "vv" );
-        
+
         // u0's value
         auto M_c = sin(Px());
+        auto uo=vf::project(M_Xh,elements(mesh),M_c);
 
         value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
         auto t = 0.0;
         auto f = 0;
         auto g = 0;
-
-        // definition of our vector and matrix that we use in our 
+        //export result
+        exportResults( uo, t);
+        // definition of our vector and matrix that we use in our
         auto F = M_backend->newVector(M_Xh);
-        auto D = M_backend->newMatrix(M_Xh,M_Xh); 
-       
+        auto D = M_backend->newMatrix(M_Xh,M_Xh);
+
         // we begin resolution with t=dt
         t=dt;
 
-        // bilinear part in our variationnal form
-        form2( _test=M_Xh, _trial=M_Xh, _matrix=D , _init=true) = integrate( elements( mesh ), M_nu*gradt(u)*trans(grad(v)) );
-        form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idt(u)/dt) + M_c*gradt(u) )*id(v) );
-        form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
-                               ( - trans(id(v))*(gradt(u)*N())));
-        D->close();
 
-        // strong limits conditions
-        form2( M_Xh, M_Xh, D ) +=
-            on( markedfaces(mesh,1), u, F, cst(0.) );
-        form2( M_Xh, M_Xh, D ) +=
-            on( markedfaces(mesh,3), u, F, cst(0.) );
-
-        // linear form (right hand side)
-        form1( M_Xh, F , _init=true) = integrate( elements( mesh ),  f*id(v)+M_c*id(v)/dt);
-        F->close();
-        
-        // we solve our linear system
-        backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
-        
-        // we export u at t 
-        exportResults( u, t); 
-        
-        vv = u;
+       //velocity at t=0
+        vv = uo;
         //time loop
-        for(t = 2*dt;t<=100.0;t+=dt)
+        for(t = dt;t<=100.0;t+=dt)
         {
-            //creation of the matrix D      
+            //creation of the matrix D
             form2( _test=M_Xh, _trial=M_Xh, _matrix=D , _init=true) = integrate( elements( mesh ), M_nu*gradt(u)*trans(grad(v)) );
             form2( M_Xh, M_Xh, D ) +=  integrate( elements( mesh ),  ( ( idt(u)/dt) + idv(vv)*gradt(u) )*id(v) );
             form2( M_Xh, M_Xh, D ) +=  integrate( boundaryfaces(mesh),
@@ -281,17 +262,17 @@ namespace Feel
             integrate( boundaryfaces(mesh), -(grad(v)*N())*g );
             F->close();
 
-            //resolution 
+            //resolution
             backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
 
             //we save the u^n-1
             vv = u;
-            exportResults( u, t); 
-        } 
+            exportResults( u, t);
+        }
     }
 
     template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-    void Burger<Dim, Order, Entity>::exportResults( element_type& U, double t) 
+    void Burgers<Dim, Order, Entity>::exportResults( element_type& U, double t)
     {
         if ( exporter->doExport() )
         {
@@ -306,16 +287,16 @@ namespace Feel
 int main( int argc, char** argv )
 {
     using namespace Feel;
-    
+
     /* change parameters below */
     const int nDim = 1;
     const int nOrder = 1;
-    typedef Feel::Burger<nDim, nOrder> burger_app_type;
+    typedef Feel::Burgers<nDim, nOrder> burgers_app_type;
 
     /* instantiate application */
-    burger_app_type burger( argc, argv, makeAbout(), makeOptions() );
+    burgers_app_type burgers( argc, argv, makeAbout(), makeOptions() );
 
     /* run application */
-    burger.run();
+    burgers.run();
 }
 
