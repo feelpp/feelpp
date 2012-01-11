@@ -54,6 +54,7 @@
 
 //#include <feel/feelvf/bilinearform.hpp>
 #include <feel/feelvf/pattern.hpp>
+#include <feel/feelvf/block.hpp>
 
 namespace Feel
 {
@@ -103,6 +104,9 @@ auto ref( T& t ) -> decltype( ref( t, detail::is_shared_ptr<T>() ) )
 
 }
 ///! \endcond detail
+
+template<int NR, int NC, typename T>
+class MatrixBlock;
 
 /**
  * \class Backend
