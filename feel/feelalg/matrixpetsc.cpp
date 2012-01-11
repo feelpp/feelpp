@@ -412,7 +412,7 @@ void MatrixPetsc<T>::zero ()
         ierr = MatZeroEntries(_M_mat);
         CHKERRABORT(this->comm(),ierr);
 
-        this->zeroEntriesDiagonal();
+        //this->zeroEntriesDiagonal();
     }
     else
     {
@@ -1413,12 +1413,16 @@ void MatrixPetsc<T>::zeroEntriesDiagonal()
     for (uint i = 0;i <std::min(this->size1(),this->size2());++i)
         this->set(i,i,0.);
 #else
+    std::cout << "zeroEntriesDiagonal()"<< std::endl;
     for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
         {
-            size_type index = it->first;
-            //if (!it->second.get<2>().empty())
-            if (it->second.get<2>().find(index)!=it->second.get<2>().end()  )
-                this->set(index,index,0.);
+            size_type index = it->first;std::cout << "\n index " << index;
+            if (index < std::min(this->size1(),this->size2()))
+                {
+                    //if (!it->second.get<2>().empty())
+                    if (it->second.get<2>().find(index)!=it->second.get<2>().end()  )
+                        this->set(index,index,0.);
+                }
         }
 #endif
 #endif
