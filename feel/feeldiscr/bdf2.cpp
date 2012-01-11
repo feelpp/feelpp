@@ -48,6 +48,7 @@ po::options_description bdf_options( std::string const& prefix )
         (prefixvm( prefix, "bdf.strategy").c_str(), Feel::po::value<int>()->default_value( 0 ), "strategy, 0=constant time steps, 1=adaptive time steps")
         (prefixvm( prefix, "bdf.steady").c_str(), Feel::po::value<bool>()->default_value( 0 ), "false: unsteady, true:steady")
         (prefixvm( prefix, "bdf.restart").c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart ")
+        (prefixvm( prefix, "bdf.restart.path").c_str(), Feel::po::value<std::string>()->default_value( "" ), "path where we reload old data")
         (prefixvm( prefix, "bdf.iterations-between-order-change").c_str(), Feel::po::value<int>()->default_value( 1 ), "iteration between time order change")
         ;
     return _options;

@@ -93,6 +93,7 @@ public:
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
         M_restart( false ),
+        M_restartPath( "" ),
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER )
     {}
@@ -112,6 +113,7 @@ public:
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
         M_restart(args[_restart | false]),
+        M_restartPath( args[_restart_path | ""] ),
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER )
         {
@@ -132,6 +134,7 @@ public:
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
         M_restart( vm[prefixvm( prefix, "bdf.restart")].as<bool>() ),
+        M_restartPath( vm[prefixvm( prefix, "bdf.restart.path")].as<std::string>() ),
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER )
     {
@@ -150,6 +153,7 @@ public:
         M_state( BDF_UNITIALIZED ),
         M_n_restart( 0 ),
         M_restart( false ),
+        M_restartPath(""),
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER )
     {
@@ -169,6 +173,7 @@ public:
         M_state( b.M_state ),
         M_n_restart( b.M_n_restart ),
         M_restart( b.M_restart ),
+        M_restartPath( b.M_restartPath),
         M_time_values_map( b.M_time_values_map ),
         M_alpha( b.M_alpha ),
         M_beta( b.M_beta )
@@ -202,6 +207,7 @@ public:
                 M_iterations_between_order_change = b.M_iterations_between_order_change;
                 M_n_restart = b.M_n_restart;
                 M_restart = b.M_restart;
+                M_restartPath = b.M_restartPath;
                 M_strategy = b.M_strategy;
                 M_state = b.M_state;
 
@@ -412,6 +418,7 @@ public:
 
     //! return the relative path where the bdf data is stored
     fs::path path() { return M_path_save; }
+    fs::path restartPath() { return M_restartPath; }
 
     void setOrder( int order ) { M_order = order; }
     void setTimeInitial( double ti ) { M_Ti = ti; }
@@ -420,6 +427,7 @@ public:
     void setStrategy( int strategy ) { M_strategy = (BDFStragegy)strategy; }
     void setSteady( bool steady = true ) { if ( steady ) { M_dt=1e30; M_Tf=1e30; } }
     void setRestart( bool doRestart ) { M_restart=doRestart; }
+    void setRestartPath( std::string s ) { M_restartPath=s; }
 
     void print() const
     {
@@ -461,6 +469,7 @@ protected:
 
     int M_n_restart;
     bool M_restart;
+    fs::path M_restartPath;//M_pathRestart;
 
     //! timer for real time per iteration
     mutable boost::timer M_timer;
@@ -544,12 +553,18 @@ protected:
 
         if ( M_restart )
             {
+                //fs::ifstream ifs;
+                fs::path thepath;
+                if ( this->restartPath().empty() ) thepath=this->path()/"metadata";//   ifs.open(this->path()/"metadata");
+                else thepath=this->restartPath()/this->path()/"metadata"; //ifs.open(this->restartPath()/this->path()/"metadata");
+
                 // read the saved bdf data
-                if ( fs::exists( M_path_save / "metadata" ) )
+                if ( fs::exists( thepath/* this->restartPath() / this->path() / "metadata" )*/ ) )
                     {
                         Debug( 5017 ) << "[Bdf] loading metadata from " << M_path_save.string() << "\n";
 
-                        fs::ifstream ifs( this->path() / "metadata");
+                        //fs::ifstream ifs( this->restartPath() / this->path() / "metadata")
+                        fs::ifstream ifs(thepath);
 
 
                         boost::archive::text_iarchive ia(ifs);
@@ -566,11 +581,13 @@ protected:
                                 if ( math::abs( time-M_Ti ) < 1e-10 )
                                     {
                                         //M_iteration = time.first;
+                                        //std::cout << "time found " << time << std::endl;
                                         found = true;
                                         break;
                                     }
                                 ++M_iteration;
                             }
+                        //std::cout << "M_iteration " << M_iteration << std::endl;
 
                         if ( !found )
                             {
@@ -579,6 +596,10 @@ protected:
                                 M_iteration = 0;
                                 M_time_values_map.clear();
                                 return;
+                            }
+                        else
+                            {
+                                M_time_values_map.resize(M_iteration+1);
                             }
                         Debug( 5017 ) << "[Bdf] initial time is Ti=" << M_Ti << "\n";
 
@@ -604,8 +625,11 @@ public:
 
     void load()
     {
-        fs::ifstream ifs( M_bdf.path() / "metadata");
+        fs::ifstream ifs;
 
+        if ( M_bdf.restartPath().empty() ) ifs.open(M_bdf.path()/"metadata");
+        else ifs.open(M_bdf.restartPath()/M_bdf.path()/"metadata");
+        //fs::ifstream ifs( M_bdf.path() / "metadata");
 
         boost::archive::text_iarchive ia(ifs);
         ia >> BOOST_SERIALIZATION_NVP(M_bdf);
@@ -855,8 +879,11 @@ Bdf<SpaceType>::init()
 
                     Debug( 5017 ) << "[Bdf::init()] load file: " << ostr.str() << "\n";
 
-                    fs::ifstream ifs(M_path_save / ostr.str(), std::ios::binary);
+                    fs::ifstream ifs;
+                    if ( this->restartPath().empty() ) ifs.open(this->path()/ostr.str());
+                    else ifs.open(this->restartPath()/this->path()/ostr.str());
 
+                    //fs::ifstream ifs (this->restartPath() / this->path() / ostr.str(), std::ios::binary);
 
                     // load data from archive
                     boost::archive::binary_iarchive ia(ifs);
@@ -1068,6 +1095,7 @@ BOOST_PARAMETER_FUNCTION(
      (strategy,*(boost::is_integral<mpl::_>),vm[prefixvm(prefix,"bdf.strategy")].template as<int>())
      (steady,*(bool),vm[prefixvm(prefix,"bdf.steady")].template as<bool>())
      (restart,*(boost::is_integral<mpl::_>),vm[prefixvm(prefix,"bdf.restart")].template as<bool>())
+     (restart_path,*,vm[prefixvm(prefix,"bdf.restart.path")].template as<std::string>())
      ))
 {
     typedef typename meta::remove_all<space_type>::type::value_type _space_type;
@@ -1079,6 +1107,7 @@ BOOST_PARAMETER_FUNCTION(
     thebdf->setSteady( steady );
     thebdf->setStrategy( strategy );
     thebdf->setRestart(restart);
+    thebdf->setRestartPath(restart_path);
     return thebdf;
 }
 
