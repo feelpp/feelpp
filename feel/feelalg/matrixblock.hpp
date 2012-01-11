@@ -59,31 +59,17 @@ template<typename T> class Backend;
  * @author Vincent Chabannes
  */
 
-template<int NR, int NC, typename T>
-class MatrixBlock : public MatrixSparse<T>
+template< typename T>
+class MatrixBlockBase : public MatrixSparse<T>
 {
     typedef MatrixSparse<T> super;
 public:
-
-    /** @name Constants
-     */
-    //@{
-
-    //! number of rows
-    static const uint16_type NBLOCKROWS = NR;
-
-    //! number of columns
-    static const uint16_type NBLOCKCOLS = NC;
-
-    static const uint16_type NBLOCKSIZE = NR * NC;
-    //@}
-
 
     /** @name Typedefs
      */
     //@{
 
-    typedef MatrixBlock<NR,NC,T> self_type;
+    typedef MatrixBlockBase<T> self_type;
 
     typedef typename super::value_type value_type;
     typedef typename super::real_type real_type;
@@ -105,22 +91,21 @@ public:
      */
     //@{
 
-    MatrixBlock( vf::Blocks<NR,NC,matrix_ptrtype > const & blockSet,
-                 backend_type &backend,
-                 bool copy_values=true,
-                 bool diag_is_nonzero=true );
+    MatrixBlockBase( vf::BlocksBase<matrix_ptrtype > const & blockSet,
+                     backend_type &backend,
+                     bool copy_values=true,
+                     bool diag_is_nonzero=true );
 
     void mergeBlockGraph(graph_ptrtype & globGraphb, matrix_ptrtype m,
                          size_type start_i, size_type start_j);
 
-    MatrixBlock( MatrixBlock const & mb )
+    MatrixBlockBase( MatrixBlockBase const & mb )
         :
         super( mb ),
-        //M_v( mb.M_v ),
         M_mat(mb.M_mat )
     {}
 
-    ~MatrixBlock()
+    ~MatrixBlockBase()
     {}
 
     //@}
@@ -129,11 +114,10 @@ public:
      */
     //@{
 
-    MatrixBlock operator=( MatrixBlock const& mb )
+    MatrixBlockBase operator=( MatrixBlockBase const& mb )
     {
         if ( this != &mb )
             {
-                //M_v = mb.M_v;
                 M_mat = mb.M_mat;
             }
         return *this;
@@ -441,9 +425,55 @@ private:
     boost::shared_ptr<MatrixSparse<value_type> > M_mat;
 };
 
+
+template<int NR, int NC, typename T>
+class MatrixBlock : public MatrixBlockBase<T>
+{
+    typedef MatrixBlockBase<T> super_type;
+
+public:
+
+    static const uint16_type NBLOCKROWS = NR;
+    static const uint16_type NBLOCKCOLS = NC;
+    static const uint16_type NBLOCKSIZE = NR * NC;
+
+    typedef typename super_type::value_type value_type;
+    typedef typename super_type::matrix_ptrtype matrix_ptrtype;
+    typedef typename super_type::backend_type backend_type;
+    typedef vf::Blocks<NBLOCKROWS,NBLOCKCOLS,matrix_ptrtype > blocks_type;
+
+    MatrixBlock(  blocks_type const & blockSet,
+                  backend_type &backend,
+                  bool copy_values=true,
+                  bool diag_is_nonzero=true )
+        :
+        super_type(blockSet,backend,copy_values,diag_is_nonzero)
+    {}
+
+    MatrixBlock( MatrixBlock const & mb )
+        :
+        super_type( mb )
+    {}
+
+    MatrixBlock operator=( MatrixBlock const& mb )
+    {
+        super_type::operator=(mb);
+        return *this;
+    }
+
+    MatrixBlock & operator = ( matrix_ptrtype const& M )
+    {
+        super_type::operator=(M);
+        return *this;
+    }
+
+}; // MatrixBlock
+
+
+
 } // Feel
 
 
-#include <feel/feelalg/matrixblock.cpp>
+//#include <feel/feelalg/matrixblock.cpp>
 
 #endif /* __MatrixBlock_H */

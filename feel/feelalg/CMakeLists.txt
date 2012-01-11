@@ -38,7 +38,7 @@ set( SRC
   vector.cpp vectorublas.cpp
   backend.cpp backendgmm.cpp backend_adaptive_reuse_pc.cpp backendpetsc.cpp
   graphcsr.cpp matrixgmm.cpp solvereigen.cpp
-  solvernonlinear.cpp
+  solvernonlinear.cpp matrixblock.cpp
   ${FEEL_PETSC_SRCS}
   ${FEEL_SLEPC_SRCS}
   ${FEEL_TRILINOS_SRCS}
