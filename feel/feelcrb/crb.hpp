@@ -64,6 +64,7 @@
 #include <feel/feelcore/serialization.hpp>
 #include <feel/feelcrb/pod.hpp>
 #include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
 namespace Feel
 {
@@ -135,8 +136,6 @@ public:
     typedef POD<truth_model_type> pod_type;
     typedef boost::shared_ptr<pod_type> pod_ptrtype;
 
-
-
     //! function space type
     typedef typename model_type::functionspace_type functionspace_type;
     typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
@@ -158,6 +157,7 @@ public:
     typedef std::vector<boost::tuple<double,double> > y_bounds_type;
 
     typedef std::vector<element_type> wn_type;
+    typedef boost::tuple< std::vector<wn_type> , std::vector<std::string> > export_vector_wn_type;
 
     typedef std::vector<double> vector_double_type;
     typedef boost::shared_ptr<vector_double_type> vector_double_ptrtype;
@@ -184,6 +184,11 @@ public:
     typedef Bdf<space_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
+    // ! export
+    typedef Exporter<mesh_type> export_type;
+    typedef boost::shared_ptr<export_type> export_ptrtype;
+
+
 
     //@}
 
@@ -204,7 +209,8 @@ public:
         M_Dmu( new parameterspace_type ),
         M_Xi( new sampling_type( M_Dmu ) ),
         M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_WNmu_complement()
+        M_WNmu_complement(),
+        exporter( Exporter<mesh_type>::New( "ensight" ) )
         {
 
         }
@@ -229,7 +235,8 @@ public:
         M_Xi( new sampling_type( M_Dmu ) ),
         M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_WNmu_complement(),
-        M_scm( new scm_type( name, vm ) )
+        M_scm( new scm_type( name, vm ) ),
+        exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) )
         {
             if ( this->loadDB() )
                 std::cout << "Database " << this->lookForDB() << " available and loaded\n";
@@ -409,6 +416,13 @@ public:
      * \param N : sampling size (optional input with default value)
      */
     void computeErrorEstimationEfficiencyIndicator (parameterspace_ptrtype const& Dmu, double& max_ei, double& min_ei,int N);
+
+
+    /**
+     * export basis functions to visualize it
+     * \param wn : tuple composed of a vector of wn_type and a vector of string (used to name basis)
+     */
+    void exportBasisFunctions( const export_vector_wn_type& wn )const ;
 
     /**
      * Returns the lower bound of the output
@@ -639,6 +653,10 @@ private:
     bool solve_dual_problem;
 
     convergence_type M_rbconv;
+
+
+    //export
+    export_ptrtype exporter;
 
     //scm
     scm_ptrtype M_scm;
@@ -1376,6 +1394,21 @@ CRB<TruthModelType>::offline()
 
 
 
+    bool visualize_basis = this->vm()["crb.visualize-basis"].template as<bool>() ;
+    if( visualize_basis )
+    {
+        std::vector<wn_type> wn;
+        std::vector<std::string> names;
+        wn.push_back(M_WN);    names.push_back("primal");
+        wn.push_back(M_WNdu);  names.push_back("dual");
+        exportBasisFunctions( boost::make_tuple( wn ,names ) );
+        if( orthonormalize_primal || orthonormalize_dual )
+        {
+            std::cout<<"[CRB::offline] Basis functions have been exported but warning elements have been orthonormalized"<<std::endl;
+        }
+    }
+
+
     this->saveDB();
     std::cout << "Offline CRB is done\n";
 
@@ -1393,8 +1426,18 @@ CRB<TruthModelType>::checkResidual(parameter_type const& mu, std::vector<double>
 {
 
 
-    if( orthonormalize_primal || orthonormalize_dual || !M_model->isSteady() )
-        throw std::logic_error( "[CRB::checkResidual] ERROR : to check residual don't use orthonormalization and select steady state" );
+    if( orthonormalize_primal || orthonormalize_dual )
+    {
+        throw std::logic_error( "[CRB::checkResidual] ERROR : to check residual don't use orthonormalization" );
+    }
+    if( !M_model->isSteady() )
+    {
+        throw std::logic_error( "[CRB::checkResidual] ERROR : to check residual select steady state" );
+    }
+    if( M_error_type==CRB_NO_RESIDUAL || M_error_type==CRB_EMPIRICAL )
+    {
+        throw std::logic_error( "[CRB::checkResidual] ERROR : to check residual set option crb.error-type to 0 or 1" );
+    }
 
     int size = mu.size();
     if(0)
@@ -2160,6 +2203,52 @@ CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn) const
     //FEEL_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
 }
 
+
+template <typename TruthModelType>
+void
+CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_vector_wn )const
+{
+
+
+    std::vector<wn_type> vect_wn=export_vector_wn.get<0>();
+    std::vector<std::string> vect_names=export_vector_wn.get<1>();
+
+    if( vect_wn.size()==0 )
+    {
+        throw std::logic_error( "[CRB::exportBasisFunctions] ERROR : there are no wn_type to export" );
+    }
+
+
+    auto first_wn = vect_wn[0];
+    auto first_element = first_wn[0];
+
+    exporter->step(0)->setMesh( first_element.functionSpace()->mesh() );
+    int basis_number=0;
+    BOOST_FOREACH( auto wn , vect_wn )
+    {
+
+        if( wn.size()==0 )
+        {
+            throw std::logic_error( "[CRB::exportBasisFunctions] ERROR : there are no element to export" );
+        }
+
+        int element_number=0;
+        BOOST_FOREACH( auto element, wn )
+        {
+            std::string basis_name = vect_names[basis_number];
+            std::string number = (boost::format("_%1%") %element_number).str() ;
+            std::string name =   basis_name + number;
+            exporter->step(0)->add( name, element );
+
+            element_number++;
+        }
+        basis_number++;
+    }
+
+    exporter->save();
+
+
+}
 
 
 //error estimation only to build reduced basis
