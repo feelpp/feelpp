@@ -39,6 +39,10 @@ configure.args  --with-python --with-debugging=0 \
 		--with-mpiexec=${prefix}/bin/openmpiexec \
         --download-umfpack \
         --download-ml \
+        --download-parmetis \
+        --download-blacs \
+        --download-scalapack \
+        --download-mumps \
 		--with-fc=${prefix}/bin/openmpif90 \
 		--LIBS=-lstdc++
 
