@@ -323,7 +323,6 @@ void MatrixPetsc<T>::init (const size_type m,
 template <typename T>
 void MatrixPetsc<T>::setIndexSplit(std::vector< std::vector<int> > const &indexSplit )
 {
-
     this->M_IndexSplit=indexSplit;
 
     _M_petscIS.resize(indexSplit.size());
@@ -333,13 +332,38 @@ void MatrixPetsc<T>::setIndexSplit(std::vector< std::vector<int> > const &indexS
     for (uint i = 0 ; i < indexSplit.size(); ++i)
         {
             PetscInt nDofForThisField = indexSplit[i].size();
+            //std::cout << "\n setIndexSplit " << i << " ndof:" << nDofForThisField << "\n";
+
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-            ierr = ISCreateGeneral(this->comm(),nDofForThisField,indexSplit[i].data(),PETSC_COPY_VALUES,&_M_petscIS[i] );
+            ierr = ISCreateGeneral(this->comm(),nDofForThisField,this->M_IndexSplit[i].data(),PETSC_COPY_VALUES,&_M_petscIS[i] );
 #else
-            ierr = ISCreateGeneral(this->comm(),nDofForThisField,indexSplit[i].data(),&_M_petscIS[i] );
+            ierr = ISCreateGeneral(this->comm(),nDofForThisField,this->M_IndexSplit[i].data(),&_M_petscIS[i] );
 #endif
             CHKERRABORT(this->comm(),ierr);
+
+#if 0
+            ISView(_M_petscIS[i],PETSC_VIEWER_STDOUT_SELF);
+
+            PetscInt n;
+            /*
+              Get the number of indices in the set
+            */
+            ISGetLocalSize(_M_petscIS[i],&n);
+            std::cout << "Local size: " << n << "\n";
+            const PetscInt *nindices;
+
+            /*
+              Get the indices in the index set
+            */
+            ISGetIndices(_M_petscIS[i],&nindices);
+            for(int j = 0;j < n; ++j )
+            {
+                std::cout << nindices[j] << " ";
+            }
+            std::cout << "\n";
+#endif
         }
+    //std::cout << "\n setIndexSplit done\n";
 }
 
 template <typename T>
@@ -358,17 +382,23 @@ void MatrixPetsc<T>::updatePCFieldSplit(PC & pc)
             ierr = PCGetType(pc,&pcName);
             CHKERRABORT(this->comm(),ierr);
 
+
             if ( std::string( PCFIELDSPLIT ) == std::string(pcName) )
                 {
-                    //std::cout << "\n updatePCFieldSplit \n";
+                    std::cout << "\n updatePCFieldSplit " << _M_petscIS.size() << "\n";
                     _M_mapPC[&pc]=true;
                     for (uint i = 0 ; i < _M_petscIS.size(); ++i)
                         {
+                            std::cout << "\n split " << i << "\n";
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+                            std::cout << "\n version >= 3.2 \n";
                             ierr=PCFieldSplitSetIS(pc,PETSC_NULL,_M_petscIS[i]);
 #else
+                            std::cout << "\n version < 3.2 \n";
                             ierr=PCFieldSplitSetIS(pc,_M_petscIS[i]);
 #endif
+                            std::cout << "\n split " << i << "done\n" << std::endl;
+
                             CHKERRABORT(this->comm(),ierr);
                         }
                 }

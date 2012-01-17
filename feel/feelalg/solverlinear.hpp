@@ -24,6 +24,7 @@
 
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/enums.hpp>
+#include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelcore/traits.hpp>
 
 namespace Feel
@@ -51,6 +52,8 @@ public:
 
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
+
+    typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
 
     /**
      *  Constructor. Initializes Solver data structures
@@ -140,21 +143,45 @@ public:
      * Sets the type of solver to use.
      */
     void setSolverType (const SolverType st)
-    { _M_solver_type = st; }
+        { _M_solver_type = st; }
 
     /**
      * Returns the type of preconditioner to use.
      */
-    PreconditionerType preconditionerType () const { return _M_preconditioner_type; }
+    PreconditionerType preconditionerType () const
+        {
+            if ( M_preconditioner )
+                return M_preconditioner->type();
+            return _M_preconditioner_type;
+        }
 
     /**
      * Sets the type of preconditioner to use.
      */
     void setPreconditionerType (const PreconditionerType pct)
-    { _M_preconditioner_type = pct; }
+        {
+            if ( M_preconditioner )
+                M_preconditioner->setType( pct );
+            else
+                _M_preconditioner_type = pct;
+        }
+
+    /**
+     * Attaches a Preconditioner object to be used by the solver
+     */
+    void attachPreconditioner(preconditioner_ptrtype preconditioner)
+        {
+            if(this->_M_is_initialized)
+            {
+                std::cerr<<"Preconditioner must be attached before the solver is initialized!"<<std::endl;
+            }
+
+            _M_preconditioner_type = SHELL_PRECOND;
+            M_preconditioner = preconditioner;
+        }
 
     void setFieldSplitType( const FieldSplitType fst )
-    { _M_fieldSplit_type = fst; }
+        { _M_fieldSplit_type = fst; }
 
     FieldSplitType fieldSplitType() const { return _M_fieldSplit_type; }
 
@@ -201,7 +228,7 @@ public:
            const double tolerance,
            const unsigned int maxit,
            bool transpose
-           ) = 0;
+        ) = 0;
 
 
 
@@ -228,7 +255,7 @@ public:
            const double tolerance,
            const unsigned int maxit,
            bool transpose
-           ) = 0;
+        ) = 0;
 
 
 protected:
@@ -237,9 +264,9 @@ protected:
      * set initialized only for subclasses
      */
     void setInitialized( bool init )
-    {
-        _M_is_initialized = init;
-    }
+        {
+            _M_is_initialized = init;
+        }
 
 protected:
 
@@ -267,6 +294,12 @@ protected:
      * Enum statitng with type of preconditioner to use.
      */
     PreconditionerType _M_preconditioner_type;
+
+    /**
+     * Holds the Preconditioner object to be used for the linear solves.
+     */
+    preconditioner_ptrtype M_preconditioner;
+
 
     FieldSplitType _M_fieldSplit_type;
 
@@ -299,6 +332,7 @@ SolverLinear<T>::SolverLinear () :
 
     _M_solver_type         (GMRES),
     _M_preconditioner_type (LU_PRECOND),
+    M_preconditioner(),
     _M_is_initialized      (false),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN )
 {

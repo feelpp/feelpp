@@ -307,7 +307,7 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
     M_solver_petsc.setMatSolverPackageType( this->matSolverPackageEnumType() );
 
     //std::pair<size_type,value_type> res = M_solver_petsc.solve( *A, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
-    auto res = M_solver_petsc.solve( *A, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
+    auto res = M_solver_petsc.solve( *A, *B, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
     Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.get<1>()/*first*/ << "\n";
     Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.get<2>()/*second*/ << "\n";
 
