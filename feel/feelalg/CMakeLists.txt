@@ -22,7 +22,7 @@
 #
 #
 if( PETSC_FOUND )
-  set( FEEL_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp functionspetsc.cpp)
+  set( FEEL_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp functionspetsc.cpp preconditionerpetsc.cpp)
 
   if ( FEEL_HAVE_SLEPC )
     set( FEEL_SLEPC_SRCS solvereigenslepc.cpp )
@@ -36,6 +36,7 @@ endif()
 set( SRC
   dummy.cpp datamap.cpp
   vector.cpp vectorublas.cpp
+  preconditioner.cpp
   backend.cpp backendgmm.cpp backend_adaptive_reuse_pc.cpp backendpetsc.cpp
   graphcsr.cpp matrixgmm.cpp solvereigen.cpp
   solvernonlinear.cpp matrixblock.cpp

@@ -56,6 +56,62 @@
 namespace Feel
 {
 
+extern "C"
+{
+#if PETSC_VERSION_LESS_THAN(2,2,1)
+  typedef int PetscErrorCode;
+  typedef int PetscInt;
+#endif
+
+
+#if PETSC_VERSION_LESS_THAN(3,0,1) && PETSC_VERSION_RELEASE
+  PetscErrorCode __feel_petsc_preconditioner_setup (void * ctx)
+  {
+    Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>(ctx);
+    preconditioner->init();
+
+    return 0;
+  }
+
+
+  PetscErrorCode __feel_petsc_preconditioner_apply(void *ctx, Vec x, Vec y)
+  {
+    Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>(ctx);
+
+    VectorPetsc<double> x_vec(x);
+    VectorPetsc<double> y_vec(y);
+
+    preconditioner->apply(x_vec,y_vec);
+
+    return 0;
+  }
+#else
+  PetscErrorCode __feel_petsc_preconditioner_setup (PC pc)
+  {
+    void *ctx;
+    PetscErrorCode ierr = PCShellGetContext(pc,&ctx);CHKERRQ(ierr);
+    Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>(ctx);
+    preconditioner->init();
+
+    return 0;
+  }
+
+  PetscErrorCode __feel_petsc_preconditioner_apply(PC pc, Vec x, Vec y)
+  {
+    void *ctx;
+    PetscErrorCode ierr = PCShellGetContext(pc,&ctx);CHKERRQ(ierr);
+    Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>(ctx);
+
+    VectorPetsc<double> x_vec(x);
+    VectorPetsc<double> y_vec(y);
+
+    preconditioner->apply(x_vec,y_vec);
+
+    return 0;
+  }
+#endif
+} // end extern "C"
+
 /*----------------------- functions ----------------------------------*/
 template <typename T>
 void
@@ -182,6 +238,15 @@ void SolverLinearPetsc<T>::init ()
                                      PETSC_DECIDE, // size of the array holding the history
                                      PETSC_TRUE);  // Whether or not to reset the history for each solve.
         CHKERRABORT(M_comm,ierr);
+
+        //If there is a preconditioner object we need to set the internal setup and apply routines
+        //if(this->M_preconditioner)
+        {
+            PCShellSetContext(_M_pc,(void*)this->M_preconditioner.get());
+            PCShellSetSetUp(_M_pc,__feel_petsc_preconditioner_setup);
+            PCShellSetApply(_M_pc,__feel_petsc_preconditioner_apply);
+        }
+
     }
 }
 
@@ -231,39 +296,6 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     if ( this->preconditionerType() == FIELDSPLIT_PRECOND )
         matrix->updatePCFieldSplit(_M_pc);
 
-#if 0
-    std::cout << "\n HOLA \n";
-    auto indexSplit = matrix->indexSplit();
-    for (uint i = 0 ; i < indexSplit.size(); ++i)
-    {
-        std::cout << "\nSIZE : "<< indexSplit[i].size() << "\n";
-        for (uint j = 0 ; j < indexSplit[i].size(); ++j)
-            std::cout << " "<< indexSplit[i][j];
-    }
-    std::cout << "\n HOLE \n";
-#endif
-#if 0
-    PCType ThePc;
-    ierr = PCGetType(_M_pc,&ThePc);
-    CHKERRABORT(M_comm,ierr);
-
-    auto indexSplit = matrix->getIndexSplit();
-    std::vector<IS> petscIS(indexSplit.size());
-
-    if ( std::string( PCFIELDSPLIT ) == std::string(ThePc) )
-    {
-        for (uint i = 0 ; i < indexSplit.size(); ++i)
-        {
-
-            PetscInt nDofForThisField = indexSplit[i].size();
-            ierr = ISCreateGeneral(M_comm,nDofForThisField,indexSplit[i].data(),&petscIS[i] );
-            CHKERRABORT(M_comm,ierr);
-
-            ierr=PCFieldSplitSetIS(_M_pc,petscIS[i]);
-            CHKERRABORT(M_comm,ierr);
-        }
-    }
-#endif
 //   // If matrix != precond, then this means we have specified a
 //   // special preconditioner, so reset preconditioner type to PCMAT.
 //   if (matrix != precond)
@@ -370,7 +402,8 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     // Set the tolerances for the iterative solver.  Use the user-supplied
     // tolerance for the relative residual & leave the others at default values.
     ierr = KSPSetTolerances (_M_ksp,
-                             this->rTolerance(),
+                             //this->rTolerance(),
+                             1e-15,
                              this->aTolerance(),
                              this->dTolerance(),
                              this->maxIterations());
