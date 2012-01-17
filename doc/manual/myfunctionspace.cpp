@@ -190,7 +190,7 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
                         _partitions=this->comm().size());
 
     //# endmarker31 #
-#if 0
+#if 1
     /**
      * The function space and some associated elements(functions) are then defined
      */
@@ -241,7 +241,7 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     auto P0h = p0_space_type::New( mesh );
     std::cout << "saving pid\n" << std::endl;
     exporter->step(0)->add( "pid", regionProcess( P0h ) );
-#if 0
+#if 1
     exporter->step(0)->add( "g", u );
     exporter->step(0)->add( "u-g", w );
     exporter->step(0)->add( "f", v );
