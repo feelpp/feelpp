@@ -691,7 +691,7 @@ void HeatSink2D::init()
     mu_min << /*k_f*/.1, /*k_s*/1, /*L*/0.02, /* Bi */ 0.01;
     M_Dmu->setMin( mu_min );
     Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_max( M_Dmu );
-    mu_max << /*k_f*/10, /*k_s*/1, /*L*/0.05, /* Bi */ 1;
+    mu_max << /*k_f*/10, /*k_s*/1, /*L*/0.02, /* Bi */ 1;
     M_Dmu->setMax( mu_max );
 
 
