@@ -896,7 +896,8 @@ CRB<TruthModelType>::offline()
 
         if( M_model->isSteady() || !model_type::is_time_dependent )
         {
-
+            u->zero();
+            udu->zero();
             boost::tie( M, A, F ) = M_model->update( mu , 1e30 );
 
             std::cout << "  -- updated model for parameter in " << timer2.elapsed() << "s\n"; timer2.restart();
