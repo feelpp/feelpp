@@ -385,19 +385,21 @@ void MatrixPetsc<T>::updatePCFieldSplit(PC & pc)
 
             if ( std::string( PCFIELDSPLIT ) == std::string(pcName) )
                 {
-                    std::cout << "\n updatePCFieldSplit " << _M_petscIS.size() << "\n";
+                    //std::cout << "\n updatePCFieldSplit " << _M_petscIS.size() << "\n";
                     _M_mapPC[&pc]=true;
                     for (uint i = 0 ; i < _M_petscIS.size(); ++i)
                         {
-                            std::cout << "\n split " << i << "\n";
+                            //std::cout << "\n split " << i << "\n";
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-                            std::cout << "\n version >= 3.2 \n";
-                            ierr=PCFieldSplitSetIS(pc,PETSC_NULL,_M_petscIS[i]);
+                            //std::cout << "\n version >= 3.2 \n";
+                            std::ostringstream os;
+                            os << i;
+                            ierr=PCFieldSplitSetIS(pc,os.str().c_str(),_M_petscIS[i]);
 #else
-                            std::cout << "\n version < 3.2 \n";
+                            //std::cout << "\n version < 3.2 \n";
                             ierr=PCFieldSplitSetIS(pc,_M_petscIS[i]);
 #endif
-                            std::cout << "\n split " << i << "done\n" << std::endl;
+                            //std::cout << "\n split " << i << "done\n" << std::endl;
 
                             CHKERRABORT(this->comm(),ierr);
                         }
