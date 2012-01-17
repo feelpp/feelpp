@@ -451,7 +451,7 @@ benchmark_options( std::string const& prefix  )
 void
 Application::doOptions( int argc, char** argv )
 {
-    std::locale::global(std::locale(""));
+    //std::locale::global(std::locale(""));
     try{
         po::options_description generic( "Generic options" );
         generic.add_options()
