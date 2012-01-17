@@ -2297,11 +2297,26 @@ public:
                 uint cptSpaces=0;
                 uint start=0;
                 std::vector<std::vector<int> > is;
-                auto result = boost::make_tuple(cptSpaces,start,is);
+                auto initial = boost::make_tuple(cptSpaces,start,is);
 
-                boost::fusion::fold( functionSpaces(), result,  detail::computeNDofForEachSpace() );
+                auto result = boost::fusion::fold( functionSpaces(), initial,  detail::computeNDofForEachSpace() );
+                is = result.template get<2>();
+#if 0
+                std::cout << "split size=" << result.template get<2>().size() << " nspace=" << nSpaces << "\n";
+                std::cout << "split:\n";
 
-                return result.template get<2>();
+                std::cout << "\n\n";
+                for(int s= 0;s < nSpaces;++s )
+                {
+                    std::cout << "space: " << is[s].size() << "\n";
+                    for(int i = 0;i < is[s].size(); ++i )
+                    {
+                        std::cout << is[s][i] << " ";
+                    }
+                    std::cout << "\n\n";
+                }
+#endif
+                return is;
             }
             std::vector<std::vector<int> > is;
             is.push_back( std::vector<int>( nLocalDof() ) );
