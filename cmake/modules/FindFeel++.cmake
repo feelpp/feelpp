@@ -171,6 +171,60 @@ if ( PYTHONLIBS_FOUND )
    SET(FEEL_ENABLED_OPTIONS "${FEEL_ENABLED_OPTIONS} Python" )
 endif()
 
+FIND_LIBRARY(METIS_LIBRARY
+    NAMES
+    metis
+    PATHS
+    "/opt/local/lib/petsc/lib"
+    "/opt/local/lib"
+)
+
+FIND_LIBRARY(PARMETIS_LIBRARY
+    NAMES
+    parmetis
+    PATHS
+    "/opt/local/lib/petsc/lib"
+)
+message(STATUS "Metis: ${METIS_LIBRARY}" )
+message(STATUS "Parmetis: ${PARMETIS_LIBRARY}" )
+SET(FEEL_LIBRARIES ${PARMETIS_LIBRARY} ${METIS_LIBRARY} ${FEEL_LIBRARIES})
+
+FIND_LIBRARY(ML_LIBRARY
+    NAMES
+    ml
+    PATHS
+    "/opt/local/lib/petsc/lib"
+)
+message(STATUS "ML: ${ML_LIBRARY}" )
+SET(FEEL_LIBRARIES ${ML_LIBRARY} ${FEEL_LIBRARIES})
+
+FIND_LIBRARY(GFORTRAN_LIBRARY
+    NAMES
+    gfortran
+    PATHS
+    "/opt/local/lib"
+    PATH_SUFFIXES
+    gcc46 gcc45 gcc44
+)
+
+FIND_LIBRARY(MUMPS_COMMON_LIBRARY
+    NAMES
+    mumps_common
+    PATHS
+    "/opt/local/lib/petsc/lib"
+)
+
+
+FIND_LIBRARY(DMUMPS_LIBRARY
+    NAMES
+    cmumps
+    PATHS
+    "/opt/local/lib/petsc/lib"
+)
+
+message(STATUS "Mumps: ${DMUMPS_LIBRARY} ${MUMPS_COMMON_LIBRARY}" )
+SET(FEEL_LIBRARIES ${DMUMPS_LIBRARY} ${MUMPS_COMMON_LIBRARY} ${GFORTRAN_LIBRARY} ${FEEL_LIBRARIES})
+
 FIND_LIBRARY(AMD_LIBRARY
     NAMES
     amd
