@@ -958,6 +958,31 @@ namespace GeoTool {
         /*_________________________________________________*/
 
         void
+        writeBSpline(uint __numLoc, data_geo_ptrtype __dg ,Loop __loop)
+        {
+            (*(boost::get<1>(*__dg)))[1][__numLoc] = boost::get<0>(*__dg)->cptLine();
+
+            std::ostringstream __ostr;
+            __ostr << "BSpline(" << boost::get<0>(*__dg)->cptLine() //cptCircle
+                   << ") = {";
+
+            std::list<int>::const_iterator it= __loop.begin();
+            std::list<int>::const_iterator it_end= --__loop.end();
+            while (it!=it_end)
+                {
+                    __ostr << (*(boost::get<1>(*__dg)))[0][*it] <<"," ;
+                    ++it;
+                }
+            __ostr << (*(boost::get<1>(*__dg)))[0][*it] << "};\n";
+
+            boost::get<0>(*__dg)->updateOstr(__ostr.str());
+
+            ++boost::get<0>(*__dg)->_M_cptLine;
+        }
+
+        /*_________________________________________________*/
+
+        void
         writeLineLoop(uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop )
         {
              (*(boost::get<1>(*__dg)))[2][__numLoc] = boost::get<0>(*__dg)->cptLineLoop();
@@ -1622,6 +1647,30 @@ namespace GeoTool {
 
             writePlaneSurface( 1, dg, 1);
 
+        }
+
+        void
+        runPeanut(data_geo_ptrtype dg)
+        {
+            node_type PtCenter = param<0>(dg);
+            node_type majorRadiusParam = param<1>(dg);//2
+            node_type minorRadiusParam = param<2>(dg);//1
+            node_type penautRadiusParam = param<3>(dg);//0.1
+            double majorRadius = majorRadiusParam(0);
+            double minorRadius = minorRadiusParam(0);
+            double penautRadius = penautRadiusParam(0);
+            writePoint( 1, dg , PtCenter(0)               , PtCenter(1)+penautRadius, 0. );
+            writePoint( 2, dg , PtCenter(0)               , PtCenter(1)-penautRadius, 0. );
+            writePoint( 3, dg , PtCenter(0)-majorRadius   , PtCenter(1)             , 0. );
+            writePoint( 4, dg , PtCenter(0)+majorRadius   , PtCenter(1)             , 0. );
+            writePoint( 5, dg , PtCenter(0)-majorRadius/4., PtCenter(1)+minorRadius , 0. );
+            writePoint( 6, dg , PtCenter(0)-majorRadius/4., PtCenter(1)-minorRadius , 0. );
+            writePoint( 7, dg , PtCenter(0)+majorRadius/4., PtCenter(1)+minorRadius , 0. );
+            writePoint( 8, dg , PtCenter(0)+majorRadius/4., PtCenter(1)-minorRadius , 0. );
+            writeBSpline( 1, dg, Loop()>>1>>5>>3>>6>>2>>8>>4>>7>>1 );
+
+            writeLineLoop( 1, dg, Loop()>>1);
+            writePlaneSurface( 1, dg, 1);
         }
 
         void
