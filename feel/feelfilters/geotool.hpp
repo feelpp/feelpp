@@ -51,7 +51,7 @@
 /*_________________________________________________*/
 
 # define GEOTOOL_SHAPE                                                  \
-    ( 15, ( ( Line          , 1, 0, 0, "line"         , 2, LINE ),      \
+    ( 16, ( ( Line          , 1, 0, 0, "line"         , 2, LINE ),      \
             ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE ),  \
             ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE ), \
             ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
@@ -61,6 +61,7 @@
             ( Pie           , 2, 1, 0, "pie"          , 3, PIE),        \
             ( Special_1a    , 2, 2, 0, "special_1a"   , 1, SPECIAL_1A ), \
             ( Special_1b    , 2, 1, 0, "special_1b"   , 1, SPECIAL_1B ), \
+            ( Peanut        , 2, 1, 0, "peanut"       , 4, PEANUT ), \
             ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE  ), \
             ( Cube          , 3, 6, 1, "cube"         , 2, CUBE  ), \
             ( Cylindre      , 3, 6, 1, "cylindre"     , 4, CYLINDRE  ), \
@@ -266,7 +267,17 @@
     ( 1, ( ( 1, 1, ( 1 ) ) )                    \
       )                                         \
     /**/
+/*_________________________________________________*/
 
+# define GEOTOOL_MARKER_POINT_PEANUT              \
+    ( 1, ( ( 1, 8, ( 1,2,3,4,5,6,7,8 ) ) ) )      \
+    /**/
+# define GEOTOOL_MARKER_LINE_PEANUT                \
+    ( 1, ( ( 1, 1, ( 1 ) ) ) )                     \
+    /**/
+# define GEOTOOL_MARKER_SURFACE_PEANUT          \
+    ( 1, ( ( 1, 1, ( 1 ) ) ) )                  \
+    /**/
 /*_________________________________________________*/
 
 # define GEOTOOL_MARKER_POINT_CYLINDRE            \
@@ -1299,6 +1310,9 @@ namespace Feel {
 
         void
         writeSpline(uint __numLoc, data_geo_ptrtype __dg ,Loop __loop);
+
+        void
+        writeBSpline(uint __numLoc, data_geo_ptrtype __dg ,Loop __loop);
 
         void
         writeLineLoop(uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
