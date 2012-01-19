@@ -2341,6 +2341,17 @@ public:
         }
 
     /**
+     * \return an element of the function space
+     */
+    element_ptrtype
+    elementPtr( std::string const& name = "u" )
+        {
+            element_ptrtype u(new element_type( this->shared_from_this(), name ));
+            u->zero();
+            return u;
+        }
+
+    /**
      * get the \p i -th \c FunctionSpace out the list
      */
     template<int i>
