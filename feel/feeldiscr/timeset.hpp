@@ -422,15 +422,39 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func)
         {
-            add( __n, __n, func, mpl::bool_<FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally>() );
+            typedef typename mpl::or_<is_shared_ptr<FunctionType>, boost::is_pointer<FunctionType> >::type is_ptr_or_shared_ptr;
+            add( __n,func,is_ptr_or_shared_ptr() );
         }
         template<typename FunctionType>
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func )
         {
-            add( __n, __fname, func, mpl::bool_<FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally>() );
+            typedef typename mpl::or_<is_shared_ptr<FunctionType>, boost::is_pointer<FunctionType> >::type is_ptr_or_shared_ptr;
+            add( __n,__fname,func,is_ptr_or_shared_ptr() );
+        }
+
+        template<typename FunctionType>
+        void add( std::string const& __n, FunctionType const& func, mpl::bool_<true> )
+        {
+            add( __n,*func, mpl::bool_<false>() );
         }
         template<typename FunctionType>
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<true> )
+        {
+            add( __n,__fname,*func, mpl::bool_<false>() );
+        }
+
+        template<typename FunctionType>
+        void add( std::string const& __n, FunctionType const& func, mpl::bool_<false> )
+        {
+            add( __n, __n, func, mpl::bool_<false>(), mpl::bool_<FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally>() );
+        }
+        template<typename FunctionType>
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false> )
+        {
+            add( __n, __fname, func, mpl::bool_<false>(), mpl::bool_<FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally>() );
+        }
+        template<typename FunctionType>
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true> )
         {
             if ( FunctionType::is_scalar )
                 {
@@ -492,7 +516,7 @@ public:
         }
 
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false> )
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false> )
         {
             if ( FunctionType::is_scalar )
                 {
