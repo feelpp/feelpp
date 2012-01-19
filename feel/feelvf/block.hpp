@@ -221,8 +221,14 @@ struct BlocksBase
         return *this;
     }
 
-    block_type
+    block_type &
     operator()(int16_type c1,int16_type c2)
+    {
+        return M_vec[c1*M_nCol+c2];
+    }
+
+    block_type
+    operator()(int16_type c1,int16_type c2) const
     {
         return M_vec[c1*M_nCol+c2];
     }
