@@ -45,6 +45,10 @@ namespace Feel
 
 template<typename T> class Backend;
 
+template <int NR, int NC, typename T=double>
+class BlocksSparseMatrix : public vf::Blocks<NR,NC,boost::shared_ptr<MatrixSparse<T> > >
+{};
+
 /**
  * \class MatrixBlock
  * \brief block of matrices

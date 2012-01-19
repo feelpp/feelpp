@@ -39,6 +39,7 @@
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/matrixblock.hpp>
+#include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/datamap.hpp>
 
 #include <feel/feelalg/solvernonlinear.hpp>
@@ -105,8 +106,8 @@ auto ref( T& t ) -> decltype( ref( t, detail::is_shared_ptr<T>() ) )
 }
 ///! \endcond detail
 
-template<int NR, int NC, typename T>
-class MatrixBlock;
+template<int NR, int NC, typename T> class MatrixBlock;
+template<int NR, typename T> class VectorBlock;
 
 /**
  * \class Backend
@@ -314,6 +315,35 @@ public:
                                     )
     {
         return newBlockMatrixImpl(block,copy_values,diag_is_nonzero);
+    }
+
+    /**
+     * instantiate a new block matrix sparse
+     */
+    template <int NR, typename BlockType=vector_ptrtype >
+    vector_ptrtype newBlockVectorImpl( vf::Blocks<NR,1,BlockType> const & b,
+                                       bool copy_values=true )
+    {
+        typedef VectorBlock<NR,typename BlockType::element_type::value_type> vector_block_type;
+        boost::shared_ptr<vector_block_type> mb(new vector_block_type( b, *this, copy_values ) );
+        return mb->getVector();
+    }
+
+    /**
+     * instantiate a new block matrix sparse
+     */
+    BOOST_PARAMETER_MEMBER_FUNCTION((vector_ptrtype),
+                                    newBlockVector,
+                                    tag,
+                                    (required
+                                     (block,*)
+                                     )
+                                    (optional
+                                     (copy_values,*(boost::is_integral<mpl::_>),true)
+                                     )
+                                    )
+    {
+        return newBlockVectorImpl(block,copy_values);
     }
 
 
