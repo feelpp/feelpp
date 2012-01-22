@@ -1,3 +1,4 @@
+
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
@@ -354,7 +355,7 @@ namespace GeoTool {
 
                     std::string Qshape = boost::get<0>(*itList);
                     std::string Qname = boost::get<1>(*itList);
-                    //std::cout << "\n Qshape="<<Qshape <<" Qname="<<Qname<<std::endl;
+                    std::cout << "\n Qshape="<<Qshape <<" Qname="<<Qname<<std::endl;
 
                     *_M_ostr << "h=" << boost::get<2>(*itList) << ";\n";
                     //data memory

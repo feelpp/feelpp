@@ -763,8 +763,35 @@ namespace Feel {
                 _M_ostrSurfaceLoop( new std::ostringstream()),
                 _M_paramShape( new parameter_shape_type()),
                 _M_markShape( new marker_type_type()),
-                _M_ostr( new std::ostringstream())
+                _M_ostr( new std::ostringstream()),
+                _M_ostrDefineByUser( new std::ostringstream()),
+                _M_geoIsDefineByUser(false)
             {
+            }
+
+            GeoGMSHTool(uint __dim,  std::string const & geoUserStr, double __meshSize=0.1, std::string __shape="NO_SHAPE", std::string __name="NO_NAME")
+                :
+                _M_dim(__dim),
+                _M_cptPt(1),
+                _M_cptLine(1),
+                _M_cptLineLoop(1),
+                _M_cptSurface(1),
+                _M_cptTableau(1),
+                _M_cptSurfaceLoop(1),
+                _M_cptVolume(1),
+                _M_ligneList(new ligne_name_type()),
+                _M_surfaceList(new surface_name_type()),
+                _M_volumeList(new volume_name_type()),
+                _M_surfaceLoopList(new surfaceloop_name_type()),
+                _M_ostrExtrude( new std::ostringstream()),
+                _M_ostrSurfaceLoop( new std::ostringstream()),
+                _M_paramShape( new parameter_shape_type()),
+                _M_markShape( new marker_type_type()),
+                _M_ostr( new std::ostringstream()),
+                _M_ostrDefineByUser( new std::ostringstream()),
+                _M_geoIsDefineByUser(true)
+            {
+                *_M_ostrDefineByUser << geoUserStr;
             }
 
             GeoGMSHTool( GeoGMSHTool const & m )
@@ -785,11 +812,14 @@ namespace Feel {
                 _M_ostrSurfaceLoop(new std::ostringstream()),
                 _M_paramShape(new parameter_shape_type(*(m._M_paramShape))),
                 _M_markShape(new marker_type_type(*(m._M_markShape))),
-                _M_ostr(new std::ostringstream())
+                _M_ostr(new std::ostringstream()),
+                _M_ostrDefineByUser( new std::ostringstream()),
+                _M_geoIsDefineByUser(m._M_geoIsDefineByUser)
             {
                 updateOstr((m._M_ostr)->str());
                 *_M_ostrExtrude << (m._M_ostrExtrude)->str();
                 *_M_ostrSurfaceLoop << (m._M_ostrSurfaceLoop)->str();
+                if(_M_geoIsDefineByUser) *_M_ostrDefineByUser  << (m._M_ostrDefineByUser)->str();
             }
 
             void zeroCpt()
@@ -1062,7 +1092,17 @@ namespace Feel {
                 this->cleanOstr();
                 this->zeroCpt();
                 this->init(_mesh_type::nOrder,partitioner,partitions,partition_file);
-                this->geoStr();
+
+                std::string geostring;
+                if(_M_geoIsDefineByUser)
+                    {
+                        geostring= _M_ostrDefineByUser->str();
+                    }
+                else
+                    {
+                        this->geoStr();
+                        geostring = _M_ostr->str();
+                    }
 
                 _mesh_ptrtype _mesh( mesh );
 
@@ -1073,7 +1113,7 @@ namespace Feel {
                 gmsh.setMshFileByPartition( partition_file );
 
                 std::string fname = gmsh.generate( name,
-                                                   _M_ostr->str(),false,false,false );
+                                                   geostring,false,false,false );
 
                 ImporterGmsh<_mesh_type> import( fname );
                 import.setVersion( "2.1" );
@@ -1099,12 +1139,23 @@ namespace Feel {
                 this->cleanOstr();
                 this->zeroCpt();
                 this->init(mesh_type::nOrder);
-                this->geoStr();
+
+                std::string geostring;
+                if(_M_geoIsDefineByUser)
+                    {
+                        geostring= _M_ostrDefineByUser->str();
+                    }
+                else
+                    {
+                        this->geoStr();
+                        geostring = _M_ostr->str();
+                    }
+
 
                 Gmsh gmsh;
                 gmsh.setOrder(mesh_type::nOrder);
                 std::string fname = gmsh.generate( name,
-                                                   _M_ostr->str(),false,false,false );
+                                                   geostring,false,false,false );
 
                 ImporterGmsh<mesh_type> import( fname );
                 import.setVersion( "2.1" );
@@ -1281,6 +1332,8 @@ namespace Feel {
             // output string
             boost::shared_ptr<std::ostringstream> _M_ostr;
 
+            boost::shared_ptr<std::ostringstream> _M_ostrDefineByUser;
+            bool _M_geoIsDefineByUser;
         };
 
         /*_________________________________________________*
