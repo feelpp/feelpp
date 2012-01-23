@@ -355,7 +355,7 @@ namespace GeoTool {
 
                     std::string Qshape = boost::get<0>(*itList);
                     std::string Qname = boost::get<1>(*itList);
-                    std::cout << "\n Qshape="<<Qshape <<" Qname="<<Qname<<std::endl;
+                    //std::cout << "\n Qshape="<<Qshape <<" Qname="<<Qname<<std::endl;
 
                     *_M_ostr << "h=" << boost::get<2>(*itList) << ";\n";
                     //data memory
