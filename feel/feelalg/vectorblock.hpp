@@ -53,23 +53,25 @@ public :
 
     template <typename VectorType>
     self_type
-    operator<<(VectorType  & m)
+    operator<<(VectorType const& m) const
     {
         //typedef typename mpl::or_<is_shared_ptr<VectorType>, boost::is_pointer<VectorType> >::type is_ptr_or_shared_ptr;
+        self_type newBlock(*this);
         typedef is_shared_ptr<VectorType> is_shared_ptr;
-        this->push_back(m,is_shared_ptr());
-        return *this;
+        newBlock.push_back(m,is_shared_ptr());
+        return newBlock;
     }
 
     template <typename VectorType>
-    void push_back(VectorType & m, mpl::bool_<true> )
+    void
+    push_back(VectorType const& m, mpl::bool_<true> )
     {
-        super_type::operator<<(m);
+        super_type::push_back(m);
     }
 
 #if 0 //Don't work
     template <typename VectorType>
-    void push_back(VectorType & m, mpl::bool_<false> )
+    void push_back(VectorType const& m, mpl::bool_<false> )
     {
         //self_type::operator<<(m.shared_from_this());
         auto m2=m.shared_from_this();

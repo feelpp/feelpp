@@ -188,6 +188,13 @@ struct BlocksBase
     //typedef boost::shared_ptr<block_type> block_ptrtype;
     //typedef MatrixSparse<T> matrix_type;
     //typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+    BlocksBase()
+        :
+        M_nRow(0),
+        M_nCol(0),
+        M_vec(1),
+        M_cptToBuild(0)
+    {}
 
     BlocksBase(uint16_type nr,uint16_type nc)
         :
@@ -195,17 +202,17 @@ struct BlocksBase
         M_nCol(nc),
         M_vec(nr*nc),
         M_cptToBuild(0)
-    {
-        //M_vec.clear();
-    }
+    {}
 
-    BlocksBase(uint16_type nr,uint16_type nc,block_type const & a)
+    BlocksBase(uint16_type nr,uint16_type nc,block_type /*const&*/ a)
         :
+        M_nRow(nr),
+        M_nCol(nc),
         M_vec(nr*nc, a),
         M_cptToBuild(0)
     {}
 
-    BlocksBase(BlocksBase<T> const & b)
+    BlocksBase(BlocksBase<T> const& b)
         :
         M_nRow(b.M_nRow),
         M_nCol(b.M_nCol),
@@ -214,21 +221,38 @@ struct BlocksBase
     {}
 
     BlocksBase<T>
-    operator<<(block_type m)
+    operator<<(block_type const& m)  const
+    {
+        BlocksBase<T> newBlock(*this);
+        newBlock.M_vec[M_cptToBuild]=m;
+        ++(newBlock.M_cptToBuild);
+        return newBlock;
+    }
+
+    void
+    push_back(block_type const& m)
     {
         M_vec[M_cptToBuild]=m;
         ++M_cptToBuild;
-        return *this;
     }
+#if 0
+    void
+    operator<<(block_type const& m)
+    {
+        M_vec[M_cptToBuild]=m;
+        ++M_cptToBuild;
+        //return *this;
+    }
+#endif
 
     block_type &
-    operator()(int16_type c1,int16_type c2)
+    operator()(uint16_type c1,uint16_type c2)
     {
         return M_vec[c1*M_nCol+c2];
     }
 
     block_type
-    operator()(int16_type c1,int16_type c2) const
+    operator()(uint16_type c1,uint16_type c2) const
     {
         return M_vec[c1*M_nCol+c2];
     }
@@ -239,11 +263,25 @@ struct BlocksBase
     uint16_type nRow() const { return M_nRow; }
     uint16_type nCol() const { return M_nCol; }
 
+    void reset()
+    {
+        M_cptToBuild=0;
+        M_vec.clear();
+        M_vec.resize(this->nRow()*this->nCol());
+    }
+
+    void merge(uint16_type c1,uint16_type c2,BlocksBase<T> /*const&*/ b)
+    {
+        uint16_type nRb = b.nRow(), nCb = b.nCol();
+        for (uint16_type i=0;i<nRb;++i)
+            for (uint16_type j=0;j<nCb;++j)
+                this->operator()(c1+i,c2+j) = b(i,j);
+    }
 
 private :
     uint16_type M_nRow,M_nCol;
     std::vector<block_type> M_vec;
-    int16_type M_cptToBuild;
+    uint16_type M_cptToBuild;
 };
 
 
@@ -262,17 +300,36 @@ struct Blocks : public BlocksBase<T>
         super_type(NR,NC)
     {}
 
-    Blocks(block_type a)
+    Blocks(block_type const& a)
         :
         super_type(NR,NC, a)
     {}
 
+    Blocks(super_type const& a)
+        :
+        super_type(a)
+    {}
+
     Blocks<NR,NC,T>
-    operator<<(block_type m)
+    operator<<(block_type const& m) const
+    {
+        Blocks<NR,NC,T> newBlock = super_type::operator<<(m) ;
+        return newBlock;
+    }
+
+    void
+    push_back(block_type const& m)
+    {
+        super_type::push_back(m);
+    }
+
+#if 0
+    void
+    operator<<(block_type const& m)
     {
         super_type::operator<<(m);
-        return *this;
     }
+#endif
 
 };
 
