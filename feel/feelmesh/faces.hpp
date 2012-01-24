@@ -38,6 +38,7 @@
 #include <boost/multi_index/ordered_index.hpp>
 
 #include <feel/feelmesh/geoelement.hpp>
+#include <feel/feelmesh/filters.hpp>
 
 namespace Feel
 {
@@ -657,6 +658,28 @@ public:
                              } );
 
     }
+
+
+    template<typename IteratorRange>
+    void updateMarker2WithRangeFaces( IteratorRange const& range, flag_type flag )
+    {
+        typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_range_type;
+        iterator_range_type it, en;
+        boost::tie( boost::tuples::ignore, it, en ) = range;
+        for(  ; it != en; ++it )
+            _M_faces.modify( this->faceIterator(it->id()), [&flag]( face_type& e ) { e.setMarker2(flag); } );
+    }
+
+    template<typename IteratorRange>
+    void updateMarker3WithRangeFaces( IteratorRange const& range, flag_type flag )
+    {
+        typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_range_type;
+        iterator_range_type it, en;
+        boost::tie( boost::tuples::ignore, it, en ) = range;
+        for(  ; it != en; ++it )
+            _M_faces.modify( this->faceIterator(it->id()), [&flag]( face_type& e ) { e.setMarker3(flag); } );
+    }
+
 
     //@}
 
