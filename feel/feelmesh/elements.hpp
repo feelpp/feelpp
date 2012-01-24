@@ -40,6 +40,7 @@
 #include <boost/multi_index/random_access_index.hpp>
 
 #include <feel/feelmesh/geoelement.hpp>
+#include <feel/feelmesh/filters.hpp>
 
 namespace Feel
 {
@@ -801,6 +802,27 @@ public:
         for( ; it != en; ++it )
             _M_elements.modify( it, [&evec]( element_type& e ) { e.setMarker3(  evec.localToGlobal( e.id(), 0, 0 ) ); } );
     }
+
+    template<typename IteratorRange>
+    void updateMarker2WithRangeElements( IteratorRange const& range, flag_type flag)
+    {
+        typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_range_type;
+        iterator_range_type it, en;
+        boost::tie( boost::tuples::ignore, it, en ) = range;
+        for(  ; it != en; ++it )
+            _M_elements.modify( this->elementIterator(it->id()), [&flag]( element_type& e ) { e.setMarker2(flag); } );
+    }
+
+    template<typename IteratorRange>
+    void updateMarker3WithRangeElements( IteratorRange const& range, flag_type flag)
+    {
+        typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_type;
+        iterator_type it, en;
+        boost::tie( boost::tuples::ignore, it, en ) = range;
+        for( ; it != en; ++it )
+            _M_elements.modify( this->elementIterator(it->id()), [&flag]( element_type& e ) { e.setMarker3(flag); } );
+    }
+
     //@}
 
 private:

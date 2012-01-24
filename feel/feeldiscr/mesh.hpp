@@ -384,6 +384,67 @@ public:
     P1_mesh_ptrtype createP1mesh() const;
 
     /**
+     * update the Marker2 with a range of elements or faces
+     * if elements -> update marker2 for this elements
+     * if faces -> update marker2 for this faces
+     */
+    template<typename IteratorRange>
+    void updateMarker2WithRange( IteratorRange const& range,flag_type flag)
+    {
+        const size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
+        this->updateMarker2WithRange(range,flag,mpl::int_<iDim>());
+    }
+
+    /**
+     * sub method of updateMarker2WithRange : MESH_ELEMENTS
+     */
+    template<typename IteratorRange>
+    void updateMarker2WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_ELEMENTS>/**/)
+    {
+        const size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
+        this->updateMarker2WithRangeElements(range,flag);
+    }
+
+    /**
+     * sub method of updateMarker2WithRange : MESH_FACES
+     */
+    template<typename IteratorRange>
+    void updateMarker2WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_FACES>/**/)
+    {
+        this->updateMarker2WithRangeFaces(range,flag);
+    }
+
+    /**
+     * update the Marker3 with a range of elements or faces
+     * if elements -> update marker3 for this elements
+     * if faces -> update marker3 for this faces
+     */
+    template<typename IteratorRange>
+    void updateMarker3WithRange( IteratorRange const& range,flag_type flag)
+    {
+        const size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
+        this->updateMarker3WithRange(range,flag,mpl::int_<iDim>());
+    }
+
+    /**
+     * sub method of updateMarker3WithRange : MESH_ELEMENTS
+     */
+    template<typename IteratorRange>
+    void updateMarker3WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_ELEMENTS>/**/)
+    {
+        this->updateMarker3WithRangeElements(range,flag);
+    }
+
+    /**
+     * sub method of updateMarker3WithRange : MESH_FACES
+     */
+    template<typename IteratorRange>
+    void updateMarker3WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_FACES> /**/)
+    {
+        this->updateMarker3WithRangeFaces(range,flag);
+    }
+
+    /**
      * Call the default partitioner (currently \p metis_partition()).
      */
     void partition ( const uint16_type n_parts = 1 );
