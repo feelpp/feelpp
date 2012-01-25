@@ -278,7 +278,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //ublas::matrix<value_type,ublas::row_major> Mloc( this->dualImageSpace()->dof()->nDofPerElement,
     //                                                 this->domainSpace()->dof()->nDofPerElement );
 
-    typename matrix_node<value_type>::type Mloc(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
+    
 
     // Local assembly: compute the Mloc matrix by evaluating
     // the domain space basis function at the dual image space
@@ -286,7 +286,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // in the ref elements and the basis and dof points in ref
     // element are the same, we compute Mloc outside the
     // element loop.
-    Mloc = /*ublas::trans*/( domainbasis->evaluate( imagebasis->dual().points() ) );
 
     Debug( 5034 ) << "domain ndof = " <<  this->domainSpace()->nDof() << "\n";
     Debug( 5034 ) << "image ndof = " <<  this->dualImageSpace()->nDof() << "\n";
@@ -303,12 +302,16 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
 
     std::vector<bool> dof_done( this->dualImageSpace()->nDof() );
+
     std::fill( dof_done.begin(), dof_done.end(), false );
 
 
     // if same mesh but not same function space (e.g. different polynomial order, different basis)
     if ( this->dualImageSpace()->mesh().get() == (image_mesh_type*)this->domainSpace()->mesh().get() )
         {
+            typename matrix_node<value_type>::type Mloc(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
+            Mloc = /*ublas::trans*/( domainbasis->evaluate( imagebasis->dual().points() ) );
+
             Debug( 5034 ) << "[interpolate] Same mesh but not same space\n";
 
             iterator_type it, en;
