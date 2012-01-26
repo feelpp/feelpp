@@ -64,7 +64,7 @@ struct compute_graph3
             else
                 {
                     auto thestencil = stencil(_test=space2, _trial=M_space1,
-                                              _pattern=M_hints,
+                                              _pattern=M_stencil->blockPattern(M_test_index,M_trial_index)/*M_hints*/,
                                               _pattern_block=M_stencil->blockPattern() );
 
                     M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thestencil->graph() );
@@ -116,7 +116,7 @@ struct compute_graph2
             else
                 {
                     auto thestencil = stencil(_test=M_space1, _trial=space2,
-                                              _pattern=M_hints,
+                                              _pattern=M_stencil->blockPattern(M_test_index,M_trial_index)/*M_hints*/,
                                               _pattern_block=M_stencil->blockPattern());
 
                     M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
