@@ -909,6 +909,36 @@ CRB<TruthModelType>::offline()
 
             Log() << "[CRB::offline] solving primal" << "\n";
             backend_primal_problem->solve( _matrix=A,  _solution=u, _rhs=F[0], _prec=A );
+
+
+#if 0
+	    std::ofstream file_solution;
+	    std::string mu_str;
+	    for(int i=0;i<mu.size();i++)
+            {
+	      mu_str= mu_str + (boost::format("_%1%") %mu[i]).str() ;
+	    }
+	    std::string name = "CRBsolution" + mu_str;
+	    file_solution.open(name,std::ios::out);
+	    for(int i=0;i<u->size();i++) file_solution<<u->operator()(i)<<"\n";
+	    file_solution.close();
+
+	    name = "CRBrhs" + mu_str;
+	    std::ofstream file_rhs;
+	    file_rhs.open(name,std::ios::out);
+	    file_rhs<<*F[0];
+	    file_rhs.close();
+
+#endif
+#if 0
+	    std::ofstream file_matrix;
+	    name = "CRBmatrix" + mu_str;
+	    file_matrix.open(name,std::ios::out);
+	    file_matrix<<*A;
+	    file_matrix.close();
+#endif
+
+
             //std::cout << "solving primal done" << std::endl;
             std::cout << "  -- primal problem solved in " << timer2.elapsed() << "s\n"; timer2.restart();
             *Rhs = *F[M_output_index];
@@ -1632,6 +1662,7 @@ CRB<TruthModelType>::check( size_type N ) const
         auto error_estimation = delta( N, mu, uN, uNdu , uNold, uNduold);
         double err = error_estimation.get<0>() ;
 
+
 #if 0
         //if (  err > 1e-5 )
         // {
@@ -1650,7 +1681,7 @@ CRB<TruthModelType>::check( size_type N ) const
         std::cout<< mu[size-1]<<" ]"<<std::endl;
 
         Log() << "[check] s= " << s << " +- " << err  << " | sfem= " << sfem << " | abs(sfem-srb) =" << math::abs( sfem - s ) << "\n";
-        std::cout << "      + s= " << s << " +- " << err  << " | sfem= " << sfem << " | abs(sfem-srb) =" << math::abs( sfem - s ) << "\n";
+        std::cout <<"[check] s = " << s << " +- " << err  << " | sfem= " << sfem << " | abs(sfem-srb) =" << math::abs( sfem - s )<< "\n";
 
 
 
@@ -2234,20 +2265,27 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
         }
 
         int element_number=0;
+	parameter_type mu;
+
         BOOST_FOREACH( auto element, wn )
         {
-            std::string basis_name = vect_names[basis_number];
-            std::string number = (boost::format("_%1%") %element_number).str() ;
-            std::string name =   basis_name + number;
-            exporter->step(0)->add( name, element );
 
+            std::string basis_name = vect_names[basis_number];
+            std::string number = (boost::format("%1%_with_parameters") %element_number).str() ;
+	    mu = M_WNmu->at(element_number);
+	    std::string mu_str;
+	    for(int i=0;i<mu.size();i++)
+            {
+	      mu_str= mu_str + (boost::format("_%1%") %mu[i]).str() ;
+	    }
+            std::string name =   basis_name + number + mu_str;
+            exporter->step(0)->add( name, element );
             element_number++;
         }
         basis_number++;
     }
 
     exporter->save();
-
 
 }
 
@@ -2397,37 +2435,40 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
     value_type __Cmm_pr=0;
 
 
-    for( int __q1=0 ; __q1<__Qm; ++__q1)
+    if(! M_model->isSteady() )
     {
-        value_type m_q1 = theta_mq[__q1];
 
-        for(int __q2=0 ; __q2<__QRhs; ++__q2)
-        {
-            value_type f_q2 = theta_fq[0][__q2];
-            __Cmf_pr +=  1./time_step * m_q1 * f_q2  * M_Cmf_pr[__q1][__q2].head(__N).dot( Un );
-            __Cmf_pr -=  1./time_step * m_q1 * f_q2  * M_Cmf_pr[__q1][__q2].head(__N).dot( Unold );
-        }
+      for( int __q1=0 ; __q1<__Qm; ++__q1)
+      {
+         value_type m_q1 = theta_mq[__q1];
 
-        for ( int __q2 = 0;__q2 < __QLhs;++__q2 )
-        {
-            value_type a_q2 = theta_aq[__q2];
-            auto m = M_Cma_pr[__q1][__q2].block(0,0,__N,__N)*Un;
-            __Cma_pr += 1./time_step * m_q1 * a_q2 * Un.dot(m);
-            __Cma_pr -= 1./time_step * m_q1 * a_q2 * Unold.dot(m);
-        }
+         for(int __q2=0 ; __q2<__QRhs; ++__q2)
+	 {
+	   value_type f_q2 = theta_fq[0][__q2];
+	   __Cmf_pr +=  1./time_step * m_q1 * f_q2  * M_Cmf_pr[__q1][__q2].head(__N).dot( Un );
+	   __Cmf_pr -=  1./time_step * m_q1 * f_q2  * M_Cmf_pr[__q1][__q2].head(__N).dot( Unold );
+	 }
 
-        for ( int __q2 = 0;__q2 < __Qm;++__q2 )
-        {
-            value_type m_q2 = theta_mq[__q2];
-            auto m1 = M_Cmm_pr[__q1][__q2].block(0,0,__N,__N)*Un;
-            auto m2 = M_Cmm_pr[__q1][__q2].block(0,0,__N,__N)*Unold;
-            __Cmm_pr += 1./(time_step*time_step) * m_q1 * m_q2 * Un.dot(m1);
+	 for ( int __q2 = 0;__q2 < __QLhs;++__q2 )
+	 {
+	   value_type a_q2 = theta_aq[__q2];
+	   auto m = M_Cma_pr[__q1][__q2].block(0,0,__N,__N)*Un;
+	   __Cma_pr += 1./time_step * m_q1 * a_q2 * Un.dot(m);
+	   __Cma_pr -= 1./time_step * m_q1 * a_q2 * Unold.dot(m);
+	 }
+
+	 for ( int __q2 = 0;__q2 < __Qm;++__q2 )
+	 {
+	   value_type m_q2 = theta_mq[__q2];
+	   auto m1 = M_Cmm_pr[__q1][__q2].block(0,0,__N,__N)*Un;
+	   auto m2 = M_Cmm_pr[__q1][__q2].block(0,0,__N,__N)*Unold;
+	   __Cmm_pr += 1./(time_step*time_step) * m_q1 * m_q2 * Un.dot(m1);
             __Cmm_pr -= 1./(time_step*time_step) * m_q1 * m_q2 * Un.dot(m2);
             __Cmm_pr -= 1./(time_step*time_step) * m_q1 * m_q2 * Unold.dot(m1);
             __Cmm_pr += 1./(time_step*time_step) * m_q1 * m_q2 * Unold.dot(m2);
-        }
-
-    }
+	 }	 
+      }
+    }//end of if(! M_model->isSteady() )
 
 #if 0
     std::cout<<"[transientResidual]  time "<<time<<std::endl;
@@ -2445,6 +2486,7 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
 
 
     value_type delta_pr =  math::abs(__c0_pr+__lambda_pr+__gamma_pr+__Cmf_pr+__Cma_pr+__Cmm_pr) ;
+
     std::vector<double> transient_coeffs_vector;
     transient_coeffs_vector.push_back(__c0_pr);
     transient_coeffs_vector.push_back(__lambda_pr);
@@ -2558,36 +2600,40 @@ CRB<TruthModelType>::transientDualResidual( int Ncur,parameter_type const& mu,  
     value_type __Cma_du=0;
     value_type __Cmm_du=0;
 
-    for( int __q1=0 ; __q1<__Qm; ++__q1)
+    if(! M_model->isSteady() )
     {
-        value_type m_q1 = theta_mq[__q1];
 
-        for(int __q2=0 ; __q2<__QOutput; ++__q2)
-        {
-            value_type f_q2 = theta_fq[M_output_index][__q2];
-            __Cmf_du += 1./time_step * m_q1 * f_q2  * M_Cmf_du[__q1][__q2].head(__N).dot( Undu );
-            __Cmf_du -= 1./time_step * m_q1 * f_q2  * M_Cmf_du[__q1][__q2].head(__N).dot( Unduold );
-        }
+      for( int __q1=0 ; __q1<__Qm; ++__q1)
+      {
+          value_type m_q1 = theta_mq[__q1];
 
-        for ( int __q2 = 0;__q2 < __QLhs;++__q2 )
-        {
-            value_type a_q2 = theta_aq[__q2];
-            auto m = M_Cma_du[__q1][__q2].block(0,0,__N,__N)*Undu;
-            __Cma_du += 1./time_step * m_q1 * a_q2 * Undu.dot(m);
-            __Cma_du -= 1./time_step * m_q1 * a_q2 * Unduold.dot(m);
-        }
+	  for(int __q2=0 ; __q2<__QOutput; ++__q2)
+          {
+              value_type f_q2 = theta_fq[M_output_index][__q2];
+              __Cmf_du += 1./time_step * m_q1 * f_q2  * M_Cmf_du[__q1][__q2].head(__N).dot( Undu );
+              __Cmf_du -= 1./time_step * m_q1 * f_q2  * M_Cmf_du[__q1][__q2].head(__N).dot( Unduold );
+	  }
 
-        for ( int __q2 = 0;__q2 < __Qm;++__q2 )
-        {
-            value_type m_q2 = theta_mq[__q2];
-            auto m1 = M_Cmm_du[__q1][__q2].block(0,0,__N,__N)*Undu;
-            auto m2 = M_Cmm_du[__q1][__q2].block(0,0,__N,__N)*Unduold;
-            __Cmm_du += 1./(time_step*time_step) * m_q1 * m_q2 * Undu.dot(m1);
-            __Cmm_du -= 1./(time_step*time_step) * m_q1 * m_q2 * Undu.dot(m2);
-            __Cmm_du -= 1./(time_step*time_step) * m_q1 * m_q2 * Unduold.dot(m1);
-            __Cmm_du += 1./(time_step*time_step) * m_q1 * m_q2 * Unduold.dot(m2);
-        }
-    }//end of loop over q1
+	  for ( int __q2 = 0;__q2 < __QLhs;++__q2 )
+	  {
+              value_type a_q2 = theta_aq[__q2];
+              auto m = M_Cma_du[__q1][__q2].block(0,0,__N,__N)*Undu;
+	      __Cma_du += 1./time_step * m_q1 * a_q2 * Undu.dot(m);
+	      __Cma_du -= 1./time_step * m_q1 * a_q2 * Unduold.dot(m);
+	  }
+
+	  for ( int __q2 = 0;__q2 < __Qm;++__q2 )
+	  {
+             value_type m_q2 = theta_mq[__q2];
+	     auto m1 = M_Cmm_du[__q1][__q2].block(0,0,__N,__N)*Undu;
+	     auto m2 = M_Cmm_du[__q1][__q2].block(0,0,__N,__N)*Unduold;
+	     __Cmm_du += 1./(time_step*time_step) * m_q1 * m_q2 * Undu.dot(m1);
+	     __Cmm_du -= 1./(time_step*time_step) * m_q1 * m_q2 * Undu.dot(m2);
+	     __Cmm_du -= 1./(time_step*time_step) * m_q1 * m_q2 * Unduold.dot(m1);
+	     __Cmm_du += 1./(time_step*time_step) * m_q1 * m_q2 * Unduold.dot(m2);
+	  }
+      }//end of loop over q1
+    }//end of if(! M_model->isSteady() )
 
     value_type delta_du;
 
