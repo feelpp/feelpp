@@ -27,7 +27,6 @@
    \date 2007-12-23
  */
 #include <feel/feelalg/backend.hpp>
-#include <feel/feelalg/backendgmm.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 #include <feel/feelalg/backendtrilinos.hpp>
 
@@ -38,8 +37,6 @@ Backend<T>::Backend()
     :
 #if defined( HAVE_PETSC_H )
     M_backend    (BACKEND_PETSC),
-#else
-    M_backend    (BACKEND_GMM),
 #endif
     M_prefix(""),
     M_nlsolver(),
@@ -116,11 +113,6 @@ Backend<T>::build( BackendType bt )
     switch ( bt )
         {
 
-        case BACKEND_GMM:
-            {
-                return backend_ptrtype( new BackendGmm<value_type> );
-            }
-            break;
 #if defined ( HAVE_PETSC_H )
         case BACKEND_PETSC:
             {
@@ -151,9 +143,7 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
 {
     Log() << "[Backend] backend " << vm["backend"].template as<std::string>() << "\n";
     BackendType bt;
-    if ( vm["backend"].template as<std::string>() == "gmm" )
-        bt = BACKEND_GMM;
-    else if ( vm["backend"].template as<std::string>() == "petsc" )
+    if ( vm["backend"].template as<std::string>() == "petsc" )
         bt = BACKEND_PETSC;
     else if ( vm["backend"].template as<std::string>() == "trilinos" )
         bt = BACKEND_TRILINOS;
@@ -166,8 +156,6 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
             bt = BACKEND_PETSC;
 #else
             Log() << "[Backend] backend " << vm["backend"].template as<std::string>() << " not available\n";
-            Log() << "[Backend] use fallback backend gmm\n";
-            bt = BACKEND_GMM;
 #endif
         }
 
@@ -193,12 +181,6 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
             }
             break;
 #endif
-        case BACKEND_GMM:
-        default:
-            {
-                return backend_ptrtype( new BackendGmm<value_type>( vm, prefix ) );
-            }
-            break;
         }
 
     // should never happen
@@ -485,12 +467,7 @@ po::options_description backend_options( std::string const& prefix )
     po::options_description _options( "Linear and NonLinear Solvers Backend " + prefix + " options");
     _options.add_options()
         // solver options
-#if defined( HAVE_PETSC_H )
-
-        (prefixvm(prefix,"backend").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: PETSc, trilinos, gmm")
-#else
-        (prefixvm(prefix,"backend").c_str(), Feel::po::value<std::string>()->default_value( "gmm" ), "backend type: PETSc, trilinos, gmm")
-#endif
+        (prefixvm(prefix,"backend").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: PETSc, trilinos")
         (prefixvm(prefix,"ksp-rtol").c_str(), Feel::po::value<double>()->default_value( 1e-13 ), "relative tolerance")
         (prefixvm(prefix,"ksp-atol").c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance")
         (prefixvm(prefix,"ksp-dtol").c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance")

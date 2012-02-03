@@ -405,6 +405,13 @@ MatrixBlockBase<T>::zeroRows( std::vector<int> const& rows, std::vector<value_ty
 
 template <typename T>
 void
+MatrixBlockBase<T>::diagonal( Vector<value_type>& out ) const
+{
+    M_mat->diagonal(out);
+}
+
+template <typename T>
+void
 MatrixBlockBase<T>::transpose( MatrixSparse<value_type>& Mt ) const
 {
     M_mat->transpose(Mt);

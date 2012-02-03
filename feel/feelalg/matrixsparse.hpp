@@ -426,6 +426,16 @@ public:
         return *this;
     }
     /**
+     * Copies the diagonal part of the matrix into \p dest.
+     */
+    virtual void diagonal (Vector<T>& dest) const = 0;
+
+    /**
+     * Copies the diagonal part of the matrix into \p dest.
+     */
+    virtual void diagonal (boost::shared_ptr<Vector<T> >& dest) const { diagonal(*dest); }
+
+    /**
      * Returns the transpose of a matrix
      *
      * \param Mt the matrix transposed

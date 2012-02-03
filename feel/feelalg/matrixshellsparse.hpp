@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-12-28
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -56,6 +56,8 @@ public:
     typedef typename super::real_type real_type;
     typedef MatrixSparse<value_type> sparse_matrix_type;
     typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
+    typedef typename super::vector_type vector_type;
+    typedef typename super::vector_ptrtype vector_ptrtype;
 
     //@}
 
@@ -105,13 +107,13 @@ public:
     //@{
 
     //! copies the diagonal of the matrix into \p v.
-    virtual void diagonal( vector_type& v );
+    void diagonal( vector_type& v ) const;
 
     //! Multiplies the matrix with arg and stores the result in dest.
-    virtual void mult( vector_type const& arg, vector_type& dest );
+    void multVector( vector_type const& in, vector_type& out ) const;
 
     //! Multiplies the matrix with arg and adds the result to dest.
-    virtual void multAndAdd( vector_type const& arg, vector_type& dest );
+    void multAddVector( vector_type const& in, vector_type& out ) const;
 
     //@}
 

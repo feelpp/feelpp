@@ -387,6 +387,11 @@ public:
     void scale( T const a );
 
     /**
+     * Copies the diagonal part of the matrix into \p dest.
+     */
+    void diagonal (Vector<value_type>& dest) const;
+
+    /**
      * Returns the transpose of a matrix
      *
      * \param M the matrix to transpose

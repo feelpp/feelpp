@@ -1110,7 +1110,15 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> 
 
 
 }
-
+template<typename T>
+void
+MatrixPetsc<T>::diagonal( Vector<value_type>& out ) const
+{
+    this->close();
+    VectorPetsc<T>* v = dynamic_cast<VectorPetsc<T>*> (&out);
+    int ierr = MatGetDiagonal( _M_mat, v->vec());
+    CHKERRABORT(this->comm(),ierr);
+}
 template<typename T>
 void
 MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
