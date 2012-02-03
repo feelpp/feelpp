@@ -170,6 +170,7 @@ add_subdirectory(dd)
 
 #add_subdirectory(heat)
 #add_subdirectory(heatns)
+add_subdirectory(nonlinear)
 add_subdirectory(adapt)
 add_subdirectory(nirb)
 add_subdirectory(mcs)
