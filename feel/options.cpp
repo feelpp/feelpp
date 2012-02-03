@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-21
 
-  Copyright (C) 2007-2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -29,7 +29,6 @@
 #include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backend.hpp>
-#include <feel/feelalg/backendgmm.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelalg/backendtrilinos.hpp>
@@ -47,7 +46,6 @@ feel_options( std::string const& prefix  )
     return
         /* alg options */
         backend_options()
-        .add( backendgmm_options( prefix ) )
 #if defined(HAVE_PETSC_H)
         .add( backendpetsc_options( prefix ) )
 #endif
