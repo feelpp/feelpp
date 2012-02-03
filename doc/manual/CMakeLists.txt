@@ -45,11 +45,16 @@ add_latex_document(feel-manual.tex
   tutorial/building.tex
   tutorial/getting-started.tex
   tutorial/feel.tex
-  examples/nonlinear.tex
-  examples/natural-convection-2d.tex
-  examples/heatsink.tex
+  nonlinear/nonlinear.tex
+  heatns/natural-convection-2d.tex
+  heat/heatsink.tex
+  dd/dd.tex
+  maxwell/maxwell.tex
   randomnotes.tex gfdl.tex howto.tex version.tex ${CPPFILES} ${STYFILES}
-  BIBFILES feel-manual.bib
+  BIBFILES
+  ../biblio/feel-manual.bib
+  ../biblio/feelpp.bib
+  ../biblio/feelpp-thesis.bib
   IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink
   USE_INDEX
   DEFAULT_PDF
@@ -93,12 +98,6 @@ macro( add_docex target )
  endforeach()
 endmacro()
 
-foreach( docex myapp )
-  add_docex( ${docex} )
-endforeach()
-
-
-
 add_custom_target(
   tut-prerequisites
   ALL
@@ -111,18 +110,11 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY
 
 if ( NOT FEEL_MINIMAL_CONFIGURATION )
 
-foreach( docex  myintegrals mymesh geotool myfunctionspace laplacian loadmesh residualestimator stokes stokes_good stokes_locking stokes_spurious bratu nonlinearpow mortar multi_levels threefields nirb)
-  add_docex( ${docex} )
-endforeach()
+# # foreach( docex  myintegrals mymesh geotool myfunctionspace laplacian loadmesh residualestimator stokes stokes_good stokes_locking stokes_spurious bratu nonlinearpow mortar multi_levels threefields nirb)
+# #   add_docex( ${docex} )
+# # endforeach()
 
 #copy (${FEEL_SOURCE_DIR}/data/medit/Cylref.mesh ${CMAKE_CURRENT_BINARY_DIR}/)
-add_custom_target(
-  loadmesh
-  ALL
-  COMMAND ${CMAKE_COMMAND} -E copy ${FEEL_SOURCE_DIR}/data/medit/Cylref.mesh
-                                   ${FEEL_BUILD_DIR}/doc/manual/
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-)
 
 
 # Natural convection problem
@@ -130,15 +122,6 @@ add_custom_target(
 #add_executable( feel_doc_convection convection.hpp convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp )
 #target_link_libraries( feel_doc_convection ${FEEL_LIBRARIES} )
 
-# Overlapping schwartz domain decomposition method
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-add_executable( feel_doc_overlapping overlapping_ddmethodgeo.cpp overlapping_ddmethod.cpp )
-target_link_libraries( feel_doc_overlapping ${FEEL_LIBRARIES} )
-
-# Non-overlapping schwartz domain decomposition method
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-add_executable( feel_doc_nonoverlapping nonoverlappinggeo.cpp nonoverlapping.cpp )
-target_link_libraries( feel_doc_nonoverlapping ${FEEL_LIBRARIES} )
 
 
 endif ( NOT FEEL_MINIMAL_CONFIGURATION )
@@ -178,12 +161,15 @@ macro(add_octave_module modulename)
 endmacro(add_octave_module)
 
 
-add_octave_module( residualestimator )
-
-add_dependencies(doc octave)
 
 
 ENDIF( OCTAVE_FOUND )
 
+add_subdirectory(tutorial)
+#add_subdirectory(dd)
 
+#add_subdirectory(heat)
+#add_subdirectory(heatns)
+#add_subdirectory(adaptr)
+#add_subdirectory(nirb)
 add_subdirectory(mcs)
