@@ -1,0 +1,87 @@
+@InProceedings{prudhomme06:_life,
+  author = 	 {Christophe Prud'homme},
+  title = 	 {Life: Overview of a Unified C++ Implementation of
+                  the Finite and Spectral Element Methods in 1D, 2D
+                  and 3D},
+  booktitle = {Workshop On State-Of-The-Art In Scientific And Parallel Computing},
+  pages = 	 10,
+  year = 	 2006,
+  series = 	 {Lecture Notes in Computer Science},
+  publisher = {Springer-Verlag},
+  note = 	 {Accepted}
+}
+
+@Article{prud'homme05:_domain_specif_embed_languag_c,
+  author = 	 {Christophe Prud'homme},
+  title = 	 {A domain specific embedded language in C++ for
+                  automatic differentiation, projection, integration
+                  and variational formulations},
+  journal = 	 {Scientific Programming},
+  year = 	 2006,
+  volume = 	 14,
+  number = 	 2,
+  pages = 	 {81-110},
+  note = 	 {\url{http://iospress.metapress.com/link.asp?id=8xwd8r59hg1hmlcl}}}
+
+
+@article{Pena2009,
+  title = "Construction of a high order fluid-structure interaction solver",
+  journal = "Journal of Computational and Applied Mathematics",
+  volume = "In Press, Accepted Manuscript",
+  year = "2009",
+  issn = "0377-0427",
+  doi = "DOI: 10.1016/j.cam.2009.08.093",
+  url = "http://www.sciencedirect.com/science/article/B6TYH-4X1SBB2-3/2/156559a39e0458528dd14ab9cfa87fd1",
+  author = "Gon\c{c}alo Pena and Christophe Prud'homme"
+}
+
+%% hal-00665481, version 1
+%% http://hal.archives-ouvertes.fr/hal-00665481
+@unpublished{DOYEUX:2012:HAL-00665481:1,
+    hal_id = {hal-00665481},
+    url = {http://hal.archives-ouvertes.fr/hal-00665481},
+    title = {{Simulation of two-fluid flows using a finite element/level set method. Application to bubbles and vesicle dynamics}},
+    author = {Doyeux, Vincent and Guyot, Yann and Chabannes, Vincent and Prud'Homme, Christophe and Ismail, Mourad},
+    abstract = {{A new framework for two-fluids flow using a Finite Element/Level Set method is presented and verified through the simulation of the rising of a bubble in a viscous fluid. This model is then enriched to deal with vesicles (which mimic red blood cells mechanical behavior) by introducing a Lagrange multiplier to constrain the inextensibility of the membrane. Moreover, high order polynomial approximation is used to increase the accuracy of the simulations. A validation of this model is finally presented on known behaviors of vesicles under flow such as ''tank treading'' and tumbling motions.}},
+    keywords = {vesicle membrane ; Navier-Stokes ; two-fluid ; finite elements ; high order level set},
+    language = {Anglais},
+    affiliation = {Laboratoire Interdisciplinaire de Physique - LIPhy , Laboratoire Jean Kuntzmann - LJK , Institut de Recherche Math{\'e}matique Avanc{\'e}e - IRMA},
+    note = {Submitted to Elsevier Journal of Computational and Applied Mathematics (JCAM) },
+    year = {2012},
+    month = Feb,
+    pdf = {http://hal.archives-ouvertes.fr/hal-00665481/PDF/ls\_jcam.pdf},
+}
+
+%% hal-00657622, version 2
+%% http://hal.archives-ouvertes.fr/hal-00657622
+@unpublished{CHABANNES:2012:HAL-00657622:2,
+    hal_id = {hal-00657622},
+    url = {http://hal.archives-ouvertes.fr/hal-00657622},
+    title = {{High order fluid structure interaction in 2D and 3D. Application to blood flow in arteries}},
+    author = {Chabannes, Vincent and Pena, Gon{\c c}alo and Prud'Homme, Christophe},
+    abstract = {{This paper addresses the numerical approximation of Fluid Structure Interaction (FSI) problems through the Arbitrary Lagrangian Eulerian (ALE) framework, high order methods and a Dirichlet-Newmann approach for the coupling. The paper is divided in two main parts. The first part concerns the discretization method for the FSI problem. We introduce an improved ALE map, capable of handling curved geometries in 2D and 3D in an unified manner, that is based on a local differential operator. We also propose a minimal CIP stabilization term for the fluid discretization that accounts for a smaller computational effort, while stabilizing the flow regime. The second part is dedicated to validate our numerical strategy through a benchmark and some applications to blood flow in arteries.}},
+    keywords = {High order methods ; Arbitrary Lagrangian Eulerian transformation ; Fluid-Structure Interaction},
+    language = {Anglais},
+    affiliation = {Laboratoire Jean Kuntzmann - LJK , Center for Mathematics - CMUC , Institut de Recherche Math{\'e}matique Avanc{\'e}e - IRMA},
+    note = {Submitted to Elsevier Journal of Computational and Applied Mathematics (JCAM) },
+    year = {2012},
+    month = Feb,
+    pdf = {http://hal.archives-ouvertes.fr/hal-00657622/PDF/vchabannes\_gpena\_cprudhomme\_jcam.pdf},
+}
+
+%% hal-00662868, version 3
+%% http://hal.archives-ouvertes.fr/hal-00662868
+@unpublished{PRUDHOMME:2012:HAL-00662868:3,
+    hal_id = {hal-00662868},
+    url = {http://hal.archives-ouvertes.fr/hal-00662868},
+    title = {{Feel++: A Computational Framework for Galerkin Methods and Advanced Numerical Methods}},
+    author = {Prud'Homme, Christophe and Chabannes, Vincent and Doyeux, Vincent and Ismail, Mourad and Samake, Abdoulaye and Pena, Gon{\c c}alo},
+    abstract = {{This paper presents an overview of a unified framework for finite element and spectral element methods in 1D, 2D and 3D in \cpp called \Feel. The article is divided in two parts. The first part provides a digression through the design of the library as well as the main abstractions handled by it, namely, meshes, function spaces, operators, linear and bilinear forms and an embedded variational language. In every case, the closeness between the language developed in \Feel and the equivalent mathematical objects is highlighted. In the second part, examples using the mortar, Schwartz (non)overlapping, three fields and two ficticious domain-like methods (the Fat Boundary Method and the Penalty Method) are presented and numerically solved in the scope of the library.}},
+    keywords = {Galerkin methods ; finite element ; domain decomposition ; ficticious domain ; domain specific embedded language ; programming paradigms},
+    language = {Anglais},
+    affiliation = {Laboratoire Jean Kuntzmann - LJK , Institut de Recherche Math{\'e}matique Avanc{\'e}e - IRMA , Laboratoire Interdisciplinaire de Physique - LIPhy , Laboratoire de Spectrom{\'e}trie Physique - LSP , Center for Mathematics - CMUC},
+    note = {Submitted to ESAIM Proc. },
+    year = {2012},
+    month = Jan,
+    pdf = {http://hal.archives-ouvertes.fr/hal-00662868/PDF/feel.pdf},
+}
