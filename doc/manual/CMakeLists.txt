@@ -166,10 +166,10 @@ endmacro(add_octave_module)
 ENDIF( OCTAVE_FOUND )
 
 add_subdirectory(tutorial)
-#add_subdirectory(dd)
+add_subdirectory(dd)
 
 #add_subdirectory(heat)
 #add_subdirectory(heatns)
 #add_subdirectory(adaptr)
-#add_subdirectory(nirb)
+add_subdirectory(nirb)
 add_subdirectory(mcs)
