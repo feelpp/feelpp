@@ -35,6 +35,7 @@ namespace ublas = boost::numeric::ublas;
 // forward declarations
 template <typename T> class Vector;
 template <typename T> class MatrixSparse;
+template <typename T> class MatrixShell;
 
 /**
  * Numeric vector. Provides a uniform interface
@@ -355,8 +356,32 @@ public:
      * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    virtual void addVector (const Vector<T>&,
-                            const MatrixSparse<T>&) = 0;
+    virtual void addVector (const Vector<T>& V_in,
+                            const MatrixSparse<T>& A_in ) = 0;
+
+    /**
+     * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
+     * and a \p Vector \p V to \p this, where \p this=U.
+     */
+    virtual void addVector (const boost::shared_ptr<Vector<T> >& V_in,
+                            const boost::shared_ptr<MatrixSparse<T> >& A_in )
+        {
+            addVector( *V_in, *A_in );
+        }
+
+    /**
+     * \f$U+=A*V\f$, add the product of a \p MatrixShell \p A
+     * and a \p Vector \p V to \p this, where \p this=U.
+     */
+    void addVector (const Vector<T>& V_in,
+                    const MatrixShell<T>& A_in );
+
+    /**
+     * \f$U+=A*V\f$, add the product of a \p MatrixShell \p A
+     * and a \p Vector \p V to \p this, where \p this=U.
+     */
+    void addVector (const boost::shared_ptr<Vector<T> >& V_in,
+                            const boost::shared_ptr<MatrixShell<T> >& A_in );
 
 #if 0
     /**

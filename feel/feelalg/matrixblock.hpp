@@ -301,6 +301,13 @@ public:
     self_type & operator = ( MatrixSparse<value_type> const& M );
 
     /**
+     * Returns the diagonal of the block matrix
+     *
+     * \param out the vector to store the diagonal
+     */
+    void diagonal( Vector<value_type>& out ) const;
+
+    /**
      * Returns the transpose of a matrix
      *
      * \param Mt the matrix transposed

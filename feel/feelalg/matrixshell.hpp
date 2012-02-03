@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-12-28
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,9 @@
  */
 #ifndef __MatrixShell_H
 #define __MatrixShell_H 1
+
+#include <feel/feelcore/traits.hpp>
+#include <feel/feelalg/vector.hpp>
 
 namespace Feel
 {
@@ -54,6 +57,8 @@ public:
 
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
+    typedef Vector<T> vector_type;
+    typedef boost::shared_ptr<Vector<T> > vector_ptrtype;
 
     //@}
 
@@ -104,14 +109,34 @@ public:
     //@{
 
     //! copies the diagonal of the matrix into \p v.
-    virtual void diagonal( vector_type& v ) = 0;
+    virtual void diagonal( vector_type& v ) const = 0;
 
-    //! Multiplies the matrix with arg and stores the result in dest.
-    virtual void mult( vector_type const& arg, vector_type& dest ) = 0;
+    void diagonal ( boost::shared_ptr<Vector<T> >& dest ) const
+        {
+            this->diagonal( *dest );
+        }
 
-    //! Multiplies the matrix with arg and adds the result to dest.
-    virtual void multAndAdd( vector_type const& arg, vector_type& dest ) = 0;
+    //! Multiplies the matrix with in and stores the result in out.
+    virtual void multVector( vector_type const& in, vector_type& out ) const = 0;
 
+    /**
+     * Multiplies the matrix with \p arg and stores the result in \p
+     * dest.
+     */
+    void multVector ( const boost::shared_ptr<Vector<T> >& arg,
+                      boost::shared_ptr<Vector<T> >& dest ) const
+        {
+            this->multVector( *arg, *dest );
+        }
+
+    //! Multiplies the matrix with in and adds the result to out.
+    virtual void multAddVector( vector_type const& in, vector_type& out ) const = 0;
+
+    void multAddVector ( const boost::shared_ptr<Vector<T> >& arg,
+                         boost::shared_ptr<Vector<T> >& dest ) const
+        {
+            this->multAddVector( *arg, *dest );
+        }
     //@}
 
 

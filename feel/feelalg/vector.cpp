@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-03-20
 
-  Copyright (C) 2008, 2009 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2008, 2009 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-03-20
  */
+#include <feel/feelalg/matrixshell.hpp>
 #include <feel/feelalg/vector.hpp>
+
 
 namespace Feel
 {
@@ -147,7 +149,21 @@ void Vector<T>::clear ()
     M_is_closed      = false;
     M_is_initialized = false;
 }
+template<typename T>
+void
+Vector<T>::addVector (const Vector<T>& V_in,
+                      const MatrixShell<T>& A_in )
+{
+    A_in.multVector( V_in, *this );
+}
 
+template<typename T>
+void
+Vector<T>::addVector (const boost::shared_ptr<Vector<T> >& V_in,
+                      const boost::shared_ptr<MatrixShell<T> >& A_in )
+{
+    A_in->multVector( *V_in, *this );
+}
 
 
 
