@@ -62,6 +62,7 @@
 #include <sstream>
 #include <limits>
 
+#include <feel/feelcore/parameter.hpp>
 #include <feel/feelpoly/operations.hpp>
 
 #include <feel/feelalg/boundingbox.hpp>
@@ -1992,6 +1993,87 @@ public:
             super::init( _M_functionspace->nDof(),  _M_functionspace->nLocalDof() );
         }
 
+        BOOST_PARAMETER_MEMBER_FUNCTION((void),
+                                        save,
+                                        tag,
+                                        (required
+                                         (path,*))
+                                        (optional
+                                         (type,(std::string),std::string("binary"))
+                                         (suffix,(std::string),std::string(""))
+                                         (sep,(std::string),std::string(""))
+                                            ))
+            {
+                Feel::detail::ignore_unused_variable_warning(args);
+                if ( !fs::exists( fs::path(path) ) )
+                {
+                    fs::create_directories( fs::path(path) );
+                }
+                std::ostringstream os1;
+                os1 << _M_name << sep << suffix << ".fdb";
+                fs::path p = fs::path(path) / os1.str();
+                fs::ofstream ofs( p );
+                if ( type == "binary" )
+                {
+                    boost::archive::binary_oarchive oa(ofs);
+                    oa << *this;
+                }
+                else if ( type == "text" )
+                {
+                    boost::archive::text_oarchive oa(ofs);
+                    oa << *this;
+                }
+                else if ( type == "xml" )
+                {
+                    //boost::archive::xml_oarchive oa(ofs);
+                    //oa << *this;
+                }
+            }
+        BOOST_PARAMETER_MEMBER_FUNCTION(
+            (void),
+            load,
+            tag,
+            (required
+             (path,*))
+            (optional
+             (type,(std::string),std::string("binary"))
+             (suffix,(std::string),std::string(""))
+             (sep,(std::string),std::string(""))
+                )
+            )
+            {
+                Feel::detail::ignore_unused_variable_warning(args);
+                std::ostringstream os1;
+                os1 << _M_name << sep << suffix << ".fdb";
+                fs::path p = fs::path(path) / os1.str();
+                if ( !fs::exists( p ) )
+                {
+                    std::ostringstream os2;
+                    os2 << _M_name << sep << suffix;
+                    p = fs::path(path) / os2.str();
+                    if ( !fs::exists( p ) )
+                        return;
+                }
+                if ( !fs::is_regular_file( p ) )
+                    return;
+
+                fs::ifstream ifs( p );
+                if ( type == "binary" )
+                {
+                    boost::archive::binary_iarchive ia(ifs);
+                    ia >> *this;
+                }
+                else if ( type == "text" )
+                {
+                    boost::archive::text_iarchive ia(ifs);
+                    ia >> *this;
+                }
+                else if ( type == "xml" )
+                {
+                    //boost::archive::xml_iarchive ia(ifs);
+                    //ia >> *this;
+                }
+            }
         //@}
     private:
 
