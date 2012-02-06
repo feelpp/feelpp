@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-12-23
 
-  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -511,6 +511,4 @@ po::options_description backend_options( std::string const& prefix )
 
     return _options;
 }
-
-
 } // namespace Feel

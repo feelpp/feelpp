@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-12-23
 
-  Copyright (C) 2007,2008,2009,2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,7 @@
 #include <boost/fusion/include/fold.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/vector.hpp>
@@ -807,6 +808,8 @@ private:
     //std::map<std::string,boost::tuple<std::string,std::string> > M_sub;
 
 };
+typedef Backend<double> backend_type;
+typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
 /**
  * \param prefix prefix given to the  backend option
@@ -814,5 +817,47 @@ private:
  */
 po::options_description backend_options( std::string const& prefix = "" );
 
+namespace detail
+{
+class BackendManagerImpl:
+        public std::map<std::pair<BackendType,std::string>, backend_ptrtype >,
+        public boost::noncopyable
+{
+public:
+    typedef backend_ptrtype value_type;
+    typedef std::pair<BackendType,std::string> key_type;
+    typedef std::map<key_type, value_type> backend_manager_type;
+
+};
+typedef Feel::Singleton<BackendManagerImpl> BackendManager;
+} // detail
+
+
+BOOST_PARAMETER_FUNCTION(
+    (backend_ptrtype), // return type
+    backend,           // 2. function name
+    tag,               // 3. namespace of tag types
+    (optional
+     (vm,           (po::variables_map), po::variables_map())
+     (name,           *(std::string), "")
+     (kind,           *(BackendType), BACKEND_PETSC)
+     (rebuild,        (bool), false)
+        ))
+{
+    Feel::detail::ignore_unused_variable_warning(args);
+
+    auto git = detail::BackendManager::instance().find( std::make_pair( kind, name ) );
+    if (  git != detail::BackendManager::instance().end() && (rebuild == false) )
+    {
+        return git->second;
+    }
+    else
+    {
+        auto b = Feel::backend_type::build( vm, name );
+        detail::BackendManager::instance().operator[]( std::make_pair( kind, name ) ) = b;
+        return b;
+    }
+
+}
 }
 #endif /* __Backend_H */
