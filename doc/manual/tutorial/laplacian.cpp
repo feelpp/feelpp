@@ -34,20 +34,11 @@
 /** include function space class */
 #include <feel/feeldiscr/functionspace.hpp>
 
-/** include helper function to define \f$P_0\f$ functions associated with regions  */
-#include <feel/feeldiscr/region.hpp>
-
-/** include integration methods */
-#include <feel/feelpoly/im.hpp>
-
 /** include gmsh mesh importer */
 #include <feel/feelfilters/gmsh.hpp>
 
 /** include exporter factory class */
 #include <feel/feelfilters/exporter.hpp>
-
-/** include  polynomialset header */
-#include <feel/feelpoly/polynomialset.hpp>
 
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <feel/feelvf/vf.hpp>
@@ -125,32 +116,12 @@ public:
     //! numerical type is double
     typedef double value_type;
 
-    //! linear algebra backend factory
-    typedef Backend<value_type> backend_type;
-    //! linear algebra backend factory shared_ptr<> type
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
-
-
-    //! sparse matrix type associated with backend
-    typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
-    //! sparse matrix type associated with backend (shared_ptr<> type)
-    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    //! vector type associated with backend
-    typedef typename backend_type::vector_type vector_type;
-    //! vector type associated with backend (shared_ptr<> type)
-    typedef typename backend_type::vector_ptrtype vector_ptrtype;
-
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order 1
     typedef Simplex<Dim> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
-    //! function space that holds piecewise constant (\f$P_0\f$) functions (e.g. to store material properties or partitioning
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar, Discontinuous> > > p0_space_type;
-    //! an element type of the \f$P_0\f$ discontinuous function space
-    typedef typename p0_space_type::element_type p0_element_type;
 
     //! the basis type of our approximation space
     typedef bases<Lagrange<Order,Scalar> > basis_type;
@@ -173,7 +144,6 @@ public:
     Laplacian( po::variables_map const& vm, AboutData const& about )
         :
         super( vm, about ),
-        M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
     {
@@ -184,9 +154,6 @@ public:
     void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
 private:
-
-    //! linear algebra backend
-    backend_ptrtype M_backend;
 
     //! mesh characteristic size
     double meshSize;
@@ -260,7 +227,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     //# endmarker1 #
     /** \endcode */
 
-    bool weakdir = this->vm()["weakdir"].template as<int>();
+    bool weak_dirichlet = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
 
@@ -273,18 +240,18 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
      */
     /** \code */
     //# marker2 #
-    auto F = M_backend->newVector( Xh );
+    auto F = backend(_vm=this->vm())->newVector( Xh );
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), f*id(v) )+
-        integrate( markedfaces( mesh, "Neumann" ),
-				  nu*gradv(gproj)*vf::N()*id(v) );
+        integrate( _range=elements(mesh), _expr=f*id(v) )+
+        integrate( _range=markedfaces( mesh, "Neumann" ),
+                   _expr=nu*gradv(gproj)*vf::N()*id(v) );
     //# endmarker2 #
-    if ( this->comm().size() != 1 || weakdir )
+    if ( weak_dirichlet )
     {
         //# marker41 #
         form1( _test=Xh, _vector=F ) +=
-            integrate( markedfaces(mesh,"Dirichlet"),
-					  g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
+            integrate( _range=markedfaces(mesh,"Dirichlet"),
+                       _expr=g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
         //# endmarker41 #
     }
     F->close();
@@ -297,18 +264,17 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
      */
     //# marker3 #
     /** \code */
-    sparse_matrix_ptrtype D( M_backend->newMatrix( _test=Xh, _trial=Xh  ) );
+    auto D = backend()->newMatrix( _test=Xh, _trial=Xh  );
     /** \endcode */
 
-    const size_type pattern = Pattern::DEFAULT|Pattern::SYMMETRIC;
     //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
     /** \code */
-
-    form2( Xh, Xh, D, _pattern=pattern ) = integrate( elements(mesh), nu*gradt(u)*trans(grad(v)) );
+    form2( _test=Xh, _trial=Xh, _matrix=D) =
+        integrate( _range=elements(mesh), _expr=nu*gradt(u)*trans(grad(v)) );
     /** \endcode */
     //# endmarker3 #
 
-    if ( this->comm().size() != 1 || weakdir )
+    if ( weak_dirichlet )
         {
             /** weak dirichlet conditions treatment for the boundaries marked 1 and 3
              * -# assemble \f$\int_{\partial \Omega} -\nabla u \cdot \mathbf{n} v\f$
@@ -317,12 +283,11 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
              */
             /** \code */
             //# marker10 #
-            form2( Xh, Xh, D, _pattern=pattern ) +=
-                integrate( markedfaces(mesh,"Dirichlet"),
-                           -(gradt(u)*vf::N())*id(v)
-                           -(grad(v)*vf::N())*idt(u)
-                           +penaldir*id(v)*idt(u)/hFace());
-            D->close();
+            form2( _test=Xh, _trial=Xh, _matrix=D ) +=
+                integrate( _range=markedfaces(mesh,"Dirichlet"),
+                           _expr= ( -(gradt(u)*vf::N())*id(v)
+                                    -(grad(v)*vf::N())*idt(u)
+                                    +penaldir*id(v)*idt(u)/hFace() ) );
             //# endmarker10 #
             /** \endcode */
         }
@@ -334,8 +299,9 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
              */
             /** \code */
             //# marker5 #
-            D->close();
-            form2( Xh, Xh, D ) +=on( _range=markedfaces(mesh, "Dirichlet"), _element=u, _rhs=F, _expr=g );
+            form2( _test=Xh, _trial=Xh, _matrix=D ) +=
+                on( _range=markedfaces(mesh, "Dirichlet"),
+                    _element=u, _rhs=F, _expr=g );
             //# endmarker5 #
             /** \endcode */
 
@@ -345,15 +311,15 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     //! solve the system
     /** \code */
 	//# marker6 #
-    backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+    backend(_rebuild=true,_vm=this->vm())->solve( _matrix=D, _solution=u, _rhs=F );
 	//# endmarker6 #
     /** \endcode */
 
     //! compute the \f$L_2$ norm of the error
     /** \code */
     //# marker7 #
-    double L2error2 =integrate(elements(mesh),
-                               (idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
+    double L2error2 =integrate(_range=elements(mesh),
+                               _expr=(idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
     double L2error =   math::sqrt( L2error2 );
 
 
