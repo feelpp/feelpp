@@ -31,11 +31,12 @@ add_custom_target(
 )
 add_docex(myapp)
 add_docex(mymesh)
+add_docex(loadmesh)
 add_docex(myintegrals)
 add_docex(geotool)
 add_docex(myfunctionspace)
 add_docex(laplacian)
-add_docex(loadmesh)
+add_docex(dar)
 add_docex(stokes)
 # stokes_good stokes_locking stokes_spurious
 # bratu nonlinearpow mortar multi_levels threefields nirb)
