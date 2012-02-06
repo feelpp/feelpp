@@ -50,8 +50,15 @@ makeOptions()
 {
     po::options_description laplacianoptions("Laplacian options");
     laplacianoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.1 ), "mesh size")
-        ("mu", po::value<double>()->default_value( 0 ), "angle in [0,pi/2]")
+	// meshs parameters
+        ("hfinsize", po::value<double>()->default_value( 0.1 ), "fine mesh size")
+        ("hcoarsesize", po::value<double>()->default_value( 0.5 ), "coarse mesh size")
+	
+	// Reduced basis parameters        
+	("NbSnapshot",po::value<int>()->default_value(100),"numbers of snapshot computed")
+        ("sizeBR",po::value<int>()->default_value(15),"size of reduced basis")
+	
+	("mu", po::value<double>()->default_value( 0 ), "angle in [0,pi/2]")
         ;
     return laplacianoptions.add( Feel::feel_options() );
 }
@@ -67,8 +74,8 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "nirb" ,
-                     "nirb" ,
+    AboutData about( "nirb-test" ,
+                     "nirb-test" ,
                      "0.2",
                      "Non intrusive reduced basis",
                      Feel::AboutData::License_GPL,
@@ -80,7 +87,7 @@ makeAbout()
 }
 
 
-class NIRB
+class NIRBTEST
     :
     public Simget
 {
@@ -119,14 +126,18 @@ public:
     //! the exporter factory (shared_ptr<> type)
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
+
     /**
      * Constructor
      */
-    NIRB( po::variables_map const& vm, AboutData const& about )
+    NIRBTEST( po::variables_map const& vm, AboutData const& about )
         :
         super( vm, about ),
         M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].as<double>() ),
+        FineMeshSize( this->vm()["hfinsize"].as<double>() ),
+        CoarseMeshSize( this->vm()["hcoarsesize"].as<double>() ),
+	NbSnapshot( this->vm()["NbSnapshot"].as<int>() ),
+	sizeBR(this->vm()["sizeBR"].as<int>()),
         mu( this->vm()["mu"].as<double>() )
     {
     }
@@ -135,29 +146,37 @@ public:
 
     void run( const double* X, unsigned long P, double* Y, unsigned long N );
     element_type blackbox( space_ptrtype Xh, double param );
+    
 private:
 
     //! linear algebra backend
     backend_ptrtype M_backend;
 
     //! mesh characteristic size
-    double meshSize;
+    double FineMeshSize;
+    double CoarseMeshSize;
+
+    // Reduced basis parameter
+    int NbSnapshot,sizeBR;
     double mu;
-}; // NIRB
-const uint16_type NIRB::Order;
+}; // NIRBTEST
+const uint16_type NIRBTEST::Order;
 void
-NIRB::run()
+NIRBTEST::run()
 {
     std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute NIRB<" << 2 << ">\n";
-    std::vector<double> X( 2 );
-    X[0] = meshSize;
-    X[1] = mu;
+    std::cout << "Execute NIRBTEST<" << 2 << ">\n";
+    std::vector<double> X(5);
+    X[0] = FineMeshSize;
+    X[1] = CoarseMeshSize;
+    X[2] = NbSnapshot;
+    X[3] = sizeBR;
+    X[4] = mu;
     std::vector<double> Y( 1 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
 void
-NIRB::run( const double* X, unsigned long P, double* Y, unsigned long N )
+NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( !this->vm().count( "nochdir" ) )
         Environment::changeRepository( boost::format( "%1%/P%2%/" )
@@ -165,41 +184,61 @@ NIRB::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                        % Order );
 
 
-    mesh_ptrtype mesh1 = createGMSHMesh( _mesh=new mesh_type,
+    mesh_ptrtype meshFine = createGMSHMesh( _mesh=new mesh_type,
                                          _desc=domain( _name="Omega1",
                                                        _usenames=true,
                                                        _shape="hypercube",
                                                        _dim=2,
                                                        _h=X[0] ) );
-    mesh_ptrtype mesh2 = createGMSHMesh( _mesh=new mesh_type,
+    mesh_ptrtype meshCoarse = createGMSHMesh( _mesh=new mesh_type,
                                          _desc=domain( _name="Omega2",
                                                        _usenames=true,
                                                        _shape="hypercube",
                                                        _dim=2,
-                                                       _h=X[0]/2 ));
+                                                       _h=X[1] ));
 
-    space_ptrtype Xh1 = space_type::New( mesh1 );
-    space_ptrtype Xh2 = space_type::New( mesh2 );
+    space_ptrtype XhFine = space_type::New( meshFine );
+    space_ptrtype XhCoarse = space_type::New( meshCoarse );
 
-    export_ptrtype exporter1( export_type::New( this->vm(), "nirb1" ) );
-    export_ptrtype exporter2( export_type::New( this->vm(), "nirb2" ) );
-    exporter1->step(0)->setMesh( mesh2 );
-    exporter2->step(0)->setMesh( mesh2 );
-    for( int i =0; i < 10; ++i )
+    export_ptrtype exporterFine( export_type::New( this->vm(), "nirbInFine" ) );
+    export_ptrtype exporterCoarse( export_type::New( this->vm(), "nirbInCoarse" ) );
+    export_ptrtype exporter2Grid(export_type::New( this->vm(), "nirbOut"));
+
+    exporterFine->step(0)->setMesh( meshFine );
+    exporterCoarse->step(0)->setMesh( meshCoarse );
+    exporter2Grid->step(0)->setMesh( meshFine );
+
+
+    //STEP ONE : Construction of the "non intruisive reduced basis (nirb) functions"
+    //Computation of the X[3] snapshots solution on Xhfine
+    //Selection of X[2] fonctions to build the "reduced basis" using a POD technique
+    //Orthogonalisation in L2 and H1 norm of "reduced basis function"
+    //Save this final functions
+     
+
+   //STEP TWO : Approximation of the solution using the "nirb" functions for a choosen mu 
+    	
+
+
+
+    for( int i =0; i < sizeBR; ++i )
     {
         double p = i*M_PI/(2*9);
-        auto u1 = blackbox( Xh1, p );
-        auto u2 = blackbox( Xh2, p );
+        auto uFine = blackbox( XhFine, p );
+        auto uCoarse = blackbox( XhCoarse, p );
 
-        exporter1->step(0)->add( (boost::format("u1-%1%")%i).str(), u1 );
-        exporter2->step(0)->add( (boost::format("u2-%1%")%i).str(), u2 );
+        exporterFine->step(0)->add( (boost::format("uFine-%1%")%i).str(), uFine );
+        exporterCoarse->step(0)->add( (boost::format("uCoarse-%1%")%i).str(), uCoarse );
     }
-    exporter2->save();
-    exporter1->save();
+
+    exporterFine->save();
+    exporterCoarse->save(); 
+    exporter2Grid->save();
+
 
 }
-NIRB::element_type
-NIRB::blackbox( space_ptrtype Xh, double param )
+NIRBTEST::element_type
+NIRBTEST::blackbox( space_ptrtype Xh, double param )
 {
 
     auto u = Xh->element();
@@ -228,7 +267,7 @@ NIRB::blackbox( space_ptrtype Xh, double param )
     backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
 
     return u;
-} // NIRB::run
+} // NIRBTEST::run
 
 /**
  * main function: entry point of the program
@@ -246,7 +285,7 @@ main( int argc, char** argv )
     /**
      * register the simgets
      */
-    app.add( new NIRB( app.vm(), app.about() ) );
+    app.add( new NIRBTEST( app.vm(), app.about() ) );
 
     /**
      * run the application
