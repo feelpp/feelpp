@@ -49,6 +49,10 @@ namespace parameter = boost::parameter;
 
 BOOST_PARAMETER_NAME(vm)    // Note: no semicolon
 BOOST_PARAMETER_NAME(prefix)
+BOOST_PARAMETER_NAME(path)
+BOOST_PARAMETER_NAME(suffix)
+BOOST_PARAMETER_NAME(filename)
+BOOST_PARAMETER_NAME(sep)
 
 BOOST_PARAMETER_NAME(verbose)
 
@@ -108,10 +112,10 @@ BOOST_PARAMETER_NAME(zmin)
 BOOST_PARAMETER_NAME(zmax)
 BOOST_PARAMETER_NAME(refine)
 BOOST_PARAMETER_NAME(update)
-BOOST_PARAMETER_NAME(filename)
 BOOST_PARAMETER_NAME(physical_are_elementary_regions)
 BOOST_PARAMETER_NAME(parametricnodes)
 BOOST_PARAMETER_NAME(force_rebuild)
+BOOST_PARAMETER_NAME(rebuild)
 BOOST_PARAMETER_NAME(shear)
 BOOST_PARAMETER_NAME(recombine)
 // parameter for adapt
@@ -124,6 +128,7 @@ BOOST_PARAMETER_NAME(hmax)
 BOOST_PARAMETER_NAME(collapseOnBoundary)
 BOOST_PARAMETER_NAME(collapseOnBoundaryTolerance)
 // parameter for xmlParse
+BOOST_PARAMETER_NAME(kind)
 BOOST_PARAMETER_NAME(type)
 BOOST_PARAMETER_NAME(latex)
 BOOST_PARAMETER_NAME(cmdName)
