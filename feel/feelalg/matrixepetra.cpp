@@ -249,7 +249,7 @@ MatrixEpetra::multiplyMatrix( const MatrixEpetra& A, const MatrixEpetra& B )
 }
 
 void
-MatrixEpetra::diagonal (Vector<T>& dest) const
+MatrixEpetra::diagonal (Vector<double>& dest) const
 {
     // TBD
 }
