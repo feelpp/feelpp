@@ -53,14 +53,14 @@ makeOptions()
         ("geomap", Feel::po::value<int>()->default_value( 0 ), "type of geomap for integrals")
         ("stiff", Feel::po::value<double>()->default_value( 1.0 ), "stiffness parameter of solution")
         ("ring", Feel::po::value<bool>()->default_value( 0 ), "0 = square computational domain, 1 = quarter of a ring as computational domain")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        //("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
         ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
         ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
         ("export-matlab", "export matrices and vectors in matlab format")
 
         ;
-    return daroptions.add( Feel::feel_options() )
-        .add( Feel::benchmark_options( "1D-P1-Hypercube" ) );
+    return daroptions.add( Feel::feel_options() );
+    //rm.add( Feel::benchmark_options() );
 }
 
 
@@ -151,10 +151,12 @@ createRing( int Dim, int Order, double meshSize, std::string const& convex )
     gmshp->setDescription( ostr.str() );
     return gmshp;
 }
+}
 
 namespace Feel
 {
 extern template class DAR<1, 1, Continuous, Hypercube>;
+extern template class DAR<2, 1, Continuous, Simplex>;
 #if 0
 extern template class DAR<5, Lagrange<5, Scalar>, Hypercube>;
 extern template class DAR<2, Lagrange<1, Scalar>, Simplex>;
@@ -175,14 +177,9 @@ int main( int argc, char** argv )
         return 0;
     }
 
-    benchmark.add( new DAR<1, 1, Continuous, Hypercube>( benchmark.vm(), benchmark.about() ) );
+    //benchmark.add( new DAR<1, 1, Continuous, Hypercube>( benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new DAR<2, 1, Continuous, Simplex>( benchmark.vm(), benchmark.about() ) );
     benchmark.run();
-    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2")("e.h1")("n.space")("n.matrix")("t.init")("t.assembly.vector")("t.assembly.matrix" )("t.solver")("d.solver")("t.integrate")("t.export") );
+    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2")("n.space")("t.init")("t.assembly.vector")("t.assembly.matrix" )("t.solver")("t.integrate") );
 }
-
-/**
- * Create the ring geometry
- */
-std::pair<std::string,std::string> createRing( int Dim, double meshSize );
-
 

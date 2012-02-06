@@ -78,11 +78,8 @@ public:
         :
         super( vm, ad ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
-        geomap( (GeomapStrategyType)this->vm()["geomap"].template as<int>() ),
-        exporter()
+        geomap( (GeomapStrategyType)this->vm()["geomap"].template as<int>() )
     {
-        Log() << "[DAR] hsize = " << meshSize() << "\n";
-        Log() << "[DAR] bccoeff = " << bcCoeff << "\n";
     }
 
     /**
@@ -102,13 +99,12 @@ private:
 
 private:
 
-    mesh_ptrtype mesh;
 
     double bcCoeff;
 
     GeomapStrategyType geomap;
 
-    boost::shared_ptr<export_type> exporter;
+
 }; // DAR
 
 template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -132,12 +128,23 @@ DAR<Dim, Order, Cont, Entity>::run()
     value_type stiff = this->vm()["stiff"].template as<value_type>();
     bool ring = this->vm()["ring"].template as<bool>();
 
-    exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
+    std::cout << "[DAR] hsize = " << meshSize() << "\n";
+    std::cout << "[DAR] bx = " << beta_x << "\n";
+    std::cout << "[DAR] by = " << beta_y << "\n";
+    std::cout << "[DAR] mu = " << mu << "\n";
+    std::cout << "[DAR] stiff = " << stiff << "\n";
+    std::cout << "[DAR] ring = " << ring << "\n";
+    std::cout << "[DAR] bccoeff = " << bcCoeff << "\n";
+    std::cout << "[DAR] bctype = " << bctype << "\n";
+
+    auto exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
+
+    boost::timer t;
 
     /*
      * First we create the mesh
      */
-
+    mesh_ptrtype mesh;
     if ( ring )
         mesh = createGMSHMesh( _mesh=new mesh_type,
                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
@@ -151,6 +158,7 @@ DAR<Dim, Order, Cont, Entity>::run()
                                              _dim=Dim,
                                              _h=meshSize() ) );
 
+    M_stats.put("t.init.mesh",t.elapsed());t.restart();
 
     /*
      * The function space and some associate elements are then defined
@@ -159,6 +167,11 @@ DAR<Dim, Order, Cont, Entity>::run()
     auto u = Xh->element();
     auto v = Xh->element();
 
+    M_stats.put("h",M_meshSize);
+    M_stats.put("n.space.nelts",Xh->mesh()->numElements());
+    M_stats.put("n.space.ndof",Xh->nLocalDof());
+    M_stats.put("t.init.space",t.elapsed());
+    Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n"; t.restart() ;
 
     auto r = sqrt(Px()*Px()+Py()*Py());
     //auto r = sqrt(trans(P())*P());
@@ -172,6 +185,8 @@ DAR<Dim, Order, Cont, Entity>::run()
     auto f = ( constant(0.0) );
 
     auto F = backend(_vm=this->vm())->newVector( Xh );
+    M_stats.put("t.init.vector",t.elapsed());
+    Log() << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
     form1( _test=Xh, _vector=F, _init=true )  =
         integrate( elements(mesh), trans(f)*id(v) );
     if ( bctype == 1 || !Cont::is_continuous )
@@ -179,8 +194,14 @@ DAR<Dim, Order, Cont, Entity>::run()
         form1( _test=Xh, _vector=F ) +=
             integrate( _range=boundaryfaces(mesh), _expr=trans(beta_minus*g)*id(v),_geomap=geomap );
     }
+    M_stats.put("t.assembly.vector.total",t.elapsed());
+    Log() << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+
 
     auto D = backend(_vm=this->vm())->newMatrix( _test=Xh, _trial=Xh, _pattern=Pattern::COUPLED|Pattern::EXTENDED );
+    M_stats.put("t.init.matrix",t.elapsed());
+    Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+
     form2( _test=Xh, _trial=Xh, _matrix=D ) =
         integrate( _range=elements(mesh), _quad=_Q<2*Order>(),
                    // -(u,beta*grad(v))+(mu*u,v)-(u,div(beta)*v)
@@ -217,24 +238,50 @@ DAR<Dim, Order, Cont, Entity>::run()
     else if ( bctype == 0 )
         {
             form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-                on( boundaryfaces(mesh), u, F, g );
+                on( _range=boundaryfaces(mesh), _element=u, _rhs=F, _expr=g );
         }
+    M_stats.put("t.assembly.matrix.total",t.elapsed());
+    Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
     if ( this->vm().count( "export-matlab" ) )
     {
         F->printMatlab( "F.m" );
         D->printMatlab( "D.m" );
     }
 
-    backend(_vm=this->vm())->solve( _matrix=D, _solution=u, _rhs=F );
+    backend(_vm=this->vm(),_rebuild=true)->solve( _matrix=D, _solution=u, _rhs=F );
+    M_stats.put("t.solver.total",t.elapsed());
+    Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";    t.restart();
 
     double c = integrate( internalfaces(mesh), trans(jumpv(idv(u)))*jumpv(idv(u))  ).evaluate()( 0, 0 );
+    M_stats.put("t.integrate.jump",t.elapsed());t.restart();
     double error = integrate( elements(mesh), trans(idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0 );
+    M_stats.put("t.integrate.l2norm",t.elapsed());t.restart();
 
     Log() << "||error||_0 =" << error << "\n";
     std::cout << "c =" << c << "\n";
     std::cout << "||error||_0 =" << error << "\n";
+    M_stats.put("e.l2.error",math::sqrt( error ));
 
-    this->exportResults( u, g, beta );
+
+    //this->exportResults( u, g, beta );
+    auto Xch = space<Continuous>::type::New( mesh );
+    auto uEx = Xch->element();
+    auto uC = Xch->element();
+    auto Xvch = space<Continuous,Vectorial>::type::New( mesh );
+    auto betaC = Xvch->element();
+
+    auto L2Proj = projector( Xch, Xch );
+    uEx = L2Proj->project( g );
+    uC = L2Proj->project( vf::idv(u) );
+    auto L2Projv = projector( Xvch, Xvch );
+    betaC = L2Projv->project( trans(beta) );
+
+    exporter->step(0)->setMesh( u.functionSpace()->mesh() );
+    exporter->step(0)->add( "u", u );
+    exporter->step(0)->add( "uC", uC );
+    exporter->step(0)->add( "exact", uEx );
+    exporter->step(0)->add( "beta", betaC );
+    exporter->save();
 } // DAR::run
 
 template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -244,6 +291,7 @@ DAR<Dim, Order, Cont, Entity>::exportResults( f1_type& U,
                                                     f2_type& E,
                                                     f3_type& beta )
 {
+#if 0
     auto Xch = space<Continuous>::type::New( mesh );
     auto uEx = Xch->element();
     auto uC = Xch->element();
@@ -262,6 +310,7 @@ DAR<Dim, Order, Cont, Entity>::exportResults( f1_type& U,
     exporter->step(0)->add( "exact", uEx );
     exporter->step(0)->add( "beta", betaC );
     exporter->save();
+#endif
 
 } // DAR::export
 } // Feel
