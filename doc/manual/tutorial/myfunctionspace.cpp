@@ -190,7 +190,6 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
                         _partitions=this->comm().size());
 
     //# endmarker31 #
-#if 1
     /**
      * The function space and some associated elements(functions) are then defined
      */
@@ -214,8 +213,7 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
 
     //# marker4 #
     auto g = sin(2*pi*Px())*cos(2*pi*Py())*cos(2*pi*Pz());
-    auto f =
-(1-Px()*Px())*(1-Py()*Py())*(1-Pz()*Pz())*pow(trans(vf::P())*vf::P(),(alpha/2.0));
+    auto f =(1-Px()*Px())*(1-Py()*Py())*(1-Pz()*Pz())*pow(trans(vf::P())*vf::P(),(alpha/2.0));
     //# endmarker4 #
 
     //# marker5 #
@@ -232,8 +230,9 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     double L2verror2 = integrate( elements(mesh), (idv(v)-f)*(idv(v)-f) ).evaluate()(0,0);
     Log() << "||v-f||_0=" << math::sqrt( L2verror2/L2f2 ) << "\n";
     //# endmarker6 #
-#endif
+
     //# marker7 #
+    // exporting to paraview or gmsh
     std::cout << "exporting\n" << std::endl;
     exporter = export_ptrtype( export_type::New( this->vm(), (boost::format( "%1%-%2%-%3%-%4%" ) % this->about().appName() % shape % Dim % Order).str() ) );
     std::cout << "exporting mesh \n" << std::endl;
@@ -249,6 +248,13 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     exporter->save();
     //# endmarker7 #
 
+    // saving and loading function
+    u.save(_path=".");
+    std::cout << "after saving ||u||^2_2=" << integrate( _range=elements(mesh), _expr=idv(u)*idv(u) ).evaluate() << "\n";
+    u.zero();
+    std::cout << "after zeroing out ||u||^2_2=" << integrate( _range=elements(mesh), _expr=idv(u)*idv(u) ).evaluate() << "\n";
+    u.load(_path=".");
+    std::cout << "after loading ||u||^2_2=" << integrate( _range=elements(mesh), _expr=idv(u)*idv(u) ).evaluate() << "\n";
 } // MyFunctionSpace::run
 
 int
