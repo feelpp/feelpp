@@ -2025,8 +2025,8 @@ public:
                 }
                 else if ( type == "xml" )
                 {
-                    boost::archive::xml_oarchive oa(ofs);
-                    oa << *this;
+                    //boost::archive::xml_oarchive oa(ofs);
+                    //oa << *this;
                 }
             }
         BOOST_PARAMETER_MEMBER_FUNCTION(
@@ -2070,8 +2070,8 @@ public:
                 }
                 else if ( type == "xml" )
                 {
-                    boost::archive::xml_iarchive ia(ifs);
-                    ia >> *this;
+                    //boost::archive::xml_iarchive ia(ifs);
+                    //ia >> *this;
                 }
             }
         //@}
