@@ -359,7 +359,7 @@ public:
     /**
      * Copies the diagonal part of the matrix into \p dest.
      */
-    void diagonal (Vector<T>& dest) const;
+    void diagonal (Vector<double>& dest) const;
 
     void setDiagonal( Epetra_Vector const& x );
 
