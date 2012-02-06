@@ -48,6 +48,7 @@
 using namespace Feel;
 using namespace Feel::vf;
 
+
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
@@ -66,7 +67,7 @@ makeOptions()
         ("bx", Feel::po::value<double>()->default_value( 1.0 ), "convection X component")
         ("by", Feel::po::value<double>()->default_value( 0.0 ), "convection Y component")
         ("bz", Feel::po::value<double>()->default_value( 0.0 ), "convection Z component")
-        ("nu", po::value<double>()->default_value( 1 ), "diffusion coefficient")
+        ("epsilon", po::value<double>()->default_value( 1 ), "diffusion coefficient")
         ("mu", po::value<double>()->default_value( 1 ), "reaction coefficient")
         ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
         ("penaldir", Feel::po::value<double>()->default_value( 10 ),
@@ -191,6 +192,9 @@ template<int Dim>
 void
 DAR<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
+    using namespace Feel::vf;
+    using  vf::N;
+
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";
 
@@ -223,7 +227,7 @@ DAR<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     bool stab = this->vm()["stab"].template as<int>();
     value_type stabcoeff = this->vm()["stabcoeff"].template as<double>();
-    value_type nu = this->vm()["nu"].template as<double>();
+    value_type epsilon = this->vm()["epsilon"].template as<double>();
     value_type mu = this->vm()["mu"].template as<double>();
     value_type bx = this->vm()["bx"].template as<double>();
     value_type by = this->vm()["by"].template as<double>();
@@ -232,7 +236,7 @@ DAR<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     std::cout << "[DAR] bx = " << bx << "\n";
     std::cout << "[DAR] by = " << by << "\n";
     std::cout << "[DAR] mu = " << mu << "\n";
-    std::cout << "[DAR] nu = " << nu << "\n";
+    std::cout << "[DAR] epsilon = " << epsilon << "\n";
     std::cout << "[DAR] bccoeff = " << penaldir << "\n";
     std::cout << "[DAR] bctype = " << weak_dirichlet << "\n";
     std::cout << "[DAR] stab = " << stab << "\n";
@@ -254,12 +258,12 @@ DAR<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                        -pi*sin(pi*Px())*sin(pi*Py())*cos(pi*Pz()) );
     auto beta = vec(cst(bx),cst(by));
     //! deduce from expression the type of f (thanks to keyword 'auto')
-    auto f = (pi*pi*Dim*nu*g+trans(grad_g)*beta + mu*g);
+    auto f = (pi*pi*Dim*epsilon*g+trans(grad_g)*beta + mu*g);
     //# endmarker1 #
     /** \endcode */
 
 
-    using namespace Feel::vf;
+
 
 
     /**
@@ -276,9 +280,11 @@ DAR<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     if ( weak_dirichlet )
     {
         //# marker41 #
+#if 1
         form1( _test=Xh, _vector=F ) +=
             integrate( _range=boundaryfaces(mesh),
-                       _expr=g*(-nu*grad(v)*vf::N()+penaldir*id(v)/hFace()) );
+                       _expr=g*(-epsilon*grad(v)*vf::N()+penaldir*id(v)/hFace()) );
+#endif
         //# endmarker41 #
     }
     /** \endcode */
@@ -295,18 +301,16 @@ DAR<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto D = backend()->newMatrix( _test=Xh, _trial=Xh, _pattern=pattern  );
     /** \endcode */
 
-    //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
+    //! assemble $\int_\Omega \epsilon \nabla u \cdot \nabla v$
     /** \code */
     form2( _test=Xh, _trial=Xh, _matrix=D) =
         integrate( _range=elements(mesh),
-                   _expr=nu*gradt(u)*trans(grad(v))+(gradt(u)*beta)*id(v)+mu*idt(u)*id(v) );
+                   _expr=(epsilon*gradt(u)*trans(grad(v))+(gradt(u)*beta)*id(v)+mu*idt(u)*id(v) ) );
     /** \endcode */
     //# endmarker3 #
 
     if ( stab )
     {
-        using  vf::N;
-
         // define the stabilisation coefficient expression
         auto stab_coeff = (stabcoeff*abs(bx*Nx()+by*Ny())* vf::pow(hFace(),2.0));
         form2( _test=Xh, _trial=Xh, _matrix=D) +=
@@ -323,11 +327,19 @@ DAR<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
              */
             /** \code */
             //# marker10 #
+#if 1
             form2( _test=Xh, _trial=Xh, _matrix=D ) +=
                 integrate( _range=boundaryfaces(mesh),
-                           _expr= ( -(nu*gradt(u)*vf::N())*id(v)
-                                    -(nu*grad(v)*vf::N())*idt(u)
+                           _expr= ( -(epsilon*gradt(u)*vf::N())*id(v)
+                                    -(epsilon*grad(v)*vf::N())*idt(u)
                                     +penaldir*id(v)*idt(u)/hFace() ) );
+#else
+            form2( _test=Xh, _trial=Xh, _matrix=D ) +=
+                integrate( _range=boundaryfaces(mesh),
+                           _expr= ( -(epsilon*gradt(u)*vf::N())*id(v)));
+
+
+#endif
             //# endmarker10 #
             /** \endcode */
         }
@@ -339,8 +351,10 @@ DAR<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
              */
             /** \code */
             //# marker5 #
+#if 1
             form2( _test=Xh, _trial=Xh, _matrix=D ) +=
                 on( _range=boundaryfaces(mesh),_element=u, _rhs=F, _expr=g );
+#endif
             //# endmarker5 #
             /** \endcode */
 
