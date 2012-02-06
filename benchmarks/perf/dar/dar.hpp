@@ -1,0 +1,271 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+  This file is part of the Feel library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2012-02-05
+
+  Copyright (C) 2012 University Joseph Fourier
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 3.0 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
+
+#include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/projector.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
+
+namespace Feel
+{
+/**
+ * Generate the Ring mesh
+ */
+gmsh_ptrtype createRing( int Dim, int Order, double meshSize, std::string const& convex );
+
+/**
+ * DAR Solver using discontinous approximation spaces
+ *
+ * solve \f$ -\beta\cdot\nabla u + \mu u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma_{in}\f$
+ */
+template<int Dim,
+         int Order,
+         typename Cont,
+         template<uint16_type,uint16_type,uint16_type> class Entity>
+class DAR
+    :
+        public Simget
+{
+    typedef Simget super;
+public:
+
+    typedef double value_type;
+
+    typedef Backend<value_type> backend_type;
+    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+
+    /*mesh*/
+    typedef Entity<Dim,Order,Dim> entity_type;
+    typedef Mesh<entity_type> mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    template<typename Conti = Cont, template<uint16_type D> class FieldType = Scalar>
+    struct space
+    {
+        typedef bases<Lagrange<Order, FieldType,Conti> > basis_type;
+        typedef FunctionSpace<mesh_type, basis_type> type;
+    };
+
+    /* export */
+    typedef Exporter<mesh_type,Order> export_type;
+
+    DAR( po::variables_map const& vm, AboutData const& ad )
+        :
+        super( vm, ad ),
+        bcCoeff( this->vm()["bccoeff"].template as<double>() ),
+        geomap( (GeomapStrategyType)this->vm()["geomap"].template as<int>() ),
+        exporter()
+    {
+        Log() << "[DAR] hsize = " << meshSize() << "\n";
+        Log() << "[DAR] bccoeff = " << bcCoeff << "\n";
+    }
+
+    /**
+     * run the convergence test
+     */
+    void run();
+    void run( const double* X, unsigned long P, double* Y, unsigned long N ) { run(); }
+private:
+
+    /**
+     * export results to ensight format (enabled by  --export cmd line options)
+     */
+    template<typename f1_type, typename f2_type, typename f3_type>
+    void exportResults( f1_type& u,
+                        f2_type& v,
+                        f3_type& e );
+
+private:
+
+    mesh_ptrtype mesh;
+
+    double bcCoeff;
+
+    GeomapStrategyType geomap;
+
+    boost::shared_ptr<export_type> exporter;
+}; // DAR
+
+template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity>
+void
+DAR<Dim, Order, Cont, Entity>::run()
+{
+    using namespace Feel::vf;
+
+    this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
+                            % this->about().appName()
+                            % entity_type::name()
+                            % Order
+                            % meshSize()
+                            );
+    value_type penalisation = this->vm()["penal"].template as<value_type>();
+    int bctype = this->vm()["bctype"].template as<int>();
+
+    double beta_x = this->vm()["bx"].template as<value_type>();
+    double beta_y = this->vm()["by"].template as<value_type>();
+    value_type mu = this->vm()["mu"].template as<value_type>();
+    value_type stiff = this->vm()["stiff"].template as<value_type>();
+    bool ring = this->vm()["ring"].template as<bool>();
+
+    exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
+
+    /*
+     * First we create the mesh
+     */
+
+    if ( ring )
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                               _desc=createRing(Dim,Order,meshSize(),entity_type::name()) );
+    else
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                               _desc=domain( _name=(boost::format( "hypercube-%1%" ) % Dim).str() ,
+                                             _order=Order,
+                                             _shape="hypercube",
+                                             _dim=Dim,
+                                             _h=meshSize() ) );
+
+
+    /*
+     * The function space and some associate elements are then defined
+     */
+    auto Xh = space<Cont>::type::New( mesh );
+    auto u = Xh->element();
+    auto v = Xh->element();
+
+
+    auto r = sqrt(Px()*Px()+Py()*Py());
+    //auto r = sqrt(trans(P())*P());
+    auto beta = beta_x*(ring*Py()/r + !ring)*oneX()+beta_y*(-ring*Px()/r + !ring)*oneY();
+    //auto beta = (ones<Dim,1>());
+    auto beta_N = (trans(N())*beta);
+    auto beta_abs = abs(beta_N);
+    auto beta_minus = constant(0.5)*(beta_abs-beta_N);
+    auto beta_plus = constant(0.5)*(beta_abs+beta_N);
+    auto g = ((!ring*exp(-mu*Px())*atan((Py()-	0.5)/stiff) + ring*exp(-mu*r*acos(Py()/r))*atan((r-0.5)/stiff)) );
+    auto f = ( constant(0.0) );
+
+    auto F = backend(_vm=this->vm())->newVector( Xh );
+    form1( _test=Xh, _vector=F, _init=true )  =
+        integrate( elements(mesh), trans(f)*id(v) );
+    if ( bctype == 1 || !Cont::is_continuous )
+    {
+        form1( _test=Xh, _vector=F ) +=
+            integrate( _range=boundaryfaces(mesh), _expr=trans(beta_minus*g)*id(v),_geomap=geomap );
+    }
+
+    auto D = backend(_vm=this->vm())->newMatrix( _test=Xh, _trial=Xh, _pattern=Pattern::COUPLED|Pattern::EXTENDED );
+    form2( _test=Xh, _trial=Xh, _matrix=D ) =
+        integrate( _range=elements(mesh), _quad=_Q<2*Order>(),
+                   // -(u,beta*grad(v))+(mu*u,v)-(u,div(beta)*v)
+                   _expr=-trans(idt(u))*(grad(v)*beta) + mu*trans(idt(u))*id(v),
+                   //- idt(u)*id(v)*(dx(beta_x)+dy(beta_y))
+                   _geomap=geomap
+                   );
+
+    if ( !Cont::is_continuous )
+        {
+            form2( _test=Xh, _trial=Xh, _matrix=D ) +=
+                integrate( _range=internalfaces(mesh), _quad=_Q<2*Order>(),
+                           // {beta u} . [v]
+                           //( trans(averaget(trans(beta)*idt(u))) * jump(trans(id(v))) )
+                           _expr=( averaget(trans(beta)*idt(u)) * jump(id(v)) )
+                           // penal*[u] . [v]
+                           + penalisation*beta_abs*( trans(jumpt(trans(idt(u))))*jump(trans(id(v))) ),
+                           _geomap=geomap);
+        }
+
+    else // continuous case: stabilization by interior penalty
+    {
+        form2( _test=Xh, _trial=Xh, _matrix=D ) +=
+            integrate( internalfaces(mesh),
+                       // penal*[grad(u)] . [grad(v)]
+                       + penalisation*beta_abs*hFace()*hFace()*(trans(jumpt(gradt(u)))*jump(grad(v)) ) );
+    }
+
+    if ( bctype == 1 || !Cont::is_continuous )
+        {
+            form2( _test=Xh, _trial=Xh, _matrix=D ) +=
+                integrate( _range=boundaryfaces(mesh), _expr=beta_plus*trans(idt(u))*id(v),_geomap=geomap );
+        }
+    else if ( bctype == 0 )
+        {
+            form2( _test=Xh, _trial=Xh, _matrix=D ) +=
+                on( boundaryfaces(mesh), u, F, g );
+        }
+    if ( this->vm().count( "export-matlab" ) )
+    {
+        F->printMatlab( "F.m" );
+        D->printMatlab( "D.m" );
+    }
+
+    backend(_vm=this->vm())->solve( _matrix=D, _solution=u, _rhs=F );
+
+    double c = integrate( internalfaces(mesh), trans(jumpv(idv(u)))*jumpv(idv(u))  ).evaluate()( 0, 0 );
+    double error = integrate( elements(mesh), trans(idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0 );
+
+    Log() << "||error||_0 =" << error << "\n";
+    std::cout << "c =" << c << "\n";
+    std::cout << "||error||_0 =" << error << "\n";
+
+    this->exportResults( u, g, beta );
+} // DAR::run
+
+template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<typename f1_type, typename f2_type, typename f3_type>
+void
+DAR<Dim, Order, Cont, Entity>::exportResults( f1_type& U,
+                                                    f2_type& E,
+                                                    f3_type& beta )
+{
+    auto Xch = space<Continuous>::type::New( mesh );
+    auto uEx = Xch->element();
+    auto uC = Xch->element();
+    auto Xvch = space<Continuous,Vectorial>::type::New( mesh );
+    auto betaC = Xvch->element();
+
+    auto L2Proj = projector( Xch, Xch );
+    uEx = L2Proj->project( E );
+    uC = L2Proj->project( vf::idv(U) );
+    auto L2Projv = projector( Xvch, Xvch );
+    betaC = L2Projv->project( trans(beta) );
+
+    exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+    exporter->step(0)->add( "u", U );
+    exporter->step(0)->add( "uC", uC );
+    exporter->step(0)->add( "exact", uEx );
+    exporter->step(0)->add( "beta", betaC );
+    exporter->save();
+
+} // DAR::export
+} // Feel
+
+
+
+
