@@ -1003,6 +1003,9 @@ template<typename T>
 void
 MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
 {
+    // the matrix needs to be closed for this to work
+    this->close();
+
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
     MatSetOption(_M_mat,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);
 #elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
