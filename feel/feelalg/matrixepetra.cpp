@@ -248,7 +248,11 @@ MatrixEpetra::multiplyMatrix( const MatrixEpetra& A, const MatrixEpetra& B )
     EpetraExt::MatrixMatrix::Multiply( A.mat(), false, B.mat(), false, (*this).mat() );
 }
 
-
+void
+MatrixEpetra::diagonal (Vector<T>& dest) const
+{
+    // TBD
+}
 void
 MatrixEpetra::transpose( MatrixSparse<value_type>& Mt ) const
 {
