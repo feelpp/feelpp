@@ -346,7 +346,7 @@ Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixRB(space_ptrtype Xh){
 		S(i,i) = Sii;	
 	} 
 
-	//return S;
+	return S;
 }
 
 //-----------------------------------------
