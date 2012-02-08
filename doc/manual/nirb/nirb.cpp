@@ -232,12 +232,14 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     export_ptrtype exporterFine( export_type::New( this->vm(), "nirbInFine" ) );
     export_ptrtype exporterCoarse( export_type::New( this->vm(), "nirbInCoarse" ) );
-    export_ptrtype exporter2Grid(export_type::New( this->vm(), "nirbOut"));
+    export_ptrtype exporter2Grid(export_type::New( this->vm(), "nirb2Grid"));
+    export_ptrtype exporter1Grid(export_type::New( this->vm(), "nirb1Grid"));
     export_ptrtype exporterErr(export_type::New( this->vm(), "nirbErr"));
 
     exporterFine->step(0)->setMesh( meshFine );
     exporterCoarse->step(0)->setMesh( meshCoarse );
     exporter2Grid->step(0)->setMesh( meshFine );
+    exporter1Grid->step(0)->setMesh( meshFine );
     exporterErr->step(0)->setMesh( meshFine );
 
 
@@ -260,27 +262,37 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto uFine = XhFine->element();
     auto uCoarse = XhCoarse->element();
     auto uNirb = XhFine->element();
-    uFine = blackbox( XhFine, p );
-    uCoarse = blackbox( XhCoarse, p);
+    auto u1Grid = XhFine->element();
+    uFine = blackbox( XhFine, p ); 
+    std :: cout << "Computation of FE solution (uFine) - Fine Grid (saved in nirbInFine):" << endl;
+    uCoarse = blackbox( XhCoarse, p); 
+    std :: cout << "Computation of FE solution (uCoarse) -  Coarse Grid (saved in nirbInCoarse):"<< endl;
     uNirb = BuildNirbSolution(XhFine,XhCoarse,p);
-    auto uErr = XhFine->element();
+    std :: cout << "Construction of NIRB solution (uNirb) - Fine/Coarse Grid (saved in nirb2Grid):"<< endl;
+    u1Grid = BuildNirbSolution(XhFine,XhFine,p);
+    std :: cout << "Construction of NIRB solution (u1Grid) - Fine/Fine Grid  (saved in nirb1Grid):"<< endl;
+    auto uErr = XhFine->element(); 
+   
     
     for (int i =0;i<XhFine->nLocalDof();i++){
       uErr(i) = std::abs(uNirb(i)-uFine(i));
     }
+    std :: cout << "Construction of the Error map between uNirb and uFine)  (saved in nirbErr):"<< endl;
    
    
- 
-    std :: cout << "After BuildNirbSolution " << endl;
-   
+
     exporterFine->step(0)->add("uFine", uFine ); 
     exporterCoarse->step(0)->add("uCoarse", uCoarse ); 
-    exporter2Grid->step(0)->add( "uNirb", uNirb ); 
+    exporter2Grid->step(0)->add( "u2Grid", uNirb ); 
+    exporter1Grid->step(0)->add("u1Grid",u1Grid);
     exporterErr->step(0)->add("uErr",uErr);
+    
+//     std::cout << "After 'exporter'->add " << endl;
  
     exporterFine->save(); 
     exporterCoarse->save();  
     exporter2Grid->save(); 
+    exporter1Grid->save(); 
     exporterErr->save(); 
 
 }
@@ -677,22 +689,26 @@ NIRBTEST::element_type NIRBTEST ::BuildNirbSolution(space_ptrtype XhFine,space_p
   //Computation of the coefficiant \BetaiH = \int uCoarse*\Epsilon_i 
   //with \Epsilon_i being the final Nirb basis functions
    
-  double BetaiH;
+   //Reading Nirb basis function #i and building the Nirb solution  
+  Eigen :: VectorXd BetaiH(sizeBR);
   uNirb.zero();
   for (int i =0;i<sizeBR;i++){
-    ui.zero();
-     //Reading Nirb basis function #i and building the Nirb solution  
-    
+    ui.zero(); 
     std::string path = (boost::format("./NIRB_BasisF_%1%") %i).str() ;
     ui.load(_path=path);
     
-    BetaiH  = D->energy(uCoarseInterpolate,ui);
-    for (int j=0;j<XhFine->nLocalDof();j++){
-      BetaiH = ui(j)*BetaiH;
-      ui(j) = BetaiH;
-    }
-    uNirb = uNirb + ui; 
+    BetaiH[i] = D->energy(uCoarseInterpolate,ui);
   }
+  
+  for (int i =0;i<sizeBR;i++){
+    ui.zero(); 	  
+    std::string path = (boost::format("./NIRB_BasisF_%1%") %i).str() ;
+    ui.load(_path=path);
+    for (int j=0;j<XhFine->nLocalDof();j++){ 
+	uNirb(j) = uNirb(j) + ui(j)*BetaiH[i]; 
+    } 
+  }
+    
   return uNirb;
   
   
