@@ -1277,7 +1277,7 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
     {
         VectorPetsc<T> const& v   = dynamic_cast<VectorPetsc<T> const&>( __v );
         VectorPetsc<T> const& u   = dynamic_cast<VectorPetsc<T> const&>( __u );
-        VectorPetsc<value_type> z( __u.size(), __u.localSize() );
+        VectorPetsc<value_type> z( __v.size(), __v.localSize() );
         if ( !transpose )
             MatMult( _M_mat, u.vec(), z.vec() );
         else
@@ -1300,7 +1300,7 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
             for( size_type i = 0; i < s; ++i )
                 v.set( start + i, __v( start + i ) );
         }
-        VectorPetsc<value_type> z( __u.size(), __u.localSize() );
+        VectorPetsc<value_type> z( __v.size(), __v.localSize() );
         if ( !transpose )
             MatMult( _M_mat, u.vec(), z.vec() );
         else
