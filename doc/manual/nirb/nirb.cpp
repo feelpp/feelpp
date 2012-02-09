@@ -176,7 +176,7 @@ public:
     void OrthogonalisationRBFunctionL2GrammSchmidt(space_ptrtype Xh,Eigen::MatrixXd &M );
     Eigen::MatrixXd  ConstructStiffMatrixSnapshot(space_ptrtype Xh);
     Eigen::MatrixXd  ConstructStiffMatrixRB(space_ptrtype Xh,std::string filename);
-    Eigen::MatrixXd  ConstructMassMatrixRB(space_ptrtype Xh,std::string filename); 
+    Eigen::MatrixXd  ConstructMassMatrixRB(space_ptrtype Xh,std::string filename);
 
 private:
 
@@ -191,7 +191,7 @@ private:
     int NbSnapshot,sizeRB;
     double muMin,muMax,mu;
 
-    // Paramater to set OFF or ON the "offline" procedure 
+    // Paramater to set OFF or ON the "offline" procedure
     int Offline;
     // if Offline = 1 then ConstructNIRB is called
     // if Offline = 0 then ConstructNIRB is not called, the Nirb Basis function are read from a file
@@ -251,7 +251,7 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
     //Fine F.E space used to build the NIRB basis
 
     space_ptrtype XhCoarse = space_type::New( meshCoarse );
- 
+
 
     export_ptrtype exporterFine(export_type::New( this->vm(), "nirbInFine" ) );
     export_ptrtype exporterCoarse(export_type::New( this->vm(), "nirbInCoarse" ) );
@@ -301,10 +301,12 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto uNirb = XhFine->element();
     auto u1Grid = XhFine->element();
 
+    boost::timer ti;
     uCoarse = blackbox( XhCoarse, p);
     std :: cout << "Computation of FE solution (uCoarse) -  Coarse Grid (saved in nirbInCoarse):"<< endl;
     uNirb = BuildNirbSolution(XhFine,XhCoarse,p);
-    std :: cout << "Construction of NIRB solution (uNirb) - Fine/Coarse Grid (saved in nirb2Grid):"<< endl;
+    std :: cout << "Construction of NIRB solution (uNirb) - Fine/Coarse Grid (saved in nirb2Grid):" << endl;
+    std::cout << "time for reduced basis computation: " << ti.elapsed() << "\n";
 
     if (ComputeError){
         std :: cout << "Error calculation " << endl;
@@ -335,7 +337,7 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
         std :: cout << "Construction of NIRB solution (u1Grid) - Fine/Fine Grid  (saved in nirb1Grid): done "<< endl;
 
 
-        // //Computation of relative error measured in  H1 norm  
+        // //Computation of relative error measured in  H1 norm
 
 
         // // auto DFine = M_backend->newMatrix( _test=XhRef, _trial=XhFine  );//Sparse F.E mass matrix D
@@ -378,10 +380,8 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
         auto uErr = XhFine->element();
 
-        // uErr = vf::project(XhFine,elements(XhFine->mesh()),abs(idv(uNirb)-idv(uFine)));
-        for (int i =0;i<XhFine->nLocalDof();i++){
-            uErr(i) = std::abs(uNirb(i)-uFine(i));
-        }
+        uErr = vf::project( _space=XhFine, _range=elements(XhFine->mesh()),
+                            _expr=abs(idv(uNirb)-idv(uFine)) );
 
         export_ptrtype exporterErr(export_type::New( this->vm(), "nirbErr"));
 
@@ -394,7 +394,6 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     }
 
-
     exporterFine->step(0)->add("uFine", uFine );
     exporterCoarse->step(0)->add("uCoarse", uCoarse );
     exporter2Grid->step(0)->add( "u2Grid", uNirb );
@@ -404,7 +403,7 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
     exporterCoarse->save();
     exporter2Grid->save();
     exporter1Grid->save();
-  
+
 
 }
 //-----------------------------------------
@@ -457,7 +456,7 @@ Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixSnapshot(space_ptrtype Xh){
         double Sii = D->energy(ui,ui);
         S(i,i) = Sii;
     }
-   
+
 
  	return S;
 }
@@ -539,8 +538,8 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
 	//associated to the N largest eigenvalues
 
 
-	int *Lind = new int [NbSnapshot];
-	int *Uind = new int [NbSnapshot];
+    std::vector<int> Lind( NbSnapshot );
+    std::vector<int> Uind( NbSnapshot );
 
 	for (int i =0;i<NbSnapshot;i++)
     {
@@ -606,8 +605,6 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
 
 	}
  	find.close();
-    delete [] Lind;
-    delete [] Uind;
 }
 
 //-----------------------------------------
@@ -806,12 +803,14 @@ NIRBTEST::element_type NIRBTEST ::BuildNirbSolution(space_ptrtype XhFine,space_p
   auto uCoarseInterpolate = XhFine->element();
   auto ui = XhFine->element();
 
-  auto D = M_backend->newMatrix( _test=XhFine, _trial=XhFine  ); //Sparse FE mass matrix
-	form2( _test=XhFine, _trial=XhFine, _matrix=D ) =
-	integrate( _range=elements(XhFine->mesh()), _expr=idt(uNirb)*id(ui));
+
+
+  auto D = M_backend->newMatrix( _test=XhCoarse, _trial=XhFine  ); //Sparse FE mass matrix
+  form2( _test=XhCoarse, _trial=XhFine, _matrix=D ) =
+      integrate( _range=elements(XhFine->mesh()), _expr=id(uCoarse)*idt(ui));
 
   uCoarse = blackbox(XhCoarse,param);//Computation of the coarse solution
-  interpolate (XhFine,uCoarse,uCoarseInterpolate);
+  //interpolate (XhFine,uCoarse,uCoarseInterpolate);
   //Interpolation of the coarse solution on the fine Mesh to compute the coefficiant BetaiH
 
   //Computation of the coefficiant \BetaiH = \int uCoarse*\Epsilon_i
@@ -826,7 +825,8 @@ NIRBTEST::element_type NIRBTEST ::BuildNirbSolution(space_ptrtype XhFine,space_p
       std::string path = (boost::format("./NIRB_BasisF_%1%") %i).str() ;
       ui.load(_path=path);
 
-      BetaiH[i] = D->energy(uCoarseInterpolate,ui);
+      //BetaiH[i] = integrate( _range=elements(XhFine->mesh()),_expr=(idv(uCoarse)*idv(ui)) ).evaluate()(0,0);
+      BetaiH[i] = D->energy(uCoarse,ui);
   }
 
   for (int i =0;i<sizeRB;i++)
@@ -834,10 +834,7 @@ NIRBTEST::element_type NIRBTEST ::BuildNirbSolution(space_ptrtype XhFine,space_p
       ui.zero();
       std::string path = (boost::format("./NIRB_BasisF_%1%") %i).str() ;
       ui.load(_path=path);
-      for (int j=0;j<XhFine->nLocalDof();j++)
-      {
-          uNirb(j) = uNirb(j) + ui(j)*BetaiH[i];
-      }
+      uNirb.add( BetaiH[i], ui );
   }
 
   return uNirb;
@@ -851,8 +848,13 @@ NIRBTEST::element_type NIRBTEST ::BuildNirbSolution(space_ptrtype XhFine,space_p
 //-----------------------------------------
 void NIRBTEST :: ConstructNIRB(space_ptrtype Xh){
 
+    boost::timer ti;
 	ComputeSnapshot(Xh);
+    double time_Xhfine=ti.elapsed();
 	std :: cout << "Computation of the " << NbSnapshot << " snapshots : done " << endl;
+    std :: cout << "time for step one : " << time_Xhfine
+                << " per basis: " << time_Xhfine/sizeRB << "\n";ti.restart();
+
 	ChooseRBFunction(Xh);
 	std:: cout << "Choice of " << sizeRB << " reduced basis functions :done " << endl;
 	//Orthogonalisation de Gram-schmidt
