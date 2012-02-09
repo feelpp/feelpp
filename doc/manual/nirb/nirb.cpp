@@ -74,7 +74,9 @@ makeOptions()
 
         ("muMin", po::value<double>()->default_value( 0 ), "angle in [0,pi/2]")
         ("muMax", po::value<double>()->default_value( M_PI/2.),"angle in [0,pi/2]")
-        ("mu",po::value<double>()->default_value(1.),"angle in [0,pi/2]");
+        ("mu",po::value<double>()->default_value(1.),"angle in [0,pi/2]")
+        ("Offline",po::value<int>()->default_value(1),"integer equal to 0 if the offline has not  to be done")
+        ("ComputeError",po::value<int>()->default_value(1),"integer equal to 0 if the error computation has not to be done");
         ;
     return laplacianoptions.add( Feel::feel_options() );
 }
@@ -156,7 +158,9 @@ public:
         sizeRB(this->vm()["sizeRB"].as<int>()),
         muMin( this->vm()["muMin"].as<double>() ),
         muMax( this->vm()["muMax"].as<double>() ),
-        mu( this->vm()["mu"].as<double>() )
+        mu( this->vm()["mu"].as<double>() ),
+        Offline( this->vm()["Offline"].as<int>()),
+        ComputeError( this->vm()["ComputeError"].as<int>())
     {
     }
 
@@ -170,7 +174,6 @@ public:
     void ChooseRBFunction(space_ptrtype Xh);
     void OrthogonalisationRBFunction(space_ptrtype Xh);
     void OrthogonalisationRBFunctionL2GrammSchmidt(space_ptrtype Xh,Eigen::MatrixXd &M );
-
     Eigen::MatrixXd  ConstructStiffMatrixSnapshot(space_ptrtype Xh);
     Eigen::MatrixXd  ConstructStiffMatrixRB(space_ptrtype Xh,std::string filename);
     Eigen::MatrixXd  ConstructMassMatrixRB(space_ptrtype Xh,std::string filename); 
@@ -184,17 +187,27 @@ private:
     double FineMeshSize;
     double CoarseMeshSize;
 
-    // Reduced basis parameter
+    //! Reduced basis parameter
     int NbSnapshot,sizeRB;
     double muMin,muMax,mu;
-}; // NIRBTEST
+
+    // Paramater to set OFF or ON the "offline" procedure 
+    int Offline;
+    // if Offline = 1 then ConstructNIRB is called
+    // if Offline = 0 then ConstructNIRB is not called, the Nirb Basis function are read from a file
+
+    // Paramater to set OFF or ON the computation of the error between the F.E and the NIRB Methods
+    int ComputeError;
+    //if ComputeError = 1  == ON
+    //if ComputeError = 0 == OFF
+    }; // NIRBTEST
 const uint16_type NIRBTEST::Order;
 void
 NIRBTEST::run()
 {
     std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute NIRBTEST<" << 3 << ">\n";
-    std::vector<double> X(7);
+    std::cout << "Execute NIRBTEST<" << 2 << ">\n";
+    std::vector<double> X(9);
     X[0] = FineMeshSize;
     X[1] = CoarseMeshSize;
     X[2] = NbSnapshot;
@@ -202,28 +215,29 @@ NIRBTEST::run()
     X[4] = muMin;
     X[5] = muMax;
     X[6] = mu;
-    std::vector<double> Y( 1 );
+    X[7] = Offline;
+    X[8] = ComputeError;
+    std::vector<double> Y(1);
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
 void
 NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
 
-    std::cout<<"fine mesh size : "<<FineMeshSize<<std::endl;
-    std::cout<<"coarse mesh size : "<<CoarseMeshSize<<std::endl;
+    std::cout << "fine mesh size : " << FineMeshSize << std::endl;
+    std::cout << "coarse mesh size : " << CoarseMeshSize << std::endl;
 
     if ( !this->vm().count( "nochdir" ) )
         Environment::changeRepository( boost::format( "%1%/P%2%/" )
                                        % this->about().appName()
                                        % Order );
 
-
     mesh_ptrtype meshFine = createGMSHMesh( _mesh=new mesh_type,
                                          _desc=domain( _name="Omega1",
                                                        _usenames=true,
                                                        _shape="hypercube",
                                                        _dim=2,
-                                                       _h=X[0] ) );
+                                                       _h=X[0] ));
     mesh_ptrtype meshCoarse = createGMSHMesh( _mesh=new mesh_type,
                                          _desc=domain( _name="Omega2",
                                                        _usenames=true,
@@ -231,20 +245,23 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                                        _dim=2,
                                                        _h=X[1] ));
 
-    space_ptrtype XhFine = space_type::New( meshFine );
-    space_ptrtype XhCoarse = space_type::New( meshCoarse );
 
-    export_ptrtype exporterFine( export_type::New( this->vm(), "nirbInFine" ) );
-    export_ptrtype exporterCoarse( export_type::New( this->vm(), "nirbInCoarse" ) );
+
+    space_ptrtype XhFine = space_type::New( meshFine );
+    //Fine F.E space used to build the NIRB basis
+
+    space_ptrtype XhCoarse = space_type::New( meshCoarse );
+ 
+
+    export_ptrtype exporterFine(export_type::New( this->vm(), "nirbInFine" ) );
+    export_ptrtype exporterCoarse(export_type::New( this->vm(), "nirbInCoarse" ) );
     export_ptrtype exporter2Grid(export_type::New( this->vm(), "nirb2Grid"));
     export_ptrtype exporter1Grid(export_type::New( this->vm(), "nirb1Grid"));
-    export_ptrtype exporterErr(export_type::New( this->vm(), "nirbErr"));
 
     exporterFine->step(0)->setMesh( meshFine );
     exporterCoarse->step(0)->setMesh( meshCoarse );
     exporter2Grid->step(0)->setMesh( meshFine );
     exporter1Grid->step(0)->setMesh( meshFine );
-    exporterErr->step(0)->setMesh( meshFine );
 
 
     //STEP ONE : Construction of the "non intruisive reduced basis (nirb) functions"
@@ -252,9 +269,26 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
     //Selection of X[2] fonctions to build the "reduced basis" using a POD technique
     //Orthogonalisation in L2 and H1 norm of "reduced basis function"
     //Save this final functions
-    //std:: cout << "STEP ONE  : Construction of the 'non intruisive' reduced basis (nirb) functions " << endl;
-    ConstructNIRB(XhFine) ;
 
+    if (!Offline){
+        std :: string filename;
+        //Checking if the NIRB basis files exist
+        //WARNING : We also must check if the basis have been computed on the right FE space (Not done yet)
+        for (int i = 0 ; i < sizeRB; i++){
+            std :: ofstream fRB((boost::format("./NIRB_BasisF_%1%/u.fdb") %i).str());
+            if (!fRB){
+                std :: cout << "WARNING : Error opening : NIRB_BasisF_" << i << " => OFFline parameter set to 1 " << endl;
+                Offline = 1;
+                break;
+            }
+            fRB.close();
+        }
+    }
+
+    if (Offline){
+        std :: cout << "STEP ONE - OFFLINE PROCEDURE :  Construction of the 'non intruisive' reduced basis (nirb) functions " << endl;
+        ConstructNIRB(XhFine) ;
+    }
 
    //STEP TWO : Approximation of the solution using the "nirb" functions for a choosen mu
 
@@ -266,35 +300,111 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto uCoarse = XhCoarse->element();
     auto uNirb = XhFine->element();
     auto u1Grid = XhFine->element();
-    uFine = blackbox( XhFine, p );
-    //std :: cout << "Computation of FE solution (uFine) - Fine Grid (saved in nirbInFine):" << endl;
-    uCoarse = blackbox( XhCoarse, p);
-    //std :: cout << "Computation of FE solution (uCoarse) -  Coarse Grid (saved in nirbInCoarse):"<< endl;
-    uNirb = BuildNirbSolution(XhFine,XhCoarse,p);
-    //std :: cout << "Construction of NIRB solution (uNirb) - Fine/Coarse Grid (saved in nirb2Grid):"<< endl;
-    u1Grid = BuildNirbSolution(XhFine,XhFine,p);
-    //std :: cout << "Construction of NIRB solution (u1Grid) - Fine/Fine Grid  (saved in nirb1Grid):"<< endl;
-    auto uErr = XhFine->element();
 
-    for (int i =0;i<XhFine->nLocalDof();i++){
-      uErr(i) = std::abs(uNirb(i)-uFine(i));
+    uCoarse = blackbox( XhCoarse, p);
+    std :: cout << "Computation of FE solution (uCoarse) -  Coarse Grid (saved in nirbInCoarse):"<< endl;
+    uNirb = BuildNirbSolution(XhFine,XhCoarse,p);
+    std :: cout << "Construction of NIRB solution (uNirb) - Fine/Coarse Grid (saved in nirb2Grid):"<< endl;
+
+    if (ComputeError){
+        std :: cout << "Error calculation " << endl;
+        mesh_ptrtype meshRef = createGMSHMesh( _mesh=new mesh_type,
+                                               _desc=domain (_name="OmegaRef",
+                                                             _usenames=true,
+                                                             _shape="hypercube",
+                                                             _dim=2,
+                                                             _h=X[0]/4));
+        space_ptrtype XhRef = space_type::New(meshRef);
+        //Reference F.E space used to compute the "reference" solution
+        //which supposed to be accurate enough
+
+
+        auto uRef = XhRef->element();
+
+        uRef = blackbox( XhRef, p );
+         std :: cout << "Computation of FE solution (uRef) - Ref Grid (not saved): done" << endl;
+        //Computation of the H1 norm of uRef
+        double H1NormUref = integrate(_range=elements(XhRef->mesh()),
+                                      _expr=(gradv(uRef)*trans(gradv(uRef))+ idv(uRef)*idv(uRef) )).evaluate()(0,0);
+
+
+        H1NormUref = std :: sqrt(H1NormUref);
+        uFine = blackbox( XhFine, p );
+        std :: cout << "Computation of FE solution (uFine) - Fine Grid (saved in nirbInFine): done" << endl;
+        u1Grid = BuildNirbSolution(XhFine,XhFine,p);
+        std :: cout << "Construction of NIRB solution (u1Grid) - Fine/Fine Grid  (saved in nirb1Grid): done "<< endl;
+
+
+        // //Computation of relative error measured in  H1 norm  
+
+
+        // // auto DFine = M_backend->newMatrix( _test=XhRef, _trial=XhFine  );//Sparse F.E mass matrix D
+        // // form2( _test=XhRef, _trial=XhFine, _matrix=DFine ) =
+        // //     integrate( _range=elements(XhFine->mesh()), _expr=idt(uRef)*id(uFine));
+        // // auto DCoarse = M_backend->newMatrix( _test=XhRef, _trial=XhCoarse  );//Sparse F.E mass matrix D
+        // // form2( _test=XhRef, _trial=XhCoarse, _matrix=DCoarse ) =
+        // //     integrate( _range=elements(XhFine->mesh()), _expr=idt(uRef)*id(uCoarse));
+
+        double ErrH1uNirb,ErrH1uFine,ErrH1uCoarse,ErrH1u1Grid;
+
+        ErrH1uNirb = integrate(_range=elements(XhRef->mesh()),
+                               _expr=( (gradv(uRef)-gradv(uNirb))*trans(gradv(uRef)-gradv(uNirb))
+                                       + (idv(uRef)-idv(uNirb))*(idv(uRef)-idv(uNirb)) )).evaluate()(0,0);
+
+
+        ErrH1uNirb = sqrt(ErrH1uNirb)/H1NormUref;
+
+        ErrH1uFine = integrate(_range=elements(XhRef->mesh()),
+                               _expr=( (gradv(uRef)-gradv(uFine))*trans(gradv(uRef)-gradv(uFine))
+                                       + (idv(uRef)-idv(uFine))*(idv(uRef)-idv(uFine)) )).evaluate()(0,0);
+        ErrH1uFine = sqrt(ErrH1uFine)/H1NormUref;
+
+        ErrH1uCoarse = integrate(_range=elements(XhRef->mesh()),
+                                 _expr=( (gradv(uRef)-gradv(uCoarse))*trans(gradv(uRef)-gradv(uCoarse))
+                                         + (idv(uRef)-idv(uCoarse))*(idv(uRef)-idv(uCoarse)) )).evaluate()(0,0);
+        ErrH1uCoarse = sqrt(ErrH1uCoarse)/H1NormUref;
+
+        ErrH1u1Grid = integrate(_range=elements(XhRef->mesh()),
+                                _expr=( (gradv(uRef)-gradv(u1Grid))*trans(gradv(uRef)-gradv(u1Grid))
+                                        + (idv(uRef)-idv(u1Grid))*(idv(uRef)-idv(u1Grid)) )).evaluate()(0,0);
+        ErrH1u1Grid = sqrt(ErrH1u1Grid)/H1NormUref;
+
+
+        std :: cout << "||u_ref - u_Nirb ||_{H1}  = " << ErrH1uNirb << endl;
+        std :: cout << "||u_ref - u_fine ||_{H1}  = " << ErrH1uFine << endl;
+        std :: cout << "||u_ref - u_coarse ||_{H1}  = " << ErrH1uCoarse << endl;
+        std :: cout << "||u_ref - u_1Grid ||_{H1}  = " << ErrH1u1Grid<< endl;
+
+
+        auto uErr = XhFine->element();
+
+        // uErr = vf::project(XhFine,elements(XhFine->mesh()),abs(idv(uNirb)-idv(uFine)));
+        for (int i =0;i<XhFine->nLocalDof();i++){
+            uErr(i) = std::abs(uNirb(i)-uFine(i));
+        }
+
+        export_ptrtype exporterErr(export_type::New( this->vm(), "nirbErr"));
+
+        exporterErr->step(0)->setMesh( meshFine );
+        exporterErr->step(0)->add("uErr",uErr);
+
+        exporterErr->save();
+        std :: cout << "Construction of the Error map between uNirb and uFine)  (saved in nirbErr): done"<< endl;
+
+
     }
-    //std :: cout << "Construction of the Error map between uNirb and uFine)  (saved in nirbErr):"<< endl;
 
 
     exporterFine->step(0)->add("uFine", uFine );
     exporterCoarse->step(0)->add("uCoarse", uCoarse );
     exporter2Grid->step(0)->add( "u2Grid", uNirb );
-    exporter1Grid->step(0)->add("u1Grid",u1Grid);
-    exporterErr->step(0)->add("uErr",uErr);
-
-//     std::cout << "After 'exporter'->add " << endl;
+    exporter1Grid->step(0)->add("u1Grid",u1Grid);//     std::cout << "After 'exporter'->add " << endl;
 
     exporterFine->save();
     exporterCoarse->save();
     exporter2Grid->save();
     exporter1Grid->save();
-    exporterErr->save();
+  
 
 }
 //-----------------------------------------
@@ -347,8 +457,7 @@ Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixSnapshot(space_ptrtype Xh){
         double Sii = D->energy(ui,ui);
         S(i,i) = Sii;
     }
-
-// 	std::cout << "Quitting ConstructStiffMatrix routine " << endl;
+   
 
  	return S;
 }
@@ -563,7 +672,7 @@ void NIRBTEST :: OrthogonalisationRBFunctionL2GrammSchmidt
         }
     }
 
-   std::cout << "In 'OrthogonalisationRBFunctionL2GrammSchmidt' : L2-Normalisation done " << endl;
+    //  std::cout << "In 'OrthogonalisationRBFunctionL2GrammSchmidt' : L2-Normalisation done " << endl;
 
 }
 
@@ -745,9 +854,10 @@ void NIRBTEST :: ConstructNIRB(space_ptrtype Xh){
 	ComputeSnapshot(Xh);
 	std :: cout << "Computation of the " << NbSnapshot << " snapshots : done " << endl;
 	ChooseRBFunction(Xh);
-	std:: cout << "Choice of " << sizeRB << " Reduced basis functions :done " << endl;
+	std:: cout << "Choice of " << sizeRB << " reduced basis functions :done " << endl;
 	//Orthogonalisation de Gram-schmidt
 	OrthogonalisationRBFunction(Xh);
+	std:: cout << "H1 and L2 orthogonalisation of the reduced basis functions :done " << endl;
 }
 
 
