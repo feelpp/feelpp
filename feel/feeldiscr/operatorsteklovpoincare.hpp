@@ -29,11 +29,11 @@
 #ifndef _OPERATORSTEKLOVPC_HPP_
 #define _OPERATORSTEKLOVPC_HPP_
 
-#include <feel/feeldiscr/operatorlift.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/operatorlift.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelvf/vf.hpp>
-#include<iostream>
+//#include<iostream>
 
 
 namespace Feel
@@ -47,21 +47,23 @@ namespace Feel
  * @see OperatorLinear
  */
 template<class fs_type>
-class OperatorSteklovPc
+class OperatorSteklovPc : public OperatorLinear<fs_type, fs_type>
 {
+    typedef OperatorLinear<fs_type, fs_type> super;
 
 public :
 
     /** @name Typedefs
      */
     //@{
-
-    typedef double real_type;
-    typedef Backend<real_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef OperatorSteklovPc<fs_type> this_type;
+    typedef OperatorLinear<fs_type, fs_type> super_type;
     typedef fs_type space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
-
+    typedef typename super::backend_type backend_type;
+    typedef typename super::backend_ptrtype backend_ptrtype;
+    typedef FsFunctionalLinear<fs_type> image_element_type;
+    typedef typename image_element_type::value_type value_type;
     //@}
     /** @name Constructors, destructor
      */
@@ -69,6 +71,7 @@ public :
 
     OperatorSteklovPc(space_ptrtype Xh, backend_ptrtype backend = Backend<double>::build(BACKEND_PETSC))
         :
+        super_type(Xh, Xh, backend),
         M_backend(backend),
         M_Xh(Xh)
     {}
@@ -89,7 +92,7 @@ public :
     };
 
     BOOST_PARAMETER_MEMBER_FUNCTION(
-                                    (real_type),
+                                    (value_type),
                                     steklovpc,
                                     tag,
                                     (required
@@ -108,12 +111,12 @@ public :
         auto op_lift = operatorLift(this->M_Xh,this->M_backend);
         auto domain_lift = op_lift->lift( _range=this->M_Xh->mesh(),_expr=idv(domain));
         auto image_lift = op_lift->lift( _range=this->M_Xh->mesh(),_expr=idv(image));
-        real_type return_type = integrate(_range=elements(this->M_Xh->mesh()), _expr=gradv(domain_lift)*trans(gradv(image_lift)), _quad=quad, _quad1=quad1 );
-        return return_type;
+        value_type steklovpcr = integrate(_range=elements(this->M_Xh->mesh()), _expr=gradv(domain_lift)*trans(gradv(image_lift)), _quad=quad, _quad1=quad1 );
+        return steklovpcr;
     }
 
     template<typename First, typename Second>
-    real_type
+    value_type
     operator()(First const& first ,Second const& second)
     {   return this->steklovpc(first, second);
     }
