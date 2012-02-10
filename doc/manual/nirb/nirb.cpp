@@ -253,16 +253,9 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     space_ptrtype XhCoarse = space_type::New( meshCoarse );
 
-
-    export_ptrtype exporterFine(export_type::New( this->vm(), "nirbInFine" ) );
-    export_ptrtype exporterCoarse(export_type::New( this->vm(), "nirbInCoarse" ) );
     export_ptrtype exporter2Grid(export_type::New( this->vm(), "nirb2Grid"));
-    export_ptrtype exporter1Grid(export_type::New( this->vm(), "nirb1Grid"));
-
-    exporterFine->step(0)->setMesh( meshFine );
-    exporterCoarse->step(0)->setMesh( meshCoarse );
     exporter2Grid->step(0)->setMesh( meshFine );
-    exporter1Grid->step(0)->setMesh( meshFine );
+    
 
 
     //STEP ONE : Construction of the "non intruisive reduced basis (nirb) functions"
@@ -297,17 +290,15 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
 
     double p = mu;
-    auto uFine = XhFine->element();
-    auto uCoarse = XhCoarse->element();
+    
+    
     auto uNirb = XhFine->element();
-    auto u1Grid = XhFine->element();
-
-    uCoarse = blackbox( XhCoarse, p);
-    std :: cout << "Computation of FE solution (uCoarse) -  Coarse Grid (saved in nirbInCoarse):"<< endl;
+    
+   
     boost::timer ti;
     uNirb = BuildNirbSolution(XhFine,XhCoarse,p);
     std :: cout << "Construction of NIRB solution (uNirb) - Fine/Coarse Grid (saved in nirb2Grid):" << endl;
-    std::cout << "time for reduced basis computation: " << ti.elapsed() << "\n";
+    std::cout << "Time to build the Nirb solution" << ti.elapsed() << "\n";
 
     if (ComputeError){
         std :: cout << "Error calculation " << endl;
@@ -323,6 +314,9 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
 
         auto uRef = XhRef->element();
+        auto uFine = XhFine->element();
+        auto uCoarse = XhCoarse->element();
+        auto u1Grid = XhFine->element();
 
         uRef = blackbox( XhRef, p );
         std :: cout << "Computation of FE solution (uRef) - Ref Grid (not saved): done" << endl;
@@ -331,7 +325,10 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                       _expr=(gradv(uRef)*trans(gradv(uRef))+ idv(uRef)*idv(uRef) )).evaluate()(0,0);
 
 
-        H1NormUref = std :: sqrt(H1NormUref);
+        H1NormUref = std :: sqrt(H1NormUref); 
+        
+        uCoarse = blackbox( XhCoarse, p);
+        std :: cout << "Computation of FE solution (uCoarse) -  Coarse Grid (saved in nirbInCoarse):"<< endl;
         uFine = blackbox( XhFine, p );
         std :: cout << "Computation of FE solution (uFine) - Fine Grid (saved in nirbInFine): done" << endl;
         u1Grid = BuildNirbSolution(XhFine,XhFine,p);
@@ -385,25 +382,34 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
                             _expr=abs(idv(uNirb)-idv(uFine)) );
 
         export_ptrtype exporterErr(export_type::New( this->vm(), "nirbErr"));
-
+        export_ptrtype exporterFine(export_type::New( this->vm(), "nirbInFine" ) );
+        export_ptrtype exporterCoarse(export_type::New( this->vm(), "nirbInCoarse" ) );
+        export_ptrtype exporter1Grid(export_type::New( this->vm(), "nirb1Grid"));
+        
+        exporterFine->step(0)->setMesh( meshFine );
+        exporterCoarse->step(0)->setMesh( meshCoarse );
+        exporter1Grid->step(0)->setMesh( meshFine );
         exporterErr->step(0)->setMesh( meshFine );
+    
         exporterErr->step(0)->add("uErr",uErr);
 
         exporterErr->save();
         std :: cout << "Construction of the Error map between uNirb and uFine)  (saved in nirbErr): done"<< endl;
+        
+        exporterFine->step(0)->add("uFine", uFine );
+        exporterCoarse->step(0)->add("uCoarse", uCoarse );
+        exporter1Grid->step(0)->add("u1Grid",u1Grid);//     std::cout << "After 'exporter'->add " << endl;
+        
+        exporterFine->save();
+        exporterCoarse->save();
+        exporter1Grid->save();
 
 
     }
 
-    exporterFine->step(0)->add("uFine", uFine );
-    exporterCoarse->step(0)->add("uCoarse", uCoarse );
+    
     exporter2Grid->step(0)->add( "u2Grid", uNirb );
-    exporter1Grid->step(0)->add("u1Grid",u1Grid);//     std::cout << "After 'exporter'->add " << endl;
-
-    exporterFine->save();
-    exporterCoarse->save();
     exporter2Grid->save();
-    exporter1Grid->save();
 
 
 }
@@ -899,20 +905,9 @@ NIRBTEST::element_type NIRBTEST ::BuildNirbSolution(space_ptrtype XhFine,space_p
       //BetaiH[i] = integrate( _range=elements(XhFine->mesh()),_expr=(idv(uCoarse)*idv(ui)) ).evaluate()(0,0);
 //      BetaiH[i] = D->energy(uCoarse,ui);
       BetaiH[i] = D->energy(uCoarseInterpolate,ui);
-    }
-
-    for (int i =0;i<sizeRB;i++)
-    {
-      ui.zero();
-      std::string path = (boost::format("./NIRB_BasisF_%1%") %i).str() ;
-      ui.load(_path=path);
       uNirb.add( BetaiH[i], ui );
-      
-//      for (int j=0;j<XhFine->nLocalDof();j++)
-//      {
-//          uNirb(j) = uNirb(j) + ui(j)*BetaiH[i];
-//      }
     }
+ 
 
     return uNirb;
 
@@ -927,16 +922,24 @@ void NIRBTEST :: ConstructNIRB(space_ptrtype Xh){
 
     boost::timer ti;
 	ComputeSnapshot(Xh);
-    double time_Xhfine=ti.elapsed();
-	std :: cout << "Computation of the " << NbSnapshot << " snapshots : done " << endl;
-    std :: cout << "time for step one : " << time_Xhfine
-                << " per basis: " << time_Xhfine/sizeRB << "\n";ti.restart();
+    double Time_snapshot=ti.elapsed();
+	std::cout << "Computation of the " << NbSnapshot << " snapshots : done  -- ";
+    std::cout << "Time per snapshot: " << Time_snapshot/NbSnapshot << endl;
+    ti.restart();
 
 	ChooseRBFunction(Xh);
-	std:: cout << "Choice of " << sizeRB << " reduced basis functions :done " << endl;
+    double TimeChooseRB =  ti.elapsed();
+	std::cout << "Choice of " << sizeRB << " reduced basis functions : done  -- ";
+    std::cout << "Time: " << TimeChooseRB << endl;
+    ti.restart();
+
 	//Orthogonalisation de Gram-schmidt
 	OrthogonalisationRBFunction(Xh);
-	std:: cout << "H1 and L2 orthogonalisation of the reduced basis functions :done " << endl;
+    double Time_buildNIRBbasis = ti.elapsed();
+	std::cout << "H1 and L2 orthogonalisation of the reduced basis functions : done  -- ";
+    std::cout << "Time: " << Time_buildNIRBbasis << endl;
+    double TotalTime = Time_buildNIRBbasis +TimeChooseRB + Time_snapshot;
+    std::cout <<"Total time for the OFFLINE procedure: " << TotalTime << endl;
 }
 
 
