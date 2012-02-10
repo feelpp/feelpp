@@ -38,7 +38,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <iostream>
+#include <iostream> 
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -46,6 +46,7 @@
 #include <Eigen/Eigenvalues>
 
 #include <vector>
+#include <algorithm>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -301,9 +302,9 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto uNirb = XhFine->element();
     auto u1Grid = XhFine->element();
 
-    boost::timer ti;
     uCoarse = blackbox( XhCoarse, p);
     std :: cout << "Computation of FE solution (uCoarse) -  Coarse Grid (saved in nirbInCoarse):"<< endl;
+    boost::timer ti;
     uNirb = BuildNirbSolution(XhFine,XhCoarse,p);
     std :: cout << "Construction of NIRB solution (uNirb) - Fine/Coarse Grid (saved in nirb2Grid):" << endl;
     std::cout << "time for reduced basis computation: " << ti.elapsed() << "\n";
@@ -324,7 +325,7 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
         auto uRef = XhRef->element();
 
         uRef = blackbox( XhRef, p );
-         std :: cout << "Computation of FE solution (uRef) - Ref Grid (not saved): done" << endl;
+        std :: cout << "Computation of FE solution (uRef) - Ref Grid (not saved): done" << endl;
         //Computation of the H1 norm of uRef
         double H1NormUref = integrate(_range=elements(XhRef->mesh()),
                                       _expr=(gradv(uRef)*trans(gradv(uRef))+ idv(uRef)*idv(uRef) )).evaluate()(0,0);
@@ -524,6 +525,11 @@ Eigen::MatrixXd NIRBTEST :: ConstructMassMatrixRB(space_ptrtype Xh, std::string 
 	return S;
 
 }
+
+
+
+
+
 //-----------------------------------------
 //-----------------------------------------
 void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
@@ -531,24 +537,16 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
 	Eigen::MatrixXd S (NbSnapshot,NbSnapshot);//Dense Stiffness Matrix
 	S = ConstructStiffMatrixSnapshot(Xh);
 	Eigen::EigenSolver <Eigen::MatrixXd> eigen_solver(S);
+    
 	//int nb_EigenValue = eigen_solver.eigenvalues().size();
 	//eigen_solver.eigenvectors().col(i)  =  eigenvector #i
-	std :: cout << "Computation of the eigenvalues of the stiffness matrix S (NbSnapshot,NbSnapshot) : done" << endl;
+    
+//    std :: cout << "Eigenvalue " <<  eigen_solver.eigenvalues() << endl;     
+    std :: cout << "Computation of the eigenvalues of the stiffness matrix S (NbSnapshot,NbSnapshot) : done" << endl;
+    
 	//Sorting N = "SizeBR" F.E solutions uh(mu_k) the more represented in the eigenvectors
 	//associated to the N largest eigenvalues
-
-
-    std::vector<int> Lind( NbSnapshot );
-    std::vector<int> Uind( NbSnapshot );
-
-	for (int i =0;i<NbSnapshot;i++)
-    {
-	    Lind[i] = i;
-	    Uind[i] = -1;
-	}
-	double memory;
-	int compt,tempi;
-	bool marqueur;
+ 
 
 
 	// saving the index's number to identify the NIRB basis functions
@@ -557,55 +555,123 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
 	if (!find){
 	  std :: cerr <<" 'ChooseRBFunction routine' - Error in opening file :" << path << endl;
 	}
-	//Sorting eigenvector #i
-	Eigen::VectorXd Vi(NbSnapshot);
-	for (int i=0;i<sizeRB;i++)
+     
+    std::vector<int> Uind(NbSnapshot);
+    for(int i=0;i<NbSnapshot;i++)
+    {
+        Uind[i] = 0; //Set to zero if u(Uind[i]) is not NIRB basis function.
+    }
+    
+    //Sorting eigenvector #i
+	std::vector<double>Vi(NbSnapshot);  
+    for (int i=0;i<sizeRB;i++)
     {
         for(int ri = 0; ri < NbSnapshot;ri++)
         {
-            Vi[ri] =  real(eigen_solver.eigenvectors().col(i)[ri]);
-            Lind[ri] = ri;
-        }
-
-        for (int j = 1; j< NbSnapshot;j++)
-        {
-            memory = Vi[j];
-            tempi = Lind[j];
-            compt = j-1;
-            marqueur = std::abs (Vi[compt])>std::abs(memory);
-            while(marqueur)
-            {
-                if (std::abs(Vi[compt])>std::abs(memory))
-                {
-                    Vi[compt+1] = Vi[compt];
-                    Lind[compt+1]= Lind[compt,1];
-                    compt--;
-                    marqueur = true;
-                }
-                else marqueur = false;
-                if (compt<0)
-                    marqueur = false;
+            //If u(Uind[ri]) is a NIRB basis function, the "Uind[ri]" component of Vi is set to zero
+            //to avoid it.
+            if (Uind[ri] == 0){
+                Vi[ri] = std::abs(real(eigen_solver.eigenvectors().col(i)[ri]));
+//                std::cout << "i =" << i << "ri = " << ri << "Vi(ri) = " << Vi[ri] << endl;
             }
-            Vi[compt+1] = memory;
-            Lind[compt+1] = tempi;
-        }
-        //Extracting reduced basis function #i + update of Uind
-        bool pasoki = true;
-        int rc = NbSnapshot-1;
-        while (pasoki && rc >0)
-        {
-            if (Uind [Lind[rc]] ==-1)
-            {
-                pasoki= false;
-                Uind [Lind[rc]] = i;
-                find << Lind[rc]<<endl;
+            else {
+                Vi[ri] = 0;
             }
-            else rc--;
         }
+        //Using max_element to find the position of the maximum component of Vi
 
+        int IndMax = std::distance( Vi.begin(), std::max_element(Vi.begin(),Vi.end()) );
+//        std:: cout << "IndMax =" << IndMax << "Vi[IndMax] = " << Vi[IndMax] << endl;
+        Uind[IndMax] = 1;
+        find << IndMax << endl;
 	}
+    
+
  	find.close();
 }
+
+////-----------------------------------------
+////-----------------------------------------
+//void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
+//
+//	Eigen::MatrixXd S (NbSnapshot,NbSnapshot);//Dense Stiffness Matrix
+//	S = ConstructStiffMatrixSnapshot(Xh);
+//	Eigen::EigenSolver <Eigen::MatrixXd> eigen_solver(S);
+//	//int nb_EigenValue = eigen_solver.eigenvalues().size();
+//	//eigen_solver.eigenvectors().col(i)  =  eigenvector #i
+//	std :: cout << "Computation of the eigenvalues of the stiffness matrix S (NbSnapshot,NbSnapshot) : done" << endl;
+//	//Sorting N = "SizeBR" F.E solutions uh(mu_k) the more represented in the eigenvectors
+//	//associated to the N largest eigenvalues
+//
+//
+//    std::vector<int> Lind( NbSnapshot );
+//    std::vector<int> Uind( NbSnapshot );
+//
+//	for (int i =0;i<NbSnapshot;i++)
+//    {
+//	    Lind[i] = i;
+//	    Uind[i] = -1;
+//	}
+//	double memory;
+//	int compt,tempi;
+//	bool marqueur;
+//
+//
+//	// saving the index's number to identify the NIRB basis functions
+//	std::string path = (boost::format("./IndBR%1%") %sizeRB).str() ;
+//	std::ofstream find(path);
+//	if (!find){
+//	  std :: cerr <<" 'ChooseRBFunction routine' - Error in opening file :" << path << endl;
+//	}
+//	//Sorting eigenvector #i
+//	Eigen::VectorXd Vi(NbSnapshot);
+//	for (int i=0;i<sizeRB;i++)
+//    {
+//        for(int ri = 0; ri < NbSnapshot;ri++)
+//        {
+//            Vi[ri] =  real(eigen_solver.eigenvectors().col(i)[ri]);
+//            Lind[ri] = ri;
+//        }
+//
+//        for (int j = 1; j< NbSnapshot;j++)
+//        {
+//            memory = Vi[j];
+//            tempi = Lind[j];
+//            compt = j-1;
+//            marqueur = std::abs (Vi[compt])>std::abs(memory);
+//            while(marqueur)
+//            {
+//                if (std::abs(Vi[compt])>std::abs(memory))
+//                {
+//                    Vi[compt+1] = Vi[compt];
+//                    Lind[compt+1]= Lind[compt,1];
+//                    compt--;
+//                    marqueur = true;
+//                }
+//                else marqueur = false;
+//                if (compt<0)
+//                    marqueur = false;
+//            }
+//            Vi[compt+1] = memory;
+//            Lind[compt+1] = tempi;
+//        }
+//        //Extracting reduced basis function #i + update of Uind
+//        bool pasoki = true;
+//        int rc = NbSnapshot-1;
+//        while (pasoki && rc >0)
+//        {
+//            if (Uind [Lind[rc]] ==-1)
+//            {
+//                pasoki= false;
+//                Uind [Lind[rc]] = i;
+//                find << Lind[rc]<<endl;
+//            }
+//            else rc--;
+//        }
+//
+//	}
+// 	find.close();
+//}
 
 //-----------------------------------------
 //-----------------------------------------
@@ -798,46 +864,57 @@ NIRBTEST::element_type NIRBTEST ::BuildNirbSolution(space_ptrtype XhFine,space_p
     //std :: cout << "In BuildNirbSolution" << endl;
 
 
-  auto uNirb = XhFine->element();
-  auto uCoarse = XhCoarse->element();
-  auto uCoarseInterpolate = XhFine->element();
-  auto ui = XhFine->element();
+    auto uNirb = XhFine->element();
+    auto uCoarse = XhCoarse->element();
+    auto uCoarseInterpolate = XhFine->element();
+    auto ui = XhFine->element();
+    
 
 
+    
+    auto D = M_backend->newMatrix( _test=XhFine, _trial=XhFine  ); //Sparse FE mass matrix
+    form2( _test=XhFine, _trial=XhFine, _matrix=D ) =
+    integrate( _range=elements(XhFine->mesh()), _expr=id(uCoarseInterpolate)*idt(ui));
+    
+//    auto D = M_backend->newMatrix( _test=XhCoarse, _trial=XhFine  ); //Sparse FE mass matrix
+//    form2( _test=XhCoarse, _trial=XhFine, _matrix=D ) =
+//    integrate( _range=elements(XhFine->mesh()), _expr=id(uCoarse)*idt(ui));
 
-  auto D = M_backend->newMatrix( _test=XhCoarse, _trial=XhFine  ); //Sparse FE mass matrix
-  form2( _test=XhCoarse, _trial=XhFine, _matrix=D ) =
-      integrate( _range=elements(XhFine->mesh()), _expr=id(uCoarse)*idt(ui));
+    uCoarse = blackbox(XhCoarse,param);//Computation of the coarse solution
+    interpolate (XhFine,uCoarse,uCoarseInterpolate);
+    //Interpolation of the coarse solution on the fine Mesh to compute the coefficiant BetaiH
 
-  uCoarse = blackbox(XhCoarse,param);//Computation of the coarse solution
-  //interpolate (XhFine,uCoarse,uCoarseInterpolate);
-  //Interpolation of the coarse solution on the fine Mesh to compute the coefficiant BetaiH
+    //Computation of the coefficiant \BetaiH = \int uCoarse*\Epsilon_i
+    //with \Epsilon_i being the final Nirb basis functions
 
-  //Computation of the coefficiant \BetaiH = \int uCoarse*\Epsilon_i
-  //with \Epsilon_i being the final Nirb basis functions
-
-  //Reading Nirb basis function #i and building the Nirb solution
-  Eigen :: VectorXd BetaiH(sizeRB);
-  uNirb.zero();
-  for (int i =0;i<sizeRB;i++)
-  {
+    //Reading Nirb basis function #i and building the Nirb solution
+    Eigen :: VectorXd BetaiH(sizeRB);
+    uNirb.zero();
+    for (int i =0;i<sizeRB;i++)
+    {
       ui.zero();
       std::string path = (boost::format("./NIRB_BasisF_%1%") %i).str() ;
       ui.load(_path=path);
 
       //BetaiH[i] = integrate( _range=elements(XhFine->mesh()),_expr=(idv(uCoarse)*idv(ui)) ).evaluate()(0,0);
-      BetaiH[i] = D->energy(uCoarse,ui);
-  }
+//      BetaiH[i] = D->energy(uCoarse,ui);
+      BetaiH[i] = D->energy(uCoarseInterpolate,ui);
+    }
 
-  for (int i =0;i<sizeRB;i++)
-  {
+    for (int i =0;i<sizeRB;i++)
+    {
       ui.zero();
       std::string path = (boost::format("./NIRB_BasisF_%1%") %i).str() ;
       ui.load(_path=path);
       uNirb.add( BetaiH[i], ui );
-  }
+      
+//      for (int j=0;j<XhFine->nLocalDof();j++)
+//      {
+//          uNirb(j) = uNirb(j) + ui(j)*BetaiH[i];
+//      }
+    }
 
-  return uNirb;
+    return uNirb;
 
 
 }
