@@ -38,7 +38,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <iostream>
+#include <iostream> 
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -107,8 +107,8 @@ makeAbout()
 
 }
 
-inline
-bool SortFunction( double i, double j) { return std::abs(i)<std::abs(j) ;}
+//inline
+//bool SortFunction( double i, double j) { return std::abs(i)<std::abs(j) ;}
 
 class NIRBTEST
     :
@@ -148,6 +148,7 @@ public:
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
     typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef std::vector<element_type> un_type;
 
 
     /**
@@ -163,7 +164,7 @@ public:
         sizeRB(this->vm()["sizeRB"].as<int>()),
         muMin( this->vm()["muMin"].as<double>() ),
         muMax( this->vm()["muMax"].as<double>() ),
-        mu( this->vm()["mu"].as<double>() ),
+        mu(this->vm()["mu"].as<double>() ),
         Offline( this->vm()["Offline"].as<int>()),
         ComputeError( this->vm()["ComputeError"].as<int>())
     {
@@ -179,6 +180,11 @@ public:
     void ChooseRBFunction(space_ptrtype Xh);
     void OrthogonalisationRBFunction(space_ptrtype Xh);
     void OrthogonalisationRBFunctionL2GrammSchmidt(space_ptrtype Xh,Eigen::MatrixXd &M );
+    
+    //Eigen::MatrixXd  ConstructStiffMatrixSnapshot(space_ptrtype Xh, un_type un );
+    //Eigen::MatrixXd  ConstructStiffMatrixRB(space_ptrtype Xh,un_type un);
+    //Eigen::MatrixXd  ConstructMassMatrixRB(space_ptrtype Xh,un_type un);
+
     Eigen::MatrixXd  ConstructStiffMatrixSnapshot(space_ptrtype Xh);
     Eigen::MatrixXd  ConstructStiffMatrixRB(space_ptrtype Xh,std::string filename);
     Eigen::MatrixXd  ConstructMassMatrixRB(space_ptrtype Xh,std::string filename);
@@ -273,7 +279,8 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
         //Checking if the NIRB basis files exist
         //WARNING : We also must check if the basis have been computed on the right FE space (Not done yet)
         for (int i = 0 ; i < sizeRB; i++){
-            std :: ofstream fRB((boost::format("./NIRB_BasisF_%1%/u.fdb") %i).str());
+            filename = (boost::format("./NIRB_BasisF_%1%") %i).str();
+            std :: ofstream fRB(filename.c_str());
             if (!fRB){
                 std :: cout << "WARNING : Error opening : NIRB_BasisF_" << i << " => OFFline parameter set to 1 " << endl;
                 Offline = 1;
@@ -288,7 +295,7 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
         ConstructNIRB(XhFine) ;
     }
 
-   //STEP TWO : Approximation of the solution using the "nirb" functions for a choosen mu
+    //STEP TWO : Approximation of the solution using the "nirb" functions for a choosen mu
 
     //std:: cout << "STEP TWO " << endl;
 
@@ -302,7 +309,7 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
     boost::timer ti;
     uNirb = BuildNirbSolution(XhFine,XhCoarse,p);
     std :: cout << "Construction of NIRB solution (uNirb) - Fine/Coarse Grid (saved in nirb2Grid):" << endl;
-    std::cout << "Time to build the Nirb solution" << ti.elapsed() << "\n";
+    std::cout << "Time to build the Nirb solution " << ti.elapsed() << "\n";
 
     if (ComputeError){
         std :: cout << "Error calculation " << endl;
@@ -329,7 +336,10 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                       _expr=(gradv(uRef)*trans(gradv(uRef))+ idv(uRef)*idv(uRef) )).evaluate()(0,0);
 
 
-        H1NormUref = std :: sqrt(H1NormUref);
+        H1NormUref = std :: sqrt(H1NormUref); 
+        
+        uCoarse = blackbox( XhCoarse, p);
+        std :: cout << "Computation of FE solution (uCoarse) -  Coarse Grid (saved in nirbInCoarse):"<< endl;
 
         uCoarse = blackbox( XhCoarse, p);
         std :: cout << "Computation of FE solution (uCoarse) -  Coarse Grid (saved in nirbInCoarse):"<< endl;
@@ -399,11 +409,17 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
         exporterErr->save();
         std :: cout << "Construction of the Error map between uNirb and uFine)  (saved in nirbErr): done"<< endl;
+        
+        exporterFine->step(0)->add("uFine", uFine );
+        exporterCoarse->step(0)->add("uCoarse", uCoarse );
+        exporter1Grid->step(0)->add("u1Grid",u1Grid);         
+        exporterFine->save();
+        exporterCoarse->save();
+        exporter1Grid->save();
 
         exporterFine->step(0)->add("uFine", uFine );
         exporterCoarse->step(0)->add("uCoarse", uCoarse );
-        exporter1Grid->step(0)->add("u1Grid",u1Grid);//     std::cout << "After 'exporter'->add " << endl;
-
+        exporter1Grid->step(0)->add("u1Grid",u1Grid); 
         exporterFine->save();
         exporterCoarse->save();
         exporter1Grid->save();
@@ -425,25 +441,20 @@ void NIRBTEST::ComputeSnapshot(space_ptrtype Xh){
     double pi = 3.14159265;
 
     auto ui = Xh->element();
-//     std :: ofstream fout ("./Paramaters_Values");
-//     if (!fout)
-//       std :: cerr <<"In ComputeSnapshot : Error opening file :  Parameters_Values" << endl;
-//
     for (int i =0; i<NbSnapshot;i++)
     {
         double theta = (i+1)*(muMax-muMin)/(113.);
-        // 	fout << i << " " << theta << endl;
         ui = blackbox(Xh,theta);
         std::string path = (boost::format("./Sol_%1%") %i).str() ;
         ui.save(_path=path);
    }
-//    fout.close();
+    
 }
 //-----------------------------------------
 //-----------------------------------------
 Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixSnapshot(space_ptrtype Xh){
-// 	std::cout << "Entering ConstructStiffMatrix routine "<<endl;
-	auto ui = Xh->element();
+	
+    auto ui = Xh->element();
 	auto uj = Xh->element();
 	auto D = M_backend->newMatrix( _test=Xh, _trial=Xh  );//Sparse F.E stiffness matrix D
  	form2( _test=Xh, _trial=Xh, _matrix=D ) =
@@ -471,6 +482,40 @@ Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixSnapshot(space_ptrtype Xh){
 
  	return S;
 }
+//-----------------------------------------
+//-----------------------------------------
+//Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixSnapshot(space_ptrtype Xh, un_type un){
+//	
+//    auto ui = Xh->element();
+//	auto uj = Xh->element();
+//	auto D = M_backend->newMatrix( _test=Xh, _trial=Xh  );//Sparse F.E stiffness matrix D
+// 	form2( _test=Xh, _trial=Xh, _matrix=D ) =
+//    integrate( _range=elements(Xh->mesh()), _expr=gradt(ui)*trans(grad(uj)));
+//    
+//	Eigen::MatrixXd S (NbSnapshot,NbSnapshot);//Dense RB stiffness matrix S
+//    
+//    for (int i = 0; i< NbSnapshot;i++)
+//    {
+//        //std::string path = (boost::format("./Sol_%1%") %i).str() ;
+//        //ui.load(_path=path);
+//        ui = un[i];
+//        
+//        for(int j=0; j< i;j++)
+//        {
+//            //path = (boost::format("./Sol_%1%") %j).str() ;
+//            //uj.load(_path=path);
+//            uj = un[j];
+//            double Sij = D->energy(ui,uj);
+//            S(i,j) = Sij;
+//            S(j,i) = Sij;
+//        }
+//        double Sii = D->energy(ui,ui);
+//        S(i,i) = Sii;
+//    }
+//    
+//    
+// 	return S;
+//}
 
 //-----------------------------------------
 //-----------------------------------------
@@ -479,15 +524,15 @@ Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixRB(space_ptrtype Xh, std::string
 	auto uj = Xh->element();
 	auto D = M_backend->newMatrix( _test=Xh, _trial=Xh  ); //Sparse FE stiffness matrix
 	form2( _test=Xh, _trial=Xh, _matrix=D ) =
-        integrate( _range=elements(Xh->mesh()), _expr=gradt(ui)*trans(grad(uj)));
-
+    integrate( _range=elements(Xh->mesh()), _expr=gradt(ui)*trans(grad(uj)));
+    
 	Eigen::MatrixXd S (sizeRB,sizeRB); //Dense RB stiffness matrix
-
+    
 	for (int i = 0; i< sizeRB;i++)
     {
         std::string path = (boost::format(filename+"%1%") %i).str() ;
 		ui.load(_path=path);
-
+        
 		for(int j=0; j< i;j++)
         {
             path = (boost::format(filename+"%1%") %j).str() ;
@@ -499,27 +544,90 @@ Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixRB(space_ptrtype Xh, std::string
  		double Sii = D->energy(ui,ui);
 		S(i,i) = Sii;
 	}
-
-// 	std :: cout << "In ConstructStiffMatrixRB - S =  \n" << S << endl;
+    
 	return S;
 }
+//-----------------------------------------
+//-----------------------------------------
+//Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixRB(space_ptrtype Xh, un_type un){
+//	auto ui = Xh->element();
+//	auto uj = Xh->element();
+//	auto D = M_backend->newMatrix( _test=Xh, _trial=Xh  ); //Sparse FE stiffness matrix
+//	form2( _test=Xh, _trial=Xh, _matrix=D ) =
+//    integrate( _range=elements(Xh->mesh()), _expr=gradt(ui)*trans(grad(uj)));
+//    
+//	Eigen::MatrixXd S (sizeRB,sizeRB); //Dense RB stiffness matrix
+//    
+//	for (int i = 0; i< sizeRB;i++)
+//    {
+//        //std::string path = (boost::format(filename+"%1%") %i).str() ;
+//		//ui.load(_path=path);
+//        ui = un[i];
+//		for(int j=0; j< i;j++)
+//        {
+//            //path = (boost::format(filename+"%1%") %j).str() ;
+//			//uj.load(_path=path);
+//            uj = un[j];
+//			double Sij = D->energy(ui,uj);
+//			S(i,j) = Sij;
+//			S(j,i) = Sij;
+//		}
+// 		double Sii = D->energy(ui,ui);
+//		S(i,i) = Sii;
+//	}
+//    
+//	return S;
+//}
 
 //-----------------------------------------
 //-----------------------------------------
+//Eigen::MatrixXd NIRBTEST :: ConstructMassMatrixRB(space_ptrtype Xh,un_type un){
+//	auto ui = Xh->element();
+//	auto uj = Xh->element();
+//	auto D = M_backend->newMatrix( _test=Xh, _trial=Xh  ); //Sparse FE mass matrix
+//	form2( _test=Xh, _trial=Xh, _matrix=D ) =
+//	integrate( _range=elements(Xh->mesh()), _expr=idt(ui)*id(uj));
+//
+//	Eigen::MatrixXd S (sizeRB,sizeRB); //Dense RB mass matrix
+//    
+//
+//	for (int i = 0; i< sizeRB;i++)
+//    {
+//        //std::string path = (boost::format(filename+"%1%") %i).str() ;
+//		//ui.load(_path=path);
+//        ui = un[i];
+//
+//		for(int j=0; j< i;j++)
+//        {
+//            //path = (boost::format(filename+"%1%") %j).str() ;
+//			//uj.load(_path=path);
+//            uj = un[j];
+//			double Sij = D->energy(ui,uj);
+//			S(i,j) = Sij;
+//			S(j,i) = Sij;
+//		}
+//		double Sii = D->energy(ui,ui);
+//		S(i,i) = Sii;
+//	} 
+//	return S;
+//
+//}
+//--------------------------------------------------------------
+//--------------------------------------------------------------
 Eigen::MatrixXd NIRBTEST :: ConstructMassMatrixRB(space_ptrtype Xh, std::string filename){
 	auto ui = Xh->element();
 	auto uj = Xh->element();
 	auto D = M_backend->newMatrix( _test=Xh, _trial=Xh  ); //Sparse FE mass matrix
 	form2( _test=Xh, _trial=Xh, _matrix=D ) =
 	integrate( _range=elements(Xh->mesh()), _expr=idt(ui)*id(uj));
-
+    
 	Eigen::MatrixXd S (sizeRB,sizeRB); //Dense RB mass matrix
-
+    
 	for (int i = 0; i< sizeRB;i++)
     {
         std::string path = (boost::format(filename+"%1%") %i).str() ;
 		ui.load(_path=path);
-
+        
 		for(int j=0; j< i;j++)
         {
             path = (boost::format(filename+"%1%") %j).str() ;
@@ -530,10 +638,9 @@ Eigen::MatrixXd NIRBTEST :: ConstructMassMatrixRB(space_ptrtype Xh, std::string 
 		}
 		double Sii = D->energy(ui,ui);
 		S(i,i) = Sii;
-	}
-// 	std :: cout << "In ConstructMassMatrixRB - S =  \n" << S << endl;
+	} 
 	return S;
-
+    
 }
 
 
@@ -550,12 +657,12 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
 
 	//int nb_EigenValue = eigen_solver.eigenvalues().size();
 	//eigen_solver.eigenvectors().col(i)  =  eigenvector #i
-
-//    std :: cout << "Eigenvalue " <<  eigen_solver.eigenvalues() << endl;
+ 
     std :: cout << "Computation of the eigenvalues of the stiffness matrix S (NbSnapshot,NbSnapshot) : done" << endl;
 
 	//Sorting N = "SizeBR" F.E solutions uh(mu_k) the more represented in the eigenvectors
 	//associated to the N largest eigenvalues
+ 
 
 
 
@@ -581,8 +688,7 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
             //If u(Uind[ri]) is a NIRB basis function, the "Uind[ri]" component of Vi is set to zero
             //to avoid it.
             if (Uind[ri] == 0){
-                Vi[ri] = std::abs(real(eigen_solver.eigenvectors().col(i)[ri]));
-                // std::cout << "i =" << i << "ri = " << ri << "Vi(ri) = " << Vi[ri] << endl;
+                Vi[ri] = std::abs(real(eigen_solver.eigenvectors().col(i)[ri])); 
             }
             else {
                 Vi[ri] = 0;
@@ -590,8 +696,7 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
         }
         //Using max_element to find the position of the maximum component of Vi
 
-        int IndMax = std::distance( Vi.begin(), boost::max_element(Vi,SortFunction) );
-        //std:: cout << "IndMax =" << IndMax << "Vi[IndMax] = " << Vi[IndMax] << endl;
+        int IndMax = std::distance(Vi.begin(),boost::max_element(Vi)); 
         Uind[IndMax] = 1;
         find << IndMax << endl;
 	}
@@ -599,89 +704,6 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
 
  	find.close();
 }
-
-////-----------------------------------------
-////-----------------------------------------
-//void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
-//
-//	Eigen::MatrixXd S (NbSnapshot,NbSnapshot);//Dense Stiffness Matrix
-//	S = ConstructStiffMatrixSnapshot(Xh);
-//	Eigen::EigenSolver <Eigen::MatrixXd> eigen_solver(S);
-//	//int nb_EigenValue = eigen_solver.eigenvalues().size();
-//	//eigen_solver.eigenvectors().col(i)  =  eigenvector #i
-//	std :: cout << "Computation of the eigenvalues of the stiffness matrix S (NbSnapshot,NbSnapshot) : done" << endl;
-//	//Sorting N = "SizeBR" F.E solutions uh(mu_k) the more represented in the eigenvectors
-//	//associated to the N largest eigenvalues
-//
-//
-//    std::vector<int> Lind( NbSnapshot );
-//    std::vector<int> Uind( NbSnapshot );
-//
-//	for (int i =0;i<NbSnapshot;i++)
-//    {
-//	    Lind[i] = i;
-//	    Uind[i] = -1;
-//	}
-//	double memory;
-//	int compt,tempi;
-//	bool marqueur;
-//
-//
-//	// saving the index's number to identify the NIRB basis functions
-//	std::string path = (boost::format("./IndBR%1%") %sizeRB).str() ;
-//	std::ofstream find(path);
-//	if (!find){
-//	  std :: cerr <<" 'ChooseRBFunction routine' - Error in opening file :" << path << endl;
-//	}
-//	//Sorting eigenvector #i
-//	Eigen::VectorXd Vi(NbSnapshot);
-//	for (int i=0;i<sizeRB;i++)
-//    {
-//        for(int ri = 0; ri < NbSnapshot;ri++)
-//        {
-//            Vi[ri] =  real(eigen_solver.eigenvectors().col(i)[ri]);
-//            Lind[ri] = ri;
-//        }
-//
-//        for (int j = 1; j< NbSnapshot;j++)
-//        {
-//            memory = Vi[j];
-//            tempi = Lind[j];
-//            compt = j-1;
-//            marqueur = std::abs (Vi[compt])>std::abs(memory);
-//            while(marqueur)
-//            {
-//                if (std::abs(Vi[compt])>std::abs(memory))
-//                {
-//                    Vi[compt+1] = Vi[compt];
-//                    Lind[compt+1]= Lind[compt,1];
-//                    compt--;
-//                    marqueur = true;
-//                }
-//                else marqueur = false;
-//                if (compt<0)
-//                    marqueur = false;
-//            }
-//            Vi[compt+1] = memory;
-//            Lind[compt+1] = tempi;
-//        }
-//        //Extracting reduced basis function #i + update of Uind
-//        bool pasoki = true;
-//        int rc = NbSnapshot-1;
-//        while (pasoki && rc >0)
-//        {
-//            if (Uind [Lind[rc]] ==-1)
-//            {
-//                pasoki= false;
-//                Uind [Lind[rc]] = i;
-//                find << Lind[rc]<<endl;
-//            }
-//            else rc--;
-//        }
-//
-//	}
-// 	find.close();
-//}
 
 //-----------------------------------------
 //-----------------------------------------
@@ -771,41 +793,35 @@ void NIRBTEST ::OrthogonalisationRBFunction(space_ptrtype Xh){
         f_in >> TindBR;
         std::string path = (boost::format("./Sol_%1%") %TindBR).str() ;
         ui.load(_path=path);
-        // 	if (i==0)
-        // 	  std:: cout << "Avant 'OrthogonalisationRBFunctionL2GrammSchmidt'  u_(IndBR(1))" << ui << endl;
         for (int j=0;j<Ndof;j++)
         {
             M(j,i) = ui(j);
         }
     }
-    //     std::cout << "sIn OrthogonalisationRBFunction : before L2-GrammSchmidt Orthogonalisation M=" << endl;
-    //     std::cout << M << endl;
-    //      element_ptrtype Pu (new element_type(u.functionSpace()));
-    //      Pu->zero();
-     double Dtemp;
-     OrthogonalisationRBFunctionL2GrammSchmidt(Xh,M);
-     //      std::cout << "In OrthogonalisationRBFunction : after L2-GrammSchmidt Orthogonalisation M=" << endl;
-     //      std::cout << M << endl;
-     //save in a file the matrix A
-     for (int i=0;i<sizeRB;i++)
-     {
-         ui.zero();
-         for (int j =0;j<Ndof;j++)
-         {
-             ui(j) = M(j,i);
-         }
-         std::string path = (boost::format("./Sol_OR%1%") %i).str() ;
-         ui.save(_path=path);
+    
+    double Dtemp;
+    OrthogonalisationRBFunctionL2GrammSchmidt(Xh,M);
+    
+    //save in a file the matrix A
+    for (int i=0;i<sizeRB;i++)
+    {
+        ui.zero();
+        for (int j =0;j<Ndof;j++)
+        {
+            ui(j) = M(j,i);
+        }
+        std::string path = (boost::format("./Sol_OR%1%") %i).str() ;
+        ui.save(_path=path);
     }
 
-     //Second step : Solving a generalized eigenvalue problem
-     //A*Epsilon_i = \lambda_i*B*Epsilon_i
-     //A : Dense stiffness matrix in the pre-orthogonalized nirb basis
-     //B : Dense mass matrix in the pre-orthogonalized nirb basis  = Idendity matrix
+    //Second step : Solving a generalized eigenvalue problem
+    //A*Epsilon_i = \lambda_i*B*Epsilon_i
+    //A : Dense stiffness matrix in the pre-orthogonalized nirb basis
+    //B : Dense mass matrix in the pre-orthogonalized nirb basis  = Idendity matrix
 
-     //Construction of the matrix A and B
+    //Construction of the matrix A and B
 
-     //     M.resize(sizeRB,sizeRB);
+    //     M.resize(sizeRB,sizeRB);
     Eigen :: MatrixXd A (sizeRB,sizeRB);
     Eigen :: MatrixXd B (sizeRB,sizeRB);
     Eigen :: MatrixXd C (sizeRB,sizeRB);
@@ -819,10 +835,6 @@ void NIRBTEST ::OrthogonalisationRBFunction(space_ptrtype Xh){
 
     es.compute(C);
 
-
-    //     std::cout<<C<<std::endl;
-    //std :: cout << "In OrthogonalisationRBFunction : after EigenSolver " <<  endl;
-
     A.resize(Ndof,sizeRB);//to upload the final NIRB function after H1-L2 orthogonalisation
     A.setZero(Ndof,sizeRB);
     for (int i = 0; i < sizeRB;i++)
@@ -835,36 +847,30 @@ void NIRBTEST ::OrthogonalisationRBFunction(space_ptrtype Xh){
        }
     }
 
-    //     std::cout << "In OrthogonalisationRBFunction : before L2-GrammSchmidt Orthogonalisation M=" << endl;
-    //     std::cout << A << endl;
-    //      element_ptrtype Pu (new element_type(u.functionSpace()));
-    //      Pu->zero();
-
+    
     OrthogonalisationRBFunctionL2GrammSchmidt(Xh,A);
-    //     std::cout << "In OrthogonalisationRBFunction : after L2-GrammSchmidt Orthogonalisation M=" << endl;
-    //     std::cout << A << endl;
-
-
-
+     
     //save in a file the final NIRB basis functions
     for (int i=0;i<sizeRB;i++)
     {
+        path = (boost::format("./NIRB_BasisF_%1%") %i).str() ; 
+        std::ofstream u_file(path.c_str());
+        if (!u_file){
+            std::cerr << "In 'OrthogonalisationRBFunction' - Error in opening file :" << path << endl;
+        }
+        u_file.precision(15);
+        u_file << Ndof << endl;
         ui.zero();
         for (int j =0;j<Ndof;j++)
         {
-            Dtemp = A(j,i);
-            ui(j)=Dtemp;
+            ui(j) = A(j,i);
+            u_file << A(j,i) << endl;
+           
         }
-        std::string path = (boost::format("./NIRB_BasisF_%1%") %i).str() ;
+        path = (boost::format("./NIRB_BasisFile_%1%") %i).str() ; 
         ui.save(_path=path);
+        u_file.close();
     }
-
-    //std :: cout << "At the end of 'H1- L2 OrthogonalisationRBFunction' " << endl;
-
-    B.setZero(sizeRB,sizeRB);
-    B = ConstructStiffMatrixRB(Xh,"./NIRB_BasisF_");
-
-
 
 }
 //---------------------------------------------------
@@ -900,16 +906,35 @@ NIRBTEST::element_type NIRBTEST ::BuildNirbSolution(space_ptrtype XhFine,space_p
     //Reading Nirb basis function #i and building the Nirb solution
     Eigen :: VectorXd BetaiH(sizeRB);
     uNirb.zero();
+    std::string path;
+    
     for (int i =0;i<sizeRB;i++)
     {
-      ui.zero();
-      std::string path = (boost::format("./NIRB_BasisF_%1%") %i).str() ;
-      ui.load(_path=path);
+        
+        ui.zero();
+        if(!Offline){
+            path = (boost::format("./NIRB_BasisF_%1%") %i).str() ;
+            std::ifstream u_file(path.c_str());
+            if (!u_file){
+                std::cerr << "In 'BuildNirbSolution' - Error in opening file :" << path << endl;
+            } 
+            int Ndof;
+            u_file >> Ndof ;
+            for(int j=0;j<Ndof;j++){
+                u_file >> ui(j);
+            }
+            u_file.close();
+        }
+        else{
+            path = (boost::format("./NIRB_BasisFile_%1%") %i).str() ;
+            ui.load(_path=path);
+        }
 
-      //BetaiH[i] = integrate( _range=elements(XhFine->mesh()),_expr=(idv(uCoarse)*idv(ui)) ).evaluate()(0,0);
-//      BetaiH[i] = D->energy(uCoarse,ui);
-      BetaiH[i] = D->energy(uCoarseInterpolate,ui);
-      uNirb.add( BetaiH[i], ui );
+        //BetaiH[i] = integrate( _range=elements(XhFine->mesh()),_expr=(idv(uCoarse)*idv(ui)) ).evaluate()(0,0);
+        //BetaiH[i] = D->energy(uCoarse,ui);
+        
+        BetaiH[i] = D->energy(uCoarseInterpolate,ui);
+        uNirb.add( BetaiH[i], ui );
     }
  
 
