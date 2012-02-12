@@ -38,7 +38,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <iostream> 
+#include <iostream>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -47,6 +47,8 @@
 
 #include <vector>
 #include <algorithm>
+
+#include<boost/range/algorithm/max_element.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -105,6 +107,8 @@ makeAbout()
 
 }
 
+inline
+bool SortFunction( double i, double j) { return std::abs(i)<std::abs(j) ;}
 
 class NIRBTEST
     :
@@ -255,7 +259,7 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     export_ptrtype exporter2Grid(export_type::New( this->vm(), "nirb2Grid"));
     exporter2Grid->step(0)->setMesh( meshFine );
-    
+
 
 
     //STEP ONE : Construction of the "non intruisive reduced basis (nirb) functions"
@@ -290,11 +294,11 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
 
     double p = mu;
-    
-    
+
+
     auto uNirb = XhFine->element();
-    
-   
+
+
     boost::timer ti;
     uNirb = BuildNirbSolution(XhFine,XhCoarse,p);
     std :: cout << "Construction of NIRB solution (uNirb) - Fine/Coarse Grid (saved in nirb2Grid):" << endl;
@@ -325,8 +329,8 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                       _expr=(gradv(uRef)*trans(gradv(uRef))+ idv(uRef)*idv(uRef) )).evaluate()(0,0);
 
 
-        H1NormUref = std :: sqrt(H1NormUref); 
-        
+        H1NormUref = std :: sqrt(H1NormUref);
+
         uCoarse = blackbox( XhCoarse, p);
         std :: cout << "Computation of FE solution (uCoarse) -  Coarse Grid (saved in nirbInCoarse):"<< endl;
         uFine = blackbox( XhFine, p );
@@ -385,21 +389,21 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
         export_ptrtype exporterFine(export_type::New( this->vm(), "nirbInFine" ) );
         export_ptrtype exporterCoarse(export_type::New( this->vm(), "nirbInCoarse" ) );
         export_ptrtype exporter1Grid(export_type::New( this->vm(), "nirb1Grid"));
-        
+
         exporterFine->step(0)->setMesh( meshFine );
         exporterCoarse->step(0)->setMesh( meshCoarse );
         exporter1Grid->step(0)->setMesh( meshFine );
         exporterErr->step(0)->setMesh( meshFine );
-    
+
         exporterErr->step(0)->add("uErr",uErr);
 
         exporterErr->save();
         std :: cout << "Construction of the Error map between uNirb and uFine)  (saved in nirbErr): done"<< endl;
-        
+
         exporterFine->step(0)->add("uFine", uFine );
         exporterCoarse->step(0)->add("uCoarse", uCoarse );
         exporter1Grid->step(0)->add("u1Grid",u1Grid);//     std::cout << "After 'exporter'->add " << endl;
-        
+
         exporterFine->save();
         exporterCoarse->save();
         exporter1Grid->save();
@@ -407,7 +411,7 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     }
 
-    
+
     exporter2Grid->step(0)->add( "u2Grid", uNirb );
     exporter2Grid->save();
 
@@ -543,16 +547,16 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
 	Eigen::MatrixXd S (NbSnapshot,NbSnapshot);//Dense Stiffness Matrix
 	S = ConstructStiffMatrixSnapshot(Xh);
 	Eigen::EigenSolver <Eigen::MatrixXd> eigen_solver(S);
-    
+
 	//int nb_EigenValue = eigen_solver.eigenvalues().size();
 	//eigen_solver.eigenvectors().col(i)  =  eigenvector #i
-    
-//    std :: cout << "Eigenvalue " <<  eigen_solver.eigenvalues() << endl;     
+
+//    std :: cout << "Eigenvalue " <<  eigen_solver.eigenvalues() << endl;
     std :: cout << "Computation of the eigenvalues of the stiffness matrix S (NbSnapshot,NbSnapshot) : done" << endl;
-    
+
 	//Sorting N = "SizeBR" F.E solutions uh(mu_k) the more represented in the eigenvectors
 	//associated to the N largest eigenvalues
- 
+
 
 
 	// saving the index's number to identify the NIRB basis functions
@@ -561,15 +565,15 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
 	if (!find){
 	  std :: cerr <<" 'ChooseRBFunction routine' - Error in opening file :" << path << endl;
 	}
-     
+
     std::vector<int> Uind(NbSnapshot);
     for(int i=0;i<NbSnapshot;i++)
     {
         Uind[i] = 0; //Set to zero if u(Uind[i]) is not NIRB basis function.
     }
-    
+
     //Sorting eigenvector #i
-	std::vector<double>Vi(NbSnapshot);  
+	std::vector<double>Vi(NbSnapshot);
     for (int i=0;i<sizeRB;i++)
     {
         for(int ri = 0; ri < NbSnapshot;ri++)
@@ -578,7 +582,7 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
             //to avoid it.
             if (Uind[ri] == 0){
                 Vi[ri] = std::abs(real(eigen_solver.eigenvectors().col(i)[ri]));
-//                std::cout << "i =" << i << "ri = " << ri << "Vi(ri) = " << Vi[ri] << endl;
+                // std::cout << "i =" << i << "ri = " << ri << "Vi(ri) = " << Vi[ri] << endl;
             }
             else {
                 Vi[ri] = 0;
@@ -586,12 +590,12 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
         }
         //Using max_element to find the position of the maximum component of Vi
 
-        int IndMax = std::distance( Vi.begin(), std::max_element(Vi.begin(),Vi.end()) );
-//        std:: cout << "IndMax =" << IndMax << "Vi[IndMax] = " << Vi[IndMax] << endl;
+        int IndMax = std::distance( Vi.begin(), boost::max_element(Vi,SortFunction) );
+        //std:: cout << "IndMax =" << IndMax << "Vi[IndMax] = " << Vi[IndMax] << endl;
         Uind[IndMax] = 1;
         find << IndMax << endl;
 	}
-    
+
 
  	find.close();
 }
