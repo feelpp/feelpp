@@ -382,11 +382,12 @@ public:
      * \return the range of iterator \c (begin,end) over the elements
      * on processor \p p
      */
-    //std::pair<pid_face_iterator, pid_face_iterator>
-    std::pair<face_iterator, face_iterator>
+    std::pair<pid_face_iterator, pid_face_iterator>
+    //std::pair<face_iterator, face_iterator>
     facesWithProcessId( size_type p ) const
+    { return _M_faces.template get<detail::by_pid>().equal_range(p); }
     //{ return _M_faces.template get<detail::by_pid>().equal_range( boost::make_tuple(/*M_comm.rank()*/p) ); }
-    { return _M_faces.template get<0>().equal_range( boost::make_tuple(/*M_comm.rank()*/p) ); }
+    //{ return _M_faces.template get<0>().equal_range( boost::make_tuple(/*M_comm.rank()*/p) ); }
 
     /**
      * get the faces container by id
