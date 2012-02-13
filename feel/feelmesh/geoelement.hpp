@@ -431,7 +431,8 @@ public:
         :
         super( id ),
         super2(),
-        M_vertices( numLocalVertices, 0 )
+        M_vertices( numLocalVertices, 0 ),
+        M_vertex_permutation(numLocalVertices)
     {
     }
     /**
@@ -441,7 +442,8 @@ public:
         :
         super( g ),
         super2( g ),
-        M_vertices( g.M_vertices )
+        M_vertices( g.M_vertices ),
+        M_vertex_permutation(g.M_vertex_permutation)
     {}
 
     /**
@@ -460,6 +462,7 @@ public:
             super::operator=( g );
             super2::operator=( g );
             M_vertices = g.M_vertices;
+            M_vertex_permutation = g.M_vertex_permutation;
         }
         return *this;
     }
@@ -561,10 +564,21 @@ public:
     {
         return std::make_pair( M_vertices.begin(), M_vertices.end() );
     }
+
+    /**
+     * \sa edgePermutation(), permutation()
+     */
+    vertex_permutation_type facePermutation( uint16_type i ) const
+    {
+        FEEL_ASSERT( i < numLocalVertices )( i )( numLocalVertices ).error( "invalid local vertex index" );
+        return M_vertex_permutation[i];
+    }
+
 private:
 
     std::vector<uint8_type> M_map;
     ublas::bounded_array<point_type*, numLocalVertices> M_vertices;
+    ublas::bounded_array<vertex_permutation_type, numLocalVertices> M_vertex_permutation;
 
 };
 
