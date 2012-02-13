@@ -147,9 +147,8 @@ public:
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
-    typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef boost::shared_ptr<export_type> export_ptrtype; 
     typedef std::vector<element_type> un_type;
-
 
     /**
      * Constructor
@@ -280,12 +279,20 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
         //WARNING : We also must check if the basis have been computed on the right FE space (Not done yet)
         for (int i = 0 ; i < sizeRB; i++){
             filename = (boost::format("./NIRB_BasisF_%1%") %i).str();
-            std :: ofstream fRB(filename.c_str());
+            std :: ifstream fRB(filename.c_str());
             if (!fRB){
                 std :: cout << "WARNING : Error opening : NIRB_BasisF_" << i << " => OFFline parameter set to 1 " << endl;
                 Offline = 1;
                 break;
             }
+            int NdofNirb;
+            fRB >> NdofNirb;
+            if (NdofNirb != XhFine->nLocalDof()){
+                std::cout <<"WARNING Error in  NIRB_BasisF_" << i << " Ndof not the same as in Xhfine => OFFline parameter set to 1 " << endl;
+                Offline = 1;
+                break;
+            }
+            
             fRB.close();
         }
     }
@@ -417,6 +424,9 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
         exporterCoarse->save();
         exporter1Grid->save();
 
+        exporterFine->step(0)->add("uFine", uFine );
+        exporterCoarse->step(0)->add("uCoarse", uCoarse );
+        exporter1Grid->step(0)->add("u1Grid",u1Grid); 
         exporterFine->step(0)->add("uFine", uFine );
         exporterCoarse->step(0)->add("uCoarse", uCoarse );
         exporter1Grid->step(0)->add("u1Grid",u1Grid); 
