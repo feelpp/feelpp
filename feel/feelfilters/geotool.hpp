@@ -1856,11 +1856,15 @@ namespace Feel {
 
         template<typename mesh_type>
         boost::shared_ptr<mesh_type>
-        createMeshFromGeoFile(std::string geofile,std::string name,double meshSize,int straighten = 1)
+        createMeshFromGeoFile(std::string geofile,std::string name,double meshSize,int straighten = 1,
+                              int partitions=1, int partition_file = 0,  GMSH_PARTITIONER partitioner = GMSH_PARTITIONER_CHACO )
         {
 
             Gmsh gmsh(mesh_type::nDim,mesh_type::nOrder);
             gmsh.setCharacteristicLength(meshSize);
+            gmsh.setNumberOfPartitions( partitions );
+            gmsh.setPartitioner( partitioner );
+            gmsh.setMshFileByPartition( partition_file );
 
             std::ostringstream ostr;
 
@@ -1871,7 +1875,12 @@ namespace Feel {
                  << "Mesh.ElementOrder=" << gmsh.order() << ";\n"
                  << "Mesh.SecondOrderIncomplete = 0;\n"
                  << "Mesh.Algorithm = 6;\n"
-                 << "Mesh.OptimizeNetgen=1;\n";
+                 << "Mesh.OptimizeNetgen=1;\n"
+                 << "// partitioning data\n"
+                 << "Mesh.Partitioner=" << partitioner << ";\n"
+                 << "Mesh.NbPartitions=" << partitions << ";\n"
+                 << "Mesh.MshFilePartitioned=" << partition_file << ";\n";
+
 
             std::string contenu;
             std::ifstream ifstr(geofile, std::ios::in);
