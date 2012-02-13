@@ -278,22 +278,16 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
         //Checking if the NIRB basis files exist
         //WARNING : We also must check if the basis have been computed on the right FE space (Not done yet)
         for (int i = 0 ; i < sizeRB; i++){
-            filename = (boost::format("./NIRB_BasisF_%1%") %i).str();
-            std :: ifstream fRB(filename.c_str());
-            if (!fRB){
-                std :: cout << "WARNING : Error opening : NIRB_BasisF_" << i << " => OFFline parameter set to 1 " << endl;
-                Offline = 1;
-                break;
-            }
+            filename = (boost::format("./NIRB_BasisFile_%1%/u.fdb") %i).str();
+            auto ui = XhFine->element();
+            ui.load(filename);
             int NdofNirb;
-            fRB >> NdofNirb;
+            NdofNirb = ui.size();
             if (NdofNirb != XhFine->nLocalDof()){
-                std::cout <<"WARNING Error in  NIRB_BasisF_" << i << " Ndof not the same as in Xhfine => OFFline parameter set to 1 " << endl;
+                std::cout <<"WARNING Error in  NIRB_BasisFile_" << i << " Ndof not the same as in Xhfine => OFFline parameter set to 1 " << endl;
                 Offline = 1;
                 break;
             }
-            
-            fRB.close();
         }
     }
 
@@ -667,12 +661,12 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
 
 	//int nb_EigenValue = eigen_solver.eigenvalues().size();
 	//eigen_solver.eigenvectors().col(i)  =  eigenvector #i
- 
+
     std :: cout << "Computation of the eigenvalues of the stiffness matrix S (NbSnapshot,NbSnapshot) : done" << endl;
 
 	//Sorting N = "SizeBR" F.E solutions uh(mu_k) the more represented in the eigenvectors
 	//associated to the N largest eigenvalues
- 
+
 
 
 
@@ -698,7 +692,7 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
             //If u(Uind[ri]) is a NIRB basis function, the "Uind[ri]" component of Vi is set to zero
             //to avoid it.
             if (Uind[ri] == 0){
-                Vi[ri] = std::abs(real(eigen_solver.eigenvectors().col(i)[ri])); 
+                Vi[ri] = std::abs(real(eigen_solver.eigenvectors().col(i)[ri]));
             }
             else {
                 Vi[ri] = 0;
@@ -706,7 +700,7 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
         }
         //Using max_element to find the position of the maximum component of Vi
 
-        int IndMax = std::distance(Vi.begin(),boost::max_element(Vi)); 
+        int IndMax = std::distance(Vi.begin(),boost::max_element(Vi));
         Uind[IndMax] = 1;
         find << IndMax << endl;
 	}
@@ -808,10 +802,10 @@ void NIRBTEST ::OrthogonalisationRBFunction(space_ptrtype Xh){
             M(j,i) = ui(j);
         }
     }
-    
+
     double Dtemp;
     OrthogonalisationRBFunctionL2GrammSchmidt(Xh,M);
-    
+
     //save in a file the matrix A
     for (int i=0;i<sizeRB;i++)
     {
@@ -857,29 +851,20 @@ void NIRBTEST ::OrthogonalisationRBFunction(space_ptrtype Xh){
        }
     }
 
-    
+
     OrthogonalisationRBFunctionL2GrammSchmidt(Xh,A);
-     
+
     //save in a file the final NIRB basis functions
     for (int i=0;i<sizeRB;i++)
     {
-        path = (boost::format("./NIRB_BasisF_%1%") %i).str() ; 
-        std::ofstream u_file(path.c_str());
-        if (!u_file){
-            std::cerr << "In 'OrthogonalisationRBFunction' - Error in opening file :" << path << endl;
-        }
-        u_file.precision(15);
-        u_file << Ndof << endl;
         ui.zero();
         for (int j =0;j<Ndof;j++)
         {
             ui(j) = A(j,i);
-            u_file << A(j,i) << endl;
-           
         }
-        path = (boost::format("./NIRB_BasisFile_%1%") %i).str() ; 
+        path = (boost::format("./NIRB_BasisFile_%1%/u.fdb") %i).str() ;
         ui.save(_path=path);
-        u_file.close();
+
     }
 
 }
@@ -894,14 +879,14 @@ NIRBTEST::element_type NIRBTEST ::BuildNirbSolution(space_ptrtype XhFine,space_p
     auto uCoarse = XhCoarse->element();
     auto uCoarseInterpolate = XhFine->element();
     auto ui = XhFine->element();
-    
 
 
-    
+
+
     auto D = M_backend->newMatrix( _test=XhFine, _trial=XhFine  ); //Sparse FE mass matrix
     form2( _test=XhFine, _trial=XhFine, _matrix=D ) =
     integrate( _range=elements(XhFine->mesh()), _expr=id(uCoarseInterpolate)*idt(ui));
-    
+
 //    auto D = M_backend->newMatrix( _test=XhCoarse, _trial=XhFine  ); //Sparse FE mass matrix
 //    form2( _test=XhCoarse, _trial=XhFine, _matrix=D ) =
 //    integrate( _range=elements(XhFine->mesh()), _expr=id(uCoarse)*idt(ui));
@@ -917,36 +902,21 @@ NIRBTEST::element_type NIRBTEST ::BuildNirbSolution(space_ptrtype XhFine,space_p
     Eigen :: VectorXd BetaiH(sizeRB);
     uNirb.zero();
     std::string path;
-    
+
     for (int i =0;i<sizeRB;i++)
     {
-        
+
         ui.zero();
-        if(!Offline){
-            path = (boost::format("./NIRB_BasisF_%1%") %i).str() ;
-            std::ifstream u_file(path.c_str());
-            if (!u_file){
-                std::cerr << "In 'BuildNirbSolution' - Error in opening file :" << path << endl;
-            } 
-            int Ndof;
-            u_file >> Ndof ;
-            for(int j=0;j<Ndof;j++){
-                u_file >> ui(j);
-            }
-            u_file.close();
-        }
-        else{
-            path = (boost::format("./NIRB_BasisFile_%1%") %i).str() ;
-            ui.load(_path=path);
-        }
+        path = (boost::format("./NIRB_BasisFile_%1%/u.fdb") %i).str() ;
+        ui.load(_path=path);
 
         //BetaiH[i] = integrate( _range=elements(XhFine->mesh()),_expr=(idv(uCoarse)*idv(ui)) ).evaluate()(0,0);
         //BetaiH[i] = D->energy(uCoarse,ui);
-        
+
         BetaiH[i] = D->energy(uCoarseInterpolate,ui);
         uNirb.add( BetaiH[i], ui );
     }
- 
+
 
     return uNirb;
 
