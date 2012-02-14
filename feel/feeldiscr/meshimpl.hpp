@@ -36,6 +36,7 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/partitioner.hpp>
+#include <feel/feelalg/glas.hpp>
 
 namespace Feel
 {
@@ -166,8 +167,8 @@ Mesh<Shape, T>::updateForUse()
                     // update permutation of entities of co-dimension 1
                     this->updateEntitiesCoDimensionOnePermutation();
                     // update in ghost cells of entities of co-dimension 1
-                    if (M_comm.size()>1)
-                        this->updateEntitiesCoDimensionOneGhostCell();
+                    //if (M_comm.size()>1)
+                    //    this->updateEntitiesCoDimensionOneGhostCell();
 
                     Debug( 4015 ) << "[Mesh::updateForUse] update entities of codimension 1 : " << ti.elapsed() << "\n";
                 }
@@ -234,7 +235,12 @@ Mesh<Shape, T>::updateForUse()
                                                             this ) );
                     }
             }
-
+#if defined(FEEL_ENABLE_MPI_MODE)
+            if ( this->components().test( MESH_UPDATE_FACES ) && this->comm().size()>1 )
+                {
+                    this->updateEntitiesCoDimensionOneGhostCell();
+                }
+#endif
             // check mesh connectivity
             this->check();
             this->setUpdatedForUse( true );
@@ -772,10 +778,12 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
     ti.restart();
 }
 
+#if defined(FEEL_ENABLE_MPI_MODE)
 template<typename Shape, typename T>
 void
 Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
 {
+    //std::cout << "[Mesh::updateEntitiesCoDimensionOneGhostCell] start" << std::endl;
     std::vector<int> nbMsgToSend(M_comm.size());
     std::fill(nbMsgToSend.begin(),nbMsgToSend.end(),0);
 
@@ -803,12 +811,15 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
             ++nbMsgToSend[IdProcessOfGhost];
         }
 
+    //------------------------------------------------------------------------------------------------//
     // counter of msg received for each process
     std::vector<int> nbMsgToRecv;
     mpi::all_to_all(M_comm,
                     nbMsgToSend,
                     nbMsgToRecv);
 
+
+    //------------------------------------------------------------------------------------------------//
     // recv id asked and re-send set of face id
     for (int proc=0; proc<M_comm.size();++proc)
         {
@@ -825,22 +836,43 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
                              << std::endl;
 #endif
                     // get faces id
-                    std::vector<int> idFaces(this->numLocalFaces());
+                    std::vector<float/*int*/> idFaces((1+nDim)*this->numLocalFaces());
                     for ( size_type j = 0; j < this->numLocalFaces(); j++ )
                         {
-                            idFaces[j]=this->element(idRecv).face( j ).id();
+                            idFaces[(1+nDim)*j]=this->element(idRecv).face(j).id();
+                            auto const& theface = this->element(idRecv).face(j);
+                            auto const& theGj = theface.G();
+#if 1
+                            //compute face barycenter
+                            typename Localization::matrix_node_type v( theGj.size1(), 1 );
+                            ublas::scalar_vector<T> avg( theGj.size2(), T(1) );
+                            T n_val = int(theGj.size2());
+                            for( size_type i = 0; i < theGj.size1(); ++i )
+                                v( i, 0 ) = ublas::inner_prod( ublas::row( theGj, i ), avg )/n_val;
+                            auto baryFace = ublas::column(v,0);
+#else // doesn't work
+                            /*auto GLASbaryFace =*/ //Feel::glas::average(jkj);
+                            auto baryFace = ublas::column(glas::average(theface.G()),0);
+#endif
+                            // save facebarycenter by components 
+                            for (uint16_type comp = 0; comp<nDim; ++comp)
+                                {
+                                    //idFaces[(1+nDim)*j+comp+1]=this->element(idRecv).faceBarycenter(j)[comp];
+                                    idFaces[(1+nDim)*j+comp+1]=baryFace[comp];
+                                }
                         }
                     // response
                     M_comm.send( proc, cpt, idFaces );
                 }
         }
 
+    //------------------------------------------------------------------------------------------------//
     // get response to initial request and update Feel::Mesh::Faces data
     for (int proc=0; proc<M_comm.size();++proc)
         {
             for ( int cpt=0;cpt<nbMsgToSend[proc];++cpt)
                 {
-                    std::vector<int> idFacesRecv;
+                    std::vector<float/*int*/> idFacesRecv((1+nDim)*this->numLocalFaces());
                     //recv
                     M_comm.recv( proc, cpt, idFacesRecv);
 #if 0
@@ -850,17 +882,82 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
                              << std::endl;
 #endif
                     //update data
-                    auto theelt = this->element(mapMsg[proc][cpt],proc);
+                    auto const& theelt = this->element(mapMsg[proc][cpt],proc);
                     for ( size_type j = 0; j < this->numLocalFaces(); j++ )
                         {
-                            auto face_it = faceIterator(theelt.face( j ).id());
-                            this->faces().modify( face_it, detail::update_id_in_partition_type( proc, idFacesRecv[j] ) );
-                        }
-                }
-        }
+                            //BUT : trouver le bon face_it (dc le jBis dans theelt ) (les permutations seraient necessaire)
+                            uint16_type jBis;bool hasFind=false;
+                            for ( uint16_type/*size_type*/ j2 = 0; j2 < this->numLocalFaces(); j2++ )
+                                {
 
+                                    auto const& thefacej2 = theelt.face(j2);
+                                    auto const& theGj2 = thefacej2.G();
+#if 1
+                                    //compute face barycenter
+                                    typename Localization::matrix_node_type v( theGj2.size1(), 1 );
+                                    ublas::scalar_vector<T> avg( theGj2.size2(), T(1) );
+                                    T n_val = int(theGj2.size2());
+                                    for( size_type i = 0; i < theGj2.size1(); ++i )
+                                        v( i, 0 ) = ublas::inner_prod( ublas::row( theGj2, i ), avg )/n_val;
+                                    auto baryFace = ublas::column(v,0);
+#else // doesn't compile (I don't now why)
+                                    auto const& thefacej2 =theelt.face(j2);
+                                    auto baryFace = ublas::column(glas::average(thefacej2.G()),0);
+#endif
+                                    if (nRealDim==1)
+                                        {
+                                            if (std::abs(/*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[(1+nDim)*j+1]) < 1e-8 )
+                                                {
+                                                    hasFind=true;
+                                                    jBis=j2;
+                                                }
+                                        }
+                                    else if (nRealDim==2)
+                                        {
+#if 0
+                                            std::cout << "rank " << M_comm.rank() << " bary j2 "<< j2 << " " << theelt.barycenter() << " " << theelt.faceBarycenter(j2) << " "
+                                                      << ublas::column(glas::average(hola.G()),0) << " "
+                                                      << hola/*theelt.face(j2)*/.barycenter()[0] << " " << idFacesRecv[(1+nDim)*j+1] << " "
+                                                      << theelt.face(j2).barycenter()[1] << " " << idFacesRecv[(1+nDim)*j+2] << std::endl;
+#endif
+                                            if ((std::abs( /*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[(1+nDim)*j+1]) < 1e-5) &&
+                                                (std::abs( /*theelt.faceBarycenter(j2)*/baryFace[1] - idFacesRecv[(1+nDim)*j+2]) < 1e-5) )
+                                                {
+                                                    hasFind=true;
+                                                    jBis=j2;
+                                                }
+                                        }
+                                    else if (nRealDim==3)
+                                        {
+                                            if ((std::abs(/*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[(1+nDim)*j+1]) < 1e-5) &&
+                                                (std::abs(/*theelt.faceBarycenter(j2)*/baryFace[1] - idFacesRecv[(1+nDim)*j+2]) < 1e-5) &&
+                                                (std::abs(/*theelt.faceBarycenter(j2)*/baryFace[2] - idFacesRecv[(1+nDim)*j+3]) < 1e-5) )
+                                                {
+                                                    hasFind=true;
+                                                    jBis=j2;
+                                                }
+                                        }
+                                }
 
-}
+                            if (!hasFind) std::cout << "[mesh::updateEntitiesCoDimensionOneGhostCell] : PROBLEM NOT FIND" << std::endl;
+
+                            // get the good face
+                            //auto face_it = faceIterator(theelt.face(j).id());
+                            auto face_it = faceIterator(theelt.face(jBis).id());
+                            //update the face
+                            this->faces().modify( face_it, detail::update_id_in_partition_type( proc, idFacesRecv[(1+nDim)*j] ) );
+
+                        } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+                } // for ( int cpt=0;cpt<nbMsgToSend[proc];++cpt)
+        } // for (int proc=0; proc<M_comm.size();++proc)
+
+    //------------------------------------------------------------------------------------------------//
+
+    //std::cout << "[Mesh::updateEntitiesCoDimensionOneGhostCell] finish" << std::endl;
+
+} // updateEntitiesCoDimensionOneGhostCell
+#endif // defined(FEEL_ENABLE_MPI_MODE)
+
 
 template<typename Shape, typename T>
 void
