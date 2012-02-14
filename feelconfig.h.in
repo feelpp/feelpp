@@ -150,6 +150,9 @@
 /* Define to `unsigned' if <sys/types.h> does not define. */
 #cmakedefine size_t
 
+/* Define if support for mpi class instantiation is enabled) */
+#cmakedefine FEEL_ENABLE_MPI_MODE
+
 #define FEEL_CONFIG_OPTIONS "${FEEL_CONFIG_OPTIONS}"
 
 #endif
