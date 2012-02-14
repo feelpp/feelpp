@@ -47,8 +47,13 @@ MatrixPetsc<T>::MatrixPetsc()
     _M_destroy_mat_on_exit(true)
 {}
 
-
-
+template <typename T>
+inline
+MatrixPetsc<T>::MatrixPetsc(DataMap const& dmRow, DataMap const& dmCol)
+    :
+    super(dmRow,dmCol),
+    _M_destroy_mat_on_exit(true)
+{}
 
 template <typename T>
 inline
@@ -86,7 +91,7 @@ void MatrixPetsc<T>::init (const size_type m,
                            const size_type nnz,
                            const size_type /*noz*/)
 {
-    //std::cout << "\n init without graph"<<std::endl;
+    //std::cout << "\nSEQUENTIAL : init without graph"<<std::endl;
 
     if ((m==0) || (n==0))
         return;
@@ -167,7 +172,7 @@ void MatrixPetsc<T>::init (const size_type m,
                            const size_type n_l,
                            graph_ptrtype const& graph )
 {
-    //std::cout << "\n init with graph"<<std::endl;
+    //std::cout << "\n SEQUENTIAL : init with graph"<<std::endl;
     this->setGraph( graph );
 
     {
@@ -241,19 +246,19 @@ void MatrixPetsc<T>::init (const size_type m,
         CHKERRABORT(this->comm(),ierr);
 
         //ierr = MatSeqAIJSetPreallocation( _M_mat, 0, (int*)this->graph()->nNzOnProc().data() );
-#if 1
+#if 0
         ierr = MatSeqAIJSetPreallocation( _M_mat, 0, dnz );
 #else
         this->graph()->close();
         //std::cout << "sizes:" << this->graph()->ia().size() << "," << this->graph()->ja().size()  << std::endl;
-        ia.resize( this->graph()->ia().size() );
-        ja.resize( this->graph()->ja().size() );
-        std::copy( this->graph()->ia().begin(), this->graph()->ia().end(), ia.begin() );
-        std::copy( this->graph()->ja().begin(), this->graph()->ja().end(), ja.begin() );
+        _M_ia.resize( this->graph()->ia().size() );
+        _M_ja.resize( this->graph()->ja().size() );
+        std::copy( this->graph()->ia().begin(), this->graph()->ia().end(), _M_ia.begin() );
+        std::copy( this->graph()->ja().begin(), this->graph()->ja().end(), _M_ja.begin() );
         //std::for_each( ia.begin(), ia.end(), [](const int& i ){ std::cout << i << std::endl; } );
 
         ierr = MatSeqAIJSetPreallocationCSR( _M_mat,
-                                             ia.data(), ja.data(),
+                                             _M_ia.data(), _M_ja.data(),
                                              this->graph()->a().data() );
 #endif
         CHKERRABORT(this->comm(),ierr);
@@ -263,15 +268,15 @@ void MatrixPetsc<T>::init (const size_type m,
         //std::cout << "matrix csr creating...\n" << std::endl;
         this->graph()->close();
         //std::cout << "sizes:" << this->graph()->ia().size() << "," << this->graph()->ja().size()  << std::endl;
-        ia.resize( this->graph()->ia().size() );
-        ja.resize( this->graph()->ja().size() );
-        std::copy( this->graph()->ia().begin(), this->graph()->ia().end(), ia.begin() );
-        std::copy( this->graph()->ja().begin(), this->graph()->ja().end(), ja.begin() );
+        _M_ia.resize( this->graph()->ia().size() );
+        _M_ja.resize( this->graph()->ja().size() );
+        std::copy( this->graph()->ia().begin(), this->graph()->ia().end(), _M_ia.begin() );
+        std::copy( this->graph()->ja().begin(), this->graph()->ja().end(), _M_ja.begin() );
         //std::for_each( ia.begin(), ia.end(), [](const int& i ){ std::cout << i << std::endl; } );
 
         ierr = MatCreateSeqAIJWithArrays( this->comm(),
                                           m_global, n_global,
-                                          ia.data(), ja.data(), this->graph()->a().data(), &_M_mat );
+                                          _M_ia.data(), _M_ja.data(), this->graph()->a().data(), &_M_mat );
         CHKERRABORT(this->comm(),ierr);
         //std::cout << "matrix csr created\n" << std::endl;
 #endif
@@ -288,6 +293,7 @@ void MatrixPetsc<T>::init (const size_type m,
 
 
     }
+
     ierr = MatSetFromOptions (_M_mat);
     CHKERRABORT(this->comm(),ierr);
 
@@ -299,6 +305,8 @@ void MatrixPetsc<T>::init (const size_type m,
 #else
     MatSetOption(_M_mat,MAT_KEEP_ZEROED_ROWS);
 #endif
+
+
 #if 1
     // additional insertions will not be allowed if they generate
     // a new nonzero
@@ -306,7 +314,7 @@ void MatrixPetsc<T>::init (const size_type m,
     //CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
-    //ierr = MatSetOption (_M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+    ierr = MatSetOption (_M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
     CHKERRABORT(this->comm(),ierr);
 #endif
 
@@ -466,6 +474,7 @@ void MatrixPetsc<T>::zero ()
 template <typename T>
 void MatrixPetsc<T>::zero ( size_type /*start1*/, size_type /*stop1*/, size_type /*start2*/, size_type /*stop2*/ )
 {
+
     FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" ) ;
 
     int ierr=0;
@@ -493,6 +502,7 @@ void MatrixPetsc<T>::zero ( size_type /*start1*/, size_type /*stop1*/, size_type
             }
         }
      }
+
 }
 
 
@@ -509,43 +519,7 @@ void MatrixPetsc<T>::clear ()
         this->setInitialized( false );
     }
 }
-#if 0
-template <typename T>
-inline
-void MatrixPetsc<T>::zeroEntriesDiagonalIfMissing()
-{
-#if 0
-    int ierr=0;
 
-    PetscTruth missing;// = PETSC_TRUE;
-    PetscInt indic;
-    //while ( missing == PETSC_TRUE)
-        {
-            std::cout << "\n HOLA";
-            ierr = MatMissingDiagonal(_M_mat,&missing,&indic);
-            //CHKERRABORT(this->comm(),ierr);
-            //            if (missing == PETSC_FALSE)
-                {
-                    std::cout << "\n HOLE";
-                    //this->set(indic,indic,0.);
-                }
-        }
-#endif
-    int start=0, stop=0, ierr=0;
-
-    ierr = MatGetOwnershipRange(_M_mat, &start, &stop);
-    CHKERRABORT(this->comm(),ierr);
-
-    VectorPetsc<value_type> diag( this->size1(), stop-start );
-
-
-        //MatGetDiagonal( _M_mat, diag.vec() );
-        std:: cout << diag.size();
-        //MatZeroRows( _M_mat, rows.size(), rows.data(), 1.0);
-        MatDiagonalSet( _M_mat, diag.vec(), INSERT_VALUES );
-
-}
-#endif
 template <typename T>
 inline
 void MatrixPetsc<T>::close () const
@@ -816,12 +790,12 @@ MatrixPetsc<T>::printMatlab (const std::string name) const
      */
     else
     {
-        ierr = PetscViewerSetFormat (PETSC_VIEWER_STDOUT_WORLD,
-                                     PETSC_VIEWER_ASCII_MATLAB);
-        CHKERRABORT(this->comm(),ierr);
+        //ierr = PetscViewerSetFormat (petsc_viewer,//PETSC_VIEWER_STDOUT_SELF,//PETSC_VIEWER_STDOUT_WORLD,
+        //                             PETSC_VIEWER_ASCII_INFO_DETAIL);//PETSC_VIEWER_ASCII_MATLAB);
+        //CHKERRABORT(this->comm(),ierr);
 
-        ierr = MatView (_M_mat, PETSC_VIEWER_STDOUT_WORLD);
-        CHKERRABORT(this->comm(),ierr);
+        //ierr = MatView (_M_mat,PETSC_VIEWER_STDOUT_WORLD);//PETSC_VIEWER_STDOUT_SELF);//
+        //CHKERRABORT(this->comm(),ierr);
     }
 
 
@@ -845,8 +819,15 @@ MatrixPetsc<T>::addMatrix (const T a_in, MatrixSparse<T> &X_in)
     FEEL_ASSERT( this->size2() == X_in.size2())( this->size2() )( X_in.size2() ).error( "incompatible dimension" );
 
     PetscScalar     a = static_cast<PetscScalar>      (a_in);
-    MatrixPetsc<T>* X = dynamic_cast<MatrixPetsc<T>*> (&X_in);
-
+    MatrixPetsc<T>* X;
+    if (this->comm().size()>1)
+        {
+            X = dynamic_cast<MatrixPetscMPI<T>*> (&X_in);
+        }
+    else
+        {
+            X = dynamic_cast<MatrixPetsc<T>*> (&X_in);
+        }
     FEEL_ASSERT (X != 0).error( "invalid petsc matrix" );
 
     int ierr=0;
@@ -862,13 +843,19 @@ MatrixPetsc<T>::addMatrix (const T a_in, MatrixSparse<T> &X_in)
 
 // 2.3.x & newer
 #else
-    //this->close();
-    //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SAME_NONZERO_PATTERN);
-    //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SUBSET_NONZERO_PATTERN );
-    ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)DIFFERENT_NONZERO_PATTERN);
-    //ierr = MatDuplicate(X->mat(),MAT_COPY_VALUES,&_M_mat);
+    if (this->comm().size()>1)
+        {
+            ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)DIFFERENT_NONZERO_PATTERN);
+        }
+    else
+        {
+            //this->close();
+            //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SAME_NONZERO_PATTERN);
+            //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SUBSET_NONZERO_PATTERN );
+            ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)DIFFERENT_NONZERO_PATTERN);
+            //ierr = MatDuplicate(X->mat(),MAT_COPY_VALUES,&_M_mat);
+        }
     CHKERRABORT(this->comm(),ierr);
-
 #endif
 }
 
@@ -1456,7 +1443,7 @@ void MatrixPetsc<T>::zeroEntriesDiagonal()
     for (uint i = 0;i <std::min(this->size1(),this->size2());++i)
         this->set(i,i,0.);
 #else
-    std::cout << "zeroEntriesDiagonal()"<< std::endl;
+    //std::cout << "zeroEntriesDiagonal()"<< std::endl;
     for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
         {
             size_type index = it->first;std::cout << "\n index " << index;
@@ -1473,7 +1460,652 @@ void MatrixPetsc<T>::zeroEntriesDiagonal()
 }
 
 
+//----------------------------------------------------------------------------------------------------//
+//----------------------------------------------------------------------------------------------------//
+//----------------------------------------------------------------------------------------------------//
+//----------------------------------------------------------------------------------------------------//
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+inline
+MatrixPetscMPI<T>::MatrixPetscMPI()
+    :
+    super()
+{}
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+inline
+MatrixPetscMPI<T>::MatrixPetscMPI(DataMap const& dmRow, DataMap const& dmCol)
+    :
+    super(dmRow,dmCol)
+{}
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+inline
+MatrixPetscMPI<T>::MatrixPetscMPI(Mat m, DataMap const& dmRow, DataMap const& dmCol)
+    :
+    super(m)
+{
+    this->setMapRow(dmRow);
+    this->setMapCol(dmCol);
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+void MatrixPetscMPI<T>::init( const size_type m,
+                              const size_type n,
+                              const size_type m_l,
+                              const size_type n_l,
+                              const size_type nnz,
+                              const size_type /*noz*/)
+{
+    //std::cout << "\n MatrixPetscMPI<T>::init without graph " << std::endl;
+}
+
+template <typename T>
+void MatrixPetscMPI<T>::init( const size_type m,
+                              const size_type n,
+                              const size_type m_l,
+                              const size_type n_l,
+                              graph_ptrtype const& graph )
+{
+    //std::cout << "\n MatrixPetscMPI<T>::init with graph " << std::endl;
+
+    this->setGraph( graph );
+
+    // Clear initialized matrices
+    if (this->isInitialized())
+        this->clear();
+
+    this->setInitialized(  true );
+
+    int proc_id = 0;
+
+    MPI_Comm_rank(this->comm(), &proc_id);
+
+    if (m==0)
+        return;
+
+    int ierr     = 0;
+    int m_global = static_cast<int>(m);
+    int n_global = static_cast<int>(n);
+    int m_local  = static_cast<int>(m_l);
+    int n_local  = static_cast<int>(n_l);
+
+
+    PetscInt *dnz;
+    PetscInt n_dnz = this->graph()->nNzOnProc().size();
+    //std::cout << "\n n_ndz = " << n_dnz << std::endl;
+    dnz = new PetscInt[n_dnz];
+    std::copy( this->graph()->nNzOnProc().begin(),
+               this->graph()->nNzOnProc().end(),
+               dnz );
+
+
+    PetscInt *dnzOffProc;
+    PetscInt n_dnzOffProc = this->graph()->nNzOffProc().size();
+    dnzOffProc = new PetscInt[ n_dnzOffProc ];
+    std::copy( this->graph()->nNzOffProc().begin(),
+               this->graph()->nNzOffProc().end(),
+               dnzOffProc );
+
+    if (n_dnzOffProc==0)
+        dnzOffProc = PETSC_NULL;
+
+    //  Mat _M_matttt;
+#if 1
+    ierr = MatCreateMPIAIJ (this->comm(),
+                            m_local, n_local,
+                            m_global, n_global,
+                            /*PETSC_DECIDE*//*n_dnz*/0, /*PETSC_NULL*/dnz,
+                            /*PETSC_DECIDE*/0/*n_dnzOffProc*/, dnzOffProc,
+                            //&_M_matttt);
+                            &(this->mat()) );//(&this->_M_mat));
+#else
+    ierr = MatCreateMPIAIJ (this->comm(),
+                            m_local, n_local,
+                            m_global, n_global,
+                            /*PETSC_DECIDE*//*n_dnz*/0, PETSC_NULL,
+                            /*PETSC_DECIDE*/0/*n_dnzOffProc*/,PETSC_NULL,
+                            //&_M_matttt);
+                            &(this->mat()) );//(&this->_M_mat));
+#endif
+
+//ierr = MatSetFromOptions(_M_matttt);//this->mat());
+//    CHKERRABORT(this->comm(),ierr);
+
+    CHKERRABORT(this->comm(),ierr);
+
+    this->graph()->close();
+    std::vector<PetscInt> ia( this->graph()->ia().size() );
+    std::vector<PetscInt> ja( this->graph()->ja().size() );
+    std::copy( this->graph()->ia().begin(), this->graph()->ia().end(), ia.begin() );
+    std::copy( this->graph()->ja().begin(), this->graph()->ja().end(), ja.begin() );
+#if 0
+    ierr = MatMPIAIJSetPreallocation(this->mat(), 0, dnz, 0, dnzOffProc);
+    //ierr = MatMPIAIJSetPreallocation(this->mat(), 0/*n_dnz*/ , PETSC_NULL, /*n_dnzOffProc*/0, PETSC_NULL);
+#else
+    ierr = MatMPIAIJSetPreallocationCSR(this->mat(), ia.data() , ja.data(), this->graph()->a().data() );
+#endif
+    CHKERRABORT(this->comm(),ierr);
+    //----------------------------------------------------------------------------------//
+    // localToGlobalMapping
+    IS isRow;
+    IS isCol;
+    ISLocalToGlobalMapping isLocToGlobMapRow;
+    ISLocalToGlobalMapping isLocToGlobMapCol;
+#if 0
+    auto idxRow = this->mapRow().mapGlobalProcessToGlobalCluster();
+    auto idxCol = this->mapCol().mapGlobalProcessToGlobalCluster();
+    //std::cout << "idxRow.size()" << idxRow.size() << std::endl;
+    ierr = ISCreateGeneral(this->comm(), idxRow.size(), &idxRow[0], PETSC_COPY_VALUES, &isRow);
+    CHKERRABORT(this->comm(),ierr);
+
+    ierr = ISCreateGeneral(this->comm(), idxCol.size(), &idxCol[0], PETSC_COPY_VALUES,&isCol);
+    CHKERRABORT(this->comm(),ierr);
+#else
+    PetscInt *idxRow;
+    PetscInt *idxCol;
+    PetscInt n_idxRow =  this->mapRow().mapGlobalProcessToGlobalCluster().size();
+    PetscInt n_idxCol =  this->mapCol().mapGlobalProcessToGlobalCluster().size();
+    idxRow = new PetscInt[n_idxRow];
+    idxCol = new PetscInt[n_idxCol];
+    std::copy( this->mapRow().mapGlobalProcessToGlobalCluster().begin(),
+               this->mapRow().mapGlobalProcessToGlobalCluster().end(),
+               idxRow );
+    std::copy( this->mapCol().mapGlobalProcessToGlobalCluster().begin(),
+               this->mapCol().mapGlobalProcessToGlobalCluster().end(),
+               idxCol );
+
+    ierr = ISCreateGeneral(this->comm(), n_idxRow, idxRow, PETSC_COPY_VALUES, &isRow);
+    CHKERRABORT(this->comm(),ierr);
+
+    ierr = ISCreateGeneral(this->comm(), n_idxCol, idxCol, PETSC_COPY_VALUES,&isCol);
+    CHKERRABORT(this->comm(),ierr);
+#endif
+    ierr=ISLocalToGlobalMappingCreateIS(isRow, &isLocToGlobMapRow);
+    CHKERRABORT(this->comm(),ierr);
+
+    ierr=ISLocalToGlobalMappingCreateIS(isCol, &isLocToGlobMapCol);
+    CHKERRABORT(this->comm(),ierr);
+
+    ierr = MatSetLocalToGlobalMapping(this->mat(),isLocToGlobMapRow,isLocToGlobMapCol);
+    CHKERRABORT(this->comm(),ierr);
+
+    // Clean up
+    ierr = ISDestroy(&isRow);
+    CHKERRABORT(this->comm(),ierr);
+
+    ierr = ISDestroy(&isCol);
+    CHKERRABORT(this->comm(),ierr);
+
+    ierr = ISLocalToGlobalMappingDestroy(&isLocToGlobMapRow);
+    CHKERRABORT(this->comm(),ierr);
+
+    ierr = ISLocalToGlobalMappingDestroy(&isLocToGlobMapCol);
+    CHKERRABORT(this->comm(),ierr);
+
+    //----------------------------------------------------------------------------------//
+    // options
+    //    Mat _M_matttt;
+
+    ierr = MatSetFromOptions(this->mat());
+    CHKERRABORT(this->comm(),ierr);
+
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
+    //ATTENTION remetre
+    //MatSetOption(this->mat(),MAT_NEW_NONZERO_LOCATION_ERR,PETSC_TRUE);
+    MatSetOption(this->mat(),MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);
+#elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
+    MatSetOption(this->mat(),MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
+#else
+    MatSetOption(this->mat(),MAT_KEEP_ZEROED_ROWS);
+#endif
+
+
+
+#if 1
+    // additional insertions will not be allowed if they generate
+    // a new nonzero
+    //ierr = MatSetOption (_M_mat, MAT_NO_NEW_NONZERO_LOCATIONS);
+    //CHKERRABORT(this->comm(),ierr);
+
+    // generates an error for new matrix entry
+    ierr = MatSetOption (this->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+    CHKERRABORT(this->comm(),ierr);
+#endif
+
+    //this->zero();
+    //this->zeroEntriesDiagonal();
+    //this->printMatlab("NULL");
+    //std::cout << "finish init with graph " << std::endl;
+
+}
+
+
+//----------------------------------------------------------------------------------------------------//
+
+
+
+template <typename T>
+inline
+size_type MatrixPetscMPI<T>::size1() const
+{
+    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+
+    int petsc_m=0, petsc_n=0, ierr=0;
+
+    //ierr = MatGetLocalSize (this->mat(), &petsc_m, &petsc_n);
+    //CHKERRABORT(this->comm(),ierr);
+    petsc_m = this->mapRow().nLocalDofWithGhost();
+
+    return static_cast<size_type>(petsc_m);
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+
+template <typename T>
+inline
+size_type MatrixPetscMPI<T>::size2() const
+{
+    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+
+    int petsc_m=0, petsc_n=0, ierr=0;
+
+    //ierr = MatGetLocalSize (this->mat(), &petsc_m, &petsc_n);
+    //CHKERRABORT(this->comm(),ierr);
+    petsc_n = this->mapCol().nLocalDofWithGhost();
+
+    return static_cast<size_type>(petsc_n);
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+
+template <typename T>
+inline
+size_type MatrixPetscMPI<T>::rowStart() const
+{
+    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+
+    int start=0, stop=0, ierr=0;
+
+    //ierr = MatGetOwnershipRange(_M_mat, &start, &stop);
+    //CHKERRABORT(this->comm(),ierr);
+    start=0; stop=this->mapRow().nLocalDofWithGhost();
+    return static_cast<size_type>(start);
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+
+template <typename T>
+inline
+size_type MatrixPetscMPI<T>::rowStop() const
+{
+    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+
+    int start=0, stop=0, ierr=0;
+
+    //ierr = MatGetOwnershipRange(_M_mat, &start, &stop);
+    //CHKERRABORT(this->comm(),ierr);
+    start=0; stop=this->mapRow().nLocalDofWithGhost();
+    return static_cast<size_type>(stop);
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+inline
+size_type MatrixPetscMPI<T>::colStart() const
+{
+    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+
+    int start=0, stop=0;
+    start=0; stop=this->mapCol().nLocalDofWithGhost();
+    return static_cast<size_type>(start);
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+
+template <typename T>
+inline
+size_type MatrixPetscMPI<T>::colStop() const
+{
+    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+
+    int start=0, stop=0;
+    start=0; stop=this->mapCol().nLocalDofWithGhost();
+    return static_cast<size_type>(stop);
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+
+template <typename T>
+inline
+void MatrixPetscMPI<T>::set(const size_type i,
+                            const size_type j,
+                            const value_type& value)
+{
+    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+
+    int ierr=0, i_val=i, j_val=j;
+
+    PetscScalar petsc_value = static_cast<PetscScalar>(value);
+    ierr = MatSetValuesLocal(this->mat(), 1, &i_val, 1, &j_val,
+                             &petsc_value, INSERT_VALUES);
+
+    CHKERRABORT(this->comm(),ierr);
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+
+template <typename T>
+inline
+void MatrixPetscMPI<T>::add (const size_type i,
+                             const size_type j,
+                             const value_type& value)
+{
+    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );
+
+    int ierr=0, i_val=i, j_val=j;
+    //Debug( 7013 ) << "[MatrixPetsc<>::add] adding value " << value << " at (" << i << "," << j << ")\n";
+    PetscScalar petsc_value = static_cast<PetscScalar>(value);
+
+    ierr = MatSetValuesLocal(this->mat(), 1, &i_val, 1, &j_val,
+                             &petsc_value, ADD_VALUES);
+    CHKERRABORT(this->comm(),ierr);
+}
+
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+void
+MatrixPetscMPI<T>::addMatrix(const ublas::matrix<value_type>& dm,
+                             const std::vector<size_type>& rows,
+                             const std::vector<size_type>& cols)
+{
+    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
+
+    const size_type m = dm.size1();
+    const size_type n = dm.size2();
+
+    FEEL_ASSERT (rows.size() == size1()).error( "invalid row size" );
+    FEEL_ASSERT (cols.size() == size2()).error( "invalid column size" );
+
+    int ierr=0;
+
+    // These casts are required for PETSc <= 2.1.5
+    ierr = MatSetValuesLocal(this->mat(),
+                             m, (int*) boost::addressof( rows[0] ),
+                             n, (int*) boost::addressof( cols[0] ),
+                             (PetscScalar*) dm.data().begin(),
+                             ADD_VALUES);
+
+
+    CHKERRABORT(this->comm(),ierr);
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+void
+MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
+                              int* cols, int ncols,
+                              value_type* data )
+{
+    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
+
+    int ierr=0;
+
+    // These casts are required for PETSc <= 2.1.5
+    ierr = MatSetValuesLocal(this->mat(),
+                             nrows, (int*) rows,
+                             ncols, (int*) cols,
+                             (PetscScalar*) data,
+                             ADD_VALUES);
+
+    CHKERRABORT(this->comm(),ierr);
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+void
+MatrixPetscMPI<T>::zero()
+{
+    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" ) ;
+
+    int ierr=0;
+
+    PetscBool is_assembled;
+    MatAssembled( this->mat(), &is_assembled );
+    if( is_assembled )
+    {
+        //std::cout << "MPI is_assembled " << std::endl;
+        ierr = MatZeroEntries(this->mat());
+        CHKERRABORT(this->comm(),ierr);
+
+        //this->zeroEntriesDiagonal();
+    }
+    else
+    {
+        if ( this->graph() )
+        {
+#if 1
+            //std::vector<PetscInt> cols( this->graph()->nCols(), 0 );
+            //std::vector<PetscScalar> v( this->graph()->nCols(), 0. );
+            for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
+            {
+                if ( it->second.get<0>() == this->comm().rank() )
+                    {
+
+                        std::vector<PetscInt> cols(  it->second.get<2>().size(), 0 );
+                        //std::set<PetscInt> cols;
+
+                        //PetscInt row = it->second.get<1>();
+                        PetscInt row =  it->first;
+
+
+                        //MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL);
+
+                        //this->mapRow()->firstDofGlobalCluster( this->comm().rank() );
+                        auto it2=it->second.get<2>().begin();
+                        auto  en2=it->second.get<2>().end();
+                        size_type cpt=0;
+                        for ( ; it2!=en2 ; ++it2)
+                            {
+                                if ( (*it2 >= this->graph()->firstColEntryOnProc() ) &&
+                                     (*it2 <= this->graph()->lastColEntryOnProc() ) )
+                                    {
+                                        cols[cpt] = this->mapRow().mapGlobalClusterToGlobalProcess()[*it2];
+                                        ++cpt;
+                                    }
+                            }
+                        cols.resize(cpt);
+                        std::vector<PetscScalar> v(  cpt,0 );
+
+                        //std::copy( it->second.get<2>().begin(), it->second.get<2>().end(), cols.begin() );
+                        MatSetValuesLocal( this->mat(), 1, &row, it->second.get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
+                    }
+            }
+#endif
+        }
+    }
+
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+void
+MatrixPetscMPI<T>::zero( size_type /*start1*/, size_type /*stop1*/, size_type /*start2*/, size_type /*stop2*/ )
+{
+
+    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" ) ;
+
+    int ierr=0;
+
+    PetscBool is_assembled;
+    MatAssembled( this->mat(), &is_assembled );
+    if ( is_assembled )
+    {
+        ierr = MatZeroEntries(this->mat());
+        CHKERRABORT(this->comm(),ierr);
+
+        //this->zeroEntriesDiagonal();
+    }
+    else
+    {
+        if ( this->graph() )
+        {
+#if 0
+            std::vector<PetscInt> cols( this->graph()->nCols(), 0 );
+            std::vector<PetscScalar> v( this->graph()->nCols(), 0. );
+            for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
+            {
+                PetscInt row = it->second.get<1>();
+                std::copy( it->second.get<2>().begin(), it->second.get<2>().end(), cols.begin() );
+                MatSetValuesLocal( this->mat(), 1, &row, it->second.get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
+            }
+#else
+            //std::vector<PetscInt> cols( this->graph()->nCols(), 0 );
+            //std::vector<PetscScalar> v( this->graph()->nCols(), 0. );
+            for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
+            {
+                if ( it->second.get<0>() == this->comm().rank() )
+                    {
+
+                        std::vector<PetscInt> cols(  it->second.get<2>().size(), 0 );
+                        //std::set<PetscInt> cols;
+
+                        //PetscInt row = it->second.get<1>();
+                        PetscInt row =  it->first;
+
+
+                        //MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL);
+
+                        //this->mapRow()->firstDofGlobalCluster( this->comm().rank() );
+                        auto it2=it->second.get<2>().begin();
+                        auto  en2=it->second.get<2>().end();
+                        size_type cpt=0;
+                        for ( ; it2!=en2 ; ++it2)
+                            {
+                                if ( (*it2 >= this->graph()->firstColEntryOnProc() ) &&
+                                     (*it2 <= this->graph()->lastColEntryOnProc() ) )
+                                    {
+                                        cols[cpt] = this->mapRow().mapGlobalClusterToGlobalProcess()[*it2];
+                                        ++cpt;
+                                    }
+                            }
+                        cols.resize(cpt);
+                        std::vector<PetscScalar> v(  cpt,0 );
+
+                        //std::copy( it->second.get<2>().begin(), it->second.get<2>().end(), cols.begin() );
+                        MatSetValuesLocal( this->mat(), 1, &row, it->second.get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
+                    }
+            }
+
+#endif
+        }
+     }
+
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+template<typename T>
+void
+MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
+                             std::vector<value_type> const& values,
+                             Vector<value_type>& rhs,
+                             Context const& on_context )
+{
+    // the matrix needs to be closed for this to work
+    this->close();
+
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
+    MatSetOption(this->mat(),MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);
+#elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
+    MatSetOption(this->mat(),MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
+#else
+    MatSetOption(this->mat(),MAT_KEEP_ZEROED_ROWS);
+#endif
+
+    int start=0, stop=this->mapRow().nLocalDofWithGhost(), ierr=0;
+    //ierr = MatGetOwnershipRange(_M_mat, &start, &stop);
+
+    if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
+        {
+            VectorPetscMPI<value_type> diag( this->mapRow() );
+
+            ierr =MatGetDiagonal( this->mat(), diag.vec() );
+            //CHKERRABORT(this->comm(),ierr);
+
+            // in Petsc 3.2, we might want to look at the new interface so that
+            // right hand side is automatically changed wrt to zeroing out the
+            // matrix entries
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
+            ierr = MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL);
+            //CHKERRABORT(this->comm(),ierr);
+#else
+            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0);
+#endif
+            ierr=MatDiagonalSet( this->mat(), diag.vec(), INSERT_VALUES );
+            //CHKERRABORT(this->comm(),ierr);
+
+            // important close
+            diag.close();
+
+            for( size_type i = 0; i < rows.size(); ++i )
+                {
+                    // eliminate column
+
+                    // warning: a row index may belong to another
+                    // processor, so make sure that we access only the
+                    // rows that belong to this processor
+                    if ( rows[i] >= start && rows[i] < stop )
+                        rhs.set( rows[i], values[i]*diag(rows[i]) );
+                }
+        }
+    else
+        {
+
+
+
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
+            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL);
+#else
+            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0);
+#endif
+            for( size_type i = 0; i < rows.size(); ++i )
+                {
+                    // eliminate column
+
+                    // warning: a row index may belong to another
+                    // processor, so make sure that we access only the
+                    // rows that belong to this processor
+                    if ( rows[i] >= start && rows[i] < stop )
+                        rhs.set( rows[i], values[i] );
+                }
+        }
+    rhs.close();
+} // zeroRows
+
+//----------------------------------------------------------------------------------------------------//
+
 template class MatrixPetsc<double>;
+template class MatrixPetscMPI<double>;
 } // Feel
 
 #endif // HAVE_PETSC_H

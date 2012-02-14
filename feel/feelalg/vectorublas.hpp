@@ -146,6 +146,10 @@ public:
     void init ( const size_type n,
                 const bool      fast=false);
 
+    //new !!!!!!!!!
+    void init( DataMap const& dm );
+
+
     /**
      * Creates a copy of this vector and returns it in an
      * \p shared_ptr<>.
@@ -336,7 +340,7 @@ public:
      */
     void updateGlobalValues() const
     {
-        this->localize( M_global_values );
+        //this->localize( M_global_values );
         M_global_values_updated = true;
     }
 

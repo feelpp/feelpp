@@ -135,6 +135,9 @@ public:
      */
     MatrixPetsc();
 
+    MatrixPetsc(DataMap const& dmRow, DataMap const& dmCol);
+
+
     /**
      * Constructor.  Creates a PetscMatrix assuming you already
      * have a valid Mat object.  In this case, m is NOT destroyed
@@ -410,6 +413,7 @@ public:
      * calling MatDestroy()!
      */
     Mat mat () const { FEEL_ASSERT (_M_mat != NULL).error("null petsc matrix"); return _M_mat; }
+    Mat& mat () { FEEL_ASSERT (_M_mat != NULL).error("null petsc matrix"); return _M_mat; }
 
     /**
      * Print the contents of the matrix in Matlab's
@@ -444,17 +448,21 @@ public:
 
     void updatePCFieldSplit(PC & pc);
 
+    std::vector<PetscInt> ia() { return _M_ia;}
+    std::vector<PetscInt> ja() { return _M_ja;}
+
     //@}
+
+    /*
+     * Set zero entries diagonal if missing : only for PETSC!
+     */
+    void zeroEntriesDiagonal();
 
 private:
 
     // disable
     MatrixPetsc( MatrixPetsc const & );
 
-    /*
-     * Set zero entries diagonal if missing : only for PETSC!
-     */
-    void zeroEntriesDiagonal();
 
 private:
 
@@ -472,7 +480,76 @@ private:
      * for the constructor which takes a PETSc Mat object.
      */
     const bool _M_destroy_mat_on_exit;
-    std::vector<PetscInt> ia,ja;
+    std::vector<PetscInt> _M_ia,_M_ja;
+};
+
+
+
+template<typename T>
+class MatrixPetscMPI : public MatrixPetsc<T>
+{
+    typedef MatrixPetsc<T> super;
+
+public :
+
+    typedef typename super::graph_type graph_type;
+    typedef typename super::graph_ptrtype graph_ptrtype;
+    typedef typename super::value_type value_type;
+
+    MatrixPetscMPI();
+
+    MatrixPetscMPI(DataMap const& dmRow, DataMap const& dmCol);
+
+    MatrixPetscMPI(Mat m, DataMap const& dmRow, DataMap const& dmCol);
+
+    void init (const size_type m,
+               const size_type n,
+               const size_type m_l,
+               const size_type n_l,
+               const size_type nnz=30,
+               const size_type noz=10);
+
+    /**
+     * Initialize using sparsity structure computed by \p dof_map.
+     */
+    void init ( const size_type m,
+                const size_type n,
+                const size_type m_l,
+                const size_type n_l,
+                graph_ptrtype const& graph );
+
+
+    size_type size1() const;
+    size_type size2() const;
+    size_type rowStart() const;
+    size_type rowStop() const;
+    size_type colStart() const;
+    size_type colStop() const;
+
+    void set(const size_type i,
+             const size_type j,
+             const value_type& value);
+
+    void add (const size_type i,
+              const size_type j,
+              const value_type& value);
+
+    void addMatrix(const ublas::matrix<value_type>& dm,
+                   const std::vector<size_type>& rows,
+                   const std::vector<size_type>& cols);
+
+    void addMatrix( int* rows, int nrows,
+                    int* cols, int ncols,
+                    value_type* data );
+
+    void zero();
+    void zero( size_type start1, size_type stop1, size_type start2, size_type stop2 );
+    //void zeroEntriesDiagonal();
+    void zeroRows( std::vector<int> const& rows,
+                   std::vector<value_type> const& values,
+                   Vector<value_type>& rhs,
+                   Context const& on_context );
+
 };
 
 

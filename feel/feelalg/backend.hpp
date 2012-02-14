@@ -264,14 +264,17 @@ public:
                                       _diag_is_nonzero=diag_is_nonzero );
 
                     mat->init( test->nDof(), trial->nDof(),
-                               test->nLocalDof(), trial->nLocalDof(),
+                               //test->nLocalDof(), trial->nLocalDof(),
+                               test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
                                s->graph() );
                 }
             else
                 {
                     // need to build inverse of pattern_block : to fix!
                     auto s = stencil( _test=trial, _trial=test, _pattern=pattern );
-                    mat->init( test->nDof(), trial->nDof(), test->nLocalDof(), trial->nLocalDof(),
+                    mat->init( test->nDof(), trial->nDof(),
+                               //test->nLocalDof(), trial->nLocalDof(),
+                               test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
                                s->graph()->transpose() );
                 }
             mat->zero();
@@ -644,6 +647,8 @@ public:
             }
             else
                 ret = solve( matrix, prec, _sol, rhs, reuse_prec );
+            //new
+            _sol->close();
             detail::ref(solution) = *_sol;
             return ret;
         }
@@ -733,6 +738,8 @@ public:
                 ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
             else
                 ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec, reuse_jac );
+            //new
+            _sol->close();
             detail::ref(solution) = *_sol;
             return ret;
         }

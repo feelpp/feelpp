@@ -113,8 +113,7 @@ GraphCSR::zero()
         {
             row_type& row = this->row(i);
             row.get<0>() = 0;//proc
-            row.get<1>() = i; //local index : warning false in parallel!!!!
-            //row.get<2>().insert(i);
+            row.get<1>() = i-M_first_row_entry_on_proc; //local index
             row.get<2>().clear(); //all is zero
         }
 
@@ -165,7 +164,7 @@ GraphCSR::addMissingZeroEntriesDiagonal()
     size_type m = this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1;
     size_type n = this->lastColEntryOnProc()-this->firstColEntryOnProc()+1;
 
-    for ( size_type i = 0 ; i< std::min(m,n) ; ++i)
+    for ( size_type i = this->firstRowEntryOnProc() ; i< this->firstRowEntryOnProc()+std::min(m,n) ; ++i)
         {
             if (this->storage().find(i)!=this->end())
                 {
@@ -203,14 +202,28 @@ GraphCSR::close()
     Debug(5050) << "[close] lastColEntryOnProc()=" << this->lastColEntryOnProc() << "\n";
     Debug(5050) << "[close] M_n_total_nz=" << M_n_total_nz.size() << "\n";
     Debug(5050) << "[close] M_storage size=" << M_storage.size() << "\n";
+    Debug(5050) << "[close] nrows=" << this->size() << "\n";
+#if !defined(FEEL_ENABLE_MPI_MODE)
     M_n_total_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
     M_n_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
     M_n_oz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
+#else // MPI
+    M_n_total_nz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1/*M_storage.size()*/ );
+    M_n_nz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1/*M_storage.size()*/ );
+    M_n_oz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1/*M_storage.size()*/ );
+
+    std::vector<int> nbMsgToSend(this->comm().size());
+    std::fill(nbMsgToSend.begin(),nbMsgToSend.end(),0);
+    std::vector< std::map<int,int> > mapMsg(this->comm().size());
+#endif
 
     std::fill( M_n_nz.begin(), M_n_nz.end(), 0 );
     std::fill( M_n_oz.begin(), M_n_oz.end(), 0 );
 
     size_type sum_nz = 0;
+    //size_type sum_n_nz = 0;
+    //size_type sum_n_oz = 0;
+
     M_max_nnz = 0;
     for( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
         {
@@ -235,23 +248,28 @@ GraphCSR::close()
                     sum_nz += vec_size;
                     for( auto vecit = boost::get<2>( irow ).begin(), vecen = boost::get<2>( irow ).end(); vecit != vecen; ++vecit )
                         {
-// parallel version coming soon....
-#if 0
+#if defined(FEEL_ENABLE_MPI_MODE) // MPI
                             if ( (*vecit < firstColEntryOnProc()) ||
                                  (*vecit > lastColEntryOnProc() ))
                                 {
                                     //Debug() << "globalindex=" << globalindex << " localindex="
                                     //<< localindex << " off-block diag: " << M_n_oz[localindex] << "\n";
+                                    //std::cout << "rank " << M_comm.rank() << " globalindex=" << globalindex << " localindex="
+                                    //          << localindex << " off-block diag: " << M_n_oz[localindex] << std::endl;
                                     // entry is off block-diagonal
                                     ++M_n_oz[localindex];
+                                    //vincent++sum_n_oz;
                                 }
                             else
 #endif
                                 {
                                     //Debug() << "globalindex=" << globalindex << " localindex="
                                     //<< localindex << " on-block diag: " << M_n_nz[localindex] << "\n";
+                                    //std::cout << "rank " << M_comm.rank() << " globalindex=" << globalindex << " localindex="
+                                    //          << localindex << " on-block diag: " << M_n_nz[localindex] << std::endl;
                                     // entry is in block-diagonal
                                     ++M_n_nz[localindex];
+                                    //vincent++sum_n_nz;
                                 }
                         }
 
@@ -267,12 +285,120 @@ GraphCSR::close()
                 }
             else
                 {
-                    // something to do here ?
+#if defined(FEEL_ENABLE_MPI_MODE) // MPI
+
+                    //size_type globalindex = it->first;
+                    //size_type localindex = boost::get<1>( irow );
+                    //size_type vec_size = boost::get<2>( irow ).size();
+
+                    auto dofOnGlobalCluster = it->first;
+
+                    // Get the row of the sparsity pattern
+                    row_type const& irow = it->second;
+
+                    auto procOnGlobalCluster = irow.get<0>();
+
+                    auto dofOnProc = irow.get<1>();
+                    //std::cout << " OOOOdofOnProc " << dofOnProc << " vecsize" << boost::get<2>( irow ).size() << std::endl;
+                    std::vector<size_type> ivec( irow.get<2>().size()+2 );
+                    ivec[0]=dofOnGlobalCluster;
+                    ivec[1]=dofOnProc;
+
+                    auto icol_it = irow.get<2>().begin();
+                    auto icol_en = irow.get<2>().end();
+                    for (int i=0; icol_it!=icol_en ; ++i,++icol_it)
+                        {
+                            //std::cout << " *icol_it " << *icol_it << std::endl;
+                            ivec[i+2] = *icol_it;//-this->firstColEntryOnProc(); //ivec[i+1] = *icol_it;
+                        }
+
+#if 0
+                    std::cout << "/n I am proc " << world.rank() << " I send to " << procOnGlobalCluster
+                              << " with dofGlobCluster " << dofOnGlobalCluster
+                              << " with dofLoc " << dofOnProc
+                              << " size of ivec " << ivec.size()
+                              << std::endl;
+#endif
+                    this->comm().send(procOnGlobalCluster, nbMsgToSend[procOnGlobalCluster],ivec );
+
+                    mapMsg[procOnGlobalCluster].insert(std::make_pair(nbMsgToSend[procOnGlobalCluster], irow.get<1>()  ) );
+
+                    ++nbMsgToSend[procOnGlobalCluster];
+#endif // MPI
                 }
 
 
         }
 
+#if defined(FEEL_ENABLE_MPI_MODE) // MPI
+    // counter of msg received for each process
+    std::vector<int> nbMsgToRecv;
+    mpi::all_to_all(this->comm(),
+                    nbMsgToSend,
+                    nbMsgToRecv);
+
+    // recv id asked and re-send set of face id
+    for (int proc=0; proc<this->comm().size();++proc)
+        {
+            for ( int cpt=0;cpt<nbMsgToRecv[proc];++cpt)
+                {
+                    //size_type localindex = mapMsg[proc][cpt];
+                    std::vector<size_type> ivec;
+
+                    this->comm().recv(proc, cpt,ivec );
+
+                    size_type globalindex = ivec[0];
+                    size_type localindex = ivec[1];
+                    row_type& row = this->row(globalindex);
+                    row.get<0>()=this->comm().rank();
+                    row.get<1>()=localindex;
+
+                    //std::cout << " OOOOlocalindex " << localindex << std::endl;
+                    for (size_type j=1; j< ivec.size(); j++)
+                        {
+                            bool isInserted = false;
+                            if (row.get<2>().find(ivec[j]) == row.get<2>().end())
+                                {
+                                    row.get<2>().insert(ivec[j]);
+                                    isInserted = true;
+                                }
+
+                            if ( (ivec[j] < firstColEntryOnProc()) ||
+                                 (ivec[j] > lastColEntryOnProc() ))
+                                {
+                                    // SUREMENT UTILE!!!!!
+                                    // M_colindices_nz[localindex].insert(ivec[j]);
+                                    //std::cout << "AYTYATYATYAT"<<std::endl;
+                                    //std::cout << "globalindex=" << globalindex << " localindex="
+                                    //          << localindex << " off-block diag: " << M_n_oz[localindex] << std::endl;
+                                    // entry is off block-diagonal
+                                    //if (this->storage().find(localindex)==this->end())
+                                    //    if (this->storage().find(localindex)->get<2>().find(ivec[j]) ==this->end())
+                                    if (isInserted) { ++M_n_oz[localindex]; ++sum_nz; }
+                                }
+                            else
+                                {
+                                    //std::cout << "rank " << this->comm().rank() << " AIAIAIAI localindex"<< localindex << std::endl;
+                                    //if (this->storage().find(localindex)==this->end())
+                                    if (isInserted) { ++M_n_nz[localindex]; ++sum_nz; }
+
+#if 0
+                                    auto isInserted = M_colindices_nz[localindex].insert(ivec[j]).second;
+                                    if (isInserted)
+                                        ++M_n_nz[localindex];
+#endif
+                                }
+
+
+                        }
+                    //std::sort(M_colindices_nz[localindex].begin(), M_colindices_nz[localindex].end());
+
+                }
+
+        } // for (int proc=0; proc<M_comm.size();++proc)
+
+
+#endif
 
 
 #if 1
@@ -291,13 +417,16 @@ GraphCSR::close()
         col_cursor+=boost::get<2>( irow ).size();
     }
     M_ia[M_storage.size()] = sum_nz;
-#else // vincent
+#else
+
+#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
     M_ia.resize( M_last_row_entry_on_proc+2,0 );
     M_ja.resize( sum_nz );
     M_a.resize(  sum_nz, 0. );
     size_type col_cursor = 0;
     auto jait = M_ja.begin();
     //for( auto it = M_storage.begin(), en = M_storage.end()  ; it != en; ++it )
+
     for( int i = 0 ; i<(M_last_row_entry_on_proc+1); ++i )
     {
         if (M_storage.find(i)!=M_storage.end())
@@ -314,8 +443,42 @@ GraphCSR::close()
             }
     }
     M_ia[M_last_row_entry_on_proc+1] = sum_nz;
-#endif
+
+#else // MPI
+    size_type nRowLoc = this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1;
+    M_ia.resize( nRowLoc+1,0 );
+    M_ja.resize( /*sum_n_nz*/sum_nz );
+    M_a.resize(  /*sum_n_nz*/sum_nz, 0. );
+    size_type col_cursor = 0;
+    auto jait = M_ja.begin();
+    for( int i = 0 ; i<nRowLoc; ++i )
+    {
+        if (M_storage.find(this->firstRowEntryOnProc()+i)!=M_storage.end())
+            {
+                row_type const& irow = this->row(this->firstRowEntryOnProc()+i);
+                size_type localindex = boost::get<1>( irow );
+                M_ia[i/*localindex*/] = col_cursor;
+                jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
+                /*for( auto vecit = boost::get<2>( irow ).begin(), vecen = boost::get<2>( irow ).end(); vecit != vecen; ++vecit )
+                    {
+                        //if ( (*vecit >= firstColEntryOnProc()) && (*vecit <= lastColEntryOnProc() ))
+                        {
+                            M_ja[col_cursor]=*vecit;std::cout << *vecit << std::endl;
+                            ++col_cursor;
+                        }
+                        }*/
+                col_cursor+=boost::get<2>( irow ).size();
+            }
+        else
+            {
+                //std::cout << "\n STRANGE " << std::endl;
+                M_ia[i] = col_cursor;
+            }
+    }
+    M_ia[nRowLoc] = /*sum_n_nz*/sum_nz;
+#endif // MPI
 #endif // 0
+#endif // 1
 
 } // close
 
@@ -323,36 +486,45 @@ GraphCSR::close()
 void
 GraphCSR::showMe( std::ostream& __out ) const
 {
-    __out << "first_row_entry_on_proc " << M_first_row_entry_on_proc << std::endl;
-    __out << "last_row_entry_on_proc " << M_last_row_entry_on_proc << std::endl;
-    __out << "first_col_entry_on_proc " << M_first_col_entry_on_proc << std::endl;
-    __out << "last_col_entry_on_proc " << M_last_col_entry_on_proc << std::endl;
-    __out << "max_nnz " << M_max_nnz << std::endl;
-
-    for( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
+    for (int proc = 0;proc<this->comm().size();++proc)
         {
-            // Get the row of the sparsity pattern
-            row_type const& row = it->second;
+            if (proc==this->comm().rank())
+                {
+                    __out << "first_row_entry_on_proc " << M_first_row_entry_on_proc << std::endl;
+                    __out << "last_row_entry_on_proc " << M_last_row_entry_on_proc << std::endl;
+                    __out << "first_col_entry_on_proc " << M_first_col_entry_on_proc << std::endl;
+                    __out << "last_col_entry_on_proc " << M_last_col_entry_on_proc << std::endl;
+                    __out << "max_nnz " << M_max_nnz << std::endl;
 
-            __out << " proc " << row.get<0>()
-                  << " globalindex " << it->first
-                  << " localindex " << row.get<1>()
-                  << "(nz " << M_n_nz[row.get<1>()]
-                  << " oz " << M_n_oz[row.get<1>()]
-                  << ") : ";
-            //size_type vec_size = boost::get<2>( irow ).size();
-            //size_type globalindex = it->first;
-            //size_type localindex = boost::get<1>( irow );
-            for (auto it = row.get<2>().begin(), en= row.get<2>().end() ; it!=en ; ++it)
-                __out << *it << " ";
+                    for( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
+                        {
+                            // Get the row of the sparsity pattern
+                            row_type const& row = it->second;
 
-            __out << std::endl;
-        }
+                            __out << " proc " << row.get<0>()
+                                  << " globalindex " << it->first
+                                  << " localindex " << row.get<1>()
+                                  << "(nz " << M_n_nz[row.get<1>()]
+                                  << " oz " << M_n_oz[row.get<1>()]
+                                  << ") : ";
+                            //size_type vec_size = boost::get<2>( irow ).size();
+                            //size_type globalindex = it->first;
+                            //size_type localindex = boost::get<1>( irow );
+                            for (auto it = row.get<2>().begin(), en= row.get<2>().end() ; it!=en ; ++it)
+                                __out << *it << " ";
+
+                            __out << std::endl;
+                        }
+                } // if (proc==this->comm().rank())
+            this->comm().barrier();
+        } // for (int proc = 0;proc<nProc;++proc)
+
 }
 
 void
 GraphCSR::printPython( std::string const& nameFile) const
 {
+
     std::ofstream graphFile(nameFile, std::ios::out /*| std::ios::app*/);
 #if 0
     std::cout << "first_row_entry_on_proc " << M_first_row_entry_on_proc << std::endl;

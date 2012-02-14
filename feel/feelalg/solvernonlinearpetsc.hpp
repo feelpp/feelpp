@@ -163,6 +163,11 @@ public:
 
 
     //@}
+    DataMap const& mapRow() const { return M_mapRow;}
+    DataMap const& mapCol() const { return M_mapCol;}
+
+    void setMapRow(DataMap const& d) { M_mapRow=d;}
+    void setMapCol(DataMap const& d) { M_mapCol=d;}
 
 private:
     /**
@@ -183,7 +188,6 @@ private:
      */
     void setPetscPreconditionerType ();
 
-    mpi::communicator M_comm;
 
     /**
      * Nonlinear solver context
@@ -201,6 +205,9 @@ private:
      * Krylov subspace context
      */
     KSP M_ksp;
+
+
+    DataMap M_mapRow,M_mapCol;
 
 };
 

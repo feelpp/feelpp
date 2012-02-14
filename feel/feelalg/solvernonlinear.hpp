@@ -148,6 +148,11 @@ public:
     //@{
 
     /**
+     * \return the communicator
+     */
+    mpi::communicator const& comm() const { return M_comm; }
+
+    /**
      * @returns true if the data structures are
      * initialized, false otherwise.
      */
@@ -318,6 +323,8 @@ public:
 
 
 protected:
+
+    mpi::communicator M_comm;
 
     /**
      * Flag indicating if the data structures have been initialized.

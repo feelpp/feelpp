@@ -105,14 +105,27 @@ extern "C"
     Feel::SolverNonLinearPetsc<double>* solver =
       static_cast<Feel::SolverNonLinearPetsc<double>*> (ctx);
 
-
+#if !defined(FEEL_ENABLE_MPI_MODE)
     boost::shared_ptr<Feel::Vector<double> > R( new Feel::VectorPetsc<double>(r));
     boost::shared_ptr<Feel::MatrixSparse<double> >  PC;
     boost::shared_ptr<Feel::Vector<double> > X_global( new Feel::VectorPetsc<double>(x));
     boost::shared_ptr<Feel::Vector<double> > X_local( new Feel::VectorPetsc<double>(X_global->size()) );
 
     X_global->localize (*X_local);
-
+#else
+    boost::shared_ptr<Feel::Vector<double> > R;
+    boost::shared_ptr<Feel::Vector<double> > X_global;
+    if (solver->comm().size()>1)
+        {
+            R.reset( new Feel::VectorPetscMPI<double>(r,solver->mapRow()));
+            X_global.reset( new Feel::VectorPetscMPI<double>(x,solver->mapRow()));
+        }
+    else // MPI
+        {
+            R.reset( new Feel::VectorPetsc<double>(r) );
+            X_global.reset( new Feel::VectorPetsc<double>(x) );
+        }
+#endif
     //if (solver->residual != NULL) solver->residual (X_local, R);
     if (solver->residual != NULL) solver->residual (X_global, R);
     //if (solver->matvec   != NULL) solver->matvec   (X_local, R, PC );
@@ -135,6 +148,7 @@ extern "C"
     Feel::SolverNonLinearPetsc<double>* solver =
       static_cast<Feel::SolverNonLinearPetsc<double>*> (ctx);
 
+#if !defined(FEEL_ENABLE_MPI_MODE)
     boost::shared_ptr<Feel::Vector<double> > R;
     boost::shared_ptr<Feel::MatrixSparse<double> >  PC(new Feel::MatrixPetsc<double>(*pc) );
     boost::shared_ptr<Feel::MatrixSparse<double> >  Jac(new Feel::MatrixPetsc<double>(*jac) );
@@ -142,6 +156,22 @@ extern "C"
     boost::shared_ptr<Feel::Vector<double> > X_local( new Feel::VectorPetsc<double>(X_global->size()) );
 
     X_global->localize (*X_local);
+#else // MPI
+    boost::shared_ptr<Feel::MatrixSparse<double> > Jac;
+    boost::shared_ptr<Feel::Vector<double> > X_global;
+    if (solver->comm().size()>1)
+        {
+            Jac.reset(new Feel::MatrixPetscMPI<double>(*jac,solver->mapRow(),solver->mapCol()) );
+            //Jac->setMapRow(solver->mapRow());
+            //Jac->setMapCol(solver->mapCol());
+            X_global.reset( new Feel::VectorPetscMPI<double>(x,solver->mapRow()));
+        }
+    else
+        {
+            Jac.reset(new Feel::MatrixPetsc<double>(*jac) );
+            X_global.reset( new Feel::VectorPetsc<double>(x));
+        }
+#endif
 
     //if (solver->jacobian != NULL) solver->jacobian (X_local, PC );
     if (solver->jacobian != NULL) solver->jacobian (X_global, Jac );
@@ -409,10 +439,35 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     ierr = SNESSetMonitor (M_snes, __feel_petsc_snes_monitor, this, PETSC_NULL);
 #endif
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
-
+#if !defined(FEEL_ENABLE_MPI_MODE)
     MatrixPetsc<T>* jac = dynamic_cast<MatrixPetsc<T>*>( jac_in.get() );
     VectorPetsc<T>* x   = dynamic_cast<VectorPetsc<T>*>( x_in.get() );
     VectorPetsc<T>* r   = dynamic_cast<VectorPetsc<T>*>( r_in.get() );
+#else // MPI
+    MatrixPetsc<T>* jac;
+    VectorPetsc<T>* x;
+    VectorPetsc<T>* r;
+    if (this->comm().size()>1)
+        {
+            jac = dynamic_cast<MatrixPetscMPI<T>*>( jac_in.get() );
+            //jac->setMapRow(jac_in->mapRow());
+            //jac->setMapCol(jac_in->mapCol());
+            x = dynamic_cast<VectorPetscMPI<T>*>( x_in.get() );
+            r = dynamic_cast<VectorPetscMPI<T>*>( r_in.get() );
+            //x->setMap(jac_in->mapRow());
+            //r->setMap(jac_in->mapRow());
+            //usefull in __feel_petsc_snes_jacobian and __feel_petsc_snes_residual
+            this->setMapRow(jac_in->mapRow());
+            this->setMapCol(jac_in->mapCol());
+        }
+    else
+        {
+            jac = dynamic_cast<MatrixPetsc<T>*>( jac_in.get() );
+            x   = dynamic_cast<VectorPetsc<T>*>( x_in.get() );
+            r   = dynamic_cast<VectorPetsc<T>*>( r_in.get() );
+        }
+#endif
+
 
     // We cast to pointers so we can be sure that they succeeded
     // by comparing the result against NULL.
@@ -651,40 +706,40 @@ SolverNonLinearPetsc<T>::setPetscKspSolverType()
     {
 
     case CG:
-      ierr = KSPSetType (M_ksp, (char*) KSPCG);         CHKERRABORT(M_comm,ierr); return;
+      ierr = KSPSetType (M_ksp, (char*) KSPCG);         CHKERRABORT(this->comm(),ierr); return;
 
     case CR:
-      ierr = KSPSetType (M_ksp, (char*) KSPCR);         CHKERRABORT(M_comm,ierr); return;
+      ierr = KSPSetType (M_ksp, (char*) KSPCR);         CHKERRABORT(this->comm(),ierr); return;
 
     case CGS:
-      ierr = KSPSetType (M_ksp, (char*) KSPCGS);        CHKERRABORT(M_comm,ierr); return;
+      ierr = KSPSetType (M_ksp, (char*) KSPCGS);        CHKERRABORT(this->comm(),ierr); return;
 
     case BICG:
-      ierr = KSPSetType (M_ksp, (char*) KSPBICG);       CHKERRABORT(M_comm,ierr); return;
+      ierr = KSPSetType (M_ksp, (char*) KSPBICG);       CHKERRABORT(this->comm(),ierr); return;
 
     case TCQMR:
-      ierr = KSPSetType (M_ksp, (char*) KSPTCQMR);      CHKERRABORT(M_comm,ierr); return;
+      ierr = KSPSetType (M_ksp, (char*) KSPTCQMR);      CHKERRABORT(this->comm(),ierr); return;
 
     case TFQMR:
-      ierr = KSPSetType (M_ksp, (char*) KSPTFQMR);      CHKERRABORT(M_comm,ierr); return;
+      ierr = KSPSetType (M_ksp, (char*) KSPTFQMR);      CHKERRABORT(this->comm(),ierr); return;
 
     case LSQR:
-      ierr = KSPSetType (M_ksp, (char*) KSPLSQR);       CHKERRABORT(M_comm,ierr); return;
+      ierr = KSPSetType (M_ksp, (char*) KSPLSQR);       CHKERRABORT(this->comm(),ierr); return;
 
     case BICGSTAB:
-      ierr = KSPSetType (M_ksp, (char*) KSPBCGS);       CHKERRABORT(M_comm,ierr); return;
+      ierr = KSPSetType (M_ksp, (char*) KSPBCGS);       CHKERRABORT(this->comm(),ierr); return;
 
     case MINRES:
-      ierr = KSPSetType (M_ksp, (char*) KSPMINRES);     CHKERRABORT(M_comm,ierr); return;
+      ierr = KSPSetType (M_ksp, (char*) KSPMINRES);     CHKERRABORT(this->comm(),ierr); return;
 
     case GMRES:
-      ierr = KSPSetType (M_ksp, (char*) KSPGMRES);      CHKERRABORT(M_comm,ierr); return;
+      ierr = KSPSetType (M_ksp, (char*) KSPGMRES);      CHKERRABORT(this->comm(),ierr); return;
 
     case RICHARDSON:
-      ierr = KSPSetType (M_ksp, (char*) KSPRICHARDSON); CHKERRABORT(M_comm,ierr); return;
+      ierr = KSPSetType (M_ksp, (char*) KSPRICHARDSON); CHKERRABORT(this->comm(),ierr); return;
 
     case CHEBYSHEV:
-      ierr = KSPSetType (M_ksp, (char*) KSPCHEBYCHEV);  CHKERRABORT(M_comm,ierr); return;
+      ierr = KSPSetType (M_ksp, (char*) KSPCHEBYCHEV);  CHKERRABORT(this->comm(),ierr); return;
 
     default:
       std::cerr << "ERROR:  Unsupported PETSC Solver: "
@@ -704,45 +759,45 @@ SolverNonLinearPetsc<T>::setPetscPreconditionerType()
   switch (this->preconditionerType())
     {
     case IDENTITY_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCNONE);      CHKERRABORT(M_comm,ierr); return;
+      ierr = PCSetType (M_pc, (char*) PCNONE);      CHKERRABORT(this->comm(),ierr); return;
 
     case CHOLESKY_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCCHOLESKY);  CHKERRABORT(M_comm,ierr); return;
+      ierr = PCSetType (M_pc, (char*) PCCHOLESKY);  CHKERRABORT(this->comm(),ierr); return;
 
     case ICC_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCICC);       CHKERRABORT(M_comm,ierr); return;
+      ierr = PCSetType (M_pc, (char*) PCICC);       CHKERRABORT(this->comm(),ierr); return;
 
     case ILU_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCILU);       CHKERRABORT(M_comm,ierr); return;
+      ierr = PCSetType (M_pc, (char*) PCILU);       CHKERRABORT(this->comm(),ierr); return;
 
     case LU_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCLU);        CHKERRABORT(M_comm,ierr); return;
+      ierr = PCSetType (M_pc, (char*) PCLU);        CHKERRABORT(this->comm(),ierr); return;
 
     case ASM_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCASM);       CHKERRABORT(M_comm,ierr); return;
+      ierr = PCSetType (M_pc, (char*) PCASM);       CHKERRABORT(this->comm(),ierr); return;
 
     case JACOBI_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCJACOBI);    CHKERRABORT(M_comm,ierr); return;
+      ierr = PCSetType (M_pc, (char*) PCJACOBI);    CHKERRABORT(this->comm(),ierr); return;
 
     case BLOCK_JACOBI_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCBJACOBI);   CHKERRABORT(M_comm,ierr); return;
+      ierr = PCSetType (M_pc, (char*) PCBJACOBI);   CHKERRABORT(this->comm(),ierr); return;
 
     case SOR_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCSOR);       CHKERRABORT(M_comm,ierr); return;
+      ierr = PCSetType (M_pc, (char*) PCSOR);       CHKERRABORT(this->comm(),ierr); return;
 
     case EISENSTAT_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCEISENSTAT); CHKERRABORT(M_comm,ierr); return;
+      ierr = PCSetType (M_pc, (char*) PCEISENSTAT); CHKERRABORT(this->comm(),ierr); return;
 
 #if !((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1) && (PETSC_VERSION_SUBMINOR <= 1))
     case USER_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCMAT);       CHKERRABORT(M_comm,ierr); return;
+      ierr = PCSetType (M_pc, (char*) PCMAT);       CHKERRABORT(this->comm(),ierr); return;
 #endif
 
     case SHELL_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCSHELL);     CHKERRABORT(M_comm,ierr); return;
+      ierr = PCSetType (M_pc, (char*) PCSHELL);     CHKERRABORT(this->comm(),ierr); return;
 
     case FIELDSPLIT_PRECOND:
-        ierr = PCSetType(M_pc,(char*) PCFIELDSPLIT); CHKERRABORT(M_comm,ierr); return;
+        ierr = PCSetType(M_pc,(char*) PCFIELDSPLIT); CHKERRABORT(this->comm(),ierr); return;
 
     default:
       std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "

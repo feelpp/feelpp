@@ -68,6 +68,8 @@ public:
     typedef typename super::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef MatrixPetsc<value_type> petsc_sparse_matrix_type;
     typedef boost::shared_ptr<sparse_matrix_type> petsc_sparse_matrix_ptrtype;
+    typedef MatrixPetscMPI<value_type> petscMPI_sparse_matrix_type;
+    //typedef boost::shared_ptr<sparse_matrix_type> petscMPI_sparse_matrix_ptrtype;
 
     typedef typename sparse_matrix_type::graph_type graph_type;
     typedef typename sparse_matrix_type::graph_ptrtype graph_ptrtype;
@@ -77,6 +79,7 @@ public:
     typedef typename super::vector_ptrtype vector_ptrtype;
     typedef VectorPetsc<value_type> petsc_vector_type;
     typedef boost::shared_ptr<vector_type> petsc_vector_ptrtype;
+    typedef VectorPetscMPI<value_type> petscMPI_vector_type;
 
     typedef typename super::solve_return_type solve_return_type;
     typedef typename super::nl_solve_return_type nl_solve_return_type;
@@ -103,10 +106,18 @@ public:
                                             DualImageSpace const& Yh,
                                             size_type matrix_properties = NON_HERMITIAN )
     {
-        sparse_matrix_ptrtype  m ( new sparse_matrix_type );
-        m->setMatrixProperties( matrix_properties );
-        m->init( Yh->nDof(), Xh->nDof(),
-                 Yh->nLocalDof(), Xh->nLocalDof() );
+        auto s = stencil( _test=Yh,_trial=Xh );
+        mpi::communicator commT;
+
+        sparse_matrix_ptrtype mat;//( new petsc_sparse_matrix_type );
+        if (commT.size()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type(Yh->map(),Xh->map()));
+        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type(Yh->map(),Xh->map()) );
+
+        mat->setMatrixProperties( matrix_properties );
+        mat->init( Yh->nDof(), Xh->nDof(),
+                   Yh->nLocalDofWithoutGhost(), Xh->nLocalDofWithoutGhost(),
+                   s->graph());
+                   //Yh->nLocalDof(), Xh->nLocalDof() );
 #if 0
         auto nSpace = DomainSpace::nSpaces;
 
@@ -124,7 +135,7 @@ public:
             }
 #endif
 
-        return m;
+        return mat;
     }
 
     sparse_matrix_ptrtype
@@ -136,7 +147,10 @@ public:
               const size_type noz=10,
               size_type matrix_properties = NON_HERMITIAN)
     {
-        sparse_matrix_ptrtype mat( new petsc_sparse_matrix_type );
+        sparse_matrix_ptrtype mat;
+        if (this->comm().size()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type );
+
         mat->setMatrixProperties( matrix_properties );
         mat->init(m,n,m_l,n_l,nnz,noz);
         return mat;
@@ -148,14 +162,17 @@ public:
                size_type matrix_properties = NON_HERMITIAN,
                bool init = true)
     {
-        sparse_matrix_ptrtype  m ( new petsc_sparse_matrix_type );
-        m->setMatrixProperties( matrix_properties );
+        sparse_matrix_ptrtype mat;
+        if (this->comm().size()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type(imagemap,domainmap));
+        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type(imagemap,domainmap));
+
+        mat->setMatrixProperties( matrix_properties );
         if (init)
             {
-                m->init( imagemap.nGlobalElements(), domainmap.nGlobalElements(),
-                         imagemap.nMyElements(), domainmap.nMyElements() );
+                mat->init( imagemap.nDof(), domainmap.nDof(),
+                           imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost() );
             }
-        return m;
+        return mat;
     }
 
     sparse_matrix_ptrtype
@@ -164,10 +181,17 @@ public:
                graph_ptrtype const & graph,
                size_type matrix_properties = NON_HERMITIAN)
     {
-        return this->newMatrix( imagemap.nGlobalElements(), domainmap.nGlobalElements(),
-                                imagemap.nMyElements(), domainmap.nMyElements(),
-                                graph,
-                                matrix_properties);
+        sparse_matrix_ptrtype mat;
+        if (this->comm().size()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type(imagemap,domainmap));
+        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type(imagemap,domainmap));
+
+        mat->setMatrixProperties( matrix_properties );
+
+        mat->init( imagemap.nDof(), domainmap.nDof(),
+                   //imagemap.nLocalDofWithGhost(), domainmap.nLocalDofWithGhost(),
+                   imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost(),
+                   graph);
+        return mat;
     }
 
     sparse_matrix_ptrtype
@@ -178,7 +202,10 @@ public:
               graph_ptrtype const & graph,
               size_type matrix_properties = NON_HERMITIAN)
     {
-        sparse_matrix_ptrtype mat( new petsc_sparse_matrix_type );
+        sparse_matrix_ptrtype mat;
+        if (this->comm().size()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type );
+
         mat->setMatrixProperties( matrix_properties );
         mat->init(m,n,m_l,n_l,graph);
         return mat;
@@ -189,7 +216,7 @@ public:
                    DataMap const& imagemap )
     {
         return newZeroMatrix(imagemap.nDof(), domainmap.nDof(),
-                             imagemap.nDof(), domainmap.nDof() );
+                             imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost() );
     }
 
     sparse_matrix_ptrtype
@@ -199,22 +226,13 @@ public:
                    const size_type n_l )
     {
         graph_ptrtype sparsity_graph( new graph_type( 0,0,m_l-1,0,n_l-1) );
-
-#if 0
-        for (size_type i=0 ; i<m_l ; ++i)
-            {
-                //sparsity_graph->row(i);
-                typename graph_type::row_type& row = sparsity_graph->row(i);
-                row.get<0>() = 0;//proc
-                row.get<1>() = i; //local index : warning false in parallel!!!!
-                row.get<2>().clear(); //all is zero
-            }
-#else
         sparsity_graph->zero();
-#endif
         sparsity_graph->close();
 
-        sparse_matrix_ptrtype  mat( new petsc_sparse_matrix_type );
+        sparse_matrix_ptrtype mat;
+        if (this->comm().size()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type );
+
         //mat->setMatrixProperties( matrix_properties );
         mat->init( m, n, m_l, n_l, sparsity_graph );
 
@@ -224,12 +242,18 @@ public:
     template<typename SpaceT>
     static vector_ptrtype newVector( SpaceT const& space )
     {
-        return vector_ptrtype( new vector_type( space->nDof(), space->nLocalDof() ) );
+        mpi::communicator theComm;
+        if (theComm.size()>1) return vector_ptrtype( new petscMPI_vector_type(space->map()) );
+        else return vector_ptrtype( new petsc_vector_type(space->map()) );
+        //return this->newVector(space->map());
+        //return vector_ptrtype( new vector_type( space->nDof(), space->nLocalDof() ) );
     }
 
     vector_ptrtype newVector( DataMap const& dm )
     {
-        return vector_ptrtype( new petsc_vector_type( dm.nGlobalElements(), dm.nMyElements() ) );
+        if (this->comm().size()>1) return vector_ptrtype( new petscMPI_vector_type(dm) );
+        else return vector_ptrtype( new petsc_vector_type(dm) );
+        //return vector_ptrtype( new petsc_vector_type( dm.nGlobalElements(), dm.nMyElements() ) );
     }
 
     vector_ptrtype newVector( const size_type n, const size_type n_local )
