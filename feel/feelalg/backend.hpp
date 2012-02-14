@@ -732,8 +732,9 @@ public:
             *_sol = detail::ref(solution);
             this->setTranspose( transpose );
             solve_return_type ret;
-            this->nlSolver()->residual( _sol, residual );
-            this->nlSolver()->jacobian( _sol, jacobian );
+            // this is done with nonlinerarsolver
+            //this->nlSolver()->residual( _sol, residual );
+            //this->nlSolver()->jacobian( _sol, jacobian );
             if ( reuse_prec == false && reuse_jac == false )
                 ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
             else

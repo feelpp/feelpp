@@ -1696,7 +1696,7 @@ void MatrixPetscMPI<T>::init( const size_type m,
 
 
 
-#if 1
+#if 0
     // additional insertions will not be allowed if they generate
     // a new nonzero
     //ierr = MatSetOption (_M_mat, MAT_NO_NEW_NONZERO_LOCATIONS);
