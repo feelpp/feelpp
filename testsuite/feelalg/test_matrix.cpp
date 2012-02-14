@@ -142,7 +142,8 @@ public:
 
         Debug() << "saving petsc matrix in matlab\n";
         //mat.printMatlab("m");
-        mat.printMatlab(std::string("/tmp/mat.m") );
+        //mat.printMatlab(std::string("/tmp/mat.m") );
+        mat.printMatlab("mat.m");
         Debug() << "saving petsc matrix in matlab done\n";
 
     }
