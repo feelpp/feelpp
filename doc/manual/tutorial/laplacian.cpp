@@ -199,7 +199,10 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
                                                       _usenames=true,
                                                       _shape=shape,
                                                       _dim=Dim,
-                                                      _h=X[0] ) );
+                                                      _h=X[0] ),
+                                        _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
+                                        _partitions=this->comm().size()  );
+
 
     /**
      * The function space and some associated elements(functions) are then defined
