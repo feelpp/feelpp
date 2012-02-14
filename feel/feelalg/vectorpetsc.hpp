@@ -127,6 +127,17 @@ public:
         this->init(n, n_local, false);
     }
 
+    VectorPetsc ( DataMap const& dm, bool doInit=true )
+        :
+        super(dm),
+        M_comm(),
+        _M_destroy_vec_on_exit( true )
+    {
+        if (doInit)
+            this->init(dm.nDof(), dm.nLocalDofWithoutGhost(), false);
+    }
+
+
     /**
      * Constructor.  Creates a VectorPetsc assuming you already have a
      * valid PETSc Vec object.  In this case, v is NOT destroyed by the
@@ -137,6 +148,16 @@ public:
     VectorPetsc(Vec v)
         :
         super(),
+        M_comm(),
+        _M_destroy_vec_on_exit( false )
+    {
+        this->_M_vec = v;
+        this->M_is_initialized = true;
+    }
+
+    VectorPetsc(Vec v, DataMap const& dm)
+        :
+        super(dm),
         M_comm(),
         _M_destroy_vec_on_exit( false )
     {
@@ -252,6 +273,8 @@ public:
      */
     //@{
 
+    const bool destroy_vec_on_exit() const {return _M_destroy_vec_on_exit;}
+
     /**
      * @return dimension of the vector. This
      * function was formerly called \p n(), but
@@ -293,6 +316,7 @@ public:
      * calling VecDestroy()!
      */
     Vec vec () const { FEEL_ASSERT (_M_vec != 0).error( "invalid petsc vector" ); return _M_vec; }
+    Vec& vec ()  { FEEL_ASSERT (_M_vec != 0).error( "invalid petsc vector" ); return _M_vec; }
 
     //@}
 
@@ -768,6 +792,57 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
     CHKERRABORT(M_comm,ierr);
 
 }
+
+//----------------------------------------------------------------------------------------------------//
+//----------------------------------------------------------------------------------------------------//
+//----------------------------------------------------------------------------------------------------//
+//----------------------------------------------------------------------------------------------------//
+//----------------------------------------------------------------------------------------------------//
+
+template<typename T>
+class VectorPetscMPI : public VectorPetsc<T>
+{
+    typedef VectorPetsc<T> super;
+    typedef typename super::value_type value_type;
+
+public:
+
+    VectorPetscMPI()
+        :
+        super()
+    {}
+
+    VectorPetscMPI(Vec v, DataMap const& dm);
+
+    VectorPetscMPI(DataMap const& dm );
+
+    void init(const size_type N,
+              const size_type n_local,
+              const bool fast=false);
+
+    value_type operator() (const size_type i) const;
+
+    void set(size_type i, const value_type& value);
+
+    void add(const size_type i, const value_type& value);
+
+    void addVector(int* i, int n, value_type* v );
+
+    void clear();
+
+    void localize();
+
+    void close();
+
+    size_type firstLocalIndex() const;
+    size_type lastLocalIndex() const;
+
+private :
+
+    Vec _M_vecLocal;
+
+};
+
 } // Feel
 #endif /* HAVE_PETSC */
 #endif /* __VectorPetsc_H */

@@ -35,24 +35,44 @@ DataMap::DataMap()
     M_comm(),
     M_closed( false ),
     _M_n_dofs( 0 ),
+    _M_n_localWithoutGhost_df( ),
+    _M_n_localWithGhost_df( ),
     _M_first_df( ),
     _M_last_df(),
-    M_myglobalelements()
+    _M_first_df_globalcluster(),
+    _M_last_df_globalcluster(),
+    M_myglobalelements(),
+    M_mapGlobalProcessToGlobalCluster(),
+    M_mapGlobalClusterToGlobalProcess()
 {
+    _M_n_localWithoutGhost_df.resize( M_comm.size() );
+    _M_n_localWithGhost_df.resize( M_comm.size() );
     _M_first_df.resize( M_comm.size() );
     _M_last_df.resize( M_comm.size() );
+    _M_first_df_globalcluster.resize( M_comm.size() );
+    _M_last_df_globalcluster.resize( M_comm.size() );
 }
 DataMap::DataMap( size_type n, size_type n_local )
     :
     M_comm(),
     M_closed( false ),
     _M_n_dofs( n ),
+    _M_n_localWithoutGhost_df( ),
+    _M_n_localWithGhost_df( ),
     _M_first_df(),
     _M_last_df(),
-    M_myglobalelements()
+    _M_first_df_globalcluster(),
+    _M_last_df_globalcluster(),
+    M_myglobalelements(),
+    M_mapGlobalProcessToGlobalCluster(),
+    M_mapGlobalClusterToGlobalProcess()
 {
+    _M_n_localWithoutGhost_df.resize( M_comm.size() );
+    _M_n_localWithGhost_df.resize( M_comm.size() );
     _M_first_df.resize( M_comm.size() );
     _M_last_df.resize( M_comm.size() );
+    _M_first_df_globalcluster.resize( M_comm.size() );
+    _M_last_df_globalcluster.resize( M_comm.size() );
 
     FEEL_ASSERT (n_local <= n)
         ( n_local )( n )
@@ -110,13 +130,18 @@ DataMap::DataMap( size_type n, size_type n_local )
                 }
 
         }
-    else
+    else // sequential
         {
             M_first_local_index = 0;
             local_sizes[M_comm.rank()] = n_local;
 
             _M_first_df[M_comm.rank()] = 0;
             _M_last_df[M_comm.rank()] = n_local-1;
+            // mpi
+            _M_n_localWithoutGhost_df[M_comm.rank()]=n_local;
+            _M_n_localWithGhost_df[M_comm.rank()]=n_local;
+            _M_first_df_globalcluster[M_comm.rank()]=0;
+            _M_last_df_globalcluster[M_comm.rank()]=n_local-1;
         }
     if ( n == invalid_size_type_value )
         _M_n_dofs = _M_last_df[M_comm.rank()]+1;
@@ -165,9 +190,15 @@ DataMap::DataMap( DataMap const & dm )
     M_comm( dm.M_comm ),
     M_closed( dm.M_closed ),
     _M_n_dofs( dm._M_n_dofs ),
+    _M_n_localWithoutGhost_df( dm._M_n_localWithoutGhost_df ),
+    _M_n_localWithGhost_df( dm._M_n_localWithGhost_df ),
     _M_first_df( dm._M_first_df ),
     _M_last_df( dm._M_last_df ),
-    M_myglobalelements()
+    _M_first_df_globalcluster( dm._M_first_df_globalcluster),
+    _M_last_df_globalcluster( dm._M_last_df_globalcluster),
+    M_myglobalelements(),
+    M_mapGlobalProcessToGlobalCluster(dm.M_mapGlobalProcessToGlobalCluster),
+    M_mapGlobalClusterToGlobalProcess(dm.M_mapGlobalClusterToGlobalProcess)
 {}
 DataMap::~DataMap()
 {}
@@ -179,10 +210,15 @@ DataMap::operator=( DataMap const& dm )
         {
             M_closed = dm.M_closed;
             _M_n_dofs = dm._M_n_dofs;
+            _M_n_localWithoutGhost_df = dm._M_n_localWithoutGhost_df;
+            _M_n_localWithGhost_df = dm._M_n_localWithGhost_df;
             _M_first_df = dm._M_first_df;
             _M_last_df = dm._M_last_df;
+            _M_first_df_globalcluster = dm._M_first_df_globalcluster;
+            _M_last_df_globalcluster = dm._M_last_df_globalcluster;
             M_myglobalelements = dm.M_myglobalelements;
-
+            M_mapGlobalProcessToGlobalCluster = dm.M_mapGlobalProcessToGlobalCluster;
+            M_mapGlobalClusterToGlobalProcess = dm.M_mapGlobalClusterToGlobalProcess;
         }
     return *this;
 }
@@ -205,4 +241,41 @@ DataMap::myGlobalElements() const
     return M_myglobalelements;
 }
 
+
+
+void
+DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
+{
+    this->comm().barrier();
+    for (int proc = 0;proc<this->comm().size();++proc)
+        {
+            if (proc==this->comm().rank())
+                {
+                    __out << "\n";
+                    __out << "-----------------------------------------------------------------------\n"
+                          << "------------------showMeMapGlobalProcessToGlobalCluster----------------\n"
+                          << "-----------------------------------------------------------------------\n"
+                          << "rank : " << proc  << "\n"
+                          << "nDof : " << this->nDof() << "\n"
+                          << "nLocalDof : " << this->nLocalDof() << "\n"
+                          << "nLocalDofWithoutGhost : " << this->nLocalDofWithoutGhost() << "\n"
+                          << "nLocalDofWithGhost : " << this->nLocalDofWithGhost() << "\n"
+                          << "mapGlobalProcessToGlobalCluster().size() " << this->mapGlobalProcessToGlobalCluster().size() << "\n"
+                          << "-----------------------------------------------------------------------\n"
+                          << std::endl;
+                    for (size_type i=0 ; i<this->mapGlobalProcessToGlobalCluster().size() ;++i)
+                        {
+                            __out << i << " " << this->mapGlobalProcessToGlobalCluster()[i]
+                                  << " real proc " << procOnGlobalCluster(/*this->*/mapGlobalProcessToGlobalCluster()[i]) <<"\n";
+                        }
+                    __out << "-----------------------------------------------------------------------\n" << std::endl;
+                }
+            this->comm().barrier();
+            //this->comm().wait();
+        }
+
+
 }
+
+} // namespace Feel
+

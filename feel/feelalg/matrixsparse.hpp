@@ -114,13 +114,26 @@ public:
      */
     MatrixSparse ();
 
-    //MatrixSparse ( MatrixSparse const& m) { std::cout << "\n HOLA COPIE MATSPARSE\n"; }
+    MatrixSparse(DataMap const& dmRow, DataMap const& dmCol);
 
     /**
      * Destructor. Free all memory, but do not release the memory of
      * the sparsity structure.
      */
     virtual ~MatrixSparse ();
+
+    /**
+     * Return datamap for rows
+     */
+    DataMap const& mapRow() const { return M_mapRow; }
+
+    /**
+     * Return datamap for cols
+     */
+    DataMap const& mapCol() const { return M_mapCol; }
+
+    void setMapRow( DataMap const& d ) { M_mapRow=d; }
+    void setMapCol( DataMap const& d ) { M_mapCol=d; }
 
     /**
      * @returns true if the matrix has been initialized,
@@ -673,6 +686,13 @@ protected:
 
     std::vector < std::vector<int> > M_IndexSplit;
 
+    /**
+     * data distribution map of the vector over the processors
+     */
+    DataMap M_mapRow;
+    DataMap M_mapCol;
+
+
 };
 
 typedef MatrixSparse<double> d_sparse_matrix_type;
@@ -688,7 +708,14 @@ MatrixSparse<T>::MatrixSparse () :
     M_mprop( NON_HERMITIAN )
 {}
 
-
+template <typename T>
+inline
+MatrixSparse<T>::MatrixSparse (DataMap const& dmRow, DataMap const& dmCol ) :
+    _M_is_initialized(false),
+    M_mprop( NON_HERMITIAN ),
+    M_mapRow( dmRow ),
+    M_mapCol( dmCol )
+{}
 
 template <typename T>
 inline

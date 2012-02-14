@@ -292,6 +292,7 @@ VectorUblas<T,Storage>::operator= (const Vector<value_type> &V)
     for( size_type i = 0; i < this->localSize(); ++i )
         {
             _M_vec.operator()( i ) = V( V.firstLocalIndex() + i );
+            //_M_vec.operator()( i ) = V(  i );
 
         }
     this->outdateGlobalValues();
@@ -337,6 +338,16 @@ VectorUblas<T,Storage>::init ( const size_type n,
     if (!fast)
         this->zero();
 }
+
+//new!!!!!!!
+ template<typename T, typename Storage>
+ void
+VectorUblas<T,Storage>::init( DataMap const& dm )
+{
+    super1::init(dm);
+    this->init( dm.nDof(), dm.nLocalDofWithGhost(), false );
+}
+
 
 template<typename T, typename Storage>
 void

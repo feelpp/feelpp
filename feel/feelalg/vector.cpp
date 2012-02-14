@@ -100,7 +100,8 @@ Vector<T>::init (const size_type n,
                  const bool fast)
 {
     boost::ignore_unused_variable_warning( fast );
-    M_map=DataMap( n, nl );
+    //deja fait dans le constructeur!!
+    //M_map=DataMap( n, nl );
 }
 
 template <typename T>
@@ -117,12 +118,13 @@ Vector<T> & Vector<T>::operator= (const Vector<T>& v )
 {
     if ( this != &v )
         {
-
-            M_map = v.map();
+            // faut il le faire??
+            //M_map = v.map();
             //std::cout << "calling operator=(Vector)\n";
             //Debug() << "calling operator=(Vector)\n";
 
-            for( size_type i = 0; i < this->localSize(); ++i )
+            //for( size_type i = 0; i < this->localSize(); ++i )
+            for( size_type i = 0; i < M_map.nLocalDofWithGhost(); ++i )
                 {
                     this->set( i,  v( v.firstLocalIndex() + i ) );
                 }

@@ -83,6 +83,7 @@ public:
     virtual ~Vector ();
 
     DataMap const& map() const { return M_map; }
+    void setMap( DataMap const& d ) { M_map=d; }
 
     /**
      * @returns true if the vector has been initialized,
@@ -161,6 +162,17 @@ public:
     virtual void init (const size_type,
                        const bool = false);
 
+
+    // surement a virtualiser!!!
+    void init ( DataMap const& dm )
+    {
+        M_is_closed = false;
+        M_is_initialized = false;
+        M_map = dm;
+    }
+
+
+
     //   /**
     //    * Change the dimension to that of the
     //    * vector \p V. The same applies as for
@@ -236,7 +248,7 @@ public:
      */
     virtual size_type size () const
     {
-        return M_map.nGlobalElements();
+        return M_map.nDof();
     }
 
     /**
@@ -245,7 +257,7 @@ public:
      */
     virtual size_type localSize() const
     {
-        return M_map.nMyElements();
+        return M_map.nLocalDofWithGhost();
     }
 
     /**
