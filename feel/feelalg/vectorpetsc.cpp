@@ -771,9 +771,11 @@ VectorPetscMPI<T>::init(const size_type n,
     std::copy( this->map().mapGlobalProcessToGlobalCluster().begin(),
                this->map().mapGlobalProcessToGlobalCluster().end(),
                idx );
-
-    //ierr = ISCreateGeneral(this->comm(), idx.size(), &idx[0], PETSC_COPY_VALUES, &is);
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = ISCreateGeneral(this->comm(), n_idx, idx, PETSC_COPY_VALUES, &is);
+#else
+    ierr = ISCreateGeneral(this->comm(), n_idx, idx, &is);
+#endif
     CHKERRABORT(this->comm(),ierr);
 
     ierr=ISLocalToGlobalMappingCreateIS(is, &isLocToGlobMap);
@@ -787,11 +789,19 @@ VectorPetscMPI<T>::init(const size_type n,
     CHKERRABORT(this->comm(),ierr);
 
     // Clean up
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = ISDestroy(&is);
     CHKERRABORT(this->comm(),ierr);
 
     ierr = ISLocalToGlobalMappingDestroy(&isLocToGlobMap);
     CHKERRABORT(this->comm(),ierr);
+#else
+    ierr = ISDestroy(is);
+    CHKERRABORT(this->comm(),ierr);
+
+    ierr = ISLocalToGlobalMappingDestroy(isLocToGlobMap);
+    CHKERRABORT(this->comm(),ierr);
+#endif
 
     ierr = VecSetFromOptions(this->vec());
     CHKERRABORT(this->comm(),ierr);
@@ -879,8 +889,11 @@ VectorPetscMPI<T>::clear()
     if ((this->isInitialized()) && (this->destroy_vec_on_exit()))
     {
         int ierr=0;
-
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
         ierr = VecDestroy(&_M_vecLocal);
+#else
+        ierr = VecDestroy(_M_vecLocal);
+#endif
         CHKERRABORT(this->comm(),ierr);
 
     }
@@ -913,7 +926,12 @@ void VectorPetscMPI<T>::localize()
     std::copy( this->map().mapGlobalProcessToGlobalCluster().begin(),
                this->map().mapGlobalProcessToGlobalCluster().end(),
                idx );
+
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = ISCreateGeneral(this->comm(), n_idx, idx, PETSC_COPY_VALUES, &isGlob);
+#else
+    ierr = ISCreateGeneral(this->comm(), n_idx, idx, &isGlob);
+#endif
     CHKERRABORT(this->comm(),ierr);
 
     ierr = ISCreateStride(PETSC_COMM_SELF,n_idx,0,1,&isLoc);
@@ -934,6 +952,7 @@ void VectorPetscMPI<T>::localize()
     CHKERRABORT(this->comm(),ierr);
 
     // Clean up
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = ISDestroy (&isGlob);
     CHKERRABORT(this->comm(),ierr);
 
@@ -942,7 +961,16 @@ void VectorPetscMPI<T>::localize()
 
     ierr = VecScatterDestroy(&scatter);
     CHKERRABORT(this->comm(),ierr);
+#else
+    ierr = ISDestroy (isGlob);
+    CHKERRABORT(this->comm(),ierr);
 
+    ierr = ISDestroy (isLoc);
+    CHKERRABORT(this->comm(),ierr);
+
+    ierr = VecScatterDestroy(scatter);
+    CHKERRABORT(this->comm(),ierr);
+#endif
 }
 
 //----------------------------------------------------------------------------------------------------//

@@ -307,7 +307,7 @@ void MatrixPetsc<T>::init (const size_type m,
 #endif
 
 
-#if 1
+#if 0
     // additional insertions will not be allowed if they generate
     // a new nonzero
     //ierr = MatSetOption (_M_mat, MAT_NO_NEW_NONZERO_LOCATIONS);
@@ -1622,11 +1622,20 @@ void MatrixPetscMPI<T>::init( const size_type m,
                this->mapCol().mapGlobalProcessToGlobalCluster().end(),
                idxCol );
 
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = ISCreateGeneral(this->comm(), n_idxRow, idxRow, PETSC_COPY_VALUES, &isRow);
     CHKERRABORT(this->comm(),ierr);
 
-    ierr = ISCreateGeneral(this->comm(), n_idxCol, idxCol, PETSC_COPY_VALUES,&isCol);
+    ierr = ISCreateGeneral(this->comm(), n_idxCol, idxCol, PETSC_COPY_VALUES, &isCol);
     CHKERRABORT(this->comm(),ierr);
+#else
+    ierr = ISCreateGeneral(this->comm(), n_idxRow, idxRow, &isRow);
+    CHKERRABORT(this->comm(),ierr);
+
+    ierr = ISCreateGeneral(this->comm(), n_idxCol, idxCol, &isCol);
+    CHKERRABORT(this->comm(),ierr);
+
+#endif
 #endif
     ierr=ISLocalToGlobalMappingCreateIS(isRow, &isLocToGlobMapRow);
     CHKERRABORT(this->comm(),ierr);
@@ -1634,10 +1643,15 @@ void MatrixPetscMPI<T>::init( const size_type m,
     ierr=ISLocalToGlobalMappingCreateIS(isCol, &isLocToGlobMapCol);
     CHKERRABORT(this->comm(),ierr);
 
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = MatSetLocalToGlobalMapping(this->mat(),isLocToGlobMapRow,isLocToGlobMapCol);
+#else
+    ierr = MatSetLocalToGlobalMapping(this->mat(),isLocToGlobMapRow);
+#endif
     CHKERRABORT(this->comm(),ierr);
 
     // Clean up
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = ISDestroy(&isRow);
     CHKERRABORT(this->comm(),ierr);
 
@@ -1649,6 +1663,19 @@ void MatrixPetscMPI<T>::init( const size_type m,
 
     ierr = ISLocalToGlobalMappingDestroy(&isLocToGlobMapCol);
     CHKERRABORT(this->comm(),ierr);
+#else
+    ierr = ISDestroy(isRow);
+    CHKERRABORT(this->comm(),ierr);
+
+    ierr = ISDestroy(isCol);
+    CHKERRABORT(this->comm(),ierr);
+
+    ierr = ISLocalToGlobalMappingDestroy(isLocToGlobMapRow);
+    CHKERRABORT(this->comm(),ierr);
+
+    ierr = ISLocalToGlobalMappingDestroy(isLocToGlobMapCol);
+    CHKERRABORT(this->comm(),ierr);
+#endif
 
     //----------------------------------------------------------------------------------//
     // options
