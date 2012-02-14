@@ -51,10 +51,17 @@ struct compute_graph3
                 {
                     const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
                     const size_type n1_dof_on_proc    = space2->nLocalDof();
+#if !defined(FEEL_ENABLE_MPI_MODE)
                     const size_type first1_dof_on_proc = space2->dof()->firstDof( proc_id );
                     const size_type last1_dof_on_proc = space2->dof()->lastDof( proc_id );
                     const size_type first2_dof_on_proc = M_space1->dof()->firstDof( proc_id );
                     const size_type last2_dof_on_proc = M_space1->dof()->lastDof( proc_id );
+#else
+                    const size_type first1_dof_on_proc = space2->dof()->firstDofGlobalCluster( proc_id );
+                    const size_type last1_dof_on_proc = space2->dof()->lastDofGlobalCluster( proc_id );
+                    const size_type first2_dof_on_proc = M_space1->dof()->firstDofGlobalCluster( proc_id );
+                    const size_type last2_dof_on_proc = M_space1->dof()->lastDofGlobalCluster( proc_id );
+#endif
                     typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( n1_dof_on_proc,
                                                                                               first1_dof_on_proc, last1_dof_on_proc,
                                                                                               first2_dof_on_proc, last2_dof_on_proc ) );
@@ -101,10 +108,18 @@ struct compute_graph2
                 {
                     const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
                     const size_type n1_dof_on_proc    = M_space1->nLocalDof();
+#if !defined(FEEL_ENABLE_MPI_MODE)
                     const size_type first1_dof_on_proc = M_space1->dof()->firstDof( proc_id );
                     const size_type last1_dof_on_proc = M_space1->dof()->lastDof( proc_id );
                     const size_type first2_dof_on_proc = space2->dof()->firstDof( proc_id );
                     const size_type last2_dof_on_proc = space2->dof()->lastDof( proc_id );
+#else
+                    const size_type first1_dof_on_proc = M_space1->dof()->firstDofGlobalCluster( proc_id );
+                    const size_type last1_dof_on_proc = M_space1->dof()->lastDofGlobalCluster( proc_id );
+                    const size_type first2_dof_on_proc = space2->dof()->firstDofGlobalCluster( proc_id );
+                    const size_type last2_dof_on_proc = space2->dof()->lastDofGlobalCluster( proc_id );
+#endif
+
                     typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( n1_dof_on_proc,
                                                                                                first1_dof_on_proc, last1_dof_on_proc,
                                                                                                first2_dof_on_proc, last2_dof_on_proc ) );
@@ -176,11 +191,18 @@ public:
              std::vector<size_type> block_pattern=std::vector<size_type>(1,size_type(Pattern::HAS_NO_BLOCK_PATTERN)),
              bool diag_is_nonzero=false )
         :
+        M_comm(),
         _M_X1( Xh ),
         _M_X2( Yh ),
+#if !defined(FEEL_ENABLE_MPI_MODE)
         M_graph( new graph_type( Xh->nLocalDof(),
-                                 Xh->nDofStart(), Xh->nDofStart()+Xh->nLocalDof()-1,
-                                 Yh->nDofStart(), Yh->nDofStart()+Yh->nLocalDof()-1 ) ),
+                                 Xh->nDofStart(), Xh->nDofStart()+ Xh->nLocalDof()-1,
+                                 Yh->nDofStart(), Yh->nDofStart()+ Yh->nLocalDof()-1 ) ),
+#else
+        M_graph( new graph_type( Xh->nLocalDof(),
+                                 Xh->dof()->firstDofGlobalCluster(this->comm().rank()), Xh->dof()->lastDofGlobalCluster(this->comm().rank()),
+                                 Yh->dof()->firstDofGlobalCluster(this->comm().rank()), Yh->dof()->lastDofGlobalCluster(this->comm().rank()) ) ),
+#endif
         M_block_pattern(block_pattern)
         {
             // init block_pattern if empty
@@ -203,6 +225,7 @@ public:
         }
     Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh, size_type graph_hints, graph_ptrtype g )
         :
+        M_comm(),
         _M_X1( Xh ),
         _M_X2( Yh ),
         M_graph( g )
@@ -281,7 +304,12 @@ public:
     trial_space_ptrtype trialSpace() const { return _M_X2; }
     graph_ptrtype graph() const { return M_graph; }
     graph_ptrtype graph() { return M_graph; }
+    mpi::communicator const& comm() const { return M_comm; }
+
 private:
+    //! mpi communicator
+    mpi::communicator M_comm;
+
     test_space_ptrtype _M_X1;
     trial_space_ptrtype _M_X2;
     graph_ptrtype M_graph;
@@ -615,7 +643,6 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
     const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
-
     graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
                                                     first1_dof_on_proc, last1_dof_on_proc,
                                                     first2_dof_on_proc, last2_dof_on_proc ) );
@@ -863,11 +890,17 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     const size_type proc_id           = _M_X1->mesh()->comm().rank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
+#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
     const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
     const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
     const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
-
+#else // MPI
+    const size_type first1_dof_on_proc = _M_X1->dof()->firstDofGlobalCluster( proc_id );
+    const size_type last1_dof_on_proc = _M_X1->dof()->lastDofGlobalCluster( proc_id );
+    const size_type first2_dof_on_proc = _M_X2->dof()->firstDofGlobalCluster( proc_id );
+    const size_type last2_dof_on_proc = _M_X2->dof()->lastDofGlobalCluster( proc_id );
+#endif
     graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
                                                   first1_dof_on_proc, last1_dof_on_proc,
                                                   first2_dof_on_proc, last2_dof_on_proc ) );
@@ -900,8 +933,11 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
 
         // Get the global indices of the DOFs with support on this element
         //element_dof1 = _M_X1->dof()->getIndices( elem.id() );
+#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
         _M_X2->dof()->getIndicesSet( elem.id(), element_dof2 );
-
+#else // MPI
+        _M_X2->dof()->getIndicesSetOnGlobalCluster( elem.id(), element_dof2 );
+#endif
         // We can be more efficient if we sort the element DOFs
         // into increasing order
         //std::sort(element_dof1.begin(), element_dof1.end());
@@ -914,16 +950,19 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
         for (size_type i=0; i<n1_dof_on_element; i++)
         //BOOST_FOREACH( auto ig1, _M_X1->dof()->getIndices( elem.id() ) )
         {
+#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
             const size_type ig1 = _M_X1->dof()->localToGlobalId( elem.id(), i );
+#else // MPI
+            const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[_M_X1->dof()->localToGlobalId( elem.id(), i )];
+            auto theproc = _M_X1->dof()->procOnGlobalCluster(ig1);
+            // numLocal without ghosts ! very important for the graph with petsc
+            const size_type il1 = ig1 - _M_X1->dof()->firstDofGlobalCluster( theproc );
+#endif
             //const size_type ig1 = element_dof1[i];
             const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
             const int ncomp1 = i / ndofpercomponent1;
             const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
 
-            // Only bother if this matrix row will be stored
-            // on this processor.
-            //if ((ig1 >= first1_dof_on_proc) &&
-            //(ig1 <= last1_dof_on_proc))
             {
                 // This is what I mean
                 // assert ((ig - first_dof_on_proc) >= 0);
@@ -936,8 +975,13 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
 #endif
                 graph_type::row_type& row = sparsity_graph->row(ig1);
                 bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
+#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
                 row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
                 row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+#else // MPI
+                row.get<0>() = theproc ;
+                row.get<1>() = il1;
+#endif
                 Debug( 5051 ) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
 
                 if ( do_less )

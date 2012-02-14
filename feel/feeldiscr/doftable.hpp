@@ -271,6 +271,27 @@ public:
             ind[i] = boost::get<0>( _M_el_l2g[ id_el][ i ] );
     }
 
+    void getIndicesSetOnGlobalCluster( size_type id_el, std::vector<size_type>& ind ) const
+    {
+        const size_type s = getIndicesSize();
+        for( size_type i = 0; i < s; ++i )
+            {
+                ind[i] = this->mapGlobalProcessToGlobalCluster()[ boost::get<0>( _M_el_l2g[ id_el][ i ] ) ];
+            }
+    }
+
+    std::vector<size_type> getIndicesOnGlobalCluster( size_type id_el ) const
+    {
+        const size_type s = getIndicesSize();
+        std::vector<size_type> ind( s );
+
+        for( size_type i = 0; i < s; ++i )
+            {
+                ind[i] = this->mapGlobalProcessToGlobalCluster()[ boost::get<0>( _M_el_l2g[ id_el][ i ] ) ];
+            }
+        return ind;
+    }
+
     /**
      * \return the dof view
      */
@@ -356,6 +377,12 @@ public:
         this->_M_first_df[0] = 0;
         this->_M_last_df[0] = dofs.size()-1;
         this->_M_n_dofs = dofs.size();
+
+        int processor = this->comm().rank();
+        this->_M_n_localWithGhost_df[processor] = this->_M_last_df[processor] - this->_M_first_df[processor] + 1;
+        this->_M_n_localWithoutGhost_df[processor]=this->_M_n_localWithGhost_df[processor];
+        this->_M_first_df_globalcluster[processor]=this->_M_first_df[processor];
+        this->_M_last_df_globalcluster[processor]=this->_M_last_df[processor];
     }
 
     /**
@@ -376,6 +403,11 @@ public:
      * \return the local to global indices
      */
     localglobal_indices_type const& localToGlobalIndices( size_type ElId ) { return M_locglob_indices[ElId]; }
+
+    /**
+     * \return the local to global indices on global cluster
+     */
+    localglobal_indices_type const& localToGlobalIndicesOnCluster( size_type ElId ) {return M_locglobOnCluster_indices[ElId]; }
 
     /**
      * \return the signs of the global dof (=1 in nodal case, +-1 in modal case)
@@ -402,6 +434,16 @@ public:
                                    const uint16_type c = 0 ) const
     {
         return _M_el_l2g[ ElId][ fe_type::nLocalDof * c  + localNode ];
+    }
+
+    global_dof_type localToGlobalOnCluster( const size_type ElId,
+                                   const uint16_type localNode,
+                                   const uint16_type c = 0 ) const
+    {
+        auto resloc = _M_el_l2g[ ElId][ fe_type::nLocalDof * c  + localNode ];
+        return boost::make_tuple(this->mapGlobalProcessToGlobalCluster()[resloc.get<0>()],
+                                 resloc.get<1>(),
+                                 resloc.get<2>() );
     }
 
     global_dof_fromface_type faceLocalToGlobal( const size_type ElId,
@@ -752,10 +794,33 @@ public:
                 Debug(5015) << "[build] check that all elements dof were assigned: OK\n";
             }
 #endif // NDEBUG
-        Debug( 5015 ) << "[Dof::build] n_dof = " << this->nLocalDof() << "\n";
+        Debug( 5015 ) << "[Dof::build] n_dof = " << this->nLocalDofWithGhost() << "\n";
 
         Debug(5015) << "[build] call buildBoundaryDofMap()\n";
         this->buildBoundaryDofMap( M );
+
+        // multi process
+        if (M_comm.size()>1)
+            {
+#if defined(FEEL_ENABLE_MPI_MODE)
+                //std::cout << "[build] call buildGhostDofMap ()"<<std::endl;
+                this->buildGhostDofMap(M);
+#else
+                std::cerr << "ERROR : FEEL_ENABLE_MPI_MODE is OFF" << std::endl;
+                //throw std::logic_error( "ERROR : FEEL_ENABLE_MPI_MODE is OFF" );
+#endif
+            }
+        else
+            {
+#if defined(FEEL_ENABLE_MPI_MODE)
+                // in sequential : identity map
+                const size_type s = this->_M_n_localWithGhost_df[this->comm().rank()];
+                this->M_mapGlobalProcessToGlobalCluster.resize(s);
+                this->M_mapGlobalClusterToGlobalProcess.resize(s);
+                for ( size_type i=0; i<s ; ++i ) this->M_mapGlobalProcessToGlobalCluster[i]=i;
+                for ( size_type i=0; i<s ; ++i ) this->M_mapGlobalClusterToGlobalProcess[i]=i;
+#endif
+            }
 
         Debug(5015) << "[Dof::build] done building the map\n";
     }
@@ -785,7 +850,28 @@ public:
      */
     void buildBoundaryDofMap( mesh_type& mesh );
 
+#if defined(FEEL_ENABLE_MPI_MODE)
+    /**
+     * build the GlobalProcessToGlobalClusterDof table
+     */
+    void buildGhostDofMap( mesh_type& mesh );
 
+    /**
+     * subroutines
+     */
+    void buildGhostInterProcessDofMap( mesh_type& mesh,
+                                       std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof );
+    void buildDofNotPresent( mesh_type& mesh,
+                             std::set<int> & setInterProcessDofNotPresent);
+
+    void buildGlobalProcessToGlobalClusterDofMap(mesh_type& mesh,
+                                                 std::map<size_type,boost::tuple<size_type,size_type> > const & mapInterProcessDof,
+                                                 std::set<int> const& setInterProcessDofNotPresent);
+    void updateGhostGlobalDof(std::map<size_type,boost::tuple<size_type,size_type> > const& mapInterProcessDof,
+                              std::set<int> const& setInterProcessDofNotPresent,
+                              int procToUpdate);
+
+#endif
     /**
      * \return the dictionnary for the global dof
      */
@@ -1232,7 +1318,7 @@ private:
     void addVertexBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true>, mpl::int_<1>  )
     {
         BOOST_STATIC_ASSERT( face_type::numVertices );
-
+#if !defined(FEEL_ENABLE_MPI_MODE)
         // id of the element adjacent to the face
         // \warning NEED TO INVESTIGATE THIS
         size_type iElAd = __face_it->ad_first();
@@ -1241,7 +1327,30 @@ private:
         // local id of the face in its adjacent element
         uint16_type iFaEl = __face_it->pos_first();
         FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+#else // MPI
+        uint16_type iFaEl;
+        size_type iElAd;
 
+        if (__face_it->processId() == __face_it->proc_first())
+            {
+                iElAd = __face_it->ad_first();
+                FEEL_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+
+                // local id of the face in its adjacent element
+                iFaEl = __face_it->pos_first();
+                FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+            }
+        else
+            {
+                iElAd = __face_it->ad_second();
+                FEEL_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+
+                // local id of the face in its adjacent element
+                iFaEl = __face_it->pos_second();
+                FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+            }
+
+#endif
         // Loop number of Dof per vertex
         const int ncdof = is_product?nComponents:1;
         for( int c = 0; c < ncdof; ++c )
@@ -1260,7 +1369,7 @@ private:
     void addVertexBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true>, mpl::int_<2>  )
     {
         BOOST_STATIC_ASSERT( face_type::numVertices );
-
+#if !defined(FEEL_ENABLE_MPI_MODE)
         // id of the element adjacent to the face
         // \warning NEED TO INVESTIGATE THIS
         size_type iElAd = __face_it->ad_first();
@@ -1269,6 +1378,29 @@ private:
         // local id of the face in its adjacent element
         uint16_type iFaEl = __face_it->pos_first();
         FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+#else // MPI
+        uint16_type iFaEl;
+        size_type iElAd;
+
+        if (__face_it->processId() == __face_it->proc_first())
+            {
+                iElAd = __face_it->ad_first();
+                FEEL_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+
+                // local id of the face in its adjacent element
+                iFaEl = __face_it->pos_first();
+                FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+            }
+        else
+            {
+                iElAd = __face_it->ad_second();
+                FEEL_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+
+                // local id of the face in its adjacent element
+                iFaEl = __face_it->pos_second();
+                FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+            }
+#endif
 
         size_type ndofF = ( face_type::numVertices * fe_type::nDofPerVertex +
                             face_type::numEdges * fe_type::nDofPerEdge +
@@ -1320,6 +1452,7 @@ private:
     template<typename FaceIterator>
     void addEdgeBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true>, mpl::int_<2> )
     {
+#if !defined(FEEL_ENABLE_MPI_MODE)
         // id of the element adjacent to the face
         // \warning NEED TO INVESTIGATE THIS
         size_type iElAd = __face_it->ad_first();
@@ -1328,6 +1461,31 @@ private:
 
         // local id of the face in its adjacent element
         uint16_type iFaEl = __face_it->pos_first();
+#else // MPI
+        uint16_type iFaEl;
+        size_type iElAd;
+
+        if (__face_it->processId() == __face_it->proc_first())
+            {
+                iElAd = __face_it->ad_first();
+                FEEL_ASSERT( iElAd != invalid_size_type_value )
+                    ( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+
+                // local id of the face in its adjacent element
+                iFaEl = __face_it->pos_first();
+            }
+        else
+            {
+                iElAd = __face_it->ad_second();
+                FEEL_ASSERT( iElAd != invalid_size_type_value )
+                    ( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+
+                // local id of the face in its adjacent element
+                iFaEl = __face_it->pos_second();
+            }
+#endif
+
+
         FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
 #if !defined(NDEBUG)
         Debug( 5005 ) << " local face id : " << iFaEl << "\n";
@@ -1360,7 +1518,7 @@ private:
     void addEdgeBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true>, mpl::int_<3> )
     {
         //BOOST_STATIC_ASSERT( face_type::numEdges );
-
+#if !defined(FEEL_ENABLE_MPI_MODE)
         // id of the element adjacent to the face
         // \warning NEED TO INVESTIGATE THIS
         size_type iElAd = __face_it->ad_first();
@@ -1369,6 +1527,30 @@ private:
         // local id of the face in its adjacent element
         uint16_type iFaEl = __face_it->pos_first();
         FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+#else // MPI
+        uint16_type iFaEl;
+        size_type iElAd;
+
+        if (__face_it->processId() == __face_it->proc_first())
+            {
+                iElAd = __face_it->ad_first();
+                FEEL_ASSERT( iElAd != invalid_size_type_value )
+                    ( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+
+                // local id of the face in its adjacent element
+                iFaEl = __face_it->pos_first();
+            }
+        else
+            {
+                iElAd = __face_it->ad_second();
+                FEEL_ASSERT( iElAd != invalid_size_type_value )
+                    ( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+
+                // local id of the face in its adjacent element
+                iFaEl = __face_it->pos_second();
+            }
+#endif
+
 #if !defined(NDEBUG)
         Debug( 5005 ) << " local face id : " << iFaEl << "\n";
 #endif
@@ -1417,6 +1599,7 @@ private:
     template<typename FaceIterator>
     void addFaceBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true> )
     {
+#if !defined(FEEL_ENABLE_MPI_MODE)
         // id of the element adjacent to the face
         // \warning NEED TO INVESTIGATE THIS
         size_type iElAd = __face_it->ad_first();
@@ -1425,6 +1608,30 @@ private:
         // local id of the face in its adjacent element
         uint16_type iFaEl = __face_it->pos_first();
         FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+#else // MPI
+        uint16_type iFaEl;
+        size_type iElAd;
+
+        if (__face_it->processId() == __face_it->proc_first())
+            {
+                iElAd = __face_it->ad_first();
+                FEEL_ASSERT( iElAd != invalid_size_type_value )
+                    ( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+
+                // local id of the face in its adjacent element
+                iFaEl = __face_it->pos_first();
+            }
+        else
+            {
+                iElAd = __face_it->ad_second();
+                FEEL_ASSERT( iElAd != invalid_size_type_value )
+                    ( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+
+                // local id of the face in its adjacent element
+                iFaEl = __face_it->pos_second();
+            }
+#endif
+
 #if !defined(NDEBUG)
         Debug( 5005 ) << " local face id : " << iFaEl << "\n";
 #endif
@@ -1625,6 +1832,11 @@ private:
 
     vector_indices_type M_locglob_indices;
     vector_indices_type M_locglob_signs;
+
+    // multi process
+    vector_indices_type M_locglobOnCluster_indices;
+    vector_indices_type M_locglobOnCluster_signs;
+
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -1669,7 +1881,6 @@ DofTable<MeshType, FEType, PeriodicityType>::DofTable( fe_ptrtype const& _fe, pe
     _M_face_sign(),
     M_dof_indices(),
     M_periodicity( periodicity )
-
 {
 }
 
@@ -1982,16 +2193,21 @@ DofTable<MeshType, FEType, PeriodicityType>::initDofMap( mesh_type& M )
     // values that will allow to check whether we have a new dof or
     // not when building the table
     const size_type nV = M.numElements();
-    int ntldof = is_product?nComponents*nldof:nldof;
+    int ntldof = is_product?nComponents*nldof:nldof;//this->getIndicesSize();
     _M_el_l2g.resize( boost::extents[nV][ntldof] );
     M_locglob_indices.resize( nV );
     M_locglob_signs.resize( nV );
+#if defined(FEEL_ENABLE_MPI_MODE)
+    M_locglobOnCluster_indices.resize( nV );
+    M_locglobOnCluster_signs.resize( nV );
+#endif
     typedef Container::index index;
     for ( index i1 = 0; i1 < index(nV); ++i1 )
         for ( index i2 = 0; i2 < index(ntldof); ++i2 )
             _M_el_l2g[i1][i2] = boost::make_tuple(invalid_size_type_value,0,false); // 0 is the invalid value for the sign !
 
     _M_face_sign = ublas::scalar_vector<bool>(M.numFaces(), false);
+
     const bool doperm = (((Shape == SHAPE_TETRA) && (nOrder > 2) ) || ((Shape == SHAPE_HEXA) && (nOrder > 1) ));
     Debug( 5005 ) << "generateFacePermutations: " << doperm << "\n";
     generateFacePermutations( M, mpl::bool_<doperm>() );
@@ -2277,6 +2493,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
 
     typedef Container::index index;
 
+#if !defined(FEEL_ENABLE_MPI_MODE) // sequential if (M_comm.size()==1)
+
     const size_type n_proc  = M.comm().size();
 
     //! list of elements which have a periodic face Tag2
@@ -2318,9 +2536,15 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
                         }
                     Debug( 5005 ) << ostr.str() << "\n";
                 }
-        }
+            }
 #endif
-    this->_M_last_df[processor] = next_free_dof-1;
+            this->_M_last_df[processor] = next_free_dof-1;
+
+            // update info
+            this->_M_n_localWithGhost_df[processor] = this->_M_last_df[processor] - this->_M_first_df[processor] + 1;
+            this->_M_n_localWithoutGhost_df[processor]=this->_M_n_localWithGhost_df[processor];
+            this->_M_first_df_globalcluster[processor]=this->_M_first_df[processor];
+            this->_M_last_df_globalcluster[processor]=this->_M_last_df[processor];
         }
     this->_M_n_dofs = next_free_dof;
 
@@ -2360,7 +2584,65 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
         }
     }
 
+#else // MPI_MODE
+
+    // compute the number of dof on current processor
+    auto it_elt = M.beginElementWithProcessId( M.comm().rank() );
+    auto en_elt = M.endElementWithProcessId( M.comm().rank() );
+    //size_type n_elts = std::distance( it_elt, en_elt);
+    //Debug( 5005 ) << "[buildDofMap] n_elts =  " << n_elts << " on processor " << processor << "\n";
+
+    mpi::all_gather( M.comm(),
+                     start_next_free_dof,
+                     this->_M_first_df );
+
+    //if ( is_periodic || is_discontinuous_locally )
+    //    this->_M_first_df[processor] =  0;
+
+    size_type next_free_dof = start_next_free_dof;
+    for (;it_elt!=en_elt; ++it_elt )
+        {
+            this->addDofFromElement( *it_elt, next_free_dof, M.comm().rank() );
+        } // elements loop
+
+    mpi::all_gather( M.comm(),
+                     next_free_dof-1,
+                     this->_M_last_df );
+
+    // acess to _M_n_localWithGhost_df for each process
+    size_type mynDofWithGhost = this->_M_last_df[M.comm().rank()] - this->_M_first_df[M.comm().rank()] + 1;
+    mpi::all_gather( M.comm(),
+                     mynDofWithGhost,
+                     this->_M_n_localWithGhost_df );
+
+    // only true in sequential, redefine in buildDofGhostMap
+    this->_M_n_localWithoutGhost_df[M_comm.rank()]=this->_M_n_localWithGhost_df[M_comm.rank()];
+    this->_M_first_df_globalcluster[M_comm.rank()]=this->_M_first_df[M_comm.rank()];
+    this->_M_last_df_globalcluster[M_comm.rank()]=this->_M_last_df[M_comm.rank()];
+    this->_M_n_dofs = next_free_dof;
+
+
+    it_elt = M.beginElementWithProcessId( M.comm().rank() );
+    for( ; it_elt != en_elt; ++it_elt )
+        {
+            size_type elid= it_elt->id();
+            for( int i = 0; i < FEType::nLocalDof; ++i )
+                {
+                    int nc1 = (is_product?nComponents1:1);
+                    for( int c1 =0; c1 < nc1; ++c1 )
+                        {
+                            int ind = FEType::nLocalDof*c1+i;
+                            boost::tie( M_locglob_indices[elid][ind],
+                                        M_locglob_signs[elid][ind], boost::tuples::ignore) =
+                                localToGlobal( elid, i, c1 );
+                        }
+                }
+        }
+
+#endif // MPI_MODE
+
     generateDofPoints( M );
+
 }
 
 template<typename MeshType, typename FEType, typename PeriodicityType>
@@ -2379,8 +2661,13 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
     //
     // Face dof
     //
+#if defined(FEEL_ENABLE_MPI_MODE)
+    auto __face_it = M.facesWithProcessId(M.comm().rank()).first;
+    auto __face_en = M.facesWithProcessId(M.comm().rank()).second;
+#else
     typename mesh_type::face_const_iterator __face_it = M.beginFace();
     typename mesh_type::face_const_iterator __face_en = M.endFace();
+#endif
 
     const size_type nF = M.faces().size();
     int ntldof = is_product?nComponents*nDofF:nDofF;
@@ -2395,7 +2682,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
     Debug( 5005 ) << "[buildBoundaryDofMap] nb faces : " << nF << "\n";
     Debug( 5005 ) << "[buildBoundaryDofMap] nb dof faces : " << nDofF*nComponents << "\n";
 
-    __face_it = M.beginFace();
     for ( size_type nf = 0; __face_it != __face_en; ++__face_it, ++nf )
     {
         FEEL_ASSERT( __face_it->isConnectedTo0() )
@@ -2462,8 +2748,8 @@ DofTable<MeshType, FEType, PeriodicityType>::generateDofPoints(  mesh_type& M )
 
     gm_context_ptrtype __c( new gm_context_type( gm, *it_elt, __geopc ) );
 
-    std::vector<bool> dof_done( nLocalDof() );
-    M_dof_points.resize( nLocalDof() );
+    std::vector<bool> dof_done( nLocalDofWithGhost() );
+    M_dof_points.resize( nLocalDofWithGhost() );
     std::fill( dof_done.begin(), dof_done.end(), false );
     for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
     {
@@ -2479,7 +2765,7 @@ DofTable<MeshType, FEType, PeriodicityType>::generateDofPoints(  mesh_type& M )
                                 // get only the local dof
                                 //size_type thedofonproc = thedof - firstDof();
                                 thedof -= firstDof();
-                                FEEL_ASSERT( thedof < nLocalDof() )( thedof )( nLocalDof() )( firstDof() )( lastDof() )( it_elt->id() )( l )( c1 ).error ( "invalid local dof index");
+                                FEEL_ASSERT( thedof < nLocalDofWithGhost() )( thedof )( nLocalDofWithGhost() )( firstDof() )( lastDof() )( it_elt->id() )( l )( c1 ).error ( "invalid local dof index");
                                 if ( dof_done[ thedof ] == false )
                                     {
                                         std::set<uint16_type> lid;
@@ -2493,14 +2779,14 @@ DofTable<MeshType, FEType, PeriodicityType>::generateDofPoints(  mesh_type& M )
                     }
             }
     }
-    for ( size_type dof_id = 0; dof_id < nLocalDof() ; ++dof_id )
+    for ( size_type dof_id = 0; dof_id < nLocalDofWithGhost() ; ++dof_id )
         {
             FEEL_ASSERT( boost::get<1>(M_dof_points[dof_id]) >= firstDof() &&
                          boost::get<1>(M_dof_points[dof_id]) <= lastDof() )
-                ( dof_id )( firstDof() )( lastDof() )( nLocalDof() )
+                ( dof_id )( firstDof() )( lastDof() )( nLocalDofWithGhost() )
                 ( boost::get<1>(M_dof_points[dof_id]) )
                 ( boost::get<0>(M_dof_points[dof_id]) ).error( "invalid dof point" );
-            FEEL_ASSERT( dof_done[dof_id] == true )( dof_id )( nLocalDof() )( firstDof() )( lastDof() )( fe_type::nDim )( fe_type::nLocalDof ).warn( "invalid dof point" );
+            FEEL_ASSERT( dof_done[dof_id] == true )( dof_id )( nLocalDofWithGhost() )( firstDof() )( lastDof() )( fe_type::nDim )( fe_type::nLocalDof ).warn( "invalid dof point" );
         }
     Debug( 5005 ) << "[Dof::generateDofPoints] generating dof coordinates done\n";
 }
@@ -2625,5 +2911,16 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
     }
 }
 
+
+
+
+
 } // namespace Feel
+
+
+
+#if defined(FEEL_ENABLE_MPI_MODE)
+#include <feel/feeldiscr/doftablempi.hpp>
 #endif
+
+#endif //_DOFTABLE_HH

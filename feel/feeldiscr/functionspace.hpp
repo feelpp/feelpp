@@ -502,6 +502,7 @@ namespace Feel
         size_type _M_finish;
     };
 
+#if 0
     struct NLocalDof
     {
         NLocalDof( size_type start = 0, size_type size = invalid_size_type_value )
@@ -541,6 +542,65 @@ private:
     mutable size_type _M_cursor;
     size_type _M_finish;
 };
+#else // MPI
+    template< typename IsWithGhostType>
+    struct NLocalDof
+    {
+
+        NLocalDof( size_type start = 0, size_type size = invalid_size_type_value )
+            :
+            _M_cursor( start ),
+            _M_finish( size )
+        {}
+        template<typename Sig>
+        struct result;
+
+        template<typename T, typename S>
+#if BOOST_VERSION < 104200
+        struct result<NLocalDof(T,S)>
+#else
+        struct result<NLocalDof(S,T)>
+#endif
+            :
+            boost::remove_reference<S>
+        {};
+
+        template <typename T>
+        size_type
+        nLocalDof(T const& x, mpl::bool_<true> /**/) const
+        {
+            return x->nLocalDofWithGhost();
+        }
+
+        template <typename T>
+        size_type
+        nLocalDof(T const& x, mpl::bool_<false> /**/) const
+        {
+            return x->nLocalDofWithoutGhost();
+        }
+
+        template <typename T>
+        size_type
+        operator()(T const& x, size_type s ) const
+        {
+            size_type ret = s;
+            if ( _M_cursor < _M_finish )
+                ret += nLocalDof(x, mpl::bool_<IsWithGhostType::value>() );
+            ++_M_cursor;
+            return ret;
+        }
+
+        template <typename T>
+        size_type
+        operator()(size_type s, T const& x ) const
+        {
+            return this->operator()( x, s );
+        }
+    private:
+        mutable size_type _M_cursor;
+        size_type _M_finish;
+    };
+#endif // end MPI
 template< typename map_type >
 struct searchIndicesBySpace
 {
@@ -1870,7 +1930,7 @@ public:
         {
             size_type nbdof_start =  fusion::accumulate( this->functionSpaces(),
                                                          size_type( 0 ),
-                                                         detail::NLocalDof( 0, i ) );
+                                                         detail::NLocalDof<mpl::bool_<true> >( 0, i ) );
 
             typename mpl::at_c<functionspace_vector_type,i>::type space( _M_functionspace->template functionSpace<i>() );
             Debug( 5010 ) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
@@ -1891,7 +1951,7 @@ public:
         {
             size_type nbdof_start =  fusion::accumulate( _M_functionspace->functionSpaces(),
                                                          size_type( 0 ),
-                                                         detail::NLocalDof( 0, i ) );
+                                                         detail::NLocalDof<mpl::bool_<true> >( 0, i ) );
             typename mpl::at_c<functionspace_vector_type,i>::type space( _M_functionspace->template functionSpace<i>() );
 
             Debug( 5010 ) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
@@ -1990,7 +2050,8 @@ public:
         void setFunctionSpace( functionspace_ptrtype space )
         {
             _M_functionspace = space;
-            super::init( _M_functionspace->nDof(),  _M_functionspace->nLocalDof() );
+            super::init( _M_functionspace->map() );
+            //super::init( _M_functionspace->nDof(),  _M_functionspace->nLocalDof() );
         }
 
         BOOST_PARAMETER_MEMBER_FUNCTION((void),
@@ -2290,6 +2351,10 @@ public:
      */
     size_type nLocalDof() const { return this->nLocalDof( mpl::bool_<is_composite>() ); }
 
+    size_type nLocalDofWithGhost() const { return this->nLocalDofWithGhost( mpl::bool_<is_composite>() ); }
+
+    size_type nLocalDofWithoutGhost() const { return this->nLocalDofWithoutGhost( mpl::bool_<is_composite>() ); }
+
     /**
      * \return the distribution of the dofs among the processors
      */
@@ -2546,6 +2611,11 @@ private:
     size_type nLocalDof( mpl::bool_<false> ) const;
     size_type nLocalDof( mpl::bool_<true> ) const;
 
+    size_type nLocalDofWithGhost( mpl::bool_<false> ) const;
+    size_type nLocalDofWithGhost( mpl::bool_<true> ) const;
+    size_type nLocalDofWithoutGhost( mpl::bool_<false> ) const;
+    size_type nLocalDofWithoutGhost( mpl::bool_<true> ) const;
+
     friend class ComponentSpace;
     class ComponentSpace
     {
@@ -2696,7 +2766,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
             Debug( 5010 ) << "component space :: nb dof per component: " << _M_comp_space->nDofPerComponent() << "\n";
         }
 
-    detail::searchIndicesBySpace<proc_dist_map_type>( this, procDistMap);
+    //detail::searchIndicesBySpace<proc_dist_map_type>( this, procDistMap);
 
     Debug( 5010 ) << "calling init(<space>) end\n";
 
@@ -2739,7 +2809,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     procDistMap = fusion::accumulate( _M_functionspaces,
                                       emptyMap,
                                       detail::searchIndicesBySpace<proc_dist_map_type>() );
-
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -2764,7 +2833,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<true> ) const
 {
     Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof() );
+    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >() );
     Debug( 5010 ) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
@@ -2773,8 +2842,44 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<false> ) const
 {
-    return _M_dof->nLocalDof();
+    //return _M_dof->nLocalDof();
+    return _M_dof->nLocalDofWithGhost();
 }
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+size_type
+FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<true> ) const
+{
+    Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
+    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >() );
+    Debug( 5010 ) << "calling nLocalDof(<composite>) end\n";
+    return ndof;
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+size_type
+FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<false> ) const
+{
+    return _M_dof->nLocalDofWithGhost();
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+size_type
+FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<true> ) const
+{
+    Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
+    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<false> >() );
+    Debug( 5010 ) << "calling nLocalDof(<composite>) end\n";
+    return ndof;
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+size_type
+FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<false> ) const
+{
+    return _M_dof->nLocalDofWithoutGhost();
+}
+
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
