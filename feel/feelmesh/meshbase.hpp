@@ -33,6 +33,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/context.hpp>
+#include <feel/feelcore/worldcomm.hpp>
 
 namespace Feel
 {
@@ -237,6 +238,19 @@ public:
      */
     virtual void partition ( const uint16_type n_parts ) = 0;
 
+    /**
+     * \return the world comm
+     */
+    WorldComm const& worldComm() const { return M_worldComm; }
+
+    virtual void setWorldComm(WorldComm const& _worldComm ) = 0;
+
+    void setWorldCommMeshBase(WorldComm const& _worldComm )
+    {
+        M_worldComm = _worldComm;
+    }
+
+    mpi::communicator const& comm() const { return M_worldComm.localComm(); }
 
     //@}
 
@@ -313,7 +327,8 @@ private:
      */
     uint16_type M_n_parts;
 
-    mpi::communicator M_comm;
+    //mpi::communicator M_comm;
+    WorldComm M_worldComm;
 };
 }
 #endif /* __MeshBase_H */

@@ -116,6 +116,7 @@ public:
         M_shape( Shape ),
         M_npids( 1 ),
         M_pid( 0 ),
+        M_pidInPartition(0),
         M_neighor_pids(),
         M_idInPartition(),
         M_elist()
@@ -133,6 +134,7 @@ public:
         M_shape( shape ),
         M_npids( 1 ),
         M_pid( 0 ),
+        M_pidInPartition(0),
         M_neighor_pids(),
         M_idInPartition(),
         M_elist()
@@ -147,6 +149,7 @@ public:
         M_shape( __me.M_shape ),
         M_npids( __me.M_npids ),
         M_pid( __me.M_pid ),
+        M_pidInPartition( __me.M_pidInPartition ),
         M_neighor_pids( __me.M_neighor_pids ),
         M_idInPartition( __me.M_idInPartition),
         M_elist( __me.M_elist )
@@ -162,6 +165,7 @@ public:
                 M_shape = __me.M_shape;
                 M_npids = __me.M_npids;
                 M_pid = __me.M_pid;
+                M_pidInPartition = __me.M_pidInPartition;
                 M_neighor_pids = __me.M_neighor_pids;
                 M_idInPartition = __me.M_idInPartition;
                 M_elist = __me.M_elist;
@@ -347,8 +351,10 @@ public:
      */
     bool isGhostCell() const
     {
-        mpi::communicator world;
-        return (world.rank()!=M_pid);
+        //return (this->worldComm().localRank()!=M_pid);
+        //mpi::communicator world;
+        //return (world.rank()!=M_pid);
+        return (M_pidInPartition!=M_pid);
     }
 
     /**
@@ -361,6 +367,12 @@ public:
      & \param pid processor id
      */
     void setProcessId( uint16_type pid )  { M_pid = pid ; }
+
+    /**
+     * set the processor id of the entity
+     & \param pid processor id
+     */
+    void setProcessIdInPartition( uint16_type pid )  { M_pidInPartition = pid ; }
 
     /**
      * \return the partition id
@@ -521,6 +533,7 @@ private:
 
     uint16_type M_npids;
     uint16_type M_pid;
+    uint16_type M_pidInPartition;
     std::vector<int> M_neighor_pids;
     std::map<uint16_type, size_type> M_idInPartition;
 

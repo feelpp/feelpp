@@ -134,6 +134,10 @@ public:
      */
     edges_type const& edges() const { return _M_edges; }
 
+    /**
+     * \return the world communicatior
+     */
+    WorldComm const& worldCommFaces() const { return _M_worldCommEdges; }
 
     /**
      * \return true if container is empty, false otherwise
@@ -329,10 +333,12 @@ public:
         return *_M_edges.insert( f ).first;
     }
 
+    void setWorldCommEdges(WorldComm const& _worldComm) { _M_worldCommEdges = _worldComm; }
+
     //@}
 
 private:
-
+    WorldComm _M_worldCommEdges;
     edges_type _M_edges;
 };
 /// \endcond
