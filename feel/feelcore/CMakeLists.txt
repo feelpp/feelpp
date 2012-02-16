@@ -33,7 +33,8 @@ set(SRC
   debug.cpp
   typeinfo.cpp
   smartassert.cpp
-  pslogger.cpp )
+  pslogger.cpp
+  worldcomm.cpp )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelcore "${SRC};${HDR}")
