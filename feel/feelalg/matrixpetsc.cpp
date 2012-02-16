@@ -516,6 +516,18 @@ void MatrixPetsc<T>::clear ()
         ierr = PETSc::MatDestroy (_M_mat);
         CHKERRABORT(this->comm(),ierr);
 
+        for (int i=0;i< _M_petscIS.size(); ++i)
+            {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+                ierr = ISDestroy(&_M_petscIS[i]);
+                CHKERRABORT(this->comm(),ierr);
+#else
+                ierr = ISDestroy(_M_petscIS[i]);
+                CHKERRABORT(this->comm(),ierr);
+#endif
+            }
+
+
         this->setInitialized( false );
     }
 }
@@ -846,6 +858,7 @@ MatrixPetsc<T>::addMatrix (const T a_in, MatrixSparse<T> &X_in)
     if (this->comm().size()>1)
         {
             ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)DIFFERENT_NONZERO_PATTERN);
+            //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SAME_NONZERO_PATTERN);
         }
     else
         {
@@ -1676,6 +1689,8 @@ void MatrixPetscMPI<T>::init( const size_type m,
     ierr = ISLocalToGlobalMappingDestroy(isLocToGlobMapCol);
     CHKERRABORT(this->comm(),ierr);
 #endif
+    delete idxRow;
+    delete idxCol;
 
     //----------------------------------------------------------------------------------//
     // options

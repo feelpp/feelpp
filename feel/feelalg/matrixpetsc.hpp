@@ -502,6 +502,8 @@ public :
 
     MatrixPetscMPI(Mat m, DataMap const& dmRow, DataMap const& dmCol);
 
+    ~MatrixPetscMPI() { this->clear(); }
+
     void init (const size_type m,
                const size_type n,
                const size_type m_l,
