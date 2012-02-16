@@ -44,6 +44,7 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/factory.hpp>
 #include <feel/feelcore/singleton.hpp>
+#include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelmesh/meshmover.hpp>
@@ -219,6 +220,9 @@ public:
      */
     bool usePhysicalNames() const { return M_usePhysicalNames; }
 
+    //! \return the world comm
+    WorldComm const& worldComm() const { return M_worldComm; }
+
     //! \return the nnumber of partitions
     int numberOfPartitions() const { return M_partitions; }
 
@@ -340,8 +344,10 @@ public:
      */
     void usePhysicalNames( bool option ) { M_usePhysicalNames = option; }
 
+    //! set the communicator
+    void setWorldComm(WorldComm const& _worldcomm) { M_worldComm = _worldcomm; }
 
-    //! set the nnumber of partitions
+    //! set the number of partitions
     void setNumberOfPartitions( int n ) { M_partitions = n; }
 
     //! set save msh file by partitions
@@ -421,7 +427,8 @@ private:
     std::string  prefix( std::string const& __name, uint16_type dim ) const;
 
 protected:
-    mpi::communicator M_comm;
+    //! communicator
+    WorldComm M_worldComm;
 
     //! mesh dimension
     int M_dimension;
@@ -676,6 +683,7 @@ BOOST_PARAMETER_FUNCTION(
      (partitions,   *(boost::is_integral<mpl::_>), 1 )
      (partition_file,   *(boost::is_integral<mpl::_>), 0 )
      (partitioner,   *(boost::is_integral<mpl::_>), GMSH_PARTITIONER_CHACO )
+     (worldcomm,      *, WorldComm() )
         )
     )
 {
@@ -683,43 +691,48 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
-    desc->setNumberOfPartitions( partitions );
-    desc->setPartitioner( partitioner );
-    desc->setMshFileByPartition( partition_file );
+    _mesh->setWorldComm(worldcomm);
+    if (worldcomm.isActive())
+        {
+            desc->setWorldComm(worldcomm);
+            desc->setNumberOfPartitions( partitions );
+            desc->setPartitioner( partitioner );
+            desc->setMshFileByPartition( partition_file );
 
-    std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
+            std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
 
+            // refinement if option is enabled to a value greater or equal to 1
+            if ( refine )
+                {
+                    Debug() << "Refine mesh ( level: " << refine << ")\n";
+                    Gmsh gmsh;
+                    fname = gmsh.refine( fname, refine, parametricnodes );
+                }
 
-    // refinement if option is enabled to a value greater or equal to 1
-    if ( refine )
-    {
-        Debug() << "Refine mesh ( level: " << refine << ")\n";
-        Gmsh gmsh;
-        fname = gmsh.refine( fname, refine, parametricnodes );
-    }
+            ImporterGmsh<_mesh_type> import( fname, FEEL_GMSH_FORMAT_VERSION, worldcomm );
 
-    ImporterGmsh<_mesh_type> import( fname );
+            // need to replace physical_regions by elementary_regions for specific meshes
+            if (physical_are_elementary_regions)
+                {
+                    import.setElementRegionAsPhysicalRegion(physical_are_elementary_regions);
+                }
 
-    // need to replace physical_regions by elementary_regions for specific meshes
-    if (physical_are_elementary_regions)
-      {
-	import.setElementRegionAsPhysicalRegion(physical_are_elementary_regions);
-      }
+            _mesh->accept( import );
 
-    _mesh->accept( import );
+            if ( update )
+                {
+                    _mesh->components().reset();
+                    _mesh->components().set( update );
+                    _mesh->updateForUse();
+                }
+            else
+                {
+                    _mesh->components().reset();
+                }
 
-    if ( update )
-    {
-        _mesh->components().reset();
-        _mesh->components().set( update );
-        _mesh->updateForUse();
-    }
-    else
-    {
-        _mesh->components().reset();
-    }
-    if ( straighten && _mesh_type::nOrder > 1 )
-        return straightenMesh( _mesh );
+            if ( straighten && _mesh_type::nOrder > 1 )
+                return straightenMesh( _mesh );
+        }
     return _mesh;
 }
 
