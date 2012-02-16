@@ -2228,7 +2228,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 
     typedef Container::index index;
 
-    const size_type n_proc  = M.comm().size();
+    const size_type n_proc  = M.worldComm().localSize();
 
     //! list of elements which have a periodic face Tag2
     periodic_element_list_type periodic_elements;
@@ -2495,7 +2495,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
 
 #if !defined(FEEL_ENABLE_MPI_MODE) // sequential if (M_comm.size()==1)
 
-    const size_type n_proc  = M.comm().size();
+    const size_type n_proc  = M.worldComm().localSize();
 
     //! list of elements which have a periodic face Tag2
     std::list<std::pair<element_type const*, face_type const*> > periodic_elements;
@@ -2552,7 +2552,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     Debug( 5005 ) << " n global dof " << nDof() << "\n";
     Debug( 5005 ) << " n local dof " << nLocalDof() << "\n";
 #endif
-    for (size_type processor=0; processor<M.comm().size(); processor++)
+    for (size_type processor=0; processor<M.worldComm().localSize(); processor++)
         {
             Debug( 5005 ) << "o processor " << processor << "\n";
             Debug( 5005 ) << "  - n dof on proc " << nDofOnProcessor(processor) << "\n";
@@ -2587,13 +2587,17 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
 #else // MPI_MODE
 
     // compute the number of dof on current processor
-    auto it_elt = M.beginElementWithProcessId( M.comm().rank() );
-    auto en_elt = M.endElementWithProcessId( M.comm().rank() );
+    auto it_elt = M.beginElementWithProcessId( M.worldComm().localRank() );
+    auto en_elt = M.endElementWithProcessId( M.worldComm().localRank() );
     //size_type n_elts = std::distance( it_elt, en_elt);
     //Debug( 5005 ) << "[buildDofMap] n_elts =  " << n_elts << " on processor " << processor << "\n";
 
-    mpi::all_gather( M.comm(),
-                     start_next_free_dof,
+    size_type theFirstDf = start_next_free_dof;
+    if ( is_periodic || is_discontinuous_locally )
+        theFirstDf = 0;
+
+    mpi::all_gather( M.worldComm().localComm(),
+                     theFirstDf,//start_next_free_dof,
                      this->_M_first_df );
 
     //if ( is_periodic || is_discontinuous_locally )
@@ -2602,16 +2606,16 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     size_type next_free_dof = start_next_free_dof;
     for (;it_elt!=en_elt; ++it_elt )
         {
-            this->addDofFromElement( *it_elt, next_free_dof, M.comm().rank() );
+            this->addDofFromElement( *it_elt, next_free_dof, M.worldComm().localRank() );
         } // elements loop
 
-    mpi::all_gather( M.comm(),
+    mpi::all_gather( M.worldComm().localComm(),
                      next_free_dof-1,
                      this->_M_last_df );
 
     // acess to _M_n_localWithGhost_df for each process
-    size_type mynDofWithGhost = this->_M_last_df[M.comm().rank()] - this->_M_first_df[M.comm().rank()] + 1;
-    mpi::all_gather( M.comm(),
+    size_type mynDofWithGhost = this->_M_last_df[M.worldComm().localRank()] - this->_M_first_df[M.worldComm().localRank()] + 1;
+    mpi::all_gather( M.worldComm().localComm(),
                      mynDofWithGhost,
                      this->_M_n_localWithGhost_df );
 
@@ -2622,7 +2626,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     this->_M_n_dofs = next_free_dof;
 
 
-    it_elt = M.beginElementWithProcessId( M.comm().rank() );
+    it_elt = M.beginElementWithProcessId( M.worldComm().localRank() );
     for( ; it_elt != en_elt; ++it_elt )
         {
             size_type elid= it_elt->id();
@@ -2662,8 +2666,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
     // Face dof
     //
 #if defined(FEEL_ENABLE_MPI_MODE)
-    auto __face_it = M.facesWithProcessId(M.comm().rank()).first;
-    auto __face_en = M.facesWithProcessId(M.comm().rank()).second;
+    auto __face_it = M.facesWithProcessId(M.worldComm().localRank()).first;
+    auto __face_en = M.facesWithProcessId(M.worldComm().localRank()).second;
 #else
     typename mesh_type::face_const_iterator __face_it = M.beginFace();
     typename mesh_type::face_const_iterator __face_en = M.endFace();
@@ -2740,8 +2744,8 @@ DofTable<MeshType, FEType, PeriodicityType>::generateDofPoints(  mesh_type& M )
 
     //const uint16_type ndofv = fe_type::nDof;
 
-    element_const_iterator it_elt = M.beginElementWithProcessId( M.comm().rank() );
-    element_const_iterator en_elt = M.endElementWithProcessId( M.comm().rank() );
+    element_const_iterator it_elt = M.beginElementWithProcessId( M.worldComm().localRank() );
+    element_const_iterator en_elt = M.endElementWithProcessId( M.worldComm().localRank() );
 
     if ( it_elt == en_elt )
         return;
