@@ -152,7 +152,7 @@ Mesh<Shape, T>::updateForUse()
             Debug( 4015 ) << "Compute adjacency graph done in " << ti.elapsed() << "\n";
 #if 0
             // partition mesh
-            if ( this->components().test( MESH_PARTITION ) || ( M_comm.size() > 1 ) )
+            if ( this->components().test( MESH_PARTITION ) || ( this->worldComm().localSize() > 1 ) )
                 {
                     boost::timer ti1;
                     this->partition();
@@ -167,7 +167,7 @@ Mesh<Shape, T>::updateForUse()
                     // update permutation of entities of co-dimension 1
                     this->updateEntitiesCoDimensionOnePermutation();
                     // update in ghost cells of entities of co-dimension 1
-                    //if (M_comm.size()>1)
+                    //if (this->worldComm().localSize()>1)
                     //    this->updateEntitiesCoDimensionOneGhostCell();
 
                     Debug( 4015 ) << "[Mesh::updateForUse] update entities of codimension 1 : " << ti.elapsed() << "\n";
@@ -236,7 +236,7 @@ Mesh<Shape, T>::updateForUse()
                     }
             }
 #if defined(FEEL_ENABLE_MPI_MODE)
-            if ( this->components().test( MESH_UPDATE_FACES ) && this->comm().size()>1 )
+            if ( this->components().test( MESH_UPDATE_FACES ) && this->worldComm().localSize()>1 )
                 {
                     this->updateEntitiesCoDimensionOneGhostCell();
                 }
@@ -479,6 +479,8 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
 {
     boost::timer ti;
     face_type face;
+    //face.setWorldComm(this->worldComm());
+    face.setProcessIdInPartition(this->worldComm().localRank());
 
     std::map<std::set<int>, size_type > _faces;
     typename std::map<std::set<int>, size_type >::iterator _faceit;
@@ -541,7 +543,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                             __f.setId( _faceit->second );
 
                             // set the id for this partition
-                            __f.setIdInPartition(this->comm().rank(),__f.id());
+                            __f.setIdInPartition(this->worldComm().localRank(),__f.id());
 
 #if !defined( NDEBUG )
                             Debug( 4015 ) << "set face id " << __f.id()
@@ -599,7 +601,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                             face.setProcessId( __element.processId() );
 
                             // set the id for this partition
-                            face.setIdInPartition(this->comm().rank(),face.id());
+                            face.setIdInPartition(this->worldComm().localRank(),face.id());
 
                             // set the vertices of the face
                             for ( size_type k = 0;k < face_type::numPoints;++k )
@@ -701,10 +703,10 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                                     update1( face );
                                     face.setOnBoundary( false );
                                     // force processId equal to M_comm.rank() if face on interprocessfaces
-                                    if (face.processId()!=M_comm.rank())
+                                    if (face.processId()!=this->worldComm().localRank())
                                         {
-                                            if ( (face.element0().processId()==M_comm.rank()) || (face.element1().processId()==M_comm.rank()) )
-                                                face.setProcessId(M_comm.rank());
+                                            if ( (face.element0().processId()==this->worldComm().localRank()) || (face.element1().processId()==this->worldComm().localRank()) )
+                                                face.setProcessId(this->worldComm().localRank());
                                         }
 
                                     this->faces().replace( __fit, face );
@@ -784,10 +786,10 @@ void
 Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
 {
     //std::cout << "[Mesh::updateEntitiesCoDimensionOneGhostCell] start" << std::endl;
-    std::vector<int> nbMsgToSend(M_comm.size());
+    std::vector<int> nbMsgToSend(this->worldComm().localSize());
     std::fill(nbMsgToSend.begin(),nbMsgToSend.end(),0);
 
-    std::vector< std::map<int,int> > mapMsg(M_comm.size());
+    std::vector< std::map<int,int> > mapMsg(this->worldComm().localSize());
 
     auto iv = this->beginGhostElement();
     auto en = this->endGhostElement();
@@ -797,9 +799,9 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
             int IdProcessOfGhost = __element.processId();
             int idInPartition = __element.idInPartition(IdProcessOfGhost);
             // send
-            M_comm.send(IdProcessOfGhost , nbMsgToSend[IdProcessOfGhost], idInPartition);
+            this->worldComm().localComm().send(IdProcessOfGhost , nbMsgToSend[IdProcessOfGhost], idInPartition);
 #if 0
-            std::cout<< "I am the proc" << M_comm.rank()<<" , I send to proc " << IdProcessOfGhost
+            std::cout<< "I am the proc" << this->worldComm().localRank()<<" , I send to proc " << IdProcessOfGhost
                      <<" with tag "<< nbMsgToSend[IdProcessOfGhost]
                      << " idSend " << idInPartition
                      << " it_ghost->G() " << __element.G()
@@ -814,22 +816,21 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
     //------------------------------------------------------------------------------------------------//
     // counter of msg received for each process
     std::vector<int> nbMsgToRecv;
-    mpi::all_to_all(M_comm,
+    mpi::all_to_all(this->worldComm().localComm(),
                     nbMsgToSend,
                     nbMsgToRecv);
 
-
     //------------------------------------------------------------------------------------------------//
     // recv id asked and re-send set of face id
-    for (int proc=0; proc<M_comm.size();++proc)
+    for (int proc=0; proc<this->worldComm().localSize();++proc)
         {
             for ( int cpt=0;cpt<nbMsgToRecv[proc];++cpt)
                 {
                     int idRecv;
                     //recv
-                    M_comm.recv( proc, cpt, idRecv);
+                    this->worldComm().localComm().recv( proc, cpt, idRecv);
 #if 0
-                    std::cout<< "I am the proc" << M_comm.rank()<<" I receive to proc " << proc
+                    std::cout<< "I am the proc" << this->worldComm().localRank()<<" I receive to proc " << proc
                              <<" with tag "<< cpt
                              << " idRecv " << idRecv
                              << " it_ghost->G() " << this->element(idRecv).G()
@@ -862,21 +863,21 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
                                 }
                         }
                     // response
-                    M_comm.send( proc, cpt, idFaces );
+                    this->worldComm().localComm().send( proc, cpt, idFaces );
                 }
         }
 
     //------------------------------------------------------------------------------------------------//
     // get response to initial request and update Feel::Mesh::Faces data
-    for (int proc=0; proc<M_comm.size();++proc)
+    for (int proc=0; proc<this->worldComm().localSize();++proc)
         {
             for ( int cpt=0;cpt<nbMsgToSend[proc];++cpt)
                 {
                     std::vector<float/*int*/> idFacesRecv((1+nDim)*this->numLocalFaces());
                     //recv
-                    M_comm.recv( proc, cpt, idFacesRecv);
+                    this->worldComm().localComm().recv( proc, cpt, idFacesRecv);
 #if 0
-                    std::cout<< "I am the proc " << M_comm.rank()<<" I receive to proc " << proc
+                    std::cout<< "I am the proc " << this->worldComm().localRank()<<" I receive to proc " << proc
                              <<" with tag "<< cpt
                              << " idFacesRecv " << idFacesRecv[0] << " " << idFacesRecv[1] << " "<< idFacesRecv[2]
                              << std::endl;
@@ -915,7 +916,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
                                     else if (nRealDim==2)
                                         {
 #if 0
-                                            std::cout << "rank " << M_comm.rank() << " bary j2 "<< j2 << " " << theelt.barycenter() << " " << theelt.faceBarycenter(j2) << " "
+                                            std::cout << "rank " << this->worldComm().localRank() << " bary j2 "<< j2 << " " << theelt.barycenter() << " " << theelt.faceBarycenter(j2) << " "
                                                       << ublas::column(glas::average(hola.G()),0) << " "
                                                       << hola/*theelt.face(j2)*/.barycenter()[0] << " " << idFacesRecv[(1+nDim)*j+1] << " "
                                                       << theelt.face(j2).barycenter()[1] << " " << idFacesRecv[(1+nDim)*j+2] << std::endl;
@@ -965,8 +966,8 @@ Mesh<Shape, T>::check() const
 {
 #if !defined( NDEBUG )
     Debug( 4015 ) << "[Mesh::check] numLocalFaces = " << this->numLocalFaces() << "\n";
-    element_iterator iv = this->beginElementWithProcessId( M_comm.rank() );
-    element_iterator en = this->endElementWithProcessId( M_comm.rank() );
+    element_iterator iv = this->beginElementWithProcessId( this->worldComm().localRank() );
+    element_iterator en = this->endElementWithProcessId( this->worldComm().localRank() );
     //boost::tie( iv, en ) = this->elementsRange();
     for ( ;iv != en; ++iv )
         {
@@ -1026,7 +1027,7 @@ Mesh<Shape, T>::findNeighboringProcessors()
 {
     // Don't need to do anything if there is
     // only one processor.
-    if (M_comm.size() == 1)
+    if (this->worldComm().localSize() == 1)
         return;
 
 #ifdef HAVE_MPI
@@ -1034,7 +1035,7 @@ Mesh<Shape, T>::findNeighboringProcessors()
     _M_neighboring_processors.clear();
 
     // Get the bounding sphere for the local processor
-    Sphere bounding_sphere = processorBoundingSphere (*this, M_comm.rank() );
+    Sphere bounding_sphere = processorBoundingSphere (*this, this->worldComm().localRank() );
 
     // Just to be sure, increase its radius by 10%.  Sure would suck to
     // miss a neighboring processor!
@@ -1044,7 +1045,7 @@ Mesh<Shape, T>::findNeighboringProcessors()
     {
         std::vector<float>
             send (4,                         0),
-            recv (4*M_comm.size(), 0);
+            recv (4*this->worldComm().localSize(), 0);
 
         send[0] = bounding_sphere.center()(0);
         send[1] = bounding_sphere.center()(1);
@@ -1053,10 +1054,10 @@ Mesh<Shape, T>::findNeighboringProcessors()
 
         MPI_Allgather (&send[0], send.size(), MPI_FLOAT,
                        &recv[0], send.size(), MPI_FLOAT,
-                       M_comm );
+                       this->worldComm().localComm() );
 
 
-        for (unsigned int proc=0; proc<M_comm.size(); proc++)
+        for (unsigned int proc=0; proc<this->worldComm().localSize(); proc++)
             {
                 const Point center (recv[4*proc+0],
                                     recv[4*proc+1],
@@ -1071,7 +1072,7 @@ Mesh<Shape, T>::findNeighboringProcessors()
             }
 
         // Print out the _neighboring_processors list
-        Debug( 4015 ) << "Processor " << M_comm.rank() << " intersects:\n";
+        Debug( 4015 ) << "Processor " << this->worldComm().localRank() << " intersects:\n";
         for (unsigned int p=0; p< _M_neighboring_processors.size(); p++)
             Debug( 4015 ) << " - proc " << _M_neighboring_processors[p] << "\n";
     }

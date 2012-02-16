@@ -36,6 +36,7 @@
 #include <boost/signal.hpp>
 
 #include <feel/feelcore/context.hpp>
+//#include <feel/feelcore/worldcomm.hpp>
 
 #include <feel/feelmesh/mesh0d.hpp>
 #include <feel/feelmesh/mesh1d.hpp>
@@ -243,12 +244,16 @@ public:
     {
         return _M_e2f[e][n];
     }
-
+#if 0
     /**
-     * \return the communicator
+     * \return the world comm
      */
-    mpi::communicator const& comm() const { return M_comm; }
+    WorldComm const& worldComm() const { return _M_worldComm; }
 
+    void setWorldComm(WorldComm const& _worldComm ) { _M_worldComm = _worldComm; }
+
+    mpi::communicator const& comm() const { return _M_worldComm.localComm(); }
+#endif
     //@}
 
     /** @name  Mutators
@@ -805,7 +810,8 @@ private:
 
 private:
 
-    mpi::communicator M_comm;
+    //! communicator
+    //WorldComm _M_worldComm;
 
     gm_ptrtype _M_gm;
     gm1_ptrtype _M_gm1;
