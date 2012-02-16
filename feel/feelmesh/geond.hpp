@@ -901,8 +901,11 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_t
     {
         ctx->update( *this, f );
         ublas::column(M_normals, f ) = ctx->unitNormal( 0 );
+#if 1 // doesn't work (vincent)
         ublas::column(M_barycenterfaces, f ) = ctx->xReal( 0 );
-
+#else
+        ublas::column(M_barycenterfaces, f ) = ublas::column(glas::average(this->face(f).G()));
+#endif
         double w = (nDim == 3)?f3[f]:((nDim==2)?f2[f]:1);
         M_measurefaces[f] = w*ctx->J(0)*ctx->normalNorm(0);
     }

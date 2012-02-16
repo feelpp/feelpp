@@ -256,11 +256,13 @@ public:
 
     Elements()
         :
+        _M_worldCommElements(),
         _M_elements()
     {}
 
     Elements( Elements const & f )
         :
+        _M_worldCommElements(f.worldCommElements()),
         _M_elements( f._M_elements )
     {}
 
@@ -281,6 +283,7 @@ public:
         if ( this != &e )
             {
                 _M_elements = e._M_elements;
+                _M_worldCommElements = e._M_worldCommElements;
             }
         return *this;
     }
@@ -306,17 +309,20 @@ public:
      */
     virtual bool isEmpty() const { return _M_elements.empty(); }
 
+    WorldComm const& worldCommElements() const { return _M_worldCommElements; }
+
+
     bool isBoundaryElement( element_type const & e ) const { return _M_elements.find( e )->isOnBoundary(); }
     bool isBoundaryElement( size_type const & id ) const { return _M_elements.find( element_type( id ) )->isOnBoundary(); }
 
     element_iterator elementIterator( size_type i ) const
-        { return  _M_elements.template get<0>().find( boost::make_tuple( M_comm.rank(), i ) ); };
+        { return  _M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) ); };
 
     element_iterator elementIterator( size_type i, size_type p ) const
         { return  _M_elements.template get<0>().find( boost::make_tuple( p, i ) ); };
 
     element_type const& element( size_type i ) const
-        { return *_M_elements.template get<0>().find( boost::make_tuple( M_comm.rank(), i ) );  };
+    { return *_M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );  };
 
     element_type const& element( size_type i, size_type p ) const
         { return *_M_elements.template get<0>().find( boost::make_tuple( p, i ) );  };
@@ -326,7 +332,7 @@ public:
      */
     bool hasElement( size_type i ) const
         {
-            return _M_elements.template get<0>().find( boost::make_tuple( M_comm.rank(), i ) ) !=
+            return _M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) ) !=
                 _M_elements.template get<0>().end();
         }
 
@@ -356,49 +362,49 @@ public:
     { return std::make_pair( _M_elements.begin(), _M_elements.end() ); }
 
     element_iterator beginElementWithId( size_type m )
-    { return _M_elements.template get<0>().lower_bound(boost::make_tuple( M_comm.rank(), m )); }
+    { return _M_elements.template get<0>().lower_bound(boost::make_tuple( this->worldCommElements().localRank(), m )); }
     element_const_iterator beginElementWithId( size_type m ) const
-    { return _M_elements.template get<0>().lower_bound(boost::make_tuple( M_comm.rank(), m )); }
+    { return _M_elements.template get<0>().lower_bound(boost::make_tuple( this->worldCommElements().localRank(), m )); }
     element_iterator endElementWithId( size_type m )
-    { return _M_elements.template get<0>().upper_bound(boost::make_tuple( M_comm.rank(), m )); }
+    { return _M_elements.template get<0>().upper_bound(boost::make_tuple( this->worldCommElements().localRank(), m )); }
     element_const_iterator endElementWithId( size_type m ) const
-    { return _M_elements.template get<0>().upper_bound(boost::make_tuple( M_comm.rank(), m )); }
+    { return _M_elements.template get<0>().upper_bound(boost::make_tuple( this->worldCommElements().localRank(), m )); }
 
     /**
      * \return the iterator \c begin over the elements with \c Marker1 \p m
      */
     marker_element_const_iterator beginElementWithMarker( size_type m ) const
-    { return _M_elements.template get<detail::by_marker>().equal_range(boost::make_tuple( Marker1(m), M_comm.rank() )).first; }
+    { return _M_elements.template get<detail::by_marker>().equal_range(boost::make_tuple( Marker1(m), this->worldCommElements().localRank() )).first; }
 
     /**
      * \return the iterator \c begin over the elements with \c Marker2 \p m
      */
     marker2_element_const_iterator beginElementWithMarker2( size_type m ) const
-    { return _M_elements.template get<detail::by_marker2>().equal_range(boost::make_tuple( Marker2(m), M_comm.rank() )).first; }
+    { return _M_elements.template get<detail::by_marker2>().equal_range(boost::make_tuple( Marker2(m), this->worldCommElements().localRank() )).first; }
 
     /**
      * \return the iterator \c begin over the elements with \c Marker3 \p m
      */
     marker3_element_const_iterator beginElementWithMarker3( size_type m ) const
-    { return _M_elements.template get<detail::by_marker3>().equal_range(boost::make_tuple( Marker3(m), M_comm.rank() )).first; }
+    { return _M_elements.template get<detail::by_marker3>().equal_range(boost::make_tuple( Marker3(m), this->worldCommElements().localRank() )).first; }
 
     /**
      * \return the iterator \c end over the elements with \c Marker1 \p m
      */
     marker_element_const_iterator endElementWithMarker( size_type m ) const
-    { return _M_elements.template get<detail::by_marker>().equal_range(boost::make_tuple( Marker1(m), M_comm.rank() )).second; }
+    { return _M_elements.template get<detail::by_marker>().equal_range(boost::make_tuple( Marker1(m), this->worldCommElements().localRank() )).second; }
 
     /**
      * \return the iterator \c end over the elements with \c Marker2 \p m
      */
     marker2_element_const_iterator endElementWithMarker2( size_type m ) const
-    { return _M_elements.template get<detail::by_marker2>().equal_range(boost::make_tuple( Marker2(m), M_comm.rank() )).second; }
+    { return _M_elements.template get<detail::by_marker2>().equal_range(boost::make_tuple( Marker2(m), this->worldCommElements().localRank() )).second; }
 
     /**
      * \return the iterator \c end over the elements with \c Marker3 \p m
      */
     marker3_element_const_iterator endElementWithMarker3( size_type m ) const
-    { return _M_elements.template get<detail::by_marker3>().equal_range(boost::make_tuple( Marker3(m), M_comm.rank() )).second; }
+    { return _M_elements.template get<detail::by_marker3>().equal_range(boost::make_tuple( Marker3(m), this->worldCommElements().localRank() )).second; }
 
     /**
      * \return the range of iterator \c (begin,end) over the elements
@@ -406,7 +412,7 @@ public:
      */
     std::pair<marker_element_const_iterator, marker_element_const_iterator>
     elementsWithMarker( size_type m, size_type p ) const
-    { return _M_elements.template get<detail::by_marker>().equal_range(boost::make_tuple( Marker1(m), M_comm.rank() )); }
+    { return _M_elements.template get<detail::by_marker>().equal_range(boost::make_tuple( Marker1(m), this->worldCommElements().localRank() )); }
 
 
     /**
@@ -415,7 +421,7 @@ public:
      */
     std::pair<marker2_element_const_iterator, marker2_element_const_iterator>
     elementsWithMarker2( size_type m, size_type p ) const
-    { return _M_elements.template get<detail::by_marker2>().equal_range(boost::make_tuple( Marker2(m), M_comm.rank() )); }
+    { return _M_elements.template get<detail::by_marker2>().equal_range(boost::make_tuple( Marker2(m), this->worldCommElements().localRank() )); }
 
     /**
      * \return the range of iterator \c (begin,end) over the elements
@@ -423,7 +429,7 @@ public:
      */
     std::pair<marker3_element_const_iterator, marker3_element_const_iterator>
     elementsWithMarker3( size_type m, size_type p ) const
-    { return _M_elements.template get<detail::by_marker3>().equal_range(boost::make_tuple( Marker3(m), M_comm.rank() ));}
+    { return _M_elements.template get<detail::by_marker3>().equal_range(boost::make_tuple( Marker3(m), this->worldCommElements().localRank() ));}
 
     element_iterator beginElementWithProcessId( size_type m )
     {
@@ -576,7 +582,7 @@ public:
      */
     std::pair<location_element_const_iterator, location_element_const_iterator>
     boundaryElements( size_type p  ) const
-    { return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple( ON_BOUNDARY, M_comm.rank() )); }
+    { return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple( ON_BOUNDARY, this->worldCommElements().localRank() )); }
 
     /**
      * \return the range of iterator \c (begin,end) over the internal
@@ -584,7 +590,7 @@ public:
      */
     std::pair<location_element_const_iterator, location_element_const_iterator>
     internalElements( size_type p  ) const
-    { return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple( INTERNAL, M_comm.rank() )); }
+    { return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple( INTERNAL, this->worldCommElements().localRank() )); }
 
 
     /**
@@ -618,7 +624,7 @@ public:
      */
     location_element_iterator beginInternalElement()
     {
-        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(INTERNAL,M_comm.rank())).first;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(INTERNAL,this->worldCommElements().localRank())).first;
     }
     /**
      * get the end() iterator on all the internal elements
@@ -627,7 +633,7 @@ public:
      */
     location_element_iterator endInternalElement()
     {
-        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(INTERNAL,M_comm.rank())).second;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(INTERNAL,this->worldCommElements().localRank())).second;
     }
 
     /**
@@ -637,7 +643,7 @@ public:
      */
     location_element_const_iterator beginInternalElement() const
     {
-        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(INTERNAL,M_comm.rank())).first;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(INTERNAL,this->worldCommElements().localRank())).first;
     }
 
     /**
@@ -647,7 +653,7 @@ public:
      */
     location_element_const_iterator endInternalElement() const
     {
-        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(INTERNAL,M_comm.rank())).second;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(INTERNAL,this->worldCommElements().localRank())).second;
     }
 
     /**
@@ -657,7 +663,7 @@ public:
      */
     location_element_iterator beginElementOnBoundary()
     {
-        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(ON_BOUNDARY,M_comm.rank())).first;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(ON_BOUNDARY,this->worldCommElements().localRank())).first;
     }
     /**
      * get the end() iterator on all the boundary elements
@@ -666,7 +672,7 @@ public:
      */
     location_element_iterator endElementOnBoundary()
     {
-        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(ON_BOUNDARY,M_comm.rank())).second;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(ON_BOUNDARY,this->worldCommElements().localRank())).second;
     }
 
     /**
@@ -676,7 +682,7 @@ public:
      */
     location_element_const_iterator beginElementOnBoundary() const
     {
-        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(ON_BOUNDARY,M_comm.rank())).first;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(ON_BOUNDARY,this->worldCommElements().localRank())).first;
     }
 
     /**
@@ -686,7 +692,7 @@ public:
      */
     location_element_const_iterator endElementOnBoundary() const
     {
-        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(ON_BOUNDARY,M_comm.rank())).second;
+        return _M_elements.template get<detail::by_location>().equal_range(boost::make_tuple(ON_BOUNDARY,this->worldCommElements().localRank())).second;
     }
 
     /**
@@ -786,7 +792,7 @@ public:
     {
         element_iterator it;
         element_iterator en;
-        boost::tie( it, en ) = elementsWithProcessId( M_comm.rank() );
+        boost::tie( it, en ) = elementsWithProcessId( this->worldCommElements().localRank() );
 
         for( ; it != en; ++it )
             _M_elements.modify( it, [&evec]( element_type& e ) { e.setMarker2(  evec.localToGlobal( e.id(), 0, 0 ) ); } );
@@ -797,7 +803,7 @@ public:
     {
         element_iterator it;
         element_iterator en;
-        boost::tie( it, en ) = elementsWithProcessId( M_comm.rank() );
+        boost::tie( it, en ) = elementsWithProcessId( this->worldCommElements().localRank() );
 
         for( ; it != en; ++it )
             _M_elements.modify( it, [&evec]( element_type& e ) { e.setMarker3(  evec.localToGlobal( e.id(), 0, 0 ) ); } );
@@ -823,10 +829,12 @@ public:
             _M_elements.modify( this->elementIterator(it->id()), [&flag]( element_type& e ) { e.setMarker3(flag); } );
     }
 
+    void setWorldCommElements(WorldComm const& _worldComm) { _M_worldCommElements = _worldComm; }
+
     //@}
 
 private:
-    mpi::communicator M_comm;
+    WorldComm _M_worldCommElements;
     elements_type _M_elements;
     parts_map_type _M_parts;
 };

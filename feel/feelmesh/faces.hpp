@@ -260,6 +260,7 @@ public:
      */
     faces_type const& faces() const { return _M_faces; }
 
+    WorldComm const& worldCommFaces() const { return _M_worldCommFaces; }
 
     virtual bool isEmpty() const { return _M_faces.empty(); }
     bool isBoundaryFace( face_type const & e ) const { return _M_faces.find( e )->isOnBoundary(); }
@@ -358,7 +359,7 @@ public:
      */
     std::pair<location_face_iterator, location_face_iterator>
     internalFaces() const
-    { return _M_faces.template get<detail::by_location>().equal_range(boost::make_tuple( INTERNAL, M_comm.rank() )); }
+    { return _M_faces.template get<detail::by_location>().equal_range(boost::make_tuple( INTERNAL, this->worldCommFaces().localRank() )); }
 
     /**
      * \return the range of iterator \c (begin,end) over the inter-process domain faces
@@ -366,7 +367,7 @@ public:
      */
     std::pair<interprocess_face_iterator, interprocess_face_iterator>
     interProcessFaces() const
-    { return _M_faces.template get<detail::by_interprocessdomain>().equal_range(boost::make_tuple( true, M_comm.rank() )); }
+    { return _M_faces.template get<detail::by_interprocessdomain>().equal_range(boost::make_tuple( true, this->worldCommFaces().localRank() )); }
 
 #if 0
     /**
@@ -375,7 +376,7 @@ public:
      */
     std::pair<interprocess_face_iterator, interprocess_face_iterator>
     intraProcessFaces() const
-    { return _M_faces.template get<detail::by_interprocessdomain>().equal_range(boost::make_tuple( false, M_comm.rank() )); }
+    { return _M_faces.template get<detail::by_interprocessdomain>().equal_range(boost::make_tuple( false, this->worldCommFaces().localRank() )); }
 #endif
 
     /**
@@ -386,8 +387,8 @@ public:
     //std::pair<face_iterator, face_iterator>
     facesWithProcessId( size_type p ) const
     { return _M_faces.template get<detail::by_pid>().equal_range(p); }
-    //{ return _M_faces.template get<detail::by_pid>().equal_range( boost::make_tuple(/*M_comm.rank()*/p) ); }
-    //{ return _M_faces.template get<0>().equal_range( boost::make_tuple(/*M_comm.rank()*/p) ); }
+    //{ return _M_faces.template get<detail::by_pid>().equal_range( boost::make_tuple(/*this->worldCommFaces().localRank()*/p) ); }
+    //{ return _M_faces.template get<0>().equal_range( boost::make_tuple(/*this->worldCommFaces().localRank()*/p) ); }
 
     /**
      * get the faces container by id
@@ -517,7 +518,7 @@ public:
      */
     location_face_iterator beginInternalFace()
         {
-            return _M_faces.template get<detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, M_comm.rank() ));
+            return _M_faces.template get<detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, this->worldCommFaces().localRank() ));
         }
     /**
      * get the end() iterator on all the internal faces
@@ -526,7 +527,7 @@ public:
      */
     location_face_iterator endInternalFace()
         {
-            return _M_faces.template get<detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, M_comm.rank() ));
+            return _M_faces.template get<detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, this->worldCommFaces().localRank() ));
         }
 
     /**
@@ -536,7 +537,7 @@ public:
      */
     location_face_const_iterator beginInternalFace() const
         {
-            return _M_faces.template get<detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, M_comm.rank() ));
+            return _M_faces.template get<detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, this->worldCommFaces().localRank() ));
         }
 
     /**
@@ -546,7 +547,7 @@ public:
      */
     location_face_const_iterator endInternalFace() const
         {
-            return _M_faces.template get<detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, M_comm.rank() ));
+            return _M_faces.template get<detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, this->worldCommFaces().localRank() ));
         }
 
     /**
@@ -556,7 +557,7 @@ public:
      */
     location_face_iterator beginFaceOnBoundary()
         {
-            return _M_faces.template get<detail::by_location>().lower_bound(boost::make_tuple( ON_BOUNDARY, M_comm.rank() ) );
+            return _M_faces.template get<detail::by_location>().lower_bound(boost::make_tuple( ON_BOUNDARY, this->worldCommFaces().localRank() ) );
         }
     /**
      * get the end() iterator on all the boundary faces
@@ -565,7 +566,7 @@ public:
      */
     location_face_iterator endFaceOnBoundary()
         {
-            return _M_faces.template get<detail::by_location>().upper_bound(boost::make_tuple( ON_BOUNDARY, M_comm.rank() ) );
+            return _M_faces.template get<detail::by_location>().upper_bound(boost::make_tuple( ON_BOUNDARY, this->worldCommFaces().localRank() ) );
         }
 
     /**
@@ -575,7 +576,7 @@ public:
      */
     location_face_const_iterator beginFaceOnBoundary() const
         {
-            return _M_faces.template get<detail::by_location>().lower_bound(boost::make_tuple( ON_BOUNDARY, M_comm.rank() ) );
+            return _M_faces.template get<detail::by_location>().lower_bound(boost::make_tuple( ON_BOUNDARY, this->worldCommFaces().localRank() ) );
         }
 
     /**
@@ -585,7 +586,7 @@ public:
      */
     location_face_const_iterator endFaceOnBoundary() const
         {
-            return _M_faces.template get<detail::by_location>().upper_bound(boost::make_tuple(ON_BOUNDARY, M_comm.rank() ) );
+            return _M_faces.template get<detail::by_location>().upper_bound(boost::make_tuple(ON_BOUNDARY, this->worldCommFaces().localRank() ) );
         }
 
     //@}
@@ -636,7 +637,7 @@ public:
         //pid_face_iterator en
         //face_iterator it;
         //face_iterator en;
-        //boost::tie( it, en ) = facesWithProcessId( M_comm.rank() );
+        //boost::tie( it, en ) = facesWithProcessId( this->worldCommFaces().localRank() );
 
         auto it = beginFace(), en = endFace();
 
@@ -681,11 +682,12 @@ public:
             _M_faces.modify( this->faceIterator(it->id()), [&flag]( face_type& e ) { e.setMarker3(flag); } );
     }
 
+    void setWorldCommFaces(WorldComm const& _worldComm) { _M_worldCommFaces = _worldComm; }
 
     //@}
 
 private:
-    mpi::communicator M_comm;
+    WorldComm _M_worldCommFaces;
     faces_type _M_faces;
 };
 /// \endcond

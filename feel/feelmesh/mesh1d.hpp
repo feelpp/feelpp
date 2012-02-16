@@ -243,6 +243,13 @@ public:
      */
     //@{
 
+    virtual void setWorldComm(WorldComm const& _worldComm )
+    {
+        this->setWorldCommMeshBase(_worldComm);
+        this->setWorldCommElements(_worldComm);
+        this->setWorldCommFaces(_worldComm);
+        this->setWorldCommPoints(_worldComm);
+    }
 
     /**
      * clear out all data from the mesh, \p isEmpty() should return

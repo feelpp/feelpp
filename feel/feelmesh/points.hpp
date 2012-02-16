@@ -340,9 +340,14 @@ public:
      */
     point_type const& addPoint( point_type const& f ) { return *_M_points.insert( f ).first; }
 
+    WorldComm const& worldCommPoints() const { return _M_worldCommPoints; }
+
+    void setWorldCommPoints(WorldComm const& _worldComm) { _M_worldCommPoints = _worldComm; }
+
     //@}
 
 private:
+    WorldComm _M_worldCommPoints;
 
     points_type _M_points;
 };

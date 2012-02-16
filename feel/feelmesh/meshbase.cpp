@@ -38,7 +38,7 @@ MeshBase::MeshBase()
     M_is_parametric( false ),
     M_n_vertices( 0 ),
     M_n_parts( 1 ),
-    M_comm()
+    M_worldComm()
 {}
 
 MeshBase::MeshBase( MeshBase const& m )
@@ -48,7 +48,7 @@ MeshBase::MeshBase( MeshBase const& m )
     M_is_parametric( m.M_is_parametric ),
     M_n_vertices( m.M_n_vertices ),
     M_n_parts( m.M_n_parts ),
-    M_comm()
+    M_worldComm(m.M_worldComm)
 {}
 
 MeshBase::~MeshBase()
@@ -64,6 +64,7 @@ MeshBase::operator=( MeshBase const& m )
         M_is_parametric = m.M_is_parametric;
         M_n_vertices = m.M_n_vertices;
         M_n_parts = m.M_n_parts;
+        M_worldComm = m.M_worldComm;
     }
     return *this;
 }
@@ -91,7 +92,7 @@ bool
 MeshBase::isPartitioned() const
 {
     if ( mpi::environment::initialized() )
-        return M_n_parts == M_comm.size();
+        return M_n_parts == M_worldComm.localSize();
     else
         return M_n_parts == 1;
 }
