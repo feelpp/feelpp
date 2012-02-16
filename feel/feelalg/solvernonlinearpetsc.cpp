@@ -303,9 +303,13 @@ void SolverNonLinearPetsc<T>::clear ()
             this->M_is_initialized = false;
 
             int ierr=0;
-
-            ierr = PETSc::SNESDestroy(M_snes);
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+            ierr = SNESDestroy(&M_snes);
             CHKERRABORT(PETSC_COMM_WORLD,ierr);
+#else
+            ierr = SNESDestroy(M_snes);
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+#endif
         }
 }
 // SolverNonLinearPetsc<> methods
@@ -491,9 +495,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     ierr = SNESSetLagPreconditioner( M_snes,-1);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
 #endif
-#if 1
-    //KSP            ksp;         /* linear solver context */
-    //PC             pc;           /* preconditioner context */
+
     SNESGetKSP(M_snes,&M_ksp);
 
     KSPSetOperators(M_ksp, jac->mat(), jac->mat(),
@@ -504,22 +506,14 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     this->setPetscPreconditionerType();
 
     PetscPCFactorSetMatSolverPackage(M_pc,this->matSolverPackageType());
-    //this->setPetscMatSolverPackageType();
 
     //PCSetType(pc,PCNONE);
     //PCSetType(M_pc,PCILU);
     //ierr = PCSetType (M_pc, (char*) PCILU);       CHKERRABORT(M_comm,ierr);
     jac->updatePCFieldSplit(M_pc);
 
-
     ierr = SNESSetFromOptions(M_snes);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
-
-
-
-
-
-#endif
 
     /*
       Set array that saves the function norms.  This array is intended

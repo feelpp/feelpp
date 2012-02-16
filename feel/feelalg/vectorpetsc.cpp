@@ -803,6 +803,8 @@ VectorPetscMPI<T>::init(const size_type n,
     CHKERRABORT(this->comm(),ierr);
 #endif
 
+    delete idx;
+
     ierr = VecSetFromOptions(this->vec());
     CHKERRABORT(this->comm(),ierr);
 
@@ -886,7 +888,7 @@ VectorPetscMPI<T>::clear()
 {
     super::clear();
 
-    if ((this->isInitialized()) && (this->destroy_vec_on_exit()))
+    if (/*(this->isInitialized()) &&*/ (this->destroy_vec_on_exit()))
     {
         int ierr=0;
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
@@ -971,6 +973,8 @@ void VectorPetscMPI<T>::localize()
     ierr = VecScatterDestroy(scatter);
     CHKERRABORT(this->comm(),ierr);
 #endif
+
+    delete idx;
 }
 
 //----------------------------------------------------------------------------------------------------//

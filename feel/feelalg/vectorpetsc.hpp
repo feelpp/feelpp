@@ -816,6 +816,8 @@ public:
 
     VectorPetscMPI(DataMap const& dm );
 
+    ~VectorPetscMPI() { this->clear(); }
+
     void init(const size_type N,
               const size_type n_local,
               const bool fast=false);
