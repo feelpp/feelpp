@@ -30,6 +30,7 @@
 #define __importer_H 1
 
 #include <feel/feelcore/visitor.hpp>
+#include <feel/feelcore/worldcomm.hpp>
 
 namespace Feel
 {
@@ -71,10 +72,11 @@ public:
     /**
      * default constructor. use GMSH as default mesh format
      */
-    Importer( MeshFormat const& format = GMSH )
+    Importer( MeshFormat const& _format = GMSH, WorldComm const& _worldcomm = WorldComm() )
         :
+        _M_worldComm( _worldcomm ),
         _M_filename(),
-        _M_format( format )
+        _M_format( _format )
         {}
 
     /**
@@ -82,8 +84,9 @@ public:
      * @param filename mesh filename to import
      * @param format format of the file
      */
-    Importer( std::string const& _filename,  MeshFormat const& _format = GMSH )
+    Importer( std::string const& _filename,  MeshFormat const& _format = GMSH, WorldComm const& _worldcomm = WorldComm() )
         :
+        _M_worldComm( _worldcomm ),
         _M_filename( _filename ),
         _M_format( _format )
         {}
@@ -120,7 +123,15 @@ public:
      */
     MeshFormat format() const { return _M_format; }
 
+    /**
+     * \return the world comm
+     */
+    WorldComm const& worldComm() const { return _M_worldComm; }
+
 private:
+
+    //! communicator
+    WorldComm _M_worldComm;
 
     //! name of the file to import
     std::string _M_filename;

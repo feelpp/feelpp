@@ -36,6 +36,7 @@
 #include <iomanip>
 #include <algorithm>
 
+#include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelfilters/importer.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -115,18 +116,19 @@ public:
      */
     //@{
 
-    ImporterGmsh()
+    ImporterGmsh(WorldComm const& _worldcomm = WorldComm())
         :
-        super( GMSH ),
+        super( GMSH, _worldcomm ),
         _M_version( FEEL_GMSH_FORMAT_VERSION ),
         M_use_elementary_region_as_physical_region( false )
         {
             //showMe();
         }
 
-    explicit ImporterGmsh( std::string const& _fname, std::string _version = FEEL_GMSH_FORMAT_VERSION )
+    explicit ImporterGmsh( std::string const& _fname, std::string _version = FEEL_GMSH_FORMAT_VERSION,
+                           WorldComm const& _worldcomm = WorldComm() )
         :
-        super( _fname, GMSH ),
+        super( _fname, GMSH, _worldcomm ),
         _M_version( _version ),
         M_use_elementary_region_as_physical_region( false )
         {
@@ -247,8 +249,7 @@ ImporterGmsh<MeshType>::isElementOnProcessor( std::vector<int> const& tag ) cons
 
     // tag[2] is the number of partition tags (1 in general 2 if cell share an
     // face with 2 processors)
-    mpi::communicator world;
-    int rank = world.rank();
+    int rank = this->worldComm().localRank();
     auto it = std::find_if( tag.begin()+3, tag.end(), [&rank] (int i) {    return i == rank; } );
     if ( it != tag.end() )
         is_element_on_processor = true;
@@ -281,7 +282,6 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     Debug( 8011 ) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit( "  << mesh_type::nDim << "D )] filename = " << this->filename() << "\n";
 
     std::ifstream __is ( this->filename().c_str() );
-
 	if ( !__is.is_open() )
     {
         std::ostringstream ostr;
@@ -714,9 +714,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     } // loop over geometric entities in gmsh file (can be elements or faces)
 
-    mpi::communicator world;
-
-    if (world.size()>1)
+    if (this->worldComm().localSize()>1)
         updateGhostCellInfo(mesh, __idGmshToFeel,  mapGhostElt);
 
     mesh->setNumVertices( std::accumulate( _M_n_vertices.begin(), _M_n_vertices.end(), 0 ) );
@@ -735,6 +733,8 @@ void
 ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<1> )
 {
     face_type pf;
+    //pf.setWorldComm(this->worldComm());
+    pf.setProcessIdInPartition(this->worldComm().localRank());
     pf.setId( mesh->numFaces() );
     pf.setTags(  tag  );
     pf.setPoint( 0, mesh->point( __e[0] ) );
@@ -749,9 +749,8 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, std::vector<int> const& __e, s
     boost::tie( fit, inserted ) = mesh->addFace( pf );
     __idGmshToFeel=pf.id();
 
-    mpi::communicator world;
     auto theface = mesh->faceIterator( pf.id() );
-    mesh->faces().modify( theface, detail::update_id_in_partition_type( world.rank(), pf.id() ) );
+    mesh->faces().modify( theface, detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
 
     Debug( 8011 ) << "added point on boundary ("
                   << fit->isOnBoundary() << ") with id :" << fit->id() << " and marker " << pf.marker()
@@ -779,7 +778,8 @@ void
 ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<1> )
 {
     element_type e;
-
+    //e.setWorldComm(this->worldComm());
+    e.setProcessIdInPartition(this->worldComm().localRank());
     e.setTags(  tag  );
     if ( type == GMSH_LINE ||
          type == GMSH_LINE_2 ||
@@ -794,9 +794,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, st
     mesh->addElement( e );
     __idGmshToFeel=e.id();
 
-    mpi::communicator world;
     auto theelt = mesh->elementIterator( e.id(), e.partitionId() );
-    mesh->elements().modify( theelt, detail::update_id_in_partition_type( world.rank(), e.id() ) );
+    mesh->elements().modify( theelt, detail::update_id_in_partition_type( this->worldComm().localRank(), e.id() ) );
 
     _M_n_vertices[ __e[0] ] = 1;
     _M_n_vertices[ __e[1] ] = 1;
@@ -810,6 +809,7 @@ void
 ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<2> )
 {
     face_type pf;
+    pf.setProcessIdInPartition(this->worldComm().localRank());
     pf.setId( mesh->numFaces() );
     pf.setTags(  tag  );
 
@@ -835,9 +835,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, s
     boost::tie( fit, inserted ) = mesh->addFace( pf );
     __idGmshToFeel=pf.id();
 
-    mpi::communicator world;
     auto theface = mesh->faceIterator( pf.id() );
-    mesh->faces().modify( theface, detail::update_id_in_partition_type( world.rank(), pf.id() ) );
+    mesh->faces().modify( theface, detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
 
     Debug( 8011 ) << "added edge on boundary ("
                   << fit->isOnBoundary() << ") with id :" << fit->id()
@@ -868,6 +867,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
     GmshOrdering<element_type> ordering;
 
     element_type pf;
+    pf.setProcessIdInPartition(this->worldComm().localRank());
     pf.setTags(  tag  );
 
     if ( type == GMSH_QUADRANGLE ||
@@ -888,9 +888,8 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
     mesh->addElement( pf );
     __idGmshToFeel=pf.id();
 
-    mpi::communicator world;
     auto theelt = mesh->elementIterator( pf.id(), pf.partitionId() );
-    mesh->elements().modify( theelt, detail::update_id_in_partition_type( world.rank(), pf.id() ) );
+    mesh->elements().modify( theelt, detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
 
     _M_n_vertices[ __e[0] ] = 1;
     _M_n_vertices[ __e[1] ] = 1;
@@ -906,6 +905,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
     GmshOrdering<face_type> ordering;
 
     face_type pf;
+    pf.setProcessIdInPartition(this->worldComm().localRank());
     pf.setId( mesh->numFaces() );
     pf.setTags(  tag  );
 
@@ -929,9 +929,8 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
 
     __idGmshToFeel=pf.id();
 
-    mpi::communicator world;
     auto theface = mesh->faceIterator( pf.id() );
-    mesh->faces().modify( theface, detail::update_id_in_partition_type( world.rank(), pf.id() ) );
+    mesh->faces().modify( theface, detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
 
     _M_n_vertices[ __e[0] ] = 1;
     _M_n_vertices[ __e[1] ] = 1;
@@ -961,6 +960,7 @@ void
 ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<3> )
 {
     element_type pv;
+    pv.setProcessIdInPartition(this->worldComm().localRank());
     GmshOrdering<element_type> ordering;
     pv.setTags(  tag  );
 
@@ -984,9 +984,8 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e,
     mesh->addElement( pv );
     __idGmshToFeel=pv.id();
 
-    mpi::communicator world;
     auto theelt = mesh->elementIterator( pv.id(), pv.partitionId() );
-    mesh->elements().modify( theelt, detail::update_id_in_partition_type( world.rank(), pv.id() ) );
+    mesh->elements().modify( theelt, detail::update_id_in_partition_type( this->worldComm().localRank(), pv.id() ) );
 
     _M_n_vertices[ __e[0] ] = 1;
     _M_n_vertices[ __e[1] ] = 1;
@@ -1006,14 +1005,12 @@ template<typename MeshType>
 void
 ImporterGmsh<MeshType>::updateGhostCellInfo(mesh_type* mesh, std::vector<int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt)
 {
-    mpi::communicator world;
-
     // counter of msg sent for each process
-    std::vector<int> nbMsgToSend(world.size());
+    std::vector<int> nbMsgToSend(this->worldComm().localSize());
     std::fill(nbMsgToSend.begin(),nbMsgToSend.end(),0);
 
     // map usefull to get final result
-    std::vector< std::map<int,int> > mapMsg(world.size());
+    std::vector< std::map<int,int> > mapMsg(this->worldComm().localSize());
 
     // iterate over ghost elt
     auto it_map = __mapGhostElt.begin();
@@ -1023,13 +1020,16 @@ ImporterGmsh<MeshType>::updateGhostCellInfo(mesh_type* mesh, std::vector<int> co
             auto idGmsh = it_map->first;
             auto idProc = it_map->second.get<1>();
 #if 0
-            std::cout<< "I am the proc" << world.rank()<<" I send to the proc " << idProc << " for idGmsh " << idGmsh+1
-                     << " with tag "<< nbMsgToSend2[it_map->second.get<1>()]
-                     << " the G " << mesh->element(it_map->second.get<0>(),idProc ).G()
-                     << std::endl;
+            std::cout << "[updateGhostCellInfo]----1---\n"
+                      << "I am the proc " << this->worldComm().globalRank()
+                      << " local proc " << this->worldComm().localRank()
+                      << " I send to the proc " << idProc << " for idGmsh " << idGmsh+1
+                      << " with tag "<< nbMsgToSend[idProc]
+                      << " the G " << mesh->element(it_map->second.get<0>(),idProc ).G()
+                      << std::endl;
 #endif
             // send
-            world.send(idProc , nbMsgToSend[idProc], idGmsh);
+            this->worldComm().localComm().send(idProc , nbMsgToSend[idProc], idGmsh);
             // save tag of request
             mapMsg[idProc].insert(std::make_pair(nbMsgToSend[idProc],it_map->second.get<0>() ) );
             // update nb send
@@ -1038,49 +1038,52 @@ ImporterGmsh<MeshType>::updateGhostCellInfo(mesh_type* mesh, std::vector<int> co
 
     // counter of msg received for each process
     std::vector<int> nbMsgToRecv;
-    mpi::all_to_all(world,
+    mpi::all_to_all(this->worldComm().localComm(),
                     nbMsgToSend,
                     nbMsgToRecv);
 
     // get gmsh id asked and re-send the correspond id Feel
-    for (int proc=0; proc<world.size();++proc)
+    for (int proc=0; proc<this->worldComm().localSize();++proc)
         {
             for ( int cpt=0 ; cpt<nbMsgToRecv[proc] ;++cpt)
                 {
                     int idGmsh;
                     //reception idGmsh
-                    world.recv( proc, cpt, idGmsh);
+                    this->worldComm().localComm().recv( proc, cpt, idGmsh);
 #if 0
-                    std::cout<< "I am the proc" << world.rank()<<" I receive of the proc " << proc << " for idGmsh " << idGmsh+1
-                             <<" with tag "<< cpt
-                             << " the G " << mesh->element(__idGmshToFeel[idGmsh]).G()
-                             << " with idFeel Classic " << __idGmshToFeel[idGmsh]
-                             << std::endl;
+                    std::cout << "[updateGhostCellInfo]----2---\n"
+                              << "I am the proc" << this->worldComm().localRank()
+                              << " I receive of the proc " << proc << " for idGmsh " << idGmsh+1
+                              << " with tag "<< cpt
+                              << " the G " << mesh->element(__idGmshToFeel[idGmsh]).G()
+                              << " with idFeel Classic " << __idGmshToFeel[idGmsh]
+                              << std::endl;
 #endif
                     //re-send idFeel
-                    world.send(proc, cpt, __idGmshToFeel[ idGmsh ]);
+                    this->worldComm().localComm().send(proc, cpt, __idGmshToFeel[ idGmsh ]);
                 }
         }
 
     // get response to initial request and update Feel::Mesh data
-    for (int proc=0; proc<world.size();++proc)
+    for (int proc=0; proc<this->worldComm().localSize();++proc)
         {
             for ( int cpt=0;cpt<nbMsgToSend[proc];++cpt)
                 {
                     int idFeel;
                     // receive idFeel
-                    world.recv( proc, cpt, idFeel);
+                    this->worldComm().localComm().recv( proc, cpt, idFeel);
                     // update data
                     auto elttt = mesh->elementIterator( mapMsg[proc][cpt],proc);
                     mesh->elements().modify( elttt, detail::update_id_in_partition_type( proc, idFeel ) );
 #if 0
-                    std::cout<< "END! I am the proc" << world.rank()<<" I receive of the proc " << proc
-                             <<" with tag "<< cpt
-                             << " for the G " << mesh->element( mapMsg[proc][cpt], proc).G()
-                             << " with idFeel Classic " << mapMsg[proc][cpt]
-                             << " with idFeel " << idFeel
-                             << " and modif " << mesh->element( mapMsg[proc][cpt] , proc).idInProcess(proc)
-                             << std::endl;
+                    std::cout << "[updateGhostCellInfo]----3---\n"
+                              << "END! I am the proc" << this->worldComm().localRank()<<" I receive of the proc " << proc
+                              <<" with tag "<< cpt
+                              << " for the G " << mesh->element( mapMsg[proc][cpt], proc).G()
+                              << " with idFeel Classic " << mapMsg[proc][cpt]
+                              << " with idFeel " << idFeel
+                              << " and modif " << mesh->element( mapMsg[proc][cpt] , proc).idInPartition(proc)
+                              << std::endl;
 #endif
                 }
         }
@@ -1088,10 +1091,10 @@ ImporterGmsh<MeshType>::updateGhostCellInfo(mesh_type* mesh, std::vector<int> co
 
     //check
 #if 0
-    std::vector<int> nbMsgToSendCheck(world.size());
+    std::vector<int> nbMsgToSendCheck(this->worldComm().localSize());
     std::fill(nbMsgToSendCheck.begin(),nbMsgToSendCheck.end(),0);
 
-    std::vector< std::map<int,int> > mapMsgCheck(world.size());
+    std::vector< std::map<int,int> > mapMsgCheck(this->worldComm().localSize());
     auto it_ghost=mesh->beginGhostElement();
     auto en_ghost=mesh->endGhostElement();
     for ( int cpt=0 ; it_ghost != en_ghost; ++it_ghost,++cpt )
@@ -1100,10 +1103,10 @@ ImporterGmsh<MeshType>::updateGhostCellInfo(mesh_type* mesh, std::vector<int> co
         //ATTENTION WARNING int OK, but auto no!!!!!!!!!!!!!!!!!!!!!!!
         int/*auto*/ IdProcessOfGhost = it_ghost->processId();
         int/*auto*/ RealIdOfGhost = it_ghost->idInPartition(IdProcessOfGhost);
-        world.send(IdProcessOfGhost, nbMsgToSendCheck[IdProcessOfGhost], RealIdOfGhost );
+        this->worldComm().localComm().send(IdProcessOfGhost, nbMsgToSendCheck[IdProcessOfGhost], RealIdOfGhost );
 #if 0
-        std::cout<< "I am the proc" << world.rank() << " I send to the proc " << IdProcessOfGhost
-                 <<" with tag "<< nbMsgToSend3[IdProcessOfGhost]
+        std::cout<< "I am the proc" << this->worldComm().localRank() << " I send to the proc " << IdProcessOfGhost
+                 <<" with tag "<< nbMsgToSendCheck[IdProcessOfGhost]
                  << " idSend " << RealIdOfGhost
                  << " it_ghost->G() " << it_ghost->G()
                  << std::endl;
@@ -1115,38 +1118,38 @@ ImporterGmsh<MeshType>::updateGhostCellInfo(mesh_type* mesh, std::vector<int> co
 
     // counter of msg received for each process
     std::vector<int> nbMsgToRecvCheck;
-    mpi::all_to_all(world,
+    mpi::all_to_all(this->worldComm().localComm(),
                     nbMsgToSendCheck,
                     nbMsgToRecvCheck);
 
-    for (int proc=0; proc<world.size();++proc)
+    for (int proc=0; proc<this->worldComm().localSize();++proc)
         {
             for ( int cpt=0;cpt<nbMsgToRecvCheck[proc];++cpt)
                 {
                     int idRecv;
-                    world.recv( proc, cpt,idRecv);
+                    this->worldComm().localComm().recv( proc, cpt,idRecv);
 #if 0
-                    std::cout<< "I am the proc" << world.rank()<<" I receive to proc " << proc
+                    std::cout<< "I am the proc" << this->worldComm().localRank()<<" I receive to proc " << proc
                              <<" with tag "<< cpt
                              << " idRecv " << idRecv
                              << " it_ghost->G() " << mesh->element(idRecv).G()
                              << std::endl;
 #endif
-                    world.send( proc, cpt, mesh->element(idRecv).G());
+                    this->worldComm().localComm().send( proc, cpt, mesh->element(idRecv).G());
                 }
         }
 
     typedef typename matrix_node<double>::type matrix_node_type;
-    std::vector< std::vector<matrix_node_type> > getFinalInfoCheck(world.size());
+    std::vector< std::vector<matrix_node_type> > getFinalInfoCheck(this->worldComm().localSize());
 
-    for (int proc=0; proc<world.size();++proc)
+    for (int proc=0; proc<this->worldComm().localSize();++proc)
         {
             getFinalInfoCheck[proc].resize(nbMsgToSendCheck[proc]);
             for ( int cpt=0;cpt<nbMsgToSendCheck[proc];++cpt)
                 {
-                    world.recv( proc, cpt, getFinalInfoCheck[proc][cpt]);
+                    this->worldComm().localComm().recv( proc, cpt, getFinalInfoCheck[proc][cpt]);
 #if 0
-                    std::cout<< "I am the proc " << world.rank()<<" I receive to proc " << proc
+                    std::cout<< "I am the proc " << this->worldComm().localRank()<<" I receive to proc " << proc
                              <<" with tag "<< cpt
                              << " points G " << getFinalInfoCheck[proc][cpt]
                              << std::endl;
@@ -1162,7 +1165,7 @@ ImporterGmsh<MeshType>::updateGhostCellInfo(mesh_type* mesh, std::vector<int> co
             int/*auto*/ IdProcessOfGhost = it_ghost->processId();
             auto indic = mapMsgCheck[IdProcessOfGhost][cpt];
 #if 0
-            std::cout<< "FINAL CHECK! I am the proc" << world.rank()
+            std::cout<< "FINAL CHECK! I am the proc" << this->worldComm().localRank()
                      << " G() initial " << it_ghost->G()
                      << " G() returned" << getFinalInfoCheck[IdProcessOfGhost/*idProc*/][indic]
                      << std::endl;

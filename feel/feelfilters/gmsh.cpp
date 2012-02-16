@@ -201,9 +201,9 @@ std::string
 Gmsh::generate( std::string const& __name, std::string const& __geo, bool const __forceRebuild, bool const parametric,bool const modifGeo ) const
 {
     std::string fname;
-    if ( !mpi::environment::initialized() || (mpi::environment::initialized()  && M_comm.rank() == 0 ) )
+    if ( !mpi::environment::initialized() || (mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
         {
-            Log() << "[Gmsh::generate] generate on processor " <<  M_comm.rank() << "/" << M_comm.size() << "\n";
+            Log() << "[Gmsh::generate] generate on processor " <<  this->worldComm().globalRank() << "/" << this->worldComm().globalSize() << "\n";
             bool geochanged (generateGeo(__name,__geo,modifGeo));
             std::ostringstream __geoname;
             __geoname << __name << ".geo";
@@ -231,7 +231,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
         }
     if ( mpi::environment::initialized() )
     {
-        mpi::broadcast( M_comm, fname, 0 );
+        mpi::broadcast( this->worldComm().globalComm(), fname, 0 );
         Log() << "[Gmsh::generate] broadcast mesh filename : " << fname << " to all other processes\n";
 
     }
