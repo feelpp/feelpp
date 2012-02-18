@@ -183,11 +183,11 @@ void run(Application_ptrtype & theApp)
 
     BOOST_CHECK_SMALL( boundary_error,1e-5);
     BOOST_CHECK_SMALL( laplacian_error,6e-3);
-    BOOST_CHECK_CLOSE( domain_measure, 1, 1e-12 );
+    BOOST_CHECK_CLOSE( domain_measure, 1, 1e-10 );
     BOOST_CHECK_CLOSE( trace_measure, 1, 1e-12 );
     BOOST_CHECK_CLOSE( trace_trace_measure, 4, 1e-12 );
     BOOST_CHECK_SMALL( const_extention_error1,1e-10);
-    BOOST_CHECK_SMALL( const_extention_error2,2e-4);
+    BOOST_CHECK_SMALL( const_extention_error2,5e-4);
 
     auto exporter = export_type::New( theApp->vm(), "Export" );
 
