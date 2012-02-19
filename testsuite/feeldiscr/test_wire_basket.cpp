@@ -166,12 +166,12 @@ void run(Application_ptrtype & theApp)
     auto glift = op_lift->lift( _range=markedfaces(mesh,6),_expr=idv(const_extension));
 
 
-    auto boundary_error = integrate( markedfaces(mesh,6), idv(const_extension)-idv(glift) ).evaluate()(0,0);
-    auto laplacian_error = integrate( elements(mesh), trace(hessv(glift)) ).evaluate()(0,0);
+    auto boundary_error = integrate( markedfaces(mesh,6), idv(glift)-idv(const_extension) ).evaluate()(0,0);
+    auto laplacian_error = integrate( elements(mesh), -trace(hessv(glift)) ).evaluate()(0,0);
 
     auto const_extention_error1 = integrate( boundaryfaces(trace_mesh),
-                                             idv(const_extension)-idv(trace_trace_projection_g) ).evaluate()(0,0);
-    auto const_extention_error2 = integrate( elements(trace_mesh), idv(const_extension)-ttmean_g ).evaluate()(0,0);
+                                             idv(trace_trace_projection_g)-idv(const_extension) ).evaluate()(0,0);
+    auto const_extention_error2 = integrate( elements(trace_mesh), ttmean_g-idv(const_extension) ).evaluate()(0,0);
 
 
 
@@ -181,7 +181,7 @@ void run(Application_ptrtype & theApp)
     std::cout << "const_extention_error1= " << const_extention_error1 << std::endl;
     std::cout << "const_extention_error2= " << const_extention_error2 << std::endl;
 
-    BOOST_CHECK_SMALL( boundary_error,1e-5);
+    BOOST_CHECK_SMALL( boundary_error,5e-5);
     BOOST_CHECK_SMALL( laplacian_error,6e-3);
     BOOST_CHECK_CLOSE( domain_measure, 1, 1e-10 );
     BOOST_CHECK_CLOSE( trace_measure, 1, 1e-12 );
