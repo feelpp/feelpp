@@ -358,7 +358,7 @@ public:
             M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
             M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu ) );
 
-            M_scm->setTruthModel( M_model );
+	    M_scm->setTruthModel( M_model );
         }
 
     //! set max iteration number
@@ -1006,6 +1006,7 @@ CRB<TruthModelType>::offline()
                         Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
                 }
 
+
                 M_bdf_primal->shiftRight( *u );
 
                 if( ! M_model->isSteady() )
@@ -1185,7 +1186,7 @@ CRB<TruthModelType>::offline()
             for(int i=0;i<M_Nm;i++)
             {
                 M_WN.push_back( ModeSet[i] );
-            }
+	    }
 
             //and now the dual
             if (solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM)
@@ -1950,6 +1951,10 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                 }
 
                 Fdu.setZero(N);
+		for(int q = 0;q < M_model->Ql(M_output_index); ++q)
+		{
+		    Fdu += theta_fq[M_output_index][q]*M_Lq_du[q].head(N);
+		}
 
                 for(int q = 0;q < Qm; ++q)
                 {
@@ -1977,7 +1982,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
             boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu ,time);
 
-            Fdu.setZero(N);
+            
+	    Fdu.setZero(N);
+
             for(int q = 0;q < M_model->Ql(0); ++q)
             {
                 Fdu += theta_fq[0][q]*M_Fq_du[q].head(N);
@@ -1998,7 +2005,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
             if( M_model->isSteady() )
             {
-                s += -( Fdu.dot( uNdu[0] ) - uNdu[0].dot(Aprdu*uN[0] ) );
+	        s += -( Fdu.dot( uNdu[0] ) - uNdu[0].dot(Aprdu*uN[0])  );
             }
             else
             {
@@ -2080,9 +2087,10 @@ CRB<TruthModelType>::delta( size_type N,
         if ( M_error_type == CRB_RESIDUAL_SCM )
         {
             double alpha_up, lbti;
-            boost::tie( alpha, lbti ) = M_scm->lb( mu );
+	    boost::tie( alpha, lbti ) = M_scm->lb( mu );
             boost::tie( alpha_up, lbti ) = M_scm->ub( mu );
             std::cout << "alpha_lo = " << alpha << " alpha_hi = " << alpha_up << "\n";
+	    
         }
 
         double upper_bound;
@@ -2095,6 +2103,7 @@ CRB<TruthModelType>::delta( size_type N,
             //upper_bound = math::sqrt(dt/alpha * primal_sum) * math::sqrt(dt/alpha * dual_sum +dt*dual_residual);
             upper_bound = math::sqrt(dt/alpha * primal_sum) * math::sqrt(dt/alpha * dual_sum);
         }
+	
 
 
         std::copy( vect_pr.begin(), vect_pr.end(), std::back_inserter(residual_coeffs));
@@ -2577,7 +2586,6 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::error_estimation_type
 CRB<TruthModelType>::transientDualResidual( int Ncur,parameter_type const& mu,  vectorN_type const& Undu ,vectorN_type const& Unduold , double time_step, double time ) const
 {
-
     int __QLhs = M_model->Qa();
     int __QOutput = M_model->Ql(M_output_index);
     int __Qm = M_model->Qm();
@@ -3349,7 +3357,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps )
 
     int Nwn = M_N;
 
-
+#if 0
     if(  M_error_type!=CRB_EMPIRICAL )
     {
         auto lo = M_rbconv.right.range( boost::bimaps::unbounded, boost::bimaps::_key <= eps );
@@ -3361,6 +3369,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps )
         Nwn = it->first;
         std::cout << "Nwn = "<< Nwn << " error = "<< it->second << " eps=" << eps << "\n";
     }
+#endif
 
 
     std::vector<vectorN_type> uN;
@@ -3419,7 +3428,7 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
     //setCRBErrorType(errorType);
 
 
-
+#if 0
     if(  M_error_type!=CRB_EMPIRICAL )
     {
       auto lo = M_rbconv.right.range( boost::bimaps::unbounded,boost::bimaps::_key <= maxerror );
@@ -3432,6 +3441,7 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
       auto it = M_rbconv.project_left( lo.first );
       Nwn = it->first;
     }
+#endif
 
     std::vector<vectorN_type> uN;
     std::vector<vectorN_type> uNdu;
@@ -3517,7 +3527,7 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_ptrtype & u , element_p
         {
             BOOST_FOREACH( auto du, M_WNdu )
             {
-                element_type e;
+		element_type e = du.functionSpace()->element();
                 e = du;
                 double k =  M_model->scalarProduct(*u, e);
                 e.scale(k);
@@ -3543,7 +3553,7 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_ptrtype & u , element_p
             int index=0;
             BOOST_FOREACH( auto du, M_WNdu )
             {
-                element_type e;
+                element_type e = du.functionSpace()->element();
                 e = du;
                 double k =  projectionN(index);
                 e.scale(k);
@@ -3558,7 +3568,7 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_ptrtype & u , element_p
         {
             BOOST_FOREACH( auto pr, M_WN )
             {
-                element_type e;
+	        auto e = pr.functionSpace()->element();
                 e = pr;
                 double k =  M_model->scalarProduct(*u, e);
                 e.scale(k);
@@ -3584,7 +3594,7 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_ptrtype & u , element_p
             int index=0;
             BOOST_FOREACH( auto pr, M_WN )
             {
-                element_type e;
+                element_type e = pr.functionSpace()->element();;
                 e = pr;
                 double k =  projectionN(index);
                 e.scale(k);
