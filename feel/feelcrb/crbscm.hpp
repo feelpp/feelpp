@@ -228,9 +228,12 @@ public:
         {
             M_model = model;
             M_Dmu = M_model->parameterSpace();
-            M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
-            M_C = sampling_ptrtype( new sampling_type( M_Dmu ) );
-            M_C_complement = sampling_ptrtype( new sampling_type( M_Dmu ) );
+	    if ( ! loadDB() )
+	    {
+               M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
+               M_C = sampling_ptrtype( new sampling_type( M_Dmu ) );
+               M_C_complement = sampling_ptrtype( new sampling_type( M_Dmu ) );
+	    }
         }
 
     //! set Kmax
@@ -383,6 +386,7 @@ private:
 
     bool M_is_initialized;
 
+
     truth_model_ptrtype M_model;
 
     double M_tolerance;
@@ -409,6 +413,8 @@ private:
 
     //! bounds for y
     y_bounds_type M_y_bounds;
+    std::vector<double> M_y_bounds_0;
+    std::vector<double> M_y_bounds_1;
 
     po::variables_map M_vm;
 };
@@ -421,6 +427,7 @@ template<typename TruthModelType>
 std::vector<boost::tuple<double,double,double> >
 CRBSCM<TruthModelType>::offline()
 {
+
     std::ofstream os_y( "y.m" );
     std::ofstream os_C( "C.m" );
 
@@ -444,6 +451,7 @@ CRBSCM<TruthModelType>::offline()
     }
 #endif
     double relative_error = 1e30;
+
 
     // compute the bounds for y in R^Q
     this->computeYBounds();
@@ -515,7 +523,6 @@ CRBSCM<TruthModelType>::offline()
                   _maxit=M_vm["solvereigen-maxiter"].template as<int>()
                 );
 
-
         if ( modes.empty()  )
         {
             Log() << "eigs failed to converge\n";
@@ -583,6 +590,13 @@ CRBSCM<TruthModelType>::offline()
         }
         ++K;
         std::cout << "============================================================\n";
+    }
+
+    //before call saveDB we have to split the vector of tuple M_y_bounds
+    for(int i=0; i<M_y_bounds.size();i++)
+    {
+      M_y_bounds_0.push_back(M_y_bounds[i].get<0>()); 
+      M_y_bounds_1.push_back(M_y_bounds[i].get<1>()); 
     }
     saveDB();
     return ckconv;
@@ -703,6 +717,9 @@ template<typename TruthModelType>
 boost::tuple<typename CRBSCM<TruthModelType>::value_type, double>
 CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) const
 {
+
+  
+
     if ( K == invalid_size_type_value ) K = this->KMax();
     if ( K > this->KMax() ) K = this->KMax();
     boost::timer ti;
@@ -724,6 +741,8 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
     glp_set_obj_dir(lp, GLP_MIN);
 
     int Malpha = std::min(M_Malpha,std::min(K,M_Xi->size()));
+
+
     int Mplus = std::min(M_Mplus,M_Xi->size()-K);
     if (M_vm["crb.scm.strategy"].template as<int>()==2)
         Mplus = std::min(M_Mplus,std::min(K, M_Xi->size()-K ));
@@ -736,7 +755,6 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
     // set the auxiliary variables: we have first Malpha of them from C_K and
     // Mplus from its complement
     glp_add_rows(lp,Malpha+Mplus);
-
     // search the the M_Malpha closest points in C_K, M_Malpha must be < K
     sampling_ptrtype C_neighbors =  M_C->searchNearestNeighbors( mu, Malpha );
 
@@ -745,12 +763,13 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
     //std::cout << "[CRBSCM::lb] add rows associated with C_K\n";
     // first the constraints associated with C_K: make sure that Malpha is not
     // greater by taking the min of M_Malpha and K
+
     for( int m=0;m < Malpha; ++m )
     {
 
         //std::cout << "[CRBSCM::lb] add row " << m << " from C_K\n";
         parameter_type mup = C_neighbors->at( m );
-        //std::cout << "[CRBSCM::lb] mup = " << mup << "\n";
+        //std::cout << "[CRBSCM::lb] mup = \n" << mup << "\n";
 
         // update the theta_q associated with mup
         boost::tie(boost::tuples::ignore, theta_q, boost::tuples::ignore ) = M_model->computeThetaq( mup );
@@ -759,7 +778,7 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
         //std::cout << "[CRBSCM::lb] row name : " << (boost::format( "c_%1%_%2%" ) % K % m).str() << "\n";
         glp_set_row_name(lp, m+1, (boost::format( "c_%1%_%2%" ) % K % m).str().c_str() );
 
-        //std::cout << "[CRBSCM::lb] row bounds\n";
+	//std::cout << "[CRBSCM::lb] row bounds\n";
         //std::cout << "[CRBSCM::lb] index in super sampling: " << C_neighbors->indexInSuperSampling( m ) << "\n";
         //std::cout << "[CRBSCM::lb] eig value: " << M_C_eigenvalues.find( C_neighbors->indexInSuperSampling( m ) )->second << "\n";
         glp_set_row_bnds(lp,
@@ -767,6 +786,7 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
                          GLP_LO,
                          M_C_eigenvalues.find( C_neighbors->indexInSuperSampling( m ) )->second,
                          0.0);
+
 
         //std::cout << "[CRBSCM::lb] constraints matrix\n";
         for( int q = 0; q < M_model->Qa(); ++q, ++nnz_index )
@@ -776,7 +796,6 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
             ja[nnz_index]=q+1;
             ar[nnz_index]=theta_q( q );
         }
-
     }
 
     //std::cout << "[CRBSCM::lb] add rows associated with C_K done. nnz=" << nnz_index << "\n";
@@ -840,14 +859,18 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
         }
         break;
         }
+	
+
         for( int q = 0; q < M_model->Qa(); ++q, ++nnz_index )
         {
             ia[nnz_index]=Malpha+m+1;
             ja[nnz_index]=q+1;
             ar[nnz_index]=theta_q( q );
-        }
+	}
     }
+
     //std::cout << "[CRBSCM::lb] add rows associated with C_K complement done. nnz=" << nnz_index << "\n";
+
 
     // set the structural variables, we have M_model->Qa() of them
     boost::tie(boost::tuples::ignore, theta_q, boost::tuples::ignore ) = M_model->computeThetaq( mu );
@@ -1140,7 +1163,10 @@ CRBSCM<TruthModelType>::save(Archive & ar, const unsigned int version) const
     ar & M_C;
     ar & M_C_complement;
     ar & M_C_eigenvalues;
-    ar & M_y_bounds;
+    ar & M_y_bounds_0;
+    ar & M_y_bounds_1;
+    ar & M_Y_ub;
+    ar & M_Xi;
 }
 
 template<typename TruthModelType>
@@ -1154,7 +1180,16 @@ CRBSCM<TruthModelType>::load(Archive & ar, const unsigned int version)
     ar & M_C;
     ar & M_C_complement;
     ar & M_C_eigenvalues;
-    ar & M_y_bounds;
+    ar & M_y_bounds_0;
+    ar & M_y_bounds_1;
+    ar & M_Y_ub;
+    ar & M_Xi;
+
+    for(int i=0;i<M_y_bounds_0.size();i++)
+    {
+      M_y_bounds.push_back( boost::make_tuple( M_y_bounds_0[i] , M_y_bounds_1[i] ) );
+    }
+
 }
 
 template<typename TruthModelType>
