@@ -37,6 +37,7 @@ find_path (SLEPC_DIR include/slepc.h
   /usr/lib/slepcdir/3.2 # Debian
   /usr/lib/slepcdir/3.1 # Debian
   /usr/lib/slepcdir/3.0.0 # Debian
+  /opt/local/lib/petsc # macports
   $ENV{HOME}/slepc
   DOC "SLEPc Directory")
 
