@@ -46,22 +46,17 @@ homepage            http://www.feelpp.org
 fetch.type          svn
 svn.url             svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk
 svn.revision        HEAD
-#master_sites        http://www.feelpp.org/opus/
-#distfiles           feel++-${version}.tar.gz
 
 checksums           md5     dbbeea5444b9954dd9e6df30596da353\
                     sha1    8e27e4eb1b271202fd2167a4681c3430a01a9847\
                     rmd160  d91328bf433a6084a9d5d209d795e527464e0331
 
-#worksrcdir	feel++-${version}/build
 worksrcdir	trunk/build
 configure	{ system "mkdir -p ${worksrcpath} && cd ${worksrcpath} && cmake ${configure.args} ../" }
 
 configure.env-append  PETSC_DIR=/opt/local/lib/petsc
-#configure.env-append  PETSC_ARCH=darwin
 configure.env-append  SLEPC_DIR=/opt/local/lib/petsc
 
-#configure.args-delete -DCMAKE_OSX_ARCHITECTURES=\"${configure.build_arch}\"
 
 # make sure to keep below in sync with cmake Portgroup except
 # for the configure.args option that mess up feel++
@@ -76,12 +71,20 @@ configure.args      -DCMAKE_VERBOSE_MAKEFILE=ON \
                     -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
                     -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
                     -DCMAKE_MODULE_PATH=${cmake_share_module_dir} \
+                    -DFEEL_ENABLE_EXAMPLES=OFF \
+                    -DFEEL_ENABLE_BENCHMARKS=OFF \
+                    -DFEEL_ENABLE_TESTS=OFF \
+                    -DFEEL_ENABLE_RESEARCH=OFF \
+                    -DFEEL_ENABLE_APPLICATIONS=OFF \
+                    -DFEEL_ENABLE_DOCUMENTATION=OFF \
+                    -DCMAKE_DISABLE_FIND_PACKAGE_Octave=TRUE \
+                    -DCMAKE_DISABLE_FIND_PACKAGE_OpenTURNS=TRUE \
+                    -DCMAKE_DISABLE_FIND_PACKAGE_Metis=TRUE \
                     -Wno-dev
 configure.cxx ${prefix}/bin/g++-mp-4.5
 configure.cc  ${prefix}/bin/gcc-mp-4.5
 configure.args-append \
     -DMPI_COMPILER=/opt/local/lib/openmpi/bin/mpic++\
-    -DFEEL_ENABLE_DOCUMENTATION=ON
 
 
 
@@ -94,24 +97,57 @@ depends_build port:cmake
 depends_lib    \
     port:cmake\
     port:gcc45\
-    port:gmsh \
     port:openmpi\
-    port:tbb\
-    port:boost\
+    port:boost +gcc45 +openmpi +regex_match_extra\
     port:petsc\
     port:slepc\
-    port:octave\
-    port:imagemagick\
+    port:gmsh\
+    port:python\
+    port:libANN
+
+variant octave description {Add octave bindings} {
+  depends_lib_append \
+    port:octave
+  configure.args-append \
+    -DCMAKE_DISABLE_FIND_PACKAGE_Octave=FALSE
+}
+
+variant tbb description {Add tbb support} {
+  depends_lib_append \
+    port:tbb
+}
+
+variant doc description {Add doc support} {
+  depends_lib_append \
+    port:doxygen \
+    port:latex2html \
+    port:imagemagick \
+  configure.args-append \
+    -DFEEL_ENABLE_DOCUMENTATION=ON
+}
+
+variant scipy description {Add python bindings} {
+  depends_lib_append \
     port:py26-scipy\
-    port:py26-numpy\
-    port:doxygen\
-    port:texlive-bin
+    port:py26-numpy
+}
 
- #   port:ghostscript\
+variant test description {Add tests to build process}{
+  configure.args-append \
+    -DFEEL_ENABLE_TESTS=ON
+}
 
-#    port:texinfo
+variant benchmarks description {Add benchmarks to build process}{
+  configure.args-append \
+    -DFEEL_ENABLE_BENCHMARKS=ON
+}
 
+variant examples description {Add examples to build process}{
+  configure.args-append \
+    -DFEEL_ENABLE_EXAMPLES=ON
+}
 
-#    port:texlive-latex-extra\
-#    port:texlive-fonts-extra
-
+variant applications description {Add applications to build process}{
+  configure.args-append \
+    -DFEEL_ENABLE_APPLICATIONS=ON
+}
