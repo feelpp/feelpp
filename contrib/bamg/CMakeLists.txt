@@ -22,7 +22,9 @@
 #
 #
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/bamglib)
-add_library(feel++_bamg
+
+if(DRAWING)
+  add_library(feel++_bamg
   Mesh2d.cpp
   bamg-gmsh.cpp
   bamglib/Mesh2.cpp
@@ -30,13 +32,30 @@ add_library(feel++_bamg
   bamglib/MeshRead.cpp
   bamglib/Metric.cpp
   bamglib/R2.cpp
-  bamglib/MeshDraw.cpp
   bamglib/MeshQuad.cpp
   bamglib/MeshWrite.cpp
   bamglib/Meshio.cpp
   bamglib/QuadTree.cpp
   bamglib/SetOfE4.cpp
-)
+  bamglib/MeshDraw.cpp
+  )
+  else()
+  add_library(feel++_bamg
+  Mesh2d.cpp
+  bamg-gmsh.cpp
+  bamglib/Mesh2.cpp
+  bamglib/MeshGeom.cpp
+  bamglib/MeshRead.cpp
+  bamglib/Metric.cpp
+  bamglib/R2.cpp
+  bamglib/MeshQuad.cpp
+  bamglib/MeshWrite.cpp
+  bamglib/Meshio.cpp
+  bamglib/QuadTree.cpp
+  bamglib/SetOfE4.cpp
+  )
+endif()
+
 
 file(GLOB_RECURSE HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 INSTALL(FILES ${HDR}  DESTINATION include/feel/bamg COMPONENT Devel)
