@@ -278,7 +278,9 @@ FIND_PACKAGE(PythonInterp 2.2 REQUIRED)
 #
 # data
 #
+IF(NOT APPLE)
 ADD_SUBDIRECTORY ( data )
+ENDIF(NOT APPLE)
 
 #
 # Feel
