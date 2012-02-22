@@ -21,6 +21,7 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
+
 foreach( debian_arches linux kfreebsd )
   IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
     set( DEBIAN_FLAVORS ${debian_arches}-gnu-c-debug ${debian_arches}-gnu-c-opt ${DEBIAN_FLAVORS})
