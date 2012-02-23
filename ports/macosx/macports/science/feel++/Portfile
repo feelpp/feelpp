@@ -87,10 +87,11 @@ configure.args-append \
     -DMPI_COMPILER=/opt/local/lib/openmpi/bin/mpic++\
 
 
+destroot.destdir DESTDIR=${destroot}${prefix}/lib/feel++
 
-post-build {
-   system "cd ${worksrcpath}/doc/api/ && make -k doxygen"
-}
+#post-build {
+#   system "cd ${worksrcpath}/doc/api/ && make -k doxygen"
+#}
 
 depends_build port:cmake
 
@@ -98,11 +99,10 @@ depends_lib    \
     port:cmake\
     port:gcc45\
     port:openmpi\
-    port:boost +gcc45 +openmpi +regex_match_extra\
+    port:boost \
     port:petsc\
     port:slepc\
     port:gmsh\
-    port:python\
     port:libANN
 
 variant octave description {Add octave bindings} {
@@ -132,22 +132,22 @@ variant scipy description {Add python bindings} {
     port:py26-numpy
 }
 
-variant test description {Add tests to build process}{
+variant test description {Add tests to build process} {
   configure.args-append \
     -DFEEL_ENABLE_TESTS=ON
 }
 
-variant benchmarks description {Add benchmarks to build process}{
+variant benchmarks description {Add benchmarks to build process} {
   configure.args-append \
     -DFEEL_ENABLE_BENCHMARKS=ON
 }
 
-variant examples description {Add examples to build process}{
+variant examples description {Add examples to build process} {
   configure.args-append \
     -DFEEL_ENABLE_EXAMPLES=ON
 }
 
-variant applications description {Add applications to build process}{
+variant applications description {Add applications to build process} {
   configure.args-append \
     -DFEEL_ENABLE_APPLICATIONS=ON
 }
