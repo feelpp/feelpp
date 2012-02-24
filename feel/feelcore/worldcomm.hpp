@@ -84,6 +84,15 @@ public:
 
     bool isActive() const { return M_isActive[this->godRank()]; }
 
+    void active();
+
+    /**
+     * showMe
+     */
+    void showMe( std::ostream& __out = std::cout ) const;
+
+    WorldComm operator+(WorldComm const & _worldComm) const;
+
 private :
 
     communicator_type M_localComm;
