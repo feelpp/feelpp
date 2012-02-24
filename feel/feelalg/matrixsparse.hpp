@@ -114,7 +114,7 @@ public:
      */
     MatrixSparse ();
 
-    MatrixSparse(DataMap const& dmRow, DataMap const& dmCol);
+    MatrixSparse(DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm());
 
     /**
      * Destructor. Free all memory, but do not release the memory of
@@ -277,7 +277,8 @@ public:
     /**
      * \return the communicator
      */
-    mpi::communicator const& comm() const { return M_comm; }
+    //mpi::communicator const& comm() const { return M_comm; }
+    WorldComm const& comm() const { return M_worldComm; }
 
     /**
      * Release all memory and return to a state just like after having
@@ -672,7 +673,8 @@ protected:
     }
 
     //! mpi communicator
-    mpi::communicator M_comm;
+    //mpi::communicator M_comm;
+    WorldComm M_worldComm;
 
     /**
      * Flag indicating whether or not the matrix
@@ -710,7 +712,8 @@ MatrixSparse<T>::MatrixSparse () :
 
 template <typename T>
 inline
-MatrixSparse<T>::MatrixSparse (DataMap const& dmRow, DataMap const& dmCol ) :
+MatrixSparse<T>::MatrixSparse (DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm ) :
+    M_worldComm( worldComm ),
     _M_is_initialized(false),
     M_mprop( NON_HERMITIAN ),
     M_mapRow( dmRow ),

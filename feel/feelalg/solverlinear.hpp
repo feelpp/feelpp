@@ -70,6 +70,9 @@ public:
      */
     virtual ~SolverLinear ();
 
+    WorldComm const& worldComm() const { return M_worldComm; }
+    void setWorldComm(WorldComm const& worldComm) { M_worldComm=worldComm; }
+
     /**
      * @returns true if the data structures are
      * initialized, false otherwise.
@@ -318,7 +321,8 @@ protected:
 
 private:
 
-    mpi::communicator M_comm;
+    //mpi communicator
+    WorldComm M_worldComm;
 
 };
 
@@ -329,7 +333,7 @@ private:
 template <typename T>
 inline
 SolverLinear<T>::SolverLinear () :
-
+    M_worldComm(),
     _M_solver_type         (GMRES),
     _M_preconditioner_type (LU_PRECOND),
     M_preconditioner(),
@@ -341,6 +345,7 @@ SolverLinear<T>::SolverLinear () :
 template <typename T>
 inline
 SolverLinear<T>::SolverLinear ( po::variables_map const& vm ) :
+    M_worldComm(),
     M_vm( vm ),
     _M_solver_type         (GMRES),
     _M_preconditioner_type (LU_PRECOND),

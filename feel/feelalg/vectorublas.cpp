@@ -161,7 +161,8 @@ VectorUblas<T,Storage>::VectorUblas()
     _M_vec( detail::fake<Storage>( *new ublas::vector<value_type>, ublas::range() ) ),
     M_global_values_updated( false ),
     M_global_values()
-{}
+{
+}
 
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( size_type __s )
@@ -209,17 +210,15 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas const & m )
 }
 
 template <typename T, typename Storage>
-VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type const& range )
+VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type const& range, DataMap const& dm )
     :
-    super1( invalid_size_type_value, range.size() ),
+    super1( dm ),
     _M_vec( detail::fake<Storage>( m.vec(), range ) ),
     M_global_values_updated( false ),
     M_global_values( range.size() )
 {
     Debug( 5600 ) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
     Debug( 5600 ) << "[VectorUblas] constructor with range: size:" << _M_vec.size() << "\n";
-    this->init( invalid_size_type_value, _M_vec.size(), true );
-
 }
 
 template <typename T, typename Storage>
@@ -310,11 +309,9 @@ VectorUblas<T,Storage>::init ( const size_type n,
         ( n_local )( n )
         ( M_comm.rank() )
         ( M_comm.size() ).error( "Invalid local vector size" );
-
     // Clear the data structures if already initialized
     if (this->isInitialized())
         this->clear();
-
     super1::init( n, n_local, fast );
 
     M_global_values_updated = false;

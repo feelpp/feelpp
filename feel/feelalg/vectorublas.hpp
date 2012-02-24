@@ -113,7 +113,7 @@ public:
 
     VectorUblas( VectorUblas const & m );
 
-    VectorUblas( VectorUblas<value_type>& m, range_type const& range );
+    VectorUblas( VectorUblas<value_type>& m, range_type const& range, DataMap const& dm );
 
     VectorUblas( ublas::vector<value_type>& m, range_type const& range );
 

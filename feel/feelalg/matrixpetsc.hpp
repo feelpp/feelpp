@@ -135,7 +135,7 @@ public:
      */
     MatrixPetsc();
 
-    MatrixPetsc(DataMap const& dmRow, DataMap const& dmCol);
+    MatrixPetsc(DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm());
 
 
     /**
@@ -498,7 +498,7 @@ public :
 
     MatrixPetscMPI();
 
-    MatrixPetscMPI(DataMap const& dmRow, DataMap const& dmCol);
+    MatrixPetscMPI(DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm());
 
     MatrixPetscMPI(Mat m, DataMap const& dmRow, DataMap const& dmCol);
 

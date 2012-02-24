@@ -37,7 +37,8 @@ GraphCSR::GraphCSR( size_type n,
                     size_type first_row_entry_on_proc,
                     size_type last_row_entry_on_proc,
                     size_type first_col_entry_on_proc,
-                    size_type last_col_entry_on_proc )
+                    size_type last_col_entry_on_proc,
+                    WorldComm const& worldcomm )
     :
     M_first_row_entry_on_proc( first_row_entry_on_proc ),
     M_last_row_entry_on_proc( last_row_entry_on_proc ),
@@ -48,7 +49,8 @@ GraphCSR::GraphCSR( size_type n,
     M_n_nz( n, 0 ),
     M_n_oz( n, 0 ),
     M_storage(),
-    M_is_closed( false )
+    M_is_closed( false ),
+    M_worldComm( worldcomm )
 {
     //std::cout << "creating graph " << this << "\n";
 }
@@ -65,7 +67,8 @@ GraphCSR::GraphCSR( GraphCSR const & g )
     M_n_oz( g.M_n_oz ),
     M_storage( g.M_storage ),
     M_graphT( g.M_graphT),
-    M_is_closed( g.M_is_closed )
+    M_is_closed( g.M_is_closed ),
+    M_worldComm( g.M_worldComm)
 {
 }
 
@@ -90,6 +93,7 @@ GraphCSR::operator=( GraphCSR const& g )
             M_storage = g.M_storage;
             M_graphT = g.M_graphT;
             M_is_closed = g.M_is_closed;
+            M_worldComm = g.M_worldComm;
         }
     return *this;
 }
@@ -112,7 +116,7 @@ GraphCSR::zero()
     for (size_type i=M_first_row_entry_on_proc ; i<=M_last_row_entry_on_proc ; ++i)
         {
             row_type& row = this->row(i);
-            row.get<0>() = 0;//proc
+            row.get<0>() = this->worldComm().globalRank();//proc
             row.get<1>() = i-M_first_row_entry_on_proc; //local index
             row.get<2>().clear(); //all is zero
         }
@@ -136,7 +140,7 @@ GraphCSR::transpose()
         {
             // Get the row of the sparsity pattern
             row_type const& irow = it->second;
-            if ( boost::get<0>( irow ) == M_comm.rank() )
+            if ( boost::get<0>( irow ) == this->worldComm().globalRank() )
                 {
                     // num line
                     size_type globalindex = it->first;
@@ -163,11 +167,11 @@ GraphCSR::addMissingZeroEntriesDiagonal()
 {
     size_type m = this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1;
     size_type n = this->lastColEntryOnProc()-this->firstColEntryOnProc()+1;
-
     for ( size_type i = this->firstRowEntryOnProc() ; i< this->firstRowEntryOnProc()+std::min(m,n) ; ++i)
         {
             if (this->storage().find(i)!=this->end())
                 {
+                    //std::cout << " row() " /*<< this->row(i).get<0>()*/ << " glabalRank " << this->worldComm().globalRank() << std::endl;
                     if (this->row(i).get<2>().find(i) == this->row(i).get<2>().end())
                         {
                             this->row(i).get<2>().insert(i);
@@ -175,8 +179,8 @@ GraphCSR::addMissingZeroEntriesDiagonal()
                 }
             else
                 {
-                    this->row(i).get<0>() = 0;//rank
-                    this->row(i).get<1>() = i;//loc
+                    this->row(i).get<0>() = this->worldComm().globalRank();//0;//rank
+                    this->row(i).get<1>() = i-this->firstRowEntryOnProc();//loc
                     this->row(i).get<2>().insert(i);
                 }
         }
@@ -186,6 +190,7 @@ GraphCSR::addMissingZeroEntriesDiagonal()
 void
 GraphCSR::close()
 {
+
     if ( M_is_closed )
     {
        //std::cout << "already closed graph " << this << "...\n";
@@ -212,24 +217,24 @@ GraphCSR::close()
     M_n_nz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1/*M_storage.size()*/ );
     M_n_oz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1/*M_storage.size()*/ );
 
-    std::vector<int> nbMsgToSend(this->comm().size());
+    std::vector<int> nbMsgToSend(this->worldComm().globalSize());
     std::fill(nbMsgToSend.begin(),nbMsgToSend.end(),0);
-    std::vector< std::map<int,int> > mapMsg(this->comm().size());
+    std::vector< std::map<int,int> > mapMsg(this->worldComm().globalSize());
 #endif
 
     std::fill( M_n_nz.begin(), M_n_nz.end(), 0 );
     std::fill( M_n_oz.begin(), M_n_oz.end(), 0 );
 
     size_type sum_nz = 0;
-    //size_type sum_n_nz = 0;
-    //size_type sum_n_oz = 0;
 
     M_max_nnz = 0;
     for( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
         {
             // Get the row of the sparsity pattern
             row_type const& irow = it->second;
-            if ( boost::get<0>( irow ) == M_comm.rank() )
+            //if ( (it->first + this->firstRowEntryOnProc()) >= this->firstRowEntryOnProc() && (it->first + this->firstRowEntryOnProc() )<=this->lastRowEntryOnProc())
+            //std::cout << " irow rank " << irow.get<0>() << " global rank " << this->worldComm().globalRank() << " god rank " << this->worldComm().godRank()  << std::endl;
+            if ( boost::get<0>( irow ) == this->worldComm().globalRank() )
                 {
                     //std::vector<size_type> const& ivec = boost::get<2>( irow );
                     size_type vec_size = boost::get<2>( irow ).size();
@@ -313,13 +318,16 @@ GraphCSR::close()
                         }
 
 #if 0
-                    std::cout << "/n I am proc " << world.rank() << " I send to " << procOnGlobalCluster
+                    std::cout << "/n I am proc " << this->worldComm().globalRank()
+                              << " god Rank " << this->worldComm().godRank()
+                              << " global Rank " << this->worldComm().globalRank()
+                              << " I send to " << procOnGlobalCluster
                               << " with dofGlobCluster " << dofOnGlobalCluster
                               << " with dofLoc " << dofOnProc
                               << " size of ivec " << ivec.size()
                               << std::endl;
 #endif
-                    this->comm().send(procOnGlobalCluster, nbMsgToSend[procOnGlobalCluster],ivec );
+                    this->worldComm().globalComm().send(procOnGlobalCluster, nbMsgToSend[procOnGlobalCluster],ivec );
 
                     mapMsg[procOnGlobalCluster].insert(std::make_pair(nbMsgToSend[procOnGlobalCluster], irow.get<1>()  ) );
 
@@ -333,28 +341,27 @@ GraphCSR::close()
 #if defined(FEEL_ENABLE_MPI_MODE) // MPI
     // counter of msg received for each process
     std::vector<int> nbMsgToRecv;
-    mpi::all_to_all(this->comm(),
+    mpi::all_to_all(this->worldComm().globalComm(),
                     nbMsgToSend,
                     nbMsgToRecv);
 
     // recv id asked and re-send set of face id
-    for (int proc=0; proc<this->comm().size();++proc)
+    for (int proc=0; proc<this->worldComm().globalSize();++proc)
         {
             for ( int cpt=0;cpt<nbMsgToRecv[proc];++cpt)
                 {
                     //size_type localindex = mapMsg[proc][cpt];
                     std::vector<size_type> ivec;
 
-                    this->comm().recv(proc, cpt,ivec );
+                    this->worldComm().globalComm().recv(proc, cpt,ivec );
 
                     size_type globalindex = ivec[0];
                     size_type localindex = ivec[1];
                     row_type& row = this->row(globalindex);
-                    row.get<0>()=this->comm().rank();
+                    row.get<0>()=this->worldComm().globalRank();
                     row.get<1>()=localindex;
 
-                    //std::cout << " OOOOlocalindex " << localindex << std::endl;
-                    for (size_type j=1; j< ivec.size(); j++)
+                    for (size_type j=2; j< ivec.size(); j++)
                         {
                             bool isInserted = false;
                             if (row.get<2>().find(ivec[j]) == row.get<2>().end())
@@ -366,27 +373,11 @@ GraphCSR::close()
                             if ( (ivec[j] < firstColEntryOnProc()) ||
                                  (ivec[j] > lastColEntryOnProc() ))
                                 {
-                                    // SUREMENT UTILE!!!!!
-                                    // M_colindices_nz[localindex].insert(ivec[j]);
-                                    //std::cout << "AYTYATYATYAT"<<std::endl;
-                                    //std::cout << "globalindex=" << globalindex << " localindex="
-                                    //          << localindex << " off-block diag: " << M_n_oz[localindex] << std::endl;
-                                    // entry is off block-diagonal
-                                    //if (this->storage().find(localindex)==this->end())
-                                    //    if (this->storage().find(localindex)->get<2>().find(ivec[j]) ==this->end())
                                     if (isInserted) { ++M_n_oz[localindex]; ++sum_nz; }
                                 }
                             else
                                 {
-                                    //std::cout << "rank " << this->comm().rank() << " AIAIAIAI localindex"<< localindex << std::endl;
-                                    //if (this->storage().find(localindex)==this->end())
                                     if (isInserted) { ++M_n_nz[localindex]; ++sum_nz; }
-
-#if 0
-                                    auto isInserted = M_colindices_nz[localindex].insert(ivec[j]).second;
-                                    if (isInserted)
-                                        ++M_n_nz[localindex];
-#endif
                                 }
 
 
@@ -401,7 +392,7 @@ GraphCSR::close()
 #endif
 
 
-#if 1
+#if 1 // build ia,ja
 #if 0
     M_ia.resize( M_storage.size()+1 );
     M_ja.resize( sum_nz );
@@ -455,18 +446,12 @@ GraphCSR::close()
     {
         if (M_storage.find(this->firstRowEntryOnProc()+i)!=M_storage.end())
             {
+
                 row_type const& irow = this->row(this->firstRowEntryOnProc()+i);
                 size_type localindex = boost::get<1>( irow );
                 M_ia[i/*localindex*/] = col_cursor;
                 jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
-                /*for( auto vecit = boost::get<2>( irow ).begin(), vecen = boost::get<2>( irow ).end(); vecit != vecen; ++vecit )
-                    {
-                        //if ( (*vecit >= firstColEntryOnProc()) && (*vecit <= lastColEntryOnProc() ))
-                        {
-                            M_ja[col_cursor]=*vecit;std::cout << *vecit << std::endl;
-                            ++col_cursor;
-                        }
-                        }*/
+
                 col_cursor+=boost::get<2>( irow ).size();
             }
         else
@@ -478,7 +463,8 @@ GraphCSR::close()
     M_ia[nRowLoc] = /*sum_n_nz*/sum_nz;
 #endif // MPI
 #endif // 0
-#endif // 1
+#endif // 1 build ia,ja
+
 
 } // close
 
@@ -486,16 +472,20 @@ GraphCSR::close()
 void
 GraphCSR::showMe( std::ostream& __out ) const
 {
-    for (int proc = 0;proc<this->comm().size();++proc)
+    __out << std::endl;
+    this->worldComm().globalComm().barrier();
+
+    for (int proc = 0;proc<this->worldComm().globalSize();++proc)
         {
-            if (proc==this->comm().rank())
+            if (proc==this->worldComm().globalRank())
                 {
+                    __out << "--------------------------------------------------------------" << std::endl;
+                    __out << "-------------Graph (on proc " << proc << ")------------------------------"<< std::endl;
                     __out << "first_row_entry_on_proc " << M_first_row_entry_on_proc << std::endl;
                     __out << "last_row_entry_on_proc " << M_last_row_entry_on_proc << std::endl;
                     __out << "first_col_entry_on_proc " << M_first_col_entry_on_proc << std::endl;
                     __out << "last_col_entry_on_proc " << M_last_col_entry_on_proc << std::endl;
                     __out << "max_nnz " << M_max_nnz << std::endl;
-
                     for( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
                         {
                             // Get the row of the sparsity pattern
@@ -503,20 +493,26 @@ GraphCSR::showMe( std::ostream& __out ) const
 
                             __out << " proc " << row.get<0>()
                                   << " globalindex " << it->first
-                                  << " localindex " << row.get<1>()
-                                  << "(nz " << M_n_nz[row.get<1>()]
-                                  << " oz " << M_n_oz[row.get<1>()]
-                                  << ") : ";
-                            //size_type vec_size = boost::get<2>( irow ).size();
-                            //size_type globalindex = it->first;
-                            //size_type localindex = boost::get<1>( irow );
-                            for (auto it = row.get<2>().begin(), en= row.get<2>().end() ; it!=en ; ++it)
-                                __out << *it << " ";
+                                  << " localindex " << row.get<1>();
+                            if (it->first>=M_first_row_entry_on_proc && it->first<=M_last_row_entry_on_proc)
+                                {
+                                    __out << "(nz " << M_n_nz[row.get<1>()]
+                                         << " oz " << M_n_oz[row.get<1>()]
+                                         << ") : ";
+                                    //size_type vec_size = boost::get<2>( irow ).size();
+                                    //size_type globalindex = it->first;
+                                    //size_type localindex = boost::get<1>( irow );
+                                    for (auto it = row.get<2>().begin(), en= row.get<2>().end() ; it!=en ; ++it)
+                                        __out << *it << " ";
+                                }
 
                             __out << std::endl;
                         }
+                    __out << "--------------------------------------------------------------" << std::endl;
+
                 } // if (proc==this->comm().rank())
-            this->comm().barrier();
+            this->worldComm().globalComm().barrier();
+
         } // for (int proc = 0;proc<nProc;++proc)
 
 }
@@ -525,7 +521,6 @@ void
 GraphCSR::printPython( std::string const& nameFile) const
 {
 
-    std::ofstream graphFile(nameFile, std::ios::out /*| std::ios::app*/);
 #if 0
     std::cout << "first_row_entry_on_proc " << M_first_row_entry_on_proc << std::endl;
     std::cout << "last_row_entry_on_proc " << M_last_row_entry_on_proc << std::endl;
@@ -534,45 +529,108 @@ GraphCSR::printPython( std::string const& nameFile) const
     std::cout << "max_nnz " << M_max_nnz << std::endl;
 #endif
 
-    graphFile << "import numpy" << std::endl
-              << "from scipy.sparse import * " << std::endl
-              << "from scipy import * " << std::endl
-              << "from pylab import * " << std::endl;
+    //compute first_row_entry last_row_entry on global graph
+    std::vector<size_type> first_row_entry(this->worldComm().globalSize());
+    std::vector<size_type> last_row_entry(this->worldComm().globalSize());
+    std::vector<size_type> first_col_entry(this->worldComm().globalSize());
+    std::vector<size_type> last_col_entry(this->worldComm().globalSize());
+    mpi::all_gather( this->worldComm().globalComm(),
+                     this->firstRowEntryOnProc(),
+                     first_row_entry);
+    mpi::all_gather( this->worldComm().globalComm(),
+                     this->lastRowEntryOnProc(),
+                     last_row_entry);
+    mpi::all_gather( this->worldComm().globalComm(),
+                     this->firstColEntryOnProc(),
+                     first_col_entry);
+    mpi::all_gather( this->worldComm().globalComm(),
+                     this->lastColEntryOnProc(),
+                     last_col_entry);
+    size_type thefirstRow = *std::min_element(first_row_entry.begin(),first_row_entry.end());
+    size_type thelastRow = *std::max_element(last_row_entry.begin(),last_row_entry.end());
+    size_type thefirstCol = *std::min_element(first_col_entry.begin(),first_col_entry.end());
+    size_type thelastCol = *std::max_element(last_col_entry.begin(),last_col_entry.end());
 
-    graphFile << "nRow=" << M_last_row_entry_on_proc-M_first_row_entry_on_proc+1 << std::endl
-              << "nCol=" << M_last_col_entry_on_proc-M_first_col_entry_on_proc+1 << std::endl;
 
-    graphFile << "mattt = array([" << std::endl;
-    for( auto it = M_storage.begin(), en = --M_storage.end() ; it != en; ++it )
+
+    //std::ofstream graphFile(nameFile, std::ios::out /*| std::ios::app*/);
+    std::ofstream graphFile;//(nameFile, std::ios::out
+    // start file : init
+    if (this->worldComm().globalRank() == this->worldComm().masterRank())
         {
-            auto const& row = it->second;
+            graphFile.open(nameFile, std::ios::out);
 
-            for (auto it2 = row.get<2>().begin(), en2= row.get<2>().end() ; it2!=en2 ; ++it2)
-                graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";// << std::endl;
+            graphFile << "import numpy" << std::endl
+                      << "from scipy.sparse import * " << std::endl
+                      << "from scipy import * " << std::endl
+                      << "from pylab import * " << std::endl;
+
+            graphFile << "nRow=" << thelastRow-thefirstRow+1 << std::endl
+                      << "nCol=" << thelastCol-thefirstCol+1 << std::endl;
+
+            graphFile << "mattt = array([" << std::endl;
+
+            graphFile.close();
         }
 
-    auto it = --M_storage.end();
-    auto const& row = it->second;
+    // synchro
+    this->worldComm().barrier();
 
-    if (row.get<2>().size()>0)
+    // big part : graph
+    for (int proc = 0;proc<this->worldComm().globalSize();++proc)
         {
-            if (row.get<2>().size()>1)
+            if (proc==this->worldComm().globalRank())
                 {
-                    for (auto it2 = row.get<2>().begin(), en2= --row.get<2>().end() ; it2!=en2 ; ++it2)
-                        graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";
-                }
-            auto it2 = --row.get<2>().end();
-            graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ] ])" << std::endl;
-        }
-    else { /*???*/ }
+                    graphFile.open(nameFile, std::ios::out | std::ios::app);
 
-    graphFile << "row = array(mattt[:,0],dtype=int);" << std::endl
-              << "col = array(mattt[:,1],dtype=int);" << std::endl
-              << "data = array(mattt[:,2]);" << std::endl
-              << "A = csr_matrix( (data,(row,col)), shape=(nRow,nCol) );" << std::endl
-              << "fig = plt.figure();" << std::endl
-              << "matplotlib.pyplot.spy(A,precision=1e-8,aspect='equal');" << std::endl
-              << "plt.show();" << std::endl;
+                    for( auto it = M_storage.begin(), en = --M_storage.end() ; it != en; ++it )
+                        {
+                            auto const& row = it->second;
+                            if (row.get<0>()==proc)
+                                for (auto it2 = row.get<2>().begin(), en2= row.get<2>().end() ; it2!=en2 ; ++it2)
+                                    graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";// << std::endl;
+                        }
+
+                    auto it = --M_storage.end();
+                    auto const& row = it->second;
+                    if (row.get<0>()==proc)
+                        {
+                            if (row.get<2>().size()>0)
+                                {
+                                    if (row.get<2>().size()>1)
+                                        {
+                                            for (auto it2 = row.get<2>().begin(), en2= --row.get<2>().end() ; it2!=en2 ; ++it2)
+                                                graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";
+                                        }
+                                    auto it2 = --row.get<2>().end();
+                                    if (proc==this->worldComm().globalSize()-1)
+                                        graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ] ])" << std::endl;
+                                    else
+                                        graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ], " << std::endl;
+                                }
+                            else { /*???*/ }
+                        }
+                    graphFile.close();
+                }
+            this->worldComm().barrier();
+        }
+
+    //endfile
+    if (this->worldComm().globalRank() == this->worldComm().masterRank())
+        {
+            graphFile.open(nameFile, std::ios::out | std::ios::app);
+
+            graphFile << "row = array(mattt[:,0],dtype=int);" << std::endl
+                      << "col = array(mattt[:,1],dtype=int);" << std::endl
+                      << "data = array(mattt[:,2]);" << std::endl
+                      << "A = csr_matrix( (data,(row,col)), shape=(nRow,nCol) );" << std::endl
+                      << "fig = plt.figure();" << std::endl
+                      << "matplotlib.pyplot.spy(A,precision=1e-8,aspect='equal');" << std::endl
+                      << "plt.show();" << std::endl;
+
+            graphFile.close();
+
+        }
 
 
 } // printPython
