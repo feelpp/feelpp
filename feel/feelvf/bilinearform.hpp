@@ -86,8 +86,11 @@ struct BFAssign2
     void operator()( boost::shared_ptr<SpaceType> const& X ) const
     {
         Debug( 5050 ) << "[BFAssign2::operator()] start loop on trial spaces against test space index: " << _M_test_index << "\n";
-        fusion::for_each( _M_bf.trialSpace()->functionSpaces(),
-                          make_bfassign1( _M_bf, _M_expr, X, _M_test_index ) );
+        if (_M_bf.testSpace()->worldsComm()[_M_test_index].isActive())
+            {
+                fusion::for_each( _M_bf.trialSpace()->functionSpaces(),
+                                  make_bfassign1( _M_bf, _M_expr, X, _M_test_index ) );
+            }
         Debug( 5050 ) << "[BFAssign2::operator()] stop loop on trial spaces against test space index: " << _M_test_index << "\n";
         ++_M_test_index;
 
@@ -1227,41 +1230,55 @@ template<typename BFType, typename ExprType, typename TestSpaceType>
 template<typename SpaceType>
 void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<SpaceType> const& trial ) const
 {
-    Debug(5050) << "[BFAssign1::operator()] expression has test functions index "
-                << _M_test_index << " : "
-                << ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
-    Debug(5050) << "[BFAssign1::operator()] expression has trial functions index "
-                << _M_trial_index << " :"
-                << ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
-
-    if ( !ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result ||
-         !ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result )
+    if (_M_bf.testSpace()->worldsComm()[_M_test_index].isActive())
         {
-            ++_M_trial_index;
-            return;
+            Debug(5050) << "[BFAssign1::operator()] expression has test functions index "
+                        << _M_test_index << " : "
+                        << ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
+            Debug(5050) << "[BFAssign1::operator()] expression has trial functions index "
+                        << _M_trial_index << " :"
+                        << ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
+
+            if ( !ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result ||
+                 !ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result )
+                {
+                    ++_M_trial_index;
+                    return;
+                }
+
+            Debug( 5050 ) << "[BFAssign1::operator()] terms found with "
+                          << "testindex: " << _M_test_index << " trialindex: " << _M_trial_index << "\n";
+            typedef SpaceType trial_space_type;
+            typedef TestSpaceType test_space_type;
+
+            //Feel::vf::Block block ( 0, 0,
+            //                        _M_bf.testSpace()->nDofStart( _M_test_index ),
+            //                        _M_bf.trialSpace()->nDofStart( _M_trial_index ) );
+            Feel::vf::list_block_type list_block;
+
+            // with mpi, dof start to 0 (thanks to the LocalToGlobal mapping).
+            if (_M_bf.testSpace()->worldsComm()[_M_test_index].globalSize()>1)
+                {
+                    //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
+                    list_block.push_back( Feel::vf::Block( 0, 0, 0, _M_bf.trialSpace()->nLocalDofStart( _M_trial_index ) ) );
+                }
+            else
+                {
+                    //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
+                    list_block.push_back( Feel::vf::Block( 0,0,
+                                                           _M_bf.testSpace()->nDofStart( _M_test_index ),
+                                                           _M_bf.trialSpace()->nDofStart( _M_trial_index ) ) );
+                }
+
+            typedef typename BFType::matrix_type matrix_type;
+            typedef Feel::vf::detail::BilinearForm<test_space_type,
+                                                   trial_space_type,
+                                                   ublas::vector_range<ublas::vector<double> > > bf_type;
+
+            bf_type bf( _M_test,trial, _M_bf.matrix(), list_block,  _M_bf.rowStartInMatrix(), _M_bf.colStartInMatrix(), _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern()  );
+
+            bf += _M_expr;
         }
-
-    Debug( 5050 ) << "[BFAssign1::operator()] terms found with "
-                  << "testindex: " << _M_test_index << " trialindex: " << _M_trial_index << "\n";
-    typedef SpaceType trial_space_type;
-    typedef TestSpaceType test_space_type;
-
-    Feel::vf::Block block ( 0, 0,
-                            _M_bf.testSpace()->nDofStart( _M_test_index ),
-                            _M_bf.trialSpace()->nDofStart( _M_trial_index ) );
-    Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
-    Feel::vf::list_block_type list_block;
-    list_block.push_back( block );
-
-    typedef typename BFType::matrix_type matrix_type;
-    typedef Feel::vf::detail::BilinearForm<test_space_type,
-        trial_space_type,
-        ublas::vector_range<ublas::vector<double> > > bf_type;
-
-    bf_type bf( _M_test,trial, _M_bf.matrix(), list_block,  _M_bf.rowStartInMatrix(), _M_bf.colStartInMatrix(), _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern()  );
-
-    bf += _M_expr;
-
     ++_M_trial_index;
 }
 
@@ -1269,41 +1286,56 @@ template<typename BFType, typename ExprType, typename TrialSpaceType>
 template<typename SpaceType>
 void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<SpaceType> const& test ) const
 {
-    Debug(5050) << "[BFAssign3::operator()] expression has trial functions index "
-                << _M_test_index << " : "
-                << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
-    Debug(5050) << "[BFAssign3::operator()] expression has test functions index "
-                << _M_trial_index << " :"
-                << ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
-
-    if ( !ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result ||
-         !ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result )
+    if (_M_bf.testSpace()->worldsComm()[_M_test_index].isActive())
         {
-            ++_M_test_index;
-            return;
+
+            Debug(5050) << "[BFAssign3::operator()] expression has trial functions index "
+                        << _M_test_index << " : "
+                        << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
+            Debug(5050) << "[BFAssign3::operator()] expression has test functions index "
+                        << _M_trial_index << " :"
+                        << ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
+
+            if ( !ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result ||
+                 !ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result )
+                {
+                    ++_M_test_index;
+                    return;
+                }
+
+            Debug( 5050 ) << "[BFAssign3::operator()] terms found with "
+                          << "testindex: " << _M_test_index << " trialindex: " << _M_trial_index << "\n";
+            typedef SpaceType test_space_type;
+            typedef TrialSpaceType trial_space_type;
+
+            //Feel::vf::Block block ( 0, 0,
+            //                        _M_bf.testSpace()->nDofStart( _M_test_index ),
+            //                        _M_bf.trialSpace()->nDofStart( _M_trial_index ) );
+            Feel::vf::list_block_type list_block;
+
+            // with mpi, dof start to 0 (thanks to the LocalToGlobal mapping).
+            if (_M_bf.testSpace()->worldsComm()[_M_test_index].globalSize()>1)
+                {
+                    //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
+                    list_block.push_back( Feel::vf::Block( 0, 0, 0, _M_bf.trialSpace()->nLocalDofStart( _M_trial_index ) ) );
+                }
+            else
+                {
+                    //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
+                    list_block.push_back( Feel::vf::Block( 0,0,
+                                                           _M_bf.testSpace()->nDofStart( _M_test_index ),
+                                                           _M_bf.trialSpace()->nDofStart( _M_trial_index ) ) );
+                }
+
+            typedef typename BFType::matrix_type matrix_type;
+            typedef Feel::vf::detail::BilinearForm<test_space_type,
+                                                   trial_space_type,
+                                                   ublas::vector_range<ublas::vector<double> > > bf_type;
+
+            bf_type bf( test, _M_trial, _M_bf.matrix(), list_block, _M_bf.rowStartInMatrix(), _M_bf.colStartInMatrix(), _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern() );
+
+            bf += _M_expr;
         }
-
-    Debug( 5050 ) << "[BFAssign3::operator()] terms found with "
-                  << "testindex: " << _M_test_index << " trialindex: " << _M_trial_index << "\n";
-    typedef SpaceType test_space_type;
-    typedef TrialSpaceType trial_space_type;
-
-    Feel::vf::Block block ( 0, 0,
-                            _M_bf.testSpace()->nDofStart( _M_test_index ),
-                            _M_bf.trialSpace()->nDofStart( _M_trial_index ) );
-    Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
-    Feel::vf::list_block_type list_block;
-    list_block.push_back( block );
-
-    typedef typename BFType::matrix_type matrix_type;
-    typedef Feel::vf::detail::BilinearForm<test_space_type,
-        trial_space_type,
-        ublas::vector_range<ublas::vector<double> > > bf_type;
-
-    bf_type bf( test, _M_trial, _M_bf.matrix(), list_block, _M_bf.rowStartInMatrix(), _M_bf.colStartInMatrix(), _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern() );
-
-    bf += _M_expr;
-
     ++_M_test_index;
 }
 
