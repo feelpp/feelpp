@@ -60,7 +60,8 @@ int main(int argc, char** argv)
 #else
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 //_desc=img2msh( _filename=mesh_name),
-                                _desc=geo( _filename=mesh_name,_dim=3),
+                                _desc=mshconvert( _filename=mesh_name ),
+                                //_desc=geo( _filename=mesh_name,_dim=3),
                                 _physical_are_elementary_regions=true,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 #endif
