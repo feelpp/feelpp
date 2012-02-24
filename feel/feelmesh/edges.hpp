@@ -100,11 +100,13 @@ public:
 
     Edges()
         :
+        _M_worldCommEdges(),
         _M_edges()
     {}
 
     Edges( Edges const & f )
         :
+        _M_worldCommEdges( f._M_worldCommEdges),
         _M_edges( f._M_edges )
     {}
 

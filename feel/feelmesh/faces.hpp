@@ -218,11 +218,13 @@ public:
 
     Faces()
         :
+        _M_worldCommFaces(),
         _M_faces()
     {}
 
     Faces( Faces const & f )
         :
+        _M_worldCommFaces(f._M_worldCommFaces),
         _M_faces( f._M_faces )
     {}
 
@@ -239,6 +241,7 @@ public:
     {
         if ( this != &e )
         {
+            _M_worldCommFaces = e._M_worldCommFaces;
             _M_faces = e._M_faces;
         }
         return *this;
